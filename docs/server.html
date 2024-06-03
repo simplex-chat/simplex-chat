@@ -885,6 +885,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <li><a href="#socks-port-for-smp-proxy">SOCKS port for SMP PROXY</a></li>
 </ul>
 </li>
+<li><a href="#server-information-page">Server information page</a></li>
 <li><a href="#documentation">Documentation</a>
 <ul>
 <li><a href="#smp-server-address">SMP server address</a></li>
@@ -1070,7 +1071,45 @@ Server address: smp://d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=:V8ONoJ6ICwnrZ
 <p>The server address above should be used in your client configuration, and if you added server password it should only be shared with the other people who you want to allow using your server to receive the messages (all your contacts will be able to send messages - it does not require a password). If you passed IP address or hostnames during the initialisation, they will be printed as part of server address, otherwise replace <code>&lt;hostnames&gt;</code> with the actual server hostnames.</p>
 <h2 id="further-configuration" tabindex="-1">Further configuration</h2>
 <p>All generated configuration, along with a description for each parameter, is available inside configuration file in <code>/etc/opt/simplex/smp-server.ini</code> for further customization. Depending on the smp-server version, the configuration file looks something like this:</p>
-<pre><code class="language-ini">[STORE_LOG]
+<pre><code class="language-ini">[INFORMATION]
+# AGPLv3 license requires that you make any source code modifications
+# available to the end users of the server.
+# LICENSE: https://github.com/simplex-chat/simplexmq/blob/stable/LICENSE
+# Include correct source code URI in case the server source code is modified in any way.
+# If any other information fields are present, source code property also MUST be present.
+
+source_code: https://github.com/simplex-chat/simplexmq
+
+# Declaring all below information is optional, any of these fields can be omitted.
+
+# Server usage conditions and amendments.
+# It is recommended to use standard conditions with any amendments in a separate document.
+# usage_conditions: https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md
+# condition_amendments: link
+
+# Server location and operator.
+server_country: &lt;YOUR_SERVER_LOCATION&gt;
+operator: &lt;YOUR_NAME&gt;
+operator_country: &lt;YOUR_LOCATION&gt;
+website: &lt;WEBSITE_IF_AVAILABLE&gt;
+
+# Administrative contacts.
+#admin_simplex: SimpleX address
+admin_email: &lt;EMAIL&gt;
+# admin_pgp:
+# admin_pgp_fingerprint:
+
+# Contacts for complaints and feedback.
+# complaints_simplex: SimpleX address
+complaints_email: &lt;COMPLAINTS_EMAIL&gt;
+# complaints_pgp:
+# complaints_pgp_fingerprint:
+
+# Hosting provider.
+hosting: &lt;HOSTING_PROVIDER_NAME&gt;
+hosting_country: &lt;HOSTING_PROVIDER_LOCATION&gt;
+
+[STORE_LOG]
 # The server uses STM memory for persistence,
 # that will be lost on restart (e.g., as with redis).
 # This option enables saving memory to append only log,
@@ -1132,6 +1171,21 @@ websockets: off
 disconnect: off
 # ttl: 43200
 # check_interval: 3600
+
+[WEB]
+# Set path to generate static mini-site for server information and qr codes/links
+static_path: &lt;WRITABLE_PATH_TO_STORE_WEBSITE&gt;
+
+# Run an embedded server on this port
+# Onion sites can use any port and register it in the hidden service config.
+# Running on a port 80 may require setting process capabilities.
+# http: 8000
+
+# You can run an embedded TLS web server too if you provide port and cert and key files.
+# Not required for running relay on onion address.
+# https: 443
+# cert: /etc/opt/simplex/web.cert
+# key: /etc/opt/simplex/web.key
 </code></pre>
 <h2 id="server-security" tabindex="-1">Server security</h2>
 <h3 id="initialization" tabindex="-1">Initialization</h3>
@@ -1357,6 +1411,108 @@ own_server_domains: &lt;your domain suffixes if using `log_stats: on`&gt;
 </code></pre>
 </li>
 </ol>
+<h2 id="server-information-page" tabindex="-1">Server information page</h2>
+<p>SMP-server versions starting from <code>v5.8.0</code> can be configured to serve Web page with server information that can include admin info, server info, provider info, etc. Run the following commands as <code>root</code> user.</p>
+<ol>
+<li>
+<p>Create folder to store webserver static files and assign correct permissions:</p>
+<pre><code class="language-sh">mkdir -p /var/www/smp-server-web &amp;&amp; chown smp:smp /var/www/smp-server-web
+</code></pre>
+</li>
+<li>
+<p>Add the following to your smp-server configuration (please modify fields in [INFORMATION] section to include relevant information):</p>
+<pre><code class="language-sh">vim /etc/opt/simplex/smp-server.ini
+</code></pre>
+<pre><code class="language-ini">[WEB]
+static_path: /var/www/smp-server-web
+
+[INFORMATION]
+# AGPLv3 license requires that you make any source code modifications
+# available to the end users of the server.
+# LICENSE: https://github.com/simplex-chat/simplexmq/blob/stable/LICENSE
+# Include correct source code URI in case the server source code is modified in any way.
+# If any other information fields are present, source code property also MUST be present.
+
+source_code: https://github.com/simplex-chat/simplexmq
+
+# Declaring all below information is optional, any of these fields can be omitted.
+
+# Server usage conditions and amendments.
+# It is recommended to use standard conditions with any amendments in a separate document.
+# usage_conditions: https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md
+# condition_amendments: link
+
+# Server location and operator.
+server_country: &lt;YOUR_SERVER_LOCATION&gt;
+operator: &lt;YOUR_NAME&gt;
+operator_country: &lt;YOUR_LOCATION&gt;
+website: &lt;WEBSITE_IF_AVAILABLE&gt;
+
+# Administrative contacts.
+#admin_simplex: SimpleX address
+admin_email: &lt;EMAIL&gt;
+# admin_pgp:
+# admin_pgp_fingerprint:
+
+# Contacts for complaints and feedback.
+# complaints_simplex: SimpleX address
+complaints_email: &lt;COMPLAINTS_EMAIL&gt;
+# complaints_pgp:
+# complaints_pgp_fingerprint:
+
+# Hosting provider.
+hosting: &lt;HOSTING_PROVIDER_NAME&gt;
+hosting_country: &lt;HOSTING_PROVIDER_LOCATION&gt; 
+</code></pre>
+</li>
+<li>
+<p>Install the webserver. For easy deployment we'll describe the installtion process of <a href="https://caddyserver.com">Caddy</a> webserver on Ubuntu server:</p>
+<ol>
+<li>
+<p>Install the packages:</p>
+<pre><code class="language-sh">sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+</code></pre>
+</li>
+<li>
+<p>Install caddy gpg key for repository:</p>
+<pre><code class="language-sh">curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+</code></pre>
+</li>
+<li>
+<p>Install Caddy repository:</p>
+<pre><code class="language-sh">curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+</code></pre>
+</li>
+<li>
+<p>Install Caddy:</p>
+<pre><code class="language-sh">sudo apt update &amp;&amp; sudo apt install caddy
+</code></pre>
+</li>
+</ol>
+<p><a href="https://caddyserver.com/docs/install">Full Caddy instllation instructions</a></p>
+</li>
+<li>
+<p>Replace Caddy configuration with the following (don't forget to replace <code>&lt;YOUR_DOMAIN&gt;</code>):</p>
+<pre><code class="language-sh">vim /etc/caddy/Caddyfile
+</code></pre>
+<pre><code class="language-caddy">&lt;YOUR_DOMAIN&gt; {
+  root * /var/www/simplex
+  file_server
+}
+</code></pre>
+</li>
+<li>
+<p>Enable and start Caddy service:</p>
+<pre><code class="language-sh">systemctl enable --now caddy
+</code></pre>
+</li>
+<li>
+<p>Upgrade your smp-server to latest version - <a href="#updating-your-smp-server">Updating your smp server</a></p>
+</li>
+<li>
+<p>Access the webpage you've deployed from your browser. You should see the smp-server information that you've provided in your ini file.</p>
+</li>
+</ol>
 <h2 id="documentation" tabindex="-1">Documentation</h2>
 <p>All necessary files for <code>smp-server</code> are located in <code>/etc/opt/simplex/</code> folder.</p>
 <p>Stored messages, connections, statistics and server log are located in <code>/var/opt/simplex/</code> folder.</p>
@@ -1424,37 +1580,309 @@ Nov 23 19:23:21 5588ab759e80 smp-server[30878]: creating new queues requires pas
 <h3 id="monitoring" tabindex="-1">Monitoring</h3>
 <p>You can enable <code>smp-server</code> statistics for <code>Grafana</code> dashboard by setting value <code>on</code> in <code>/etc/opt/simplex/smp-server.ini</code>, under <code>[STORE_LOG]</code> section in <code>log_stats:</code> field.</p>
 <p>Logs will be stored as <code>csv</code> file in <code>/var/opt/simplex/smp-server-stats.daily.log</code>. Fields for the <code>csv</code> file are:</p>
-<pre><code class="language-sh">fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,monthMsgQueues
+<pre><code class="language-sh">fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,monthMsgQueues,msgSentNtf,msgRecvNtf,dayCountNtf,weekCountNtf,monthCountNtf,qCount,msgCount,msgExpired,qDeletedNew,qDeletedSecured,pRelays_pRequests,pRelays_pSuccesses,pRelays_pErrorsConnect,pRelays_pErrorsCompat,pRelays_pErrorsOther,pRelaysOwn_pRequests,pRelaysOwn_pSuccesses,pRelaysOwn_pErrorsConnect,pRelaysOwn_pErrorsCompat,pRelaysOwn_pErrorsOther,pMsgFwds_pRequests,pMsgFwds_pSuccesses,pMsgFwds_pErrorsConnect,pMsgFwds_pErrorsCompat,pMsgFwds_pErrorsOther,pMsgFwdsOwn_pRequests,pMsgFwdsOwn_pSuccesses,pMsgFwdsOwn_pErrorsConnect,pMsgFwdsOwn_pErrorsCompat,pMsgFwdsOwn_pErrorsOther,pMsgFwdsRecv,qSub,qSubAuth,qSubDuplicate,qSubProhibited,msgSentAuth,msgSentQuota,msgSentLarge
 </code></pre>
-<ul>
-<li>
-<p><code>fromTime</code> - timestamp; date and time of event</p>
-</li>
-<li>
-<p><code>qCreated</code> - int; created queues</p>
-</li>
-<li>
-<p><code>qSecured</code> - int; established queues</p>
-</li>
-<li>
-<p><code>qDeleted</code> - int; deleted queues</p>
-</li>
-<li>
-<p><code>msgSent</code> - int; sent messages</p>
-</li>
-<li>
-<p><code>msgRecv</code> - int; received messages</p>
-</li>
-<li>
-<p><code>dayMsgQueues</code> - int; active queues in a day</p>
-</li>
-<li>
-<p><code>weekMsgQueues</code> - int; active queues in a week</p>
-</li>
-<li>
-<p><code>monthMsgQueues</code> - int; active queues in a month</p>
-</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Field number</th>
+<th>Field name</th>
+<th>Field Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>fromTime</code></td>
+<td>Date of statistics</td>
+</tr>
+<tr>
+<td>Messaging queue:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>qCreated</code></td>
+<td>Created</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>qSecured</code></td>
+<td>Established</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>qDeleted</code></td>
+<td>Deleted</td>
+</tr>
+<tr>
+<td>Messages:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>msgSent</code></td>
+<td>Sent</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>msgRecv</code></td>
+<td>Received</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>dayMsgQueues</code></td>
+<td>Active queues in a day</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>weekMsgQueues</code></td>
+<td>Active queues in a week</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>monthMsgQueues</code></td>
+<td>Active queues in a month</td>
+</tr>
+<tr>
+<td>Messages with &quot;notification&quot; flag</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>msgSentNtf</code></td>
+<td>Sent</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>msgRecvNtf</code></td>
+<td>Received</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>dayCountNtf</code></td>
+<td>Active queues in a day</td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>weekCountNtf</code></td>
+<td>Active queues in a week</td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>monthCountNtf</code></td>
+<td>Active queues in a month</td>
+</tr>
+<tr>
+<td>Additional statistics:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>15</td>
+<td><code>qCount</code></td>
+<td>Stored queues</td>
+</tr>
+<tr>
+<td>16</td>
+<td><code>msgCount</code></td>
+<td>Stored messages</td>
+</tr>
+<tr>
+<td>17</td>
+<td><code>msgExpired</code></td>
+<td>Expired messages</td>
+</tr>
+<tr>
+<td>18</td>
+<td><code>qDeletedNew</code></td>
+<td>New deleted queues</td>
+</tr>
+<tr>
+<td>19</td>
+<td><code>qDeletedSecured</code></td>
+<td>Secured deleted queues</td>
+</tr>
+<tr>
+<td>Requested sessions with all relays:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>20</td>
+<td><code>pRelays_pRequests</code></td>
+<td>- requests</td>
+</tr>
+<tr>
+<td>21</td>
+<td><code>pRelays_pSuccesses</code></td>
+<td>- successes</td>
+</tr>
+<tr>
+<td>22</td>
+<td><code>pRelays_pErrorsConnect</code></td>
+<td>- connection errors</td>
+</tr>
+<tr>
+<td>23</td>
+<td><code>pRelays_pErrorsCompat</code></td>
+<td>- compatability errors</td>
+</tr>
+<tr>
+<td>24</td>
+<td><code>pRelays_pErrorsOther</code></td>
+<td>- other errors</td>
+</tr>
+<tr>
+<td>Requested sessions with own relays:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>25</td>
+<td><code>pRelaysOwn_pRequests</code></td>
+<td>- requests</td>
+</tr>
+<tr>
+<td>26</td>
+<td><code>pRelaysOwn_pSuccesses</code></td>
+<td>- successes</td>
+</tr>
+<tr>
+<td>27</td>
+<td><code>pRelaysOwn_pErrorsConnect</code></td>
+<td>- connection errors</td>
+</tr>
+<tr>
+<td>28</td>
+<td><code>pRelaysOwn_pErrorsCompat</code></td>
+<td>- compatability errors</td>
+</tr>
+<tr>
+<td>29</td>
+<td><code>pRelaysOwn_pErrorsOther</code></td>
+<td>- other errors</td>
+</tr>
+<tr>
+<td>Message forwards to all relays:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>30</td>
+<td><code>pMsgFwds_pRequests</code></td>
+<td>- requests</td>
+</tr>
+<tr>
+<td>31</td>
+<td><code>pMsgFwds_pSuccesses</code></td>
+<td>- successes</td>
+</tr>
+<tr>
+<td>32</td>
+<td><code>pMsgFwds_pErrorsConnect</code></td>
+<td>- connection errors</td>
+</tr>
+<tr>
+<td>33</td>
+<td><code>pMsgFwds_pErrorsCompat</code></td>
+<td>- compatability errors</td>
+</tr>
+<tr>
+<td>34</td>
+<td><code>pMsgFwds_pErrorsOther</code></td>
+<td>- other errors</td>
+</tr>
+<tr>
+<td>Message forward to own relays:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>35</td>
+<td><code>pMsgFwdsOwn_pRequests</code></td>
+<td>- requests</td>
+</tr>
+<tr>
+<td>36</td>
+<td><code>pMsgFwdsOwn_pSuccesses</code></td>
+<td>- successes</td>
+</tr>
+<tr>
+<td>37</td>
+<td><code>pMsgFwdsOwn_pErrorsConnect</code></td>
+<td>- connection errors</td>
+</tr>
+<tr>
+<td>38</td>
+<td><code>pMsgFwdsOwn_pErrorsCompat</code></td>
+<td>- compatability errors</td>
+</tr>
+<tr>
+<td>39</td>
+<td><code>pMsgFwdsOwn_pErrorsOther</code></td>
+<td>- other errors</td>
+</tr>
+<tr>
+<td>Received message forwards:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>40</td>
+<td><code>pMsgFwdsRecv</code></td>
+<td></td>
+</tr>
+<tr>
+<td>Message queue subscribtion errors:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>41</td>
+<td><code>qSub</code></td>
+<td>All</td>
+</tr>
+<tr>
+<td>42</td>
+<td><code>qSubAuth</code></td>
+<td>Authentication erorrs</td>
+</tr>
+<tr>
+<td>43</td>
+<td><code>qSubDuplicate</code></td>
+<td>Duplicate SUB errors</td>
+</tr>
+<tr>
+<td>44</td>
+<td><code>qSubProhibited</code></td>
+<td>Prohibited SUB errors</td>
+</tr>
+<tr>
+<td>Message errors:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>45</td>
+<td><code>msgSentAuth</code></td>
+<td>Authentication errors</td>
+</tr>
+<tr>
+<td>46</td>
+<td><code>msgSentQuota</code></td>
+<td>Quota errors</td>
+</tr>
+<tr>
+<td>47</td>
+<td><code>msgSentLarge</code></td>
+<td>Large message errors</td>
+</tr>
+</tbody>
+</table>
 <p>To import <code>csv</code> to <code>Grafana</code> one should:</p>
 <ol>
 <li>
