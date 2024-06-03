@@ -17,6 +17,8 @@ struct ChatItemInfoView: View {
     @Binding var chatItemInfo: ChatItemInfo?
     @State private var selection: CIInfoTab = .history
     @State private var alert: CIInfoViewAlert? = nil
+    @State private var messageStatusLimited: Bool = true
+    @State private var fileStatusLimited: Bool = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum CIInfoTab {
@@ -157,9 +159,34 @@ struct ChatItemInfoView: View {
             if developerTools {
                 infoRow("Database ID", "\(meta.itemId)")
                 infoRow("Record updated at", localTimestamp(meta.updatedAt))
-                infoRow("Message status", ci.meta.itemStatus.id)
+                let msv = infoRow("Message status", ci.meta.itemStatus.id)
+                Group {
+                    if messageStatusLimited {
+                        msv.lineLimit(1)
+                    } else {
+                        msv
+                    }
+                }
+                .onTapGesture {
+                    withAnimation {
+                        messageStatusLimited.toggle()
+                    }
+                }
+
                 if let file = ci.file {
-                    infoRow("File status", file.fileStatus.id)
+                    let fsv = infoRow("File status", file.fileStatus.id)
+                    Group {
+                        if fileStatusLimited {
+                            fsv.lineLimit(1)
+                        } else {
+                            fsv
+                        }
+                    }
+                    .onTapGesture {
+                        withAnimation {
+                            fileStatusLimited.toggle()
+                        }
+                    }
                 }
             }
         }
