@@ -275,7 +275,7 @@
 "0 sec" = "0 saniye";
 
 /* No comment provided by engineer. */
-"0s" = "0 saniye";
+"0s" = "0sn";
 
 /* time interval */
 "1 day" = "1 gün";
@@ -438,7 +438,7 @@
 "All your contacts will remain connected. Profile update will be sent to your contacts." = "Tüm kişileriniz bağlı kalacaktır. Profil güncellemesi kişilerinize gönderilecektir.";
 
 /* No comment provided by engineer. */
-"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "Tüm kişileriniz, sohbetleriniz ve dosyalarınız güvenli bir şekilde şifrelenecek ve parçalar halinde yapılandırılmış XFTP rölelerine yüklenecektir.";
+"All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." = "Tüm kişileriniz, konuşmalarınız ve dosyalarınız güvenli bir şekilde şifrelenir ve yapılandırılmış XFTP yönlendiricilerine parçalar halinde yüklenir.";
 
 /* No comment provided by engineer. */
 "Allow" = "İzin ver";
@@ -450,6 +450,9 @@
 "Allow disappearing messages only if your contact allows it to you." = "Eğer kişide izin verirse kaybolan mesajlara izin ver.";
 
 /* No comment provided by engineer. */
+"Allow downgrade" = "Sürüm düşürmeye izin ver";
+
+/* No comment provided by engineer. */
 "Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Konuştuğun kişi, kalıcı olarak silinebilen mesajlara izin veriyorsa sen de ver. (24 saat içinde)";
 
 /* No comment provided by engineer. */
@@ -459,7 +462,7 @@
 "Allow message reactions." = "Mesaj tepkilerine izin ver.";
 
 /* No comment provided by engineer. */
-"Allow sending direct messages to members." = "Üyelere direkt mesaj göndermeye izin ver.";
+"Allow sending direct messages to members." = "Üyelere doğrudan mesaj göndermeye izin ver.";
 
 /* No comment provided by engineer. */
 "Allow sending disappearing messages." = "Kendiliğinden yok olan mesajlar göndermeye izin ver.";
@@ -508,6 +511,9 @@
 
 /* pref value */
 "always" = "her zaman";
+
+/* No comment provided by engineer. */
+"Always use private routing." = "Her zaman gizli yönlendirme kullan.";
 
 /* No comment provided by engineer. */
 "Always use relay" = "Her zaman yönlendirici kullan";
@@ -716,6 +722,9 @@
 /* No comment provided by engineer. */
 "Cannot receive file" = "Dosya alınamıyor";
 
+/* snd error text */
+"Capacity exceeded - recipient did not receive previously sent messages." = "Kapasite aşıldı - alıcı önceden gönderilen mesajları almadı.";
+
 /* No comment provided by engineer. */
 "Cellular" = "Hücresel Veri";
 
@@ -851,6 +860,9 @@
 
 /* No comment provided by engineer. */
 "Confirm database upgrades" = "Veritabanı geliştirmelerini onayla";
+
+/* No comment provided by engineer. */
+"Confirm files from unknown servers." = "Bilinmeyen sunuculardan gelen dosyaları onayla.";
 
 /* No comment provided by engineer. */
 "Confirm network settings" = "Ağ ayarlarını onaylayın";
@@ -1320,6 +1332,9 @@
 /* No comment provided by engineer. */
 "Desktop devices" = "Bilgisayar cihazları";
 
+/* snd error text */
+"Destination server error: %@" = "Hedef sunucu hatası: %@";
+
 /* No comment provided by engineer. */
 "Develop" = "Geliştir";
 
@@ -1397,6 +1412,12 @@
 
 /* No comment provided by engineer. */
 "Do not send history to new members." = "Yeni üyelere geçmişi gönderme.";
+
+/* No comment provided by engineer. */
+"Do NOT send messages directly, even if your or destination server does not support private routing." = "Sizin veya hedef sunucunun özel yönlendirmeyi desteklememesi durumunda bile mesajları doğrudan GÖNDERMEYİN.";
+
+/* No comment provided by engineer. */
+"Do NOT use private routing." = "Gizli yönlendirmeyi KULLANMA.";
 
 /* No comment provided by engineer. */
 "Do NOT use SimpleX for emergency calls." = "Acil aramalar için SimpleX'i KULLANMAYIN.";
@@ -1840,6 +1861,9 @@
 "File: %@" = "Dosya: %@";
 
 /* No comment provided by engineer. */
+"Files" = "Dosyalar";
+
+/* No comment provided by engineer. */
 "Files & media" = "Dosyalar & medya";
 
 /* chat feature */
@@ -1904,6 +1928,12 @@
 
 /* No comment provided by engineer. */
 "Forwarded from" = "Şuradan iletildi";
+
+/* snd error text */
+"Forwarding server: %@\nDestination server error: %@" = "Yönlendirme sunucusu: %1$@\nHedef sunucu hatası: %2$@";
+
+/* snd error text */
+"Forwarding server: %@\nError: %@" = "Yönlendirme sunucusu: %1$@\nHata: %2$@";
 
 /* No comment provided by engineer. */
 "Found desktop" = "Bilgisayar bulundu";
@@ -2460,6 +2490,9 @@
 /* No comment provided by engineer. */
 "Message delivery receipts!" = "Mesaj alındı bilgisi!";
 
+/* item status text */
+"Message delivery warning" = "Mesaj iletimi uyarısı";
+
 /* No comment provided by engineer. */
 "Message draft" = "Mesaj taslağı";
 
@@ -2474,6 +2507,12 @@
 
 /* notification */
 "message received" = "mesaj alındı";
+
+/* No comment provided by engineer. */
+"Message routing fallback" = "Mesaj yönlendirme yedeklemesi";
+
+/* No comment provided by engineer. */
+"Message routing mode" = "Mesaj yönlendirme modu";
 
 /* No comment provided by engineer. */
 "Message source remains private." = "Mesaj kaynağı gizli kalır.";
@@ -2585,6 +2624,9 @@
 
 /* No comment provided by engineer. */
 "Network connection" = "Ağ bağlantısı";
+
+/* snd error text */
+"Network issues - message expired after many attempts to send it." = "Ağ sorunları - birçok gönderme denemesinden sonra mesajın süresi doldu.";
 
 /* No comment provided by engineer. */
 "Network management" = "Ağ yönetimi";
@@ -2948,8 +2990,17 @@
 /* No comment provided by engineer. */
 "Private filenames" = "Gizli dosya adları";
 
+/* No comment provided by engineer. */
+"Private message routing" = "Gizli mesaj yönlendirme";
+
+/* No comment provided by engineer. */
+"Private message routing 🚀" = "Gizli mesaj yönlendirme 🚀";
+
 /* name of notes to self */
 "Private notes" = "Gizli notlar";
+
+/* No comment provided by engineer. */
+"Private routing" = "Gizli yönlendirme";
 
 /* No comment provided by engineer. */
 "Profile and server connections" = "Profil ve sunucu bağlantıları";
@@ -2985,7 +3036,7 @@
 "Prohibit messages reactions." = "Mesajlarda tepkileri yasakla.";
 
 /* No comment provided by engineer. */
-"Prohibit sending direct messages to members." = "Geri dönülmez mesaj silme işlemini yasakla.";
+"Prohibit sending direct messages to members." = "Üyelere doğrudan mesaj göndermeyi yasakla.";
 
 /* No comment provided by engineer. */
 "Prohibit sending disappearing messages." = "Kaybolan mesajların gönderimini yasakla.";
@@ -3003,7 +3054,13 @@
 "Protect app screen" = "Uygulama ekranını koru";
 
 /* No comment provided by engineer. */
+"Protect IP address" = "IP adresini koru";
+
+/* No comment provided by engineer. */
 "Protect your chat profiles with a password!" = "Bir parolayla birlikte sohbet profillerini koru!";
+
+/* No comment provided by engineer. */
+"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "IP adresinizi kişileriniz tarafından seçilen mesajlaşma yönlendiricilerinden koruyun.\n*Ağ ve sunucular* ayarlarında etkinleştirin.";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Protokol zaman aşımı";
@@ -3117,10 +3174,10 @@
 "rejected call" = "geri çevrilmiş çağrı";
 
 /* No comment provided by engineer. */
-"Relay server is only used if necessary. Another party can observe your IP address." = "Aktarma sunucusu yalnızca gerekli olduğunda kullanılır. Başka bir taraf IP adresinizi gözlemleyebilir.";
+"Relay server is only used if necessary. Another party can observe your IP address." = "Yönlendirici sunucusu yalnızca gerekli olduğunda kullanılır. Başka bir taraf IP adresinizi gözlemleyebilir.";
 
 /* No comment provided by engineer. */
-"Relay server protects your IP address, but it can observe the duration of the call." = "Aktarıcı sunucu IP adresinizi korur, ancak aramanın süresini gözlemleyebilir.";
+"Relay server protects your IP address, but it can observe the duration of the call." = "Yönlendirici sunucu IP adresinizi korur, ancak aramanın süresini gözlemleyebilir.";
 
 /* No comment provided by engineer. */
 "Remove" = "Sil";
@@ -3229,6 +3286,9 @@
 
 /* No comment provided by engineer. */
 "Run chat" = "Sohbeti çalıştır";
+
+/* No comment provided by engineer. */
+"Safely receive files" = "Dosyaları güvenle alın";
 
 /* No comment provided by engineer. */
 "Safer groups" = "Daha güvenli gruplar";
@@ -3387,6 +3447,12 @@
 "Send live message" = "Canlı mesaj gönder";
 
 /* No comment provided by engineer. */
+"Send messages directly when IP address is protected and your or destination server does not support private routing." = "IP adresi korumalı olduğunda ve sizin veya hedef sunucunun özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.";
+
+/* No comment provided by engineer. */
+"Send messages directly when your or destination server does not support private routing." = "Sizin veya hedef sunucunun özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.";
+
+/* No comment provided by engineer. */
 "Send notifications" = "Bildirimler gönder";
 
 /* No comment provided by engineer. */
@@ -3449,6 +3515,9 @@
 /* No comment provided by engineer. */
 "Sent messages will be deleted after set time." = "Gönderilen mesajlar ayarlanan süreden sonra silinecektir.";
 
+/* srv error text. */
+"Server address is incompatible with network settings." = "Sunucu adresi ağ ayarlarıyla uyumlu değil.";
+
 /* server test error */
 "Server requires authorization to create queues, check password" = "Sunucunun sıra oluşturması için yetki gereklidir, şifreyi kontrol edin";
 
@@ -3457,6 +3526,9 @@
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Sunucu testinde hata oluştu!";
+
+/* srv error text */
+"Server version is incompatible with network settings." = "Sunucu sürümü ağ ayarlarıyla uyumlu değil.";
 
 /* No comment provided by engineer. */
 "Servers" = "Sunucular";
@@ -3525,6 +3597,9 @@
 "Share with contacts" = "Kişilerle paylaş";
 
 /* No comment provided by engineer. */
+"Show → on messages sent via private routing." = "Gizli yönlendirme yoluyla gönderilen mesajlarda → işaretini göster.";
+
+/* No comment provided by engineer. */
 "Show calls in phone history" = "Telefon geçmişinde aramaları göster";
 
 /* No comment provided by engineer. */
@@ -3532,6 +3607,9 @@
 
 /* No comment provided by engineer. */
 "Show last messages" = "Son mesajları göster";
+
+/* No comment provided by engineer. */
+"Show message status" = "Mesaj durumunu göster";
 
 /* No comment provided by engineer. */
 "Show preview" = "Ön gösterimi göser";
@@ -3741,6 +3819,9 @@
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Uygulama, mesaj veya iletişim isteği aldığınızda sizi bilgilendirebilir - etkinleştirmek için lütfen ayarları açın.";
 
 /* No comment provided by engineer. */
+"The app will ask to confirm downloads from unknown file servers (except .onion)." = "Uygulama bilinmeyen dosya sunucularından indirmeleri onaylamanızı isteyecektir (.onion hariç).";
+
+/* No comment provided by engineer. */
 "The attempt to change database passphrase was not completed." = "Veritabanı parolasını değiştirme girişimi tamamlanmadı.";
 
 /* No comment provided by engineer. */
@@ -3861,6 +3942,9 @@
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Bilgilerinizi korumak için SimpleX Lock özelliğini açın.\nBu özellik etkinleştirilmeden önce kimlik doğrulamayı tamamlamanız istenecektir.";
 
 /* No comment provided by engineer. */
+"To protect your IP address, private routing uses your SMP servers to deliver messages." = "IP adresinizi korumak için,gizli yönlendirme mesajları iletmek için SMP sunucularınızı kullanır.";
+
+/* No comment provided by engineer. */
 "To record voice message please grant permission to use Microphone." = "Sesli mesaj kaydetmek için lütfen Mikrofon kullanım izni verin.";
 
 /* No comment provided by engineer. */
@@ -3945,6 +4029,12 @@
 "Unknown error" = "Bilinmeyen hata";
 
 /* No comment provided by engineer. */
+"unknown relays" = "bilinmeyen yönlendiriciler";
+
+/* No comment provided by engineer. */
+"Unknown servers!" = "Bilinmeyen sunucular!";
+
+/* No comment provided by engineer. */
 "unknown status" = "bilinmeyen durum";
 
 /* No comment provided by engineer. */
@@ -3967,6 +4057,9 @@
 
 /* No comment provided by engineer. */
 "Unmute" = "Susturmayı kaldır";
+
+/* No comment provided by engineer. */
+"unprotected" = "korumasız";
 
 /* No comment provided by engineer. */
 "Unread" = "Okunmamış";
@@ -4036,6 +4129,12 @@
 
 /* No comment provided by engineer. */
 "Use only local notifications?" = "Sadece yerel bildirimler kullanılsın mı?";
+
+/* No comment provided by engineer. */
+"Use private routing with unknown servers when IP address is not protected." = "IP adresi korunmadığında bilinmeyen sunucularla gizli yönlendirme kullan.";
+
+/* No comment provided by engineer. */
+"Use private routing with unknown servers." = "Bilinmeyen sunucularla gizli yönlendirme kullan.";
 
 /* No comment provided by engineer. */
 "Use server" = "Sunucu kullan";
@@ -4191,6 +4290,9 @@
 "When connecting audio and video calls." = "Sesli ve görüntülü aramalara bağlanırken.";
 
 /* No comment provided by engineer. */
+"when IP hidden" = "IP gizliyken";
+
+/* No comment provided by engineer. */
 "When people request to connect, you can accept or reject it." = "İnsanlar bağlantı talebinde bulunduğunda, kabul edebilir veya reddedebilirsiniz.";
 
 /* No comment provided by engineer. */
@@ -4215,7 +4317,16 @@
 "With reduced battery usage." = "Azaltılmış pil kullanımı ile birlikte.";
 
 /* No comment provided by engineer. */
+"Without Tor or VPN, your IP address will be visible to file servers." = "Tor veya VPN olmadan, IP adresiniz dosya sunucularına görülebilir.";
+
+/* No comment provided by engineer. */
+"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Tor veya VPN olmadan, IP adresiniz bu XFTP aktarıcıları tarafından görülebilir: %@.";
+
+/* No comment provided by engineer. */
 "Wrong database passphrase" = "Yanlış veritabanı parolası";
+
+/* snd error text */
+"Wrong key or unknown connection - most likely this connection is deleted." = "Yanlış anahtar veya bilinmeyen bağlantı - büyük olasılıkla bu bağlantı silinmiştir.";
 
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Yanlış parola!";

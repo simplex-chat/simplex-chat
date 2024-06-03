@@ -450,6 +450,9 @@
 "Allow disappearing messages only if your contact allows it to you." = "Разрешить исчезающие сообщения, только если Ваш контакт разрешает их Вам.";
 
 /* No comment provided by engineer. */
+"Allow downgrade" = "Разрешить прямую доставку";
+
+/* No comment provided by engineer. */
 "Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Разрешить необратимое удаление сообщений, только если Ваш контакт разрешает это Вам. (24 часа)";
 
 /* No comment provided by engineer. */
@@ -508,6 +511,9 @@
 
 /* pref value */
 "always" = "всегда";
+
+/* No comment provided by engineer. */
+"Always use private routing." = "Всегда использовать конфиденциальную доставку.";
 
 /* No comment provided by engineer. */
 "Always use relay" = "Всегда соединяться через relay";
@@ -716,6 +722,9 @@
 /* No comment provided by engineer. */
 "Cannot receive file" = "Невозможно получить файл";
 
+/* snd error text */
+"Capacity exceeded - recipient did not receive previously sent messages." = "Превышено количество сообщений - предыдущие сообщения не доставлены.";
+
 /* No comment provided by engineer. */
 "Cellular" = "Мобильная сеть";
 
@@ -851,6 +860,9 @@
 
 /* No comment provided by engineer. */
 "Confirm database upgrades" = "Подтвердить обновление базы данных";
+
+/* No comment provided by engineer. */
+"Confirm files from unknown servers." = "Подтверждать файлы с неизвестных серверов.";
 
 /* No comment provided by engineer. */
 "Confirm network settings" = "Подтвердите настройки сети";
@@ -1320,6 +1332,9 @@
 /* No comment provided by engineer. */
 "Desktop devices" = "Компьютеры";
 
+/* snd error text */
+"Destination server error: %@" = "Ошибка сервера получателя: %@";
+
 /* No comment provided by engineer. */
 "Develop" = "Для разработчиков";
 
@@ -1397,6 +1412,12 @@
 
 /* No comment provided by engineer. */
 "Do not send history to new members." = "Не отправлять историю новым членам.";
+
+/* No comment provided by engineer. */
+"Do NOT send messages directly, even if your or destination server does not support private routing." = "Не отправлять сообщения напрямую, даже если сервер получателя не поддерживает конфиденциальную доставку.";
+
+/* No comment provided by engineer. */
+"Do NOT use private routing." = "Не использовать конфиденциальную доставку.";
 
 /* No comment provided by engineer. */
 "Do NOT use SimpleX for emergency calls." = "Не используйте SimpleX для экстренных звонков.";
@@ -1840,6 +1861,9 @@
 "File: %@" = "Файл: %@";
 
 /* No comment provided by engineer. */
+"Files" = "Файлы";
+
+/* No comment provided by engineer. */
 "Files & media" = "Файлы и медиа";
 
 /* chat feature */
@@ -1904,6 +1928,12 @@
 
 /* No comment provided by engineer. */
 "Forwarded from" = "Переслано из";
+
+/* snd error text */
+"Forwarding server: %@\nDestination server error: %@" = "Пересылающий сервер: %1$@\nОшибка сервера получателя: %2$@";
+
+/* snd error text */
+"Forwarding server: %@\nError: %@" = "Пересылающий сервер: %1$@\nОшибка: %2$@";
 
 /* No comment provided by engineer. */
 "Found desktop" = "Компьютер найден";
@@ -2460,6 +2490,9 @@
 /* No comment provided by engineer. */
 "Message delivery receipts!" = "Отчеты о доставке сообщений!";
 
+/* item status text */
+"Message delivery warning" = "Предупреждение доставки сообщения";
+
 /* No comment provided by engineer. */
 "Message draft" = "Черновик сообщения";
 
@@ -2474,6 +2507,12 @@
 
 /* notification */
 "message received" = "получено сообщение";
+
+/* No comment provided by engineer. */
+"Message routing fallback" = "Прямая доставка сообщений";
+
+/* No comment provided by engineer. */
+"Message routing mode" = "Режим доставки сообщений";
 
 /* No comment provided by engineer. */
 "Message source remains private." = "Источник сообщения остаётся конфиденциальным.";
@@ -2585,6 +2624,9 @@
 
 /* No comment provided by engineer. */
 "Network connection" = "Интернет-соединение";
+
+/* snd error text */
+"Network issues - message expired after many attempts to send it." = "Ошибка сети - сообщение не было отправлено после многократных попыток.";
 
 /* No comment provided by engineer. */
 "Network management" = "Статус сети";
@@ -2948,8 +2990,17 @@
 /* No comment provided by engineer. */
 "Private filenames" = "Защищенные имена файлов";
 
+/* No comment provided by engineer. */
+"Private message routing" = "Конфиденциальная доставка сообщений";
+
+/* No comment provided by engineer. */
+"Private message routing 🚀" = "Конфиденциальная доставка сообщений 🚀";
+
 /* name of notes to self */
 "Private notes" = "Личные заметки";
+
+/* No comment provided by engineer. */
+"Private routing" = "Конфиденциальная доставка";
 
 /* No comment provided by engineer. */
 "Profile and server connections" = "Профиль и соединения на сервере";
@@ -3003,7 +3054,13 @@
 "Protect app screen" = "Защитить экран приложения";
 
 /* No comment provided by engineer. */
+"Protect IP address" = "Защитить IP адрес";
+
+/* No comment provided by engineer. */
 "Protect your chat profiles with a password!" = "Защитите Ваши профили чата паролем!";
+
+/* No comment provided by engineer. */
+"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Защитите ваш IP адрес от серверов сообщений, выбранных Вашими контактами.\nВключите в настройках *Сеть и серверы*.";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Таймаут протокола";
@@ -3231,6 +3288,9 @@
 "Run chat" = "Запустить chat";
 
 /* No comment provided by engineer. */
+"Safely receive files" = "Получайте файлы безопасно";
+
+/* No comment provided by engineer. */
 "Safer groups" = "Более безопасные группы";
 
 /* chat item action */
@@ -3387,6 +3447,12 @@
 "Send live message" = "Отправить живое сообщение";
 
 /* No comment provided by engineer. */
+"Send messages directly when IP address is protected and your or destination server does not support private routing." = "Отправлять сообщения напрямую, когда IP адрес защищен, и Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.";
+
+/* No comment provided by engineer. */
+"Send messages directly when your or destination server does not support private routing." = "Отправлять сообщения напрямую, когда Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.";
+
+/* No comment provided by engineer. */
 "Send notifications" = "Отправлять уведомления";
 
 /* No comment provided by engineer. */
@@ -3449,6 +3515,9 @@
 /* No comment provided by engineer. */
 "Sent messages will be deleted after set time." = "Отправленные сообщения будут удалены через заданное время.";
 
+/* srv error text. */
+"Server address is incompatible with network settings." = "Адрес сервера несовместим с настройками сети.";
+
 /* server test error */
 "Server requires authorization to create queues, check password" = "Сервер требует авторизации для создания очередей, проверьте пароль";
 
@@ -3457,6 +3526,9 @@
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Ошибка теста сервера!";
+
+/* srv error text */
+"Server version is incompatible with network settings." = "Версия сервера несовместима с настройками сети.";
 
 /* No comment provided by engineer. */
 "Servers" = "Серверы";
@@ -3525,6 +3597,9 @@
 "Share with contacts" = "Поделиться с контактами";
 
 /* No comment provided by engineer. */
+"Show → on messages sent via private routing." = "Показать → на сообщениях доставленных конфиденциально.";
+
+/* No comment provided by engineer. */
 "Show calls in phone history" = "Показать звонки в истории телефона";
 
 /* No comment provided by engineer. */
@@ -3532,6 +3607,9 @@
 
 /* No comment provided by engineer. */
 "Show last messages" = "Показывать последние сообщения";
+
+/* No comment provided by engineer. */
+"Show message status" = "Показать статус сообщения";
 
 /* No comment provided by engineer. */
 "Show preview" = "Показывать уведомления";
@@ -3741,6 +3819,9 @@
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Приложение может посылать Вам уведомления о сообщениях и запросах на соединение - уведомления можно включить в Настройках.";
 
 /* No comment provided by engineer. */
+"The app will ask to confirm downloads from unknown file servers (except .onion)." = "Приложение будет запрашивать подтверждение загрузки с неизвестных серверов (за исключением .onion адресов).";
+
+/* No comment provided by engineer. */
 "The attempt to change database passphrase was not completed." = "Попытка поменять пароль базы данных не была завершена.";
 
 /* No comment provided by engineer. */
@@ -3861,6 +3942,9 @@
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Чтобы защитить Вашу информацию, включите блокировку SimpleX Chat.\nВам будет нужно пройти аутентификацию для включения блокировки.";
 
 /* No comment provided by engineer. */
+"To protect your IP address, private routing uses your SMP servers to deliver messages." = "Чтобы защитить ваш IP адрес, приложение использует Ваши SMP серверы для конфиденциальной доставки сообщений.";
+
+/* No comment provided by engineer. */
 "To record voice message please grant permission to use Microphone." = "Для записи голосового сообщения, пожалуйста разрешите доступ к микрофону.";
 
 /* No comment provided by engineer. */
@@ -3945,6 +4029,12 @@
 "Unknown error" = "Неизвестная ошибка";
 
 /* No comment provided by engineer. */
+"unknown relays" = "неизвестные серверы";
+
+/* No comment provided by engineer. */
+"Unknown servers!" = "Неизвестные серверы!";
+
+/* No comment provided by engineer. */
 "unknown status" = "неизвестный статус";
 
 /* No comment provided by engineer. */
@@ -3967,6 +4057,9 @@
 
 /* No comment provided by engineer. */
 "Unmute" = "Уведомлять";
+
+/* No comment provided by engineer. */
+"unprotected" = "незащищённый";
 
 /* No comment provided by engineer. */
 "Unread" = "Не прочитано";
@@ -4036,6 +4129,12 @@
 
 /* No comment provided by engineer. */
 "Use only local notifications?" = "Использовать только локальные нотификации?";
+
+/* No comment provided by engineer. */
+"Use private routing with unknown servers when IP address is not protected." = "Использовать конфиденциальную доставку с неизвестными серверами, когда IP адрес не защищен.";
+
+/* No comment provided by engineer. */
+"Use private routing with unknown servers." = "Использовать конфиденциальную доставку с неизвестными серверами.";
 
 /* No comment provided by engineer. */
 "Use server" = "Использовать сервер";
@@ -4191,6 +4290,9 @@
 "When connecting audio and video calls." = "Во время соединения аудио и видео звонков.";
 
 /* No comment provided by engineer. */
+"when IP hidden" = "когда IP защищен";
+
+/* No comment provided by engineer. */
 "When people request to connect, you can accept or reject it." = "Когда Вы получите запрос на соединение, Вы можете принять или отклонить его.";
 
 /* No comment provided by engineer. */
@@ -4215,7 +4317,16 @@
 "With reduced battery usage." = "С уменьшенным потреблением батареи.";
 
 /* No comment provided by engineer. */
+"Without Tor or VPN, your IP address will be visible to file servers." = "Без Тора или ВПН, Ваш IP адрес будет доступен серверам файлов.";
+
+/* No comment provided by engineer. */
+"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Без Тора или ВПН, Ваш IP адрес будет доступен этим серверам файлов: %@.";
+
+/* No comment provided by engineer. */
 "Wrong database passphrase" = "Неправильный пароль базы данных";
+
+/* snd error text */
+"Wrong key or unknown connection - most likely this connection is deleted." = "Неверный ключ или неизвестное соединение - скорее всего, это соединение удалено.";
 
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Неправильный пароль!";

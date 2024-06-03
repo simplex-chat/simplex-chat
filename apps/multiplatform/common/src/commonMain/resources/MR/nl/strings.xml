@@ -1164,7 +1164,7 @@
     <string name="import_theme_error_desc">Zorg ervoor dat het bestand de juiste YAML-syntaxis heeft. Exporteer het thema om een voorbeeld te hebben van de themabestandsstructuur.</string>
     <string name="opening_database">Database openen…</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Lees meer in de <font color="#0088ff">Gebruikershandleiding</font>.]]></string>
-    <string name="theme_colors_section_title">THEMA KLEUREN</string>
+    <string name="theme_colors_section_title">INTERFACE KLEUREN</string>
     <string name="you_can_share_your_address">U kunt uw adres delen als een link of QR-code - iedereen kan verbinding met u maken.</string>
     <string name="all_app_data_will_be_cleared">Alle app-gegevens worden verwijderd.</string>
     <string name="empty_chat_profile_is_created">Er wordt een leeg chatprofiel met de opgegeven naam gemaakt en de app wordt zoals gewoonlijk geopend.</string>
@@ -1806,4 +1806,54 @@
     <string name="settings_section_title_files">BESTANDEN</string>
     <string name="protect_ip_address">Bescherm het IP-adres</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">De app vraagt om downloads van onbekende bestandsservers te bevestigen (behalve .onion of wanneer SOCKS-proxy is ingeschakeld).</string>
+    <string name="error_initializing_web_view">Fout bij het initialiseren van WebView. Update uw systeem naar de nieuwe versie. Neem contact op met ontwikkelaars.
+\nFout: %s</string>
+    <string name="color_wallpaper_tint">Achtergrond accent</string>
+    <string name="wallpaper_scale_fill">Vullen</string>
+    <string name="wallpaper_scale_fit">Passen</string>
+    <string name="wallpaper_preview_hello_alice">Goedemiddag!</string>
+    <string name="wallpaper_preview_hello_bob">Goedemorgen!</string>
+    <string name="theme_remove_image">Verwijder afbeelding</string>
+    <string name="wallpaper_scale">Schaal</string>
+    <string name="chat_theme_apply_to_all_modes">Alle kleurmodi</string>
+    <string name="chat_theme_apply_to_mode">Toepassen op</string>
+    <string name="chat_theme_apply_to_light_mode">Lichte modus</string>
+    <string name="v5_8_chat_themes_descr">Laat uw chats er anders uitzien!</string>
+    <string name="v5_8_chat_themes">Nieuwe chatthema\'s</string>
+    <string name="v5_8_private_routing">Routing van privéberichten🚀</string>
+    <string name="v5_8_safe_files_descr">Bevestig bestanden van onbekende servers.</string>
+    <string name="v5_8_message_delivery">Verbeterde bezorging van berichten</string>
+    <string name="v5_8_persian_ui">Perzische gebruikersinterface</string>
+    <string name="v5_8_safe_files">Veilig bestanden ontvangen</string>
+    <string name="v5_8_message_delivery_descr">Met verminderd batterijgebruik.</string>
+    <string name="theme_destination_app_theme">App thema</string>
+    <string name="chat_theme_reset_to_app_theme">Terugzetten naar app thema</string>
+    <string name="chat_theme_reset_to_user_theme">Terugzetten naar gebruikersthema</string>
+    <string name="chat_theme_apply_to_dark_mode">Donkere modus</string>
+    <string name="wallpaper_advanced_settings">Geavanceerde instellingen</string>
+    <string name="v5_8_private_routing_descr">Bescherm uw IP-adres tegen de berichtenrelais die door uw contacten zijn gekozen.
+\nSchakel dit in in *Netwerk en servers*-instellingen.</string>
+    <string name="wallpaper_scale_repeat">Herhalen</string>
+    <string name="settings_section_title_chat_colors">Chatkleuren</string>
+    <string name="settings_section_title_user_theme">Profiel thema</string>
+    <string name="settings_section_title_chat_theme">Chat thema</string>
+    <string name="color_primary_variant2">Extra accent 2</string>
+    <string name="theme_black">Zwart</string>
+    <string name="color_mode">Kleur mode</string>
+    <string name="color_mode_dark">Donker</string>
+    <string name="dark_mode_colors">Kleuren in donkere modus</string>
+    <string name="color_mode_light">Licht</string>
+    <string name="color_received_quote">Antwoord ontvangen</string>
+    <string name="reset_single_color">Kleur opnieuw instellen</string>
+    <string name="color_sent_quote">Antwoord verzonden</string>
+    <string name="color_mode_system">Systeem</string>
+    <string name="color_wallpaper_background">Wallpaper achtergrond</string>
+    <string name="chat_theme_set_default_theme">Stel het standaard thema in</string>
+    <string name="chat_list_always_visible">Toon chatlijst in nieuw venster</string>
+    <string name="message_queue_info_none">geen</string>
+    <string name="info_row_debug_delivery">Foutopsporing bezorging</string>
+    <string name="message_queue_info">Informatie over berichtenwachtrij</string>
+    <string name="message_queue_info_server_info">informatie over serverwachtrij: %1$s
+\n
+\nlaatst ontvangen bericht: %2$s</string>
 </resources>
