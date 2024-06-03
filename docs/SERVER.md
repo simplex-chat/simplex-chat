@@ -21,7 +21,7 @@ revision: 28.05.2024
   - [Tor: installation and configuration](#tor-installation-and-configuration)
     - [Installation for onion address](#installation-for-onion-address)
     - [SOCKS port for SMP PROXY](#socks-port-for-smp-proxy)
-  - [Web server pages](#web-server-pages)
+  - [Server iformation page](#server-iformation-page)
   - [Documentation](#documentation)
     - [SMP server address](#smp-server-address)
     - [Systemd commands](#systemd-commands)
@@ -597,9 +597,9 @@ SMP-server versions starting from `v5.8.0-beta.0` can be configured to PROXY smp
    ...
    ```
 
-## Web server pages
+## Server iformation page
 
-SMP-server versions starting from `v5.8.0-beta.5` can be configured to serve Web page with server information that can include admin info, server info, provider info, etc. Run the following commands as `root` user.
+SMP-server versions starting from `v5.8.0` can be configured to serve Web page with server information that can include admin info, server info, provider info, etc. Run the following commands as `root` user.
 
 1. Create folder to store webserver static files and assign correct permissions:
 
