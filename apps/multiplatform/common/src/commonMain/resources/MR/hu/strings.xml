@@ -481,7 +481,7 @@
     <string name="error_loading_xftp_servers">Hiba az XFTP kiszolgálók betöltésekor</string>
     <string name="error_loading_smp_servers">Hiba az SMP kiszolgálók betöltésekor</string>
     <string name="error_setting_network_config">Hiba a hálózat konfigurációjának frissítésekor</string>
-    <string name="network_option_enable_tcp_keep_alive">TCP életben tartásának engedélyezése</string>
+    <string name="network_option_enable_tcp_keep_alive">TCP életben tartása</string>
     <string name="icon_descr_flip_camera">Fényképezőgép megfordítása</string>
     <string name="email_invite_body">Üdv!
 \nCsatlakozzon hozzám SimpleX Chat-en keresztül: %s</string>
