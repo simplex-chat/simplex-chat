@@ -21,6 +21,7 @@ revision: 28.05.2024
   - [Tor: installation and configuration](#tor-installation-and-configuration)
     - [Installation for onion address](#installation-for-onion-address)
     - [SOCKS port for SMP PROXY](#socks-port-for-smp-proxy)
+  - [Web server pages](#web-server-pages)
   - [Documentation](#documentation)
     - [SMP server address](#smp-server-address)
     - [Systemd commands](#systemd-commands)
@@ -227,6 +228,44 @@ The server address above should be used in your client configuration, and if you
 All generated configuration, along with a description for each parameter, is available inside configuration file in `/etc/opt/simplex/smp-server.ini` for further customization. Depending on the smp-server version, the configuration file looks something like this:
 
 ```ini
+[INFORMATION]
+# AGPLv3 license requires that you make any source code modifications
+# available to the end users of the server.
+# LICENSE: https://github.com/simplex-chat/simplexmq/blob/stable/LICENSE
+# Include correct source code URI in case the server source code is modified in any way.
+# If any other information fields are present, source code property also MUST be present.
+
+source_code: https://github.com/simplex-chat/simplexmq
+
+# Declaring all below information is optional, any of these fields can be omitted.
+
+# Server usage conditions and amendments.
+# It is recommended to use standard conditions with any amendments in a separate document.
+# usage_conditions: https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md
+# condition_amendments: link
+
+# Server location and operator.
+server_country: <YOUR_SERVER_LOCATION>
+operator: <YOUR_NAME>
+operator_country: <YOUR_LOCATION>
+website: <WEBSITE_IF_AVAILABLE>
+
+# Administrative contacts.
+#admin_simplex: SimpleX address
+admin_email: <EMAIL>
+# admin_pgp:
+# admin_pgp_fingerprint:
+
+# Contacts for complaints and feedback.
+# complaints_simplex: SimpleX address
+complaints_email: <COMPLAINTS_EMAIL>
+# complaints_pgp:
+# complaints_pgp_fingerprint:
+
+# Hosting provider.
+hosting: <HOSTING_PROVIDER_NAME>
+hosting_country: <HOSTING_PROVIDER_LOCATION>
+
 [STORE_LOG]
 # The server uses STM memory for persistence,
 # that will be lost on restart (e.g., as with redis).
@@ -289,6 +328,21 @@ websockets: off
 disconnect: off
 # ttl: 43200
 # check_interval: 3600
+
+[WEB]
+# Set path to generate static mini-site for server information and qr codes/links
+static_path: <WRITABLE_PATH_TO_STORE_WEBSITE>
+
+# Run an embedded server on this port
+# Onion sites can use any port and register it in the hidden service config.
+# Running on a port 80 may require setting process capabilities.
+# http: 8000
+
+# You can run an embedded TLS web server too if you provide port and cert and key files.
+# Not required for running relay on onion address.
+# https: 443
+# cert: /etc/opt/simplex/web.cert
+# key: /etc/opt/simplex/web.key
 ```
 
 ## Server security
@@ -543,6 +597,116 @@ SMP-server versions starting from `v5.8.0-beta.0` can be configured to PROXY smp
    ...
    ```
 
+## Web server pages
+
+SMP-server versions starting from `v5.8.0-beta.5` can be configured to serve Web page with server information that can include admin info, server info, provider info, etc. Run the following commands as `root` user.
+
+1. Create folder to store webserver static files and assign correct permissions:
+
+   ```sh
+   mkdir -p /var/www/smp-server-web && chown smp:smp /var/www/smp-server-web
+   ```
+
+2. Add the following to your smp-server configuration (please modify fields in [INFORMATION] section to include relevant information):
+
+   ```sh
+   vim /etc/opt/simplex/smp-server.ini
+   ```
+
+   ```ini
+   [WEB]
+   static_path: /var/www/smp-server-web
+
+   [INFORMATION]
+   # AGPLv3 license requires that you make any source code modifications
+   # available to the end users of the server.
+   # LICENSE: https://github.com/simplex-chat/simplexmq/blob/stable/LICENSE
+   # Include correct source code URI in case the server source code is modified in any way.
+   # If any other information fields are present, source code property also MUST be present.
+
+   source_code: https://github.com/simplex-chat/simplexmq
+
+   # Declaring all below information is optional, any of these fields can be omitted.
+
+   # Server usage conditions and amendments.
+   # It is recommended to use standard conditions with any amendments in a separate document.
+   # usage_conditions: https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md
+   # condition_amendments: link
+
+   # Server location and operator.
+   server_country: <YOUR_SERVER_LOCATION>
+   operator: <YOUR_NAME>
+   operator_country: <YOUR_LOCATION>
+   website: <WEBSITE_IF_AVAILABLE>
+  
+   # Administrative contacts.
+   #admin_simplex: SimpleX address
+   admin_email: <EMAIL>
+   # admin_pgp:
+   # admin_pgp_fingerprint:
+
+   # Contacts for complaints and feedback.
+   # complaints_simplex: SimpleX address
+   complaints_email: <COMPLAINTS_EMAIL>
+   # complaints_pgp:
+   # complaints_pgp_fingerprint:
+
+   # Hosting provider.
+   hosting: <HOSTING_PROVIDER_NAME>
+   hosting_country: <HOSTING_PROVIDER_LOCATION> 
+   ```
+
+3. Install the webserver. For easy deployment we'll describe the installtion process of [Caddy](https://caddyserver.com) webserver on Ubuntu server:
+
+   1. Install the packages:
+
+      ```sh
+      sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+      ```
+
+   2. Install caddy gpg key for repository:
+
+      ```sh
+      curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+      ```
+
+   3. Install Caddy repository:
+
+      ```sh
+      curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+      ```
+
+   4. Install Caddy:
+
+      ```sh
+      sudo apt update && sudo apt install caddy
+      ```
+
+   [Full Caddy instllation instructions](https://caddyserver.com/docs/install)
+
+4. Replace Caddy configuration with the following (don't forget to replace `<YOUR_DOMAIN>`):
+
+   ```sh
+   vim /etc/caddy/Caddyfile
+   ```
+
+   ```caddy
+   <YOUR_DOMAIN> {
+     root * /var/www/simplex
+     file_server
+   }
+   ```
+
+5. Enable and start Caddy service:
+
+   ```sh
+   systemctl enable --now caddy
+   ```
+
+6. Upgrade your smp-server to latest version - [Updating your smp server](#updating-your-smp-server)
+
+7. Access the webpage you've deployed from your browser. You should see the smp-server information that you've provided in your ini file.
+
 ## Documentation
 
 All necessary files for `smp-server` are located in `/etc/opt/simplex/` folder.
@@ -635,26 +799,60 @@ You can enable `smp-server` statistics for `Grafana` dashboard by setting value 
 Logs will be stored as `csv` file in `/var/opt/simplex/smp-server-stats.daily.log`. Fields for the `csv` file are:
 
 ```sh
-fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,monthMsgQueues
+fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,monthMsgQueues,msgSentNtf,msgRecvNtf,dayCountNtf,weekCountNtf,monthCountNtf,qCount,msgCount,msgExpired,qDeletedNew,qDeletedSecured,pRelays_pRequests,pRelays_pSuccesses,pRelays_pErrorsConnect,pRelays_pErrorsCompat,pRelays_pErrorsOther,pRelaysOwn_pRequests,pRelaysOwn_pSuccesses,pRelaysOwn_pErrorsConnect,pRelaysOwn_pErrorsCompat,pRelaysOwn_pErrorsOther,pMsgFwds_pRequests,pMsgFwds_pSuccesses,pMsgFwds_pErrorsConnect,pMsgFwds_pErrorsCompat,pMsgFwds_pErrorsOther,pMsgFwdsOwn_pRequests,pMsgFwdsOwn_pSuccesses,pMsgFwdsOwn_pErrorsConnect,pMsgFwdsOwn_pErrorsCompat,pMsgFwdsOwn_pErrorsOther,pMsgFwdsRecv,qSub,qSubAuth,qSubDuplicate,qSubProhibited,msgSentAuth,msgSentQuota,msgSentLarge
+
 ```
 
-- `fromTime` - timestamp; date and time of event
+| Field number  | Field name                   | Field Type  | Field Description                          |
+| ------------- | ---------------------------- | ----------- | -------------------------------------------
+| 1             | `fromTime`                   | `timestamp` | Date and time of event                     |
+| 2             | `qCreated`                   | `int`       | Created queues                             |
+| 3             | `qSecured`                   | `int`       | Established queues                         |
+| 4             | `qDeleted`                   | `int`       | Deleted queues                             |
+| 5             | `msgSent`                    | `int`       | Sent messages                              |
+| 6             | `msgRecv`                    | `int`       | Received messages                          |
+| 7             | `dayMsgQueues`               | `int`       | Active queues in a day                     |
+| 8             | `weekMsgQueues`              | `int`       | Active queues in a week                    |
+| 9             | `monthMsgQueues`             | `int`       | Active queues in a month                   |
+| 10            | `msgSentNtf`                 | `int`       | Sent messages with notification            |
+| 11            | `msgRecvNtf`                 | `int`       | Received messages with notification        |
+| 12            | `dayCountNtf`                | `int`       | Daily active queues with notifications     |
+| 13            | `weekCountNtf`               | `int`       | Weekly active queues with notifications    |
+| 14            | `monthCountNtf`              | `int`       | Monthly active queues with notifications   |
+| 15            | `qCount`                     | `int`       | Stored queues                              |
+| 16            | `msgCount`                   | `int`       | Stored messages                            |
+| 17            | `msgExpired`                 | `int`       | Expired messages                           |
+| 18            | `qDeletedNew`                | `int`       | New deleted queues                         |
+| 19            | `qDeletedSecured`            | `int`       | Secured deleted queues                     |
+| 20            | `pRelays_pRequests`          | `int`       | All relays: requests                       |
+| 21            | `pRelays_pSuccesses`         | `int`       | All relays: successes                      |
+| 22            | `pRelays_pErrorsConnect`     | `int`       | All relays: connection errors              |
+| 23            | `pRelays_pErrorsCompat`      | `int`       | All relays: compatability errors           |
+| 24            | `pRelays_pErrorsOther`       | `int`       | All relays: other errors                   |
+| 25            | `pRelaysOwn_pRequests`       | `int`       | Own relays: requests                       |
+| 26            | `pRelaysOwn_pSuccesses`      | `int`       | Own relays: successes                      |
+| 27            | `pRelaysOwn_pErrorsConnect`  | `int`       | Own relays: connection errors              |
+| 28            | `pRelaysOwn_pErrorsCompat`   | `int`       | Own relays: compatability errors           |
+| 29            | `pRelaysOwn_pErrorsOther`    | `int`       | Own relays: other errors                   |
+| 30            | `pMsgFwds_pRequests`         | `int`       | All message forwards: requests             |
+| 31            | `pMsgFwds_pSuccesses`        | `int`       | All message forwards: successes            |
+| 32            | `pMsgFwds_pErrorsConnect`    | `int`       | All message forwards: connection errors    |
+| 33            | `pMsgFwds_pErrorsCompat`     | `int`       | All message forwards: compatability errors |
+| 34            | `pMsgFwds_pErrorsOther`      | `int`       | All message forwards: other errors         |
+| 35            | `pMsgFwdsOwn_pRequests`      | `int`       | Own message forwards: requests             |
+| 36            | `pMsgFwdsOwn_pSuccesses`     | `int`       | Own message forwards: successes            |
+| 37            | `pMsgFwdsOwn_pErrorsConnect` | `int`       | Own message forwards: connection errors    |
+| 38            | `pMsgFwdsOwn_pErrorsCompat`  | `int`       | Own message forwards: compatability errors |
+| 39            | `pMsgFwdsOwn_pErrorsOther`   | `int`       | Own message forwards: other errors         |
+| 40            | `pMsgFwdsRecv`               | `int`       | Received message forwards                  |
+| 41            | `qSub`                       | `int`       | All subscribtion errors                    |
+| 42            | `qSubAuth`                   | `int`       | Authentication subscription erorrs         |
+| 43            | `qSubDuplicate`              | `int`       | Duplicates subscription errors             |
+| 44            | `qSubProhibited`             | `int`       | Prohibited subscription errors             |
+| 45            | `msgSentAuth`                | `int`       | Authentication message errors              |
+| 46            | `msgSentQuota`               | `int`       | Quota message errors                       |
+| 47            | `msgSentLarge`               | `int`       | Large packets message errors               |
 
-- `qCreated` - int; created queues
-
-- `qSecured` - int; established queues
-
-- `qDeleted` - int; deleted queues
-
-- `msgSent` - int; sent messages
-
-- `msgRecv` - int; received messages
-
-- `dayMsgQueues` - int; active queues in a day
-
-- `weekMsgQueues` - int; active queues in a week
-
-- `monthMsgQueues` - int; active queues in a month
 
 To import `csv` to `Grafana` one should:
 
