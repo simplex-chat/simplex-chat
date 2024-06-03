@@ -1826,10 +1826,14 @@ func processReceivedMsg(_ res: ChatResponse) async {
         if let aChatItem = aChatItem {
             await chatItemSimpleUpdate(user, aChatItem)
         }
-    case let .rcvFileError(user, aChatItem, _):
+    case let .rcvFileError(user, aChatItem, _, _):
         if let aChatItem = aChatItem {
             await chatItemSimpleUpdate(user, aChatItem)
             Task { cleanupFile(aChatItem) }
+        }
+    case let .rcvFileWarning(user, aChatItem, _, _):
+        if let aChatItem = aChatItem {
+            await chatItemSimpleUpdate(user, aChatItem)
         }
     case let .sndFileStart(user, aChatItem, _):
         await chatItemSimpleUpdate(user, aChatItem)
@@ -1851,6 +1855,10 @@ func processReceivedMsg(_ res: ChatResponse) async {
         if let aChatItem = aChatItem {
             await chatItemSimpleUpdate(user, aChatItem)
             Task { cleanupFile(aChatItem) }
+        }
+    case let .sndFileWarning(user, aChatItem, _, _):
+        if let aChatItem = aChatItem {
+            await chatItemSimpleUpdate(user, aChatItem)
         }
     case let .callInvitation(invitation):
         await MainActor.run {

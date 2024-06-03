@@ -2728,7 +2728,7 @@ public enum CIStatus: Decodable {
     case rcvRead
     case invalid(text: String)
 
-    var id: String {
+    public var id: String {
         switch self {
         case .sndNew: return "sndNew"
         case .sndSent: return "sndSent"
@@ -3334,7 +3334,7 @@ public enum CIFileStatus: Decodable, Equatable {
     case rcvWarning(rcvFileError: FileError)
     case invalid(text: String)
 
-    var id: String {
+    public var id: String {
         switch self {
         case .sndStored: return "sndStored"
         case let .sndTransfer(sndProgress, sndTotal): return "sndTransfer \(sndProgress) \(sndTotal)"

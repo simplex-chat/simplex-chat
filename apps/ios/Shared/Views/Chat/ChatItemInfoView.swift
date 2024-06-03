@@ -157,6 +157,10 @@ struct ChatItemInfoView: View {
             if developerTools {
                 infoRow("Database ID", "\(meta.itemId)")
                 infoRow("Record updated at", localTimestamp(meta.updatedAt))
+                infoRow("Message status", ci.meta.itemStatus.id)
+                if let file = ci.file {
+                    infoRow("File status", file.fileStatus.id)
+                }
             }
         }
     }
