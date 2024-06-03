@@ -1,6 +1,6 @@
 ---
 title: Hosting your own SMP Server
-revision: 28.05.2024
+revision: 03.06.2024
 ---
 
 | Updated 28.05.2024 | Languages: EN, [FR](/docs/lang/fr/SERVER.md), [CZ](/docs/lang/cs/SERVER.md), [PL](/docs/lang/pl/SERVER.md) |
@@ -21,7 +21,7 @@ revision: 28.05.2024
   - [Tor: installation and configuration](#tor-installation-and-configuration)
     - [Installation for onion address](#installation-for-onion-address)
     - [SOCKS port for SMP PROXY](#socks-port-for-smp-proxy)
-  - [Server iformation page](#server-iformation-page)
+  - [Server information page](#server-information-page)
   - [Documentation](#documentation)
     - [SMP server address](#smp-server-address)
     - [Systemd commands](#systemd-commands)
@@ -597,7 +597,7 @@ SMP-server versions starting from `v5.8.0-beta.0` can be configured to PROXY smp
    ...
    ```
 
-## Server iformation page
+## Server information page
 
 SMP-server versions starting from `v5.8.0` can be configured to serve Web page with server information that can include admin info, server info, provider info, etc. Run the following commands as `root` user.
 
