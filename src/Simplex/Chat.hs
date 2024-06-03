@@ -3355,9 +3355,9 @@ subscribeUserConnections vr onlyNeeded user = do
   (conns, ctConns, ucs, gs, mConns, sfts, rfts, pcConns) <-
     if onlyNeeded
       then do
-        (conns, entities) <- withStore' $ \a -> getConnectionsToSubscribe a vr user
-        let (ctConns, ucs, mConns, sfts, rfts, pcConns) = foldl' addEntity ([], [], [], M.empty, M.empty, []) entities
-        pure (conns, ctConns, ucs, [], mConns, sfts, rfts, pcConns)
+        (conns, entities) <- withStore' $ \db -> getConnectionsToSubscribe db vr user
+        let (cts, ucs, ms, sfts, rfts, pcs) = foldl' addEntity ([], [], [], M.empty, M.empty, []) entities
+        pure (conns, cts, ucs, [], ms, sfts, rfts, pcs)
       else do
         withStore' (`unsetConnectionToSubscribe` user)
         ctConns <- getContactConns

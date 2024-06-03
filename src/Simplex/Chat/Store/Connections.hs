@@ -214,9 +214,11 @@ getContactConnEntityByConnReqHash db vr user@User {userId} (cReqHash1, cReqHash2
 
 getConnectionsToSubscribe :: DB.Connection -> VersionRangeChat -> User -> IO ([ConnId], [ConnectionEntity])
 getConnectionsToSubscribe db vr user@User {userId} = do
-  connIds <- map fromOnly <$> DB.query db "SELECT agent_conn_id FROM connections WHERE user_id = ? AND to_subscribe = 1" (Only userId)
+  aConnIds <- map fromOnly <$> DB.query db "SELECT agent_conn_id FROM connections WHERE to_subscribe = 1 AND user_id = ?" (Only userId)
+  entities <- forM aConnIds $ \acId ->
+    eitherToMaybe <$> runExceptT (getConnectionEntity db vr user acId)
   unsetConnectionToSubscribe db user
-  entities <- forM connIds $ fmap eitherToMaybe . runExceptT . getConnectionEntity db vr user . AgentConnId
+  let connIds = map (\(AgentConnId connId) -> connId) aConnIds
   pure (connIds, catMaybes entities)
 
 unsetConnectionToSubscribe :: DB.Connection -> User -> IO ()
