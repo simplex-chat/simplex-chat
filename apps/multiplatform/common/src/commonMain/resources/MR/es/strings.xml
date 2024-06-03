@@ -763,7 +763,7 @@
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger tu privacidad, en lugar de los identificadores de usuario que usan el resto de plataformas, SimpleX dispone de identificadores para las colas de mensajes, independientes para cada uno de tus contactos.</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Para proteger tu información, activa el Bloqueo SimpleX.
 \nSe te pedirá que completes la autenticación antes de activar esta función.</string>
-    <string name="updating_settings_will_reconnect_client_to_all_servers">Al actualizar la configuración, el cliente se reconectará a todos los servidores.</string>
+    <string name="updating_settings_will_reconnect_client_to_all_servers">Al actualizar la configuración el cliente se reconectará a todos los servidores.</string>
     <string name="use_simplex_chat_servers__question">¿Usar servidores SimpleX Chat\?</string>
     <string name="simplex_link_group">Enlace de grupo SimpleX</string>
     <string name="simplex_link_invitation">Invitación única SimpleX</string>
@@ -1779,17 +1779,17 @@
     <string name="snd_error_expired">Problema en la red - el mensaje ha expirado tras muchos intentos de envío.</string>
     <string name="srv_error_version">La versión del servidor es incompatible con la configuración de red.</string>
     <string name="network_smp_proxy_mode_private_routing">Enrutamiento privado</string>
-    <string name="network_smp_proxy_mode_unknown">Servidor de retransmisión desconocido</string>
+    <string name="network_smp_proxy_mode_unknown">Con servidores desconocidos</string>
     <string name="network_smp_proxy_mode_never_description">NO usar enrutamiento privado.</string>
     <string name="update_network_smp_proxy_fallback_question">Enrutamiento de mensajes alternativo</string>
     <string name="update_network_smp_proxy_mode_question">Modo de enrutamiento de mensajes</string>
     <string name="network_smp_proxy_fallback_prohibit">No</string>
     <string name="private_routing_show_message_status">Estado del mensaje</string>
-    <string name="network_smp_proxy_mode_unprotected_description">Usar enrutamiento privado con servidores desconocidos cuando la dirección IP no está protegida.</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Usar enrutamiento privado con servidores desconocidos cuando tu dirección IP no está protegida.</string>
     <string name="network_smp_proxy_fallback_allow_protected">Con IP oculta</string>
     <string name="network_smp_proxy_fallback_allow">Si</string>
     <string name="network_smp_proxy_fallback_allow_description">Enviar mensajes directamente cuando tu servidor o el de destino no admitan enrutamiento privado.</string>
-    <string name="private_routing_explanation">Para proteger tu dirección IP, el enrutamiento privado usa tus servidores SMP para enviar mensajes.</string>
+    <string name="private_routing_explanation">Para proteger tu dirección IP, el enrutamiento privado usa tu lista de servidores SMP para enviar mensajes.</string>
     <string name="network_smp_proxy_fallback_prohibit_description">NO enviar mensajes directamente incluso si tu servidor o el de destino no soportan enrutamiento privado.</string>
     <string name="network_smp_proxy_mode_always">Siempre</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">Permitir versión anterior</string>
@@ -1798,9 +1798,9 @@
     <string name="network_smp_proxy_mode_never">Nunca</string>
     <string name="settings_section_title_private_message_routing">ENRUTAMIENTO PRIVADO DE MENSAJES</string>
     <string name="srv_error_host">La dirección del servidor es incompatible con la configuración de la red.</string>
-    <string name="network_smp_proxy_mode_unprotected">Desprotegido</string>
+    <string name="network_smp_proxy_mode_unprotected">Con IP desprotegida</string>
     <string name="snd_error_auth">Clave incorrecta o conexión desconocida - probablemente esta conexión fue eliminada</string>
-    <string name="network_smp_proxy_mode_unknown_description">Usar enrutamiento privado con servidores desconocidos.</string>
+    <string name="network_smp_proxy_mode_unknown_description">Usar enrutamiento privado con servidores de retransmisión desconocidos.</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Enviar mensajes directamente cuando tu dirección IP está protegida y tu servidor o el de destino no admitan enrutamiento privado.</string>
     <string name="file_not_approved_title">¡Servidores desconocidos!</string>
     <string name="file_not_approved_descr">Sin Tor o VPN, tu dirección IP será visible para estos relés XFTP:
@@ -1848,7 +1848,7 @@
     <string name="v5_8_message_delivery_descr">Con uso reducido de la batería.</string>
     <string name="theme_destination_app_theme">Tema de la app</string>
     <string name="v5_8_safe_files_descr">Confirma archivos de servidores desconocidos.</string>
-    <string name="info_row_debug_delivery">Entrega de debug</string>
+    <string name="info_row_debug_delivery">Informe debug</string>
     <string name="v5_8_chat_themes_descr">¡Cambia el aspecto de tus chats!</string>
     <string name="v5_8_chat_themes">Nuevos temas de chat</string>
     <string name="message_queue_info">Información cola de mensajes</string>
