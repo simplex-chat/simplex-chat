@@ -131,7 +131,7 @@ struct VoiceMessagePlayer: View {
     @Binding var allowMenu: Bool
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .topTrailing) {
             if let recordingFile = recordingFile {
                 switch recordingFile.fileStatus {
                 case .sndStored: playbackButton()
@@ -139,6 +139,7 @@ struct VoiceMessagePlayer: View {
                 case .sndComplete: playbackButton()
                 case .sndCancelled: playbackButton()
                 case .sndError: playbackButton()
+                case .sndWarning: playbackButton()
                 case .rcvInvitation: downloadButton(recordingFile, "play.fill")
                 case .rcvAccepted: loadingIcon()
                 case .rcvTransfer: loadingIcon()
@@ -146,8 +147,11 @@ struct VoiceMessagePlayer: View {
                 case .rcvComplete: playbackButton()
                 case .rcvCancelled: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
                 case .rcvError: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
+                case .rcvWarning: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
                 case .invalid: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
                 }
+
+                fileStatusIcon(recordingFile)
             } else {
                 playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
             }
@@ -170,6 +174,58 @@ struct VoiceMessagePlayer: View {
         }
         .onChange(of: playbackState) { state in
             allowMenu = state == .paused || state == .noPlayback
+        }
+    }
+
+    @ViewBuilder private func fileStatusIcon(_ file: CIFile) -> some View {
+        switch (file.fileStatus) {
+        case let .rcvError(rcvFileError):
+            statusIcon("multiply", .red)
+                .onTapGesture {
+                    AlertManager.shared.showAlert(Alert(
+                        title: Text("File download warning"),
+                        message: Text(rcvFileError.errorInfo)
+                    ))
+                }
+        case let .rcvWarning(rcvFileError):
+            statusIcon("exclamationmark.triangle.fill", .orange)
+                .onTapGesture {
+                    AlertManager.shared.showAlert(Alert(
+                        title: Text("File download warning"),
+                        message: Text(rcvFileError.errorInfo)
+                    ))
+                }
+        case .sndTransfer:
+            ProgressView()
+                .frame(width: 10, height: 10)
+        case let .sndError(sndFileError):
+            statusIcon("multiply", .red)
+                .onTapGesture {
+                    AlertManager.shared.showAlert(Alert(
+                        title: Text("File upload error"),
+                        message: Text(sndFileError.errorInfo)
+                    ))
+                }
+        case let .sndWarning(sndFileError):
+            statusIcon("exclamationmark.triangle.fill", .orange)
+                .onTapGesture {
+                    AlertManager.shared.showAlert(Alert(
+                        title: Text("File upload warning"),
+                        message: Text(sndFileError.errorInfo)
+                    ))
+                }
+        default:
+            EmptyView()
+        }
+    }
+
+    private func statusIcon(_ icon: String, _ color: Color) -> some View {
+        ZStack (alignment: .center) {
+            Image(systemName: icon)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 10, height: 10)
+                .foregroundColor(color)
         }
     }
 
