@@ -12,6 +12,7 @@ pluginManagement {
         id("com.android.application").version(extra["gradle.plugin.version"] as String)
         id("com.android.library").version(extra["gradle.plugin.version"] as String)
         id("org.jetbrains.compose").version(extra["compose.version"] as String)
+        id("org.jetbrains.kotlin.plugin.compose").version(extra["kotlin.version"] as String)
         id("org.jetbrains.kotlin.plugin.serialization").version(extra["kotlin.version"] as String)
     }
 }

@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
 plugins {
   kotlin("multiplatform")
   id("org.jetbrains.compose")
+  id("org.jetbrains.kotlin.plugin.compose")
   id("io.github.tomtzook.gradle-cmake") version "1.2.2"
 }
 
