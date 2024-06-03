@@ -153,6 +153,8 @@ fun UserPicker(
   ) {
     Column(
       Modifier
+        .align(Alignment.BottomStart)
+        .padding(bottom = BottomAppBarHeight)
         .widthIn(min = 260.dp)
         .width(IntrinsicSize.Min)
         .height(IntrinsicSize.Min)

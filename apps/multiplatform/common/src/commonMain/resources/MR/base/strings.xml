@@ -331,6 +331,7 @@
   <string name="welcome">Welcome!</string>
   <string name="this_text_is_available_in_settings">This text is available in settings</string>
   <string name="your_chats">Chats</string>
+  <string name="contacts">Contacts</string>
   <string name="contact_connection_pending">connecting…</string>
   <string name="member_contact_send_direct_message">send direct message</string>
   <string name="group_preview_you_are_invited">you are invited to group</string>
@@ -341,6 +342,8 @@
   <string name="you_have_no_chats">You have no chats</string>
   <string name="loading_chats">Loading chats…</string>
   <string name="no_filtered_chats">No filtered chats</string>
+  <string name="no_contacts">No contacts</string>
+  <string name="no_filtered_contacts">No filtered contacts</string>
   <string name="contact_tap_to_connect">Tap to Connect</string>
   <string name="connect_with_contact_name_question">Connect with %1$s?</string>
   <string name="search_or_paste_simplex_link">Search or paste SimpleX link</string>
@@ -418,10 +421,28 @@
   <string name="notifications">Notifications</string>
 
   <!-- Chat Info Actions - ChatInfoView.kt -->
+  <string name="info_view_connect_button">connect</string>
+  <string name="info_view_open_button">open</string>
+  <string name="info_view_message_button">message</string>
+  <string name="info_view_call_button">call</string>
+  <string name="info_view_video_button">video</string>
   <string name="delete_contact_question">Delete contact?</string>
   <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>
+  <string name="delete_contact_cannot_undo_warning">Contact will be deleted - this cannot be undone!</string>
+  <string name="delete_conversation_question">Delete conversation?</string>
+  <string name="delete_conversation_all_messages_deleted_cannot_undo_warning">Conversation and all messages will be deleted - this cannot be undone!</string>
+  <string name="delete_conversation">Delete conversation</string>
+  <string name="only_delete_conversation">Only delete conversation</string>
+  <string name="delete_contact_keep_conversation">Delete contact, keep conversation</string>
+  <string name="notify_delete_contact_question">Notify contact?</string>
+  <string name="confirm_delete_contact_question">Confirm contact deletion?</string>
   <string name="delete_and_notify_contact">Delete and notify contact</string>
+  <string name="delete_without_notification">Delete without notification</string>
   <string name="button_delete_contact">Delete contact</string>
+  <string name="conversation_deleted">Conversation deleted!</string>
+  <string name="you_can_still_send_messages_to_contact">You can still send messages to %1$s from the Contacts tab.</string>
+  <string name="contact_deleted">Contact deleted!</string>
+  <string name="you_can_still_view_conversation_with_contact">You can still view conversation with %1$s in the Chats tab.</string>
   <string name="text_field_set_contact_placeholder">Set contact name…</string>
   <string name="icon_descr_server_status_connected">Connected</string>
   <string name="icon_descr_server_status_disconnected">Disconnected</string>
@@ -608,6 +629,7 @@
   <!-- NewChatView.kt -->
   <string name="new_chat">New chat</string>
   <string name="add_contact_tab">Add contact</string>
+  <string name="scan_paste_link">Scan / Paste link</string>
   <string name="one_time_link">One-time invitation link</string>
   <string name="one_time_link_short">1-time link</string>
   <string name="simplex_address">SimpleX address</string>

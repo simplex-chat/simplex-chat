@@ -485,7 +485,7 @@ struct ChatListNavLink: View {
     private func deleteConversationNotice(_ contact: Contact) -> Alert {
         return Alert(
             title: Text("Conversation deleted!"),
-            message: Text("You can still send messages to \(contact.displayName) from the Contacts tab. "),
+            message: Text("You can still send messages to \(contact.displayName) from the Contacts tab."),
             primaryButton: .default(Text("Don't show again")) {
                 showDeleteConversationNotice = false
             },
