@@ -320,4 +320,24 @@
     <string name="privacy_show_last_messages">Arată ultimul mesaj</string>
     <string name="button_send_direct_message">Trimite mesaj direct</string>
     <string name="chat_theme_set_default_theme">Setează tema implicită</string>
+    <string name="theme_simplex">SimpleX</string>
+    <string name="system_restricted_background_desc">SimpleX nu poate rula în fundal. Vei primi notificările doar când aplicația rulează.</string>
+    <string name="simplex_service_notification_title">Serviciu SimpleX Chat</string>
+    <string name="icon_descr_address">Adresă SimpleX</string>
+    <string name="settings_shutdown">Închide</string>
+    <string name="simplex_links">Link-uri SimpleX</string>
+    <string name="simplex_links_are_prohibited_in_group">Link-urile SimpleX sunt interzise în acest grup.</string>
+    <string name="v4_2_security_assessment_desc">Securitatea SimpleX Chat a fost verificată de Trail of Bits.</string>
+    <string name="ntf_channel_messages">Mesaje SimpleX Chat</string>
+    <string name="ntf_channel_calls">Apeluri SimpleX Chat</string>
+    <string name="simplex_address">Adresă SimpleX</string>
+    <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
+    <string name="simplex_links_not_allowed">Link-uri SimpleX nepermise</string>
+    <string name="icon_descr_simplex_team">Echipa SimpleX</string>
+    <string name="shutdown_alert_question">Închizi?</string>
+    <string name="simplex_link_contact">Adresă de contact SimpleX</string>
+    <string name="simplex_link_group">Link de grup SimpleX</string>
+    <string name="simplex_link_mode">Link-uri SimpleX</string>
+    <string name="simplex_link_invitation">Invitație unică SimpleX</string>
+    <string name="image_descr_simplex_logo">Siglă SimpleX</string>
 </resources>
