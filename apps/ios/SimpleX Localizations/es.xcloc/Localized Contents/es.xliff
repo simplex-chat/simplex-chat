@@ -1723,7 +1723,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Debug delivery" xml:space="preserve" approved="no">
         <source>Debug delivery</source>
-        <target state="translated">Entrega de corrección de fallos</target>
+        <target state="translated">Informe debug</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Decentralized" xml:space="preserve">
@@ -3704,7 +3704,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Message queue info" xml:space="preserve" approved="no">
         <source>Message queue info</source>
-        <target state="translated">Información de la cola de mensajes</target>
+        <target state="translated">Información cola de mensajes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reactions" xml:space="preserve">
@@ -5912,9 +5912,9 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>Para proteger la zona horaria, los archivos de imagen/voz usan la hora UTC.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect your IP address, private routing uses your SMP servers to deliver messages." xml:space="preserve">
+      <trans-unit id="To protect your IP address, private routing uses your SMP servers to deliver messages." xml:space="preserve" approved="no">
         <source>To protect your IP address, private routing uses your SMP servers to deliver messages.</source>
-        <target>Para proteger tu dirección IP, el enrutamiento privado usa tus servidores SMP para enviar mensajes.</target>
+        <target state="translated">Para proteger tu dirección IP, el enrutamiento privado usa tu lista de servidores SMP para enviar mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
@@ -6207,14 +6207,14 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
         <target>¿Usar sólo notificaciones locales?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use private routing with unknown servers when IP address is not protected." xml:space="preserve">
+      <trans-unit id="Use private routing with unknown servers when IP address is not protected." xml:space="preserve" approved="no">
         <source>Use private routing with unknown servers when IP address is not protected.</source>
-        <target>Usar enrutamiento privado con servidores desconocidos cuando la dirección IP no está protegida.</target>
+        <target state="translated">Usar enrutamiento privado con servidores desconocidos cuando tu dirección IP no está protegida.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use private routing with unknown servers." xml:space="preserve">
+      <trans-unit id="Use private routing with unknown servers." xml:space="preserve" approved="no">
         <source>Use private routing with unknown servers.</source>
-        <target>Usar enrutamiento privado con servidores desconocidos.</target>
+        <target state="translated">Usar enrutamiento privado con servidores de retransmisión desconocidos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -7591,7 +7591,7 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <source>server queue info: %1$@
 
 last received msg: %2$@</source>
-        <target state="translated">información de la cola del servidor: %1$@
+        <target state="translated">información cola del servidor: %1$@
 
 último mensaje recibido: %2$@</target>
         <note>queue info</note>
@@ -7636,9 +7636,9 @@ last received msg: %2$@</source>
         <target>desconocido</target>
         <note>connection info</note>
       </trans-unit>
-      <trans-unit id="unknown relays" xml:space="preserve">
+      <trans-unit id="unknown relays" xml:space="preserve" approved="no">
         <source>unknown relays</source>
-        <target>servidor de retransmisión desconocido</target>
+        <target state="translated">con servidores desconocidos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="unknown status" xml:space="preserve">
@@ -7646,9 +7646,9 @@ last received msg: %2$@</source>
         <target>estado desconocido</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="unprotected" xml:space="preserve">
+      <trans-unit id="unprotected" xml:space="preserve" approved="no">
         <source>unprotected</source>
-        <target>desprotegido</target>
+        <target state="translated">con IP desprotegida</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="updated group profile" xml:space="preserve">
