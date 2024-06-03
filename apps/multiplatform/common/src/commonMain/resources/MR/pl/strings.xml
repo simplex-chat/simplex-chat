@@ -1837,4 +1837,25 @@
     <string name="settings_section_title_chat_theme">Motyw czatu</string>
     <string name="color_mode">Tryb koloru</string>
     <string name="color_mode_dark">Ciemny</string>
+    <string name="error_initializing_web_view">Błąd inicjacji WebView. Zaktualizuj swój system do nowej wersji. Proszę skontaktować się z deweloperami.
+\nBłąd: %s</string>
+    <string name="message_queue_info_none">nic</string>
+    <string name="v5_8_chat_themes">Nowy motywy czatu</string>
+    <string name="v5_8_private_routing">Trasowanie prywatnych wiadomości🚀</string>
+    <string name="v5_8_safe_files">Bezpiecznie otrzymuj pliki</string>
+    <string name="v5_8_message_delivery">Ulepszona dostawa wiadomości</string>
+    <string name="v5_8_persian_ui">Perski interfejs użytkownika</string>
+    <string name="v5_8_safe_files_descr">Potwierdzaj pliki z nieznanych serwerów.</string>
+    <string name="info_row_debug_delivery">Dostarczenie debugowania</string>
+    <string name="v5_8_chat_themes_descr">Zrób wygląd Twoich czatów inny!</string>
+    <string name="v5_8_private_routing_descr">Chroni Twój adres IP przed przekaźnikami wiadomości wybranych przez Twoje kontakty.
+\nWłącz w ustawianiach *Sieć i serwery* .</string>
+    <string name="message_queue_info">Informacje kolejki wiadomości</string>
+    <string name="message_queue_info_server_info">Informacje kolejki serwera: %1$s
+\n
+\nostatnia otrzymana wiadomość: %2$s</string>
+    <string name="v5_8_message_delivery_descr">Ze zredukowanym zużyciem baterii.</string>
+    <string name="theme_destination_app_theme">Motyw aplikacji</string>
+    <string name="chat_theme_reset_to_app_theme">Zresetuj do motywu aplikacji</string>
+    <string name="chat_theme_reset_to_user_theme">Zresetuj do motywu użytkownika</string>
 </resources>

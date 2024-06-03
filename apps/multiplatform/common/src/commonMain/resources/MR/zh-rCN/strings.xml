@@ -1837,4 +1837,25 @@
     <string name="settings_section_title_chat_theme">聊天主题</string>
     <string name="reset_single_color">重置颜色</string>
     <string name="wallpaper_scale">缩放</string>
+    <string name="error_initializing_web_view">Webview 初始化失败。更新你的系统到新版本。请联系开发者。
+\n错误：%s</string>
+    <string name="v5_8_private_routing_descr">保护您的真实 IP 地址。不让你的联系人选择的消息中继看到它。
+\n在*网络&amp;服务器*设置中开启。</string>
+    <string name="v5_8_safe_files_descr">确认来自未知服务器的文件。</string>
+    <string name="v5_8_safe_files">安全地接收文件</string>
+    <string name="v5_8_message_delivery">改进了消息传递</string>
+    <string name="v5_8_chat_themes_descr">让你的聊天看上去不同！</string>
+    <string name="v5_8_private_routing">私密消息路由🚀</string>
+    <string name="v5_8_chat_themes">新的聊天主题</string>
+    <string name="v5_8_persian_ui">波斯语用户界面</string>
+    <string name="v5_8_message_delivery_descr">降低电池用量</string>
+    <string name="theme_destination_app_theme">主题</string>
+    <string name="chat_theme_reset_to_app_theme">重置为应用主题</string>
+    <string name="chat_theme_reset_to_user_theme">重置为用户主题</string>
+    <string name="info_row_debug_delivery">发送调试</string>
+    <string name="message_queue_info">消息队列信息</string>
+    <string name="message_queue_info_server_info">消息队列信息：%1$s
+\n
+\n上一则收到的信息：%2$s</string>
+    <string name="message_queue_info_none">无</string>
 </resources>

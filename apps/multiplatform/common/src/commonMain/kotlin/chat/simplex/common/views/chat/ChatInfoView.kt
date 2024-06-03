@@ -42,6 +42,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.serialization.encodeToString
 import java.io.File
 
 @Composable
@@ -418,6 +419,19 @@ fun ChatInfoLayout(
       SectionView(title = stringResource(MR.strings.section_title_for_console)) {
         InfoRow(stringResource(MR.strings.info_row_local_name), chat.chatInfo.localDisplayName)
         InfoRow(stringResource(MR.strings.info_row_database_id), chat.chatInfo.apiId.toString())
+        SectionItemView({
+          withBGApi {
+            val info = controller.apiContactQueueInfo(chat.remoteHostId, chat.chatInfo.apiId)
+            if (info != null) {
+              AlertManager.shared.showAlertMsg(
+                title = generalGetString(MR.strings.message_queue_info),
+                text = queueInfoText(info)
+              )
+            }
+          }
+        }) {
+          Text(stringResource(MR.strings.info_row_debug_delivery))
+        }
       }
     }
     SectionBottomSpacer()
@@ -796,6 +810,12 @@ fun showSyncConnectionForceAlert(syncConnectionForce: () -> Unit) {
     onConfirm = syncConnectionForce,
     destructive = true,
   )
+}
+
+fun queueInfoText(info: Pair<RcvMsgInfo?, QueueInfo>): String {
+  val (rcvMsgInfo, qInfo) = info
+  val msgInfo: String = if (rcvMsgInfo != null) json.encodeToString(rcvMsgInfo) else generalGetString(MR.strings.message_queue_info_none)
+  return generalGetString(MR.strings.message_queue_info_server_info).format(json.encodeToString(qInfo), msgInfo)
 }
 
 @Preview

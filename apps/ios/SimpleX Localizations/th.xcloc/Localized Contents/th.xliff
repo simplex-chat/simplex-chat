@@ -1629,6 +1629,10 @@ This is your own one-time link!</source>
         <target>ระบบจะย้ายฐานข้อมูลเมื่อแอปรีสตาร์ท</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Debug delivery" xml:space="preserve">
+        <source>Debug delivery</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Decentralized" xml:space="preserve">
         <source>Decentralized</source>
         <target>กระจายอำนาจแล้ว</target>
@@ -3512,6 +3516,10 @@ This is your link for group %@!</source>
       <trans-unit id="Message draft" xml:space="preserve">
         <source>Message draft</source>
         <target>ร่างข้อความ</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message queue info" xml:space="preserve">
+        <source>Message queue info</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reactions" xml:space="preserve">
@@ -7198,6 +7206,12 @@ SimpleX servers cannot see your profile.</source>
       <trans-unit id="send direct message" xml:space="preserve">
         <source>send direct message</source>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve">
+        <source>server queue info: %1$@
+
+last received msg: %2$@</source>
+        <note>queue info</note>
       </trans-unit>
       <trans-unit id="set new contact address" xml:space="preserve">
         <source>set new contact address</source>

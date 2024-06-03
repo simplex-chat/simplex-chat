@@ -75,6 +75,7 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Client (SMPProxyMode (..), SMPProxyFallback (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -83,9 +84,10 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SMPMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServer, XFTPServerWithAuth, userProtocol)
+import Simplex.Messaging.Server.QueueStore.QueueInfo
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
-import Simplex.Messaging.Transport.Client (TransportHost)
+import Simplex.Messaging.Transport.Client (SocksProxy, TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, catchAllErrors', tryAllErrors, tryAllErrors', (<$$>))
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitation)
@@ -350,6 +352,7 @@ data ChatCommand
   | GetChatItemTTL
   | APISetNetworkConfig NetworkConfig
   | APIGetNetworkConfig
+  | SetNetworkConfig SimpleNetCfg
   | APISetNetworkInfo UserNetworkInfo
   | ReconnectAllServers
   | APISetChatSettings ChatRef ChatSettings
@@ -357,6 +360,8 @@ data ChatCommand
   | APIContactInfo ContactId
   | APIGroupInfo GroupId
   | APIGroupMemberInfo GroupId GroupMemberId
+  | APIContactQueueInfo ContactId
+  | APIGroupMemberQueueInfo GroupId GroupMemberId
   | APISwitchContact ContactId
   | APISwitchGroupMember GroupId GroupMemberId
   | APIAbortSwitchContact ContactId
@@ -375,6 +380,8 @@ data ChatCommand
   | ContactInfo ContactName
   | ShowGroupInfo GroupName
   | GroupMemberInfo GroupName ContactName
+  | ContactQueueInfo ContactName
+  | GroupMemberQueueInfo GroupName ContactName
   | SwitchContact ContactName
   | SwitchGroupMember GroupName ContactName
   | AbortSwitchContact ContactName
@@ -569,6 +576,7 @@ data ChatResponse
   | CRContactInfo {user :: User, contact :: Contact, connectionStats_ :: Maybe ConnectionStats, customUserProfile :: Maybe Profile}
   | CRGroupInfo {user :: User, groupInfo :: GroupInfo, groupSummary :: GroupSummary}
   | CRGroupMemberInfo {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
+  | CRQueueInfo {user :: User, rcvMsgInfo :: Maybe RcvMsgInfo, queueInfo :: QueueInfo}
   | CRContactSwitchStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
   | CRGroupMemberSwitchStarted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
   | CRContactSwitchAborted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
@@ -953,6 +961,18 @@ data AppFilePathsConfig = AppFilePathsConfig
     appRemoteHostsFolder :: Maybe FilePath
   }
   deriving (Show)
+
+data SimpleNetCfg = SimpleNetCfg
+  { socksProxy :: Maybe SocksProxy,
+    smpProxyMode_ :: Maybe SMPProxyMode,
+    smpProxyFallback_ :: Maybe SMPProxyFallback,
+    tcpTimeout_ :: Maybe Int,
+    logTLSErrors :: Bool
+  }
+  deriving (Show)
+
+defaultSimpleNetCfg :: SimpleNetCfg
+defaultSimpleNetCfg = SimpleNetCfg Nothing Nothing Nothing Nothing False
 
 data ContactSubStatus = ContactSubStatus
   { contact :: Contact,

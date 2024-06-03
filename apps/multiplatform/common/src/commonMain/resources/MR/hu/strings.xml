@@ -348,9 +348,9 @@
     <string name="delete_message__question">Üzenet törlése?</string>
     <string name="delete_pending_connection__question">Függő kapcsolatfelvételi kérések törlése?</string>
     <string name="database_encrypted">Adatbázis titkosítva!</string>
-    <string name="clear_chat_question">Üzenetek törlése?</string>
+    <string name="clear_chat_question">Üzenetek kiürítése?</string>
     <string name="database_downgrade">Visszatérés a korábbi adatbázis verzióra</string>
-    <string name="clear_chat_button">Üzenetek törlése</string>
+    <string name="clear_chat_button">Üzenetek kiürítése</string>
     <string name="database_passphrase_will_be_updated">Adatbázis titkosítási jelmondat frissítve lesz.</string>
     <string name="multicast_connect_automatically">Kapcsolódás automatikusan</string>
     <string name="database_error">Adatbázis hiba</string>
@@ -813,7 +813,7 @@
     <string name="only_group_owners_can_change_prefs">Csak a csoporttulajdonosok módosíthatják a csoportbeállításokat.</string>
     <string name="no_history">Nincsenek előzmények</string>
     <string name="invalid_QR_code">Érvénytelen QR-kód</string>
-    <string name="mark_read">Olvasottként jelölés</string>
+    <string name="mark_read">Olvasottnak jelölés</string>
     <string name="live">ÉLŐ</string>
     <string name="mark_unread">Olvasatlannak jelölés</string>
     <string name="icon_descr_more_button">Több</string>
@@ -1360,7 +1360,7 @@
     <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[A kapcsolódás már folyamatban van ehhez: <b>%1$s</b>.]]></string>
     <string name="unhide_profile">Profil felfedése</string>
     <string name="this_link_is_not_a_valid_connection_link">Ez a hivatkozás nem érvényes kapcsolati hivatkozás!</string>
-    <string name="to_verify_compare">A végpontok közötti titkosítás ellenőrzéséhez hasonlítsa össze (vagy szkennelje be) az ismerőse eszközén lévő kódot.</string>
+    <string name="to_verify_compare">A végpontok közötti titkosítás ellenőrzéséhez hasonlítsa össze (vagy olvassa be a QR-kódot) az ismerőse eszközén lévő kóddal.</string>
     <string name="you_must_use_the_most_recent_version_of_database">A csevegési adatbázis legfrissebb verzióját CSAK egy eszközön kell használnia, ellenkező esetben előfordulhat, hogy az üzeneteket nem fogja megkapni valamennyi ismerősétől.</string>
     <string name="messages_section_description">Ez a beállítás a jelenlegi csevegési profilban lévő üzenetekre érvényes</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Meghívást kapott a csoportba. Csatlakozzon, hogy kapcsolatba léphessen a csoport tagjaival.</string>
@@ -1597,7 +1597,7 @@
     <string name="note_folder_local_display_name">Privát jegyzetek</string>
     <string name="error_deleting_note_folder">Hiba a privát jegyzetek törlésekor</string>
     <string name="error_creating_message">Hiba az üzenet létrehozásakor</string>
-    <string name="clear_note_folder_question">Privát jegyzetek törlése?</string>
+    <string name="clear_note_folder_question">Privát jegyzetek kiürítése?</string>
     <string name="info_row_created_at">Létrehozva ekkor:</string>
     <string name="saved_message_title">Mentett üzenet</string>
     <string name="share_text_created_at">Megosztva ekkor: %s</string>
@@ -1679,7 +1679,7 @@
     <string name="migrate_from_device_start_chat">Csevegés indítása</string>
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[<b>Nem szabad</b> ugyanazt az adatbázist használni egyszerre két eszközön.]]></string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">Erősítse meg, hogy emlékszik az adatbázis jelmondatára az átköltöztetéshez.</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Válassza az <i>Átköltöztetés egy másik eszközről</i> opciót az új eszközön és szkennelje be a QR-kódot.]]></string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Válassza az <i>Átköltöztetés egy másik eszközről</i> opciót az új eszközön és olvassa be a QR-kódot.]]></string>
     <string name="migrate_from_device_finalize_migration">Átköltöztetés véglegesítése</string>
     <string name="migrate_to_device_finalize_migration">Átköltöztetés véglegesítése egy másik eszközön.</string>
     <string name="migrate_to_device_database_init">Letöltés előkészítése</string>
@@ -1707,8 +1707,8 @@
     <string name="e2ee_info_no_pq_short">Ez a csevegés végpontok közötti titkosítással védett.</string>
     <string name="auth_open_migration_to_another_device">Átköltöztetési párbeszédablak megnyitása</string>
     <string name="e2ee_info_pq_short">Ez a csevegés végpontok közötti kvantumrezisztens tikosítással védett.</string>
-    <string name="e2ee_info_no_pq"><![CDATA[Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti titkosítással</b> és sérülés utáni titkosságvédelemmel, visszautasítással és sérülés utáni helyreállítással védi.]]></string>
-    <string name="e2ee_info_pq"><![CDATA[Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti kvantumrezisztens titkosítással</b> és sérülés utáni titkosságvédelemmel, visszautasítással és sérülés utáni helyreállítással védi.]]></string>
+    <string name="e2ee_info_no_pq"><![CDATA[Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti titkosítással</b>, sérülés utáni titkosság-védelemmel és -helyreállítással, továbbá visszautasítással védi.]]></string>
+    <string name="e2ee_info_pq"><![CDATA[Az üzeneteket, fájlokat és hívásokat <b>végpontok közötti kvantumrezisztens titkosítással</b>, sérülés utáni titkosság-védelemmel és -helyreállítással, továbbá visszautasítással védi.]]></string>
     <string name="error_showing_desktop_notification">Hiba az értesítés megjelenítésekor, lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="permissions_find_in_settings_and_grant">Keresse meg ezt az engedélyt az Android beállításaiban, és adja meg kézzel.</string>
     <string name="permissions_grant_in_settings">Engedélyezés a beállításokban</string>
@@ -1832,4 +1832,24 @@
     <string name="color_wallpaper_tint">Háttérkép kiemelés</string>
     <string name="color_wallpaper_background">Háttérkép háttérszíne</string>
     <string name="color_primary_variant2">További kiemelés 2</string>
+    <string name="theme_destination_app_theme">Alkalmazás téma</string>
+    <string name="v5_8_persian_ui">Perzsa kezelőfelület</string>
+    <string name="v5_8_private_routing_descr">Védje IP-címét az ismerősei által kiválasztott üzenetküldő átjátszókkal szemben.
+\nEngedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.</string>
+    <string name="v5_8_safe_files_descr">Ismeretlen kiszolgálókról származó fájlok jóváhagyása.</string>
+    <string name="v5_8_message_delivery">Javított üzenetkézbesítés</string>
+    <string name="chat_theme_reset_to_app_theme">Alkalmazás témájának visszaállítása</string>
+    <string name="v5_8_chat_themes_descr">Tegye egyedivé a csevegéseit!</string>
+    <string name="v5_8_chat_themes">Új csevegési témák</string>
+    <string name="v5_8_private_routing">Privát üzenet útválasztás 🚀</string>
+    <string name="v5_8_safe_files">Fájlok biztonságos fogadása</string>
+    <string name="v5_8_message_delivery_descr">Csökkentett akkumulátor-használattal.</string>
+    <string name="error_initializing_web_view">Hiba a WebView inicializálásában. Frissítse rendszerét az új verzióra. Kérjük, lépjen kapcsolatba a fejlesztőkkel.
+\nHiba: %s</string>
+    <string name="chat_theme_reset_to_user_theme">Felhasználó által létrehozott téma visszaállítása</string>
+    <string name="message_queue_info">Üzenet várakoztatási információ</string>
+    <string name="message_queue_info_none">nincs</string>
+    <string name="info_row_debug_delivery">Hibakeresés kézbesítés</string>
+    <string name="message_queue_info_server_info">Kiszolgáló várakoztatási infó: %1$s
+\nUtoljára kézbesített üzenet: %2$s</string>
 </resources>

@@ -115,6 +115,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
         false
       }
     }, title = "SimpleX") {
+//      val hardwareAccelerationDisabled = remember { listOf(GraphicsApi.SOFTWARE_FAST, GraphicsApi.SOFTWARE_COMPAT, GraphicsApi.UNKNOWN).contains(window.renderApi) }
       simplexWindowState.window = window
       AppScreen()
       if (simplexWindowState.openDialog.isAwaiting) {
