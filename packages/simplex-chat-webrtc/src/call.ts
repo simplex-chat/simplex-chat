@@ -302,8 +302,7 @@ const processCommand = (function () {
       function resolveIceCandidates() {
         if (delay) clearTimeout(delay)
         resolved = true
-        // console.log("resolveIceCandidates", JSON.stringify(candidates))
-        console.log("resolveIceCandidates")
+        console.log("resolveIceCandidates", JSON.stringify(candidates))
         const iceCandidates = serialize(candidates)
         candidates = []
         resolve(iceCandidates)
@@ -311,8 +310,7 @@ const processCommand = (function () {
 
       function sendIceCandidates() {
         if (candidates.length === 0) return
-        // console.log("sendIceCandidates", JSON.stringify(candidates))
-        console.log("sendIceCandidates")
+        console.log("sendIceCandidates", JSON.stringify(candidates))
         const iceCandidates = serialize(candidates)
         candidates = []
         sendMessageToNative({resp: {type: "ice", iceCandidates}})
@@ -466,7 +464,7 @@ const processCommand = (function () {
             iceCandidates: await activeCall.iceCandidates,
             capabilities: {encryption},
           }
-          // console.log("offer response", JSON.stringify(resp))
+          console.log("offer response", JSON.stringify(resp))
           break
         }
         case "offer":
@@ -480,7 +478,7 @@ const processCommand = (function () {
             const {media, aesKey, iceServers, relay} = command
             activeCall = await initializeCall(getCallConfig(!!aesKey, iceServers, relay), media, aesKey)
             const pc = activeCall.connection
-            // console.log("offer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
+            console.log("offer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
             await pc.setRemoteDescription(new RTCSessionDescription(offer))
             const answer = await pc.createAnswer()
             await pc.setLocalDescription(answer)
@@ -492,7 +490,7 @@ const processCommand = (function () {
               iceCandidates: await activeCall.iceCandidates,
             }
           }
-          // console.log("answer response", JSON.stringify(resp))
+          console.log("answer response", JSON.stringify(resp))
           break
         case "answer":
           if (!pc) {
@@ -504,7 +502,7 @@ const processCommand = (function () {
           } else {
             const answer: RTCSessionDescriptionInit = parse(command.answer)
             const remoteIceCandidates: RTCIceCandidateInit[] = parse(command.iceCandidates)
-            // console.log("answer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
+            console.log("answer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
             await pc.setRemoteDescription(new RTCSessionDescription(answer))
             addIceCandidates(pc, remoteIceCandidates)
             resp = {type: "ok"}
@@ -575,9 +573,8 @@ const processCommand = (function () {
 
   function addIceCandidates(conn: RTCPeerConnection, iceCandidates: RTCIceCandidateInit[]) {
     for (const c of iceCandidates) {
-      console.log("Adding ice candidate")
       conn.addIceCandidate(new RTCIceCandidate(c))
-      // console.log("addIceCandidates", JSON.stringify(c))
+      console.log("addIceCandidates", JSON.stringify(c))
     }
   }
 
