@@ -131,27 +131,58 @@ struct VoiceMessagePlayer: View {
     @Binding var allowMenu: Bool
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
+        ZStack {
             if let recordingFile = recordingFile {
                 switch recordingFile.fileStatus {
-                case .sndStored: playbackButton()
-                case .sndTransfer: playbackButton()
+                case .sndStored:
+                    if recordingFile.fileProtocol == .local {
+                        playbackButton()
+                    } else {
+                        loadingIcon()
+                    }
+                case .sndTransfer: loadingIcon()
                 case .sndComplete: playbackButton()
                 case .sndCancelled: playbackButton()
-                case .sndError: playbackButton()
-                case .sndWarning: playbackButton()
+                case let .sndError(sndFileError):
+                    fileStatusIcon("multiply")
+                        .onTapGesture {
+                            AlertManager.shared.showAlert(Alert(
+                                title: Text("File upload error"),
+                                message: Text(sndFileError.errorInfo)
+                            ))
+                        }
+                case let .sndWarning(sndFileError):
+                    fileStatusIcon("exclamationmark.triangle.fill")
+                        .onTapGesture {
+                            AlertManager.shared.showAlert(Alert(
+                                title: Text("File upload warning"),
+                                message: Text(sndFileError.errorInfo)
+                            ))
+                        }
                 case .rcvInvitation: downloadButton(recordingFile, "play.fill")
                 case .rcvAccepted: loadingIcon()
                 case .rcvTransfer: loadingIcon()
                 case .rcvAborted: downloadButton(recordingFile, "exclamationmark.arrow.circlepath")
                 case .rcvComplete: playbackButton()
                 case .rcvCancelled: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
-                case .rcvError: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
-                case .rcvWarning: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
+                case let .rcvError(rcvFileError):
+                    fileStatusIcon("multiply")
+                        .onTapGesture {
+                            AlertManager.shared.showAlert(Alert(
+                                title: Text("File download error"),
+                                message: Text(rcvFileError.errorInfo)
+                            ))
+                        }
+                case let .rcvWarning(rcvFileError):
+                    fileStatusIcon("exclamationmark.triangle.fill")
+                        .onTapGesture {
+                            AlertManager.shared.showAlert(Alert(
+                                title: Text("File download warning"),
+                                message: Text(rcvFileError.errorInfo)
+                            ))
+                        }
                 case .invalid: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
                 }
-
-                fileStatusIcon(recordingFile)
             } else {
                 playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
             }
@@ -174,62 +205,6 @@ struct VoiceMessagePlayer: View {
         }
         .onChange(of: playbackState) { state in
             allowMenu = state == .paused || state == .noPlayback
-        }
-    }
-
-    @ViewBuilder private func fileStatusIcon(_ file: CIFile) -> some View {
-        switch (file.fileStatus) {
-        case let .rcvError(rcvFileError):
-            Button {
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("File download warning"),
-                    message: Text(rcvFileError.errorInfo)
-                ))
-            } label: {
-                statusIcon("multiply", .red)
-            }
-        case let .rcvWarning(rcvFileError):
-            Button {
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("File download warning"),
-                    message: Text(rcvFileError.errorInfo)
-                ))
-            } label: {
-                statusIcon("exclamationmark.triangle.fill", .orange)
-            }
-        case .sndTransfer:
-            ProgressView()
-                .frame(width: 10, height: 10)
-        case let .sndError(sndFileError):
-            Button {
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("File upload error"),
-                    message: Text(sndFileError.errorInfo)
-                ))
-            } label: {
-                statusIcon("multiply", .red)
-            }
-        case let .sndWarning(sndFileError):
-            Button {
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("File upload warning"),
-                    message: Text(sndFileError.errorInfo)
-                ))
-            } label: {
-                statusIcon("exclamationmark.triangle.fill", .orange)
-            }
-        default:
-            EmptyView()
-        }
-    }
-
-    private func statusIcon(_ icon: String, _ color: Color) -> some View {
-        ZStack (alignment: .center) {
-            Image(systemName: icon)
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 10, height: 10)
-                .foregroundColor(color)
         }
     }
 
@@ -304,6 +279,17 @@ struct VoiceMessagePlayer: View {
                 .rotationEffect(.degrees(-90))
                 .animation(.linear, value: progress)
         }
+    }
+
+    private func fileStatusIcon(_ image: String) -> some View {
+        Image(systemName: image)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 14, height: 14)
+            .foregroundColor(Color(uiColor: .tertiaryLabel))
+            .frame(width: 56, height: 56)
+            .background(showBackground ? chatItemFrameColor(chatItem, colorScheme) : .clear)
+            .clipShape(Circle())
     }
 
     private func loadingIcon() -> some View {
