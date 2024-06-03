@@ -180,40 +180,44 @@ struct VoiceMessagePlayer: View {
     @ViewBuilder private func fileStatusIcon(_ file: CIFile) -> some View {
         switch (file.fileStatus) {
         case let .rcvError(rcvFileError):
-            statusIcon("multiply", .red)
-                .onTapGesture {
-                    AlertManager.shared.showAlert(Alert(
-                        title: Text("File download warning"),
-                        message: Text(rcvFileError.errorInfo)
-                    ))
-                }
+            Button {
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("File download warning"),
+                    message: Text(rcvFileError.errorInfo)
+                ))
+            } label: {
+                statusIcon("multiply", .red)
+            }
         case let .rcvWarning(rcvFileError):
-            statusIcon("exclamationmark.triangle.fill", .orange)
-                .onTapGesture {
-                    AlertManager.shared.showAlert(Alert(
-                        title: Text("File download warning"),
-                        message: Text(rcvFileError.errorInfo)
-                    ))
-                }
+            Button {
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("File download warning"),
+                    message: Text(rcvFileError.errorInfo)
+                ))
+            } label: {
+                statusIcon("exclamationmark.triangle.fill", .orange)
+            }
         case .sndTransfer:
             ProgressView()
                 .frame(width: 10, height: 10)
         case let .sndError(sndFileError):
-            statusIcon("multiply", .red)
-                .onTapGesture {
-                    AlertManager.shared.showAlert(Alert(
-                        title: Text("File upload error"),
-                        message: Text(sndFileError.errorInfo)
-                    ))
-                }
+            Button {
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("File upload error"),
+                    message: Text(sndFileError.errorInfo)
+                ))
+            } label: {
+                statusIcon("multiply", .red)
+            }
         case let .sndWarning(sndFileError):
-            statusIcon("exclamationmark.triangle.fill", .orange)
-                .onTapGesture {
-                    AlertManager.shared.showAlert(Alert(
-                        title: Text("File upload warning"),
-                        message: Text(sndFileError.errorInfo)
-                    ))
-                }
+            Button {
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("File upload warning"),
+                    message: Text(sndFileError.errorInfo)
+                ))
+            } label: {
+                statusIcon("exclamationmark.triangle.fill", .orange)
+            }
         default:
             EmptyView()
         }

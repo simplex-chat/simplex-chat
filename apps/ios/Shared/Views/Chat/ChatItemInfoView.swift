@@ -477,8 +477,12 @@ struct ChatItemInfoView: View {
         if developerTools {
             shareText += [
                 String.localizedStringWithFormat(NSLocalizedString("Database ID: %d", comment: "copied message info"), meta.itemId),
-                String.localizedStringWithFormat(NSLocalizedString("Record updated at: %@", comment: "copied message info"), localTimestamp(meta.updatedAt))
+                String.localizedStringWithFormat(NSLocalizedString("Record updated at: %@", comment: "copied message info"), localTimestamp(meta.updatedAt)),
+                String.localizedStringWithFormat(NSLocalizedString("Message status: %@", comment: "copied message info"), meta.itemStatus.id)
             ]
+            if let file = ci.file {
+                shareText += [String.localizedStringWithFormat(NSLocalizedString("File status: %@", comment: "copied message info"), file.fileStatus.id)]
+            }
         }
         if let qi = ci.quotedItem {
             shareText += ["", NSLocalizedString("## In reply to", comment: "copied message info")]

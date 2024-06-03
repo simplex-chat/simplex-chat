@@ -212,7 +212,7 @@ struct CIVideoView: View {
                     .disabled(!canBePlayed)
                 }
             }
-            loadingIndicator()
+            fileStatusIcon()
         }
         .onAppear {
             addObserver(player, url)
@@ -278,11 +278,11 @@ struct CIVideoView: View {
             .resizable()
             .scaledToFit()
             .frame(width: w)
-            loadingIndicator()
+            fileStatusIcon()
         }
     }
 
-    @ViewBuilder private func loadingIndicator() -> some View {
+    @ViewBuilder private func fileStatusIcon() -> some View {
         if let file = chatItem.file {
             switch file.fileStatus {
             case .sndStored:
@@ -299,8 +299,22 @@ struct CIVideoView: View {
                 }
             case .sndComplete: fileIcon("checkmark", 10, 13)
             case .sndCancelled: fileIcon("xmark", 10, 13)
-            case .sndError: fileIcon("xmark", 10, 13)
-            case .sndWarning: fileIcon("exclamationmark.triangle.fill", 10, 13)
+            case let .sndError(sndFileError):
+                fileIcon("xmark", 10, 13)
+                    .onTapGesture {
+                        AlertManager.shared.showAlert(Alert(
+                            title: Text("File upload error"),
+                            message: Text(sndFileError.errorInfo)
+                        ))
+                    }
+            case let .sndWarning(sndFileError):
+                fileIcon("exclamationmark.triangle.fill", 10, 13)
+                    .onTapGesture {
+                        AlertManager.shared.showAlert(Alert(
+                            title: Text("File upload warning"),
+                            message: Text(sndFileError.errorInfo)
+                        ))
+                    }
             case .rcvInvitation: fileIcon("arrow.down", 10, 13)
             case .rcvAccepted: fileIcon("ellipsis", 14, 11)
             case let .rcvTransfer(rcvProgress, rcvTotal):
@@ -312,8 +326,22 @@ struct CIVideoView: View {
             case .rcvAborted: fileIcon("exclamationmark.arrow.circlepath", 14, 11)
             case .rcvComplete: EmptyView()
             case .rcvCancelled: fileIcon("xmark", 10, 13)
-            case .rcvError: fileIcon("xmark", 10, 13)
-            case .rcvWarning: fileIcon("exclamationmark.triangle.fill", 10, 13)
+            case let .rcvError(rcvFileError):
+                fileIcon("xmark", 10, 13)
+                    .onTapGesture {
+                        AlertManager.shared.showAlert(Alert(
+                            title: Text("File download error"),
+                            message: Text(rcvFileError.errorInfo)
+                        ))
+                    }
+            case let .rcvWarning(rcvFileError):
+                fileIcon("exclamationmark.triangle.fill", 10, 13)
+                    .onTapGesture {
+                        AlertManager.shared.showAlert(Alert(
+                            title: Text("File download warning"),
+                            message: Text(rcvFileError.errorInfo)
+                        ))
+                    }
             case .invalid: fileIcon("questionmark", 10, 13)
             }
         }
