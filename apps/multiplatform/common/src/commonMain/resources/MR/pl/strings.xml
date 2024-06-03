@@ -799,7 +799,6 @@
     <string name="prohibit_sending_disappearing_messages">Zabroń wysyłania znikających wiadomości.</string>
     <string name="feature_received_prohibited">otrzymane, zabronione</string>
     <string name="reset_color">Resetuj kolory</string>
-    <string name="save_color">Zapisz kolor</string>
     <string name="accept_feature_set_1_day">Ustaw 1 dzień</string>
     <string name="theme_system">System</string>
     <string name="language_system">System</string>
@@ -1154,7 +1153,7 @@
     <string name="you_can_accept_or_reject_connection">Kiedy ludzie proszą o połączenie, możesz je zaakceptować lub odrzucić.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Nie stracisz kontaktów, jeśli później usuniesz swój adres.</string>
     <string name="customize_theme_title">Dostosuj motyw</string>
-    <string name="theme_colors_section_title">KOLORY MOTYWU</string>
+    <string name="theme_colors_section_title">KOLORY INTERFEJSU</string>
     <string name="your_contacts_will_remain_connected">Twoje kontakty pozostaną połączone.</string>
     <string name="add_address_to_your_profile">Dodaj adres do swojego profilu, aby Twoje kontakty mogły go udostępnić innym osobom. Aktualizacja profilu zostanie wysłana do Twoich kontaktów.</string>
     <string name="create_address_and_let_people_connect">Utwórz adres, aby ludzie mogli się z Tobą połączyć.</string>
@@ -1769,4 +1768,94 @@
     <string name="v5_7_shape_profile_images_descr">Kwadrat, okrąg lub cokolwiek pomiędzy.</string>
     <string name="v5_7_forward_descr">Źródło wiadomości pozostaje prywatne.</string>
     <string name="v5_7_quantum_resistant_encryption_descr">Zostanie włączone w czatach bezpośrednich!</string>
+    <string name="network_smp_proxy_mode_always_description">Zawsze używaj prywatnego trasowania.</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Zezwól na obniżenie wersji</string>
+    <string name="network_smp_proxy_mode_always">Zawsze</string>
+    <string name="snd_error_quota">Przekroczono pojemność - odbiorca nie otrzymał wcześniej wysłanych wiadomości.</string>
+    <string name="snd_error_relay">Błąd serwera docelowego: %1$s</string>
+    <string name="ci_status_other_error">Błąd: %1$s</string>
+    <string name="snd_error_proxy_relay">Serwer przekazujący: %1$s
+\nBłąd serwera docelowego: %2$s</string>
+    <string name="snd_error_proxy">Serwer przekazujący: %1$s
+\nBłąd: %2$s</string>
+    <string name="message_delivery_warning_title">Ostrzeżenie dostarczenia wiadomości</string>
+    <string name="snd_error_expired">Błąd sieciowy - wiadomość wygasła po wielu próbach wysłania jej.</string>
+    <string name="srv_error_host">Adres serwera jest niekompatybilny z ustawieniami sieciowymi.</string>
+    <string name="srv_error_version">Wersja serwera jest niekompatybilna z ustawieniami sieciowymi.</string>
+    <string name="snd_error_auth">Zły klucz lub nieznane połączenie - najprawdopodobniej to połączenie jest usunięte.</string>
+    <string name="network_smp_proxy_mode_never">Nigdy</string>
+    <string name="network_smp_proxy_mode_unprotected">Niezabezpieczony</string>
+    <string name="network_smp_proxy_mode_never_description">NIE używaj prywatnego trasowania.</string>
+    <string name="update_network_smp_proxy_mode_question">Tryb trasowania wiadomości</string>
+    <string name="network_smp_proxy_fallback_allow">Tak</string>
+    <string name="network_smp_proxy_fallback_prohibit">Nie</string>
+    <string name="network_smp_proxy_fallback_allow_protected">Gdy IP ukryty</string>
+    <string name="private_routing_show_message_status">Pokaż status wiadomości</string>
+    <string name="settings_section_title_private_message_routing">TRASOWANIE PRYWATNYCH WIADOMOŚCI</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">NIE wysyłaj wiadomości bezpośrednio, nawet jeśli serwer docelowy nie obsługuje prywatnego trasowania.</string>
+    <string name="private_routing_explanation">Aby chronić Twój adres IP, prywatne trasowanie używa Twoich serwerów SMP, aby dostarczyć wiadomości.</string>
+    <string name="network_smp_proxy_mode_unknown">Nieznane przekaźniki</string>
+    <string name="network_smp_proxy_mode_unknown_description">Używaj prywatnego trasowania z nieznanymi serwerami.</string>
+    <string name="update_network_smp_proxy_fallback_question">Rezerwowe trasowania wiadomości</string>
+    <string name="network_smp_proxy_mode_private_routing">Prywatne trasowanie</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">Wysyłaj wiadomości bezpośrednio, gdy adres IP jest chroniony i Twój lub docelowy serwer nie obsługuje prywatnego trasowania.</string>
+    <string name="network_smp_proxy_fallback_allow_description">Wysyłaj wiadomości bezpośrednio, gdy Twój lub docelowy serwer nie obsługuje prywatnego trasowania.</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Używaj prywatnego trasowania z nieznanymi serwerami, gdy adres IP nie jest chroniony.</string>
+    <string name="file_not_approved_title">Nieznane serwery!</string>
+    <string name="file_not_approved_descr">Bez Tor lub VPN, Twój adres IP będzie widoczny dla tych przekaźników XFTP:
+\n%1$s.</string>
+    <string name="protect_ip_address">Chroń adres IP</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">Aplikacja będzie prosić o potwierdzenie pobierań z nieznanych serwerów plików (z wyjątkiem .onion lub gdy proxy SOCKS jest włączone).</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Bez Tor lub VPN, Twój adres IP będzie widoczny do serwerów plików.</string>
+    <string name="settings_section_title_files">PLIKI</string>
+    <string name="settings_section_title_user_theme">Motyw profilu</string>
+    <string name="chat_list_always_visible">Pokaż listę czatów w nowym oknie</string>
+    <string name="dark_mode_colors">Kolory ciemnego trybu</string>
+    <string name="color_mode_light">Jasny</string>
+    <string name="color_received_quote">Otrzymano odpowiedź</string>
+    <string name="theme_remove_image">Usuń obraz</string>
+    <string name="reset_single_color">Zresetuj kolory</string>
+    <string name="wallpaper_scale_fill">Wypełnij</string>
+    <string name="wallpaper_scale_fit">Dopasuj</string>
+    <string name="wallpaper_preview_hello_alice">Dzień dobry!</string>
+    <string name="wallpaper_preview_hello_bob">Dzień dobry!</string>
+    <string name="chat_theme_apply_to_light_mode">Jasny tryb</string>
+    <string name="wallpaper_scale_repeat">Powtórz</string>
+    <string name="color_primary_variant2">Dodatkowy akcent 2</string>
+    <string name="chat_theme_apply_to_all_modes">Wszystkie tryby kolorów</string>
+    <string name="chat_theme_apply_to_dark_mode">Ciemny tryb</string>
+    <string name="chat_theme_set_default_theme">Ustaw domyślny motyw</string>
+    <string name="color_mode_system">Systemowy</string>
+    <string name="color_wallpaper_background">Tło tapety</string>
+    <string name="wallpaper_advanced_settings">Zaawansowane ustawienia</string>
+    <string name="chat_theme_apply_to_mode">Zastosuj dla</string>
+    <string name="wallpaper_scale">Skaluj</string>
+    <string name="theme_black">Czarny</string>
+    <string name="color_wallpaper_tint">Akcent tapety</string>
+    <string name="color_sent_quote">Wyślij odpowiedź</string>
+    <string name="settings_section_title_chat_colors">Kolory czatu</string>
+    <string name="settings_section_title_chat_theme">Motyw czatu</string>
+    <string name="color_mode">Tryb koloru</string>
+    <string name="color_mode_dark">Ciemny</string>
+    <string name="error_initializing_web_view">Błąd inicjacji WebView. Zaktualizuj swój system do nowej wersji. Proszę skontaktować się z deweloperami.
+\nBłąd: %s</string>
+    <string name="message_queue_info_none">nic</string>
+    <string name="v5_8_chat_themes">Nowy motywy czatu</string>
+    <string name="v5_8_private_routing">Trasowanie prywatnych wiadomości🚀</string>
+    <string name="v5_8_safe_files">Bezpiecznie otrzymuj pliki</string>
+    <string name="v5_8_message_delivery">Ulepszona dostawa wiadomości</string>
+    <string name="v5_8_persian_ui">Perski interfejs użytkownika</string>
+    <string name="v5_8_safe_files_descr">Potwierdzaj pliki z nieznanych serwerów.</string>
+    <string name="info_row_debug_delivery">Dostarczenie debugowania</string>
+    <string name="v5_8_chat_themes_descr">Zrób wygląd Twoich czatów inny!</string>
+    <string name="v5_8_private_routing_descr">Chroni Twój adres IP przed przekaźnikami wiadomości wybranych przez Twoje kontakty.
+\nWłącz w ustawianiach *Sieć i serwery* .</string>
+    <string name="message_queue_info">Informacje kolejki wiadomości</string>
+    <string name="message_queue_info_server_info">Informacje kolejki serwera: %1$s
+\n
+\nostatnia otrzymana wiadomość: %2$s</string>
+    <string name="v5_8_message_delivery_descr">Ze zredukowanym zużyciem baterii.</string>
+    <string name="theme_destination_app_theme">Motyw aplikacji</string>
+    <string name="chat_theme_reset_to_app_theme">Zresetuj do motywu aplikacji</string>
+    <string name="chat_theme_reset_to_user_theme">Zresetuj do motywu użytkownika</string>
 </resources>

@@ -35,6 +35,7 @@ struct GroupMemberInfoView: View {
         case abortSwitchAddressAlert
         case syncConnectionForceAlert
         case planAndConnectAlert(alert: PlanAndConnectAlert)
+        case queueInfo(info: String)
         case error(title: LocalizedStringKey, error: LocalizedStringKey)
 
         var id: String {
@@ -49,6 +50,7 @@ struct GroupMemberInfoView: View {
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
             case let .planAndConnectAlert(alert): return "planAndConnectAlert \(alert.id)"
+            case let .queueInfo(info): return "queueInfo \(info)"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -196,6 +198,18 @@ struct GroupMemberInfoView: View {
                         Section("For console") {
                             infoRow("Local name", member.localDisplayName)
                             infoRow("Database ID", "\(member.groupMemberId)")
+                            Button ("Debug delivery") {
+                                Task {
+                                    do {
+                                        let info = queueInfoText(try await apiGroupMemberQueueInfo(groupInfo.apiId, member.groupMemberId))
+                                        await MainActor.run { alert = .queueInfo(info: info) }
+                                    } catch let e {
+                                        logger.error("apiContactQueueInfo error: \(responseError(e))")
+                                        let a = getErrorAlert(e, "Error")
+                                        await MainActor.run { alert = .error(title: a.title, error: a.message) }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -241,6 +255,7 @@ struct GroupMemberInfoView: View {
                 case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchMemberAddress)
                 case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncMemberConnection(force: true) })
                 case let .planAndConnectAlert(alert): return planAndConnectAlert(alert, dismiss: true)
+                case let .queueInfo(info): return queueInfoAlert(info)
                 case let .error(title, error): return Alert(title: Text(title), message: Text(error))
                 }
             }

@@ -113,7 +113,7 @@ struct ChatView: View {
                     } label: {
                         ChatInfoToolbar(chat: chat)
                     }
-                    .sheet(isPresented: $showChatInfoSheet) {
+                    .appSheet(isPresented: $showChatInfoSheet) {
                         ChatInfoView(
                             openedFromChatView: true,
                             chat: chat,

@@ -848,7 +848,6 @@
     <string name="theme_dark">Темная</string>
     <!-- Appearance.kt -->
     <string name="theme">Тема</string>
-    <string name="save_color">Сохранить цвет</string>
     <string name="reset_color">Сбросить цвета</string>
     <string name="color_primary">Акцент</string>
     <!-- Preferences.kt -->
@@ -1250,7 +1249,7 @@
     <string name="prohibit_message_reactions">Запретить реакции на сообщения.</string>
     <string name="prohibit_message_reactions_group">Запретить реакции на сообщения.</string>
     <string name="custom_time_unit_seconds">секунд</string>
-    <string name="theme_colors_section_title">ЦВЕТА ТЕМЫ</string>
+    <string name="theme_colors_section_title">ЦВЕТА ИНТЕРФЕЙСА</string>
     <string name="share_address_with_contacts_question">Поделиться адресом с контактами\?</string>
     <string name="profile_update_will_be_sent_to_contacts">Обновлённый профиль будет отправлен Вашим контактам.</string>
     <string name="learn_more_about_address">Об адресе SimpleX</string>
@@ -1851,4 +1850,95 @@
     <string name="v5_7_shape_profile_images">Форма картинок профилей</string>
     <string name="v5_7_shape_profile_images_descr">Квадрат, круг и все, что между ними.</string>
     <string name="v5_7_quantum_resistant_encryption_descr">Будет включено в прямых разговорах!</string>
+    <string name="settings_section_title_files">ФАЙЛЫ</string>
+    <string name="v5_8_chat_themes">Новые темы чатов</string>
+    <string name="message_queue_info_none">нет</string>
+    <string name="color_mode_light">Светлая</string>
+    <string name="color_mode_system">Системная</string>
+    <string name="dark_mode_colors">Цвета тёмного режима</string>
+    <string name="v5_8_safe_files">Получайте файлы безопасно</string>
+    <string name="v5_8_private_routing">Конфиденциальная доставка сообщений 🚀</string>
+    <string name="v5_8_message_delivery">Улучшенная доставка сообщений</string>
+    <string name="v5_8_message_delivery_descr">Уменьшенный расход батареи.</string>
+    <string name="srv_error_version">Версия сервера несовместима с настройками сети.</string>
+    <string name="snd_error_auth">Неверный ключ или неизвестное соединение - скорее всего, это соединение удалено.</string>
+    <string name="snd_error_quota">Превышено количество сообщений - предыдущие сообщения не доставлены.</string>
+    <string name="snd_error_relay">Ошибка сервера получателя: %1$s</string>
+    <string name="ci_status_other_error">Ошибка: %1$s</string>
+    <string name="snd_error_proxy_relay">Пересылающий сервер: %1$s
+\nОшибка сервера получателя: %2$s</string>
+    <string name="snd_error_proxy">Пересылающий сервер: %1$s
+\nОшибка: %2$s</string>
+    <string name="message_delivery_warning_title">Предупреждение доставки сообщения</string>
+    <string name="snd_error_expired">Ошибка сети - сообщение не было отправлено после многократных попыток.</string>
+    <string name="srv_error_host">Адрес сервера несовместим с настройками сети.</string>
+    <string name="message_queue_info_server_info">информация сервера об очереди: %1$s
+\n
+\nпоследнее полученное сообщение: %2$s</string>
+    <string name="chat_list_always_visible">Показать список чатов в новом окне</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">Приложение будет запрашивать подтверждение загрузки с неизвестных серверов (за исключением .onion адресов или когда SOCKS-прокси включен).</string>
+    <string name="network_smp_proxy_mode_unprotected">Незащищённый</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Без Тора или ВПН, Ваш IP адрес будет доступен серверам файлов.</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">Отправлять сообщения напрямую, когда IP адрес защищен, и Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.</string>
+    <string name="theme_black">Черная</string>
+    <string name="chat_theme_apply_to_dark_mode">Тёмный режим</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">Не отправлять сообщения напрямую, даже если сервер получателя не поддерживает конфиденциальную доставку.</string>
+    <string name="color_mode">Режим цветов</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Разрешить прямую доставку</string>
+    <string name="network_smp_proxy_mode_always">Всегда</string>
+    <string name="v5_8_safe_files_descr">Подтверждать файлы с неизвестных серверов.</string>
+    <string name="network_smp_proxy_mode_always_description">Всегда использовать конфиденциальную доставку.</string>
+    <string name="color_mode_dark">Тёмная</string>
+    <string name="info_row_debug_delivery">Отладка доставки</string>
+    <string name="error_initializing_web_view">Ошибка инициализации WebView. Обновите Вашу систему до новой версии. Свяжитесь с разработчиками.
+\nОшибка: %s</string>
+    <string name="chat_theme_apply_to_light_mode">Светлый режим</string>
+    <string name="v5_8_chat_themes_descr">Сделайте ваши чаты разными!</string>
+    <string name="message_queue_info">Информация об очереди сообщений</string>
+    <string name="v5_8_persian_ui">Персидский интерфейс</string>
+    <string name="protect_ip_address">Защитить IP адрес</string>
+    <string name="v5_8_private_routing_descr">Защитите ваш IP адрес от серверов сообщений, выбранных Вашими контактами.
+\nВключите в настройках Сеть и серверы.</string>
+    <string name="network_smp_proxy_fallback_allow_description">Отправьте сообщения напрямую, когда Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.</string>
+    <string name="network_smp_proxy_mode_private_routing">Конфиденциальная доставка</string>
+    <string name="network_smp_proxy_mode_unknown_description">Использовать конфиденциальную доставку с неизвестными серверами.</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Использовать конфиденциальную доставку с неизвестными серверами, когда IP адрес не защищен.</string>
+    <string name="network_smp_proxy_fallback_allow_protected">Когда IP защищен</string>
+    <string name="network_smp_proxy_fallback_allow">Да</string>
+    <string name="private_routing_explanation">Чтобы защитить ваш IP адрес, приложение использует Ваши SMP серверы для конфиденциальной доставки сообщений.</string>
+    <string name="settings_section_title_profile_images">Изображения профилей</string>
+    <string name="chat_theme_apply_to_all_modes">Все режимы</string>
+    <string name="theme_destination_app_theme">Тема приложения</string>
+    <string name="chat_theme_reset_to_app_theme">Сбросить на тему приложения</string>
+    <string name="chat_theme_reset_to_user_theme">Сбросить на тему пользователя</string>
+    <string name="file_not_approved_title">Неизвестные серверы!</string>
+    <string name="file_not_approved_descr">Без Тора или ВПН, Ваш IP адрес будет доступен этим серверам файлов:
+\n%1$s.</string>
+    <string name="network_smp_proxy_mode_never_description">Не использовать конфиденциальную маршрутизацию.</string>
+    <string name="network_smp_proxy_mode_never">Никогда</string>
+    <string name="network_smp_proxy_mode_unknown">Неизвестные серверы</string>
+    <string name="network_smp_proxy_fallback_prohibit">Нет</string>
+    <string name="private_routing_show_message_status">Показать статус сообщения</string>
+    <string name="update_network_smp_proxy_fallback_question">Прямая доставка сообщений</string>
+    <string name="update_network_smp_proxy_mode_question">Режим доставки сообщений</string>
+    <string name="settings_section_title_private_message_routing">КОНФИДЕНЦИАЛЬНАЯ ДОСТАВКА СООБЩЕНИЙ</string>
+    <string name="settings_section_title_chat_colors">Цвета чата</string>
+    <string name="settings_section_title_chat_theme">Тема чата</string>
+    <string name="settings_section_title_user_theme">Тема профиля</string>
+    <string name="color_primary_variant2">Дополнительный акцент 2</string>
+    <string name="wallpaper_advanced_settings">Дополнительные настройки</string>
+    <string name="wallpaper_scale_fill">Обрезать</string>
+    <string name="wallpaper_scale_fit">Полностью</string>
+    <string name="wallpaper_preview_hello_alice">Добрый день!</string>
+    <string name="wallpaper_preview_hello_bob">Доброе утро!</string>
+    <string name="color_received_quote">Полученный ответ</string>
+    <string name="theme_remove_image">Удалить изображение</string>
+    <string name="wallpaper_scale_repeat">Повторить</string>
+    <string name="reset_single_color">Сбросить цвет</string>
+    <string name="wallpaper_scale">Масштаб</string>
+    <string name="color_sent_quote">Отправленный ответ</string>
+    <string name="chat_theme_set_default_theme">Установить тему по умолчанию</string>
+    <string name="color_wallpaper_tint">Рисунок обоев</string>
+    <string name="color_wallpaper_background">Фон обоев</string>
+    <string name="chat_theme_apply_to_mode">Применить к</string>
 </resources>

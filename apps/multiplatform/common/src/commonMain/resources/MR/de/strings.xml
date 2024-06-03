@@ -400,11 +400,11 @@
     <string name="network_use_onion_hosts_prefer">Wenn verfügbar</string>
     <string name="network_use_onion_hosts_no">Nein</string>
     <string name="network_use_onion_hosts_required">Erforderlich</string>
-    <string name="network_use_onion_hosts_prefer_desc">Onion-Hosts werden verwendet, wenn sie verfügbar sind.</string>
+    <string name="network_use_onion_hosts_prefer_desc">Wenn Onion-Hosts verfügbar sind, werden sie verwendet.</string>
     <string name="network_use_onion_hosts_no_desc">Onion-Hosts werden nicht verwendet.</string>
     <string name="network_use_onion_hosts_required_desc">Für die Verbindung werden Onion-Hosts benötigt.
 \nBitte beachten Sie: Ohne .onion-Adresse können Sie keine Verbindung mit den Servern herstellen.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion-Hosts werden verwendet, wenn sie verfügbar sind.</string>
+    <string name="network_use_onion_hosts_prefer_desc_in_alert">Wenn Onion-Hosts verfügbar sind, werden sie verwendet.</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">Onion-Hosts werden nicht verwendet.</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Für die Verbindung werden Onion-Hosts benötigt.</string>
     <string name="appearance_settings">Erscheinungsbild</string>
@@ -502,7 +502,7 @@
     <!-- Call settings -->
     <string name="settings_audio_video_calls">Audio- &amp; Videoanrufe</string>
     <string name="your_calls">Ihre Anrufe</string>
-    <string name="always_use_relay">Über ein Relais verbinden</string>
+    <string name="always_use_relay">Immer über ein Relais verbinden</string>
     <string name="call_on_lock_screen">Anrufe auf Sperrbildschirm:</string>
     <string name="accept_call_on_lock_screen">Akzeptieren</string>
     <string name="show_call_on_lock_screen">Anzeigen</string>
@@ -825,7 +825,7 @@
     <string name="network_option_protocol_timeout">Protokollzeitüberschreitung</string>
     <string name="network_option_ping_interval">PING-Intervall</string>
     <string name="network_option_enable_tcp_keep_alive">TCP-Keep-Alive aktivieren</string>
-    <string name="network_options_revert">Zurückkehren</string>
+    <string name="network_options_revert">Zurücksetzen</string>
     <string name="network_options_save">Speichern</string>
     <string name="update_network_settings_question">Netzwerkeinstellungen aktualisieren?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Die Aktualisierung der Einstellungen wird den Client wieder mit allen Servern verbinden.</string>
@@ -842,7 +842,6 @@
     <string name="theme_dark">Dunkel</string>
     <!-- Appearance.kt -->
     <string name="theme">Design</string>
-    <string name="save_color">Farbe speichern</string>
     <string name="reset_color">Farben zurücksetzen</string>
     <string name="color_primary">Akzent</string>
     <!-- Preferences.kt -->
@@ -1208,7 +1207,7 @@
     <string name="you_can_accept_or_reject_connection">Wenn Personen eine Verbindung anfordern, können Sie diese annehmen oder ablehnen.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Sie werden Ihre damit verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.</string>
     <string name="customize_theme_title">Design anpassen</string>
-    <string name="theme_colors_section_title">DESIGN-FARBEN</string>
+    <string name="theme_colors_section_title">INTERFACE-FARBEN</string>
     <string name="add_address_to_your_profile">Fügen Sie die Adresse Ihrem Profil hinzu, damit Ihre Kontakte sie mit anderen Personen teilen können. Es wird eine Profilaktualisierung an Ihre Kontakte gesendet.</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Alle Ihre Kontakte bleiben verbunden. Es wird eine Profilaktualisierung an Ihre Kontakte gesendet.</string>
     <string name="create_address_and_let_people_connect">Erstellen Sie eine Adresse, damit sich Personen mit Ihnen verbinden können.</string>
@@ -1386,7 +1385,7 @@
     <string name="v5_2_favourites_filter_descr">Nach ungelesenen und favorisierten Chats filtern.</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Das Senden von Empfangsbestätigungen an alle Kontakte in allen sichtbaren Chat-Profilen wird aktiviert.</string>
     <string name="receipts_contacts_override_disabled">Das Senden von Bestätigungen an %d Kontakte ist deaktiviert</string>
-    <string name="receipts_section_description">Diese Einstellungen gelten für Ihr aktuelles Profil</string>
+    <string name="receipts_section_description">Diese Einstellungen gelten für Ihr aktuelles Chat-Profil</string>
     <string name="receipts_section_description_1">Sie können in den Kontakt- und Gruppeneinstellungen überschrieben werden.</string>
     <string name="receipts_section_contacts">Kontakte</string>
     <string name="receipts_contacts_title_disable">Bestätigungen deaktivieren\?</string>
@@ -1430,8 +1429,8 @@
     <string name="connect_via_member_address_alert_desc">An dieses Gruppenmitglied wird eine Verbindungsanfrage gesendet.</string>
     <string name="connect_via_member_address_alert_title">Direkt verbinden\?</string>
     <string name="connect_via_link_incognito">Inkognito verbinden</string>
-    <string name="connect_use_current_profile">Das aktuelle Profil nutzen</string>
-    <string name="connect_use_new_incognito_profile">Ein neues Inkognito-Profil nutzen</string>
+    <string name="connect_use_current_profile">Aktuelles Chat-Profil nutzen</string>
+    <string name="connect_use_new_incognito_profile">Neues Inkognito-Profil nutzen</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Wählen Sie bitte in den App-Einstellungen <b>App-Akkuverbrauch</b> / <b>Unbeschränkt</b> , um Anrufe im Hintergrund zu führen.]]></string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">Fügen Sie den erhaltenen Link ein, um sich mit Ihrem Kontakt zu verbinden…</string>
     <string name="connect__a_new_random_profile_will_be_shared">Es wird ein neues Zufallsprofil geteilt.</string>
@@ -1460,7 +1459,7 @@
     <string name="open_database_folder">Datenbank-Ordner öffnen</string>
     <string name="passphrase_will_be_saved_in_settings">Das Passwort wird in Klartext in den Einstellungen gespeichert, nachdem Sie es geändert oder die App neu gestartet haben.</string>
     <string name="settings_is_storing_in_clear_text">Das Passwort wurde in Klartext in den Einstellungen gespeichert.</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Bitte beachten Sie</b>: Die Nachrichten- und Dateirelais sind per SOCKS Proxy verbunden. Anrufe und gesendete Link-Vorschaubilder nutzen eine direkte Verbindung.]]></string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Bitte beachten Sie</b>: Die Nachrichten- und Datei-Relais sind per SOCKS-Proxy verbunden. Anrufe und gesendete Link-Vorschaubilder nutzen eine direkte Verbindung.]]></string>
     <string name="encrypt_local_files">Lokale Dateien verschlüsseln</string>
     <string name="rcv_group_event_open_chat">Öffnen</string>
     <string name="v5_3_encrypt_local_files">Gespeicherte Dateien &amp; Medien verschlüsseln</string>
@@ -1529,7 +1528,7 @@
     <string name="unblock_member_confirmation">Freigeben</string>
     <string name="non_content_uri_alert_title">Ungültiger Datei-Pfad</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Sie haben über diese Adresse bereits eine Verbindung beantragt!</string>
-    <string name="terminal_always_visible">Die Konsole in einem neuen Fenster anzeigen</string>
+    <string name="terminal_always_visible">Konsole in einem neuen Fenster anzeigen</string>
     <string name="block_member_desc">Von %s werden alle neuen Nachrichten ausgeblendet!</string>
     <string name="blocked_item_description">Blockiert</string>
     <string name="encryption_renegotiation_error">Fehler bei der Neuverhandlung der Verschlüsselung</string>
@@ -1670,7 +1669,7 @@
     <string name="past_member_vName">Ehemaliges Mitglied %1$s</string>
     <string name="possible_slow_function_desc">Die Ausführung dieser Funktion dauert zu lange: %1$d Sekunden: %2$s</string>
     <string name="possible_slow_function_title">Langsame Funktion</string>
-    <string name="show_slow_api_calls">Zeige langsame API-Aufrufe an</string>
+    <string name="show_slow_api_calls">Langsame API-Aufrufe anzeigen</string>
     <string name="group_member_status_unknown_short">unbekannt</string>
     <string name="developer_options_section">Optionen für Entwickler</string>
     <string name="group_member_status_unknown">unbekannter Gruppenmitglieds-Status</string>
@@ -1729,7 +1728,7 @@
     <string name="migrate_to_device_downloading_details">Link-Details werden heruntergeladen</string>
     <string name="migrate_to_device_downloading_archive">Archiv wird heruntergeladen</string>
     <string name="migrate_to_device_apply_onion">Anwenden</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">Alle Ihre Kontakte, Unterhaltungen und Dateien werden sicher verschlüsselt und in Daten-Paketen auf die konfigurierten XTFP-Server hochgeladen.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Alle Ihre Kontakte, Unterhaltungen und Dateien werden sicher verschlüsselt und in Daten-Paketen auf die konfigurierten XTFP-Relais hochgeladen.</string>
     <string name="migrate_from_device_archive_and_upload">Archivieren und Hochladen</string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Warnung</b>: Das Archiv wird gelöscht.]]></string>
     <string name="migrate_from_device_check_connection_and_try_again">Überprüfen Sie Ihre Internet-Verbindung und probieren Sie es nochmals</string>
@@ -1850,4 +1849,94 @@
     <string name="settings_section_title_profile_images">Profil-Bilder</string>
     <string name="v5_7_shape_profile_images">Form der Profil-Bilder</string>
     <string name="v5_7_shape_profile_images_descr">Quadratisch, kreisförmig oder irgendetwas dazwischen.</string>
+    <string name="snd_error_relay">Fehler auf dem Zielserver: %1$s</string>
+    <string name="ci_status_other_error">Fehler: %1$s</string>
+    <string name="message_delivery_warning_title">Warnung bei der Nachrichtenzustellung</string>
+    <string name="snd_error_auth">Falscher Schlüssel oder unbekannte Verbindung - höchstwahrscheinlich ist diese Verbindung gelöscht.</string>
+    <string name="srv_error_version">Die Server-Version ist nicht mit den Netzwerk-Einstellungen kompatibel.</string>
+    <string name="snd_error_quota">Kapazität überschritten - der Empfänger hat die zuvor gesendeten Nachrichten nicht empfangen.</string>
+    <string name="snd_error_proxy_relay">Weiterleitungsserver: %1$s
+\nFehler auf dem Zielserver: %2$s</string>
+    <string name="snd_error_proxy">Weiterleitungsserver: %1$s
+\nFehler: %2$s</string>
+    <string name="snd_error_expired">Netzwerk-Fehler - die Nachricht ist nach vielen Sende-Versuchen abgelaufen.</string>
+    <string name="srv_error_host">Die Server-Adresse ist nicht mit den Netzwerk-Einstellungen kompatibel.</string>
+    <string name="network_smp_proxy_mode_always">Immer</string>
+    <string name="network_smp_proxy_mode_private_routing">Privates Routing</string>
+    <string name="network_smp_proxy_mode_never">Nie</string>
+    <string name="network_smp_proxy_mode_unknown">Unbekannte Relais</string>
+    <string name="network_smp_proxy_mode_unprotected">Ungeschützt</string>
+    <string name="network_smp_proxy_mode_unknown_description">Sie nutzen privates Routing mit unbekannten Servern.</string>
+    <string name="network_smp_proxy_mode_never_description">Sie nutzen KEIN privates Routing.</string>
+    <string name="update_network_smp_proxy_mode_question">Modus für das Nachrichten-Routing</string>
+    <string name="network_smp_proxy_fallback_allow">Ja</string>
+    <string name="network_smp_proxy_fallback_prohibit">Nein</string>
+    <string name="network_smp_proxy_fallback_allow_protected">Wenn die IP-Adresse versteckt ist</string>
+    <string name="update_network_smp_proxy_fallback_question">Fallback für das Nachrichten-Routing</string>
+    <string name="private_routing_show_message_status">Nachrichtenstatus anzeigen</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Herabstufung erlauben</string>
+    <string name="network_smp_proxy_mode_always_description">Sie nutzen immer privates Routing.</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">Nachrichten werden nicht direkt versendet, selbst wenn Ihr oder der Zielserver kein privates Routing unterstützt.</string>
+    <string name="settings_section_title_private_message_routing">PRIVATES NACHRICHTEN-ROUTING</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">Nachrichten werden direkt versendet, wenn die IP-Adresse geschützt ist, und Ihr oder der Zielserver kein privates Routing unterstützt.</string>
+    <string name="network_smp_proxy_fallback_allow_description">Nachrichten werden direkt versendet, wenn Ihr oder der Zielserver kein privates Routing unterstützt.</string>
+    <string name="private_routing_explanation">Zum Schutz Ihrer IP-Adresse, wird für die Nachrichten-Auslieferung privates Routing über Ihre konfigurierten SMP-Server genutzt.</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Sie nutzen privates Routing mit unbekannten Servern, wenn Ihre IP-Adresse nicht geschützt ist.</string>
+    <string name="protect_ip_address">IP-Adresse schützen</string>
+    <string name="settings_section_title_files">DATEIEN</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">Die App wird bei unbekannten Datei-Servern nach einer Download-Bestätigung fragen (außer bei .onion oder wenn ein SOCKS-Proxy aktiviert ist).</string>
+    <string name="file_not_approved_title">Unbekannte Server!</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Ohne Tor- oder VPN-Nutzung wird Ihre IP-Adresse für Datei-Server sichtbar sein.</string>
+    <string name="file_not_approved_descr">Ohne Tor- oder VPN-Nutzung wird Ihre IP-Adresse für diese XFTP-Relais sichtbar sein:
+\n%1$s.</string>
+    <string name="settings_section_title_user_theme">Profil-Design</string>
+    <string name="theme_black">Schwarz</string>
+    <string name="color_mode">Farbvariante</string>
+    <string name="color_mode_dark">Dunkel</string>
+    <string name="color_mode_light">Hell</string>
+    <string name="reset_single_color">Farbe zurücksetzen</string>
+    <string name="color_sent_quote">Gesendete Antwort</string>
+    <string name="color_mode_system">System</string>
+    <string name="chat_theme_apply_to_dark_mode">Dunkle Variante</string>
+    <string name="wallpaper_scale_fill">Füllen</string>
+    <string name="chat_theme_apply_to_light_mode">Helle Variante</string>
+    <string name="color_received_quote">Empfangene Antwort</string>
+    <string name="theme_remove_image">Bild entfernen</string>
+    <string name="wallpaper_scale_repeat">Wiederholen</string>
+    <string name="wallpaper_scale">Skalieren</string>
+    <string name="chat_theme_set_default_theme">Default-Design einstellen</string>
+    <string name="color_wallpaper_tint">Wallpaper-Akzent</string>
+    <string name="color_wallpaper_background">Wallpaper-Hintergrund</string>
+    <string name="chat_theme_apply_to_mode">Anwenden auf</string>
+    <string name="color_primary_variant2">Zusätzlicher Akzent 2</string>
+    <string name="wallpaper_advanced_settings">Erweiterte Einstellungen</string>
+    <string name="chat_theme_apply_to_all_modes">Alle Farbvarianten</string>
+    <string name="settings_section_title_chat_colors">Chat-Farben</string>
+    <string name="settings_section_title_chat_theme">Chat-Design</string>
+    <string name="wallpaper_scale_fit">Passend</string>
+    <string name="chat_list_always_visible">Chat-Liste in einem neuen Fenster anzeigen</string>
+    <string name="wallpaper_preview_hello_alice">Guten Nachmittag!</string>
+    <string name="wallpaper_preview_hello_bob">Guten Morgen!</string>
+    <string name="dark_mode_colors">Farben für die dunkle Variante</string>
+    <string name="theme_destination_app_theme">App-Design</string>
+    <string name="v5_8_persian_ui">Persische Bedienoberfläche</string>
+    <string name="chat_theme_reset_to_user_theme">Auf das Benutzer-spezifische Design zurücksetzen</string>
+    <string name="error_initializing_web_view">Fehler bei der Initialisierung von Webview. Aktualisieren Sie Ihr System auf die neue Version. Bitte kontaktieren Sie die Entwickler.
+\nFehler: %s</string>
+    <string name="chat_theme_reset_to_app_theme">Auf das App-Design zurücksetzen</string>
+    <string name="v5_8_safe_files_descr">Dateien von unbekannten Servern bestätigen.</string>
+    <string name="v5_8_message_delivery">Verbesserte Zustellung von Nachrichten</string>
+    <string name="v5_8_chat_themes_descr">Gestalten Sie Ihre Chats unterschiedlich!</string>
+    <string name="v5_8_chat_themes">Neue Chat-Designs</string>
+    <string name="v5_8_private_routing">Privates Nachrichten-Routing 🚀</string>
+    <string name="v5_8_private_routing_descr">Schützen Sie Ihre IP-Adresse vor den Nachrichten-Relais , die Ihr Kontakt ausgewählt hat.
+\nAktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</string>
+    <string name="v5_8_safe_files">Dateien sicher empfangen</string>
+    <string name="v5_8_message_delivery_descr">Mit reduziertem Akkuverbrauch.</string>
+    <string name="message_queue_info_none">Keine Information</string>
+    <string name="info_row_debug_delivery">Debugging-Zustellung</string>
+    <string name="message_queue_info">Nachrichten-Warteschlangen-Information</string>
+    <string name="message_queue_info_server_info">Server-Warteschlangen-Information: %1$s
+\n
+\nZuletzt empfangene Nachricht: %2$s</string>
 </resources>

@@ -271,7 +271,6 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = MR.images.ic_translate,
         titleId = MR.strings.v4_5_italian_interface,
         descrId = MR.strings.v4_5_italian_interface_descr,
-        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
       )
     )
   ),
@@ -308,7 +307,6 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = MR.images.ic_translate,
         titleId = MR.strings.v4_6_chinese_spanish_interface,
         descrId = MR.strings.v4_6_chinese_spanish_interface_descr,
-        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
       )
     )
   ),
@@ -330,7 +328,6 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = MR.images.ic_translate,
         titleId = MR.strings.v5_0_polish_interface,
         descrId = MR.strings.v5_0_polish_interface_descr,
-        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
       )
     )
   ),
@@ -362,7 +359,6 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = MR.images.ic_translate,
         titleId = MR.strings.v5_1_japanese_portuguese_interface,
         descrId = MR.strings.whats_new_thanks_to_users_contribute_weblate,
-        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
       )
     )
   ),
@@ -427,7 +423,6 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = MR.images.ic_translate,
         titleId = MR.strings.v5_3_new_interface_languages,
         descrId = MR.strings.v5_3_new_interface_languages_descr,
-        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
       )
     )
   ),
@@ -491,7 +486,6 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = MR.images.ic_translate,
         titleId = MR.strings.v5_5_new_interface_languages,
         descrId = MR.strings.whats_new_thanks_to_users_contribute_weblate,
-        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
       )
     )
   ),
@@ -554,7 +548,37 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         icon = MR.images.ic_translate,
         titleId = MR.strings.v5_7_new_interface_languages,
         descrId = MR.strings.whats_new_thanks_to_users_contribute_weblate,
-        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
+      )
+    )
+  ),
+  VersionDescription(
+    version = "v5.8",
+    post = "https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.html",
+    features = listOf(
+      FeatureDescription(
+        icon = MR.images.ic_settings_ethernet,
+        titleId = MR.strings.v5_8_private_routing,
+        descrId = MR.strings.v5_8_private_routing_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_palette,
+        titleId = MR.strings.v5_8_chat_themes,
+        descrId = MR.strings.v5_8_chat_themes_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_security,
+        titleId = MR.strings.v5_8_safe_files,
+        descrId = MR.strings.v5_8_safe_files_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_battery_3_bar,
+        titleId = MR.strings.v5_8_message_delivery,
+        descrId = MR.strings.v5_8_message_delivery_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_translate,
+        titleId = MR.strings.v5_8_persian_ui,
+        descrId = MR.strings.whats_new_thanks_to_users_contribute_weblate
       )
     )
   ),

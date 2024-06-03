@@ -23,6 +23,7 @@ module Simplex.Chat.Store.Messages
     createNewSndMessage,
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
+    getLastRcvMsgInfo,
     createNewRcvMessage,
     updateSndMsgDeliveryStatus,
     createPendingGroupMessage,
@@ -226,6 +227,23 @@ createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMs
       (msgId, connId, agentMsgId, msgMetaJson agentMsgMeta, snd $ broker agentMsgMeta, currentTs, currentTs, MDSRcvAgent)
   pure msg
 
+getLastRcvMsgInfo :: DB.Connection -> Int64 -> IO (Maybe RcvMsgInfo)
+getLastRcvMsgInfo db connId =
+  maybeFirstRow rcvMsgInfo $
+    DB.query
+      db
+      [sql|
+        SELECT message_id, msg_delivery_id, delivery_status, agent_msg_id, agent_msg_meta
+        FROM msg_deliveries
+        WHERE connection_id = ? AND delivery_status IN (?, ?)
+        ORDER BY created_at DESC, msg_delivery_id DESC
+        LIMIT 1
+      |]
+      (connId, MDSRcvAgent, MDSRcvAcknowledged)
+  where
+    rcvMsgInfo (msgId, msgDeliveryId, msgDeliveryStatus, agentMsgId, agentMsgMeta) =
+      RcvMsgInfo {msgId, msgDeliveryId, msgDeliveryStatus, agentMsgId, agentMsgMeta}
+
 createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
 createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, msgBody} sharedMsgId_ authorMember forwardedByMember =
   case connOrGroupId of
@@ -285,22 +303,22 @@ createPendingGroupMessage db groupMemberId messageId introId_ = do
     |]
     (groupMemberId, messageId, introId_, currentTs, currentTs)
 
-getPendingGroupMessages :: DB.Connection -> Int64 -> IO [PendingGroupMessage]
+getPendingGroupMessages :: DB.Connection -> Int64 -> IO [(SndMessage, ACMEventTag, Maybe Int64)]
 getPendingGroupMessages db groupMemberId =
   map pendingGroupMessage
     <$> DB.query
       db
       [sql|
-        SELECT pgm.message_id, m.chat_msg_event, m.msg_body, pgm.group_member_intro_id
+        SELECT pgm.message_id, m.shared_msg_id, m.msg_body, m.chat_msg_event, pgm.group_member_intro_id
         FROM pending_group_messages pgm
         JOIN messages m USING (message_id)
         WHERE pgm.group_member_id = ?
-        ORDER BY pgm.message_id ASC
+        ORDER BY pgm.created_at ASC, pgm.message_id ASC
       |]
       (Only groupMemberId)
   where
-    pendingGroupMessage (msgId, cmEventTag, msgBody, introId_) =
-      PendingGroupMessage {msgId, cmEventTag, msgBody, introId_}
+    pendingGroupMessage (msgId, sharedMsgId, msgBody, cmEventTag, introId_) =
+      (SndMessage {msgId, sharedMsgId, msgBody}, cmEventTag, introId_)
 
 deletePendingGroupMessage :: DB.Connection -> Int64 -> MessageId -> IO ()
 deletePendingGroupMessage db groupMemberId messageId =
@@ -838,7 +856,7 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
     ciMeta content status =
       let itemDeleted' = case itemDeleted of
             DBCINotDeleted -> Nothing
-            _ -> Just (CIDeleted @CTLocal deletedTs)
+            _ -> Just (CIDeleted @'CTLocal deletedTs)
           itemEdited' = fromMaybe False itemEdited
           itemForwarded = toCIForwardedFrom forwardedFromRow
        in mkCIMeta itemId content itemText status sentViaProxy sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs Nothing createdAt updatedAt
@@ -1458,7 +1476,7 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
     ciMeta content status =
       let itemDeleted' = case itemDeleted of
             DBCINotDeleted -> Nothing
-            _ -> Just (CIDeleted @CTDirect deletedTs)
+            _ -> Just (CIDeleted @'CTDirect deletedTs)
           itemEdited' = fromMaybe False itemEdited
           itemForwarded = toCIForwardedFrom forwardedFromRow
        in mkCIMeta itemId content itemText status sentViaProxy sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs Nothing createdAt updatedAt
@@ -1520,7 +1538,7 @@ toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir,
             DBCINotDeleted -> Nothing
             DBCIBlocked -> Just (CIBlocked deletedTs)
             DBCIBlockedByAdmin -> Just (CIBlockedByAdmin deletedTs)
-            _ -> Just (maybe (CIDeleted @CTGroup deletedTs) (CIModerated deletedTs) deletedByGroupMember_)
+            _ -> Just (maybe (CIDeleted @'CTGroup deletedTs) (CIModerated deletedTs) deletedByGroupMember_)
           itemEdited' = fromMaybe False itemEdited
           itemForwarded = toCIForwardedFrom forwardedFromRow
        in mkCIMeta itemId content itemText status sentViaProxy sharedMsgId itemForwarded itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt
@@ -1919,7 +1937,7 @@ markGroupChatItemDeleted db User {userId} GroupInfo {groupId} ci@ChatItem {meta}
   let itemId = chatItemId' ci
       (deletedByGroupMemberId, itemDeleted) = case byGroupMember_ of
         Just m@GroupMember {groupMemberId} -> (Just groupMemberId, Just $ CIModerated (Just deletedTs) m)
-        _ -> (Nothing, Just $ CIDeleted @CTGroup (Just deletedTs))
+        _ -> (Nothing, Just $ CIDeleted @'CTGroup (Just deletedTs))
   insertChatItemMessage_ db itemId msgId currentTs
   DB.execute
     db

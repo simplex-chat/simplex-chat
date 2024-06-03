@@ -14,6 +14,7 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
+{-# OPTIONS_GHC -fno-warn-operator-whitespace #-}
 
 module Simplex.Chat.Messages where
 
@@ -455,10 +456,10 @@ deriving instance Show ACIReaction
 data JSONCIReaction c d = JSONCIReaction {chatInfo :: ChatInfo c, chatReaction :: CIReaction c d}
 
 type family ChatTypeQuotable (a :: ChatType) :: Constraint where
-  ChatTypeQuotable CTDirect = ()
-  ChatTypeQuotable CTGroup = ()
+  ChatTypeQuotable 'CTDirect = ()
+  ChatTypeQuotable 'CTGroup = ()
   ChatTypeQuotable a =
-    (Int ~ Bool, TypeError (Type.Text "ChatType " :<>: ShowType a :<>: Type.Text " cannot be quoted"))
+    (Int ~ Bool, TypeError ('Type.Text "ChatType " ':<>: 'ShowType a ':<>: 'Type.Text " cannot be quoted"))
 
 data CIQDirection (c :: ChatType) where
   CIQDirectSnd :: CIQDirection 'CTDirect
@@ -944,13 +945,6 @@ data RcvMessage = RcvMessage
     forwardedByMember :: Maybe GroupMemberId
   }
 
-data PendingGroupMessage = PendingGroupMessage
-  { msgId :: MessageId,
-    cmEventTag :: ACMEventTag,
-    msgBody :: MsgBody,
-    introId_ :: Maybe Int64
-  }
-
 type MessageId = Int64
 
 data ConnOrGroupId = ConnectionId Int64 | GroupId Int64
@@ -965,6 +959,15 @@ data RcvMsgDelivery = RcvMsgDelivery
   { connId :: Int64,
     agentMsgId :: AgentMsgId,
     agentMsgMeta :: MsgMeta
+  }
+  deriving (Show)
+
+data RcvMsgInfo = RcvMsgInfo
+  { msgId :: Int64,
+    msgDeliveryId :: Int64,
+    msgDeliveryStatus :: Text,
+    agentMsgId :: AgentMsgId,
+    agentMsgMeta :: Text
   }
   deriving (Show)
 
@@ -1338,3 +1341,5 @@ $(JQ.deriveJSON defaultJSON ''MsgMetaJSON)
 
 msgMetaJson :: MsgMeta -> Text
 msgMetaJson = decodeLatin1 . LB.toStrict . J.encode . msgMetaToJson
+
+$(JQ.deriveJSON defaultJSON ''RcvMsgInfo)

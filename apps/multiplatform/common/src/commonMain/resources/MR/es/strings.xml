@@ -220,7 +220,7 @@
     <string name="group_member_status_connected">conectado</string>
     <string name="conn_level_desc_direct">directa</string>
     <string name="chat_preferences_contact_allows">El contacto permite</string>
-    <string name="chat_preferences_default">predefinido (%s)</string>
+    <string name="chat_preferences_default">predeterminado (%s)</string>
     <string name="full_deletion">Eliminar para todos</string>
     <string name="feature_enabled">activado</string>
     <string name="contacts_can_mark_messages_for_deletion">Tus contactos sólo pueden marcar los mensajes para eliminar. Tu podrás verlos.</string>
@@ -274,7 +274,7 @@
     <string name="chat_is_stopped_indication">Chat está parado</string>
     <string name="rcv_group_event_changed_member_role">rol de %s cambiado a %s</string>
     <string name="change_role">Cambiar rol</string>
-    <string name="v4_5_transport_isolation_descr">Mediante perfil (por defecto) o por conexión (BETA)</string>
+    <string name="v4_5_transport_isolation_descr">Mediante perfil (predeterminado) o por conexión (BETA)</string>
     <string name="snd_conn_event_switch_queue_phase_changing">cambiando de servidor…</string>
     <string name="chat_preferences">Preferencias de Chat</string>
     <string name="feature_cancelled_item">cancelado %s</string>
@@ -606,8 +606,7 @@
     <string name="callstatus_rejected">llamada rechazada</string>
     <string name="secret_text">secreto</string>
     <string name="open_simplex_chat_to_accept_call">Abrir SimpleX Chat para aceptar llamada</string>
-    <string name="network_options_reset_to_defaults">Restablecer valores por defecto</string>
-    <string name="save_color">Guardar color</string>
+    <string name="network_options_reset_to_defaults">Restablecer valores predetarminados</string>
     <string name="icon_descr_server_status_pending">Pendiente</string>
     <string name="periodic_notifications">Notificaciones periódicas</string>
     <string name="store_passphrase_securely">Guarda la contraseña de forma segura, NO podrás cambiarla si la pierdes.</string>
@@ -965,7 +964,7 @@
     <string name="save_profile_password">Guardar contraseña de perfil</string>
     <string name="password_to_show">Contraseña para hacerlo visible</string>
     <string name="error_saving_user_password">Error al guardar contraseña de usuario</string>
-    <string name="relay_server_if_necessary">El retransmisor sólo se usa en caso de necesidad. Un tercero podría ver tu IP.</string>
+    <string name="relay_server_if_necessary">El servidor de retransmisión sólo se usa en caso de necesidad. Un tercero podría ver tu IP.</string>
     <string name="relay_server_protects_ip">El servidor de retransmisión protege tu IP pero puede ver la duración de la llamada.</string>
     <string name="enter_password_to_show">Introduce la contraseña</string>
     <string name="user_hide">Ocultar</string>
@@ -1162,7 +1161,7 @@
     <string name="color_sent_message">Mensaje enviado</string>
     <string name="stop_sharing">Dejar de compartir</string>
     <string name="stop_sharing_address">¿Dejar de compartir la dirección\?</string>
-    <string name="theme_colors_section_title">COLORES DEL TEMA</string>
+    <string name="theme_colors_section_title">COLORES DEL INTERFAZ</string>
     <string name="you_can_create_it_later">Puedes crearla más tarde</string>
     <string name="share_address_with_contacts_question">¿Compartir la dirección con los contactos\?</string>
     <string name="share_with_contacts">Compartir con contactos</string>
@@ -1510,7 +1509,7 @@
     <string name="group_member_role_author">autor</string>
     <string name="paste_desktop_address">Pegar dirección de ordenador</string>
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[¡Este es tu enlace para el grupo <b>%1$s</b>!]]></string>
-    <string name="verify_code_with_desktop">Verificar código con ordenador</string>
+    <string name="verify_code_with_desktop">Verifica el código en el ordenador</string>
     <string name="scan_qr_code_from_desktop">Escanear código QR desde ordenador</string>
     <string name="unblock_member_confirmation">Desbloquear</string>
     <string name="multicast_discoverable_via_local_network">Detectable mediante red local</string>
@@ -1740,7 +1739,7 @@
     <string name="network_type_network_wifi">WiFi</string>
     <string name="network_type_ethernet">Ethernet por cable</string>
     <string name="feature_roles_admins">administradores</string>
-    <string name="feature_enabled_for">Activar para</string>
+    <string name="feature_enabled_for">Activado para</string>
     <string name="prohibit_sending_simplex_links">No permitir el envío de enlaces SimpleX</string>
     <string name="feature_roles_all_members">todos los miembros</string>
     <string name="allow_to_send_simplex_links">Permitir enviar enlaces SimpleX.</string>
@@ -1767,7 +1766,97 @@
     <string name="v5_7_call_sounds_descr">Al iniciar llamadas de audio y vídeo.</string>
     <string name="v5_7_quantum_resistant_encryption_descr">¡Será habilitado en los chats directos!</string>
     <string name="v5_7_network_descr">Conexión de red más fiable.</string>
-    <string name="settings_section_title_profile_images">Imágenes del perfil</string>
+    <string name="settings_section_title_profile_images">Forma de los perfiles</string>
     <string name="v5_7_shape_profile_images">Dar forma a las imágenes de perfil</string>
     <string name="v5_7_shape_profile_images_descr">Cuadrada, circular o cualquier forma intermedia.</string>
+    <string name="snd_error_quota">Capacidad excedida - el destinatario no ha recibido los mensajes previos.</string>
+    <string name="snd_error_relay">Error del servidor de destino: %1$s</string>
+    <string name="ci_status_other_error">Error: %1$s</string>
+    <string name="snd_error_proxy_relay">Servidor de reenvío: %1$s
+\nError del servidor de destino: %2$s</string>
+    <string name="snd_error_proxy">Servidor de reenvío: %1$s
+\nError: %2$s</string>
+    <string name="snd_error_expired">Problema en la red - el mensaje ha expirado tras muchos intentos de envío.</string>
+    <string name="srv_error_version">La versión del servidor es incompatible con la configuración de red.</string>
+    <string name="network_smp_proxy_mode_private_routing">Enrutamiento privado</string>
+    <string name="network_smp_proxy_mode_unknown">Servidor de retransmisión desconocido</string>
+    <string name="network_smp_proxy_mode_never_description">NO usar enrutamiento privado.</string>
+    <string name="update_network_smp_proxy_fallback_question">Enrutamiento de mensajes alternativo</string>
+    <string name="update_network_smp_proxy_mode_question">Modo de enrutamiento de mensajes</string>
+    <string name="network_smp_proxy_fallback_prohibit">No</string>
+    <string name="private_routing_show_message_status">Estado del mensaje</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Usar enrutamiento privado con servidores desconocidos cuando la dirección IP no está protegida.</string>
+    <string name="network_smp_proxy_fallback_allow_protected">Con IP oculta</string>
+    <string name="network_smp_proxy_fallback_allow">Si</string>
+    <string name="network_smp_proxy_fallback_allow_description">Enviar mensajes directamente cuando tu servidor o el de destino no admitan enrutamiento privado.</string>
+    <string name="private_routing_explanation">Para proteger tu dirección IP, el enrutamiento privado usa tus servidores SMP para enviar mensajes.</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">NO enviar mensajes directamente incluso si tu servidor o el de destino no soportan enrutamiento privado.</string>
+    <string name="network_smp_proxy_mode_always">Siempre</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Permitir versión anterior</string>
+    <string name="network_smp_proxy_mode_always_description">Usar siempre enrutamiento privado.</string>
+    <string name="message_delivery_warning_title">Aviso de entrega de mensaje</string>
+    <string name="network_smp_proxy_mode_never">Nunca</string>
+    <string name="settings_section_title_private_message_routing">ENRUTAMIENTO PRIVADO DE MENSAJES</string>
+    <string name="srv_error_host">La dirección del servidor es incompatible con la configuración de la red.</string>
+    <string name="network_smp_proxy_mode_unprotected">Desprotegido</string>
+    <string name="snd_error_auth">Clave incorrecta o conexión desconocida - probablemente esta conexión fue eliminada</string>
+    <string name="network_smp_proxy_mode_unknown_description">Usar enrutamiento privado con servidores desconocidos.</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">Enviar mensajes directamente cuando tu dirección IP está protegida y tu servidor o el de destino no admitan enrutamiento privado.</string>
+    <string name="file_not_approved_title">¡Servidores desconocidos!</string>
+    <string name="file_not_approved_descr">Sin Tor o VPN, tu dirección IP será visible para estos relés XFTP:
+\n%1$s.</string>
+    <string name="protect_ip_address">Proteger dirección IP</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Sin Tor o VPN, tu dirección IP será visible para los servidores de archivos.</string>
+    <string name="settings_section_title_files">ARCHIVOS</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">La aplicación pedirá confirmar las descargas de servidores de archivos desconocidos (excepto .onion o cuando se active SOCKS proxy).</string>
+    <string name="settings_section_title_chat_colors">Colores del chat</string>
+    <string name="settings_section_title_chat_theme">Tema del chat</string>
+    <string name="chat_theme_apply_to_mode">Aplicar a</string>
+    <string name="theme_black">Negro</string>
+    <string name="chat_theme_apply_to_all_modes">Todos los modos</string>
+    <string name="color_mode">Modo de color</string>
+    <string name="color_mode_dark">Oscuro</string>
+    <string name="chat_theme_apply_to_dark_mode">Modo oscuro</string>
+    <string name="dark_mode_colors">Colores en modo oscuro</string>
+    <string name="wallpaper_scale_fill">Relleno</string>
+    <string name="wallpaper_preview_hello_alice">¡Buenas tardes!</string>
+    <string name="wallpaper_preview_hello_bob">¡Buenos días!</string>
+    <string name="color_mode_light">Claro</string>
+    <string name="chat_theme_apply_to_light_mode">Modo claro</string>
+    <string name="color_received_quote">Respuesta recibida</string>
+    <string name="wallpaper_scale_repeat">Mosaico</string>
+    <string name="theme_remove_image">Quitar imagen</string>
+    <string name="reset_single_color">Restablecer color</string>
+    <string name="wallpaper_scale">Escala</string>
+    <string name="color_sent_quote">Respuesta enviada</string>
+    <string name="chat_theme_set_default_theme">Establecer tema predeterminado</string>
+    <string name="color_mode_system">Sistema</string>
+    <string name="color_wallpaper_background">Color de fondo</string>
+    <string name="wallpaper_scale_fit">Encaje</string>
+    <string name="color_primary_variant2">Color adicional 2</string>
+    <string name="wallpaper_advanced_settings">Configuración avanzada</string>
+    <string name="settings_section_title_user_theme">Tema del perfil</string>
+    <string name="chat_list_always_visible">Listado del chat en ventana nueva</string>
+    <string name="color_wallpaper_tint">Color imagen de fondo</string>
+    <string name="message_queue_info_server_info">información cola del servidor: %1$s
+\n
+\núltimo mensaje recibido: %2$s</string>
+    <string name="chat_theme_reset_to_app_theme">Restablecer al tema de la app</string>
+    <string name="v5_8_private_routing">Enrutamiento privado de mensajes 🚀</string>
+    <string name="v5_8_safe_files">Recibe archivos de forma segura</string>
+    <string name="v5_8_message_delivery">Mejora del envío de mensajes</string>
+    <string name="v5_8_message_delivery_descr">Con uso reducido de la batería.</string>
+    <string name="theme_destination_app_theme">Tema de la app</string>
+    <string name="v5_8_safe_files_descr">Confirma archivos de servidores desconocidos.</string>
+    <string name="info_row_debug_delivery">Entrega de debug</string>
+    <string name="v5_8_chat_themes_descr">¡Cambia el aspecto de tus chats!</string>
+    <string name="v5_8_chat_themes">Nuevos temas de chat</string>
+    <string name="message_queue_info">Información cola de mensajes</string>
+    <string name="message_queue_info_none">ninguno</string>
+    <string name="v5_8_private_routing_descr">Protege tu dirección IP de los servidores de retransmisión elegidos por tus contactos.
+\nActívalo en ajustes de *Servidores y Redes*.</string>
+    <string name="chat_theme_reset_to_user_theme">Restablecer al tema del usuario</string>
+    <string name="error_initializing_web_view">Error al inicializar WebView. Actualiza tu sistema a la última versión. Por favor, ponte en contacto con los desarrolladores.
+\nError: %s</string>
+    <string name="v5_8_persian_ui">Interfaz en persa</string>
 </resources>

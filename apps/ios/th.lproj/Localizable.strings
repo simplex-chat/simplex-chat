@@ -1386,7 +1386,7 @@
 /* No comment provided by engineer. */
 "Error: " = "ผิดพลาด: ";
 
-/* No comment provided by engineer. */
+/* snd error text */
 "Error: %@" = "ข้อผิดพลาด: % @";
 
 /* No comment provided by engineer. */
@@ -1997,9 +1997,6 @@
 
 /* No comment provided by engineer. */
 "More improvements are coming soon!" = "การปรับปรุงเพิ่มเติมกำลังจะมาเร็ว ๆ นี้!";
-
-/* No comment provided by engineer. */
-"Most likely this contact has deleted the connection with you." = "เป็นไปได้มากว่าผู้ติดต่อนี้ได้ลบการเชื่อมต่อกับคุณ";
 
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "โปรไฟล์การแชทหลายรายการ";
@@ -3049,9 +3046,6 @@
 
 /* No comment provided by engineer. */
 "Unable to record voice message" = "ไม่สามารถบันทึกข้อความเสียง";
-
-/* item status description */
-"Unexpected error: %@" = "ข้อผิดพลาดที่ไม่คาดคิด: %@";
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "สถานะการย้ายข้อมูลที่ไม่คาดคิด";

@@ -69,7 +69,6 @@
     <string name="personal_welcome">स्वागत %1$s!</string>
     <string name="callstate_starting">शुरुआत</string>
     <string name="send_verb">भेजना</string>
-    <string name="save_color">रंग बचाओ</string>
     <string name="share_verb">साझा करना</string>
     <string name="reject_contact_button">अस्वीकार</string>
     <string name="network_use_onion_hosts_required">आवश्यक</string>

@@ -450,6 +450,9 @@
 "Allow disappearing messages only if your contact allows it to you." = "Sta verdwijnende berichten alleen toe als uw contact dit toestaat.";
 
 /* No comment provided by engineer. */
+"Allow downgrade" = "Downgraden toestaan";
+
+/* No comment provided by engineer. */
 "Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Sta het onomkeerbaar verwijderen van berichten alleen toe als uw contact dit toestaat. (24 uur)";
 
 /* No comment provided by engineer. */
@@ -508,6 +511,9 @@
 
 /* pref value */
 "always" = "altijd";
+
+/* No comment provided by engineer. */
+"Always use private routing." = "Gebruik altijd privéroutering.";
 
 /* No comment provided by engineer. */
 "Always use relay" = "Altijd relay gebruiken";
@@ -716,6 +722,9 @@
 /* No comment provided by engineer. */
 "Cannot receive file" = "Kan bestand niet ontvangen";
 
+/* snd error text */
+"Capacity exceeded - recipient did not receive previously sent messages." = "Capaciteit overschreden - ontvanger heeft eerder verzonden berichten niet ontvangen.";
+
 /* No comment provided by engineer. */
 "Cellular" = "Mobiel";
 
@@ -851,6 +860,9 @@
 
 /* No comment provided by engineer. */
 "Confirm database upgrades" = "Bevestig database upgrades";
+
+/* No comment provided by engineer. */
+"Confirm files from unknown servers." = "Bevestig bestanden van onbekende servers.";
 
 /* No comment provided by engineer. */
 "Confirm network settings" = "Bevestig netwerk instellingen";
@@ -1320,6 +1332,9 @@
 /* No comment provided by engineer. */
 "Desktop devices" = "Desktop apparaten";
 
+/* snd error text */
+"Destination server error: %@" = "Bestemmingsserverfout: %@";
+
 /* No comment provided by engineer. */
 "Develop" = "Ontwikkelen";
 
@@ -1397,6 +1412,12 @@
 
 /* No comment provided by engineer. */
 "Do not send history to new members." = "Stuur geen geschiedenis naar nieuwe leden.";
+
+/* No comment provided by engineer. */
+"Do NOT send messages directly, even if your or destination server does not support private routing." = "Stuur GEEN berichten rechtstreeks, zelfs als uw of de bestemmingsserver geen privéroutering ondersteunt.";
+
+/* No comment provided by engineer. */
+"Do NOT use private routing." = "Gebruik GEEN privéroutering.";
 
 /* No comment provided by engineer. */
 "Do NOT use SimpleX for emergency calls." = "Gebruik SimpleX NIET voor noodoproepen.";
@@ -1779,7 +1800,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Fout: ";
 
-/* No comment provided by engineer. */
+/* snd error text */
 "Error: %@" = "Fout: %@";
 
 /* No comment provided by engineer. */
@@ -1838,6 +1859,9 @@
 
 /* No comment provided by engineer. */
 "File: %@" = "Bestand: %@";
+
+/* No comment provided by engineer. */
+"Files" = "Bestanden";
 
 /* No comment provided by engineer. */
 "Files & media" = "Bestanden en media";
@@ -1904,6 +1928,12 @@
 
 /* No comment provided by engineer. */
 "Forwarded from" = "Doorgestuurd vanuit";
+
+/* snd error text */
+"Forwarding server: %@\nDestination server error: %@" = "Doorstuurserver: %1$@\nBestemmingsserverfout: %2$@";
+
+/* snd error text */
+"Forwarding server: %@\nError: %@" = "Doorstuurserver: %1$@\nFout: %2$@";
 
 /* No comment provided by engineer. */
 "Found desktop" = "Desktop gevonden";
@@ -2460,6 +2490,9 @@
 /* No comment provided by engineer. */
 "Message delivery receipts!" = "Ontvangst bevestiging voor berichten!";
 
+/* item status text */
+"Message delivery warning" = "Waarschuwing voor berichtbezorging";
+
 /* No comment provided by engineer. */
 "Message draft" = "Concept bericht";
 
@@ -2474,6 +2507,12 @@
 
 /* notification */
 "message received" = "bericht ontvangen";
+
+/* No comment provided by engineer. */
+"Message routing fallback" = "Terugval op berichtroutering";
+
+/* No comment provided by engineer. */
+"Message routing mode" = "Berichtrouteringsmodus";
 
 /* No comment provided by engineer. */
 "Message source remains private." = "Berichtbron blijft privé.";
@@ -2569,9 +2608,6 @@
 "Most likely this connection is deleted." = "Hoogstwaarschijnlijk is deze verbinding verwijderd.";
 
 /* No comment provided by engineer. */
-"Most likely this contact has deleted the connection with you." = "Hoogstwaarschijnlijk heeft dit contact de verbinding met jou verwijderd.";
-
-/* No comment provided by engineer. */
 "Multiple chat profiles" = "Meerdere chat profielen";
 
 /* No comment provided by engineer. */
@@ -2588,6 +2624,9 @@
 
 /* No comment provided by engineer. */
 "Network connection" = "Netwerkverbinding";
+
+/* snd error text */
+"Network issues - message expired after many attempts to send it." = "Netwerkproblemen - bericht is verlopen na vele pogingen om het te verzenden.";
 
 /* No comment provided by engineer. */
 "Network management" = "Netwerkbeheer";
@@ -2951,8 +2990,17 @@
 /* No comment provided by engineer. */
 "Private filenames" = "Privé bestandsnamen";
 
+/* No comment provided by engineer. */
+"Private message routing" = "Routering van privéberichten";
+
+/* No comment provided by engineer. */
+"Private message routing 🚀" = "Routing van privéberichten🚀";
+
 /* name of notes to self */
 "Private notes" = "Privé notities";
+
+/* No comment provided by engineer. */
+"Private routing" = "Privéroutering";
 
 /* No comment provided by engineer. */
 "Profile and server connections" = "Profiel- en serververbindingen";
@@ -3006,7 +3054,13 @@
 "Protect app screen" = "App scherm verbergen";
 
 /* No comment provided by engineer. */
+"Protect IP address" = "Bescherm het IP-adres";
+
+/* No comment provided by engineer. */
 "Protect your chat profiles with a password!" = "Bescherm je chat profielen met een wachtwoord!";
+
+/* No comment provided by engineer. */
+"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Bescherm uw IP-adres tegen de berichtenrelais die door uw contacten zijn gekozen.\nSchakel dit in in *Netwerk en servers*-instellingen.";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Protocol timeout";
@@ -3076,9 +3130,6 @@
 
 /* No comment provided by engineer. */
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Het ontvangstadres wordt gewijzigd naar een andere server. Adres wijziging wordt voltooid nadat de afzender online is.";
-
-/* No comment provided by engineer. */
-"Receiving concurrency" = "Gelijktijdig ontvangen";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Het ontvangen van het bestand wordt gestopt.";
@@ -3237,6 +3288,9 @@
 "Run chat" = "Chat uitvoeren";
 
 /* No comment provided by engineer. */
+"Safely receive files" = "Veilig bestanden ontvangen";
+
+/* No comment provided by engineer. */
 "Safer groups" = "Veiligere groepen";
 
 /* chat item action */
@@ -3393,6 +3447,12 @@
 "Send live message" = "Stuur een livebericht";
 
 /* No comment provided by engineer. */
+"Send messages directly when IP address is protected and your or destination server does not support private routing." = "Stuur berichten rechtstreeks als het IP-adres beschermd is en uw of bestemmingsserver geen privéroutering ondersteunt.";
+
+/* No comment provided by engineer. */
+"Send messages directly when your or destination server does not support private routing." = "Stuur berichten rechtstreeks wanneer uw of de doelserver geen privéroutering ondersteunt.";
+
+/* No comment provided by engineer. */
 "Send notifications" = "Meldingen verzenden";
 
 /* No comment provided by engineer. */
@@ -3455,6 +3515,9 @@
 /* No comment provided by engineer. */
 "Sent messages will be deleted after set time." = "Verzonden berichten worden na ingestelde tijd verwijderd.";
 
+/* srv error text. */
+"Server address is incompatible with network settings." = "Serveradres is niet compatibel met netwerkinstellingen.";
+
 /* server test error */
 "Server requires authorization to create queues, check password" = "Server vereist autorisatie om wachtrijen te maken, controleer wachtwoord";
 
@@ -3463,6 +3526,9 @@
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Servertest mislukt!";
+
+/* srv error text */
+"Server version is incompatible with network settings." = "Serverversie is incompatibel met netwerkinstellingen.";
 
 /* No comment provided by engineer. */
 "Servers" = "Servers";
@@ -3531,6 +3597,9 @@
 "Share with contacts" = "Delen met contacten";
 
 /* No comment provided by engineer. */
+"Show → on messages sent via private routing." = "Toon → bij berichten verzonden via privéroutering.";
+
+/* No comment provided by engineer. */
 "Show calls in phone history" = "Toon oproepen in de telefoongeschiedenis";
 
 /* No comment provided by engineer. */
@@ -3538,6 +3607,9 @@
 
 /* No comment provided by engineer. */
 "Show last messages" = "Laat laatste berichten zien";
+
+/* No comment provided by engineer. */
+"Show message status" = "Toon berichtstatus";
 
 /* No comment provided by engineer. */
 "Show preview" = "Toon voorbeeld";
@@ -3747,6 +3819,9 @@
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "De app kan u op de hoogte stellen wanneer u berichten of contact verzoeken ontvangt - open de instellingen om dit in te schakelen.";
 
 /* No comment provided by engineer. */
+"The app will ask to confirm downloads from unknown file servers (except .onion)." = "De app vraagt om downloads van onbekende bestandsservers (behalve .onion) te bevestigen.";
+
+/* No comment provided by engineer. */
 "The attempt to change database passphrase was not completed." = "De poging om het wachtwoord van de database te wijzigen is niet voltooid.";
 
 /* No comment provided by engineer. */
@@ -3867,6 +3942,9 @@
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Schakel SimpleX Vergrendelen om uw informatie te beschermen.\nU wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingeschakeld.";
 
 /* No comment provided by engineer. */
+"To protect your IP address, private routing uses your SMP servers to deliver messages." = "Om uw IP-adres te beschermen, gebruikt privéroutering uw SMP-servers om berichten te bezorgen.";
+
+/* No comment provided by engineer. */
 "To record voice message please grant permission to use Microphone." = "Geef toestemming om de microfoon te gebruiken om een spraakbericht op te nemen.";
 
 /* No comment provided by engineer. */
@@ -3920,9 +3998,6 @@
 /* rcv group event chat item */
 "unblocked %@" = "gedeblokkeerd %@";
 
-/* item status description */
-"Unexpected error: %@" = "Onverwachte fout: %@";
-
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Onverwachte migratiestatus";
 
@@ -3954,6 +4029,12 @@
 "Unknown error" = "Onbekende fout";
 
 /* No comment provided by engineer. */
+"unknown relays" = "onbekende relays";
+
+/* No comment provided by engineer. */
+"Unknown servers!" = "Onbekende servers!";
+
+/* No comment provided by engineer. */
 "unknown status" = "onbekende status";
 
 /* No comment provided by engineer. */
@@ -3976,6 +4057,9 @@
 
 /* No comment provided by engineer. */
 "Unmute" = "Dempen opheffen";
+
+/* No comment provided by engineer. */
+"unprotected" = "onbeschermd";
 
 /* No comment provided by engineer. */
 "Unread" = "Ongelezen";
@@ -4045,6 +4129,12 @@
 
 /* No comment provided by engineer. */
 "Use only local notifications?" = "Alleen lokale meldingen gebruiken?";
+
+/* No comment provided by engineer. */
+"Use private routing with unknown servers when IP address is not protected." = "Gebruik privéroutering met onbekende servers wanneer het IP-adres niet beveiligd is.";
+
+/* No comment provided by engineer. */
+"Use private routing with unknown servers." = "Gebruik privéroutering met onbekende servers.";
 
 /* No comment provided by engineer. */
 "Use server" = "Gebruik server";
@@ -4200,6 +4290,9 @@
 "When connecting audio and video calls." = "Bij het verbinden van audio- en video-oproepen.";
 
 /* No comment provided by engineer. */
+"when IP hidden" = "wanneer IP verborgen is";
+
+/* No comment provided by engineer. */
 "When people request to connect, you can accept or reject it." = "Wanneer mensen vragen om verbinding te maken, kunt u dit accepteren of weigeren.";
 
 /* No comment provided by engineer. */
@@ -4224,7 +4317,16 @@
 "With reduced battery usage." = "Met verminderd batterijgebruik.";
 
 /* No comment provided by engineer. */
+"Without Tor or VPN, your IP address will be visible to file servers." = "Zonder Tor of VPN is uw IP-adres zichtbaar voor bestandsservers.";
+
+/* No comment provided by engineer. */
+"Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Zonder Tor of VPN zal uw IP-adres zichtbaar zijn voor deze XFTP-relays: %@.";
+
+/* No comment provided by engineer. */
 "Wrong database passphrase" = "Verkeerd wachtwoord voor de database";
+
+/* snd error text */
+"Wrong key or unknown connection - most likely this connection is deleted." = "Verkeerde sleutel of onbekende verbinding - hoogstwaarschijnlijk is deze verbinding verwijderd.";
 
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Verkeerd wachtwoord!";

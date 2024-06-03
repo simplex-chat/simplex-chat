@@ -1,10 +1,12 @@
 package chat.simplex.common.platform
 
 import androidx.compose.runtime.Composable
-import chat.simplex.common.model.CIFile
-import chat.simplex.common.model.CryptoFile
+import chat.simplex.common.model.*
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
+import com.charleskorn.kaml.*
+import kotlinx.serialization.encodeToString
 import java.io.*
 import java.net.URI
 import java.net.URLDecoder
@@ -14,8 +16,10 @@ expect val dataDir: File
 expect val tmpDir: File
 expect val filesDir: File
 expect val appFilesDir: File
+expect val wallpapersDir: File
 expect val coreTmpDir: File
 expect val dbAbsolutePrefixPath: String
+expect val preferencesDir: File
 
 expect val chatDatabaseFileName: String
 expect val agentDatabaseFileName: String
@@ -78,6 +82,20 @@ fun getAppFilePath(fileName: String): String {
   }
 }
 
+fun getWallpaperFilePath(fileName: String): String {
+  val rh = chatModel.currentRemoteHost.value
+  val s = File.separator
+  val path = if (rh == null) {
+    wallpapersDir.absolutePath + s + fileName
+  } else {
+    remoteHostsDir.absolutePath + s + rh.storePath + s + "simplex_v1_assets" + s + "wallpapers" + s + fileName
+  }
+  File(path).parentFile.mkdirs()
+  return path
+}
+
+fun getPreferenceFilePath(fileName: String = "themes.yaml"): String = preferencesDir.absolutePath + File.separator + fileName
+
 fun getLoadedFilePath(file: CIFile?): String? {
   val f = file?.fileSource?.filePath
   return if (f != null && file.loaded) {
@@ -97,6 +115,42 @@ fun getLoadedFileSource(file: CIFile?): CryptoFile? {
     null
   }
 }
+
+fun readThemeOverrides(): List<ThemeOverrides> {
+  return try {
+    val file = File(getPreferenceFilePath("themes.yaml"))
+    if (!file.exists()) return emptyList()
+
+    file.inputStream().use {
+      val map = yaml.parseToYamlNode(it).yamlMap
+      val list = map.get<YamlList>("themes")
+      val res = ArrayList<ThemeOverrides>()
+      list?.items?.forEach {
+        try {
+          res.add(yaml.decodeFromYamlNode(ThemeOverrides.serializer(), it))
+        } catch (e: Throwable) {
+          Log.e(TAG, "Error while reading specific theme: ${e.stackTraceToString()}")
+        }
+      }
+      res.skipDuplicates()
+    }
+  } catch (e: Throwable) {
+    Log.e(TAG, "Error while reading themes file: ${e.stackTraceToString()}")
+    emptyList()
+  }
+}
+
+fun writeThemeOverrides(overrides: List<ThemeOverrides>): Boolean =
+  try {
+    File(getPreferenceFilePath("themes.yaml")).outputStream().use {
+      val string = yaml.encodeToString(ThemesFile(themes = overrides))
+      it.bufferedWriter().use { it.write(string) }
+    }
+    true
+  } catch (e: Throwable) {
+    Log.e(TAG, "Error while writing themes file: ${e.stackTraceToString()}")
+    false
+  }
 
 private fun fileReady(file: CIFile, filePath: String) =
   File(filePath).exists() &&

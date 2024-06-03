@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.ui.theme.appColors
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
@@ -137,7 +138,7 @@ fun DecryptionErrorItemFixButton(
   onClick: () -> Unit,
   syncSupported: Boolean
 ) {
-  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+  val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
     Modifier.clickable(onClick = onClick),
     shape = RoundedCornerShape(18.dp),
@@ -164,10 +165,11 @@ fun DecryptionErrorItemFixButton(
             tint = if (syncSupported) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
           )
           Spacer(Modifier.padding(2.dp))
+          val secondaryColor = MaterialTheme.colors.secondary
           Text(
             buildAnnotatedString {
               append(generalGetString(MR.strings.fix_connection))
-              withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null, encrypted = null)) }
+              withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null, encrypted = null, secondaryColor = secondaryColor)) }
               withStyle(reserveTimestampStyle) { append("    ") } // for icon
             },
             color = if (syncSupported) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
@@ -184,7 +186,7 @@ fun DecryptionErrorItem(
   ci: ChatItem,
   onClick: () -> Unit
 ) {
-  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+  val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
     Modifier.clickable(onClick = onClick),
     shape = RoundedCornerShape(18.dp),
@@ -195,10 +197,11 @@ fun DecryptionErrorItem(
       Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
       contentAlignment = Alignment.BottomEnd,
     ) {
+      val secondaryColor = MaterialTheme.colors.secondary
       Text(
         buildAnnotatedString {
           withStyle(SpanStyle(fontStyle = FontStyle.Italic, color = Color.Red)) { append(ci.content.text) }
-          withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null, encrypted = null)) }
+          withStyle(reserveTimestampStyle) { append(reserveSpaceForMeta(ci.meta, null, encrypted = null, secondaryColor = secondaryColor)) }
         },
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp)
       )

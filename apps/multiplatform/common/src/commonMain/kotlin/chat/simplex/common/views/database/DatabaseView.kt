@@ -486,6 +486,8 @@ fun deleteChatDatabaseFilesAndState() {
   tmpDir.deleteRecursively()
   getMigrationTempFilesDirectory().deleteRecursively()
   tmpDir.mkdir()
+  wallpapersDir.deleteRecursively()
+  wallpapersDir.mkdirs()
   DatabaseUtils.ksDatabasePassword.remove()
   controller.appPrefs.storeDBPassphrase.set(true)
   controller.ctrl = null
@@ -535,6 +537,7 @@ suspend fun exportChatArchive(
   if (!m.chatDbChanged.value) {
     controller.apiSaveAppSettings(AppSettings.current.prepareForExport())
   }
+  wallpapersDir.mkdirs()
   m.controller.apiExportArchive(config)
   if (storagePath == null) {
     deleteOldArchive(m)
@@ -590,6 +593,7 @@ private fun importArchive(
     withLongRunningApi {
       try {
         m.controller.apiDeleteStorage()
+        wallpapersDir.mkdirs()
         try {
           val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
           val archiveErrors = m.controller.apiImportArchive(config)

@@ -154,8 +154,8 @@ private fun VoiceLayout(
   }
   when {
     hasText -> {
-      val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
-      val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+      val sentColor = MaterialTheme.appColors.sentMessage
+      val receivedColor = MaterialTheme.appColors.receivedMessage
       Spacer(Modifier.width(6.dp))
       VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, play, pause, longClick, receiveFile)
       Row(verticalAlignment = Alignment.CenterVertically) {
@@ -224,8 +224,8 @@ private fun PlayPauseButton(
   longClick: () -> Unit,
   icon: ImageResource = MR.images.ic_play_arrow_filled,
 ) {
-  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
-  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+  val sentColor = MaterialTheme.appColors.sentMessage
+  val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
     Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
     color = if (sent) sentColor else receivedColor,

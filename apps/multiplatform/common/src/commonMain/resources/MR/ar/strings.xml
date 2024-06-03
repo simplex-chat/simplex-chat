@@ -847,7 +847,6 @@
     <string name="auth_open_chat_profiles">افتح ملفات تعريف الدردشة</string>
     <string name="revoke_file__confirm">اسحب الوصول</string>
     <string name="save_archive">حفظ الأرشيف</string>
-    <string name="save_color">حفظ اللون</string>
     <string name="reveal_verb">كشف</string>
     <string name="stop_rcv_file__message">سيتم إيقاف استلام الملف.</string>
     <string name="reject_contact_button">رفض</string>
@@ -1124,7 +1123,7 @@
     <string name="settings_section_title_themes">السمات</string>
     <string name="v4_6_chinese_spanish_interface_descr">بفضل المستخدمين - المساهمة عبر Weblate!</string>
     <string name="database_initialization_error_desc">قاعدة البيانات لا تعمل بشكل صحيح. انقر لمعرفة المزيد</string>
-    <string name="theme_colors_section_title">ألوان السمة</string>
+    <string name="theme_colors_section_title">ألوان الواجهة</string>
     <string name="tap_to_activate_profile">انقر لتنشيط الملف الشخصي.</string>
     <string name="v4_5_transport_isolation">عزل النقل</string>
     <string name="this_string_is_not_a_connection_link">هذه السلسلة ليست رابط اتصال!</string>
@@ -1767,4 +1766,94 @@
     <string name="v5_7_shape_profile_images">شكل الصور الشخصية</string>
     <string name="v5_7_new_interface_languages">واجهة المستخدم الليتوانية</string>
     <string name="v5_7_shape_profile_images_descr">مربع أو دائرة أو أي شيء بينهما.</string>
+    <string name="srv_error_host">عنوان الخادم غير متوافق مع إعدادات الشبكة.</string>
+    <string name="srv_error_version">إصدار الخادم غير متوافق مع إعدادات الشبكة.</string>
+    <string name="snd_error_auth">مفتاح خاطئ أو اتصال غير معروف - على الأرجح حُذف هذا الاتصال.</string>
+    <string name="snd_error_quota">تم تجاوز السعة - لم يتلق المُستلم الرسائل المُرسلة مسبقًا.</string>
+    <string name="snd_error_relay">خطأ في خادم الوجهة: %1$s</string>
+    <string name="ci_status_other_error">خطأ: %1$s</string>
+    <string name="snd_error_proxy_relay">خادم إعادة التوجيه: %1$s
+\nخطأ في الخادم الوجهة: %2$s</string>
+    <string name="snd_error_proxy">خادم إعادة التوجيه: %1$s
+\nخطأ: %2$s</string>
+    <string name="message_delivery_warning_title">تحذير تسليم الرسالة</string>
+    <string name="snd_error_expired">مشكلات الشبكة - انتهت صلاحية الرسالة بعد عِدة محاولات لإرسالها.</string>
+    <string name="network_smp_proxy_fallback_allow">نعم</string>
+    <string name="private_routing_explanation">لحماية عنوان IP الخاص بك، يستخدم التوجيه الخاص خوادم SMP الخاصة بك لتسليم الرسائل.</string>
+    <string name="settings_section_title_private_message_routing">توجيه الرسائل الخاصة</string>
+    <string name="network_smp_proxy_mode_private_routing">التوجيه الخاص</string>
+    <string name="network_smp_proxy_mode_unprotected">غير محمي</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">السماح بالرجوع إلى إصدار سابق</string>
+    <string name="network_smp_proxy_mode_never_description">لا تستخدم التوجيه الخاص.</string>
+    <string name="update_network_smp_proxy_mode_question">وضع توجيه الرسائل</string>
+    <string name="network_smp_proxy_fallback_prohibit">لا</string>
+    <string name="network_smp_proxy_fallback_allow_protected">عندما يكون IP مخفيًا</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">لا ترسل رسائل مباشرةً، حتى لو كان خادمك أو خادم الوجهة لا يدعم التوجيه الخاص.</string>
+    <string name="network_smp_proxy_fallback_allow_description">أرسل الرسائل مباشرة عندما لا يدعم الخادم الوجهة الخاص بك أو الخادم الوجهة التوجيه الخاص.</string>
+    <string name="update_network_smp_proxy_fallback_question">احتياطي توجيه الرسالة</string>
+    <string name="private_routing_show_message_status">أظهِر حالة الرسالة</string>
+    <string name="protect_ip_address">احمِ عنوان IP</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">بدون تور أو VPN، سيكون عنوان IP الخاص بك مرئيًا لخوادم الملفات.</string>
+    <string name="network_smp_proxy_mode_unknown_description">استخدم التوجيه الخاص مع خوادم غير معروفة.</string>
+    <string name="network_smp_proxy_mode_unprotected_description">استخدم التوجيه الخاص مع خوادم غير معروفة عندما لا يكون عنوان IP محميًا.</string>
+    <string name="network_smp_proxy_mode_always">دائمًا</string>
+    <string name="network_smp_proxy_mode_always_description">استخدم دائمًا التوجيه الخاص.</string>
+    <string name="settings_section_title_files">الملفات</string>
+    <string name="network_smp_proxy_mode_never">مطلقًا</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">سيطلب التطبيق تأكيد التنزيلات من خوادم ملفات غير معروفة (باستثناء .onion أو عند تفعيل وكيل SOCKS).</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">أرسل الرسائل مباشرة عندما يكون عنوان IP محميًا ولا يدعم الخادم الوجهة لديك التوجيه الخاص.</string>
+    <string name="network_smp_proxy_mode_unknown">مُرحلات غير معروفة</string>
+    <string name="file_not_approved_title">خوادم غير معروفة!</string>
+    <string name="file_not_approved_descr">بدون تور أو VPN، سيكون عنوان IP الخاص بك مرئيًا لمُرحلات XFTP هذه:
+\n%1$s.</string>
+    <string name="chat_list_always_visible">أظهِر قائمة الدردشة في نافذة جديدة</string>
+    <string name="settings_section_title_chat_colors">ألوان الدردشة</string>
+    <string name="settings_section_title_chat_theme">سمة الدردشة</string>
+    <string name="color_received_quote">تلقى الرد</string>
+    <string name="theme_remove_image">أزِل الصورة</string>
+    <string name="wallpaper_scale_repeat">تكرار</string>
+    <string name="reset_single_color">إعادة تعيين اللون</string>
+    <string name="color_sent_quote">أرسلت رد</string>
+    <string name="chat_theme_set_default_theme">تعيين السمة الافتراضية</string>
+    <string name="color_mode_system">النظام</string>
+    <string name="color_wallpaper_tint">لون تمييز خلفية الشاشة</string>
+    <string name="color_primary_variant2">لون إضافي ثانوي 2</string>
+    <string name="wallpaper_advanced_settings">الإعدادات المتقدمة</string>
+    <string name="chat_theme_apply_to_all_modes">جميع أوضاع الألوان</string>
+    <string name="theme_black">أسود</string>
+    <string name="color_mode">وضع اللون</string>
+    <string name="color_mode_dark">داكن</string>
+    <string name="chat_theme_apply_to_dark_mode">الوضع الداكن</string>
+    <string name="dark_mode_colors">ألوان الوضع الداكن</string>
+    <string name="wallpaper_scale_fit">ملائمة</string>
+    <string name="wallpaper_preview_hello_alice">طاب يومك!</string>
+    <string name="wallpaper_preview_hello_bob">صباح الخير!</string>
+    <string name="color_wallpaper_background">صورة خلفية الشاشة</string>
+    <string name="chat_theme_apply_to_light_mode">الوضع الفاتح</string>
+    <string name="settings_section_title_user_theme">السمة الملف الشخصي</string>
+    <string name="color_mode_light">فاتح</string>
+    <string name="chat_theme_apply_to_mode">طبّق لِ</string>
+    <string name="wallpaper_scale_fill">ملء</string>
+    <string name="wallpaper_scale">المقياس</string>
+    <string name="message_queue_info_none">لا شيء</string>
+    <string name="v5_8_private_routing">توجيه الرسائل الخاصة 🚀</string>
+    <string name="v5_8_chat_themes_descr">اجعل محادثاتك تبدو مختلفة!</string>
+    <string name="v5_8_safe_files">تلقي الملفات بأمان</string>
+    <string name="v5_8_persian_ui">واجهة المستخدم الفارسية</string>
+    <string name="chat_theme_reset_to_app_theme">إعادة التعيين إلى سمة التطبيق</string>
+    <string name="theme_destination_app_theme">سمة التطبيق</string>
+    <string name="v5_8_safe_files_descr">تأكيد الملفات من خوادم غير معروفة.</string>
+    <string name="chat_theme_reset_to_user_theme">إعادة التعيين إلى سمة المستخدم</string>
+    <string name="message_queue_info_server_info">معلومات قائمة انتظار الخادم: %1$s
+\n
+\nآخر رسالة تم استلامها: %2$s</string>
+    <string name="info_row_debug_delivery">تسليم التصحيح</string>
+    <string name="message_queue_info">معلومات قائمة انتظار الرسائل</string>
+    <string name="v5_8_private_routing_descr">احمِ عنوان IP الخاص بك من مُرحلات المُراسلة التي اختارتها جهات الاتصال الخاصة بك.
+\nفعّل في إعدادات *الشبكة والخوادم*.</string>
+    <string name="v5_8_chat_themes">سمات دردشة جديدة</string>
+    <string name="error_initializing_web_view">حدث خطأ أثناء تهيئة WebView. حدّث نظامك إلى الإصدار الجديد. يُرجى التواصل بالمطورين.
+\nError: %s</string>
+    <string name="v5_8_message_delivery">تحسين تسليم الرسائل</string>
+    <string name="v5_8_message_delivery_descr">مع انخفاض استخدام البطارية.</string>
 </resources>
