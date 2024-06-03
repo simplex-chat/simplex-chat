@@ -1,7 +1,7 @@
 {
     "features": "Особливості",
     "simplex-explained-tab-3-text": "3. Що бачать сервери",
-    "terms-and-privacy-policy": "Умови та політика конфіденційності",
+    "terms-and-privacy-policy": "Політика конфіденційності",
     "feature-4-title": "Голосові повідомлення з шифруванням від кінця до кінця",
     "feature-5-title": "Зникнення повідомлень",
     "simplex-private-card-3-point-3": "Відновлення з'єднання вимкнено для запобігання атакам на сесію.",
@@ -240,7 +240,7 @@
     "stable-versions-built-by-f-droid-org": "Стабільні версії, побудовані F-Droid.org",
     "simplex-chat-repo": "Репозитарій SimpleX Chat",
     "f-droid-org-repo": "Репозитарій F-Droid.org",
-    "releases-to-this-repo-are-done-1-2-days-later": "Релізи в цей репозитарій робляться за 1-2 дні пізніше",
+    "releases-to-this-repo-are-done-1-2-days-later": "Релізи в це репо відбуваються на кілька днів пізніше",
     "stable-and-beta-versions-built-by-developers": "Стабільні та бета-версії, побудовані розробниками",
     "f-droid-page-f-droid-org-repo-section-text": "SimpleX Chat та репозитарії F-Droid.org підписують збірки різними ключами. Щоб переключитися, будь ласка, <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>експортуйте</a> базу даних чату та перевстановіть додаток.",
     "hero-overlay-3-title": "Оцінка безпеки",
@@ -252,5 +252,8 @@
     "comparison-section-list-point-4a": "Ретранслятори SimpleX не можуть порушити e2e-шифрування. Перевірте безпековий код для зменшення ризику атаки на зовнішньобандовий канал",
     "docs-dropdown-9": "Завантаження",
     "please-enable-javascript": "Будь ласка, увімкніть JavaScript, щоб побачити QR-код.",
-    "please-use-link-in-mobile-app": "Будь ласка, скористайтеся посиланням у мобільному додатку"
+    "please-use-link-in-mobile-app": "Будь ласка, скористайтеся посиланням у мобільному додатку",
+    "docs-dropdown-11": "ПОШИРЕНІ ЗАПИТАННЯ",
+    "docs-dropdown-10": "Прозорість",
+    "docs-dropdown-12": "Безпека"
 }
