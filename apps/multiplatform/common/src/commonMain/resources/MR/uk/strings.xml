@@ -1850,4 +1850,10 @@
     <string name="reset_single_color">Скинути колір</string>
     <string name="color_mode_system">Система</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Без Tor або VPN ваша IP-адреса буде видимою для файлових серверів.</string>
+    <string name="message_queue_info_none">немає</string>
+    <string name="info_row_debug_delivery">Доставка налагодження</string>
+    <string name="message_queue_info">Інформація про чергу повідомлень</string>
+    <string name="message_queue_info_server_info">інформація про чергу на сервері: %1$s
+\n
+\nостаннє отримане повідомлення: %2$s</string>
 </resources>
