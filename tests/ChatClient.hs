@@ -25,7 +25,7 @@ import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..))
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), defaultSimpleNetCfg)
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (currentChatVersion, pqEncryptionCompressionVersion)
@@ -44,7 +44,7 @@ import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshake
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), closeSQLiteStore)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
+import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
 import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
@@ -94,7 +94,7 @@ testCoreOpts =
       -- dbKey = "this is a pass-phrase to encrypt the database",
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],
       xftpServers = ["xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"],
-      networkConfig = defaultNetworkConfig,
+      simpleNetCfg = defaultSimpleNetCfg,
       logLevel = CLLImportant,
       logConnections = False,
       logServerHosts = False,
@@ -401,8 +401,8 @@ testChatCfg4 cfg p1 p2 p3 p4 test = testChatN cfg testOpts [p1, p2, p3, p4] test
 concurrentlyN_ :: [IO a] -> IO ()
 concurrentlyN_ = mapConcurrently_ id
 
-serverCfg :: ServerConfig
-serverCfg =
+smpServerCfg :: ServerConfig
+smpServerCfg =
   ServerConfig
     { transports = [(serverPort, transport @TLS)],
       tbqSize = 1,
@@ -431,11 +431,16 @@ serverCfg =
       smpHandshakeTimeout = 1000000,
       controlPort = Nothing,
       smpAgentCfg = defaultSMPClientAgentConfig,
-      allowSMPProxy = False
+      allowSMPProxy = False,
+      serverClientConcurrency = 16,
+      information = Nothing
     }
 
 withSmpServer :: IO () -> IO ()
-withSmpServer = serverBracket (`runSMPServerBlocking` serverCfg)
+withSmpServer = withSmpServer' smpServerCfg
+
+withSmpServer' :: ServerConfig -> IO () -> IO ()
+withSmpServer' cfg = serverBracket (`runSMPServerBlocking` cfg)
 
 xftpTestPort :: ServiceName
 xftpTestPort = "7002"
@@ -468,7 +473,8 @@ xftpServerConfig =
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
       controlPort = Nothing,
-      transportConfig = defaultTransportServerConfig
+      transportConfig = defaultTransportServerConfig,
+      responseDelay = 0
     }
 
 withXFTPServer :: IO () -> IO ()

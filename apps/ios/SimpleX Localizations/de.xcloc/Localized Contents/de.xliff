@@ -695,7 +695,7 @@
       </trans-unit>
       <trans-unit id="All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays." xml:space="preserve">
         <source>All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.</source>
-        <target>Alle Ihre Kontakte, Unterhaltungen und Dateien werden sicher verschlüsselt und in Daten-Paketen auf die konfigurierten XTFP-Server hochgeladen.</target>
+        <target>Alle Ihre Kontakte, Unterhaltungen und Dateien werden sicher verschlüsselt und in Daten-Paketen auf die konfigurierten XTFP-Relais hochgeladen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow" xml:space="preserve">
@@ -711,6 +711,11 @@
       <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve">
         <source>Allow disappearing messages only if your contact allows it to you.</source>
         <target>Erlauben Sie verschwindende Nachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Allow downgrade" xml:space="preserve">
+        <source>Allow downgrade</source>
+        <target>Herabstufung erlauben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you. (24 hours)" xml:space="preserve">
@@ -806,6 +811,11 @@
       <trans-unit id="Already joining the group!" xml:space="preserve">
         <source>Already joining the group!</source>
         <target>Sie sind bereits Mitglied der Gruppe!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Always use private routing." xml:space="preserve">
+        <source>Always use private routing.</source>
+        <target>Sie nutzen immer privates Routing.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Always use relay" xml:space="preserve">
@@ -1088,6 +1098,11 @@
         <target>Datei kann nicht empfangen werden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Capacity exceeded - recipient did not receive previously sent messages." xml:space="preserve">
+        <source>Capacity exceeded - recipient did not receive previously sent messages.</source>
+        <target>Kapazität überschritten - der Empfänger hat die zuvor gesendeten Nachrichten nicht empfangen.</target>
+        <note>snd error text</note>
+      </trans-unit>
       <trans-unit id="Cellular" xml:space="preserve">
         <source>Cellular</source>
         <target>Zellulär</target>
@@ -1282,6 +1297,11 @@
       <trans-unit id="Confirm database upgrades" xml:space="preserve">
         <source>Confirm database upgrades</source>
         <target>Datenbank-Aktualisierungen bestätigen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Confirm files from unknown servers." xml:space="preserve">
+        <source>Confirm files from unknown servers.</source>
+        <target>Dateien von unbekannten Servern bestätigen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm network settings" xml:space="preserve">
@@ -1701,6 +1721,10 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target>Die Datenbank wird beim nächsten Start der App migriert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Debug delivery" xml:space="preserve">
+        <source>Debug delivery</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Decentralized" xml:space="preserve">
         <source>Decentralized</source>
         <target>Dezentral</target>
@@ -1948,6 +1972,11 @@ Das kann nicht rückgängig gemacht werden!</target>
         <target>Desktop-Geräte</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Destination server error: %@" xml:space="preserve">
+        <source>Destination server error: %@</source>
+        <target>Zielserver-Fehler: %@</target>
+        <note>snd error text</note>
+      </trans-unit>
       <trans-unit id="Develop" xml:space="preserve">
         <source>Develop</source>
         <target>Entwicklung</target>
@@ -2053,9 +2082,19 @@ Das kann nicht rückgängig gemacht werden!</target>
         <target>Lokales Netzwerk durchsuchen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Do NOT send messages directly, even if your or destination server does not support private routing." xml:space="preserve">
+        <source>Do NOT send messages directly, even if your or destination server does not support private routing.</source>
+        <target>Nachrichten werden nicht direkt versendet, selbst wenn Ihr oder der Zielserver kein privates Routing unterstützt.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
         <source>Do NOT use SimpleX for emergency calls.</source>
-        <target>Nutzen Sie SimpleX nicht für Notrufe.</target>
+        <target>SimpleX NICHT für Notrufe nutzen.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Do NOT use private routing." xml:space="preserve">
+        <source>Do NOT use private routing.</source>
+        <target>Sie nutzen KEIN privates Routing.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do it later" xml:space="preserve">
@@ -2621,7 +2660,7 @@ Das kann nicht rückgängig gemacht werden!</target>
       <trans-unit id="Error: %@" xml:space="preserve">
         <source>Error: %@</source>
         <target>Fehler: %@</target>
-        <note>No comment provided by engineer.</note>
+        <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Error: URL is invalid" xml:space="preserve">
         <source>Error: URL is invalid</source>
@@ -2711,6 +2750,11 @@ Das kann nicht rückgängig gemacht werden!</target>
       <trans-unit id="File: %@" xml:space="preserve">
         <source>File: %@</source>
         <target>Datei: %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Files" xml:space="preserve">
+        <source>Files</source>
+        <target>Dateien</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Files &amp; media" xml:space="preserve">
@@ -2817,6 +2861,20 @@ Das kann nicht rückgängig gemacht werden!</target>
         <source>Forwarded from</source>
         <target>Weitergeleitet aus</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Forwarding server: %@&#10;Destination server error: %@" xml:space="preserve">
+        <source>Forwarding server: %1$@
+Destination server error: %2$@</source>
+        <target>Weiterleitungsserver: %1$@
+Zielserver Fehler: %2$@</target>
+        <note>snd error text</note>
+      </trans-unit>
+      <trans-unit id="Forwarding server: %@&#10;Error: %@" xml:space="preserve">
+        <source>Forwarding server: %1$@
+Error: %2$@</source>
+        <target>Weiterleitungsserver: %1$@
+Fehler: %2$@</target>
+        <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Found desktop" xml:space="preserve">
         <source>Found desktop</source>
@@ -3633,9 +3691,18 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Empfangsbestätigungen für Nachrichten!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Message delivery warning" xml:space="preserve">
+        <source>Message delivery warning</source>
+        <target>Warnung bei der Nachrichtenzustellung</target>
+        <note>item status text</note>
+      </trans-unit>
       <trans-unit id="Message draft" xml:space="preserve">
         <source>Message draft</source>
         <target>Nachrichtenentwurf</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message queue info" xml:space="preserve">
+        <source>Message queue info</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reactions" xml:space="preserve">
@@ -3651,6 +3718,16 @@ Das ist Ihr Link für die Gruppe %@!</target>
       <trans-unit id="Message reactions are prohibited in this group." xml:space="preserve">
         <source>Message reactions are prohibited in this group.</source>
         <target>In dieser Gruppe sind Reaktionen auf Nachrichten nicht erlaubt.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message routing fallback" xml:space="preserve">
+        <source>Message routing fallback</source>
+        <target>Fallback für das Nachrichten-Routing</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message routing mode" xml:space="preserve">
+        <source>Message routing mode</source>
+        <target>Modus für das Nachrichten-Routing</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message source remains private." xml:space="preserve">
@@ -3783,11 +3860,6 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Wahrscheinlich ist diese Verbindung gelöscht worden.</target>
         <note>item status description</note>
       </trans-unit>
-      <trans-unit id="Most likely this contact has deleted the connection with you." xml:space="preserve">
-        <source>Most likely this contact has deleted the connection with you.</source>
-        <target>Dieser Kontakt hat sehr wahrscheinlich die Verbindung mit Ihnen gelöscht.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Multiple chat profiles" xml:space="preserve">
         <source>Multiple chat profiles</source>
         <target>Mehrere Chat-Profile</target>
@@ -3817,6 +3889,11 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <source>Network connection</source>
         <target>Netzwerkverbindung</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Network issues - message expired after many attempts to send it." xml:space="preserve">
+        <source>Network issues - message expired after many attempts to send it.</source>
+        <target>Netzwerk-Fehler - die Nachricht ist nach vielen Sende-Versuchen abgelaufen.</target>
+        <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Network management" xml:space="preserve">
         <source>Network management</source>
@@ -4004,12 +4081,12 @@ Das ist Ihr Link für die Gruppe %@!</target>
       </trans-unit>
       <trans-unit id="Onion hosts will be required for connection. Requires enabling VPN." xml:space="preserve">
         <source>Onion hosts will be required for connection. Requires enabling VPN.</source>
-        <target>Für die Verbindung werden Onion-Hosts benötigt. Dies erfordert die Aktivierung eines VPNs.</target>
+        <target>Für diese Verbindung werden Onion-Hosts benötigt. Dies erfordert die Aktivierung eines VPNs.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Onion hosts will be used when available. Requires enabling VPN." xml:space="preserve">
         <source>Onion hosts will be used when available. Requires enabling VPN.</source>
-        <target>Onion-Hosts werden verwendet, sobald sie verfügbar sind. Dies erfordert die Aktivierung eines VPNs.</target>
+        <target>Wenn Onion-Hosts verfügbar sind, werden sie verwendet. Dies erfordert die Aktivierung eines VPNs.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Onion hosts will not be used." xml:space="preserve">
@@ -4359,10 +4436,25 @@ Fehler: %@</target>
         <target>Neutrale Dateinamen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Private message routing" xml:space="preserve">
+        <source>Private message routing</source>
+        <target>Privates Nachrichten-Routing</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Private message routing 🚀" xml:space="preserve">
+        <source>Private message routing 🚀</source>
+        <target>Privates Nachrichten-Routing 🚀</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Private notes" xml:space="preserve">
         <source>Private notes</source>
         <target>Private Notizen</target>
         <note>name of notes to self</note>
+      </trans-unit>
+      <trans-unit id="Private routing" xml:space="preserve">
+        <source>Private routing</source>
+        <target>Privates Routing</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
         <source>Profile and server connections</source>
@@ -4444,9 +4536,21 @@ Fehler: %@</target>
         <target>Das Senden von Sprachnachrichten nicht erlauben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Protect IP address" xml:space="preserve">
+        <source>Protect IP address</source>
+        <target>IP-Adresse schützen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Protect app screen" xml:space="preserve">
         <source>Protect app screen</source>
         <target>App-Bildschirm schützen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve">
+        <source>Protect your IP address from the messaging relays chosen by your contacts.
+Enable in *Network &amp; servers* settings.</source>
+        <target>Schützen Sie Ihre IP-Adresse vor den Nachrichten-Relais , die Ihre Kontakte ausgewählt haben.
+Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve">
@@ -4552,11 +4656,6 @@ Fehler: %@</target>
       <trans-unit id="Receiving address will be changed to a different server. Address change will complete after sender comes online." xml:space="preserve">
         <source>Receiving address will be changed to a different server. Address change will complete after sender comes online.</source>
         <target>Die Empfängeradresse wird auf einen anderen Server geändert. Der Adresswechsel wird abgeschlossen, wenn der Absender wieder online ist.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Receiving concurrency" xml:space="preserve">
-        <source>Receiving concurrency</source>
-        <target>Gleichzeitiger Empfang</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve">
@@ -4794,6 +4893,11 @@ Fehler: %@</target>
         <target>SMP-Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Safely receive files" xml:space="preserve">
+        <source>Safely receive files</source>
+        <target>Dateien sicher empfangen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Safer groups" xml:space="preserve">
         <source>Safer groups</source>
         <target>Sicherere Gruppen</target>
@@ -5019,6 +5123,16 @@ Fehler: %@</target>
         <target>Live Nachricht senden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send messages directly when IP address is protected and your or destination server does not support private routing." xml:space="preserve">
+        <source>Send messages directly when IP address is protected and your or destination server does not support private routing.</source>
+        <target>Nachrichten werden direkt versendet, wenn die IP-Adresse geschützt ist, und Ihr oder der Zielserver kein privates Routing unterstützt.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send messages directly when your or destination server does not support private routing." xml:space="preserve">
+        <source>Send messages directly when your or destination server does not support private routing.</source>
+        <target>Nachrichten werden direkt versendet, wenn Ihr oder der Zielserver kein privates Routing unterstützt.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Send notifications" xml:space="preserve">
         <source>Send notifications</source>
         <target>Benachrichtigungen senden</target>
@@ -5124,6 +5238,11 @@ Fehler: %@</target>
         <target>Gesendete Nachrichten werden nach der eingestellten Zeit gelöscht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Server address is incompatible with network settings." xml:space="preserve">
+        <source>Server address is incompatible with network settings.</source>
+        <target>Die Server-Adresse ist nicht mit den Netzwerk-Einstellungen kompatibel.</target>
+        <note>srv error text.</note>
+      </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
         <source>Server requires authorization to create queues, check password</source>
         <target>Um Warteschlangen zu erzeugen benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort</target>
@@ -5138,6 +5257,11 @@ Fehler: %@</target>
         <source>Server test failed!</source>
         <target>Server Test ist fehlgeschlagen!</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Server version is incompatible with network settings." xml:space="preserve">
+        <source>Server version is incompatible with network settings.</source>
+        <target>Die Server-Version ist nicht mit den Netzwerk-Einstellungen kompatibel.</target>
+        <note>srv error text</note>
       </trans-unit>
       <trans-unit id="Servers" xml:space="preserve">
         <source>Servers</source>
@@ -5259,9 +5383,19 @@ Fehler: %@</target>
         <target>Letzte Nachrichten anzeigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Show message status" xml:space="preserve">
+        <source>Show message status</source>
+        <target>Nachrichtenstatus anzeigen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
         <source>Show preview</source>
         <target>Vorschau anzeigen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Show → on messages sent via private routing." xml:space="preserve">
+        <source>Show → on messages sent via private routing.</source>
+        <target>Bei Nachrichten, die über privates Routing versendet wurden, → anzeigen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show:" xml:space="preserve">
@@ -5586,6 +5720,11 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Wenn sie Nachrichten oder Kontaktanfragen empfangen, kann Sie die App benachrichtigen - Um dies zu aktivieren, öffnen Sie bitte die Einstellungen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The app will ask to confirm downloads from unknown file servers (except .onion)." xml:space="preserve">
+        <source>The app will ask to confirm downloads from unknown file servers (except .onion).</source>
+        <target>Die App wird eine Bestätigung bei Downloads von unbekannten Datei-Servern anfordern (außer bei .onion).</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="The attempt to change database passphrase was not completed." xml:space="preserve">
         <source>The attempt to change database passphrase was not completed.</source>
         <target>Die Änderung des Datenbank-Passworts konnte nicht abgeschlossen werden.</target>
@@ -5771,6 +5910,11 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Bild- und Sprachdateinamen enthalten UTC, um Informationen zur Zeitzone zu schützen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To protect your IP address, private routing uses your SMP servers to deliver messages." xml:space="preserve">
+        <source>To protect your IP address, private routing uses your SMP servers to deliver messages.</source>
+        <target>Zum Schutz Ihrer IP-Adresse, wird für die Nachrichten-Auslieferung privates Routing über Ihre konfigurierten SMP-Server genutzt.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
         <source>To protect your information, turn on SimpleX Lock.
 You will be prompted to complete authentication before this feature is enabled.</source>
@@ -5863,11 +6007,6 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
         <target>Mitglied freigeben?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unexpected error: %@" xml:space="preserve">
-        <source>Unexpected error: %@</source>
-        <target>Unerwarteter Fehler: %@</target>
-        <note>item status description</note>
-      </trans-unit>
       <trans-unit id="Unexpected migration state" xml:space="preserve">
         <source>Unexpected migration state</source>
         <target>Unerwarteter Migrationsstatus</target>
@@ -5911,6 +6050,11 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
       <trans-unit id="Unknown error" xml:space="preserve">
         <source>Unknown error</source>
         <target>Unbekannter Fehler</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unknown servers!" xml:space="preserve">
+        <source>Unknown servers!</source>
+        <target>Unbekannte Server!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
@@ -6032,7 +6176,7 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="Use current profile" xml:space="preserve">
         <source>Use current profile</source>
-        <target>Das aktuelle Profil nutzen</target>
+        <target>Aktuelles Profil nutzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use for new connections" xml:space="preserve">
@@ -6052,12 +6196,22 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="Use new incognito profile" xml:space="preserve">
         <source>Use new incognito profile</source>
-        <target>Ein neues Inkognito-Profil nutzen</target>
+        <target>Neues Inkognito-Profil nutzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use only local notifications?" xml:space="preserve">
         <source>Use only local notifications?</source>
         <target>Nur lokale Benachrichtigungen nutzen?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use private routing with unknown servers when IP address is not protected." xml:space="preserve">
+        <source>Use private routing with unknown servers when IP address is not protected.</source>
+        <target>Sie nutzen privates Routing mit unbekannten Servern, wenn Ihre IP-Adresse nicht geschützt ist.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use private routing with unknown servers." xml:space="preserve">
+        <source>Use private routing with unknown servers.</source>
+        <target>Sie nutzen privates Routing mit unbekannten Servern.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -6295,10 +6449,25 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Mit reduziertem Akkuverbrauch.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Without Tor or VPN, your IP address will be visible to file servers." xml:space="preserve">
+        <source>Without Tor or VPN, your IP address will be visible to file servers.</source>
+        <target>Ohne Tor- oder VPN-Nutzung wird Ihre IP-Adresse für Datei-Server sichtbar sein.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." xml:space="preserve">
+        <source>Without Tor or VPN, your IP address will be visible to these XFTP relays: %@.</source>
+        <target>Ohne Tor- oder VPN-Nutzung wird Ihre IP-Adresse für diese XFTP-Relais sichtbar sein: %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
         <source>Wrong database passphrase</source>
         <target>Falsches Datenbank-Passwort</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Wrong key or unknown connection - most likely this connection is deleted." xml:space="preserve">
+        <source>Wrong key or unknown connection - most likely this connection is deleted.</source>
+        <target>Falscher Schlüssel oder unbekannte Verbindung - höchstwahrscheinlich ist diese Verbindung gelöscht worden.</target>
+        <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Wrong passphrase!" xml:space="preserve">
         <source>Wrong passphrase!</source>
@@ -7415,6 +7584,12 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Direktnachricht senden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve">
+        <source>server queue info: %1$@
+
+last received msg: %2$@</source>
+        <note>queue info</note>
+      </trans-unit>
       <trans-unit id="set new contact address" xml:space="preserve">
         <source>set new contact address</source>
         <target>Es wurde eine neue Kontaktadresse festgelegt</target>
@@ -7455,9 +7630,19 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Unbekannt</target>
         <note>connection info</note>
       </trans-unit>
+      <trans-unit id="unknown relays" xml:space="preserve">
+        <source>unknown relays</source>
+        <target>Unbekannte Relais</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="unknown status" xml:space="preserve">
         <source>unknown status</source>
         <target>unbekannter Gruppenmitglieds-Status</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="unprotected" xml:space="preserve">
+        <source>unprotected</source>
+        <target>Ungeschützt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="updated group profile" xml:space="preserve">
@@ -7524,6 +7709,11 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <source>weeks</source>
         <target>Wochen</target>
         <note>time unit</note>
+      </trans-unit>
+      <trans-unit id="when IP hidden" xml:space="preserve">
+        <source>when IP hidden</source>
+        <target>Wenn die IP-Adresse versteckt ist</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="yes" xml:space="preserve">
         <source>yes</source>
@@ -7661,7 +7851,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="NSHumanReadableCopyright" xml:space="preserve">
         <source>Copyright © 2022 SimpleX Chat. All rights reserved.</source>
-        <target>Copyright © 2022 SimpleX Chat. All rights reserved.</target>
+        <target>Copyright © 2024 SimpleX Chat. All rights reserved.</target>
         <note>Copyright (human-readable)</note>
       </trans-unit>
     </body>

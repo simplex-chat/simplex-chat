@@ -237,7 +237,7 @@
     "f-droid-org-repo": "F-Droid.org Repository",
     "stable-versions-built-by-f-droid-org": "Von F-Droid.org erstellte stabile Versionen",
     "f-droid-page-f-droid-org-repo-section-text": "SimpleX Chat- und F-Droid.org-Repositorys signieren ihre Builds mit verschiedenen Schlüsseln. Zum Umschalten bitte <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>die Chat-Datenbank exportieren</a> und die App neu installieren.",
-    "releases-to-this-repo-are-done-1-2-days-later": "Die Versionen für dieses Repository werden 1..2 Tage später erstellt",
+    "releases-to-this-repo-are-done-1-2-days-later": "Die Versionen für dieses Repository werden einige Tage später erstellt",
     "docs-dropdown-8": "SimpleX Verzeichnisdienst",
     "simplex-chat-via-f-droid": "SimpleX Chat per F-Droid",
     "simplex-chat-repo": "SimpleX Chat Repository",

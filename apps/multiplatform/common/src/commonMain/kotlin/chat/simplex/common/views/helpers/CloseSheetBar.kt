@@ -51,7 +51,7 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
 @Composable
 fun AppBarTitle(title: String, hostDevice: Pair<Long?, String>? = null,  withPadding: Boolean = true, bottomPadding: Dp = DEFAULT_PADDING * 1.5f) {
   val theme = CurrentColors.collectAsState()
-  val titleColor = CurrentColors.collectAsState().value.appColors.title
+  val titleColor = MaterialTheme.appColors.title
   val brush = if (theme.value.base == DefaultTheme.SIMPLEX)
     Brush.linearGradient(listOf(titleColor.darker(0.2f), titleColor.lighter(0.35f)), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
   else // color is not updated when changing themes if I pass null here

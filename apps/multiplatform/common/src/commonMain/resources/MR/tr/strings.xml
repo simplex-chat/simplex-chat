@@ -87,7 +87,7 @@
     <string name="scan_code_from_contacts_app">Konuştuğunuz kişinin uygulamasından güvenlik kodunu okut.</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">WebRTC ICE sunucu adreslerinin doğru formatta olduğundan emin olun: Satırlara ayrılmış ve yinelenmemiş şekilde.</string>
     <string name="save_servers_button">Kaydet</string>
-    <string name="theme_colors_section_title">TEMA RENKLERİ</string>
+    <string name="theme_colors_section_title">ARAYÜZ RENKLERİ</string>
     <string name="save_auto_accept_settings">Otomatik-kabul ayarlarını kaydet</string>
     <string name="save_settings_question">Ayarlar kaydedilsin mi?</string>
     <string name="save_and_notify_contacts">Kaydet ve konuştuğun kişilere bildir</string>
@@ -122,7 +122,6 @@
     <string name="theme_simplex">SimpleX</string>
     <string name="dark_theme">Koyu tema</string>
     <string name="theme">Tema</string>
-    <string name="save_color">Rengi kaydet</string>
     <string name="import_theme">Temayı içe aktar</string>
     <string name="import_theme_error">Temayı içe aktarırken hata oluştu</string>
     <string name="import_theme_error_desc">Dosyanın doğru YAML sözdizimine sahip olduğundan emin olun. Tema dosyası yapısının bir örneğine sahip olmak için temayı dışa aktarın.</string>
@@ -150,7 +149,7 @@
     <string name="role_in_group">Yetki</string>
     <string name="allow_voice_messages_question">Sesli mesajlara izin verilsin mi?</string>
     <string name="users_add">Profil ekle</string>
-    <string name="allow_direct_messages">Üyelere direkt mesaj gönderilmesine izin ver.</string>
+    <string name="allow_direct_messages">Üyelere doğrudan mesaj gönderilmesine izin ver.</string>
     <string name="allow_to_send_disappearing">Kendiliğinden yok olan mesajlar göndermeye izin ver.</string>
     <string name="allow_to_delete_messages">Gönderilen mesajların kalıcı olarak silinmesine izin ver. (24 saat içinde)</string>
     <string name="allow_to_send_files">Dosya ve medya göndermeye izin ver.</string>
@@ -506,7 +505,7 @@
     <string name="info_row_disappears_at">Kendiliğinden şu sürede yok olacak</string>
     <string name="share_text_disappears_at">Kendiliğinden şu sürede yok olacak: %s</string>
     <string name="feature_enabled">etkin</string>
-    <string name="direct_messages">Direkt mesaj</string>
+    <string name="direct_messages">Doğrudan mesajlar</string>
     <string name="no_call_on_lock_screen">Devre dışı bırak</string>
     <string name="display_name_cannot_contain_whitespace">Görünen ad, boşluk gibi aralıklama türleri içeremez.</string>
     <string name="display_name">İsmini gir:</string>
@@ -530,7 +529,7 @@
     <string name="snd_conn_event_ratchet_sync_agreed">%s üyesi için şifreleme kabul edildi</string>
     <string name="conn_level_desc_direct">doğrudan</string>
     <string name="dont_show_again">Yeniden gösterme</string>
-    <string name="direct_messages_are_prohibited_in_chat">Bu grupta üyeler arası direkt mesajlar yasaklıdır.</string>
+    <string name="direct_messages_are_prohibited_in_chat">Bu grupta üyeler arası doğrudan mesajlaşma yasaklıdır.</string>
     <string name="feature_enabled_for_contact">konuşulan kişi için etkinleşti</string>
     <string name="feature_enabled_for_you">senin için etkinleştirildi</string>
     <string name="ttl_sec">%d sn</string>
@@ -653,7 +652,7 @@
     <string name="group_display_name_field">Grup adını gir:</string>
     <string name="group_full_name_field">Grup tam adı:</string>
     <string name="files_and_media">Dosya ve medya</string>
-    <string name="group_members_can_send_dms">Grup üyeleri direkt mesaj gönderebilir.</string>
+    <string name="group_members_can_send_dms">Grup üyeleri doğrudan mesaj gönderebilir.</string>
     <string name="group_members_can_delete">Grup üyeleri, gönderilen mesajları kalıcı olarak silebilir. (24 saat içinde)</string>
     <string name="group_members_can_send_voice">Grup üyeleri sesli mesaj gönderebilirler.</string>
     <string name="files_are_prohibited_in_group">Bu toplu konuşmada, dosya ve medya yasaklanmıştır.</string>
@@ -1007,7 +1006,7 @@
     <string name="prohibit_message_reactions">Mesaj tepkilerini yasakla.</string>
     <string name="prohibit_sending_voice_messages">Sesli mesaj göndermeyi yasakla.</string>
     <string name="prohibit_message_deletion">Geri alınamaz mesaj silme işlemini yasakla.</string>
-    <string name="prohibit_direct_messages">Üyelere direkt mesaj göndermeyi yasakla.</string>
+    <string name="prohibit_direct_messages">Üyelere doğrudan mesaj göndermeyi yasakla.</string>
     <string name="prohibit_sending_files">Dosya ve medya göndermeyi yasakla.</string>
     <string name="v4_4_live_messages">Canlı mesajlar</string>
     <string name="v5_0_polish_interface">Arayüz geliştirildi</string>
@@ -1216,7 +1215,7 @@
     <string name="alert_text_msg_bad_hash">Önceki mesajın hash\'i farklı.</string>
     <string name="lock_not_enabled">SimpleX Kilit aktif değil!</string>
     <string name="chat_lock">SimpleX Kilit</string>
-    <string name="connect_via_member_address_alert_title">Direkt bağlanılsın mı?</string>
+    <string name="connect_via_member_address_alert_title">Doğrudan bağlanılsın mı?</string>
     <string name="receipts_section_description">Bu ayarlar mevcut profiliniz içindir</string>
     <string name="smp_servers_test_failed">Sunucu testi başarısız!</string>
     <string name="verify_connection">Bağlantıyı onayla</string>
@@ -1231,7 +1230,7 @@
     <string name="v4_6_audio_video_calls_descr">Bluetooth desteği ve diğer iyileştirmeler.</string>
     <string name="icon_descr_settings">Ayarlar</string>
     <string name="settings_section_title_settings">AYARLAR</string>
-    <string name="compose_send_direct_message_to_connect">Bağlanmak için direkt mesaj gönderin</string>
+    <string name="compose_send_direct_message_to_connect">Bağlanmak için doğrudan mesaj gönderin</string>
     <string name="security_code">Güvenlik kodu</string>
     <string name="v5_4_better_groups_descr">Daha hızlı gruplara katılma ve daha güvenilir mesajlar.</string>
     <string name="group_main_profile_sent">Sohbet profiliniz grup üyelerine gönderilecek</string>
@@ -1404,7 +1403,7 @@
     <string name="the_text_you_pasted_is_not_a_link">Yapıştırdığın bağlantı bir SimpleX bağlantısı değil.</string>
     <string name="color_sent_message">Gönderilmiş mesaj</string>
     <string name="receipts_groups_title_disable">Gruplar için alıcılar devre dışı bırakılsın mı?</string>
-    <string name="relay_server_protects_ip">Aktarıcı sunucu IP adresinizi korur, ancak aramanın süresini gözlemleyebilir.</string>
+    <string name="relay_server_protects_ip">Yönlendirici sunucu IP adresinizi korur, ancak aramanın süresini gözlemleyebilir.</string>
     <string name="loading_remote_file_title">Dosya yükleniyor</string>
     <string name="connecting_to_desktop">Masaüstüne bağlanıyor</string>
     <string name="no_contacts_to_add">Eklenecek kişi yok</string>
@@ -1694,7 +1693,7 @@
     <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">Uyarı: Birden fazla cihazda sohbet başlatmak desteklenmez ve mesaj iletimi başarısızlıklara neden olabilir.</string>
     <string name="migrate_from_device_verify_database_passphrase">Veritabanı parolasını doğrulayın</string>
     <string name="migrate_from_device_verify_passphrase">Parolayı doğrulayın</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">Tüm kişileriniz, konuşmalarınız ve dosyalarınız güvenli bir şekilde şifrelenir ve yapılandırılmış XFTP rölelerine parçalar halinde yüklenir.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Tüm kişileriniz, konuşmalarınız ve dosyalarınız güvenli bir şekilde şifrelenir ve yapılandırılmış XFTP yönlendiricilerine parçalar halinde yüklenir.</string>
     <string name="migrate_from_device_archive_and_upload">Arşivle ve yükle</string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Uyarı</b>: arşiv silinecektir.]]></string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">Taşımak için veritabanı parolasını hatırladığınızı doğrulayın.</string>
@@ -1770,4 +1769,88 @@
     <string name="settings_section_title_profile_images">Profil resimleri</string>
     <string name="v5_7_shape_profile_images">Profil resimlerini şekillendir</string>
     <string name="v5_7_shape_profile_images_descr">Kare,daire, veya aralarında herhangi bir şey.</string>
+    <string name="snd_error_quota">Kapasite aşıldı - alıcı önceden gönderilen mesajları almadı.</string>
+    <string name="snd_error_relay">Hedef sunucu hatası: %1$s</string>
+    <string name="ci_status_other_error">Hata: %1$s</string>
+    <string name="snd_error_proxy_relay">Yönlendirme sunucusu: %1$s
+\nHedef sunucu hatası: %2$s</string>
+    <string name="snd_error_proxy">Yönlendirme sunucusu: %1$s
+\nHata: %2$s</string>
+    <string name="message_delivery_warning_title">Mesaj iletimi uyarısı</string>
+    <string name="snd_error_expired">Ağ sorunları - birçok gönderme denemesinden sonra mesajın süresi doldu.</string>
+    <string name="srv_error_host">Sunucu adresi ağ ayarlarıyla uyumlu değil.</string>
+    <string name="srv_error_version">Sunucu sürümü ağ ayarlarıyla uyumlu değil.</string>
+    <string name="snd_error_auth">Yanlış anahtar veya bilinmeyen bağlantı - büyük olasılıkla bu bağlantı silinmiştir.</string>
+    <string name="network_smp_proxy_mode_private_routing">Gizli yönlendirme</string>
+    <string name="network_smp_proxy_mode_unknown">Bilinmeyen yönlendiriciler</string>
+    <string name="network_smp_proxy_mode_always_description">Her zaman gizli yönlendirmeyi kullan.</string>
+    <string name="network_smp_proxy_mode_never_description">Gizli yönlendirmeyi KULLANMA.</string>
+    <string name="update_network_smp_proxy_mode_question">Mesaj yönlendirme modu</string>
+    <string name="network_smp_proxy_mode_never">Hiçbir zaman</string>
+    <string name="network_smp_proxy_mode_unknown_description">Bilinmeyen sunucularla gizli yönlendirme kullan.</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Sürüm düşürmeye izin ver</string>
+    <string name="network_smp_proxy_fallback_prohibit">Hayır</string>
+    <string name="update_network_smp_proxy_fallback_question">Mesaj yönlendirme yedeklemesi</string>
+    <string name="network_smp_proxy_mode_always">Her zaman</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">Sizin veya hedef sunucunun özel yönlendirmeyi desteklememesi durumunda bile mesajları doğrudan GÖNDERMEYİN.</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">IP adresi korumalı olduğunda ve sizin veya hedef sunucunun özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.</string>
+    <string name="network_smp_proxy_fallback_allow_description">Sizin veya hedef sunucunun özel yönlendirmeyi desteklemediği durumlarda mesajları doğrudan gönderin.</string>
+    <string name="settings_section_title_private_message_routing">GİZLİ MESAJ YÖNLENDİRME</string>
+    <string name="private_routing_show_message_status">Mesaj durumunu göster</string>
+    <string name="private_routing_explanation">IP adresinizi korumak için,gizli yönlendirme mesajları iletmek için SMP sunucularınızı kullanır.</string>
+    <string name="network_smp_proxy_mode_unprotected">Korumasız</string>
+    <string name="network_smp_proxy_mode_unprotected_description">IP adresi korunmadığında bilinmeyen sunucularla gizli yönlendirme kullan.</string>
+    <string name="network_smp_proxy_fallback_allow_protected">IP gizliyken</string>
+    <string name="network_smp_proxy_fallback_allow">Evet</string>
+    <string name="settings_section_title_chat_theme">Sohbet teması</string>
+    <string name="settings_section_title_user_theme">Profil teması</string>
+    <string name="theme_black">Siyah</string>
+    <string name="color_mode">Renk modu</string>
+    <string name="dark_mode_colors">Karanlık mod renkleri</string>
+    <string name="color_mode_light">Aydınlık</string>
+    <string name="color_mode_system">Sistem</string>
+    <string name="color_primary_variant2">Ek vurgu 2</string>
+    <string name="chat_theme_apply_to_all_modes">Bütün renk modları</string>
+    <string name="chat_theme_apply_to_mode">Şuna uygula</string>
+    <string name="chat_theme_apply_to_dark_mode">Karanlık mod</string>
+    <string name="wallpaper_scale_fill">Doldur</string>
+    <string name="wallpaper_scale">Ölçeklendir</string>
+    <string name="color_sent_quote">Gönderilen cevap</string>
+    <string name="chat_theme_set_default_theme">Varsayılan temaya ayarla</string>
+    <string name="wallpaper_advanced_settings">Gelişmiş ayarlar</string>
+    <string name="wallpaper_preview_hello_bob">Günaydın!</string>
+    <string name="color_mode_dark">Karanlık</string>
+    <string name="chat_theme_apply_to_light_mode">Aydınlık mod</string>
+    <string name="protect_ip_address">IP adresini koru</string>
+    <string name="settings_section_title_files">DOSYALAR</string>
+    <string name="settings_section_title_chat_colors">Sohbet renkleri</string>
+    <string name="wallpaper_scale_fit">Sığdır</string>
+    <string name="color_received_quote">Alınan cevap</string>
+    <string name="wallpaper_preview_hello_alice">İyi öğlenler!</string>
+    <string name="theme_remove_image">Resmi kaldır</string>
+    <string name="wallpaper_scale_repeat">Tekrarla</string>
+    <string name="reset_single_color">Rengi sıfırla</string>
+    <string name="chat_list_always_visible">Sohbet listesini yeni pencerede göster</string>
+    <string name="file_not_approved_title">Bilinmeyen sunucular!</string>
+    <string name="file_not_approved_descr">Tor veya VPN olmadan, IP adresiniz bu XFTP yönlendiricileri tarafından görülebilir:
+\n%1$s.</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Tor veya VPN olmadan, IP adresiniz dosya sunucularına görülebilir.</string>
+    <string name="color_wallpaper_tint">Duvar kağıdı vurgusu</string>
+    <string name="color_wallpaper_background">Duvar kağıdı arkaplanı</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">Uygulama, bilinmeyen dosya sunucularından indirmeleri onaylamanızı isteyecektir (.onion veya SOCKS vekilleri etkin değilse).</string>
+    <string name="error_initializing_web_view">WebView başlatılırken hata oluştu. Sisteminizi yeni sürüme güncelleyin. Lütfen geliştiricilerle iletişime geçin.
+\nHata: %s</string>
+    <string name="v5_8_chat_themes_descr">Sohbetlerinizin farklı görünmesini sağlayın!</string>
+    <string name="v5_8_persian_ui">Farsça Arayüz</string>
+    <string name="chat_theme_reset_to_user_theme">Kullanıcı temasına sıfırla</string>
+    <string name="v5_8_private_routing_descr">IP adresinizi kişileriniz tarafından seçilen mesajlaşma yönlendiricilerinden koruyun.
+\n*Ağ ve sunucular* ayarlarında etkinleştirin.</string>
+    <string name="v5_8_private_routing">Gizli mesaj yönlendirme 🚀</string>
+    <string name="v5_8_safe_files_descr">Bilinmeyen sunuculardan gelen dosyaları onayla.</string>
+    <string name="v5_8_message_delivery">Geliştirilmiş mesaj iletimi</string>
+    <string name="v5_8_chat_themes">Yeni sohbet temaları</string>
+    <string name="v5_8_safe_files">Dosyaları güvenle alın</string>
+    <string name="v5_8_message_delivery_descr">Azaltılmış pil kullanımı ile.</string>
+    <string name="theme_destination_app_theme">Uygulama teması</string>
+    <string name="chat_theme_reset_to_app_theme">Uygulama temasına sıfırla</string>
 </resources>

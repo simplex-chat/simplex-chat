@@ -235,7 +235,7 @@
     "glossary": "术语表",
     "signing-key-fingerprint": "签名密钥指纹 (SHA-256)",
     "simplex-chat-via-f-droid": "通过 F-Droid 下载 SimpleX",
-    "releases-to-this-repo-are-done-1-2-days-later": "此存储库的版本将延迟 1-2 天发布",
+    "releases-to-this-repo-are-done-1-2-days-later": "此存储库的版本将延迟数天发布",
     "f-droid-org-repo": "F-Droid.org 存储库",
     "stable-versions-built-by-f-droid-org": "由 F-Droid.org 构建的稳定版本",
     "simplex-chat-repo": "SimpleX 存储库",

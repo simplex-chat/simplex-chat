@@ -41,9 +41,12 @@ enum class ModalPlacement {
 }
 
 class ModalData {
-  private val state = mutableMapOf<String, MutableState<Any>>()
+  private val state = mutableMapOf<String, MutableState<Any?>>()
   fun <T> stateGetOrPut (key: String, default: () -> T): MutableState<T> =
     state.getOrPut(key) { mutableStateOf(default() as Any) } as MutableState<T>
+
+  fun <T> stateGetOrPutNullable (key: String, default: () -> T?): MutableState<T?> =
+    state.getOrPut(key) { mutableStateOf(default() as Any?) } as MutableState<T?>
 }
 
 class ModalManager(private val placement: ModalPlacement? = null) {

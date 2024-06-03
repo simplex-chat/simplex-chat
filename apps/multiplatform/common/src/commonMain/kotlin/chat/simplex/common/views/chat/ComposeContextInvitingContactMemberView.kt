@@ -16,7 +16,7 @@ import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
 fun ComposeContextInvitingContactMemberView() {
-  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+  val sentColor = MaterialTheme.appColors.sentMessage
   Row(
     Modifier
       .height(60.dp)

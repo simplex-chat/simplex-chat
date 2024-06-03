@@ -7,6 +7,7 @@ import SectionItemView
 import SectionItemWithValue
 import SectionView
 import SectionViewSelectable
+import SectionViewSelectableCards
 import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -250,17 +251,17 @@ fun NetworkAndServersView() {
       Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 24.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
     }
 
-//    if (currentRemoteHost == null) {
-//      SectionView(generalGetString(MR.strings.settings_section_title_private_message_routing)) {
-//        SMPProxyModePicker(smpProxyMode, showModal, updateSMPProxyMode)
-//        SMPProxyFallbackPicker(smpProxyFallback, showModal, updateSMPProxyFallback, enabled = remember { mutableStateOf(smpProxyMode.value != SMPProxyMode.Never) })
-//        SettingsPreferenceItem(painterResource(MR.images.ic_arrow_forward), stringResource(MR.strings.private_routing_show_message_status), chatModel.controller.appPrefs.showSentViaProxy)
-//      }
-//      SectionCustomFooter {
-//        Text(stringResource(MR.strings.private_routing_explanation))
-//      }
-//      Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 32.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
-//    }
+    if (currentRemoteHost == null) {
+      SectionView(generalGetString(MR.strings.settings_section_title_private_message_routing)) {
+        SMPProxyModePicker(smpProxyMode, showModal, updateSMPProxyMode)
+        SMPProxyFallbackPicker(smpProxyFallback, showModal, updateSMPProxyFallback, enabled = remember { mutableStateOf(smpProxyMode.value != SMPProxyMode.Never) })
+        SettingsPreferenceItem(painterResource(MR.images.ic_arrow_forward), stringResource(MR.strings.private_routing_show_message_status), chatModel.controller.appPrefs.showSentViaProxy)
+      }
+      SectionCustomFooter {
+        Text(stringResource(MR.strings.private_routing_explanation))
+      }
+      Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 32.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
+    }
 
     SectionView(generalGetString(MR.strings.settings_section_title_calls)) {
       SettingsActionItem(painterResource(MR.images.ic_electrical_services), stringResource(MR.strings.webrtc_ice_servers), { ModalManager.start.showModal { RTCServersView(m) } })
@@ -555,7 +556,7 @@ private fun SMPProxyModePicker(
           Modifier.fillMaxWidth(),
         ) {
           AppBarTitle(stringResource(MR.strings.network_smp_proxy_mode_private_routing))
-          SectionViewSelectable(null, smpProxyMode, values, updateSMPProxyMode)
+          SectionViewSelectableCards(null, smpProxyMode, values, updateSMPProxyMode)
         }
       }
     }
@@ -592,7 +593,7 @@ private fun SMPProxyFallbackPicker(
           Modifier.fillMaxWidth(),
         ) {
           AppBarTitle(stringResource(MR.strings.network_smp_proxy_fallback_allow_downgrade))
-          SectionViewSelectable(null, smpProxyFallback, values, updateSMPProxyFallback)
+          SectionViewSelectableCards(null, smpProxyFallback, values, updateSMPProxyFallback)
         }
       }
     }

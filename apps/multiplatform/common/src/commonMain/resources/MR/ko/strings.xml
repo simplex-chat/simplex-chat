@@ -757,7 +757,6 @@
     <string name="save_and_notify_contact">저장하고 대화 상대에게 알리기</string>
     <string name="remove_passphrase">지우기</string>
     <string name="save_archive">아카이브 저장하기</string>
-    <string name="save_color">색상 저장하기</string>
     <string name="save_passphrase_in_keychain">암호 저장소에 비밀번호 저장하기</string>
     <string name="restore_database">데이터베이스 백업 복원하기</string>
     <string name="restore_database_alert_desc">데이터베이스 백업을 복원한 후 이전 비밀번호를 입력해 주세요. 이 작업은 되돌릴 수 없어요.</string>

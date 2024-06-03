@@ -783,7 +783,6 @@
     <string name="theme_light">Clair</string>
     <string name="theme_dark">Sombre</string>
     <string name="theme">Thème</string>
-    <string name="save_color">Enregistrer la couleur</string>
     <string name="reset_color">Réinitialisation des couleurs</string>
     <string name="color_primary">Principale</string>
     <string name="chat_preferences_you_allow">Vous autorisez</string>
@@ -1121,7 +1120,7 @@
     <string name="you_wont_lose_your_contacts_if_delete_address">Vous ne perdrez pas vos contacts si vous supprimez votre adresse ultérieurement.</string>
     <string name="simplex_address">Adresse SimpleX</string>
     <string name="you_can_accept_or_reject_connection">Vous pouvez accepter ou refuser les demandes de contacts.</string>
-    <string name="theme_colors_section_title">COULEURS DU THÈME</string>
+    <string name="theme_colors_section_title">COULEURS DE L\'INTERFACE</string>
     <string name="your_contacts_will_remain_connected">Vos contacts resteront connectés.</string>
     <string name="share_address_with_contacts_question">Partager l\'adresse avec vos contacts \?</string>
     <string name="share_with_contacts">Partager avec vos contacts</string>
@@ -1769,4 +1768,94 @@
     <string name="v5_7_shape_profile_images_descr">Carré, circulaire, ou toute autre forme intermédiaire.</string>
     <string name="v5_7_call_sounds_descr">Lors des appels audio et vidéo.</string>
     <string name="v5_7_new_interface_languages">Interface utilisateur en lituanien</string>
+    <string name="message_delivery_warning_title">Avertissement sur la distribution des messages</string>
+    <string name="srv_error_host">L\'adresse du serveur est incompatible avec les paramètres du réseau.</string>
+    <string name="srv_error_version">La version du serveur est incompatible avec les paramètres du réseau.</string>
+    <string name="network_smp_proxy_mode_always_description">Toujours utiliser le routage privé.</string>
+    <string name="network_smp_proxy_mode_never_description">Ne pas utiliser de routage privé.</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Utiliser le routage privé avec des serveurs inconnus lorsque l\'adresse IP n\'est pas protégée.</string>
+    <string name="network_smp_proxy_fallback_allow_description">Envoyez les messages de manière directe lorsque votre serveur ou le serveur de destination ne prend pas en charge le routage privé.</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">Envoyer les messages de manière directe lorsque l\'adresse IP est protégée et que votre serveur ou le serveur de destination ne prend pas en charge le routage privé.</string>
+    <string name="snd_error_expired">Problèmes de réseau - le message a expiré après plusieurs tentatives d\'envoi.</string>
+    <string name="snd_error_auth">Clé erronée ou connexion non identifiée - il est très probable que cette connexion soit supprimée.</string>
+    <string name="snd_error_proxy_relay">Serveur de transfert : %1$s
+\nErreur au niveau du serveur de destination : %2$s</string>
+    <string name="snd_error_proxy">Serveur de transfert : %1$s
+\nErreur : %2$s</string>
+    <string name="network_smp_proxy_mode_always">Toujours</string>
+    <string name="network_smp_proxy_mode_private_routing">Routage privé</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Autoriser la rétrogradation</string>
+    <string name="update_network_smp_proxy_mode_question">Mode de routage des messages</string>
+    <string name="network_smp_proxy_mode_never">Jamais</string>
+    <string name="network_smp_proxy_mode_unknown">Relais inconnus</string>
+    <string name="network_smp_proxy_fallback_prohibit">Non</string>
+    <string name="network_smp_proxy_fallback_allow_protected">Lorsque l\'IP est masquée</string>
+    <string name="network_smp_proxy_fallback_allow">Oui</string>
+    <string name="update_network_smp_proxy_fallback_question">Rabattement du routage des messages</string>
+    <string name="private_routing_show_message_status">Afficher le statut du message</string>
+    <string name="protect_ip_address">Protection de l\'adresse IP</string>
+    <string name="settings_section_title_files">FICHIERS</string>
+    <string name="settings_section_title_private_message_routing">ROUTAGE PRIVÉ DES MESSAGES</string>
+    <string name="snd_error_relay">Erreur au niveau du serveur de destination : %1$s</string>
+    <string name="ci_status_other_error">Erreur : %1$s</string>
+    <string name="snd_error_quota">Capacité dépassée - le destinataire n\'a pas pu recevoir les messages envoyés précédemment.</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">L\'app demandera une confirmation pour les téléchargements depuis des serveurs de fichiers inconnus (sauf .onion ou lorsque le proxy SOCKS est activé).</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">Ne pas envoyer de messages directement, même si votre serveur ou le serveur de destination ne prend pas en charge le routage privé.</string>
+    <string name="private_routing_explanation">Pour protéger votre adresse IP, le routage privé utilise vos serveurs SMP pour délivrer les messages.</string>
+    <string name="network_smp_proxy_mode_unprotected">Non protégé</string>
+    <string name="file_not_approved_title">Serveurs inconnus !</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Sans Tor ou un VPN, votre adresse IP sera visible par les serveurs de fichiers.</string>
+    <string name="network_smp_proxy_mode_unknown_description">Utiliser le routage privé avec des serveurs inconnus.</string>
+    <string name="file_not_approved_descr">Sans Tor ou un VPN, votre adresse IP sera visible par ces relais XFTP :
+\n%1$s.</string>
+    <string name="color_primary_variant2">Accentuation supplémentaire 2</string>
+    <string name="wallpaper_advanced_settings">Paramètres avancés</string>
+    <string name="theme_black">Noir</string>
+    <string name="chat_theme_apply_to_mode">Appliquer à</string>
+    <string name="info_row_debug_delivery">Debug de la distribution</string>
+    <string name="wallpaper_scale_fill">Remplir</string>
+    <string name="wallpaper_preview_hello_bob">Bonjour Alice !</string>
+    <string name="v5_8_message_delivery">Amélioration de la transmission des messages</string>
+    <string name="v5_8_chat_themes_descr">Donnez à vos discussions un style différent !</string>
+    <string name="message_queue_info">Info sur la file des messages</string>
+    <string name="v5_8_chat_themes">Nouveaux thèmes de discussion</string>
+    <string name="message_queue_info_none">aucun</string>
+    <string name="v5_8_private_routing">Routage privé des messages 🚀</string>
+    <string name="v5_8_private_routing_descr">Protégez votre adresse IP des relais de messagerie choisis par vos contacts.
+\nActivez-le dans les paramètres *Réseau et serveurs*.</string>
+    <string name="chat_theme_reset_to_user_theme">Réinitialiser au thème de l\'utilisateur</string>
+    <string name="chat_list_always_visible">Afficher la liste des chats dans une nouvelle fenêtre</string>
+    <string name="color_wallpaper_tint">Teinte du fond d\'écran</string>
+    <string name="color_wallpaper_background">Fond d\'écran</string>
+    <string name="message_queue_info_server_info">info sur la file du serveur : %1$s
+\n
+\ndernier message reçu : %2$s</string>
+    <string name="theme_destination_app_theme">Thème de l\'app</string>
+    <string name="color_mode">Mode de couleur</string>
+    <string name="color_mode_dark">Sombre</string>
+    <string name="dark_mode_colors">Couleurs du mode sombre</string>
+    <string name="wallpaper_preview_hello_alice">Salut Bob !</string>
+    <string name="color_received_quote">Réponse reçue</string>
+    <string name="theme_remove_image">Retirer l\'image</string>
+    <string name="reset_single_color">Réinitialiser la couleur</string>
+    <string name="color_sent_quote">Réponse envoyée</string>
+    <string name="wallpaper_scale_repeat">Répéter</string>
+    <string name="wallpaper_scale">Dimension</string>
+    <string name="chat_theme_apply_to_all_modes">Tous les modes de couleur</string>
+    <string name="chat_theme_apply_to_dark_mode">Mode sombre</string>
+    <string name="wallpaper_scale_fit">Adapter</string>
+    <string name="chat_theme_apply_to_light_mode">Mode clair</string>
+    <string name="chat_theme_reset_to_app_theme">Réinitialiser au thème de l\'app</string>
+    <string name="chat_theme_set_default_theme">Définir le thème par défaut</string>
+    <string name="v5_8_safe_files_descr">Confirmer les fichiers provenant de serveurs inconnus.</string>
+    <string name="v5_8_persian_ui">UI en persan</string>
+    <string name="v5_8_safe_files">Réception de fichiers en toute sécurité</string>
+    <string name="v5_8_message_delivery_descr">Consommation réduite de la batterie.</string>
+    <string name="settings_section_title_chat_colors">Couleurs de la discussion</string>
+    <string name="settings_section_title_chat_theme">Thème de la discussion</string>
+    <string name="settings_section_title_user_theme">Thème de profil</string>
+    <string name="color_mode_light">Clair</string>
+    <string name="color_mode_system">Système</string>
+    <string name="error_initializing_web_view">Erreur d\'initialisation de WebView. Mettez votre système à jour avec la nouvelle version. Veuillez contacter les développeurs.
+\nErreur : %s</string>
 </resources>

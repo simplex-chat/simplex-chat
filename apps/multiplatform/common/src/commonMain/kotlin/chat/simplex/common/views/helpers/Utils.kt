@@ -19,6 +19,7 @@ import kotlinx.serialization.encodeToString
 import java.io.*
 import java.net.URI
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.Executors
@@ -145,6 +146,7 @@ fun getThemeFromUri(uri: URI, withAlertOnException: Boolean = true): ThemeOverri
     runCatching {
       return yaml.decodeFromStream<ThemeOverrides>(it!!)
     }.onFailure {
+      Log.e(TAG, "Error while decoding theme: ${it.stackTraceToString()}")
       if (withAlertOnException) {
         AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.import_theme_error),
@@ -278,6 +280,38 @@ fun saveFileFromUri(uri: URI, withAlertOnException: Boolean = true): CryptoFile?
 
     null
   }
+}
+
+fun saveWallpaperFile(uri: URI): String? {
+  val destFileName = generateNewFileName("wallpaper", "jpg", File(getWallpaperFilePath("")))
+  val destFile = File(getWallpaperFilePath(destFileName))
+  try {
+    val inputStream = uri.inputStream()
+    Files.copy(inputStream!!, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+  } catch (e: Exception) {
+    Log.e(TAG, "Error saving wallpaper file: ${e.stackTraceToString()}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.stackTraceToString())
+    return null
+  }
+  return destFile.name
+}
+
+fun saveWallpaperFile(image: ImageBitmap): String {
+  val destFileName = generateNewFileName("wallpaper", "jpg", File(getWallpaperFilePath("")))
+  val destFile = File(getWallpaperFilePath(destFileName))
+  val dataResized = resizeImageToDataSize(image, false, maxDataSize = 5_000_000)
+  val output = FileOutputStream(destFile)
+  dataResized.use {
+    it.writeTo(output)
+  }
+  return destFile.name
+}
+
+fun removeWallpaperFile(fileName: String? = null) {
+  File(getWallpaperFilePath("_")).parentFile.listFiles()?.forEach {
+    if (it.name == fileName) it.delete()
+  }
+  WallpaperType.cachedImages.remove(fileName)
 }
 
 fun <T> createTmpFileAndDelete(onCreated: (File) -> T): T {
@@ -550,8 +584,31 @@ fun KeyChangeEffect(
   val initialKey = remember { key1 }
   val initialKey2 = remember { key2 }
   var anyChange by remember { mutableStateOf(false) }
-  LaunchedEffect(key1) {
+  LaunchedEffect(key1, key2) {
     if (anyChange || key1 != initialKey || key2 != initialKey2) {
+      block()
+      anyChange = true
+    }
+  }
+}
+
+/**
+ * Runs the [block] only after initial value of the [key1], or [key2], or [key3] changes, not after initial launch
+ * */
+@Composable
+@NonRestartableComposable
+fun KeyChangeEffect(
+  key1: Any?,
+  key2: Any?,
+  key3: Any?,
+  block: suspend CoroutineScope.() -> Unit
+) {
+  val initialKey = remember { key1 }
+  val initialKey2 = remember { key2 }
+  val initialKey3 = remember { key3 }
+  var anyChange by remember { mutableStateOf(false) }
+  LaunchedEffect(key1, key2, key3) {
+    if (anyChange || key1 != initialKey || key2 != initialKey2 || key3 != initialKey3) {
       block()
       anyChange = true
     }

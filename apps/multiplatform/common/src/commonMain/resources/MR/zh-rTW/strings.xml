@@ -827,7 +827,6 @@
     <string name="error_saving_group_profile">儲存群組檔案時出錯</string>
     <string name="network_options_revert">恢復</string>
     <string name="theme">主題</string>
-    <string name="save_color">儲存顏色</string>
     <string name="chat_preferences_you_allow">你允許</string>
     <string name="set_group_preferences">修改群組內的設定</string>
     <string name="direct_messages">私訊</string>

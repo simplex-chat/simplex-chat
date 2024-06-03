@@ -25,11 +25,6 @@ val connections = ArrayList<WebSocket>()
 
 @Composable
 actual fun ActiveCallView() {
-  val endCall = {
-    val call = chatModel.activeCall.value
-    if (call != null) withBGApi { chatModel.callManager.endCall(call) }
-  }
-  BackHandler(onBack = endCall)
   val scope = rememberCoroutineScope()
   WebRTCController(chatModel.callCommand) { apiMsg ->
     Log.d(TAG, "received from WebRTCController: $apiMsg")

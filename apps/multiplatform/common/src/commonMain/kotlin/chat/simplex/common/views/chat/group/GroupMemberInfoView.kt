@@ -3,6 +3,7 @@ package chat.simplex.common.views.chat.group
 import InfoRow
 import SectionBottomSpacer
 import SectionDividerSpaced
+import SectionItemView
 import SectionSpacer
 import SectionTextFooter
 import SectionView
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
@@ -59,6 +61,7 @@ fun GroupMemberInfoView(
   if (chat != null) {
     val newRole = remember { mutableStateOf(member.memberRole) }
     GroupMemberInfoLayout(
+      rhId = rhId,
       groupInfo,
       member,
       connStats,
@@ -220,6 +223,7 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
 
 @Composable
 fun GroupMemberInfoLayout(
+  rhId: Long?,
   groupInfo: GroupInfo,
   member: GroupMember,
   connStats: MutableState<ConnectionStats?>,
@@ -418,6 +422,19 @@ fun GroupMemberInfoLayout(
       SectionView(title = stringResource(MR.strings.section_title_for_console)) {
         InfoRow(stringResource(MR.strings.info_row_local_name), member.localDisplayName)
         InfoRow(stringResource(MR.strings.info_row_database_id), member.groupMemberId.toString())
+        SectionItemView({
+          withBGApi {
+            val info = controller.apiGroupMemberQueueInfo(rhId, groupInfo.apiId, member.groupMemberId)
+            if (info != null) {
+              AlertManager.shared.showAlertMsg(
+                title = generalGetString(MR.strings.message_queue_info),
+                text = queueInfoText(info)
+              )
+            }
+          }
+        }) {
+          Text(stringResource(MR.strings.info_row_debug_delivery))
+        }
       }
     }
     SectionBottomSpacer()
@@ -664,6 +681,7 @@ fun blockMemberForAll(rhId: Long?, gInfo: GroupInfo, member: GroupMember, blocke
 fun PreviewGroupMemberInfoLayout() {
   SimpleXTheme {
     GroupMemberInfoLayout(
+      rhId = null,
       groupInfo = GroupInfo.sampleData,
       member = GroupMember.sampleData,
       connStats = remember { mutableStateOf(null) },

@@ -126,6 +126,7 @@ struct ChatInfoView: View {
         case abortSwitchAddressAlert
         case syncConnectionForceAlert
         case deleteContactNotice
+        case queueInfo(info: String)
         case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
@@ -136,6 +137,7 @@ struct ChatInfoView: View {
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
             case .deleteContactNotice: return "deleteContactNotice"
+            case let .queueInfo(info): return "queueInfo \(info)"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -270,6 +272,18 @@ struct ChatInfoView: View {
                     Section(header: Text("For console")) {
                         infoRow("Local name", chat.chatInfo.localDisplayName)
                         infoRow("Database ID", "\(chat.chatInfo.apiId)")
+                        Button ("Debug delivery") {
+                            Task {
+                                do {
+                                    let info = queueInfoText(try await apiContactQueueInfo(chat.chatInfo.apiId))
+                                    await MainActor.run { alert = .queueInfo(info: info) }
+                                } catch let e {
+                                    logger.error("apiContactQueueInfo error: \(responseError(e))")
+                                    let a = getErrorAlert(e, "Error")
+                                    await MainActor.run { alert = .error(title: a.title, error: a.message) }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -307,6 +321,7 @@ struct ChatInfoView: View {
             case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchContactAddress)
             case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncContactConnection(force: true) })
             case .deleteContactNotice: return deleteContactNotice(contact)
+            case let .queueInfo(info): return queueInfoAlert(info)
             case let .error(title, error): return mkAlert(title: title, message: error)
             }
         }
@@ -782,6 +797,22 @@ func syncConnectionForceAlert(_ syncConnectionForce: @escaping () -> Void) -> Al
         message: Text("The encryption is working and the new encryption agreement is not required. It may result in connection errors!"),
         primaryButton: .destructive(Text("Renegotiate"), action: syncConnectionForce),
         secondaryButton: .cancel()
+    )
+}
+
+func queueInfoText(_ info: (RcvMsgInfo?, QueueInfo)) -> String {
+    let (rcvMsgInfo, qInfo) = info
+    var msgInfo: String
+    if let rcvMsgInfo { msgInfo = encodeJSON(rcvMsgInfo) } else { msgInfo = "none" }
+    return String.localizedStringWithFormat(NSLocalizedString("server queue info: %@\n\nlast received msg: %@", comment: "queue info"), encodeJSON(qInfo), msgInfo)
+}
+
+func queueInfoAlert(_ info: String) -> Alert {
+    Alert(
+        title: Text("Message queue info"),
+        message: Text(info),
+        primaryButton: .default(Text("Ok")),
+        secondaryButton: .default(Text("Copy")) { UIPasteboard.general.string = info }
     )
 }
 
