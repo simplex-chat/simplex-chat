@@ -3,7 +3,6 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.compose")
-    id("org.jetbrains.kotlin.plugin.compose")
     kotlin("android")
     id("org.jetbrains.kotlin.plugin.serialization")
 }

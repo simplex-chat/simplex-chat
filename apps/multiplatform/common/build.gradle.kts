@@ -1,7 +1,6 @@
 plugins {
   kotlin("multiplatform")
   id("org.jetbrains.compose")
-  id("org.jetbrains.kotlin.plugin.compose")
   id("com.android.library")
   id("org.jetbrains.kotlin.plugin.serialization")
   id("dev.icerock.mobile.multiplatform-resources")
