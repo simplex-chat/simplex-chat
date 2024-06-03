@@ -199,4 +199,14 @@
     <string name="wallpaper_advanced_settings">Cài đặt nâng cao</string>
     <string name="chat_theme_apply_to_all_modes">Tất cả chế độ màu</string>
     <string name="permissions_camera_and_record_audio">Camera và mic</string>
+    <string name="alert_title_cant_invite_contacts">Không thể mời liên hệ!</string>
+    <string name="cannot_access_keychain">Không thể truy cập Keystore để lưu mật khẩu cơ sở dữ liệu</string>
+    <string name="icon_descr_cancel_link_preview">hủy bỏ xem trước liên kết</string>
+    <string name="migrate_from_device_cancel_migration">Hủy bỏ di chuyển</string>
+    <string name="theme_destination_app_theme">Chủ đề ứng dụng</string>
+    <string name="cannot_receive_file">Không thể nhận tệp</string>
+    <string name="database_initialization_error_title">Không thể khởi tạo cơ sở dữ liệu</string>
+    <string name="feature_cancelled_item">đã hủy bỏ %s</string>
+    <string name="invite_prohibited">Không thể mời liên hệ!</string>
+    <string name="icon_descr_cancel_live_message">Hủy bỏ tin nhắn động</string>
 </resources>
