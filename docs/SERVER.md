@@ -800,59 +800,68 @@ Logs will be stored as `csv` file in `/var/opt/simplex/smp-server-stats.daily.lo
 
 ```sh
 fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,monthMsgQueues,msgSentNtf,msgRecvNtf,dayCountNtf,weekCountNtf,monthCountNtf,qCount,msgCount,msgExpired,qDeletedNew,qDeletedSecured,pRelays_pRequests,pRelays_pSuccesses,pRelays_pErrorsConnect,pRelays_pErrorsCompat,pRelays_pErrorsOther,pRelaysOwn_pRequests,pRelaysOwn_pSuccesses,pRelaysOwn_pErrorsConnect,pRelaysOwn_pErrorsCompat,pRelaysOwn_pErrorsOther,pMsgFwds_pRequests,pMsgFwds_pSuccesses,pMsgFwds_pErrorsConnect,pMsgFwds_pErrorsCompat,pMsgFwds_pErrorsOther,pMsgFwdsOwn_pRequests,pMsgFwdsOwn_pSuccesses,pMsgFwdsOwn_pErrorsConnect,pMsgFwdsOwn_pErrorsCompat,pMsgFwdsOwn_pErrorsOther,pMsgFwdsRecv,qSub,qSubAuth,qSubDuplicate,qSubProhibited,msgSentAuth,msgSentQuota,msgSentLarge
-
 ```
 
-| Field number  | Field name                   | Field Type  | Field Description                          |
-| ------------- | ---------------------------- | ----------- | -------------------------------------------
-| 1             | `fromTime`                   | `timestamp` | Date and time of event                     |
-| 2             | `qCreated`                   | `int`       | Created queues                             |
-| 3             | `qSecured`                   | `int`       | Established queues                         |
-| 4             | `qDeleted`                   | `int`       | Deleted queues                             |
-| 5             | `msgSent`                    | `int`       | Sent messages                              |
-| 6             | `msgRecv`                    | `int`       | Received messages                          |
-| 7             | `dayMsgQueues`               | `int`       | Active queues in a day                     |
-| 8             | `weekMsgQueues`              | `int`       | Active queues in a week                    |
-| 9             | `monthMsgQueues`             | `int`       | Active queues in a month                   |
-| 10            | `msgSentNtf`                 | `int`       | Sent messages with notification            |
-| 11            | `msgRecvNtf`                 | `int`       | Received messages with notification        |
-| 12            | `dayCountNtf`                | `int`       | Daily active queues with notifications     |
-| 13            | `weekCountNtf`               | `int`       | Weekly active queues with notifications    |
-| 14            | `monthCountNtf`              | `int`       | Monthly active queues with notifications   |
-| 15            | `qCount`                     | `int`       | Stored queues                              |
-| 16            | `msgCount`                   | `int`       | Stored messages                            |
-| 17            | `msgExpired`                 | `int`       | Expired messages                           |
-| 18            | `qDeletedNew`                | `int`       | New deleted queues                         |
-| 19            | `qDeletedSecured`            | `int`       | Secured deleted queues                     |
-| 20            | `pRelays_pRequests`          | `int`       | All relays: requests                       |
-| 21            | `pRelays_pSuccesses`         | `int`       | All relays: successes                      |
-| 22            | `pRelays_pErrorsConnect`     | `int`       | All relays: connection errors              |
-| 23            | `pRelays_pErrorsCompat`      | `int`       | All relays: compatability errors           |
-| 24            | `pRelays_pErrorsOther`       | `int`       | All relays: other errors                   |
-| 25            | `pRelaysOwn_pRequests`       | `int`       | Own relays: requests                       |
-| 26            | `pRelaysOwn_pSuccesses`      | `int`       | Own relays: successes                      |
-| 27            | `pRelaysOwn_pErrorsConnect`  | `int`       | Own relays: connection errors              |
-| 28            | `pRelaysOwn_pErrorsCompat`   | `int`       | Own relays: compatability errors           |
-| 29            | `pRelaysOwn_pErrorsOther`    | `int`       | Own relays: other errors                   |
-| 30            | `pMsgFwds_pRequests`         | `int`       | All message forwards: requests             |
-| 31            | `pMsgFwds_pSuccesses`        | `int`       | All message forwards: successes            |
-| 32            | `pMsgFwds_pErrorsConnect`    | `int`       | All message forwards: connection errors    |
-| 33            | `pMsgFwds_pErrorsCompat`     | `int`       | All message forwards: compatability errors |
-| 34            | `pMsgFwds_pErrorsOther`      | `int`       | All message forwards: other errors         |
-| 35            | `pMsgFwdsOwn_pRequests`      | `int`       | Own message forwards: requests             |
-| 36            | `pMsgFwdsOwn_pSuccesses`     | `int`       | Own message forwards: successes            |
-| 37            | `pMsgFwdsOwn_pErrorsConnect` | `int`       | Own message forwards: connection errors    |
-| 38            | `pMsgFwdsOwn_pErrorsCompat`  | `int`       | Own message forwards: compatability errors |
-| 39            | `pMsgFwdsOwn_pErrorsOther`   | `int`       | Own message forwards: other errors         |
-| 40            | `pMsgFwdsRecv`               | `int`       | Received message forwards                  |
-| 41            | `qSub`                       | `int`       | All subscribtion errors                    |
-| 42            | `qSubAuth`                   | `int`       | Authentication subscription erorrs         |
-| 43            | `qSubDuplicate`              | `int`       | Duplicates subscription errors             |
-| 44            | `qSubProhibited`             | `int`       | Prohibited subscription errors             |
-| 45            | `msgSentAuth`                | `int`       | Authentication message errors              |
-| 46            | `msgSentQuota`               | `int`       | Quota message errors                       |
-| 47            | `msgSentLarge`               | `int`       | Large packets message errors               |
-
+| Field number  | Field name                   | Field Description          |
+| ------------- | ---------------------------- | -------------------------- |
+| 1             | `fromTime`                   | Date of statistics         |
+| Messaging queue:                                                          |
+| 2             | `qCreated`                   | Created                    |
+| 3             | `qSecured`                   | Established                |
+| 4             | `qDeleted`                   | Deleted                    |
+| Messages:                                                                 |
+| 5             | `msgSent`                    | Sent                       |
+| 6             | `msgRecv`                    | Received                   |
+| 7             | `dayMsgQueues`               | Active queues in a day     |
+| 8             | `weekMsgQueues`              | Active queues in a week    |
+| 9             | `monthMsgQueues`             | Active queues in a month   |
+| Messages with "notification" flag                                         |
+| 10            | `msgSentNtf`                 | Sent                       |
+| 11            | `msgRecvNtf`                 | Received                   |
+| 12            | `dayCountNtf`                | Active queues in a day     |
+| 13            | `weekCountNtf`               | Active queues in a week    |
+| 14            | `monthCountNtf`              | Active queues in a month   |
+| Additional statistics:                                                    |
+| 15            | `qCount`                     | Stored queues              |
+| 16            | `msgCount`                   | Stored messages            |
+| 17            | `msgExpired`                 | Expired messages           |
+| 18            | `qDeletedNew`                | New deleted queues         |
+| 19            | `qDeletedSecured`            | Secured deleted queues     |
+| Requested sessions with all relays:                                       |
+| 20            | `pRelays_pRequests`          | - requests                 |
+| 21            | `pRelays_pSuccesses`         | - successes                |
+| 22            | `pRelays_pErrorsConnect`     | - connection errors        |
+| 23            | `pRelays_pErrorsCompat`      | - compatability errors     |
+| 24            | `pRelays_pErrorsOther`       | - other errors             |
+| Requested sessions with own relays:                                       |
+| 25            | `pRelaysOwn_pRequests`       | - requests                 |
+| 26            | `pRelaysOwn_pSuccesses`      | - successes                |
+| 27            | `pRelaysOwn_pErrorsConnect`  | - connection errors        |
+| 28            | `pRelaysOwn_pErrorsCompat`   | - compatability errors     |
+| 29            | `pRelaysOwn_pErrorsOther`    | - other errors             |
+| Message forwards to all relays:                                           |
+| 30            | `pMsgFwds_pRequests`         | - requests                 |
+| 31            | `pMsgFwds_pSuccesses`        | - successes                |
+| 32            | `pMsgFwds_pErrorsConnect`    | - connection errors        |
+| 33            | `pMsgFwds_pErrorsCompat`     | - compatability errors     |
+| 34            | `pMsgFwds_pErrorsOther`      | - other errors             |
+| Message forward to own relays:                                            |
+| 35            | `pMsgFwdsOwn_pRequests`      | - requests                 |
+| 36            | `pMsgFwdsOwn_pSuccesses`     | - successes                |
+| 37            | `pMsgFwdsOwn_pErrorsConnect` | - connection errors        |
+| 38            | `pMsgFwdsOwn_pErrorsCompat`  | - compatability errors     |
+| 39            | `pMsgFwdsOwn_pErrorsOther`   | - other errors             |
+| Received message forwards:                                                |
+| 40            | `pMsgFwdsRecv`               |                            |
+| Message queue subscribtion errors:                                        |
+| 41            | `qSub`                       | All                        |
+| 42            | `qSubAuth`                   | Authentication erorrs      |
+| 43            | `qSubDuplicate`              | Duplicate SUB errors       |
+| 44            | `qSubProhibited`             | Prohibited SUB errors      |
+| Message errors:                                                           |
+| 45            | `msgSentAuth`                | Authentication errors      |
+| 46            | `msgSentQuota`               | Quota errors               |
+| 47            | `msgSentLarge`               | Large message errors       |
 
 To import `csv` to `Grafana` one should:
 
