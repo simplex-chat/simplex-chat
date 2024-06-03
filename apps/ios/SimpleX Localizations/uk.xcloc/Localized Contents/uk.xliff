@@ -1721,8 +1721,9 @@ This is your own one-time link!</source>
         <target>База даних буде перенесена під час перезапуску програми</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Debug delivery" xml:space="preserve">
+      <trans-unit id="Debug delivery" xml:space="preserve" approved="no">
         <source>Debug delivery</source>
+        <target state="translated">Доставка налагодження</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Decentralized" xml:space="preserve">
@@ -3701,8 +3702,9 @@ This is your link for group %@!</source>
         <target>Чернетка повідомлення</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message queue info" xml:space="preserve">
+      <trans-unit id="Message queue info" xml:space="preserve" approved="no">
         <source>Message queue info</source>
+        <target state="translated">Інформація про чергу повідомлень</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reactions" xml:space="preserve">
@@ -7584,10 +7586,13 @@ SimpleX servers cannot see your profile.</source>
         <target>надіслати пряме повідомлення</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve">
+      <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve" approved="no">
         <source>server queue info: %1$@
 
 last received msg: %2$@</source>
+        <target state="translated">інформація про чергу на сервері: %1$@
+
+останнє отримане повідомлення: %2$@</target>
         <note>queue info</note>
       </trans-unit>
       <trans-unit id="set new contact address" xml:space="preserve">
