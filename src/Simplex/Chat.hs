@@ -7048,22 +7048,30 @@ agentXFTPDeleteSndFilesRemote user sndFiles = do
   let redirects' = mapMaybe mapRedirectMeta $ concat redirects
       sndFilesAll = redirects' <> sndFiles
       sndFilesAll' = filter (not . agentSndFileDeleted . fst) sndFilesAll
-  sndFilesAll'' <- catMaybes <$> mapM sndFileDescr sndFilesAll'
-  let sfs = map (\(XFTPSndFile {agentSndFileId = AgentSndFileId aFileId}, sfd, _) -> (aFileId, sfd)) sndFilesAll''
-  withAgent' $ \a -> xftpDeleteSndFilesRemote a (aUserId user) sfs
-  void . withStoreBatch' $ \db -> map (setSndFTAgentDeleted db user . (\(_, _, fId) -> fId)) sndFilesAll''
+  -- while file is being prepared and uploaded, it would not have description available;
+  -- this partitions files into those with and without descriptions -
+  -- files with description are deleted remotely, files without description are deleted internally
+  (sfsNoDescr, sfsWithDescr) <- partitionSndDescr sndFilesAll' [] []
+  withAgent' $ \a -> xftpDeleteSndFilesInternal a sfsNoDescr
+  withAgent' $ \a -> xftpDeleteSndFilesRemote a (aUserId user) sfsWithDescr
+  void . withStoreBatch' $ \db -> map (setSndFTAgentDeleted db user . (\(_, fId) -> fId)) sndFilesAll'
   where
     mapRedirectMeta :: FileTransferMeta -> Maybe (XFTPSndFile, FileTransferId)
     mapRedirectMeta FileTransferMeta {fileId = fileId, xftpSndFile = Just sndFileRedirect} = Just (sndFileRedirect, fileId)
     mapRedirectMeta _ = Nothing
-    sndFileDescr :: (XFTPSndFile, FileTransferId) -> CM' (Maybe (XFTPSndFile, ValidFileDescription 'FSender, FileTransferId))
-    sndFileDescr (xsf@XFTPSndFile {privateSndFileDescr}, fileId) =
-      join <$> forM privateSndFileDescr parseSndDescr
-      where
-        parseSndDescr sfdText =
+    partitionSndDescr ::
+      [(XFTPSndFile, FileTransferId)] ->
+      [SndFileId] ->
+      [(SndFileId, ValidFileDescription 'FSender)] ->
+      CM' ([SndFileId], [(SndFileId, ValidFileDescription 'FSender)])
+    partitionSndDescr [] filesWithoutDescr filesWithDescr = pure (filesWithoutDescr, filesWithDescr)
+    partitionSndDescr ((XFTPSndFile {agentSndFileId = AgentSndFileId aFileId, privateSndFileDescr}, _) : xsfs) filesWithoutDescr filesWithDescr =
+      case privateSndFileDescr of
+        Nothing -> partitionSndDescr xsfs (aFileId : filesWithoutDescr) filesWithDescr
+        Just sfdText ->
           tryChatError' (parseFileDescription sfdText) >>= \case
-            Left _ -> pure Nothing
-            Right sd -> pure $ Just (xsf, sd, fileId)
+            Left _ -> partitionSndDescr xsfs (aFileId : filesWithoutDescr) filesWithDescr
+            Right sfd -> partitionSndDescr xsfs filesWithoutDescr ((aFileId, sfd) : filesWithDescr)
 
 userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Bool -> Profile
 userProfileToSend user@User {profile = p} incognitoProfile ct inGroup = do
