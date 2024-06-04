@@ -62,22 +62,22 @@ struct CIImageView: View {
                             case .rcvCancelled: () // TODO
                             case let .rcvError(rcvFileError):
                                 AlertManager.shared.showAlert(Alert(
-                                    title: Text("File download error"),
+                                    title: Text("File error"),
                                     message: Text(rcvFileError.errorInfo)
                                 ))
                             case let .rcvWarning(rcvFileError):
                                 AlertManager.shared.showAlert(Alert(
-                                    title: Text("File download warning"),
+                                    title: Text("Temporary file error"),
                                     message: Text(rcvFileError.errorInfo)
                                 ))
                             case let .sndError(sndFileError):
                                 AlertManager.shared.showAlert(Alert(
-                                    title: Text("File upload error"),
+                                    title: Text("File error"),
                                     message: Text(sndFileError.errorInfo)
                                 ))
                             case let .sndWarning(sndFileError):
                                 AlertManager.shared.showAlert(Alert(
-                                    title: Text("File upload warning"),
+                                    title: Text("Temporary file error"),
                                     message: Text(sndFileError.errorInfo)
                                 ))
                             default: ()

@@ -88,26 +88,6 @@ struct CIVideoView: View {
                             case .rcvTransfer: () // ?
                             case .rcvComplete: () // ?
                             case .rcvCancelled: () // TODO
-                            case let .rcvError(rcvFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("File download error"),
-                                    message: Text(rcvFileError.errorInfo)
-                                ))
-                            case let .rcvWarning(rcvFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("File download warning"),
-                                    message: Text(rcvFileError.errorInfo)
-                                ))
-                            case let .sndError(sndFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("File upload error"),
-                                    message: Text(sndFileError.errorInfo)
-                                ))
-                            case let .sndWarning(sndFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("File upload warning"),
-                                    message: Text(sndFileError.errorInfo)
-                                ))
                             default: ()
                             }
                         }
@@ -303,7 +283,7 @@ struct CIVideoView: View {
                 fileIcon("xmark", 10, 13)
                     .onTapGesture {
                         AlertManager.shared.showAlert(Alert(
-                            title: Text("File upload error"),
+                            title: Text("File error"),
                             message: Text(sndFileError.errorInfo)
                         ))
                     }
@@ -311,7 +291,7 @@ struct CIVideoView: View {
                 fileIcon("exclamationmark.triangle.fill", 10, 13)
                     .onTapGesture {
                         AlertManager.shared.showAlert(Alert(
-                            title: Text("File upload warning"),
+                            title: Text("Temporary file error"),
                             message: Text(sndFileError.errorInfo)
                         ))
                     }
@@ -330,7 +310,7 @@ struct CIVideoView: View {
                 fileIcon("xmark", 10, 13)
                     .onTapGesture {
                         AlertManager.shared.showAlert(Alert(
-                            title: Text("File download error"),
+                            title: Text("File error"),
                             message: Text(rcvFileError.errorInfo)
                         ))
                     }
@@ -338,7 +318,7 @@ struct CIVideoView: View {
                 fileIcon("exclamationmark.triangle.fill", 10, 13)
                     .onTapGesture {
                         AlertManager.shared.showAlert(Alert(
-                            title: Text("File download warning"),
+                            title: Text("Temporary file error"),
                             message: Text(rcvFileError.errorInfo)
                         ))
                     }

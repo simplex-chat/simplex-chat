@@ -144,18 +144,18 @@ struct VoiceMessagePlayer: View {
                 case .sndComplete: playbackButton()
                 case .sndCancelled: playbackButton()
                 case let .sndError(sndFileError):
-                    fileStatusIcon("multiply")
+                    fileStatusIcon("multiply", 14)
                         .onTapGesture {
                             AlertManager.shared.showAlert(Alert(
-                                title: Text("File upload error"),
+                                title: Text("File error"),
                                 message: Text(sndFileError.errorInfo)
                             ))
                         }
                 case let .sndWarning(sndFileError):
-                    fileStatusIcon("exclamationmark.triangle.fill")
+                    fileStatusIcon("exclamationmark.triangle.fill", 16)
                         .onTapGesture {
                             AlertManager.shared.showAlert(Alert(
-                                title: Text("File upload warning"),
+                                title: Text("Temporary file error"),
                                 message: Text(sndFileError.errorInfo)
                             ))
                         }
@@ -166,18 +166,18 @@ struct VoiceMessagePlayer: View {
                 case .rcvComplete: playbackButton()
                 case .rcvCancelled: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
                 case let .rcvError(rcvFileError):
-                    fileStatusIcon("multiply")
+                    fileStatusIcon("multiply", 14)
                         .onTapGesture {
                             AlertManager.shared.showAlert(Alert(
-                                title: Text("File download error"),
+                                title: Text("File error"),
                                 message: Text(rcvFileError.errorInfo)
                             ))
                         }
                 case let .rcvWarning(rcvFileError):
-                    fileStatusIcon("exclamationmark.triangle.fill")
+                    fileStatusIcon("exclamationmark.triangle.fill", 16)
                         .onTapGesture {
                             AlertManager.shared.showAlert(Alert(
-                                title: Text("File download warning"),
+                                title: Text("Temporary file error"),
                                 message: Text(rcvFileError.errorInfo)
                             ))
                         }
@@ -281,11 +281,11 @@ struct VoiceMessagePlayer: View {
         }
     }
 
-    private func fileStatusIcon(_ image: String) -> some View {
+    private func fileStatusIcon(_ image: String, _ size: CGFloat) -> some View {
         Image(systemName: image)
             .resizable()
             .aspectRatio(contentMode: .fit)
-            .frame(width: 14, height: 14)
+            .frame(width: size, height: size)
             .foregroundColor(Color(uiColor: .tertiaryLabel))
             .frame(width: 56, height: 56)
             .background(showBackground ? chatItemFrameColor(chatItem, colorScheme) : .clear)

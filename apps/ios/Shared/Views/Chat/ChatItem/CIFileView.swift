@@ -113,13 +113,13 @@ struct CIFileView: View {
             case let .rcvError(rcvFileError):
                 logger.debug("CIFileView fileAction - in .rcvError")
                 AlertManager.shared.showAlert(Alert(
-                    title: Text("File download error"),
+                    title: Text("File error"),
                     message: Text(rcvFileError.errorInfo)
                 ))
             case let .rcvWarning(rcvFileError):
                 logger.debug("CIFileView fileAction - in .rcvWarning")
                 AlertManager.shared.showAlert(Alert(
-                    title: Text("File download warning"),
+                    title: Text("Temporary file error"),
                     message: Text(rcvFileError.errorInfo)
                 ))
             case .sndStored:
@@ -135,13 +135,13 @@ struct CIFileView: View {
             case let .sndError(sndFileError):
                 logger.debug("CIFileView fileAction - in .sndError")
                 AlertManager.shared.showAlert(Alert(
-                    title: Text("File upload error"),
+                    title: Text("File error"),
                     message: Text(sndFileError.errorInfo)
                 ))
             case let .sndWarning(sndFileError):
                 logger.debug("CIFileView fileAction - in .sndWarning")
                 AlertManager.shared.showAlert(Alert(
-                    title: Text("File upload warning"),
+                    title: Text("Temporary file error"),
                     message: Text(sndFileError.errorInfo)
                 ))
             default: break
