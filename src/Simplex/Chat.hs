@@ -7048,6 +7048,9 @@ agentXFTPDeleteSndFilesRemote user sndFiles = do
   let redirects' = mapMaybe mapRedirectMeta $ concat redirects
       sndFilesAll = redirects' <> sndFiles
       sndFilesAll' = filter (not . agentSndFileDeleted . fst) sndFilesAll
+  -- while file is being prepared and uploaded, it would not have description available;
+  -- this partitions files into those with and without descriptions -
+  -- files with description are deleted remotely, files without description are deleted internally
   (sfsNoDescr, sfsWithDescr) <- partitionSndDescr sndFilesAll' [] []
   withAgent' $ \a -> xftpDeleteSndFilesInternal a sfsNoDescr
   withAgent' $ \a -> xftpDeleteSndFilesRemote a (aUserId user) sfsWithDescr
