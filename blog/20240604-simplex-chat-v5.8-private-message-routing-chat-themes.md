@@ -72,7 +72,7 @@ The routing protocol also prevents the possibility of MITM attack by the forward
 The diagram below shows all the encryption layers used in private message routing:
 
 ```
------------------             ----------------- --- TLS --- -----------------             -----------------
+-----------------             -----------------  -- TLS --  -----------------             -----------------
 |               |  -- TLS --  |               |  -- f2d --  |               |  -- TLS --  |               |
 |               |  -- s2d --  |               |  -- s2d --  |               |  -- d2r --  |               |
 |    Sending    |  -- e2e --  |    sender's   |  -- e2e --  |  recipient's  |  -- e2e --  |   Receiving   |
@@ -80,7 +80,7 @@ The diagram below shows all the encryption layers used in private message routin
 |               |  -- e2e --  |     relay     |  -- e2e --  |     relay     |  -- e2e --  |               |
 |               |  -- s2d --  |               |  -- s2d --  |               |  -- d2r --  |               |
 |               |  -- TLS --  |               |  -- f2d --  |               |  -- TLS --  |               |
------------------             ----------------- --- TLS --- -----------------             -----------------
+-----------------             -----------------  -- TLS --  -----------------             -----------------
 ```
 
 **e2e** - two end-to-end encryption layers between **sending** and **receiving** clients, one of which uses double ratchet algorithm. These encryption layers are present in the previous version of message routing protocol too.
