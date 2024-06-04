@@ -7,6 +7,116 @@
         <description>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</description>
         <language>en</language>
             <item>
+                <title>SimpleX network: private message routing, v5.8 released with IP address protection and chat themes</title>
+                <link>https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.html</link>
+                <description>&lt;h1 id=&quot;simplex-network-private-message-routing-v58-released-with-ip-address-protection-and-chat-themes&quot; tabindex=&quot;-1&quot;&gt;SimpleX network: private message routing, v5.8 released with IP address protection and chat themes&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; June 4, 2024&lt;/p&gt;
+&lt;p&gt;What&#39;s new in v5.8:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.html#private-message-routing&quot;&gt;private message routing&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.html#server-transparency&quot;&gt;server transparency&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.html#protect-ip-address-when-downloading-files--media&quot;&gt;protect IP address when downloading files &amp;amp; media&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.html#chat-themes&quot;&gt;chat themes&lt;/a&gt; for better conversation privacy - in Android and desktop apps.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.html#group-improvements&quot;&gt;group improvements&lt;/a&gt; - reduced traffic and additional preferences.&lt;/li&gt;
+&lt;li&gt;improved networking, message and file delivery.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Also, we added Persian interface language to the Android and desktop apps, thanks to &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#help-translating-simplex-chat&quot;&gt;our users and Weblate&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;private-message-routing&quot; tabindex=&quot;-1&quot;&gt;Private message routing&lt;/h2&gt;
+&lt;h3 id=&quot;whats-the-problem&quot; tabindex=&quot;-1&quot;&gt;What&#39;s the problem?&lt;/h3&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/simplex-explained.svg&quot; width=&quot;37%&quot; class=&quot;float-right&quot; /&gt;
+&lt;p&gt;SimpleX network design has always been focussed on protecting user identity on the messaging protocol level - there is no user profile identifiers of any kind in the protocol design, not even random numbers or cryptographic keys.&lt;/p&gt;
+&lt;p&gt;Until this release though, SimpleX network had no built-in protection of user transport identities - IP addresses. As previously the users could only choose which messaging relays to use to receive messages, these relays could observe the IP addresses of the senders, and if these relays were controlled by the recipients, the recipients themselves could observe them too - either by modifying server code or simply by tracking all connecting IP addresses.&lt;/p&gt;
+&lt;p&gt;To work around this limitation, many users connected to SimpleX network relays via Tor or VPN - so that the recipients&#39; relays could not observe IP addresses of the users when they send messages. Still, it was the most important and the most criticized limitation of SimpleX network for the users.&lt;/p&gt;
+&lt;h3 id=&quot;why-didnt-we-just-embed-tor-in-the-app&quot; tabindex=&quot;-1&quot;&gt;Why didn&#39;t we just embed Tor in the app?&lt;/h3&gt;
+&lt;p&gt;Tor is the best transport overlay network in existence, and it provides network anonymity for millions of Internet users.&lt;/p&gt;
+&lt;p&gt;SimpleX Chat has many integration points with Tor:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;it allows &lt;a href=&quot;https://simplex.chat/blog/20220901-simplex-chat-v3.2-incognito-mode.html#using-onion-server-addresses-with-tor&quot;&gt;dual server addresses&lt;/a&gt;, when the same messaging relay can be reached both via Tor and via clearnet.&lt;/li&gt;
+&lt;li&gt;it utilises Tor&#39;s SOCKS proxy &amp;quot;isolate-by-auth&amp;quot; feature to create a new Tor circuit for each user profile, and with an additional option - for each contact. Per-contact &lt;a href=&quot;https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation&quot;&gt;transport isolation&lt;/a&gt; is still experimental, as it doesn&#39;t work if you connect to groups with many members, and it&#39;s only available if you enable developer tools.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Many SimpleX network design ideas are borrowed from Tor network design:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;mitigation of &lt;a href=&quot;https://simplex.chat/docs/glossary.html#man-in-the-middle-attack&quot;&gt;MITM attack&lt;/a&gt; on client-server connection is done in the same way as Tor relays do it - the fingerprint of offline certificate is included in server address and validated by the client.&lt;/li&gt;
+&lt;li&gt;the private routing itself uses the approach similar to onion routing, by adding encryption layers on each hop.&lt;/li&gt;
+&lt;li&gt;we are also considering to implement Tor&#39;s &lt;a href=&quot;https://blog.torproject.org/introducing-proof-of-work-defense-for-onion-services/&quot;&gt;Proof-of-work DoS defence&lt;/a&gt; mechanism.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;So why didn&#39;t we just embed Tor into the messaging clients to provide IP address protection?&lt;/p&gt;
+&lt;p&gt;We believe that Tor may be the wrong solution for some users for one of the reasons:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;much higher latency, error rate and resource usage.&lt;/li&gt;
+&lt;li&gt;people who want to use Tor are better served by specialized apps, such as &lt;a href=&quot;https://guardianproject.info/apps/org.torproject.android/&quot;&gt;Orbot&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;Tor usage is restricted in some networks, so it would require complex configuration in the app UI.&lt;/li&gt;
+&lt;li&gt;some countries have legislative restrictions on Tor usage, so embedding Tor would require supporting multiple app versions, and it would leave the original problem unsolved in these countries.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Also, while Tor solves the problem of IP address protection, it doesn&#39;t solve the problem of meta-data correlation by user&#39;s transport session. When the client connects to the messaging relays via Tor, the relays can still observe which messaging queues a user sends messages to via a single TCP connection. The client can mitigate it with per-contact transport isolation, but it uses too much traffic and battery for most users.&lt;/p&gt;
+&lt;p&gt;So we believed we would create more value to the users of SimpleX network with private message routing. This new message routing protocol provides IP address and transport session protection out of the box, once released. It can also be extended to support delayed delivery and other functions, improving both usability and transport privacy in the future.&lt;/p&gt;
+&lt;p&gt;At the same time, we plan to continue supporting Tor and other overlay networks. Any overlay network that supports SOCKS proxy with &amp;quot;isolate-by-auth&amp;quot; feature will work with SimpleX Chat app.&lt;/p&gt;
+&lt;h3 id=&quot;what-is-private-message-routing-and-how-does-it-work&quot; tabindex=&quot;-1&quot;&gt;What is private message routing and how does it work?&lt;/h3&gt;
+&lt;p&gt;Private message routing is a major milestone for SimpleX network evolution. It is a new message routing protocol that protects both users&#39; IP addresses and transport sessions from the messaging relays chosen by their contacts. Private message routing is, effectively, a 2-hop onion routing protocol inspired by Tor design, but with one important difference - the first (forwarding) relay is always chosen by message sender and the second (destination) - by the message recipient. In this way, neither side of the conversation can observe IP address or transport session of another.&lt;/p&gt;
+&lt;p&gt;At the same time, the relays chosen by the sending clients to forward the messages cannot observe to which connections (messaging queues) the messages are sent, because of the additional layer of end-to-end encryption between the sender and the destination relay, similar to how onion routing works in Tor network, and also thanks to the protocol design that avoids any repeated or non-random identifiers associated with the messages, that would otherwise allow correlating the messages sent to different connections as sent by the same user. Each message forwarded to the destination relay is additionally encrypted with one-time ephemeral key, to be independent of messages sent to different connections.&lt;/p&gt;
+&lt;p&gt;The routing protocol also prevents the possibility of MITM attack by the forwarding relay, which provides the certificate the session keys of the destination server to the sending client that are cryptographically signed by the same certificate that is included in destination server address, so the client can verify that the messages are sent to the intended destination, and not intercepted.&lt;/p&gt;
+&lt;p&gt;The diagram below shows all the encryption layers used in private message routing:&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;-----------------             -----------------  -- TLS --  -----------------             -----------------
+|               |  -- TLS --  |               |  -- f2d --  |               |  -- TLS --  |               |
+|               |  -- s2d --  |               |  -- s2d --  |               |  -- d2r --  |               |
+|    Sending    |  -- e2e --  |    sender&#39;s   |  -- e2e --  |  recipient&#39;s  |  -- e2e --  |   Receiving   |
+|    client     |  message -&amp;gt; |  Forwarding   |  message -&amp;gt; |  Destination  |  message -&amp;gt; |    client     |
+|               |  -- e2e --  |     relay     |  -- e2e --  |     relay     |  -- e2e --  |               |
+|               |  -- s2d --  |               |  -- s2d --  |               |  -- d2r --  |               |
+|               |  -- TLS --  |               |  -- f2d --  |               |  -- TLS --  |               |
+-----------------             -----------------  -- TLS --  -----------------             -----------------
+&lt;/code&gt;&lt;/pre&gt;
+&lt;p&gt;&lt;strong&gt;e2e&lt;/strong&gt; - two end-to-end encryption layers between &lt;strong&gt;sending&lt;/strong&gt; and &lt;strong&gt;receiving&lt;/strong&gt; clients, one of which uses double ratchet algorithm. These encryption layers are present in the previous version of message routing protocol too.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;s2d&lt;/strong&gt; - encryption between the &lt;strong&gt;sending&lt;/strong&gt; client and recipient&#39;s &lt;strong&gt;destination&lt;/strong&gt; relay. This new encryption layer hides the message metadata (destination connection address and message notification flag) from the forwarding relay.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;f2d&lt;/strong&gt; - additional new encryption layer between &lt;strong&gt;forwarding&lt;/strong&gt; and &lt;strong&gt;destination&lt;/strong&gt; relays, protecting from traffic correlation in case TLS is compromised - there are no identifiers or cyphertext in common between incoming and outgoing traffic of both relays inside TLS connection.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;d2r&lt;/strong&gt; - additional encryption layer between destination relay and the recipient, also protecting from traffic correlation in case TLS is compromised.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;TLS&lt;/strong&gt; - TLS 1.3 transport encryption.&lt;/p&gt;
+&lt;p&gt;For private routing to work, both the forwardig and the destination relays should support the updated messaging protocol - it is supported from v5.8 of the messaging relays. It is already released to all relays preset in the app, and available as a self-hosted server. We updated &lt;a href=&quot;https://simplex.chat/docs/server.html&quot;&gt;the guide&lt;/a&gt; about how to host your own messaging relays.&lt;/p&gt;
+&lt;p&gt;Because many self-hosted relays did not upgrade yet, private routing is not enabled by default. To enable it, you can open &lt;em&gt;Network &amp;amp; servers&lt;/em&gt; settings in the app and change the settings in &lt;em&gt;Private message routing&lt;/em&gt; section. We recommend setting &lt;em&gt;Private routing&lt;/em&gt; option to &lt;em&gt;Unprotected&lt;/em&gt; (to use it only with unknown relays and when not connecting via Tor) and &lt;em&gt;Allow downgrade&lt;/em&gt; to &lt;em&gt;Yes&lt;/em&gt; (so messages can still be delivered to the messaging relays that didn&#39;t upgrade yet) or to &lt;em&gt;When IP hidden&lt;/em&gt; (in which case the messages will fail to deliver to unknown relays that didn&#39;t upgrade yet unless you connect to them via Tor).&lt;/p&gt;
+&lt;p&gt;Read more about the technical design of the private message routing in &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/blob/stable/rfcs/2023-09-12-second-relays.md&quot;&gt;this document&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;server-transparency&quot; tabindex=&quot;-1&quot;&gt;Server transparency&lt;/h2&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20240604-server.png&quot; width=&quot;40%&quot; class=&quot;float-to-right&quot; /&gt;
+&lt;p&gt;Even with very limited information available to the messaging relays, there are &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md#simplex-messaging-protocol-server&quot;&gt;several things&lt;/a&gt; that would reduce users&#39; privacy that a compromised relay can do.&lt;/p&gt;
+&lt;p&gt;We &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/blob/master/rfcs/2024-03-20-server-metadata.md&quot;&gt;wrote previously&lt;/a&gt; that it is important that server operators commit to running unmodified server code or disclose any code modifications, and also disclose server ownership and any other relevant information.&lt;/p&gt;
+&lt;p&gt;While we cannot require the operators of self-hosted and private servers to disclose any information about them (apart from which server code they use - this is the requirement of the AGPLv3 license to share this information with users connecting to the server), as we add other server operators to the app, it is important for the users to have all important information about these operators and servers location.&lt;/p&gt;
+&lt;p&gt;This server release adds server information page where all this information can be made available to the users. For example, this is &lt;a href=&quot;https://smp8.simplex.im/&quot; target=&quot;_blank&quot;&gt;the information&lt;/a&gt; about one of the servers preset in the app.&lt;/p&gt;
+&lt;p&gt;The updated server guide also includes &lt;a href=&quot;https://simplex.chat/docs/server.html#&quot;&gt;the instruction&lt;/a&gt; about how to host this page for your server. It is generated as a static page when the server starts. We recommend using Caddy webserver to serve it.&lt;/p&gt;
+&lt;h2 id=&quot;more-new-things-in-v58&quot; tabindex=&quot;-1&quot;&gt;More new things in v5.8&lt;/h2&gt;
+&lt;h3 id=&quot;protect-ip-address-when-downloading-files-and-media&quot; tabindex=&quot;-1&quot;&gt;Protect IP address when downloading files &amp;amp; media&lt;/h3&gt;
+&lt;p&gt;This version added the protection of your IP address when receiving files from unknown file servers without Tor. Images and voice messages won&#39;t automatically download from unknown servers too until you tap them, and confirm that you trust the file server where they were uploaded.&lt;/p&gt;
+&lt;h3 id=&quot;chat-themes&quot; tabindex=&quot;-1&quot;&gt;Chat themes&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20240604-theme1.png&quot; width=&quot;244&quot; class=&quot;float-to-right&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20240604-theme2.png&quot; width=&quot;244&quot; class=&quot;float-to-right&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;In Android and desktop app you can now customize how the app looks by choosing wallpapers with one of the preset themes or choose your own image as a wallpaper.&lt;/p&gt;
+&lt;p&gt;But this feature is not only about customization - it allows to set different colors and wallpaper for different user profiles and even specific conversations. You can also choose different themes for different chat profiles.&lt;/p&gt;
+&lt;p&gt;In case you use different identities for different conversations, it helps avoiding mistakes.&lt;/p&gt;
+&lt;h3 id=&quot;group-improvements&quot; tabindex=&quot;-1&quot;&gt;Group improvements&lt;/h3&gt;
+&lt;p&gt;This version adds additional group configuration options to allow sending images, files and media, and also SimpleX links only to group administrators and owners. So with this release group owners can have more control over content shared in the groups.&lt;/p&gt;
+&lt;p&gt;We also stopped unnecessary traffic caused by the members who became inactive without leaving the groups - it should substantially reduce traffic and battery consumption to the users who send messages in large groups.&lt;/p&gt;
+&lt;h2 id=&quot;simplex-network&quot; tabindex=&quot;-1&quot;&gt;SimpleX network&lt;/h2&gt;
+&lt;p&gt;Some links to answer the most common questions:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers&quot;&gt;How can SimpleX deliver messages without user identifiers&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#why-having-users-identifiers-is-bad-for-the-users&quot;&gt;What are the risks to have identifiers assigned to the users&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations&quot;&gt;Technical details and limitations&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/faq/index.html&quot;&gt;Frequently asked questions&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Please also see our &lt;a href=&quot;https://simplex.chat/&quot;&gt;website&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;help-us-with-donations&quot; tabindex=&quot;-1&quot;&gt;Help us with donations&lt;/h2&gt;
+&lt;p&gt;Huge thank you to everybody who donates to SimpleX Chat!&lt;/p&gt;
+&lt;p&gt;We are planning a 3rd party security audit for the protocols and cryptography design in July 2024, and also the security audit for an implementation in December 2024/January 2025, and it would hugely help us if some part of this $50,000+ expense is covered with donations.&lt;/p&gt;
+&lt;p&gt;We are prioritizing users privacy and security - it would be impossible without your support.&lt;/p&gt;
+&lt;p&gt;Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX network based on the same principles as email and web, but much more private and secure.&lt;/p&gt;
+&lt;p&gt;Your donations help us raise more funds – any amount, even the price of the cup of coffee, makes a big difference for us.&lt;/p&gt;
+&lt;p&gt;See &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations&quot;&gt;this section&lt;/a&gt; for the ways to donate.&lt;/p&gt;
+&lt;p&gt;Thank you,&lt;/p&gt;
+&lt;p&gt;Evgeny&lt;/p&gt;
+&lt;p&gt;SimpleX Chat founder&lt;/p&gt;
+</description>
+                
+                
+                <pubDate>04 Jun 2024</pubDate>
+                <dc:creator>SimpleX Chat</dc:creator>
+                <guid>https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.html</guid>
+            </item>
+            <item>
                 <title>Protecting Children&#39;s Safety Requires End-to-End Encryption</title>
                 <link>https://simplex.chat/blog/20240601-protecting-children-safety-requires-e2e-encryption.html</link>
                 <description>&lt;h1 id=&quot;protecting-childrens-safety-requires-end-to-end-encryption&quot; tabindex=&quot;-1&quot;&gt;Protecting Children&#39;s Safety Requires End-to-End Encryption&lt;/h1&gt;
