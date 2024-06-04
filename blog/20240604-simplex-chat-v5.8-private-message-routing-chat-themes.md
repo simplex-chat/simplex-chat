@@ -55,9 +55,9 @@ We believe that Tor may be the wrong solution for some users for one of the reas
 - Tor usage is restricted in some networks, so it would require complex configuration in the app UI.
 - some countries have legislative restrictions on Tor usage, so embedding Tor would require supporting multiple app versions, and it would leave the original problem unsolved in these countries.
 
-Also, while Tor solves the problem of IP address protection, it doesn't solve the problem of meta-data correlation by user's transport session - the messaging relays can still observe which messaging queues a user sends messages to via a single TCP connection, and while the client could create a new TCP connection and Tor circuit for each conversation, it would use too much traffic and battery for most users.
+Also, while Tor solves the problem of IP address protection, it doesn't solve the problem of meta-data correlation by user's transport session. When the client connects to the messaging relays via Tor, the relays can still observe which messaging queues a user sends messages to via a single TCP connection. The client can mitigate it with per-contact transport isolation, but it uses too much traffic and battery for most users.
 
-So we believed we would create more value to the users by adding an approach to message routing in SimpleX network that provides IP address and transport session protection out of the box, when initially released, and that can also be extended to support delayed delivery and other functions, improving both usability and transport privacy in the future.
+So we believed we would create more value to the users of SimpleX network with private message routing. This new message routing protocol provides IP address and transport session protection out of the box, once released. It can also be extended to support delayed delivery and other functions, improving both usability and transport privacy in the future.
 
 At the same time, we plan to continue supporting Tor and other overlay networks. Any overlay network that supports SOCKS proxy with "isolate-by-auth" feature will work with SimpleX Chat app.
 
