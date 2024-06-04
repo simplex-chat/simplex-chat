@@ -2774,7 +2774,7 @@ public enum CIStatus: Decodable {
                 agentError.errorInfo
             )
         case let .sndWarning(agentError): return (
-                NSLocalizedString("Temporary delivery error", comment: "item status text"),
+                NSLocalizedString("Message delivery warning", comment: "item status text"),
                 agentError.errorInfo
             )
         case .rcvNew: return nil
