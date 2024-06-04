@@ -1,5 +1,19 @@
 # Blog
 
+Jun 4, 2024 [SimpleX network: private message routing, v5.8 released with IP address protection and chat themes](./20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md)
+
+What's new in v5.8:
+- private message routing.
+- server transparency.
+- protect IP address when downloading files & media.
+- chat themes for better conversation privacy - in Android and desktop apps.
+- group improvements - reduced traffic and additional preferences.
+- improved networking, message and file delivery.
+
+Also, we added Persian interface language to the Android and desktop apps, thanks to our users and Weblate.
+
+---
+
 Jun 1, 2024 [Children's Safety Requires End-to-End Encryption](./20240601-children-safety-requires-e2e-encryption.md)
 
 As lawmakers grapple with the serious issue of child exploitation online, some proposed solutions would fuel the very problem they aim to solve.
