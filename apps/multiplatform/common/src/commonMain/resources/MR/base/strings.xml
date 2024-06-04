@@ -1410,6 +1410,8 @@
   <string name="info_row_database_id">Database ID</string>
   <string name="info_row_debug_delivery">Debug delivery</string>
   <string name="info_row_updated_at">Record updated at</string>
+  <string name="info_row_message_status">Message status</string>
+  <string name="info_row_file_status">File status</string>
   <string name="info_row_sent_at">Sent at</string>
   <string name="info_row_created_at">Created at</string>
   <string name="info_row_received_at">Received at</string>
@@ -1418,6 +1420,8 @@
   <string name="info_row_disappears_at">Disappears at</string>
   <string name="share_text_database_id">Database ID: %d</string>
   <string name="share_text_updated_at">Record updated at: %s</string>
+  <string name="share_text_message_status">Message status: %s</string>
+  <string name="share_text_file_status">File status: %s</string>
   <string name="share_text_sent_at">Sent at: %s</string>
   <string name="share_text_created_at">Created at: %s</string>
   <string name="share_text_received_at">Received at: %s</string>
