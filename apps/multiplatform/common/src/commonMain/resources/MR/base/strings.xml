@@ -271,6 +271,11 @@
   <string name="srv_error_host">Server address is incompatible with network settings.</string>
   <string name="srv_error_version">Server version is incompatible with network settings.</string>
 
+  <!-- CIFileStatus errors -->
+  <string name="file_error_auth">Wrong key or unknown file chunk address - most likely file is deleted.</string>
+  <string name="file_error_no_file">File not found - most likely file was deleted or cancelled.</string>
+  <string name="file_error_relay">File server error: %1$s</string>
+
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Reply</string>
   <string name="share_verb">Share</string>
@@ -408,6 +413,8 @@
   <string name="error_saving_file">Error saving file</string>
   <string name="loading_remote_file_title">Loading the file </string>
   <string name="loading_remote_file_desc">Please, wait while the file is being loaded from the linked mobile</string>
+  <string name="file_error">File error</string>
+  <string name="temporary_file_error">Temporary file error</string>
 
   <!-- Voice messages -->
   <string name="voice_message">Voice message</string>
