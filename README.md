@@ -234,6 +234,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent and important updates:
 
+[Jun 4, 2024. SimpleX network: private message routing, v5.8 released with IP address protection and chat themes](./blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md)
+
 [Apr 26, 2024. SimpleX network: legally binding transparency, v5.7 released with better calls and messages.](./blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md)
 
 [Mar 23, 2024. SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration.](./blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.md)
@@ -382,10 +384,10 @@ Please also join [#simplex-devs](https://simplex.chat/contact#/?v=1-2&smp=smp%3A
 - ✅ Private notes.
 - ✅ Improve sending videos (including encryption of locally stored videos).
 - ✅ Post-quantum resistant key exchange in double ratchet protocol.
+- ✅ Message delivery relay for senders (to conceal IP address from the recipients' servers and to reduce the traffic).
 - 🏗 Improve stability and reduce battery usage.
 - 🏗 Improve experience for the new users.
 - 🏗 Large groups, communities and public channels.
-- 🏗 Message delivery relay for senders (to conceal IP address from the recipients' servers and to reduce the traffic).
 - Privacy & security slider - a simple way to set all settings at once.
 - SMP queue redundancy and rotation (manual is supported).
 - Include optional message into connection request sent via contact address.
