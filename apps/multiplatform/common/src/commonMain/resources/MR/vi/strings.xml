@@ -209,4 +209,14 @@
     <string name="feature_cancelled_item">đã hủy bỏ %s</string>
     <string name="invite_prohibited">Không thể mời liên hệ!</string>
     <string name="icon_descr_cancel_live_message">Hủy bỏ tin nhắn động</string>
+    <string name="rcv_group_event_changed_member_role">đã thay đổi vai trò của %s thành %s</string>
+    <string name="snd_error_quota">Dung lượng lưu trữ vượt quá giới hạn - người nhận không thể nhận được tin nhắn vừa gửi trước đó.</string>
+    <string name="rcv_conn_event_switch_queue_phase_completed">đã thay đổi địa chỉ cho bạn</string>
+    <string name="change_database_passphrase_question">Thay đổi mật khẩu cơ sở dữ liệu?</string>
+    <string name="rcv_group_event_changed_your_role">đã thay đổi vai trò của bạn thành %s</string>
+    <string name="change_lock_mode">Thay đổi chế độ khóa</string>
+    <string name="network_type_cellular">Di động</string>
+    <string name="la_change_app_passcode">Đổi mật khẩu</string>
+    <string name="change_member_role_question">Thay đổi vai trò nhóm?</string>
+    <string name="change_verb">Thay đổi</string>
 </resources>
