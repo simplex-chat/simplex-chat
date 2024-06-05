@@ -156,7 +156,7 @@
     <string name="allow_to_send_disappearing">Az eltűnő üzenetek küldése engedélyezve van.</string>
     <string name="allow_disappearing_messages_only_if">Az eltűnő üzenetek küldése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</string>
     <string name="icon_descr_audio_off">Hang kikapcsolva</string>
-    <string name="allow_direct_messages">A közvetlen üzenetek küldése a tagok számára engedélyezve van.</string>
+    <string name="allow_direct_messages">A közvetlen üzenetek küldése a tagok között engedélyezve van.</string>
     <string name="settings_section_title_app">Alkalmazás</string>
     <string name="icon_descr_call_progress">Hívás folyamatban</string>
     <string name="both_you_and_your_contact_can_add_message_reactions">Mindkét fél küldhet üzenetreakciókat.</string>
@@ -1229,7 +1229,7 @@
     <string name="save_passphrase_and_open_chat">Jelmondat mentése és csevegés megnyitása</string>
     <string name="save_preferences_question">Beállítások mentése?</string>
     <string name="first_platform_without_user_ids">Az első csevegési rendszer bármiféle felhasználó azonosító nélkül - privátra lett tervezre.</string>
-    <string name="prohibit_direct_messages">A közvetlen üzenetek küldése le van tiltva a tagok között.</string>
+    <string name="prohibit_direct_messages">A közvetlen üzenetek küldése a tagok között le van tiltva.</string>
     <string name="network_enable_socks">SOCKS proxy használata?</string>
     <string name="icon_descr_speaker_off">Hangszóró kikapcsolva</string>
     <string name="custom_time_unit_weeks">hét</string>
