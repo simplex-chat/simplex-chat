@@ -39,7 +39,7 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit) {
       withBGApi {
         val groupInfo = chatModel.controller.apiNewGroup(rhId, incognito, groupProfile)
         if (groupInfo != null) {
-          chatModel.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Group(groupInfo), chatItems = listOf()))
+          chatModel.updateGroup(rhId = rhId, groupInfo)
           chatModel.chatItems.clear()
           chatModel.chatItemStatuses.clear()
           chatModel.chatId.value = groupInfo.id
