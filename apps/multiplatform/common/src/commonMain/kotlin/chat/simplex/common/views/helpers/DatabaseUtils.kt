@@ -39,22 +39,22 @@ object DatabaseUtils {
     }
   }
 
-  private fun hasDatabase(rootDir: String): Boolean =
-    File(rootDir + File.separator + chatDatabaseFileName).exists() && File(rootDir + File.separator + agentDatabaseFileName).exists()
+  private fun hasAtLeastOneDatabase(rootDir: String): Boolean =
+    File(rootDir + File.separator + chatDatabaseFileName).exists() || File(rootDir + File.separator + agentDatabaseFileName).exists()
 
   fun useDatabaseKey(): String {
     Log.d(TAG, "useDatabaseKey ${appPreferences.storeDBPassphrase.get()}")
     var dbKey = ""
     val useKeychain = appPreferences.storeDBPassphrase.get()
     if (useKeychain) {
-      if (!hasDatabase(dataDir.absolutePath)) {
+      if (!hasAtLeastOneDatabase(dataDir.absolutePath)) {
         dbKey = randomDatabasePassword()
         ksDatabasePassword.set(dbKey)
         appPreferences.initialRandomDBPassphrase.set(true)
       } else {
         dbKey = ksDatabasePassword.get() ?: ""
       }
-    } else if (appPlatform.isDesktop && !hasDatabase(dataDir.absolutePath)) {
+    } else if (appPlatform.isDesktop && !hasAtLeastOneDatabase(dataDir.absolutePath)) {
       // In case of database was deleted by hand
       dbKey = randomDatabasePassword()
       ksDatabasePassword.set(dbKey)
