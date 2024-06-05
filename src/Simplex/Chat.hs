@@ -93,8 +93,9 @@ import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescr
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import qualified Simplex.FileTransfer.Transport as XFTP
+import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, getNetworkConfig', ipAddressProtected, temporaryAgentError, withLockMap)
+import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, getNetworkConfig', ipAddressProtected, withLockMap)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
@@ -3768,11 +3769,11 @@ processAgentMsgSndFile _corrId aFileId msg = do
               lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
               withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText rfds)
               case rfds of
-                [] -> sendFileError "no receiver descriptions" vr ft
+                [] -> sendFileError (FileErrOther "no receiver descriptions") "no receiver descriptions" vr ft
                 rfd : _ -> case [fd | fd@(FD.ValidFileDescription FD.FileDescription {chunks = [_]}) <- rfds] of
                   [] -> case xftpRedirectFor of
                     Nothing -> xftpSndFileRedirect user fileId rfd >>= toView . CRSndFileRedirectStartXFTP user ft
-                    Just _ -> sendFileError "Prohibit chaining redirects" vr ft
+                    Just _ -> sendFileError (FileErrOther "chaining redirects") "Prohibit chaining redirects" vr ft
                   rfds' -> do
                     -- we have 1 chunk - use it as URI whether it is redirect or not
                     ft' <- maybe (pure ft) (\fId -> withStore $ \db -> getFileTransferMeta db user fId) xftpRedirectFor
@@ -3817,11 +3818,15 @@ processAgentMsgSndFile _corrId aFileId msg = do
                             pure (sndMsg, msgDeliveryId)
                     _ -> pure ()
                 _ -> pure () -- TODO error?
-        SFERR e
-          | temporaryAgentError e ->
-              throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
-          | otherwise ->
-              sendFileError (tshow e) vr ft
+        SFWARN e -> do
+          let err = tshow e
+          logWarn $ "Sent file warning: " <> err
+          ci <- withStore $ \db -> do
+            liftIO $ updateCIFileStatus db user fileId (CIFSSndWarning $ agentFileError e)
+            lookupChatItemByFileId db vr user fileId
+          toView $ CRSndFileWarning user ci ft err
+        SFERR e ->
+          sendFileError (agentFileError e) (tshow e) vr ft
       where
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
         fileDescrText = safeDecodeUtf8 . strEncode
@@ -3839,14 +3844,26 @@ processAgentMsgSndFile _corrId aFileId msg = do
               case L.nonEmpty fds of
                 Just fds' -> loopSend fds'
                 Nothing -> pure msgDeliveryId
-        sendFileError :: Text -> VersionRangeChat -> FileTransferMeta -> CM ()
-        sendFileError err vr ft = do
+        sendFileError :: FileError -> Text -> VersionRangeChat -> FileTransferMeta -> CM ()
+        sendFileError ferr err vr ft = do
           logError $ "Sent file error: " <> err
           ci <- withStore $ \db -> do
-            liftIO $ updateFileCancelled db user fileId CIFSSndError
+            liftIO $ updateFileCancelled db user fileId (CIFSSndError ferr)
             lookupChatItemByFileId db vr user fileId
           lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
           toView $ CRSndFileError user ci ft err
+
+agentFileError :: AgentErrorType -> FileError
+agentFileError = \case
+  XFTP _ XFTP.AUTH -> FileErrAuth
+  FILE NO_FILE -> FileErrNoFile
+  BROKER _ e -> brokerError FileErrRelay e
+  e -> FileErrOther $ tshow e
+  where
+    brokerError srvErr = \case
+      HOST -> srvErr SrvErrHost
+      SMP.TRANSPORT TEVersion -> srvErr SrvErrVersion
+      e -> srvErr . SrvErrOther $ tshow e
 
 splitFileDescr :: RcvFileDescrText -> CM (NonEmpty FileDescr)
 splitFileDescr rfdText = do
@@ -3900,16 +3917,19 @@ processAgentMsgRcvFile _corrId aFileId msg = do
                 lookupChatItemByFileId db vr user fileId
               agentXFTPDeleteRcvFile aFileId fileId
               toView $ maybe (CRRcvStandaloneFileComplete user fsTargetPath ft) (CRRcvFileComplete user) ci_
+        RFWARN e -> do
+          ci <- withStore $ \db -> do
+            liftIO $ updateCIFileStatus db user fileId (CIFSRcvWarning $ agentFileError e)
+            lookupChatItemByFileId db vr user fileId
+          toView $ CRRcvFileWarning user ci e ft
         RFERR e
-          | temporaryAgentError e ->
-              throwChatError $ CEXFTPRcvFile fileId (AgentRcvFileId aFileId) e
-          | e == XFTP "" XFTP.NOT_APPROVED -> do
+          | e == FILE NOT_APPROVED -> do
               aci_ <- resetRcvCIFileStatus user fileId CIFSRcvAborted
               agentXFTPDeleteRcvFile aFileId fileId
               forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
           | otherwise -> do
               ci <- withStore $ \db -> do
-                liftIO $ updateFileCancelled db user fileId CIFSRcvError
+                liftIO $ updateFileCancelled db user fileId (CIFSRcvError $ agentFileError e)
                 lookupChatItemByFileId db vr user fileId
               agentXFTPDeleteRcvFile aFileId fileId
               toView $ CRRcvFileError user ci e ft
@@ -4825,7 +4845,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           unless (connInactive conn) $ do
             quotaErrCounter' <- withStore' $ \db -> incQuotaErrCounter db user conn
             when (quotaErrCounter' >= quotaErrInactiveCount) $
-              toView $ CRConnectionInactive connEntity True
+              toView $
+                CRConnectionInactive connEntity True
         _ -> pure ()
 
     continueSending :: ConnectionEntity -> Connection -> CM Bool
