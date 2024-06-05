@@ -733,9 +733,9 @@
         <target>Üzenetreakciók engedélyezése.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow sending direct messages to members." xml:space="preserve">
+      <trans-unit id="Allow sending direct messages to members." xml:space="preserve" approved="no">
         <source>Allow sending direct messages to members.</source>
-        <target>Közvetlen üzenetek küldésének engedélyezése a tagok számára.</target>
+        <target state="translated">A közvetlen üzenetek küldése a tagok között engedélyezve van.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow sending disappearing messages." xml:space="preserve">
@@ -4518,9 +4518,9 @@ Hiba: %@</target>
         <target>A SimpleX hivatkozások küldése le van tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
+      <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve" approved="no">
         <source>Prohibit sending direct messages to members.</source>
-        <target>A közvetlen üzenetek küldése le van tiltva a tagok között.</target>
+        <target state="translated">A közvetlen üzenetek küldése a tagok között le van tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending disappearing messages." xml:space="preserve">
