@@ -340,4 +340,18 @@
     <string name="simplex_link_mode">Link-uri SimpleX</string>
     <string name="simplex_link_invitation">Invitație unică SimpleX</string>
     <string name="image_descr_simplex_logo">Siglă SimpleX</string>
+    <string name="receipts_section_groups">Grupuri mici (max 20)</string>
+    <string name="v5_3_simpler_incognito_mode">Mod incognito simplificat</string>
+    <string name="v5_7_shape_profile_images_descr">Pătrat, cerc, sau orice între.</string>
+    <string name="is_not_verified">%s nu este verificat</string>
+    <string name="is_verified">%s este verificat</string>
+    <string name="smp_servers">Servere SMP</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s și %d alți membri s-au conectat</string>
+    <string name="group_members_n">%s, %s și %d membri</string>
+    <string name="audio_device_speaker">Difuzor</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s și %s s-au conectat</string>
+    <string name="recipient_colon_delivery_status">%s: %s</string>
+    <string name="smp_servers_test_some_failed">Niște servere au eșuat testul:</string>
+    <string name="icon_descr_speaker_off">Difuzor oprit</string>
+    <string name="icon_descr_speaker_on">Difuzor pornit</string>
 </resources>
