@@ -354,4 +354,22 @@
     <string name="smp_servers_test_some_failed">Niște servere au eșuat testul:</string>
     <string name="icon_descr_speaker_off">Difuzor oprit</string>
     <string name="icon_descr_speaker_on">Difuzor pornit</string>
+    <string name="full_backup">Copie de rezervă a datelor aplicației</string>
+    <string name="theme_destination_app_theme">Tema aplicației</string>
+    <string name="color_primary_variant2">Accent suplimentar 2</string>
+    <string name="migrate_from_device_start_chat">Începe conversația</string>
+    <string name="chat_theme_apply_to_all_modes">Toate modurile de culoare</string>
+    <string name="always_use_relay">Folosește mereu releu</string>
+    <string name="chat_theme_apply_to_mode">Aplică pentru</string>
+    <string name="add_contact_or_create_group">Începe o nouă conversație</string>
+    <string name="star_on_github">Stea pe GitHub</string>
+    <string name="conn_event_disabled_pq">Criptare de la capăt la capăt standard</string>
+    <string name="notifications_mode_periodic">Pornește periodic</string>
+    <string name="network_smp_proxy_mode_always">Mereu</string>
+    <string name="network_smp_proxy_mode_always_description">Folosește mereu rutare privată.</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">Toate contactele vor rămâne conectate. Actualizarea profilului va fi trimisă contactelor tale.</string>
+    <string name="callstate_starting">pornire…</string>
+    <string name="chat_item_ttl_seconds">%s secunde</string>
+    <string name="start_chat_question">Începi conversația?</string>
+    <string name="wallpaper_advanced_settings">Setări avansate</string>
 </resources>
