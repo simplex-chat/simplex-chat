@@ -738,7 +738,7 @@
     <string name="member_info_section_title_member">TAG</string>
     <string name="onboarding_notifications_mode_subtitle">Ez később a beállításokon keresztül módosítható.</string>
     <string name="new_member_role">Új tag szerepköre</string>
-    <string name="la_mode_off">Ki</string>
+    <string name="la_mode_off">Kikapcsolva</string>
     <string name="invalid_contact_link">Érvénytelen hivatkozás!</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">A kapcsolódáshoz Onion kiszolgálókra lesz szükség.</string>
     <string name="new_in_version">Változások a %s verzióban</string>
@@ -762,7 +762,7 @@
     <string name="alert_title_group_invitation_expired">A meghívó lejárt!</string>
     <string name="only_stored_on_members_devices">(csak a csoporttagok tárolják)</string>
     <string name="moderate_verb">Moderálás</string>
-    <string name="chat_preferences_on">be</string>
+    <string name="chat_preferences_on">bekapcsolva</string>
     <string name="v5_1_japanese_portuguese_interface">Japán és portugál kezelőfelület</string>
     <string name="message_deletion_prohibited_in_chat">Az üzenetek végleges törlése le van tiltva ebben a csoportban.</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">Onion kiszolgálók nem lesznek használva.</string>
@@ -821,7 +821,7 @@
     <string name="invalid_message_format">érvénytelen üzenet formátum</string>
     <string name="join_group_button">Csatlakozás</string>
     <string name="shutdown_alert_desc">Az értesítések az alkalmazás elindításáig nem fognak működni</string>
-    <string name="chat_preferences_off">ki</string>`
+    <string name="chat_preferences_off">kikapcsolva</string>`
   <string name="this_device_version"><![CDATA[<i>(ez az eszköz: v%s)</i>]]></string>
     <string name="feature_offered_item">ajánlott %s</string>
     <string name="button_leave_group">Csoport elhagyása</string>
