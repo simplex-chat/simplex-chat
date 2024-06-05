@@ -65,7 +65,7 @@ import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, ProtoServerWithAuth, ProtocolServer (..), ProtocolTypeI, SProtocolType (..))
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import Simplex.Messaging.Util (bshow, safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version hiding (version)
 import Simplex.RemoteControl.Types (RCCtrlAddress (..))
 import System.Console.ANSI.Types
@@ -211,6 +211,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRRcvFileSndCancelled u _ ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRRcvFileError u (Just ci) e _ -> ttyUser u $ receivingFile_' hu testView "error" ci <> [sShow e]
   CRRcvFileError u Nothing e ft -> ttyUser u $ receivingFileStandalone "error" ft <> [sShow e]
+  CRRcvFileWarning u (Just ci) e _ -> ttyUser u $ receivingFile_' hu testView "warning: " ci <> [sShow e]
+  CRRcvFileWarning u Nothing e ft -> ttyUser u $ receivingFileStandalone "warning: " ft <> [sShow e]
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
   CRSndStandaloneFileCreated u ft -> ttyUser u $ uploadingFileStandalone "started" ft
@@ -222,6 +224,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRSndFileCancelledXFTP {} -> []
   CRSndFileError u Nothing ft e -> ttyUser u $ uploadingFileStandalone "error" ft <> [plain e]
   CRSndFileError u (Just ci) _ e -> ttyUser u $ uploadingFile "error" ci <> [plain e]
+  CRSndFileWarning u Nothing ft e -> ttyUser u $ uploadingFileStandalone "warning: " ft <> [plain e]
+  CRSndFileWarning u (Just ci) _ e -> ttyUser u $ uploadingFile "warning: " ci <> [plain e]
   CRSndFileRcvCancelled u _ ft@SndFileTransfer {recipientDisplayName = c} ->
     ttyUser u [ttyContact c <> " cancelled receiving " <> sndFile ft]
   CRStandaloneFileInfo info_ -> maybe ["no file information in URI"] (\j -> [viewJSON j]) info_
@@ -1194,7 +1198,7 @@ viewServerTestResult (AProtoServerWithAuth p _) = \case
       <> [pName <> " server requires authorization to upload files, check password" | testStep == TSCreateFile && (case testError of XFTP _ XFTP.AUTH -> True; _ -> False)]
       <> ["Possibly, certificate fingerprint in " <> pName <> " server address is incorrect" | testStep == TSConnect && brokerErr]
     where
-      result = [pName <> " server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> plain (strEncode testError)]
+      result = [pName <> " server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> sShow testError]
       brokerErr = case testError of
         BROKER _ NETWORK -> True
         _ -> False
@@ -1776,14 +1780,16 @@ viewFileTransferStatusXFTP (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId
     CIFSSndTransfer progress total -> ["sending " <> fstr <> " in progress " <> fileProgressXFTP progress total fileSize]
     CIFSSndCancelled -> ["sending " <> fstr <> " cancelled"]
     CIFSSndComplete -> ["sending " <> fstr <> " complete"]
-    CIFSSndError -> ["sending " <> fstr <> " error"]
+    CIFSSndError sndFileErr -> ["sending " <> fstr <> " error: " <> plain (show sndFileErr)]
+    CIFSSndWarning sndFileErr -> ["sending " <> fstr <> " warning: " <> plain (show sndFileErr)]
     CIFSRcvInvitation -> ["receiving " <> fstr <> " not accepted yet, use " <> highlight ("/fr " <> show fileId) <> " to receive file"]
     CIFSRcvAccepted -> ["receiving " <> fstr <> " just started"]
     CIFSRcvTransfer progress total -> ["receiving " <> fstr <> " progress " <> fileProgressXFTP progress total fileSize]
     CIFSRcvAborted -> ["receiving " <> fstr <> " aborted, use " <> highlight ("/fr " <> show fileId) <> " to receive file"]
     CIFSRcvComplete -> ["receiving " <> fstr <> " complete" <> maybe "" (\(CryptoFile fp _) -> ", path: " <> plain fp) fileSource]
     CIFSRcvCancelled -> ["receiving " <> fstr <> " cancelled"]
-    CIFSRcvError -> ["receiving " <> fstr <> " error"]
+    CIFSRcvError rcvFileErr -> ["receiving " <> fstr <> " error: " <> plain (show rcvFileErr)]
+    CIFSRcvWarning rcvFileErr -> ["receiving " <> fstr <> " warning: " <> plain (show rcvFileErr)]
     CIFSInvalid text -> [fstr <> " invalid status: " <> plain text]
   where
     fstr = fileTransferStr fileId fileName
@@ -1984,8 +1990,6 @@ viewChatError isCmd logLevel testView = \case
     CEFileImageSize _ -> ["max image size: " <> sShow maxImageSize <> " bytes, resize it or send as a file using " <> highlight' "/f"]
     CEFileNotReceived fileId -> ["file " <> sShow fileId <> " not received"]
     CEFileNotApproved fileId unknownSrvs -> ["file " <> sShow fileId <> " aborted, unknwon XFTP servers:"] <> map (plain . show) unknownSrvs
-    CEXFTPRcvFile fileId aFileId e -> ["error receiving XFTP file " <> sShow fileId <> ", agent file id " <> sShow aFileId <> ": " <> sShow e | logLevel == CLLError]
-    CEXFTPSndFile fileId aFileId e -> ["error sending XFTP file " <> sShow fileId <> ", agent file id " <> sShow aFileId <> ": " <> sShow e | logLevel == CLLError]
     CEFallbackToSMPProhibited fileId -> ["recipient tried to accept file " <> sShow fileId <> " via old protocol, prohibited"]
     CEInlineFileProhibited _ -> ["A small file sent without acceptance - you can enable receiving such files with -f option."]
     CEInvalidQuote -> ["cannot reply to this message"]
