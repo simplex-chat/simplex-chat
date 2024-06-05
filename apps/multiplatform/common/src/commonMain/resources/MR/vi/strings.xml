@@ -221,4 +221,7 @@
     <string name="change_verb">Thay đổi</string>
     <string name="switch_receiving_address_question">Thay đổi địa chỉ nhận?</string>
     <string name="switch_receiving_address">Thay đổi địa chỉ nhận</string>
+    <string name="change_self_destruct_mode">Thay đổi chế độ tự hủy</string>
+    <string name="change_self_destruct_passcode">Thay đổi mật khẩu tự hủy</string>
+    <string name="change_role">Thay đổi vai trò</string>
 </resources>
