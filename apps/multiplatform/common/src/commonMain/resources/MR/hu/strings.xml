@@ -1852,4 +1852,13 @@
     <string name="info_row_debug_delivery">Kézbesítési hibák felderítése</string>
     <string name="message_queue_info_server_info">Kiszolgáló várakoztatási infó: %1$s
 \nUtoljára kézbesített üzenet: %2$s</string>
+    <string name="file_error_auth">Hibás kulcs vagy ismeretlen fájltöredék cím - valószínűleg a fájl törlődött.</string>
+    <string name="temporary_file_error">Ideiglenes fájlhiba</string>
+    <string name="info_row_message_status">Üzenetállapot</string>
+    <string name="share_text_message_status">Üzenetállapot: %s</string>
+    <string name="file_error">Fájlhiba</string>
+    <string name="file_error_no_file">Fájl nem található - valószínűleg a fájlt törölték vagy visszavonták.</string>
+    <string name="file_error_relay">Fájlkiszolgáló hiba: %1$s</string>
+    <string name="info_row_file_status">Fájlállapot</string>
+    <string name="share_text_file_status">Fájlállapot: %s</string>
 </resources>
