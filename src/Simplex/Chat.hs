@@ -3370,8 +3370,8 @@ agentSubscriber = do
       toView' $ CRChatError Nothing $ ChatErrorAgent (CRITICAL True $ "Message reception stopped: " <> show e) Nothing
       E.throwIO e
   where
-    process :: (ACorrId, EntityId, APartyCmd 'Agent) -> CM' ()
-    process (corrId, entId, APC e msg) = run $ case e of
+    process :: (ACorrId, EntityId, AEvt) -> CM' ()
+    process (corrId, entId, AEvt e msg) = run $ case e of
       SAENone -> processAgentMessageNoConn msg
       SAEConn -> processAgentMessage corrId entId msg
       SAERcvFile -> processAgentMsgRcvFile corrId entId msg
@@ -3685,7 +3685,7 @@ expireChatItems user@User {userId} ttl sync = do
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db vr user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
 
-processAgentMessage :: ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> CM ()
+processAgentMessage :: ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
 processAgentMessage _ connId (DEL_RCVQ srv qId err_) =
   toView $ CRAgentRcvQueueDeleted (AgentConnId connId) srv (AgentQueueId qId) err_
 processAgentMessage _ connId DEL_CONN =
@@ -3714,7 +3714,7 @@ critical a =
     ChatErrorStore SEDBBusyError {message} -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
     e -> throwError e
 
-processAgentMessageNoConn :: ACommand 'Agent 'AENone -> CM ()
+processAgentMessageNoConn :: AEvent 'AENone -> CM ()
 processAgentMessageNoConn = \case
   CONNECT p h -> hostEvent $ CRHostConnected p h
   DISCONNECT p h -> hostEvent $ CRHostDisconnected p h
@@ -3735,7 +3735,7 @@ processAgentMessageNoConn = \case
           cs <- withStore' (`getConnectionsContacts` conns)
           toView $ event srv cs
 
-processAgentMsgSndFile :: ACorrId -> SndFileId -> ACommand 'Agent 'AESndFile -> CM ()
+processAgentMsgSndFile :: ACorrId -> SndFileId -> AEvent 'AESndFile -> CM ()
 processAgentMsgSndFile _corrId aFileId msg = do
   (cRef_, fileId) <- withStore (`getXFTPSndFileDBIds` AgentSndFileId aFileId)
   withEntityLock_ cRef_ . withFileLock "processAgentMsgSndFile" fileId $
@@ -3858,12 +3858,12 @@ agentFileError = \case
   XFTP _ XFTP.AUTH -> FileErrAuth
   FILE NO_FILE -> FileErrNoFile
   BROKER _ e -> brokerError FileErrRelay e
-  e -> FileErrOther . safeDecodeUtf8 $ strEncode e
+  e -> FileErrOther $ tshow e
   where
     brokerError srvErr = \case
       HOST -> srvErr SrvErrHost
       SMP.TRANSPORT TEVersion -> srvErr SrvErrVersion
-      e -> srvErr . SrvErrOther . safeDecodeUtf8 $ strEncode e
+      e -> srvErr . SrvErrOther $ tshow e
 
 splitFileDescr :: RcvFileDescrText -> CM (NonEmpty FileDescr)
 splitFileDescr rfdText = do
@@ -3878,7 +3878,7 @@ splitFileDescr rfdText = do
             then fileDescr :| []
             else fileDescr <| splitParts (partNo + 1) partSize rest
 
-processAgentMsgRcvFile :: ACorrId -> RcvFileId -> ACommand 'Agent 'AERcvFile -> CM ()
+processAgentMsgRcvFile :: ACorrId -> RcvFileId -> AEvent 'AERcvFile -> CM ()
 processAgentMsgRcvFile _corrId aFileId msg = do
   (cRef_, fileId) <- withStore (`getXFTPRcvFileDBIds` AgentRcvFileId aFileId)
   withEntityLock_ cRef_ . withFileLock "processAgentMsgRcvFile" fileId $
@@ -3934,7 +3934,7 @@ processAgentMsgRcvFile _corrId aFileId msg = do
               agentXFTPDeleteRcvFile aFileId fileId
               toView $ CRRcvFileError user ci e ft
 
-processAgentMessageConn :: VersionRangeChat -> User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> CM ()
+processAgentMessageConn :: VersionRangeChat -> User -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
 processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = do
   -- Missing connection/entity errors here will be sent to the view but not shown as CRITICAL alert,
   -- as in this case no need to ACK message - we can't process messages for this connection anyway.
@@ -3966,7 +3966,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         pure $ updateEntityConnStatus acEntity connStatus
       Nothing -> pure acEntity
 
-    agentMsgConnStatus :: ACommand 'Agent e -> Maybe ConnStatus
+    agentMsgConnStatus :: AEvent e -> Maybe ConnStatus
     agentMsgConnStatus = \case
       CONF {} -> Just ConnRequested
       INFO {} -> Just ConnSndReady
@@ -3988,7 +3988,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     processINFOpqSupport Connection {pqSupport = pq} pq' =
       when (pq /= pq') $ messageWarning "processINFOpqSupport: unexpected pqSupport change"
 
-    processDirectMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> Maybe Contact -> CM ()
+    processDirectMessage :: AEvent e -> ConnectionEntity -> Connection -> Maybe Contact -> CM ()
     processDirectMessage agentMsg connEntity conn@Connection {connId, connChatVersion, peerChatVRange, viaUserContactLink, customUserProfileId, connectionCode} = \case
       Nothing -> case agentMsg of
         CONF confId pqSupport _ connInfo -> do
@@ -4213,7 +4213,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- TODO add debugging output
         _ -> pure ()
 
-    processGroupMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> CM ()
+    processGroupMessage :: AEvent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> CM ()
     processGroupMessage agentMsg connEntity conn@Connection {connId, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
       INV (ACR _ cReq) ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
@@ -4641,7 +4641,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         r n'' = Just (ci, CIRcvDecryptionError mde n'')
     mdeUpdatedCI _ _ = Nothing
 
-    processSndFileConn :: ACommand 'Agent e -> ConnectionEntity -> Connection -> SndFileTransfer -> CM ()
+    processSndFileConn :: AEvent e -> ConnectionEntity -> Connection -> SndFileTransfer -> CM ()
     processSndFileConn agentMsg connEntity conn ft@SndFileTransfer {fileId, fileName, fileStatus} =
       case agentMsg of
         -- SMP CONF for SndFileConnection happens for direct file protocol
@@ -4689,7 +4689,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- TODO add debugging output
         _ -> pure ()
 
-    processRcvFileConn :: ACommand 'Agent e -> ConnectionEntity -> Connection -> RcvFileTransfer -> CM ()
+    processRcvFileConn :: AEvent e -> ConnectionEntity -> Connection -> RcvFileTransfer -> CM ()
     processRcvFileConn agentMsg connEntity conn ft@RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}, grpMemberId} =
       case agentMsg of
         INV (ACR _ cReq) ->
@@ -4772,7 +4772,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           RcvChunkDuplicate -> withAckMessage' "file msg" agentConnId meta $ pure ()
           RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
 
-    processUserContactRequest :: ACommand 'Agent e -> ConnectionEntity -> Connection -> UserContact -> CM ()
+    processUserContactRequest :: AEvent e -> ConnectionEntity -> Connection -> UserContact -> CM ()
     processUserContactRequest agentMsg connEntity conn UserContact {userContactLinkId} = case agentMsg of
       REQ invId pqSupport _ connInfo -> do
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
@@ -4860,13 +4860,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     -- TODO v5.7 / v6.0 - together with deprecating old group protocol establishing direct connections?
     -- we could save command records only for agent APIs we process continuations for (INV)
-    withCompletedCommand :: forall e. AEntityI e => Connection -> ACommand 'Agent e -> (CommandData -> CM ()) -> CM ()
+    withCompletedCommand :: forall e. AEntityI e => Connection -> AEvent e -> (CommandData -> CM ()) -> CM ()
     withCompletedCommand Connection {connId} agentMsg action = do
-      let agentMsgTag = APCT (sAEntity @e) $ aCommandTag agentMsg
+      let agentMsgTag = AEvtTag (sAEntity @e) $ aEventTag agentMsg
       cmdData_ <- withStore' $ \db -> getCommandDataByCorrId db user corrId
       case cmdData_ of
         Just cmdData@CommandData {cmdId, cmdConnId = Just cmdConnId', cmdFunction}
-          | connId == cmdConnId' && (agentMsgTag == commandExpectedResponse cmdFunction || agentMsgTag == APCT SAEConn ERR_) -> do
+          | connId == cmdConnId' && (agentMsgTag == commandExpectedResponse cmdFunction || agentMsgTag == AEvtTag SAEConn ERR_) -> do
               withStore' $ \db -> deleteCommand db user cmdId
               action cmdData
           | otherwise -> err cmdId $ "not matching connection id or unexpected response, corrId = " <> show corrId
@@ -4930,14 +4930,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       BROKER _ e -> brokerError SndErrRelay e
       SMP proxySrv (SMP.PROXY (SMP.BROKER e)) -> brokerError (SndErrProxy proxySrv) e
       AP.PROXY proxySrv _ (ProxyProtocolError (SMP.PROXY (SMP.BROKER e))) -> brokerError (SndErrProxyRelay proxySrv) e
-      e -> SndErrOther . safeDecodeUtf8 $ strEncode e
+      e -> SndErrOther $ tshow e
       where
         brokerError srvErr = \case
           NETWORK -> SndErrExpired
           TIMEOUT -> SndErrExpired
           HOST -> srvErr SrvErrHost
           SMP.TRANSPORT TEVersion -> srvErr SrvErrVersion
-          e -> srvErr . SrvErrOther . safeDecodeUtf8 $ strEncode e
+          e -> srvErr . SrvErrOther $ tshow e
 
     badRcvFileChunk :: RcvFileTransfer -> String -> CM ()
     badRcvFileChunk ft err =
