@@ -219,4 +219,6 @@
     <string name="la_change_app_passcode">Đổi mật khẩu</string>
     <string name="change_member_role_question">Thay đổi vai trò nhóm?</string>
     <string name="change_verb">Thay đổi</string>
+    <string name="switch_receiving_address_question">Thay đổi địa chỉ nhận?</string>
+    <string name="switch_receiving_address">Thay đổi địa chỉ nhận</string>
 </resources>
