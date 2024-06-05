@@ -7469,9 +7469,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>megfigyelő</target>
         <note>member role</note>
       </trans-unit>
-      <trans-unit id="off" xml:space="preserve">
+      <trans-unit id="off" xml:space="preserve" approved="no">
         <source>off</source>
-        <target>ki</target>
+        <target state="translated">kikapcsolva</target>
         <note>enabled status
    group pref value
    time to disappear</note>
