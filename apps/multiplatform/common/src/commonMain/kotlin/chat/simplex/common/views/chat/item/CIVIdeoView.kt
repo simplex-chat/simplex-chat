@@ -107,7 +107,7 @@ fun CIVideoView(
         }
       }
     }
-    loadingIndicator(file)
+    fileStatusIcon(file)
   }
 }
 
@@ -339,11 +339,13 @@ private fun progressIndicator() {
 }
 
 @Composable
-private fun fileIcon(icon: Painter, stringId: StringResource) {
+private fun fileIcon(icon: Painter, stringId: StringResource, onClick: (() -> Unit)? = null) {
+  var modifier = Modifier.fillMaxSize()
+  modifier = if (onClick != null) { modifier.clickable { onClick() } } else { modifier }
   Icon(
     icon,
     stringResource(stringId),
-    Modifier.fillMaxSize(),
+    modifier,
     tint = Color.White
   )
 }
@@ -364,7 +366,7 @@ private fun progressCircle(progress: Long, total: Long) {
 }
 
 @Composable
-private fun loadingIndicator(file: CIFile?) {
+private fun fileStatusIcon(file: CIFile?) {
   if (file != null) {
     Box(
       Modifier
@@ -387,7 +389,28 @@ private fun loadingIndicator(file: CIFile?) {
           }
         is CIFileStatus.SndComplete -> fileIcon(painterResource(MR.images.ic_check_filled), MR.strings.icon_descr_video_snd_complete)
         is CIFileStatus.SndCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
-        is CIFileStatus.SndError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+        is CIFileStatus.SndError ->
+          fileIcon(
+            painterResource(MR.images.ic_close),
+            MR.strings.icon_descr_file,
+            onClick = {
+              AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.file_error),
+                file.fileStatus.sndFileError.errorInfo
+              )
+            }
+          )
+        is CIFileStatus.SndWarning ->
+          fileIcon(
+            painterResource(MR.images.ic_warning_filled),
+            MR.strings.icon_descr_file,
+            onClick = {
+              AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.temporary_file_error),
+                file.fileStatus.sndFileError.errorInfo
+              )
+            }
+          )
         is CIFileStatus.RcvInvitation -> fileIcon(painterResource(MR.images.ic_arrow_downward), MR.strings.icon_descr_video_asked_to_receive)
         is CIFileStatus.RcvAccepted -> fileIcon(painterResource(MR.images.ic_more_horiz), MR.strings.icon_descr_waiting_for_video)
         is CIFileStatus.RcvTransfer ->
@@ -397,10 +420,31 @@ private fun loadingIndicator(file: CIFile?) {
             progressIndicator()
           }
         is CIFileStatus.RcvAborted -> fileIcon(painterResource(MR.images.ic_sync_problem), MR.strings.icon_descr_file)
+        is CIFileStatus.RcvComplete -> {}
         is CIFileStatus.RcvCancelled -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
-        is CIFileStatus.RcvError -> fileIcon(painterResource(MR.images.ic_close), MR.strings.icon_descr_file)
+        is CIFileStatus.RcvError ->
+          fileIcon(
+            painterResource(MR.images.ic_close),
+            MR.strings.icon_descr_file,
+            onClick = {
+              AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.file_error),
+                file.fileStatus.rcvFileError.errorInfo
+              )
+            }
+          )
+        is CIFileStatus.RcvWarning ->
+          fileIcon(
+            painterResource(MR.images.ic_warning_filled),
+            MR.strings.icon_descr_file,
+            onClick = {
+              AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.temporary_file_error),
+                file.fileStatus.rcvFileError.errorInfo
+              )
+            }
+          )
         is CIFileStatus.Invalid -> fileIcon(painterResource(MR.images.ic_question_mark), MR.strings.icon_descr_file)
-        else -> {}
       }
     }
   }
