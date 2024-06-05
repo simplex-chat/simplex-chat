@@ -224,4 +224,6 @@
     <string name="change_self_destruct_mode">Thay đổi chế độ tự hủy</string>
     <string name="change_self_destruct_passcode">Thay đổi mật khẩu tự hủy</string>
     <string name="change_role">Thay đổi vai trò</string>
+    <string name="snd_conn_event_switch_queue_phase_changing">đang thay đổi địa chỉ…</string>
+    <string name="rcv_conn_event_switch_queue_phase_changing">đang thay đổi địa chỉ…</string>
 </resources>
