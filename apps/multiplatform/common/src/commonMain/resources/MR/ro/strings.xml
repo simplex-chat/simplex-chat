@@ -372,4 +372,9 @@
     <string name="chat_item_ttl_seconds">%s secunde</string>
     <string name="start_chat_question">Începi conversația?</string>
     <string name="wallpaper_advanced_settings">Setări avansate</string>
+    <string name="bad_desktop_address">Adresă desktop rea</string>
+    <string name="alert_title_msg_bad_id">ID de mesaj incorect</string>
+    <string name="integrity_msg_bad_hash">Hash de mesaj incorect</string>
+    <string name="integrity_msg_bad_id">ID de mesaj incorect</string>
+    <string name="alert_title_msg_bad_hash">Hash de mesaj incorect</string>
 </resources>
