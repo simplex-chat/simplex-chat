@@ -1939,4 +1939,13 @@
     <string name="message_queue_info_server_info">Server-Warteschlangen-Information: %1$s
 \n
 \nZuletzt empfangene Nachricht: %2$s</string>
+    <string name="file_error_no_file">Datei nicht gefunden - höchstwahrscheinlich wurde die Datei gelöscht oder der Transfer abgebrochen.</string>
+    <string name="file_error_relay">Datei-Server-Fehler: %1$s</string>
+    <string name="file_error_auth">Falscher Schlüssel oder unbekannte Datei-Chunk-Adresse - höchstwahrscheinlich wurde die Datei gelöscht.</string>
+    <string name="file_error">Datei-Fehler</string>
+    <string name="info_row_message_status">Nachrichten-Status</string>
+    <string name="share_text_message_status">Nachrichten-Status: %s</string>
+    <string name="info_row_file_status">Datei-Status</string>
+    <string name="share_text_file_status">Datei-Status: %s</string>
+    <string name="temporary_file_error">Temporärer Datei-Fehler</string>
 </resources>
