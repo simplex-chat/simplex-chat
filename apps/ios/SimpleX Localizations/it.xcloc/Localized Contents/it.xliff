@@ -4438,9 +4438,9 @@ Errore: %@</target>
         <target>Nomi di file privati</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private message routing" xml:space="preserve">
+      <trans-unit id="Private message routing" xml:space="preserve" approved="no">
         <source>Private message routing</source>
-        <target>Instradamento privato messaggi</target>
+        <target state="translated">Instradamento privato dei messaggi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private message routing 🚀" xml:space="preserve">
