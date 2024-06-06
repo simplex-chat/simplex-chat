@@ -1797,7 +1797,7 @@
     <string name="network_smp_proxy_fallback_prohibit_description">NON inviare messaggi direttamente, anche se il tuo server o quello di destinazione non supporta l\'instradamento privato.</string>
     <string name="network_smp_proxy_mode_never_description">NON usare l\'instradamento privato.</string>
     <string name="network_smp_proxy_fallback_prohibit">No</string>
-    <string name="settings_section_title_private_message_routing">INSTRADAMENTO PRIVATO MESSAGGI</string>
+    <string name="settings_section_title_private_message_routing">INSTRADAMENTO PRIVATO DEI MESSAGGI</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Invia messaggi direttamente quando l\'indirizzo IP è protetto e il tuo server o quello di destinazione non supporta l\'instradamento privato.</string>
     <string name="private_routing_explanation">Per proteggere il tuo indirizzo IP, l\'instradamento privato usa i tuoi server SMP per consegnare i messaggi.</string>
     <string name="network_smp_proxy_mode_unprotected">Non protetto</string>
@@ -1858,4 +1858,13 @@
 \n
 \nultimo msg ricevuto: %2$s</string>
     <string name="info_row_debug_delivery">Debug della consegna</string>
+    <string name="share_text_message_status">Stato del messaggio: %s</string>
+    <string name="share_text_file_status">Stato del file: %s</string>
+    <string name="file_error_auth">Chiave sbagliata o indirizzo sconosciuto per frammento del file - probabilmente il file è stato eliminato.</string>
+    <string name="file_error_no_file">File non trovato - probabilmente è stato eliminato o annullato.</string>
+    <string name="info_row_message_status">Stato del messaggio</string>
+    <string name="info_row_file_status">Stato del file</string>
+    <string name="file_error_relay">Errore del server del file: %1$s</string>
+    <string name="file_error">Errore del file</string>
+    <string name="temporary_file_error">Errore del file temporaneo</string>
 </resources>
