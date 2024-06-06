@@ -1858,4 +1858,13 @@
 \n
 \n上一则收到的信息：%2$s</string>
     <string name="message_queue_info_none">无</string>
+    <string name="file_error_no_file">未找到文件 - 最有可能的情况是文件被删或被取消了</string>
+    <string name="file_error_auth">错误的密钥或未知的文件块地址 - 最可能的情况是文件被删了。</string>
+    <string name="file_error">文件错误</string>
+    <string name="file_error_relay">文件服务器错误：%1$s</string>
+    <string name="info_row_file_status">文件状态</string>
+    <string name="info_row_message_status">消息状态</string>
+    <string name="temporary_file_error">临时性文件错误</string>
+    <string name="share_text_file_status">文件状态：%s</string>
+    <string name="share_text_message_status">消息状态：%s</string>
 </resources>
