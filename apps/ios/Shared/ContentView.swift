@@ -14,6 +14,7 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var sceneDelegate: SceneDelegate
 
     var contentAccessAuthenticationExtended: Bool
 
@@ -138,6 +139,23 @@ struct ContentView: View {
                 break
             }
         }
+        .onChange(of: colorScheme) { scheme in
+            logger.log("LALAL DARK THEME CHANGED \(String(describing: scheme))  \(String(describing: sceneDelegate.window?.overrideUserInterfaceStyle)), system theme = \(sceneDelegate.window?.overrideUserInterfaceStyle == .unspecified)")
+            //reactOnDarkThemeChanges(scheme == .dark)
+        }
+        .onAppear {
+            Task {
+                for i in 0...2000 {
+                    await Task.sleep(10_000000)
+                    DispatchQueue.main.asyncAfter(deadline: .now()) {
+                        MaterialTheme.shared.objectWillChange.send()
+                        MaterialTheme.shared.colors.primary = [Color.gray, Color.red, Color.white, Color.brown, Color.cyan, Color.green].randomElement()!
+                        MaterialTheme.shared.colors.secondary = [Color.gray, Color.red, Color.white, Color.brown, Color.cyan, Color.green].randomElement()!
+                        logger.debug("LALAL UP TO \(MaterialTheme.shared.colors.primary)")
+                    }
+                }
+            }
+        }
     }
 
     @ViewBuilder private func contentView() -> some View {
@@ -231,6 +249,7 @@ struct ContentView: View {
     private func mainView() -> some View {
         ZStack(alignment: .top) {
             ChatListView(showSettings: $showSettings).privacySensitive(protectScreen)
+//            .environmentObject(MaterialTheme.chat)
             .onAppear {
                 requestNtfAuthorization()
                 // Local Authentication notice is to be shown on next start after onboarding is complete

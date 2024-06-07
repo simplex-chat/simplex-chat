@@ -276,6 +276,68 @@ public class IntDefault: Default<Int> {
     }
 }
 
+public class StringDefault: Default<String> {
+    public func get() -> String {
+        self.defaults.string(forKey: self.key)!
+    }
+}
+
+public class GenericDefault<T> {
+    var defaults: UserDefaults
+    var key: String
+    var defaultValue: T
+    var encode: (T) -> String
+    var decode: (String) -> T
+
+    public init(defaults: UserDefaults = UserDefaults.standard, forKey: String, withDefault: T, encode: @escaping (T) -> String, decode: @escaping (String) -> T) {
+        self.defaults = defaults
+        self.key = forKey
+        self.defaultValue = withDefault
+        self.encode = encode
+        self.decode = decode
+    }
+
+    public func get() -> T {
+        if let value = defaults.string(forKey: key) {
+            return decode(value)
+        }
+        return defaultValue
+    }
+
+    public func set(_ value: T) {
+        defaults.set(encode(value), forKey: key)
+        defaults.synchronize()
+    }
+}
+//
+//public class ThemeOverridesDefault<I, O> {
+//    var defaults: UserDefaults
+//    var key: String
+//    var defaultValue: O
+//    var encode: (I) -> String
+//    var decode: (String) -> O
+//
+//    public init(defaults: UserDefaults = UserDefaults.standard, forKey: String, withDefault: O, encode: @escaping (I) -> String, decode: @escaping (String) -> O) {
+//        self.defaults = defaults
+//        self.key = forKey
+//        self.defaultValue = withDefault
+//        self.encode = encode
+//        self.decode = decode
+//    }
+//
+//    public func get() -> O {
+//        if let value = defaults.string(forKey: key) {
+//            return decode(value)
+//        }
+//        return defaultValue
+//    }
+//
+//    public func set(_ value: I) {
+//        defaults.set(encode(value), forKey: key)
+//        defaults.synchronize()
+//    }
+//}
+
 public class Default<T> {
     var defaults: UserDefaults
     var key: String

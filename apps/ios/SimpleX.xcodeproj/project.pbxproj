@@ -188,7 +188,11 @@
 		8C69FE7D2B8C7D2700267E38 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C69FE7C2B8C7D2700267E38 /* AppSettings.swift */; };
 		8C7D949A2B88952700B7B9E1 /* MigrateToDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7D94992B88952700B7B9E1 /* MigrateToDevice.swift */; };
 		8C7DF3202B7CDB0A00C886D0 /* MigrateFromDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7DF31F2B7CDB0A00C886D0 /* MigrateFromDevice.swift */; };
+		8C7E3CE42C0DEAC400BFF63A /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7E3CE32C0DEAC400BFF63A /* Theme.swift */; };
+		8C804B1E2C11F966007A63C8 /* ChatWallpaper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C804B1D2C11F966007A63C8 /* ChatWallpaper.swift */; };
 		8C81482C2BD91CD4002CBEC3 /* AudioDevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C81482B2BD91CD4002CBEC3 /* AudioDevicePicker.swift */; };
+		8C852B082C1086D100BA61E8 /* Color.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C852B072C1086D100BA61E8 /* Color.swift */; };
+		8C86EBE52C0DAE4F00E12243 /* ThemeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C86EBE42C0DAE4F00E12243 /* ThemeManager.swift */; };
 		8CC4ED902BD7B8530078AEE8 /* CallAudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */; };
 		8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC956ED2BC0041000412A11 /* NetworkObserver.swift */; };
 		D7197A1829AE89660055C05A /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D7197A1729AE89660055C05A /* WebRTC */; };
@@ -485,7 +489,11 @@
 		8C69FE7C2B8C7D2700267E38 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		8C7D94992B88952700B7B9E1 /* MigrateToDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrateToDevice.swift; sourceTree = "<group>"; };
 		8C7DF31F2B7CDB0A00C886D0 /* MigrateFromDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrateFromDevice.swift; sourceTree = "<group>"; };
+		8C7E3CE32C0DEAC400BFF63A /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		8C804B1D2C11F966007A63C8 /* ChatWallpaper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatWallpaper.swift; sourceTree = "<group>"; };
 		8C81482B2BD91CD4002CBEC3 /* AudioDevicePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDevicePicker.swift; sourceTree = "<group>"; };
+		8C852B072C1086D100BA61E8 /* Color.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Color.swift; sourceTree = "<group>"; };
+		8C86EBE42C0DAE4F00E12243 /* ThemeManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeManager.swift; sourceTree = "<group>"; };
 		8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallAudioDeviceManager.swift; sourceTree = "<group>"; };
 		8CC956ED2BC0041000412A11 /* NetworkObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkObserver.swift; sourceTree = "<group>"; };
 		D72A9087294BD7A70047C86D /* NativeTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTextEditor.swift; sourceTree = "<group>"; };
@@ -660,6 +668,7 @@
 				64C3B0202A0D359700E19930 /* CustomTimePicker.swift */,
 				5CEBD7452A5C0A8F00665FE2 /* KeyboardPadding.swift */,
 				8C05382D2B39887E006436DC /* VideoUtils.swift */,
+				8C804B1D2C11F966007A63C8 /* ChatWallpaper.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -684,6 +693,7 @@
 		5CA059C2279559F40002BEB4 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				8C86EBE22C0DAE0A00E12243 /* UI */,
 				5CA059C3279559F40002BEB4 /* SimpleXApp.swift */,
 				5C36027227F47AD5009F19D9 /* AppDelegate.swift */,
 				5CA059C4279559F40002BEB4 /* ContentView.swift */,
@@ -920,6 +930,24 @@
 				8C7D94992B88952700B7B9E1 /* MigrateToDevice.swift */,
 			);
 			path = Migration;
+			sourceTree = "<group>";
+		};
+		8C86EBE22C0DAE0A00E12243 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				8C86EBE32C0DAE3700E12243 /* Theme */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		8C86EBE32C0DAE3700E12243 /* Theme */ = {
+			isa = PBXGroup;
+			children = (
+				8C86EBE42C0DAE4F00E12243 /* ThemeManager.swift */,
+				8C7E3CE32C0DEAC400BFF63A /* Theme.swift */,
+				8C852B072C1086D100BA61E8 /* Color.swift */,
+			);
+			path = Theme;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -1159,6 +1187,7 @@
 				5C029EAA283942EA004A9677 /* CallController.swift in Sources */,
 				5CBE6C142944CC12002D9531 /* ScanCodeView.swift in Sources */,
 				5CC036E029C488D500C0EF20 /* HiddenProfileView.swift in Sources */,
+				8C7E3CE42C0DEAC400BFF63A /* Theme.swift in Sources */,
 				5C5346A827B59A6A004DF848 /* ChatHelp.swift in Sources */,
 				5CB634A829E437960066AD6B /* PasscodeEntry.swift in Sources */,
 				5CFA59C42860BC6200863A68 /* MigrateToAppGroupView.swift in Sources */,
@@ -1196,6 +1225,7 @@
 				64E972072881BB22008DBC02 /* CIGroupInvitationView.swift in Sources */,
 				5CC1C99227A6C7F5000D9FF6 /* QRCode.swift in Sources */,
 				5C116CDC27AABE0400E66D01 /* ContactRequestView.swift in Sources */,
+				8C86EBE52C0DAE4F00E12243 /* ThemeManager.swift in Sources */,
 				5CB9250D27A9432000ACCCDD /* ChatListNavLink.swift in Sources */,
 				649BCDA0280460FD00C3A862 /* ComposeImageView.swift in Sources */,
 				5CA059ED279559F40002BEB4 /* ContentView.swift in Sources */,
@@ -1226,6 +1256,7 @@
 				5C5DB70E289ABDD200730FFF /* AppearanceSettings.swift in Sources */,
 				5C5F2B6D27EBC3FE006A9D5F /* ImagePicker.swift in Sources */,
 				5C3CCFCC2AE6BD3100C3F0C3 /* ConnectDesktopView.swift in Sources */,
+				8C804B1E2C11F966007A63C8 /* ChatWallpaper.swift in Sources */,
 				5C9C2DA92899DA6F00CC63B1 /* NetworkAndServers.swift in Sources */,
 				5C6BA667289BD954009B8ECC /* DismissSheets.swift in Sources */,
 				5C577F7D27C83AA10006112D /* MarkdownHelp.swift in Sources */,
@@ -1252,6 +1283,7 @@
 				5C5E5D3B2824468B00B0488A /* ActiveCallView.swift in Sources */,
 				5C2E260727A2941F00F70299 /* SimpleXAPI.swift in Sources */,
 				6440CA00288857A10062C672 /* CIEventView.swift in Sources */,
+				8C852B082C1086D100BA61E8 /* Color.swift in Sources */,
 				5CB0BA92282713FD00B3292C /* CreateProfile.swift in Sources */,
 				5C5F2B7027EBC704006A9D5F /* ProfileImage.swift in Sources */,
 				5C9329412929248A0090FFF9 /* ScanProtocolServer.swift in Sources */,

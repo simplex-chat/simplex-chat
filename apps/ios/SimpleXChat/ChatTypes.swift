@@ -26,6 +26,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat {
     public var sendRcptsContacts: Bool
     public var sendRcptsSmallGroups: Bool
     public var viewPwdHash: UserPwdHash?
+    //public var uiThemes: ThemeModeOverrides
 
     public var id: Int64 { userId }
 

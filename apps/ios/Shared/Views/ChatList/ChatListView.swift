@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     @Binding var showSettings: Bool
     @State private var searchMode = false
     @FocusState private var searchFocussed
@@ -132,11 +133,12 @@ struct ChatListView: View {
     }
 
     private func toggleFilterButton() -> some View {
-        Button {
+        return Button {
             showUnreadAndFavorites = !showUnreadAndFavorites
         } label: {
             Image(systemName: "line.3.horizontal.decrease.circle" + (showUnreadAndFavorites ? ".fill" : ""))
-                .foregroundColor(.accentColor)
+                .background(MaterialTheme.colors.secondary)
+                .foregroundColor(MaterialTheme.colors.primary)
         }
     }
 

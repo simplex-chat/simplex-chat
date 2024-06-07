@@ -62,6 +62,11 @@ let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST = "connectRemoteViaMulticast"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "connectRemoteViaMulticastAuto"
 let DEFAULT_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"
 
+let DEFAULT_CURRENT_THEME = "currentTheme"
+let DEFAULT_SYSTEM_DARK_THEME = "systemDarkTheme"
+let DEFAULT_CURRENT_THEME_IDS = "currentThemeIds"
+let DEFAULT_THEME_OVERRIDES = "themeOverrides"
+
 let ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN = "androidCallOnLockScreen"
 
 let appDefaults: [String: Any] = [
@@ -101,7 +106,12 @@ let appDefaults: [String: Any] = [
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST: true,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO: true,
     DEFAULT_SHOW_SENT_VIA_RPOXY: false,
-    ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN: AppSettingsLockScreenCalls.show.rawValue
+    ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN: AppSettingsLockScreenCalls.show.rawValue,
+
+    DEFAULT_THEME_OVERRIDES: "{}",
+//    DEFAULT_CURRENT_THEME: DefaultTheme.SYSTEM_THEME_NAME,
+//    DEFAULT_SYSTEM_DARK_THEME: DefaultTheme.SIMPLEX.themeName
+    DEFAULT_CURRENT_THEME_IDS: "{}"
 ]
 
 // not used anymore
@@ -147,6 +157,11 @@ let privacyDeliveryReceiptsSet = BoolDefault(defaults: UserDefaults.standard, fo
 let onboardingStageDefault = EnumDefault<OnboardingStage>(defaults: UserDefaults.standard, forKey: DEFAULT_ONBOARDING_STAGE, withDefault: .onboardingComplete)
 
 let customDisappearingMessageTimeDefault = IntDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME)
+
+let currentThemeDefault = StringDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME)
+let systemDarkThemeDefault = StringDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SYSTEM_DARK_THEME)
+let currentThemeIdsDefault = GenericDefault<[String: String]>(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME_IDS, withDefault: [:], encode: { value in encodeJSON(value) }, decode: { value in decodeJSON(value) ?? [:]  } )
+let themeOverridesDefault: GenericDefault<[ThemeOverrides]> = GenericDefault(defaults: UserDefaults.standard, forKey: DEFAULT_THEME_OVERRIDES, withDefault: [] as [ThemeOverrides], encode: { value in encodeJSON(ThemesFile(themes: value)) }, decode: { value in if let res: ThemesFile = decodeJSON(value) { res.themes } else { [] } })
 
 func setGroupDefaults() {
     privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))

@@ -83,7 +83,9 @@ struct AppearanceSettings: View {
                     }
                 }
                 .onChange(of: userInterfaceStyle) { _ in
+                    logger.debug("LALAL \(String(describing: sceneDelegate.window?.traitCollection.userInterfaceStyle))  \(sceneDelegate.window?.traitCollection.userInterfaceStyle == .dark)")
                     sceneDelegate.window?.overrideUserInterfaceStyle = userInterfaceStyle
+                    logger.debug("LALAL \(String(describing: sceneDelegate.window?.traitCollection.userInterfaceStyle))  \(sceneDelegate.window?.traitCollection.userInterfaceStyle == .dark)")
                     setUserInterfaceStyleDefault(userInterfaceStyle)
                 }
                 .onChange(of: uiTintColor) { _ in
