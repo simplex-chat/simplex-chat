@@ -4716,7 +4716,7 @@ sealed class CR {
           (if (remoteCtrl_ == null) "null" else json.encodeToString(remoteCtrl_)) +
           "\nsessionCode: $sessionCode"
     is RemoteCtrlConnected -> json.encodeToString(remoteCtrl)
-    is RemoteCtrlStopped -> noDetails()
+    is RemoteCtrlStopped -> "rcsState: $rcsState\nrcsStopReason: $rcStopReason"
     is ContactPQAllowed -> withUser(user, "contact: ${contact.id}\npqEncryption: $pqEncryption")
     is ContactPQEnabled -> withUser(user, "contact: ${contact.id}\npqEnabled: $pqEnabled")
     is VersionInfo -> "version ${json.encodeToString(versionInfo)}\n\n" +
