@@ -1957,12 +1957,20 @@ func processReceivedMsg(_ res: ChatResponse) async {
             let state = UIRemoteCtrlSessionState.connected(remoteCtrl: remoteCtrl, sessionCode: m.remoteCtrlSession?.sessionCode ?? "")
             m.remoteCtrlSession = m.remoteCtrlSession?.updateState(state)
         }
-    case .remoteCtrlStopped:
+    case let .remoteCtrlStopped(_, rcStopReason):
         // This delay is needed to cancel the session that fails on network failure,
         // e.g. when user did not grant permission to access local network yet.
         if let sess = m.remoteCtrlSession {
             await MainActor.run {
                 m.remoteCtrlSession = nil
+                dismissAllSheets() {
+                    AlertManager.shared.showAlert(Alert(
+                        title: Text("Connection with desktop stopped"),
+                        message: Text("Make sure that mobile device is connected to the same local network as desktop, and that connection is not blocked by desktop firewall.\nIf you are re-establishing connection with the desktop after previously unlinking it, try creating a new link on the desktop.\nIf you are still unsure how to fix the issue, please share the error with developers."),
+                        primaryButton: .default(Text("Ok")),
+                        secondaryButton: .default(Text("Copy error")) { UIPasteboard.general.string = String(describing: rcStopReason) }
+                    ))
+                }
             }
             if case .connected = sess.sessionState {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
