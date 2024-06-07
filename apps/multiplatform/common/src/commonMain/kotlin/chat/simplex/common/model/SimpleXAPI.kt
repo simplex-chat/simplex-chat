@@ -1,9 +1,18 @@
 package chat.simplex.common.model
 
+import SectionItemView
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import chat.simplex.common.views.helpers.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.setNetCfg
 import chat.simplex.common.model.ChatModel.updatingChatsMutex
@@ -12,7 +21,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
-import chat.simplex.common.views.chat.group.toggleShowMemberMessages
+import chat.simplex.common.views.chat.group.*
 import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
@@ -20,6 +29,7 @@ import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
 import chat.simplex.res.MR
 import com.russhwolf.settings.Settings
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.withLock
@@ -2194,13 +2204,30 @@ object ChatController {
         val sess = chatModel.remoteCtrlSession.value
         if (sess != null) {
           chatModel.remoteCtrlSession.value = null
+          ModalManager.fullscreen.closeModals()
           fun showAlert(chatError: ChatError) {
-            AlertManager.shared.showAlertMsg(
-              generalGetString(MR.strings.remote_ctrl_was_disconnected_title),
-              if (chatError is ChatError.ChatErrorRemoteCtrl) {
+            AlertManager.shared.showAlertDialogButtonsColumn(
+              title = generalGetString(MR.strings.remote_ctrl_was_disconnected_title),
+              text = if (chatError is ChatError.ChatErrorRemoteCtrl) {
                 chatError.remoteCtrlError.localizedString
               } else {
-                generalGetString(MR.strings.remote_ctrl_disconnected_with_reason).format(chatError.string)
+                generalGetString(MR.strings.remote_ctrl_connection_stopped_desc)
+              },
+              buttons = {
+                Column {
+                  val clipboard = LocalClipboardManager.current
+                  SectionItemView({
+                    clipboard.setText(AnnotatedString(json.encodeToString(r.rcStopReason)))
+                    AlertManager.shared.hideAlert()
+                  }) {
+                    Text(stringResource(MR.strings.copy_error), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                  }
+                  SectionItemView({
+                    AlertManager.shared.hideAlert()
+                  }) {
+                    Text(stringResource(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                  }
+                }
               }
             )
           }

@@ -1921,6 +1921,8 @@
   <string name="remote_ctrl_was_disconnected_title">Connection stopped</string>
   <string name="remote_host_disconnected_from"><![CDATA[Disconnected from mobile <b>%s</b> with the reason: %s]]></string>
   <string name="remote_ctrl_disconnected_with_reason">Disconnected with the reason: %s</string>
+  <string name="remote_ctrl_connection_stopped_desc">Make sure that mobile device is connected to the same local network as desktop, and that connection is not blocked by desktop firewall.\nIf you are re-establishing connection with the desktop after previously unlinking it, try creating a new link on the desktop.\nIf you are still unsure how to fix the issue, please share the error with developers.</string>
+  <string name="copy_error">Copy error</string>
   <string name="disconnect_desktop_question">Disconnect desktop?</string>
   <string name="only_one_device_can_work_at_the_same_time">Only one device can work at the same time</string>
   <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Open <i>Use from desktop</i> in mobile app and scan QR code.]]></string>
