@@ -1859,4 +1859,13 @@
     <string name="error_initializing_web_view">Error al inicializar WebView. Actualiza tu sistema a la última versión. Por favor, ponte en contacto con los desarrolladores.
 \nError: %s</string>
     <string name="v5_8_persian_ui">Interfaz en persa</string>
+    <string name="file_error_auth">Clave incorrecta o dirección de bloque de datos del archivo desconocida - lo más probable es que el archivo se haya borrado.</string>
+    <string name="file_error_no_file">Archivo no encontrado - el archivo probablemente ha sido borrado o cancelado.</string>
+    <string name="file_error_relay">Error del servidor de archivos: %1$s</string>
+    <string name="file_error">Error de archivo</string>
+    <string name="temporary_file_error">Error de archivo temporal</string>
+    <string name="share_text_message_status">Estado del mensaje: %s</string>
+    <string name="info_row_message_status">Estado del mensaje</string>
+    <string name="share_text_file_status">Estado del archivo: %s</string>
+    <string name="info_row_file_status">Estado del archivo</string>
 </resources>
