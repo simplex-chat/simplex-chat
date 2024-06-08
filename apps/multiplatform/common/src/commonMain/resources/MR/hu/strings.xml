@@ -146,7 +146,7 @@
     <string name="attach">Csatolás</string>
     <string name="v5_0_app_passcode">Alkalmazás jelkód</string>
     <string name="icon_descr_asked_to_receive">Felkérték a kép fogadására</string>
-    <string name="use_camera_button">Fényképező</string>
+    <string name="use_camera_button">Kamera</string>
     <string name="cannot_access_keychain">A Keystore-hoz nem sikerül hozzáférni az adatbázis jelszó mentése végett</string>
     <string name="callstatus_in_progress">hívás folyamatban</string>
     <string name="auto_accept_images">Fotók automatikus elfogadása</string>
@@ -482,7 +482,7 @@
     <string name="error_loading_smp_servers">Hiba az SMP kiszolgálók betöltésekor</string>
     <string name="error_setting_network_config">Hiba a hálózat konfigurációjának frissítésekor</string>
     <string name="network_option_enable_tcp_keep_alive">TCP életben tartása</string>
-    <string name="icon_descr_flip_camera">Fényképezőgép megfordítása</string>
+    <string name="icon_descr_flip_camera">Kamera váltás</string>
     <string name="email_invite_body">Üdv!
 \nCsatlakozzon hozzám SimpleX Chat-en keresztül: %s</string>
     <string name="display_name_cannot_contain_whitespace">A megjelenített név nem tartalmazhat szóközöket.</string>
@@ -730,7 +730,7 @@
     <string name="v5_3_new_desktop_app">Új asztali alkalmazás!</string>
     <string name="v4_6_group_moderation_descr">Most már az adminok is:
 \n- törölhetik a tagok üzeneteit.
-\n- letilthatnak tagokat (\"megfigyelő\" szerepkör)</string>
+\n- letilthatnak tagokat („megfigyelő” szerepkör)</string>
     <string name="rcv_group_event_member_added">meghívta őt: %1$s</string>
     <string name="message_reactions_are_prohibited">Az üzenetreakciók küldése le van tiltva ebben a csoportban.</string>
     <string name="network_use_onion_hosts_no">Nem</string>
@@ -984,7 +984,7 @@
     <string name="description_you_shared_one_time_link">egyszer használatos hivatkozást osztott meg</string>
     <string name="simplex_link_mode_browser_warning">A hivatkozás megnyitása a böngészőben gyengítheti az adatvédelmet és a biztonságot. A megbízhatatlan SimpleX hivatkozások pirossal vannak kiemelve.</string>
     <string name="your_ice_servers">ICE kiszolgálók</string>
-    <string name="you_accepted_connection">Kapcsolódás elfogadva</string>
+    <string name="you_accepted_connection">Kapcsolat létrehozása</string>
     <string name="reject_contact_button">Elutasítás</string>
     <string name="notification_preview_mode_message_desc">Ismerős és üzenet megjelenítése</string>
     <string name="settings_section_title_settings">BEÁLLÍTÁSOK</string>
@@ -1486,7 +1486,7 @@
     <string name="v4_5_message_draft_descr">Az utolsó üzenet tervezetének megőrzése a mellékletekkel együtt.</string>
     <string name="saved_ICE_servers_will_be_removed">A mentett WebRTC ICE-kiszolgálók eltávolításra kerülnek.</string>
     <string name="receipts_groups_override_enabled">Kézbesítési jelentések engedélyezve vannak a(z) %d csoportban</string>
-    <string name="member_role_will_be_changed_with_notification">A szerepkör meg fog változni erre: \"%s\". A csoportban mindenki értesítve lesz.</string>
+    <string name="member_role_will_be_changed_with_notification">A szerepkör meg fog változni erre: „%s”. A csoportban mindenki értesítve lesz.</string>
     <string name="users_delete_with_connections">Profil és kiszolgálókapcsolatok</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Egy üzenetküldő- és alkalmazásplatform, amely védi az ön adatait és biztonságát.</string>
     <string name="tap_to_activate_profile">A profil aktiválásához koppintson az ikonra.</string>
@@ -1506,7 +1506,7 @@
     <string name="smp_servers_per_user">A jelenlegi csevegési profilhoz tartozó új kapcsolatok kiszolgálói</string>
     <string name="receiving_via">Fogadás ezen keresztül:</string>
     <string name="store_passphrase_securely_without_recover">Tárolja el biztonságosan jelmondát, mert ha elveszti azt, akkor NEM férhet hozzá a csevegéshez.</string>
-    <string name="member_role_will_be_changed_with_invitation">A tag szerepköre erre fog változni: \"%s\". A tag új meghívót fog kapni.</string>
+    <string name="member_role_will_be_changed_with_invitation">A tag szerepköre erre fog változni: „%s”. A tag új meghívót fog kapni.</string>
     <string name="icon_descr_profile_image_placeholder">profilkép helyőrző</string>
     <string name="sync_connection_force_desc">A titkosítás működik, és új titkosítási egyezményre nincs szükség. Ez kapcsolati hibákat eredményezhet!</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Ez a művelet nem vonható vissza - profiljai, ismerősei, üzenetei és fájljai véglegesen törlésre kerülnek.</string>
@@ -1536,7 +1536,7 @@
     <string name="chat_is_stopped_you_should_transfer_database">A csevegés leállt. Ha már használta ezt az adatbázist egy másik eszközön, úgy visszaállítás szükséges a csevegés megkezdése előtt.</string>
     <string name="recent_history_is_not_sent_to_new_members">Az előzmények nem kerülnek elküldésre az új tagok számára.</string>
     <string name="retry_verb">Újrapróbálkozás</string>
-    <string name="camera_not_available">A fényképező nem elérhető</string>
+    <string name="camera_not_available">A kamera nem elérhető</string>
     <string name="enable_sending_recent_history">Az utolsó 100 üzenet elküldése az új tagok számára.</string>
     <string name="disable_sending_recent_history">Az előzmények ne kerüljenek elküldésre az új tagok számára.</string>
     <string name="or_show_this_qr_code">Vagy mutassa meg ezt a kódot</string>
@@ -1857,7 +1857,7 @@
     <string name="info_row_message_status">Üzenetállapot</string>
     <string name="share_text_message_status">Üzenetállapot: %s</string>
     <string name="file_error">Fájlhiba</string>
-    <string name="file_error_no_file">Fájl nem található - valószínűleg a fájlt törölték vagy visszavonták.</string>
+    <string name="file_error_no_file">A fájl nem található - valószínűleg a fájlt törölték vagy visszavonták.</string>
     <string name="file_error_relay">Fájlkiszolgáló hiba: %1$s</string>
     <string name="info_row_file_status">Fájlállapot</string>
     <string name="share_text_file_status">Fájlállapot: %s</string>
