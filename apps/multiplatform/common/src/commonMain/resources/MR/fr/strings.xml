@@ -1858,4 +1858,13 @@
     <string name="color_mode_system">Système</string>
     <string name="error_initializing_web_view">Erreur d\'initialisation de WebView. Mettez votre système à jour avec la nouvelle version. Veuillez contacter les développeurs.
 \nErreur : %s</string>
+    <string name="file_error_no_file">Fichier introuvable - le fichier a probablement été supprimé ou annulé.</string>
+    <string name="file_error_auth">Mauvaise clé ou adresse inconnue du bloc de données du fichier - le fichier est probablement supprimé.</string>
+    <string name="file_error_relay">Erreur du serveur de fichiers : %1$s</string>
+    <string name="file_error">Erreur de fichier</string>
+    <string name="temporary_file_error">Erreur de fichier temporaire</string>
+    <string name="info_row_file_status">Statut du fichier</string>
+    <string name="share_text_file_status">Statut du fichier: %s</string>
+    <string name="info_row_message_status">Statut du message</string>
+    <string name="share_text_message_status">Statut du message: %s</string>
 </resources>
