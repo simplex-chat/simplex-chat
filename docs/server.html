@@ -1174,7 +1174,7 @@ disconnect: off
 
 [WEB]
 # Set path to generate static mini-site for server information and qr codes/links
-static_path: &lt;WRITABLE_PATH_TO_STORE_WEBSITE&gt;
+static_path: /var/opt/simplex/www
 
 # Run an embedded server on this port
 # Onion sites can use any port and register it in the hidden service config.
@@ -1415,16 +1415,11 @@ own_server_domains: &lt;your domain suffixes if using `log_stats: on`&gt;
 <p>SMP-server versions starting from <code>v5.8.0</code> can be configured to serve Web page with server information that can include admin info, server info, provider info, etc. Run the following commands as <code>root</code> user.</p>
 <ol>
 <li>
-<p>Create folder to store webserver static files and assign correct permissions:</p>
-<pre><code class="language-sh">mkdir -p /var/www/smp-server-web &amp;&amp; chown smp:smp /var/www/smp-server-web
-</code></pre>
-</li>
-<li>
 <p>Add the following to your smp-server configuration (please modify fields in [INFORMATION] section to include relevant information):</p>
 <pre><code class="language-sh">vim /etc/opt/simplex/smp-server.ini
 </code></pre>
 <pre><code class="language-ini">[WEB]
-static_path: /var/www/smp-server-web
+static_path: /var/opt/simplex/www
 
 [INFORMATION]
 # AGPLv3 license requires that you make any source code modifications
@@ -1496,7 +1491,7 @@ hosting_country: &lt;HOSTING_PROVIDER_LOCATION&gt;
 <pre><code class="language-sh">vim /etc/caddy/Caddyfile
 </code></pre>
 <pre><code class="language-caddy">&lt;YOUR_DOMAIN&gt; {
-  root * /var/www/simplex
+  root * /var/opt/simplex/www
   file_server
 }
 </code></pre>
