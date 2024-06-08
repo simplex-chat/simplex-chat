@@ -605,7 +605,10 @@ export interface CRUserAcceptedGroupSent extends CR {
   type: "userAcceptedGroupSent"
   user: User
   groupInfo: GroupInfo
-  hostContact?: Contact // included when joining group via group link
+  /**
+   * Included when joining group via group link
+   */
+  hostContact?: Contact
 }
 
 export interface CRUserDeletedMember extends CR {
@@ -761,7 +764,7 @@ export interface User {
   userContactId: number
   localDisplayName: string
   profile: LocalProfile
-  // fullPreferences :: FullPreferences
+  // fullPreferences :: FullPreferences // TODO: what is this?
   activeUser: boolean
   viewPwdHash: string
   showNtfs: boolean
@@ -843,17 +846,24 @@ export interface GroupInfo {
   createdAt: Date
 }
 
+/**
+ * TODO: explain whether groups are treated like contacts, i.e. have a profile resembling a contact;
+ * or whether this is about the user's profile being displayed differently to group members
+ */
 export interface GroupProfile {
   displayName: string
   fullName: string
-  image?: string // web-compatible data/base64 string for the image
+  /**
+   * Web-compatible data/base64 string for the image
+   */
+  image?: string
 }
 
 export interface GroupMember {
   groupMemberId: number
   memberId: string
   memberRole: GroupMemberRole
-  // memberCategory: GroupMemberCategory
+  // memberCategory: GroupMemberCategory TODO: what is this?
   // memberStatus: GroupMemberStatus
   // invitedBy: InvitedBy
   localDisplayName: string
@@ -970,7 +980,7 @@ export function ciContentText(content: CIContent): string | undefined {
 
 interface RcvFileTransfer {
   fileId: number
-  // fileInvitation: FileInvitation
+  // fileInvitation: FileInvitation TODO: what is this?
   // fileStatus: RcvFileStatus
   senderDisplayName: string
   chunkSize: number
@@ -986,8 +996,8 @@ interface SndFileTransfer {
   chunkSize: number
   recipientDisplayName: string
   connId: number
-  // agentConnId: string
-  // fileStatus: FileStatus
+  // agentConnId: string TODO: what is this?
+  // fileStatus: FileStatus TODO: what is this?
 }
 
 interface FileTransferMeta {

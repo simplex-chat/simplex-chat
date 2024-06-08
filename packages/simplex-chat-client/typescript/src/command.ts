@@ -1,3 +1,6 @@
+/**
+ * Represents a command for the {@link https://simplex.chat/docs/cli.html SimpleX CLI}.
+ */
 export type ChatCommand =
   | ShowActiveUser
   | CreateActiveUser
@@ -281,8 +284,17 @@ export interface APISendMessage extends IChatCommand {
 }
 
 export interface ComposedMessage {
+  /**
+   * TODO: specify what the file is for
+   */
   filePath?: string
+  /**
+   * Another message that is being replied to.
+   */
   quotedItemId?: ChatItemId
+  /**
+   * The actual text, image, file etc. that is being sent.
+   */
   msgContent: MsgContent
 }
 
@@ -589,22 +601,51 @@ export interface LocalProfile {
 }
 
 export enum ChatType {
+  /**
+   * A private chat with one contact
+   * @type {ChatType.Direct}
+   */
   Direct = "@",
+  /**
+   * A group chat with multiple contacts
+   * @type {ChatType.Group}
+   */
   Group = "#",
+  /**
+   * Asking to initiate a private chat with a contact
+   * @type {ChatType.ContactRequest}
+   */
   ContactRequest = "<@",
 }
 
+/**
+ * `count` is the number of messages in a chat
+ * <ul>
+ *     <li>sent after the message specified in `after`</li>
+ *     <li>sent before the message specified in `before`</li>
+ *     <li>sent after the last message, if neither `after` nor `before` is specified</li>
+ * </ul>
+ */
 export type ChatPagination =
-  | {count: number} // count from the last item in case neither after nor before specified
+  | {count: number}
   | {count: number; after: ChatItemId}
   | {count: number; before: ChatItemId}
 
+/**
+ * Identifier of a chat message
+ */
 export type ChatItemId = number
 
 type MsgContentTag = "text" | "link" | "image" | "file"
 
+/**
+ * The content of a chat message.
+ */
 export type MsgContent = MCText | MCLink | MCImage | MCFile | MCUnknown
 
+/**
+ * Message content.
+ */
 interface MC {
   type: MsgContentTag
   text: string
@@ -615,19 +656,31 @@ interface MCText extends MC {
   text: string
 }
 
+/**
+ * A polished hyperlink to a {@link https://en.wikipedia.org/wiki/Uniform_Resource_Identifier Uniform Resource Identifier} (URI).
+ */
 interface MCLink extends MC {
   type: "link"
+  /**
+   * The message to accompany the link. Just like a regular text message, but with a link attached.
+   */
   text: string
   preview: LinkPreview
 }
 
 interface MCImage extends MC {
   type: "image"
-  image: string // image preview as base64 encoded data string
+  /**
+   * Image preview as base64 encoded data string
+   */
+  image: string
 }
 
 interface MCFile extends MC {
   type: "file"
+  /**
+   * TODO: specify what this is
+   */
   text: string
 }
 
@@ -636,6 +689,10 @@ interface MCUnknown {
   text: string
 }
 
+/**
+ * A brief summary of a {@link https://en.wikipedia.org/wiki/Uniform_Resource_Identifier Uniform Resource Identifier} (URI).
+ * Can be used for web page previews.
+ */
 interface LinkPreview {
   uri: string
   title: string
@@ -644,7 +701,15 @@ interface LinkPreview {
 }
 
 export enum DeleteMode {
+  /**
+   * Delete the message for everyone in the chat.
+   * @type {DeleteMode.Broadcast}
+   */
   Broadcast = "broadcast",
+  /**
+   * Delete the message only locally.
+   * @type {DeleteMode.Internal}
+   */
   Internal = "internal",
 }
 
@@ -662,10 +727,18 @@ export enum GroupMemberRole {
 
 interface GroupProfile {
   displayName: string
-  fullName: string // can be empty string
+  /**
+   * May be empty.
+   */
+  fullName: string
   image?: string
 }
 
+/**
+ * Converts a given {@link ChatCommand} to command line input for the {@link https://simplex.chat/docs/cli.html SimpleX Terminal CLI}.
+ * @param {ChatCommand} cmd  The command to convert.
+ * @returns {string} The command line input, including all arguments necessary to execute the command in the CLI.
+ */
 export function cmdString(cmd: ChatCommand): string {
   switch (cmd.type) {
     case "showActiveUser":
