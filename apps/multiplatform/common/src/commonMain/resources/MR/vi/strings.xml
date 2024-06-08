@@ -239,4 +239,15 @@
     <string name="settings_section_title_chat_colors">Màu trò chuyện</string>
     <string name="chat_database_section">CƠ SỞ DỮ LIỆU SIMPLEX CHAT</string>
     <string name="chat_is_stopped">Ứng dụng SimpleX Chat đã được dừng lại</string>
+    <string name="migrate_to_device_chat_migrated">Cơ sở dữ liệu đã được di chuyển!</string>
+    <string name="your_chats">Các cuộc trò chuyện</string>
+    <string name="settings_section_title_chats">CÁC CUỘC TRÒ CHUYỆN</string>
+    <string name="notifications_mode_periodic_desc">Kiểm tra tin nhắn mới mỗi 10 phút trong tối đa 1 phút</string>
+    <string name="v4_6_chinese_spanish_interface">Giao diện Trung Quốc và Tây Ban Nha</string>
+    <string name="chat_with_developers">Trò chuyện với nhà phát triển</string>
+    <string name="smp_servers_check_address">Kiểm tra lại địa chỉ server và thử lại.</string>
+    <string name="choose_file_title">Chọn một tệp</string>
+    <string name="network_session_mode_user">Hồ sơ trò chuyện</string>
+    <string name="migrate_from_device_check_connection_and_try_again">Kiểm tra kết nối internet của bạn và thử lại</string>
+    <string name="settings_section_title_chat_theme">Chủ đề trò chuyện</string>
 </resources>
