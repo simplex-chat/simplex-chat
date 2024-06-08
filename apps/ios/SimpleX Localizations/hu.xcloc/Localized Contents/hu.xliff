@@ -493,11 +493,11 @@
         <target>: </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="&lt;p&gt;Hi!&lt;/p&gt;&#10;&lt;p&gt;&lt;a href=&quot;%@&quot;&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;" xml:space="preserve">
+      <trans-unit id="&lt;p&gt;Hi!&lt;/p&gt;&#10;&lt;p&gt;&lt;a href=&quot;%@&quot;&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;" xml:space="preserve" approved="no">
         <source>&lt;p&gt;Hi!&lt;/p&gt;
 &lt;p&gt;&lt;a href="%@"&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;</source>
-        <target>&lt;p&gt;Üdvözlöm!&lt;/p&gt;
-&lt;p&gt;&lt;a href="%@"&gt;Csatlakozzon hozzám a SimpleX Chaten&lt;/a&gt;&lt;/p&gt;</target>
+        <target state="translated">&lt;p&gt;Üdvözlöm!&lt;/p&gt;
+&lt;p&gt;&lt;a href=„%@”&gt;Csatlakozzon hozzám a SimpleX Chaten&lt;/a&gt;&lt;/p&gt;</target>
         <note>email text</note>
       </trans-unit>
       <trans-unit id="A few more things" xml:space="preserve">
@@ -1063,9 +1063,9 @@
         <target>Hívások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Camera not available" xml:space="preserve">
+      <trans-unit id="Camera not available" xml:space="preserve" approved="no">
         <source>Camera not available</source>
-        <target>A fényképező nem elérhető</target>
+        <target state="translated">A kamera nem elérhető</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -3667,14 +3667,14 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Tag</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
+      <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve" approved="no">
         <source>Member role will be changed to "%@". All group members will be notified.</source>
-        <target>A tag szerepköre meg fog változni erre: "%@". A csoport minden tagja értesítést kap róla.</target>
+        <target state="translated">A tag szerepköre meg fog változni erre: „%@”. A csoport minden tagja értesítést kap róla.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve">
+      <trans-unit id="Member role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve" approved="no">
         <source>Member role will be changed to "%@". The member will receive a new invitation.</source>
-        <target>A tag szerepköre meg fog változni erre: "%@". A tag új meghívást fog kapni.</target>
+        <target state="translated">A tag szerepköre meg fog változni erre: „%@”. A tag új meghívást fog kapni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
@@ -4042,13 +4042,13 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Az értesítések le vannak tiltva!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve">
+      <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve" approved="no">
         <source>Now admins can:
 - delete members' messages.
 - disable members ("observer" role)</source>
-        <target>Most már az adminok is:
+        <target state="translated">Most már az adminok is:
 - törölhetik a tagok üzeneteit.
-- letilthatnak tagokat ("megfigyelő" szerepkör)</target>
+- letilthatnak tagokat („megfigyelő” szerepkör)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="OK" xml:space="preserve">
@@ -6491,9 +6491,9 @@ A kapcsolódáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsol
         <target>**Nem szabad** ugyanazt az adatbázist használni egyszerre két eszközön.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You accepted connection" xml:space="preserve">
+      <trans-unit id="You accepted connection" xml:space="preserve" approved="no">
         <source>You accepted connection</source>
-        <target>Kapcsolódás elfogadva</target>
+        <target state="translated">Kapcsolat létrehozása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You allow" xml:space="preserve">
