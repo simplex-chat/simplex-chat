@@ -1821,7 +1821,7 @@
     <string name="chat_list_always_visible">Csevegőlista megjelenítése új ablakban</string>
     <string name="color_mode_light">Világos</string>
     <string name="chat_theme_apply_to_light_mode">Világos mód</string>
-    <string name="color_received_quote">Kapott válasz</string>
+    <string name="color_received_quote">Fogadott válasz</string>
     <string name="theme_remove_image">Kép eltávolítása</string>
     <string name="wallpaper_scale_repeat">Mozaik</string>
     <string name="reset_single_color">Szín visszaállítása</string>
