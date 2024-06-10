@@ -1863,6 +1863,6 @@
     <string name="share_text_file_status">Fájlállapot: %s</string>
     <string name="copy_error">Másolási hiba</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">Ezt a hivatkozást egy másik mobilleszközön már használták, hozzon létre egy új hivatkozást az asztali számítógépén.</string>
-    <string name="remote_ctrl_connection_stopped_desc">Ellenőrizze, hogy a mobil és az asztali számítógép ugyanahhoz a helyi hálózathoz csatlakozik-e továbbá, hogy az asztali számítógép tűzfalában engedélyezve van-e a kapcsolat.
+    <string name="remote_ctrl_connection_stopped_desc">Ellenőrizze, hogy a mobil és az asztali számítógép ugyanahhoz a helyi hálózathoz csatlakozik-e, valamint az asztali számítógép tűzfalában engedélyezve van-e a kapcsolat.
 \nMinden további problémát osszon meg a fejlesztőkkel.</string>
 </resources>
