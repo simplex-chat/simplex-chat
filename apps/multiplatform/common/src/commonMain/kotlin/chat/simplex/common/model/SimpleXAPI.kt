@@ -2205,30 +2205,41 @@ object ChatController {
           chatModel.remoteCtrlSession.value = null
           ModalManager.fullscreen.closeModals()
           fun showAlert(chatError: ChatError) {
-            AlertManager.shared.showAlertDialogButtonsColumn(
-              title = generalGetString(MR.strings.remote_ctrl_was_disconnected_title),
-              text = if (chatError is ChatError.ChatErrorRemoteCtrl) {
-                chatError.remoteCtrlError.localizedString
-              } else {
-                generalGetString(MR.strings.remote_ctrl_connection_stopped_desc)
-              },
-              buttons = {
-                Column {
-                  val clipboard = LocalClipboardManager.current
-                  SectionItemView({
-                    clipboard.setText(AnnotatedString(json.encodeToString(r.rcStopReason)))
-                    AlertManager.shared.hideAlert()
-                  }) {
-                    Text(stringResource(MR.strings.copy_error), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+            when {
+              r.rcStopReason is RemoteCtrlStopReason.ConnectionFailed
+                  && r.rcStopReason.chatError is ChatError.ChatErrorAgent
+                  && r.rcStopReason.chatError.agentError is AgentErrorType.RCP
+                  && r.rcStopReason.chatError.agentError.rcpErr is RCErrorType.IDENTITY ->
+                AlertManager.shared.showAlertMsg(
+                  title = generalGetString(MR.strings.remote_ctrl_was_disconnected_title),
+                  text = generalGetString(MR.strings.remote_ctrl_connection_stopped_identity_desc)
+                )
+              else ->
+                AlertManager.shared.showAlertDialogButtonsColumn(
+                  title = generalGetString(MR.strings.remote_ctrl_was_disconnected_title),
+                  text = if (chatError is ChatError.ChatErrorRemoteCtrl) {
+                    chatError.remoteCtrlError.localizedString
+                  } else {
+                    generalGetString(MR.strings.remote_ctrl_connection_stopped_desc)
+                  },
+                  buttons = {
+                    Column {
+                      SectionItemView({
+                        AlertManager.shared.hideAlert()
+                      }) {
+                        Text(stringResource(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                      }
+                      val clipboard = LocalClipboardManager.current
+                      SectionItemView({
+                        clipboard.setText(AnnotatedString(json.encodeToString(r.rcStopReason)))
+                        AlertManager.shared.hideAlert()
+                      }) {
+                        Text(stringResource(MR.strings.copy_error), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                      }
+                    }
                   }
-                  SectionItemView({
-                    AlertManager.shared.hideAlert()
-                  }) {
-                    Text(stringResource(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-                  }
-                }
-              }
-            )
+                )
+            }
           }
           when (r.rcStopReason) {
             is RemoteCtrlStopReason.DiscoveryFailed -> showAlert(r.rcStopReason.chatError)
