@@ -1861,4 +1861,5 @@
     <string name="file_error_relay">Fájlkiszolgáló hiba: %1$s</string>
     <string name="info_row_file_status">Fájlállapot</string>
     <string name="share_text_file_status">Fájlállapot: %s</string>
+    <string name="copy_error">Másolási hiba</string>
 </resources>
