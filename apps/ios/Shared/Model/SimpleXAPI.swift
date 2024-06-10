@@ -1968,12 +1968,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
                     case .connectionFailed(.errorAgent(.RCP(.identity))):
                         AlertManager.shared.showAlertMsg(
                             title: "Connection with desktop stopped",
-                            message: "This link seems to have been previously used for another mobile connection, try creating a new link on the desktop."
+                            message: "This link was used with another mobile device, please create a new link on the desktop."
                         )
                     default:
                         AlertManager.shared.showAlert(Alert(
                             title: Text("Connection with desktop stopped"),
-                            message: Text("Make sure that mobile device is connected to the same local network as desktop, and that connection is not blocked by desktop firewall.\nIf you are still unsure how to fix the issue, please share the error with developers."),
+                            message: Text("Please check that mobile and desktop are connected to the same local network, and that desktop firewall allows the connection.\nPlease share any other issues with the developers."),
                             primaryButton: .default(Text("Ok")),
                             secondaryButton: .default(Text("Copy error")) { UIPasteboard.general.string = String(describing: rcStopReason) }
                         ))
