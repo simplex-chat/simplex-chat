@@ -414,9 +414,7 @@ struct ConnectDesktopView: View {
 
     private func processDesktopQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
-        case let .success(r):
-            connectDesktopAddress(r.string)
-            showQRCodeScanner = false
+        case let .success(r): connectDesktopAddress(r.string)
         case let .failure(e): errorAlert(e)
         }
     }
