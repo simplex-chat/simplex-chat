@@ -191,7 +191,6 @@
 		8C81482C2BD91CD4002CBEC3 /* AudioDevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C81482B2BD91CD4002CBEC3 /* AudioDevicePicker.swift */; };
 		8CC4ED902BD7B8530078AEE8 /* CallAudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */; };
 		8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC956ED2BC0041000412A11 /* NetworkObserver.swift */; };
-		B7FE70E72C13AA30007CA6DB /* ScannerInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7FE70E62C13AA30007CA6DB /* ScannerInView.swift */; };
 		D7197A1829AE89660055C05A /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D7197A1729AE89660055C05A /* WebRTC */; };
 		D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D72A9087294BD7A70047C86D /* NativeTextEditor.swift */; };
 		D741547829AF89AF0022400A /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D741547729AF89AF0022400A /* StoreKit.framework */; };
@@ -489,7 +488,6 @@
 		8C81482B2BD91CD4002CBEC3 /* AudioDevicePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDevicePicker.swift; sourceTree = "<group>"; };
 		8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallAudioDeviceManager.swift; sourceTree = "<group>"; };
 		8CC956ED2BC0041000412A11 /* NetworkObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkObserver.swift; sourceTree = "<group>"; };
-		B7FE70E62C13AA30007CA6DB /* ScannerInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScannerInView.swift; sourceTree = "<group>"; };
 		D72A9087294BD7A70047C86D /* NativeTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTextEditor.swift; sourceTree = "<group>"; };
 		D741547729AF89AF0022400A /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/StoreKit.framework; sourceTree = DEVELOPER_DIR; };
 		D741547929AF90B00022400A /* PushKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PushKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/PushKit.framework; sourceTree = DEVELOPER_DIR; };
@@ -564,7 +562,6 @@
 		5C2E260D27A30E2400F70299 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				B7FE70E52C13AA0A007CA6DB /* Common */,
 				5CB0BA8C282711BC00B3292C /* Onboarding */,
 				3C714775281C080100CB4D4B /* Call */,
 				5C971E1F27AEBF7000C8A3CE /* Helpers */,
@@ -925,14 +922,6 @@
 			path = Migration;
 			sourceTree = "<group>";
 		};
-		B7FE70E52C13AA0A007CA6DB /* Common */ = {
-			isa = PBXGroup;
-			children = (
-				B7FE70E62C13AA30007CA6DB /* ScannerInView.swift */,
-			);
-			path = Common;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -1282,7 +1271,6 @@
 				5C7031162953C97F00150A12 /* CIFeaturePreferenceView.swift in Sources */,
 				1841538E296606C74533367C /* UserPicker.swift in Sources */,
 				18415B0585EB5A9A0A7CA8CD /* PressedButtonStyle.swift in Sources */,
-				B7FE70E72C13AA30007CA6DB /* ScannerInView.swift in Sources */,
 				1841560FD1CD447955474C1D /* UserProfilesView.swift in Sources */,
 				64C3B0212A0D359700E19930 /* CustomTimePicker.swift in Sources */,
 				8CC4ED902BD7B8530078AEE8 /* CallAudioDeviceManager.swift in Sources */,
