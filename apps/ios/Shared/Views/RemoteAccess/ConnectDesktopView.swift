@@ -181,23 +181,27 @@ struct ConnectDesktopView: View {
     }
 
     private func connectingDesktopView(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo?) -> some View {
-        List {
-            Section("Connecting to desktop") {
-                ctrlDeviceNameText(session, rc)
-                ctrlDeviceVersionText(session)
-            }
+        ZStack {
+            List {
+                Section("Connecting to desktop") {
+                    ctrlDeviceNameText(session, rc)
+                    ctrlDeviceVersionText(session)
+                }
 
-            if let sessCode = session.sessionCode {
-                Section("Session code") {
-                    sessionCodeText(sessCode)
+                if let sessCode = session.sessionCode {
+                    Section("Session code") {
+                        sessionCodeText(sessCode)
+                    }
+                }
+
+                Section {
+                    disconnectButton()
                 }
             }
+            .navigationTitle("Connecting to desktop")
 
-            Section {
-                disconnectButton()
-            }
+            ProgressView().scaleEffect(2)
         }
-        .navigationTitle("Connecting to desktop")
     }
 
     private func searchingDesktopView() -> some View {
