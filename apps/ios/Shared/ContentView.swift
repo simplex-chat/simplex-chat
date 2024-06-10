@@ -14,6 +14,7 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     @EnvironmentObject var sceneDelegate: SceneDelegate
 
     var contentAccessAuthenticationExtended: Bool
@@ -52,6 +53,16 @@ struct ContentView: View {
     }
 
     var body: some View {
+        if #available(iOS 16.0, *) {
+            allViews()
+                .scrollContentBackground(.hidden)
+        } else {
+            // on iOS 15 scroll view background disabled in SceneDelegate
+            allViews()
+        }
+    }
+
+    @ViewBuilder func allViews() -> some View {
         ZStack {
             let showCallArea = chatModel.activeCall != nil && chatModel.activeCall?.callState != .waitCapabilities && chatModel.activeCall?.callState != .invitationAccepted
             // contentView() has to be in a single branch, so that enabling authentication doesn't trigger re-rendering and close settings.
@@ -97,6 +108,8 @@ struct ContentView: View {
                 initializationView()
             }
         }
+        .tint(MaterialTheme.colors.primary)
+        .background(MaterialTheme.colors.background)
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
         .sheet(isPresented: $showSettings) {
             SettingsView(showSettings: $showSettings)
@@ -141,21 +154,23 @@ struct ContentView: View {
         }
         .onChange(of: colorScheme) { scheme in
             logger.log("LALAL DARK THEME CHANGED \(String(describing: scheme))  \(String(describing: sceneDelegate.window?.overrideUserInterfaceStyle)), system theme = \(sceneDelegate.window?.overrideUserInterfaceStyle == .unspecified)")
-            //reactOnDarkThemeChanges(scheme == .dark)
-        }
-        .onAppear {
-            Task {
-                for i in 0...2000 {
-                    await Task.sleep(10_000000)
-                    DispatchQueue.main.asyncAfter(deadline: .now()) {
-                        MaterialTheme.shared.objectWillChange.send()
-                        MaterialTheme.shared.colors.primary = [Color.gray, Color.red, Color.white, Color.brown, Color.cyan, Color.green].randomElement()!
-                        MaterialTheme.shared.colors.secondary = [Color.gray, Color.red, Color.white, Color.brown, Color.cyan, Color.green].randomElement()!
-                        logger.debug("LALAL UP TO \(MaterialTheme.shared.colors.primary)")
-                    }
-                }
+            if sceneDelegate.window?.overrideUserInterfaceStyle == .unspecified {
+                reactOnDarkThemeChanges(scheme == .dark)
             }
         }
+//        .onAppear {
+//            Task {
+//                for i in 0...2000 {
+//                    await Task.sleep(10_000000)
+//                    DispatchQueue.main.asyncAfter(deadline: .now()) {
+//                        MaterialTheme.shared.objectWillChange.send()
+//                        MaterialTheme.shared.colors.primary = [Color.gray, Color.red, Color.white, Color.brown, Color.cyan, Color.green].randomElement()!
+//                        MaterialTheme.shared.colors.secondary = [Color.gray, Color.red, Color.white, Color.brown, Color.cyan, Color.green].randomElement()!
+//                        logger.debug("LALAL UP TO \(MaterialTheme.shared.colors.primary)")
+//                    }
+//                }
+//            }
+//        }
     }
 
     @ViewBuilder private func contentView() -> some View {

@@ -385,4 +385,3 @@ public enum WallpaperType {
         }
     }
 }
-

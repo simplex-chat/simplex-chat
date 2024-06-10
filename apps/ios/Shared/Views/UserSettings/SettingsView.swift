@@ -44,7 +44,7 @@ let DEFAULT_ENCRYPTION_STARTED_AT = "encryptionStartedAt"
 let DEFAULT_ACCENT_COLOR_RED = "accentColorRed"
 let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen"
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
-let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
+//let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
 let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
@@ -93,7 +93,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_ACCENT_COLOR_RED: 0.000,
     DEFAULT_ACCENT_COLOR_GREEN: 0.533,
     DEFAULT_ACCENT_COLOR_BLUE: 1.000,
-    DEFAULT_USER_INTERFACE_STYLE: 0,
+    //DEFAULT_USER_INTERFACE_STYLE: 0,
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
@@ -109,8 +109,8 @@ let appDefaults: [String: Any] = [
     ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN: AppSettingsLockScreenCalls.show.rawValue,
 
     DEFAULT_THEME_OVERRIDES: "{}",
-//    DEFAULT_CURRENT_THEME: DefaultTheme.SYSTEM_THEME_NAME,
-//    DEFAULT_SYSTEM_DARK_THEME: DefaultTheme.SIMPLEX.themeName
+    DEFAULT_CURRENT_THEME: DefaultTheme.SYSTEM_THEME_NAME,
+    DEFAULT_SYSTEM_DARK_THEME: DefaultTheme.SIMPLEX.themeName,
     DEFAULT_CURRENT_THEME_IDS: "{}"
 ]
 
@@ -359,6 +359,7 @@ struct SettingsView: View {
                     }
                 }
             }
+            .modifier(ThemedBackground())
             .navigationTitle("Your settings")
         }
         .onDisappear {

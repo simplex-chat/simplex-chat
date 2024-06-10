@@ -111,6 +111,13 @@ public class ThemeManager {
     static func applyTheme(_ theme: String) {
         currentThemeDefault.set(theme)
         CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        SceneDelegate.windowStatic?.tintColor = UIColor(CurrentColors.colors.primary)
+        SceneDelegate.windowStatic?.backgroundColor = UIColor(CurrentColors.colors.background)
+        SceneDelegate.windowStatic?.overrideUserInterfaceStyle = switch currentThemeDefault.get() {
+        case DefaultTheme.LIGHT.themeName: .light
+        case DefaultTheme.SYSTEM_THEME_NAME: .unspecified
+        default: .dark
+        }
     }
 
     static func changeDarkTheme(_ theme: String) {
@@ -159,7 +166,7 @@ public class ThemeManager {
 
     static func copyFromSameThemeOverrides(_ type: WallpaperType?, _ lowerLevelOverride: ThemeModeOverride?, _ pref: Binding<ThemeModeOverride>) -> Bool {
         let overrides = themeOverridesDefault.get()
-        let sameWallpaper: ThemeWallpaper? = if let wallpaper = lowerLevelOverride?.wallpaper, lowerLevelOverride?.type.sameType(type) == true {
+        let sameWallpaper: ThemeWallpaper? = if let wallpaper = lowerLevelOverride?.wallpaper, lowerLevelOverride?.type?.sameType(type) == true {
             wallpaper
         } else {
             overrides.sameTheme(type, CurrentColors.base.themeName)?.wallpaper

@@ -6,9 +6,9 @@
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
 
-import SwiftUI
 import Foundation
 import SimpleXChat
+import SwiftUI
 
 enum DefaultTheme: String, Codable {
     case LIGHT
@@ -36,7 +36,7 @@ enum DefaultTheme: String, Codable {
     }
 }
 
-enum DefaultThemeMode: String, Codable {
+enum DefaultThemeMode: String, Codable, CaseIterable {
     case light
     case dark
 }
@@ -284,7 +284,7 @@ public struct ThemeWallpaper: Codable {
                 nil
             }
         }
-        let scaleType: WallpaperScaleType? = if scaleType == nil { nil } else if let WallpaperType.Image(_, _, scaleType) = type { scaleType } else { nil }
+        let scaleType: WallpaperScaleType? = if scaleType == nil { nil } else if case let WallpaperType.Image(_, _, scaleType) = type { scaleType } else { nil }
         let imageFile: String? = if case let WallpaperType.Image(filename, _, _) = type { filename } else { nil }
         return ThemeWallpaper (
             preset: preset,
@@ -342,33 +342,41 @@ public struct ThemeOverrides: Codable {
     var wallpaper: ThemeWallpaper? = nil
 
     func isSame(_ type: WallpaperType?, _ themeName: String) -> Bool {
-        (
-            (wallpaper?.preset != nil && type is WallpaperType.Preset && wallpaper.preset == type.filename) ||
-            (wallpaper?.imageFile != nil && type is WallpaperType.Image) ||
-            (wallpaper?.preset == nil && wallpaper?.imageFile == nil && (type == WallpaperType.Empty || type == nil))
-        ) && base.themeName == themeName
+        if base.themeName != themeName {
+            return false
+        }
+        return if let preset = wallpaper?.preset, let type, case let WallpaperType.Preset(filename, _) = type, preset == filename {
+            true
+        } else if wallpaper?.imageFile != nil, let type, case WallpaperType.Image = type {
+            true
+        } else if wallpaper?.preset == nil && wallpaper?.imageFile == nil && type == nil {
+            true
+        } else if wallpaper?.preset == nil && wallpaper?.imageFile == nil, let type, case WallpaperType.Empty = type {
+            true
+        } else {
+            false
+        }
     }
 
     func withUpdatedColor(_ name: ThemeColor, _ color: String?) -> ThemeOverrides {
         var c = colors
         var w = wallpaper
-            switch name {
-            case ThemeColor.PRIMARY: c.accent = color
-            case ThemeColor.PRIMARY_VARIANT: c.accentVariant = color
-            case ThemeColor.SECONDARY: c.secondary = color
-            case ThemeColor.SECONDARY_VARIANT: c.secondaryVariant = color
-            case ThemeColor.BACKGROUND: c.background = color
-            case ThemeColor.SURFACE: c.menus = color
-            case ThemeColor.TITLE: c.title = color
-            case ThemeColor.PRIMARY_VARIANT2: c.accentVariant2 = color
-            case ThemeColor.SENT_MESSAGE: c.sentMessage = color
-            case ThemeColor.SENT_QUOTE: c.sentReply = color
-            case ThemeColor.RECEIVED_MESSAGE: c.receivedMessage = color
-            case ThemeColor.RECEIVED_QUOTE: c.receivedReply = color
-            case ThemeColor.WALLPAPER_BACKGROUND: w.background = color
-            case ThemeColor.WALLPAPER_TINT: w.tint = color
-            }
-        )
+        switch name {
+        case ThemeColor.PRIMARY: c.accent = color
+        case ThemeColor.PRIMARY_VARIANT: c.accentVariant = color
+        case ThemeColor.SECONDARY: c.secondary = color
+        case ThemeColor.SECONDARY_VARIANT: c.secondaryVariant = color
+        case ThemeColor.BACKGROUND: c.background = color
+        case ThemeColor.SURFACE: c.menus = color
+        case ThemeColor.TITLE: c.title = color
+        case ThemeColor.PRIMARY_VARIANT2: c.accentVariant2 = color
+        case ThemeColor.SENT_MESSAGE: c.sentMessage = color
+        case ThemeColor.SENT_QUOTE: c.sentReply = color
+        case ThemeColor.RECEIVED_MESSAGE: c.receivedMessage = color
+        case ThemeColor.RECEIVED_QUOTE: c.receivedReply = color
+        case ThemeColor.WALLPAPER_BACKGROUND: w?.background = color
+        case ThemeColor.WALLPAPER_TINT: w?.tint = color
+        }
         return ThemeOverrides(themeId: themeId, base: base, colors: c, wallpaper: w)
     }
 
@@ -386,7 +394,6 @@ public struct ThemeOverrides: Codable {
         c.secondaryVariant = perChatTheme?.secondaryVariant?.colorFromReadableHex() ?? perUserTheme?.secondaryVariant?.colorFromReadableHex() ?? colors.secondaryVariant?.colorFromReadableHex() ?? presetWallpaperTheme?.secondaryVariant?.colorFromReadableHex() ?? baseColors.secondaryVariant
         c.background = perChatTheme?.background?.colorFromReadableHex() ?? perUserTheme?.background?.colorFromReadableHex() ?? colors.background?.colorFromReadableHex() ?? presetWallpaperTheme?.background?.colorFromReadableHex() ?? baseColors.background
         c.surface = perChatTheme?.surface?.colorFromReadableHex() ?? perUserTheme?.surface?.colorFromReadableHex() ?? colors.surface?.colorFromReadableHex() ?? presetWallpaperTheme?.surface?.colorFromReadableHex() ?? baseColors.surface
-        )
         return c
     }
 
@@ -402,42 +409,44 @@ public struct ThemeOverrides: Codable {
         let sentQuoteFallback = colors.sentQuote?.colorFromReadableHex() ?? presetWallpaperTheme?.sentQuote?.colorFromReadableHex() ?? baseColors.sentQuote
         let receivedMessageFallback = colors.receivedMessage?.colorFromReadableHex() ?? presetWallpaperTheme?.receivedMessage?.colorFromReadableHex() ?? baseColors.receivedMessage
         let receivedQuoteFallback = colors.receivedQuote?.colorFromReadableHex() ?? presetWallpaperTheme?.receivedQuote?.colorFromReadableHex() ?? baseColors.receivedQuote
-        var c = baseColors
+        let c = baseColors
         c.title = perChatTheme?.title?.colorFromReadableHex() ?? perUserTheme?.title?.colorFromReadableHex() ?? colors.title?.colorFromReadableHex() ?? presetWallpaperTheme?.title?.colorFromReadableHex() ?? baseColors.title
         c.primaryVariant2 = perChatTheme?.primaryVariant2?.colorFromReadableHex() ?? perUserTheme?.primaryVariant2?.colorFromReadableHex() ?? colors.primaryVariant2?.colorFromReadableHex() ?? presetWallpaperTheme?.primaryVariant2?.colorFromReadableHex() ?? baseColors.primaryVariant2
         c.sentMessage = if let c = perChatTheme?.sentMessage { c.colorFromReadableHex() } else if perUserTheme != nil && (perChatWallpaperType == nil || perUserWallpaperType == nil || perChatWallpaperType!.sameType(perUserWallpaperType)) { perUserTheme?.sentMessage?.colorFromReadableHex() ?? sentMessageFallback } else { sentMessageFallback }
         c.sentQuote = if let c = perChatTheme?.sentQuote { c.colorFromReadableHex() } else if let perUserTheme, (perChatWallpaperType == nil || perUserWallpaperType == nil || perChatWallpaperType!.sameType(perUserWallpaperType)) { perUserTheme.sentQuote?.colorFromReadableHex() ?? sentQuoteFallback } else { sentQuoteFallback }
         c.receivedMessage = if let c = perChatTheme?.receivedMessage { c.colorFromReadableHex() } else if let perUserTheme, (perChatWallpaperType == nil || perUserWallpaperType == nil || perChatWallpaperType!.sameType(perUserWallpaperType)) { perUserTheme.receivedMessage?.colorFromReadableHex() ?? receivedMessageFallback }
         else { receivedMessageFallback }
-        c.receivedQuote = if let c = perChatTheme?.receivedQuote { c.colorFromReadableHex() } else if let perUserTheme, (perChatWallpaperType == nil || perUserWallpaperType == nil || perChatWallpaperType?.sameType(perUserWallpaperType)) { perUserTheme.receivedQuote?.colorFromReadableHex() ?? receivedQuoteFallback } else { receivedQuoteFallback }
+        c.receivedQuote = if let c = perChatTheme?.receivedQuote { c.colorFromReadableHex() } else if let perUserTheme, (perChatWallpaperType == nil || perUserWallpaperType == nil || perChatWallpaperType!.sameType(perUserWallpaperType)) { perUserTheme.receivedQuote?.colorFromReadableHex() ?? receivedQuoteFallback } else { receivedQuoteFallback }
+        return c
     }
 
     func toAppWallpaper(_ themeOverridesForType: WallpaperType?, _ perChatTheme: ThemeModeOverride?, _ perUserTheme: ThemeModeOverride?, _ materialBackgroundColor: Color) -> AppWallpaper {
-        let mainType = if themeOverridesForType != nil { themeOverridesForType }
+        let mainType: WallpaperType
+        if let t = themeOverridesForType { mainType = t }
         // type can be nil if override is empty `"wallpaper": "{}"`, in this case no wallpaper is needed, empty.
         // It's not nil to override upper level wallpaper
-        else if let w = perChatTheme?.wallpaper { w.toAppWallpaper().type }
-        else if let w = perUserTheme?.wallpaper { w.toAppWallpaper().type }
-        else if let w = wallpaper { w.toAppWallpaper().type }
-        else { return AppWallpaper() }
+        else if let w = perChatTheme?.wallpaper { mainType = w.toAppWallpaper().type }
+        else if let w = perUserTheme?.wallpaper { mainType = w.toAppWallpaper().type }
+        else if let w = wallpaper { mainType = w.toAppWallpaper().type }
+        else { return AppWallpaper(background: nil, tint: nil, type: WallpaperType.Empty) }
 
-        let first: ThemeWallpaper? = if mainType.sameType(perChatTheme?.wallpaper?.toAppWallpaper()?.type) { perChatTheme?.wallpaper } else { nil }
-        let second: ThemeWallpaper? = if mainType.sameType(perUserTheme?.wallpaper?.toAppWallpaper()?.type) { perUserTheme?.wallpaper } else { nil }
-        let third: ThemeWallpaper? = if mainType.sameType(self.wallpaper?.toAppWallpaper()?.type) { self.wallpaper } else { nil }
+        let first: ThemeWallpaper? = if mainType.sameType(perChatTheme?.wallpaper?.toAppWallpaper().type) { perChatTheme?.wallpaper } else { nil }
+        let second: ThemeWallpaper? = if mainType.sameType(perUserTheme?.wallpaper?.toAppWallpaper().type) { perUserTheme?.wallpaper } else { nil }
+        let third: ThemeWallpaper? = if mainType.sameType(self.wallpaper?.toAppWallpaper().type) { self.wallpaper } else { nil }
 
         switch mainType {
-        case WallpaperType.Preset:
-            mainType.scale = mainType.scale ?? first?.scale ?? second?.scale ?? third?.scale
-        case WallpaperType.Image:
-            mainType.scale = if themeOverridesForType == nil { mainType.scale ?? first?.scale ?? second?.scale ?? third?.scale } else { second?.scale ?? third?.scale ?? mainType.scale }
-            mainType.scaleType = if themeOverridesForType == nil { mainType.scaleType ?? first?.scaleType ?? second?.scaleType ?? third?.scaleType } else { second?.scaleType ?? third?.scaleType ?? mainType.scaleType }
-            mainType.filename = if themeOverridesForType == nil { mainType.filename } else { first?.imageFile ?? second?.imageFile ?? third?.imageFile ?? mainType.filename }
+        case var WallpaperType.Preset(_, scale):
+            scale = scale ?? first?.scale ?? second?.scale ?? third?.scale
+        case var WallpaperType.Image(filename, scale, scaleType):
+            scale = if themeOverridesForType == nil { scale ?? first?.scale ?? second?.scale ?? third?.scale } else { second?.scale ?? third?.scale ?? scale }
+            scaleType = if themeOverridesForType == nil { scaleType ?? first?.scaleType ?? second?.scaleType ?? third?.scaleType } else { second?.scaleType ?? third?.scaleType ?? scaleType }
+            filename = if themeOverridesForType == nil { filename } else { first?.imageFile ?? second?.imageFile ?? third?.imageFile ?? filename }
         case WallpaperType.Empty: ()
         }
-        mainType.background = (first?.background ?? second?.background ?? third?.background)?.colorFromReadableHex() ?? mainType.defaultBackgroundColor(base, materialBackgroundColor)
-        mainType.tint = (first?.tint ?? second?.tint ?? third?.tint)?.colorFromReadableHex() ?? mainType.defaultTintColor(base)
+        let background = (first?.background ?? second?.background ?? third?.background)?.colorFromReadableHex() ?? mainType.defaultBackgroundColor(base, materialBackgroundColor)
+        let tint = (first?.tint ?? second?.tint ?? third?.tint)?.colorFromReadableHex() ?? mainType.defaultTintColor(base)
 
-        return AppWallpaper(background: nil, tint: nil, type: mainType)
+        return AppWallpaper(background: background, tint: tint, type: mainType)
     }
 
     func withFilledColors(_ base: DefaultTheme, _ perChatTheme: ThemeColors?, _ perChatWallpaperType: WallpaperType?, _ perUserTheme: ThemeColors?, _ perUserWallpaperType: WallpaperType?, _ presetWallpaperTheme: ThemeColors?) -> ThemeColors {
@@ -550,19 +559,22 @@ struct ThemedBackground: ViewModifier {
 
     func body(content: Content) -> some View {
         if baseTheme == DefaultTheme.SIMPLEX {
-            content.background(
-/*
- brush = Brush.linearGradient(
- listOf(
- CurrentColors.value.colors.background.darker(0.4f),
- CurrentColors.value.colors.background.lighter(0.4f)
- ),
- Offset(0f, Float.POSITIVE_INFINITY),
- Offset(Float.POSITIVE_INFINITY, 0f)
- */
-            )
+            content
+                .background(
+                    CurrentColors.colors.background
+                    /*
+                     brush = Brush.linearGradient(
+                     listOf(
+                     CurrentColors.value.colors.background.darker(0.4f),
+                     CurrentColors.value.colors.background.lighter(0.4f)
+                     ),
+                     Offset(0f, Float.POSITIVE_INFINITY),
+                     Offset(Float.POSITIVE_INFINITY, 0f)
+                     */
+                )
         } else {
-            content.background(CurrentColors.colors.background)
+            content
+                .background(CurrentColors.colors.background)
         }
     }
 }
