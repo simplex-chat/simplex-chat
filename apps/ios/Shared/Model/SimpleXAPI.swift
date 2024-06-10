@@ -1968,7 +1968,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
                     case .connectionFailed(.errorAgent(.RCP(.identity))):
                         AlertManager.shared.showAlertMsg(
                             title: "Connection with desktop stopped",
-                            message: "If you are re-establishing connection with the desktop after previously unlinking it, try creating a new link on the desktop."
+                            message: "This link seems to have been previously used for another mobile connection, try creating a new link on the desktop."
                         )
                     default:
                         AlertManager.shared.showAlert(Alert(
