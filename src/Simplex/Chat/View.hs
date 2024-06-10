@@ -1919,7 +1919,7 @@ viewRemoteCtrlStopped :: RemoteCtrlStopReason -> [StyledString]
 viewRemoteCtrlStopped = \case
   RCSRConnectionFailed (ChatErrorAgent (RCP RCEIdentity) _) ->
     ["remote controller stopped: if you are re-establishing connection with the remote host after previously unlinking it, try creating a new link on the remote host."]
-  _ -> ["remote controller stopped: make sure that both devices are connected to the same local network, and that connection is not blocked by firewall."]
+  _ -> ["remote controller stopped"]
 
 viewChatError :: Bool -> ChatLogLevel -> Bool -> ChatError -> [StyledString]
 viewChatError isCmd logLevel testView = \case
