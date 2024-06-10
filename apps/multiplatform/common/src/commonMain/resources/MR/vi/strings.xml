@@ -250,4 +250,16 @@
     <string name="network_session_mode_user">Hồ sơ trò chuyện</string>
     <string name="migrate_from_device_check_connection_and_try_again">Kiểm tra kết nối internet của bạn và thử lại</string>
     <string name="settings_section_title_chat_theme">Chủ đề trò chuyện</string>
+    <string name="color_mode">Chế độ màu</string>
+    <string name="clear_verification">Xác minh xóa</string>
+    <string name="clear_contacts_selection_button">Xóa</string>
+    <string name="icon_descr_close_button">Nút đóng</string>
+    <string name="clear_note_folder_question">Xóa ghi chú riêng tư?</string>
+    <string name="colored_text">có màu</string>
+    <string name="clear_chat_button">Xóa cuộc trò chuyện</string>
+    <string name="clear_chat_menu_action">Xóa</string>
+    <string name="in_developing_title">Sắp ra mắt!</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device">Chọn <i>Di chuyển từ một thiết bị khác</i>trên thiết bị mới và quét mã QR.</string>
+    <string name="clear_verb">Xóa</string>
+    <string name="clear_chat_question">Xóa cuộc trò chuyện?</string>
 </resources>
