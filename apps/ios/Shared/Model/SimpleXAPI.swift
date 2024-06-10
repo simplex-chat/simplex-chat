@@ -1964,12 +1964,20 @@ func processReceivedMsg(_ res: ChatResponse) async {
             await MainActor.run {
                 m.remoteCtrlSession = nil
                 dismissAllSheets() {
-                    AlertManager.shared.showAlert(Alert(
-                        title: Text("Connection with desktop stopped"),
-                        message: Text("Make sure that mobile device is connected to the same local network as desktop, and that connection is not blocked by desktop firewall.\nIf you are re-establishing connection with the desktop after previously unlinking it, try creating a new link on the desktop.\nIf you are still unsure how to fix the issue, please share the error with developers."),
-                        primaryButton: .default(Text("Ok")),
-                        secondaryButton: .default(Text("Copy error")) { UIPasteboard.general.string = String(describing: rcStopReason) }
-                    ))
+                    switch rcStopReason {
+                    case .connectionFailed(.errorAgent(.RCP(.identity))):
+                        AlertManager.shared.showAlertMsg(
+                            title: "Connection with desktop stopped",
+                            message: "If you are re-establishing connection with the desktop after previously unlinking it, try creating a new link on the desktop."
+                        )
+                    default:
+                        AlertManager.shared.showAlert(Alert(
+                            title: Text("Connection with desktop stopped"),
+                            message: Text("Make sure that mobile device is connected to the same local network as desktop, and that connection is not blocked by desktop firewall.\nIf you are still unsure how to fix the issue, please share the error with developers."),
+                            primaryButton: .default(Text("Ok")),
+                            secondaryButton: .default(Text("Copy error")) { UIPasteboard.general.string = String(describing: rcStopReason) }
+                        ))
+                    }
                 }
             }
             if case .connected = sess.sessionState {
