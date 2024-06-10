@@ -26,7 +26,7 @@
     "terms-and-privacy-policy": "Adatvédelmi irányelvek",
     "hero-header": "Újradefiniált adatvédelem",
     "hero-subheader": "Az első üzenetküldő<br>felhasználói azonosítók nélkül",
-    "hero-p-1": "Más alkalmazások felhasználói azonosítókkal rendelkeznek: Signal, Matrix, Session, Briar, Jami, Cwtch, stb.<br> A SimpleX nem, <strong>még véletlenszerű számok sem</strong>.<br> Ez radikálisan javítja az adatvédelmet.",
+    "hero-p-1": "Más alkalmazások felhasználói azonosítókkal rendelkeznek: Signal, Matrix, Session, Briar, Jami, Cwtch, stb.<br> A SimpleX nem, <strong>még véletlenszerű számokkal sem</strong>.<br> Ez radikálisan javítja az adatvédelmet.",
     "hero-overlay-1-textlink": "Miért ártanak a felhasználói azonosítók az adatvédelemnek?",
     "hero-overlay-2-textlink": "Hogyan működik a SimpleX?",
     "hero-overlay-3-textlink": "A biztonság értékelése",
