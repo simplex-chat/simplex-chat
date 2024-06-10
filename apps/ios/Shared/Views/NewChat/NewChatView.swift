@@ -364,10 +364,9 @@ private struct ConnectView: View {
 }
 
 struct ScannerInView: View {
-    @State private var cameraAuthorizationStatus: AVAuthorizationStatus?
-
     @Binding var showQRCodeScanner: Bool
     let processQRCode: (_ resp: Result<ScanResult, ScanError>) -> Void
+    @State private var cameraAuthorizationStatus: AVAuthorizationStatus?
     var scanMode: ScanMode = .continuous
 
     var body: some View {
