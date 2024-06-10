@@ -1918,7 +1918,7 @@ viewRemoteCtrl CtrlAppInfo {deviceName, appVersionRange = AppVersionRange _ (App
 viewRemoteCtrlStopped :: RemoteCtrlStopReason -> [StyledString]
 viewRemoteCtrlStopped = \case
   RCSRConnectionFailed (ChatErrorAgent (RCP RCEIdentity) _) ->
-    ["remote controller stopped: if you are re-establishing connection with the remote host after previously unlinking it, try creating a new link on the remote host."]
+    ["remote controller stopped: this link seems to have been previously used for another controller, try creating a new link on the desktop"]
   _ -> ["remote controller stopped"]
 
 viewChatError :: Bool -> ChatLogLevel -> Bool -> ChatError -> [StyledString]
