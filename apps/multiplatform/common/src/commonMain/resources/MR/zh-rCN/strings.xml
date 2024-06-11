@@ -1867,4 +1867,8 @@
     <string name="temporary_file_error">临时性文件错误</string>
     <string name="share_text_file_status">文件状态：%s</string>
     <string name="share_text_message_status">消息状态：%s</string>
+    <string name="remote_ctrl_connection_stopped_desc">请检查移动设备和桌面设备连接到的是同一个本地网络，且桌面防火墙允许连接。
+\n请和开发者分享任何其他问题。</string>
+    <string name="remote_ctrl_connection_stopped_identity_desc">此链接用于另一台移动设备，请在桌面上创建新的链接。</string>
+    <string name="copy_error">复制错误</string>
 </resources>
