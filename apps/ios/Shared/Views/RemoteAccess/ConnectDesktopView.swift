@@ -333,16 +333,10 @@ struct ConnectDesktopView: View {
             }
         }
     }
-
+    
     private func scanDesctopAddressView() -> some View {
         Section("Scan QR code from desktop") {
-            CodeScannerView(codeTypes: [.qr], scanMode: .oncePerCode, completion: processDesktopQRCode)
-                .aspectRatio(1, contentMode: .fit)
-                .cornerRadius(12)
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                .padding(.horizontal)
+            ScannerInView(showQRCodeScanner: $showQRCodeScanner,  processQRCode: processDesktopQRCode, scanMode: .oncePerCode)
         }
     }
 
