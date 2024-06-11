@@ -1948,4 +1948,8 @@
     <string name="info_row_file_status">Datei-Status</string>
     <string name="share_text_file_status">Datei-Status: %s</string>
     <string name="temporary_file_error">Temporärer Datei-Fehler</string>
+    <string name="copy_error">Fehler beim Kopieren</string>
+    <string name="remote_ctrl_connection_stopped_identity_desc">Dieser Link wurde schon mit einem anderen Mobiltelefon genutzt. Bitte erstellen sie einen neuen Link in der Desktop-App.</string>
+    <string name="remote_ctrl_connection_stopped_desc">Bitte überprüfen Sie, ob sich das Mobiltelefon und die Desktop-App im gleichen lokalen Netzwerk befinden, und die Desktop-Firewall die Verbindung erlaubt.
+\nBitte teilen Sie weitere mögliche Probleme den Entwicklern mit.</string>
 </resources>
