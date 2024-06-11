@@ -1868,4 +1868,8 @@
     <string name="info_row_message_status">Estado del mensaje</string>
     <string name="share_text_file_status">Estado del archivo: %s</string>
     <string name="info_row_file_status">Estado del archivo</string>
+    <string name="remote_ctrl_connection_stopped_desc">Comprueba que el móvil y el ordenador están conectados a la misma red local y que el firewall del ordenador permite la conexión.
+\nPor favor, comparte cualquier otro problema con los desarrolladores.</string>
+    <string name="copy_error">Error al copiar</string>
+    <string name="remote_ctrl_connection_stopped_identity_desc">Este enlace fue utilizado con otro dispositivo móvil, por favor cree un nuevo enlace en el desktop.</string>
 </resources>
