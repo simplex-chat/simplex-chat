@@ -1867,4 +1867,8 @@
     <string name="share_text_file_status">Statut du fichier: %s</string>
     <string name="info_row_message_status">Statut du message</string>
     <string name="share_text_message_status">Statut du message: %s</string>
+    <string name="copy_error">Erreur de copie</string>
+    <string name="remote_ctrl_connection_stopped_desc">Veuillez vérifier que le mobile et l\'ordinateur sont connectés au même réseau local et que le pare-feu de l\'ordinateur autorise la connexion.
+\nVeuillez faire part de tout autre problème aux développeurs.</string>
+    <string name="remote_ctrl_connection_stopped_identity_desc">Ce lien a été utilisé avec un autre appareil mobile, veuillez créer un nouveau lien sur le desktop.</string>
 </resources>
