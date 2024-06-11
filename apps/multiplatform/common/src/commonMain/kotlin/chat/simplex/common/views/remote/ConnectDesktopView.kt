@@ -15,6 +15,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -165,6 +166,24 @@ private fun ConnectingDesktop(session: RemoteCtrlSession, rc: RemoteCtrlInfo?) {
 
   SectionView {
     DisconnectButton(onClick = ::disconnectDesktop)
+  }
+
+  ProgressIndicator()
+}
+
+@Composable
+private fun ProgressIndicator() {
+  Box(
+    Modifier.fillMaxSize(),
+    contentAlignment = Alignment.Center
+  ) {
+    CircularProgressIndicator(
+      Modifier
+        .padding(horizontal = 2.dp)
+        .size(30.dp),
+      color = MaterialTheme.colors.secondary,
+      strokeWidth = 3.dp
+    )
   }
 }
 

@@ -27,7 +27,6 @@ import Numeric.Natural (Natural)
 import Options.Applicative
 import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), updateStr, versionNumber, versionString)
 import Simplex.FileTransfer.Description (mb)
-import Simplex.Messaging.Client (SMPProxyMode (..), SMPProxyFallback (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)

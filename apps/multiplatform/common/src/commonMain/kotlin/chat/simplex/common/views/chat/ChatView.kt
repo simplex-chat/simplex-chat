@@ -964,17 +964,8 @@ fun BoxWithConstraintsScope.ChatItemsList(
         // With default touchSlop when you scroll LazyColumn, you can unintentionally open reply view
         LocalViewConfiguration provides LocalViewConfiguration.current.bigTouchSlop()
       ) {
-        val dismissState = rememberDismissState(initialValue = DismissValue.Default) { false }
-        val directions = setOf(DismissDirection.EndToStart)
-        val swipeableModifier = SwipeToDismissModifier(
-          state = dismissState,
-          directions = directions,
-          swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
-        )
-        val swipedToEnd = (dismissState.overflow.value > 0f && directions.contains(DismissDirection.StartToEnd))
-        val swipedToStart = (dismissState.overflow.value < 0f && directions.contains(DismissDirection.EndToStart))
-        if (dismissState.isAnimationRunning && (swipedToStart || swipedToEnd)) {
-          LaunchedEffect(Unit) {
+        val dismissState = rememberDismissState(initialValue = DismissValue.Default) {
+          if (it == DismissValue.DismissedToStart) {
             scope.launch {
               if ((cItem.content is CIContent.SndMsgContent || cItem.content is CIContent.RcvMsgContent) && chat.chatInfo !is ChatInfo.Local) {
                 if (composeState.value.editing) {
@@ -985,7 +976,13 @@ fun BoxWithConstraintsScope.ChatItemsList(
               }
             }
           }
+          false
         }
+        val swipeableModifier = SwipeToDismissModifier(
+          state = dismissState,
+          directions = setOf(DismissDirection.EndToStart),
+          swipeDistance = with(LocalDensity.current) { 30.dp.toPx() },
+        )
         val provider = {
           providerForGallery(i, chatModel.chatItems.value, cItem.id) { indexInReversed ->
             scope.launch {

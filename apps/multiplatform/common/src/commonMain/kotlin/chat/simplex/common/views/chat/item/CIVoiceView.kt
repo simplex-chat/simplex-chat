@@ -253,6 +253,81 @@ private fun PlayPauseButton(
 }
 
 @Composable
+private fun PlayablePlayPauseButton(
+  audioPlaying: Boolean,
+  sent: Boolean,
+  hasText: Boolean,
+  progress: State<Int>,
+  duration: State<Int>,
+  strokeWidth: Float,
+  strokeColor: Color,
+  error: Boolean,
+  play: () -> Unit,
+  pause: () -> Unit,
+  longClick: () -> Unit,
+) {
+  val angle = 360f * (progress.value.toDouble() / duration.value).toFloat()
+  if (hasText) {
+    IconButton({ if (!audioPlaying) play() else pause() }, Modifier.size(56.dp).drawRingModifier(angle, strokeColor, strokeWidth)) {
+      Icon(
+        if (audioPlaying) painterResource(MR.images.ic_pause_filled) else painterResource(MR.images.ic_play_arrow_filled),
+        contentDescription = null,
+        Modifier.size(36.dp),
+        tint = MaterialTheme.colors.primary
+      )
+    }
+  } else {
+    PlayPauseButton(audioPlaying, sent, angle, strokeWidth, strokeColor, true, error, play, pause, longClick = longClick)
+  }
+}
+
+@Composable
+private fun VoiceMsgLoadingProgressIndicator() {
+  Box(
+    Modifier
+      .size(56.dp)
+      .clip(RoundedCornerShape(4.dp)),
+    contentAlignment = Alignment.Center
+  ) {
+    ProgressIndicator()
+  }
+}
+
+@Composable
+private fun FileStatusIcon(
+  sent: Boolean,
+  icon: ImageResource,
+  longClick: () -> Unit,
+  onClick: () -> Unit,
+) {
+  val sentColor = MaterialTheme.appColors.sentMessage
+  val receivedColor = MaterialTheme.appColors.receivedMessage
+  Surface(
+    color = if (sent) sentColor else receivedColor,
+    shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
+    contentColor = LocalContentColor.current
+  ) {
+    Box(
+      Modifier
+        .defaultMinSize(minWidth = 56.dp, minHeight = 56.dp)
+        .combinedClickable(
+          onClick = onClick,
+          onLongClick = longClick
+        )
+        .onRightClick { longClick() },
+      contentAlignment = Alignment.Center
+    ) {
+      Icon(
+        painterResource(icon),
+        contentDescription = null,
+        Modifier.size(36.dp),
+        tint = MaterialTheme.colors.secondary
+      )
+    }
+  }
+}
+
+@Composable
 private fun VoiceMsgIndicator(
   file: CIFile?,
   audioPlaying: Boolean,
@@ -268,39 +343,73 @@ private fun VoiceMsgIndicator(
 ) {
   val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() }
   val strokeColor = MaterialTheme.colors.primary
-  if (file != null && file.loaded && progress != null && duration != null) {
-    val angle = 360f * (progress.value.toDouble() / duration.value).toFloat()
-    if (hasText) {
-      IconButton({ if (!audioPlaying) play() else pause() }, Modifier.size(56.dp).drawRingModifier(angle, strokeColor, strokeWidth)) {
-        Icon(
-          if (audioPlaying) painterResource(MR.images.ic_pause_filled) else painterResource(MR.images.ic_play_arrow_filled),
-          contentDescription = null,
-          Modifier.size(36.dp),
-          tint = MaterialTheme.colors.primary
-        )
+  when {
+    file?.fileStatus is CIFileStatus.SndStored ->
+      if (file.fileProtocol == FileProtocol.LOCAL && progress != null && duration != null) {
+        PlayablePlayPauseButton(audioPlaying, sent, hasText, progress, duration, strokeWidth, strokeColor, error, play, pause, longClick = longClick)
+      } else {
+        VoiceMsgLoadingProgressIndicator()
       }
-    } else {
-      PlayPauseButton(audioPlaying, sent, angle, strokeWidth, strokeColor, true, error, play, pause, longClick = longClick)
-    }
-  } else {
-    if (file?.fileStatus is CIFileStatus.RcvInvitation) {
+    file?.fileStatus is CIFileStatus.SndTransfer ->
+      VoiceMsgLoadingProgressIndicator()
+    file != null && file.fileStatus is CIFileStatus.SndError ->
+      FileStatusIcon(
+        sent,
+        MR.images.ic_close,
+        longClick,
+        onClick = {
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.file_error),
+            file.fileStatus.sndFileError.errorInfo
+          )
+        }
+      )
+    file != null && file.fileStatus is CIFileStatus.SndWarning ->
+      FileStatusIcon(
+        sent,
+        MR.images.ic_warning_filled,
+        longClick,
+        onClick = {
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.temporary_file_error),
+            file.fileStatus.sndFileError.errorInfo
+          )
+        }
+      )
+    file?.fileStatus is CIFileStatus.RcvInvitation ->
       PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, { receiveFile(file.fileId) }, {}, longClick = longClick)
-    } else if (file?.fileStatus is CIFileStatus.RcvTransfer
-      || file?.fileStatus is CIFileStatus.RcvAccepted
-    ) {
-      Box(
-        Modifier
-          .size(56.dp)
-          .clip(RoundedCornerShape(4.dp)),
-        contentAlignment = Alignment.Center
-      ) {
-        ProgressIndicator()
-      }
-    } else if (file?.fileStatus is CIFileStatus.RcvAborted) {
+    file?.fileStatus is CIFileStatus.RcvTransfer || file?.fileStatus is CIFileStatus.RcvAccepted ->
+      VoiceMsgLoadingProgressIndicator()
+    file?.fileStatus is CIFileStatus.RcvAborted ->
       PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, true, error, { receiveFile(file.fileId) }, {}, longClick = longClick, icon = MR.images.ic_sync_problem)
-    } else {
+    file != null && file.fileStatus is CIFileStatus.RcvError ->
+      FileStatusIcon(
+        sent,
+        MR.images.ic_close,
+        longClick,
+        onClick = {
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.file_error),
+            file.fileStatus.rcvFileError.errorInfo
+          )
+        }
+      )
+    file != null && file.fileStatus is CIFileStatus.RcvWarning ->
+      FileStatusIcon(
+        sent,
+        MR.images.ic_warning_filled,
+        longClick,
+        onClick = {
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.temporary_file_error),
+            file.fileStatus.rcvFileError.errorInfo
+          )
+        }
+      )
+    file != null && file.loaded && progress != null && duration != null ->
+      PlayablePlayPauseButton(audioPlaying, sent, hasText, progress, duration, strokeWidth, strokeColor, error, play, pause, longClick = longClick)
+    else ->
       PlayPauseButton(audioPlaying, sent, 0f, strokeWidth, strokeColor, false, false, {}, {}, longClick)
-    }
   }
 }
 

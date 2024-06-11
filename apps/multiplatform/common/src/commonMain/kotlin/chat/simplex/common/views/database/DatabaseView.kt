@@ -448,6 +448,9 @@ private fun stopChat(m: ChatModel, progressIndicator: MutableState<Boolean>? = n
       progressIndicator?.value = true
       stopChatAsync(m)
       platform.androidChatStopped()
+      // close chat view for desktop
+      chatModel.chatId.value = null
+      ModalManager.end.closeModals()
       onStop?.invoke()
     } catch (e: Error) {
       m.chatRunning.value = true
