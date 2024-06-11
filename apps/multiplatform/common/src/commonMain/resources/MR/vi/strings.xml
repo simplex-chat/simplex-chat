@@ -262,4 +262,15 @@
     <string name="migrate_from_device_choose_migrate_from_another_device">Chọn <i>Di chuyển từ một thiết bị khác</i>trên thiết bị mới và quét mã QR.</string>
     <string name="clear_verb">Xóa</string>
     <string name="clear_chat_question">Xóa cuộc trò chuyện?</string>
+    <string name="configure_ICE_servers">Cài đặt cấu hình cho các máy chủ ICE</string>
+    <string name="migrate_to_device_confirm_network_settings">Xác nhận các cài đặt mạng</string>
+    <string name="confirm_passcode">Xác nhận mã truy cập</string>
+    <string name="group_member_status_complete">hoàn thành</string>
+    <string name="confirm_password">Xác nhận mật khẩu</string>
+    <string name="confirm_database_upgrades">Xác nhận nâng cấp cơ sở dữ liệu</string>
+    <string name="v4_4_verify_connection_security_desc">So sánh mã bảo mật với liên hệ của bạn.</string>
+    <string name="confirm_verb">Xác nhận</string>
+    <string name="smp_server_test_compare_file">So sánh tệp</string>
+    <string name="v5_8_safe_files_descr">Xác nhận các tệp từ những máy chủ không xác định.</string>
+    <string name="confirm_new_passphrase">Xác nhận mật khẩu mới…</string>
 </resources>
