@@ -1871,5 +1871,5 @@
     <string name="remote_ctrl_connection_stopped_desc">Comprueba que el móvil y el ordenador están conectados a la misma red local y que el firewall del ordenador permite la conexión.
 \nPor favor, comparte cualquier otro problema con los desarrolladores.</string>
     <string name="copy_error">Error al copiar</string>
-    <string name="remote_ctrl_connection_stopped_identity_desc">Este enlace fue utilizado con otro dispositivo móvil, por favor cree un nuevo enlace en el desktop.</string>
+    <string name="remote_ctrl_connection_stopped_identity_desc">Este enlace ha sido usado en otro dispositivo móvil, por favor crea un enlace nuevo en el ordenador.</string>
 </resources>
