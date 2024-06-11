@@ -1865,4 +1865,8 @@
     <string name="info_row_file_status">حالة الملف</string>
     <string name="share_text_file_status">حالة الملف: %s</string>
     <string name="share_text_message_status">حالة الرسالة: %s</string>
+    <string name="copy_error">خطأ في النسخ</string>
+    <string name="remote_ctrl_connection_stopped_identity_desc">تم استخدام هذا الرابط مع جهاز محمول آخر، يُرجى إنشاء رابط جديد على سطح المكتب.</string>
+    <string name="remote_ctrl_connection_stopped_desc">يُرجى التحقق من اتصال الهاتف المحمول وسطح المكتب بنفس الشبكة المحلية، وأن جدار حماية سطح المكتب يسمح بالاتصال.
+\nيُرجى مشاركة أي مشاكل أُخرى مع المطورين.</string>
 </resources>
