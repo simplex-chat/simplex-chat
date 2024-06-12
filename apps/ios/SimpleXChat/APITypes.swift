@@ -2224,3 +2224,80 @@ public enum MsgType: String, Codable {
     case message
     case quota
 }
+
+public struct AgentServersSummary: Decodable {
+    var usersServersSummary: Dictionary<Int64, ServersSummary>
+    // var totalServersSummary: ServersSummary
+}
+
+public struct ServersSummary: Decodable {
+    var smpServersSummary: SMPServerSummary
+    var xftpServersSummary: XFTPServerSummary
+}
+
+public struct SMPServerSummary: Decodable {
+    var smpServer: String
+    var usedForNewConnections: Bool
+    var subscriptionsSummary: SMPServerSubsSummary?
+    var workersSummary: SMPServerWorkersSummary
+    var commandsStats: [CommandStat]
+    var rcvMsgCounts: [SMPServerRcvMsgCounts]
+    var deliveryInfo: SMPServerDeliveryInfo?
+}
+
+public struct XFTPServerSummary: Decodable {
+    var xftpServer: String
+    var usedForNewFiles: Bool
+    var workersSummary: SMPServerWorkersSummary
+    var commandsStats: [CommandStat]
+}
+
+public struct SMPServerSubsSummary: Decodable {
+    var activeSubscriptions: [SMPServerSubInfo]
+    var pendingSubscriptions: [SMPServerSubInfo]
+    var removedSubscriptions: [SMPServerSubInfo]
+}
+
+public struct SMPServerSubInfo: Decodable {
+    var rcvId: String
+    var subError: String?
+}
+
+public struct SMPServerWorkersSummary: Decodable {
+    var smpDeliveryWorkers_: Dictionary<String, WorkersDetails>
+    var asyncCmdWorker_: WorkersDetails
+    var smpSubWorkers_: [String]
+}
+
+public struct SMPServerRcvMsgCounts: Decodable {
+    var connId: String
+    var total: Int
+    var duplicate: Int
+}
+
+public struct SMPServerDeliveryInfo: Decodable {
+    var host: String
+    var viaOnionHost: Bool
+    var viaSocksProxy: Bool
+    var smpProxy: String?
+}
+
+public struct XFTPServerWorkersSummary: Decodable {
+    var rcvWorker: WorkersDetails?
+    var sndWorker: WorkersDetails?
+    var delWorker: WorkersDetails?
+}
+
+public struct WorkersDetails: Decodable {
+    var restarts: Int
+    var hasWork: Bool
+    var hasAction: Bool
+}
+
+public struct CommandStat: Decodable {
+    var host: String
+    var clientTs: Date
+    var cmd: String
+    var res: String
+    var count: Int
+}
