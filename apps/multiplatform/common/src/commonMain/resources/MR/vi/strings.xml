@@ -273,4 +273,18 @@
     <string name="smp_server_test_compare_file">So sánh tệp</string>
     <string name="v5_8_safe_files_descr">Xác nhận các tệp từ những máy chủ không xác định.</string>
     <string name="confirm_new_passphrase">Xác nhận mật khẩu mới…</string>
+    <string name="migrate_from_device_confirm_upload">Xác nhận tải lên</string>
+    <string name="migrate_from_device_confirm_you_remember_passphrase">Xác nhận rằng bạn nhớ mật khẩu cơ sở dữ liệu để chuyển nó đi.</string>
+    <string name="smp_server_test_connect">Kết nối</string>
+    <string name="group_member_status_connected">đã kết nối</string>
+    <string name="icon_descr_server_status_connected">Đã kết nối</string>
+    <string name="callstate_connected">đã kết nối</string>
+    <string name="connect_via_member_address_alert_title">Kết nối trực tiếp?</string>
+    <string name="connect_via_link_verb">Kết nối</string>
+    <string name="rcv_group_event_member_connected">đã kết nối</string>
+    <string name="multicast_connect_automatically">Tự động kết nối</string>
+    <string name="server_connected">đã kết nối</string>
+    <string name="notification_contact_connected">Đã kết nối</string>
+    <string name="auth_confirm_credential">Xác nhận thông tin đăng nhập của bạn</string>
+    <string name="connect_button">Kết nối</string>
 </resources>
