@@ -366,6 +366,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       "chat entity locks: " <> viewJSON chatEntityLocks,
       "agent locks: " <> viewJSON agentLocks
     ]
+  CRAgentServersSummary serversSummary -> ["agent servers summary: " <> viewJSON serversSummary]
   CRAgentStats stats -> map (plain . intercalate ",") stats
   CRAgentSubs {activeSubs, pendingSubs, removedSubs} ->
     [plain $ "Subscriptions: active = " <> show (sum activeSubs) <> ", pending = " <> show (sum pendingSubs) <> ", removed = " <> show (sum $ M.map length removedSubs)]
