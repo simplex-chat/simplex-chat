@@ -20,6 +20,7 @@ struct ChatListView: View {
     @State private var newChatMenuOption: NewChatMenuOption? = nil
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
+    @State private var showServersSummary = false
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
@@ -61,6 +62,9 @@ struct ChatListView: View {
         }
         .sheet(isPresented: $showConnectDesktop) {
             ConnectDesktopView()
+        }
+        .sheet(isPresented: $showServersSummary) {
+            Text("Servers summary view")
         }
     }
 
@@ -115,9 +119,7 @@ struct ChatListView: View {
                 HStack(spacing: 4) {
                     Text("Chats")
                         .font(.headline)
-                    if chatModel.chats.count > 0 {
-                        toggleFilterButton()
-                    }
+                    subscriptionsStatusIcon()
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
             }
@@ -131,11 +133,11 @@ struct ChatListView: View {
         }
     }
 
-    private func toggleFilterButton() -> some View {
+    private func subscriptionsStatusIcon() -> some View {
         Button {
-            showUnreadAndFavorites = !showUnreadAndFavorites
+            showServersSummary = true
         } label: {
-            Image(systemName: "line.3.horizontal.decrease.circle" + (showUnreadAndFavorites ? ".fill" : ""))
+            Image(systemName: "wifi")
                 .foregroundColor(.accentColor)
         }
     }
@@ -282,9 +284,9 @@ struct ChatListSearchBar: View {
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: String?
     @State private var ignoreSearchTextChange = false
-    @State private var showScanCodeSheet = false
     @State private var alert: PlanAndConnectAlert?
     @State private var sheet: PlanAndConnectActionSheet?
+    @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
         VStack(spacing: 12) {
@@ -301,26 +303,6 @@ struct ChatListSearchBar: View {
                             .onTapGesture {
                                 searchText = ""
                             }
-                    } else if !searchFocussed {
-                        HStack(spacing: 24) {
-                            if m.pasteboardHasStrings {
-                                Image(systemName: "doc")
-                                    .onTapGesture {
-                                        if let str = UIPasteboard.general.string {
-                                            searchText = str
-                                        }
-                                    }
-                            }
-
-                            Image(systemName: "qrcode")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 20, height: 20)
-                                .onTapGesture {
-                                    showScanCodeSheet = true
-                                }
-                        }
-                        .padding(.trailing, 2)
                     }
                 }
                 .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
@@ -335,13 +317,11 @@ struct ChatListSearchBar: View {
                             searchText = ""
                             searchFocussed = false
                         }
+                } else if m.chats.count > 0 {
+                    toggleFilterButton()
                 }
             }
             Divider()
-        }
-        .sheet(isPresented: $showScanCodeSheet) {
-            NewChatView(selection: .connect, showQRCodeScanner: true)
-                .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil) // fixes .refreshable in ChatListView affecting nested view
         }
         .onChange(of: searchFocussed) { sf in
             withAnimation { searchMode = sf }
@@ -373,6 +353,21 @@ struct ChatListSearchBar: View {
         }
         .actionSheet(item: $sheet) { s in
             planAndConnectActionSheet(s, dismiss: true, cleanup: { searchText = "" })
+        }
+    }
+
+    private func toggleFilterButton() -> some View {
+        ZStack {
+            Color.clear
+                .frame(width: 22, height: 22)
+            Image(systemName: showUnreadAndFavorites ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(showUnreadAndFavorites ? .accentColor : .secondary)
+                .frame(width: showUnreadAndFavorites ? 22 : 16, height: showUnreadAndFavorites ? 22 : 16)
+                .onTapGesture {
+                    showUnreadAndFavorites = !showUnreadAndFavorites
+                }
         }
     }
 
