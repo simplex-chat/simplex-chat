@@ -88,7 +88,7 @@ struct NtfModeSelector: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(mode.label)
                     .font(.headline)
-                    .foregroundColor(selection == mode ? .accentColor : .secondary)
+                    .foregroundColor(selection == mode ? MaterialTheme.colors.primary : MaterialTheme.colors.secondary)
                 Text(ntfModeDescription(mode))
                     .lineLimit(10)
                     .font(.subheadline)

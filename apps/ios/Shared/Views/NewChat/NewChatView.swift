@@ -486,6 +486,7 @@ func strHasSingleSimplexLink(_ str: String) -> FormattedText? {
 }
 
 struct IncognitoToggle: View {
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     @Binding var incognitoEnabled: Bool
     @State private var showIncognitoSheet = false
 
@@ -499,7 +500,7 @@ struct IncognitoToggle: View {
                 HStack(spacing: 6) {
                     Text("Incognito")
                     Image(systemName: "info.circle")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(MaterialTheme.colors.primary)
                         .font(.system(size: 14))
                 }
                 .onTapGesture {

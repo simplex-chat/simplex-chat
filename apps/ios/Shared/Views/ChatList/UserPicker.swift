@@ -132,7 +132,7 @@ struct UserPicker: View {
                 if user.activeUser {
                     Image(systemName: "checkmark")
                 } else if u.unreadCount > 0 {
-                    unreadCounter(u.unreadCount, color: user.showNtfs ? .accentColor : .secondary)
+                    unreadCounter(u.unreadCount, color: user.showNtfs ? MaterialTheme.colors.primary : MaterialTheme.colors.secondary)
                 } else if !user.showNtfs {
                     Image(systemName: "speaker.slash")
                 }

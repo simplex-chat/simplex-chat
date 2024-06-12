@@ -21,6 +21,7 @@ struct AddGroupMembersView: View {
 
 struct AddGroupMembersViewCommon: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     var chat: Chat
     @State var groupInfo: GroupInfo
     var creatingGroup: Bool = false
@@ -177,7 +178,7 @@ struct AddGroupMembersViewCommon: View {
         } else {
             if checked {
                 icon = "checkmark.circle.fill"
-                iconColor = .accentColor
+                iconColor = MaterialTheme.colors.primary
             } else {
                 icon = "circle"
                 iconColor = Color(uiColor: .tertiaryLabel)

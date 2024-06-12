@@ -418,7 +418,7 @@ struct ChatItemInfoView: View {
                     .foregroundColor(.secondary).opacity(0.67)
             }
             let v = Group {
-                if let (icon, statusColor) = status.statusIcon(Color.secondary) {
+                if let (icon, statusColor) = status.statusIcon(MaterialTheme.colors.secondary, MaterialTheme.colors.primary) {
                     switch status {
                     case .sndRcvd:
                         ZStack(alignment: .trailing) {

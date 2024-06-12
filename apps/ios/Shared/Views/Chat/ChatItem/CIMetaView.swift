@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct CIMetaView: View {
     @ObservedObject var chat: Chat
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     var chatItem: ChatItem
     var metaColor: Color
     var paleMetaColor = Color(UIColor.tertiaryLabel)
@@ -63,6 +64,7 @@ func ciMetaText(
     chatTTL: Int?,
     encrypted: Bool?,
     color: Color = .clear,
+    primaryColor: Color = .accentColor,
     transparent: Bool = false,
     sent: SentCheckmark? = nil,
     showStatus: Bool = true,
@@ -85,7 +87,7 @@ func ciMetaText(
         r = r + statusIconText("arrow.forward", color.opacity(0.67)).font(.caption2)
     }
     if showStatus {
-        if let (icon, statusColor) = meta.statusIcon(color) {
+        if let (icon, statusColor) = meta.statusIcon(color, primaryColor) {
             let t = Text(Image(systemName: icon)).font(.caption2)
             let gap = Text("  ").kerning(-1.25)
             let t1 = t.foregroundColor(transparent ? .clear : statusColor.opacity(0.67))

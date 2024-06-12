@@ -174,6 +174,7 @@ func ntfModeDescription(_ mode: NotificationsMode) -> LocalizedStringKey {
 }
 
 struct SelectionListView<Item: SelectableItem>: View {
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     var list: [Item]
     @Binding var selection: Item
     var onSelection: ((Item) -> Void)?
@@ -187,11 +188,11 @@ struct SelectionListView<Item: SelectableItem>: View {
                 if selection == item {
                     Image(systemName: "checkmark")
                         .resizable().scaledToFit().frame(width: 16)
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(MaterialTheme.colors.primary)
                 }
             }
             .contentShape(Rectangle())
-            .listRowBackground(Color(uiColor: tapped == item ? .secondarySystemFill : .systemBackground))
+            .listRowBackground(tapped == item ? Color(uiColor: .secondarySystemFill) : MaterialTheme.colors.background)
             .onTapGesture {
                 if selection == item { return }
                 if let f = onSelection {

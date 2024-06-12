@@ -396,7 +396,7 @@ struct ChatView: View {
                 circleButton {
                     unreadCountText(unreadAbove)
                         .font(.callout)
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(theme.colors.primary)
                 }
                 .onTapGesture { scrollUp(proxy) }
                 .contextMenu {
@@ -416,13 +416,13 @@ struct ChatView: View {
                 circleButton {
                     unreadCountText(counts.unreadBelow)
                         .font(.callout)
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(theme.colors.primary)
                 }
                 .onTapGesture { scrollToBottom(proxy) }
             } else if counts.totalBelow > 16 {
                 circleButton {
                     Image(systemName: "chevron.down")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(theme.colors.primary)
                 }
                 .onTapGesture { scrollToBottom(proxy) }
             }
@@ -742,7 +742,7 @@ struct ChatView: View {
                             Text("\(r.totalReacted)")
                                 .font(.caption)
                                 .fontWeight(r.userReacted ? .bold : .light)
-                                .foregroundColor(r.userReacted ? .accentColor : .secondary)
+                                .foregroundColor(r.userReacted ? MaterialTheme.colors.primary : MaterialTheme.colors.secondary)
                         }
                     }
                     .padding(.horizontal, 6)

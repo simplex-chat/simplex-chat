@@ -183,7 +183,7 @@ struct ChatListView: View {
     private func unreadBadge(_ text: Text? = Text(" "), size: CGFloat = 18) -> some View {
         Circle()
             .frame(width: size, height: size)
-            .foregroundColor(.accentColor)
+            .foregroundColor(MaterialTheme.colors.primary)
     }
 
     private func onboardingButtons() -> some View {
@@ -194,7 +194,7 @@ struct ChatListView: View {
                 p.addLine(to: CGPoint(x: 0, y: 10))
                 p.addLine(to: CGPoint(x: 8, y: 0))
             }
-            .fill(Color.accentColor)
+            .fill(MaterialTheme.colors.primary)
             .frame(width: 20, height: 10)
             .padding(.trailing, 12)
 
@@ -217,7 +217,7 @@ struct ChatListView: View {
                 .padding(.vertical, 10)
                 .padding(.horizontal, 20)
         }
-        .background(Color.accentColor)
+        .background(MaterialTheme.colors.primary)
         .foregroundColor(.white)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
@@ -280,6 +280,7 @@ struct ChatListView: View {
 
 struct ChatListSearchBar: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     @Binding var searchMode: Bool
     @FocusState.Binding var searchFocussed: Bool
     @Binding var searchText: String
@@ -334,7 +335,7 @@ struct ChatListSearchBar: View {
 
                 if searchFocussed {
                     Text("Cancel")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(MaterialTheme.colors.primary)
                         .onTapGesture {
                             searchText = ""
                             searchFocussed = false

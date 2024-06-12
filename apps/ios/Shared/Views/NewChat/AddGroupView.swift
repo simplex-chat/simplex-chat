@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct AddGroupView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
     @State private var chat: Chat?
@@ -95,7 +96,7 @@ struct AddGroupView: View {
             Section {
                 groupNameTextField()
                 Button(action: createGroup) {
-                    settingsRow("checkmark", color: .accentColor) { Text("Create group") }
+                    settingsRow("checkmark", color: MaterialTheme.colors.primary) { Text("Create group") }
                 }
                 .disabled(!canCreateProfile())
                 IncognitoToggle(incognitoEnabled: $incognitoDefault)

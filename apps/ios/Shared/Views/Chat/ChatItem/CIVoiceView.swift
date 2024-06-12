@@ -232,6 +232,7 @@ struct VoiceMessagePlayer: View {
     }
 
     private struct ProgressCircle: View {
+        @EnvironmentObject var MaterialTheme: MaterialTheme
         var length: TimeInterval
         @Binding var progress: TimeInterval?
 
@@ -239,7 +240,7 @@ struct VoiceMessagePlayer: View {
             Circle()
                 .trim(from: 0, to: ((progress ?? TimeInterval(0)) / length))
                 .stroke(
-                    Color.accentColor,
+                    MaterialTheme.colors.primary,
                     style: StrokeStyle(lineWidth: 3)
                 )
                 .rotationEffect(.degrees(-90))

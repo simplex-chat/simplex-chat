@@ -211,6 +211,7 @@ struct GroupChatInfoView: View {
     private struct MemberRowView: View {
         var groupInfo: GroupInfo
         @ObservedObject var groupMember: GMember
+        @EnvironmentObject var MaterialTheme: MaterialTheme
         var user: Bool = false
         @Binding var alert: GroupChatInfoViewAlert?
 
@@ -283,7 +284,7 @@ struct GroupChatInfoView: View {
                     Button {
                         alert = .unblockMemberAlert(mem: member)
                     } label: {
-                        Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
+                        Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(MaterialTheme.colors.primary)
                     }
                 }
             }
@@ -295,7 +296,7 @@ struct GroupChatInfoView: View {
                     Button {
                         alert = .unblockForAllAlert(mem: member)
                     } label: {
-                        Label("Unblock for all", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
+                        Label("Unblock for all", systemImage: "hand.raised.slash").foregroundColor(MaterialTheme.colors.primary)
                     }
                 } else {
                     Button {

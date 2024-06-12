@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct CIMemberCreatedContactView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     var chatItem: ChatItem
     
     var body: some View {
@@ -43,7 +44,7 @@ struct CIMemberCreatedContactView: View {
             r = r
             + Text(openText)
                 .fontWeight(.medium)
-                .foregroundColor(.accentColor)
+                .foregroundColor(MaterialTheme.colors.primary)
             + Text("  ")
         }
         r = r + chatItem.timestampText

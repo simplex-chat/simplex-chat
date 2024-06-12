@@ -333,6 +333,7 @@ struct SimplexLockView: View {
     @Binding var prefPerformLA: Bool
     @Binding var currentLAMode: LAMode
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @State private var laMode: LAMode = privacyLocalAuthModeDefault.get()
     @AppStorage(DEFAULT_LA_LOCK_DELAY) private var laLockDelay = 30
@@ -417,7 +418,7 @@ struct SimplexLockView: View {
                             HStack(spacing: 6) {
                                 Text("Enable self-destruct")
                                 Image(systemName: "info.circle")
-                                    .foregroundColor(.accentColor)
+                                    .foregroundColor(MaterialTheme.colors.primary)
                                     .font(.system(size: 14))
                             }
                             .onTapGesture {

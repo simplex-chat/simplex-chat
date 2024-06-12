@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct CIFeaturePreferenceView: View {
     @ObservedObject var chat: Chat
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     var chatItem: ChatItem
     var feature: ChatFeature
     var allowed: FeatureAllowed
@@ -45,7 +46,7 @@ struct CIFeaturePreferenceView: View {
             r = r
             + Text(acceptText)
                 .fontWeight(.medium)
-                .foregroundColor(.accentColor)
+                .foregroundColor(MaterialTheme.colors.primary)
             + Text("  ")
         }
         r = r + chatItem.timestampText

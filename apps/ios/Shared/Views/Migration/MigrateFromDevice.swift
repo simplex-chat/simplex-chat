@@ -53,6 +53,7 @@ private enum MigrateFromDeviceViewAlert: Identifiable {
 
 struct MigrateFromDevice: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var showSettings: Bool
     @Binding var showProgressOnSettings: Bool
@@ -215,7 +216,7 @@ struct MigrateFromDevice: View {
             Section {
                 Button(action: { migrationState = .archiving }) {
                     settingsRow("tray.and.arrow.up") {
-                        Text("Archive and upload").foregroundColor(.accentColor)
+                        Text("Archive and upload").foregroundColor(MaterialTheme.colors.primary)
                     }
                 }
             } header: {
@@ -249,7 +250,7 @@ struct MigrateFromDevice: View {
                 }
             }
             let ratio = Float(uploadedBytes) / Float(totalBytes)
-            MigrateFromDevice.largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: uploadedBytes, countStyle: .binary)) uploaded")
+            MigrateFromDevice.largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: uploadedBytes, countStyle: .binary)) uploaded", MaterialTheme.colors.primary)
         }
         .onAppear {
             startUploading(totalBytes, archivePath)
@@ -263,7 +264,7 @@ struct MigrateFromDevice: View {
                     migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: totalBytes, fileId: 0, archivePath: archivePath, ctrl: nil)
                 }) {
                     settingsRow("tray.and.arrow.up") {
-                        Text("Repeat upload").foregroundColor(.accentColor)
+                        Text("Repeat upload").foregroundColor(MaterialTheme.colors.primary)
                     }
                 }
             } header: {
@@ -299,7 +300,7 @@ struct MigrateFromDevice: View {
                 }
                 Button(action: { finishMigration(fileId, ctrl) }) {
                     settingsRow("checkmark") {
-                        Text("Finalize migration").foregroundColor(.accentColor)
+                        Text("Finalize migration").foregroundColor(MaterialTheme.colors.primary)
                     }
                 }
             } footer: {
@@ -340,7 +341,7 @@ struct MigrateFromDevice: View {
                     }
                     Button(action: { alert = .deleteChat() }) {
                         settingsRow("trash.fill") {
-                            Text("Delete database from this device").foregroundColor(.accentColor)
+                            Text("Delete database from this device").foregroundColor(MaterialTheme.colors.primary)
                         }
                     }
                 } header: {
@@ -379,7 +380,7 @@ struct MigrateFromDevice: View {
             .truncationMode(.middle)
     }
 
-    static func largeProgressView(_ value: Float, _ title: String, _ description: LocalizedStringKey) -> some View {
+    static func largeProgressView(_ value: Float, _ title: String, _ description: LocalizedStringKey, _ primaryColor: Color) -> some View {
         ZStack {
             VStack {
                 Text(description)
@@ -389,7 +390,7 @@ struct MigrateFromDevice: View {
                 Text(title)
                     .font(.system(size: 54))
                     .bold()
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(primaryColor)
 
                 Text(description)
                     .font(.title3)
@@ -398,7 +399,7 @@ struct MigrateFromDevice: View {
             Circle()
                 .trim(from: 0, to: CGFloat(value))
                 .stroke(
-                    Color.accentColor,
+                    primaryColor,
                     style: StrokeStyle(lineWidth: 27)
                 )
                 .rotationEffect(.degrees(180))

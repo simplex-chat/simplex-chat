@@ -79,6 +79,7 @@ struct CreateProfile: View {
 
 struct CreateFirstProfile: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     @Environment(\.dismiss) var dismiss
     @State private var displayName: String = ""
     @FocusState private var focusDisplayName
@@ -90,9 +91,9 @@ struct CreateFirstProfile: View {
                     .font(.largeTitle)
                     .bold()
                 Text("Your profile, contacts and delivered messages are stored on your device.")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(MaterialTheme.colors.secondary)
                 Text("The profile is only shared with your contacts.")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(MaterialTheme.colors.secondary)
                     .padding(.bottom)
             }
             .padding(.bottom)

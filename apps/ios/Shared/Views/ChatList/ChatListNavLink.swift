@@ -26,6 +26,7 @@ private let rowHeights: [DynamicTypeSize: CGFloat] = [
 
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ObservedObject var chat: Chat
     @State private var showContactRequestDialog = false
@@ -224,7 +225,7 @@ struct ChatListNavLink: View {
         } label: {
             Label("Join", systemImage: chat.chatInfo.incognito ? "theatermasks" : "ipad.and.arrow.forward")
         }
-        .tint(chat.chatInfo.incognito ? .indigo : .accentColor)
+        .tint(chat.chatInfo.incognito ? .indigo : MaterialTheme.colors.primary)
     }
 
     @ViewBuilder private func markReadButton() -> some View {
@@ -234,14 +235,14 @@ struct ChatListNavLink: View {
             } label: {
                 Label("Read", systemImage: "checkmark")
             }
-            .tint(Color.accentColor)
+            .tint(MaterialTheme.colors.primary)
         } else {
             Button {
                 Task { await markChatUnread(chat) }
             } label: {
                 Label("Unread", systemImage: "circlebadge.fill")
             }
-            .tint(Color.accentColor)
+            .tint(MaterialTheme.colors.primary)
         }
 
     }
@@ -306,7 +307,7 @@ struct ChatListNavLink: View {
             Button {
                 Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) }
             } label: { Label("Accept", systemImage: "checkmark") }
-                .tint(.accentColor)
+                .tint(MaterialTheme.colors.primary)
             Button {
                 Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) }
             } label: {
@@ -346,7 +347,7 @@ struct ChatListNavLink: View {
             } label: {
                 Label("Name", systemImage: "pencil")
             }
-            .tint(.accentColor)
+            .tint(MaterialTheme.colors.primary)
         }
         .frame(height: rowHeights[dynamicTypeSize])
         .appSheet(isPresented: $showContactConnectionInfo) {

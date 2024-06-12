@@ -42,7 +42,7 @@ struct CIGroupInvitationView: View {
                                 .overlay(DetermineWidth())
                             (
                                 Text(chatIncognito ? "Tap to join incognito" : "Tap to join")
-                                    .foregroundColor(inProgress ? .secondary : chatIncognito ? .indigo : .accentColor)
+                                    .foregroundColor(inProgress ? .secondary : chatIncognito ? .indigo : MaterialTheme.colors.primary)
                                     .font(.callout)
                                 + Text("   ")
                                 + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy)
@@ -99,7 +99,7 @@ struct CIGroupInvitationView: View {
     private func groupInfoView(_ action: Bool) -> some View {
         var color: Color
         if action && !inProgress {
-            color = chatIncognito ? .indigo : .accentColor
+            color = chatIncognito ? .indigo : MaterialTheme.colors.primary
         } else {
             color = Color(uiColor: .tertiaryLabel)
         }

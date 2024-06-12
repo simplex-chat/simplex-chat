@@ -80,7 +80,7 @@ struct ComposeVoiceView: View {
                     Button {
                         startPlayback()
                     } label: {
-                        playPauseIcon("play.fill")
+                        playPauseIcon("play.fill", MaterialTheme.colors.secondary)
                     }
                     Text(voiceMessageTime_(recordingTime))
                 case .playing:
@@ -88,7 +88,7 @@ struct ComposeVoiceView: View {
                         audioPlayer?.pause()
                         playbackState = .paused
                     } label: {
-                        playPauseIcon("pause.fill")
+                        playPauseIcon("pause.fill", MaterialTheme.colors.secondary)
                     }
                     Text(voiceMessageTime_(playbackTime))
                 case .paused:
@@ -96,7 +96,7 @@ struct ComposeVoiceView: View {
                         audioPlayer?.play()
                         playbackState = .playing
                     } label: {
-                        playPauseIcon("play.fill")
+                        playPauseIcon("play.fill", MaterialTheme.colors.secondary)
                     }
                     Text(voiceMessageTime_(playbackTime))
                 }
@@ -131,7 +131,7 @@ struct ComposeVoiceView: View {
         }
     }
 
-    private func playPauseIcon(_ image: String, _ color: Color = .accentColor) -> some View {
+    private func playPauseIcon(_ image: String, _ color: Color) -> some View {
         Image(systemName: image)
             .resizable()
             .aspectRatio(contentMode: .fit)
@@ -162,6 +162,7 @@ struct ComposeVoiceView: View {
     }
 
     private struct ProgressBar: View {
+        @EnvironmentObject var MaterialTheme: MaterialTheme
         var length: TimeInterval
         @Binding var progress: TimeInterval?
 
@@ -169,7 +170,7 @@ struct ComposeVoiceView: View {
             GeometryReader { geometry in
                 ZStack {
                     Rectangle()
-                        .fill(Color.accentColor)
+                        .fill(MaterialTheme.colors.primary)
                         .frame(width: min(CGFloat((progress ?? TimeInterval(0)) / length) * geometry.size.width, geometry.size.width), height: 4)
                         .animation(.linear, value: progress)
                 }

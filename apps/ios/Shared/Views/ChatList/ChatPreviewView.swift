@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct ChatPreviewView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     @ObservedObject var chat: Chat
     @Binding var progressByTimeout: Bool
     @State var deleting: Bool = false
@@ -94,7 +95,7 @@ struct ChatPreviewView: View {
         case let .group(groupInfo):
             let v = previewTitle(t)
             switch (groupInfo.membership.memberStatus) {
-            case .memInvited: v.foregroundColor(deleting ? .secondary : chat.chatInfo.incognito ? .indigo : .accentColor)
+            case .memInvited: v.foregroundColor(deleting ? .secondary : chat.chatInfo.incognito ? .indigo : MaterialTheme.colors.primary)
             case .memAccepted: v.foregroundColor(.secondary)
             default: if deleting  { v.foregroundColor(.secondary) } else { v }
             }
@@ -133,7 +134,7 @@ struct ChatPreviewView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 4)
                     .frame(minWidth: 18, minHeight: 18)
-                    .background(chat.chatInfo.ntfsEnabled || chat.chatInfo.chatType == .local ? Color.accentColor : Color.secondary)
+                    .background(chat.chatInfo.ntfsEnabled || chat.chatInfo.chatType == .local ? MaterialTheme.colors.primary : MaterialTheme.colors.secondary)
                     .cornerRadius(10)
             } else if !chat.chatInfo.ntfsEnabled && chat.chatInfo.chatType != .local {
                 Image(systemName: "speaker.slash.fill")
@@ -151,7 +152,7 @@ struct ChatPreviewView: View {
 
     private func messageDraft(_ draft: ComposeState) -> Text {
         let msg = draft.message
-        return image("rectangle.and.pencil.and.ellipsis", color: .accentColor)
+        return image("rectangle.and.pencil.and.ellipsis", color: MaterialTheme.colors.primary)
                 + attachment()
                 + messageText(msg, parseSimpleXMarkdown(msg), nil, preview: true, showSecrets: false)
 
@@ -206,7 +207,7 @@ struct ChatPreviewView: View {
             case let .direct(contact):
                 if contact.activeConn == nil && contact.profile.contactLink != nil {
                     chatPreviewInfoText("Tap to Connect")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(MaterialTheme.colors.primary)
                 } else if !contact.ready && contact.activeConn != nil {
                     if contact.nextSendGrpInv {
                         chatPreviewInfoText("send direct message")
