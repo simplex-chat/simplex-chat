@@ -144,6 +144,7 @@ struct AddGroupView: View {
                 profile.image = nil
             }
         }
+        .modifier(ThemedBackground())
     }
 
     func groupNameTextField() -> some View {

@@ -94,6 +94,7 @@ struct ProtocolServersView: View {
         }
         .sheet(isPresented: $showScanProtoServer) {
             ScanProtocolServer(servers: $servers)
+            .modifier(ThemedBackground())
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
             if saveDisabled {

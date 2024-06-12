@@ -99,12 +99,14 @@ struct ChatItemInfoView: View {
                         Label("History", systemImage: "clock")
                     }
                     .tag(CIInfoTab.history)
+                    .modifier(ThemedBackground())
                 if let qi = ci.quotedItem {
                     quoteTab(qi)
                         .tabItem {
                             Label("In reply to", systemImage: "arrowshape.turn.up.left")
                         }
                         .tag(CIInfoTab.quote)
+                        .modifier(ThemedBackground())
                 }
                 if let forwardedFromItem = chatItemInfo?.forwardedFromChatItem {
                     forwardedFromTab(forwardedFromItem)
@@ -112,6 +114,7 @@ struct ChatItemInfoView: View {
                             Label(local ? "Saved" : "Forwarded", systemImage: "arrowshape.turn.up.forward")
                         }
                         .tag(CIInfoTab.forwarded)
+                        .modifier(ThemedBackground())
                 }
             }
             .onAppear {
@@ -121,6 +124,7 @@ struct ChatItemInfoView: View {
             }
         } else {
             historyTab()
+            .modifier(ThemedBackground())
         }
     }
 

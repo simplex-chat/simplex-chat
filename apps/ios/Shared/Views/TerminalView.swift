@@ -131,6 +131,7 @@ struct TerminalView: View {
             }
         }
         .onDisappear { terminalItem = nil }
+        .modifier(ThemedBackground())
     }
     
     func consoleSendMessage() {

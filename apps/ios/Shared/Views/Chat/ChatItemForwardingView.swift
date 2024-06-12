@@ -35,6 +35,7 @@ struct ChatItemForwardingView: View {
                     }
                 }
         }
+        .modifier(ThemedBackground())
     }
 
     @ViewBuilder private func forwardListView() -> some View {
@@ -59,9 +60,13 @@ struct ChatItemForwardingView: View {
                     .cornerRadius(12)
                     .padding(.horizontal)
                 }
-                .background(Color(.systemGroupedBackground))
+                .modifier(ThemedBackground())
             } else {
-                emptyList()
+                ZStack {
+                    emptyList()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .modifier(ThemedBackground())
             }
         }
     }
