@@ -48,6 +48,7 @@ struct PrivacySettings: View {
                     NavigationLink {
                         SimplexLockView(prefPerformLA: $prefPerformLA, currentLAMode: $currentLAMode)
                             .navigationTitle("SimpleX Lock")
+                            .modifier(ThemedBackground())
                     } label: {
                         if prefPerformLA {
                             settingsRow("lock.fill", color: .green) {

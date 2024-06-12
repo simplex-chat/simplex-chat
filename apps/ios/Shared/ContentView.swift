@@ -257,14 +257,13 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity )
         .background(
             Rectangle()
-                .fill(.background)
+                .fill(MaterialTheme.colors.background)
         ) 
     }
 
     private func mainView() -> some View {
         ZStack(alignment: .top) {
             ChatListView(showSettings: $showSettings).privacySensitive(protectScreen)
-//            .environmentObject(MaterialTheme.chat)
             .onAppear {
                 requestNtfAuthorization()
                 // Local Authentication notice is to be shown on next start after onboarding is complete

@@ -300,6 +300,7 @@ struct UserAddressView: View {
         NavigationLink {
             UserAddressLearnMore()
                 .navigationTitle("SimpleX address")
+                .modifier(ThemedBackground())
                 .navigationBarTitleDisplayMode(.large)
         } label: {
             settingsRow("info.circle") {

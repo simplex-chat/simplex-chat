@@ -111,6 +111,7 @@ struct UserProfilesView: View {
             }
         }
         .navigationTitle("Your chat profiles")
+        .modifier(ThemedBackground())
         .searchable(text: $searchTextOrPassword, placement: .navigationBarDrawer(displayMode: .always))
         .autocorrectionDisabled(true)
         .textInputAutocapitalization(.never)
@@ -237,6 +238,7 @@ struct UserProfilesView: View {
                 }
             }
         }
+        .modifier(ThemedBackground())
     }
 
     @ViewBuilder func actionHeader(_ title: LocalizedStringKey, _ user: User) -> some View {

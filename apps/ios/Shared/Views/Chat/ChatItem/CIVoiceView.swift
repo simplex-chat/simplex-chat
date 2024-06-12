@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct CIVoiceView: View {
     @ObservedObject var chat: Chat
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     var chatItem: ChatItem
     let recordingFile: CIFile?
     let duration: Int
@@ -92,7 +93,7 @@ struct CIVoiceView: View {
     }
 
     private func metaView() -> some View {
-        CIMetaView(chat: chat, chatItem: chatItem)
+        CIMetaView(chat: chat, chatItem: chatItem, metaColor: MaterialTheme.colors.secondary)
     }
 }
 
@@ -118,7 +119,7 @@ struct VoiceMessagePlayerTime: View {
 
 struct VoiceMessagePlayer: View {
     @EnvironmentObject var chatModel: ChatModel
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     var chatItem: ChatItem
     var recordingFile: CIFile?
     var recordingTime: TimeInterval
@@ -209,7 +210,7 @@ struct VoiceMessagePlayer: View {
                 .foregroundColor(color)
                 .padding(.leading, image == "play.fill" ? 4 : 0)
                 .frame(width: 56, height: 56)
-                .background(showBackground ? chatItemFrameColor(chatItem, colorScheme) : .clear)
+                .background(showBackground ? chatItemFrameColor(chatItem, MaterialTheme) : .clear)
                 .clipShape(Circle())
             if recordingTime > 0 {
                 ProgressCircle(length: recordingTime, progress: $playbackTime)
@@ -250,7 +251,7 @@ struct VoiceMessagePlayer: View {
         ProgressView()
             .frame(width: 30, height: 30)
             .frame(width: 56, height: 56)
-            .background(showBackground ? chatItemFrameColor(chatItem, colorScheme) : .clear)
+            .background(showBackground ? chatItemFrameColor(chatItem, MaterialTheme) : .clear)
             .clipShape(Circle())
     }
 

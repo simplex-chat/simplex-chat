@@ -153,6 +153,7 @@ class SceneDelegate: NSObject, ObservableObject, UIWindowSceneDelegate {
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         UITableView.appearance().backgroundColor = .clear
+        UITableViewCell.appearance().backgroundColor = .clear
         guard let windowScene = scene as? UIWindowScene else { return }
         self.windowScene = windowScene
         window = windowScene.keyWindow

@@ -247,6 +247,7 @@ struct GroupMemberInfoView: View {
                 ProgressView().scaleEffect(2)
             }
         }
+        .modifier(ThemedBackground())
     }
 
     func connectViaAddressButton(_ contactLink: String) -> some View {
@@ -374,6 +375,7 @@ struct GroupMemberInfoView: View {
             )
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Security code")
+            .modifier(ThemedBackground())
         } label: {
             Label(
                 member.verified ? "View security code" : "Verify security code",

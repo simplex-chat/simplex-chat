@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct CIGroupInvitationView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
     var groupInvitation: CIGroupInvitation
@@ -65,11 +65,11 @@ struct CIGroupInvitationView: View {
                 }
             }
 
-            CIMetaView(chat: chat, chatItem: chatItem, showStatus: false, showEdited: false)
+            CIMetaView(chat: chat, chatItem: chatItem, metaColor: MaterialTheme.colors.secondary, showStatus: false, showEdited: false)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(chatItemFrameColor(chatItem, colorScheme))
+        .background(chatItemFrameColor(chatItem, MaterialTheme))
         .cornerRadius(18)
         .textSelection(.disabled)
         .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }

@@ -9,16 +9,9 @@
 import SwiftUI
 import SimpleXChat
 
-let notesChatColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.21)
-let notesChatColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.19)
-let sentColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.12)
-let sentColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.17)
-private let sentQuoteColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.11)
-private let sentQuoteColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.09)
-
 struct FramedItemView: View {
     @EnvironmentObject var m: ChatModel
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
     @Binding var revealed: Bool
@@ -83,7 +76,10 @@ struct FramedItemView: View {
                     .accessibilityLabel("")
             }
         }
-            .background(chatItemFrameColorMaybeImageOrVideo(chatItem, colorScheme))
+            .onAppear {
+                metaColor = metaColor == .secondary ? MaterialTheme.colors.secondary : metaColor
+            }
+            .background(chatItemFrameColorMaybeImageOrVideo(chatItem, MaterialTheme))
             .cornerRadius(18)
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
@@ -175,13 +171,13 @@ struct FramedItemView: View {
                 .font(.caption)
                 .lineLimit(1)
         }
-        .foregroundColor(.secondary)
+        .foregroundColor(MaterialTheme.colors.secondary)
         .padding(.horizontal, 12)
         .padding(.top, 6)
         .padding(.bottom, pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
         .overlay(DetermineWidth())
         .frame(minWidth: msgWidth, alignment: .leading)
-        .background(chatItemFrameContextColor(chatItem, colorScheme))
+        .background(chatItemFrameContextColor(chatItem, MaterialTheme))
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
@@ -233,7 +229,7 @@ struct FramedItemView: View {
             // if enable this always, size of the framed voice message item will be incorrect after end of playback
             .overlay { if case .voice = chatItem.content.msgContent {} else { DetermineWidth() } }
             .frame(minWidth: msgWidth, alignment: .leading)
-            .background(chatItemFrameContextColor(chatItem, colorScheme))
+            .background(chatItemFrameContextColor(chatItem, MaterialTheme))
 
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
@@ -248,7 +244,7 @@ struct FramedItemView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(sender)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(MaterialTheme.colors.secondary)
                         .lineLimit(1)
                     ciQuotedMsgTextView(qi, lines: 2)
                 }
@@ -363,22 +359,22 @@ func onlyImageOrVideo(_ ci: ChatItem) -> Bool {
     return false
 }
 
-func chatItemFrameColorMaybeImageOrVideo(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Color {
+func chatItemFrameColorMaybeImageOrVideo(_ ci: ChatItem, _ theme: MaterialTheme) -> Color {
     onlyImageOrVideo(ci)
     ? Color.clear
-    : chatItemFrameColor(ci, colorScheme)
+    : chatItemFrameColor(ci, theme)
 }
 
-func chatItemFrameColor(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Color {
+func chatItemFrameColor(_ ci: ChatItem, _ theme: MaterialTheme) -> Color {
     ci.chatDir.sent
-    ? (colorScheme == .light ? sentColorLight : sentColorDark)
-    : Color(uiColor: .tertiarySystemGroupedBackground)
+    ? theme.appColors.sentMessage
+    : theme.appColors.receivedMessage
 }
 
-func chatItemFrameContextColor(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Color {
+func chatItemFrameContextColor(_ ci: ChatItem, _ theme: MaterialTheme) -> Color {
     ci.chatDir.sent
-    ? (colorScheme == .light ? sentQuoteColorLight : sentQuoteColorDark)
-    : Color(uiColor: .quaternarySystemFill)
+    ? theme.appColors.sentQuote
+    : theme.appColors.receivedQuote
 }
 
 struct FramedItemView_Previews: PreviewProvider {

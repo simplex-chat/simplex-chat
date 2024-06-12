@@ -241,6 +241,7 @@ struct ChatInfoView: View {
                     }
                 }
             }
+            .modifier(ThemedBackground())
             .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -370,6 +371,7 @@ struct ChatInfoView: View {
             )
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Security code")
+            .modifier(ThemedBackground())
         } label: {
             Label(
                 contact.verified ? "View security code" : "Verify security code",
@@ -386,6 +388,7 @@ struct ChatInfoView: View {
                 currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)
             )
             .navigationBarTitle("Contact preferences")
+            .modifier(ThemedBackground())
             .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Contact preferences", systemImage: "switch.2")

@@ -12,7 +12,7 @@ import SimpleXChat
 struct ChatItemInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     var ci: ChatItem
     @Binding var chatItemInfo: ChatItemInfo?
     @State private var selection: CIInfoTab = .history
@@ -196,7 +196,7 @@ struct ChatItemInfoView: View {
             textBubble(itemVersion.msgContent.text, itemVersion.formattedText, nil)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(chatItemFrameColor(ci, colorScheme))
+                .background(chatItemFrameColor(ci, MaterialTheme))
                 .cornerRadius(18)
                 .contextMenu {
                     if itemVersion.msgContent.text != "" {
@@ -265,7 +265,7 @@ struct ChatItemInfoView: View {
             textBubble(qi.text, qi.formattedText, qi.getSender(nil))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(quotedMsgFrameColor(qi, colorScheme))
+                .background(quotedMsgFrameColor(qi, MaterialTheme))
                 .cornerRadius(18)
                 .contextMenu {
                     if qi.text != "" {
@@ -289,10 +289,10 @@ struct ChatItemInfoView: View {
         .frame(maxWidth: maxWidth, alignment: .leading)
     }
 
-    func quotedMsgFrameColor(_ qi: CIQuote, _ colorScheme: ColorScheme) -> Color {
+    func quotedMsgFrameColor(_ qi: CIQuote, _ theme: MaterialTheme) -> Color {
         (qi.chatDir?.sent ?? false)
-        ? (colorScheme == .light ? sentColorLight : sentColorDark)
-        : Color(uiColor: .tertiarySystemGroupedBackground)
+        ? theme.appColors.sentMessage
+        : theme.appColors.receivedMessage
     }
 
     @ViewBuilder private func forwardedFromTab(_ forwardedFromItem: AChatItem) -> some View {

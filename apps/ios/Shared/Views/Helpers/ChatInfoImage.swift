@@ -10,7 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct ChatInfoImage: View {
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     @ObservedObject var chat: Chat
     var size: CGFloat
     var color = Color(uiColor: .tertiarySystemGroupedBackground)
@@ -24,8 +24,7 @@ struct ChatInfoImage: View {
         case .contactRequest: iconName = "person.crop.circle.fill"
         default: iconName = "circle.fill"
         }
-        let notesColor = colorScheme == .light ? notesChatColorLight : notesChatColorDark
-        let iconColor = if case .local = chat.chatInfo { notesColor } else { color }
+        let iconColor = if case .local = chat.chatInfo { MaterialTheme.appColors.primaryVariant2 } else { color }
         return ProfileImage(
             imageStr: chat.chatInfo.image,
             iconName: iconName,

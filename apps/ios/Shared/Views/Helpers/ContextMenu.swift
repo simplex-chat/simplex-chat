@@ -11,7 +11,7 @@ import UIKit
 import SwiftUI
 
 extension View {
-    func uiKitContextMenu(hasImageOrVideo: Bool, maxWidth: CGFloat, itemWidth: Binding<CGFloat>, menu: Binding<UIMenu>, allowMenu: Binding<Bool>) -> some View {
+    func uiKitContextMenu(hasImageOrVideo: Bool, maxWidth: CGFloat, itemWidth: Binding<CGFloat>, menu: Binding<UIMenu>, allowMenu: Binding<Bool>, backgroundColor: Color) -> some View {
         Group {
             if allowMenu.wrappedValue {
                 if hasImageOrVideo {
@@ -19,10 +19,10 @@ extension View {
                         self.environmentObject(ChatModel.shared)
                         .overlay(DetermineWidthImageVideoItem())
                         .onPreferenceChange(DetermineWidthImageVideoItem.Key.self) { itemWidth.wrappedValue = $0 == 0 ? maxWidth : $0 }
-                    , maxWidth: maxWidth, itemWidth: itemWidth, menu: menu)
+                                    , maxWidth: maxWidth, itemWidth: itemWidth, menu: menu, backgroundColor: backgroundColor)
                     .frame(maxWidth: itemWidth.wrappedValue)
                 } else {
-                    InteractionView(content: self.environmentObject(ChatModel.shared), maxWidth: maxWidth, itemWidth: itemWidth, menu: menu)
+                    InteractionView(content: self.environmentObject(ChatModel.shared), maxWidth: maxWidth, itemWidth: itemWidth, menu: menu, backgroundColor: backgroundColor)
                         .fixedSize(horizontal: true, vertical: false)
                 }
             } else {
@@ -42,11 +42,14 @@ struct InteractionView<Content: View>: UIViewRepresentable {
     var maxWidth: CGFloat
     var itemWidth: Binding<CGFloat>
     @Binding var menu: UIMenu
+    var backgroundColor: Color
 
     func makeUIView(context: Context) -> UIView {
         let view = HostingViewHolder()
         view.backgroundColor = .clear
         let hostView = UIHostingController(rootView: content)
+//        hostView.view.backgroundColor = UIColor(backgroundColor)
+        hostView.view.backgroundColor = .clear
         view.contentSize = hostView.view.intrinsicContentSize
         hostView.view.translatesAutoresizingMaskIntoConstraints = false
         let constraints = [
@@ -72,6 +75,7 @@ struct InteractionView<Content: View>: UIViewRepresentable {
         if was != (uiView as! HostingViewHolder).contentSize {
             uiView.invalidateIntrinsicContentSize()
         }
+        //uiView.backgroundColor = UIColor(backgroundColor)
     }
 
     func makeCoordinator() -> Coordinator {

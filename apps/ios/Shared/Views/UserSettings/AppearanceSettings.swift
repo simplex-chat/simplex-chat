@@ -125,7 +125,6 @@ struct AppearanceSettings: View {
                     setUIAccentColorDefault(uiTintColor)
                 }
             }
-            .modifier(ThemedBackground())
         }
     }
 

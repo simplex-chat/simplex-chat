@@ -19,14 +19,7 @@ public enum PresetWallpaper {
     case travel
 
     var res: UIImage {
-        switch self {
-        case .cats: UIImage()
-        case .flowers: UIImage()
-        case .hearts: UIImage()
-        case .kids: UIImage()
-        case .school: UIImage()
-        case .travel: UIImage()
-        }
+        UIImage(named: "wallpaper_\(filename)")!
     }
 
     var filename: String {
@@ -308,34 +301,44 @@ public enum WallpaperScaleType/*(val contentScale: ContentScale)*/: Codable {
 }
 
 public enum WallpaperType {
-//    abstract val scale: Float?
-//
-//    val image by lazy {
-//        val filename = when (this) {
-//            is Preset -> filename
-//            is Image -> filename
-//            else -> return@lazy null
-//                }
-//        if (filename == "") return@lazy null
-//            if (cachedImages[filename] != null) {
-//            cachedImages[filename]
-//        } else {
-//            val res = if (this is Preset) {
-//                (PresetWallpaper.from(filename) ?? PresetWallpaper.CATS).res.toComposeImageBitmap()!!
-//            } else {
-//                try {
-//                    // In case of unintentional image deletion don't crash the app
-//                    File(getWallpaperFilePath(filename)).inputStream().use { loadImageBitmap(it) }
-//                } catch (e: Exception) {
-//                    Log.e(TAG, "Error while loading wallpaper file: ${e.stackTraceToString()}")
-//                    null
-//                }
-//            }
-//            res?.prepareToDraw()
-//            cachedImages[filename] = res ?? return@lazy null
-//            res
-//        }
-//    }
+    var image: SwiftUI.Image? {
+        if let uiImage {
+            return SwiftUI.Image(uiImage: uiImage)
+        }
+        return nil
+    }
+
+    var uiImage: UIImage? {
+        let filename: String
+        switch self {
+        case let .Preset(f, _): filename = f
+        case let .Image(f, _, _): filename = f
+        default: return nil
+        }
+        if filename == "" { return nil }
+        if let image = WallpaperType.cachedImages[filename] {
+            return image
+        } else {
+            let res: UIImage?
+            if case let .Preset(filename, _) = self {
+                res = (PresetWallpaper.from(filename) ?? PresetWallpaper.cats).res
+            } else {
+                do {
+                    // LALAL REMOVE
+                    res = nil
+                    // In case of unintentional image deletion don't crash the app
+                    //File(getWallpaperFilePath(filename)).inputStream().use { loadImageBitmap(it) }
+                } catch let e {
+                    logger.error("Error while loading wallpaper file: \(e)")
+                    res = nil
+                }
+            }
+            if let res {
+                WallpaperType.cachedImages[filename] = res
+            }
+            return res
+        }
+    }
 
     func sameType(_ other: WallpaperType?) -> Bool {
         if case let .Preset(filename, _) = self, case let .Preset(otherFilename, _) = other { filename == otherFilename }
@@ -347,7 +350,6 @@ public enum WallpaperType {
     func samePreset(other: PresetWallpaper?) -> Bool { if case let .Preset(filename, _) = self, filename == other?.filename { true } else { false } }
 
     case Preset(_ filename: String, _ scale: Float?)
-//                val predefinedImageScale = PresetWallpaper.from(filename)?.scale ?? 1f
 
     case Image(_ filename: String, _ scale: Float?, _ scaleType: WallpaperScaleType?)
 
@@ -385,3 +387,76 @@ public enum WallpaperType {
         }
     }
 }
+
+
+struct ChatViewBackground: ViewModifier {
+    @EnvironmentObject var MaterialTheme: MaterialTheme
+    var image: Image
+    var imageType: WallpaperType
+    var background: Color
+    var tint: Color
+
+    func body(content: Content) -> some View {
+        content.background(
+            Canvas { context, size in
+                var image = context.resolve(image)
+                image.shading = .color(tint)
+                let rect = CGRectMake(0, 0, size.width, size.height)
+                func repeatDraw(_ imageScale: CGFloat) {
+                    let scale = imageScale
+                    for h in 0 ... Int(size.height / image.size.height / scale) {
+                        for w in 0 ... Int(size.width / image.size.width / scale) {
+                            let rect = CGRectMake(CGFloat(w) * image.size.width * scale, CGFloat(h) * image.size.height * scale, image.size.width * scale, image.size.height * scale)
+                            context.draw(image, in: rect, style: FillStyle())
+                        }
+                    }
+                }
+                context.fill(Path(rect), with: .color(background))
+                switch imageType {
+                case let WallpaperType.Preset(filename, scale): repeatDraw(CGFloat((scale ?? 1) * (PresetWallpaper.from(filename)?.scale ?? 1)))
+                case let WallpaperType.Image(_, scale, scaleType):
+                    let scaleType = scaleType ?? WallpaperScaleType.fill
+                    switch scaleType {
+                    case WallpaperScaleType.repeat: repeatDraw(CGFloat(scale ?? 1))
+                    case WallpaperScaleType.fill: fallthrough
+                    case WallpaperScaleType.fit:
+//                        let scale = scaleType.contentScale.computeScaleFactor(Size(image.width.toFloat(), image.height.toFloat()), Size(size.width, size.height))
+//                        let scaledWidth = (image.width * scale.scaleX).roundToInt()
+//                        let scaledHeight = (image.height * scale.scaleY).roundToInt()
+//                        drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
+//                        if (scaleType == WallpaperScaleType.FIT) {
+//                            if (scaledWidth < size.width) {
+//                                // has black lines at left and right sides
+//                                var x = (size.width - scaledWidth) / 2
+//                                while (x > 0) {
+//                                    drawImage(image, dstOffset = IntOffset(x = (x - scaledWidth).roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
+//                                    x -= scaledWidth
+//                                }
+//                                x = size.width - (size.width - scaledWidth) / 2
+//                                while (x < size.width) {
+//                                    drawImage(image, dstOffset = IntOffset(x = x.roundToInt(), y = ((size.height - scaledHeight) / 2).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
+//                                    x += scaledWidth
+//                                }
+//                            } else {
+//                                // has black lines at top and bottom sides
+//                                var y = (size.height - scaledHeight) / 2
+//                                while (y > 0) {
+//                                    drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = (y - scaledHeight).roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
+//                                    y -= scaledHeight
+//                                }
+//                                y = size.height - (size.height - scaledHeight) / 2
+//                                while (y < size.height) {
+//                                    drawImage(image, dstOffset = IntOffset(x = ((size.width - scaledWidth) / 2).roundToInt(), y = y.roundToInt()), dstSize = IntSize(scaledWidth, scaledHeight), filterQuality = quality)
+//                                    y += scaledHeight
+//                                }
+//                            }
+//                        }
+                        context.fill(Path(rect), with: .color(tint))
+                    }
+                case WallpaperType.Empty: ()
+                }
+            }
+        )
+    }
+}
+

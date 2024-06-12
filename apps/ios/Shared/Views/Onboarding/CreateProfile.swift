@@ -66,6 +66,7 @@ struct CreateProfile: View {
             }
         }
         .navigationTitle("Create your profile")
+        .modifier(ThemedBackground())
         .alert(item: $alert) { a in userProfileAlert(a, $displayName) }
         .onAppear() {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {

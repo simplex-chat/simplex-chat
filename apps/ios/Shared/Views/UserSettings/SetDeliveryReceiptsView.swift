@@ -89,7 +89,7 @@ struct SetDeliveryReceiptsView: View {
         .padding()
         .padding(.horizontal)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(uiColor: .systemBackground))
+        .background(MaterialTheme.shared.colors.background)
     }
 }
 

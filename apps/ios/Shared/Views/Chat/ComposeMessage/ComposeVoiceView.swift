@@ -25,7 +25,7 @@ func voiceMessageTime_(_ time: TimeInterval?) -> String {
 
 struct ComposeVoiceView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     var recordingFileName: String
     @Binding var recordingTime: TimeInterval?
     @Binding var recordingState: VoiceMessageRecordingState
@@ -50,7 +50,7 @@ struct ComposeVoiceView: View {
         }
         .padding(.vertical, 1)
         .frame(height: ComposeVoiceView.previewHeight)
-        .background(colorScheme == .light ? sentColorLight : sentColorDark)
+        .background(MaterialTheme.appColors.sentMessage)
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
     }

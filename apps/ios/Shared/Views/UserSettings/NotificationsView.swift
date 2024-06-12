@@ -33,6 +33,7 @@ struct NotificationsView: View {
                         }
                     }
                     .navigationTitle("Send notifications")
+                    .modifier(ThemedBackground())
                     .navigationBarTitleDisplayMode(.inline)
                     .alert(item: $showAlert) { alert in
                         if let token = m.deviceToken {
@@ -68,6 +69,7 @@ struct NotificationsView: View {
                         }
                     }
                     .navigationTitle("Show preview")
+                    .modifier(ThemedBackground())
                     .navigationBarTitleDisplayMode(.inline)
                 } label: {
                     HStack {

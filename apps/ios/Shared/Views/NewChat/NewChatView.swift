@@ -94,7 +94,7 @@ struct NewChatView: View {
             .background(
                 // Rectangle is needed for swipe gesture to work on mostly empty views (creatingLinkProgressView and retryButton)
                 Rectangle()
-                    .fill(Color(uiColor: .systemGroupedBackground))
+                    .fill(MaterialTheme.shared.colors.background)
             )
             .animation(.easeInOut(duration: 0.3333), value: selection)
             .gesture(DragGesture(minimumDistance: 20.0, coordinateSpace: .local)
@@ -113,7 +113,7 @@ struct NewChatView: View {
                 }
             )
         }
-        .background(Color(.systemGroupedBackground))
+        .modifier(ThemedBackground())
         .onChange(of: invitationUsed) { used in
             if used && !(m.showingInvitation?.connChatUsed ?? true) {
                 m.markShowingInvitationUsed()

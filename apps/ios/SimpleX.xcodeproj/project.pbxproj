@@ -189,6 +189,7 @@
 		8C7D949A2B88952700B7B9E1 /* MigrateToDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7D94992B88952700B7B9E1 /* MigrateToDevice.swift */; };
 		8C7DF3202B7CDB0A00C886D0 /* MigrateFromDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7DF31F2B7CDB0A00C886D0 /* MigrateFromDevice.swift */; };
 		8C7E3CE42C0DEAC400BFF63A /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7E3CE32C0DEAC400BFF63A /* Theme.swift */; };
+		8C7F8F0E2C19C0C100D16888 /* ViewModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7F8F0D2C19C0C100D16888 /* ViewModifiers.swift */; };
 		8C804B1E2C11F966007A63C8 /* ChatWallpaper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C804B1D2C11F966007A63C8 /* ChatWallpaper.swift */; };
 		8C81482C2BD91CD4002CBEC3 /* AudioDevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C81482B2BD91CD4002CBEC3 /* AudioDevicePicker.swift */; };
 		8C852B082C1086D100BA61E8 /* Color.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C852B072C1086D100BA61E8 /* Color.swift */; };
@@ -490,6 +491,7 @@
 		8C7D94992B88952700B7B9E1 /* MigrateToDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrateToDevice.swift; sourceTree = "<group>"; };
 		8C7DF31F2B7CDB0A00C886D0 /* MigrateFromDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MigrateFromDevice.swift; sourceTree = "<group>"; };
 		8C7E3CE32C0DEAC400BFF63A /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		8C7F8F0D2C19C0C100D16888 /* ViewModifiers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewModifiers.swift; sourceTree = "<group>"; };
 		8C804B1D2C11F966007A63C8 /* ChatWallpaper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatWallpaper.swift; sourceTree = "<group>"; };
 		8C81482B2BD91CD4002CBEC3 /* AudioDevicePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDevicePicker.swift; sourceTree = "<group>"; };
 		8C852B072C1086D100BA61E8 /* Color.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Color.swift; sourceTree = "<group>"; };
@@ -669,6 +671,7 @@
 				5CEBD7452A5C0A8F00665FE2 /* KeyboardPadding.swift */,
 				8C05382D2B39887E006436DC /* VideoUtils.swift */,
 				8C804B1D2C11F966007A63C8 /* ChatWallpaper.swift */,
+				8C7F8F0D2C19C0C100D16888 /* ViewModifiers.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -1213,6 +1216,7 @@
 				5CB0BA90282713D900B3292C /* SimpleXInfo.swift in Sources */,
 				5C063D2727A4564100AEC577 /* ChatPreviewView.swift in Sources */,
 				5CC868F329EB540C0017BBFD /* CIRcvDecryptionError.swift in Sources */,
+				8C7F8F0E2C19C0C100D16888 /* ViewModifiers.swift in Sources */,
 				5C35CFCB27B2E91D00FB6C6D /* NtfManager.swift in Sources */,
 				5C9D13A3282187BB00AB8B43 /* WebRTC.swift in Sources */,
 				5C9A5BDB2871E05400A5B906 /* SetNotificationsMode.swift in Sources */,

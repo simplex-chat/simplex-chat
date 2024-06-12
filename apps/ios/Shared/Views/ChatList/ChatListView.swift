@@ -87,6 +87,7 @@ struct ChatListView: View {
             ))
         }
         .listStyle(.plain)
+        .background(MaterialTheme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(searchMode)
         .toolbar {
@@ -133,11 +134,10 @@ struct ChatListView: View {
     }
 
     private func toggleFilterButton() -> some View {
-        return Button {
+        Button {
             showUnreadAndFavorites = !showUnreadAndFavorites
         } label: {
             Image(systemName: "line.3.horizontal.decrease.circle" + (showUnreadAndFavorites ? ".fill" : ""))
-                .background(MaterialTheme.colors.secondary)
                 .foregroundColor(MaterialTheme.colors.primary)
         }
     }
@@ -156,12 +156,14 @@ struct ChatListView: View {
                             searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
                         )
                         .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                         .frame(maxWidth: .infinity)
                     }
                     ForEach(cs, id: \.viewId) { chat in
                         ChatListNavLink(chat: chat)
                             .padding(.trailing, -16)
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
+                            .listRowBackground(Color.clear)
                     }
                     .offset(x: -8)
                 }

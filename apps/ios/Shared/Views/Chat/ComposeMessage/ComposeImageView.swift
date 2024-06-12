@@ -10,7 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct ComposeImageView: View {
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     let images: [String]
     let cancelImage: (() -> Void)
     let cancelEnabled: Bool
@@ -48,7 +48,7 @@ struct ComposeImageView: View {
         }
         .padding(.vertical, 1)
         .padding(.trailing, 12)
-        .background(colorScheme == .light ? sentColorLight : sentColorDark)
+        .background(MaterialTheme.appColors.sentMessage)
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
     }

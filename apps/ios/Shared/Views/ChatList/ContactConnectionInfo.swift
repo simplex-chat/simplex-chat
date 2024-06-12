@@ -82,6 +82,7 @@ struct ContactConnectionInfo: View {
                     }
                 }
             }
+            .modifier(ThemedBackground())
             if #available(iOS 16, *) {
                 v
             } else {
@@ -178,6 +179,7 @@ private func oneTimeLinkLearnMoreButton() -> some View {
     NavigationLink {
         AddContactLearnMore(showTitle: false)
             .navigationTitle("One-time invitation link")
+            .modifier(ThemedBackground())
             .navigationBarTitleDisplayMode(.large)
     } label: {
         settingsRow("info.circle") {

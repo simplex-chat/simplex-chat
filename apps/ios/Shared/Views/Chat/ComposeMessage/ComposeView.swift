@@ -254,6 +254,7 @@ enum UploadContent: Equatable {
 
 struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     @ObservedObject var chat: Chat
     @Binding var composeState: ComposeState
     @Binding var keyboardVisible: Bool
@@ -356,7 +357,7 @@ struct ComposeView: View {
                             : .accentColor
                     )
                     .padding(.trailing, 12)
-                    .background(.background)
+                    .background(MaterialTheme.colors.background)
                     .disabled(!chat.userCanSend)
 
                     if chat.userIsObserver {

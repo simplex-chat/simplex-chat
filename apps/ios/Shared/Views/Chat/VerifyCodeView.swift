@@ -66,6 +66,7 @@ struct VerifyCodeView: View {
                                 ScanCodeView(connectionVerified: $connectionVerified, verify: verify)
                                     .navigationBarTitleDisplayMode(.large)
                                     .navigationTitle("Scan code")
+                                    .modifier(ThemedBackground())
                             } label: {
                                 Label("Scan code", systemImage: "qrcode")
                             }

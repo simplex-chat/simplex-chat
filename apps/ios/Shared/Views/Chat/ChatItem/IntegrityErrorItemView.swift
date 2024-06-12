@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct IntegrityErrorItemView: View {
     @ObservedObject var chat: Chat
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     var msgError: MsgErrorType
     var chatItem: ChatItem
 
@@ -54,6 +55,7 @@ struct IntegrityErrorItemView: View {
 
 struct CIMsgError: View {
     @ObservedObject var chat: Chat
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     var chatItem: ChatItem
     var onTap: () -> Void
 
@@ -62,7 +64,7 @@ struct CIMsgError: View {
             Text(chatItem.content.text)
                 .foregroundColor(.red)
                 .italic()
-            CIMetaView(chat: chat, chatItem: chatItem)
+            CIMetaView(chat: chat, chatItem: chatItem, metaColor: MaterialTheme.colors.secondary)
                 .padding(.horizontal, 12)
         }
         .padding(.leading, 12)

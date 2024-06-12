@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct EmojiItemView: View {
     @ObservedObject var chat: Chat
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     var chatItem: ChatItem
 
     var body: some View {
@@ -18,7 +19,7 @@ struct EmojiItemView: View {
             emojiText(chatItem.content.text)
                 .padding(.top, 8)
                 .padding(.horizontal, 6)
-            CIMetaView(chat: chat, chatItem: chatItem)
+            CIMetaView(chat: chat, chatItem: chatItem, metaColor: MaterialTheme.colors.secondary)
                 .padding(.bottom, 8)
                 .padding(.horizontal, 12)
         }

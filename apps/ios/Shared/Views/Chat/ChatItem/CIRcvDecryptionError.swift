@@ -13,6 +13,7 @@ let decryptErrorReason: LocalizedStringKey = "It can happen when you or your con
 
 struct CIRcvDecryptionError: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     @ObservedObject var chat: Chat
     var msgDecryptError: MsgDecryptError
     var msgCount: UInt32
@@ -125,7 +126,7 @@ struct CIRcvDecryptionError: View {
                 )
             }
             .padding(.horizontal, 12)
-            CIMetaView(chat: chat, chatItem: chatItem)
+            CIMetaView(chat: chat, chatItem: chatItem, metaColor: MaterialTheme.colors.secondary)
                 .padding(.horizontal, 12)
         }
         .onTapGesture(perform: { onClick() })
@@ -145,7 +146,7 @@ struct CIRcvDecryptionError: View {
                 + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy)
             }
             .padding(.horizontal, 12)
-            CIMetaView(chat: chat, chatItem: chatItem)
+            CIMetaView(chat: chat, chatItem: chatItem, metaColor: MaterialTheme.colors.secondary)
                 .padding(.horizontal, 12)
         }
         .onTapGesture(perform: { onClick() })

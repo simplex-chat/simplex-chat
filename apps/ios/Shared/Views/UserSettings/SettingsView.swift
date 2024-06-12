@@ -171,6 +171,7 @@ struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var sceneDelegate: SceneDelegate
+    @EnvironmentObject var MaterialTheme: MaterialTheme
     @Binding var showSettings: Bool
     @State private var showProgress: Bool = false
 
@@ -195,6 +196,7 @@ struct SettingsView: View {
                         NavigationLink {
                             UserProfile()
                                 .navigationTitle("Your current profile")
+                                .modifier(ThemedBackground())
                         } label: {
                             ProfilePreview(profileOf: user)
                                 .padding(.leading, -8)
@@ -212,6 +214,7 @@ struct SettingsView: View {
                         NavigationLink {
                             UserAddressView(shareViaProfile: user.addressShared)
                                 .navigationTitle("SimpleX address")
+                                .modifier(ThemedBackground())
                                 .navigationBarTitleDisplayMode(.large)
                         } label: {
                             settingsRow("qrcode") { Text("Your SimpleX address") }
@@ -220,6 +223,7 @@ struct SettingsView: View {
                         NavigationLink {
                             PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
                                 .navigationTitle("Your preferences")
+                                .modifier(ThemedBackground())
                         } label: {
                             settingsRow("switch.2") { Text("Chat preferences") }
                         }
@@ -234,6 +238,7 @@ struct SettingsView: View {
                     NavigationLink {
                         MigrateFromDevice(showSettings: $showSettings, showProgressOnSettings: $showProgress)
                             .navigationTitle("Migrate device")
+                            .modifier(ThemedBackground())
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
                         settingsRow("tray.and.arrow.up") { Text("Migrate to another device") }
@@ -245,6 +250,7 @@ struct SettingsView: View {
                     NavigationLink {
                         NotificationsView()
                             .navigationTitle("Notifications")
+                            .modifier(ThemedBackground())
                     } label: {
                         HStack {
                             notificationsIcon()
@@ -256,6 +262,7 @@ struct SettingsView: View {
                     NavigationLink {
                         NetworkAndServers()
                             .navigationTitle("Network & servers")
+                            .modifier(ThemedBackground())
                     } label: {
                         settingsRow("externaldrive.connected.to.line.below") { Text("Network & servers") }
                     }
@@ -264,6 +271,7 @@ struct SettingsView: View {
                     NavigationLink {
                         CallSettings()
                             .navigationTitle("Your calls")
+                            .modifier(ThemedBackground())
                     } label: {
                         settingsRow("video") { Text("Audio & video calls") }
                     }
@@ -272,6 +280,7 @@ struct SettingsView: View {
                     NavigationLink {
                         PrivacySettings()
                             .navigationTitle("Your privacy")
+                            .modifier(ThemedBackground())
                     } label: {
                         settingsRow("lock") { Text("Privacy & security") }
                     }
@@ -281,6 +290,7 @@ struct SettingsView: View {
                         NavigationLink {
                             AppearanceSettings()
                                 .navigationTitle("Appearance")
+                                .modifier(ThemedBackground())
                         } label: {
                             settingsRow("sun.max") { Text("Appearance") }
                         }
@@ -295,6 +305,7 @@ struct SettingsView: View {
                         NavigationLink {
                             ChatHelp(showSettings: $showSettings)
                                 .navigationTitle("Welcome \(user.displayName)!")
+                                .modifier(ThemedBackground())
                                 .frame(maxHeight: .infinity, alignment: .top)
                         } label: {
                             settingsRow("questionmark") { Text("How to use it") }
@@ -302,6 +313,7 @@ struct SettingsView: View {
                     }
                     NavigationLink {
                         WhatsNewView(viaSettings: true)
+                            .modifier(ThemedBackground())
                             .navigationBarTitleDisplayMode(.inline)
                     } label: {
                         settingsRow("plus") { Text("What's new") }
@@ -309,6 +321,7 @@ struct SettingsView: View {
                     NavigationLink {
                         SimpleXInfo(onboarding: false)
                             .navigationBarTitle("", displayMode: .inline)
+                            .modifier(ThemedBackground())
                             .frame(maxHeight: .infinity, alignment: .top)
                     } label: {
                         settingsRow("info") { Text("About SimpleX Chat") }
@@ -348,19 +361,21 @@ struct SettingsView: View {
                     NavigationLink {
                         DeveloperView()
                             .navigationTitle("Developer tools")
+                            .modifier(ThemedBackground())
                     } label: {
                         settingsRow("chevron.left.forwardslash.chevron.right") { Text("Developer tools") }
                     }
                     NavigationLink {
                         VersionView()
                             .navigationBarTitle("App version")
+                            .modifier(ThemedBackground())
                     } label: {
                         Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
                     }
                 }
             }
-            .modifier(ThemedBackground())
             .navigationTitle("Your settings")
+            .modifier(ThemedBackground())
         }
         .onDisappear {
             chatModel.showingTerminal = false
@@ -372,6 +387,7 @@ struct SettingsView: View {
         NavigationLink {
             DatabaseView(showSettings: $showSettings, chatItemTTL: chatModel.chatItemTTL)
                 .navigationTitle("Your chat database")
+                .modifier(ThemedBackground())
         } label: {
             let color: Color = chatModel.chatDbEncrypted == false ? .orange : .secondary
             settingsRow("internaldrive", color: color) {

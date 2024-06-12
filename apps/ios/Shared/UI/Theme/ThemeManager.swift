@@ -58,11 +58,11 @@ public class ThemeManager {
         let defaultTheme = defaultActiveTheme(appSettingsTheme)
 
         let baseTheme = switch nonSystemThemeName {
-        case DefaultTheme.LIGHT.themeName: ActiveTheme(name: DefaultTheme.LIGHT.themeName, base: DefaultTheme.LIGHT, colors: LightColorPalette, appColors: LightColorPaletteApp, wallpaper: AppWallpaper(background: nil, tint: nil, type: PresetWallpaper.school.toType(DefaultTheme.LIGHT)))
-        case DefaultTheme.DARK.themeName: ActiveTheme(name: DefaultTheme.DARK.themeName, base: DefaultTheme.DARK, colors: DarkColorPalette, appColors: DarkColorPaletteApp, wallpaper: AppWallpaper(background: nil, tint: nil, type: PresetWallpaper.school.toType(DefaultTheme.DARK)))
-        case DefaultTheme.SIMPLEX.themeName: ActiveTheme(name: DefaultTheme.SIMPLEX.themeName, base: DefaultTheme.SIMPLEX, colors: SimplexColorPalette, appColors: SimplexColorPaletteApp, wallpaper: AppWallpaper(background: nil, tint: nil, type: PresetWallpaper.school.toType(DefaultTheme.SIMPLEX)))
-        case DefaultTheme.BLACK.themeName: ActiveTheme(name: DefaultTheme.BLACK.themeName, base: DefaultTheme.BLACK, colors: BlackColorPalette, appColors: BlackColorPaletteApp, wallpaper: AppWallpaper(background: nil, tint: nil, type: PresetWallpaper.school.toType(DefaultTheme.BLACK)))
-        default: ActiveTheme(name: DefaultTheme.LIGHT.themeName, base: DefaultTheme.LIGHT, colors: LightColorPalette, appColors: LightColorPaletteApp, wallpaper: AppWallpaper(background: nil, tint: nil, type: PresetWallpaper.school.toType(DefaultTheme.LIGHT)))
+        case DefaultTheme.LIGHT.themeName: ActiveTheme(name: DefaultTheme.LIGHT.themeName, base: DefaultTheme.LIGHT, colors: LightColorPalette.clone(), appColors: LightColorPaletteApp.clone(), wallpaper: AppWallpaper(background: nil, tint: nil, type: PresetWallpaper.school.toType(DefaultTheme.LIGHT)))
+        case DefaultTheme.DARK.themeName: ActiveTheme(name: DefaultTheme.DARK.themeName, base: DefaultTheme.DARK, colors: DarkColorPalette.clone(), appColors: DarkColorPaletteApp.clone(), wallpaper: AppWallpaper(background: nil, tint: nil, type: PresetWallpaper.school.toType(DefaultTheme.DARK)))
+        case DefaultTheme.SIMPLEX.themeName: ActiveTheme(name: DefaultTheme.SIMPLEX.themeName, base: DefaultTheme.SIMPLEX, colors: SimplexColorPalette.clone(), appColors: SimplexColorPaletteApp.clone(), wallpaper: AppWallpaper(background: nil, tint: nil, type: PresetWallpaper.school.toType(DefaultTheme.SIMPLEX)))
+        case DefaultTheme.BLACK.themeName: ActiveTheme(name: DefaultTheme.BLACK.themeName, base: DefaultTheme.BLACK, colors: BlackColorPalette.clone(), appColors: BlackColorPaletteApp.clone(), wallpaper: AppWallpaper(background: nil, tint: nil, type: PresetWallpaper.school.toType(DefaultTheme.BLACK)))
+        default: ActiveTheme(name: DefaultTheme.LIGHT.themeName, base: DefaultTheme.LIGHT, colors: LightColorPalette.clone(), appColors: LightColorPaletteApp.clone(), wallpaper: AppWallpaper(background: nil, tint: nil, type: PresetWallpaper.school.toType(DefaultTheme.LIGHT)))
         }
 
         let perUserTheme = baseTheme.colors.isLight ? perUserTheme?.light : perUserTheme?.dark
@@ -317,4 +317,17 @@ extension Color {
                       Int(b * 255)
         )
     }
+
+    func darker(_ factor: CGFloat = 0.1) -> Color {
+        var (r, g, b, a): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+        UIColor(self).getRed(&r, green: &g, blue: &b, alpha: &a)
+        return Color(.sRGB, red: max(r * (1 - factor), 0), green: max(g * (1 - factor), 0), blue: max(b * (1 - factor), 0), opacity: a)
+    }
+
+    func lighter(_ factor: CGFloat = 0.1) -> Color {
+        var (r, g, b, a): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+        UIColor(self).getRed(&r, green: &g, blue: &b, alpha: &a)
+        return Color(.sRGB, red: min(r * (1 + factor), 1), green: min(g * (1 + factor), 1), blue: min(b * (1 + factor), 1), opacity: a)
+    }
+
 }
