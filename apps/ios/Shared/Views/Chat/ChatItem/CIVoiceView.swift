@@ -134,18 +134,53 @@ struct VoiceMessagePlayer: View {
         ZStack {
             if let recordingFile = recordingFile {
                 switch recordingFile.fileStatus {
-                case .sndStored: playbackButton()
-                case .sndTransfer: playbackButton()
+                case .sndStored:
+                    if recordingFile.fileProtocol == .local {
+                        playbackButton()
+                    } else {
+                        loadingIcon()
+                    }
+                case .sndTransfer: loadingIcon()
                 case .sndComplete: playbackButton()
                 case .sndCancelled: playbackButton()
-                case .sndError: playbackButton()
+                case let .sndError(sndFileError):
+                    fileStatusIcon("multiply", 14)
+                        .onTapGesture {
+                            AlertManager.shared.showAlert(Alert(
+                                title: Text("File error"),
+                                message: Text(sndFileError.errorInfo)
+                            ))
+                        }
+                case let .sndWarning(sndFileError):
+                    fileStatusIcon("exclamationmark.triangle.fill", 16)
+                        .onTapGesture {
+                            AlertManager.shared.showAlert(Alert(
+                                title: Text("Temporary file error"),
+                                message: Text(sndFileError.errorInfo)
+                            ))
+                        }
                 case .rcvInvitation: downloadButton(recordingFile, "play.fill")
                 case .rcvAccepted: loadingIcon()
                 case .rcvTransfer: loadingIcon()
                 case .rcvAborted: downloadButton(recordingFile, "exclamationmark.arrow.circlepath")
                 case .rcvComplete: playbackButton()
                 case .rcvCancelled: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
-                case .rcvError: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
+                case let .rcvError(rcvFileError):
+                    fileStatusIcon("multiply", 14)
+                        .onTapGesture {
+                            AlertManager.shared.showAlert(Alert(
+                                title: Text("File error"),
+                                message: Text(rcvFileError.errorInfo)
+                            ))
+                        }
+                case let .rcvWarning(rcvFileError):
+                    fileStatusIcon("exclamationmark.triangle.fill", 16)
+                        .onTapGesture {
+                            AlertManager.shared.showAlert(Alert(
+                                title: Text("Temporary file error"),
+                                message: Text(rcvFileError.errorInfo)
+                            ))
+                        }
                 case .invalid: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
                 }
             } else {
@@ -244,6 +279,17 @@ struct VoiceMessagePlayer: View {
                 .rotationEffect(.degrees(-90))
                 .animation(.linear, value: progress)
         }
+    }
+
+    private func fileStatusIcon(_ image: String, _ size: CGFloat) -> some View {
+        Image(systemName: image)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: size, height: size)
+            .foregroundColor(Color(uiColor: .tertiaryLabel))
+            .frame(width: 56, height: 56)
+            .background(showBackground ? chatItemFrameColor(chatItem, colorScheme) : .clear)
+            .clipShape(Circle())
     }
 
     private func loadingIcon() -> some View {

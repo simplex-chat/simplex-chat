@@ -31,7 +31,6 @@ import kotlinx.coroutines.delay
 fun SetupDatabasePassphrase(m: ChatModel) {
   val progressIndicator = remember { mutableStateOf(false) }
   val prefs = m.controller.appPrefs
-  val saveInPreferences = remember { mutableStateOf(prefs.storeDBPassphrase.get()) }
   val initialRandomDBPassphrase = remember { mutableStateOf(prefs.initialRandomDBPassphrase.get()) }
   // Do not do rememberSaveable on current key to prevent saving it on disk in clear text
   val currentKey = remember { mutableStateOf(if (initialRandomDBPassphrase.value) DatabaseUtils.ksDatabasePassword.get() ?: "" else "") }
@@ -58,7 +57,16 @@ fun SetupDatabasePassphrase(m: ChatModel) {
         prefs.storeDBPassphrase.set(false)
 
         val newKeyValue = newKey.value
-        val success = encryptDatabase(currentKey, newKey, confirmNewKey, mutableStateOf(true), saveInPreferences, mutableStateOf(true), progressIndicator, false)
+        val success = encryptDatabase(
+          currentKey = currentKey,
+          newKey = newKey,
+          confirmNewKey = confirmNewKey,
+          initialRandomDBPassphrase = mutableStateOf(true),
+          useKeychain = mutableStateOf(false),
+          storedKey = mutableStateOf(true),
+          progressIndicator = progressIndicator,
+          migration = false
+        )
         if (success) {
           startChat(newKeyValue)
           nextStep()

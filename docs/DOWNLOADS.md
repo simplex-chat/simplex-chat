@@ -7,7 +7,7 @@ revision: 11.02.2024
 | Updated 23.03.2024 | Languages: EN |
 # Download SimpleX apps
 
-The latest stable version is v5.6.
+The latest stable version is v5.8.
 
 You can get the latest beta releases from [GitHub](https://github.com/simplex-chat/simplex-chat/releases).
 

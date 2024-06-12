@@ -131,8 +131,7 @@ aCfg = (agentConfig defaultChatConfig) {tbqSize = 16}
 testAgentCfg :: AgentConfig
 testAgentCfg =
   aCfg
-    { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000},
-      xftpNotifyErrsOnRetry = False
+    { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000}
     }
 
 testCfg :: ChatConfig
