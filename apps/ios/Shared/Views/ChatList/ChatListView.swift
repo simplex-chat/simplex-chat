@@ -17,7 +17,7 @@ struct ChatListView: View {
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
-
+    @State var topVisibleRowIndex: Int? = nil;
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = false
 
@@ -57,8 +57,8 @@ struct ChatListView: View {
         let cs = filteredChats()
         ZStack {
             VStack {
-                List {
-                    if !chatModel.chats.isEmpty {
+                ScrollViewReader { scrollViewProxy in
+                    if !chatModel.chats.isEmpty && oneHandUI{
                         ChatListSearchBar(
                             searchMode: $searchMode,
                             searchFocussed: $searchFocussed,
@@ -66,17 +66,41 @@ struct ChatListView: View {
                             searchShowingSimplexLink: $searchShowingSimplexLink,
                             searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
                         )
-                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                        .scaleEffect(x: 1, y: -1, anchor: .center)
                         .listRowSeparator(.hidden)
                         .frame(maxWidth: .infinity)
+                        .padding(10)
                     }
-                    ForEach(cs, id: \.viewId) { chat in
-                        ChatListNavLink(chat: chat)
-                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                            .padding(.trailing, -16)
-                            .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
+                    List {
+                        if !chatModel.chats.isEmpty && !oneHandUI{
+                            ChatListSearchBar(
+                                searchMode: $searchMode,
+                                searchFocussed: $searchFocussed,
+                                searchText: $searchText,
+                                searchShowingSimplexLink: $searchShowingSimplexLink,
+                                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+                            )
+                            .listRowSeparator(.hidden)
+                            .frame(maxWidth: .infinity)
+                        }
+                        ForEach(cs.indices, id: \.self) { index in
+                            ChatListNavLink(chat: cs[index])
+                                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                                .padding(.trailing, -16)
+                                .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(cs[index].chatInfo.id))
+                                .background(GeometryReader { proxy in
+                                    Color.clear
+                                        .onAppear {
+                                            updateTopVisibleRowIndex(proxy: proxy, index: index)
+                                        }
+                                        .onChange(of: proxy.frame(in: .named("SCROLL")).minY) { _ in
+                                            updateTopVisibleRowIndex(proxy: proxy, index: index)
+                                        }
+                                })
+                        }
+                        .offset(x: -8)
                     }
-                    .offset(x: -8)
+                    .coordinateSpace(name: "SCROLL")
                 }
             }
             .onChange(of: chatModel.chatId) { _ in
@@ -89,6 +113,23 @@ struct ChatListView: View {
                 Text("No filtered chats")
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
+            }
+        }
+    }
+    
+    private func updateTopVisibleRowIndex(proxy: GeometryProxy, index: Int) {
+        let frame = proxy.frame(in: .named("SCROLL"))
+
+        if frame.minY >= 0 && frame.minY < frame.height / 2 {
+            if topVisibleRowIndex != index {
+                let shouldShowToolbar: Bool
+                if let topVisibleRowIndex = topVisibleRowIndex {
+                    shouldShowToolbar = topVisibleRowIndex > index
+                } else {
+                    shouldShowToolbar = true
+                }
+                topVisibleRowIndex = index
+                NotificationCenter.default.post(name: .toolbarVisibilityChanged, object: shouldShowToolbar)
             }
         }
     }
