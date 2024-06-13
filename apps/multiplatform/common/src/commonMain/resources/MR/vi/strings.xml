@@ -287,4 +287,18 @@
     <string name="notification_contact_connected">Đã kết nối</string>
     <string name="auth_confirm_credential">Xác nhận thông tin đăng nhập của bạn</string>
     <string name="connect_button">Kết nối</string>
+    <string name="connected_desktop">Máy tính đã được kết nối</string>
+    <string name="rcv_group_event_member_created_contact">đã kết nối trực tiếp</string>
+    <string name="group_member_status_accepted">đang kết nối (đã được chấp nhận)</string>
+    <string name="contact_connection_pending">đang kết nối…</string>
+    <string name="connected_to_mobile">Đã kết nối tới điện thoại</string>
+    <string name="connected_mobile">Điện thoại đã được kết nối</string>
+    <string name="group_member_status_connecting">đang kết nối</string>
+    <string name="group_connection_pending">đang kết nối…</string>
+    <string name="callstate_connecting">đang kết nối…</string>
+    <string name="connect_via_link_incognito">Kết nối ẩn danh</string>
+    <string name="server_connecting">đang kết nối</string>
+    <string name="connected_to_desktop">Đã kết nối tới máy tính</string>
+    <string name="group_member_status_announced">đang kết nối (đã được thông báo)</string>
+    <string name="display_name_connecting">đang kết nối…</string>
 </resources>
