@@ -244,7 +244,7 @@ struct ContentView: View {
         .background(
             Rectangle()
                 .fill(theme.colors.background)
-        ) 
+        )
     }
 
     private func mainView() -> some View {

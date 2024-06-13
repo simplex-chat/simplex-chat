@@ -684,25 +684,6 @@ let BlackColorPaletteApp = AppColors(
 
 var systemInDarkThemeCurrently: Bool = false
 
-extension User {
-    var uiThemes: ThemeModeOverrides? {
-        ThemeModeOverrides() // LALAL remove it
-    }
-}
-
-extension Contact {
-    var uiThemes: ThemeModeOverrides? {
-        nil
-        //ThemeModeOverrides(dark: ThemeModeOverride(mode: DefaultThemeMode.dark, colors: ThemeColors(primary: Color.green.toReadableHex(), secondary: Color.red.toReadableHex(), background: Color.white.toReadableHex(), sentMessage: Color.yellow.toReadableHex()))) // LALAL remove it
-    }
-}
-
-extension GroupInfo {
-    var uiThemes: ThemeModeOverrides? {
-        ThemeModeOverrides() // LALAL remove it
-    }
-}
-
 var CurrentColors: ThemeManager.ActiveTheme = ThemeManager.currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get()) {
     didSet {
         AppTheme.shared.name = CurrentColors.name
