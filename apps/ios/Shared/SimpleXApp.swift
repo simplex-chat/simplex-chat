@@ -40,7 +40,6 @@ struct SimpleXApp: App {
             ContentView(contentAccessAuthenticationExtended: !authenticationExpired())
                 .environmentObject(chatModel)
                 .environmentObject(AppTheme.shared)
-                //.tint(AppTheme.shared.colors.primary)
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")
                     chatModel.appOpenUrl = url
