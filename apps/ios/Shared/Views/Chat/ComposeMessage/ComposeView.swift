@@ -354,7 +354,7 @@ struct ComposeView: View {
                         keyboardVisible: $keyboardVisible,
                         sendButtonColor: chat.chatInfo.incognito
                             ? .indigo.opacity(colorScheme == .dark ? 1 : 0.7)
-                            : theme.colors.secondary
+                            : theme.colors.primary
                     )
                     .padding(.trailing, 12)
                     .background(theme.colors.background)

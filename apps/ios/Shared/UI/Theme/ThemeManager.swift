@@ -96,9 +96,9 @@ public class ThemeManager {
         let wBackground = current.wallpaper.background
         let wTint = current.wallpaper.tint
         let w: ThemeWallpaper? = if case WallpaperType.Empty = wType { 
-            ThemeWallpaper.from(wType, wBackground?.toReadableHex(), wTint?.toReadableHex()).withFilledWallpaperBase64()
-        } else {
             nil
+        } else {
+            ThemeWallpaper.from(wType, wBackground?.toReadableHex(), wTint?.toReadableHex()).withFilledWallpaperBase64()
         }
         return ThemeOverrides(
             themeId: "",

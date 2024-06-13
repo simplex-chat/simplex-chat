@@ -2,7 +2,7 @@
 //  ChatWallpaper.swift
 //  SimpleX (iOS)
 //
-//  Created by Stanislav on 06.06.2024.
+//  Created by Avently on 06.06.2024.
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
 
@@ -355,11 +355,11 @@ public enum WallpaperType {
 
     case Empty
 
-    func defaultBackgroundColor(_ theme: DefaultTheme, _ materialBackground: Color) -> Color {
+    func defaultBackgroundColor(_ theme: DefaultTheme, _ themeBackground: Color) -> Color {
         if case let .Preset(filename, _) = self {
             (PresetWallpaper.from(filename) ?? PresetWallpaper.cats).background[theme]!
         } else {
-            materialBackground
+            themeBackground
         }
     }
 

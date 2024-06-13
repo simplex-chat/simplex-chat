@@ -80,7 +80,7 @@ struct ComposeVoiceView: View {
                     Button {
                         startPlayback()
                     } label: {
-                        playPauseIcon("play.fill", theme.colors.secondary)
+                        playPauseIcon("play.fill", theme.colors.primary)
                     }
                     Text(voiceMessageTime_(recordingTime))
                 case .playing:
@@ -88,7 +88,7 @@ struct ComposeVoiceView: View {
                         audioPlayer?.pause()
                         playbackState = .paused
                     } label: {
-                        playPauseIcon("pause.fill", theme.colors.secondary)
+                        playPauseIcon("pause.fill", theme.colors.primary)
                     }
                     Text(voiceMessageTime_(playbackTime))
                 case .paused:
@@ -96,7 +96,7 @@ struct ComposeVoiceView: View {
                         audioPlayer?.play()
                         playbackState = .playing
                     } label: {
-                        playPauseIcon("play.fill", theme.colors.secondary)
+                        playPauseIcon("play.fill", theme.colors.primary)
                     }
                     Text(voiceMessageTime_(playbackTime))
                 }

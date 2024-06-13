@@ -26,7 +26,6 @@ enum DefaultTheme: String, Codable {
         : DefaultThemeMode.dark
     }
 
-    // Call it only with base theme, not SYSTEM
     func hasChangedAnyColor(_ overrides: ThemeOverrides?) -> Bool {
         if let overrides {
             overrides.colors != ThemeColors() || overrides.wallpaper != nil && (overrides.wallpaper?.background != nil || overrides.wallpaper?.tint != nil)
@@ -39,16 +38,6 @@ enum DefaultTheme: String, Codable {
 enum DefaultThemeMode: String, Codable {
     case light
     case dark
-}
-
-protocol Copying {
-    init(instance: Self)
-}
-
-extension Copying {
-    func copy() -> Self {
-        Self.init(instance: self)
-    }
 }
 
 class Colors: ObservableObject, NSCopying {
@@ -324,6 +313,7 @@ public struct ThemeWallpaper: Codable {
 
     func importFromString() -> ThemeWallpaper {
         self
+        // LALAL
         //if preset == nil, let image {
             // Need to save image from string and to save its path
 //            do {
@@ -438,7 +428,7 @@ public struct ThemeOverrides: Codable {
         let c = baseColors.clone()
         c.title = perChatTheme?.title?.colorFromReadableHex() ?? perUserTheme?.title?.colorFromReadableHex() ?? colors.title?.colorFromReadableHex() ?? presetWallpaperTheme?.title?.colorFromReadableHex() ?? baseColors.title
         c.primaryVariant2 = perChatTheme?.primaryVariant2?.colorFromReadableHex() ?? perUserTheme?.primaryVariant2?.colorFromReadableHex() ?? colors.primaryVariant2?.colorFromReadableHex() ?? presetWallpaperTheme?.primaryVariant2?.colorFromReadableHex() ?? baseColors.primaryVariant2
-        c.sentMessage = if let c = perChatTheme?.sentMessage { c.colorFromReadableHex() } else if perUserTheme != nil && (perChatWallpaperType == nil || perUserWallpaperType == nil || perChatWallpaperType!.sameType(perUserWallpaperType)) { perUserTheme?.sentMessage?.colorFromReadableHex() ?? sentMessageFallback } else { sentMessageFallback }
+        c.sentMessage = if let c = perChatTheme?.sentMessage { c.colorFromReadableHex() } else if let perUserTheme, (perChatWallpaperType == nil || perUserWallpaperType == nil || perChatWallpaperType!.sameType(perUserWallpaperType)) { perUserTheme.sentMessage?.colorFromReadableHex() ?? sentMessageFallback } else { sentMessageFallback }
         c.sentQuote = if let c = perChatTheme?.sentQuote { c.colorFromReadableHex() } else if let perUserTheme, (perChatWallpaperType == nil || perUserWallpaperType == nil || perChatWallpaperType!.sameType(perUserWallpaperType)) { perUserTheme.sentQuote?.colorFromReadableHex() ?? sentQuoteFallback } else { sentQuoteFallback }
         c.receivedMessage = if let c = perChatTheme?.receivedMessage { c.colorFromReadableHex() } else if let perUserTheme, (perChatWallpaperType == nil || perUserWallpaperType == nil || perChatWallpaperType!.sameType(perUserWallpaperType)) { perUserTheme.receivedMessage?.colorFromReadableHex() ?? receivedMessageFallback }
         else { receivedMessageFallback }
@@ -446,7 +436,7 @@ public struct ThemeOverrides: Codable {
         return c
     }
 
-    func toAppWallpaper(_ themeOverridesForType: WallpaperType?, _ perChatTheme: ThemeModeOverride?, _ perUserTheme: ThemeModeOverride?, _ materialBackgroundColor: Color) -> AppWallpaper {
+    func toAppWallpaper(_ themeOverridesForType: WallpaperType?, _ perChatTheme: ThemeModeOverride?, _ perUserTheme: ThemeModeOverride?, _ themeBackgroundColor: Color) -> AppWallpaper {
         let mainType: WallpaperType
         if let t = themeOverridesForType { mainType = t }
         // type can be nil if override is empty `"wallpaper": "{}"`, in this case no wallpaper is needed, empty.
@@ -472,7 +462,7 @@ public struct ThemeOverrides: Codable {
         case WallpaperType.Empty:
             wallpaper = WallpaperType.Empty
         }
-        let background = (first?.background ?? second?.background ?? third?.background)?.colorFromReadableHex() ?? mainType.defaultBackgroundColor(base, materialBackgroundColor)
+        let background = (first?.background ?? second?.background ?? third?.background)?.colorFromReadableHex() ?? mainType.defaultBackgroundColor(base, themeBackgroundColor)
         let tint = (first?.tint ?? second?.tint ?? third?.tint)?.colorFromReadableHex() ?? mainType.defaultTintColor(base)
 
         return AppWallpaper(background: background, tint: tint, type: wallpaper)
@@ -512,7 +502,7 @@ extension [ThemeOverrides] {
             // prevent situation when two themes has the same type but different theme id (maybe something was changed in prefs by hand)
             $0.isSame(WallpaperType.from(theme.wallpaper), theme.base.themeName)
         }
-        var a = self // LALAL SHOULD BE A CLONE
+        var a = self.map { $0 }
         if let index {
             a[index] = theme
         } else {
@@ -611,17 +601,6 @@ struct ThemedBackground: ViewModifier {
             )
     }
 }
-
-let DEFAULT_PADDING = 20
-let DEFAULT_SPACE_AFTER_ICON = 4
-let DEFAULT_PADDING_HALF = DEFAULT_PADDING / 2
-let DEFAULT_BOTTOM_PADDING = 48
-let DEFAULT_BOTTOM_BUTTON_PADDING = 20
-
-let DEFAULT_START_MODAL_WIDTH = 388
-let DEFAULT_MIN_CENTER_MODAL_WIDTH = 590
-let DEFAULT_END_MODAL_WIDTH = 388
-let DEFAULT_MAX_IMAGE_WIDTH = 500
 
 let DarkColorPalette = Colors(
     primary: SimplexBlue,
@@ -798,7 +777,7 @@ extension AppWallpaper {
 func reactOnDarkThemeChanges(_ isDark: Bool) {
     systemInDarkThemeCurrently = isDark
     //sceneDelegate.window?.overrideUserInterfaceStyle == .unspecified
-    if (currentThemeDefault.get() == DefaultTheme.SYSTEM_THEME_NAME && CurrentColors.colors.isLight == isDark) {
+    if currentThemeDefault.get() == DefaultTheme.SYSTEM_THEME_NAME && CurrentColors.colors.isLight == isDark {
         // Change active colors from light to dark and back based on system theme
         ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
     }

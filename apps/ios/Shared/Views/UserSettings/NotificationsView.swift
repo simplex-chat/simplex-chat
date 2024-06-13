@@ -192,9 +192,7 @@ struct SelectionListView<Item: SelectableItem>: View {
                 }
             }
             .contentShape(Rectangle())
-            .if(tapped == item) { view in
-                view.listRowBackground(Color(uiColor: .secondarySystemFill))
-            }
+            .listRowBackground(tapped == item ? Color(uiColor: .secondarySystemFill) : theme.colors.background)
             .onTapGesture {
                 if selection == item { return }
                 if let f = onSelection {

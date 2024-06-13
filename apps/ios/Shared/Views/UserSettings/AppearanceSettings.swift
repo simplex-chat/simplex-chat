@@ -31,7 +31,6 @@ struct AppearanceSettings: View {
         if currentThemeDefault.get() == DefaultTheme.SYSTEM_THEME_NAME { nil as DefaultThemeMode? } else { CurrentColors.base.mode }
     }()
     @State private var darkModeTheme: String = UserDefaults.standard.string(forKey: DEFAULT_SYSTEM_DARK_THEME) ?? DefaultTheme.SIMPLEX.themeName
-    //@AppStorage(DEFAULT_SYSTEM_DARK_THEME) private var darkModeTheme: String!
     @State private var uiTintColor = getUIAccentColorDefault()
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileImageCornerRadius = defaultProfileImageCorner
 
@@ -107,10 +106,6 @@ struct AppearanceSettings: View {
                     } else if case DefaultThemeMode.dark = mode {
                         ThemeManager.applyTheme(systemDarkThemeDefault.get())
                     }
-//                    logger.debug("LALAL \(String(describing: sceneDelegate.window?.traitCollection.userInterfaceStyle))  \(sceneDelegate.window?.traitCollection.userInterfaceStyle == .dark)")
-//                    sceneDelegate.window?.overrideUserInterfaceStyle = userInterfaceStyle
-//                    logger.debug("LALAL \(String(describing: sceneDelegate.window?.traitCollection.userInterfaceStyle))  \(sceneDelegate.window?.traitCollection.userInterfaceStyle == .dark)")
-//                    setUserInterfaceStyleDefault(userInterfaceStyle)
                 }
                 .onChange(of: darkModeTheme) { darkTheme in
                     ThemeManager.changeDarkTheme(darkTheme)

@@ -276,12 +276,6 @@ public class IntDefault: Default<Int> {
     }
 }
 
-public class StringDefault: Default<String> {
-    public override func get() -> String {
-        self.defaults.string(forKey: self.key)!
-    }
-}
-
 public class Default<T> {
     var defaults: UserDefaults
     var key: String

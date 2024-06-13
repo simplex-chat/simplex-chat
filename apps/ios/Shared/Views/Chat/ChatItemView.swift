@@ -11,7 +11,6 @@ import SimpleXChat
 
 struct ChatItemView: View {
     @ObservedObject var chat: Chat
-    @EnvironmentObject var theme: AppTheme
     var chatItem: ChatItem
     var maxWidth: CGFloat = .infinity
     @State var scrollProxy: ScrollViewProxy? = nil
