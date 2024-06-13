@@ -369,7 +369,7 @@ activeAgentServers ChatConfig {defaultServers} p =
   fromMaybe (cfgServers p defaultServers)
     . nonEmpty
     . map (\ServerCfg {server} -> server)
-    . filter (\ServerCfg {enabled} -> enabled)
+    . filter (\ServerCfg {enabled} -> enabled == SEEnabled)
 
 cfgServers :: UserProtocol p => SProtocolType p -> (DefaultAgentServers -> NonEmpty (ProtoServerWithAuth p))
 cfgServers p DefaultAgentServers {smp, xftp} = case p of
@@ -1312,7 +1312,7 @@ processChatCommand' vr = \case
         servers' = fromMaybe (L.map toServerCfg defServers) $ nonEmpty servers
     pure $ CRUserProtoServers user $ AUPS $ UserProtoServers p servers' defServers
     where
-      toServerCfg server = ServerCfg {server, preset = True, tested = Nothing, enabled = True}
+      toServerCfg server = ServerCfg {server, preset = True, tested = Nothing, enabled = SEEnabled}
   GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
     processChatCommand $ APIGetUserProtoServers userId aProtocol
   APISetUserProtoServers userId (APSC p (ProtoServersConfig servers)) -> withUserId userId $ \user -> withServerProtocol p $ do
@@ -2250,7 +2250,9 @@ processChatCommand' vr = \case
   GetAgentServersSummary userId -> withUserId userId $ \user -> do
     agentServersSummary <- lift $ withAgent' getAgentServersSummary
     users <- withStore' getUsers
-    let presentedServersSummary = toPresentedServersSummary agentServersSummary users user
+    -- for smp and xftp, then pass to toPresentedServersSummary:
+    -- servers <- withStore' (`getProtocolServers` user)
+    let presentedServersSummary = toPresentedServersSummary agentServersSummary users user [] []
     pure $ CRAgentServersSummary user presentedServersSummary
   GetAgentWorkers -> lift $ CRAgentWorkersSummary <$> withAgent' getAgentWorkersSummary
   GetAgentWorkersDetails -> lift $ CRAgentWorkersDetails <$> withAgent' getAgentWorkersDetails
@@ -7743,7 +7745,7 @@ chatCommandP =
         (Just <$> (AutoAccept <$> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)))
         (pure Nothing)
     srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
-    toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
+    toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = SEEnabled}
     rcCtrlAddressP = RCCtrlAddress <$> ("addr=" *> strP) <*> (" iface=" *> (jsonP <|> text1P))
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char

@@ -17,49 +17,47 @@ data PresentedServersSummary = PresentedServersSummary
   deriving (Show)
 
 data ServersSummary = ServersSummary
-  { currentlyUsedSMPServers :: [CurrentlyUsedSMPServerSummary],
-    previouslyUsedSMPServers :: [PreviouslyUsedSMPServerSummary],
-    onlyProxiedSMPServers :: [SMPServer],
-    currentlyUsedXFTPServers :: [CurrentlyUsedXFTPServerSummary],
-    previouslyUsedXFTPServers :: [PreviouslyUsedXFTPServerSummary]
+  { currentlyUsedSMPServers :: [SMPServerSummary],
+    previouslyUsedSMPServers :: [SMPServerSummary],
+    onlyProxiedSMPServers :: [SMPServerSummary],
+    currentlyUsedXFTPServers :: [XFTPServerSummary],
+    previouslyUsedXFTPServers :: [XFTPServerSummary]
   }
   deriving (Show)
 
--- currently used in session - have state;
--- stats are optional in case none were collected yet (?)
-data CurrentlyUsedSMPServerSummary = CurrentlyUsedSMPServerSummary
+data SMPServerSummary = SMPServerSummary
   { smpServer :: SMPServer,
-    state :: SMPServerState,
+    -- known:
+    -- always Nothing in totalServersSummary - to avoid hassle of navigating to other users server settings;
+    -- always Just in userServersSummary - True if server is in list of user servers, otherwise False;
+    -- True - allows to navigate to server settings, False - allows to add server to configured as known (SEKnown)
+    known :: Maybe Bool,
+    -- state:
+    -- Just if currently used in session, otherwise Nothing;
+    -- onlyProxiedSMPServers would always have state and statsData as Nothing
+    state :: Maybe SMPServerState,
+    -- statsData:
+    -- even if state is Nothing, statsData can be Just - server could be used earlier in session
+    -- or in previous sessions and stats for it were restored
     statsData :: Maybe AgentSMPServerStatsData
   }
   deriving (Show)
 
--- could be used earlier in session, or in previous sessions and stats for it were restored
-data PreviouslyUsedSMPServerSummary = PreviouslyUsedSMPServerSummary
-  { smpServer :: SMPServer,
-    statsData :: AgentSMPServerStatsData
-  }
-  deriving (Show)
-
-data CurrentlyUsedXFTPServerSummary = CurrentlyUsedXFTPServerSummary
+data XFTPServerSummary = CurrentlyUsedXFTPServerSummary
   { xftpServer :: XFTPServer,
-    state :: XFTPServerState,
+    known :: Maybe Bool,
+    state :: Maybe XFTPServerState,
     statsData :: Maybe AgentXFTPServerStatsData
   }
   deriving (Show)
 
-data PreviouslyUsedXFTPServerSummary = PreviouslyUsedXFTPServerSummary
-  { xftpServer :: XFTPServer,
-    statsData :: AgentXFTPServerStatsData
-  }
-  deriving (Show)
-
-toPresentedServersSummary :: AgentServersSummary -> [User] -> User -> PresentedServersSummary
-toPresentedServersSummary _agentServersSummary _users _currentUser = do
+toPresentedServersSummary :: AgentServersSummary -> [User] -> User -> [ServerCfg p1] -> [ServerCfg p2] -> PresentedServersSummary
+toPresentedServersSummary _agentServersSummary _users _currentUser _smpSrvs _xftpSrvs = do
   -- map from agentServersSummary to PresentedServersSummary
   -- - userServersSummary is for currentUser
   -- - users are passed to exclude hidden users from totalServersSummary
   -- - if currentUser is hidden, it should be accounted in totalServersSummary
+  -- - set known based on passed smpSrvs and xftpSrvs
   PresentedServersSummary
     { userServersSummary =
         ServersSummary
@@ -79,13 +77,9 @@ toPresentedServersSummary _agentServersSummary _users _currentUser = do
           }
     }
 
-$(J.deriveJSON defaultJSON ''CurrentlyUsedSMPServerSummary)
+$(J.deriveJSON defaultJSON ''SMPServerSummary)
 
-$(J.deriveJSON defaultJSON ''PreviouslyUsedSMPServerSummary)
-
-$(J.deriveJSON defaultJSON ''CurrentlyUsedXFTPServerSummary)
-
-$(J.deriveJSON defaultJSON ''PreviouslyUsedXFTPServerSummary)
+$(J.deriveJSON defaultJSON ''XFTPServerSummary)
 
 $(J.deriveJSON defaultJSON ''ServersSummary)
 
