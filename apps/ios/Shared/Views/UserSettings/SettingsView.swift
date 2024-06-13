@@ -158,14 +158,39 @@ let onboardingStageDefault = EnumDefault<OnboardingStage>(defaults: UserDefaults
 
 let customDisappearingMessageTimeDefault = IntDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME)
 
-let currentThemeDefault = StringDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME)
-let systemDarkThemeDefault = StringDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SYSTEM_DARK_THEME)
-let currentThemeIdsDefault = GenericDefault<[String: String]>(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME_IDS, withDefault: [:], encode: { value in encodeJSON(value) }, decode: { value in decodeJSON(value) ?? [:]  } )
-let themeOverridesDefault: GenericDefault<[ThemeOverrides]> = GenericDefault(defaults: UserDefaults.standard, forKey: DEFAULT_THEME_OVERRIDES, withDefault: [] as [ThemeOverrides], encode: { value in encodeJSON(ThemesFile(themes: value)) }, decode: { value in if let res: ThemesFile = decodeJSON(value) { res.themes } else { [] } })
+let currentThemeDefault = Default<String>(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME)
+let systemDarkThemeDefault = Default<String>(defaults: UserDefaults.standard, forKey: DEFAULT_SYSTEM_DARK_THEME)
+let currentThemeIdsDefault = CodableDefault<[String: String]>(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME_IDS, withDefault: [:] )
+let themeOverridesDefault: CodableDefault<ThemesFile> = CodableDefault(defaults: UserDefaults.standard, forKey: DEFAULT_THEME_OVERRIDES, withDefault: ThemesFile())
 
 func setGroupDefaults() {
     privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))
 }
+
+public class CodableDefault<T: Codable> {
+    var defaults: UserDefaults
+    var key: String
+    var defaultValue: T
+
+    public init(defaults: UserDefaults = UserDefaults.standard, forKey: String, withDefault: T) {
+        self.defaults = defaults
+        self.key = forKey
+        self.defaultValue = withDefault
+    }
+
+    public func get() -> T {
+        if let value = defaults.string(forKey: key) {
+            return decodeJSON(value) ?? defaultValue
+        }
+        return defaultValue
+    }
+
+    public func set(_ value: T) {
+        defaults.set(encodeJSON(value), forKey: key)
+        defaults.synchronize()
+    }
+}
+
 
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme

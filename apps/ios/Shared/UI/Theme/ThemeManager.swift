@@ -91,7 +91,7 @@ public class ThemeManager {
     }
 
     static func currentThemeOverridesForExport(_ perChatTheme: ThemeModeOverride?, _ perUserTheme: ThemeModeOverrides?) -> ThemeOverrides {
-        let current = currentColors(nil, perChatTheme, perUserTheme, themeOverridesDefault.get())
+        let current = currentColors(nil, perChatTheme, perUserTheme, themeOverridesDefault.get().themes)
         let wType = current.wallpaper.type
         let wBackground = current.wallpaper.background
         let wTint = current.wallpaper.tint
@@ -110,7 +110,7 @@ public class ThemeManager {
 
     static func applyTheme(_ theme: String) {
         currentThemeDefault.set(theme)
-        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get().themes)
         SceneDelegate.windowStatic?.tintColor = UIColor(CurrentColors.colors.primary)
         SceneDelegate.windowStatic?.backgroundColor = UIColor(CurrentColors.colors.background)
         SceneDelegate.windowStatic?.overrideUserInterfaceStyle = switch currentThemeDefault.get() {
@@ -122,30 +122,30 @@ public class ThemeManager {
 
     static func changeDarkTheme(_ theme: String) {
         systemDarkThemeDefault.set(theme)
-        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get().themes)
     }
 
-    static func saveAndApplyThemeColor(_ baseTheme: DefaultTheme, _ name: ThemeColor, _ color: Color? = nil, _ pref: GenericDefault<[ThemeOverrides]>? = nil) {
+    static func saveAndApplyThemeColor(_ baseTheme: DefaultTheme, _ name: ThemeColor, _ color: Color? = nil, _ pref: CodableDefault<ThemesFile>? = nil) {
         let nonSystemThemeName = baseTheme.themeName
         let pref = pref ?? themeOverridesDefault
-        let overrides = pref.get()
+        let overrides = pref.get().themes
         let themeId = currentThemeIdsDefault.get()[nonSystemThemeName]
         let prevValue = overrides.getTheme(themeId) ?? ThemeOverrides(base: baseTheme)
-        pref.set(overrides.replace(prevValue.withUpdatedColor(name, color?.toReadableHex())))
+        pref.set(ThemesFile(themes: overrides.replace(prevValue.withUpdatedColor(name, color?.toReadableHex()))))
         var themeIds = currentThemeIdsDefault.get()
         themeIds[nonSystemThemeName] = prevValue.themeId
         currentThemeIdsDefault.set(themeIds)
-        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get().themes)
     }
 
     static func applyThemeColor(name: ThemeColor, color: Color? = nil, pref: Binding<ThemeModeOverride>) {
         pref.wrappedValue = pref.wrappedValue.withUpdatedColor(name, color?.toReadableHex())
     }
 
-    static func saveAndApplyWallpaper(_ baseTheme: DefaultTheme, _ type: WallpaperType?, _ pref: GenericDefault<[ThemeOverrides]>) {
+    static func saveAndApplyWallpaper(_ baseTheme: DefaultTheme, _ type: WallpaperType?, _ pref: CodableDefault<ThemesFile>?) {
         let nonSystemThemeName = baseTheme.themeName
         let pref = pref ?? themeOverridesDefault
-        let overrides = pref.get()
+        let overrides = pref.get().themes
         let theme = overrides.sameTheme(type, baseTheme.themeName)
         var prevValue = theme ?? ThemeOverrides(base: baseTheme)
         prevValue.wallpaper = if let type {
@@ -157,15 +157,15 @@ public class ThemeManager {
         } else {
             nil
         }
-        pref.set(overrides.replace(prevValue))
+        pref.set(ThemesFile(themes: overrides.replace(prevValue)))
         var themeIds = currentThemeIdsDefault.get()
         themeIds[nonSystemThemeName] = prevValue.themeId
         currentThemeIdsDefault.set(themeIds)
-        CurrentColors = currentColors( nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        CurrentColors = currentColors( nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get().themes)
     }
 
     static func copyFromSameThemeOverrides(_ type: WallpaperType?, _ lowerLevelOverride: ThemeModeOverride?, _ pref: Binding<ThemeModeOverride>) -> Bool {
-        let overrides = themeOverridesDefault.get()
+        let overrides = themeOverridesDefault.get().themes
         let sameWallpaper: ThemeWallpaper? = if let wallpaper = lowerLevelOverride?.wallpaper, lowerLevelOverride?.type?.sameType(type) == true {
             wallpaper
         } else {
@@ -215,11 +215,11 @@ public class ThemeManager {
         pref.wrappedValue = prevValue
     }
 
-    static func saveAndApplyThemeOverrides(_ theme: ThemeOverrides, _ pref: GenericDefault<[ThemeOverrides]>? = nil) {
+    static func saveAndApplyThemeOverrides(_ theme: ThemeOverrides, _ pref: CodableDefault<ThemesFile>? = nil) {
         let wallpaper = theme.wallpaper?.importFromString()
         let nonSystemThemeName = theme.base.themeName
-        let pref: GenericDefault<[ThemeOverrides]> = pref ?? themeOverridesDefault
-        let overrides = pref.get()
+        let pref: CodableDefault<ThemesFile> = pref ?? themeOverridesDefault
+        let overrides = pref.get().themes
         var prevValue = overrides.getTheme(nil, wallpaper?.toAppWallpaper().type, theme.base) ?? ThemeOverrides(base: theme.base)
         if prevValue.wallpaper?.imageFile != nil {
             // LALAL
@@ -228,26 +228,26 @@ public class ThemeManager {
         prevValue.base = theme.base
         prevValue.colors = theme.colors
         prevValue.wallpaper = wallpaper
-        pref.set(overrides.replace(prevValue))
+        pref.set(ThemesFile(themes: overrides.replace(prevValue)))
         currentThemeDefault.set(nonSystemThemeName)
         var currentThemeIds = currentThemeIdsDefault.get()
         currentThemeIds[nonSystemThemeName] = prevValue.themeId
         currentThemeIdsDefault.set(currentThemeIds)
-        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get().themes)
     }
 
-    static func resetAllThemeColors(_ pref: GenericDefault<[ThemeOverrides]>? = nil) {
+    static func resetAllThemeColors(_ pref: CodableDefault<ThemesFile>? = nil) {
         let nonSystemThemeName = nonSystemThemeName()
-        let pref: GenericDefault<[ThemeOverrides]> = pref ?? themeOverridesDefault
-        let overrides = pref.get()
+        let pref: CodableDefault<ThemesFile> = pref ?? themeOverridesDefault
+        let overrides = pref.get().themes
         guard let themeId = currentThemeIdsDefault.get()[nonSystemThemeName],
               var prevValue = overrides.getTheme(themeId)
         else { return }
         prevValue.colors = ThemeColors()
         prevValue.wallpaper?.background = nil
         prevValue.wallpaper?.tint = nil
-        pref.set(overrides.replace(prevValue))
-        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        pref.set(ThemesFile(themes: overrides.replace(prevValue)))
+        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get().themes)
     }
 
     static func resetAllThemeColors(_ pref: Binding<ThemeModeOverride>) {
@@ -259,9 +259,9 @@ public class ThemeManager {
     }
 
     static func removeTheme(_ themeId: String?) {
-        var themes = themeOverridesDefault.get().map { $0 }
+        var themes = themeOverridesDefault.get().themes.map { $0 }
         themes.removeAll(where: { $0.themeId == themeId })
-        themeOverridesDefault.set(themes)
+        themeOverridesDefault.set(ThemesFile(themes: themes))
     }
 }
 

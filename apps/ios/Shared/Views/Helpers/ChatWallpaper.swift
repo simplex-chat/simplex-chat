@@ -260,7 +260,7 @@ public enum PresetWallpaper {
     func toType(_ base: DefaultTheme, _ scale: Float? = nil) -> WallpaperType {
         WallpaperType.Preset(
             filename,
-            scale ?? themeOverridesDefault.get().first { $0.wallpaper != nil && $0.wallpaper!.preset == filename && $0.base == base }?.wallpaper?.scale ?? 1
+            scale ?? themeOverridesDefault.get().themes.first { $0.wallpaper != nil && $0.wallpaper!.preset == filename && $0.base == base }?.wallpaper?.scale ?? 1
         )
     }
 

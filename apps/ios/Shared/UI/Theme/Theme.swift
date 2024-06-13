@@ -728,7 +728,7 @@ extension GroupInfo {
     }
 }
 
-var CurrentColors: ThemeManager.ActiveTheme = ThemeManager.currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get()) {
+var CurrentColors: ThemeManager.ActiveTheme = ThemeManager.currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get().themes) {
     didSet {
         MaterialTheme.shared.name = CurrentColors.name
         MaterialTheme.shared.base = CurrentColors.base
