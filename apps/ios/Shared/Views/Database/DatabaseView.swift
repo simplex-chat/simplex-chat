@@ -19,6 +19,7 @@ enum DatabaseAlert: Identifiable {
     case chatDeleted
     case deleteLegacyDatabase
     case deleteFilesAndMedia
+    case deleteTempFiles
     case setChatItemTTL(ttl: ChatItemTTL)
     case error(title: LocalizedStringKey, error: String = "")
 
@@ -33,6 +34,7 @@ enum DatabaseAlert: Identifiable {
         case .chatDeleted: return "chatDeleted"
         case .deleteLegacyDatabase: return "deleteLegacyDatabase"
         case .deleteFilesAndMedia: return "deleteFilesAndMedia"
+        case .deleteTempFiles: return "deleteTempFiles"
         case .setChatItemTTL: return "setChatItemTTL"
         case let .error(title, _): return "error \(title)"
         }
@@ -49,6 +51,7 @@ struct DatabaseView: View {
     @State private var progressIndicator = false
     @AppStorage(DEFAULT_CHAT_ARCHIVE_NAME) private var chatArchiveName: String?
     @AppStorage(DEFAULT_CHAT_ARCHIVE_TIME) private var chatArchiveTime: Double = 0
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var dbContainer = dbContainerGroupDefault.get()
     @State private var legacyDatabase = hasLegacyDatabase()
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
@@ -191,6 +194,16 @@ struct DatabaseView: View {
                     }
                 }
             }
+
+            if developerTools {
+                Section {
+                    Button("Delete temporary files", role: .destructive) {
+                        alert = .deleteTempFiles
+                    }
+                } header: {
+                    Text("Temp files")
+                }
+            }
         }
         .onAppear {
             runChat = m.chatRunning ?? true
@@ -287,6 +300,15 @@ struct DatabaseView: View {
                 message: Text("This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain."),
                 primaryButton: .destructive(Text("Delete")) {
                     deleteFiles()
+                },
+                secondaryButton: .cancel()
+            )
+        case .deleteTempFiles:
+            return Alert(
+                title: Text("Delete temporary files?"),
+                message: Text("This action cannot be undone - all temporary files will be deleted."),
+                primaryButton: .destructive(Text("Delete")) {
+                    deleteAppTempFiles()
                 },
                 secondaryButton: .cancel()
             )
