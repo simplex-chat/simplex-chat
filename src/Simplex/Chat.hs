@@ -20,6 +20,7 @@ import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry)
 import Control.Logger.Simple
 import Control.Monad
+import Simplex.Chat.Stats
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
@@ -2246,7 +2247,11 @@ processChatCommand' vr = \case
         CLUserContact ucId -> "UserContact " <> show ucId
         CLFile fId -> "File " <> show fId
   DebugEvent event -> toView event >> ok_
-  GetAgentServersSummary -> lift $ CRAgentServersSummary <$> withAgent' getAgentServersSummary
+  GetAgentServersSummary userId -> withUserId userId $ \user -> do
+    agentServersSummary <- lift $ withAgent' getAgentServersSummary
+    users <- withStore' getUsers
+    let presentedServersSummary = toPresentedServersSummary agentServersSummary users user
+    pure $ CRAgentServersSummary user presentedServersSummary
   GetAgentWorkers -> lift $ CRAgentWorkersSummary <$> withAgent' getAgentWorkersSummary
   GetAgentWorkersDetails -> lift $ CRAgentWorkersDetails <$> withAgent' getAgentWorkersDetails
   GetAgentStats -> lift $ CRAgentStats . map stat <$> withAgent' getAgentStats
@@ -7593,7 +7598,7 @@ chatCommandP =
       ("/version" <|> "/v") $> ShowVersion,
       "/debug locks" $> DebugLocks,
       "/debug event " *> (DebugEvent <$> jsonP),
-      "/get servers summary" $> GetAgentServersSummary,
+      "/get servers summary " *> (GetAgentServersSummary <$> A.decimal),
       "/get stats" $> GetAgentStats,
       "/reset stats" $> ResetAgentStats,
       "/get subs" $> GetAgentSubs,

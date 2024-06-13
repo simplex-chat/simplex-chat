@@ -160,6 +160,7 @@ library
       Simplex.Chat.Remote.RevHTTP
       Simplex.Chat.Remote.Transport
       Simplex.Chat.Remote.Types
+      Simplex.Chat.Stats
       Simplex.Chat.Store
       Simplex.Chat.Store.AppSettings
       Simplex.Chat.Store.Connections
