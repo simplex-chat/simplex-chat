@@ -33,5 +33,5 @@ let WarningYellow = Color(255, 192, 0, a: 255)
 let FileLight = Color(183, 190, 199, a: 255)
 let FileDark = Color(101, 101, 106, a: 255)
 
-var MenuTextColor: Color { if isInDarkTheme() { MaterialTheme.shared.colors.onBackground.opacity(0.8) } else { Color.black } }
-var NoteFolderIconColor: Color { MaterialTheme.shared.appColors.primaryVariant2 }
+var MenuTextColor: Color { if isInDarkTheme() { AppTheme.shared.colors.onBackground.opacity(0.8) } else { Color.black } }
+var NoteFolderIconColor: Color { AppTheme.shared.appColors.primaryVariant2 }

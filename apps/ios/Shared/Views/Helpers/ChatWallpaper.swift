@@ -390,7 +390,7 @@ public enum WallpaperType {
 
 
 struct ChatViewBackground: ViewModifier {
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     var image: Image
     var imageType: WallpaperType
     var background: Color

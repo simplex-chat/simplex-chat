@@ -29,7 +29,7 @@ struct PasscodeView: View {
         }
         .padding(.horizontal, 40)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(MaterialTheme.shared.colors.background)
+        .background(AppTheme.shared.colors.background)
     }
 
     private func verticalPasscodeView(_ g: GeometryProxy) -> some View {

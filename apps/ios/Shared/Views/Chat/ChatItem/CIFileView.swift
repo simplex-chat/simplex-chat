@@ -12,7 +12,7 @@ import SimpleXChat
 struct CIFileView: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     let file: CIFile?
     let edited: Bool
 
@@ -144,7 +144,7 @@ struct CIFileView: View {
             case .sndError: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .rcvInvitation:
                 if fileSizeValid(file) {
-                    fileIcon("arrow.down.doc.fill", color: MaterialTheme.colors.primary)
+                    fileIcon("arrow.down.doc.fill", color: theme.colors.primary)
                 } else {
                     fileIcon("doc.fill", color: .orange, innerIcon: "exclamationmark", innerIconSize: 12)
                 }
@@ -156,7 +156,7 @@ struct CIFileView: View {
                     progressView()
                 }
             case .rcvAborted:
-                fileIcon("doc.fill", color: MaterialTheme.colors.primary, innerIcon: "exclamationmark.arrow.circlepath", innerIconSize: 12)
+                fileIcon("doc.fill", color: theme.colors.primary, innerIcon: "exclamationmark.arrow.circlepath", innerIconSize: 12)
             case .rcvComplete: fileIcon("doc.fill")
             case .rcvCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .rcvError: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)

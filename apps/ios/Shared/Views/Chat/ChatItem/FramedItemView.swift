@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct FramedItemView: View {
     @EnvironmentObject var m: ChatModel
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
     @Binding var revealed: Bool
@@ -77,9 +77,9 @@ struct FramedItemView: View {
             }
         }
             .onAppear {
-                metaColor = metaColor == .secondary ? MaterialTheme.colors.secondary : metaColor
+                metaColor = metaColor == .secondary ? theme.colors.secondary : metaColor
             }
-            .background(chatItemFrameColorMaybeImageOrVideo(chatItem, MaterialTheme))
+            .background(chatItemFrameColorMaybeImageOrVideo(chatItem, theme))
             .cornerRadius(18)
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
@@ -171,13 +171,13 @@ struct FramedItemView: View {
                 .font(.caption)
                 .lineLimit(1)
         }
-        .foregroundColor(MaterialTheme.colors.secondary)
+        .foregroundColor(theme.colors.secondary)
         .padding(.horizontal, 12)
         .padding(.top, 6)
         .padding(.bottom, pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
         .overlay(DetermineWidth())
         .frame(minWidth: msgWidth, alignment: .leading)
-        .background(chatItemFrameContextColor(chatItem, MaterialTheme))
+        .background(chatItemFrameContextColor(chatItem, theme))
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
@@ -229,7 +229,7 @@ struct FramedItemView: View {
             // if enable this always, size of the framed voice message item will be incorrect after end of playback
             .overlay { if case .voice = chatItem.content.msgContent {} else { DetermineWidth() } }
             .frame(minWidth: msgWidth, alignment: .leading)
-            .background(chatItemFrameContextColor(chatItem, MaterialTheme))
+            .background(chatItemFrameContextColor(chatItem, theme))
 
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
@@ -244,7 +244,7 @@ struct FramedItemView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(sender)
                         .font(.caption)
-                        .foregroundColor(MaterialTheme.colors.secondary)
+                        .foregroundColor(theme.colors.secondary)
                         .lineLimit(1)
                     ciQuotedMsgTextView(qi, lines: 2)
                 }
@@ -359,19 +359,19 @@ func onlyImageOrVideo(_ ci: ChatItem) -> Bool {
     return false
 }
 
-func chatItemFrameColorMaybeImageOrVideo(_ ci: ChatItem, _ theme: MaterialTheme) -> Color {
+func chatItemFrameColorMaybeImageOrVideo(_ ci: ChatItem, _ theme: AppTheme) -> Color {
     onlyImageOrVideo(ci)
     ? Color.clear
     : chatItemFrameColor(ci, theme)
 }
 
-func chatItemFrameColor(_ ci: ChatItem, _ theme: MaterialTheme) -> Color {
+func chatItemFrameColor(_ ci: ChatItem, _ theme: AppTheme) -> Color {
     ci.chatDir.sent
     ? theme.appColors.sentMessage
     : theme.appColors.receivedMessage
 }
 
-func chatItemFrameContextColor(_ ci: ChatItem, _ theme: MaterialTheme) -> Color {
+func chatItemFrameContextColor(_ ci: ChatItem, _ theme: AppTheme) -> Color {
     ci.chatDir.sent
     ? theme.appColors.sentQuote
     : theme.appColors.receivedQuote

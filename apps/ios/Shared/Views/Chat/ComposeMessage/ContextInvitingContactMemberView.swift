@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct ContextInvitingContactMemberView: View {
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
 
     var body: some View {
         HStack {
@@ -20,7 +20,7 @@ struct ContextInvitingContactMemberView: View {
         .padding(12)
         .frame(minHeight: 50)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(MaterialTheme.appColors.sentMessage)
+        .background(theme.appColors.sentMessage)
         .padding(.top, 8)
     }
 }

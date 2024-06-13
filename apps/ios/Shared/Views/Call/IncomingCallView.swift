@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct IncomingCallView: View {
     @EnvironmentObject var m: ChatModel
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     @ObservedObject var cc = CallController.shared
 
     var body: some View {
@@ -44,7 +44,7 @@ struct IncomingCallView: View {
                     cc.endCall(invitation: invitation)
                 }
 
-                callButton("Ignore", "multiply", MaterialTheme.colors.primary) {
+                callButton("Ignore", "multiply", theme.colors.primary) {
                     cc.activeCallInvitation = nil
                 }
 

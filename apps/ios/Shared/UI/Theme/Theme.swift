@@ -584,16 +584,16 @@ struct ThemeModeOverride: Codable {
 }
 
 struct ThemedBackground: ViewModifier {
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
 
     func body(content: Content) -> some View {
         content
             .background(
-                MaterialTheme.base == DefaultTheme.SIMPLEX
+                theme.base == DefaultTheme.SIMPLEX
                 ? LinearGradient(
                     colors: [
-                        MaterialTheme.colors.background.lighter(0.4),
-                        MaterialTheme.colors.background.darker(0.4)
+                        theme.colors.background.lighter(0.4),
+                        theme.colors.background.darker(0.4)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -605,9 +605,9 @@ struct ThemedBackground: ViewModifier {
                 )
             )
             .background(
-                MaterialTheme.base == DefaultTheme.SIMPLEX
+                theme.base == DefaultTheme.SIMPLEX
                 ? Color.clear
-                : MaterialTheme.colors.background
+                : theme.colors.background
             )
     }
 }
@@ -730,12 +730,12 @@ extension GroupInfo {
 
 var CurrentColors: ThemeManager.ActiveTheme = ThemeManager.currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get().themes) {
     didSet {
-        MaterialTheme.shared.name = CurrentColors.name
-        MaterialTheme.shared.base = CurrentColors.base
-        MaterialTheme.shared.colors.updateColorsFrom(CurrentColors.colors)
-        MaterialTheme.shared.appColors.updateColorsFrom(CurrentColors.appColors)
-        MaterialTheme.shared.wallpaper.updateWallpaperFrom(CurrentColors.wallpaper)
-        MaterialTheme.shared.objectWillChange.send()
+        AppTheme.shared.name = CurrentColors.name
+        AppTheme.shared.base = CurrentColors.base
+        AppTheme.shared.colors.updateColorsFrom(CurrentColors.colors)
+        AppTheme.shared.appColors.updateColorsFrom(CurrentColors.appColors)
+        AppTheme.shared.wallpaper.updateWallpaperFrom(CurrentColors.wallpaper)
+        AppTheme.shared.objectWillChange.send()
     }
 }
 
@@ -743,8 +743,8 @@ func isInDarkTheme() -> Bool { !CurrentColors.colors.isLight }
 
 //func isSystemInDarkTheme(): Bool
 
-class MaterialTheme: ObservableObject {
-    static let shared = MaterialTheme(name: CurrentColors.name, base: CurrentColors.base, colors: CurrentColors.colors, appColors: CurrentColors.appColors, wallpaper: CurrentColors.wallpaper)
+class AppTheme: ObservableObject {
+    static let shared = AppTheme(name: CurrentColors.name, base: CurrentColors.base, colors: CurrentColors.colors, appColors: CurrentColors.appColors, wallpaper: CurrentColors.wallpaper)
 
     var name: String
     var base: DefaultTheme
@@ -838,7 +838,7 @@ func reactOnDarkThemeChanges(_ isDark: Bool) {
 //                theme.wallpaper.copy()
 //            }.apply { updateWallpaperFrom(theme.wallpaper) }
 //            CompositionLocalProvider(
-//                LocalContentColor provides MaterialTheme.colors.onBackground,
+//                LocalContentColor provides theme.colors.onBackground,
 //                LocalAppColors provides rememberedAppColors,
 //                LocalAppWallpaper provides rememberedWallpaper,
 //                content = content)
@@ -864,7 +864,7 @@ func reactOnDarkThemeChanges(_ isDark: Bool) {
 //                theme.wallpaper.copy()
 //            }.apply { updateWallpaperFrom(theme.wallpaper) }
 //            CompositionLocalProvider(
-//                LocalContentColor provides MaterialTheme.colors.onBackground,
+//                LocalContentColor provides theme.colors.onBackground,
 //                LocalAppColors provides rememberedAppColors,
 //                LocalAppWallpaper provides rememberedWallpaper,
 //                content = content)

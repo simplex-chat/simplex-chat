@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct ContactConnectionInfo: View {
     @EnvironmentObject var m: ChatModel
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @State var contactConnection: PendingContactConnection
     @State private var alert: CCInfoAlert?
@@ -151,7 +151,7 @@ struct ContactConnectionInfo: View {
                 HStack(spacing: 6) {
                     Text("Incognito")
                     Image(systemName: "info.circle")
-                        .foregroundColor(MaterialTheme.colors.primary)
+                        .foregroundColor(theme.colors.primary)
                         .font(.system(size: 14))
                 }
                 .onTapGesture {

@@ -39,8 +39,8 @@ struct SimpleXApp: App {
             // so that it's computed by the time view renders, and not on event after rendering
             ContentView(contentAccessAuthenticationExtended: !authenticationExpired())
                 .environmentObject(chatModel)
-                .environmentObject(MaterialTheme.shared)
-                //.tint(MaterialTheme.shared.colors.primary)
+                .environmentObject(AppTheme.shared)
+                //.tint(AppTheme.shared.colors.primary)
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")
                     chatModel.appOpenUrl = url

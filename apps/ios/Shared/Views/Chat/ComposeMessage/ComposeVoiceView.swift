@@ -25,7 +25,7 @@ func voiceMessageTime_(_ time: TimeInterval?) -> String {
 
 struct ComposeVoiceView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     var recordingFileName: String
     @Binding var recordingTime: TimeInterval?
     @Binding var recordingState: VoiceMessageRecordingState
@@ -50,7 +50,7 @@ struct ComposeVoiceView: View {
         }
         .padding(.vertical, 1)
         .frame(height: ComposeVoiceView.previewHeight)
-        .background(MaterialTheme.appColors.sentMessage)
+        .background(theme.appColors.sentMessage)
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
     }
@@ -80,7 +80,7 @@ struct ComposeVoiceView: View {
                     Button {
                         startPlayback()
                     } label: {
-                        playPauseIcon("play.fill", MaterialTheme.colors.secondary)
+                        playPauseIcon("play.fill", theme.colors.secondary)
                     }
                     Text(voiceMessageTime_(recordingTime))
                 case .playing:
@@ -88,7 +88,7 @@ struct ComposeVoiceView: View {
                         audioPlayer?.pause()
                         playbackState = .paused
                     } label: {
-                        playPauseIcon("pause.fill", MaterialTheme.colors.secondary)
+                        playPauseIcon("pause.fill", theme.colors.secondary)
                     }
                     Text(voiceMessageTime_(playbackTime))
                 case .paused:
@@ -96,7 +96,7 @@ struct ComposeVoiceView: View {
                         audioPlayer?.play()
                         playbackState = .playing
                     } label: {
-                        playPauseIcon("play.fill", MaterialTheme.colors.secondary)
+                        playPauseIcon("play.fill", theme.colors.secondary)
                     }
                     Text(voiceMessageTime_(playbackTime))
                 }
@@ -162,7 +162,7 @@ struct ComposeVoiceView: View {
     }
 
     private struct ProgressBar: View {
-        @EnvironmentObject var MaterialTheme: MaterialTheme
+        @EnvironmentObject var theme: AppTheme
         var length: TimeInterval
         @Binding var progress: TimeInterval?
 
@@ -170,7 +170,7 @@ struct ComposeVoiceView: View {
             GeometryReader { geometry in
                 ZStack {
                     Rectangle()
-                        .fill(MaterialTheme.colors.primary)
+                        .fill(theme.colors.primary)
                         .frame(width: min(CGFloat((progress ?? TimeInterval(0)) / length) * geometry.size.width, geometry.size.width), height: 4)
                         .animation(.linear, value: progress)
                 }

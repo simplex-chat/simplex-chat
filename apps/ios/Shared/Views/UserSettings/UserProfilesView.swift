@@ -8,7 +8,7 @@ import SimpleXChat
 
 struct UserProfilesView: View {
     @EnvironmentObject private var m: ChatModel
-    @EnvironmentObject private var MaterialTheme: MaterialTheme
+    @EnvironmentObject private var theme: AppTheme
     @Binding var showSettings: Bool
     @Environment(\.editMode) private var editMode
     @AppStorage(DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE) private var showHiddenProfilesNotice = true
@@ -359,7 +359,7 @@ struct UserProfilesView: View {
                         }
                     }
                 }
-                .tint(MaterialTheme.colors.primary)
+                .tint(theme.colors.primary)
             }
         }
         if #available(iOS 16, *) {

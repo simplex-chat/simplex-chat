@@ -90,7 +90,7 @@ enum SendReceipts: Identifiable, Hashable {
 
 struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
     @State var contact: Contact
@@ -438,7 +438,7 @@ struct ChatInfoView: View {
         HStack {
             Text("Network status")
             Image(systemName: "info.circle")
-                .foregroundColor(MaterialTheme.colors.primary)
+                .foregroundColor(theme.colors.primary)
                 .font(.system(size: 14))
             Spacer()
             Text(chatModel.contactNetworkStatus(contact).statusString)

@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     @Binding var showSettings: Bool
     @State private var searchMode = false
     @FocusState private var searchFocussed
@@ -87,7 +87,7 @@ struct ChatListView: View {
             ))
         }
         .listStyle(.plain)
-        .background(MaterialTheme.colors.background)
+        .background(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(searchMode)
         .toolbar {
@@ -138,7 +138,7 @@ struct ChatListView: View {
             showUnreadAndFavorites = !showUnreadAndFavorites
         } label: {
             Image(systemName: "line.3.horizontal.decrease.circle" + (showUnreadAndFavorites ? ".fill" : ""))
-                .foregroundColor(MaterialTheme.colors.primary)
+                .foregroundColor(theme.colors.primary)
         }
     }
 
@@ -183,7 +183,7 @@ struct ChatListView: View {
     private func unreadBadge(_ text: Text? = Text(" "), size: CGFloat = 18) -> some View {
         Circle()
             .frame(width: size, height: size)
-            .foregroundColor(MaterialTheme.colors.primary)
+            .foregroundColor(theme.colors.primary)
     }
 
     private func onboardingButtons() -> some View {
@@ -194,7 +194,7 @@ struct ChatListView: View {
                 p.addLine(to: CGPoint(x: 0, y: 10))
                 p.addLine(to: CGPoint(x: 8, y: 0))
             }
-            .fill(MaterialTheme.colors.primary)
+            .fill(theme.colors.primary)
             .frame(width: 20, height: 10)
             .padding(.trailing, 12)
 
@@ -217,7 +217,7 @@ struct ChatListView: View {
                 .padding(.vertical, 10)
                 .padding(.horizontal, 20)
         }
-        .background(MaterialTheme.colors.primary)
+        .background(theme.colors.primary)
         .foregroundColor(.white)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
@@ -280,7 +280,7 @@ struct ChatListView: View {
 
 struct ChatListSearchBar: View {
     @EnvironmentObject var m: ChatModel
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     @Binding var searchMode: Bool
     @FocusState.Binding var searchFocussed: Bool
     @Binding var searchText: String
@@ -335,7 +335,7 @@ struct ChatListSearchBar: View {
 
                 if searchFocussed {
                     Text("Cancel")
-                        .foregroundColor(MaterialTheme.colors.primary)
+                        .foregroundColor(theme.colors.primary)
                         .onTapGesture {
                             searchText = ""
                             searchFocussed = false

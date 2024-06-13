@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct ContactRequestView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     var contactRequest: UserContactRequest
     @ObservedObject var chat: Chat
 
@@ -24,7 +24,7 @@ struct ContactRequestView: View {
                     Text(contactRequest.chatViewName)
                         .font(.title3)
                         .fontWeight(.bold)
-                        .foregroundColor(MaterialTheme.colors.primary)
+                        .foregroundColor(theme.colors.primary)
                         .padding(.leading, 8)
                         .frame(alignment: .topLeading)
                     Spacer()

@@ -10,7 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct ContextItemView: View {
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
     let contextItem: ChatItem
     let contextIcon: String
@@ -44,7 +44,7 @@ struct ContextItemView: View {
         .padding(12)
         .frame(minHeight: 50)
         .frame(maxWidth: .infinity)
-        .background(chatItemFrameColor(contextItem, MaterialTheme))
+        .background(chatItemFrameColor(contextItem, theme))
         .padding(.top, 8)
     }
 

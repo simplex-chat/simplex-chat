@@ -78,7 +78,7 @@ struct SetNotificationsMode: View {
 }
 
 struct NtfModeSelector: View {
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     var mode: NotificationsMode
     @Binding var selection: NotificationsMode
     @State private var tapped = false
@@ -88,7 +88,7 @@ struct NtfModeSelector: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(mode.label)
                     .font(.headline)
-                    .foregroundColor(selection == mode ? MaterialTheme.colors.primary : MaterialTheme.colors.secondary)
+                    .foregroundColor(selection == mode ? theme.colors.primary : theme.colors.secondary)
                 Text(ntfModeDescription(mode))
                     .lineLimit(10)
                     .font(.subheadline)
@@ -96,11 +96,11 @@ struct NtfModeSelector: View {
             .padding(12)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(tapped ? Color(uiColor: .secondarySystemFill) : MaterialTheme.colors.background)
+        .background(tapped ? Color(uiColor: .secondarySystemFill) : theme.colors.background)
         .clipShape(RoundedRectangle(cornerRadius: 18))
         .overlay(
             RoundedRectangle(cornerRadius: 18)
-                .stroke(selection == mode ? MaterialTheme.colors.primary : Color(uiColor: .secondarySystemFill), lineWidth: 2)
+                .stroke(selection == mode ? theme.colors.primary : Color(uiColor: .secondarySystemFill), lineWidth: 2)
         )
         ._onButtonGesture { down in
             tapped = down

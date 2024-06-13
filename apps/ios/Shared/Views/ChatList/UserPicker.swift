@@ -10,7 +10,7 @@ struct UserPicker: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.scenePhase) var scenePhase
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     @Binding var showSettings: Bool
     @Binding var showConnectDesktop: Bool
     @Binding var userPickerVisible: Bool
@@ -77,7 +77,7 @@ struct UserPicker: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .background(
             Rectangle()
-                .fill(MaterialTheme.colors.surface)
+                .fill(theme.colors.surface)
                 .cornerRadius(16)
                 .shadow(color: .black.opacity(0.12), radius: 24, x: 0, y: 0)
         )
@@ -132,7 +132,7 @@ struct UserPicker: View {
                 if user.activeUser {
                     Image(systemName: "checkmark")
                 } else if u.unreadCount > 0 {
-                    unreadCounter(u.unreadCount, color: user.showNtfs ? MaterialTheme.colors.primary : MaterialTheme.colors.secondary)
+                    unreadCounter(u.unreadCount, color: user.showNtfs ? theme.colors.primary : theme.colors.secondary)
                 } else if !user.showNtfs {
                     Image(systemName: "speaker.slash")
                 }
@@ -140,7 +140,7 @@ struct UserPicker: View {
             .padding(.trailing)
             .padding([.leading, .vertical], 12)
         })
-        .buttonStyle(PressedButtonStyle(defaultColor: MaterialTheme.colors.surface, pressedColor: Color(uiColor: .secondarySystemFill)))
+        .buttonStyle(PressedButtonStyle(defaultColor: theme.colors.surface, pressedColor: Color(uiColor: .secondarySystemFill)))
     }
 
     private func menuButton(_ title: LocalizedStringKey, icon: String, action: @escaping () -> Void) -> some View {
@@ -157,7 +157,7 @@ struct UserPicker: View {
             .padding(.vertical, 22)
             .frame(height: menuButtonHeight)
         }
-        .buttonStyle(PressedButtonStyle(defaultColor: MaterialTheme.colors.surface, pressedColor: Color(uiColor: .secondarySystemFill)))
+        .buttonStyle(PressedButtonStyle(defaultColor: theme.colors.surface, pressedColor: Color(uiColor: .secondarySystemFill)))
     }
 }
 

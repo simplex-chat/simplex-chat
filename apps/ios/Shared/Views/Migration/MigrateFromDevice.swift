@@ -53,7 +53,7 @@ private enum MigrateFromDeviceViewAlert: Identifiable {
 
 struct MigrateFromDevice: View {
     @EnvironmentObject var m: ChatModel
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var showSettings: Bool
     @Binding var showProgressOnSettings: Bool
@@ -216,7 +216,7 @@ struct MigrateFromDevice: View {
             Section {
                 Button(action: { migrationState = .archiving }) {
                     settingsRow("tray.and.arrow.up") {
-                        Text("Archive and upload").foregroundColor(MaterialTheme.colors.primary)
+                        Text("Archive and upload").foregroundColor(theme.colors.primary)
                     }
                 }
             } header: {
@@ -250,7 +250,7 @@ struct MigrateFromDevice: View {
                 }
             }
             let ratio = Float(uploadedBytes) / Float(totalBytes)
-            MigrateFromDevice.largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: uploadedBytes, countStyle: .binary)) uploaded", MaterialTheme.colors.primary)
+            MigrateFromDevice.largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: uploadedBytes, countStyle: .binary)) uploaded", theme.colors.primary)
         }
         .onAppear {
             startUploading(totalBytes, archivePath)
@@ -264,7 +264,7 @@ struct MigrateFromDevice: View {
                     migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: totalBytes, fileId: 0, archivePath: archivePath, ctrl: nil)
                 }) {
                     settingsRow("tray.and.arrow.up") {
-                        Text("Repeat upload").foregroundColor(MaterialTheme.colors.primary)
+                        Text("Repeat upload").foregroundColor(theme.colors.primary)
                     }
                 }
             } header: {
@@ -300,7 +300,7 @@ struct MigrateFromDevice: View {
                 }
                 Button(action: { finishMigration(fileId, ctrl) }) {
                     settingsRow("checkmark") {
-                        Text("Finalize migration").foregroundColor(MaterialTheme.colors.primary)
+                        Text("Finalize migration").foregroundColor(theme.colors.primary)
                     }
                 }
             } footer: {
@@ -341,7 +341,7 @@ struct MigrateFromDevice: View {
                     }
                     Button(action: { alert = .deleteChat() }) {
                         settingsRow("trash.fill") {
-                            Text("Delete database from this device").foregroundColor(MaterialTheme.colors.primary)
+                            Text("Delete database from this device").foregroundColor(theme.colors.primary)
                         }
                     }
                 } header: {

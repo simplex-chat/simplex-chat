@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct CIVoiceView: View {
     @ObservedObject var chat: Chat
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     var chatItem: ChatItem
     let recordingFile: CIFile?
     let duration: Int
@@ -93,7 +93,7 @@ struct CIVoiceView: View {
     }
 
     private func metaView() -> some View {
-        CIMetaView(chat: chat, chatItem: chatItem, metaColor: MaterialTheme.colors.secondary)
+        CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
     }
 }
 
@@ -119,7 +119,7 @@ struct VoiceMessagePlayerTime: View {
 
 struct VoiceMessagePlayer: View {
     @EnvironmentObject var chatModel: ChatModel
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     var chatItem: ChatItem
     var recordingFile: CIFile?
     var recordingTime: TimeInterval
@@ -210,7 +210,7 @@ struct VoiceMessagePlayer: View {
                 .foregroundColor(color)
                 .padding(.leading, image == "play.fill" ? 4 : 0)
                 .frame(width: 56, height: 56)
-                .background(showBackground ? chatItemFrameColor(chatItem, MaterialTheme) : .clear)
+                .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
                 .clipShape(Circle())
             if recordingTime > 0 {
                 ProgressCircle(length: recordingTime, progress: $playbackTime)
@@ -232,7 +232,7 @@ struct VoiceMessagePlayer: View {
     }
 
     private struct ProgressCircle: View {
-        @EnvironmentObject var MaterialTheme: MaterialTheme
+        @EnvironmentObject var theme: AppTheme
         var length: TimeInterval
         @Binding var progress: TimeInterval?
 
@@ -240,7 +240,7 @@ struct VoiceMessagePlayer: View {
             Circle()
                 .trim(from: 0, to: ((progress ?? TimeInterval(0)) / length))
                 .stroke(
-                    MaterialTheme.colors.primary,
+                    theme.colors.primary,
                     style: StrokeStyle(lineWidth: 3)
                 )
                 .rotationEffect(.degrees(-90))
@@ -252,7 +252,7 @@ struct VoiceMessagePlayer: View {
         ProgressView()
             .frame(width: 30, height: 30)
             .frame(width: 56, height: 56)
-            .background(showBackground ? chatItemFrameColor(chatItem, MaterialTheme) : .clear)
+            .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
             .clipShape(Circle())
     }
 

@@ -26,7 +26,7 @@ private let rowHeights: [DynamicTypeSize: CGFloat] = [
 
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ObservedObject var chat: Chat
     @State private var showContactRequestDialog = false
@@ -225,7 +225,7 @@ struct ChatListNavLink: View {
         } label: {
             Label("Join", systemImage: chat.chatInfo.incognito ? "theatermasks" : "ipad.and.arrow.forward")
         }
-        .tint(chat.chatInfo.incognito ? .indigo : MaterialTheme.colors.primary)
+        .tint(chat.chatInfo.incognito ? .indigo : theme.colors.primary)
     }
 
     @ViewBuilder private func markReadButton() -> some View {
@@ -235,14 +235,14 @@ struct ChatListNavLink: View {
             } label: {
                 Label("Read", systemImage: "checkmark")
             }
-            .tint(MaterialTheme.colors.primary)
+            .tint(theme.colors.primary)
         } else {
             Button {
                 Task { await markChatUnread(chat) }
             } label: {
                 Label("Unread", systemImage: "circlebadge.fill")
             }
-            .tint(MaterialTheme.colors.primary)
+            .tint(theme.colors.primary)
         }
 
     }
@@ -307,7 +307,7 @@ struct ChatListNavLink: View {
             Button {
                 Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) }
             } label: { Label("Accept", systemImage: "checkmark") }
-                .tint(MaterialTheme.colors.primary)
+                .tint(theme.colors.primary)
             Button {
                 Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) }
             } label: {
@@ -347,7 +347,7 @@ struct ChatListNavLink: View {
             } label: {
                 Label("Name", systemImage: "pencil")
             }
-            .tint(MaterialTheme.colors.primary)
+            .tint(theme.colors.primary)
         }
         .frame(height: rowHeights[dynamicTypeSize])
         .appSheet(isPresented: $showContactConnectionInfo) {

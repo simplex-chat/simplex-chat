@@ -14,7 +14,7 @@ private let memberImageSize: CGFloat = 34
 
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @State var theme: MaterialTheme = buildTheme()
+    @State var theme: AppTheme = buildTheme()
     @Environment(\.dismiss) var dismiss
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
@@ -540,7 +540,7 @@ struct ChatView: View {
 
     private struct ChatItemWithMenu: View {
         @EnvironmentObject var m: ChatModel
-        @EnvironmentObject var MaterialTheme: MaterialTheme
+        @EnvironmentObject var theme: AppTheme
         @ObservedObject var chat: Chat
         var chatItem: ChatItem
         var maxWidth: CGFloat
@@ -674,8 +674,8 @@ struct ChatView: View {
                     playbackState: $playbackState,
                     playbackTime: $playbackTime
                 )
-                .environmentObject(MaterialTheme)
-                .uiKitContextMenu(hasImageOrVideo: ci.content.msgContent?.isImageOrVideo == true, maxWidth: maxWidth, itemWidth: $itemWidth, menu: uiMenu, allowMenu: $allowMenu, backgroundColor: MaterialTheme.colors.background)
+                .environmentObject(theme)
+                .uiKitContextMenu(hasImageOrVideo: ci.content.msgContent?.isImageOrVideo == true, maxWidth: maxWidth, itemWidth: $itemWidth, menu: uiMenu, allowMenu: $allowMenu, backgroundColor: theme.colors.background)
                 .accessibilityLabel("")
                 if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
                     chatItemReactions(ci)
@@ -742,7 +742,7 @@ struct ChatView: View {
                             Text("\(r.totalReacted)")
                                 .font(.caption)
                                 .fontWeight(r.userReacted ? .bold : .light)
-                                .foregroundColor(r.userReacted ? MaterialTheme.colors.primary : MaterialTheme.colors.secondary)
+                                .foregroundColor(r.userReacted ? theme.colors.primary : theme.colors.secondary)
                         }
                     }
                     .padding(.horizontal, 6)
@@ -1232,12 +1232,12 @@ struct ChatView: View {
     }
 }
 
-private func buildTheme() -> MaterialTheme {
+private func buildTheme() -> AppTheme {
     if let cId = ChatModel.shared.chatId, let chat = ChatModel.shared.getChat(cId) {
         let perChatTheme = if case let .direct(contact) = chat.chatInfo {
-            contact.uiThemes?.preferredMode(!MaterialTheme.shared.colors.isLight)
+            contact.uiThemes?.preferredMode(!AppTheme.shared.colors.isLight)
         } else if case let .group(groupInfo) = chat.chatInfo {
-            groupInfo.uiThemes?.preferredMode(!MaterialTheme.shared.colors.isLight)
+            groupInfo.uiThemes?.preferredMode(!AppTheme.shared.colors.isLight)
         } else {
             nil as ThemeModeOverride?
         }
@@ -1247,9 +1247,9 @@ private func buildTheme() -> MaterialTheme {
             nil as ThemeManager.ActiveTheme?
         }
         let theme = overrides ?? CurrentColors
-        return MaterialTheme(name: theme.name, base: theme.base, colors: theme.colors, appColors: theme.appColors, wallpaper: theme.wallpaper)
+        return AppTheme(name: theme.name, base: theme.base, colors: theme.colors, appColors: theme.appColors, wallpaper: theme.wallpaper)
     } else {
-        return MaterialTheme.shared
+        return AppTheme.shared
     }
 }
 

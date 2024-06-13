@@ -14,7 +14,7 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Environment(\.colorScheme) var colorScheme
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var sceneDelegate: SceneDelegate
 
     var contentAccessAuthenticationExtended: Bool
@@ -108,8 +108,8 @@ struct ContentView: View {
                 initializationView()
             }
         }
-        .tint(MaterialTheme.colors.primary)
-        .background(MaterialTheme.colors.background)
+        .tint(theme.colors.primary)
+        .background(theme.colors.background)
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
         .sheet(isPresented: $showSettings) {
             SettingsView(showSettings: $showSettings)
@@ -243,7 +243,7 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity )
         .background(
             Rectangle()
-                .fill(MaterialTheme.colors.background)
+                .fill(theme.colors.background)
         ) 
     }
 

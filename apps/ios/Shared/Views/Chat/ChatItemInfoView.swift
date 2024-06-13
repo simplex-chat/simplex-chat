@@ -12,7 +12,7 @@ import SimpleXChat
 struct ChatItemInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var MaterialTheme: MaterialTheme
+    @EnvironmentObject var theme: AppTheme
     var ci: ChatItem
     @Binding var chatItemInfo: ChatItemInfo?
     @State private var selection: CIInfoTab = .history
@@ -200,7 +200,7 @@ struct ChatItemInfoView: View {
             textBubble(itemVersion.msgContent.text, itemVersion.formattedText, nil)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(chatItemFrameColor(ci, MaterialTheme))
+                .background(chatItemFrameColor(ci, theme))
                 .cornerRadius(18)
                 .contextMenu {
                     if itemVersion.msgContent.text != "" {
@@ -269,7 +269,7 @@ struct ChatItemInfoView: View {
             textBubble(qi.text, qi.formattedText, qi.getSender(nil))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(quotedMsgFrameColor(qi, MaterialTheme))
+                .background(quotedMsgFrameColor(qi, theme))
                 .cornerRadius(18)
                 .contextMenu {
                     if qi.text != "" {
@@ -293,7 +293,7 @@ struct ChatItemInfoView: View {
         .frame(maxWidth: maxWidth, alignment: .leading)
     }
 
-    func quotedMsgFrameColor(_ qi: CIQuote, _ theme: MaterialTheme) -> Color {
+    func quotedMsgFrameColor(_ qi: CIQuote, _ theme: AppTheme) -> Color {
         (qi.chatDir?.sent ?? false)
         ? theme.appColors.sentMessage
         : theme.appColors.receivedMessage
@@ -418,7 +418,7 @@ struct ChatItemInfoView: View {
                     .foregroundColor(.secondary).opacity(0.67)
             }
             let v = Group {
-                if let (icon, statusColor) = status.statusIcon(MaterialTheme.colors.secondary, MaterialTheme.colors.primary) {
+                if let (icon, statusColor) = status.statusIcon(theme.colors.secondary, theme.colors.primary) {
                     switch status {
                     case .sndRcvd:
                         ZStack(alignment: .trailing) {
