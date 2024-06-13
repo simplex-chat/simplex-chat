@@ -1242,7 +1242,7 @@ private func buildTheme() -> AppTheme {
             nil as ThemeModeOverride?
         }
         let overrides = if perChatTheme != nil {
-            ThemeManager.currentColors(nil, perChatTheme, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get().themes)
+            ThemeManager.currentColors(nil, perChatTheme, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
         } else {
             nil as ThemeManager.ActiveTheme?
         }

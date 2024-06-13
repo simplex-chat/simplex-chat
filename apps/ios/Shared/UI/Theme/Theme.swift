@@ -346,10 +346,6 @@ public struct ThemeWallpaper: Codable {
     }
 }
 
-public struct ThemesFile: Codable {
-    var themes: [ThemeOverrides] = []
-}
-
 public struct ThemeOverrides: Codable {
     var themeId: String = UUID().uuidString
     var base: DefaultTheme
@@ -707,7 +703,7 @@ extension GroupInfo {
     }
 }
 
-var CurrentColors: ThemeManager.ActiveTheme = ThemeManager.currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get().themes) {
+var CurrentColors: ThemeManager.ActiveTheme = ThemeManager.currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get()) {
     didSet {
         AppTheme.shared.name = CurrentColors.name
         AppTheme.shared.base = CurrentColors.base
