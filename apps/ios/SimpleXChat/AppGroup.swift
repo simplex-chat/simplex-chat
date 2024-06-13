@@ -265,13 +265,13 @@ public class EnumDefault<T: RawRepresentable> where T.RawValue == String {
 }
 
 public class BoolDefault: Default<Bool> {
-    public override func get() -> Bool {
+    public func get() -> Bool {
         self.defaults.bool(forKey: self.key)
     }
 }
 
 public class IntDefault: Default<Int> {
-    public override func get() -> Int {
+    public func get() -> Int {
         self.defaults.integer(forKey: self.key)
     }
 }
@@ -288,10 +288,6 @@ public class Default<T> {
     public func set(_ value: T) {
         defaults.set(value, forKey: key)
         defaults.synchronize()
-    }
-
-    public func get() -> T {
-        defaults.value(forKey: key) as! T
     }
 }
 

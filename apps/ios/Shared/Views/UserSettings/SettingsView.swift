@@ -158,13 +158,34 @@ let onboardingStageDefault = EnumDefault<OnboardingStage>(defaults: UserDefaults
 
 let customDisappearingMessageTimeDefault = IntDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME)
 
-let currentThemeDefault = Default<String>(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME)
-let systemDarkThemeDefault = Default<String>(defaults: UserDefaults.standard, forKey: DEFAULT_SYSTEM_DARK_THEME)
+let currentThemeDefault = StringDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME, withDefault: DefaultTheme.SYSTEM_THEME_NAME)
+let systemDarkThemeDefault = StringDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SYSTEM_DARK_THEME, withDefault: DefaultTheme.SIMPLEX.themeName)
 let currentThemeIdsDefault = CodableDefault<[String: String]>(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME_IDS, withDefault: [:] )
 let themeOverridesDefault: CodableDefault<ThemesFile> = CodableDefault(defaults: UserDefaults.standard, forKey: DEFAULT_THEME_OVERRIDES, withDefault: ThemesFile())
 
 func setGroupDefaults() {
     privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))
+}
+
+public class StringDefault {
+    var defaults: UserDefaults
+    var key: String
+    var defaultValue: String
+
+    public init(defaults: UserDefaults = UserDefaults.standard, forKey: String, withDefault: String) {
+        self.defaults = defaults
+        self.key = forKey
+        self.defaultValue = withDefault
+    }
+
+    public func get() -> String {
+        defaults.string(forKey: key) ?? defaultValue
+    }
+
+    public func set(_ value: String) {
+        defaults.set(value, forKey: key)
+        defaults.synchronize()
+    }
 }
 
 public class CodableDefault<T: Codable> {
