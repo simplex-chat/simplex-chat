@@ -271,6 +271,11 @@
   <string name="srv_error_host">Server address is incompatible with network settings.</string>
   <string name="srv_error_version">Server version is incompatible with network settings.</string>
 
+  <!-- CIFileStatus errors -->
+  <string name="file_error_auth">Wrong key or unknown file chunk address - most likely file is deleted.</string>
+  <string name="file_error_no_file">File not found - most likely file was deleted or cancelled.</string>
+  <string name="file_error_relay">File server error: %1$s</string>
+
   <!-- Chat Actions - ChatItemView.kt (and general) -->
   <string name="reply_verb">Reply</string>
   <string name="share_verb">Share</string>
@@ -411,6 +416,8 @@
   <string name="error_saving_file">Error saving file</string>
   <string name="loading_remote_file_title">Loading the file </string>
   <string name="loading_remote_file_desc">Please, wait while the file is being loaded from the linked mobile</string>
+  <string name="file_error">File error</string>
+  <string name="temporary_file_error">Temporary file error</string>
 
   <!-- Voice messages -->
   <string name="voice_message">Voice message</string>
@@ -1425,6 +1432,8 @@
   <string name="info_row_database_id">Database ID</string>
   <string name="info_row_debug_delivery">Debug delivery</string>
   <string name="info_row_updated_at">Record updated at</string>
+  <string name="info_row_message_status">Message status</string>
+  <string name="info_row_file_status">File status</string>
   <string name="info_row_sent_at">Sent at</string>
   <string name="info_row_created_at">Created at</string>
   <string name="info_row_received_at">Received at</string>
@@ -1433,6 +1442,8 @@
   <string name="info_row_disappears_at">Disappears at</string>
   <string name="share_text_database_id">Database ID: %d</string>
   <string name="share_text_updated_at">Record updated at: %s</string>
+  <string name="share_text_message_status">Message status: %s</string>
+  <string name="share_text_file_status">File status: %s</string>
   <string name="share_text_sent_at">Sent at: %s</string>
   <string name="share_text_created_at">Created at: %s</string>
   <string name="share_text_received_at">Received at: %s</string>
@@ -1932,6 +1943,9 @@
   <string name="remote_ctrl_was_disconnected_title">Connection stopped</string>
   <string name="remote_host_disconnected_from"><![CDATA[Disconnected from mobile <b>%s</b> with the reason: %s]]></string>
   <string name="remote_ctrl_disconnected_with_reason">Disconnected with the reason: %s</string>
+  <string name="remote_ctrl_connection_stopped_desc">Please check that mobile and desktop are connected to the same local network, and that desktop firewall allows the connection.\nPlease share any other issues with the developers.</string>
+  <string name="remote_ctrl_connection_stopped_identity_desc">This link was used with another mobile device, please create a new link on the desktop.</string>
+  <string name="copy_error">Copy error</string>
   <string name="disconnect_desktop_question">Disconnect desktop?</string>
   <string name="only_one_device_can_work_at_the_same_time">Only one device can work at the same time</string>
   <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Open <i>Use from desktop</i> in mobile app and scan QR code.]]></string>

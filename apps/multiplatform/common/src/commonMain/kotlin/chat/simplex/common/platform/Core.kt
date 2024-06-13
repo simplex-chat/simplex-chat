@@ -1,6 +1,7 @@
 package chat.simplex.common.platform
 
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.currentUser
 import chat.simplex.common.views.helpers.*
@@ -57,6 +58,9 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
   try {
     if (chatModel.ctrlInitInProgress.value) return
     chatModel.ctrlInitInProgress.value = true
+    if (!appPrefs.storeDBPassphrase.get() && !appPrefs.initialRandomDBPassphrase.get()) {
+      ksDatabasePassword.remove()
+    }
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
     val confirm = confirmMigrations ?: if (appPreferences.developerTools.get() && appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
     var migrated: Array<Any> = chatMigrateInit(dbAbsolutePrefixPath, dbKey, MigrationConfirmation.Error.value)

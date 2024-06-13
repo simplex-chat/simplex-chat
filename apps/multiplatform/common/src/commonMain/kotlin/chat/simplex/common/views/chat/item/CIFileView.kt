@@ -87,6 +87,26 @@ fun CIFileView(
               )
             FileProtocol.LOCAL -> {}
           }
+        file.fileStatus is CIFileStatus.RcvError ->
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.file_error),
+            file.fileStatus.rcvFileError.errorInfo
+          )
+        file.fileStatus is CIFileStatus.RcvWarning ->
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.temporary_file_error),
+            file.fileStatus.rcvFileError.errorInfo
+          )
+        file.fileStatus is CIFileStatus.SndError ->
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.file_error),
+            file.fileStatus.sndFileError.errorInfo
+          )
+        file.fileStatus is CIFileStatus.SndWarning ->
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.temporary_file_error),
+            file.fileStatus.sndFileError.errorInfo
+          )
         file.forwardingAllowed() -> {
           withLongRunningApi(slow = 600_000) {
             var filePath = getLoadedFilePath(file)
@@ -157,6 +177,7 @@ fun CIFileView(
           is CIFileStatus.SndComplete -> fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
           is CIFileStatus.SndCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.SndError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
+          is CIFileStatus.SndWarning -> fileIcon(innerIcon = painterResource(MR.images.ic_warning_filled))
           is CIFileStatus.RcvInvitation ->
             if (fileSizeValid(file))
               fileIcon(innerIcon = painterResource(MR.images.ic_arrow_downward), color = MaterialTheme.colors.primary)
@@ -174,6 +195,7 @@ fun CIFileView(
           is CIFileStatus.RcvComplete -> fileIcon()
           is CIFileStatus.RcvCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.RcvError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
+          is CIFileStatus.RcvWarning -> fileIcon(innerIcon = painterResource(MR.images.ic_warning_filled))
           is CIFileStatus.Invalid -> fileIcon(innerIcon = painterResource(MR.images.ic_question_mark))
         }
       } else {

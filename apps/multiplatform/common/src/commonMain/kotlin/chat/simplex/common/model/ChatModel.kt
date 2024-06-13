@@ -2674,6 +2674,7 @@ data class CIFile(
     is CIFileStatus.SndComplete -> true
     is CIFileStatus.SndCancelled -> true
     is CIFileStatus.SndError -> true
+    is CIFileStatus.SndWarning -> true
     is CIFileStatus.RcvInvitation -> false
     is CIFileStatus.RcvAccepted -> false
     is CIFileStatus.RcvTransfer -> false
@@ -2681,6 +2682,7 @@ data class CIFile(
     is CIFileStatus.RcvCancelled -> false
     is CIFileStatus.RcvComplete -> true
     is CIFileStatus.RcvError -> false
+    is CIFileStatus.RcvWarning -> false
     is CIFileStatus.Invalid -> false
   }
 
@@ -2696,6 +2698,7 @@ data class CIFile(
       }
     is CIFileStatus.SndCancelled -> null
     is CIFileStatus.SndError -> null
+    is CIFileStatus.SndWarning -> sndCancelAction
     is CIFileStatus.RcvInvitation -> null
     is CIFileStatus.RcvAccepted -> rcvCancelAction
     is CIFileStatus.RcvTransfer -> rcvCancelAction
@@ -2703,6 +2706,7 @@ data class CIFile(
     is CIFileStatus.RcvCancelled -> null
     is CIFileStatus.RcvComplete -> null
     is CIFileStatus.RcvError -> null
+    is CIFileStatus.RcvWarning -> rcvCancelAction
     is CIFileStatus.Invalid -> null
   }
 
@@ -2876,14 +2880,16 @@ sealed class CIFileStatus {
   @Serializable @SerialName("sndTransfer") class SndTransfer(val sndProgress: Long, val sndTotal: Long): CIFileStatus()
   @Serializable @SerialName("sndComplete") object SndComplete: CIFileStatus()
   @Serializable @SerialName("sndCancelled") object SndCancelled: CIFileStatus()
-  @Serializable @SerialName("sndError") object SndError: CIFileStatus()
+  @Serializable @SerialName("sndError") class SndError(val sndFileError: FileError): CIFileStatus()
+  @Serializable @SerialName("sndWarning") class SndWarning(val sndFileError: FileError): CIFileStatus()
   @Serializable @SerialName("rcvInvitation") object RcvInvitation: CIFileStatus()
   @Serializable @SerialName("rcvAccepted") object RcvAccepted: CIFileStatus()
   @Serializable @SerialName("rcvTransfer") class RcvTransfer(val rcvProgress: Long, val rcvTotal: Long): CIFileStatus()
   @Serializable @SerialName("rcvAborted") object RcvAborted: CIFileStatus()
   @Serializable @SerialName("rcvComplete") object RcvComplete: CIFileStatus()
   @Serializable @SerialName("rcvCancelled") object RcvCancelled: CIFileStatus()
-  @Serializable @SerialName("rcvError") object RcvError: CIFileStatus()
+  @Serializable @SerialName("rcvError") class RcvError(val rcvFileError: FileError): CIFileStatus()
+  @Serializable @SerialName("rcvWarning") class RcvWarning(val rcvFileError: FileError): CIFileStatus()
   @Serializable @SerialName("invalid") class Invalid(val text: String): CIFileStatus()
 
   val sent: Boolean get() = when (this) {
@@ -2892,6 +2898,7 @@ sealed class CIFileStatus {
     is SndComplete -> true
     is SndCancelled -> true
     is SndError -> true
+    is SndWarning -> true
     is RcvInvitation -> false
     is RcvAccepted -> false
     is RcvTransfer -> false
@@ -2899,7 +2906,23 @@ sealed class CIFileStatus {
     is RcvComplete -> false
     is RcvCancelled -> false
     is RcvError -> false
+    is RcvWarning -> false
     is Invalid -> false
+  }
+}
+
+@Serializable
+sealed class FileError {
+  @Serializable @SerialName("auth") class Auth: FileError()
+  @Serializable @SerialName("noFile") class NoFile: FileError()
+  @Serializable @SerialName("relay") class Relay(val srvError: SrvError): FileError()
+  @Serializable @SerialName("other") class Other(val fileError: String): FileError()
+
+  val errorInfo: String get() = when (this) {
+    is FileError.Auth -> generalGetString(MR.strings.file_error_auth)
+    is FileError.NoFile -> generalGetString(MR.strings.file_error_no_file)
+    is FileError.Relay -> generalGetString(MR.strings.file_error_relay).format(srvError.errorInfo)
+    is FileError.Other -> generalGetString(MR.strings.ci_status_other_error).format(fileError)
   }
 }
 
