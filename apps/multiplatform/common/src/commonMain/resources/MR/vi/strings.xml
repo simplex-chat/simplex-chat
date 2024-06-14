@@ -301,4 +301,33 @@
     <string name="connected_to_desktop">Đã kết nối tới máy tính</string>
     <string name="group_member_status_announced">đang kết nối (đã được thông báo)</string>
     <string name="display_name_connecting">đang kết nối…</string>
+    <string name="group_member_status_introduced">đang kết nối (đã được giới thiệu)</string>
+    <string name="group_member_status_intro_invitation">đang kết nối (lời mời giới thiệu)</string>
+    <string name="remote_ctrl_error_bad_state">Kết nối tới máy tính đang ở trong tình trạng không tốt</string>
+    <string name="remote_host_was_disconnected_title">Kết nối đã bị ngắt</string>
+    <string name="connect_via_link_or_qr">Kết nối thông qua liên kết / mã QR</string>
+    <string name="connect_plan_connect_to_yourself">Kết nối tới chính bạn?</string>
+    <string name="connection_request_sent">Yêu cầu kết nối đã được gửi!</string>
+    <string name="connect_via_link">Kết nối thông qua liên kết</string>
+    <string name="icon_descr_call_connecting">Đang kết nối cuộc gọi</string>
+    <string name="desktop_connection_terminated">Kết nối đã bị ngắt</string>
+    <string name="connecting_to_desktop">Đang kết nối tới máy tính</string>
+    <string name="v5_3_discover_join_groups_descr">- kết nối tới dịch vụ thư mục (BETA)!
+\n- đánh dấu đã nhận (tối đa 20 thành viên).
+\n- nhanh hơn và ổn định hơn.</string>
+    <string name="remote_ctrl_was_disconnected_title">Kết nối đã bị ngắt</string>
+    <string name="remote_host_error_bad_state">Kết nối tới điện thoại <b>%s</b> đang ở trong tình trạng không tốt</string>
+    <string name="connect_to_desktop">Kết nối tới máy tính</string>
+    <string name="connection_timeout">Hết thời gian chờ kết nối</string>
+    <string name="connection_error">Lỗi kết nối</string>
+    <string name="info_row_connection">Kết nối</string>
+    <string name="connect_plan_connect_via_link">Kết nối thông qua liên kết?</string>
+    <string name="connection_local_display_name">kết nối %1$d</string>
+    <string name="display_name_connection_established">kết nối đã được tạo lập</string>
+    <string name="connect_with_contact_name_question">Kết nối với %1$s?</string>
+    <string name="connection_error_auth">Lỗi kết nối (AUTH)</string>
+    <string name="network_session_mode_entity">Kết nối</string>
+    <string name="callstatus_connecting">đang kết nối cuộc gọi…</string>
+    <string name="connect_via_contact_link">Kết nối thông qua địa chỉ liên lạc?</string>
+    <string name="connect_via_invitation_link">Kết nối thông qua liên kết dùng một lần?</string>
 </resources>
