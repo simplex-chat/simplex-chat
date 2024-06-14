@@ -46,7 +46,7 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {core
       exitFailure
     run db@ChatDatabase {chatStore} = do
       let agentStatsPath = dbFilePrefix <> "_agent_stats.json"
-          aCfg = (agentConfig cfg) {agentStatsBackupFile = Just agentStatsPath}
+          aCfg = (agentConfig cfg) {agentStatsLogFile = Just agentStatsPath}
           cfg' = cfg {agentConfig = aCfg}
       u_ <- getSelectActiveUser chatStore
       cc <- newChatController db u_ cfg' opts False
