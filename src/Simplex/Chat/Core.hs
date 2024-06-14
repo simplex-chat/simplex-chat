@@ -25,6 +25,7 @@ import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Chat.View (serializeChatResponse)
+import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore, withTransaction)
 import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
@@ -44,8 +45,11 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {core
       putStrLn $ "Error opening database: " <> show e
       exitFailure
     run db@ChatDatabase {chatStore} = do
+      let agentStatsPath = dbFilePrefix <> "_agent_stats.json"
+          aCfg = (agentConfig cfg) {agentStatsBackupFile = Just agentStatsPath}
+          cfg' = cfg {agentConfig = aCfg}
       u_ <- getSelectActiveUser chatStore
-      cc <- newChatController db u_ cfg opts False
+      cc <- newChatController db u_ cfg' opts False
       u <- maybe (createActiveUser cc) pure u_
       unless testView $ putStrLn $ "Current user: " <> userStr u
       runSimplexChat opts u cc chat
