@@ -357,6 +357,7 @@ struct DatabaseView: View {
             Task {
                 do {
                     try await apiDeleteStorage()
+                    try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
                     do {
                         let config = ArchiveConfig(archivePath: archivePath.path)
                         let archiveErrors = try await apiImportArchive(config: config)
