@@ -55,17 +55,17 @@ jobs:
             ghc: "8.10.7"
             cache_path: ~/.cabal/store
           - os: ubuntu-20.04
-            ghc: "9.6.3"
+            ghc: "9.6.4"
             cache_path: ~/.cabal/store
             asset_name: simplex-chat-ubuntu-20_04-x86-64
             desktop_asset_name: simplex-desktop-ubuntu-20_04-x86_64.deb
           - os: ubuntu-22.04
-            ghc: "9.6.3"
+            ghc: "9.6.4"
             cache_path: ~/.cabal/store
             asset_name: simplex-chat-ubuntu-22_04-x86-64
             desktop_asset_name: simplex-desktop-ubuntu-22_04-x86_64.deb
           - os: macos-latest
-            ghc: "9.6.3"
+            ghc: "9.6.4"
             cache_path: ~/.cabal/store
             asset_name: simplex-chat-macos-aarch64
             desktop_asset_name: simplex-desktop-macos-aarch64.dmg
@@ -75,7 +75,7 @@ jobs:
             asset_name: simplex-chat-macos-x86-64
             desktop_asset_name: simplex-desktop-macos-x86_64.dmg
           - os: windows-latest
-            ghc: "9.6.3"
+            ghc: "9.6.4"
             cache_path: C:/cabal
             asset_name: simplex-chat-windows-x86-64
             desktop_asset_name: simplex-desktop-windows-x86_64.msi
