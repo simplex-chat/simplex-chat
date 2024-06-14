@@ -1771,4 +1771,20 @@
     <string name="e2ee_info_no_pq"><![CDATA[Zprávy, soubory a hovory jsou chráněny <b>koncovým</b> šifrováním s dokonalým dopředným utajením, odmítnutím a obnovením po vloupání.]]></string>
     <string name="wallpaper_advanced_settings">Pokročilé nastavení</string>
     <string name="chat_theme_apply_to_all_modes">Všechny barevné režimy</string>
+    <string name="snd_error_quota">Překročená kapacita - příjemci neobdrží dříve poslané zprávy.</string>
+    <string name="network_smp_proxy_mode_always">Vždy</string>
+    <string name="chat_theme_apply_to_mode">Použít na</string>
+    <string name="v5_8_safe_files_descr">Potvrdit soubory z neznámých serverů.</string>
+    <string name="chat_theme_apply_to_dark_mode">Tmavý mód</string>
+    <string name="theme_destination_app_theme">Téma aplikace</string>
+    <string name="network_smp_proxy_mode_always_description">Vždy užít soukromé směrování.</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Povolit downgrade</string>
+    <string name="copy_error">Kopírovat chybu</string>
+    <string name="settings_section_title_chat_colors">Barvy chatu</string>
+    <string name="settings_section_title_chat_theme">Téma chatu</string>
+    <string name="color_primary_variant2">Další zbarvení 2</string>
+    <string name="theme_black">Černé</string>
+    <string name="color_mode">Mód barvy</string>
+    <string name="color_mode_dark">Tmavé</string>
+    <string name="dark_mode_colors">Mód tmavých barev</string>
 </resources>
