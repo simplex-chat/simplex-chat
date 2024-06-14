@@ -7,26 +7,25 @@
 //
 
 import Foundation
-import SimpleXChat
 import SwiftUI
 
-enum DefaultTheme: String, Codable {
+public enum DefaultTheme: String, Codable {
     case LIGHT
     case DARK
     case SIMPLEX
     case BLACK
 
-    static let SYSTEM_THEME_NAME: String = "SYSTEM"
+    public static let SYSTEM_THEME_NAME: String = "SYSTEM"
 
-    var themeName: String { self.rawValue }
+    public var themeName: String { self.rawValue }
 
-    var mode: DefaultThemeMode {
+    public var mode: DefaultThemeMode {
         self == .LIGHT
         ? DefaultThemeMode.light
         : DefaultThemeMode.dark
     }
 
-    func hasChangedAnyColor(_ overrides: ThemeOverrides?) -> Bool {
+    public func hasChangedAnyColor(_ overrides: ThemeOverrides?) -> Bool {
         if let overrides {
             overrides.colors != ThemeColors() || overrides.wallpaper != nil && (overrides.wallpaper?.background != nil || overrides.wallpaper?.tint != nil)
         } else {
@@ -35,24 +34,24 @@ enum DefaultTheme: String, Codable {
     }
 }
 
-enum DefaultThemeMode: String, Codable {
+public enum DefaultThemeMode: String, Codable {
     case light
     case dark
 }
 
-class Colors: ObservableObject, NSCopying {
-    @Published var primary: Color
-    @Published var primaryVariant: Color
-    @Published var secondary: Color
-    @Published var secondaryVariant: Color
-    @Published var background: Color
-    @Published var surface: Color
-    @Published var error: Color
-    @Published var onBackground: Color
-    @Published var onSurface: Color
-    @Published var isLight: Bool
+public class Colors: ObservableObject, NSCopying {
+    @Published public var primary: Color
+    @Published public var primaryVariant: Color
+    @Published public var secondary: Color
+    @Published public var secondaryVariant: Color
+    @Published public var background: Color
+    @Published public var surface: Color
+    @Published public var error: Color
+    @Published public var onBackground: Color
+    @Published public var onSurface: Color
+    @Published public var isLight: Bool
 
-    init(primary: Color, primaryVariant: Color, secondary: Color, secondaryVariant: Color, background: Color, surface: Color, error: Color, onBackground: Color, onSurface: Color, isLight: Bool) {
+    public init(primary: Color, primaryVariant: Color, secondary: Color, secondaryVariant: Color, background: Color, surface: Color, error: Color, onBackground: Color, onSurface: Color, isLight: Bool) {
         self.primary = primary
         self.primaryVariant = primaryVariant
         self.secondary = secondary
@@ -64,22 +63,22 @@ class Colors: ObservableObject, NSCopying {
         self.onSurface = onSurface
         self.isLight = isLight
     }
-    func copy(with zone: NSZone? = nil) -> Any {
+    public func copy(with zone: NSZone? = nil) -> Any {
         Colors(primary: self.primary, primaryVariant: self.primaryVariant, secondary: self.secondary, secondaryVariant: self.secondaryVariant, background: self.background, surface: self.surface, error: self.error, onBackground: self.onBackground, onSurface: self.onSurface, isLight: self.isLight)
     }
 
-    func clone() -> Colors { copy() as! Colors }
+    public func clone() -> Colors { copy() as! Colors }
 }
 
-class AppColors: ObservableObject, NSCopying {
-    @Published var title: Color
-    @Published var primaryVariant2: Color
-    @Published var sentMessage: Color
-    @Published var sentQuote: Color
-    @Published var receivedMessage: Color
-    @Published var receivedQuote: Color
+public class AppColors: ObservableObject, NSCopying {
+    @Published public var title: Color
+    @Published public var primaryVariant2: Color
+    @Published public var sentMessage: Color
+    @Published public var sentQuote: Color
+    @Published public var receivedMessage: Color
+    @Published public var receivedQuote: Color
 
-    init(title: Color, primaryVariant2: Color, sentMessage: Color, sentQuote: Color, receivedMessage: Color, receivedQuote: Color) {
+    public init(title: Color, primaryVariant2: Color, sentMessage: Color, sentQuote: Color, receivedMessage: Color, receivedQuote: Color) {
         self.title = title
         self.primaryVariant2 = primaryVariant2
         self.sentMessage = sentMessage
@@ -88,13 +87,13 @@ class AppColors: ObservableObject, NSCopying {
         self.receivedQuote = receivedQuote
     }
 
-    func copy(with zone: NSZone? = nil) -> Any {
+    public func copy(with zone: NSZone? = nil) -> Any {
         AppColors(title: self.title, primaryVariant2: self.primaryVariant2, sentMessage: self.sentMessage, sentQuote: self.sentQuote, receivedMessage: self.receivedMessage, receivedQuote: self.receivedQuote)
     }
 
-    func clone() -> AppColors { copy() as! AppColors }
+    public func clone() -> AppColors { copy() as! AppColors }
 
-    func copy(
+    public func copy(
         title: Color?,
         primaryVariant2: Color?,
         sentMessage: Color?,
@@ -113,24 +112,24 @@ class AppColors: ObservableObject, NSCopying {
     }
 }
 
-class AppWallpaper: ObservableObject, NSCopying {
-    @Published var background: Color? = nil
-    @Published var tint: Color? = nil
-    @Published var type: WallpaperType = WallpaperType.Empty
+public class AppWallpaper: ObservableObject, NSCopying {
+    @Published public var background: Color? = nil
+    @Published public var tint: Color? = nil
+    @Published public var type: WallpaperType = WallpaperType.Empty
 
-    init(background: Color?, tint: Color?, type: WallpaperType) {
+    public init(background: Color?, tint: Color?, type: WallpaperType) {
         self.background = background
         self.tint = tint
         self.type = type
     }
 
-    func copy(with zone: NSZone? = nil) -> Any {
+    public func copy(with zone: NSZone? = nil) -> Any {
         AppWallpaper(background: self.background, tint: self.tint, type: self.type)
     }
 
-    func clone() -> AppWallpaper { copy() as! AppWallpaper }
+    public func clone() -> AppWallpaper { copy() as! AppWallpaper }
 
-    func copyWithoutDefault(_ background: Color?, _ tint: Color?, _ type: WallpaperType) -> AppWallpaper {
+    public func copyWithoutDefault(_ background: Color?, _ tint: Color?, _ type: WallpaperType) -> AppWallpaper {
         AppWallpaper(
             background: background,
             tint: tint,
@@ -139,7 +138,7 @@ class AppWallpaper: ObservableObject, NSCopying {
     }
 }
 
-enum ThemeColor {
+public enum ThemeColor {
     case PRIMARY
     case PRIMARY_VARIANT
     case SECONDARY
@@ -155,7 +154,7 @@ enum ThemeColor {
     case WALLPAPER_BACKGROUND
     case WALLPAPER_TINT
 
-    func fromColors(_ colors: Colors, _ appColors: AppColors, _ appWallpaper: AppWallpaper) -> Color? {
+    public func fromColors(_ colors: Colors, _ appColors: AppColors, _ appWallpaper: AppWallpaper) -> Color? {
         switch (self) {
         case .PRIMARY: colors.primary
         case .PRIMARY_VARIANT: colors.primaryVariant
@@ -174,7 +173,7 @@ enum ThemeColor {
         }
     }
 
-    var text: LocalizedStringKey {
+    public var text: LocalizedStringKey {
         switch (self) {
         case .PRIMARY: "Accent"
         case .PRIMARY_VARIANT: "Additional accent"
@@ -194,19 +193,34 @@ enum ThemeColor {
     }
 }
 
-struct ThemeColors: Codable, Equatable{
-    var primary: String? = nil
-    var primaryVariant: String? = nil
-    var secondary: String? = nil
-    var secondaryVariant: String? = nil
-    var background: String? = nil
-    var surface: String? = nil
-    var title: String? = nil
-    var primaryVariant2: String? = nil
-    var sentMessage: String? = nil
-    var sentQuote: String? = nil
-    var receivedMessage: String? = nil
-    var receivedQuote: String? = nil
+public struct ThemeColors: Codable, Equatable{
+    public var primary: String? = nil
+    public var primaryVariant: String? = nil
+    public var secondary: String? = nil
+    public var secondaryVariant: String? = nil
+    public var background: String? = nil
+    public var surface: String? = nil
+    public var title: String? = nil
+    public var primaryVariant2: String? = nil
+    public var sentMessage: String? = nil
+    public var sentQuote: String? = nil
+    public var receivedMessage: String? = nil
+    public var receivedQuote: String? = nil
+
+    public init(primary: String? = nil, primaryVariant: String? = nil, secondary: String? = nil, secondaryVariant: String? = nil, background: String? = nil, surface: String? = nil, title: String? = nil, primaryVariant2: String? = nil, sentMessage: String? = nil, sentQuote: String? = nil, receivedMessage: String? = nil, receivedQuote: String? = nil) {
+        self.primary = primary
+        self.primaryVariant = primaryVariant
+        self.secondary = secondary
+        self.secondaryVariant = secondaryVariant
+        self.background = background
+        self.surface = surface
+        self.title = title
+        self.primaryVariant2 = primaryVariant2
+        self.sentMessage = sentMessage
+        self.sentQuote = sentQuote
+        self.receivedMessage = receivedMessage
+        self.receivedQuote = receivedQuote
+    }
 
     enum CodingKeys: String, CodingKey {
         case primary = "accent"
@@ -223,7 +237,7 @@ struct ThemeColors: Codable, Equatable{
         case receivedQuote = "receivedReply"
     }
 
-    static func from(sentMessage: String, sentQuote: String, receivedMessage: String, receivedQuote: String) -> ThemeColors {
+    public static func from(sentMessage: String, sentQuote: String, receivedMessage: String, receivedQuote: String) -> ThemeColors {
         var c = ThemeColors()
         c.sentMessage = sentMessage
         c.sentQuote = sentQuote
@@ -232,7 +246,7 @@ struct ThemeColors: Codable, Equatable{
         return c
     }
 
-    static func from(_ colors: Colors, _ appColors: AppColors) -> ThemeColors {
+    public static func from(_ colors: Colors, _ appColors: AppColors) -> ThemeColors {
         ThemeColors(
             primary: colors.primary.toReadableHex(),
             primaryVariant: colors.primaryVariant.toReadableHex(),
@@ -250,7 +264,7 @@ struct ThemeColors: Codable, Equatable{
     }
 }
 
-public struct ThemeWallpaper: Codable {
+public struct ThemeWallpaper: Codable, Equatable {
     public var preset: String?
     public var scale: Float?
     public var scaleType: WallpaperScaleType?
@@ -259,7 +273,17 @@ public struct ThemeWallpaper: Codable {
     public var image: String?
     public var imageFile: String?
 
-    func toAppWallpaper() -> AppWallpaper {
+    public init(preset: String? = nil, scale: Float? = nil, scaleType: WallpaperScaleType? = nil, background: String? = nil, tint: String? = nil, image: String? = nil, imageFile: String? = nil) {
+        self.preset = preset
+        self.scale = scale
+        self.scaleType = scaleType
+        self.background = background
+        self.tint = tint
+        self.image = image
+        self.imageFile = imageFile
+    }
+
+    public func toAppWallpaper() -> AppWallpaper {
         AppWallpaper (
             background: background?.colorFromReadableHex(),
             tint: tint?.colorFromReadableHex(),
@@ -267,25 +291,7 @@ public struct ThemeWallpaper: Codable {
         )
     }
 
-    func withFilledWallpaperBase64() -> ThemeWallpaper {
-        let aw = toAppWallpaper()
-        let type = aw.type
-        let preset: String? = if case let WallpaperType.Preset(filename, _) = type { filename } else { nil }
-        let scale: Float? = if case let WallpaperType.Preset(_, scale) = type { scale } else { if case let WallpaperType.Image(_, scale, _) = type { scale } else { 1.0 } }
-        let scaleType: WallpaperScaleType? = if case let WallpaperType.Image(_, _, scaleType) = type { scaleType } else { nil }
-        let image: String? = if case WallpaperType.Image = type, let image = type.uiImage { resizeImageToStrSize(image, maxDataSize: 5_000_000) } else { nil }
-        return ThemeWallpaper (
-            preset: preset,
-            scale: scale,
-            scaleType: scaleType,
-            background: aw.background?.toReadableHex(),
-            tint: aw.tint?.toReadableHex(),
-            image: image,
-            imageFile: nil
-        )
-    }
-
-    func withFilledWallpaperPath() -> ThemeWallpaper {
+    public func withFilledWallpaperPath() -> ThemeWallpaper {
         let aw = toAppWallpaper()
         let type = aw.type
         let preset: String? = if case let WallpaperType.Preset(filename, _) = type { filename } else { nil }
@@ -311,25 +317,7 @@ public struct ThemeWallpaper: Codable {
         )
     }
 
-    func importFromString() -> ThemeWallpaper {
-        self
-        // LALAL
-        //if preset == nil, let image {
-            // Need to save image from string and to save its path
-//            do {
-//                let parsed = base64ToBitmap(image)
-//                let filename = saveWallpaperFile(parsed)
-//                return copy(image = nil, imageFile = filename)
-//            } catch let e {
-//                logger.error("Error while parsing/copying the image: \(e)")
-//                return ThemeWallpaper()
-//            }
-//        } else {
-//            self
-//        }
-    }
-
-    static func from(_ type: WallpaperType, _ background: String?, _ tint: String?) -> ThemeWallpaper {
+    public static func from(_ type: WallpaperType, _ background: String?, _ tint: String?) -> ThemeWallpaper {
         let preset: String? = if case let WallpaperType.Preset(filename, _) = type { filename } else { nil }
         let scale: Float? = if case let WallpaperType.Preset(_, scale) = type { scale } else if case let WallpaperType.Image(_, scale, _) = type { scale } else { nil }
         let scaleType: WallpaperScaleType? = if case let WallpaperType.Image(_, _, scaleType) = type  { scaleType } else { nil }
@@ -346,13 +334,20 @@ public struct ThemeWallpaper: Codable {
     }
 }
 
-public struct ThemeOverrides: Codable {
-    var themeId: String = UUID().uuidString
-    var base: DefaultTheme
-    var colors: ThemeColors = ThemeColors()
-    var wallpaper: ThemeWallpaper? = nil
+public struct ThemeOverrides: Codable, Equatable {
+    public var themeId: String = UUID().uuidString
+    public var base: DefaultTheme
+    public var colors: ThemeColors = ThemeColors()
+    public var wallpaper: ThemeWallpaper? = nil
 
-    func isSame(_ type: WallpaperType?, _ themeName: String) -> Bool {
+    public init(themeId: String = UUID().uuidString, base: DefaultTheme, colors: ThemeColors = ThemeColors(), wallpaper: ThemeWallpaper? = nil) {
+        self.themeId = themeId
+        self.base = base
+        self.colors = colors
+        self.wallpaper = wallpaper
+    }
+
+    public func isSame(_ type: WallpaperType?, _ themeName: String) -> Bool {
         if base.themeName != themeName {
             return false
         }
@@ -369,7 +364,7 @@ public struct ThemeOverrides: Codable {
         }
     }
 
-    func withUpdatedColor(_ name: ThemeColor, _ color: String?) -> ThemeOverrides {
+    public func withUpdatedColor(_ name: ThemeColor, _ color: String?) -> ThemeOverrides {
         var c = colors
         var w = wallpaper
         switch name {
@@ -391,7 +386,7 @@ public struct ThemeOverrides: Codable {
         return ThemeOverrides(themeId: themeId, base: base, colors: c, wallpaper: w)
     }
 
-    func toColors(_ base: DefaultTheme, _ perChatTheme: ThemeColors?, _ perUserTheme: ThemeColors?, _ presetWallpaperTheme: ThemeColors?) -> Colors {
+    public func toColors(_ base: DefaultTheme, _ perChatTheme: ThemeColors?, _ perUserTheme: ThemeColors?, _ presetWallpaperTheme: ThemeColors?) -> Colors {
         let baseColors = switch base {
             case DefaultTheme.LIGHT: LightColorPalette
             case DefaultTheme.DARK: DarkColorPalette
@@ -408,7 +403,7 @@ public struct ThemeOverrides: Codable {
         return c
     }
 
-    func toAppColors(_ base: DefaultTheme, _ perChatTheme: ThemeColors?, _ perChatWallpaperType: WallpaperType?, _ perUserTheme: ThemeColors?, _ perUserWallpaperType: WallpaperType?, _ presetWallpaperTheme: ThemeColors?) -> AppColors {
+    public func toAppColors(_ base: DefaultTheme, _ perChatTheme: ThemeColors?, _ perChatWallpaperType: WallpaperType?, _ perUserTheme: ThemeColors?, _ perUserWallpaperType: WallpaperType?, _ presetWallpaperTheme: ThemeColors?) -> AppColors {
         let baseColors = switch base {
         case DefaultTheme.LIGHT: LightColorPaletteApp
         case DefaultTheme.DARK: DarkColorPaletteApp
@@ -432,7 +427,7 @@ public struct ThemeOverrides: Codable {
         return c
     }
 
-    func toAppWallpaper(_ themeOverridesForType: WallpaperType?, _ perChatTheme: ThemeModeOverride?, _ perUserTheme: ThemeModeOverride?, _ themeBackgroundColor: Color) -> AppWallpaper {
+    public func toAppWallpaper(_ themeOverridesForType: WallpaperType?, _ perChatTheme: ThemeModeOverride?, _ perUserTheme: ThemeModeOverride?, _ themeBackgroundColor: Color) -> AppWallpaper {
         let mainType: WallpaperType
         if let t = themeOverridesForType { mainType = t }
         // type can be nil if override is empty `"wallpaper": "{}"`, in this case no wallpaper is needed, empty.
@@ -464,7 +459,7 @@ public struct ThemeOverrides: Codable {
         return AppWallpaper(background: background, tint: tint, type: wallpaper)
     }
 
-    func withFilledColors(_ base: DefaultTheme, _ perChatTheme: ThemeColors?, _ perChatWallpaperType: WallpaperType?, _ perUserTheme: ThemeColors?, _ perUserWallpaperType: WallpaperType?, _ presetWallpaperTheme: ThemeColors?) -> ThemeColors {
+    public func withFilledColors(_ base: DefaultTheme, _ perChatTheme: ThemeColors?, _ perChatWallpaperType: WallpaperType?, _ perUserTheme: ThemeColors?, _ perUserWallpaperType: WallpaperType?, _ presetWallpaperTheme: ThemeColors?) -> ThemeColors {
         let c = toColors(base, perChatTheme, perUserTheme, presetWallpaperTheme)
         let ac = toAppColors(base, perChatTheme, perChatWallpaperType, perUserTheme, perUserWallpaperType, presetWallpaperTheme)
         return ThemeColors(
@@ -485,15 +480,15 @@ public struct ThemeOverrides: Codable {
 }
 
 extension [ThemeOverrides] {
-    func getTheme(_ themeId: String?) -> ThemeOverrides? {
+    public func getTheme(_ themeId: String?) -> ThemeOverrides? {
         self.first { $0.themeId == themeId }
     }
 
-    func getTheme(_ themeId: String?, _ type: WallpaperType?, _ base: DefaultTheme) -> ThemeOverrides? {
+    public func getTheme(_ themeId: String?, _ type: WallpaperType?, _ base: DefaultTheme) -> ThemeOverrides? {
         self.first { $0.themeId == themeId || $0.isSame(type, base.themeName) }
     }
 
-    func replace(_ theme: ThemeOverrides) -> [ThemeOverrides] {
+    public func replace(_ theme: ThemeOverrides) -> [ThemeOverrides] {
         let index = self.firstIndex { $0.themeId == theme.themeId ||
             // prevent situation when two themes has the same type but different theme id (maybe something was changed in prefs by hand)
             $0.isSame(WallpaperType.from(theme.wallpaper), theme.base.themeName)
@@ -507,9 +502,9 @@ extension [ThemeOverrides] {
         return a
     }
 
-    func sameTheme(_ type: WallpaperType?, _ themeName: String) -> ThemeOverrides? { first { $0.isSame(type, themeName) } }
+    public func sameTheme(_ type: WallpaperType?, _ themeName: String) -> ThemeOverrides? { first { $0.isSame(type, themeName) } }
 
-    func skipDuplicates() -> [ThemeOverrides] {
+    public func skipDuplicates() -> [ThemeOverrides] {
         var res: [ThemeOverrides] = []
         self.forEach { theme in
             let themeType = WallpaperType.from(theme.wallpaper)
@@ -522,23 +517,29 @@ extension [ThemeOverrides] {
 
 }
 
-struct ThemeModeOverrides: Codable {
-    var light: ThemeModeOverride? = nil
-    var dark: ThemeModeOverride? = nil
+public struct ThemeModeOverrides: Codable {
+    public var light: ThemeModeOverride? = nil
+    public var dark: ThemeModeOverride? = nil
 
-    func preferredMode(_ darkTheme: Bool) -> ThemeModeOverride? {
+    public func preferredMode(_ darkTheme: Bool) -> ThemeModeOverride? {
         darkTheme ? dark : light
     }
 }
 
-struct ThemeModeOverride: Codable {
-    var mode: DefaultThemeMode = CurrentColors.base.mode
-    var colors: ThemeColors = ThemeColors()
-    var wallpaper: ThemeWallpaper? = nil
+public struct ThemeModeOverride: Codable {
+    public var mode: DefaultThemeMode// = CurrentColors.base.mode
+    public var colors: ThemeColors = ThemeColors()
+    public var wallpaper: ThemeWallpaper? = nil
 
-    var type: WallpaperType? { WallpaperType.from(wallpaper) }
+    public init(mode: DefaultThemeMode, colors: ThemeColors = ThemeColors(), wallpaper: ThemeWallpaper? = nil) {
+        self.mode = mode
+        self.colors = colors
+        self.wallpaper = wallpaper
+    }
 
-    func withUpdatedColor(_ name: ThemeColor, _ color: String?) -> ThemeModeOverride {
+    public var type: WallpaperType? { WallpaperType.from(wallpaper) }
+
+    public func withUpdatedColor(_ name: ThemeColor, _ color: String?) -> ThemeModeOverride {
         var c = colors
         var w = wallpaper
         switch (name) {
@@ -560,7 +561,7 @@ struct ThemeModeOverride: Codable {
         return ThemeModeOverride(mode: mode, colors: c, wallpaper: w)
     }
 
-    static func withFilledAppDefaults(_ mode: DefaultThemeMode, _ base: DefaultTheme) -> ThemeModeOverride {
+    public static func withFilledAppDefaults(_ mode: DefaultThemeMode, _ base: DefaultTheme) -> ThemeModeOverride {
         ThemeModeOverride(
             mode: mode,
             colors: ThemeOverrides(base: base).withFilledColors(base, nil, nil, nil, nil, nil),
@@ -569,36 +570,7 @@ struct ThemeModeOverride: Codable {
     }
 }
 
-struct ThemedBackground: ViewModifier {
-    @EnvironmentObject var theme: AppTheme
-
-    func body(content: Content) -> some View {
-        content
-            .background(
-                theme.base == DefaultTheme.SIMPLEX
-                ? LinearGradient(
-                    colors: [
-                        theme.colors.background.lighter(0.4),
-                        theme.colors.background.darker(0.4)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                : LinearGradient(
-                    colors: [],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .background(
-                theme.base == DefaultTheme.SIMPLEX
-                ? Color.clear
-                : theme.colors.background
-            )
-    }
-}
-
-let DarkColorPalette = Colors(
+public let DarkColorPalette = Colors(
     primary: SimplexBlue,
     primaryVariant: SimplexBlue,
     secondary: HighOrLowlight,
@@ -610,7 +582,7 @@ let DarkColorPalette = Colors(
     onSurface: Color(0xFFFFFBFA),
     isLight: false
 )
-let DarkColorPaletteApp = AppColors(
+public let DarkColorPaletteApp = AppColors(
     title: SimplexBlue,
     primaryVariant2: Color(0xFF18262E),
     sentMessage: Color(0xFF18262E),
@@ -619,7 +591,7 @@ let DarkColorPaletteApp = AppColors(
     receivedQuote: Color(0xff373739)
 )
 
-let LightColorPalette = Colors (
+public let LightColorPalette = Colors (
     primary: SimplexBlue,
     primaryVariant: SimplexBlue,
     secondary: HighOrLowlight,
@@ -631,7 +603,7 @@ let LightColorPalette = Colors (
     onSurface: Color.black,
     isLight: true
 )
-let LightColorPaletteApp = AppColors(
+public let LightColorPaletteApp = AppColors(
     title: SimplexBlue,
     primaryVariant2: Color(0xFFE9F7FF),
     sentMessage: Color(0xFFE9F7FF),
@@ -640,7 +612,7 @@ let LightColorPaletteApp = AppColors(
     receivedQuote: Color(0xffececee)
 )
 
-let SimplexColorPalette = Colors(
+public let SimplexColorPalette = Colors(
     primary: Color(0xFF70F0F9),
     primaryVariant: Color(0xFF1298A5),
     secondary: HighOrLowlight,
@@ -652,7 +624,7 @@ let SimplexColorPalette = Colors(
     onSurface: Color(0xFFFFFBFA),
     isLight: false
 )
-let SimplexColorPaletteApp = AppColors(
+public let SimplexColorPaletteApp = AppColors(
     title: Color(0xFF267BE5),
     primaryVariant2: Color(0xFF172941),
     sentMessage: Color(0xFF172941),
@@ -661,7 +633,7 @@ let SimplexColorPaletteApp = AppColors(
     receivedQuote: Color(0xff36394a)
 )
 
-let BlackColorPalette = Colors(
+public let BlackColorPalette = Colors(
     primary: Color(0xff0077e0),
     primaryVariant: Color(0xff0077e0),
     secondary: HighOrLowlight,
@@ -673,7 +645,7 @@ let BlackColorPalette = Colors(
     onSurface: Color(0xFFFFFBFA),
     isLight: false
 )
-let BlackColorPaletteApp = AppColors(
+public let BlackColorPaletteApp = AppColors(
     title: Color(0xff0077e0),
     primaryVariant2: Color(0xff243747),
     sentMessage: Color(0xFF18262E),
@@ -682,43 +654,12 @@ let BlackColorPaletteApp = AppColors(
     receivedQuote: Color(0xff29292b)
 )
 
-var systemInDarkThemeCurrently: Bool = false
-
-var CurrentColors: ThemeManager.ActiveTheme = ThemeManager.currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get()) {
-    didSet {
-        AppTheme.shared.name = CurrentColors.name
-        AppTheme.shared.base = CurrentColors.base
-        AppTheme.shared.colors.updateColorsFrom(CurrentColors.colors)
-        AppTheme.shared.appColors.updateColorsFrom(CurrentColors.appColors)
-        AppTheme.shared.wallpaper.updateWallpaperFrom(CurrentColors.wallpaper)
-        AppTheme.shared.objectWillChange.send()
-    }
-}
-
-func isInDarkTheme() -> Bool { !CurrentColors.colors.isLight }
+public var systemInDarkThemeCurrently: Bool = false
 
 //func isSystemInDarkTheme(): Bool
 
-class AppTheme: ObservableObject {
-    static let shared = AppTheme(name: CurrentColors.name, base: CurrentColors.base, colors: CurrentColors.colors, appColors: CurrentColors.appColors, wallpaper: CurrentColors.wallpaper)
-
-    var name: String
-    var base: DefaultTheme
-    @ObservedObject var colors: Colors
-    @ObservedObject var appColors: AppColors
-    @ObservedObject var wallpaper: AppWallpaper
-
-    init(name: String, base: DefaultTheme, colors: Colors, appColors: AppColors, wallpaper: AppWallpaper) {
-        self.name = name
-        self.base = base
-        self.colors = colors
-        self.appColors = appColors
-        self.wallpaper = wallpaper
-    }
-}
-
 extension Colors {
-    func updateColorsFrom(_ other: Colors) {
+    public func updateColorsFrom(_ other: Colors) {
         primary = other.primary
         primaryVariant = other.primaryVariant
         secondary = other.secondary
@@ -733,7 +674,7 @@ extension Colors {
 }
 
 extension AppColors {
-    func updateColorsFrom(_ other: AppColors) {
+    public func updateColorsFrom(_ other: AppColors) {
         title = other.title
         primaryVariant2 = other.primaryVariant2
         sentMessage = other.sentMessage
@@ -744,19 +685,10 @@ extension AppColors {
 }
 
 extension AppWallpaper {
-    func updateWallpaperFrom(_ other: AppWallpaper) {
+    public func updateWallpaperFrom(_ other: AppWallpaper) {
         background = other.background
         tint = other.tint
         type = other.type
-    }
-}
-
-func reactOnDarkThemeChanges(_ isDark: Bool) {
-    systemInDarkThemeCurrently = isDark
-    //sceneDelegate.window?.overrideUserInterfaceStyle == .unspecified
-    if currentThemeDefault.get() == DefaultTheme.SYSTEM_THEME_NAME && CurrentColors.colors.isLight == isDark {
-        // Change active colors from light to dark and back based on system theme
-        ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
     }
 }
 

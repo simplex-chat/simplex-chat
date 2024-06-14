@@ -170,7 +170,7 @@ public enum ChatCommand {
             case .apiStopChat: return "/_stop"
             case let .apiActivateChat(restore): return "/_app activate restore=\(onOff(restore))"
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
-            case let .apiSetAppFilePaths(filesFolder, tempFolder, assetsFolder): return "/set file paths \(encodeJSON(AppFilePaths(filesFolder: filesFolder, tempFolder: tempFolder, assetsFolder: assetsFolder)))"
+            case let .apiSetAppFilePaths(filesFolder, tempFolder, assetsFolder): return "/set file paths \(encodeJSON(AppFilePaths(appFilesFolder: filesFolder, appTempFolder: tempFolder, appAssetsFolder: assetsFolder)))"
             case let .apiSetEncryptLocalFiles(enable): return "/_files_encrypt \(onOff(enable))"
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
@@ -2244,7 +2244,7 @@ public enum MsgType: String, Codable {
 }
 
 public struct AppFilePaths: Encodable {
-    public let filesFolder: String
-    public let tempFolder: String
-    public let assetsFolder: String
+    public let appFilesFolder: String
+    public let appTempFolder: String
+    public let appAssetsFolder: String
 }

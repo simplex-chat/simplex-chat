@@ -48,7 +48,7 @@ extension AppSettings {
         if let val = uiColorScheme { def.setValue(val, forKey: DEFAULT_CURRENT_THEME) }
         if let val = uiDarkColorScheme { def.setValue(val, forKey: DEFAULT_SYSTEM_DARK_THEME) }
         if let val = uiCurrentThemeIds { def.setValue(val, forKey: DEFAULT_CURRENT_THEME_IDS) }
-        if let val = uiThemes { def.setValue(val, forKey: DEFAULT_THEME_OVERRIDES) }
+        if let val = uiThemes { def.setValue(val.skipDuplicates(), forKey: DEFAULT_THEME_OVERRIDES) }
     }
 
     public static var current: AppSettings {

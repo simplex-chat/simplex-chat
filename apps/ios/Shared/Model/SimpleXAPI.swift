@@ -825,15 +825,15 @@ func apiSetConnectionAlias(connId: Int64, localAlias: String) async throws -> Pe
     throw r
 }
 
-func apiSetUserUIThemes(userId: Int64, themes: ThemeModeOverrides?) -> Bool {
+func apiSetUserUIThemes(userId: Int64, themes: ThemeModeOverrides?) async -> Bool {
     let r = await chatSendCmd(.apiSetUserUIThemes(userId: userId, themes: themes))
     if case .cmdOk = r { return true }
     logger.error("apiSetUserUIThemes bad response: \(String(describing: r))")
     return false
 }
 
-func apiSetChatUIThemes(chatId: ChatId, themes: ThemeModeOverrides?) -> Bool {
-    let r = chatSendCmd(.apiSetChatUIThemes(chatId: chatId, themes: themes))
+func apiSetChatUIThemes(chatId: ChatId, themes: ThemeModeOverrides?) async -> Bool {
+    let r = await chatSendCmd(.apiSetChatUIThemes(chatId: chatId, themes: themes))
     if case .cmdOk = r { return true }
     logger.error("apiSetChatUIThemes bad response: \(String(describing: r))")
     return false
