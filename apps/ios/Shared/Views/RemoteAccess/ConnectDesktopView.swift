@@ -182,23 +182,27 @@ struct ConnectDesktopView: View {
     }
 
     private func connectingDesktopView(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo?) -> some View {
-        List {
-            Section("Connecting to desktop") {
-                ctrlDeviceNameText(session, rc)
-                ctrlDeviceVersionText(session)
-            }
+        ZStack {
+            List {
+                Section("Connecting to desktop") {
+                    ctrlDeviceNameText(session, rc)
+                    ctrlDeviceVersionText(session)
+                }
 
-            if let sessCode = session.sessionCode {
-                Section("Session code") {
-                    sessionCodeText(sessCode)
+                if let sessCode = session.sessionCode {
+                    Section("Session code") {
+                        sessionCodeText(sessCode)
+                    }
+                }
+
+                Section {
+                    disconnectButton()
                 }
             }
+            .navigationTitle("Connecting to desktop")
 
-            Section {
-                disconnectButton()
-            }
+            ProgressView().scaleEffect(2)
         }
-        .navigationTitle("Connecting to desktop")
         .modifier(ThemedBackground())
     }
 
@@ -338,13 +342,7 @@ struct ConnectDesktopView: View {
 
     private func scanDesctopAddressView() -> some View {
         Section("Scan QR code from desktop") {
-            CodeScannerView(codeTypes: [.qr], scanMode: .oncePerCode, completion: processDesktopQRCode)
-                .aspectRatio(1, contentMode: .fit)
-                .cornerRadius(12)
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                .padding(.horizontal)
+            ScannerInView(showQRCodeScanner: $showQRCodeScanner,  processQRCode: processDesktopQRCode, scanMode: .oncePerCode)
         }
     }
 

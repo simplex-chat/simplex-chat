@@ -224,6 +224,8 @@ object ThemeManager {
       s.length == 1 -> "#ff$s$s$s$s$s$s"
       s.length == 2 -> "#ff$s$s$s"
       s.length == 3 -> "#ff$s$s"
+      s.length == 4 && this.alpha == 0f -> "#0000$s" // 000088ff treated as 88ff
+      s.length == 4 -> "#ff00$s"
       s.length == 6 && this.alpha == 0f -> "#00$s"
       s.length == 6 -> "#ff$s"
       else -> "#$s"
