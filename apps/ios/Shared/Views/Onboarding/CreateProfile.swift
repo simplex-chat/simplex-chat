@@ -171,6 +171,10 @@ private func createProfile(_ displayName: String, showAlert: (UserProfileAlert) 
         // .isEmpty check is redundant here, but it makes it clearer what is going on
         if m.users.isEmpty || m.users.allSatisfy({ $0.user.hidden }) {
             try startChat()
+            // Chat was started but no user data was loaded at the moment (it may happen after deleting the last user)
+            if m.chats.isEmpty {
+                try getUserChatData()
+            }
             withAnimation {
                 onboardingStageDefault.set(.step3_CreateSimpleXAddress)
                 m.onboardingStage = .step3_CreateSimpleXAddress
