@@ -32,22 +32,22 @@ data SMPServerSummary = SMPServerSummary
     -- always Just in userServersSummary - True if server is in list of user servers, otherwise False;
     -- True - allows to navigate to server settings, False - allows to add server to configured as known (SEKnown)
     known :: Maybe Bool,
-    -- state:
+    -- sessions:
     -- Just if currently used in session, otherwise Nothing;
-    -- onlyProxiedSMPServers would always have state and statsData as Nothing
-    state :: Maybe SMPServerState,
-    -- statsData:
-    -- even if state is Nothing, statsData can be Just - server could be used earlier in session
+    -- onlyProxiedSMPServers would always have sessions and stats as Nothing
+    sessions :: Maybe SMPServerSessions,
+    -- stats:
+    -- even if sessions is Nothing, stats can be Just - server could be used earlier in session
     -- or in previous sessions and stats for it were restored
-    statsData :: Maybe AgentSMPServerStatsData
+    stats :: Maybe AgentSMPServerStatsData
   }
   deriving (Show)
 
 data XFTPServerSummary = CurrentlyUsedXFTPServerSummary
   { xftpServer :: XFTPServer,
     known :: Maybe Bool,
-    state :: Maybe XFTPServerState,
-    statsData :: Maybe AgentXFTPServerStatsData
+    sessions :: Maybe XFTPServerSessions,
+    stats :: Maybe AgentXFTPServerStatsData
   }
   deriving (Show)
 
