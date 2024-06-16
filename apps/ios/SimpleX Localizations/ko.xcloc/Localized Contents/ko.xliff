@@ -5,9 +5,11 @@
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.2" build-num="14C18"/>
     </header>
     <body>
-      <trans-unit id="&#10;" xml:space="preserve">
+      <trans-unit id="&#10;" xml:space="preserve" approved="no">
         <source>
 </source>
+        <target state="translated">
+</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=" " xml:space="preserve">
@@ -2407,24 +2409,29 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Send live message</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send notifications" xml:space="preserve">
+      <trans-unit id="Send notifications" xml:space="preserve" approved="no">
         <source>Send notifications</source>
+        <target state="translated">알림 전송</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send notifications:" xml:space="preserve">
+      <trans-unit id="Send notifications:" xml:space="preserve" approved="no">
         <source>Send notifications:</source>
+        <target state="translated">알림 전송:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send questions and ideas" xml:space="preserve">
+      <trans-unit id="Send questions and ideas" xml:space="preserve" approved="no">
         <source>Send questions and ideas</source>
+        <target state="translated">질문이나 아이디어 보내기</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve">
+      <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve" approved="no">
         <source>Send them from gallery or custom keyboards.</source>
+        <target state="needs-translation">갤러리 또는 사용자 정의 키보드에서 그들을 보내십시오.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
+      <trans-unit id="Sender cancelled file transfer." xml:space="preserve" approved="no">
         <source>Sender cancelled file transfer.</source>
+        <target state="translated">상대방이 파일 전송을 취소했습니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
@@ -3775,6 +3782,16 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">셀룰러</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Send messages directly when your or destination server does not support private routing." xml:space="preserve" approved="no">
+        <source>Send messages directly when your or destination server does not support private routing.</source>
+        <target state="needs-translation">이 서버 또는 도착 서버가 비밀 라우팅을 지원하지 않을 때 직통 메시지 보내기.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Send up to 100 last messages to new members." xml:space="preserve" approved="no">
+        <source>Send up to 100 last messages to new members.</source>
+        <target state="translated">새로운 멤버에게 최대 100개의 마지막 메시지 보내기.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="ko" datatype="plaintext">
@@ -3798,8 +3815,9 @@ SimpleX servers cannot see your profile.</source>
         <source>SimpleX needs microphone access for audio and video calls, and to record voice messages.</source>
         <note>Privacy - Microphone Usage Description</note>
       </trans-unit>
-      <trans-unit id="NSPhotoLibraryAddUsageDescription" xml:space="preserve">
+      <trans-unit id="NSPhotoLibraryAddUsageDescription" xml:space="preserve" approved="no">
         <source>SimpleX needs access to Photo Library for saving captured and received media</source>
+        <target state="needs-translation">SimpleX는 캡처 및 수신 된 미디어를 저장하기 위해 사진 라이브러리에 접근이 필요합니다</target>
         <note>Privacy - Photo Library Additions Usage Description</note>
       </trans-unit>
     </body>
@@ -3813,8 +3831,9 @@ SimpleX servers cannot see your profile.</source>
         <source>SimpleX NSE</source>
         <note>Bundle display name</note>
       </trans-unit>
-      <trans-unit id="CFBundleName" xml:space="preserve">
+      <trans-unit id="CFBundleName" xml:space="preserve" approved="no">
         <source>SimpleX NSE</source>
+        <target state="translated">SimpleX NSE</target>
         <note>Bundle name</note>
       </trans-unit>
       <trans-unit id="NSHumanReadableCopyright" xml:space="preserve">
