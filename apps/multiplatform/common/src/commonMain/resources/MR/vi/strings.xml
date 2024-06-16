@@ -330,4 +330,16 @@
     <string name="callstatus_connecting">đang kết nối cuộc gọi…</string>
     <string name="connect_via_contact_link">Kết nối thông qua địa chỉ liên lạc?</string>
     <string name="connect_via_invitation_link">Kết nối thông qua liên kết dùng một lần?</string>
+    <string name="icon_descr_contact_checked">Liên hệ đã được kiểm tra</string>
+    <string name="receipts_section_contacts">Các liên hệ</string>
+    <string name="chat_preferences_contact_allows">Liên hệ có cho phép</string>
+    <string name="contact_already_exists">Liên hệ đã tồn tại</string>
+    <string name="profile_update_event_contact_name_changed">liện hệ %1$s đã thay đổi thành %2$s</string>
+    <string name="alert_title_contact_connection_pending">Liên hệ này vẫn chưa được kết nối!</string>
+    <string name="notification_preview_somebody">Liên hệ ẩn:</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Liên hệ và tất cả tin nhắn sẽ bị xóa - quá trình này không thể hoàn tác được!</string>
+    <string name="notification_preview_mode_contact">Tên liên hệ</string>
+    <string name="status_contact_has_e2e_encryption">liên hệ có bảo mật đầu cuối</string>
+    <string name="status_contact_has_no_e2e_encryption">liên hệ không có bảo mật đầu cuối</string>
+    <string name="contact_preferences">Tùy chọn liên hệ</string>
 </resources>
