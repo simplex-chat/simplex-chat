@@ -54,15 +54,18 @@ struct CIFileView: View {
             switch (file.fileStatus) {
             case .sndStored: return file.fileProtocol == .local
             case .sndTransfer: return false
-            case .sndComplete: return false
+            case .sndComplete: return true
             case .sndCancelled: return false
-            case .sndError: return false
+            case .sndError: return true
+            case .sndWarning: return true
             case .rcvInvitation: return true
             case .rcvAccepted: return true
             case .rcvTransfer: return false
+            case .rcvAborted: return true
             case .rcvComplete: return true
             case .rcvCancelled: return false
-            case .rcvError: return false
+            case .rcvError: return true
+            case .rcvWarning: return true
             case .invalid: return false
             }
         }
@@ -73,10 +76,10 @@ struct CIFileView: View {
         logger.debug("CIFileView fileAction")
         if let file = file {
             switch (file.fileStatus) {
-            case .rcvInvitation:
+            case .rcvInvitation, .rcvAborted:
                 if fileSizeValid(file) {
                     Task {
-                        logger.debug("CIFileView fileAction - in .rcvInvitation, in Task")
+                        logger.debug("CIFileView fileAction - in .rcvInvitation, .rcvAborted, in Task")
                         if let user = m.currentUser {
                             await receiveFile(user: user, fileId: file.fileId)
                         }
@@ -107,11 +110,40 @@ struct CIFileView: View {
                 if let fileSource = getLoadedFileSource(file) {
                     saveCryptoFile(fileSource)
                 }
+            case let .rcvError(rcvFileError):
+                logger.debug("CIFileView fileAction - in .rcvError")
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("File error"),
+                    message: Text(rcvFileError.errorInfo)
+                ))
+            case let .rcvWarning(rcvFileError):
+                logger.debug("CIFileView fileAction - in .rcvWarning")
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("Temporary file error"),
+                    message: Text(rcvFileError.errorInfo)
+                ))
             case .sndStored:
                 logger.debug("CIFileView fileAction - in .sndStored")
                 if file.fileProtocol == .local, let fileSource = getLoadedFileSource(file) {
                     saveCryptoFile(fileSource)
                 }
+            case .sndComplete:
+                logger.debug("CIFileView fileAction - in .sndComplete")
+                if let fileSource = getLoadedFileSource(file) {
+                    saveCryptoFile(fileSource)
+                }
+            case let .sndError(sndFileError):
+                logger.debug("CIFileView fileAction - in .sndError")
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("File error"),
+                    message: Text(sndFileError.errorInfo)
+                ))
+            case let .sndWarning(sndFileError):
+                logger.debug("CIFileView fileAction - in .sndWarning")
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("Temporary file error"),
+                    message: Text(sndFileError.errorInfo)
+                ))
             default: break
             }
         }
@@ -135,6 +167,7 @@ struct CIFileView: View {
             case .sndComplete: fileIcon("doc.fill", innerIcon: "checkmark", innerIconSize: 10)
             case .sndCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .sndError: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
+            case .sndWarning: fileIcon("doc.fill", innerIcon: "exclamationmark.triangle.fill", innerIconSize: 10)
             case .rcvInvitation:
                 if fileSizeValid(file) {
                     fileIcon("arrow.down.doc.fill", color: .accentColor)
@@ -148,9 +181,12 @@ struct CIFileView: View {
                 } else {
                     progressView()
                 }
+            case .rcvAborted:
+                fileIcon("doc.fill", color: .accentColor, innerIcon: "exclamationmark.arrow.circlepath", innerIconSize: 12)
             case .rcvComplete: fileIcon("doc.fill")
             case .rcvCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .rcvError: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
+            case .rcvWarning: fileIcon("doc.fill", innerIcon: "exclamationmark.triangle.fill", innerIconSize: 10)
             case .invalid: fileIcon("doc.fill", innerIcon: "questionmark", innerIconSize: 10)
             }
         } else {

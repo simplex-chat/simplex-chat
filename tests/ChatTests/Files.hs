@@ -738,7 +738,7 @@ testXFTPRcvError tmp = do
       _ <- getTermLine bob
 
       bob ##> "/fs 1"
-      bob <## "receiving file 1 (test.pdf) error"
+      bob <## "receiving file 1 (test.pdf) error: FileErrAuth"
 
 testXFTPCancelRcvRepeat :: HasCallStack => FilePath -> IO ()
 testXFTPCancelRcvRepeat =

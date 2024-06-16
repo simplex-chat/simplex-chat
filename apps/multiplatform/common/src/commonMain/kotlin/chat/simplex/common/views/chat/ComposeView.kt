@@ -408,14 +408,15 @@ fun ComposeView(
       composeState.value = composeState.value.copy(inProgress = true)
     }
 
-    suspend fun forwardItem(rhId: Long?, forwardedItem: ChatItem, fromChatInfo: ChatInfo): ChatItem? {
+    suspend fun forwardItem(rhId: Long?, forwardedItem: ChatItem, fromChatInfo: ChatInfo, ttl: Int?): ChatItem? {
       val chatItem = controller.apiForwardChatItem(
         rh = rhId,
         toChatType = chat.chatInfo.chatType,
         toChatId = chat.chatInfo.apiId,
         fromChatType = fromChatInfo.chatType,
         fromChatId = fromChatInfo.apiId,
-        itemId = forwardedItem.id
+        itemId = forwardedItem.id,
+        ttl = ttl
       )
       if (chatItem != null) {
         chatModel.addChatItem(rhId, chat.chatInfo, chatItem)
@@ -490,9 +491,9 @@ fun ComposeView(
       sendMemberContactInvitation()
       sent = null
     } else if (cs.contextItem is ComposeContextItem.ForwardingItem) {
-      sent = forwardItem(chat.remoteHostId, cs.contextItem.chatItem, cs.contextItem.fromChatInfo)
+      sent = forwardItem(chat.remoteHostId, cs.contextItem.chatItem, cs.contextItem.fromChatInfo, ttl = ttl)
       if (cs.message.isNotEmpty()) {
-        sent = send(chat, checkLinkPreview(), quoted = sent?.id, live = false, ttl = null)
+        sent = send(chat, checkLinkPreview(), quoted = sent?.id, live = false, ttl = ttl)
       }
     } else if (cs.contextItem is ComposeContextItem.EditingItem) {
       val ei = cs.contextItem.chatItem
@@ -775,7 +776,7 @@ fun ComposeView(
 
   @Composable
   fun MsgNotAllowedView(reason: String, icon: Painter) {
-    val color = CurrentColors.collectAsState().value.appColors.receivedMessage
+    val color = MaterialTheme.appColors.receivedMessage
     Row(Modifier.padding(top = 5.dp).fillMaxWidth().background(color).padding(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF * 1.5f), verticalAlignment = Alignment.CenterVertically) {
       Icon(icon, null, tint = MaterialTheme.colors.secondary)
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))
@@ -861,7 +862,7 @@ fun ComposeView(
       }
     }
     Row(
-      modifier = Modifier.padding(end = 8.dp),
+      modifier = Modifier.background(MaterialTheme.colors.background).padding(end = 8.dp),
       verticalAlignment = Alignment.Bottom,
     ) {
       val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)
@@ -973,7 +974,7 @@ fun ComposeView(
       val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }
       val sendButtonColor =
         if (chat.chatInfo.incognito)
-          if (isSystemInDarkTheme()) Indigo else Indigo.copy(alpha = 0.7F)
+          if (isInDarkTheme()) Indigo else Indigo.copy(alpha = 0.7F)
         else MaterialTheme.colors.primary
       SendMsgView(
         composeState,

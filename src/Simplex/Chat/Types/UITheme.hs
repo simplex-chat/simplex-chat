@@ -128,13 +128,16 @@ data UIColors = UIColors
     background :: Maybe UIColor,
     menus :: Maybe UIColor,
     title :: Maybe UIColor,
+    accentVariant2 :: Maybe UIColor,
     sentMessage :: Maybe UIColor,
-    receivedMessage :: Maybe UIColor
+    sentReply :: Maybe UIColor,
+    receivedMessage :: Maybe UIColor,
+    receivedReply :: Maybe UIColor
   }
   deriving (Eq, Show)
 
 defaultUIColors :: UIColors
-defaultUIColors = UIColors Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+defaultUIColors = UIColors Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 newtype UIColor = UIColor String
   deriving (Eq, Show)

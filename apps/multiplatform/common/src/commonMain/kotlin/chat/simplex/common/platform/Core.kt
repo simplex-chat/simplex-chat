@@ -1,6 +1,7 @@
 package chat.simplex.common.platform
 
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.currentUser
 import chat.simplex.common.views.helpers.*
@@ -43,14 +44,13 @@ val appPreferences: AppPreferences
 
 val chatController: ChatController = ChatController
 
-fun initChatControllerAndRunMigrations() {
+fun initChatControllerOnStart() {
   withLongRunningApi {
     if (appPreferences.chatStopped.get() && appPreferences.storeDBPassphrase.get() && ksDatabasePassword.get() != null) {
       initChatController(startChat = ::showStartChatAfterRestartAlert)
     } else {
       initChatController()
     }
-    runMigrations()
   }
 }
 
@@ -58,6 +58,9 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
   try {
     if (chatModel.ctrlInitInProgress.value) return
     chatModel.ctrlInitInProgress.value = true
+    if (!appPrefs.storeDBPassphrase.get() && !appPrefs.initialRandomDBPassphrase.get()) {
+      ksDatabasePassword.remove()
+    }
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
     val confirm = confirmMigrations ?: if (appPreferences.developerTools.get() && appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
     var migrated: Array<Any> = chatMigrateInit(dbAbsolutePrefixPath, dbKey, MigrationConfirmation.Error.value)
@@ -88,11 +91,13 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
       return
     }
     platform.androidRestartNetworkObserver()
-    controller.apiSetTempFolder(coreTmpDir.absolutePath)
-    controller.apiSetFilesFolder(appFilesDir.absolutePath)
-    if (appPlatform.isDesktop) {
-      controller.apiSetRemoteHostsFolder(remoteHostsDir.absolutePath)
-    }
+    controller.apiSetAppFilePaths(
+      appFilesDir.absolutePath,
+      coreTmpDir.absolutePath,
+      wallpapersDir.parentFile.absolutePath,
+      remoteHostsDir.absolutePath,
+      ctrl
+    )
     controller.apiSetEncryptLocalFiles(controller.appPrefs.privacyEncryptLocalFiles.get())
     // If we migrated successfully means previous re-encryption process on database level finished successfully too
     if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)

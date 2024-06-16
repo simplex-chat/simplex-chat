@@ -47,9 +47,6 @@ fun FramedItemView(
   }
 
   @Composable
-  fun Color.toQuote(): Color = if (isInDarkTheme()) lighter(0.12f) else darker(0.12f)
-
-  @Composable
   fun ciQuotedMsgTextView(qi: CIQuote, lines: Int) {
     MarkdownText(
       qi.text,
@@ -89,11 +86,11 @@ fun FramedItemView(
 
   @Composable
   fun FramedItemHeader(caption: String, italic: Boolean, icon: Painter? = null, pad: Boolean = false) {
-    val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
-    val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+    val sentColor = MaterialTheme.appColors.sentQuote
+    val receivedColor = MaterialTheme.appColors.receivedQuote
     Row(
       Modifier
-        .background(if (sent) sentColor.toQuote() else receivedColor.toQuote())
+        .background(if (sent) sentColor else receivedColor)
         .fillMaxWidth()
         .padding(start = 8.dp, top = 6.dp, end = 12.dp, bottom = if (pad || (ci.quotedItem == null && ci.meta.itemForwarded == null)) 6.dp else 0.dp),
       horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -122,11 +119,11 @@ fun FramedItemView(
 
   @Composable
   fun ciQuoteView(qi: CIQuote) {
-    val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
-    val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+    val sentColor = MaterialTheme.appColors.sentQuote
+    val receivedColor = MaterialTheme.appColors.receivedQuote
     Row(
       Modifier
-        .background(if (sent) sentColor.toQuote() else receivedColor.toQuote())
+        .background(if (sent) sentColor else receivedColor)
         .fillMaxWidth()
         .combinedClickable(
           onLongClick = { showMenu.value = true },
@@ -188,8 +185,8 @@ fun FramedItemView(
   val transparentBackground = (ci.content.msgContent is MsgContent.MCImage || ci.content.msgContent is MsgContent.MCVideo) &&
       !ci.meta.isLive && ci.content.text.isEmpty() && ci.quotedItem == null && ci.meta.itemForwarded == null
 
-  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
-  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+  val sentColor = MaterialTheme.appColors.sentMessage
+  val receivedColor = MaterialTheme.appColors.receivedMessage
   Box(Modifier
     .clip(RoundedCornerShape(18.dp))
     .background(
@@ -241,7 +238,7 @@ fun FramedItemView(
           } else {
             when (val mc = ci.content.msgContent) {
               is MsgContent.MCImage -> {
-                CIImageView(image = mc.image, file = ci.file, metaColor = metaColor, imageProvider ?: return@PriorityLayout, showMenu, receiveFile)
+                CIImageView(image = mc.image, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, receiveFile)
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {

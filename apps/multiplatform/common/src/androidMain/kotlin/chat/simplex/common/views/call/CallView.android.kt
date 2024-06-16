@@ -11,6 +11,7 @@ import android.media.*
 import android.os.Build
 import android.os.PowerManager
 import android.os.PowerManager.PROXIMITY_SCREEN_OFF_WAKE_LOCK
+import android.view.View
 import android.view.ViewGroup
 import android.webkit.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -670,37 +671,43 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
   Box(Modifier.fillMaxSize()) {
     AndroidView(
       factory = { AndroidViewContext ->
-        (staticWebView ?: WebView(androidAppContext)).apply {
-          layoutParams = ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT,
-          )
-          this.webChromeClient = object: WebChromeClient() {
-            override fun onPermissionRequest(request: PermissionRequest) {
-              if (request.origin.toString().startsWith("file:/")) {
-                request.grant(request.resources)
-              } else {
-                Log.d(TAG, "Permission request from webview denied.")
-                request.deny()
+        try {
+          (staticWebView ?: WebView(androidAppContext)).apply {
+            layoutParams = ViewGroup.LayoutParams(
+              ViewGroup.LayoutParams.MATCH_PARENT,
+              ViewGroup.LayoutParams.MATCH_PARENT,
+            )
+            this.webChromeClient = object: WebChromeClient() {
+              override fun onPermissionRequest(request: PermissionRequest) {
+                if (request.origin.toString().startsWith("file:/")) {
+                  request.grant(request.resources)
+                } else {
+                  Log.d(TAG, "Permission request from webview denied.")
+                  request.deny()
+                }
               }
             }
+            this.webViewClient = LocalContentWebViewClient(webView, assetLoader)
+            this.clearHistory()
+            this.clearCache(true)
+            this.addJavascriptInterface(WebRTCInterface(onResponse), "WebRTCInterface")
+            this.setBackgroundColor(android.graphics.Color.BLACK)
+            val webViewSettings = this.settings
+            webViewSettings.allowFileAccess = true
+            webViewSettings.allowContentAccess = true
+            webViewSettings.javaScriptEnabled = true
+            webViewSettings.mediaPlaybackRequiresUserGesture = false
+            webViewSettings.cacheMode = WebSettings.LOAD_NO_CACHE
+            if (staticWebView == null) {
+              this.loadUrl("file:android_asset/www/android/call.html")
+            } else {
+              webView.value = this
+            }
           }
-          this.webViewClient = LocalContentWebViewClient(webView, assetLoader)
-          this.clearHistory()
-          this.clearCache(true)
-          this.addJavascriptInterface(WebRTCInterface(onResponse), "WebRTCInterface")
-          this.setBackgroundColor(android.graphics.Color.BLACK)
-          val webViewSettings = this.settings
-          webViewSettings.allowFileAccess = true
-          webViewSettings.allowContentAccess = true
-          webViewSettings.javaScriptEnabled = true
-          webViewSettings.mediaPlaybackRequiresUserGesture = false
-          webViewSettings.cacheMode = WebSettings.LOAD_NO_CACHE
-          if (staticWebView == null) {
-            this.loadUrl("file:android_asset/www/android/call.html")
-          } else {
-            webView.value = this
-          }
+        } catch (e: Exception) {
+          Log.e(TAG, "Error initializing WebView: ${e.stackTraceToString()}")
+          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), generalGetString(MR.strings.error_initializing_web_view).format(e.stackTraceToString()))
+          return@AndroidView View(androidAppContext)
         }
       }
     ) { /* WebView */ }

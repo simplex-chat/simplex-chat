@@ -229,7 +229,8 @@ CREATE TABLE rcv_files(
   REFERENCES xftp_file_descriptions ON DELETE SET NULL,
   agent_rcv_file_id BLOB NULL,
   agent_rcv_file_deleted INTEGER DEFAULT 0 CHECK(agent_rcv_file_deleted NOT NULL),
-  to_receive INTEGER
+  to_receive INTEGER,
+  user_approved_relays INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE snd_file_chunks(
   file_id INTEGER NOT NULL,
@@ -288,6 +289,7 @@ CREATE TABLE connections(
   pq_encryption INTEGER NOT NULL DEFAULT 0,
   pq_snd_enabled INTEGER,
   pq_rcv_enabled INTEGER,
+  quota_err_counter INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE

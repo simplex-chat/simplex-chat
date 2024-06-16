@@ -21,8 +21,8 @@ import kotlinx.datetime.Clock
 
 @Composable
 fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: MutableState<Boolean>, showViaProxy: Boolean) {
-  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
-  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+  val sentColor = MaterialTheme.appColors.sentMessage
+  val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
     shape = RoundedCornerShape(18.dp),
     color = if (ci.chatDir.sent) sentColor else receivedColor,

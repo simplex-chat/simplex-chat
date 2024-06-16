@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chat.item
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
@@ -64,7 +63,7 @@ fun CIFileView(
   fun fileAction() {
     if (file != null) {
       when {
-        file.fileStatus is CIFileStatus.RcvInvitation -> {
+        file.fileStatus is CIFileStatus.RcvInvitation || file.fileStatus is CIFileStatus.RcvAborted -> {
           if (fileSizeValid(file)) {
             receiveFile(file.fileId)
           } else {
@@ -88,6 +87,26 @@ fun CIFileView(
               )
             FileProtocol.LOCAL -> {}
           }
+        file.fileStatus is CIFileStatus.RcvError ->
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.file_error),
+            file.fileStatus.rcvFileError.errorInfo
+          )
+        file.fileStatus is CIFileStatus.RcvWarning ->
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.temporary_file_error),
+            file.fileStatus.rcvFileError.errorInfo
+          )
+        file.fileStatus is CIFileStatus.SndError ->
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.file_error),
+            file.fileStatus.sndFileError.errorInfo
+          )
+        file.fileStatus is CIFileStatus.SndWarning ->
+          AlertManager.shared.showAlertMsg(
+            generalGetString(MR.strings.temporary_file_error),
+            file.fileStatus.sndFileError.errorInfo
+          )
         file.forwardingAllowed() -> {
           withLongRunningApi(slow = 600_000) {
             var filePath = getLoadedFilePath(file)
@@ -155,15 +174,10 @@ fun CIFileView(
               FileProtocol.SMP -> progressIndicator()
               FileProtocol.LOCAL -> {}
             }
-          is CIFileStatus.SndComplete -> {
-            if ((file.forwardingAllowed() || (chatModel.connectedToRemote() && CIFile.cachedRemoteFileRequests[file.fileSource] == true))) {
-              fileIcon()
-            } else {
-              fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
-            }
-          }
+          is CIFileStatus.SndComplete -> fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
           is CIFileStatus.SndCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.SndError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
+          is CIFileStatus.SndWarning -> fileIcon(innerIcon = painterResource(MR.images.ic_warning_filled))
           is CIFileStatus.RcvInvitation ->
             if (fileSizeValid(file))
               fileIcon(innerIcon = painterResource(MR.images.ic_arrow_downward), color = MaterialTheme.colors.primary)
@@ -176,9 +190,12 @@ fun CIFileView(
             } else {
               progressIndicator()
             }
+          is CIFileStatus.RcvAborted ->
+            fileIcon(innerIcon = painterResource(MR.images.ic_sync_problem), color = MaterialTheme.colors.primary)
           is CIFileStatus.RcvComplete -> fileIcon()
           is CIFileStatus.RcvCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.RcvError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
+          is CIFileStatus.RcvWarning -> fileIcon(innerIcon = painterResource(MR.images.ic_warning_filled))
           is CIFileStatus.Invalid -> fileIcon(innerIcon = painterResource(MR.images.ic_question_mark))
         }
       } else {

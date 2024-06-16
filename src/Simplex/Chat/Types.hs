@@ -47,7 +47,8 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
-import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, RcvFileId, SAEntity (..), SndFileId, UserId)
+import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
@@ -1072,7 +1073,8 @@ data RcvFileTransfer = RcvFileTransfer
 data XFTPRcvFile = XFTPRcvFile
   { rcvFileDescription :: RcvFileDescr,
     agentRcvFileId :: Maybe AgentRcvFileId,
-    agentRcvFileDeleted :: Bool
+    agentRcvFileDeleted :: Bool,
+    userApprovedRelays :: Bool
   }
   deriving (Eq, Show)
 
@@ -1302,6 +1304,7 @@ data Connection = Connection
     pqSndEnabled :: Maybe PQEncryption,
     pqRcvEnabled :: Maybe PQEncryption,
     authErrCounter :: Int,
+    quotaErrCounter :: Int, -- if exceeds limit messages to group members are created as pending; sending to contacts is unaffected by this
     createdAt :: UTCTime
   }
   deriving (Eq, Show)
@@ -1314,6 +1317,15 @@ authErrDisableCount = 10
 
 connDisabled :: Connection -> Bool
 connDisabled Connection {authErrCounter} = authErrCounter >= authErrDisableCount
+
+quotaErrInactiveCount :: Int
+quotaErrInactiveCount = 5
+
+quotaErrSetOnMERR :: Int
+quotaErrSetOnMERR = 999
+
+connInactive :: Connection -> Bool
+connInactive Connection {quotaErrCounter} = quotaErrCounter >= quotaErrInactiveCount
 
 data SecurityCode = SecurityCode {securityCode :: Text, verifiedAt :: UTCTime}
   deriving (Eq, Show)
@@ -1571,7 +1583,7 @@ instance TextEncoding CommandFunction where
     CFAckMessage -> "ack_message"
     CFDeleteConn -> "delete_conn"
 
-commandExpectedResponse :: CommandFunction -> APartyCmdTag 'Agent
+commandExpectedResponse :: CommandFunction -> AEvtTag
 commandExpectedResponse = \case
   CFCreateConnGrpMemInv -> t INV_
   CFCreateConnGrpInv -> t INV_
@@ -1583,7 +1595,7 @@ commandExpectedResponse = \case
   CFAckMessage -> t OK_
   CFDeleteConn -> t OK_
   where
-    t = APCT SAEConn
+    t = AEvtTag SAEConn
 
 data CommandData = CommandData
   { cmdId :: CommandId,

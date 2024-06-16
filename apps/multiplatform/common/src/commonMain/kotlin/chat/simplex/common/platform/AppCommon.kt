@@ -42,6 +42,12 @@ fun runMigrations() {
           ChatController.appPrefs.currentTheme.set(DefaultTheme.SIMPLEX.name)
         }
         lastMigration.set(117)
+      } else if (lastMigration.get() < 203) {
+        // Moving to a different key for storing themes as a List
+        val oldOverrides = ChatController.appPrefs.themeOverridesOld.get().values.toList()
+        ChatController.appPrefs.themeOverrides.set(oldOverrides)
+        ChatController.appPrefs.currentThemeIds.set(oldOverrides.associate { it.base.themeName to it.themeId })
+        lastMigration.set(203)
       } else {
         lastMigration.set(BuildConfigCommon.ANDROID_VERSION_CODE)
         break

@@ -13,6 +13,7 @@
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -fno-warn-implicit-lift #-}
 
 module Simplex.Chat.Controller where
 
@@ -67,13 +68,14 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
-import Simplex.Messaging.Agent.Client (AgentLocks, AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, UserNetworkInfo)
+import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, UserNetworkInfo)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Client (SMPProxyMode (..), SMPProxyFallback (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -81,10 +83,11 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SMPMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServerWithAuth, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SMPMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServer, XFTPServerWithAuth, userProtocol)
+import Simplex.Messaging.Server.QueueStore.QueueInfo
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
-import Simplex.Messaging.Transport.Client (TransportHost)
+import Simplex.Messaging.Transport.Client (SocksProxy, TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, catchAllErrors', tryAllErrors, tryAllErrors', (<$$>))
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitation)
@@ -205,6 +208,7 @@ data ChatController = ChatController
     chatStore :: SQLiteStore,
     chatStoreChanged :: TVar Bool, -- if True, chat should be fully restarted
     random :: TVar ChaChaDRG,
+    eventSeq :: TVar Int,
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, Maybe RemoteHostId, ChatResponse),
     connNetworkStatuses :: TMap AgentConnId NetworkStatus,
@@ -291,7 +295,7 @@ data ChatCommand
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
-  | APIForwardChatItem {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemId :: ChatItemId}
+  | APIForwardChatItem {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemId :: ChatItemId, ttl :: Maybe Int}
   | APIUserRead UserId
   | UserRead
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
@@ -348,6 +352,7 @@ data ChatCommand
   | GetChatItemTTL
   | APISetNetworkConfig NetworkConfig
   | APIGetNetworkConfig
+  | SetNetworkConfig SimpleNetCfg
   | APISetNetworkInfo UserNetworkInfo
   | ReconnectAllServers
   | APISetChatSettings ChatRef ChatSettings
@@ -355,6 +360,8 @@ data ChatCommand
   | APIContactInfo ContactId
   | APIGroupInfo GroupId
   | APIGroupMemberInfo GroupId GroupMemberId
+  | APIContactQueueInfo ContactId
+  | APIGroupMemberQueueInfo GroupId GroupMemberId
   | APISwitchContact ContactId
   | APISwitchGroupMember GroupId GroupMemberId
   | APIAbortSwitchContact ContactId
@@ -373,6 +380,8 @@ data ChatCommand
   | ContactInfo ContactName
   | ShowGroupInfo GroupName
   | GroupMemberInfo GroupName ContactName
+  | ContactQueueInfo ContactName
+  | GroupMemberQueueInfo GroupName ContactName
   | SwitchContact ContactName
   | SwitchGroupMember GroupName ContactName
   | AbortSwitchContact ContactName
@@ -458,8 +467,8 @@ data ChatCommand
   | ForwardFile ChatName FileTransferId
   | ForwardImage ChatName FileTransferId
   | SendFileDescription ChatName FilePath
-  | ReceiveFile {fileId :: FileTransferId, storeEncrypted :: Maybe Bool, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
-  | SetFileToReceive {fileId :: FileTransferId, storeEncrypted :: Maybe Bool}
+  | ReceiveFile {fileId :: FileTransferId, userApprovedRelays :: Bool, storeEncrypted :: Maybe Bool, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
+  | SetFileToReceive {fileId :: FileTransferId, userApprovedRelays :: Bool, storeEncrypted :: Maybe Bool}
   | CancelFile FileTransferId
   | FileStatus FileTransferId
   | ShowProfile -- UserId (not used in UI)
@@ -502,6 +511,7 @@ data ChatCommand
   | GetAgentWorkers
   | GetAgentWorkersDetails
   | GetAgentMsgCounts
+  | GetAgentQueuesInfo
   | -- The parser will return this command for strings that start from "//".
     -- This command should be processed in preCmdHook
     CustomChatCommand ByteString
@@ -566,6 +576,7 @@ data ChatResponse
   | CRContactInfo {user :: User, contact :: Contact, connectionStats_ :: Maybe ConnectionStats, customUserProfile :: Maybe Profile}
   | CRGroupInfo {user :: User, groupInfo :: GroupInfo, groupSummary :: GroupSummary}
   | CRGroupMemberInfo {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
+  | CRQueueInfo {user :: User, rcvMsgInfo :: Maybe RcvMsgInfo, queueInfo :: QueueInfo}
   | CRContactSwitchStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
   | CRGroupMemberSwitchStarted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
   | CRContactSwitchAborted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
@@ -643,6 +654,7 @@ data ChatResponse
   | CRRcvFileCancelled {user :: User, chatItem_ :: Maybe AChatItem, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileSndCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileError {user :: User, chatItem_ :: Maybe AChatItem, agentError :: AgentErrorType, rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileWarning {user :: User, chatItem_ :: Maybe AChatItem, agentError :: AgentErrorType, rcvFileTransfer :: RcvFileTransfer}
   | CRSndFileStart {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileComplete {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileRcvCancelled {user :: User, chatItem_ :: Maybe AChatItem, sndFileTransfer :: SndFileTransfer}
@@ -655,6 +667,7 @@ data ChatResponse
   | CRSndStandaloneFileComplete {user :: User, fileTransferMeta :: FileTransferMeta, rcvURIs :: [Text]}
   | CRSndFileCancelledXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta}
   | CRSndFileError {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, errorMessage :: Text}
+  | CRSndFileWarning {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, errorMessage :: Text}
   | CRUserProfileUpdated {user :: User, fromProfile :: Profile, toProfile :: Profile, updateSummary :: UserProfileUpdateSummary}
   | CRUserProfileImage {user :: User, profile :: Profile}
   | CRContactAliasUpdated {user :: User, toContact :: Contact}
@@ -748,7 +761,10 @@ data ChatResponse
   | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
   | CRAgentMsgCounts {msgCounts :: [(Text, (Int, Int))]}
+  | CRAgentQueuesInfo {agentQueuesInfo :: AgentQueuesInfo}
+  | CRContactDisabled {user :: User, contact :: Contact}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
+  | CRConnectionInactive {connectionEntity :: ConnectionEntity, inactive :: Bool}
   | CRAgentRcvQueueDeleted {agentConnId :: AgentConnId, server :: SMPServer, agentQueueId :: AgentQueueId, agentError_ :: Maybe AgentErrorType}
   | CRAgentConnDeleted {agentConnId :: AgentConnId}
   | CRAgentUserDeleted {agentUserId :: Int64}
@@ -949,6 +965,18 @@ data AppFilePathsConfig = AppFilePathsConfig
   }
   deriving (Show)
 
+data SimpleNetCfg = SimpleNetCfg
+  { socksProxy :: Maybe SocksProxy,
+    smpProxyMode_ :: Maybe SMPProxyMode,
+    smpProxyFallback_ :: Maybe SMPProxyFallback,
+    tcpTimeout_ :: Maybe Int,
+    logTLSErrors :: Bool
+  }
+  deriving (Show)
+
+defaultSimpleNetCfg :: SimpleNetCfg
+defaultSimpleNetCfg = SimpleNetCfg Nothing Nothing Nothing Nothing False
+
 data ContactSubStatus = ContactSubStatus
   { contact :: Contact,
     contactError :: Maybe ChatError
@@ -1114,7 +1142,6 @@ data ChatErrorType
   | CECantBlockMemberForSelf {groupInfo :: GroupInfo, member :: GroupMember, setShowMessages :: Bool}
   | CEGroupMemberUserRemoved
   | CEGroupMemberNotFound
-  | CEGroupMemberIntroNotFound {contactName :: ContactName}
   | CEGroupCantResendInvitation {groupInfo :: GroupInfo, contactName :: ContactName}
   | CEGroupInternal {message :: String}
   | CEFileNotFound {message :: String}
@@ -1131,8 +1158,7 @@ data ChatErrorType
   | CEFileImageType {filePath :: FilePath}
   | CEFileImageSize {filePath :: FilePath}
   | CEFileNotReceived {fileId :: FileTransferId}
-  | CEXFTPRcvFile {fileId :: FileTransferId, agentRcvFileId :: AgentRcvFileId, agentError :: AgentErrorType}
-  | CEXFTPSndFile {fileId :: FileTransferId, agentSndFileId :: AgentSndFileId, agentError :: AgentErrorType}
+  | CEFileNotApproved {fileId :: FileTransferId, unknownServers :: [XFTPServer]}
   | CEFallbackToSMPProhibited {fileId :: FileTransferId}
   | CEInlineFileProhibited {fileId :: FileTransferId}
   | CEInvalidQuote

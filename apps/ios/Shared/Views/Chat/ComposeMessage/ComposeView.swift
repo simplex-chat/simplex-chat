@@ -712,9 +712,9 @@ struct ComposeView: View {
         if chat.chatInfo.contact?.nextSendGrpInv ?? false {
             await sendMemberContactInvitation()
         } else if case let .forwardingItem(ci, fromChatInfo) = composeState.contextItem {
-            sent = await forwardItem(ci, fromChatInfo)
+            sent = await forwardItem(ci, fromChatInfo, ttl)
             if !composeState.message.isEmpty {
-                sent = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: nil)
+                sent = await send(checkLinkPreview(), quoted: sent?.id, live: false, ttl: ttl)
             }
         } else if case let .editingItem(ci) = composeState.contextItem {
             sent = await updateMessage(ci, live: live)
@@ -890,13 +890,14 @@ struct ComposeView: View {
             return nil
         }
 
-        func forwardItem(_ forwardedItem: ChatItem, _ fromChatInfo: ChatInfo) async -> ChatItem? {
+        func forwardItem(_ forwardedItem: ChatItem, _ fromChatInfo: ChatInfo, _ ttl: Int?) async -> ChatItem? {
             if let chatItem = await apiForwardChatItem(
                 toChatType: chat.chatInfo.chatType,
                 toChatId: chat.chatInfo.apiId,
                 fromChatType: fromChatInfo.chatType,
                 fromChatId: fromChatInfo.apiId,
-                itemId: forwardedItem.id
+                itemId: forwardedItem.id,
+                ttl: ttl
             ) {
                 await MainActor.run {
                     chatModel.addChatItem(chat.chatInfo, chatItem)
