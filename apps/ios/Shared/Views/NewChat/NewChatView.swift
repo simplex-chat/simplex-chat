@@ -367,11 +367,12 @@ struct ScannerInView: View {
     @Binding var showQRCodeScanner: Bool
     let processQRCode: (_ resp: Result<ScanResult, ScanError>) -> Void
     @State private var cameraAuthorizationStatus: AVAuthorizationStatus?
+    var scanMode: ScanMode = .continuous
 
     var body: some View {
         Group {
             if showQRCodeScanner, case .authorized = cameraAuthorizationStatus {
-                CodeScannerView(codeTypes: [.qr], scanMode: .continuous, completion: processQRCode)
+                CodeScannerView(codeTypes: [.qr], scanMode: scanMode, completion: processQRCode)
                     .aspectRatio(1, contentMode: .fit)
                     .cornerRadius(12)
                     .listRowBackground(Color.clear)
@@ -435,6 +436,7 @@ struct ScannerInView: View {
         }
     }
 }
+
 
 private func linkTextView(_ link: String) -> some View {
     Text(link)

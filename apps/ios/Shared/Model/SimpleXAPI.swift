@@ -1957,12 +1957,28 @@ func processReceivedMsg(_ res: ChatResponse) async {
             let state = UIRemoteCtrlSessionState.connected(remoteCtrl: remoteCtrl, sessionCode: m.remoteCtrlSession?.sessionCode ?? "")
             m.remoteCtrlSession = m.remoteCtrlSession?.updateState(state)
         }
-    case .remoteCtrlStopped:
+    case let .remoteCtrlStopped(_, rcStopReason):
         // This delay is needed to cancel the session that fails on network failure,
         // e.g. when user did not grant permission to access local network yet.
         if let sess = m.remoteCtrlSession {
             await MainActor.run {
                 m.remoteCtrlSession = nil
+                dismissAllSheets() {
+                    switch rcStopReason {
+                    case .connectionFailed(.errorAgent(.RCP(.identity))):
+                        AlertManager.shared.showAlertMsg(
+                            title: "Connection with desktop stopped",
+                            message: "This link was used with another mobile device, please create a new link on the desktop."
+                        )
+                    default:
+                        AlertManager.shared.showAlert(Alert(
+                            title: Text("Connection with desktop stopped"),
+                            message: Text("Please check that mobile and desktop are connected to the same local network, and that desktop firewall allows the connection.\nPlease share any other issues with the developers."),
+                            primaryButton: .default(Text("Ok")),
+                            secondaryButton: .default(Text("Copy error")) { UIPasteboard.general.string = String(describing: rcStopReason) }
+                        ))
+                    }
+                }
             }
             if case .connected = sess.sessionState {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
