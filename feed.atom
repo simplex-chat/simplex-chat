@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom" xml:base="https://simplex.chat/">
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+    <id>https://simplex.chat/</id>
+    <link type="text/html" rel="alternate" href="https://simplex.chat/"/>
+    <link type="application/atom+xml" rel="self" href="https://simplex.chat/feed.atom"/>
     <title>SimpleX Chat Blog</title>
     <subtitle>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</subtitle>
-    <link href="https://simplex.chat/feed.atom" rel="self"/>
-    <link href="https://simplex.chat/"/>
     <updated>2024-06-04T00:00:00Z</updated>
-    <id>https://simplex.chat/</id>
     <author>
         <name>SimpleX Chat</name>
         <email>chat@simplex.chat</email>
     </author>
         <entry>
-            <title>Simplex Chat</title>
-            <link href="https://simplex.chat/blog/20201022-simplex-chat.html"/>
-            
-            <updated>22 Oct 2020</updated>
             <id>https://simplex.chat/blog/20201022-simplex-chat.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat&quot; tabindex=&quot;-1&quot;&gt;Simplex chat&lt;/h1&gt;
+            <!-- <updated>22 Oct 2020</updated> -->
+            <updated>2020-10-22T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20201022-simplex-chat.html"/>
+            <title>Simplex Chat</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat&quot; tabindex=&quot;-1&quot;&gt;Simplex chat&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Oct 22, 2020&lt;/p&gt;
 &lt;p&gt;&lt;a href=&quot;https://simplex.chat/&quot;&gt;https://simplex.chat&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;I&#39;d really appreciate your feedback, criticism and suggestions on the open-source idea I was slowly working on since early 2020. I recently made the demo server for the low-level message queue protocol (&amp;quot;simplex messaging protocol&amp;quot;) and the website to try to explain the chat idea that would use this protocol.&lt;/p&gt;
@@ -26,15 +26,18 @@
 &lt;p&gt;Any criticism would be great - thank you in advance!&lt;/p&gt;
 &lt;p&gt;Originally published at &lt;a href=&quot;https://www.reddit.com/r/haskell/comments/jg6uh4/simplex_chat/&quot;&gt;https://www.reddit.com/r/haskell/comments/jg6uh4/simplex_chat/&lt;/a&gt;&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>Announcing SimpleX Chat Prototype!</title>
-            <link href="https://simplex.chat/blog/20210512-simplex-chat-terminal-ui.html"/>
-            
-            <updated>12 May 2021</updated>
             <id>https://simplex.chat/blog/20210512-simplex-chat-terminal-ui.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;announcing-simplex-chat-prototype&quot; tabindex=&quot;-1&quot;&gt;Announcing SimpleX Chat Prototype!&lt;/h1&gt;
+            <!-- <updated>12 May 2021</updated> -->
+            <updated>2021-05-12T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20210512-simplex-chat-terminal-ui.html"/>
+            <title>Announcing SimpleX Chat Prototype!</title>
+            <content type="html">&lt;h1 id=&quot;announcing-simplex-chat-prototype&quot; tabindex=&quot;-1&quot;&gt;Announcing SimpleX Chat Prototype!&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; May 12, 2021&lt;/p&gt;
 &lt;p&gt;For the last six months &lt;a href=&quot;https://github.com/epoberezkin&quot;&gt;me&lt;/a&gt; and my son Efim have been working to bring you a working prototype of SimpleX Chat. We&#39;re excited to announce SimpleX Chat terminal client is now available &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat&quot;&gt;here&lt;/a&gt; on Linux, Windows and Mac (you can either build from source or download the binary for Linux, Windows or Mac from the latest release).&lt;/p&gt;
 &lt;p&gt;We’ve been using the terminal client between us and a few other people for a couple of months now, eating our own “dog food”, and have developed up to version 0.3.1, with most of the messaging protocol features we originally planned&lt;/p&gt;
@@ -52,15 +55,18 @@
 &lt;p&gt;We&#39;re building a new kind of chat network - the only network that lets you control your chat. We&#39;d really appreciate your feedback, criticism and support - a star on the github repo, signing up to the mailing list or any contribution to the project will help. There is so much more to do!&lt;/p&gt;
 &lt;p&gt;Originally published at &lt;a href=&quot;https://www.reddit.com/r/haskell/comments/naw6lz/simplex_chat_prototype_terminal_ui_made_in_haskell/&quot;&gt;https://www.reddit.com/r/haskell/comments/naw6lz/simplex_chat_prototype_terminal_ui_made_in_haskell/&lt;/a&gt;&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX announces SimpleX Chat v0.4</title>
-            <link href="https://simplex.chat/blog/20210914-simplex-chat-v0.4-released.html"/>
-            
-            <updated>14 Sep 2021</updated>
             <id>https://simplex.chat/blog/20210914-simplex-chat-v0.4-released.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-announces-simplex-chat-v04&quot; tabindex=&quot;-1&quot;&gt;SimpleX announces SimpleX Chat v0.4&lt;/h1&gt;
+            <!-- <updated>14 Sep 2021</updated> -->
+            <updated>2021-09-14T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20210914-simplex-chat-v0.4-released.html"/>
+            <title>SimpleX announces SimpleX Chat v0.4</title>
+            <content type="html">&lt;h1 id=&quot;simplex-announces-simplex-chat-v04&quot; tabindex=&quot;-1&quot;&gt;SimpleX announces SimpleX Chat v0.4&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Sep 14, 2021&lt;/p&gt;
 &lt;h2 id=&quot;open-source-decentralized-chat-that-uses-privacy-preserving-message-routing-protocol&quot; tabindex=&quot;-1&quot;&gt;Open-source decentralized chat that uses privacy-preserving message routing protocol&lt;/h2&gt;
 &lt;p&gt;We are building a new platform for distributed Internet applications where privacy of the messages &lt;em&gt;and&lt;/em&gt; the network matter. &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat&quot;&gt;SimpleX Chat&lt;/a&gt; is our first application, a chat application built on the SimpleX platform that serves as an example of the power of the platform and as a reference application.&lt;/p&gt;
@@ -82,15 +88,18 @@
 &lt;p&gt;Our goal is to create a new kind of chat platform that lets you control your chat!&lt;/p&gt;
 &lt;p&gt;Originally published at &lt;a href=&quot;https://www.reddit.com/r/selfhosted/comments/poal79/simplex_chat_an_opensource_decentralized_chat/&quot;&gt;https://www.reddit.com/r/selfhosted/comments/poal79/simplex_chat_an_opensource_decentralized_chat/&lt;/a&gt;&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX announces SimpleX Chat v0.5</title>
-            <link href="https://simplex.chat/blog/20211208-simplex-chat-v0.5-released.html"/>
-            
-            <updated>08 Dec 2021</updated>
             <id>https://simplex.chat/blog/20211208-simplex-chat-v0.5-released.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-announces-simplex-chat-v05&quot; tabindex=&quot;-1&quot;&gt;SimpleX announces SimpleX Chat v0.5&lt;/h1&gt;
+            <!-- <updated>08 Dec 2021</updated> -->
+            <updated>2021-12-08T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20211208-simplex-chat-v0.5-released.html"/>
+            <title>SimpleX announces SimpleX Chat v0.5</title>
+            <content type="html">&lt;h1 id=&quot;simplex-announces-simplex-chat-v05&quot; tabindex=&quot;-1&quot;&gt;SimpleX announces SimpleX Chat v0.5&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Dec 08, 2021&lt;/p&gt;
 &lt;h2 id=&quot;simplex-chat-is-the-first-chat-platform-that-is-100percent-private-by-design-simplex-no-access-to-your-connections-graph&quot; tabindex=&quot;-1&quot;&gt;Simplex Chat is the first chat platform that is 100% private by design - SimpleX no access to your connections graph&lt;/h2&gt;
 &lt;p&gt;We are building a new platform for distributed Internet applications where privacy of the messages &lt;em&gt;and&lt;/em&gt; the network matter. &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat&quot;&gt;SimpleX Chat&lt;/a&gt; is our first application, a chat application built on the SimpleX platform that serves as an example of the power of the platform and as a reference application.&lt;/p&gt;
@@ -107,15 +116,18 @@
 &lt;p&gt;Our goal is to create a new kind of chat platform that lets you control your chat!&lt;/p&gt;
 &lt;p&gt;Originally published at &lt;a href=&quot;https://www.reddit.com/r/haskell/comments/rc0xkn/simplex_chat_the_first_chat_platform_that_is_100/&quot;&gt;https://www.reddit.com/r/haskell/comments/rc0xkn/simplex_chat_the_first_chat_platform_that_is_100/&lt;/a&gt;&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX announces SimpleX Chat v1</title>
-            <link href="https://simplex.chat/blog/20220112-simplex-chat-v1-released.html"/>
-            
-            <updated>12 Jan 2022</updated>
             <id>https://simplex.chat/blog/20220112-simplex-chat-v1-released.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-announces-simplex-chat-v1&quot; tabindex=&quot;-1&quot;&gt;SimpleX announces SimpleX Chat v1&lt;/h1&gt;
+            <!-- <updated>12 Jan 2022</updated> -->
+            <updated>2022-01-12T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20220112-simplex-chat-v1-released.html"/>
+            <title>SimpleX announces SimpleX Chat v1</title>
+            <content type="html">&lt;h1 id=&quot;simplex-announces-simplex-chat-v1&quot; tabindex=&quot;-1&quot;&gt;SimpleX announces SimpleX Chat v1&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Jan 12, 2022&lt;/p&gt;
 &lt;h2 id=&quot;the-most-private-and-secure-chat-and-application-platform&quot; tabindex=&quot;-1&quot;&gt;The most private and secure chat and application platform&lt;/h2&gt;
 &lt;p&gt;We are building a new platform for distributed Internet applications where privacy of the messages &lt;em&gt;and&lt;/em&gt; the network matter. &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat&quot;&gt;SimpleX Chat&lt;/a&gt; is our first application, a messaging application built on the SimpleX platform.&lt;/p&gt;
@@ -146,15 +158,18 @@
 &lt;h2 id=&quot;we-look-forward-to-you-using-it&quot; tabindex=&quot;-1&quot;&gt;We look forward to you using it!&lt;/h2&gt;
 &lt;p&gt;We look forward to your feedback and suggestions - via GitHub issues or via SimpleX Chat - you can connect to the team with &lt;code&gt;/simplex&lt;/code&gt; command once you run the chat.&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX announces SimpleX Chat public beta for iOS</title>
-            <link href="https://simplex.chat/blog/20220214-simplex-chat-ios-public-beta.html"/>
-            
-            <updated>14 Feb 2022</updated>
             <id>https://simplex.chat/blog/20220214-simplex-chat-ios-public-beta.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-announces-simplex-chat-public-beta-for-ios&quot; tabindex=&quot;-1&quot;&gt;SimpleX announces SimpleX Chat public beta for iOS&lt;/h1&gt;
+            <!-- <updated>14 Feb 2022</updated> -->
+            <updated>2022-02-14T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20220214-simplex-chat-ios-public-beta.html"/>
+            <title>SimpleX announces SimpleX Chat public beta for iOS</title>
+            <content type="html">&lt;h1 id=&quot;simplex-announces-simplex-chat-public-beta-for-ios&quot; tabindex=&quot;-1&quot;&gt;SimpleX announces SimpleX Chat public beta for iOS&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Feb 14, 2022&lt;/p&gt;
 &lt;h2 id=&quot;private-and-secure-chat-and-application-platform-public-beta-is-now-available-for-iphones-with-ios-15&quot; tabindex=&quot;-1&quot;&gt;Private and secure chat and application platform - &lt;a href=&quot;https://testflight.apple.com/join/DWuT2LQu&quot;&gt;public beta is now available&lt;/a&gt; for iPhones with iOS 15.&lt;/h2&gt;
 &lt;p&gt;Our new iPhone app is very basic - right now it only supports text messages and emojis.&lt;/p&gt;
@@ -183,15 +198,18 @@
 &lt;p&gt;SimpleX also allows people to host their own servers to have control of their chat data. SimpleX servers are exceptionally lightweight and require a single process with the initial memory footprint of under 20 Mb, which grows as the server adds in-memory queues (even with 10,000 queues it uses less than 50Mb, not accounting for messages). It should be considered though that while self-hosting the servers provides more control, it may reduce meta-data privacy, as it is easier to correlate the traffic of servers with small number of messages coming through.&lt;/p&gt;
 &lt;p&gt;Further details on platform objectives and technical design are available &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md&quot;&gt;in SimpleX platform overview&lt;/a&gt;.&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX announces SimpleX Chat mobile apps for iOS and Android</title>
-            <link href="https://simplex.chat/blog/20220308-simplex-chat-mobile-apps.html"/>
-            
-            <updated>08 Mar 2022</updated>
             <id>https://simplex.chat/blog/20220308-simplex-chat-mobile-apps.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-announces-simplex-chat-mobile-apps-for-ios-and-android&quot; tabindex=&quot;-1&quot;&gt;SimpleX announces SimpleX Chat mobile apps for iOS and Android&lt;/h1&gt;
+            <!-- <updated>08 Mar 2022</updated> -->
+            <updated>2022-03-08T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20220308-simplex-chat-mobile-apps.html"/>
+            <title>SimpleX announces SimpleX Chat mobile apps for iOS and Android</title>
+            <content type="html">&lt;h1 id=&quot;simplex-announces-simplex-chat-mobile-apps-for-ios-and-android&quot; tabindex=&quot;-1&quot;&gt;SimpleX announces SimpleX Chat mobile apps for iOS and Android&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; March 8, 2022&lt;/p&gt;
 &lt;h2 id=&quot;simplex-chat-is-the-first-chat-platform-that-is-100percent-private-by-design-it-has-no-access-to-your-connections-graph&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat is the first chat platform that is 100% private by design - it has no access to your connections graph&lt;/h2&gt;
 &lt;p&gt;We have now released iPhone and Android apps to &lt;a href=&quot;https://apps.apple.com/us/app/simplex-chat/id1605771084&quot;&gt;Apple AppStore&lt;/a&gt; and &lt;a href=&quot;https://play.google.com/store/apps/details?id=chat.simplex.app&quot;&gt;Google Play Store&lt;/a&gt;, &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk&quot;&gt;APK for Android&lt;/a&gt; is also available for direct download.&lt;/p&gt;
@@ -238,15 +256,18 @@
 &lt;/ul&gt;
 &lt;p&gt;Please let us know what else you think is important and if you find any bugs.&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>Instant notifications for SimpleX Chat mobile apps</title>
-            <link href="https://simplex.chat/blog/20220404-simplex-chat-instant-notifications.html"/>
-            
-            <updated>04 Apr 2022</updated>
             <id>https://simplex.chat/blog/20220404-simplex-chat-instant-notifications.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;instant-notifications-for-simplex-chat-mobile-apps&quot; tabindex=&quot;-1&quot;&gt;Instant notifications for SimpleX Chat mobile apps&lt;/h1&gt;
+            <!-- <updated>04 Apr 2022</updated> -->
+            <updated>2022-04-04T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20220404-simplex-chat-instant-notifications.html"/>
+            <title>Instant notifications for SimpleX Chat mobile apps</title>
+            <content type="html">&lt;h1 id=&quot;instant-notifications-for-simplex-chat-mobile-apps&quot; tabindex=&quot;-1&quot;&gt;Instant notifications for SimpleX Chat mobile apps&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; April 04, 2022&lt;/p&gt;
 &lt;h2 id=&quot;simplex-chat-is-the-first-chat-platform-that-is-100percent-private-by-design-it-has-no-access-to-your-connections&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat is the first chat platform that is 100% private by design - it has no access to your connections&lt;/h2&gt;
 &lt;p&gt;Since we released SimpleX Chat mobile apps couple of weeks ago we&#39;ve had a lot of excitement from our users - nearly 2000 people downloaded the app after &lt;a href=&quot;https://simplex.chat/blog/20220308-simplex-chat-mobile-apps.html&quot;&gt;the announcement&lt;/a&gt;!&lt;/p&gt;
@@ -334,15 +355,18 @@
 &lt;/ul&gt;
 &lt;p&gt;Thank you!&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat v2.0 - sending images and files in mobile apps</title>
-            <link href="https://simplex.chat/blog/20220511-simplex-chat-v2-images-files.html"/>
-            
-            <updated>11 May 2022</updated>
             <id>https://simplex.chat/blog/20220511-simplex-chat-v2-images-files.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v20-sending-images-and-files-in-mobile-apps&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v2.0 - sending images and files in mobile apps&lt;/h1&gt;
+            <!-- <updated>11 May 2022</updated> -->
+            <updated>2022-05-11T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20220511-simplex-chat-v2-images-files.html"/>
+            <title>SimpleX Chat v2.0 - sending images and files in mobile apps</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-v20-sending-images-and-files-in-mobile-apps&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v2.0 - sending images and files in mobile apps&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; May 11, 2022&lt;/p&gt;
 &lt;h2 id=&quot;new-in-version-20-sending-images-and-files-privately&quot; tabindex=&quot;-1&quot;&gt;New in version 2.0 - sending images and files privately&lt;/h2&gt;
 &lt;p&gt;To send image and files SimpleX Chat uses privacy-preserving system components, both in iOS and Android apps. We do not ask for permission to access multiple or selected files, as, for example, Signal and Telegram do - it compromises either privacy or convenience.&lt;/p&gt;
@@ -365,15 +389,18 @@
 &lt;/ol&gt;
 &lt;img src=&quot;https://simplex.chat/images/conversation.png&quot; alt=&quot;Make a private connection&quot; width=&quot;594&quot; height=&quot;360&quot; /&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat v2.1 - better conversation privacy</title>
-            <link href="https://simplex.chat/blog/20220524-simplex-chat-better-privacy.html"/>
-            
-            <updated>24 May 2022</updated>
             <id>https://simplex.chat/blog/20220524-simplex-chat-better-privacy.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v21-better-conversation-privacy&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v2.1 - better conversation privacy&lt;/h1&gt;
+            <!-- <updated>24 May 2022</updated> -->
+            <updated>2022-05-24T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20220524-simplex-chat-better-privacy.html"/>
+            <title>SimpleX Chat v2.1 - better conversation privacy</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-v21-better-conversation-privacy&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v2.1 - better conversation privacy&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; May 24, 2022&lt;/p&gt;
 &lt;h2 id=&quot;new-in-version-21-clearing-conversations-without-deleting-contacts&quot; tabindex=&quot;-1&quot;&gt;New in version 2.1 - clearing conversations without deleting contacts&lt;/h2&gt;
 &lt;p&gt;In this version you can irreversibly delete individual messages after they were deleted by a sender, and also completely clear the conversation.&lt;/p&gt;
@@ -383,15 +410,18 @@
 &lt;p&gt;See &lt;a href=&quot;https://simplex.chat/blog/20220511-simplex-chat-v2-images-files.html&quot;&gt;v2 announcement&lt;/a&gt; for more information about SimpleX platform and how it works.&lt;/p&gt;
 &lt;p&gt;Read about SimpleX design in &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md&quot;&gt;whitepaper&lt;/a&gt;.&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat v2.2 - the new privacy and security features</title>
-            <link href="https://simplex.chat/blog/20220604-simplex-chat-new-privacy-security-settings.html"/>
-            
-            <updated>04 Jun 2022</updated>
             <id>https://simplex.chat/blog/20220604-simplex-chat-new-privacy-security-settings.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v22-the-new-privacy-and-security-features&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v2.2 - the new privacy and security features&lt;/h1&gt;
+            <!-- <updated>04 Jun 2022</updated> -->
+            <updated>2022-06-04T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20220604-simplex-chat-new-privacy-security-settings.html"/>
+            <title>SimpleX Chat v2.2 - the new privacy and security features</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-v22-the-new-privacy-and-security-features&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v2.2 - the new privacy and security features&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; June 4, 2022&lt;/p&gt;
 &lt;p&gt;See &lt;a href=&quot;https://simplex.chat/blog/20220511-simplex-chat-v2-images-files.html&quot;&gt;v2 announcement&lt;/a&gt; for more information about SimpleX platform and how it protects your privacy by avoiding user identities of any kind in its design - SimpleX, unlike any other messaging platform, has no identity keys or any numbers that identify its users.&lt;/p&gt;
 &lt;h2 id=&quot;new-privacy-and-security-settings-in-version-22&quot; tabindex=&quot;-1&quot;&gt;New Privacy and Security settings in version 2.2&lt;/h2&gt;
@@ -419,15 +449,18 @@
 &lt;p&gt;See &lt;a href=&quot;https://simplex.chat/blog/20220112-simplex-chat-v1-released.html&quot;&gt;v1 announcement&lt;/a&gt; for information on how SimpleX protects the security of the messages.&lt;/p&gt;
 &lt;p&gt;Read about SimpleX design in &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md&quot;&gt;whitepaper&lt;/a&gt;.&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX announces SimpleX Chat v3 &amp;mdash; with encrypted calls and iOS push notifications</title>
-            <link href="https://simplex.chat/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html"/>
-            
-            <updated>11 Jul 2022</updated>
             <id>https://simplex.chat/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-announces-simplex-chat-v3-with-encrypted-calls-and-ios-push-notifications&quot; tabindex=&quot;-1&quot;&gt;SimpleX announces SimpleX Chat v3 - with encrypted calls and iOS push notifications&lt;/h1&gt;
+            <!-- <updated>11 Jul 2022</updated> -->
+            <updated>2022-07-11T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html"/>
+            <title>SimpleX announces SimpleX Chat v3 &amp;mdash; with encrypted calls and iOS push notifications</title>
+            <content type="html">&lt;h1 id=&quot;simplex-announces-simplex-chat-v3-with-encrypted-calls-and-ios-push-notifications&quot; tabindex=&quot;-1&quot;&gt;SimpleX announces SimpleX Chat v3 - with encrypted calls and iOS push notifications&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Jul 11, 2022&lt;/p&gt;
 &lt;h2 id=&quot;new-in-version-3&quot; tabindex=&quot;-1&quot;&gt;New in version 3&lt;/h2&gt;
 &lt;ul&gt;
@@ -489,15 +522,18 @@
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat v3.1-beta is released &amp;mdash; improved battery/traffic usage</title>
-            <link href="https://simplex.chat/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.html"/>
-            
-            <updated>23 Jul 2022</updated>
             <id>https://simplex.chat/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v31-beta-is-released-improved-batterytraffic-usage&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v3.1-beta is released - improved battery/traffic usage&lt;/h1&gt;
+            <!-- <updated>23 Jul 2022</updated> -->
+            <updated>2022-07-23T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.html"/>
+            <title>SimpleX Chat v3.1-beta is released &amp;mdash; improved battery/traffic usage</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-v31-beta-is-released-improved-batterytraffic-usage&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v3.1-beta is released - improved battery/traffic usage&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Jul 23, 2022&lt;/p&gt;
 &lt;h2 id=&quot;whats-new&quot; tabindex=&quot;-1&quot;&gt;What&#39;s new&lt;/h2&gt;
 &lt;ul&gt;
@@ -575,15 +611,18 @@
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat v3.1 is released &amp;mdash; with secret groups and server access via Tor</title>
-            <link href="https://simplex.chat/blog/20220808-simplex-chat-v3.1-chat-groups.html"/>
-            
-            <updated>08 Aug 2022</updated>
             <id>https://simplex.chat/blog/20220808-simplex-chat-v3.1-chat-groups.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v31-is-released-with-secret-groups-and-server-access-via-tor&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v3.1 is released - with secret groups and server access via Tor&lt;/h1&gt;
+            <!-- <updated>08 Aug 2022</updated> -->
+            <updated>2022-08-08T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20220808-simplex-chat-v3.1-chat-groups.html"/>
+            <title>SimpleX Chat v3.1 is released &amp;mdash; with secret groups and server access via Tor</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-v31-is-released-with-secret-groups-and-server-access-via-tor&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v3.1 is released - with secret groups and server access via Tor&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Aug 8, 2022&lt;/p&gt;
 &lt;h2 id=&quot;whats-new&quot; tabindex=&quot;-1&quot;&gt;What&#39;s new&lt;/h2&gt;
 &lt;ul&gt;
@@ -660,15 +699,18 @@
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat v3.2 is released &amp;mdash; meet Incognito mode, unique to Simplex Chat</title>
-            <link href="https://simplex.chat/blog/20220901-simplex-chat-v3.2-incognito-mode.html"/>
-            
-            <updated>01 Sep 2022</updated>
             <id>https://simplex.chat/blog/20220901-simplex-chat-v3.2-incognito-mode.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v32-is-released-meet-incognito-mode-unique-to-simplex-chat&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v3.2 is released - meet Incognito mode, unique to Simplex Chat&lt;/h1&gt;
+            <!-- <updated>01 Sep 2022</updated> -->
+            <updated>2022-09-01T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20220901-simplex-chat-v3.2-incognito-mode.html"/>
+            <title>SimpleX Chat v3.2 is released &amp;mdash; meet Incognito mode, unique to Simplex Chat</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-v32-is-released-meet-incognito-mode-unique-to-simplex-chat&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v3.2 is released - meet Incognito mode, unique to Simplex Chat&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Sep 1, 2022&lt;/p&gt;
 &lt;h2 id=&quot;whats-new&quot; tabindex=&quot;-1&quot;&gt;What&#39;s new&lt;/h2&gt;
 &lt;ul&gt;
@@ -736,15 +778,18 @@
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat v4.0 with encrypted database is released</title>
-            <link href="https://simplex.chat/blog/20220928-simplex-chat-v4-encrypted-database.html"/>
-            
-            <updated>28 Sep 2022</updated>
             <id>https://simplex.chat/blog/20220928-simplex-chat-v4-encrypted-database.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v4-with-encrypted-local-database-is-released&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v4 with encrypted local database is released&lt;/h1&gt;
+            <!-- <updated>28 Sep 2022</updated> -->
+            <updated>2022-09-28T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20220928-simplex-chat-v4-encrypted-database.html"/>
+            <title>SimpleX Chat v4.0 with encrypted database is released</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-v4-with-encrypted-local-database-is-released&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v4 with encrypted local database is released&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Sep 28, 2022&lt;/p&gt;
 &lt;h2 id=&quot;whats-new-in-v4&quot; tabindex=&quot;-1&quot;&gt;What&#39;s new in v4&lt;/h2&gt;
 &lt;ul&gt;
@@ -835,15 +880,18 @@
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>Security assessment by Trail of Bits, the new website and v4.2 released</title>
-            <link href="https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html"/>
-            
-            <updated>08 Nov 2022</updated>
             <id>https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;security-assessment-by-trail-of-bits-the-new-website-and-v42-released&quot; tabindex=&quot;-1&quot;&gt;Security assessment by Trail of Bits, the new website and v4.2 released&lt;/h1&gt;
+            <!-- <updated>08 Nov 2022</updated> -->
+            <updated>2022-11-08T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html"/>
+            <title>Security assessment by Trail of Bits, the new website and v4.2 released</title>
+            <content type="html">&lt;h1 id=&quot;security-assessment-by-trail-of-bits-the-new-website-and-v42-released&quot; tabindex=&quot;-1&quot;&gt;Security assessment by Trail of Bits, the new website and v4.2 released&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Nov 8, 2022&lt;/p&gt;
 &lt;h2 id=&quot;security-assessment-by-trail-of-bits&quot; tabindex=&quot;-1&quot;&gt;Security assessment by Trail of Bits&lt;/h2&gt;
 &lt;img src=&quot;https://simplex.chat/blog/images/20221108-trail-of-bits.jpg&quot; width=&quot;240&quot; /&gt;
@@ -964,15 +1012,18 @@
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat reviews and v4.3 released – with instant voice messages, irreversible deletion of sent messages and improved server configuration.</title>
-            <link href="https://simplex.chat/blog/20221206-simplex-chat-v4.3-voice-messages.html"/>
-            
-            <updated>06 Dec 2022</updated>
             <id>https://simplex.chat/blog/20221206-simplex-chat-v4.3-voice-messages.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-reviews-and-v43-released-with-instant-voice-messages-irreversible-deletion-of-sent-messages-and-improved-server-configuration&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat reviews and v4.3 released – with instant voice messages, irreversible deletion of sent messages and improved server configuration.&lt;/h1&gt;
+            <!-- <updated>06 Dec 2022</updated> -->
+            <updated>2022-12-06T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20221206-simplex-chat-v4.3-voice-messages.html"/>
+            <title>SimpleX Chat reviews and v4.3 released – with instant voice messages, irreversible deletion of sent messages and improved server configuration.</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-reviews-and-v43-released-with-instant-voice-messages-irreversible-deletion-of-sent-messages-and-improved-server-configuration&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat reviews and v4.3 released – with instant voice messages, irreversible deletion of sent messages and improved server configuration.&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Dec 6, 2022&lt;/p&gt;
 &lt;h2 id=&quot;simplex-chat-reviews&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat reviews&lt;/h2&gt;
 &lt;p&gt;Since we published &lt;a href=&quot;https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html&quot;&gt;the security assessment of SimpleX Chat&lt;/a&gt; completed by Trail of Bits in November, several sites published the reviews and included it in their recommendations:&lt;/p&gt;
@@ -1057,15 +1108,18 @@
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat v4.4 released – with disappearing messages, live messages, connection security verification and French language!</title>
-            <link href="https://simplex.chat/blog/20230103-simplex-chat-v4.4-disappearing-messages.html"/>
-            
-            <updated>03 Jan 2023</updated>
             <id>https://simplex.chat/blog/20230103-simplex-chat-v4.4-disappearing-messages.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v44-released-with-disappearing-messages-live-messages-connection-security-verification-and-french-language&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v4.4 released – with disappearing messages, live messages, connection security verification and French language!&lt;/h1&gt;
+            <!-- <updated>03 Jan 2023</updated> -->
+            <updated>2023-01-03T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20230103-simplex-chat-v4.4-disappearing-messages.html"/>
+            <title>SimpleX Chat v4.4 released – with disappearing messages, live messages, connection security verification and French language!</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-v44-released-with-disappearing-messages-live-messages-connection-security-verification-and-french-language&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v4.4 released – with disappearing messages, live messages, connection security verification and French language!&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Jan 3, 2023&lt;/p&gt;
 &lt;h2 id=&quot;whats-new-in-v44&quot; tabindex=&quot;-1&quot;&gt;What&#39;s new in v4.4&lt;/h2&gt;
 &lt;ul&gt;
@@ -1121,15 +1175,18 @@
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat v4.5 released – with multiple chat profiles, message draft, transport isolation and Italian language!</title>
-            <link href="https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html"/>
-            
-            <updated>04 Feb 2023</updated>
             <id>https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v45-released-with-multiple-user-profiles-message-draft-transport-isolation-and-italian-interface&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v4.5 released – with multiple user profiles, message draft, transport isolation and Italian interface!&lt;/h1&gt;
+            <!-- <updated>04 Feb 2023</updated> -->
+            <updated>2023-02-04T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html"/>
+            <title>SimpleX Chat v4.5 released – with multiple chat profiles, message draft, transport isolation and Italian language!</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-v45-released-with-multiple-user-profiles-message-draft-transport-isolation-and-italian-interface&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v4.5 released – with multiple user profiles, message draft, transport isolation and Italian interface!&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Feb 4, 2023&lt;/p&gt;
 &lt;h2 id=&quot;whats-new-in-v45&quot; tabindex=&quot;-1&quot;&gt;What&#39;s new in v4.5&lt;/h2&gt;
 &lt;ul&gt;
@@ -1200,15 +1257,18 @@
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX File Transfer Protocol - a new protocol for sending large files efficiently, privately and securely.</title>
-            <link href="https://simplex.chat/blog/20230301-simplex-file-transfer-protocol.html"/>
-            
-            <updated>01 Mar 2023</updated>
             <id>https://simplex.chat/blog/20230301-simplex-file-transfer-protocol.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-file-transfer-protocol-a-new-protocol-for-sending-large-files-efficiently-privately-and-securely&quot; tabindex=&quot;-1&quot;&gt;SimpleX File Transfer Protocol – a new protocol for sending large files efficiently, privately and securely.&lt;/h1&gt;
+            <!-- <updated>01 Mar 2023</updated> -->
+            <updated>2023-03-01T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20230301-simplex-file-transfer-protocol.html"/>
+            <title>SimpleX File Transfer Protocol - a new protocol for sending large files efficiently, privately and securely.</title>
+            <content type="html">&lt;h1 id=&quot;simplex-file-transfer-protocol-a-new-protocol-for-sending-large-files-efficiently-privately-and-securely&quot; tabindex=&quot;-1&quot;&gt;SimpleX File Transfer Protocol – a new protocol for sending large files efficiently, privately and securely.&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Mar 1, 2023&lt;/p&gt;
 &lt;ul&gt;
 &lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/undefined&quot;&gt;Quick start: how to send a file using XFTP CLI&lt;/a&gt;&lt;/li&gt;
@@ -1310,15 +1370,18 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat v4.6 – with hidden profiles, community moderation, improved audio/video calls and reduced battery usage.</title>
-            <link href="https://simplex.chat/blog/20230328-simplex-chat-v4-6-hidden-profiles.html"/>
-            
-            <updated>28 Mar 2023</updated>
             <id>https://simplex.chat/blog/20230328-simplex-chat-v4-6-hidden-profiles.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v46-with-hidden-profiles-community-moderation-improved-audiovideo-calls-and-reduced-battery-usage&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v4.6 – with hidden profiles, community moderation, improved audio/video calls and reduced battery usage.&lt;/h1&gt;
+            <!-- <updated>28 Mar 2023</updated> -->
+            <updated>2023-03-28T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20230328-simplex-chat-v4-6-hidden-profiles.html"/>
+            <title>SimpleX Chat v4.6 – with hidden profiles, community moderation, improved audio/video calls and reduced battery usage.</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-v46-with-hidden-profiles-community-moderation-improved-audiovideo-calls-and-reduced-battery-usage&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v4.6 – with hidden profiles, community moderation, improved audio/video calls and reduced battery usage.&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Mar 28, 2023&lt;/p&gt;
 &lt;h2 id=&quot;whats-new-in-v46&quot; tabindex=&quot;-1&quot;&gt;What&#39;s new in v4.6&lt;/h2&gt;
 &lt;ul&gt;
@@ -1384,15 +1447,18 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat: vision and funding, v5.0 released with videos and files up to 1gb</title>
-            <link href="https://simplex.chat/blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.html"/>
-            
-            <updated>22 Apr 2023</updated>
             <id>https://simplex.chat/blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-vision-and-funding-v50-released-with-videos-and-files-up-to-1gb&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat: vision and funding, v5.0 released with videos and files up to 1gb.&lt;/h1&gt;
+            <!-- <updated>22 Apr 2023</updated> -->
+            <updated>2023-04-22T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.html"/>
+            <title>SimpleX Chat: vision and funding, v5.0 released with videos and files up to 1gb</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-vision-and-funding-v50-released-with-videos-and-files-up-to-1gb&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat: vision and funding, v5.0 released with videos and files up to 1gb.&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Apr 22, 2023&lt;/p&gt;
 &lt;p&gt;SimpleX Chat vision and funding:&lt;/p&gt;
 &lt;ul&gt;
@@ -1467,15 +1533,18 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat v5.1 released: message reactions and self-destruct passcode</title>
-            <link href="https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html"/>
-            
-            <updated>23 May 2023</updated>
             <id>https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v51-released-message-reactions-and-self-destruct-passcode&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v5.1 released: message reactions and self-destruct passcode&lt;/h1&gt;
+            <!-- <updated>23 May 2023</updated> -->
+            <updated>2023-05-23T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.html"/>
+            <title>SimpleX Chat v5.1 released: message reactions and self-destruct passcode</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-v51-released-message-reactions-and-self-destruct-passcode&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v5.1 released: message reactions and self-destruct passcode&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; May 23, 2023&lt;/p&gt;
 &lt;p&gt;What&#39;s new in v5.1:&lt;/p&gt;
 &lt;ul&gt;
@@ -1552,15 +1621,18 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat v5.2 released: message delivery receipts</title>
-            <link href="https://simplex.chat/blog/20230722-simplex-chat-v5-2-message-delivery-receipts.html"/>
-            
-            <updated>22 Jul 2023</updated>
             <id>https://simplex.chat/blog/20230722-simplex-chat-v5-2-message-delivery-receipts.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v52-released-message-delivery-receipts&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v5.2 released: message delivery receipts&lt;/h1&gt;
+            <!-- <updated>22 Jul 2023</updated> -->
+            <updated>2023-07-22T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20230722-simplex-chat-v5-2-message-delivery-receipts.html"/>
+            <title>SimpleX Chat v5.2 released: message delivery receipts</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-v52-released-message-delivery-receipts&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v5.2 released: message delivery receipts&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; July 22, 2023&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;What&#39;s new in v5.2:&lt;/strong&gt;&lt;/p&gt;
 &lt;ul&gt;
@@ -1675,15 +1747,18 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat v5.3 released: desktop app, local file encryption and improved groups with directory service</title>
-            <link href="https://simplex.chat/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.html"/>
-            
-            <updated>25 Sep 2023</updated>
             <id>https://simplex.chat/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v53-released-desktop-app-local-file-encryption-and-improved-groups&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v5.3 released: desktop app, local file encryption and improved groups&lt;/h1&gt;
+            <!-- <updated>25 Sep 2023</updated> -->
+            <updated>2023-09-25T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.html"/>
+            <title>SimpleX Chat v5.3 released: desktop app, local file encryption and improved groups with directory service</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-v53-released-desktop-app-local-file-encryption-and-improved-groups&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v5.3 released: desktop app, local file encryption and improved groups&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; September 25, 2023&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;What&#39;s new in v5.3:&lt;/strong&gt;&lt;/p&gt;
 &lt;ul&gt;
@@ -1770,15 +1845,18 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat v5.4 - link mobile and desktop apps via quantum resistant protocol, and much better groups.</title>
-            <link href="https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html"/>
-            
-            <updated>25 Nov 2023</updated>
             <id>https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v54-link-mobile-and-desktop-apps-via-quantum-resistant-protocol-and-much-better-groups&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v5.4 - link mobile and desktop apps via quantum resistant protocol, and much better groups.&lt;/h1&gt;
+            <!-- <updated>25 Nov 2023</updated> -->
+            <updated>2023-11-25T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html"/>
+            <title>SimpleX Chat v5.4 - link mobile and desktop apps via quantum resistant protocol, and much better groups.</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-v54-link-mobile-and-desktop-apps-via-quantum-resistant-protocol-and-much-better-groups&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v5.4 - link mobile and desktop apps via quantum resistant protocol, and much better groups.&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Nov 25, 2023&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;What&#39;s new in v5.4:&lt;/strong&gt;&lt;/p&gt;
 &lt;ul&gt;
@@ -1880,15 +1958,18 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat: free infrastructure from Linode, v5.5 released with private notes, group history and a simpler UX to connect.</title>
-            <link href="https://simplex.chat/blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.html"/>
-            
-            <updated>24 Jan 2024</updated>
             <id>https://simplex.chat/blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-free-infrastructure-from-linode-v55-released-with-private-notes-group-history-and-a-simpler-ux-to-connect&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat: free infrastructure from Linode, v5.5 released with private notes, group history and a simpler UX to connect.&lt;/h1&gt;
+            <!-- <updated>24 Jan 2024</updated> -->
+            <updated>2024-01-24T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.html"/>
+            <title>SimpleX Chat: free infrastructure from Linode, v5.5 released with private notes, group history and a simpler UX to connect.</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-free-infrastructure-from-linode-v55-released-with-private-notes-group-history-and-a-simpler-ux-to-connect&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat: free infrastructure from Linode, v5.5 released with private notes, group history and a simpler UX to connect.&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Jan 24, 2024&lt;/p&gt;
 &lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/undefined&quot;&gt;SimpleX Chat infrastructure on Linode&lt;/a&gt;:&lt;/p&gt;
 &lt;ul&gt;
@@ -1963,15 +2044,18 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX Chat v5.6 (beta): adding quantum resistance to Signal double ratchet algorithm</title>
-            <link href="https://simplex.chat/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.html"/>
-            
-            <updated>14 Mar 2024</updated>
             <id>https://simplex.chat/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-chat-v56-beta-adding-quantum-resistance-to-signal-double-ratchet-algorithm&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v5.6 beta: adding quantum resistance to Signal double ratchet algorithm&lt;/h1&gt;
+            <!-- <updated>14 Mar 2024</updated> -->
+            <updated>2024-03-14T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.html"/>
+            <title>SimpleX Chat v5.6 (beta): adding quantum resistance to Signal double ratchet algorithm</title>
+            <content type="html">&lt;h1 id=&quot;simplex-chat-v56-beta-adding-quantum-resistance-to-signal-double-ratchet-algorithm&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v5.6 beta: adding quantum resistance to Signal double ratchet algorithm&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Mar 14, 2024&lt;/p&gt;
 &lt;p&gt;This is a major upgrade for SimpleX messaging protocols, we are really proud to present the results of the hard work of our whole team on the &lt;a href=&quot;https://en.wikipedia.org/wiki/Pi_Day&quot;&gt;Pi day&lt;/a&gt;.&lt;/p&gt;
 &lt;p&gt;This post also covers various aspects of end-to-end encryption, compares different messengers, and explains why and how quantum-resistant encryption is added to SimpleX Chat:&lt;/p&gt;
@@ -2134,15 +2218,18 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 &lt;/image&gt;</content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration</title>
-            <link href="https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html"/>
-            
-            <updated>23 Mar 2024</updated>
             <id>https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-network-real-privacy-and-stable-profits-non-profits-for-protocols-v56-released-with-quantum-resistant-e2e-encryption-and-simple-profile-migration&quot; tabindex=&quot;-1&quot;&gt;SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration&lt;/h1&gt;
+            <!-- <updated>23 Mar 2024</updated> -->
+            <updated>2024-03-23T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html"/>
+            <title>SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration</title>
+            <content type="html">&lt;h1 id=&quot;simplex-network-real-privacy-and-stable-profits-non-profits-for-protocols-v56-released-with-quantum-resistant-e2e-encryption-and-simple-profile-migration&quot; tabindex=&quot;-1&quot;&gt;SimpleX network: real privacy and stable profits, non-profits for protocols, v5.6 released with quantum resistant e2e encryption and simple profile migration&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Mar 23, 2024&lt;/p&gt;
 &lt;p&gt;SimpleX network: deliver real privacy via a profitable business and non-profit protocol governance:&lt;/p&gt;
 &lt;ul&gt;
@@ -2244,15 +2331,18 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>Why I joined SimpleX Chat - by Esra&#39;a al Shafei</title>
-            <link href="https://simplex.chat/blog/20240404-why-i-joined-simplex-chat-esraa-al-shafei.html"/>
-            
-            <updated>04 Apr 2024</updated>
             <id>https://simplex.chat/blog/20240404-why-i-joined-simplex-chat-esraa-al-shafei.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;why-i-joined-simplex-chat&quot; tabindex=&quot;-1&quot;&gt;Why I joined SimpleX Chat&lt;/h1&gt;
+            <!-- <updated>04 Apr 2024</updated> -->
+            <updated>2024-04-04T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20240404-why-i-joined-simplex-chat-esraa-al-shafei.html"/>
+            <title>Why I joined SimpleX Chat - by Esra&#39;a al Shafei</title>
+            <content type="html">&lt;h1 id=&quot;why-i-joined-simplex-chat&quot; tabindex=&quot;-1&quot;&gt;Why I joined SimpleX Chat&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Apr 4, 2024&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;By &lt;a href=&quot;https://mastodon.social/@alshafei&quot;&gt;Esra&#39;a al Shafei&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
 &lt;p&gt;Transitioning from a lifelong career dedicated to nonprofits, including Board roles at organizations like the Wikimedia Foundation, Access Now and Tor, my decision to join SimpleX Chat may come as a surprise to some. But, as I step into this new chapter, I want to share the insights and convictions that have guided me here, shedding light on what I think sets SimpleX Chat apart and why this move feels like an essential learning opportunity.&lt;/p&gt;
@@ -2268,15 +2358,18 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;Another important consideration is that the SimpleX network does have a plan that would rely on users&#39; payments for specific or tailored services, and not on some other sources of revenue or funds (ads, etc.). Building anything that users would be willing to pay for requires substantially more time and resources, hence the VC route to establish a business model that doesn’t translate to the user being the product. But any business services need to be separate from SimpleX as a public interest technology. As outlined in this &lt;a href=&quot;https://simplex.chat/blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.html&quot;&gt;recent post&lt;/a&gt;, I’ll be using my background in nonprofit governance structures to ensure that the SimpleX network protocols evolve under the stewardship of nonprofit entities in various jurisdictions, so that its continued evolution aligns more closely with the vision of community-driven, independent and decentralized governance. This would help create a necessary balance between different structures, in the same way many tech nonprofits also have for-profit subsidiaries to attract fee-for-service agreements to sustain their operations.&lt;/p&gt;
 &lt;p&gt;In summary: My decision to join Simplex Chat, despite my deep-rooted beliefs and skepticism towards VC funding, reflects a broader realization: that the fight for privacy, security, and decentralization in today’s web is multifaceted and sometimes requires us to depart from our comfort zones to explore sustainable paths for continuous growth and impact so that open source privacy tools and protocols are no longer “niche”, but universally accessible standards. As long as nothing in this journey compromises our moral principles and integrity, this will remain a very worthwhile goal to pursue.&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>The dangers of metadata in messengers</title>
-            <link href="https://simplex.chat/blog/20240416-dangers-of-metadata-in-messengers.html"/>
-            
-            <updated>16 Apr 2024</updated>
             <id>https://simplex.chat/blog/20240416-dangers-of-metadata-in-messengers.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;the-dangers-of-metadata-in-messengers&quot; tabindex=&quot;-1&quot;&gt;The dangers of metadata in messengers&lt;/h1&gt;
+            <!-- <updated>16 Apr 2024</updated> -->
+            <updated>2024-04-16T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20240416-dangers-of-metadata-in-messengers.html"/>
+            <title>The dangers of metadata in messengers</title>
+            <content type="html">&lt;h1 id=&quot;the-dangers-of-metadata-in-messengers&quot; tabindex=&quot;-1&quot;&gt;The dangers of metadata in messengers&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Apr 16, 2024&lt;/p&gt;
 &lt;p&gt;&lt;em&gt;By &lt;a href=&quot;https://mastodon.social/@alshafei&quot;&gt;Esra&#39;a al Shafei&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
 &lt;p&gt;In many countries around the world, phone numbers are attached to biometrics data and personal IDs. Telecommunications companies are either government owned or are heavily regulated, privately owned monopolies who comply with most government requests for backdoors or user data. The idea that today, we still need to give out our phone numbers as primary identifiers to be able to use the leading messaging apps should be frowned upon and actively challenged. It’s necessary to advocate for private alternatives in messaging that do not rely on user IDs of any kind - and yes, it’s possible.&lt;/p&gt;
@@ -2304,15 +2397,18 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;As of today, most messaging alternatives, including SimpleX, will have some limitations. But with the limited resources we have, we are committed to daily progress towards creating a truly private messenger that anyone can use while maintaining the features that users have come to know and love in messaging interfaces. We want to be the prime example of a messenger that achieves genuine privacy without compromising it for convenience. We need to be able to reliably move away from small and niche use cases to endorsing and enforcing global standards for privacy and making it accessible for all users regardless of their technical expertise.&lt;/p&gt;
 &lt;p&gt;We’re grateful for the users and &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#help-us-with-donations&quot;&gt;donors&lt;/a&gt; who have been following along on this journey thus far and helping with feedback, anything from bug reports to identifying potential risks. Building in the open has always been a necessity for transparency and ongoing &lt;a href=&quot;https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html&quot;&gt;auditability&lt;/a&gt;, because we don’t want anyone to just take our word for it. &lt;a href=&quot;https://github.com/simplex-chat&quot;&gt;See for yourself&lt;/a&gt; and engage in the discussions. We fully expect you to hold us accountable to our word.&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX network: legally binding transparency, v5.7 released with better calls and messages</title>
-            <link href="https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html"/>
-            
-            <updated>26 Apr 2024</updated>
             <id>https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-network-legally-binding-transparency-v57-released-with-better-calls-and-messages&quot; tabindex=&quot;-1&quot;&gt;SimpleX network: legally binding transparency, v5.7 released with better calls and messages&lt;/h1&gt;
+            <!-- <updated>26 Apr 2024</updated> -->
+            <updated>2024-04-26T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.html"/>
+            <title>SimpleX network: legally binding transparency, v5.7 released with better calls and messages</title>
+            <content type="html">&lt;h1 id=&quot;simplex-network-legally-binding-transparency-v57-released-with-better-calls-and-messages&quot; tabindex=&quot;-1&quot;&gt;SimpleX network: legally binding transparency, v5.7 released with better calls and messages&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Apr 26, 2024&lt;/p&gt;
 &lt;p&gt;What&#39;s new in v5.7:&lt;/p&gt;
 &lt;ul&gt;
@@ -2381,15 +2477,18 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX: Redefining Privacy by Making Hard Choices</title>
-            <link href="https://simplex.chat/blog/20240516-simplex-redefining-privacy-hard-choices.html"/>
-            
-            <updated>16 May 2024</updated>
             <id>https://simplex.chat/blog/20240516-simplex-redefining-privacy-hard-choices.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-redefining-privacy-by-making-hard-choices&quot; tabindex=&quot;-1&quot;&gt;SimpleX: Redefining Privacy by Making Hard Choices&lt;/h1&gt;
+            <!-- <updated>16 May 2024</updated> -->
+            <updated>2024-05-16T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20240516-simplex-redefining-privacy-hard-choices.html"/>
+            <title>SimpleX: Redefining Privacy by Making Hard Choices</title>
+            <content type="html">&lt;h1 id=&quot;simplex-redefining-privacy-by-making-hard-choices&quot; tabindex=&quot;-1&quot;&gt;SimpleX: Redefining Privacy by Making Hard Choices&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; May 16, 2024&lt;/p&gt;
 &lt;p&gt;When it comes to open source privacy tools, the status quo often dictates the limitations of existing protocols and structures. However, these norms need to be challenged to radically shift how we approach genuinely private communication. This requires doing some uncomfortable things, like making hard choices as it relates to funding, alternative decentralization models, doubling down on privacy over convenience, and more.&lt;/p&gt;
 &lt;p&gt;There will always be questions on why the SimpleX Chat and network makes the choices it makes, and that’s good! It’s important to question us and to understand the reasoning behind each decision, whether it’s technical, structural, financial or any other.&lt;/p&gt;
@@ -2425,15 +2524,18 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;h2 id=&quot;looking-ahead&quot; tabindex=&quot;-1&quot;&gt;Looking ahead&lt;/h2&gt;
 &lt;p&gt;The future of the Internet should be based on decentralized infrastructure operated by commercially viable organizations. These operators need to possess minimal user data, so that users have genuine control over their identities, and free from lock-in by the operators, to support fair competition. This requires a drastic re-imagining of the current norms and newer, more privacy-minded protocols. All in all, private messaging is surrounded by very difficult challenges but it’s worth it to keep pushing the industry forward and not settle for the status quo and current trade offs, protocol limitations and vulnerabilities. The Internet deserves better standards, and so do users.&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>Protecting Children&#39;s Safety Requires End-to-End Encryption</title>
-            <link href="https://simplex.chat/blog/20240601-protecting-children-safety-requires-e2e-encryption.html"/>
-            
-            <updated>01 Jun 2024</updated>
             <id>https://simplex.chat/blog/20240601-protecting-children-safety-requires-e2e-encryption.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;protecting-childrens-safety-requires-end-to-end-encryption&quot; tabindex=&quot;-1&quot;&gt;Protecting Children&#39;s Safety Requires End-to-End Encryption&lt;/h1&gt;
+            <!-- <updated>01 Jun 2024</updated> -->
+            <updated>2024-06-01T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20240601-protecting-children-safety-requires-e2e-encryption.html"/>
+            <title>Protecting Children&#39;s Safety Requires End-to-End Encryption</title>
+            <content type="html">&lt;h1 id=&quot;protecting-childrens-safety-requires-end-to-end-encryption&quot; tabindex=&quot;-1&quot;&gt;Protecting Children&#39;s Safety Requires End-to-End Encryption&lt;/h1&gt;
 &lt;p&gt;As lawmakers grapple with the serious issue of child exploitation online, some proposed solutions would fuel the very problem they aim to solve. Despite expert warnings, the Belgian Presidency persists in pushing for the implementation of client-side scanning on encrypted messaging services, rebranding the effort as &amp;quot;upload moderation&amp;quot;. Their &lt;a href=&quot;https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=COM%3A2022%3A209%3AFIN&amp;amp;qid=1652451192472&quot;&gt;latest proposal&lt;/a&gt; mandates that providers of private communication services obtain user consent for AI-based scanning of their private chats. If users do not consent, they will be prohibited from sharing images, videos, and URLs.&lt;/p&gt;
 &lt;p&gt;Privacy critics have long pushed for measures like centralized scanning of private photos and messaging data, arguing it could detect illicit content. However, invasive monitoring of private communications would create detrimental risks that far outweigh any perceived benefits.&lt;/p&gt;
 &lt;h2 id=&quot;why-were-taking-action&quot; tabindex=&quot;-1&quot;&gt;Why we’re taking action&lt;/h2&gt;
@@ -2446,15 +2548,18 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;However, some recent legislative efforts have bizarrely moved in the opposite direction by seeking to limit parental access. The chilling truth is that the least private platforms have been major enablers of child exploitation. Eroding privacy protections on other services will only aid criminals further, not protect children. Preserving strong encryption and user privacy must be the foundation for any credible effort to combat online child exploitation. Initiatives trading privacy for supposed safety are not just technically flawed, but would achieve the exact opposite of their stated intent. We must avoid being gaslighted by narratives that defy logic, and instead provide users with the highest possible standards for privacy protections as a core principle.&lt;/p&gt;
 &lt;p&gt;Protecting end-to-end encryption without carving out backdoors or vulnerabilities should be non-negotiable for children&#39;s and everyone’s safety. It is critical to redirect the discourse to focus on taking genuine privacy further by protecting against &lt;a href=&quot;https://simplex.chat/blog/20240416-dangers-of-metadata-in-messengers.html&quot;&gt;metadata hoarding&lt;/a&gt; and other means by which people’s data can be abused or subjected to surveillance.&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
         <entry>
-            <title>SimpleX network: private message routing, v5.8 released with IP address protection and chat themes</title>
-            <link href="https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.html"/>
-            
-            <updated>04 Jun 2024</updated>
             <id>https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.html</id>
-            <content xml:lang="en" type="html">&lt;h1 id=&quot;simplex-network-private-message-routing-v58-released-with-ip-address-protection-and-chat-themes&quot; tabindex=&quot;-1&quot;&gt;SimpleX network: private message routing, v5.8 released with IP address protection and chat themes&lt;/h1&gt;
+            <!-- <updated>04 Jun 2024</updated> -->
+            <updated>2024-06-04T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.html"/>
+            <title>SimpleX network: private message routing, v5.8 released with IP address protection and chat themes</title>
+            <content type="html">&lt;h1 id=&quot;simplex-network-private-message-routing-v58-released-with-ip-address-protection-and-chat-themes&quot; tabindex=&quot;-1&quot;&gt;SimpleX network: private message routing, v5.8 released with IP address protection and chat themes&lt;/h1&gt;
 &lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; June 4, 2024&lt;/p&gt;
 &lt;p&gt;What&#39;s new in v5.8:&lt;/p&gt;
 &lt;ul&gt;
@@ -2555,6 +2660,9 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
 </content>
-            
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
         </entry>
 </feed>
