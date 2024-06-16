@@ -1767,6 +1767,11 @@ video {
   text-align: center;
 }
 
+.\!text-lg {
+  font-size: 1.125rem !important;
+  line-height: 1.75rem !important;
+}
+
 .text-2xl {
   font-size: 1.5rem;
   line-height: 2rem;
@@ -2556,6 +2561,11 @@ video {
     text-align: left;
   }
 
+  .md\:\!text-xl {
+    font-size: 1.25rem !important;
+    line-height: 1.75rem !important;
+  }
+
   .md\:text-\[20px\] {
     font-size: 20px;
   }
@@ -2570,11 +2580,6 @@ video {
 
   .md\:text-\[55px\] {
     font-size: 55px;
-  }
-
-  .md\:text-xl {
-    font-size: 1.25rem;
-    line-height: 1.75rem;
   }
 
   .md\:leading-\[43px\] {
