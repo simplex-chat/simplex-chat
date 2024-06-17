@@ -290,7 +290,7 @@ struct VoiceMessagePlayer: View {
             .frame(width: size, height: size)
             .foregroundColor(Color(uiColor: .tertiaryLabel))
             .frame(width: 56, height: 56)
-            .background(showBackground ? chatItemFrameColor(chatItem, colorScheme) : .clear)
+            .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
             .clipShape(Circle())
     }
 
