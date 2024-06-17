@@ -763,28 +763,31 @@ processChatCommand' vr = \case
             _ -> throwChatError CEInvalidChatItemUpdate
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTGroup -> withGroupLock "updateChatItem" chatId $ do
-      Group gInfo@GroupInfo {groupId} ms <- withStore $ \db -> getGroup db vr user chatId
+      Group gInfo@GroupInfo {groupId, membership} ms <- withStore $ \db -> getGroup db vr user chatId
       assertUserGroupRole gInfo GRAuthor
-      cci <- withStore $ \db -> getGroupCIWithReactions db user gInfo itemId
-      case cci of
-        CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
-          case (ciContent, itemSharedMsgId, editable) of
-            (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
-              let changed = mc /= oldMC
-              if changed || fromMaybe False itemLive
-                then do
-                  (SndMessage {msgId}, _) <- sendGroupMessage user gInfo ms (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
-                  ci' <- withStore' $ \db -> do
-                    currentTs <- liftIO getCurrentTime
-                    when changed $
-                      addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
-                    let edited = itemLive /= Just True
-                    updateGroupChatItem db user groupId ci (CISndMsgContent mc) edited live $ Just msgId
-                  startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
-                  pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci')
-                else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
-            _ -> throwChatError CEInvalidChatItemUpdate
-        CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
+      if prohibitedGroupLink gInfo membership mc
+        then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText GFSimplexLinks))
+        else do
+          cci <- withStore $ \db -> getGroupCIWithReactions db user gInfo itemId
+          case cci of
+            CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
+              case (ciContent, itemSharedMsgId, editable) of
+                (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
+                  let changed = mc /= oldMC
+                  if changed || fromMaybe False itemLive
+                    then do
+                      (SndMessage {msgId}, _) <- sendGroupMessage user gInfo ms (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
+                      ci' <- withStore' $ \db -> do
+                        currentTs <- liftIO getCurrentTime
+                        when changed $
+                          addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
+                        let edited = itemLive /= Just True
+                        updateGroupChatItem db user groupId ci (CISndMsgContent mc) edited live $ Just msgId
+                      startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
+                      pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci')
+                    else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
+                _ -> throwChatError CEInvalidChatItemUpdate
+            CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTLocal -> do
       (nf@NoteFolder {noteFolderId}, cci) <- withStore $ \db -> (,) <$> getNoteFolder db user chatId <*> getLocalChatItem db user chatId itemId
       case cci of
@@ -2922,8 +2925,12 @@ prohibitedGroupContent :: GroupInfo -> GroupMember -> MsgContent -> Maybe f -> M
 prohibitedGroupContent gInfo m mc file_
   | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) = Just GFVoice
   | not (isVoice mc) && isJust file_ && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
-  | not (groupFeatureMemberAllowed SGFSimplexLinks m gInfo) && containsFormat isSimplexLink (parseMarkdown $ msgContentText mc) = Just GFSimplexLinks
+  | prohibitedGroupLink gInfo m mc = Just GFSimplexLinks
   | otherwise = Nothing
+
+prohibitedGroupLink :: GroupInfo -> GroupMember -> MsgContent -> Bool
+prohibitedGroupLink gInfo m mc =
+  not (groupFeatureMemberAllowed SGFSimplexLinks m gInfo) && containsFormat isSimplexLink (parseMarkdown $ msgContentText mc)
 
 roundedFDCount :: Int -> Int
 roundedFDCount n
@@ -5255,17 +5262,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> CM ()
     groupMessageUpdate gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId, memberId} sharedMsgId mc msg@RcvMessage {msgId} brokerTs ttl_ live_ =
-      updateRcvChatItem `catchCINotFound` \_ -> do
-        -- This patches initial sharedMsgId into chat item when locally deleted chat item
-        -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
-        -- Chat item and update message which created it will have different sharedMsgId in this case...
-        let timed_ = rcvGroupCITimed gInfo ttl_
-        ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg (Just sharedMsgId) brokerTs content Nothing timed_ live
-        ci' <- withStore' $ \db -> do
-          createChatItemVersion db (chatItemId' ci) brokerTs mc
-          ci' <- updateGroupChatItem db user groupId ci content True live Nothing
-          blockedMember m ci' $ markGroupChatItemBlocked db user gInfo ci'
-        toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci')
+      if prohibitedGroupLink gInfo m mc
+        then messageWarning $ "x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks
+        else do
+          updateRcvChatItem `catchCINotFound` \_ -> do
+            -- This patches initial sharedMsgId into chat item when locally deleted chat item
+            -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
+            -- Chat item and update message which created it will have different sharedMsgId in this case...
+            let timed_ = rcvGroupCITimed gInfo ttl_
+            ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg (Just sharedMsgId) brokerTs content Nothing timed_ live
+            ci' <- withStore' $ \db -> do
+              createChatItemVersion db (chatItemId' ci) brokerTs mc
+              ci' <- updateGroupChatItem db user groupId ci content True live Nothing
+              blockedMember m ci' $ markGroupChatItemBlocked db user gInfo ci'
+            toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci')
       where
         content = CIRcvMsgContent mc
         live = fromMaybe False live_
