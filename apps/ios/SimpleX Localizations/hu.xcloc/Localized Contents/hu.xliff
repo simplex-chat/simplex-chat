@@ -7600,9 +7600,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>új kapcsolattartási azonosító beállítása</target>
         <note>profile update event chat item</note>
       </trans-unit>
-      <trans-unit id="set new profile picture" xml:space="preserve">
+      <trans-unit id="set new profile picture" xml:space="preserve" approved="no">
         <source>set new profile picture</source>
-        <target>új profilkép beállítása</target>
+        <target state="translated">új profilképet állított be</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="standard end-to-end encryption" xml:space="preserve">
