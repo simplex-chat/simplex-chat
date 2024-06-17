@@ -765,7 +765,7 @@ processChatCommand' vr = \case
     CTGroup -> withGroupLock "updateChatItem" chatId $ do
       Group gInfo@GroupInfo {groupId, membership} ms <- withStore $ \db -> getGroup db vr user chatId
       assertUserGroupRole gInfo GRAuthor
-      if prohibitedGroupLink gInfo membership mc
+      if prohibitedSimplexLinks gInfo membership mc
         then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText GFSimplexLinks))
         else do
           cci <- withStore $ \db -> getGroupCIWithReactions db user gInfo itemId
@@ -2925,11 +2925,11 @@ prohibitedGroupContent :: GroupInfo -> GroupMember -> MsgContent -> Maybe f -> M
 prohibitedGroupContent gInfo m mc file_
   | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) = Just GFVoice
   | not (isVoice mc) && isJust file_ && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
-  | prohibitedGroupLink gInfo m mc = Just GFSimplexLinks
+  | prohibitedSimplexLinks gInfo m mc = Just GFSimplexLinks
   | otherwise = Nothing
 
-prohibitedGroupLink :: GroupInfo -> GroupMember -> MsgContent -> Bool
-prohibitedGroupLink gInfo m mc =
+prohibitedSimplexLinks :: GroupInfo -> GroupMember -> MsgContent -> Bool
+prohibitedSimplexLinks gInfo m mc =
   not (groupFeatureMemberAllowed SGFSimplexLinks m gInfo) && containsFormat isSimplexLink (parseMarkdown $ msgContentText mc)
 
 roundedFDCount :: Int -> Int
@@ -5262,7 +5262,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> CM ()
     groupMessageUpdate gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId, memberId} sharedMsgId mc msg@RcvMessage {msgId} brokerTs ttl_ live_ =
-      if prohibitedGroupLink gInfo m mc
+      if prohibitedSimplexLinks gInfo m mc
         then messageWarning $ "x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks
         else do
           updateRcvChatItem `catchCINotFound` \_ -> do
