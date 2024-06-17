@@ -1358,6 +1358,9 @@ processChatCommand' vr = \case
     pure $ CRNetworkConfig cfg
   APISetNetworkInfo info -> lift (withAgent' (`setUserNetworkInfo` info)) >> ok_
   ReconnectAllServers -> withUser' $ \_ -> lift (withAgent' reconnectAllServers) >> ok_
+  ReconnectServer userId srv -> withUserId userId $ \user -> do
+    lift (withAgent' $ \a -> reconnectSMPServer a (aUserId user) srv)
+    ok_
   APISetChatSettings (ChatRef cType chatId) chatSettings -> withUser $ \user -> case cType of
     CTDirect -> do
       ct <- withStore $ \db -> do
@@ -7411,6 +7414,7 @@ chatCommandP =
       "/_network " *> (APISetNetworkConfig <$> jsonP),
       ("/network " <|> "/net ") *> (SetNetworkConfig <$> netCfgP),
       ("/network" <|> "/net") $> APIGetNetworkConfig,
+      "/reconnect " *> (ReconnectServer <$> A.decimal <* A.space <*> strP),
       "/reconnect" $> ReconnectAllServers,
       "/_settings " *> (APISetChatSettings <$> chatRefP <* A.space <*> jsonP),
       "/_member settings #" *> (APISetMemberSettings <$> A.decimal <* A.space <*> A.decimal <* A.space <*> jsonP),
