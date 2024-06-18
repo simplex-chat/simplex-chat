@@ -1807,7 +1807,7 @@
     <string name="forwarded_description">weitergeleitet</string>
     <string name="settings_section_title_network_connection">Netzwerkverbindung</string>
     <string name="network_type_no_network_connection">Keine Netzwerkverbindung</string>
-    <string name="network_type_cellular">Zellulär</string>
+    <string name="network_type_cellular">Mobilfunknetz</string>
     <string name="network_type_other">Andere</string>
     <string name="network_type_network_wifi">WiFi</string>
     <string name="network_type_ethernet">Kabelgebundenes Netzwerk</string>
