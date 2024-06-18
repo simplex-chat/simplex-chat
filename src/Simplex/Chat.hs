@@ -2930,7 +2930,11 @@ prohibitedGroupContent gInfo m mc file_
 
 prohibitedSimplexLinks :: GroupInfo -> GroupMember -> MsgContent -> Bool
 prohibitedSimplexLinks gInfo m mc =
-  not (groupFeatureMemberAllowed SGFSimplexLinks m gInfo) && containsFormat isSimplexLink (parseMarkdown $ msgContentText mc)
+  not (groupFeatureMemberAllowed SGFSimplexLinks m gInfo)
+    && maybe False (any ftIsSimplexLink) (parseMaybeMarkdownList $ msgContentText mc)
+  where
+    ftIsSimplexLink :: FormattedText -> Bool
+    ftIsSimplexLink FormattedText {format} = maybe False isSimplexLink format
 
 roundedFDCount :: Int -> Int
 roundedFDCount n
