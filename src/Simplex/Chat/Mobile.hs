@@ -198,7 +198,8 @@ mobileChatOpts dbFilePrefix =
             logAgent = Nothing,
             logFile = Nothing,
             tbqSize = 1024,
-            highlyAvailable = False
+            highlyAvailable = False,
+            yesToUpMigrations = False
           },
       deviceName = Nothing,
       chatCmd = "",

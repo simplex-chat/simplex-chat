@@ -101,7 +101,8 @@ testCoreOpts =
       logAgent = Nothing,
       logFile = Nothing,
       tbqSize = 16,
-      highlyAvailable = False
+      highlyAvailable = False,
+      yesToUpMigrations = False
     }
 
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
@@ -131,8 +132,7 @@ aCfg = (agentConfig defaultChatConfig) {tbqSize = 16}
 testAgentCfg :: AgentConfig
 testAgentCfg =
   aCfg
-    { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000},
-      xftpNotifyErrsOnRetry = False
+    { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000}
     }
 
 testCfg :: ChatConfig

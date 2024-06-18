@@ -31,6 +31,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
+import kotlinx.serialization.encodeToString
 
 sealed class CIInfoTab {
   class Delivery(val memberDeliveryStatuses: List<MemberDeliveryStatus>): CIInfoTab()
@@ -217,6 +218,27 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   }
 
   @Composable
+  fun ExpandableInfoRow(title: String, value: String) {
+    val expanded = remember { mutableStateOf(false) }
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .sizeIn(minHeight = 46.dp)
+        .padding(PaddingValues(horizontal = DEFAULT_PADDING))
+        .clickable { expanded.value = !expanded.value },
+      horizontalArrangement = Arrangement.spacedBy(12.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Text(title, color = MaterialTheme.colors.onBackground)
+      if (expanded.value) {
+        Text(value, color = MaterialTheme.colors.secondary)
+      } else {
+        Text(value, color = MaterialTheme.colors.secondary, maxLines = 1)
+      }
+    }
+  }
+
+  @Composable
   fun Details() {
     AppBarTitle(stringResource(if (ci.localNote) MR.strings.saved_message_title else if (sent) MR.strings.sent_message else MR.strings.received_message))
     SectionView {
@@ -244,6 +266,10 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       if (devTools) {
         InfoRow(stringResource(MR.strings.info_row_database_id), ci.meta.itemId.toString())
         InfoRow(stringResource(MR.strings.info_row_updated_at), localTimestamp(ci.meta.updatedAt))
+        ExpandableInfoRow(stringResource(MR.strings.info_row_message_status), jsonShort.encodeToString(ci.meta.itemStatus))
+        if (ci.file != null) {
+          ExpandableInfoRow(stringResource(MR.strings.info_row_file_status), jsonShort.encodeToString(ci.file.fileStatus))
+        }
       }
     }
   }
@@ -531,6 +557,10 @@ fun itemInfoShareText(chatModel: ChatModel, ci: ChatItem, chatItemInfo: ChatItem
   if (devTools) {
     shareText.add(String.format(generalGetString(MR.strings.share_text_database_id), meta.itemId))
     shareText.add(String.format(generalGetString(MR.strings.share_text_updated_at), meta.updatedAt))
+    shareText.add(String.format(generalGetString(MR.strings.share_text_message_status), jsonShort.encodeToString(ci.meta.itemStatus)))
+    if (ci.file != null) {
+      shareText.add(String.format(generalGetString(MR.strings.share_text_file_status), jsonShort.encodeToString(ci.file.fileStatus)))
+    }
   }
   val qi = ci.quotedItem
   if (qi != null) {
