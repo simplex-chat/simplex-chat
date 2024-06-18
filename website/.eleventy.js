@@ -404,7 +404,6 @@ module.exports = function (ty) {
         // this condition works if the link is a valid website file
         const fileContent = fs.readFileSync(linkFile, 'utf8')
         parsed.path = (matter(fileContent).data?.permalink || parsed.path).replace(/\.md$/, ".html").toLowerCase()
-        return parsed.path
       } else if (!fs.existsSync(linkFile)) {
         linkFile = linkFile.replace('/website/src', '')
         if (fs.existsSync(linkFile)) {
@@ -414,12 +413,13 @@ module.exports = function (ty) {
           index = linkFile.indexOf(keyword)
           linkFile = linkFile.substring(index + keyword.length)
           parsed.path = `${githubUrl}${linkFile}`
-          return parsed.path
         } else {
           // if the link is not a valid website file or project file
           throw new Error(`Broken link: ${parsed.path} in ${hostFile}`)
         }
       }
+
+      return uri.serialize(parsed)
     }
   }).use(markdownItAnchor, {
     slugify: (str) =>
