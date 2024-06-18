@@ -104,7 +104,7 @@ import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), Migrati
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
-import Simplex.Messaging.Client (ProxyClientError (..), NetworkConfig (..), defaultNetworkConfig)
+import Simplex.Messaging.Client (NetworkConfig (..), ProxyClientError (..), defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -3225,7 +3225,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
       throwChatError $ CEFileNotApproved fileId unknownSrvs
 
-getNetworkConfig :: CM' NetworkConfig 
+getNetworkConfig :: CM' NetworkConfig
 getNetworkConfig = withAgent' $ liftIO . getNetworkConfig'
 
 resetRcvCIFileStatus :: User -> FileTransferId -> CIFileStatus 'MDRcv -> CM (Maybe AChatItem)
@@ -5261,10 +5261,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           groupMsgToView gInfo ci' {reactions}
 
     groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> CM ()
-    groupMessageUpdate gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId, memberId} sharedMsgId mc msg@RcvMessage {msgId} brokerTs ttl_ live_ =
-      if prohibitedSimplexLinks gInfo m mc
-        then messageWarning $ "x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks
-        else do
+    groupMessageUpdate gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId, memberId} sharedMsgId mc msg@RcvMessage {msgId} brokerTs ttl_ live_
+      | prohibitedSimplexLinks gInfo m mc =
+          messageWarning $ "x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks
+      | otherwise = do
           updateRcvChatItem `catchCINotFound` \_ -> do
             -- This patches initial sharedMsgId into chat item when locally deleted chat item
             -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
