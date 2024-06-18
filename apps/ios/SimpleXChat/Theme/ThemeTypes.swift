@@ -521,6 +521,11 @@ public struct ThemeModeOverrides: Codable {
     public var light: ThemeModeOverride? = nil
     public var dark: ThemeModeOverride? = nil
 
+    public init(light: ThemeModeOverride? = nil, dark: ThemeModeOverride? = nil) {
+        self.light = light
+        self.dark = dark
+    }
+
     public func preferredMode(_ darkTheme: Bool) -> ThemeModeOverride? {
         darkTheme ? dark : light
     }

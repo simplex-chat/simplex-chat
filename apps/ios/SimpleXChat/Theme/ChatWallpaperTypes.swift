@@ -9,7 +9,7 @@
 import Foundation
 import SwiftUI
 
-public enum PresetWallpaper {
+public enum PresetWallpaper: CaseIterable {
     case cats
     case flowers
     case hearts
@@ -290,6 +290,20 @@ public enum WallpaperScaleType/*(val contentScale: ContentScale)*/: Codable {
         case .repeat: "Repeat"
         }
     }
+
+    public func computeScaleFactor(_ srcSize: CGSize, _ dstSize: CGSize) -> (CGFloat, CGFloat) {
+        switch self {
+        case .fill:
+            let widthScale = dstSize.width / srcSize.width
+            let heightScale = dstSize.height / srcSize.height
+            return (max(widthScale, heightScale), max(widthScale, heightScale))
+        case .fit: fallthrough
+        case .repeat:
+            let widthScale = dstSize.width / srcSize.width
+            let heightScale = dstSize.height / srcSize.height
+            return (min(widthScale, heightScale), min(widthScale, heightScale))
+        }
+    }
 }
 
 public enum WallpaperType {
@@ -330,6 +344,16 @@ public enum WallpaperType {
         else if case .Image = self, case .Image = other { true }
         else if case .Empty = self, case .Empty = other { true }
         else { false }
+    }
+
+    public var isEmpty: Bool { switch self { case .Empty: true; default: false } }
+
+    public var scale: Float { 
+        switch self {
+        case let .Preset(_, scale): scale ?? 1
+        case let .Image(_, scale, _): scale ?? 1
+        default: 1
+        }
     }
 
     public func samePreset(other: PresetWallpaper?) -> Bool { if case let .Preset(filename, _) = self, filename == other?.filename { true } else { false } }

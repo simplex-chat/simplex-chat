@@ -17,6 +17,10 @@ class ThemeManager {
         let colors: Colors
         let appColors: AppColors
         var wallpaper: AppWallpaper = AppWallpaper(background: nil, tint: nil, type: .Empty)
+
+        func toAppTheme() -> AppTheme {
+            AppTheme(name: name, base: base, colors: colors, appColors: appColors, wallpaper: wallpaper)
+        }
     }
 
     private static func systemDarkThemeColors() -> (Colors, DefaultTheme) {
@@ -135,7 +139,7 @@ class ThemeManager {
         var themeIds = currentThemeIdsDefault.get()
         themeIds[nonSystemThemeName] = prevValue.themeId
         currentThemeIdsDefault.set(themeIds)
-        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        applyTheme(currentThemeDefault.get())
     }
 
     static func applyThemeColor(name: ThemeColor, color: Color? = nil, pref: Binding<ThemeModeOverride>) {
