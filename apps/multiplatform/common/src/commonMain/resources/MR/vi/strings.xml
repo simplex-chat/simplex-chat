@@ -342,4 +342,14 @@
     <string name="status_contact_has_e2e_encryption">liên hệ có bảo mật đầu cuối</string>
     <string name="status_contact_has_no_e2e_encryption">liên hệ không có bảo mật đầu cuối</string>
     <string name="contact_preferences">Tùy chọn liên hệ</string>
+    <string name="copy_verb">Sao chép</string>
+    <string name="create_profile_button">Tạo</string>
+    <string name="contacts_can_mark_messages_for_deletion">Liên hệ có thể đánh dấu tin nhắn để xóa; bạn vẫn sẽ có thể xem được chúng.</string>
+    <string name="icon_descr_context">Biểu tượng ngữ cảnh</string>
+    <string name="continue_to_next_step">Tiếp tục</string>
+    <string name="contribute">Đóng góp</string>
+    <string name="copied">Đã sao chép vào bộ nhớ đệm</string>
+    <string name="core_version">Phiên bản lõi: v%s</string>
+    <string name="correct_name_to">Sửa tên thành %s?</string>
+    <string name="copy_error">Sao chép lỗi</string>
 </resources>
