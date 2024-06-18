@@ -1103,9 +1103,9 @@
         <target>Kapazität überschritten - der Empfänger hat die zuvor gesendeten Nachrichten nicht empfangen.</target>
         <note>snd error text</note>
       </trans-unit>
-      <trans-unit id="Cellular" xml:space="preserve">
+      <trans-unit id="Cellular" xml:space="preserve" approved="no">
         <source>Cellular</source>
-        <target>Zellulär</target>
+        <target state="translated">Mobilfunknetz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change" xml:space="preserve">
