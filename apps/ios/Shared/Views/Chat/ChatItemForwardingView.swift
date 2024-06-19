@@ -19,7 +19,8 @@ struct ChatItemForwardingView: View {
 
     @State private var searchText: String = ""
     @FocusState private var searchFocused
-    @State private var alert: SomeAlert? = nil
+    @State private var alert: SomeAlert?
+    @State private var hasSimplexLink: Bool?
 
     var body: some View {
         NavigationView {
@@ -36,12 +37,7 @@ struct ChatItemForwardingView: View {
                     }
                 }
         }
-        .alert(item: $alert) { a in
-            switch a {
-            case let .someAlert(alert, _):
-                return alert
-            }
-        }
+        .alert(item: $alert) { $0.alert }
     }
 
     @ViewBuilder private func forwardListView() -> some View {
@@ -111,7 +107,8 @@ struct ChatItemForwardingView: View {
 
     private func prohibitedByPref(_ chat: Chat) -> Bool {
         // preference checks should match checks in compose view
-        let simplexLinkProhibited = hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
+        hasSimplexLink = hasSimplexLink ?? checkSimplexLink(ci)
+        let simplexLinkProhibited = (hasSimplexLink ?? false) && !chat.groupFeatureEnabled(.simplexLinks)
         let fileProhibited = (ci.content.msgContent?.isMediaOrFileAttachment ?? false) && !chat.groupFeatureEnabled(.files)
         let voiceProhibited = (ci.content.msgContent?.isVoice ?? false) && !chat.chatInfo.featureEnabled(.voice)
         return switch chat.chatInfo {
@@ -124,12 +121,6 @@ struct ChatItemForwardingView: View {
         }
     }
 
-    private var hasSimplexLink: Bool {
-        guard let mcText = ci.content.msgContent?.text else { return false }
-        guard let parsedMsg = parseSimpleXMarkdown(mcText) else { return false }
-        return parsedMsgHasSimplexLink(parsedMsg)
-    }
-
     private func emptyList() -> some View {
         Text("No filtered chats")
             .foregroundColor(.secondary)
@@ -139,7 +130,7 @@ struct ChatItemForwardingView: View {
     @ViewBuilder private func forwardListChatView(_ chat: Chat) -> some View {
         Button {
             if prohibitedByPref(chat) {
-                alert = .someAlert(
+                alert = SomeAlert(
                     alert: mkAlert(
                         title: "Cannot forward message",
                         message: "Selected chat preferences prohibit this message."
@@ -178,6 +169,12 @@ struct ChatItemForwardingView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
+}
+
+private func checkSimplexLink(_ ci: ChatItem) -> Bool {
+    guard let mcText = ci.content.msgContent?.text else { return false }
+    guard let parsedMsg = parseSimpleXMarkdown(mcText) else { return false }
+    return parsedMsgHasSimplexLink(parsedMsg)
 }
 
 #Preview {
