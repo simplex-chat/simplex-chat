@@ -142,7 +142,7 @@ struct ChatItemForwardingView: View {
                 alert = .someAlert(
                     alert: mkAlert(
                         title: "Cannot forward message",
-                        message: "Forwarding this message to selected chat is prohibited due to chat preferences."
+                        message: "Selected chat preferences prohibit this message."
                     ),
                     id: "forward prohibited by preferences"
                 )
