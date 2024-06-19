@@ -153,7 +153,7 @@
     <string name="delete_after">Eliminar en</string>
     <string name="ttl_sec">%d seg</string>
     <string name="contact_already_exists">El contácto ya existe</string>
-    <string name="connection_error_auth">Error conexión (Autenticación)</string>
+    <string name="connection_error_auth">Error de conexión (Autenticación)</string>
     <string name="for_me_only">Eliminar para mí</string>
     <string name="icon_descr_server_status_disconnected">Desconectado</string>
     <string name="icon_descr_server_status_connected">Conectado</string>
@@ -328,7 +328,7 @@
     <string name="error_creating_address">Error al crear dirección</string>
     <string name="error_deleting_user">Error al eliminar perfil</string>
     <string name="auth_enable_simplex_lock">Activar Bloqueo SimpleX</string>
-    <string name="one_time_link">Enlace de invitación de un uso</string>
+    <string name="one_time_link">Enlace de invitación de un solo uso</string>
     <string name="smp_servers">Servidores SMP</string>
     <string name="settings_experimental_features">Características experimentales</string>
     <string name="error_importing_database">Error al importar base de datos</string>
@@ -355,8 +355,8 @@
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Si has recibido un enlace de invitación a SimpleX Chat puedes abrirlo en tu navegador:</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Si seleccionas rechazar, el remitente NO será notificado.</string>
     <string name="invalid_contact_link">¡Enlace no válido!</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Si no puedes reunirte en persona, puedes <b>escanear el código QR en la videollamada</b>, o tu contacto puede compartir un enlace de invitación.]]></string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Si no puedes reunirte en persona, <b>muestra el código QR en la videollamada</b>, o comparte el enlace.]]></string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Si no puedes reunirte en persona, puedes <b>escanear el código QR por videollamada</b>, o tu contacto puede compartir un enlace de invitación.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Si no puedes reunirte en persona, <b>muestra el código QR por videollamada</b>, o comparte el enlace.</string>
     <string name="how_to">Cómo</string>
     <string name="ignore">Ignorar</string>
     <string name="error_deleting_database">Error al eliminar base de datos</string>
@@ -616,7 +616,7 @@
     <string name="image_descr_profile_image">imagen del perfil</string>
     <string name="prohibit_sending_voice_messages">No se permiten mensajes de voz.</string>
     <string name="protect_app_screen">Proteger la pantalla de la aplicación</string>
-    <string name="read_more_in_github_with_link"><![CDATA[Saber más en nuestro <font color="#0088ff">repositorio GitHub</font> .]]></string>
+    <string name="read_more_in_github_with_link">Conoce más en nuestro &lt;font color=#0088ff&gt;repositorio GitHub&lt;/font&gt; .</string>
     <string name="icon_descr_record_voice_message">Grabar mensaje de voz</string>
     <string name="rcv_group_event_member_deleted">ha expulsado a %1$s</string>
     <string name="send_link_previews">Enviar previsualizacion de enlaces</string>
@@ -660,7 +660,7 @@
     <string name="callstate_received_confirmation">confirmación recibida…</string>
     <string name="onboarding_notifications_mode_periodic">Periódico</string>
     <string name="privacy_redefined">Privacidad redefinida</string>
-    <string name="read_more_in_github">Saber más en nuestro repositorio GitHub.</string>
+    <string name="read_more_in_github">Conoce más en nuestro repositorio GitHub.</string>
     <string name="reject">Rechazar</string>
     <string name="open_verb">Abrir</string>
     <string name="icon_descr_call_pending_sent">Llamada pendiente</string>
@@ -670,7 +670,7 @@
     <string name="restore_database_alert_desc">Introduce la contraseña anterior después de restaurar la copia de seguridad de la base de datos. Esta acción no se puede deshacer.</string>
     <string name="rcv_group_event_user_deleted">te ha expulsado</string>
     <string name="receiving_via">Recibiendo vía</string>
-    <string name="network_option_protocol_timeout">Tiempo de espera del protocolo</string>
+    <string name="network_option_protocol_timeout">Timeout protocolo</string>
     <string name="network_option_seconds_label">seg</string>
     <string name="users_delete_with_connections">Datos del perfil y conexiones</string>
     <string name="prohibit_sending_disappearing_messages">No se permiten mensajes temporales.</string>
@@ -707,8 +707,8 @@
     <string name="save_and_notify_contact">Guardar y notificar contacto</string>
     <string name="save_preferences_question">¿Guardar preferencias\?</string>
     <string name="save_and_notify_group_members">Guardar y notificar grupo</string>
-    <string name="connection_error_auth_desc">A menos que tu contacto haya eliminado la conexión o que este enlace ya se haya usado, podría ser un error. Por favor, notifícalo.
-\nPara conectarte, pide a tu contacto que cree otro enlace de conexión y comprueba que tienes buena conexión de red.</string>
+    <string name="connection_error_auth_desc">A menos que tu contacto haya eliminado la conexión o el enlace haya sido usado, podría ser un error. Por favor, notifícalo.
+\nPara conectarte pide a tu contacto que cree otro enlace y comprueba la conexión de red.</string>
     <string name="periodic_notifications_desc">La aplicación recoge nuevos mensajes periódicamente lo que consume un pequeño porcentaje de batería al día. La aplicación no usa notificaciones push por tanto los datos de tu dispositivo no se envían a los servidores push.</string>
     <string name="la_notice_title_simplex_lock">Bloqueo SimpleX</string>
     <string name="auth_unlock">Desbloquear</string>
@@ -747,7 +747,7 @@
     <string name="icon_descr_speaker_on">Altavoz activado</string>
     <string name="stop_chat_to_enable_database_actions">Para habilitar las acciones sobre la base de datos, debes parar Chat</string>
     <string name="connection_you_accepted_will_be_cancelled">¡La conexión que has aceptado se cancelará!</string>
-    <string name="database_initialization_error_desc">La base de datos no funciona correctamente. Pulsa para saber más</string>
+    <string name="database_initialization_error_desc">La base de datos no funciona correctamente. Pulsa para conocer más</string>
     <string name="moderate_message_will_be_marked_warning">El mensaje será marcado como moderado para todos los miembros.</string>
     <string name="next_generation_of_private_messaging">La nueva generación de mensajería privada</string>
     <string name="delete_files_and_media_desc">Esta acción es irreversible. Se eliminarán todos los archivos y multimedia recibidos y enviados. Las imágenes de baja resolución permanecerán.</string>
@@ -809,7 +809,7 @@
     <string name="chat_item_ttl_seconds">%s segundo(s)</string>
     <string name="group_invitation_tap_to_join">Pulsa para unirte</string>
     <string name="rcv_group_event_updated_group_profile">ha actualizado el perfil del grupo</string>
-    <string name="network_option_tcp_connection_timeout">Tiempo de espera de la conexión TCP agotado</string>
+    <string name="network_option_tcp_connection_timeout">Timeout de la conexión TCP</string>
     <string name="theme">Tema</string>
     <string name="set_group_preferences">Establece preferencias de grupo</string>
     <string name="settings_section_title_support">SOPORTE SIMPLEX CHAT</string>
@@ -883,7 +883,7 @@
     <string name="incognito_random_profile">Tu perfil aleatorio</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Te conectarás cuando tu solicitud se acepte, por favor espera o compruébalo más tarde.</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Te conectarás cuando el dispositivo de tu contacto esté en línea, por favor espera o compruébalo más tarde.</string>
-    <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Se te pedirá identificarte cuándo inicies o continues usando la aplicación tras 30 segundos en segundo plano.</string>
+    <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Se te pedirá autenticarte cuando inicies la aplicación o sigas usándola tras 30 segundos en segundo plano.</string>
     <string name="invite_prohibited_description">Estás intentando invitar a un contacto con el que compartes un perfil incógnito a un grupo en el que usas tu perfil principal</string>
     <string name="simplex_link_mode_browser">Mediante navegador</string>
     <string name="simplex_link_connection">mediante %1$s</string>
@@ -955,7 +955,7 @@
     <string name="smp_servers_your_server">Tu servidor</string>
     <string name="smp_servers_your_server_address">Dirección de tu servidor</string>
     <string name="your_current_profile">Tu perfil actual</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Tu perfil se almacena en tu dispositivo y sólo se comparte con tus contactos. Los servidores SimpleX no pueden ver tu perfil.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Tu perfil es almacenado en tu dispositivo y solamente se comparte con tus contactos. Los servidores SimpleX no pueden ver tu perfil.</string>
     <string name="language_system">Sistema</string>
     <string name="button_add_welcome_message">Añadir mensaje de bienvenida</string>
     <string name="v4_6_audio_video_calls">Llamadas y videollamadas</string>
@@ -1116,14 +1116,14 @@
     <string name="v5_0_large_files_support_descr">¡Rápido y sin necesidad de esperar a que el remitente esté en línea!</string>
     <string name="auth_open_chat_profiles">Abrir perfiles</string>
     <string name="learn_more">Más información</string>
-    <string name="if_you_cant_meet_in_person">Si no puedes reunirte en persona, **muestra el código QR por videollamada**, o comparte el enlace.</string>
+    <string name="if_you_cant_meet_in_person">Si no puedes reunirte en persona, muestra el código QR por videollamada o comparte el enlace.</string>
     <string name="scan_qr_to_connect_to_contact">Para conectarse, tu contacto puede escanear el código QR o usar el enlace en la aplicación.</string>
     <string name="create_simplex_address">Crear dirección SimpleX</string>
     <string name="auto_accept_contact">Auto aceptar</string>
     <string name="group_welcome_preview">Vista previa</string>
     <string name="opening_database">Abriendo base de datos…</string>
     <string name="error_setting_address">Error al introducir dirección</string>
-    <string name="read_more_in_user_guide_with_link"><![CDATA[Saber más en la <font color="#0088ff">Guía de Usuario</font>.]]></string>
+    <string name="read_more_in_user_guide_with_link">Conoce más en la &lt;font color=#0088ff&gt;Guía de Usuario&lt;/font&gt;.</string>
     <string name="one_time_link_short">Enlace un uso</string>
     <string name="simplex_address">Dirección SimpleX</string>
     <string name="you_can_accept_or_reject_connection">Cuando alguien solicite conectarse podrás aceptar o rechazar su solicitud.</string>
@@ -1243,7 +1243,7 @@
     <string name="v5_1_custom_themes_descr">Personalizar y compartir temas de color.</string>
     <string name="v5_1_message_reactions_descr">¡Por fin los tenemos! 🚀</string>
     <string name="v5_1_message_reactions">Reacciones a los mensajes</string>
-    <string name="whats_new_read_more">Saber más</string>
+    <string name="whats_new_read_more">Conoce más</string>
     <string name="v5_1_japanese_portuguese_interface">Interfaz en japonés y portugués</string>
     <string name="item_info_no_text">sin texto</string>
     <string name="non_fatal_errors_occured_during_import">Algunos errores no críticos ocurrieron durante la importación - para más detalles puedes ver la consola de Chat.</string>
@@ -1268,7 +1268,7 @@
     <string name="allow_to_send_files">Se permite enviar archivos y multimedia</string>
     <string name="favorite_chat">Favorito</string>
     <string name="only_owners_can_enable_files_and_media">Sólo los propietarios del grupo pueden activar los archivos y multimedia.</string>
-    <string name="network_option_protocol_timeout_per_kb">Timeout de protocolo por KB</string>
+    <string name="network_option_protocol_timeout_per_kb">Timeout protocolo por KB</string>
     <string name="snd_conn_event_ratchet_sync_allowed">renegociación de cifrado permitida para %s</string>
     <string name="conn_event_ratchet_sync_agreed">cifrado acordado</string>
     <string name="conn_event_ratchet_sync_ok">cifrado ok</string>
@@ -1533,26 +1533,26 @@
     <string name="enable_sending_recent_history">Enviar hasta 100 últimos mensajes a los miembros nuevos.</string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Añadir contacto</b>: crea un enlace de invitación nuevo o usa un enlace recibido.]]></string>
     <string name="disable_sending_recent_history">No enviar historial a miembros nuevos.</string>
-    <string name="or_show_this_qr_code">O mostrar este código</string>
+    <string name="or_show_this_qr_code">O muestra este código QR</string>
     <string name="recent_history_is_sent_to_new_members">Hasta 100 últimos mensajes son enviados a los miembros nuevos.</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">El código QR escaneado no es un enlace SimpleX.</string>
     <string name="the_text_you_pasted_is_not_a_link">El texto pegado no es un enlace SimpleX.</string>
     <string name="enable_camera_access">Permitir acceso a la cámara</string>
     <string name="you_can_view_invitation_link_again">Podrás ver el enlace de invitación en detalles de conexión.</string>
     <string name="keep_unused_invitation_question">¿Guardar invitación no usada?</string>
-    <string name="share_this_1_time_link">Compartir este enlace de un uso</string>
+    <string name="share_this_1_time_link">Comparte este enlace de un solo uso</string>
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>Crear grupo</b>: crea un grupo nuevo.]]></string>
     <string name="recent_history">Historial visible</string>
     <string name="la_app_passcode">Código acceso app</string>
     <string name="new_chat">Nuevo chat</string>
     <string name="loading_chats">Cargando chats…</string>
     <string name="creating_link">Creando enlace…</string>
-    <string name="or_scan_qr_code">O escanear código QR</string>
+    <string name="or_scan_qr_code">O escanea el código QR</string>
     <string name="invalid_qr_code">Código QR no válido</string>
     <string name="add_contact_tab">Añadir contacto</string>
     <string name="tap_to_scan">Pulsa para escanear</string>
     <string name="keep_invitation_link">Guardar</string>
-    <string name="tap_to_paste_link">Pulsa para pegar enlace</string>
+    <string name="tap_to_paste_link">Pulsa para pegar el enlace</string>
     <string name="search_or_paste_simplex_link">Buscar o pegar enlace SimpleX</string>
     <string name="v5_5_message_delivery_descr">Con uso reducido de batería.</string>
     <string name="blocked_by_admin_item_description">bloqueado por administrador</string>
