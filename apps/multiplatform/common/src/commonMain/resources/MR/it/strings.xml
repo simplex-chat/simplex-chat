@@ -1870,4 +1870,5 @@
     <string name="remote_ctrl_connection_stopped_desc">Controlla che mobile e desktop siano collegati alla stessa rete locale e che il firewall del desktop consenta la connessione.
 \nSi prega di condividere qualsiasi altro problema con gli sviluppatori.</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">Questo link è stato usato con un altro dispositivo mobile, creane uno nuovo sul desktop.</string>
+    <string name="copy_error">Copia errore</string>
 </resources>
