@@ -44,25 +44,16 @@ struct ChatItemForwardingView: View {
     @ViewBuilder private func forwardListView() -> some View {
         VStack(alignment: .leading) {
             if !chatsToForwardTo.isEmpty {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 8) {
-                        searchFieldView(text: $searchText, focussed: $searchFocused)
-                            .padding(.leading, 2)
-                        let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-                        let chats = s == "" ? chatsToForwardTo : chatsToForwardTo.filter { foundChat($0, s) }
-                        ForEach(chats) { chat in
-                            Divider()
-                            forwardListChatView(chat)
-                                .disabled(chatModel.deletedChats.contains(chat.chatInfo.id))
-                        }
+                List {
+                    searchFieldView(text: $searchText, focussed: $searchFocused)
+                        .padding(.leading, 2)
+                    let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
+                    let chats = s == "" ? chatsToForwardTo : chatsToForwardTo.filter { foundChat($0, s) }
+                    ForEach(chats) { chat in
+                        forwardListChatView(chat)
+                            .disabled(chatModel.deletedChats.contains(chat.chatInfo.id))
                     }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                    .background(Color(uiColor: .systemBackground))
-                    .cornerRadius(12)
-                    .padding(.horizontal)
                 }
-                .background(Color(.systemGroupedBackground))
             } else {
                 emptyList()
             }
