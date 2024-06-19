@@ -19,6 +19,7 @@ struct ChatItemForwardingView: View {
 
     @State private var searchText: String = ""
     @FocusState private var searchFocused
+    @State private var alert: SomeAlert? = nil
 
     var body: some View {
         NavigationView {
@@ -35,6 +36,12 @@ struct ChatItemForwardingView: View {
                     }
                 }
         }
+        .alert(item: $alert) { a in
+            switch a {
+            case let .someAlert(alert, _):
+                return alert
+            }
+        }
     }
 
     @ViewBuilder private func forwardListView() -> some View {
@@ -49,7 +56,7 @@ struct ChatItemForwardingView: View {
                         let chats = s == "" ? chatsToForwardTo : chatsToForwardTo.filter { filterChatSearched($0, s) }
                         ForEach(chats) { chat in
                             Divider()
-                            forwardListNavLinkView(chat)
+                            forwardListChatView(chat)
                                 .disabled(chatModel.deletedChats.contains(chat.chatInfo.id))
                         }
                     }
@@ -92,21 +99,25 @@ struct ChatItemForwardingView: View {
     }
 
     private func canForwardToChat(_ chat: Chat) -> Bool {
+        switch chat.chatInfo {
+        case let .direct(contact): contact.sendMsgEnabled && !contact.nextSendGrpInv
+        case let .group(groupInfo): groupInfo.sendMsgEnabled
+        case let .local(noteFolder): noteFolder.sendMsgEnabled
+        case .contactRequest: false
+        case .contactConnection: false
+        case .invalidJSON: false
+        }
+    }
+
+    private func prohibitedByPref(_ chat: Chat) -> Bool {
         // preference checks should match checks in compose view
         let simplexLinkProhibited = hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
         let fileProhibited = (ci.content.msgContent?.isMediaOrFileAttachment ?? false) && !chat.groupFeatureEnabled(.files)
         let voiceProhibited = (ci.content.msgContent?.isVoice ?? false) && !chat.chatInfo.featureEnabled(.voice)
         return switch chat.chatInfo {
-        case let .direct(contact):
-            contact.sendMsgEnabled
-            && !contact.nextSendGrpInv
-            && !voiceProhibited
-        case let .group(groupInfo):
-            groupInfo.sendMsgEnabled
-            && !simplexLinkProhibited
-            && !fileProhibited
-            && !voiceProhibited
-        case let .local(noteFolder): noteFolder.sendMsgEnabled
+        case .direct: voiceProhibited
+        case .group: simplexLinkProhibited || fileProhibited || voiceProhibited
+        case .local: false
         case .contactRequest: false
         case .contactConnection: false
         case .invalidJSON: false
@@ -125,25 +136,35 @@ struct ChatItemForwardingView: View {
             .frame(maxWidth: .infinity)
     }
 
-    @ViewBuilder private func forwardListNavLinkView(_ chat: Chat) -> some View {
+    @ViewBuilder private func forwardListChatView(_ chat: Chat) -> some View {
         Button {
-            dismiss()
-            if chat.id == fromChatInfo.id {
-                 composeState = ComposeState(
-                     message: composeState.message,
-                     preview: composeState.linkPreview != nil ? composeState.preview : .noPreview,
-                     contextItem: .forwardingItem(chatItem: ci, fromChatInfo: fromChatInfo)
-                 )
+            if prohibitedByPref(chat) {
+                alert = .someAlert(
+                    alert: mkAlert(
+                        title: "Cannot forward message",
+                        message: "Forwarding this message to selected chat is prohibited due to chat preferences."
+                    ),
+                    id: "forward prohibited by preferences"
+                )
             } else {
-                composeState = ComposeState.init(forwardingItem: ci, fromChatInfo: fromChatInfo)
-                chatModel.chatId = chat.id
+                dismiss()
+                if chat.id == fromChatInfo.id {
+                    composeState = ComposeState(
+                        message: composeState.message,
+                        preview: composeState.linkPreview != nil ? composeState.preview : .noPreview,
+                        contextItem: .forwardingItem(chatItem: ci, fromChatInfo: fromChatInfo)
+                    )
+                } else {
+                    composeState = ComposeState.init(forwardingItem: ci, fromChatInfo: fromChatInfo)
+                    chatModel.chatId = chat.id
+                }
             }
         } label: {
             HStack {
                 ChatInfoImage(chat: chat, size: 30)
                     .padding(.trailing, 2)
                 Text(chat.chatInfo.chatViewName)
-                    .foregroundColor(.primary)
+                    .foregroundColor(prohibitedByPref(chat) ? .secondary : .primary)
                     .lineLimit(1)
                 if chat.chatInfo.incognito {
                     Spacer()
