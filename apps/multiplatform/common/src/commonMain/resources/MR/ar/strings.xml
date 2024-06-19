@@ -1869,4 +1869,6 @@
     <string name="remote_ctrl_connection_stopped_identity_desc">تم استخدام هذا الرابط مع جهاز محمول آخر، يُرجى إنشاء رابط جديد على سطح المكتب.</string>
     <string name="remote_ctrl_connection_stopped_desc">يُرجى التحقق من اتصال الهاتف المحمول وسطح المكتب بنفس الشبكة المحلية، وأن جدار حماية سطح المكتب يسمح بالاتصال.
 \nيُرجى مشاركة أي مشاكل أُخرى مع المطورين.</string>
+    <string name="cannot_share_message_alert_title">لا يمكن إرسال الرسالة</string>
+    <string name="cannot_share_message_alert_text">تفضيلات الدردشة المحدّدة تحظر هذه الرسالة.</string>
 </resources>
