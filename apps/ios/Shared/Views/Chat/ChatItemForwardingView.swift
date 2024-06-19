@@ -92,14 +92,31 @@ struct ChatItemForwardingView: View {
     }
 
     private func canForwardToChat(_ chat: Chat) -> Bool {
-        switch chat.chatInfo {
-        case let .direct(contact): contact.sendMsgEnabled && !contact.nextSendGrpInv
-        case let .group(groupInfo): groupInfo.sendMsgEnabled
+        // preference checks should match checks in compose view
+        let simplexLinkProhibited = hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
+        let fileProhibited = (ci.content.msgContent?.isMediaOrFileAttachment ?? false) && !chat.groupFeatureEnabled(.files)
+        let voiceProhibited = (ci.content.msgContent?.isVoice ?? false) && !chat.chatInfo.featureEnabled(.voice)
+        return switch chat.chatInfo {
+        case let .direct(contact):
+            contact.sendMsgEnabled
+            && !contact.nextSendGrpInv
+            && !voiceProhibited
+        case let .group(groupInfo):
+            groupInfo.sendMsgEnabled
+            && !simplexLinkProhibited
+            && !fileProhibited
+            && !voiceProhibited
         case let .local(noteFolder): noteFolder.sendMsgEnabled
         case .contactRequest: false
         case .contactConnection: false
         case .invalidJSON: false
         }
+    }
+
+    private var hasSimplexLink: Bool {
+        guard let mcText = ci.content.msgContent?.text else { return false }
+        guard let parsedMsg = parseSimpleXMarkdown(mcText) else { return false }
+        return parsedMsgHasSimplexLink(parsedMsg)
     }
 
     private func emptyList() -> some View {
