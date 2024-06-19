@@ -32,13 +32,44 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
     scaffoldState = scaffoldState,
     topBar = { Column { ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() } } },
   ) {
+    val sharedContent = chatModel.sharedContent.value
+    var isMediaOrFileAttachment = false
+    var isVoice = false
+    var hasSimplexLink = false
+    when (sharedContent) {
+      is SharedContent.Text ->
+        hasSimplexLink = hasSimplexLink(sharedContent.text)
+      is SharedContent.Media -> {
+        isMediaOrFileAttachment = true
+        hasSimplexLink = hasSimplexLink(sharedContent.text)
+      }
+      is SharedContent.File -> {
+        isMediaOrFileAttachment = true
+        hasSimplexLink = hasSimplexLink(sharedContent.text)
+      }
+      is SharedContent.Forward -> {
+        val mc = sharedContent.chatItem.content.msgContent
+        if (mc != null) {
+          isMediaOrFileAttachment = mc.isMediaOrFileAttachment
+          isVoice = mc.isVoice
+          hasSimplexLink = hasSimplexLink(mc.text)
+        }
+      }
+      null -> {}
+    }
     Box(Modifier.padding(it)) {
       Column(
         modifier = Modifier
           .fillMaxSize()
       ) {
         if (chatModel.chats.isNotEmpty()) {
-          ShareList(chatModel, search = searchInList)
+          ShareList(
+            chatModel,
+            search = searchInList,
+            isMediaOrFileAttachment = isMediaOrFileAttachment,
+            isVoice = isVoice,
+            hasSimplexLink = hasSimplexLink
+          )
         } else {
           EmptyList()
         }
@@ -53,6 +84,11 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
       })
     }
   }
+}
+
+private fun hasSimplexLink(msg: String): Boolean {
+  val parsedMsg = parseToMarkdown(msg) ?: return false
+  return parsedMsg.any { ft -> ft.format is Format.SimplexLink }
 }
 
 @Composable
@@ -142,7 +178,13 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
 }
 
 @Composable
-private fun ShareList(chatModel: ChatModel, search: String) {
+private fun ShareList(
+  chatModel: ChatModel,
+  search: String,
+  isMediaOrFileAttachment: Boolean,
+  isVoice: Boolean,
+  hasSimplexLink: Boolean
+) {
   val chats by remember(search) {
     derivedStateOf {
       val sorted = chatModel.chats.toList().sortedByDescending { it.chatInfo is ChatInfo.Local }
@@ -157,7 +199,13 @@ private fun ShareList(chatModel: ChatModel, search: String) {
     modifier = Modifier.fillMaxWidth()
   ) {
     items(chats) { chat ->
-      ShareListNavLinkView(chat, chatModel)
+      ShareListNavLinkView(
+        chat,
+        chatModel,
+        isMediaOrFileAttachment = isMediaOrFileAttachment,
+        isVoice = isVoice,
+        hasSimplexLink = hasSimplexLink
+      )
     }
   }
 }
