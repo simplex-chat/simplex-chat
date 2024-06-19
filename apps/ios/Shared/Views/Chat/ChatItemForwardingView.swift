@@ -120,12 +120,6 @@ struct ChatItemForwardingView: View {
         }
     }
 
-    private func emptyList() -> some View {
-        Text("No filtered chats")
-            .foregroundColor(.secondary)
-            .frame(maxWidth: .infinity)
-    }
-
     private var hasSimplexLink: Bool {
         if let hasSimplexLink_ { return hasSimplexLink_ }
         let r =
@@ -137,6 +131,12 @@ struct ChatItemForwardingView: View {
             }
         hasSimplexLink_ = r
         return r
+    }
+
+    private func emptyList() -> some View {
+        Text("No filtered chats")
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity)
     }
     
     @ViewBuilder private func forwardListChatView(_ chat: Chat) -> some View {
