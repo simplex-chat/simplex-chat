@@ -21,6 +21,7 @@ struct ChatItemForwardingView: View {
     @FocusState private var searchFocused
     @State private var alert: SomeAlert?
     @State private var hasSimplexLink_: Bool?
+    private let chatsToForwardTo = filterChatsToForwardTo()
 
     var body: some View {
         NavigationView {
@@ -42,14 +43,13 @@ struct ChatItemForwardingView: View {
 
     @ViewBuilder private func forwardListView() -> some View {
         VStack(alignment: .leading) {
-            let chatsToForwardTo = filterChatsToForwardTo()
             if !chatsToForwardTo.isEmpty {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 8) {
                         searchFieldView(text: $searchText, focussed: $searchFocused)
                             .padding(.leading, 2)
                         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-                        let chats = s == "" ? chatsToForwardTo : chatsToForwardTo.filter { filterChatSearched($0, s) }
+                        let chats = s == "" ? chatsToForwardTo : chatsToForwardTo.filter { foundChat($0, s) }
                         ForEach(chats) { chat in
                             Divider()
                             forwardListChatView(chat)
@@ -69,16 +69,7 @@ struct ChatItemForwardingView: View {
         }
     }
 
-    private func filterChatsToForwardTo() -> [Chat] {
-        var filteredChats = chatModel.chats.filter({ canForwardToChat($0) })
-        if let index = filteredChats.firstIndex(where: { $0.chatInfo.chatType == .local }) {
-            let privateNotes = filteredChats.remove(at: index)
-            filteredChats.insert(privateNotes, at: 0)
-        }
-        return filteredChats
-    }
-
-    private func filterChatSearched(_ chat: Chat, _ searchStr: String) -> Bool {
+    private func foundChat(_ chat: Chat, _ searchStr: String) -> Bool {
         let cInfo = chat.chatInfo
         return switch cInfo {
         case let .direct(contact):
@@ -91,17 +82,6 @@ struct ChatItemForwardingView: View {
 
         func viewNameContains(_ cInfo: ChatInfo, _ s: String) -> Bool {
             cInfo.chatViewName.localizedLowercase.contains(s)
-        }
-    }
-
-    private func canForwardToChat(_ chat: Chat) -> Bool {
-        switch chat.chatInfo {
-        case let .direct(contact): contact.sendMsgEnabled && !contact.nextSendGrpInv
-        case let .group(groupInfo): groupInfo.sendMsgEnabled
-        case let .local(noteFolder): noteFolder.sendMsgEnabled
-        case .contactRequest: false
-        case .contactConnection: false
-        case .invalidJSON: false
         }
     }
 
@@ -181,6 +161,27 @@ struct ChatItemForwardingView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+}
+
+private func filterChatsToForwardTo() -> [Chat] {
+    var filteredChats = ChatModel.shared.chats.filter { c in
+        c.chatInfo.chatType != .local && canForwardToChat(c)
+    }
+    if let privateNotes = ChatModel.shared.chats.first(where: { $0.chatInfo.chatType == .local }) {
+        filteredChats.insert(privateNotes, at: 0)
+    }
+    return filteredChats
+}
+
+private func canForwardToChat(_ chat: Chat) -> Bool {
+    switch chat.chatInfo {
+    case let .direct(contact): contact.sendMsgEnabled && !contact.nextSendGrpInv
+    case let .group(groupInfo): groupInfo.sendMsgEnabled
+    case let .local(noteFolder): noteFolder.sendMsgEnabled
+    case .contactRequest: false
+    case .contactConnection: false
+    case .invalidJSON: false
     }
 }
 
