@@ -46,6 +46,10 @@ img{
   -ms-user-select: none; /* For Internet Explorer and Edge */
 }
 
+a{
+  word-wrap: break-word;
+}
+
 /* #comparison::before {
   display: block;
   content: " ";

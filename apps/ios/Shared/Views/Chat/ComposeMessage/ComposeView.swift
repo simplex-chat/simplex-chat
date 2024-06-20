@@ -287,6 +287,7 @@ struct ComposeView: View {
             if chat.chatInfo.contact?.nextSendGrpInv ?? false {
                 ContextInvitingContactMemberView()
             }
+            // preference checks should match checks in forwarding list
             let simplexLinkProhibited = hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
             let fileProhibited = composeState.attachmentPreview && !chat.groupFeatureEnabled(.files)
             let voiceProhibited = composeState.voicePreview && !chat.chatInfo.featureEnabled(.voice)
@@ -1066,7 +1067,7 @@ struct ComposeView: View {
         } else {
             nil
         }
-        let simplexLink = parsedMsg.contains(where: { ft in ft.format?.isSimplexLink ?? false })
+        let simplexLink = parsedMsgHasSimplexLink(parsedMsg)
         return (url, simplexLink)
     }
 
@@ -1104,6 +1105,10 @@ struct ComposeView: View {
         pendingLinkUrl = nil
         cancelledLinks = []
     }
+}
+
+func parsedMsgHasSimplexLink(_ parsedMsg: [FormattedText]) -> Bool {
+    parsedMsg.contains(where: { ft in ft.format?.isSimplexLink ?? false })
 }
 
 struct ComposeView_Previews: PreviewProvider {

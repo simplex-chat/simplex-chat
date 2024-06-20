@@ -2925,6 +2925,20 @@ sealed class MsgContent {
   @Serializable(with = MsgContentSerializer::class) class MCFile(override val text: String): MsgContent()
   @Serializable(with = MsgContentSerializer::class) class MCUnknown(val type: String? = null, override val text: String, val json: JsonElement): MsgContent()
 
+  val isVoice: Boolean get() =
+    when (this) {
+      is MCVoice -> true
+      else -> false
+    }
+
+  val isMediaOrFileAttachment: Boolean get() =
+    when (this) {
+      is MCImage -> true
+      is MCVideo -> true
+      is MCFile -> true
+      else -> false
+    }
+
   val cmdString: String get() =
     if (this is MCUnknown) "json $json" else "json ${json.encodeToString(this)}"
 }
