@@ -12,13 +12,14 @@ active_blog: true
             list-style: disc;
             margin-right: 0;
             margin-left: 0;
+            -webkit-margin-start: 1.2rem;
+            margin-inline-start: 1.2rem;
         }
         #blog-list ul {
             list-style-position: inside;
             overflow: auto;
         }
         #blog-list ul li {
-            -webkit-margin-start: 1.1rem;
             color: #000;
         }
         .dark #blog-list ul li {
@@ -58,7 +59,7 @@ active_blog: true
                 </div>
                 <div class="p-6 md:py-8 flex-[2.5] flex flex-col">
                     <div>
-                        <h1 class="text-grey-black dark:text-white text-lg md:text-xl font-bold ">
+                        <h1 class="text-grey-black dark:text-white !text-lg md:!text-xl font-bold ">
                             <a href="{{ blog.url }}">{{ blog.data.title | safe }}</a>
                         </h1>
                         <p class="text-sm text-[#A8B0B4] font-medium mt-2 mb-4 tracking-[0.03em]">

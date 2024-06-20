@@ -113,8 +113,8 @@ section.container>div>p:nth-child(2) {
 #article ol li {
   margin-right: 0;
   margin-left: 0;
-  /* -webkit-margin-start: 1.1rem;
-  margin-inline-start: 1.1rem; */
+  -webkit-margin-start: 1.2rem;
+  margin-inline-start: 1.2rem;
   color: #000;
 }
 
@@ -138,16 +138,16 @@ section.container>div>p:nth-child(2) {
   line-height: 30px;
 }
 
-/* #article ul li {
+#article ul li {
   list-style: disc;
-} */
+}
 
-#article ul > li::before {
+/* #article ul > li::before {
   content: '•';
   font-size: 24px;
   vertical-align: middle;
   margin-right: 5px;
-}
+} */
 
 #article ol li {
   list-style: decimal;
@@ -222,10 +222,6 @@ h6 {
 
   #article .float-to-right {
     float: right;
-    margin-left: 3rem;
-  }
-
-  #article .float-right{
     margin-left: 3rem;
   }
 }
