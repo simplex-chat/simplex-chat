@@ -278,7 +278,7 @@ func wallpaperBackgrounds(light: String) -> [DefaultTheme : Color] {
     ]
 }
 
-public enum WallpaperScaleType/*(val contentScale: ContentScale)*/: Codable {
+public enum WallpaperScaleType/*(val contentScale: ContentScale)*/: String, Codable, CaseIterable {
     case fill/* (ContentScale.Crop)*/
     case fit/* (ContentScale.Fit)*/
     case `repeat`/* (ContentScale.Fit)*/
@@ -345,6 +345,10 @@ public enum WallpaperType {
         else if case .Empty = self, case .Empty = other { true }
         else { false }
     }
+
+    public var isPreset: Bool { switch self { case .Preset: true; default: false } }
+
+    public var isImage: Bool { switch self { case .Image: true; default: false } }
 
     public var isEmpty: Bool { switch self { case .Empty: true; default: false } }
 

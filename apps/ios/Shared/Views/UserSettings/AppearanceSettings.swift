@@ -10,14 +10,6 @@ import SwiftUI
 import SimpleXChat
 import Yams
 
-public func decodeYAML<T: Decodable>(_ string: String) -> T? {
-    try? YAMLDecoder().decode(T.self, from: string)
-}
-
-public func encodeYAML<T: Encodable>(_ value: T) -> String {
-    try! YAMLEncoder().encode(value)
-}
-
 //let interfaceStyles: [UIUserInterfaceStyle] = [.unspecified, .light, .dark]
 
 let colorModesLocalized: [LocalizedStringKey] = ["System", "Light", "Dark"]
@@ -56,6 +48,7 @@ struct AppearanceSettings: View {
     }()
 
     @State var showImageImporter: Bool = false
+    @State var customizeThemeIsOpen: Bool = false
 
     var body: some View {
         VStack{
@@ -143,8 +136,8 @@ struct AppearanceSettings: View {
                             onTypeChange(type)
                         }
                     }
-                    //                    //ThemeDestinationPicker(themeUserDestination)
-                    //
+                    ThemeDestinationPicker(themeUserDestination: $themeUserDestination, themeUserDest: themeUserDestination?.0, customizeThemeIsOpen: $customizeThemeIsOpen)
+
                     WallpaperPresetSelector(
                         selectedWallpaper: wallpaperType,
                         currentColors: { type in
@@ -205,10 +198,16 @@ struct AppearanceSettings: View {
                             CustomizeThemeView(onChooseType: onChooseType)
                                 .navigationTitle("Profile theme")
                                 .modifier(ThemedBackground())
+                                .onAppear {
+                                    customizeThemeIsOpen = true
+                                }
                         } else {
                             CustomizeThemeView(onChooseType: onChooseType)
                                 .navigationTitle("Customize theme")
                                 .modifier(ThemedBackground())
+                                .onAppear {
+                                    customizeThemeIsOpen = true
+                                }
                         }
                     } label: {
                         Text("Customize theme")
@@ -269,6 +268,9 @@ struct AppearanceSettings: View {
                 }
             }
         }
+        .onAppear {
+            customizeThemeIsOpen = false
+        }
     }
 
     private var currentLanguage: String {
@@ -297,7 +299,6 @@ struct AppearanceSettings: View {
 struct ChatThemePreview: View {
     @EnvironmentObject var theme: AppTheme
     var base: DefaultTheme
-    var wallpaperImage: Image?
     var wallpaperType: WallpaperType?
     var backgroundColor: Color? //theme.wallpaper.background
     var tintColor: Color? //theme.wallpaper.tint
@@ -326,7 +327,7 @@ struct ChatThemePreview: View {
         .padding(10)
         .frame(maxWidth: .infinity)
 
-        if let wallpaperImage, let wallpaperType, let backgroundColor, let tintColor {
+        if let wallpaperType, let wallpaperImage = wallpaperType.image, let backgroundColor, let tintColor {
             view.modifier(ChatViewBackground(image: wallpaperImage, imageType: wallpaperType, background: backgroundColor, tint: tintColor))
         } else {
             view.background(themeBackgroundColor)
@@ -354,7 +355,6 @@ struct WallpaperPresetSelector: View {
             //SimpleXThemeOverride(remember(selectedWallpaper, CurrentColors.collectAsState().value) }) {
             ChatThemePreview(
                 base: theme.base,
-                wallpaperImage: theme.wallpaper.type.image,
                 wallpaperType: selectedWallpaper,
                 backgroundColor: activeBackgroundColor ?? theme.wallpaper.background,
                 tintColor: activeTintColor ?? theme.wallpaper.tint
@@ -387,7 +387,6 @@ struct WallpaperPresetSelector: View {
                 //SimpleXThemeOverride(remember(background, selectedWallpaper, CurrentColors.collectAsState().value)
                 ChatThemePreview(
                     base: baseTheme,
-                    wallpaperImage: type.image,
                     wallpaperType: type,
                     backgroundColor: checked ? activeBackgroundColor ?? overrides.wallpaper.background : overrides.wallpaper.background,
                     tintColor: checked ? activeTintColor ?? overrides.wallpaper.tint : overrides.wallpaper.tint,
@@ -421,7 +420,6 @@ struct WallpaperPresetSelector: View {
             if checked || wallpaperImage != nil {
                 ChatThemePreview(
                     base: baseTheme,
-                    wallpaperImage: wallpaperImage,
                     wallpaperType: checked ? type : appWallpaper.type,
                     backgroundColor: checked ? activeBackgroundColor ?? backgroundColor : backgroundColor,
                     tintColor: checked ? activeTintColor ?? tintColor : tintColor,
@@ -529,17 +527,19 @@ struct CustomizeThemeView: View {
             Section {
                 Button {
                     let overrides = ThemeManager.currentThemeOverridesForExport(nil, nil/*chatModel.currentUser.uiThemes*/)
-                    var lines = encodeYAML(overrides).split(separator: "\n")
-                    // Removing theme id without using custom serializer or data class
-                    lines.remove(at: 0)
-                    let theme = lines.joined(separator: "\n")
-                    let tempUrl = getTempFilesDirectory().appendingPathComponent("simplex.theme")
-                    try? FileManager.default.removeItem(at: tempUrl)
                     do {
-                        try FileManager.default.createFile(atPath: tempUrl.path, contents: theme.data(using: .utf8))
-                        showShareSheet(items: [tempUrl])
+                        let encoded = try encodeThemeOverrides(overrides)
+                        var lines = encoded.split(separator: "\n")
+                        // Removing theme id without using custom serializer or data class
+                        lines.remove(at: 0)
+                        let theme = lines.joined(separator: "\n")
+                        let tempUrl = getTempFilesDirectory().appendingPathComponent("simplex.theme")
+                        try? FileManager.default.removeItem(at: tempUrl)
+                        if FileManager.default.createFile(atPath: tempUrl.path, contents: theme.data(using: .utf8)) {
+                            showShareSheet(items: [tempUrl])
+                        }
                     } catch {
-                        logger.error("Error writing theme into file: \(error)")
+                        AlertManager.shared.showAlertMsg(title: "Error", message: "Error exporting theme: \(error.localizedDescription)")
                     }
                 } label: {
                     Text("Export theme").foregroundColor(theme.colors.primary)
@@ -551,7 +551,7 @@ struct CustomizeThemeView: View {
                 }
                 .fileImporter(
                     isPresented: $showFileImporter,
-                    allowedContentTypes: [.plainText],
+                    allowedContentTypes: [.data/*.plainText*/],
                     allowsMultipleSelection: false
                 ) { result in
                     if case let .success(files) = result, let fileURL = files.first {
@@ -564,14 +564,14 @@ struct CustomizeThemeView: View {
                             if let fileSize = fileSize,
                                // Same as Android/desktop
                                fileSize <= 5_500_000 {
-                                fileURL.stopAccessingSecurityScopedResource()
-                                if let string = try? String(contentsOf: fileURL, encoding: .utf8), let theme: ThemeOverrides = decodeYAML(string) {
+                                if let string = try? String(contentsOf: fileURL, encoding: .utf8), let theme: ThemeOverrides = decodeYAML("themeId: \(UUID().uuidString)\n" + string) {
                                     ThemeManager.saveAndApplyThemeOverrides(theme)
                                     saveThemeToDatabase(nil)
                                     logger.error("Saved theme from file")
                                 } else {
                                     logger.error("Error decoding theme file")
                                 }
+                                fileURL.stopAccessingSecurityScopedResource()
                             } else {
                                 fileURL.stopAccessingSecurityScopedResource()
                                 let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: 5_500_000, countStyle: .binary)
@@ -587,8 +587,68 @@ struct CustomizeThemeView: View {
                 }
             }
         }
+        /// When changing app theme, user overrides are hidden. User overrides will be returned back after closing Appearance screen, see ThemeDestinationPicker()
+        .interactiveDismissDisabled(true)
     }
 }
+
+struct ThemeDestinationPicker: View {
+    @EnvironmentObject var m: ChatModel
+    @Binding var themeUserDestination: (Int64, ThemeModeOverrides?)?
+    @State var themeUserDest: Int64?
+    @Binding var customizeThemeIsOpen: Bool
+
+    var body: some View {
+        let values = [(nil, "All profiles")] + m.users.filter { $0.user.activeUser }.map { ($0.user.userId, $0.user.chatViewName)}
+
+        if values.contains(where: { (userId, text) in userId == themeUserDestination?.0 }) {
+            Picker("Apply to mode", selection: $themeUserDest) {
+                ForEach(values, id: \.0) { (_, text) in
+                    Text(text)
+                }
+            }
+            .frame(height: 36)
+            .onChange(of: themeUserDest) { userId in
+                themeUserDest = userId
+                if let userId {
+                    themeUserDestination = (userId, m.users.first { $0.user.userId == userId }?.user.uiThemes)
+                } else {
+                    themeUserDestination = nil
+                }
+                if let userId, userId != m.currentUser?.userId {
+                    changeActiveUser(userId, viewPwd: nil)
+                }
+            }
+            .onChange(of: themeUserDestination == nil) { isNil in
+                if isNil {
+                    // Easiest way to hide per-user customization.
+                    // Otherwise, it would be needed to make global variable and to use it everywhere for making a decision to include these overrides into active theme constructing or not
+                    m.currentUser?.uiThemes = nil
+                } else {
+                    m.updateCurrentUserUiThemes(uiThemes: m.users.first(where: { $0.user.userId == m.currentUser?.userId })?.user.uiThemes)
+                }
+            }
+            .onDisappear {
+                // Skip when Appearance screen is not hidden yet
+                if customizeThemeIsOpen { return }
+                // Restore user overrides from stored list of users
+                m.updateCurrentUserUiThemes(uiThemes: m.users.first(where: { $0.user.userId == m.currentUser?.userId })?.user.uiThemes)
+                themeUserDestination = if let currentUser = m.currentUser, let uiThemes = currentUser.uiThemes {
+                    (currentUser.userId, uiThemes)
+                } else {
+                    nil
+                }
+            }
+        } else {
+            EmptyView()
+                .onAppear {
+                    themeUserDestination = nil
+                    themeUserDest = nil
+                }
+        }
+    }
+}
+
 
 struct CustomizeThemeColorsSection: View {
     @EnvironmentObject var theme: AppTheme
@@ -596,13 +656,6 @@ struct CustomizeThemeColorsSection: View {
 
     var body: some View {
         Section {
-            picker(.WALLPAPER_BACKGROUND)
-            picker(.WALLPAPER_TINT)
-            picker(.SENT_MESSAGE)
-            picker(.SENT_QUOTE)
-            picker(.RECEIVED_MESSAGE)
-            picker(.RECEIVED_QUOTE)
-
             picker(.PRIMARY)
             picker(.PRIMARY_VARIANT)
             picker(.SECONDARY)
@@ -649,18 +702,96 @@ func editColorBinding(name: ThemeColor, wallpaperType: WallpaperType, wallpaperI
 }
 
 struct WallpaperSetupView: View {
-    @State var wallpaperType: WallpaperType?
-    @State var theme: DefaultTheme
-    @State var initialWallpaper: AppWallpaper?
-    @State var initialSentColor: Color
-    @State var initialSentQuoteColor: Color
-    @State var initialReceivedColor: Color
-    @State var initialReceivedQuoteColor: Color
-    @State var editColor: (ThemeColor) -> Binding<Color>
-    @State var onTypeChange: (WallpaperType?) -> Void
+    var wallpaperType: WallpaperType?
+    var theme: DefaultTheme
+    var initialWallpaper: AppWallpaper?
+    // LALAL unneeded?
+    var initialSentColor: Color
+    var initialSentQuoteColor: Color
+    var initialReceivedColor: Color
+    var initialReceivedQuoteColor: Color
+    // LALAL
+
+    var editColor: (ThemeColor) -> Binding<Color>
+    var onTypeChange: (WallpaperType?) -> Void
 
     var body: some View {
-        EmptyView()
+        if let wallpaperType, case let WallpaperType.Image(_, _, scaleType) = wallpaperType {
+            let wallpaperScaleType = if let scaleType {
+                scaleType
+            } else if let initialWallpaper, case let WallpaperType.Image(_, _, scaleType) = initialWallpaper.type, let scaleType {
+                scaleType
+            } else {
+                WallpaperScaleType.fill
+            }
+            WallpaperScaleTypeChooser(wallpaperScaleType: Binding.constant(wallpaperScaleType), wallpaperType: wallpaperType, onTypeChange: onTypeChange)
+        }
+
+
+        if let wallpaperType, wallpaperType.isPreset {
+            WallpaperScaleChooser(wallpaperScale: Binding.constant(initialWallpaper?.type.scale ?? 1), wallpaperType: wallpaperType, onTypeChange: onTypeChange)
+        } else if let wallpaperType, case let WallpaperType.Image(_, _, scaleType) = wallpaperType, scaleType == WallpaperScaleType.repeat {
+            WallpaperScaleChooser(wallpaperScale: Binding.constant(initialWallpaper?.type.scale ?? 1), wallpaperType: wallpaperType, onTypeChange: onTypeChange)
+        }
+
+        if wallpaperType?.isPreset == true || wallpaperType?.isImage == true {
+            picker(.WALLPAPER_BACKGROUND)
+            picker(.WALLPAPER_TINT)
+        }
+
+        picker(.SENT_MESSAGE)
+        picker(.SENT_QUOTE)
+        picker(.RECEIVED_MESSAGE)
+        picker(.RECEIVED_QUOTE)
+
+    }
+
+    func picker(_ name: ThemeColor) -> some View {
+        ColorPickerView(name: name, selection: editColor(name))
+    }
+
+    private struct WallpaperScaleTypeChooser: View {
+        @Binding var wallpaperScaleType: WallpaperScaleType
+        var wallpaperType: WallpaperType?
+        var onTypeChange: (WallpaperType?) -> Void
+
+        var body: some View {
+            Picker("Scale", selection: Binding(get: { wallpaperScaleType }, set: { scaleType in
+                if let wallpaperType, case let WallpaperType.Image(filename, scale, _) = wallpaperType {
+                    onTypeChange(WallpaperType.Image(filename, scale, scaleType))
+                }
+            })) {
+                ForEach(Array(WallpaperScaleType.allCases), id: \.self) { type in
+                    Text(type.text)
+                }
+            }
+            .frame(height: 36)
+        }
+    }
+}
+
+private struct WallpaperScaleChooser: View {
+    @Binding var wallpaperScale: Float
+    var wallpaperType: WallpaperType?
+    var onTypeChange: (WallpaperType?) -> Void
+
+    var body: some View {
+        HStack {
+            Text("\(wallpaperScale)".prefix(4))
+                .frame(width: 40, height: 36, alignment: .leading)
+            Slider(
+                value: Binding(get: { wallpaperScale }, set: { scale in
+                    if let wallpaperType, case let WallpaperType.Preset(filename, _) = wallpaperType {
+                        onTypeChange(WallpaperType.Preset(filename, Float("\(scale)".prefix(4))))
+                    } else if let wallpaperType, case let WallpaperType.Image(filename, _, scaleType) = wallpaperType {
+                        onTypeChange(WallpaperType.Image(filename, Float("\(scale)".prefix(4)), scaleType))
+                    }
+                }),
+                in: 0.5...2,
+                step: 0.01
+            )
+            .frame(height: 36)
+        }
     }
 }
 
@@ -769,7 +900,11 @@ private func saveThemeToDatabase(_ themeUserDestination: (Int64, ThemeModeOverri
     }
     updateBackendTask.cancel()
     updateBackendTask = Task {
-        try? await Task.sleep(nanoseconds: 300_000000)
+        do {
+            try await Task.sleep(nanoseconds: 300_000000)
+        } catch {
+            return
+        }
         if themeUserDestination == nil {
             do {
                 try apiSaveAppSettings(settings: AppSettings.current.prepareForExport())
@@ -795,6 +930,38 @@ private func removeUserThemeModeOverrides(_ themeUserDestination: Binding<(Int64
         wallpaperFilesToDelete.append(filename)
     }
     wallpaperFilesToDelete.forEach(removeWallpaperFile)
+}
+
+private func decodeYAML<T: Decodable>(_ string: String) -> T? {
+    do {
+        return try YAMLDecoder().decode(T.self, from: string)
+    } catch {
+        logger.error("Error decoding YAML: \(error)")
+        return nil
+    }
+}
+
+private func encodeThemeOverrides(_ value: ThemeOverrides) throws -> String {
+    let encoder = YAMLEncoder()
+    encoder.options = YAMLEncoder.Options(sequenceStyle: .block, mappingStyle: .block, newLineScalarStyle: .doubleQuoted)
+
+    guard var node = try Yams.compose(yaml: try encoder.encode(value)) else {
+        throw RuntimeError("Error while composing a node from object")
+    }
+    node["base"]?.scalar?.style = .doubleQuoted
+
+    ThemeColors.CodingKeys.allCases.forEach { key in
+        node["colors"]?[key.stringValue]?.scalar?.style = .doubleQuoted
+    }
+
+    ThemeWallpaper.CodingKeys.allCases.forEach { key in
+        if case .scale = key {
+            // let number be without quotes
+        } else {
+            node["wallpaper"]?[key.stringValue]?.scalar?.style = .doubleQuoted
+        }
+    }
+    return try Yams.serialize(node: node)
 }
 
 //func getUserInterfaceStyleDefault() -> UIUserInterfaceStyle {
