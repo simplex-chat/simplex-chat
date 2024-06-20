@@ -1871,4 +1871,6 @@
 \nSi prega di condividere qualsiasi altro problema con gli sviluppatori.</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">Questo link è stato usato con un altro dispositivo mobile, creane uno nuovo sul desktop.</string>
     <string name="copy_error">Copia errore</string>
+    <string name="cannot_share_message_alert_title">Impossibile inviare il messaggio</string>
+    <string name="cannot_share_message_alert_text">Le preferenze della chat selezionata vietano questo messaggio.</string>
 </resources>
