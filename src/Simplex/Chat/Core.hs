@@ -25,7 +25,6 @@ import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Chat.View (serializeChatResponse)
-import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore, withTransaction)
 import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)

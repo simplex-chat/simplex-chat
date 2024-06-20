@@ -29,13 +29,12 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Types
-import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ConnReqUriData (..), ConnectionRequestUri (..), SMPQueue (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import Simplex.Messaging.Util (decodeJSON, safeDecodeUtf8)
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
 
@@ -146,7 +145,7 @@ parseMarkdown s = fromRight (unmarked s) $ A.parseOnly (markdownP <* A.endOfInpu
 
 isSimplexLink :: Format -> Bool
 isSimplexLink = \case
-  SimplexLink {} -> True;
+  SimplexLink {} -> True
   _ -> False
 
 markdownP :: Parser Markdown

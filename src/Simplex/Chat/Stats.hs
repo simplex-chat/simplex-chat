@@ -12,15 +12,29 @@ import Simplex.Messaging.Protocol
 
 data PresentedServersSummary = PresentedServersSummary
   { userServersSummary :: ServersSummary,
-    totalServersSummary :: ServersSummary
+    allServersSummary :: ServersSummary
   }
   deriving (Show)
 
+-- Presentation of servers will be split into separate categories,
+-- so users can differentiate currently used (connected) servers,
+-- previously connected servers that were in use in previous sessions,
+-- and servers that are only proxied (not connected directly).
 data ServersSummary = ServersSummary
-  { currentlyUsedSMPServers :: [SMPServerSummary],
+  { -- currently used SMP servers are those with Just in sessions and/or subs in SMPServerSummary;
+    -- all other servers would fall either into previously used or only proxied servers
+    currentlyUsedSMPServers :: [SMPServerSummary],
+    -- previously used SMP servers are those with Nothing in sessions and subs,
+    -- and have sentDirect, sentProxied and/or recvMsgs > 0 in server stats (see AgentSMPServerStats)
     previouslyUsedSMPServers :: [SMPServerSummary],
+    -- only proxied SMP servers are those that aren't (according to current state - sessions and subs)
+    -- and weren't (according to stats) connected directly; they would have Nothing in sessions and subs,
+    -- and have sentDirect, sentProxied and recvMsgs = 0 in server stats
     onlyProxiedSMPServers :: [SMPServerSummary],
+    -- currently used XFTP servers are those with Just in sessions in XFTPServerSummary,
+    -- and/or have upload/download/deletion in progress
     currentlyUsedXFTPServers :: [XFTPServerSummary],
+    -- previously used XFTP servers are those with Nothing in sessions and don't have any process in progress
     previouslyUsedXFTPServers :: [XFTPServerSummary]
   }
   deriving (Show)
@@ -28,26 +42,28 @@ data ServersSummary = ServersSummary
 data SMPServerSummary = SMPServerSummary
   { smpServer :: SMPServer,
     -- known:
-    -- always Nothing in totalServersSummary - to avoid hassle of navigating to other users server settings;
+    -- for simplicity always Nothing in totalServersSummary - allows us to load configured servers only for current user,
+    -- and also unnecessary unless we want to add navigation to other users servers settings;
     -- always Just in userServersSummary - True if server is in list of user servers, otherwise False;
     -- True - allows to navigate to server settings, False - allows to add server to configured as known (SEKnown)
     known :: Maybe Bool,
-    -- sessions:
-    -- Just if currently used in session, otherwise Nothing;
-    -- onlyProxiedSMPServers would always have sessions and stats as Nothing
-    sessions :: Maybe SMPServerSessions,
+    sessions :: Maybe ServerSessions,
+    subs :: Maybe SMPServerSubs,
     -- stats:
-    -- even if sessions is Nothing, stats can be Just - server could be used earlier in session
-    -- or in previous sessions and stats for it were restored
+    -- even if sessions and subs are Nothing, stats can be Just - server could be used earlier in session,
+    -- or in previous sessions and stats for it were restored; server would fall into a category of
+    -- previously used or only proxied servers - see ServersSummary above
     stats :: Maybe AgentSMPServerStatsData
   }
   deriving (Show)
 
-data XFTPServerSummary = CurrentlyUsedXFTPServerSummary
+data XFTPServerSummary = XFTPServerSummary
   { xftpServer :: XFTPServer,
-    known :: Maybe Bool,
-    sessions :: Maybe XFTPServerSessions,
-    stats :: Maybe AgentXFTPServerStatsData
+    known :: Maybe Bool, -- same as in SMPServerSummary
+    sessions :: Maybe ServerSessions,
+    rcvInProgress :: Bool,
+    sndInProgress :: Bool,
+    delInProgress :: Bool
   }
   deriving (Show)
 
@@ -67,7 +83,7 @@ toPresentedServersSummary _agentServersSummary _users _currentUser _smpSrvs _xft
             currentlyUsedXFTPServers = [],
             previouslyUsedXFTPServers = []
           },
-      totalServersSummary =
+      allServersSummary =
         ServersSummary
           { currentlyUsedSMPServers = [],
             previouslyUsedSMPServers = [],
