@@ -14,8 +14,10 @@ import com.russhwolf.settings.*
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.desc.desc
+import kotlinx.coroutines.*
 import java.io.File
 import java.util.*
+import java.util.concurrent.Executors
 
 @Composable
 actual fun font(name: String, res: String, weight: FontWeight, style: FontStyle): Font =
@@ -59,8 +61,11 @@ private val settingsThemesProps =
   Properties()
     .also { props -> try { settingsThemesFile.reader().use { props.load(it) } } catch (e: Exception) { /**/ } }
 
-actual val settings: Settings = PropertiesSettings(settingsProps) { withApi { settingsFile.writer().use { settingsProps.store(it, "") } } }
-actual val settingsThemes: Settings = PropertiesSettings(settingsThemesProps) { withApi { settingsThemesFile.writer().use { settingsThemesProps.store(it, "") } } }
+
+private val settingsWriterThread = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
+
+actual val settings: Settings = PropertiesSettings(settingsProps) { CoroutineScope(settingsWriterThread).launch { settingsFile.writer().use { settingsProps.store(it, "") } } }
+actual val settingsThemes: Settings = PropertiesSettings(settingsThemesProps) { CoroutineScope(settingsWriterThread).launch { settingsThemesFile.writer().use { settingsThemesProps.store(it, "") } } }
 
 actual fun windowOrientation(): WindowOrientation =
   if (simplexWindowState.windowState.size.width > simplexWindowState.windowState.size.height) {
