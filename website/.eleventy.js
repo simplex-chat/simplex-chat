@@ -420,6 +420,8 @@ module.exports = function (ty) {
           throw new Error(`Broken link: ${parsed.path} in ${hostFile}`)
         }
       }
+
+      return uri.serialize(parsed)
     }
   }).use(markdownItAnchor, {
     slugify: (str) =>
