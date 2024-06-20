@@ -6,7 +6,6 @@ module Simplex.Chat.Stats where
 
 import Control.Applicative ((<|>))
 import qualified Data.Aeson.TH as J
-import Data.List (sortOn)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (isJust)
@@ -96,29 +95,25 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
     { statsStartedAt,
       userServersSummary =
         ServersSummary
-          { currentlyUsedSMPServers = sortSMPSums userSMPCurr,
-            previouslyUsedSMPServers = sortSMPSums userSMPPrev,
-            onlyProxiedSMPServers = sortSMPSums userSMPProx,
-            currentlyUsedXFTPServers = sortXFTPSums userXFTPCurr,
-            previouslyUsedXFTPServers = sortXFTPSums userXFTPPrev
+          { currentlyUsedSMPServers = userSMPCurr,
+            previouslyUsedSMPServers = userSMPPrev,
+            onlyProxiedSMPServers = userSMPProx,
+            currentlyUsedXFTPServers = userXFTPCurr,
+            previouslyUsedXFTPServers = userXFTPPrev
           },
       allServersSummary =
         ServersSummary
-          { currentlyUsedSMPServers = sortSMPSums allSMPCurr,
-            previouslyUsedSMPServers = sortSMPSums allSMPPrev,
-            onlyProxiedSMPServers = sortSMPSums allSMPProx,
-            currentlyUsedXFTPServers = sortXFTPSums allXFTPCurr,
-            previouslyUsedXFTPServers = sortXFTPSums allXFTPPrev
+          { currentlyUsedSMPServers = allSMPCurr,
+            previouslyUsedSMPServers = allSMPPrev,
+            onlyProxiedSMPServers = allSMPProx,
+            currentlyUsedXFTPServers = allXFTPCurr,
+            previouslyUsedXFTPServers = allXFTPPrev
           }
     }
   where
     AgentServersSummary {statsStartedAt, smpServersSessions, smpServersSubs, smpServersStats, xftpServersSessions, xftpServersStats, xftpRcvInProgress, xftpSndInProgress, xftpDelInProgress} = agentSummary
     countUserInAll auId = auId == aUserId currentUser || auId `notElem` hiddenUserIds
     hiddenUserIds = map aUserId $ filter (isJust . viewPwdHash) users
-    sortSMPSums :: [SMPServerSummary] -> [SMPServerSummary]
-    sortSMPSums = sortOn (\SMPServerSummary {smpServer} -> smpServer)
-    sortXFTPSums :: [XFTPServerSummary] -> [XFTPServerSummary]
-    sortXFTPSums = sortOn (\XFTPServerSummary {xftpServer} -> xftpServer)
     smpSumsIntoCategories :: [SMPServerSummary] -> ([SMPServerSummary], [SMPServerSummary], [SMPServerSummary])
     smpSumsIntoCategories = foldr partitionSummary ([], [], [])
       where
