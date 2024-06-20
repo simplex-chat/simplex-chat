@@ -67,82 +67,11 @@ struct AppearanceSettings: View {
                     let baseTheme = theme.base
                     let wallpaperType = theme.wallpaper.type
 
-                    let updateThemeUserDestination = {
-                        if let dest = themeUserDestination {
-                            var (userId, themes) = dest
-                            themes = themes ?? ThemeModeOverrides()
-                            if case DefaultThemeMode.light = perUserTheme.mode {
-                                themes?.light = perUserTheme
-                            } else {
-                                themes?.dark = perUserTheme
-                            }
-                            themeUserDestination = (userId, themes)
-                        }
-                    }
-
-                    let onTypeCopyFromSameTheme: (WallpaperType?) -> Bool = { type in
-                        if themeUserDestination == nil {
-                            ThemeManager.saveAndApplyWallpaper(baseTheme, type, themeOverridesDefault)
-                        } else {
-                            var wallpaperFiles = Set([perUserTheme.wallpaper?.imageFile])
-                            _ = ThemeManager.copyFromSameThemeOverrides(type, nil, $perUserTheme)
-                            wallpaperFiles.remove(perUserTheme.wallpaper?.imageFile)
-                            wallpaperFiles.forEach(removeWallpaperFile)
-                            updateThemeUserDestination()
-                        }
-                        saveThemeToDatabase(themeUserDestination)
-                        return true
-                    }
-
-                    let onTypeChange: (WallpaperType?) -> Void = { type in
-                        if themeUserDestination == nil {
-                            ThemeManager.saveAndApplyWallpaper(baseTheme, type, themeOverridesDefault)
-                        } else {
-                            ThemeManager.applyWallpaper(type, $perUserTheme)
-                            updateThemeUserDestination()
-                        }
-                        saveThemeToDatabase(themeUserDestination)
-                    }
-
-                    let currentColors: (WallpaperType?) -> ThemeManager.ActiveTheme = { type in
-                        // If applying for :
-                        // - all themes: no overrides needed
-                        // - specific user: only user overrides for currently selected theme are needed, because they will NOT be copied when other wallpaper is selected
-                        let perUserOverride: ThemeModeOverrides? = themeUserDestination == nil
-                        ? nil
-                        : wallpaperType.sameType(type)
-                        ? m.currentUser?.uiThemes
-                        : nil
-                        return ThemeManager.currentColors(type, nil, perUserOverride, themeOverridesDefault.get())
-                    }
-
-                    let onChooseType: (WallpaperType?) -> Void = { type in
-                        // don't have image in parent or already selected wallpaper with custom image
-                        if let type, case WallpaperType.Image = type {
-                            if case WallpaperType.Image = wallpaperType, themeUserDestination?.1 != nil {
-                                showImageImporter = true
-                            } else if currentColors(type).wallpaper.type.image == nil {
-                                showImageImporter = true
-                            } else if currentColors(type).wallpaper.type.image != nil, case WallpaperType.Image = wallpaperType, themeUserDestination == nil {
-                                showImageImporter = true
-                            } else if themeUserDestination == nil {
-                                onTypeChange(currentColors(type).wallpaper.type)
-                            } else {
-                                _ = onTypeCopyFromSameTheme(currentColors(type).wallpaper.type)
-                            }
-                        } else if (themeUserDestination != nil && themeUserDestination?.1?.preferredMode(!CurrentColors.colors.isLight)?.type?.sameType(type) == false) || !theme.wallpaper.type.sameType(type) {
-                            _ = onTypeCopyFromSameTheme(type)
-                        } else {
-                            onTypeChange(type)
-                        }
-                    }
                     ThemeDestinationPicker(themeUserDestination: $themeUserDestination, themeUserDest: themeUserDestination?.0, customizeThemeIsOpen: $customizeThemeIsOpen)
 
                     WallpaperPresetSelector(
                         selectedWallpaper: wallpaperType,
-                        currentColors: { type in
-                            currentColors(type)
-                        },
+                        currentColors: currentColors,
                         onChooseType: onChooseType
                     )
                     .padding(.bottom, 10)
@@ -159,8 +88,7 @@ struct AppearanceSettings: View {
                         }
                     }))
 
-                    let type = theme.wallpaper.type
-                    if case let WallpaperType.Image(filename, _, _) = type, (themeUserDestination == nil || perUserTheme.wallpaper?.imageFile != nil) {
+                    if case let WallpaperType.Image(filename, _, _) = wallpaperType, (themeUserDestination == nil || perUserTheme.wallpaper?.imageFile != nil) {
                         Button {
                             if themeUserDestination == nil {
                                 let defaultActiveTheme = ThemeManager.defaultActiveTheme(themeOverridesDefault.get())
@@ -270,6 +198,76 @@ struct AppearanceSettings: View {
         }
         .onAppear {
             customizeThemeIsOpen = false
+        }
+    }
+
+    private func updateThemeUserDestination() {
+        if let dest = themeUserDestination {
+            var (userId, themes) = dest
+            themes = themes ?? ThemeModeOverrides()
+            if case DefaultThemeMode.light = perUserTheme.mode {
+                themes?.light = perUserTheme
+            } else {
+                themes?.dark = perUserTheme
+            }
+            themeUserDestination = (userId, themes)
+        }
+    }
+
+    private func onTypeCopyFromSameTheme(_ type: WallpaperType?) -> Bool {
+        if themeUserDestination == nil {
+            ThemeManager.saveAndApplyWallpaper(theme.base, type, themeOverridesDefault)
+        } else {
+            var wallpaperFiles = Set([perUserTheme.wallpaper?.imageFile])
+            _ = ThemeManager.copyFromSameThemeOverrides(type, nil, $perUserTheme)
+            wallpaperFiles.remove(perUserTheme.wallpaper?.imageFile)
+            wallpaperFiles.forEach(removeWallpaperFile)
+            updateThemeUserDestination()
+        }
+        saveThemeToDatabase(themeUserDestination)
+        return true
+    }
+
+    private func onTypeChange(_ type: WallpaperType?) {
+        if themeUserDestination == nil {
+            ThemeManager.saveAndApplyWallpaper(theme.base, type, themeOverridesDefault)
+        } else {
+            ThemeManager.applyWallpaper(type, $perUserTheme)
+            updateThemeUserDestination()
+        }
+        saveThemeToDatabase(themeUserDestination)
+    }
+
+    private func currentColors(_ type: WallpaperType?) -> ThemeManager.ActiveTheme {
+        // If applying for :
+        // - all themes: no overrides needed
+        // - specific user: only user overrides for currently selected theme are needed, because they will NOT be copied when other wallpaper is selected
+        let perUserOverride: ThemeModeOverrides? = themeUserDestination == nil
+        ? nil
+        : theme.wallpaper.type.sameType(type)
+        ? m.currentUser?.uiThemes
+        : nil
+        return ThemeManager.currentColors(type, nil, perUserOverride, themeOverridesDefault.get())
+    }
+
+    private func onChooseType(_ type: WallpaperType?) {
+        // don't have image in parent or already selected wallpaper with custom image
+        if let type, case WallpaperType.Image = type {
+            if case WallpaperType.Image = theme.wallpaper.type, themeUserDestination?.1 != nil {
+                showImageImporter = true
+            } else if currentColors(type).wallpaper.type.image == nil {
+                showImageImporter = true
+            } else if currentColors(type).wallpaper.type.image != nil, case WallpaperType.Image = theme.wallpaper.type, themeUserDestination == nil {
+                showImageImporter = true
+            } else if themeUserDestination == nil {
+                onTypeChange(currentColors(type).wallpaper.type)
+            } else {
+                _ = onTypeCopyFromSameTheme(currentColors(type).wallpaper.type)
+            }
+        } else if (themeUserDestination != nil && themeUserDestination?.1?.preferredMode(!CurrentColors.colors.isLight)?.type?.sameType(type) == false) || !theme.wallpaper.type.sameType(type) {
+            _ = onTypeCopyFromSameTheme(type)
+        } else {
+            onTypeChange(type)
         }
     }
 
