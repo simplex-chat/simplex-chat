@@ -106,6 +106,7 @@ struct TerminalView: View {
         }
         .navigationViewStyle(.stack)
         .navigationTitle("Chat console")
+        .modifier(ThemedBackground())
     }
 
     func scrollToBottom(_ proxy: ScrollViewProxy, animation: Animation = .default) {
@@ -130,6 +131,7 @@ struct TerminalView: View {
             }
         }
         .onDisappear { terminalItem = nil }
+        .modifier(ThemedBackground())
     }
     
     func consoleSendMessage() {

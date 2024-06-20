@@ -10,9 +10,13 @@ import SwiftUI
 
 let defaultAccentColor = CGColor.init(red: 0, green: 0.533, blue: 1, alpha: 1)
 
-let interfaceStyles: [UIUserInterfaceStyle] = [.unspecified, .light, .dark]
+//let interfaceStyles: [UIUserInterfaceStyle] = [.unspecified, .light, .dark]
 
-let interfaceStyleNames: [LocalizedStringKey] = ["System", "Light", "Dark"]
+let colorModesLocalized: [LocalizedStringKey] = ["System", "Light", "Dark"]
+let colorModesNames: [DefaultThemeMode?] = [nil, DefaultThemeMode.light, DefaultThemeMode.dark]
+
+let darkThemesLocalized: [LocalizedStringKey] = ["Dark", "SimpleX", "Black"]
+let darkThemesNames: [String] = [DefaultTheme.DARK.themeName, DefaultTheme.SIMPLEX.themeName, DefaultTheme.BLACK.themeName]
 
 let appSettingsURL = URL(string: UIApplication.openSettingsURLString)!
 
@@ -22,7 +26,11 @@ struct AppearanceSettings: View {
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @State private var iconLightTapped = false
     @State private var iconDarkTapped = false
-    @State private var userInterfaceStyle = getUserInterfaceStyleDefault()
+    //@State private var userInterfaceStyle = getUserInterfaceStyleDefault()
+    @State private var colorMode: DefaultThemeMode? = {
+        if currentThemeDefault.get() == DefaultTheme.SYSTEM_THEME_NAME { nil as DefaultThemeMode? } else { CurrentColors.base.mode }
+    }()
+    @State private var darkModeTheme: String = UserDefaults.standard.string(forKey: DEFAULT_SYSTEM_DARK_THEME) ?? DefaultTheme.SIMPLEX.themeName
     @State private var uiTintColor = getUIAccentColorDefault()
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileImageCornerRadius = defaultProfileImageCorner
 
@@ -65,9 +73,15 @@ struct AppearanceSettings: View {
                 }
 
                 Section {
-                    Picker("Theme", selection: $userInterfaceStyle) {
-                        ForEach(interfaceStyles, id: \.self) { style in
-                            Text(interfaceStyleNames[interfaceStyles.firstIndex(of: style) ?? 0])
+                    Picker("Color mode", selection: $colorMode) {
+                        ForEach(Array(colorModesNames.enumerated()), id: \.element) { index, mode in
+                            Text(colorModesLocalized[index])
+                        }
+                    }
+                    .frame(height: 36)
+                    Picker("Dark mode colors", selection: $darkModeTheme) {
+                        ForEach(Array(darkThemesNames.enumerated()), id: \.element) { index, darkTheme in
+                            Text(darkThemesLocalized[index])
                         }
                     }
                     .frame(height: 36)
@@ -82,9 +96,24 @@ struct AppearanceSettings: View {
                         Text("Reset colors").font(.callout)
                     }
                 }
-                .onChange(of: userInterfaceStyle) { _ in
-                    sceneDelegate.window?.overrideUserInterfaceStyle = userInterfaceStyle
-                    setUserInterfaceStyleDefault(userInterfaceStyle)
+                .onChange(of: colorMode) { mode in
+                    guard let mode else {
+                        ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
+                        return
+                    }
+                    if case DefaultThemeMode.light = mode {
+                        ThemeManager.applyTheme(DefaultTheme.LIGHT.themeName)
+                    } else if case DefaultThemeMode.dark = mode {
+                        ThemeManager.applyTheme(systemDarkThemeDefault.get())
+                    }
+                }
+                .onChange(of: darkModeTheme) { darkTheme in
+                    ThemeManager.changeDarkTheme(darkTheme)
+                    if currentThemeDefault.get() == DefaultTheme.SYSTEM_THEME_NAME {
+                        ThemeManager.applyTheme(currentThemeDefault.get())
+                    } else if currentThemeDefault.get() != DefaultTheme.LIGHT.themeName {
+                        ThemeManager.applyTheme(systemDarkThemeDefault.get())
+                    }
                 }
                 .onChange(of: uiTintColor) { _ in
                     sceneDelegate.window?.tintColor = UIColor(cgColor: uiTintColor)
@@ -136,24 +165,24 @@ func setUIAccentColorDefault(_ color: CGColor) {
     }
 }
 
-func getUserInterfaceStyleDefault() -> UIUserInterfaceStyle {
-    switch UserDefaults.standard.integer(forKey: DEFAULT_USER_INTERFACE_STYLE) {
-    case 1: return .light
-    case 2: return .dark
-    default: return .unspecified
-    }
-}
-
-func setUserInterfaceStyleDefault(_ style: UIUserInterfaceStyle) {
-    var v: Int
-    switch style {
-    case .unspecified: v = 0
-    case .light: v = 1
-    case .dark: v = 2
-    default: v = 0
-    }
-    UserDefaults.standard.set(v, forKey: DEFAULT_USER_INTERFACE_STYLE)
-}
+//func getUserInterfaceStyleDefault() -> UIUserInterfaceStyle {
+//    switch UserDefaults.standard.integer(forKey: DEFAULT_USER_INTERFACE_STYLE) {
+//    case 1: return .light
+//    case 2: return .dark
+//    default: return .unspecified
+//    }
+//}
+//
+//func setUserInterfaceStyleDefault(_ style: UIUserInterfaceStyle) {
+//    var v: Int
+//    switch style {
+//    case .unspecified: v = 0
+//    case .light: v = 1
+//    case .dark: v = 2
+//    default: v = 0
+//    }
+//    UserDefaults.standard.set(v, forKey: DEFAULT_USER_INTERFACE_STYLE)
+//}
 
 struct AppearanceSettings_Previews: PreviewProvider {
     static var previews: some View {

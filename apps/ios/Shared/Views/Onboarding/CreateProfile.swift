@@ -66,6 +66,7 @@ struct CreateProfile: View {
             }
         }
         .navigationTitle("Create your profile")
+        .modifier(ThemedBackground())
         .alert(item: $alert) { a in userProfileAlert(a, $displayName) }
         .onAppear() {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
@@ -78,6 +79,7 @@ struct CreateProfile: View {
 
 struct CreateFirstProfile: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss
     @State private var displayName: String = ""
     @FocusState private var focusDisplayName
@@ -89,9 +91,9 @@ struct CreateFirstProfile: View {
                     .font(.largeTitle)
                     .bold()
                 Text("Your profile, contacts and delivered messages are stored on your device.")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
                 Text("The profile is only shared with your contacts.")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
                     .padding(.bottom)
             }
             .padding(.bottom)

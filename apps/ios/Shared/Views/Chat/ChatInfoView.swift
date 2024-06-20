@@ -90,6 +90,7 @@ enum SendReceipts: Identifiable, Hashable {
 
 struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
     @State var contact: Contact
@@ -241,6 +242,7 @@ struct ChatInfoView: View {
                     }
                 }
             }
+            .modifier(ThemedBackground())
             .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -370,6 +372,7 @@ struct ChatInfoView: View {
             )
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Security code")
+            .modifier(ThemedBackground())
         } label: {
             Label(
                 contact.verified ? "View security code" : "Verify security code",
@@ -386,6 +389,7 @@ struct ChatInfoView: View {
                 currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)
             )
             .navigationBarTitle("Contact preferences")
+            .modifier(ThemedBackground())
             .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Contact preferences", systemImage: "switch.2")
@@ -434,7 +438,7 @@ struct ChatInfoView: View {
         HStack {
             Text("Network status")
             Image(systemName: "info.circle")
-                .foregroundColor(.accentColor)
+                .foregroundColor(theme.colors.primary)
                 .font(.system(size: 14))
             Spacer()
             Text(chatModel.contactNetworkStatus(contact).statusString)

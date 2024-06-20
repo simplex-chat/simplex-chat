@@ -14,7 +14,7 @@ private let memberImageSize: CGFloat = 34
 
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @Environment(\.colorScheme) var colorScheme
+    @State var theme: AppTheme = buildTheme()
     @Environment(\.dismiss) var dismiss
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
@@ -60,7 +60,16 @@ struct ChatView: View {
                 Divider()
             }
             ZStack(alignment: .trailing) {
+                let wallpaperImage = theme.wallpaper.type.image
+                let wallpaperType = theme.wallpaper.type
+                let backgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(theme.base, theme.colors.background)
+                let tintColor = theme.wallpaper.tint ?? wallpaperType.defaultTintColor(theme.base)
                 chatItemsList()
+                    .if(wallpaperImage != nil) { view in
+                        view.modifier(
+                            ChatViewBackground(image: wallpaperImage!, imageType: wallpaperType, background: backgroundColor, tint: tintColor)
+                        )
+                    }
                 if let proxy = scrollProxy {
                     floatingButtons(proxy)
                 }
@@ -78,7 +87,9 @@ struct ChatView: View {
         }
         .padding(.top, 1)
         .navigationTitle(cInfo.chatViewName)
+        .background(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
+        .environmentObject(theme)
         .onAppear {
             initChatView()
         }
@@ -89,6 +100,7 @@ struct ChatView: View {
                     chat = c
                 }
                 initChatView()
+                theme = buildTheme()
             } else {
                 dismiss()
             }
@@ -384,7 +396,7 @@ struct ChatView: View {
                 circleButton {
                     unreadCountText(unreadAbove)
                         .font(.callout)
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(theme.colors.primary)
                 }
                 .onTapGesture { scrollUp(proxy) }
                 .contextMenu {
@@ -404,13 +416,13 @@ struct ChatView: View {
                 circleButton {
                     unreadCountText(counts.unreadBelow)
                         .font(.callout)
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(theme.colors.primary)
                 }
                 .onTapGesture { scrollToBottom(proxy) }
             } else if counts.totalBelow > 16 {
                 circleButton {
                     Image(systemName: "chevron.down")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(theme.colors.primary)
                 }
                 .onTapGesture { scrollToBottom(proxy) }
             }
@@ -513,7 +525,7 @@ struct ChatView: View {
             }
         }
     }
-    
+
     @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
         ChatItemWithMenu(
             chat: chat,
@@ -528,7 +540,7 @@ struct ChatView: View {
 
     private struct ChatItemWithMenu: View {
         @EnvironmentObject var m: ChatModel
-        @Environment(\.colorScheme) var colorScheme
+        @EnvironmentObject var theme: AppTheme
         @ObservedObject var chat: Chat
         var chatItem: ChatItem
         var maxWidth: CGFloat
@@ -662,7 +674,8 @@ struct ChatView: View {
                     playbackState: $playbackState,
                     playbackTime: $playbackTime
                 )
-                .uiKitContextMenu(hasImageOrVideo: ci.content.msgContent?.isImageOrVideo == true, maxWidth: maxWidth, itemWidth: $itemWidth, menu: uiMenu, allowMenu: $allowMenu)
+                .environmentObject(theme)
+                .uiKitContextMenu(hasImageOrVideo: ci.content.msgContent?.isImageOrVideo == true, maxWidth: maxWidth, itemWidth: $itemWidth, menu: uiMenu, allowMenu: $allowMenu, backgroundColor: theme.colors.background)
                 .accessibilityLabel("")
                 if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
                     chatItemReactions(ci)
@@ -729,7 +742,7 @@ struct ChatView: View {
                             Text("\(r.totalReacted)")
                                 .font(.caption)
                                 .fontWeight(r.userReacted ? .bold : .light)
-                                .foregroundColor(r.userReacted ? .accentColor : .secondary)
+                                .foregroundColor(r.userReacted ? theme.colors.primary : theme.colors.secondary)
                         }
                     }
                     .padding(.horizontal, 6)
@@ -1216,6 +1229,27 @@ struct ChatView: View {
         if let ci = chatModel.topItemInView(itemsInView: itemsInView) {
             withAnimation { proxy.scrollTo(ci.viewId, anchor: .top) }
         }
+    }
+}
+
+private func buildTheme() -> AppTheme {
+    if let cId = ChatModel.shared.chatId, let chat = ChatModel.shared.getChat(cId) {
+        let perChatTheme = if case let .direct(contact) = chat.chatInfo {
+            contact.uiThemes?.preferredMode(!AppTheme.shared.colors.isLight)
+        } else if case let .group(groupInfo) = chat.chatInfo {
+            groupInfo.uiThemes?.preferredMode(!AppTheme.shared.colors.isLight)
+        } else {
+            nil as ThemeModeOverride?
+        }
+        let overrides = if perChatTheme != nil {
+            ThemeManager.currentColors(nil, perChatTheme, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        } else {
+            nil as ThemeManager.ActiveTheme?
+        }
+        let theme = overrides ?? CurrentColors
+        return AppTheme(name: theme.name, base: theme.base, colors: theme.colors, appColors: theme.appColors, wallpaper: theme.wallpaper)
+    } else {
+        return AppTheme.shared
     }
 }
 

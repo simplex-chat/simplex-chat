@@ -44,7 +44,7 @@ let DEFAULT_ENCRYPTION_STARTED_AT = "encryptionStartedAt"
 let DEFAULT_ACCENT_COLOR_RED = "accentColorRed"
 let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen"
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
-let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
+//let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
 let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
@@ -61,6 +61,11 @@ let DEFAULT_CONFIRM_REMOTE_SESSIONS = "confirmRemoteSessions"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST = "connectRemoteViaMulticast"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "connectRemoteViaMulticastAuto"
 let DEFAULT_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"
+
+let DEFAULT_CURRENT_THEME = "currentTheme"
+let DEFAULT_SYSTEM_DARK_THEME = "systemDarkTheme"
+let DEFAULT_CURRENT_THEME_IDS = "currentThemeIds"
+let DEFAULT_THEME_OVERRIDES = "themeOverrides"
 
 let ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN = "androidCallOnLockScreen"
 
@@ -88,7 +93,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_ACCENT_COLOR_RED: 0.000,
     DEFAULT_ACCENT_COLOR_GREEN: 0.533,
     DEFAULT_ACCENT_COLOR_BLUE: 1.000,
-    DEFAULT_USER_INTERFACE_STYLE: 0,
+    //DEFAULT_USER_INTERFACE_STYLE: 0,
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
@@ -101,7 +106,12 @@ let appDefaults: [String: Any] = [
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST: true,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO: true,
     DEFAULT_SHOW_SENT_VIA_RPOXY: false,
-    ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN: AppSettingsLockScreenCalls.show.rawValue
+    ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN: AppSettingsLockScreenCalls.show.rawValue,
+
+    DEFAULT_THEME_OVERRIDES: "{}",
+    DEFAULT_CURRENT_THEME: DefaultTheme.SYSTEM_THEME_NAME,
+    DEFAULT_SYSTEM_DARK_THEME: DefaultTheme.SIMPLEX.themeName,
+    DEFAULT_CURRENT_THEME_IDS: "{}"
 ]
 
 // not used anymore
@@ -148,14 +158,66 @@ let onboardingStageDefault = EnumDefault<OnboardingStage>(defaults: UserDefaults
 
 let customDisappearingMessageTimeDefault = IntDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME)
 
+let currentThemeDefault = StringDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME, withDefault: DefaultTheme.SYSTEM_THEME_NAME)
+let systemDarkThemeDefault = StringDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SYSTEM_DARK_THEME, withDefault: DefaultTheme.SIMPLEX.themeName)
+let currentThemeIdsDefault = CodableDefault<[String: String]>(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME_IDS, withDefault: [:] )
+let themeOverridesDefault: CodableDefault<[ThemeOverrides]> = CodableDefault(defaults: UserDefaults.standard, forKey: DEFAULT_THEME_OVERRIDES, withDefault: [])
+
 func setGroupDefaults() {
     privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))
 }
+
+public class StringDefault {
+    var defaults: UserDefaults
+    var key: String
+    var defaultValue: String
+
+    public init(defaults: UserDefaults = UserDefaults.standard, forKey: String, withDefault: String) {
+        self.defaults = defaults
+        self.key = forKey
+        self.defaultValue = withDefault
+    }
+
+    public func get() -> String {
+        defaults.string(forKey: key) ?? defaultValue
+    }
+
+    public func set(_ value: String) {
+        defaults.set(value, forKey: key)
+        defaults.synchronize()
+    }
+}
+
+public class CodableDefault<T: Codable> {
+    var defaults: UserDefaults
+    var key: String
+    var defaultValue: T
+
+    public init(defaults: UserDefaults = UserDefaults.standard, forKey: String, withDefault: T) {
+        self.defaults = defaults
+        self.key = forKey
+        self.defaultValue = withDefault
+    }
+
+    public func get() -> T {
+        if let value = defaults.string(forKey: key) {
+            return decodeJSON(value) ?? defaultValue
+        }
+        return defaultValue
+    }
+
+    public func set(_ value: T) {
+        defaults.set(encodeJSON(value), forKey: key)
+        defaults.synchronize()
+    }
+}
+
 
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var sceneDelegate: SceneDelegate
+    @EnvironmentObject var theme: AppTheme
     @Binding var showSettings: Bool
     @State private var showProgress: Bool = false
 
@@ -180,6 +242,7 @@ struct SettingsView: View {
                         NavigationLink {
                             UserProfile()
                                 .navigationTitle("Your current profile")
+                                .modifier(ThemedBackground())
                         } label: {
                             ProfilePreview(profileOf: user)
                                 .padding(.leading, -8)
@@ -197,6 +260,7 @@ struct SettingsView: View {
                         NavigationLink {
                             UserAddressView(shareViaProfile: user.addressShared)
                                 .navigationTitle("SimpleX address")
+                                .modifier(ThemedBackground())
                                 .navigationBarTitleDisplayMode(.large)
                         } label: {
                             settingsRow("qrcode") { Text("Your SimpleX address") }
@@ -205,6 +269,7 @@ struct SettingsView: View {
                         NavigationLink {
                             PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
                                 .navigationTitle("Your preferences")
+                                .modifier(ThemedBackground())
                         } label: {
                             settingsRow("switch.2") { Text("Chat preferences") }
                         }
@@ -219,6 +284,7 @@ struct SettingsView: View {
                     NavigationLink {
                         MigrateFromDevice(showSettings: $showSettings, showProgressOnSettings: $showProgress)
                             .navigationTitle("Migrate device")
+                            .modifier(ThemedBackground())
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
                         settingsRow("tray.and.arrow.up") { Text("Migrate to another device") }
@@ -230,6 +296,7 @@ struct SettingsView: View {
                     NavigationLink {
                         NotificationsView()
                             .navigationTitle("Notifications")
+                            .modifier(ThemedBackground())
                     } label: {
                         HStack {
                             notificationsIcon()
@@ -241,6 +308,7 @@ struct SettingsView: View {
                     NavigationLink {
                         NetworkAndServers()
                             .navigationTitle("Network & servers")
+                            .modifier(ThemedBackground())
                     } label: {
                         settingsRow("externaldrive.connected.to.line.below") { Text("Network & servers") }
                     }
@@ -249,6 +317,7 @@ struct SettingsView: View {
                     NavigationLink {
                         CallSettings()
                             .navigationTitle("Your calls")
+                            .modifier(ThemedBackground())
                     } label: {
                         settingsRow("video") { Text("Audio & video calls") }
                     }
@@ -257,6 +326,7 @@ struct SettingsView: View {
                     NavigationLink {
                         PrivacySettings()
                             .navigationTitle("Your privacy")
+                            .modifier(ThemedBackground())
                     } label: {
                         settingsRow("lock") { Text("Privacy & security") }
                     }
@@ -266,6 +336,7 @@ struct SettingsView: View {
                         NavigationLink {
                             AppearanceSettings()
                                 .navigationTitle("Appearance")
+                                .modifier(ThemedBackground())
                         } label: {
                             settingsRow("sun.max") { Text("Appearance") }
                         }
@@ -280,6 +351,7 @@ struct SettingsView: View {
                         NavigationLink {
                             ChatHelp(showSettings: $showSettings)
                                 .navigationTitle("Welcome \(user.displayName)!")
+                                .modifier(ThemedBackground())
                                 .frame(maxHeight: .infinity, alignment: .top)
                         } label: {
                             settingsRow("questionmark") { Text("How to use it") }
@@ -287,6 +359,7 @@ struct SettingsView: View {
                     }
                     NavigationLink {
                         WhatsNewView(viaSettings: true)
+                            .modifier(ThemedBackground())
                             .navigationBarTitleDisplayMode(.inline)
                     } label: {
                         settingsRow("plus") { Text("What's new") }
@@ -294,6 +367,7 @@ struct SettingsView: View {
                     NavigationLink {
                         SimpleXInfo(onboarding: false)
                             .navigationBarTitle("", displayMode: .inline)
+                            .modifier(ThemedBackground())
                             .frame(maxHeight: .infinity, alignment: .top)
                     } label: {
                         settingsRow("info") { Text("About SimpleX Chat") }
@@ -333,18 +407,21 @@ struct SettingsView: View {
                     NavigationLink {
                         DeveloperView()
                             .navigationTitle("Developer tools")
+                            .modifier(ThemedBackground())
                     } label: {
                         settingsRow("chevron.left.forwardslash.chevron.right") { Text("Developer tools") }
                     }
                     NavigationLink {
                         VersionView()
                             .navigationBarTitle("App version")
+                            .modifier(ThemedBackground())
                     } label: {
                         Text("v\(appVersion ?? "?") (\(appBuild ?? "?"))")
                     }
                 }
             }
             .navigationTitle("Your settings")
+            .modifier(ThemedBackground())
         }
         .onDisappear {
             chatModel.showingTerminal = false
@@ -356,6 +433,7 @@ struct SettingsView: View {
         NavigationLink {
             DatabaseView(showSettings: $showSettings, chatItemTTL: chatModel.chatItemTTL)
                 .navigationTitle("Your chat database")
+                .modifier(ThemedBackground())
         } label: {
             let color: Color = chatModel.chatDbEncrypted == false ? .orange : .secondary
             settingsRow("internaldrive", color: color) {

@@ -94,7 +94,7 @@ struct NewChatView: View {
             .background(
                 // Rectangle is needed for swipe gesture to work on mostly empty views (creatingLinkProgressView and retryButton)
                 Rectangle()
-                    .fill(Color(uiColor: .systemGroupedBackground))
+                    .fill(AppTheme.shared.colors.background)
             )
             .animation(.easeInOut(duration: 0.3333), value: selection)
             .gesture(DragGesture(minimumDistance: 20.0, coordinateSpace: .local)
@@ -113,7 +113,7 @@ struct NewChatView: View {
                 }
             )
         }
-        .background(Color(.systemGroupedBackground))
+        .modifier(ThemedBackground())
         .onChange(of: invitationUsed) { used in
             if used && !(m.showingInvitation?.connChatUsed ?? true) {
                 m.markShowingInvitationUsed()
@@ -488,6 +488,7 @@ func strHasSingleSimplexLink(_ str: String) -> FormattedText? {
 }
 
 struct IncognitoToggle: View {
+    @EnvironmentObject var theme: AppTheme
     @Binding var incognitoEnabled: Bool
     @State private var showIncognitoSheet = false
 
@@ -501,7 +502,7 @@ struct IncognitoToggle: View {
                 HStack(spacing: 6) {
                     Text("Incognito")
                     Image(systemName: "info.circle")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(theme.colors.primary)
                         .font(.system(size: 14))
                 }
                 .onTapGesture {

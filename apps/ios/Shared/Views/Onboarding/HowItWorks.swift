@@ -44,6 +44,7 @@ struct HowItWorks: View {
         .lineLimit(10)
         .padding()
         .frame(maxHeight: .infinity, alignment: .top)
+        .modifier(ThemedBackground())
     }
 }
 

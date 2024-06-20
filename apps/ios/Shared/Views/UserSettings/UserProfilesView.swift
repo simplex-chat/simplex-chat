@@ -8,6 +8,7 @@ import SimpleXChat
 
 struct UserProfilesView: View {
     @EnvironmentObject private var m: ChatModel
+    @EnvironmentObject private var theme: AppTheme
     @Binding var showSettings: Bool
     @Environment(\.editMode) private var editMode
     @AppStorage(DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE) private var showHiddenProfilesNotice = true
@@ -111,6 +112,7 @@ struct UserProfilesView: View {
             }
         }
         .navigationTitle("Your chat profiles")
+        .modifier(ThemedBackground())
         .searchable(text: $searchTextOrPassword, placement: .navigationBarDrawer(displayMode: .always))
         .autocorrectionDisabled(true)
         .textInputAutocapitalization(.never)
@@ -237,6 +239,7 @@ struct UserProfilesView: View {
                 }
             }
         }
+        .modifier(ThemedBackground())
     }
 
     @ViewBuilder func actionHeader(_ title: LocalizedStringKey, _ user: User) -> some View {
@@ -356,7 +359,7 @@ struct UserProfilesView: View {
                         }
                     }
                 }
-                .tint(.accentColor)
+                .tint(theme.colors.primary)
             }
         }
         if #available(iOS 16, *) {

@@ -135,6 +135,7 @@ struct GroupChatInfoView: View {
                     }
                 }
             }
+            .modifier(ThemedBackground())
             .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -210,6 +211,7 @@ struct GroupChatInfoView: View {
     private struct MemberRowView: View {
         var groupInfo: GroupInfo
         @ObservedObject var groupMember: GMember
+        @EnvironmentObject var theme: AppTheme
         var user: Bool = false
         @Binding var alert: GroupChatInfoViewAlert?
 
@@ -282,7 +284,7 @@ struct GroupChatInfoView: View {
                     Button {
                         alert = .unblockMemberAlert(mem: member)
                     } label: {
-                        Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
+                        Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(theme.colors.primary)
                     }
                 }
             }
@@ -294,7 +296,7 @@ struct GroupChatInfoView: View {
                     Button {
                         alert = .unblockForAllAlert(mem: member)
                     } label: {
-                        Label("Unblock for all", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
+                        Label("Unblock for all", systemImage: "hand.raised.slash").foregroundColor(theme.colors.primary)
                     }
                 } else {
                     Button {
@@ -333,6 +335,7 @@ struct GroupChatInfoView: View {
                 creatingGroup: false
             )
             .navigationBarTitle("Group link")
+            .modifier(ThemedBackground())
             .navigationBarTitleDisplayMode(.large)
         } label: {
             if groupLink == nil {
@@ -350,6 +353,7 @@ struct GroupChatInfoView: View {
                 groupProfile: groupInfo.groupProfile
             )
             .navigationBarTitle("Group profile")
+            .modifier(ThemedBackground())
             .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Edit group profile", systemImage: "pencil")
@@ -364,6 +368,7 @@ struct GroupChatInfoView: View {
                 welcomeText: groupInfo.groupProfile.description ?? ""
             )
             .navigationTitle("Welcome message")
+            .modifier(ThemedBackground())
             .navigationBarTitleDisplayMode(.large)
         } label: {
             groupInfo.groupProfile.description == nil
@@ -518,6 +523,7 @@ func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bo
             creatingGroup: creatingGroup
         )
         .navigationBarTitle("Group preferences")
+        .modifier(ThemedBackground())
         .navigationBarTitleDisplayMode(.large)
     } label: {
         if creatingGroup {

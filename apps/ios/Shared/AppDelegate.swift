@@ -148,13 +148,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 class SceneDelegate: NSObject, ObservableObject, UIWindowSceneDelegate {
     var window: UIWindow?
+    static var windowStatic: UIWindow?
     var windowScene: UIWindowScene?
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        UITableView.appearance().backgroundColor = .clear
         guard let windowScene = scene as? UIWindowScene else { return }
         self.windowScene = windowScene
         window = windowScene.keyWindow
-        window?.tintColor = UIColor(cgColor: getUIAccentColorDefault())
-        window?.overrideUserInterfaceStyle = getUserInterfaceStyleDefault()
+        SceneDelegate.windowStatic = windowScene.keyWindow
+        ThemeManager.applyTheme(currentThemeDefault.get())
     }
 }

@@ -254,6 +254,7 @@ enum UploadContent: Equatable {
 
 struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
     @Binding var composeState: ComposeState
     @Binding var keyboardVisible: Bool
@@ -353,10 +354,10 @@ struct ComposeView: View {
                         keyboardVisible: $keyboardVisible,
                         sendButtonColor: chat.chatInfo.incognito
                             ? .indigo.opacity(colorScheme == .dark ? 1 : 0.7)
-                            : .accentColor
+                            : theme.colors.primary
                     )
                     .padding(.trailing, 12)
-                    .background(.background)
+                    .background(theme.colors.background)
                     .disabled(!chat.userCanSend)
 
                     if chat.userIsObserver {

@@ -32,7 +32,6 @@ enum class DefaultTheme {
 
   val mode: DefaultThemeMode get() = if (this == LIGHT) DefaultThemeMode.LIGHT else DefaultThemeMode.DARK
 
-  // Call it only with base theme, not SYSTEM
   fun hasChangedAnyColor(overrides: ThemeOverrides?): Boolean {
     if (overrides == null) return false
     return overrides.colors != ThemeColors() ||

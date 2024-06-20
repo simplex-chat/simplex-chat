@@ -21,6 +21,7 @@ struct AddGroupMembersView: View {
 
 struct AddGroupMembersViewCommon: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     var chat: Chat
     @State var groupInfo: GroupInfo
     var creatingGroup: Bool = false
@@ -125,6 +126,7 @@ struct AddGroupMembersViewCommon: View {
         .onChange(of: selectedContacts) { _ in
             searchFocussed = false
         }
+        .modifier(ThemedBackground())
     }
 
     private func inviteMembersButton() -> some View {
@@ -176,7 +178,7 @@ struct AddGroupMembersViewCommon: View {
         } else {
             if checked {
                 icon = "checkmark.circle.fill"
-                iconColor = .accentColor
+                iconColor = theme.colors.primary
             } else {
                 icon = "circle"
                 iconColor = Color(uiColor: .tertiaryLabel)

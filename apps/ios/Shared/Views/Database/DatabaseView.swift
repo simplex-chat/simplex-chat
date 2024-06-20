@@ -118,6 +118,7 @@ struct DatabaseView: View {
                     NavigationLink {
                         DatabaseEncryptionView(useKeychain: $useKeychain, migration: false)
                             .navigationTitle("Database passphrase")
+                            .modifier(ThemedBackground())
                     } label: {
                         Text("Database passphrase")
                     }
@@ -144,6 +145,7 @@ struct DatabaseView: View {
                         NavigationLink {
                             ChatArchiveView(archiveName: archiveName)
                                 .navigationTitle(title)
+                                .modifier(ThemedBackground())
                         } label: {
                             Text(title)
                         }

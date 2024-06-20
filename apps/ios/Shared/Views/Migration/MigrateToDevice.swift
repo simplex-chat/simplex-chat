@@ -91,6 +91,7 @@ private enum MigrateToDeviceViewAlert: Identifiable {
 
 struct MigrateToDevice: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @Binding var migrationState: MigrationToState?
@@ -243,7 +244,7 @@ struct MigrateToDevice: View {
                 }
             }
             let ratio = Float(downloadedBytes) / Float(max(totalBytes, 1))
-            MigrateFromDevice.largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: downloadedBytes, countStyle: .binary)) downloaded")
+            MigrateFromDevice.largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: downloadedBytes, countStyle: .binary)) downloaded", theme.colors.primary)
         }
     }
 
@@ -255,7 +256,7 @@ struct MigrateToDevice: View {
                     migrationState = .linkDownloading(link: link)
                 }) {
                     settingsRow("tray.and.arrow.down") {
-                        Text("Repeat download").foregroundColor(.accentColor)
+                        Text("Repeat download").foregroundColor(theme.colors.primary)
                     }
                 }
             } header: {
@@ -293,7 +294,7 @@ struct MigrateToDevice: View {
                     migrationState = .archiveImport(archivePath: archivePath)
                 }) {
                     settingsRow("square.and.arrow.down") {
-                        Text("Repeat import").foregroundColor(.accentColor)
+                        Text("Repeat import").foregroundColor(theme.colors.primary)
                     }
                 }
             } header: {
@@ -334,7 +335,7 @@ struct MigrateToDevice: View {
                         migrationState = .migration(passphrase: passphrase, confirmation: confirmation, useKeychain: useKeychain)
                     }) {
                         settingsRow("square.and.arrow.down") {
-                            Text(button).foregroundColor(.accentColor)
+                            Text(button).foregroundColor(theme.colors.primary)
                         }
                     }
                 } else {
@@ -364,6 +365,7 @@ struct MigrateToDevice: View {
     }
 
     struct OnionView: View {
+        @EnvironmentObject var theme: AppTheme
         @State var appSettings: AppSettings
         @State private var onionHosts: OnionHosts = .no
         var finishMigration: (AppSettings) -> Void
@@ -381,7 +383,7 @@ struct MigrateToDevice: View {
                         finishMigration(appSettings)
                     }) {
                         settingsRow("checkmark") {
-                            Text("Apply").foregroundColor(.accentColor)
+                            Text("Apply").foregroundColor(theme.colors.primary)
                         }
                     }
                 } header: {
