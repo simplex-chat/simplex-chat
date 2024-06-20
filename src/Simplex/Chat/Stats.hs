@@ -86,11 +86,11 @@ data XFTPServerSummary = XFTPServerSummary
 toPresentedServersSummary :: AgentServersSummary -> [User] -> User -> [SMPServer] -> [XFTPServer] -> PresentedServersSummary
 toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrvs = do
   let (userSMPSrvsSumms, allSMPSrvsSumms) = accSMPSrvsSummaries
-      (userSMPCurr, userSMPPrev, userSMPProx) = smpSumsIntoCategories userSMPSrvsSumms
-      (allSMPCurr, allSMPPrev, allSMPProx) = smpSumsIntoCategories allSMPSrvsSumms
+      (userSMPCurr, userSMPPrev, userSMPProx) = smpSummsIntoCategories userSMPSrvsSumms
+      (allSMPCurr, allSMPPrev, allSMPProx) = smpSummsIntoCategories allSMPSrvsSumms
       (userXFTPSrvsSumms, allXFTPSrvsSumms) = accXFTPSrvsSummaries
-      (userXFTPCurr, userXFTPPrev) = xftpSumsIntoCategories userXFTPSrvsSumms
-      (allXFTPCurr, allXFTPPrev) = xftpSumsIntoCategories allXFTPSrvsSumms
+      (userXFTPCurr, userXFTPPrev) = xftpSummsIntoCategories userXFTPSrvsSumms
+      (allXFTPCurr, allXFTPPrev) = xftpSummsIntoCategories allXFTPSrvsSumms
   PresentedServersSummary
     { statsStartedAt,
       userServersSummary =
@@ -114,8 +114,8 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
     AgentServersSummary {statsStartedAt, smpServersSessions, smpServersSubs, smpServersStats, xftpServersSessions, xftpServersStats, xftpRcvInProgress, xftpSndInProgress, xftpDelInProgress} = agentSummary
     countUserInAll auId = auId == aUserId currentUser || auId `notElem` hiddenUserIds
     hiddenUserIds = map aUserId $ filter (isJust . viewPwdHash) users
-    smpSumsIntoCategories :: [SMPServerSummary] -> ([SMPServerSummary], [SMPServerSummary], [SMPServerSummary])
-    smpSumsIntoCategories = foldr partitionSummary ([], [], [])
+    smpSummsIntoCategories :: [SMPServerSummary] -> ([SMPServerSummary], [SMPServerSummary], [SMPServerSummary])
+    smpSummsIntoCategories = foldr partitionSummary ([], [], [])
       where
         partitionSummary srvSumm (curr, prev, prox)
           | isCurrentlyUsed srvSumm = (srvSumm : curr, prev, prox)
@@ -128,8 +128,8 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
           -- check: should connCompleted be counted for proxy? is it?
           Just AgentSMPServerStatsData {_sentDirect, _sentProxied, _sentDirectAttempts, _sentProxiedAttempts, _recvMsgs, _connCreated, _connSecured, _connSubscribed, _connSubAttempts} ->
             _sentDirect > 0 || _sentProxied > 0 || _sentDirectAttempts > 0 || _sentProxiedAttempts > 0 || _recvMsgs > 0 || _connCreated > 0 || _connSecured > 0 || _connSubscribed > 0 || _connSubAttempts > 0
-    xftpSumsIntoCategories :: [XFTPServerSummary] -> ([XFTPServerSummary], [XFTPServerSummary])
-    xftpSumsIntoCategories = foldr partitionSummary ([], [])
+    xftpSummsIntoCategories :: [XFTPServerSummary] -> ([XFTPServerSummary], [XFTPServerSummary])
+    xftpSummsIntoCategories = foldr partitionSummary ([], [])
       where
         partitionSummary srvSumm (curr, prev)
           | isCurrentlyUsed srvSumm = (srvSumm : curr, prev)
