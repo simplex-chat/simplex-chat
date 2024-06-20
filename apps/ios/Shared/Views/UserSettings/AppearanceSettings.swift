@@ -762,13 +762,13 @@ struct WallpaperSetupView: View {
                 Slider(
                     value: Binding(get: { wallpaperScale }, set: { scale in
                         if let wallpaperType, case let WallpaperType.Preset(filename, _) = wallpaperType {
-                            onTypeChange(WallpaperType.Preset(filename, Float("\(scale)".prefix(4))))
+                            onTypeChange(WallpaperType.Preset(filename, Float("\(scale)".prefix(9))))
                         } else if let wallpaperType, case let WallpaperType.Image(filename, _, scaleType) = wallpaperType {
-                            onTypeChange(WallpaperType.Image(filename, Float("\(scale)".prefix(4)), scaleType))
+                            onTypeChange(WallpaperType.Image(filename, Float("\(scale)".prefix(9)), scaleType))
                         }
                     }),
                     in: 0.5...2,
-                    step: 0.01
+                    step: 0.0000001
                 )
                 .frame(height: 36)
             }
