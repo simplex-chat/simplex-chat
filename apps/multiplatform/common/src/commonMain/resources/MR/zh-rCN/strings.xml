@@ -1871,4 +1871,6 @@
 \n请和开发者分享任何其他问题。</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">此链接用于另一台移动设备，请在桌面上创建新的链接。</string>
     <string name="copy_error">复制错误</string>
+    <string name="cannot_share_message_alert_title">无法发送消息</string>
+    <string name="cannot_share_message_alert_text">选择的聊天首选项禁止此条消息。</string>
 </resources>
