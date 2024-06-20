@@ -67,7 +67,7 @@ data XFTPServerSummary = XFTPServerSummary
   }
   deriving (Show)
 
-toPresentedServersSummary :: AgentServersSummary -> [User] -> User -> [ServerCfg p1] -> [ServerCfg p2] -> PresentedServersSummary
+toPresentedServersSummary :: AgentServersSummary -> [User] -> User -> [SMPServer] -> [XFTPServer] -> PresentedServersSummary
 toPresentedServersSummary _agentServersSummary _users _currentUser _smpSrvs _xftpSrvs = do
   -- map from agentServersSummary to PresentedServersSummary
   -- - userServersSummary is for currentUser

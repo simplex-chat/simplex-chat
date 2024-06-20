@@ -95,7 +95,7 @@ import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, getAgentServersSummary, getNetworkConfig', ipAddressProtected, withLockMap)
+import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, getNetworkConfig', ipAddressProtected, withLockMap)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
@@ -113,7 +113,7 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolTypeI, SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolTypeI, SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol, ProtocolServer)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
@@ -2256,10 +2256,18 @@ processChatCommand' vr = \case
   GetAgentServersSummary userId -> withUserId userId $ \user -> do
     agentServersSummary <- lift $ withAgent' getAgentServersSummary
     users <- withStore' getUsers
-    -- for smp and xftp, then pass to toPresentedServersSummary:
-    -- servers <- withStore' (`getProtocolServers` user)
-    let presentedServersSummary = toPresentedServersSummary agentServersSummary users user [] []
+    smpServers <- getUserServers user SPSMP
+    xftpServers <- getUserServers user SPXFTP
+    let presentedServersSummary = toPresentedServersSummary agentServersSummary users user smpServers xftpServers
     pure $ CRAgentServersSummary user presentedServersSummary
+    where
+      getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => User -> SProtocolType p -> CM [ProtocolServer p]
+      getUserServers users protocol = do
+        ChatConfig {defaultServers} <- asks config
+        let defServers = cfgServers protocol defaultServers
+        servers <- map (\ServerCfg {server} -> server) <$> withStore' (`getProtocolServers` users)
+        let srvs = if null servers then L.toList defServers else servers
+        pure $ map protoServer srvs
   GetAgentWorkers -> lift $ CRAgentWorkersSummary <$> withAgent' getAgentWorkersSummary
   GetAgentWorkersDetails -> lift $ CRAgentWorkersDetails <$> withAgent' getAgentWorkersDetails
   GetAgentStats -> lift $ CRAgentStats . map stat <$> withAgent' getAgentStats
