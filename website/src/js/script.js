@@ -1,5 +1,3 @@
-const uniqueSwiperContainer = document.querySelector('.unique-swiper')
-if (uniqueSwiperContainer) {
 const uniqueSwiper = new Swiper('.unique-swiper', {
     slidesPerView: 1,
     spaceBetween: 80,
@@ -25,15 +23,12 @@ const uniqueSwiper = new Swiper('.unique-swiper', {
         prevEl: '.unique-swiper-button-prev',
     },
 });
-}
 
 const isMobile = {
     Android: () => navigator.userAgent.match(/Android/i),
     iOS: () => navigator.userAgent.match(/iPhone|iPad|iPod/i)
 };
 
-const privateSwiperContainer = document.querySelector('.private-swiper')
-if (privateSwiperContainer) {
 const privateSwiper = new Swiper('.private-swiper', {
     slidesPerView: 1,
     slidesPerGroup: 1,
@@ -84,10 +79,7 @@ const privateSwiper = new Swiper('.private-swiper', {
         }
     }
 });
-}
 
-const simplexExplainedSwiperContainer = document.querySelector('.simplex-explained-swiper')
-if (simplexExplainedSwiperContainer){
 const simplexExplainedSwiper = new Swiper(".simplex-explained-swiper", {
     slidesPerView: 1,
     spaceBetween: 80,
@@ -120,7 +112,6 @@ const simplexExplainedSwiper = new Swiper(".simplex-explained-swiper", {
         }
     }
 });
-}
 
 function closeOverlay(e) {
     e.target.closest('.overlay').classList.remove('flex');

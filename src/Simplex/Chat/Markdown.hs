@@ -144,10 +144,6 @@ markdownToList (m1 :|: m2) = markdownToList m1 <> markdownToList m2
 parseMarkdown :: Text -> Markdown
 parseMarkdown s = fromRight (unmarked s) $ A.parseOnly (markdownP <* A.endOfInput) s
 
-containsFormat :: (Format -> Bool) -> Markdown -> Bool
-containsFormat p (Markdown f _) = maybe False p f
-containsFormat p (m1 :|: m2) = containsFormat p m1 || containsFormat p m2
-
 isSimplexLink :: Format -> Bool
 isSimplexLink = \case
   SimplexLink {} -> True;
