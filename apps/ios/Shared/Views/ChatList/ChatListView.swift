@@ -18,6 +18,7 @@ struct ChatListView: View {
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @State var topVisibleRowIndex: Int? = nil;
+    @State private var searchVisible: Bool = true;
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = false
 
@@ -55,34 +56,12 @@ struct ChatListView: View {
 
     @ViewBuilder private var chatList: some View {
         let cs = filteredChats()
-        ZStack {
+        ZStack(alignment: .top) {
             VStack {
                 ScrollViewReader { scrollViewProxy in
-                    if !chatModel.chats.isEmpty && oneHandUI{
-                        ChatListSearchBar(
-                            searchMode: $searchMode,
-                            searchFocussed: $searchFocussed,
-                            searchText: $searchText,
-                            searchShowingSimplexLink: $searchShowingSimplexLink,
-                            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-                        )
-                        .scaleEffect(x: 1, y: -1, anchor: .center)
-                        .listRowSeparator(.hidden)
-                        .frame(maxWidth: .infinity)
-                        .padding(10)
-                    }
                     List {
-                        if !chatModel.chats.isEmpty && !oneHandUI{
-                            ChatListSearchBar(
-                                searchMode: $searchMode,
-                                searchFocussed: $searchFocussed,
-                                searchText: $searchText,
-                                searchShowingSimplexLink: $searchShowingSimplexLink,
-                                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-                            )
-                            .listRowSeparator(.hidden)
-                            .frame(maxWidth: .infinity)
-                        }
+                        Color.clear
+                            .frame(height: 30)
                         ForEach(cs.indices, id: \.self) { index in
                             ChatListNavLink(chat: cs[index])
                                 .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
@@ -114,22 +93,54 @@ struct ChatListView: View {
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
             }
+            
+            if !chatModel.chats.isEmpty && searchVisible {
+                VStack {
+                    ChatListSearchBar(
+                        searchMode: $searchMode,
+                        searchFocussed: $searchFocussed,
+                        searchText: $searchText,
+                        searchShowingSimplexLink: $searchShowingSimplexLink,
+                        searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+                    )
+                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                    .listRowSeparator(.hidden)
+                    .frame(maxWidth: .infinity)
+                    .padding(10)
+                }
+                .background(Color(.systemBackground))
+            }
         }
     }
     
     private func updateTopVisibleRowIndex(proxy: GeometryProxy, index: Int) {
         let frame = proxy.frame(in: .named("SCROLL"))
+        
+        if (oneHandUI) {
+            let screenHeight = UIScreen.main.bounds.height
 
-        if frame.minY >= 0 && frame.minY < frame.height / 2 {
-            if topVisibleRowIndex != index {
-                let shouldShowToolbar: Bool
-                if let topVisibleRowIndex = topVisibleRowIndex {
-                    shouldShowToolbar = topVisibleRowIndex > index
-                } else {
-                    shouldShowToolbar = true
+            if frame.maxY <= screenHeight && frame.maxY > screenHeight - frame.height / 2 {
+                if topVisibleRowIndex != index {
+                    if let topVisibleRowIndex = topVisibleRowIndex  {
+                        searchVisible = topVisibleRowIndex > index || index == 0
+                    } else {
+                        searchVisible = true
+                    }
+                    
+                    topVisibleRowIndex = index
                 }
-                topVisibleRowIndex = index
-                NotificationCenter.default.post(name: .toolbarVisibilityChanged, object: shouldShowToolbar)
+            }
+        } else {
+            if frame.minY >= 0 && frame.minY < frame.height / 2 {
+                if topVisibleRowIndex != index {
+                    if let topVisibleRowIndex = topVisibleRowIndex {
+                        searchVisible = topVisibleRowIndex > index
+                    } else {
+                        searchVisible = true
+                    }
+                    
+                    topVisibleRowIndex = index
+                }
             }
         }
     }
