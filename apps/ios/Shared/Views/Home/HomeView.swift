@@ -61,15 +61,16 @@ struct HomeView: View {
             case .chats: withToolbar("Chats", chatListView)
             }
         }
-
-        ToolbarView {
-            settingsButton()
-            Spacer()
-            contactsButton()
-            Spacer()
-            chatsButton()
-            Spacer()
-            newChatButton()
+        .toolbar {
+            ToolbarItemGroup(placement: .bottomBar) {
+                settingsButton()
+                Spacer()
+                contactsButton()
+                Spacer()
+                chatsButton()
+                Spacer()
+                newChatButton()
+            }
         }
 
         if #unavailable(iOS 16) {
@@ -218,40 +219,6 @@ struct HomeView: View {
         if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
             ChatView(chat: chat).onAppear {
                 loadChat(chat: chat)
-            }
-        }
-    }
-}
-
-extension Notification.Name {
-    static let toolbarVisibilityChanged = Notification.Name("toolbarVisibilityChanged")
-}
-
-struct ToolbarView<Content: View>: View {
-    @State var isVisible: Bool = true;
-    let content: Content
-
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
-
-    var body: some View {
-        VStack {
-            Spacer()
-            if isVisible {
-                VStack {}
-                    .toolbar {
-                        ToolbarItemGroup(placement: .bottomBar) {
-                            content
-                        }
-                    }
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .toolbarVisibilityChanged)) { notification in
-            if let visibility = notification.object as? Bool {
-                if isVisible != visibility {
-                    isVisible.toggle()
-                }
             }
         }
     }
