@@ -1472,7 +1472,7 @@
     <string name="receipts_groups_override_disabled">Kézbesítési jelentések le vannak tiltva a(z) %d csoportban</string>
     <string name="non_fatal_errors_occured_during_import">Néhány nem végzetes hiba történt az importálás során – további részletekért a csevegési konzolban olvashat.</string>
     <string name="v4_5_italian_interface_descr">Köszönet a felhasználóknak - hozzájárulás a Weblaten!</string>
-    <string name="relay_server_if_necessary">Az átjátszó kiszolgáló csak szükség esetén kerül használatra. Egy másik fél megfigyelheti az IP-címét.</string>
+    <string name="relay_server_if_necessary">Az átjátszó kiszolgáló csak szükség esetén kerül használatra. Egy másik fél megfigyelheti az IP-címet.</string>
     <string name="v5_0_app_passcode_descr">Rendszerhitelesítés helyetti beállítás.</string>
     <string name="switch_receiving_address_desc">A fogadó cím egy másik kiszolgálóra változik. A címváltoztatás a feladó online állapotba kerülése után fejeződik be.</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">A csevegés megállítása a csevegő adatbázis exportálásához, importálásához, vagy törléséhez. A csevegés megállítása alatt nem tud üzeneteket fogadni és küldeni.</string>
@@ -1481,7 +1481,7 @@
     <string name="save_passphrase_in_settings">Jelmondat mentése a beállításokban</string>
     <string name="send_receipts_disabled_alert_msg">Ennek a csoportnak több mint %1$d tagja van, a kézbesítési jelentések nem kerülnek elküldésre.</string>
     <string name="v5_2_message_delivery_receipts_descr">A második jelölés, amit kihagytunk! ✅</string>
-    <string name="relay_server_protects_ip">Az átjátszó kiszolgáló megvédi IP-címét, de megfigyelheti a hívás időtartamát.</string>
+    <string name="relay_server_protects_ip">Az átjátszó kiszolgáló megvédi az IP-címet, de megfigyelheti a hívás időtartamát.</string>
     <string name="read_more_in_github">További információ a GitHub tárolónkban.</string>
     <string name="v4_5_message_draft_descr">Az utolsó üzenet tervezetének megőrzése a mellékletekkel együtt.</string>
     <string name="saved_ICE_servers_will_be_removed">A mentett WebRTC ICE-kiszolgálók eltávolításra kerülnek.</string>
@@ -1791,14 +1791,14 @@
     <string name="update_network_smp_proxy_mode_question">Üzenet útválasztási mód</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Közvetlen üzenetküldés, ha az IP-cím védett és az ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
     <string name="network_smp_proxy_fallback_allow_description">Közvetlen üzenetküldés, ha az ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
-    <string name="private_routing_explanation">Az IP-címe védelme érdekében a privát útválasztás az SMP-kiszolgálókat használja az üzenetek kézbesítéséhez.</string>
+    <string name="private_routing_explanation">Az IP-cím védelmének érdekében a privát útválasztás az SMP-kiszolgálókat használja az üzenetek kézbesítéséhez.</string>
     <string name="update_network_smp_proxy_fallback_question">Üzenet útválasztási tartalék</string>
     <string name="settings_section_title_private_message_routing">PRIVÁT ÜZENET ÚTVÁLASZTÁS</string>
     <string name="network_smp_proxy_mode_unprotected_description">Privát útválasztás használata ismeretlen kiszolgálókkal, ha az IP-cím nem védett.</string>
     <string name="network_smp_proxy_fallback_prohibit_description">Ne küldjön üzeneteket közvetlenül, még akkor sem, ha az ön kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Tor vagy VPN nélkül az IP-címe látható lesz a fájlkiszolgálók számára.</string>
     <string name="settings_section_title_files">FÁJLOK</string>
-    <string name="protect_ip_address">Az IP-cím védelme</string>
+    <string name="protect_ip_address">IP-cím védelem</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">Az alkalmazás kérni fogja az ismeretlen fájlkiszolgálókról történő letöltések megerősítését (kivéve, ha az .onion vagy a SOCKS proxy engedélyezve van).</string>
     <string name="file_not_approved_title">Ismeretlen kiszolgálók!</string>
     <string name="file_not_approved_descr">Tor vagy VPN nélkül az IP-címe látható lesz az XFTP átjátszók számára:
