@@ -26,7 +26,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat {
     public var sendRcptsContacts: Bool
     public var sendRcptsSmallGroups: Bool
     public var viewPwdHash: UserPwdHash?
-    //public var uiThemes: ThemeModeOverrides
+    public var uiThemes: ThemeModeOverrides?
 
     public var id: Int64 { userId }
 
@@ -1505,6 +1505,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     var chatTs: Date?
     var contactGroupMemberId: Int64?
     var contactGrpInvSent: Bool
+    public var uiThemes: ThemeModeOverrides?
 
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
@@ -1844,6 +1845,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     var createdAt: Date
     var updatedAt: Date
     var chatTs: Date?
+    public var uiThemes: ThemeModeOverrides?
 
     public var id: ChatId { get { "#\(groupId)" } }
     public var apiId: Int64 { get { groupId } }

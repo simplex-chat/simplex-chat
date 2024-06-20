@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 let defaultAccentColor = CGColor.init(red: 0, green: 0.533, blue: 1, alpha: 1)
 

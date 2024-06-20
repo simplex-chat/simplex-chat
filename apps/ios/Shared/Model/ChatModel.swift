@@ -422,6 +422,16 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func updateCurrentUserUiThemes(uiThemes: ThemeModeOverrides?) {
+        guard var current = currentUser else { return }
+        current.uiThemes = uiThemes
+        let i = users.firstIndex(where: { $0.user.userId == current.userId })
+        if let i {
+            users[i].user = current
+        }
+        currentUser = current
+    }
+
     func addLiveDummy(_ chatInfo: ChatInfo) -> ChatItem {
         let cItem = ChatItem.liveDummy(chatInfo.chatType)
         withAnimation {

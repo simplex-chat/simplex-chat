@@ -29,8 +29,7 @@ public enum ChatCommand {
     case apiStopChat
     case apiActivateChat(restoreChat: Bool)
     case apiSuspendChat(timeoutMicroseconds: Int)
-    case setTempFolder(tempFolder: String)
-    case setFilesFolder(filesFolder: String)
+    case apiSetAppFilePaths(filesFolder: String, tempFolder: String, assetsFolder: String)
     case apiSetEncryptLocalFiles(enable: Bool)
     case apiExportArchive(config: ArchiveConfig)
     case apiImportArchive(config: ArchiveConfig)
@@ -106,6 +105,8 @@ public enum ChatCommand {
     case apiSetContactPrefs(contactId: Int64, preferences: Preferences)
     case apiSetContactAlias(contactId: Int64, localAlias: String)
     case apiSetConnectionAlias(connId: Int64, localAlias: String)
+    case apiSetUserUIThemes(userId: Int64, themes: ThemeModeOverrides?)
+    case apiSetChatUIThemes(chatId: String, themes: ThemeModeOverrides?)
     case apiCreateMyAddress(userId: Int64)
     case apiDeleteMyAddress(userId: Int64)
     case apiShowMyAddress(userId: Int64)
@@ -169,8 +170,7 @@ public enum ChatCommand {
             case .apiStopChat: return "/_stop"
             case let .apiActivateChat(restore): return "/_app activate restore=\(onOff(restore))"
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
-            case let .setTempFolder(tempFolder): return "/_temp_folder \(tempFolder)"
-            case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
+            case let .apiSetAppFilePaths(filesFolder, tempFolder, assetsFolder): return "/set file paths \(encodeJSON(AppFilePaths(appFilesFolder: filesFolder, appTempFolder: tempFolder, appAssetsFolder: assetsFolder)))"
             case let .apiSetEncryptLocalFiles(enable): return "/_files_encrypt \(onOff(enable))"
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
@@ -268,6 +268,8 @@ public enum ChatCommand {
             case let .apiSetContactPrefs(contactId, preferences): return "/_set prefs @\(contactId) \(encodeJSON(preferences))"
             case let .apiSetContactAlias(contactId, localAlias): return "/_set alias @\(contactId) \(localAlias.trimmingCharacters(in: .whitespaces))"
             case let .apiSetConnectionAlias(connId, localAlias): return "/_set alias :\(connId) \(localAlias.trimmingCharacters(in: .whitespaces))"
+            case let .apiSetUserUIThemes(userId, themes): return "/_set theme user \(userId) \(themes != nil ? encodeJSON(themes) : "")"
+            case let .apiSetChatUIThemes(chatId, themes): return "/_set theme \(chatId) \(themes != nil ? encodeJSON(themes) : "")"
             case let .apiCreateMyAddress(userId): return "/_address \(userId)"
             case let .apiDeleteMyAddress(userId): return "/_delete_address \(userId)"
             case let .apiShowMyAddress(userId): return "/_show_address \(userId)"
@@ -325,8 +327,7 @@ public enum ChatCommand {
             case .apiStopChat: return "apiStopChat"
             case .apiActivateChat: return "apiActivateChat"
             case .apiSuspendChat: return "apiSuspendChat"
-            case .setTempFolder: return "setTempFolder"
-            case .setFilesFolder: return "setFilesFolder"
+            case .apiSetAppFilePaths: return "apiSetAppFilePaths"
             case .apiSetEncryptLocalFiles: return "apiSetEncryptLocalFiles"
             case .apiExportArchive: return "apiExportArchive"
             case .apiImportArchive: return "apiImportArchive"
@@ -402,6 +403,8 @@ public enum ChatCommand {
             case .apiSetContactPrefs: return "apiSetContactPrefs"
             case .apiSetContactAlias: return "apiSetContactAlias"
             case .apiSetConnectionAlias: return "apiSetConnectionAlias"
+            case .apiSetUserUIThemes: return "apiSetUserUIThemes"
+            case .apiSetChatUIThemes: return "apiSetChatUIThemes"
             case .apiCreateMyAddress: return "apiCreateMyAddress"
             case .apiDeleteMyAddress: return "apiDeleteMyAddress"
             case .apiShowMyAddress: return "apiShowMyAddress"
@@ -2071,6 +2074,11 @@ public struct AppSettings: Codable, Equatable {
     public var androidCallOnLockScreen: AppSettingsLockScreenCalls? = nil
     public var iosCallKitEnabled: Bool? = nil
     public var iosCallKitCallsInRecents: Bool? = nil
+    public var uiProfileImageCornerRadius: Float? = nil
+    public var uiColorScheme: String? = nil
+    public var uiDarkColorScheme: String? = nil
+    public var uiCurrentThemeIds: [String: String]? = nil
+    public var uiThemes: [ThemeOverrides]? = nil
 
     public func prepareForExport() -> AppSettings {
         var empty = AppSettings()
@@ -2095,6 +2103,11 @@ public struct AppSettings: Codable, Equatable {
         if androidCallOnLockScreen != def.androidCallOnLockScreen { empty.androidCallOnLockScreen = androidCallOnLockScreen }
         if iosCallKitEnabled != def.iosCallKitEnabled { empty.iosCallKitEnabled = iosCallKitEnabled }
         if iosCallKitCallsInRecents != def.iosCallKitCallsInRecents { empty.iosCallKitCallsInRecents = iosCallKitCallsInRecents }
+        if uiProfileImageCornerRadius != def.uiProfileImageCornerRadius { empty.uiProfileImageCornerRadius = uiProfileImageCornerRadius }
+        if uiColorScheme != def.uiColorScheme { empty.uiColorScheme = uiColorScheme }
+        if uiDarkColorScheme != def.uiDarkColorScheme { empty.uiDarkColorScheme = uiDarkColorScheme }
+        if uiCurrentThemeIds != def.uiCurrentThemeIds { empty.uiCurrentThemeIds = uiCurrentThemeIds }
+        if uiThemes != def.uiThemes { empty.uiThemes = uiThemes }
         return empty
     }
 
@@ -2119,7 +2132,12 @@ public struct AppSettings: Codable, Equatable {
             confirmDBUpgrades: false,
             androidCallOnLockScreen: AppSettingsLockScreenCalls.show,
             iosCallKitEnabled: true,
-            iosCallKitCallsInRecents: false
+            iosCallKitCallsInRecents: false,
+            uiProfileImageCornerRadius: 22.5,
+            uiColorScheme: DefaultTheme.SYSTEM_THEME_NAME,
+            uiDarkColorScheme: DefaultTheme.SIMPLEX.themeName,
+            uiCurrentThemeIds: nil as [String: String]?,
+            uiThemes: nil as [ThemeOverrides]?
         )
     }
 }
@@ -2223,4 +2241,10 @@ public struct MsgInfo: Codable {
 public enum MsgType: String, Codable {
     case message
     case quota
+}
+
+public struct AppFilePaths: Encodable {
+    public let appFilesFolder: String
+    public let appTempFolder: String
+    public let appAssetsFolder: String
 }

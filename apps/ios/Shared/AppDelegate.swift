@@ -17,6 +17,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         if #available(iOS 17.0, *) { trackKeyboard() }
         NotificationCenter.default.addObserver(self, selector: #selector(pasteboardChanged), name: UIPasteboard.changedNotification, object: nil)
         removePasscodesIfReinstalled()
+        prepareForLaunch()
         return true
     }
 
@@ -139,6 +140,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             _ = kcSelfDestructPassword.remove()
             _ = kcDatabasePassword.remove()
         }
+    }
+
+    private func prepareForLaunch() {
+        try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
     }
 
     static func keepScreenOn(_ on: Bool) {

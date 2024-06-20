@@ -10,8 +10,8 @@ import Foundation
 import SwiftUI
 import SimpleXChat
 
-public class ThemeManager {
-    public struct ActiveTheme {
+class ThemeManager {
+    struct ActiveTheme {
         let name: String
         let base: DefaultTheme
         let colors: Colors
@@ -49,7 +49,7 @@ public class ThemeManager {
             return perUserTheme
         }
         let defaultTheme = defaultActiveTheme(appSettingsTheme)
-        return ThemeModeOverride(colors: defaultTheme?.colors ?? ThemeColors(), wallpaper: defaultTheme?.wallpaper)
+        return ThemeModeOverride(mode: CurrentColors.base.mode, colors: defaultTheme?.colors ?? ThemeColors(), wallpaper: defaultTheme?.wallpaper)
     }
 
     static func currentColors(_ themeOverridesForType: WallpaperType?, _ perChatTheme: ThemeModeOverride?, _ perUserTheme: ThemeModeOverrides?, _ appSettingsTheme: [ThemeOverrides]) -> ActiveTheme {
@@ -95,7 +95,7 @@ public class ThemeManager {
         let wType = current.wallpaper.type
         let wBackground = current.wallpaper.background
         let wTint = current.wallpaper.tint
-        let w: ThemeWallpaper? = if case WallpaperType.Empty = wType { 
+        let w: ThemeWallpaper? = if case WallpaperType.Empty = wType {
             nil
         } else {
             ThemeWallpaper.from(wType, wBackground?.toReadableHex(), wTint?.toReadableHex()).withFilledWallpaperBase64()
@@ -176,19 +176,17 @@ public class ThemeManager {
                 var w: ThemeWallpaper = ThemeWallpaper.from(type, nil, nil)
                 w.scale = nil
                 w.scaleType = nil
-                pref.wrappedValue = ThemeModeOverride(wallpaper: w)
+                pref.wrappedValue = ThemeModeOverride(mode: CurrentColors.base.mode, wallpaper: w)
             } else {
                 // Make an empty wallpaper to override any top level ones
-                pref.wrappedValue = ThemeModeOverride(wallpaper: ThemeWallpaper())
+                pref.wrappedValue = ThemeModeOverride(mode: CurrentColors.base.mode, wallpaper: ThemeWallpaper())
             }
             return true
         }
         var type = sameWallpaper.toAppWallpaper().type
         if case let WallpaperType.Image(filename, scale, scaleType) = type, sameWallpaper.imageFile == filename {
             // same image file. Needs to be copied first in order to be able to remove the file once it's not needed anymore without affecting main theme override
-            // LALAL
-            let filename: String? = "LALAL"//saveWallpaperFile(File(getWallpaperFilePath(filename)).toURI())
-            if let filename {
+            if let filename = saveWallpaperFile(url: getWallpaperFilePath(filename)) {
                 type = WallpaperType.Image(filename, scale, scaleType)
             } else {
                 logger.error("Error while copying wallpaper from global overrides to chat overrides")
@@ -221,9 +219,8 @@ public class ThemeManager {
         let pref: CodableDefault<[ThemeOverrides]> = pref ?? themeOverridesDefault
         let overrides = pref.get()
         var prevValue = overrides.getTheme(nil, wallpaper?.toAppWallpaper().type, theme.base) ?? ThemeOverrides(base: theme.base)
-        if prevValue.wallpaper?.imageFile != nil {
-            // LALAL
-            //File(getWallpaperFilePath(prevValue.wallpaper.imageFile)).delete()
+        if let imageFile = prevValue.wallpaper?.imageFile {
+            try? FileManager.default.removeItem(at: getWallpaperFilePath(imageFile))
         }
         prevValue.base = theme.base
         prevValue.colors = theme.colors
@@ -263,71 +260,4 @@ public class ThemeManager {
         themes.removeAll(where: { $0.themeId == themeId })
         themeOverridesDefault.set(themes)
     }
-}
-
-extension String {
-    func colorFromReadableHex() -> Color {
-        // https://stackoverflow.com/a/56874327
-        let hex = self.trimmingCharacters(in: ["#", " "])
-        var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
-        switch hex.count {
-        case 3: // RGB (12-bit)
-            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6: // RGB (24-bit)
-            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8: // ARGB (32-bit)
-            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default:
-            (a, r, g, b) = (1, 1, 1, 0)
-        }
-
-        return Color(
-            .sRGB,
-            red: Double(r) / 255,
-            green: Double(g) / 255,
-            blue:  Double(b) / 255,
-            opacity: Double(a) / 255
-        )
-    }
-}
-
-extension Color {
-    init(_ argb: Int64) {
-        let a = Double((argb & 0xFF000000) >> 24) / 255.0
-        let r = Double((argb & 0xFF0000) >> 16) / 255.0
-        let g = Double((argb & 0xFF00) >> 8) / 255.0
-        let b = Double((argb & 0xFF)) / 255.0
-        self.init(.sRGB, red: r, green: g, blue: b, opacity: a)
-    }
-
-    init(_ r: Int, _ g: Int, _ b: Int, a: Int) {
-        self.init(.sRGB, red: Double(r) / 255.0, green: Double(g) / 255.0, blue: Double(b) / 255.0, opacity: Double(a) / 255.0)
-    }
-
-    func toReadableHex() -> String {
-        let uiColor: UIColor = .init(self)
-        var (r, g, b, a): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
-        uiColor.getRed(&r, green: &g, blue: &b, alpha: &a)
-        return String(format: "#%02x%02x%02x%02x",
-                      Int(a * 255),
-                      Int(r * 255),
-                      Int(g * 255),
-                      Int(b * 255)
-        )
-    }
-
-    func darker(_ factor: CGFloat = 0.1) -> Color {
-        var (r, g, b, a): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
-        UIColor(self).getRed(&r, green: &g, blue: &b, alpha: &a)
-        return Color(.sRGB, red: max(r * (1 - factor), 0), green: max(g * (1 - factor), 0), blue: max(b * (1 - factor), 0), opacity: a)
-    }
-
-    func lighter(_ factor: CGFloat = 0.1) -> Color {
-        var (r, g, b, a): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
-        UIColor(self).getRed(&r, green: &g, blue: &b, alpha: &a)
-        return Color(.sRGB, red: min(r * (1 + factor), 1), green: min(g * (1 + factor), 1), blue: min(b * (1 + factor), 1), opacity: a)
-    }
-
 }
