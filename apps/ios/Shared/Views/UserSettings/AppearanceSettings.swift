@@ -750,6 +750,31 @@ struct WallpaperSetupView: View {
         ColorPickerView(name: name, selection: editColor(name))
     }
 
+    private struct WallpaperScaleChooser: View {
+        @Binding var wallpaperScale: Float
+        var wallpaperType: WallpaperType?
+        var onTypeChange: (WallpaperType?) -> Void
+
+        var body: some View {
+            HStack {
+                Text("\(wallpaperScale)".prefix(4))
+                    .frame(width: 40, height: 36, alignment: .leading)
+                Slider(
+                    value: Binding(get: { wallpaperScale }, set: { scale in
+                        if let wallpaperType, case let WallpaperType.Preset(filename, _) = wallpaperType {
+                            onTypeChange(WallpaperType.Preset(filename, Float("\(scale)".prefix(4))))
+                        } else if let wallpaperType, case let WallpaperType.Image(filename, _, scaleType) = wallpaperType {
+                            onTypeChange(WallpaperType.Image(filename, Float("\(scale)".prefix(4)), scaleType))
+                        }
+                    }),
+                    in: 0.5...2,
+                    step: 0.01
+                )
+                .frame(height: 36)
+            }
+        }
+    }
+
     private struct WallpaperScaleTypeChooser: View {
         @Binding var wallpaperScaleType: WallpaperScaleType
         var wallpaperType: WallpaperType?
@@ -765,31 +790,6 @@ struct WallpaperSetupView: View {
                     Text(type.text)
                 }
             }
-            .frame(height: 36)
-        }
-    }
-}
-
-private struct WallpaperScaleChooser: View {
-    @Binding var wallpaperScale: Float
-    var wallpaperType: WallpaperType?
-    var onTypeChange: (WallpaperType?) -> Void
-
-    var body: some View {
-        HStack {
-            Text("\(wallpaperScale)".prefix(4))
-                .frame(width: 40, height: 36, alignment: .leading)
-            Slider(
-                value: Binding(get: { wallpaperScale }, set: { scale in
-                    if let wallpaperType, case let WallpaperType.Preset(filename, _) = wallpaperType {
-                        onTypeChange(WallpaperType.Preset(filename, Float("\(scale)".prefix(4))))
-                    } else if let wallpaperType, case let WallpaperType.Image(filename, _, scaleType) = wallpaperType {
-                        onTypeChange(WallpaperType.Image(filename, Float("\(scale)".prefix(4)), scaleType))
-                    }
-                }),
-                in: 0.5...2,
-                step: 0.01
-            )
             .frame(height: 36)
         }
     }
