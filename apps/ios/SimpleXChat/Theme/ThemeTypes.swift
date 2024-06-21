@@ -9,7 +9,7 @@
 import Foundation
 import SwiftUI
 
-public enum DefaultTheme: String, Codable {
+public enum DefaultTheme: String, Codable, Equatable {
     case LIGHT
     case DARK
     case SIMPLEX
@@ -39,7 +39,7 @@ public enum DefaultThemeMode: String, Codable {
     case dark
 }
 
-public class Colors: ObservableObject, NSCopying {
+public class Colors: ObservableObject, NSCopying, Equatable {
     @Published public var primary: Color
     @Published public var primaryVariant: Color
     @Published public var secondary: Color
@@ -63,6 +63,20 @@ public class Colors: ObservableObject, NSCopying {
         self.onSurface = onSurface
         self.isLight = isLight
     }
+
+    public static func == (lhs: Colors, rhs: Colors) -> Bool {
+        lhs.primary == rhs.primary &&
+        lhs.primaryVariant == rhs.primaryVariant &&
+        lhs.secondary == rhs.secondary &&
+        lhs.secondaryVariant == rhs.secondaryVariant &&
+        lhs.background == rhs.background &&
+        lhs.surface == rhs.surface &&
+        lhs.error == rhs.error &&
+        lhs.onBackground == rhs.onBackground &&
+        lhs.onSurface == rhs.onSurface &&
+        lhs.isLight == rhs.isLight
+    }
+
     public func copy(with zone: NSZone? = nil) -> Any {
         Colors(primary: self.primary, primaryVariant: self.primaryVariant, secondary: self.secondary, secondaryVariant: self.secondaryVariant, background: self.background, surface: self.surface, error: self.error, onBackground: self.onBackground, onSurface: self.onSurface, isLight: self.isLight)
     }
@@ -70,7 +84,7 @@ public class Colors: ObservableObject, NSCopying {
     public func clone() -> Colors { copy() as! Colors }
 }
 
-public class AppColors: ObservableObject, NSCopying {
+public class AppColors: ObservableObject, NSCopying, Equatable {
     @Published public var title: Color
     @Published public var primaryVariant2: Color
     @Published public var sentMessage: Color
@@ -85,6 +99,15 @@ public class AppColors: ObservableObject, NSCopying {
         self.sentQuote = sentQuote
         self.receivedMessage = receivedMessage
         self.receivedQuote = receivedQuote
+    }
+
+    public static func == (lhs: AppColors, rhs: AppColors) -> Bool {
+        lhs.title == rhs.title &&
+        lhs.primaryVariant2 == rhs.primaryVariant2 &&
+        lhs.sentMessage == rhs.sentMessage &&
+        lhs.sentQuote == rhs.sentQuote &&
+        lhs.receivedQuote == rhs.receivedMessage &&
+        lhs.receivedQuote == rhs.receivedQuote
     }
 
     public func copy(with zone: NSZone? = nil) -> Any {
@@ -112,7 +135,13 @@ public class AppColors: ObservableObject, NSCopying {
     }
 }
 
-public class AppWallpaper: ObservableObject, NSCopying {
+public class AppWallpaper: ObservableObject, NSCopying, Equatable {
+    public static func == (lhs: AppWallpaper, rhs: AppWallpaper) -> Bool {
+        lhs.background == rhs.background &&
+        lhs.tint == rhs.tint &&
+        lhs.type == rhs.type
+    }
+    
     @Published public var background: Color? = nil
     @Published public var tint: Color? = nil
     @Published public var type: WallpaperType = WallpaperType.Empty
@@ -543,7 +572,7 @@ public struct ThemeModeOverrides: Codable {
     }
 }
 
-public struct ThemeModeOverride: Codable {
+public struct ThemeModeOverride: Codable, Equatable {
     public var mode: DefaultThemeMode// = CurrentColors.base.mode
     public var colors: ThemeColors = ThemeColors()
     public var wallpaper: ThemeWallpaper? = nil

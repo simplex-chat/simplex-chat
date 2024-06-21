@@ -17,7 +17,9 @@ var CurrentColors: ThemeManager.ActiveTheme = ThemeManager.currentColors(nil, ni
         AppTheme.shared.colors.updateColorsFrom(CurrentColors.colors)
         AppTheme.shared.appColors.updateColorsFrom(CurrentColors.appColors)
         AppTheme.shared.wallpaper.updateWallpaperFrom(CurrentColors.wallpaper)
-        AppTheme.shared.objectWillChange.send()
+        DispatchQueue.main.async {
+            AppTheme.shared.objectWillChange.send()
+        }
     }
 }
 
@@ -26,7 +28,7 @@ var NoteFolderIconColor: Color { AppTheme.shared.appColors.primaryVariant2 }
 
 func isInDarkTheme() -> Bool { !CurrentColors.colors.isLight }
 
-class AppTheme: ObservableObject {
+class AppTheme: ObservableObject, Equatable {
     static let shared = AppTheme(name: CurrentColors.name, base: CurrentColors.base, colors: CurrentColors.colors, appColors: CurrentColors.appColors, wallpaper: CurrentColors.wallpaper)
 
     var name: String
@@ -41,6 +43,13 @@ class AppTheme: ObservableObject {
         self.colors = colors
         self.appColors = appColors
         self.wallpaper = wallpaper
+    }
+
+    static func == (lhs: AppTheme, rhs: AppTheme) -> Bool {
+        lhs.name == rhs.name &&
+        lhs.colors == rhs.colors &&
+        lhs.appColors == rhs.appColors &&
+        lhs.wallpaper == rhs.wallpaper
     }
 }
 

@@ -120,12 +120,9 @@ struct AppearanceSettings: View {
                     .frame(height: 36)
 
                     NavigationLink {
-                        let user = themeUserDestination?.0
-                        if let user {
-                            //UserWallpaperEditorModal
-                            CustomizeThemeView(onChooseType: onChooseType)
-                                .navigationTitle("Profile theme")
-                                .modifier(ThemedBackground())
+                        let userId = themeUserDestination?.0
+                        if let userId {
+                            UserWallpaperEditorSheet(userId: userId)
                                 .onAppear {
                                     customizeThemeIsOpen = true
                                 }
@@ -264,7 +261,7 @@ struct AppearanceSettings: View {
             } else {
                 _ = onTypeCopyFromSameTheme(currentColors(type).wallpaper.type)
             }
-        } else if (themeUserDestination != nil && themeUserDestination?.1?.preferredMode(!CurrentColors.colors.isLight)?.type?.sameType(type) == false) || !theme.wallpaper.type.sameType(type) {
+        } else if (themeUserDestination != nil && themeUserDestination?.1?.preferredMode(!CurrentColors.colors.isLight)?.type != type) || theme.wallpaper.type != type {
             _ = onTypeCopyFromSameTheme(type)
         } else {
             onTypeChange(type)
@@ -298,8 +295,8 @@ struct ChatThemePreview: View {
     @EnvironmentObject var theme: AppTheme
     var base: DefaultTheme
     var wallpaperType: WallpaperType?
-    var backgroundColor: Color? //theme.wallpaper.background
-    var tintColor: Color? //theme.wallpaper.tint
+    var backgroundColor: Color?
+    var tintColor: Color?
     var withMessages: Bool = true
 
     var body: some View {
@@ -350,7 +347,6 @@ struct WallpaperPresetSelector: View {
 
     var body: some View {
         VStack {
-            //SimpleXThemeOverride(remember(selectedWallpaper, CurrentColors.collectAsState().value) }) {
             ChatThemePreview(
                 base: theme.base,
                 wallpaperType: selectedWallpaper,
@@ -382,7 +378,6 @@ struct WallpaperPresetSelector: View {
         let overrides = currentColors(type).toAppTheme()
         return ZStack {
             if let type {
-                //SimpleXThemeOverride(remember(background, selectedWallpaper, CurrentColors.collectAsState().value)
                 ChatThemePreview(
                     base: baseTheme,
                     wallpaperType: type,
@@ -406,8 +401,7 @@ struct WallpaperPresetSelector: View {
     }
 
     func OwnBackgroundItem(_ type: WallpaperType?) -> some View {
-        let overrides = //remember(type, baseTheme, theme.wallpaper) {
-          currentColors(WallpaperType.Image("", nil, nil))
+        let overrides = currentColors(WallpaperType.Image("", nil, nil))
         let appWallpaper = overrides.wallpaper
         let backgroundColor = appWallpaper.background
         let tintColor = appWallpaper.tint
@@ -436,8 +430,6 @@ struct WallpaperPresetSelector: View {
         .onTapGesture {
             onChooseType(WallpaperType.Image("", nil, nil))
         }
-
-//                .border(1.dp, if (type is WallpaperType.Image) MaterialTheme.colors.primary.copy(0.8f) else MaterialTheme.colors.onBackground.copy(0.1f), RoundedCornerShape(percent = cornerRadius))
       }
 }
 
@@ -490,7 +482,7 @@ struct CustomizeThemeView: View {
             Section {
                 WallpaperSetupView(
                     wallpaperType: wallpaperType,
-                    theme: baseTheme,
+                    base: baseTheme,
                     initialWallpaper: theme.wallpaper,
                     initialSentColor: theme.appColors.sentMessage,
                     initialSentQuoteColor: theme.appColors.sentQuote,
@@ -509,7 +501,6 @@ struct CustomizeThemeView: View {
             }
 
             CustomizeThemeColorsSection(editColor: editColor)
-                .environmentObject(theme)
 
             let currentOverrides = ThemeManager.defaultActiveTheme(themeOverridesDefault.get())
             let canResetColors = theme.base.hasChangedAnyColor(currentOverrides)
@@ -590,6 +581,95 @@ struct CustomizeThemeView: View {
     }
 }
 
+struct UserWallpaperEditorSheet: View {
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var theme: AppTheme
+    @State var userId: Int64
+    @State private var globalThemeUsed: Bool = false
+
+    @State private var themes = ChatModel.shared.currentUser?.uiThemes ?? ThemeModeOverrides()
+
+    var body: some View {
+        let preferred = themes.preferredMode(!theme.colors.isLight)
+        let initialTheme = preferred ?? ThemeManager.defaultActiveTheme(ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        UserWallpaperEditor(
+            initialTheme: initialTheme,
+            themeModeOverride: initialTheme,
+            applyToMode: themes.light == themes.dark ? nil : initialTheme.mode,
+            globalThemeUsed: $globalThemeUsed,
+            save: { applyToMode, newTheme in
+                await save(applyToMode, newTheme, themes, userId)
+            }
+        )
+        .navigationTitle("Profile theme")
+        .modifier(ThemedBackground())
+        .onAppear {
+            globalThemeUsed = preferred == nil
+        }
+        .onChange(of: ChatModel.shared.currentUser?.userId) { _ in
+            dismiss()
+        }
+    }
+
+    private func save(
+        _ applyToMode: DefaultThemeMode?,
+        _ newTheme: ThemeModeOverride?,
+        _ themes: ThemeModeOverrides?,
+        _ userId: Int64
+    ) async {
+        let unchangedThemes: ThemeModeOverrides = themes ?? ThemeModeOverrides()
+        var wallpaperFiles = Set([unchangedThemes.light?.wallpaper?.imageFile, unchangedThemes.dark?.wallpaper?.imageFile])
+        var changedThemes: ThemeModeOverrides? = unchangedThemes
+        let light: ThemeModeOverride? = if let newTheme {
+            ThemeModeOverride(mode: DefaultThemeMode.light, colors: newTheme.colors, wallpaper: newTheme.wallpaper?.withFilledWallpaperPath())
+        } else {
+            nil
+        }
+        let dark: ThemeModeOverride? = if let newTheme {
+            ThemeModeOverride(mode: DefaultThemeMode.dark, colors: newTheme.colors, wallpaper: newTheme.wallpaper?.withFilledWallpaperPath())
+        } else {
+            nil
+        }
+
+        if let applyToMode {
+            switch applyToMode {
+            case DefaultThemeMode.light:
+                changedThemes?.light = light
+            case DefaultThemeMode.dark:
+                changedThemes?.dark = dark
+            }
+        } else {
+            changedThemes?.light = light
+            changedThemes?.dark = dark
+        }
+        changedThemes = if changedThemes?.light != nil || changedThemes?.dark != nil { changedThemes } else { nil }
+        wallpaperFiles.remove(changedThemes?.light?.wallpaper?.imageFile)
+        wallpaperFiles.remove(changedThemes?.dark?.wallpaper?.imageFile)
+        wallpaperFiles.forEach(removeWallpaperFile)
+
+        let oldThemes = ChatModel.shared.currentUser?.uiThemes
+        let changedThemesConstant = changedThemes
+        // Update before save to make it work seamless
+        await MainActor.run {
+            ChatModel.shared.updateCurrentUserUiThemes(uiThemes: changedThemesConstant)
+        }
+        updateBackendTask.cancel()
+        updateBackendTask = Task {
+            do {
+                try await Task.sleep(nanoseconds: 300_000000)
+                if await !apiSetUserUIThemes(userId: userId, themes: changedThemesConstant) {
+                    DispatchQueue.main.async {
+                        // If failed to apply for some reason return the old themes
+                        ChatModel.shared.updateCurrentUserUiThemes(uiThemes: oldThemes)
+                    }
+                }
+            } catch {
+                // canceled task
+            }
+        }
+    }
+}
+
 struct ThemeDestinationPicker: View {
     @EnvironmentObject var m: ChatModel
     @Binding var themeUserDestination: (Int64, ThemeModeOverrides?)?
@@ -649,7 +729,6 @@ struct ThemeDestinationPicker: View {
 
 
 struct CustomizeThemeColorsSection: View {
-    @EnvironmentObject var theme: AppTheme
     @State var editColor: (ThemeColor) -> Binding<Color>
 
     var body: some View {
@@ -701,7 +780,7 @@ func editColorBinding(name: ThemeColor, wallpaperType: WallpaperType, wallpaperI
 
 struct WallpaperSetupView: View {
     var wallpaperType: WallpaperType?
-    var theme: DefaultTheme
+    var base: DefaultTheme
     var initialWallpaper: AppWallpaper?
     // LALAL unneeded?
     var initialSentColor: Color
@@ -798,7 +877,15 @@ struct ColorPickerView: View {
     @State var selection: Binding<Color>
 
     var body: some View {
-        ColorPicker(title(name), selection: selection, supportsOpacity: false)
+        let supportsOpacity = switch name {
+        case .WALLPAPER_TINT: true
+        case .SENT_MESSAGE: true
+        case .SENT_QUOTE: true
+        case .RECEIVED_MESSAGE: true
+        case .RECEIVED_QUOTE: true
+        default: UIColor(selection.wrappedValue).cgColor.alpha < 1
+        }
+        ColorPicker(title(name), selection: selection, supportsOpacity: supportsOpacity)
 
     }
 

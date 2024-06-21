@@ -306,7 +306,7 @@ public enum WallpaperScaleType/*(val contentScale: ContentScale)*/: String, Coda
     }
 }
 
-public enum WallpaperType {
+public enum WallpaperType: Equatable {
     public var image: SwiftUI.Image? {
         if let uiImage {
             return SwiftUI.Image(uiImage: uiImage)
