@@ -9,7 +9,7 @@
 import Foundation
 import SwiftUI
 
-public struct User: Identifiable, Decodable, UserLike, NamedChat {
+public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var userId: Int64
     var userContactId: Int64
     var localDisplayName: ContactName
@@ -52,7 +52,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat {
     )
 }
 
-public struct UserRef: Identifiable, Decodable, UserLike {
+public struct UserRef: Identifiable, Decodable, UserLike, Hashable {
     public var userId: Int64
     public var localDisplayName: ContactName
 
@@ -63,12 +63,12 @@ public protocol UserLike: Identifiable {
     var userId: Int64  { get }
 }
 
-public struct UserPwdHash: Decodable {
+public struct UserPwdHash: Decodable, Hashable {
     public var hash: String
     public var salt: String
 }
 
-public struct UserInfo: Decodable, Identifiable {
+public struct UserInfo: Decodable, Identifiable, Hashable {
     public var user: User
     public var unreadCount: Int
 
@@ -89,7 +89,7 @@ public typealias ContactName = String
 
 public typealias GroupName = String
 
-public struct Profile: Codable, NamedChat {
+public struct Profile: Codable, NamedChat, Hashable {
     public init(
         displayName: String,
         fullName: String,
@@ -121,7 +121,7 @@ public struct Profile: Codable, NamedChat {
     )
 }
 
-public struct LocalProfile: Codable, NamedChat {
+public struct LocalProfile: Codable, NamedChat, Hashable {
     public init(
         profileId: Int64,
         displayName: String,
@@ -171,13 +171,13 @@ public func fromLocalProfile (_ profile: LocalProfile) -> Profile {
     Profile(displayName: profile.displayName, fullName: profile.fullName, image: profile.image, contactLink: profile.contactLink, preferences: profile.preferences)
 }
 
-public struct UserProfileUpdateSummary: Decodable {
+public struct UserProfileUpdateSummary: Decodable, Hashable {
     public var updateSuccesses: Int
     public var updateFailures: Int
     public var changedContacts: [Contact]
 }
 
-public enum ChatType: String {
+public enum ChatType: String, Hashable {
     case direct = "@"
     case group = "#"
     case local = "*"
@@ -202,7 +202,7 @@ extension NamedChat {
 
 public typealias ChatId = String
 
-public struct FullPreferences: Decodable, Equatable {
+public struct FullPreferences: Decodable, Equatable, Hashable {
     public var timedMessages: TimedMessagesPreference
     public var fullDelete: SimplePreference
     public var reactions: SimplePreference
@@ -232,7 +232,7 @@ public struct FullPreferences: Decodable, Equatable {
     )
 }
 
-public struct Preferences: Codable {
+public struct Preferences: Codable, Hashable {
     public var timedMessages: TimedMessagesPreference?
     public var fullDelete: SimplePreference?
     public var reactions: SimplePreference?
@@ -308,11 +308,11 @@ public func contactUserPreferencesToPreferences(_ contactUserPreferences: Contac
     )
 }
 
-public protocol Preference: Codable, Equatable {
+public protocol Preference: Codable, Equatable, Hashable {
     var allow: FeatureAllowed { get set }
 }
 
-public struct SimplePreference: Preference {
+public struct SimplePreference: Preference, Hashable {
     public var allow: FeatureAllowed
 
     public init(allow: FeatureAllowed) {
@@ -320,7 +320,7 @@ public struct SimplePreference: Preference {
     }
 }
 
-public struct TimedMessagesPreference: Preference {
+public struct TimedMessagesPreference: Preference, Hashable {
     public var allow: FeatureAllowed
     public var ttl: Int?
 
@@ -334,7 +334,7 @@ public struct TimedMessagesPreference: Preference {
     }
 }
 
-public enum CustomTimeUnit {
+public enum CustomTimeUnit: Hashable {
     case second
     case minute
     case hour
@@ -433,7 +433,7 @@ public func shortTimeText(_ seconds: Int?) -> LocalizedStringKey {
     return CustomTimeUnit.toShortText(seconds: seconds)
 }
 
-public struct ContactUserPreferences: Decodable {
+public struct ContactUserPreferences: Decodable, Hashable {
     public var timedMessages: ContactUserPreference<TimedMessagesPreference>
     public var fullDelete: ContactUserPreference<SimplePreference>
     public var reactions: ContactUserPreference<SimplePreference>
@@ -483,7 +483,7 @@ public struct ContactUserPreferences: Decodable {
     )
 }
 
-public struct ContactUserPreference<P: Preference>: Decodable {
+public struct ContactUserPreference<P: Preference>: Decodable, Hashable {
     public var enabled: FeatureEnabled
     public var userPreference: ContactUserPref<P>
     public var contactPreference: P
@@ -495,7 +495,7 @@ public struct ContactUserPreference<P: Preference>: Decodable {
     }
 }
 
-public struct FeatureEnabled: Decodable {
+public struct FeatureEnabled: Decodable, Hashable {
     public var forUser: Bool
     public var forContact: Bool
 
@@ -526,7 +526,7 @@ public struct FeatureEnabled: Decodable {
     }
 }
 
-public enum ContactUserPref<P: Preference>: Decodable {
+public enum ContactUserPref<P: Preference>: Decodable, Hashable {
     case contact(preference: P) // contact override is set
     case user(preference: P) // global user default is used
 
@@ -547,7 +547,7 @@ public protocol Feature {
     var text: String { get }
 }
 
-public enum ChatFeature: String, Decodable, Feature {
+public enum ChatFeature: String, Decodable, Feature, Hashable {
     case timedMessages
     case fullDelete
     case reactions
@@ -690,7 +690,7 @@ public enum ChatFeature: String, Decodable, Feature {
     }
 }
 
-public enum GroupFeature: String, Decodable, Feature {
+public enum GroupFeature: String, Decodable, Feature, Hashable {
     case timedMessages
     case directMessages
     case fullDelete
@@ -890,7 +890,7 @@ public enum ContactFeatureAllowed: Identifiable, Hashable {
     }
 }
 
-public struct ContactFeaturesAllowed: Equatable {
+public struct ContactFeaturesAllowed: Equatable, Hashable {
     public var timedMessagesAllowed: Bool
     public var timedMessagesTTL: Int?
     public var fullDelete: ContactFeatureAllowed
@@ -968,7 +968,7 @@ public func contactFeatureAllowedToPref(_ contactFeatureAllowed: ContactFeatureA
     }
 }
 
-public enum FeatureAllowed: String, Codable, Identifiable {
+public enum FeatureAllowed: String, Codable, Identifiable, Hashable {
     case always
     case yes
     case no
@@ -986,7 +986,7 @@ public enum FeatureAllowed: String, Codable, Identifiable {
     }
 }
 
-public struct FullGroupPreferences: Decodable, Equatable {
+public struct FullGroupPreferences: Decodable, Equatable, Hashable {
     public var timedMessages: TimedMessagesGroupPreference
     public var directMessages: RoleGroupPreference
     public var fullDelete: GroupPreference
@@ -1028,7 +1028,7 @@ public struct FullGroupPreferences: Decodable, Equatable {
     )
 }
 
-public struct GroupPreferences: Codable {
+public struct GroupPreferences: Codable, Hashable {
     public var timedMessages: TimedMessagesGroupPreference?
     public var directMessages: RoleGroupPreference?
     public var fullDelete: GroupPreference?
@@ -1083,7 +1083,7 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
     )
 }
 
-public struct GroupPreference: Codable, Equatable {
+public struct GroupPreference: Codable, Equatable, Hashable {
     public var enable: GroupFeatureEnabled
 
     public var on: Bool {
@@ -1107,7 +1107,7 @@ public struct GroupPreference: Codable, Equatable {
     }
 }
 
-public struct RoleGroupPreference: Codable, Equatable {
+public struct RoleGroupPreference: Codable, Equatable, Hashable {
     public var enable: GroupFeatureEnabled
     public var role: GroupMemberRole?
 
@@ -1121,7 +1121,7 @@ public struct RoleGroupPreference: Codable, Equatable {
     }
 }
 
-public struct TimedMessagesGroupPreference: Codable, Equatable {
+public struct TimedMessagesGroupPreference: Codable, Equatable, Hashable {
     public var enable: GroupFeatureEnabled
     public var ttl: Int?
 
@@ -1135,7 +1135,7 @@ public struct TimedMessagesGroupPreference: Codable, Equatable {
     }
 }
 
-public enum GroupFeatureEnabled: String, Codable, Identifiable {
+public enum GroupFeatureEnabled: String, Codable, Identifiable, Hashable {
     case on
     case off
 
@@ -1158,7 +1158,7 @@ public enum GroupFeatureEnabled: String, Codable, Identifiable {
     }
 }
 
-public enum ChatInfo: Identifiable, Decodable, NamedChat {
+public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
     case direct(contact: Contact)
     case group(groupInfo: GroupInfo)
     case local(noteFolder: NoteFolder)
@@ -1370,7 +1370,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
-    public enum ShowEnableVoiceMessagesAlert {
+    public enum ShowEnableVoiceMessagesAlert: Hashable {
         case userEnable
         case askContact
         case groupOwnerCan
@@ -1443,7 +1443,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
         }
     }
 
-    public struct SampleData {
+    public struct SampleData: Hashable {
         public var direct: ChatInfo
         public var group: ChatInfo
         public var local: ChatInfo
@@ -1460,7 +1460,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
     )
 }
 
-public struct ChatData: Decodable, Identifiable {
+public struct ChatData: Decodable, Identifiable, Hashable {
     public var chatInfo: ChatInfo
     public var chatItems: [ChatItem]
     public var chatStats: ChatStats
@@ -1476,7 +1476,7 @@ public struct ChatData: Decodable, Identifiable {
     }
 }
 
-public struct ChatStats: Decodable {
+public struct ChatStats: Decodable, Hashable {
     public init(unreadCount: Int = 0, minUnreadItemId: Int64 = 0, unreadChat: Bool = false) {
         self.unreadCount = unreadCount
         self.minUnreadItemId = minUnreadItemId
@@ -1488,7 +1488,7 @@ public struct ChatStats: Decodable {
     public var unreadChat: Bool = false
 }
 
-public struct Contact: Identifiable, Decodable, NamedChat {
+public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var contactId: Int64
     var localDisplayName: ContactName
     public var profile: LocalProfile
@@ -1574,12 +1574,12 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     )
 }
 
-public enum ContactStatus: String, Decodable {
+public enum ContactStatus: String, Decodable, Hashable {
     case active = "active"
     case deleted = "deleted"
 }
 
-public struct ContactRef: Decodable, Equatable {
+public struct ContactRef: Decodable, Equatable, Hashable {
     var contactId: Int64
     public var agentConnId: String
     var connId: Int64
@@ -1588,12 +1588,12 @@ public struct ContactRef: Decodable, Equatable {
     public var id: ChatId { get { "@\(contactId)" } }
 }
 
-public struct ContactSubStatus: Decodable {
+public struct ContactSubStatus: Decodable, Hashable {
     public var contact: Contact
     public var contactError: ChatError?
 }
 
-public struct Connection: Decodable {
+public struct Connection: Decodable, Hashable {
     public var connId: Int64
     public var agentConnId: String
     public var peerChatVRange: VersionRange
@@ -1637,7 +1637,7 @@ public struct Connection: Decodable {
     )
 }
 
-public struct VersionRange: Decodable {
+public struct VersionRange: Decodable, Hashable {
     public init(minVersion: Int, maxVersion: Int) {
         self.minVersion = minVersion
         self.maxVersion = maxVersion
@@ -1651,7 +1651,7 @@ public struct VersionRange: Decodable {
     }
 }
 
-public struct SecurityCode: Decodable, Equatable {
+public struct SecurityCode: Decodable, Equatable, Hashable {
     public init(securityCode: String, verifiedAt: Date) {
         self.securityCode = securityCode
         self.verifiedAt = verifiedAt
@@ -1661,7 +1661,7 @@ public struct SecurityCode: Decodable, Equatable {
     public var verifiedAt: Date
 }
 
-public struct UserContact: Decodable {
+public struct UserContact: Decodable, Hashable {
     public var userContactLinkId: Int64
 //    public var connReqContact: String
     public var groupId: Int64?
@@ -1679,7 +1679,7 @@ public struct UserContact: Decodable {
     }
 }
 
-public struct UserContactRequest: Decodable, NamedChat {
+public struct UserContactRequest: Decodable, NamedChat, Hashable {
     var contactRequestId: Int64
     public var userContactLinkId: Int64
     public var cReqChatVRange: VersionRange
@@ -1708,7 +1708,7 @@ public struct UserContactRequest: Decodable, NamedChat {
     )
 }
 
-public struct PendingContactConnection: Decodable, NamedChat {
+public struct PendingContactConnection: Decodable, NamedChat, Hashable {
     public var pccConnId: Int64
     var pccAgentConnId: String
     var pccConnStatus: ConnStatus
@@ -1798,7 +1798,7 @@ public struct PendingContactConnection: Decodable, NamedChat {
     }
 }
 
-public enum ConnStatus: String, Decodable {
+public enum ConnStatus: String, Decodable, Hashable {
     case new = "new"
     case joined = "joined"
     case requested = "requested"
@@ -1822,7 +1822,7 @@ public enum ConnStatus: String, Decodable {
     }
 }
 
-public struct Group: Decodable {
+public struct Group: Decodable, Hashable {
     public var groupInfo: GroupInfo
     public var members: [GroupMember]
 
@@ -1832,7 +1832,7 @@ public struct Group: Decodable {
     }
 }
 
-public struct GroupInfo: Identifiable, Decodable, NamedChat {
+public struct GroupInfo: Identifiable, Decodable, NamedChat, Hashable {
     public var groupId: Int64
     var localDisplayName: GroupName
     public var groupProfile: GroupProfile
@@ -1878,12 +1878,12 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     )
 }
 
-public struct GroupRef: Decodable {
+public struct GroupRef: Decodable, Hashable {
     public var groupId: Int64
     var localDisplayName: GroupName
 }
 
-public struct GroupProfile: Codable, NamedChat {
+public struct GroupProfile: Codable, NamedChat, Hashable {
     public init(displayName: String, fullName: String, description: String? = nil, image: String? = nil, groupPreferences: GroupPreferences? = nil) {
         self.displayName = displayName
         self.fullName = fullName
@@ -1905,7 +1905,7 @@ public struct GroupProfile: Codable, NamedChat {
     )
 }
 
-public struct GroupMember: Identifiable, Decodable {
+public struct GroupMember: Identifiable, Decodable, Hashable {
     public var groupMemberId: Int64
     public var groupId: Int64
     public var memberId: String
@@ -2037,21 +2037,21 @@ public struct GroupMember: Identifiable, Decodable {
     )
 }
 
-public struct GroupMemberSettings: Codable {
+public struct GroupMemberSettings: Codable, Hashable {
     public var showMessages: Bool
 }
 
-public struct GroupMemberRef: Decodable {
+public struct GroupMemberRef: Decodable, Hashable {
     var groupMemberId: Int64
     var profile: Profile
 }
 
-public struct GroupMemberIds: Decodable {
+public struct GroupMemberIds: Decodable, Hashable {
     var groupMemberId: Int64
     var groupId: Int64
 }
 
-public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Codable {
+public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Codable, Hashable {
     case observer = "observer"
     case author = "author"
     case member = "member"
@@ -2085,7 +2085,7 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Cod
     }
 }
 
-public enum GroupMemberCategory: String, Decodable {
+public enum GroupMemberCategory: String, Decodable, Hashable {
     case userMember = "user"
     case inviteeMember = "invitee"
     case hostMember = "host"
@@ -2093,7 +2093,7 @@ public enum GroupMemberCategory: String, Decodable {
     case postMember = "post"
 }
 
-public enum GroupMemberStatus: String, Decodable {
+public enum GroupMemberStatus: String, Decodable, Hashable {
     case memRemoved = "removed"
     case memLeft = "left"
     case memGroupDeleted = "deleted"
@@ -2142,7 +2142,7 @@ public enum GroupMemberStatus: String, Decodable {
     }
 }
 
-public struct NoteFolder: Identifiable, Decodable, NamedChat {
+public struct NoteFolder: Identifiable, Decodable, NamedChat, Hashable {
     public var noteFolderId: Int64
     public var favorite: Bool
     public var unread: Bool
@@ -2175,18 +2175,18 @@ public struct NoteFolder: Identifiable, Decodable, NamedChat {
     )
 }
 
-public enum InvitedBy: Decodable {
+public enum InvitedBy: Decodable, Hashable {
     case contact(byContactId: Int64)
     case user
     case unknown
 }
 
-public struct MemberSubError: Decodable {
+public struct MemberSubError: Decodable, Hashable {
     var member: GroupMemberIds
     var memberError: ChatError
 }
 
-public enum ConnectionEntity: Decodable {
+public enum ConnectionEntity: Decodable, Hashable {
     case rcvDirectMsgConnection(contact: Contact?)
     case rcvGroupMsgConnection(groupInfo: GroupInfo, groupMember: GroupMember)
     case sndFileConnection(sndFileTransfer: SndFileTransfer)
@@ -2217,12 +2217,12 @@ public enum ConnectionEntity: Decodable {
     }
 }
 
-public struct NtfMsgInfo: Decodable {
+public struct NtfMsgInfo: Decodable, Hashable {
     public var msgId: String
     public var msgTs: Date
 }
 
-public struct AChatItem: Decodable {
+public struct AChatItem: Decodable, Hashable {
     public var chatInfo: ChatInfo
     public var chatItem: ChatItem
 
@@ -2234,19 +2234,19 @@ public struct AChatItem: Decodable {
     }
 }
 
-public struct ACIReaction: Decodable {
+public struct ACIReaction: Decodable, Hashable {
     public var chatInfo: ChatInfo
     public var chatReaction: CIReaction
 }
 
-public struct CIReaction: Decodable {
+public struct CIReaction: Decodable, Hashable {
     public var chatDir: CIDirection
     public var chatItem: ChatItem
     public var sentAt: Date
     public var reaction: MsgReaction
 }
 
-public struct ChatItem: Identifiable, Decodable {
+public struct ChatItem: Identifiable, Decodable, Hashable {
     public init(chatDir: CIDirection, meta: CIMeta, content: CIContent, formattedText: [FormattedText]? = nil, quotedItem: CIQuote? = nil, reactions: [CIReactionCount] = [], file: CIFile? = nil) {
         self.chatDir = chatDir
         self.meta = meta
@@ -2596,7 +2596,7 @@ public struct ChatItem: Identifiable, Decodable {
     }
 }
 
-public enum CIMergeCategory {
+public enum CIMergeCategory: Hashable {
     case memberConnected
     case rcvGroupEvent
     case sndGroupEvent
@@ -2605,7 +2605,7 @@ public enum CIMergeCategory {
     case chatFeature
 }
 
-public enum CIDirection: Decodable {
+public enum CIDirection: Decodable, Hashable {
     case directSnd
     case directRcv
     case groupSnd
@@ -2627,7 +2627,7 @@ public enum CIDirection: Decodable {
     }
 }
 
-public struct CIMeta: Decodable {
+public struct CIMeta: Decodable, Hashable {
     public var itemId: Int64
     public var itemTs: Date
     var itemText: String
@@ -2690,7 +2690,7 @@ public struct CIMeta: Decodable {
     }
 }
 
-public struct CITimed: Decodable {
+public struct CITimed: Decodable, Hashable {
     public var ttl: Int
     public var deleteAt: Date?
 }
@@ -2717,7 +2717,7 @@ private func recent(_ date: Date) -> Bool {
     return isSameDay || (now < currentDay12 && date >= previousDay18 && date < currentDay00)
 }
 
-public enum CIStatus: Decodable {
+public enum CIStatus: Decodable, Hashable {
     case sndNew
     case sndSent(sndProgress: SndCIStatusProgress)
     case sndRcvd(msgRcptStatus: MsgReceiptStatus, sndProgress: SndCIStatusProgress)
@@ -2787,7 +2787,7 @@ public enum CIStatus: Decodable {
     }
 }
 
-public enum SndError: Decodable {
+public enum SndError: Decodable, Hashable {
     case auth
     case quota
     case expired
@@ -2809,7 +2809,7 @@ public enum SndError: Decodable {
     }
 }
 
-public enum SrvError: Decodable, Equatable {
+public enum SrvError: Decodable, Hashable {
     case host
     case version
     case other(srvError: String)
@@ -2831,17 +2831,17 @@ public enum SrvError: Decodable, Equatable {
     }
 }
 
-public enum MsgReceiptStatus: String, Decodable {
+public enum MsgReceiptStatus: String, Decodable, Hashable {
     case ok
     case badMsgHash
 }
 
-public enum SndCIStatusProgress: String, Decodable {
+public enum SndCIStatusProgress: String, Decodable, Hashable {
     case partial
     case complete
 }
 
-public enum CIDeleted: Decodable {
+public enum CIDeleted: Decodable, Hashable {
     case deleted(deletedTs: Date?)
     case blocked(deletedTs: Date?)
     case blockedByAdmin(deletedTs: Date?)
@@ -2857,12 +2857,12 @@ public enum CIDeleted: Decodable {
     }
 }
 
-public enum MsgDirection: String, Decodable {
+public enum MsgDirection: String, Decodable, Hashable {
     case rcv = "rcv"
     case snd = "snd"
 }
 
-public enum CIForwardedFrom: Decodable {
+public enum CIForwardedFrom: Decodable, Hashable {
     case unknown
     case contact(chatName: String, msgDir: MsgDirection, contactId: Int64?, chatItemId: Int64?)
     case group(chatName: String, msgDir: MsgDirection, groupId: Int64?, chatItemId: Int64?)
@@ -2882,7 +2882,7 @@ public enum CIForwardedFrom: Decodable {
     }
 }
 
-public enum CIDeleteMode: String, Decodable {
+public enum CIDeleteMode: String, Decodable, Hashable {
     case cidmBroadcast = "broadcast"
     case cidmInternal = "internal"
 }
@@ -2891,7 +2891,7 @@ protocol ItemContent {
     var text: String { get }
 }
 
-public enum CIContent: Decodable, ItemContent {
+public enum CIContent: Decodable, ItemContent, Hashable {
     case sndMsgContent(msgContent: MsgContent)
     case rcvMsgContent(msgContent: MsgContent)
     case sndDeleted(deleteMode: CIDeleteMode) // legacy - since v4.3.0 itemDeleted field is used
@@ -3027,7 +3027,7 @@ public enum CIContent: Decodable, ItemContent {
     }
 }
 
-public enum MsgDecryptError: String, Decodable {
+public enum MsgDecryptError: String, Decodable, Hashable {
     case ratchetHeader
     case tooManySkipped
     case ratchetEarlier
@@ -3045,7 +3045,7 @@ public enum MsgDecryptError: String, Decodable {
     }
 }
 
-public struct CIQuote: Decodable, ItemContent {
+public struct CIQuote: Decodable, ItemContent, Hashable {
     public var chatDir: CIDirection?
     public var itemId: Int64?
     var sharedMsgId: String? = nil
@@ -3083,13 +3083,13 @@ public struct CIQuote: Decodable, ItemContent {
     }
 }
 
-public struct CIReactionCount: Decodable {
+public struct CIReactionCount: Decodable, Hashable {
     public var reaction: MsgReaction
     public var userReacted: Bool
     public var totalReacted: Int
 }
 
-public enum MsgReaction: Hashable {
+public enum MsgReaction: Hashable, Identifiable {
     case emoji(emoji: MREmojiChar)
     case unknown(type: String)
 
@@ -3110,9 +3110,16 @@ public enum MsgReaction: Hashable {
         case type
         case emoji
     }
+
+    public var id: String {
+        switch self {
+        case let .emoji(emoji): emoji.rawValue
+        case let .unknown(unknown): unknown
+        }
+    }
 }
 
-public enum MREmojiChar: String, Codable, CaseIterable {
+public enum MREmojiChar: String, Codable, CaseIterable, Hashable {
     case thumbsup = "👍"
     case thumbsdown = "👎"
     case smile = "😀"
@@ -3153,7 +3160,7 @@ extension MsgReaction: Encodable {
     }
 }
 
-public struct CIFile: Decodable {
+public struct CIFile: Decodable, Hashable {
     public var fileId: Int64
     public var fileName: String
     public var fileSize: Int64
@@ -3221,7 +3228,7 @@ public struct CIFile: Decodable {
     }
 }
 
-public struct CryptoFile: Codable {
+public struct CryptoFile: Codable, Hashable {
     public var filePath: String // the name of the file, not a full path
     public var cryptoArgs: CryptoFileArgs?
 
@@ -3268,20 +3275,26 @@ public struct CryptoFile: Codable {
     static var decryptedUrls = Dictionary<String, URL>()
 }
 
-public struct CryptoFileArgs: Codable {
+public struct CryptoFileArgs: Codable, Hashable {
     public var fileKey: String
     public var fileNonce: String
 }
 
-public struct CancelAction {
+public struct CancelAction: Hashable {
     public var uiAction: String
     public var alert: AlertInfo
 }
 
-public struct AlertInfo {
+public struct AlertInfo: Hashable {
     public var title: LocalizedStringKey
     public var message: LocalizedStringKey
     public var confirm: LocalizedStringKey
+}
+
+extension LocalizedStringKey: Hashable {
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine("\(self)")
+    }
 }
 
 private var sndCancelAction = CancelAction(
@@ -3311,13 +3324,13 @@ private var rcvCancelAction = CancelAction(
     )
 )
 
-public enum FileProtocol: String, Decodable {
+public enum FileProtocol: String, Decodable, Hashable {
     case smp = "smp"
     case xftp = "xftp"
     case local = "local"
 }
 
-public enum CIFileStatus: Decodable, Equatable {
+public enum CIFileStatus: Decodable, Equatable, Hashable {
     case sndStored
     case sndTransfer(sndProgress: Int64, sndTotal: Int64)
     case sndComplete
@@ -3355,7 +3368,7 @@ public enum CIFileStatus: Decodable, Equatable {
     }
 }
 
-public enum FileError: Decodable, Equatable {
+public enum FileError: Decodable, Equatable, Hashable {
     case auth
     case noFile
     case relay(srvError: SrvError)
@@ -3380,7 +3393,7 @@ public enum FileError: Decodable, Equatable {
     }
 }
 
-public enum MsgContent: Equatable {
+public enum MsgContent: Equatable, Hashable {
     case text(String)
     case link(text: String, preview: LinkPreview)
     case image(text: String, image: String)
@@ -3547,7 +3560,7 @@ extension MsgContent: Encodable {
     }
 }
 
-public struct FormattedText: Decodable {
+public struct FormattedText: Decodable, Hashable {
     public var text: String
     public var format: Format?
 
@@ -3556,7 +3569,7 @@ public struct FormattedText: Decodable {
     }
 }
 
-public enum Format: Decodable, Equatable {
+public enum Format: Decodable, Equatable, Hashable {
     case bold
     case italic
     case strikeThrough
@@ -3578,7 +3591,7 @@ public enum Format: Decodable, Equatable {
     }
 }
 
-public enum SimplexLinkType: String, Decodable {
+public enum SimplexLinkType: String, Decodable, Hashable {
     case contact
     case invitation
     case group
@@ -3592,7 +3605,7 @@ public enum SimplexLinkType: String, Decodable {
     }
 }
 
-public enum FormatColor: String, Decodable {
+public enum FormatColor: String, Decodable, Hashable {
     case red = "red"
     case green = "green"
     case blue = "blue"
@@ -3619,7 +3632,7 @@ public enum FormatColor: String, Decodable {
 }
 
 // Struct to use with simplex API
-public struct LinkPreview: Codable, Equatable {
+public struct LinkPreview: Codable, Equatable, Hashable {
     public init(uri: URL, title: String, description: String = "", image: String) {
         self.uri = uri
         self.title = title
@@ -3634,7 +3647,7 @@ public struct LinkPreview: Codable, Equatable {
     public var image: String
 }
 
-public enum NtfTknStatus: String, Decodable {
+public enum NtfTknStatus: String, Decodable, Hashable {
     case new = "NEW"
     case registered = "REGISTERED"
     case invalid = "INVALID"
@@ -3643,22 +3656,22 @@ public enum NtfTknStatus: String, Decodable {
     case expired = "EXPIRED"
 }
 
-public struct SndFileTransfer: Decodable {
+public struct SndFileTransfer: Decodable, Hashable {
 
 }
 
-public struct RcvFileTransfer: Decodable {
+public struct RcvFileTransfer: Decodable, Hashable {
     public let fileId: Int64
 }
 
-public struct FileTransferMeta: Decodable {
+public struct FileTransferMeta: Decodable, Hashable {
     public let fileId: Int64
     public let fileName: String
     public let filePath: String
     public let fileSize: Int64
 }
 
-public enum CICallStatus: String, Decodable {
+public enum CICallStatus: String, Decodable, Hashable {
     case pending
     case missed
     case rejected
@@ -3690,7 +3703,7 @@ public func durationText(_ sec: Int) -> String {
         : String(format: "%02d:%02d:%02d", m / 60, m % 60, s)
 }
 
-public enum MsgErrorType: Decodable {
+public enum MsgErrorType: Decodable, Hashable {
     case msgSkipped(fromMsgId: Int64, toMsgId: Int64)
     case msgBadId(msgId: Int64)
     case msgBadHash
@@ -3707,7 +3720,7 @@ public enum MsgErrorType: Decodable {
     }
 }
 
-public struct CIGroupInvitation: Decodable {
+public struct CIGroupInvitation: Decodable, Hashable {
     public var groupId: Int64
     public var groupMemberId: Int64
     public var localDisplayName: GroupName
@@ -3723,18 +3736,18 @@ public struct CIGroupInvitation: Decodable {
     }
 }
 
-public enum CIGroupInvitationStatus: String, Decodable {
+public enum CIGroupInvitationStatus: String, Decodable, Hashable {
     case pending
     case accepted
     case rejected
     case expired
 }
 
-public struct E2EEInfo: Decodable {
+public struct E2EEInfo: Decodable, Hashable {
     public var pqEnabled: Bool
 }
 
-public enum RcvDirectEvent: Decodable {
+public enum RcvDirectEvent: Decodable, Hashable {
     case contactDeleted
     case profileUpdated(fromProfile: Profile, toProfile: Profile)
 
@@ -3763,7 +3776,7 @@ public enum RcvDirectEvent: Decodable {
     }
 }
 
-public enum RcvGroupEvent: Decodable {
+public enum RcvGroupEvent: Decodable, Hashable {
     case memberAdded(groupMemberId: Int64, profile: Profile)
     case memberConnected
     case memberLeft
@@ -3819,7 +3832,7 @@ public enum RcvGroupEvent: Decodable {
     }
 }
 
-public enum SndGroupEvent: Decodable {
+public enum SndGroupEvent: Decodable, Hashable {
     case memberRole(groupMemberId: Int64, profile: Profile, role: GroupMemberRole)
     case userRole(role: GroupMemberRole)
     case memberBlocked(groupMemberId: Int64, profile: Profile, blocked: Bool)
@@ -3847,7 +3860,7 @@ public enum SndGroupEvent: Decodable {
     }
 }
 
-public enum RcvConnEvent: Decodable {
+public enum RcvConnEvent: Decodable, Hashable {
     case switchQueue(phase: SwitchPhase)
     case ratchetSync(syncStatus: RatchetSyncState)
     case verificationCodeReset
@@ -3884,7 +3897,7 @@ func ratchetSyncStatusToText(_ ratchetSyncStatus: RatchetSyncState) -> String {
     }
 }
 
-public enum SndConnEvent: Decodable {
+public enum SndConnEvent: Decodable, Hashable {
     case switchQueue(phase: SwitchPhase, member: GroupMemberRef?)
     case ratchetSync(syncStatus: RatchetSyncState, member: GroupMemberRef?)
     case pqEnabled(enabled: Bool)
@@ -3921,14 +3934,14 @@ public enum SndConnEvent: Decodable {
     }
 }
 
-public enum SwitchPhase: String, Decodable {
+public enum SwitchPhase: String, Decodable, Hashable {
     case started
     case confirmed
     case secured
     case completed
 }
 
-public enum ChatItemTTL: Hashable, Identifiable, Comparable {
+public enum ChatItemTTL: Identifiable, Comparable, Hashable {
     case day
     case week
     case month
@@ -3978,13 +3991,13 @@ public enum ChatItemTTL: Hashable, Identifiable, Comparable {
     }
 }
 
-public struct ChatItemInfo: Decodable {
+public struct ChatItemInfo: Decodable, Hashable {
     public var itemVersions: [ChatItemVersion]
     public var memberDeliveryStatuses: [MemberDeliveryStatus]?
     public var forwardedFromChatItem: AChatItem?
 }
 
-public struct ChatItemVersion: Decodable {
+public struct ChatItemVersion: Decodable, Hashable {
     public var chatItemVersionId: Int64
     public var msgContent: MsgContent
     public var formattedText: [FormattedText]?
@@ -3992,7 +4005,7 @@ public struct ChatItemVersion: Decodable {
     public var createdAt: Date
 }
 
-public struct MemberDeliveryStatus: Decodable {
+public struct MemberDeliveryStatus: Decodable, Hashable {
     public var groupMemberId: Int64
     public var memberDeliveryStatus: CIStatus
     public var sentViaProxy: Bool?
