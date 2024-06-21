@@ -17,17 +17,22 @@ SimpleX Chat Protocol is a protocol used by SimpleX Chat clients to exchange mes
 The scope of SimpleX Chat Protocol is application level messages, both for chat functionality, related to the conversations between the clients, and extensible for any other application functions. Currently supported chat functions:
 
 - direct and group messages,
-- message replies (quoting), forwarded messages and message deletions,
-- message attachments: images and files,
+- message replies (quoting), message editing, forwarded messages and message deletions,
+- message attachments: images, videos, voice messages and files,
 - creating and managing chat groups,
 - invitation and signalling for audio/video WebRTC calls.
 
 ## General message format
 
-SimpleX Chat protocol supports two message formats:
+SimpleX Chat protocol supports these message formats:
 
 - JSON-based format for chat and application messages.
+- compressed format for adapting larger messages to reduced size of message envelope, caused by addition of PQ encryption keys to SMP agent message envelope.
 - binary format for sending files or any other binary data.
+
+JSON-based message format supports batching inside a single container message, by encoding list of messages as JSON array.
+
+Current implementation of chat protocol in SimpleX Chat uses SimpleX File Transfer Protocol (XFTP) for file transfer, with passing file description as chat protocol messages, instead passing files in binary format via SMP connections.
 
 ### JSON format for chat and application messages
 
@@ -77,7 +82,21 @@ For example, this message defines a simple text message `"hello!"`:
 
 `params` property includes message data, depending on `event`, as defined below and in [JTD schema](./simplex-chat.schema.json).
 
+### Compressed format
+
+The syntax of compressed message is defined by the following ABNF notation:
+
+```abnf
+compressedMessage = %s"X" 1*15780 OCTET; compressed message data
+```
+
+Compressed message is required to fit into 13388 bytes, accounting for agent overhead (see Protocol's maxCompressedMsgLength).
+
+The actual JSON message is required to fit into 15610 bytes, accounting for group message forwarding (x.grp.msg.forward) overhead (see Protocol's maxEncodedMsgLength).
+
 ### Binary format for sending files
+
+> Note: Planned to be deprecated. No longer used for file transfer in SimpleX Chat implementation of chat protocol.
 
 SimpleX Chat clients use separate connections to send files using a binary format. File chunk size send in each message MUST NOT be bigger than 15,780 bytes to fit into 16kb (16384 bytes) transport block.
 
@@ -117,7 +136,9 @@ SimpleX Chat Protocol supports the following message types passed in `event` pro
 - `x.contact` - contact profile and additional data sent as part of contact request to a long-term contact address.
 - `x.info*` - messages to send, update and de-duplicate contact profiles.
 - `x.msg.*` - messages to create, update and delete content chat items.
+- `x.msg.file.descr` - message to transfer XFTP file description.
 - `x.file.*` - messages to accept and cancel sending files (see files sub-protocol).
+- `x.direct.del` - message to notify about contact deletion.
 - `x.grp.*` - messages used to manage groups and group members (see group sub-protocol).
 - `x.call.*` - messages to invite to WebRTC calls and send signalling messages.
 - `x.ok` - message sent during connection handshake.
@@ -155,6 +176,8 @@ Message content can be one of four types:
 - `text` - no file attachment is expected for this format, `text` property MUST be non-empty.
 - `file` - attached file is required, `text` property MAY be empty.
 - `image` - attached file is required, `text` property MAY be empty.
+- `video` - attached file is required, `text` property MAY be empty.
+- `voice` - attached file is required, `text` property MAY be empty.
 - `link` - no file attachment is expected, `text` property MUST be non-empty. `preview` property contains information about link preview.
 
 See `/definition/msgContent` in [JTD schema](./simplex-chat.schema.json) for message container format.
@@ -181,6 +204,8 @@ File attachment can optionally include connection address to receive the file - 
 
 `x.file.cancel` message is sent to notify the recipient that sending of the file was cancelled. It is sent in response to accepting the file with `x.file.acpt.inv` message. It is sent in the same connection where the file was offered.
 
+`x.msg.file.descr` message is used to send XFTP file description. File descriptions that don't fit into a single chat protocol message are sent in parts, with messages including part number (`fileDescrPartNo`) and description completion marker (`fileDescrComplete`). Recipient client accumulates description parts and starts file download upon completing file description.
+
 ## Sub-protocol for chat groups
 
 ### Decentralized design for chat groups
@@ -197,6 +222,8 @@ The diagram below shows the sequence of messages sent between the users' clients
 
 ![Adding member to the group](./diagrams/group.svg)
 
+While introduced members establish connection inside group, inviting member forwards messages between them by sending `x.grp.msg.forward` messages. When introduced members finalize connection, they notify inviting member to stop forwarding via `x.grp.mem.con` message.
+
 ### Member roles
 
 Currently members can have one of three roles - `owner`, `admin` and `member`. The user that created the group is self-assigned owner role, the new members are assigned role by the member who adds them - only `owner` and `admin` members can add new members; only `owner` members can add members with `owner` role.
@@ -206,6 +233,10 @@ Currently members can have one of three roles - `owner`, `admin` and `member`. T
 `x.grp.inv` message is sent to invite contact to the group via contact's direct connection and includes group member connection address. This message MUST only be sent by members with `admin` or `owner` role. Optional `groupLinkId` is included when this message is sent to contacts connected via the user's group link. This identifier is a random byte sequence, with no global or even local uniqueness - it is only used for the user's invitations to a given group to provide confirmation to the contact that the group invitation is for the same group the contact was connecting to via the group link, so that the invitation can be automatically accepted by the contact - the contact compares it with the group link id contained in the group link uri's data field.
 
 `x.grp.acpt` message is sent as part of group member connection handshake, only to the inviting user.
+
+`x.grp.link.inv` message is sent as part of connection handshake to member joining via group link, and contains group profile and initial information about inviting and joining member.
+
+`x.grp.link.mem` message is sent as part of connection handshake to member joining via group link, and contains remaining information about inviting member.
 
 `x.grp.mem.new` message is sent by the inviting user to all connected members (and scheduled as pending to all announced but not yet connected members) to announce a new member to the existing members. This message MUST only be sent by members with `admin` or `owner` role. Receiving clients MUST ignore this message if it is received from member with `member` role.
 
@@ -219,6 +250,10 @@ Currently members can have one of three roles - `owner`, `admin` and `member`. T
 
 `x.grp.mem.role` message is sent to update group member role - it is sent to all members by the member who updated the role of the member referenced in this message. This message MUST only be sent by members with `admin` or `owner` role. Receiving clients MUST ignore this message if it is received from member with role less than `admin`.
 
+`x.grp.mem.restrict` message is sent to group members to communicate group member restrictions, such as member being blocked for sending messages.
+
+`x.grp.mem.con` message is sent by members connecting inside group to inviting member, to notify the inviting member they have completed the connection and no longer require forwarding messages between them.
+
 `x.grp.mem.del` message is sent to delete a member - it is sent to all members by the member who deletes the member referenced in this message. This message MUST only be sent by members with `admin` or `owner` role. Receiving clients MUST ignore this message if it is received from member with `member` role.
 
 `x.grp.leave` message is sent to all members by the member leaving the group. If the only group `owner` leaves the group, it will not be possible to delete it with `x.grp.del` message - but all members can still leave the group with `x.grp.leave` message and then delete a local copy of the group.
@@ -226,6 +261,10 @@ Currently members can have one of three roles - `owner`, `admin` and `member`. T
 `x.grp.del` message is sent to all members by the member who deletes the group. Clients who received this message SHOULD keep a local copy of the deleted group, until it is deleted by the user. This message MUST only be sent by members with `owner` role. Receiving clients MUST ignore this message if it is received from member other than with `owner` role.
 
 `x.grp.info` message is sent to all members by the member who updated group profile. Only group owners can update group profiles. Clients MAY implement some conflict resolution strategy - it is currently not implemented by SimpleX Chat client. This message MUST only be sent by members with `owner` role. Receiving clients MUST ignore this message if it is received from member other than with `owner` role.
+
+`x.grp.direct.inv` message is sent to a group member to propose establishing a direct connection between members, thus creating a contact with another member.
+
+`x.grp.msg.forward` message is sent by inviting member to forward messages between introduced members, while they are connecting.
 
 ## Sub-protocol for WebRTC audio/video calls
 
