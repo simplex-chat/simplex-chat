@@ -1,102 +1,208 @@
 ---
 title: Sending messages
 ---
-# Sending, editing and deleting messages
 
-Sending text messages on SimpleX Chat is pretty straightforward, tap on your contact and then tap on text area, type in your message and tap on "Send" button.
+# Sending, editing, deleting, drafting, forwarding, replying and reacting to messages
 
-You need to open a conversation to send messages.
+After creating your first chat profile, you can start communicating privately with other SimpleX Chat users. Click or tap on the following sections to learn more:
+
+- [Sending messages](#sending-messages)
+- [Editing messages](#editing-messages)
+- [Deleting messages](#deleting-messages)
+- [Drafting messages](#drafting-messages)
+- [Forwarding messages](#forwarding-messages)
+- [Replying to messages](#replying-to-messages)
+- [Reacting to messages](#reacting-to-messages)
 
 ## Sending messages
 
 ### Sending text messages
 
-You can send, edit and quote messages in a conversation.
+You can send text messages to your contacts and groups. 
 
-To send, simply type in the message in the entry box and tap "Send".
+#### To send a text message:
 
-To edit or quote a message, tap and hold the message and choose the action.
+1. Tap on your contact or group in the main **Chats** screen.
+2. Tap on the text area toward the bottom of the screen.
+3. Type in your message.
+4. Tap the ⬆️ (send) button.
 
-### Sending images and files
+### Sending images, videos, and files
 
-- Tap 📎 (paperclip) button on the left of the message entry box.
-- Choose between "Use Camera", "From Gallery" and "Choose file".
-- Once you have chosen what you wish to send, tap on "Send" button.
+<img src="../../blog/images/20230422-video.png" width="288">
 
-On iOS you can also paste images from the clipboard.
+Have something you want to share with your contacts and groups? You can send images, videos and files of up to 1GB in size.
+
+#### To send an image, video or file:
+
+1. Tap the 📎 (attach) button on the left of the text area.
+2. Choose either **Camera**, **Image**, **Video** or **File**.
+3. Once you have chosen what you wish to send, tap the ⬆️ (send) button.
+
+**Tip**: if you're using iOS, you can also paste images from the clipboard.
 
 ### Sending voice messages
 
 <img src="../../blog/images/20221206-voice.png" width="288">
 
-- Tap 🎤 (microphone) button on the right of the message entry box.
-- Allow SimpleX Chat to record the voice if prompted. You will have to tap on the microphone button once again if this happens.
-- Speak, once you've finished the recording, tap on the square stop icon on the right.
-- You may listen to the recording before sending it, and re-record if necessary.
-- Tap on "Send" button to send the recorded voice message.
+Prefer to speak instead of text? You can record voice messages of up to 5 minutes.
 
-You can also tap and hold the microphone button to record a voice message. In this case the recording will stop once you release the button. You still need to tap "Send" to send the message.
+#### To send a voice message:
 
-**Please note**: if the microphone button is gray, that means voice messages are disabled in this conversation. Ask your contact or group owner to enable them (they are enabled by default).
+1. Tap the 🎙️ (microphone) button on the right of the text area.
+2. Allow SimpleX Chat to record your voice, if prompted. You will have to tap the 🎙️ (microphone) button again if this happens.
+3. Speak.
+4. Tap the 🟦 (stop) button on the right-hand side of the text area to stop recording.
+5. (Optional) You may listen to the recording before sending it, and re-record if necessary.
+6. Tap the ⬆️ (send) button to send your recorded voice message.
 
-### How to use disappearing messages
+**Tip**: You can also tap and hold the 🎙️ (microphone) button to record your voice message. In this case, the recording will stop once you release the button. You still need to tap the ⬆️ (send) button to send your recorded voice message.
+
+**Please note**: If the 🎙️ (microphone) button is greyed out, that means voice messages are disabled in your chat. Ask your contact or group owner to enable them.
+
+### Sending disappearing messages
 
 <img src="../../blog/images/20230103-disappearing2.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20230103-disappearing1.png" width="288">
 
-- Tap on name of the conversation.
-- Toggle the slider next to "Disappearing messages".
-- Choose how long until messages are deleted after being sent in "Delete after".
+Worried that your messages will stay in someone else's chat history? You can send disappearing messages to your contacts and groups. But before you can send them: you must enable them first, as they are disabled by default.
 
-**Please note**: Your contact must also enable disappearing messages. In a group, only group owner can enable disappearing messages.
+#### To enable disappearing messages with your contact:
+
+1. Tap on your contact in your list of chats.
+2. Tap on your contact's name at the top of the screen.
+3. Tap **Contact preferences**.
+4. Toggle **Disappearing messages** on, if it's toggled off.
+5. From the **Delete after** drop-down menu, choose how long until messages are deleted after being sent.
+6. Tap **Save and notify contact**. An offer of your chosen timer will then be sent to your contact.
+
+**Please note**: Disappearing messages require mutual consent between you and your contact to be enabled. If your contact doesn't have disappearing messages enabled, they will receive an offer from you to enable disappearing messages with your proposed timer. If they agree to it, then they must tap **Accept** to enable them. If your contact chooses to reject your offer, then disappearing messages will remain disabled until you both agree to a timer that works best for the nature of your conversation.
+
+#### To enable disappearing messages in your group:
+
+1. Tap on your group in your list of chats.
+2. Tap on your group's name at the top of the screen.
+3. Tap **Group preferences**.
+4. Toggle **Disappearing messages** on, if it's toggled off.
+5. From the **Delete after** drop-down menu, choose how long until messages are deleted after they're sent.
+6. Tap **Save and notify group members**.
+
+**Please note**: in a group, only the group owner can enable disappearing messages.
+
+Now that you have disappearing messages enabled, all you have to do is send a message and it will disappear after the timer expires. That's it! But if for some reason you need to set a different timer for an individual message, you do have that option available to you.
+
+#### To set a timer for an individual disappearing message:
+
+1. Compose your message.
+2. Tap and hold the ⬆️ (send) button.
+3. Tap **Disappearing message**.
+4. Choose a timer of your choice.
+
+**Please note**: this option is not available if you have disappearing messages disabled in your conversation.
 
 ### Sending "live" messages
 
 <img src="../../blog/images/20230103-live.png" width="288">
 
-You can use "live" messages for your recipients to see the messages as you type them, without having to tap "Send" button until it's completed. It can be useful in these scenarios:
+You can compose "live" messages for your contacts to see as you type them without having to tap the ⬆️ (send) button until it's completed. It can be useful in the following scenarios:
 
-1. Real-time conversation, like talking in person or in a discussion club. You can retract what you wrote, but your recipients would see it. Also people don’t need to guess what you’re typing. This allows to avoid interrupting the flow of conversation and still send longer messages.
-2. An activist doing live reporting when there is a risk to lose the phone or connection at any moment. This feature allows to send as much as possible, up to the last word, without having to send only very short messages.
+- Real-time conversation, like talking in person or in a discussion club. You can retract what you wrote, but your recipients would still see it. Also people don’t need to guess what you’re typing. This avoids interrupting the flow of conversation and still allow you to send longer messages.
 
-To send a "live" message:
+- An activist doing live reporting when there is a risk of losing their phone or connection at any moment. This feature allows typing as many words as possible until the last word, without having to send only very short messages.
 
-- Tap ⚡️ (lightning) button on the right of the message entry box.
-- When you do it first time, you would see and alert explaining the feature. Tap "OK", and tap it again.
-- Now you can start typing the messages, the app will be periodically sending the updates to your recipients, as you type (every few seconds, and only complete words).
+#### To send a "live" message:
 
-### Sending stickers and animated messages
+1. Tap the ⚡️ (lightning) button on the right of the text area. When you do it the first time, you will see a little popup explaining how the feature works.
+2. Tap **OK**.
+3. Tap the ⚡️ (lightning) button again.
+
+Done! Now you can start typing "live" messages. The app will periodically send updates to your contacts every few seconds as you type each word.
+
+### Sending stickers and GIFs
 
 <img src="../../blog/images/20230103-stickers1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20230103-stickers2.png" width="303">
 
-While there are no stickers and GIFs in the app itself, you can send them using third-party (such as [GIPHY](https://apps.apple.com/us/app/giphy-the-gif-search-engine/id974748812) on iOS) or native (Android 13+) keyboards.
+Although there are no stickers and GIFs available in the app itself, you can still send them using third-party keyboards (such as [GIPHY](https://apps.apple.com/us/app/giphy-the-gif-search-engine/id974748812) on iOS) or native (Android 13+) keyboards.
 
-### Message drafts
+## Editing messages
 
-<img src="../../blog/images/20230204-draft1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20230204-draft2.png" width="288">
+Made a typo in your message and want to correct it? You can edit it.
 
-Messages are kept in the chat until they are sent, even if you leave the chat.
+#### To edit a message:
 
-For privacy and simplicity, we decided to allow only one message draft and keep it only until the app is stopped.
+1. Tap and hold your message.
+2. Choose **Edit**.
+3. Edit your message.
+4. Tap the ⬆️ (send) button.
 
-Read more in [this post](../../blog/20230204-simplex-chat-v4-5-user-chat-profiles.md#message-draft).
+**Please note**: you only have 24 hours to edit your message after it's sent.
 
 ## Deleting messages
 
 <img src="../../blog/images/20221206-deleted1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20221206-deleted2.png" width="288">
 
-To delete a message, tap and hold the message and choose "Delete".
+You can delete messages from your contacts and groups. 
 
-If you sent this message yourself within the last 24 hours, you will be offered two options:
+#### To delete a message
 
-- `delete for everyone` - this will either mark the message as deleted for you and the recipient(s) (this is the default) or fully delete the message on your and recipients' devices (if you have enabled "Delete for everyone" in the conversation preferences)
-- `delete for me` - this will delete the message only locally.
+1. Tap and hold a message.
+2. Choose **Delete**.
 
-Please read about [reasons for not allowing full deletion by default](../../blog/20221206-simplex-chat-v4.3-voice-messages.md#irreversible-message-deletion). TL;DR: data sovereignty.
+If you sent a message within the last 24 hours, you will be offered two options when you go to delete it:
 
-## Moderating messages in the groups
+- `delete for everyone` - The message will be marked as deleted for you and your contacts by default. If you don't want this, you can configure this feature to fully delete the message from your and recipients' devices instead. 
+- `delete for me` - This will only delete the message from your device.
 
-Group admins can delete member messages that are inappropriate for the groups.
+**Please note**: after 24 hours have passed, the `delete for everyone` option will become unavailable and only the `delete for me` option will remain.
 
-To remove a message of another member, tap and hold the message and choose "Moderate".
+For more details on why we don't enable `delete for everyone` by default, please read [this blog post](../../blog/20221206-simplex-chat-v4.3-voice-messages.md#irreversible-message-deletion). TL;DR: data sovereignty.
 
-Please read about [group moderation](../../blog/20230328-simplex-chat-v4-6-hidden-profiles.md#community-moderation).
+## Drafting messages
+
+<img src="../../blog/images/20230204-draft1.png" width="288"> &nbsp;&nbsp; <img src="../../blog/images/20230204-draft2.png" width="288">
+
+You can draft a message before sending it to your contact or group, or saving it in your private notes.
+
+#### To draft a message:
+
+1. Type your text message, attach any files or media, or record a voice message.
+
+2. Go back to the main **Chats** screen.
+
+**Please note**: For privacy and simplicity, we decided to allow only one message draft at a time and keep it until the app is stopped.
+
+## Forwarding messages
+
+<img title="" src="../../blog/images/20240426-forward1.png" alt="" width="288"> <img title="" src="../../blog/images/20240426-forward2.png" alt="" width="288"> <img title="" src="../../blog/images/20240426-forward3.png" alt="" width="288">
+
+You can forward messages to your contacts, groups and your private notes. 
+
+#### To forward a message:
+
+1. Tap and hold a message.
+2. Choose **Forward**.
+3. Choose a contact or group, or your private notes.
+4. Tap the ⬆️ (send) button.
+
+## Replying to messages
+
+You can reply directly to a message from your contact or group. 
+
+#### To reply to a message:
+
+1. Tap and hold a message.
+2. Choose **Reply**.
+3. Type your message.
+4. Tap the ⬆️ (send) button.
+
+**Tip**: if you're using Android, you can also swipe left on a message to make your reply.
+
+## Reacting to messages
+
+You can react to messages. Note: you can only choose from six emojis at this time. 
+
+#### To react to a message with an emoji:
+
+1. Tap and hold a message.
+2. Choose from any of the six emojis available at the top of the context menu.
+
+**Tip**: if you've mistakenly reacted to a message with the wrong emoji, you can just tap on it to remove it.
