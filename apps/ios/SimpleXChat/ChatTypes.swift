@@ -2625,6 +2625,13 @@ public enum CIDirection: Decodable, Hashable {
             }
         }
     }
+
+    public var groupMember: GroupMember? {
+        switch self {
+        case let .groupRcv(groupMember): groupMember
+        default: nil
+        }
+    }
 }
 
 public struct CIMeta: Decodable, Hashable {

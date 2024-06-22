@@ -711,6 +711,23 @@ final class ChatModel: ObservableObject {
             .unknown
         }
     }
+
+    func set(reaction: MsgReaction, for chatItem: ChatItem, chatInfo: ChatInfo, add: Bool) async {
+        do {
+            let chatItem = try await apiChatItemReaction(
+                type: chatInfo.chatType,
+                id: chatInfo.apiId,
+                itemId: chatItem.id,
+                add: add,
+                reaction: reaction
+            )
+            await MainActor.run {
+                updateChatItem(chatInfo, chatItem)
+            }
+        } catch let error {
+            logger.error("apiChatItemReaction error: \(responseError(error))")
+        }
+    }
 }
 
 struct ShowingInvitation {
