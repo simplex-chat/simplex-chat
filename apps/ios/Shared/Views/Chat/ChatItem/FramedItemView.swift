@@ -112,7 +112,7 @@ struct FramedItemView: View {
         } else {
             switch (chatItem.content.msgContent) {
             case let .image(text, image):
-                CIImageView(chatItem: chatItem, image: image, maxWidth: timelineMaxWidth, imgWidth: $imgWidth)
+                CIImageView(chatItem: chatItem, image: image, maxWidth: maxWidth, imgWidth: $imgWidth)
                     .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -125,7 +125,7 @@ struct FramedItemView: View {
                     ciMsgContentView(chatItem)
                 }
             case let .video(text, image, duration):
-                CIVideoView(chatItem: chatItem, image: image, duration: duration, maxWidth: timelineMaxWidth, videoWidth: $videoWidth)
+                CIVideoView(chatItem: chatItem, image: image, duration: duration, maxWidth: maxWidth, videoWidth: $videoWidth)
                 .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -429,12 +429,3 @@ struct FramedItemView_Deleted_Previews: PreviewProvider {
         .previewLayout(.fixed(width: 360, height: 200))
     }
 }
-
-
-// TODO: ChatItemView should be able to determine it's own size, given available space
-fileprivate let timelineMaxWidth: CGFloat = {
-    Timeline.AlignmentContainer(
-        alignment: .center,
-        content: { EmptyView() }
-    ).maxWidth
-}()
