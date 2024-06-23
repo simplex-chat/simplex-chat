@@ -13,7 +13,6 @@ struct ChatItemView: View {
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
     var maxWidth: CGFloat = .infinity
-    @State var scrollProxy: ScrollViewProxy? = nil
     @Binding var revealed: Bool
     @Binding var allowMenu: Bool
     @Binding var audioPlayer: AudioPlayer?
@@ -23,8 +22,6 @@ struct ChatItemView: View {
         chat: Chat,
         chatItem: ChatItem,
         showMember: Bool = false,
-        maxWidth: CGFloat = .infinity,
-        scrollProxy: ScrollViewProxy? = nil,
         revealed: Binding<Bool>,
         allowMenu: Binding<Bool> = .constant(false),
         audioPlayer: Binding<AudioPlayer?> = .constant(nil),
@@ -33,8 +30,6 @@ struct ChatItemView: View {
     ) {
         self.chat = chat
         self.chatItem = chatItem
-        self.maxWidth = maxWidth
-        _scrollProxy = .init(initialValue: scrollProxy)
         _revealed = revealed
         _allowMenu = allowMenu
         _audioPlayer = audioPlayer
@@ -62,7 +57,7 @@ struct ChatItemView: View {
     }
 
     private func framedItemView() -> some View {
-        FramedItemView(chat: chat, chatItem: chatItem, revealed: $revealed, maxWidth: maxWidth, scrollProxy: scrollProxy, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
+        FramedItemView(chat: chat, chatItem: chatItem, revealed: $revealed, maxWidth: maxWidth, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
     }
 }
 

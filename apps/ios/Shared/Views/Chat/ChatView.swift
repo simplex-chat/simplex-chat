@@ -26,48 +26,36 @@ struct ChatView: View {
     @State private var connectionStats: ConnectionStats?
     @State private var customUserProfile: Profile?
     @State private var connectionCode: String?
-    @State private var tableView: UITableView?
-    @State private var loadingItems = false
-    @State private var firstPage = false
-    @State private var itemsInView: Set<String> = []
-    @State private var scrollProxy: ScrollViewProxy?
     @State private var searchMode = false
     @State private var searchText: String = ""
+    @State private var timelineScroll: Timeline.Scroll = .isNearBottom(true)
     @FocusState private var searchFocussed
-    // opening GroupMemberInfoView on member icon
-    @State private var membersLoaded = false
-    @State private var selectedMember: GMember? = nil
     // opening GroupLinkView on link button (incognito)
     @State private var showGroupLinkSheet: Bool = false
     @State private var groupLink: String?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
 
     var body: some View {
-        if #available(iOS 16.0, *) {
-            viewBody
-            .scrollDismissesKeyboard(.immediately)
-            .keyboardPadding()
-        } else {
-            viewBody
-        }
-    }
-
-    private var viewBody: some View {
         let cInfo = chat.chatInfo
         return VStack(spacing: 0) {
             if searchMode {
                 searchToolbar()
                 Divider()
             }
-            ZStack(alignment: .trailing) {
-                chatItemsList()
-                if let proxy = scrollProxy {
-                    floatingButtons(proxy)
+            Timeline.TimelineView(
+                chat: chat,
+                composeState: $composeState
+            )
+            .onChange(of: searchText) { _ in
+                loadChat(chat: chat, search: searchText)
+            }
+            .onChange(of: chatModel.chatId) { chatId in
+                if let chatId, let c = chatModel.getChat(chatId) {
+                    chat = c
+                    showChatInfoSheet = false
+                    loadChat(chat: c)
                 }
             }
-            
-            Spacer(minLength: 0)
-
             connectingText()
             ComposeView(
                 chat: chat,
@@ -102,7 +90,6 @@ struct ChatView: View {
                         chatModel.chatItemStatuses = [:]
                         chatModel.reversedChatItems = []
                         chatModel.groupMembers = []
-                        membersLoaded = false
                     }
                 }
             }
@@ -140,7 +127,10 @@ struct ChatView: View {
                     }
                 } else if case let .group(groupInfo) = cInfo {
                     Button {
-                        Task { await loadGroupMembers(groupInfo) { showChatInfoSheet = true } }
+                        Task {
+                            await chatModel.loadGroupMembers(groupInfo: groupInfo)
+                            showChatInfoSheet = true
+                        }
                     } label: {
                         ChatInfoToolbar(chat: chat)
                     }
@@ -226,17 +216,6 @@ struct ChatView: View {
         }
     }
 
-    private func loadGroupMembers(_ groupInfo: GroupInfo, updateView: @escaping () -> Void = {}) async {
-        let groupMembers = await apiListMembers(groupInfo.groupId)
-        await MainActor.run {
-            if chatModel.chatId == groupInfo.id {
-                chatModel.groupMembers = groupMembers.map { GMember.init($0) }
-                membersLoaded = true
-                updateView()
-            }
-        }
-    }
-
     private func initChatView() {
         let cInfo = chat.chatInfo
         // This check prevents the call to apiContactInfo after the app is suspended, and the database is closed.
@@ -299,67 +278,9 @@ struct ChatView: View {
         .padding(.horizontal)
         .padding(.vertical, 8)
     }
-    
+
     private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
         ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
-    }
-
-    private func chatItemsList() -> some View {
-        let cInfo = chat.chatInfo
-        return GeometryReader { g in
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(spacing: 0)  {
-                        ForEach(chatModel.reversedChatItems, id: \.viewId) { ci in
-                            let voiceNoFrame = voiceWithoutFrame(ci)
-                            let maxWidth = cInfo.chatType == .group
-                                            ? voiceNoFrame
-                                                ? (g.size.width - 28) - 42
-                                                : (g.size.width - 28) * 0.84 - 42
-                                            : voiceNoFrame
-                                                ? (g.size.width - 32)
-                                                : (g.size.width - 32) * 0.84
-                            chatItemView(ci, maxWidth)
-                                .scaleEffect(x: 1, y: -1, anchor: .center)
-                                .onAppear {
-                                    itemsInView.insert(ci.viewId)
-                                    loadChatItems(cInfo, ci, proxy)
-                                    if ci.isRcvNew {
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                                            if chatModel.chatId == cInfo.id && itemsInView.contains(ci.viewId) {
-                                                Task {
-                                                    await apiMarkChatItemRead(cInfo, ci)
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                .onDisappear {
-                                    itemsInView.remove(ci.viewId)
-                                }
-                        }
-                    }
-                }
-                .onAppear {
-                    scrollProxy = proxy
-                }
-                .onTapGesture { hideKeyboard() }
-                .onChange(of: searchText) { _ in
-                    loadChat(chat: chat, search: searchText)
-                }
-                .onChange(of: chatModel.chatId) { chatId in
-                    if let chatId, let c = chatModel.getChat(chatId) {
-                        chat = c
-                        showChatInfoSheet = false
-                        loadChat(chat: c)
-                        DispatchQueue.main.async {
-                            scrollToBottom(proxy)
-                        }
-                    }
-                }
-            }
-        }
-        .scaleEffect(x: 1, y: -1, anchor: .center)
     }
 
     @ViewBuilder private func connectingText() -> some View {
@@ -375,49 +296,7 @@ struct ChatView: View {
             EmptyView()
         }
     }
-    
-    private func floatingButtons(_ proxy: ScrollViewProxy) -> some View {
-        let counts = chatModel.unreadChatItemCounts(itemsInView: itemsInView)
-        return VStack {
-            let unreadAbove = chat.chatStats.unreadCount - counts.unreadBelow
-            if unreadAbove > 0 {
-                circleButton {
-                    unreadCountText(unreadAbove)
-                        .font(.callout)
-                        .foregroundColor(.accentColor)
-                }
-                .onTapGesture { scrollUp(proxy) }
-                .contextMenu {
-                    Button {
-                        if let ci = chatModel.topItemInView(itemsInView: itemsInView) {
-                            Task {
-                                await markChatRead(chat, aboveItem: ci)
-                            }
-                        }
-                    } label: {
-                        Label("Mark read", systemImage: "checkmark")
-                    }
-                }
-            }
-            Spacer()
-            if counts.unreadBelow > 0 {
-                circleButton {
-                    unreadCountText(counts.unreadBelow)
-                        .font(.callout)
-                        .foregroundColor(.accentColor)
-                }
-                .onTapGesture { scrollToBottom(proxy) }
-            } else if counts.totalBelow > 16 {
-                circleButton {
-                    Image(systemName: "chevron.down")
-                        .foregroundColor(.accentColor)
-                }
-                .onTapGesture { scrollToBottom(proxy) }
-            }
-        }
-        .padding()
-    }
-    
+
     private func circleButton<Content: View>(_ content: @escaping () -> Content) -> some View {
         ZStack {
             Circle()
@@ -426,7 +305,7 @@ struct ChatView: View {
             content()
         }
     }
-    
+
     private func callButton(_ contact: Contact, _ media: CallMediaType, imageName: String) -> some View {
         Button {
             CallController.shared.startCall(contact, media)
@@ -456,11 +335,14 @@ struct ChatView: View {
             Label("Search", systemImage: "magnifyingglass")
         }
     }
-    
+
     private func addMembersButton() -> some View {
         Button {
             if case let .group(gInfo) = chat.chatInfo {
-                Task { await loadGroupMembers(gInfo) { showAddMembersSheet = true } }
+                Task {
+                    await chatModel.loadGroupMembers(groupInfo: gInfo)
+                    showAddMembersSheet = true
+                }
             }
         } label: {
             Image(systemName: "person.crop.circle.badge.plus")
@@ -483,738 +365,6 @@ struct ChatView: View {
             }
         } label: {
             Image(systemName: "link.badge.plus")
-        }
-    }
-
-    private func loadChatItems(_ cInfo: ChatInfo, _ ci: ChatItem, _ proxy: ScrollViewProxy) {
-        if let firstItem = chatModel.reversedChatItems.last, firstItem.id == ci.id {
-            if loadingItems || firstPage { return }
-            loadingItems = true
-            Task {
-                do {
-                    let items = try await apiGetChatItems(
-                        type: cInfo.chatType,
-                        id: cInfo.apiId,
-                        pagination: .before(chatItemId: firstItem.id, count: 50),
-                        search: searchText
-                    )
-                    await MainActor.run {
-                        if items.count == 0 {
-                            firstPage = true
-                        } else {
-                            chatModel.reversedChatItems.append(contentsOf: items.reversed())
-                        }
-                        loadingItems = false
-                    }
-                } catch let error {
-                    logger.error("apiGetChat error: \(responseError(error))")
-                    await MainActor.run { loadingItems = false }
-                }
-            }
-        }
-    }
-    
-    @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
-        ChatItemWithMenu(
-            chat: chat,
-            chatItem: ci,
-            maxWidth: maxWidth,
-            itemWidth: maxWidth,
-            composeState: $composeState,
-            selectedMember: $selectedMember,
-            chatView: self
-        )
-    }
-
-    private struct ChatItemWithMenu: View {
-        @EnvironmentObject var m: ChatModel
-        @Environment(\.colorScheme) var colorScheme
-        @ObservedObject var chat: Chat
-        var chatItem: ChatItem
-        var maxWidth: CGFloat
-        @State var itemWidth: CGFloat
-        @Binding var composeState: ComposeState
-        @Binding var selectedMember: GMember?
-        var chatView: ChatView
-
-        @State private var deletingItem: ChatItem? = nil
-        @State private var showDeleteMessage = false
-        @State private var deletingItems: [Int64] = []
-        @State private var showDeleteMessages = false
-        @State private var revealed = false
-        @State private var showChatItemInfoSheet: Bool = false
-        @State private var chatItemInfo: ChatItemInfo?
-        @State private var showForwardingSheet: Bool = false
-
-        @State private var allowMenu: Bool = true
-
-        @State private var audioPlayer: AudioPlayer?
-        @State private var playbackState: VoiceMessagePlaybackState = .noPlayback
-        @State private var playbackTime: TimeInterval?
-
-        var body: some View {
-            let (currIndex, nextItem) = m.getNextChatItem(chatItem)
-            let ciCategory = chatItem.mergeCategory
-            if (ciCategory != nil && ciCategory == nextItem?.mergeCategory) {
-                // memberConnected events and deleted items are aggregated at the last chat item in a row, see ChatItemView
-                ZStack {} // scroll doesn't work if it's EmptyView()
-            } else {
-                let (prevHidden, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
-                let range = itemsRange(currIndex, prevHidden)
-                if revealed, let range = range {
-                    let items = Array(zip(Array(range), m.reversedChatItems[range]))
-                    ForEach(items, id: \.1.viewId) { (i, ci) in
-                        let prev = i == prevHidden ? prevItem : m.reversedChatItems[i + 1]
-                        chatItemView(ci, nil, prev)
-                    }
-                } else {
-                    // Switch branches just to work around context menu problem when 'revealed' changes but size of item isn't
-                    if revealed {
-                        chatItemView(chatItem, range, prevItem)
-                    } else {
-                        chatItemView(chatItem, range, prevItem)
-                    }
-                }
-            }
-        }
-
-        @ViewBuilder func chatItemView(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ prevItem: ChatItem?) -> some View {
-            if case let .groupRcv(member) = ci.chatDir,
-               case let .group(groupInfo) = chat.chatInfo {
-                let (prevMember, memCount): (GroupMember?, Int) =
-                    if let range = range {
-                        m.getPrevHiddenMember(member, range)
-                    } else {
-                        (nil, 1)
-                    }
-                if prevItem == nil || showMemberImage(member, prevItem) || prevMember != nil {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if ci.content.showMemberName {
-                            Text(memberNames(member, prevMember, memCount))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(2)
-                                .padding(.leading, memberImageSize + 14)
-                                .padding(.top, 7)
-                        }
-                        HStack(alignment: .top, spacing: 8) {
-                            ProfileImage(imageStr: member.memberProfile.image, size: memberImageSize)
-                                .onTapGesture {
-                                    if chatView.membersLoaded {
-                                        selectedMember = m.getGroupMember(member.groupMemberId)
-                                    } else {
-                                        Task {
-                                            await chatView.loadGroupMembers(groupInfo) {
-                                                selectedMember = m.getGroupMember(member.groupMemberId)
-                                            }
-                                        }
-                                    }
-                                }
-                                .appSheet(item: $selectedMember) { member in
-                                    GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
-                                }
-                            chatItemWithMenu(ci, range, maxWidth)
-                        }
-                    }
-                    .padding(.top, 5)
-                    .padding(.trailing)
-                    .padding(.leading, 12)
-                } else {
-                    chatItemWithMenu(ci, range, maxWidth)
-                        .padding(.top, 5)
-                        .padding(.trailing)
-                        .padding(.leading, memberImageSize + 8 + 12)
-                }
-            } else {
-                chatItemWithMenu(ci, range, maxWidth)
-                    .padding(.horizontal)
-                    .padding(.top, 5)
-            }
-        }
-
-        private func memberNames(_ member: GroupMember, _ prevMember: GroupMember?, _ memCount: Int) -> LocalizedStringKey {
-            let name = member.displayName
-            return if let prevName = prevMember?.displayName {
-                memCount > 2
-                ? "\(name), \(prevName) and \(memCount - 2) members"
-                : "\(name) and \(prevName)"
-            } else {
-                "\(name)"
-            }
-        }
-
-        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat) -> some View {
-            let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
-            let uiMenu: Binding<UIMenu> = Binding(
-                get: { UIMenu(title: "", children: menu(ci, range, live: composeState.liveMessage != nil)) },
-                set: { _ in }
-            )
-            
-            VStack(alignment: alignment.horizontal, spacing: 3) {
-                ChatItemView(
-                    chat: chat,
-                    chatItem: ci,
-                    maxWidth: maxWidth,
-                    scrollProxy: chatView.scrollProxy,
-                    revealed: $revealed,
-                    allowMenu: $allowMenu,
-                    audioPlayer: $audioPlayer,
-                    playbackState: $playbackState,
-                    playbackTime: $playbackTime
-                )
-                .uiKitContextMenu(hasImageOrVideo: ci.content.msgContent?.isImageOrVideo == true, maxWidth: maxWidth, itemWidth: $itemWidth, menu: uiMenu, allowMenu: $allowMenu)
-                .accessibilityLabel("")
-                if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
-                    chatItemReactions(ci)
-                        .padding(.bottom, 4)
-                }
-            }
-                .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
-                    Button("Delete for me", role: .destructive) {
-                        deleteMessage(.cidmInternal)
-                    }
-                    if let di = deletingItem, di.meta.deletable && !di.localNote {
-                        Button(broadcastDeleteButtonText, role: .destructive) {
-                            deleteMessage(.cidmBroadcast)
-                        }
-                    }
-                }
-                .confirmationDialog(deleteMessagesTitle, isPresented: $showDeleteMessages, titleVisibility: .visible) {
-                    Button("Delete for me", role: .destructive) {
-                        deleteMessages()
-                    }
-                }
-                .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
-                .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
-                .onDisappear {
-                    if ci.content.msgContent?.isVoice == true {
-                        allowMenu = true
-                        audioPlayer?.stop()
-                        playbackState = .noPlayback
-                        playbackTime = TimeInterval(0)
-                    }
-                }
-                .sheet(isPresented: $showChatItemInfoSheet, onDismiss: {
-                    chatItemInfo = nil
-                }) {
-                    ChatItemInfoView(ci: ci, chatItemInfo: $chatItemInfo)
-                }
-                .sheet(isPresented: $showForwardingSheet) {
-                    if #available(iOS 16.0, *) {
-                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo, composeState: $composeState)
-                            .presentationDetents([.fraction(0.8)])
-                    } else {
-                        ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo, composeState: $composeState)
-                    }
-                }
-        }
-
-        private func showMemberImage(_ member: GroupMember, _ prevItem: ChatItem?) -> Bool {
-            switch (prevItem?.chatDir) {
-            case .groupSnd: return true
-            case let .groupRcv(prevMember): return prevMember.groupMemberId != member.groupMemberId
-            default: return false
-            }
-        }
-
-        private func chatItemReactions(_ ci: ChatItem) -> some View {
-            HStack(spacing: 4) {
-                ForEach(ci.reactions, id: \.reaction) { r in
-                    let v = HStack(spacing: 4) {
-                        switch r.reaction {
-                        case let .emoji(emoji): Text(emoji.rawValue).font(.caption)
-                        case .unknown: EmptyView()
-                        }
-                        if r.totalReacted > 1 {
-                            Text("\(r.totalReacted)")
-                                .font(.caption)
-                                .fontWeight(r.userReacted ? .bold : .light)
-                                .foregroundColor(r.userReacted ? .accentColor : .secondary)
-                        }
-                    }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 4)
-
-                    if chat.chatInfo.featureEnabled(.reactions) && (ci.allowAddReaction || r.userReacted) {
-                        v.onTapGesture {
-                            setReaction(ci, add: !r.userReacted, reaction: r.reaction)
-                        }
-                    } else {
-                        v
-                    }
-                }
-            }
-        }
-
-        private func menu(_ ci: ChatItem, _ range: ClosedRange<Int>?, live: Bool) -> [UIMenuElement] {
-            var menu: [UIMenuElement] = []
-            if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
-                let rs = allReactions(ci)
-                if chat.chatInfo.featureEnabled(.reactions) && ci.allowAddReaction,
-                   rs.count > 0 {
-                    var rm: UIMenu
-                    if #available(iOS 16, *) {
-                        var children: [UIMenuElement] = Array(rs.prefix(topReactionsCount(rs)))
-                        if let sm = reactionUIMenu(rs) {
-                            children.append(sm)
-                        }
-                        rm = UIMenu(title: "", options: .displayInline, children: children)
-                        rm.preferredElementSize = .small
-                    } else {
-                        rm = reactionUIMenuPreiOS16(rs)
-                    }
-                    menu.append(rm)
-                }
-                if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && !ci.localNote {
-                    menu.append(replyUIAction(ci))
-                }
-                let fileSource = getLoadedFileSource(ci.file)
-                let fileExists = if let fs = fileSource, FileManager.default.fileExists(atPath: getAppFilePath(fs.filePath).path) { true } else { false }
-                let copyAndShareAllowed = !ci.content.text.isEmpty || (ci.content.msgContent?.isImage == true && fileExists)
-                if copyAndShareAllowed {
-                    menu.append(shareUIAction(ci))
-                    menu.append(copyUIAction(ci))
-                }
-                if let fileSource = fileSource, fileExists {
-                    if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
-                        if image.imageData != nil {
-                            menu.append(saveFileAction(fileSource))
-                        } else {
-                            menu.append(saveImageAction(image))
-                        }
-                    } else {
-                        menu.append(saveFileAction(fileSource))
-                    }
-                } else if let file = ci.file, case .rcvInvitation = file.fileStatus, fileSizeValid(file) {
-                    menu.append(downloadFileAction(file))
-                }
-                if ci.meta.editable && !mc.isVoice && !live {
-                    menu.append(editAction(ci))
-                }
-                if ci.meta.itemDeleted == nil
-                    && (ci.file == nil || (fileSource != nil && fileExists))
-                    && !ci.isLiveDummy && !live {
-                    menu.append(forwardUIAction(ci))
-                }
-                if !ci.isLiveDummy {
-                    menu.append(viewInfoUIAction(ci))
-                }
-                if revealed {
-                    menu.append(hideUIAction())
-                }
-                if ci.meta.itemDeleted == nil && !ci.localNote,
-                   let file = ci.file,
-                   let cancelAction = file.cancelAction {
-                    menu.append(cancelFileUIAction(file.fileId, cancelAction))
-                }
-                if !live || !ci.meta.isLive {
-                    menu.append(deleteUIAction(ci))
-                }
-                if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo) {
-                    menu.append(moderateUIAction(ci, groupInfo))
-                }
-            } else if ci.meta.itemDeleted != nil {
-                if revealed {
-                    menu.append(hideUIAction())
-                } else if !ci.isDeletedContent {
-                    menu.append(revealUIAction())
-                } else if range != nil {
-                    menu.append(expandUIAction())
-                }
-                menu.append(viewInfoUIAction(ci))
-                menu.append(deleteUIAction(ci))
-            } else if ci.isDeletedContent {
-                menu.append(viewInfoUIAction(ci))
-                menu.append(deleteUIAction(ci))
-            } else if ci.mergeCategory != nil && ((range?.count ?? 0) > 1 || revealed) {
-                menu.append(revealed ? shrinkUIAction() : expandUIAction())
-                menu.append(deleteUIAction(ci))
-            } else if ci.showLocalDelete {
-                menu.append(deleteUIAction(ci))
-            }
-            return menu
-        }
-        
-        private func replyUIAction(_ ci: ChatItem) -> UIAction {
-            UIAction(
-                title: NSLocalizedString("Reply", comment: "chat item action"),
-                image: UIImage(systemName: "arrowshape.turn.up.left")
-            ) { _ in
-                withAnimation {
-                    if composeState.editing {
-                        composeState = ComposeState(contextItem: .quotedItem(chatItem: ci))
-                    } else {
-                        composeState = composeState.copy(contextItem: .quotedItem(chatItem: ci))
-                    }
-                }
-            }
-        }
-
-        private func forwardUIAction(_ ci: ChatItem) -> UIAction {
-            UIAction(
-                title: NSLocalizedString("Forward", comment: "chat item action"),
-                image: UIImage(systemName: "arrowshape.turn.up.forward")
-            ) { _ in
-                showForwardingSheet = true
-            }
-        }
-
-        private func reactionUIMenuPreiOS16(_ rs: [UIAction]) -> UIMenu {
-            UIMenu(
-                title: NSLocalizedString("React…", comment: "chat item menu"),
-                image: UIImage(systemName: "face.smiling"),
-                children: rs
-            )
-        }
-
-        @available(iOS 16.0, *)
-        private func reactionUIMenu(_ rs: [UIAction]) -> UIMenu? {
-            var children = rs
-            children.removeFirst(min(rs.count, topReactionsCount(rs)))
-            if children.count == 0 { return nil }
-            return UIMenu(
-                title: "",
-                image: UIImage(systemName: "ellipsis"),
-                children: children
-            )
-        }
-
-        private func allReactions(_ ci: ChatItem) -> [UIAction] {
-            MsgReaction.values.compactMap { r in
-                ci.reactions.contains(where: { $0.userReacted && $0.reaction == r })
-                ? nil
-                : UIAction(title: r.text) { _ in setReaction(ci, add: true, reaction: r) }
-            }
-        }
-
-        private func topReactionsCount(_ rs: [UIAction]) -> Int {
-            rs.count > 4 ? 3 : 4
-        }
-
-        private func setReaction(_ ci: ChatItem, add: Bool, reaction: MsgReaction) {
-            Task {
-                do {
-                    let cInfo = chat.chatInfo
-                    let chatItem = try await apiChatItemReaction(
-                        type: cInfo.chatType,
-                        id: cInfo.apiId,
-                        itemId: ci.id,
-                        add: add,
-                        reaction: reaction
-                    )
-                    await MainActor.run {
-                        m.updateChatItem(chat.chatInfo, chatItem)
-                    }
-                } catch let error {
-                    logger.error("apiChatItemReaction error: \(responseError(error))")
-                }
-            }
-        }
-
-        private func shareUIAction(_ ci: ChatItem) -> UIAction {
-            UIAction(
-                title: NSLocalizedString("Share", comment: "chat item action"),
-                image: UIImage(systemName: "square.and.arrow.up")
-            ) { _ in
-                var shareItems: [Any] = [ci.content.text]
-                if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
-                    shareItems.append(image)
-                }
-                showShareSheet(items: shareItems)
-            }
-        }
-        
-        private func copyUIAction(_ ci: ChatItem) -> UIAction {
-            UIAction(
-                title: NSLocalizedString("Copy", comment: "chat item action"),
-                image: UIImage(systemName: "doc.on.doc")
-            ) { _ in
-                if case let .image(text, _) = ci.content.msgContent,
-                   text == "",
-                   let image = getLoadedImage(ci.file) {
-                    UIPasteboard.general.image = image
-                } else {
-                    UIPasteboard.general.string = ci.content.text
-                }
-            }
-        }
-        
-        private func saveImageAction(_ image: UIImage) -> UIAction {
-            UIAction(
-                title: NSLocalizedString("Save", comment: "chat item action"),
-                image: UIImage(systemName: "square.and.arrow.down")
-            ) { _ in
-                UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-            }
-        }
-        
-        private func saveFileAction(_ fileSource: CryptoFile) -> UIAction {
-            UIAction(
-                title: NSLocalizedString("Save", comment: "chat item action"),
-                image: UIImage(systemName: fileSource.cryptoArgs == nil ? "square.and.arrow.down" : "lock.open")
-            ) { _ in
-                saveCryptoFile(fileSource)
-            }
-        }
-
-        private func downloadFileAction(_ file: CIFile) -> UIAction {
-            UIAction(
-                title: NSLocalizedString("Download", comment: "chat item action"),
-                image: UIImage(systemName: "arrow.down.doc")
-            ) { _ in
-                Task {
-                    logger.debug("ChatView downloadFileAction, in Task")
-                    if let user = m.currentUser {
-                        await receiveFile(user: user, fileId: file.fileId)
-                    }
-                }
-            }
-        }
-
-        private func editAction(_ ci: ChatItem) -> UIAction {
-            UIAction(
-                title: NSLocalizedString("Edit", comment: "chat item action"),
-                image: UIImage(systemName: "square.and.pencil")
-            ) { _ in
-                withAnimation {
-                    composeState = ComposeState(editingItem: ci)
-                }
-            }
-        }
-
-        private func viewInfoUIAction(_ ci: ChatItem) -> UIAction {
-            UIAction(
-                title: NSLocalizedString("Info", comment: "chat item action"),
-                image: UIImage(systemName: "info.circle")
-            ) { _ in
-                Task {
-                    do {
-                        let cInfo = chat.chatInfo
-                        let ciInfo = try await apiGetChatItemInfo(type: cInfo.chatType, id: cInfo.apiId, itemId: ci.id)
-                        await MainActor.run {
-                            chatItemInfo = ciInfo
-                        }
-                        if case let .group(gInfo) = chat.chatInfo {
-                            await chatView.loadGroupMembers(gInfo)
-                        }
-                    } catch let error {
-                        logger.error("apiGetChatItemInfo error: \(responseError(error))")
-                    }
-                    await MainActor.run { showChatItemInfoSheet = true }
-                }
-            }
-        }
-
-        private func cancelFileUIAction(_ fileId: Int64, _ cancelAction: CancelAction) -> UIAction {
-            return UIAction(
-                title: cancelAction.uiAction,
-                image: UIImage(systemName: "xmark"),
-                attributes: [.destructive]
-            ) { _ in
-                AlertManager.shared.showAlert(Alert(
-                    title: Text(cancelAction.alert.title),
-                    message: Text(cancelAction.alert.message),
-                    primaryButton: .destructive(Text(cancelAction.alert.confirm)) {
-                        Task {
-                            if let user = m.currentUser {
-                                await cancelFile(user: user, fileId: fileId)
-                            }
-                        }
-                    },
-                    secondaryButton: .cancel()
-                ))
-            }
-        }
-
-        private func hideUIAction() -> UIAction {
-            UIAction(
-                title: NSLocalizedString("Hide", comment: "chat item action"),
-                image: UIImage(systemName: "eye.slash")
-            ) { _ in
-                withAnimation {
-                    revealed = false
-                }
-            }
-        }
-        
-        private func deleteUIAction(_ ci: ChatItem) -> UIAction {
-            UIAction(
-                title: NSLocalizedString("Delete", comment: "chat item action"),
-                image: UIImage(systemName: "trash"),
-                attributes: [.destructive]
-            ) { _ in
-                if !revealed,
-                   let currIndex = m.getChatItemIndex(ci),
-                   let ciCategory = ci.mergeCategory {
-                    let (prevHidden, _) = m.getPrevShownChatItem(currIndex, ciCategory)
-                    if let range = itemsRange(currIndex, prevHidden) {
-                        var itemIds: [Int64] = []
-                        for i in range {
-                            itemIds.append(m.reversedChatItems[i].id)
-                        }
-                        showDeleteMessages = true
-                        deletingItems = itemIds
-                    } else {
-                        showDeleteMessage = true
-                        deletingItem = ci
-                    }
-                } else {
-                    showDeleteMessage = true
-                    deletingItem = ci
-                }
-            }
-        }
-
-        private func itemsRange(_ currIndex: Int?, _ prevHidden: Int?) -> ClosedRange<Int>? {
-            if let currIndex = currIndex,
-               let prevHidden = prevHidden,
-               prevHidden > currIndex {
-                currIndex...prevHidden
-            } else {
-                nil
-            }
-        }
-
-        private func moderateUIAction(_ ci: ChatItem, _ groupInfo: GroupInfo) -> UIAction {
-            UIAction(
-                title: NSLocalizedString("Moderate", comment: "chat item action"),
-                image: UIImage(systemName: "flag"),
-                attributes: [.destructive]
-            ) { _ in
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("Delete member message?"),
-                    message: Text(
-                                groupInfo.fullGroupPreferences.fullDelete.on
-                                ? "The message will be deleted for all members."
-                                : "The message will be marked as moderated for all members."
-                            ),
-                    primaryButton: .destructive(Text("Delete")) {
-                        deletingItem = ci
-                        deleteMessage(.cidmBroadcast)
-                    },
-                    secondaryButton: .cancel()
-                ))
-            }
-        }
-
-        private func revealUIAction() -> UIAction {
-            UIAction(
-                title: NSLocalizedString("Reveal", comment: "chat item action"),
-                image: UIImage(systemName: "eye")
-            ) { _ in
-                withAnimation {
-                    revealed = true
-                }
-            }
-        }
-
-        private func expandUIAction() -> UIAction {
-            UIAction(
-                title: NSLocalizedString("Expand", comment: "chat item action"),
-                image: UIImage(systemName: "arrow.up.and.line.horizontal.and.arrow.down")
-            ) { _ in
-                withAnimation {
-                    revealed = true
-                }
-            }
-        }
-
-        private func shrinkUIAction() -> UIAction {
-            UIAction(
-                title: NSLocalizedString("Hide", comment: "chat item action"),
-                image: UIImage(systemName: "arrow.down.and.line.horizontal.and.arrow.up")
-            ) { _ in
-                withAnimation {
-                    revealed = false
-                }
-            }
-        }
-
-        private var broadcastDeleteButtonText: LocalizedStringKey {
-            chat.chatInfo.featureEnabled(.fullDelete) ? "Delete for everyone" : "Mark deleted for everyone"
-        }
-
-        var deleteMessagesTitle: LocalizedStringKey {
-            let n = deletingItems.count
-            return n == 1 ? "Delete message?" : "Delete \(n) messages?"
-        }
-
-        private func deleteMessages() {
-            let itemIds = deletingItems
-            if itemIds.count > 0 {
-                let chatInfo = chat.chatInfo
-                Task {
-                    var deletedItems: [ChatItem] = []
-                    for itemId in itemIds {
-                        do {
-                            let (di, _) = try await apiDeleteChatItem(
-                                type: chatInfo.chatType,
-                                id: chatInfo.apiId,
-                                itemId: itemId,
-                                mode: .cidmInternal
-                            )
-                            deletedItems.append(di)
-                        } catch {
-                            logger.error("ChatView.deleteMessage error: \(error.localizedDescription)")
-                        }
-                    }
-                    await MainActor.run {
-                        for di in deletedItems {
-                            m.removeChatItem(chatInfo, di)
-                        }
-                    }
-                }
-            }
-        }
-
-        private func deleteMessage(_ mode: CIDeleteMode) {
-            logger.debug("ChatView deleteMessage")
-            Task {
-                logger.debug("ChatView deleteMessage: in Task")
-                do {
-                    if let di = deletingItem {
-                        var deletedItem: ChatItem
-                        var toItem: ChatItem?
-                        if case .cidmBroadcast = mode,
-                           let (groupInfo, groupMember) = di.memberToModerate(chat.chatInfo) {
-                            (deletedItem, toItem) = try await apiDeleteMemberChatItem(
-                                groupId: groupInfo.apiId,
-                                groupMemberId: groupMember.groupMemberId,
-                                itemId: di.id
-                            )
-                        } else {
-                            (deletedItem, toItem) = try await apiDeleteChatItem(
-                                type: chat.chatInfo.chatType,
-                                id: chat.chatInfo.apiId,
-                                itemId: di.id,
-                                mode: mode
-                            )
-                        }
-                        DispatchQueue.main.async {
-                            deletingItem = nil
-                            if let toItem = toItem {
-                                _ = m.upsertChatItem(chat.chatInfo, toItem)
-                            } else {
-                                m.removeChatItem(chat.chatInfo, deletedItem)
-                            }
-                        }
-                    }
-                } catch {
-                    logger.error("ChatView.deleteMessage error: \(error.localizedDescription)")
-                }
-            }
-        }
-    }
-
-    private func scrollToBottom(_ proxy: ScrollViewProxy) {
-        if let ci = chatModel.reversedChatItems.first {
-            withAnimation { proxy.scrollTo(ci.viewId, anchor: .top) }
-        }
-    }
-    
-    private func scrollUp(_ proxy: ScrollViewProxy) {
-        if let ci = chatModel.topItemInView(itemsInView: itemsInView) {
-            withAnimation { proxy.scrollTo(ci.viewId, anchor: .top) }
         }
     }
 }
