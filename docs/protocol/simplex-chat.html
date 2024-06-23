@@ -744,17 +744,20 @@ window.addEventListener('scroll',changeHeaderBg);
 <p>The scope of SimpleX Chat Protocol is application level messages, both for chat functionality, related to the conversations between the clients, and extensible for any other application functions. Currently supported chat functions:</p>
 <ul>
 <li>direct and group messages,</li>
-<li>message replies (quoting), forwarded messages and message deletions,</li>
-<li>message attachments: images and files,</li>
+<li>message replies (quoting), message editing, forwarded messages and message deletions,</li>
+<li>message attachments: images, videos, voice messages and files,</li>
 <li>creating and managing chat groups,</li>
 <li>invitation and signalling for audio/video WebRTC calls.</li>
 </ul>
 <h2 id="general-message-format" tabindex="-1">General message format</h2>
-<p>SimpleX Chat protocol supports two message formats:</p>
+<p>SimpleX Chat protocol supports these message formats:</p>
 <ul>
 <li>JSON-based format for chat and application messages.</li>
+<li>compressed format for adapting larger messages to reduced size of message envelope, caused by addition of PQ encryption keys to SMP agent message envelope.</li>
 <li>binary format for sending files or any other binary data.</li>
 </ul>
+<p>JSON-based message format supports batching inside a single container message, by encoding list of messages as JSON array.</p>
+<p>Current implementation of chat protocol in SimpleX Chat uses SimpleX File Transfer Protocol (XFTP) for file transfer, with passing file description as chat protocol messages, instead passing files in binary format via SMP connections.</p>
 <h3 id="json-format-for-chat-and-application-messages" tabindex="-1">JSON format for chat and application messages</h3>
 <p>This document uses JTD schemas <a href="https://www.rfc-editor.org/rfc/rfc8927.html">RFC 8927</a> to define the properties of chat messages, with some additional restrictions on message properties included in metadata member of JTD schemas. In case of any contradiction between JSON examples and JTD schema the latter MUST be considered correct.</p>
 <p>Whitespace is used in JSON examples for readability, SimpleX Chat Protocol clients MUST avoid using whitespace when encoding JSON messages.</p>
@@ -791,7 +794,16 @@ window.addEventListener('scroll',changeHeaderBg);
 <p><code>msgId</code> property is a 12 bytes base64url-encoded random message ID that the clients can use to reference the message in the future, e.g. when editing, quoting or deleting it.</p>
 <p><code>event</code> property is the type of the message that defines the semantics of the message and the allowed format of <code>params</code> property.</p>
 <p><code>params</code> property includes message data, depending on <code>event</code>, as defined below and in <a href="simplex-chat.schema.json">JTD schema</a>.</p>
+<h3 id="compressed-format" tabindex="-1">Compressed format</h3>
+<p>The syntax of compressed message is defined by the following ABNF notation:</p>
+<pre><code class="language-abnf">compressedMessage = %s&quot;X&quot; 1*15780 OCTET; compressed message data
+</code></pre>
+<p>Compressed message is required to fit into 13388 bytes, accounting for agent overhead (see Protocol's maxCompressedMsgLength).</p>
+<p>The actual JSON message is required to fit into 15610 bytes, accounting for group message forwarding (x.grp.msg.forward) overhead (see Protocol's maxEncodedMsgLength).</p>
 <h3 id="binary-format-for-sending-files" tabindex="-1">Binary format for sending files</h3>
+<blockquote>
+<p>Note: Planned to be deprecated. No longer used for file transfer in SimpleX Chat implementation of chat protocol.</p>
+</blockquote>
 <p>SimpleX Chat clients use separate connections to send files using a binary format. File chunk size send in each message MUST NOT be bigger than 15,780 bytes to fit into 16kb (16384 bytes) transport block.</p>
 <p>The syntax of each message used to send files is defined by the following ABNF notation:</p>
 <pre><code class="language-abnf">fileMessage = fileChunk / cancelFile
@@ -817,7 +829,9 @@ eventWord = 1* ALPHA
 <li><code>x.contact</code> - contact profile and additional data sent as part of contact request to a long-term contact address.</li>
 <li><code>x.info*</code> - messages to send, update and de-duplicate contact profiles.</li>
 <li><code>x.msg.*</code> - messages to create, update and delete content chat items.</li>
+<li><code>x.msg.file.descr</code> - message to transfer XFTP file description.</li>
 <li><code>x.file.*</code> - messages to accept and cancel sending files (see files sub-protocol).</li>
+<li><code>x.direct.del</code> - message to notify about contact deletion.</li>
 <li><code>x.grp.*</code> - messages used to manage groups and group members (see group sub-protocol).</li>
 <li><code>x.call.*</code> - messages to invite to WebRTC calls and send signalling messages.</li>
 <li><code>x.ok</code> - message sent during connection handshake.</li>
@@ -841,6 +855,8 @@ eventWord = 1* ALPHA
 <li><code>text</code> - no file attachment is expected for this format, <code>text</code> property MUST be non-empty.</li>
 <li><code>file</code> - attached file is required, <code>text</code> property MAY be empty.</li>
 <li><code>image</code> - attached file is required, <code>text</code> property MAY be empty.</li>
+<li><code>video</code> - attached file is required, <code>text</code> property MAY be empty.</li>
+<li><code>voice</code> - attached file is required, <code>text</code> property MAY be empty.</li>
 <li><code>link</code> - no file attachment is expected, <code>text</code> property MUST be non-empty. <code>preview</code> property contains information about link preview.</li>
 </ul>
 <p>See <code>/definition/msgContent</code> in <a href="simplex-chat.schema.json">JTD schema</a> for message container format.</p>
@@ -855,6 +871,7 @@ eventWord = 1* ALPHA
 <p><code>x.file.acpt</code> message is used to accept the file in case when file connection address was included in the message (that is the case when the file invitation was sent in direct message). It is sent as part of file connection handshake via file connection, that is why this message contains no reference to the file - the used connection provides sufficient context for the sender.</p>
 <p><code>x.file.acpt.inv</code> message is used to accept the file in group conversations, it includes the connection address. It is sent in the same connection where the file was offered and must reference the original message.</p>
 <p><code>x.file.cancel</code> message is sent to notify the recipient that sending of the file was cancelled. It is sent in response to accepting the file with <code>x.file.acpt.inv</code> message. It is sent in the same connection where the file was offered.</p>
+<p><code>x.msg.file.descr</code> message is used to send XFTP file description. File descriptions that don't fit into a single chat protocol message are sent in parts, with messages including part number (<code>fileDescrPartNo</code>) and description completion marker (<code>fileDescrComplete</code>). Recipient client accumulates description parts and starts file download upon completing file description.</p>
 <h2 id="sub-protocol-for-chat-groups" tabindex="-1">Sub-protocol for chat groups</h2>
 <h3 id="decentralized-design-for-chat-groups" tabindex="-1">Decentralized design for chat groups</h3>
 <p>SimpleX Chat groups are fully decentralized and do not have any globally unique group identifiers - they are only defined on client devices as a group profile and a set of bi-directional SimpleX connections with other group members. When a new member accepts group invitation, the inviting member introduces a new member to all existing members and forwards the connection addresses so that they can establish direct and group member connections.</p>
@@ -863,21 +880,28 @@ eventWord = 1* ALPHA
 <p>Each member in the group is identified by a group-wide unique identifier used by all members in the group. This is to allow referencing members in the messages and to allow group message integrity validation.</p>
 <p>The diagram below shows the sequence of messages sent between the users' clients to add the new member to the group.</p>
 <p><img src="diagrams/group.svg" alt="Adding member to the group"></p>
+<p>While introduced members establish connection inside group, inviting member forwards messages between them by sending <code>x.grp.msg.forward</code> messages. When introduced members finalize connection, they notify inviting member to stop forwarding via <code>x.grp.mem.con</code> message.</p>
 <h3 id="member-roles" tabindex="-1">Member roles</h3>
 <p>Currently members can have one of three roles - <code>owner</code>, <code>admin</code> and <code>member</code>. The user that created the group is self-assigned owner role, the new members are assigned role by the member who adds them - only <code>owner</code> and <code>admin</code> members can add new members; only <code>owner</code> members can add members with <code>owner</code> role.</p>
 <h3 id="messages-to-manage-groups-and-add-members" tabindex="-1">Messages to manage groups and add members</h3>
 <p><code>x.grp.inv</code> message is sent to invite contact to the group via contact's direct connection and includes group member connection address. This message MUST only be sent by members with <code>admin</code> or <code>owner</code> role. Optional <code>groupLinkId</code> is included when this message is sent to contacts connected via the user's group link. This identifier is a random byte sequence, with no global or even local uniqueness - it is only used for the user's invitations to a given group to provide confirmation to the contact that the group invitation is for the same group the contact was connecting to via the group link, so that the invitation can be automatically accepted by the contact - the contact compares it with the group link id contained in the group link uri's data field.</p>
 <p><code>x.grp.acpt</code> message is sent as part of group member connection handshake, only to the inviting user.</p>
+<p><code>x.grp.link.inv</code> message is sent as part of connection handshake to member joining via group link, and contains group profile and initial information about inviting and joining member.</p>
+<p><code>x.grp.link.mem</code> message is sent as part of connection handshake to member joining via group link, and contains remaining information about inviting member.</p>
 <p><code>x.grp.mem.new</code> message is sent by the inviting user to all connected members (and scheduled as pending to all announced but not yet connected members) to announce a new member to the existing members. This message MUST only be sent by members with <code>admin</code> or <code>owner</code> role. Receiving clients MUST ignore this message if it is received from member with <code>member</code> role.</p>
 <p><code>x.grp.mem.intro</code> messages are sent by the inviting user to the invited member, via their group member connection, one message for each existing member. When this message is sent by any other member than the one who invited the recipient it MUST be ignored.</p>
 <p><code>x.grp.mem.inv</code> messages are sent by the invited user to the inviting user, one message for each existing member previously introduced with <code>x.grp.mem.intro</code> message. When this message is sent by any other member than the one who was invited by the recipient it MUST be ignored.</p>
 <p><code>x.grp.mem.fwd</code> message is used by the inviting user to forward the invitations received from invited member in <code>x.grp.mem.inv</code> messages to all other members. This message can only be sent by the member who previously announced the new member, otherwise the recipients MUST ignore it.</p>
 <p><code>x.grp.mem.info</code> this message is sent as part of member connection handshake - it includes group member profile.</p>
 <p><code>x.grp.mem.role</code> message is sent to update group member role - it is sent to all members by the member who updated the role of the member referenced in this message. This message MUST only be sent by members with <code>admin</code> or <code>owner</code> role. Receiving clients MUST ignore this message if it is received from member with role less than <code>admin</code>.</p>
+<p><code>x.grp.mem.restrict</code> message is sent to group members to communicate group member restrictions, such as member being blocked for sending messages.</p>
+<p><code>x.grp.mem.con</code> message is sent by members connecting inside group to inviting member, to notify the inviting member they have completed the connection and no longer require forwarding messages between them.</p>
 <p><code>x.grp.mem.del</code> message is sent to delete a member - it is sent to all members by the member who deletes the member referenced in this message. This message MUST only be sent by members with <code>admin</code> or <code>owner</code> role. Receiving clients MUST ignore this message if it is received from member with <code>member</code> role.</p>
 <p><code>x.grp.leave</code> message is sent to all members by the member leaving the group. If the only group <code>owner</code> leaves the group, it will not be possible to delete it with <code>x.grp.del</code> message - but all members can still leave the group with <code>x.grp.leave</code> message and then delete a local copy of the group.</p>
 <p><code>x.grp.del</code> message is sent to all members by the member who deletes the group. Clients who received this message SHOULD keep a local copy of the deleted group, until it is deleted by the user. This message MUST only be sent by members with <code>owner</code> role. Receiving clients MUST ignore this message if it is received from member other than with <code>owner</code> role.</p>
 <p><code>x.grp.info</code> message is sent to all members by the member who updated group profile. Only group owners can update group profiles. Clients MAY implement some conflict resolution strategy - it is currently not implemented by SimpleX Chat client. This message MUST only be sent by members with <code>owner</code> role. Receiving clients MUST ignore this message if it is received from member other than with <code>owner</code> role.</p>
+<p><code>x.grp.direct.inv</code> message is sent to a group member to propose establishing a direct connection between members, thus creating a contact with another member.</p>
+<p><code>x.grp.msg.forward</code> message is sent by inviting member to forward messages between introduced members, while they are connecting.</p>
 <h2 id="sub-protocol-for-webrtc-audiovideo-calls" tabindex="-1">Sub-protocol for WebRTC audio/video calls</h2>
 <p>This sub-protocol is used to send call invitations and to negotiate end-to-end encryption keys and pass WebRTC signalling information.</p>
 <p>These message are used for WebRTC calls:</p>
