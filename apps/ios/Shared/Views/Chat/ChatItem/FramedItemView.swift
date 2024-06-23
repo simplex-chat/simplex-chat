@@ -18,12 +18,12 @@ private let sentQuoteColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, o
 
 struct FramedItemView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var scrollModel: Timeline.ScrollModel
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
     @Binding var revealed: Bool
     var maxWidth: CGFloat = .infinity
-    @State var scrollProxy: ScrollViewProxy? = nil
     @State var msgWidth: CGFloat = 0
     @State var imgWidth: CGFloat? = nil
     @State var videoWidth: CGFloat? = nil
@@ -58,11 +58,8 @@ struct FramedItemView: View {
                 if let qi = chatItem.quotedItem {
                     ciQuoteView(qi)
                         .onTapGesture {
-                            if let proxy = scrollProxy,
-                               let ci = m.reversedChatItems.first(where: { $0.id == qi.itemId }) {
-                                withAnimation {
-                                    proxy.scrollTo(ci.viewId, anchor: .bottom)
-                                }
+                            if let id = qi.itemId {
+                                scrollModel.state = .scrollingTo(.item(id))
                             }
                         }
                 } else if let itemForwarded = chatItem.meta.itemForwarded {
@@ -115,7 +112,7 @@ struct FramedItemView: View {
         } else {
             switch (chatItem.content.msgContent) {
             case let .image(text, image):
-                CIImageView(chatItem: chatItem, image: image, maxWidth: maxWidth, imgWidth: $imgWidth, scrollProxy: scrollProxy)
+                CIImageView(chatItem: chatItem, image: image, maxWidth: timelineMaxWidth, imgWidth: $imgWidth)
                     .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -128,7 +125,7 @@ struct FramedItemView: View {
                     ciMsgContentView(chatItem)
                 }
             case let .video(text, image, duration):
-                CIVideoView(chatItem: chatItem, image: image, duration: duration, maxWidth: maxWidth, videoWidth: $videoWidth, scrollProxy: scrollProxy)
+                CIVideoView(chatItem: chatItem, image: image, duration: duration, maxWidth: timelineMaxWidth, videoWidth: $videoWidth)
                 .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -432,3 +429,12 @@ struct FramedItemView_Deleted_Previews: PreviewProvider {
         .previewLayout(.fixed(width: 360, height: 200))
     }
 }
+
+
+// TODO: ChatItemView should be able to determine it's own size, given available space
+fileprivate let timelineMaxWidth: CGFloat = {
+    Timeline.AlignmentContainer(
+        alignment: .center,
+        content: { EmptyView() }
+    ).maxWidth
+}()

@@ -16,7 +16,6 @@ struct CIImageView: View {
     let image: String
     let maxWidth: CGFloat
     @Binding var imgWidth: CGFloat?
-    @State var scrollProxy: ScrollViewProxy?
     @State private var showFullScreenImage = false
 
     var body: some View {
@@ -25,7 +24,7 @@ struct CIImageView: View {
             if let uiImage = getLoadedImage(file) {
                 imageView(uiImage)
                 .fullScreenCover(isPresented: $showFullScreenImage) {
-                    FullScreenMediaView(chatItem: chatItem, image: uiImage, showView: $showFullScreenImage, scrollProxy: scrollProxy)
+                    FullScreenMediaView(chatItem: chatItem, image: uiImage, showView: $showFullScreenImage)
                 }
                 .onTapGesture { showFullScreenImage = true }
                 .onChange(of: m.activeCallViewIsCollapsed) { _ in

@@ -21,7 +21,6 @@ struct CIVideoView: View {
     @State private var videoPlaying: Bool = false
     private let maxWidth: CGFloat
     @Binding private var videoWidth: CGFloat?
-    @State private var scrollProxy: ScrollViewProxy?
     @State private var preview: UIImage? = nil
     @State private var player: AVPlayer?
     @State private var fullPlayer: AVPlayer?
@@ -33,13 +32,12 @@ struct CIVideoView: View {
     @State private var fullScreenTimeObserver: Any? = nil
     @State private var publisher: AnyCancellable? = nil
 
-    init(chatItem: ChatItem, image: String, duration: Int, maxWidth: CGFloat, videoWidth: Binding<CGFloat?>, scrollProxy: ScrollViewProxy?) {
+    init(chatItem: ChatItem, image: String, duration: Int, maxWidth: CGFloat, videoWidth: Binding<CGFloat?>) {
         self.chatItem = chatItem
         self.image = image
         self._duration = State(initialValue: duration)
         self.maxWidth = maxWidth
         self._videoWidth = videoWidth
-        self.scrollProxy = scrollProxy
         if let url = getLoadedVideo(chatItem.file) {
             let decrypted = chatItem.file?.fileSource?.cryptoArgs == nil ? url : chatItem.file?.fileSource?.decryptedGet()
             self._urlDecrypted = State(initialValue: decrypted)
