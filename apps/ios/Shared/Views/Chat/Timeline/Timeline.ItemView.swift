@@ -14,7 +14,9 @@ extension Timeline {
     struct ItemView: View {
         let item: Timeline.Item
         @EnvironmentObject var chatModel: ChatModel
+        @EnvironmentObject var scrollModel: ScrollModel
         @ObservedObject var chat: Chat
+
         @Binding var expandedItems: Set<ChatItem.ID>
         @Binding var composeState: ComposeState
         @Binding var sheet: Sheet?
@@ -42,6 +44,7 @@ extension Timeline {
             .padding(.top, item.isDirectionPersisted ? .zero : 8)
             .padding(.horizontal, 8)
             .padding(.bottom, 4)
+            .task { await item.markAsRead(chatInfo: chat.chatInfo) }
         }
 
         // TODO: Clarify merged item member names
@@ -105,7 +108,6 @@ extension Timeline {
                     reactions(chatItem: item.chatItem)
                 }
             }
-            .task { await chatItem.markAsRead(chatInfo: chat.chatInfo) }
         }
 
         private func reactions(chatItem: ChatItem) -> some View {
@@ -151,6 +153,22 @@ extension Timeline {
     }
 }
 
+extension Timeline {
+    /// Manages ``ReverseList`` scrolling
+    class ScrollModel: ObservableObject {
+
+        @Published var state: Scroll = .isNearBottom(true)
+
+        func scrollToBottom() {
+            state = .scrollingTo(.bottom)
+        }
+
+        func scrollToItem(id: ChatItem.ID) {
+            state = .scrollingTo(.item(id))
+        }
+    }
+}
+
 extension ChatItem {
     fileprivate var alignment: Alignment {
         chatDir.sent ? .trailing : .leading
@@ -158,10 +176,5 @@ extension ChatItem {
 
     fileprivate var horizontalAlignment: HorizontalAlignment {
         chatDir.sent ? .trailing : .leading
-    }
-
-    fileprivate func markAsRead(chatInfo: ChatInfo) async {
-        // TODO: As there can be many items, these calls sould be debounced
-        if isRcvNew { await apiMarkChatItemRead(chatInfo, self) }
     }
 }

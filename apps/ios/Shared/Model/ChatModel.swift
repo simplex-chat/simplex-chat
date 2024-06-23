@@ -728,6 +728,15 @@ final class ChatModel: ObservableObject {
             logger.error("apiChatItemReaction error: \(responseError(error))")
         }
     }
+
+    func loadGroupMembers(groupInfo: GroupInfo) async {
+        let groupMembers = await apiListMembers(groupInfo.groupId)
+        await MainActor.run {
+            if chatId == groupInfo.id {
+                self.groupMembers = groupMembers.map { GMember.init($0) }
+            }
+        }
+    }
 }
 
 struct ShowingInvitation {

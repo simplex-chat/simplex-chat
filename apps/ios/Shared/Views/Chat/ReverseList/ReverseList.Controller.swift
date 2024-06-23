@@ -92,15 +92,16 @@ extension ReverseList {
                 )
         }
 
-
         /// Scrolls to Item at index path
         /// - Parameter indexPath: Item to scroll to - will scroll to beginning of the list, if `nil`
-        func scroll(to indexPath: IndexPath = IndexPath(item: .zero, section: .zero)) {
-            tableView.scrollToRow(
-                at: indexPath,
-                at: .middle,
-                animated: true
-            )
+        func scroll(to index: Int?) {
+            if let index {
+                tableView.scrollToRow(
+                    at: IndexPath(row: index, section: .zero),
+                    at: .middle,
+                    animated: true
+                )
+            }
         }
 
         func update(items: Array<Item>) {
@@ -108,7 +109,11 @@ extension ReverseList {
             snapshot.appendSections([.main])
             snapshot.appendItems(items)
             dataSource.defaultRowAnimation = .none
-            dataSource.apply(snapshot, animatingDifferences: itemCount != .zero)
+            var animatingDifferences = false
+            if #available(iOS 16.0, *) {
+                animatingDifferences = (items.count - itemCount) < Timeline.pageLoad
+            }
+            dataSource.apply(snapshot, animatingDifferences: animatingDifferences)
             itemCount = items.count
         }
     }

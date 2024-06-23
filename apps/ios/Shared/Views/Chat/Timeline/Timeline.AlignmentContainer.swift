@@ -17,8 +17,9 @@ extension Timeline {
 
         /// For larger screens `maxWidth` defines maximum message width,
         /// that still preserves readable line length
-        let maxWidth: Double = 300
-
+        let maxWidth: Double = 320
+        
+        /// Leading or Trailing
         let alignment: Alignment
         @ViewBuilder let content: () -> Content
 

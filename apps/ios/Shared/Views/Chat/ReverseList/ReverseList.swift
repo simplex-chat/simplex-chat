@@ -9,7 +9,7 @@
 import SwiftUI
 
 /// A List, which displays it's items in reverse order - from bottom to top
-struct ReverseList<Item: Hashable & Sendable, Content: View>: UIViewControllerRepresentable {
+struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIViewControllerRepresentable {
 
     let items: Array<Item>
 
@@ -26,8 +26,13 @@ struct ReverseList<Item: Hashable & Sendable, Content: View>: UIViewControllerRe
     }
 
     func updateUIViewController(_ controller: Controller, context: Context) {
-        if case .scrollingToBottom = scroll {
-            controller.scroll()
+        if case let .scrollingTo(destination) = scroll, !items.isEmpty {
+            switch destination {
+            case let .item(id):
+                controller.scroll(to: items.firstIndex(where: { $0.id == id }))
+            case .bottom:
+                controller.scroll(to: .zero)
+            }
         } else {
             controller.update(items: items)
         }
@@ -37,12 +42,17 @@ struct ReverseList<Item: Hashable & Sendable, Content: View>: UIViewControllerRe
 extension ReverseList {
     /// Represents Scroll State of ``ReverseList``
     enum Scroll: Equatable {
-        case scrollingToBottom
+        enum Destination: Equatable {
+            case item(Item.ID)
+            case bottom
+        }
+
+        case scrollingTo(Destination)
         case isNearBottom(Bool)
 
-        var isAtBottom: Bool {
+        var isNearBottom: Bool {
             switch self {
-            case .scrollingToBottom: false
+            case .scrollingTo: false
             case let .isNearBottom(bool): bool
             }
         }

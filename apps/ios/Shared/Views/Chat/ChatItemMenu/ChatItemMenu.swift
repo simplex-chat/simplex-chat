@@ -14,7 +14,7 @@ struct ChatItemMenu: View {
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
     let timelineItem: Timeline.Item
-    /// Index, in case this ``ChatItemMenu`` represents to one of the merged items
+    /// Index, in case this ``ChatItemMenu`` if for one of the merged items
     let mergedIndex: Int?
 
     @Binding var composeState: ComposeState

@@ -150,12 +150,7 @@ extension ChatItemMenu {
                     let cInfo = chat.chatInfo
                     let ciInfo = try await apiGetChatItemInfo(type: cInfo.chatType, id: cInfo.apiId, itemId: chatItem.id)
                     if case let .group(groupInfo) = chat.chatInfo {
-                        let groupMembers = await apiListMembers(groupInfo.groupId)
-                        await MainActor.run {
-                            if m.chatId == groupInfo.id {
-                                m.groupMembers = groupMembers.map { GMember.init($0) }
-                            }
-                        }
+                        await m.loadGroupMembers(groupInfo: groupInfo)
                     }
                     await MainActor.run { sheet = .itemInfo(chatItem, ciInfo) }
                 } catch let error {
@@ -221,7 +216,7 @@ extension ChatItemMenu {
             expandedItems.remove(timelineItem.chatItem.id)
         } label: {
             Label(
-                NSLocalizedString("Hide", comment: "chat item action"),
+                NSLocalizedString("Collapse", comment: "chat item action"),
                 systemImage: "arrow.down.and.line.horizontal.and.arrow.up"
             )
         }

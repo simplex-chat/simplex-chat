@@ -13,18 +13,23 @@ extension Timeline {
     struct TimelineView: View {
         @EnvironmentObject var chatModel: ChatModel
         @ObservedObject var chat: Chat
+        @StateObject var scrollModel = ScrollModel()
+
         @Binding var composeState: ComposeState
 
         @State private var items = Array<Item>()
+        @State private var unreadCount = Int.zero
         @State private var expanded = Set<ChatItem.ID>()
         @State private var loadState = LoadState.ready
         @State private var sheet: Sheet?
         @State private var deleteItems: Array<ChatItem>?
-        @State private var scroll: ReverseList<Item, ItemView>.Scroll = .isNearBottom(true)
 
         var body: some View {
             ZStack(alignment: .bottomTrailing) {
-                ReverseList(items: items, scroll: $scroll) { item in
+                ReverseList(
+                    items: items,
+                    scroll: $scrollModel.state
+                ) { item in
                     Timeline.ItemView(
                         item: item,
                         chat: chat,
@@ -33,16 +38,17 @@ extension Timeline {
                         sheet: $sheet,
                         deleteItems: $deleteItems
                     )
-                } loadedCell: {
+                } loadedCell: { indexPath in
                     if items.count >= Timeline.pageLoad,
-                       items.count - $0.item < Timeline.pageLoad {
+                       items.count - indexPath.item < Timeline.pageLoad {
                         loadPage(chatInfo: chat.chatInfo)
                     }
                 }
-                if !scroll.isAtBottom { scrollToBottomButton }
+                scrollButton
             }
 
             // Data binding
+            .environmentObject(scrollModel)
             .onChange(of: chatModel.reversedChatItems) { update(chatItems: $0) }
             .onChange(of: expanded) { update(expanded: $0) }
             .onAppear { update() }
@@ -56,18 +62,39 @@ extension Timeline {
             ) { deleteButtons(items: $0) }
         }
 
-        private var scrollToBottomButton: some View {
-            Button {
-                scroll = .scrollingToBottom
-            } label: {
-                Image(systemName: "chevron.down")
-                    .imageScale(.large).offset(y: 1)
-                    .frame(width: 44, height: 44)
-                    .background(Material.ultraThin)
-                    .clipShape(Circle())
-                    .shadow(radius: 2)
-                    .padding()
+        private var scrollButton: some View {
+            Group {
+                if unreadCount > .zero {
+                    Button {
+                        if let firstUnread = items.last(
+                            where: { $0.chatItem.isRcvNew == true }
+                        ) { scrollModel.scrollToItem(id: firstUnread.id) }
+                    } label: {
+                        materialCircle {
+                            Text("\(unreadCount)").bold()
+                        }
+                    }
+                } else if !scrollModel.state.isNearBottom {
+                    Button {
+                        scrollModel.scrollToBottom()
+                    } label: {
+                        materialCircle {
+                            Image(systemName: "chevron.down")
+                                .imageScale(.large)
+                                .offset(y: 1)
+                        }
+                    }
+                }
             }
+        }
+
+        private func materialCircle(content: () -> some View) -> some View {
+            content()
+                .frame(width: 44, height: 44)
+                .background(Material.ultraThin)
+                .clipShape(Circle())
+                .shadow(radius: 2)
+                .padding()
         }
 
         private func update(
@@ -79,7 +106,13 @@ extension Timeline {
                     reversedChatItems: chatItems ?? chatModel.reversedChatItems,
                     expanded: expanded ?? self.expanded
                 )
-                await MainActor.run { self.items = items }
+                let unreadCount = items.reduce(into: .zero) { count, item in
+                    if item.chatItem.isRcvNew { count += 1 }
+                }
+                await MainActor.run {
+                    self.items = items
+                    self.unreadCount = unreadCount
+                }
             }
         }
     }

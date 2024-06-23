@@ -16,4 +16,6 @@ enum Timeline {
     static let pageLoad = 10
     /// Hardcoded size of the profile images
     static let profileImageSize = 34
+
+    typealias Scroll = ReverseList<Item, ItemView>.Scroll
 }

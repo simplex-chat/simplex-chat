@@ -20,7 +20,24 @@ extension Timeline {
         let isDirectionPersisted: Bool
         /// Defines if merged chat items are expanded and visible
         let isExpanded: Bool
+
+        func markAsRead(chatInfo: ChatInfo) async {
+            await chatItem.markAsRead(chatInfo: chatInfo)
+            for mergeChatItem in mergedChatItems {
+                await mergeChatItem.markAsRead(chatInfo: chatInfo)
+            }
+        }
     }
+}
+
+extension ChatItem {
+    fileprivate func markAsRead(chatInfo: ChatInfo) async {
+        if isRcvNew { await apiMarkChatItemRead(chatInfo, self) }
+    }
+}
+
+extension Timeline.Item: Identifiable {
+    var id: ChatItem.ID { chatItem.id }
 }
 
 extension Array<Timeline.Item> {
