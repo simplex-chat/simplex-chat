@@ -26,8 +26,8 @@ metadata:
                 <link>{{ absolutePostUrl }}</link>
                 <description>{{ blog.templateContent | htmlToAbsoluteUrls(absolutePostUrl) }}</description>
                 {# <description>{{ blog.templateContent | striptags | truncate(200) }}</description> #}
-                {# <pubDate>{{ blog.data.date | dateToRfc822 }}</pubDate> #}
-                <pubDate>{{ blog.data.date.toUTCString().split(' ').slice(1, 4).join(' ') }}</pubDate>
+                <pubDate>{{ blog.data.date | dateToRfc822 }}</pubDate>
+                {# <pubDate>{{ blog.data.date.toUTCString().split(' ').slice(1, 4).join(' ') }}</pubDate> #}
                 <dc:creator>{{ metadata.author.name }}</dc:creator>
                 <guid>{{ absolutePostUrl }}</guid>
             </item>

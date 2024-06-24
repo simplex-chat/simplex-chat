@@ -2032,10 +2032,19 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
     threadDelay 1000000
     bob ##> "/c"
     inv <- getInvitation bob
-    bob ##> ("#team " <> inv)
+    bob ##> ("#team \"" <> inv <> "\\ntest\"")
+    bob <## "bad chat command: feature not allowed SimpleX links"
+    bob ##> ("/_send #1 json {\"msgContent\": {\"type\": \"text\", \"text\": \"" <> inv <> "\\ntest\"}}")
     bob <## "bad chat command: feature not allowed SimpleX links"
     (alice </)
     (cath </)
+    bob `send` ("@alice \"" <> inv <> "\\ntest\"")
+    bob <# ("@alice " <> inv)
+    bob <## "test"
+    alice <# ("bob> " <> inv)
+    alice <## "test"
+    bob ##> "#team <- @alice https://simplex.chat"
+    bob <## "bad chat command: feature not allowed SimpleX links"
     alice #> ("#team " <> inv)
     bob <# ("#team alice> " <> inv)
     cath <# ("#team alice> " <> inv)
