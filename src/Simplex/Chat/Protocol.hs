@@ -712,44 +712,44 @@ deriving instance Eq (CMEventTag e)
 
 instance MsgEncodingI e => StrEncoding (CMEventTag e) where
   strEncode = \case
-    XMsgNew_ -> "x.msg.new"
-    XMsgFileDescr_ -> "x.msg.file.descr"
-    XMsgUpdate_ -> "x.msg.update"
-    XMsgDel_ -> "x.msg.del"
-    XMsgDeleted_ -> "x.msg.deleted"
-    XMsgReact_ -> "x.msg.react"
-    XFile_ -> "x.file"
-    XFileAcpt_ -> "x.file.acpt"
-    XFileAcptInv_ -> "x.file.acpt.inv"
-    XFileCancel_ -> "x.file.cancel"
-    XInfo_ -> "x.info"
-    XContact_ -> "x.contact"
-    XDirectDel_ -> "x.direct.del"
-    XGrpInv_ -> "x.grp.inv"
-    XGrpAcpt_ -> "x.grp.acpt"
-    XGrpLinkInv_ -> "x.grp.link.inv"
-    XGrpLinkMem_ -> "x.grp.link.mem"
-    XGrpMemNew_ -> "x.grp.mem.new"
-    XGrpMemIntro_ -> "x.grp.mem.intro"
-    XGrpMemInv_ -> "x.grp.mem.inv"
-    XGrpMemFwd_ -> "x.grp.mem.fwd"
-    XGrpMemInfo_ -> "x.grp.mem.info"
-    XGrpMemRole_ -> "x.grp.mem.role"
-    XGrpMemRestrict_ -> "x.grp.mem.restrict"
-    XGrpMemCon_ -> "x.grp.mem.con"
-    XGrpMemConAll_ -> "x.grp.mem.con.all"
-    XGrpMemDel_ -> "x.grp.mem.del"
-    XGrpLeave_ -> "x.grp.leave"
-    XGrpDel_ -> "x.grp.del"
-    XGrpInfo_ -> "x.grp.info"
-    XGrpDirectInv_ -> "x.grp.direct.inv"
-    XGrpMsgForward_ -> "x.grp.msg.forward"
+    XMsgNew_ -> "x.msg.new" --
+    XMsgFileDescr_ -> "x.msg.file.descr" --
+    XMsgUpdate_ -> "x.msg.update" --
+    XMsgDel_ -> "x.msg.del" --
+    XMsgDeleted_ -> "x.msg.deleted" -- not used
+    XMsgReact_ -> "x.msg.react" --
+    XFile_ -> "x.file" -- not used
+    XFileAcpt_ -> "x.file.acpt" --
+    XFileAcptInv_ -> "x.file.acpt.inv" --
+    XFileCancel_ -> "x.file.cancel" --
+    XInfo_ -> "x.info" --
+    XContact_ -> "x.contact" --
+    XDirectDel_ -> "x.direct.del" --
+    XGrpInv_ -> "x.grp.inv" --
+    XGrpAcpt_ -> "x.grp.acpt" --
+    XGrpLinkInv_ -> "x.grp.link.inv" --
+    XGrpLinkMem_ -> "x.grp.link.mem" --
+    XGrpMemNew_ -> "x.grp.mem.new" --
+    XGrpMemIntro_ -> "x.grp.mem.intro" --
+    XGrpMemInv_ -> "x.grp.mem.inv" --
+    XGrpMemFwd_ -> "x.grp.mem.fwd" --
+    XGrpMemInfo_ -> "x.grp.mem.info" --
+    XGrpMemRole_ -> "x.grp.mem.role" --
+    XGrpMemRestrict_ -> "x.grp.mem.restrict" --
+    XGrpMemCon_ -> "x.grp.mem.con" --
+    XGrpMemConAll_ -> "x.grp.mem.con.all" -- not used
+    XGrpMemDel_ -> "x.grp.mem.del" --
+    XGrpLeave_ -> "x.grp.leave" --
+    XGrpDel_ -> "x.grp.del" --
+    XGrpInfo_ -> "x.grp.info" --
+    XGrpDirectInv_ -> "x.grp.direct.inv" --
+    XGrpMsgForward_ -> "x.grp.msg.forward" --
     XInfoProbe_ -> "x.info.probe"
-    XInfoProbeCheck_ -> "x.info.probe.check"
-    XInfoProbeOk_ -> "x.info.probe.ok"
-    XCallInv_ -> "x.call.inv"
-    XCallOffer_ -> "x.call.offer"
-    XCallAnswer_ -> "x.call.answer"
+    XInfoProbeCheck_ -> "x.info.probe.check" --
+    XInfoProbeOk_ -> "x.info.probe.ok" --
+    XCallInv_ -> "x.call.inv" --
+    XCallOffer_ -> "x.call.offer" --
+    XCallAnswer_ -> "x.call.answer" --
     XCallExtra_ -> "x.call.extra"
     XCallEnd_ -> "x.call.end"
     XOk_ -> "x.ok"
