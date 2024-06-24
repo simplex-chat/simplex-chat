@@ -190,6 +190,7 @@
 		8C7D949A2B88952700B7B9E1 /* MigrateToDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7D94992B88952700B7B9E1 /* MigrateToDevice.swift */; };
 		8C7DF3202B7CDB0A00C886D0 /* MigrateFromDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7DF31F2B7CDB0A00C886D0 /* MigrateFromDevice.swift */; };
 		8C7F8F0E2C19C0C100D16888 /* ViewModifiers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7F8F0D2C19C0C100D16888 /* ViewModifiers.swift */; };
+		8C8118722C220B5B00E6FC94 /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = 8C8118712C220B5B00E6FC94 /* Yams */; };
 		8C81482C2BD91CD4002CBEC3 /* AudioDevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C81482B2BD91CD4002CBEC3 /* AudioDevicePicker.swift */; };
 		8CC4ED902BD7B8530078AEE8 /* CallAudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */; };
 		8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC956ED2BC0041000412A11 /* NetworkObserver.swift */; };
@@ -514,6 +515,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5CE2BA702845308900EC33A6 /* SimpleXChat.framework in Frameworks */,
+				8C8118722C220B5B00E6FC94 /* Yams in Frameworks */,
 				D741547829AF89AF0022400A /* StoreKit.framework in Frameworks */,
 				D7197A1829AE89660055C05A /* WebRTC in Frameworks */,
 				D77B92DC2952372200A5A1CC /* SwiftyGif in Frameworks */,
@@ -997,6 +999,7 @@
 				D77B92DB2952372200A5A1CC /* SwiftyGif */,
 				D7F0E33829964E7E0068AF69 /* LZString */,
 				D7197A1729AE89660055C05A /* WebRTC */,
+				8C8118712C220B5B00E6FC94 /* Yams */,
 			);
 			productName = "SimpleX (iOS)";
 			productReference = 5CA059CA279559F40002BEB4 /* SimpleX.app */;
@@ -1117,6 +1120,7 @@
 				D77B92DA2952372200A5A1CC /* XCRemoteSwiftPackageReference "SwiftyGif" */,
 				D7F0E33729964E7D0068AF69 /* XCRemoteSwiftPackageReference "lzstring-swift" */,
 				D7197A1629AE89660055C05A /* XCRemoteSwiftPackageReference "WebRTC" */,
+				8C73C1162C21E17B00892670 /* XCRemoteSwiftPackageReference "Yams" */,
 			);
 			productRefGroup = 5CA059CB279559F40002BEB4 /* Products */;
 			projectDirPath = "";
@@ -1959,6 +1963,14 @@
 				minimumVersion = 2.0.0;
 			};
 		};
+		8C73C1162C21E17B00892670 /* XCRemoteSwiftPackageReference "Yams" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/jpsim/Yams";
+			requirement = {
+				kind = exactVersion;
+				version = 5.1.2;
+			};
+		};
 		D7197A1629AE89660055C05A /* XCRemoteSwiftPackageReference "WebRTC" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/simplex-chat/WebRTC.git";
@@ -1990,6 +2002,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5C8F01CB27A6F0D8007D2C8D /* XCRemoteSwiftPackageReference "CodeScanner" */;
 			productName = CodeScanner;
+		};
+		8C8118712C220B5B00E6FC94 /* Yams */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8C73C1162C21E17B00892670 /* XCRemoteSwiftPackageReference "Yams" */;
+			productName = Yams;
 		};
 		D7197A1729AE89660055C05A /* WebRTC */ = {
 			isa = XCSwiftPackageProductDependency;

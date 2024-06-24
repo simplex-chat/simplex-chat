@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftUI
+import Yams
 
 public let jsonDecoder = getJSONDecoder()
 let jsonEncoder = getJSONEncoder()
@@ -852,7 +853,7 @@ public enum ChatResponse: Decodable, Error {
             case let .contactInfo(u, contact, connectionStats_, customUserProfile): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats_: \(String(describing: connectionStats_))\ncustomUserProfile: \(String(describing: customUserProfile))")
             case let .groupMemberInfo(u, groupInfo, member, connectionStats_): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats_: \(String(describing: connectionStats_))")
             case let .queueInfo(u, rcvMsgInfo, queueInfo):
-                let msgInfo = if let info = rcvMsgInfo { encodeJSON(rcvMsgInfo) } else { "none" }
+                let msgInfo = if let info = rcvMsgInfo { encodeJSON(info) } else { "none" }
                 return withUser(u, "rcvMsgInfo: \(msgInfo)\nqueueInfo: \(encodeJSON(queueInfo))")
             case let .contactSwitchStarted(u, contact, connectionStats): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))")
             case let .groupMemberSwitchStarted(u, groupInfo, member, connectionStats): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats: \(String(describing: connectionStats))")

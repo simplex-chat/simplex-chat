@@ -222,7 +222,7 @@ public struct ThemeColors: Codable, Equatable{
         self.receivedQuote = receivedQuote
     }
 
-    enum CodingKeys: String, CodingKey {
+    public enum CodingKeys: String, CodingKey, CaseIterable {
         case primary = "accent"
         case primaryVariant = "accentVariant"
         case secondary
@@ -283,6 +283,16 @@ public struct ThemeWallpaper: Codable, Equatable {
         self.imageFile = imageFile
     }
 
+    public enum CodingKeys: String, CodingKey, CaseIterable {
+        case preset
+        case scale
+        case scaleType
+        case background
+        case tint
+        case image
+        case imageFile
+    }
+
     public func toAppWallpaper() -> AppWallpaper {
         AppWallpaper (
             background: background?.colorFromReadableHex(),
@@ -334,6 +344,8 @@ public struct ThemeWallpaper: Codable, Equatable {
     }
 }
 
+/// If you add new properties, make sure they serialized to YAML correctly, see:
+/// encodeThemeOverrides()
 public struct ThemeOverrides: Codable, Equatable {
     public var themeId: String = UUID().uuidString
     public var base: DefaultTheme
@@ -520,6 +532,11 @@ extension [ThemeOverrides] {
 public struct ThemeModeOverrides: Codable {
     public var light: ThemeModeOverride? = nil
     public var dark: ThemeModeOverride? = nil
+
+    public init(light: ThemeModeOverride? = nil, dark: ThemeModeOverride? = nil) {
+        self.light = light
+        self.dark = dark
+    }
 
     public func preferredMode(_ darkTheme: Bool) -> ThemeModeOverride? {
         darkTheme ? dark : light

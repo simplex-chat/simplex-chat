@@ -47,7 +47,11 @@ final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
     @Published var v3DBMigration: V3DBMigrationState = v3DBMigrationDefault.get()
-    @Published var currentUser: User?
+    @Published var currentUser: User? {
+        didSet {
+            ThemeManager.applyTheme(currentThemeDefault.get())
+        }
+    }
     @Published var users: [UserInfo] = []
     @Published var chatInitialized = false
     @Published var chatRunning: Bool?
