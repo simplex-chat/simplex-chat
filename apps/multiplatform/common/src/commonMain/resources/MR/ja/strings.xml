@@ -298,7 +298,7 @@
     <string name="error_saving_file">ファイル保存でエラー発生</string>
     <string name="icon_descr_server_status_connected">接続中</string>
     <string name="icon_descr_server_status_pending">確認待ち</string>
-    <string name="cancel_verb">中止</string>
+    <string name="cancel_verb">キャンセル</string>
     <string name="add_contact">使い捨ての招待リンク</string>
     <string name="icon_descr_record_voice_message">音声メッセージを録音</string>
     <string name="from_gallery_button">ギャラリーから</string>
@@ -1833,4 +1833,5 @@
 \n*ネットワークとサーバー*設定から有効にして下さい。</string>
     <string name="network_smp_proxy_fallback_prohibit">いいえ</string>
     <string name="network_smp_proxy_fallback_allow">はい</string>
+    <string name="update_network_smp_proxy_mode_question">メッセージルーティングモード</string>
 </resources>
