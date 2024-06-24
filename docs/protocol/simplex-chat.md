@@ -285,9 +285,9 @@ These message are used for WebRTC calls:
 This threat model compliments SMP, XFTP, push notifications and XRCP protocols threat models:
 
 - [SimpleX Messaging Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md#threat-model);
-- [SimpleX File Transfer Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/xftp.md#threat-model)
-- [Push notifications threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/push-notifications.md#threat-model)
-- [SimpleX Remote Control Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/xrcp.md#threat-model)
+- [SimpleX File Transfer Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/xftp.md#threat-model);
+- [Push notifications threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/push-notifications.md#threat-model);
+- [SimpleX Remote Control Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/xrcp.md#threat-model).
 
 #### A user’s contact
 
