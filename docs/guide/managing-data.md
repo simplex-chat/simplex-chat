@@ -1,6 +1,5 @@
 ---
 title: Managing data
-
 ---
 
 # Managing Your Data

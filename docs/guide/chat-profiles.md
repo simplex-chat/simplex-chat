@@ -1,6 +1,5 @@
 ---
 title: Chat profiles
-
 ---
 
 # Your chat profiles

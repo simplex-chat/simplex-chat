@@ -1,6 +1,5 @@
 ---
 title: App settings
-
 ---
 
 # App settings
