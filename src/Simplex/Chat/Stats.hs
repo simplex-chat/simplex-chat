@@ -129,7 +129,7 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
           -- check: should connCompleted be counted for proxy? is it?
           Just AgentSMPServerStatsData {_sentDirect, _sentProxied, _sentDirectAttempts, _sentProxiedAttempts, _recvMsgs, _connCreated, _connSecured, _connSubscribed, _connSubAttempts} ->
             _sentDirect > 0 || _sentProxied > 0 || _sentDirectAttempts > 0 || _sentProxiedAttempts > 0 || _recvMsgs > 0 || _connCreated > 0 || _connSecured > 0 || _connSubscribed > 0 || _connSubAttempts > 0
-    xftpSummsIntoCategories :: [XFTPServerSummary] -> ([XFTPServerSummary], [XFTPServerSummary])
+    xftpSummsIntoCategories :: Map XFTPServer XFTPServerSummary -> ([XFTPServerSummary], [XFTPServerSummary])
     xftpSummsIntoCategories = foldr partitionSummary ([], [])
       where
         partitionSummary srvSumm (curr, prev)
@@ -172,47 +172,40 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
         addSubs s summ@SMPServerSummary {subs} = summ {subs = Just $ maybe s (s `addSMPSubs`) subs}
         addStats :: AgentSMPServerStatsData -> SMPServerSummary -> SMPServerSummary
         addStats s summ@SMPServerSummary {stats} = summ {stats = Just $ maybe s (s `addSMPStats`) stats}
-    mergeXFTPSrvsMaps ::
-      Map (UserId, XFTPServer) ServerSessions ->
-      Map (UserId, XFTPServer) AgentXFTPServerStatsData ->
-      Map (UserId, XFTPServer) (Maybe ServerSessions, Maybe AgentXFTPServerStatsData)
-    mergeXFTPSrvsMaps sessions stats = mergedMap2
+    accXFTPSrvsSummaries :: (Map XFTPServer XFTPServerSummary, Map XFTPServer XFTPServerSummary)
+    accXFTPSrvsSummaries = M.foldrWithKey' (addServerData addStats) summs1 xftpServersStats
       where
-        combinedMap1 = M.foldrWithKey (\k v acc -> M.insertWith combine k (Just v, Nothing) acc) M.empty sessions
-        mergedMap2 = M.foldrWithKey (\k v acc -> M.insertWith combine k (Nothing, Just v) acc) combinedMap1 stats
-        combine (m1, m2) (n1, n2) = (m1 <|> n1, m2 <|> n2)
-    accXFTPSrvsSummaries :: ([XFTPServerSummary], [XFTPServerSummary])
-    accXFTPSrvsSummaries = (userSrvSummaries, allSrvSummaries)
-      where
-        allSrvSummaries = M.elems allSrvSummariesMap
-        (userSrvSummaries, allSrvSummariesMap) = M.foldrWithKey accumulate initialAcc mergedData
-        mergedData = mergeXFTPSrvsMaps xftpServersSessions xftpServersStats
-        initialAcc = ([], M.empty)
-        accumulate (auId, server) (sessions, stats) (uAcc, allAcc) =
-          let rcvInProgress = server `elem` xftpRcvInProgress
-              sndInProgress = server `elem` xftpSndInProgress
-              delInProgress = server `elem` xftpDelInProgress
-              knownForUser = Just $ server `elem` userXFTPSrvs
-              summaryForUser = XFTPServerSummary server knownForUser sessions stats rcvInProgress sndInProgress delInProgress
-              newUAcc = if auId == aUserId currentUser then summaryForUser : uAcc else uAcc
-              summaryForAll = XFTPServerSummary server Nothing sessions stats rcvInProgress sndInProgress delInProgress
-              newAllAcc =
-                if countUserInAll auId
-                  then M.insertWith combineSummaries server summaryForAll allAcc
-                  else allAcc
-           in (newUAcc, newAllAcc)
-        combineSummaries
-          (XFTPServerSummary _ _ sessions1 stats1 _ _ _)
-          (XFTPServerSummary xftpServer known sessions2 stats2 rcvInProgress sndInProgress delInProgress) =
-            XFTPServerSummary
-              { xftpServer,
-                known,
-                sessions = addServerSessions <$> sessions1 <*> sessions2,
-                stats = addXFTPStats <$> stats1 <*> stats2,
-                rcvInProgress,
-                sndInProgress,
-                delInProgress
-              }
+        summs1 = M.foldrWithKey' (addServerData addSessions) (M.empty, M.empty) xftpServersSessions
+        addServerData ::
+          (a -> XFTPServerSummary -> XFTPServerSummary) ->
+          (UserId, XFTPServer) ->
+          a ->
+          (Map XFTPServer XFTPServerSummary, Map XFTPServer XFTPServerSummary) ->
+          (Map XFTPServer XFTPServerSummary, Map XFTPServer XFTPServerSummary)
+        addServerData addData (userId, srv) d (userSumms, allUsersSumms) = (userSumms', allUsersSumms')
+          where
+            userSumms'
+              | userId == aUserId currentUser = alterSumms newUserSummary userSumms
+              | otherwise = userSumms
+            allUsersSumms'
+              | countUserInAll userId = alterSumms newSummary allUsersSumms
+              | otherwise = allUsersSumms
+            alterSumms n = M.alter (Just . addData d . fromMaybe n) srv
+            newUserSummary = (newSummary :: XFTPServerSummary) {known = Just $ srv `elem` userXFTPSrvs}
+            newSummary =
+              XFTPServerSummary
+                { xftpServer = srv,
+                  known = Nothing,
+                  sessions = Nothing,
+                  stats = Nothing,
+                  rcvInProgress = srv `elem` xftpRcvInProgress,
+                  sndInProgress = srv `elem` xftpSndInProgress,
+                  delInProgress = srv `elem` xftpDelInProgress
+                }
+        addSessions :: ServerSessions -> XFTPServerSummary -> XFTPServerSummary
+        addSessions s summ@XFTPServerSummary {sessions} = summ {sessions = Just $ maybe s (s `addServerSessions`) sessions}
+        addStats :: AgentXFTPServerStatsData -> XFTPServerSummary -> XFTPServerSummary
+        addStats s summ@XFTPServerSummary {stats} = summ {stats = Just $ maybe s (s `addXFTPStats`) stats}
     addServerSessions :: ServerSessions -> ServerSessions -> ServerSessions
     addServerSessions ss1 ss2 =
       ServerSessions
