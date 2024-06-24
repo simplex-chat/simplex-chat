@@ -1010,20 +1010,20 @@ public func chatError(_ chatResponse: ChatResponse) -> ChatErrorType? {
     }
 }
 
-public enum ConnectionPlan: Decodable {
+public enum ConnectionPlan: Decodable, Hashable {
     case invitationLink(invitationLinkPlan: InvitationLinkPlan)
     case contactAddress(contactAddressPlan: ContactAddressPlan)
     case groupLink(groupLinkPlan: GroupLinkPlan)
 }
 
-public enum InvitationLinkPlan: Decodable {
+public enum InvitationLinkPlan: Decodable, Hashable {
     case ok
     case ownLink
     case connecting(contact_: Contact?)
     case known(contact: Contact)
 }
 
-public enum ContactAddressPlan: Decodable {
+public enum ContactAddressPlan: Decodable, Hashable {
     case ok
     case ownLink
     case connectingConfirmReconnect
@@ -1032,7 +1032,7 @@ public enum ContactAddressPlan: Decodable {
     case contactViaAddress(contact: Contact)
 }
 
-public enum GroupLinkPlan: Decodable {
+public enum GroupLinkPlan: Decodable, Hashable {
     case ok
     case ownLink(groupInfo: GroupInfo)
     case connectingConfirmReconnect
@@ -1040,13 +1040,13 @@ public enum GroupLinkPlan: Decodable {
     case known(groupInfo: GroupInfo)
 }
 
-struct NewUser: Encodable {
+struct NewUser: Encodable, Hashable {
     var profile: Profile?
     var sameServers: Bool
     var pastTimestamp: Bool
 }
 
-public enum ChatPagination {
+public enum ChatPagination: Hashable {
     case last(count: Int)
     case after(chatItemId: Int64, count: Int)
     case before(chatItemId: Int64, count: Int)
@@ -1262,7 +1262,7 @@ public struct ServerAddress: Decodable {
     )
 }
 
-public struct NetCfg: Codable, Equatable {
+public struct NetCfg: Codable, Equatable, Hashable {
     public var socksProxy: String? = nil
     var socksMode: SocksMode = .always
     public var hostMode: HostMode = .publicHost
@@ -1308,18 +1308,18 @@ public struct NetCfg: Codable, Equatable {
     public var enableKeepAlive: Bool { tcpKeepAlive != nil }
 }
 
-public enum HostMode: String, Codable {
+public enum HostMode: String, Codable, Hashable {
     case onionViaSocks
     case onionHost = "onion"
     case publicHost = "public"
 }
 
-public enum SocksMode: String, Codable {
+public enum SocksMode: String, Codable, Hashable {
     case always = "always"
     case onion = "onion"
 }
 
-public enum SMPProxyMode: String, Codable {
+public enum SMPProxyMode: String, Codable, Hashable {
     case always = "always"
     case unknown = "unknown"
     case unprotected = "unprotected"
@@ -1339,7 +1339,7 @@ public enum SMPProxyMode: String, Codable {
     public static let values: [SMPProxyMode] = [.always, .unknown, .unprotected, .never]
 }
 
-public enum SMPProxyFallback: String, Codable {
+public enum SMPProxyFallback: String, Codable, Hashable {
     case allow = "allow"
     case allowProtected = "allowProtected"
     case prohibit = "prohibit"
@@ -1357,7 +1357,7 @@ public enum SMPProxyFallback: String, Codable {
     public static let values: [SMPProxyFallback] = [.allow, .allowProtected, .prohibit]
 }
 
-public enum OnionHosts: String, Identifiable {
+public enum OnionHosts: String, Identifiable, Hashable {
     case no
     case prefer
     case require
@@ -1391,7 +1391,7 @@ public enum OnionHosts: String, Identifiable {
     public static let values: [OnionHosts] = [.no, .prefer, .require]
 }
 
-public enum TransportSessionMode: String, Codable, Identifiable {
+public enum TransportSessionMode: String, Codable, Identifiable, Hashable {
     case user
     case entity
 
@@ -1407,7 +1407,7 @@ public enum TransportSessionMode: String, Codable, Identifiable {
     public static let values: [TransportSessionMode] = [.user, .entity]
 }
 
-public struct KeepAliveOpts: Codable, Equatable {
+public struct KeepAliveOpts: Codable, Equatable, Hashable {
     public var keepIdle: Int // seconds
     public var keepIntvl: Int // seconds
     public var keepCnt: Int // times
@@ -1415,7 +1415,7 @@ public struct KeepAliveOpts: Codable, Equatable {
     public static let defaults: KeepAliveOpts = KeepAliveOpts(keepIdle: 30, keepIntvl: 15, keepCnt: 4)
 }
 
-public enum NetworkStatus: Decodable, Equatable {
+public enum NetworkStatus: Decodable, Equatable, Hashable {
     case unknown
     case connected
     case disconnected
@@ -1453,12 +1453,12 @@ public enum NetworkStatus: Decodable, Equatable {
     }
 }
 
-public struct ConnNetworkStatus: Decodable {
+public struct ConnNetworkStatus: Decodable, Hashable {
     public var agentConnId: String
     public var networkStatus: NetworkStatus
 }
 
-public struct ChatSettings: Codable {
+public struct ChatSettings: Codable, Hashable {
     public var enableNtfs: MsgFilter
     public var sendRcpts: Bool?
     public var favorite: Bool
@@ -1472,13 +1472,13 @@ public struct ChatSettings: Codable {
     public static let defaults: ChatSettings = ChatSettings(enableNtfs: .all, sendRcpts: nil, favorite: false)
 }
 
-public enum MsgFilter: String, Codable {
+public enum MsgFilter: String, Codable, Hashable {
     case none
     case all
     case mentions
 }
 
-public struct UserMsgReceiptSettings: Codable {
+public struct UserMsgReceiptSettings: Codable, Hashable {
     public var enable: Bool
     public var clearOverrides: Bool
 
@@ -1488,7 +1488,7 @@ public struct UserMsgReceiptSettings: Codable {
     }
 }
 
-public struct ConnectionStats: Decodable {
+public struct ConnectionStats: Decodable, Hashable {
     public var connAgentVersion: Int
     public var rcvQueuesInfo: [RcvQueueInfo]
     public var sndQueuesInfo: [SndQueueInfo]
@@ -1504,30 +1504,30 @@ public struct ConnectionStats: Decodable {
     }
 }
 
-public struct RcvQueueInfo: Codable {
+public struct RcvQueueInfo: Codable, Hashable {
     public var rcvServer: String
     public var rcvSwitchStatus: RcvSwitchStatus?
     public var canAbortSwitch: Bool
 }
 
-public enum RcvSwitchStatus: String, Codable {
+public enum RcvSwitchStatus: String, Codable, Hashable {
     case switchStarted = "switch_started"
     case sendingQADD = "sending_qadd"
     case sendingQUSE = "sending_quse"
     case receivedMessage = "received_message"
 }
 
-public struct SndQueueInfo: Codable {
+public struct SndQueueInfo: Codable, Hashable {
     public var sndServer: String
     public var sndSwitchStatus: SndSwitchStatus?
 }
 
-public enum SndSwitchStatus: String, Codable {
+public enum SndSwitchStatus: String, Codable, Hashable {
     case sendingQKEY = "sending_qkey"
     case sendingQTEST = "sending_qtest"
 }
 
-public enum QueueDirection: String, Decodable {
+public enum QueueDirection: String, Decodable, Hashable {
     case rcv
     case snd
 }
@@ -1551,7 +1551,7 @@ public enum RatchetSyncState: String, Decodable {
     case agreed
 }
 
-public struct UserContactLink: Decodable {
+public struct UserContactLink: Decodable, Hashable {
     public var connReqContact: String
     public var autoAccept: AutoAccept?
 
@@ -1565,7 +1565,7 @@ public struct UserContactLink: Decodable {
     }
 }
 
-public struct AutoAccept: Codable {
+public struct AutoAccept: Codable, Hashable {
     public var acceptIncognito: Bool
     public var autoReply: MsgContent?
 
@@ -1587,7 +1587,7 @@ public protocol SelectableItem: Hashable, Identifiable {
     static var values: [Self] { get }
 }
 
-public struct DeviceToken: Decodable {
+public struct DeviceToken: Decodable, Hashable {
     var pushProvider: PushProvider
     var token: String
 
@@ -1601,12 +1601,12 @@ public struct DeviceToken: Decodable {
     }
 }
 
-public enum PushEnvironment: String {
+public enum PushEnvironment: String, Hashable {
     case development
     case production
 }
 
-public enum PushProvider: String, Decodable {
+public enum PushProvider: String, Decodable, Hashable {
     case apns_dev
     case apns_prod
 
@@ -1620,7 +1620,7 @@ public enum PushProvider: String, Decodable {
 
 // This notification mode is for app core, UI uses AppNotificationsMode.off to mean completely disable,
 // and .local for periodic background checks
-public enum NotificationsMode: String, Decodable, SelectableItem {
+public enum NotificationsMode: String, Decodable, SelectableItem, Hashable {
     case off = "OFF"
     case periodic = "PERIODIC"
     case instant = "INSTANT"
@@ -1638,7 +1638,7 @@ public enum NotificationsMode: String, Decodable, SelectableItem {
     public static var values: [NotificationsMode] = [.instant, .periodic, .off]
 }
 
-public enum NotificationPreviewMode: String, SelectableItem, Codable {
+public enum NotificationPreviewMode: String, SelectableItem, Codable, Hashable {
     case hidden
     case contact
     case message
@@ -1656,7 +1656,7 @@ public enum NotificationPreviewMode: String, SelectableItem, Codable {
     public static var values: [NotificationPreviewMode] = [.message, .contact, .hidden]
 }
 
-public struct RemoteCtrlInfo: Decodable {
+public struct RemoteCtrlInfo: Decodable, Hashable {
     public var remoteCtrlId: Int64
     public var ctrlDeviceName: String
     public var sessionState: RemoteCtrlSessionState?
@@ -1666,7 +1666,7 @@ public struct RemoteCtrlInfo: Decodable {
     }
 }
 
-public enum RemoteCtrlSessionState: Decodable {
+public enum RemoteCtrlSessionState: Decodable, Hashable {
     case starting
     case searching
     case connecting
@@ -1681,17 +1681,17 @@ public enum RemoteCtrlStopReason: Decodable {
     case disconnected
 }
 
-public struct CtrlAppInfo: Decodable {
+public struct CtrlAppInfo: Decodable, Hashable {
     public var appVersionRange: AppVersionRange
     public var deviceName: String
 }
 
-public struct AppVersionRange: Decodable {
+public struct AppVersionRange: Decodable, Hashable {
     public var minVersion: String
     public var maxVersion: String
 }
 
-public struct CoreVersionInfo: Decodable {
+public struct CoreVersionInfo: Decodable, Hashable {
     public var version: String
     public var simplexmqVersion: String
     public var simplexmqCommit: String
@@ -1713,7 +1713,7 @@ private func encodeCJSON<T: Encodable>(_ value: T) -> [CChar] {
     encodeJSON(value).cString(using: .utf8)!
 }
 
-public enum ChatError: Decodable {
+public enum ChatError: Decodable, Hashable {
     case error(errorType: ChatErrorType)
     case errorAgent(agentError: AgentErrorType)
     case errorStore(storeError: StoreError)
@@ -1722,7 +1722,7 @@ public enum ChatError: Decodable {
     case invalidJSON(json: String)
 }
 
-public enum ChatErrorType: Decodable {
+public enum ChatErrorType: Decodable, Hashable {
     case noActiveUser
     case noConnectionUser(agentConnId: String)
     case noSndFileUser(agentSndFileId: String)
@@ -1801,7 +1801,7 @@ public enum ChatErrorType: Decodable {
     case exception(message: String)
 }
 
-public enum StoreError: Decodable {
+public enum StoreError: Decodable, Hashable {
     case duplicateName
     case userNotFound(userId: Int64)
     case userNotFoundByName(contactName: ContactName)
@@ -1861,7 +1861,7 @@ public enum StoreError: Decodable {
     case noGroupSndStatus(itemId: Int64, groupMemberId: Int64)
 }
 
-public enum DatabaseError: Decodable {
+public enum DatabaseError: Decodable, Hashable {
     case errorEncrypted
     case errorPlaintext
     case errorNoFile(dbFile: String)
@@ -1869,12 +1869,12 @@ public enum DatabaseError: Decodable {
     case errorOpen(sqliteError: SQLiteError)
 }
 
-public enum SQLiteError: Decodable {
+public enum SQLiteError: Decodable, Hashable {
     case errorNotADatabase
     case error(String)
 }
 
-public enum AgentErrorType: Decodable {
+public enum AgentErrorType: Decodable, Hashable {
     case CMD(cmdErr: CommandErrorType)
     case CONN(connErr: ConnectionErrorType)
     case SMP(smpErr: ProtocolErrorType)
@@ -1888,7 +1888,7 @@ public enum AgentErrorType: Decodable {
     case INACTIVE
 }
 
-public enum CommandErrorType: Decodable {
+public enum CommandErrorType: Decodable, Hashable {
     case PROHIBITED
     case SYNTAX
     case NO_CONN
@@ -1896,7 +1896,7 @@ public enum CommandErrorType: Decodable {
     case LARGE
 }
 
-public enum ConnectionErrorType: Decodable {
+public enum ConnectionErrorType: Decodable, Hashable {
     case NOT_FOUND
     case DUPLICATE
     case SIMPLEX
@@ -1904,7 +1904,7 @@ public enum ConnectionErrorType: Decodable {
     case NOT_AVAILABLE
 }
 
-public enum BrokerErrorType: Decodable {
+public enum BrokerErrorType: Decodable, Hashable {
     case RESPONSE(smpErr: String)
     case UNEXPECTED
     case NETWORK
@@ -1913,7 +1913,7 @@ public enum BrokerErrorType: Decodable {
     case TIMEOUT
 }
 
-public enum ProtocolErrorType: Decodable {
+public enum ProtocolErrorType: Decodable, Hashable {
     case BLOCK
     case SESSION
     case CMD(cmdErr: ProtocolCommandError)
@@ -1924,7 +1924,7 @@ public enum ProtocolErrorType: Decodable {
     case INTERNAL
 }
 
-public enum XFTPErrorType: Decodable {
+public enum XFTPErrorType: Decodable, Hashable {
     case BLOCK
     case SESSION
     case CMD(cmdErr: ProtocolCommandError)
@@ -1941,7 +1941,7 @@ public enum XFTPErrorType: Decodable {
     case INTERNAL
 }
 
-public enum RCErrorType: Decodable {
+public enum RCErrorType: Decodable, Hashable {
     case `internal`(internalErr: String)
     case identity
     case noLocalAddress
@@ -1959,7 +1959,7 @@ public enum RCErrorType: Decodable {
     case syntax(syntaxErr: String)
 }
 
-public enum ProtocolCommandError: Decodable {
+public enum ProtocolCommandError: Decodable, Hashable {
     case UNKNOWN
     case SYNTAX
     case PROHIBITED
@@ -1968,7 +1968,7 @@ public enum ProtocolCommandError: Decodable {
     case NO_ENTITY
 }
 
-public enum ProtocolTransportError: Decodable {
+public enum ProtocolTransportError: Decodable, Hashable {
     case badBlock
     case largeMsg
     case badSession
@@ -1976,14 +1976,14 @@ public enum ProtocolTransportError: Decodable {
     case handshake(handshakeErr: SMPHandshakeError)
 }
 
-public enum SMPHandshakeError: Decodable {
+public enum SMPHandshakeError: Decodable, Hashable {
     case PARSE
     case VERSION
     case IDENTITY
     case BAD_AUTH
 }
 
-public enum SMPAgentError: Decodable {
+public enum SMPAgentError: Decodable, Hashable {
     case A_MESSAGE
     case A_PROHIBITED
     case A_VERSION
@@ -1992,12 +1992,12 @@ public enum SMPAgentError: Decodable {
     case A_QUEUE(queueErr: String)
 }
 
-public enum ArchiveError: Decodable {
+public enum ArchiveError: Decodable, Hashable {
     case `import`(chatError: ChatError)
     case importFile(file: String, chatError: ChatError)
 }
 
-public enum RemoteCtrlError: Decodable {
+public enum RemoteCtrlError: Decodable, Hashable {
     case inactive
     case badState
     case busy
@@ -2011,14 +2011,14 @@ public enum RemoteCtrlError: Decodable {
     case protocolError
 }
 
-public struct MigrationFileLinkData: Codable {
+public struct MigrationFileLinkData: Codable, Hashable {
     let networkConfig: NetworkConfig?
 
     public init(networkConfig: NetworkConfig) {
         self.networkConfig = networkConfig
     }
 
-    public struct NetworkConfig: Codable {
+    public struct NetworkConfig: Codable, Hashable {
         let socksProxy: String?
         let hostMode: HostMode?
         let requiredHostMode: Bool?
@@ -2050,7 +2050,7 @@ public struct MigrationFileLinkData: Codable {
     }
 }
 
-public struct AppSettings: Codable, Equatable {
+public struct AppSettings: Codable, Equatable, Hashable {
     public var networkConfig: NetCfg? = nil
     public var privacyEncryptLocalFiles: Bool? = nil
     public var privacyAskToApproveRelays: Bool? = nil
@@ -2124,7 +2124,7 @@ public struct AppSettings: Codable, Equatable {
     }
 }
 
-public enum AppSettingsNotificationMode: String, Codable {
+public enum AppSettingsNotificationMode: String, Codable, Hashable {
     case off
     case periodic
     case instant
@@ -2152,13 +2152,13 @@ public enum AppSettingsNotificationMode: String, Codable {
 //    case message
 //}
 
-public enum AppSettingsLockScreenCalls: String, Codable {
+public enum AppSettingsLockScreenCalls: String, Codable, Hashable {
     case disable
     case show
     case accept
 }
 
-public struct UserNetworkInfo: Codable, Equatable {
+public struct UserNetworkInfo: Codable, Equatable, Hashable {
     public let networkType: UserNetworkType
     public let online: Bool
 
@@ -2168,7 +2168,7 @@ public struct UserNetworkInfo: Codable, Equatable {
     }
 }
 
-public enum UserNetworkType: String, Codable {
+public enum UserNetworkType: String, Codable, Hashable {
     case none
     case cellular
     case wifi
@@ -2186,7 +2186,7 @@ public enum UserNetworkType: String, Codable {
     }
 }
 
-public struct RcvMsgInfo: Codable {
+public struct RcvMsgInfo: Codable, Hashable {
     var msgId: Int64
     var msgDeliveryId: Int64
     var msgDeliveryStatus: String
@@ -2194,7 +2194,7 @@ public struct RcvMsgInfo: Codable {
     var agentMsgMeta: String
 }
 
-public struct QueueInfo: Codable {
+public struct QueueInfo: Codable, Hashable {
     var qiSnd: Bool
     var qiNtf: Bool
     var qiSub: QSub?
@@ -2202,25 +2202,25 @@ public struct QueueInfo: Codable {
     var qiMsg: MsgInfo?
 }
 
-public struct QSub: Codable {
+public struct QSub: Codable, Hashable {
     var qSubThread: QSubThread
     var qDelivered: String?
 }
 
-public enum QSubThread: String, Codable {
+public enum QSubThread: String, Codable, Hashable {
     case noSub
     case subPending
     case subThread
     case prohibitSub
 }
 
-public struct MsgInfo: Codable {
+public struct MsgInfo: Codable, Hashable {
     var msgId: String
     var msgTs: Date
     var msgType: MsgType
 }
 
-public enum MsgType: String, Codable {
+public enum MsgType: String, Codable, Hashable {
     case message
     case quota
 }
