@@ -210,7 +210,7 @@ File attachment can optionally include connection address to receive the file - 
 
 ### Decentralized design for chat groups
 
-SimpleX Chat groups are fully decentralized and do not have any globally unique group identifiers - they are only defined on client devices as a group profile and a set of bi-directional SimpleX connections with other group members. When a new member accepts group invitation, the inviting member introduces a new member to all existing members and forwards the connection addresses so that they can establish direct and group member connections.
+SimpleX Chat groups are fully decentralized and do not have any globally unique group identifiers - they are only defined on client devices as a group profile and a set of bi-directional SimpleX connections with other group members. When a new member accepts group invitation or joins via group link, the inviting member introduces a new member to all existing members and forwards the connection addresses so that they can establish direct and group member connections.
 
 There is a possibility of the attack here: as the introducing member forwards the addresses, they can substitute them with other addresses, performing MITM attack on the communication between existing and introduced members - this is similar to the communication operator being able to perform MITM on any connection between the users. To mitigate this attack this group sub-protocol will be extended to allow validating security of the connection by sending connection verification out-of-band.
 
