@@ -485,7 +485,8 @@ public struct ThemeOverrides: Codable, Equatable {
         let wallpaper: WallpaperType
         switch mainType {
         case let WallpaperType.Preset(preset, scale):
-            wallpaper = WallpaperType.Preset(preset, scale ?? first?.scale ?? second?.scale ?? third?.scale)
+            let scale = if themeOverridesForType == nil { scale ?? first?.scale ?? second?.scale ?? third?.scale } else { second?.scale ?? third?.scale ?? scale }
+            wallpaper = WallpaperType.Preset(preset, scale)
         case let WallpaperType.Image(filename, scale, scaleType):
             let scale = if themeOverridesForType == nil { scale ?? first?.scale ?? second?.scale ?? third?.scale } else { second?.scale ?? third?.scale ?? scale }
             let scaleType = if themeOverridesForType == nil { scaleType ?? first?.scaleType ?? second?.scaleType ?? third?.scaleType } else { second?.scaleType ?? third?.scaleType ?? scaleType }
@@ -737,71 +738,3 @@ extension AppWallpaper {
         type = other.type
     }
 }
-
-//@Composable
-//func SimpleXTheme(darkTheme: Bool? = nil, content: @Composable () -> Void) {
-//    val systemDark = rememberUpdatedState(isSystemInDarkTheme())
-//    LaunchedEffect(Void) {
-//        // snapshotFlow vs LaunchedEffect reduce number of recomposes
-//        snapshotFlow { systemDark.value }
-//            .collect {
-//                reactOnDarkThemeChanges(systemDark.value)
-//            }
-//    }
-//    val theme by CurrentColors.collectAsState()
-//    LaunchedEffect(Void) {
-//        // snapshotFlow vs LaunchedEffect reduce number of recomposes when user is changed or it's themes
-//        snapshotFlow { chatModel.currentUser.value?.uiThemes }
-//            .collect {
-//                ThemeManager.applyTheme(appPrefs.currentTheme.get()!!)
-//            }
-//    }
-//    MaterialTheme(
-//        colors = theme.colors,
-//        typography = Typography,
-//        shapes = Shapes,
-//        content = {
-//            val rememberedAppColors = remember {
-//                // Explicitly creating a new object here so we don't mutate the initial [appColors]
-//                // provided, and overwrite the values set in it.
-//                theme.appColors.copy()
-//            }.apply { updateColorsFrom(theme.appColors) }
-//            val rememberedWallpaper = remember {
-//                // Explicitly creating a new object here so we don't mutate the initial [wallpaper]
-//                // provided, and overwrite the values set in it.
-//                theme.wallpaper.copy()
-//            }.apply { updateWallpaperFrom(theme.wallpaper) }
-//            CompositionLocalProvider(
-//                LocalContentColor provides theme.colors.onBackground,
-//                LocalAppColors provides rememberedAppColors,
-//                LocalAppWallpaper provides rememberedWallpaper,
-//                content = content)
-//        }
-//    )
-//}
-//
-//@Composable
-//func SimpleXThemeOverride(theme: ThemeManager.ActiveTheme, content: @Composable () -> Void) {
-//    MaterialTheme(
-//        colors = theme.colors,
-//        typography = Typography,
-//        shapes = Shapes,
-//        content = {
-//            val rememberedAppColors = remember {
-//                // Explicitly creating a new object here so we don't mutate the initial [appColors]
-//                // provided, and overwrite the values set in it.
-//                theme.appColors.copy()
-//            }.apply { updateColorsFrom(theme.appColors) }
-//            val rememberedWallpaper = remember {
-//                // Explicitly creating a new object here so we don't mutate the initial [wallpaper]
-//                // provided, and overwrite the values set in it.
-//                theme.wallpaper.copy()
-//            }.apply { updateWallpaperFrom(theme.wallpaper) }
-//            CompositionLocalProvider(
-//                LocalContentColor provides theme.colors.onBackground,
-//                LocalAppColors provides rememberedAppColors,
-//                LocalAppWallpaper provides rememberedWallpaper,
-//                content = content)
-//        }
-//    )
-//}

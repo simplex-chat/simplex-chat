@@ -658,7 +658,7 @@ struct UserWallpaperEditorSheet: View {
             do {
                 try await Task.sleep(nanoseconds: 300_000000)
                 if await !apiSetUserUIThemes(userId: userId, themes: changedThemesConstant) {
-                    DispatchQueue.main.async {
+                    await MainActor.run {
                         // If failed to apply for some reason return the old themes
                         ChatModel.shared.updateCurrentUserUiThemes(uiThemes: oldThemes)
                     }
@@ -752,11 +752,11 @@ struct CustomizeThemeColorsSection: View {
 
 }
 
-func editColorBinding(name: ThemeColor, wallpaperType: WallpaperType, wallpaperImage: Image?, theme: AppTheme, onColorChange: @escaping (Color?) -> Void) -> Binding<Color> {
+func editColorBinding(name: ThemeColor, wallpaperType: WallpaperType?, wallpaperImage: Image?, theme: AppTheme, onColorChange: @escaping (Color?) -> Void) -> Binding<Color> {
     Binding(get: {
         let baseTheme = theme.base
-        let wallpaperBackgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(baseTheme, theme.colors.background)
-        let wallpaperTintColor = theme.wallpaper.tint ?? wallpaperType.defaultTintColor(baseTheme)
+        let wallpaperBackgroundColor = theme.wallpaper.background ?? wallpaperType?.defaultBackgroundColor(baseTheme, theme.colors.background) ?? Color.clear
+        let wallpaperTintColor = theme.wallpaper.tint ?? wallpaperType?.defaultTintColor(baseTheme) ?? Color.clear
         return switch name {
         case ThemeColor.WALLPAPER_BACKGROUND: wallpaperBackgroundColor
         case ThemeColor.WALLPAPER_TINT: wallpaperTintColor
@@ -773,9 +773,7 @@ func editColorBinding(name: ThemeColor, wallpaperType: WallpaperType, wallpaperI
         case ThemeColor.RECEIVED_MESSAGE: theme.appColors.receivedMessage
         case ThemeColor.RECEIVED_QUOTE: theme.appColors.receivedQuote
         }
-    }, set: { value in
-        onColorChange(value)
-    })
+    }, set: onColorChange)
 }
 
 struct WallpaperSetupView: View {

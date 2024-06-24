@@ -85,9 +85,18 @@ struct ChatViewBackground: ViewModifier {
 
 extension PresetWallpaper {
     public func toType(_ base: DefaultTheme, _ scale: Float? = nil) -> WallpaperType {
-        WallpaperType.Preset(
+        let scale = if let scale {
+            scale
+        } else if let type = ChatModel.shared.currentUser?.uiThemes?.preferredMode(base.mode == DefaultThemeMode.dark)?.wallpaper?.toAppWallpaper().type, type.sameType(WallpaperType.Preset(filename, nil)) {
+            type.scale
+        } else if let scale = themeOverridesDefault.get().first(where: { $0.wallpaper != nil && $0.wallpaper!.preset == filename })?.wallpaper?.scale {
+            scale
+        } else {
+            Float(1.0)
+        }
+        return WallpaperType.Preset(
             filename,
-            scale ?? themeOverridesDefault.get().first { $0.wallpaper != nil && $0.wallpaper!.preset == filename && $0.base == base }?.wallpaper?.scale ?? 1
+            scale
         )
     }
 }

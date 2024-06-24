@@ -13,6 +13,7 @@ let SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
 struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
     @Binding var groupInfo: GroupInfo
@@ -80,6 +81,13 @@ struct GroupChatInfoView: View {
                         sendReceiptsOption()
                     } else {
                         sendReceiptsOptionDisabled()
+                    }
+                    NavigationLink {
+                        ChatWallpaperEditorSheet(chat: chat)
+                    } label: {
+                        Image(systemName: "photo")
+                            .foregroundColor(theme.colors.primary)
+                        Text("Chat theme")
                     }
                 } header: {
                     Text("")

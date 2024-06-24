@@ -11,7 +11,7 @@ import SwiftUI
 import SimpleXChat
 
 class ThemeManager {
-    struct ActiveTheme {
+    struct ActiveTheme: Equatable {
         let name: String
         let base: DefaultTheme
         let colors: Colors
