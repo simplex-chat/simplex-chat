@@ -19,8 +19,8 @@ import Simplex.Messaging.Protocol
 
 data PresentedServersSummary = PresentedServersSummary
   { statsStartedAt :: UTCTime,
-    userServersSummary :: ServersSummary,
-    allServersSummary :: ServersSummary
+    currentUserServers :: ServersSummary,
+    allUsersServers :: ServersSummary
   }
   deriving (Show)
 
@@ -54,7 +54,7 @@ data SMPServerSummary = SMPServerSummary
     -- known:
     -- for simplicity always Nothing in totalServersSummary - allows us to load configured servers only for current user,
     -- and also unnecessary unless we want to add navigation to other users servers settings;
-    -- always Just in userServersSummary - True if server is in list of user servers, otherwise False;
+    -- always Just in currentUserServers - True if server is in list of user servers, otherwise False;
     -- True - allows to navigate to server settings, False - allows to add server to configured as known (SEKnown)
     known :: Maybe Bool,
     sessions :: Maybe ServerSessions,
@@ -79,7 +79,7 @@ data XFTPServerSummary = XFTPServerSummary
   deriving (Show)
 
 -- Maps AgentServersSummary to PresentedServersSummary:
--- - userServersSummary is for currentUser;
+-- - currentUserServers is for currentUser;
 -- - users are passed to exclude hidden users from totalServersSummary;
 -- - if currentUser is hidden, it should be accounted in totalServersSummary;
 -- - known is set only in user level summaries based on passed userSMPSrvs and userXFTPSrvs
@@ -93,7 +93,7 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
       (allXFTPCurr, allXFTPPrev) = xftpSummsIntoCategories allXFTPSrvsSumms
   PresentedServersSummary
     { statsStartedAt,
-      userServersSummary =
+      currentUserServers =
         ServersSummary
           { currentlyUsedSMPServers = userSMPCurr,
             previouslyUsedSMPServers = userSMPPrev,
@@ -101,7 +101,7 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
             currentlyUsedXFTPServers = userXFTPCurr,
             previouslyUsedXFTPServers = userXFTPPrev
           },
-      allServersSummary =
+      allUsersServers =
         ServersSummary
           { currentlyUsedSMPServers = allSMPCurr,
             previouslyUsedSMPServers = allSMPPrev,
@@ -170,9 +170,9 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
             SMPServerSummary
               { smpServer,
                 known,
-                sessions = addMaybes addServerSessions sessions1 sessions2,
-                subs = addMaybes addSMPSubs subs1 subs2,
-                stats = addMaybes addSMPStats stats1 stats2
+                sessions = addServerSessions <$> sessions1 <*> sessions2,
+                subs = addSMPSubs <$> subs1 <*> subs2,
+                stats = addSMPStats <$> stats1 <*> stats2
               }
     mergeXFTPSrvsMaps ::
       Map (UserId, XFTPServer) ServerSessions ->
@@ -209,17 +209,12 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
             XFTPServerSummary
               { xftpServer,
                 known,
-                sessions = addMaybes addServerSessions sessions1 sessions2,
-                stats = addMaybes addXFTPStats stats1 stats2,
+                sessions = addServerSessions <$> sessions1 <*> sessions2,
+                stats = addXFTPStats <$> stats1 <*> stats2,
                 rcvInProgress,
                 sndInProgress,
                 delInProgress
               }
-    addMaybes :: (a -> a -> a) -> Maybe a -> Maybe a -> Maybe a
-    addMaybes add (Just x) (Just y) = Just $ add x y
-    addMaybes _ Nothing (Just y) = Just y
-    addMaybes _ (Just x) Nothing = Just x
-    addMaybes _ Nothing Nothing = Nothing
     addServerSessions :: ServerSessions -> ServerSessions -> ServerSessions
     addServerSessions ss1 ss2 =
       ServerSessions
