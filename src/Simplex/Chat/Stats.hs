@@ -154,7 +154,7 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
               | userId == aUserId currentUser = alterSumms newUserSummary userSumms
               | otherwise = userSumms
             allUsersSumms'
-              | countUserInAll userId = alterSumms newSummary allUsersSumms 
+              | countUserInAll userId = alterSumms newSummary allUsersSumms
               | otherwise = allUsersSumms
             alterSumms n = M.alter (Just . addData d . fromMaybe n) srv
             newUserSummary = (newSummary :: SMPServerSummary) {known = Just $ srv `elem` userSMPSrvs}
