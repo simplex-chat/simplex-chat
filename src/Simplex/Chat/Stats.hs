@@ -167,11 +167,11 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
                   stats = Nothing
                 }
         addSessions :: ServerSessions -> SMPServerSummary -> SMPServerSummary
-        addSessions s summ@SMPServerSummary {sessions} = summ {sessions = (s `addServerSessions`) <$> sessions}
+        addSessions s summ@SMPServerSummary {sessions} = summ {sessions = maybe s (s `addServerSessions`) sessions}
         addSubs :: SMPServerSubs -> SMPServerSummary -> SMPServerSummary
-        addSubs s summ@SMPServerSummary {subs} = summ {subs = (s `addSMPSubs`) <$> subs}
+        addSubs s summ@SMPServerSummary {subs} = summ {subs = maybe s (s `addSMPSubs`) subs}
         addStats :: AgentSMPServerStatsData -> SMPServerSummary -> SMPServerSummary
-        addStats s summ@SMPServerSummary {stats} = summ {stats = (s `addSMPStats`) <$> stats}
+        addStats s summ@SMPServerSummary {stats} = summ {stats = maybe s (s `addSMPStats`) stats}
     mergeXFTPSrvsMaps ::
       Map (UserId, XFTPServer) ServerSessions ->
       Map (UserId, XFTPServer) AgentXFTPServerStatsData ->
