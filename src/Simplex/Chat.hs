@@ -424,7 +424,7 @@ subscribeUsers onlyNeeded users = do
   subscribe vr us'
   where
     subscribe :: VersionRangeChat -> [User] -> CM' ()
-    subscribe vr = mapM_ $ runExceptT . subscribeUserConnections vr onlyNeeded
+    subscribe vr = mapM_ $ runExceptT . subscribeUserConnections vr onlyNeeded Agent.subscribeConnections
 
 startFilesToReceive :: [User] -> CM' ()
 startFilesToReceive users = do
@@ -3379,9 +3379,12 @@ agentSubscriber = do
       where
         run action = action `catchChatError'` (toView' . CRChatError Nothing)
 
-subscribeUserConnections :: VersionRangeChat -> Bool -> User -> CM ()
-subscribeUserConnections vr onlyNeeded user = do
+type AgentBatchSubscribe = AgentClient -> [ConnId] -> ExceptT AgentErrorType IO (Map ConnId (Either AgentErrorType ()))
+
+subscribeUserConnections :: VersionRangeChat -> Bool -> AgentBatchSubscribe -> User -> CM ()
+subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
   -- get user connections
+  ce <- asks $ subscriptionEvents . config
   (conns, ctConns, ucs, gs, mConns, sfts, rfts, pcConns) <-
     if onlyNeeded
       then do
@@ -3400,9 +3403,9 @@ subscribeUserConnections vr onlyNeeded user = do
         pure (conns, ctConns, ucs, gs, mConns, sfts, rfts, pcConns)
   -- detach subscription and result processing
   void . lift . forkIO . runSubscriber $ do
-    rs <- withAgent (`Agent.subscribeConnections` conns) -- subscribe using batched commands
+    -- subscribe using batched commands
+    rs <- withAgent $ \a -> agentBatchSubscribe a conns
     let (errs, _oks) = M.mapEither id rs
-    ce <- asks $ subscriptionEvents . config
     refs <- if ce then withStore' $ \db -> getConnectionsContacts db (M.keys errs) else pure []
     let connRefs = M.fromList $ map (\ContactRef {agentConnId = AgentConnId acId, localDisplayName} -> (acId, localDisplayName)) refs
     contactSubsToView errs ctConns connRefs ce
