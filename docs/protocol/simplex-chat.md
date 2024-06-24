@@ -2,7 +2,7 @@
 title: SimpleX Chat Protocol
 revision: 08.08.2022
 ---
-DRAFT Revision 0.1, 2022-08-08
+DRAFT Revision 0.2, 2024-06-24
 
 Evgeny Poberezkin
 
@@ -220,13 +220,13 @@ Each member in the group is identified by a group-wide unique identifier used by
 
 The diagram below shows the sequence of messages sent between the users' clients to add the new member to the group.
 
-![Adding member to the group](./diagrams/group.svg)
-
 While introduced members establish connection inside group, inviting member forwards messages between them by sending `x.grp.msg.forward` messages. When introduced members finalize connection, they notify inviting member to stop forwarding via `x.grp.mem.con` message.
+
+![Adding member to the group](./diagrams/group.svg)
 
 ### Member roles
 
-Currently members can have one of three roles - `owner`, `admin` and `member`. The user that created the group is self-assigned owner role, the new members are assigned role by the member who adds them - only `owner` and `admin` members can add new members; only `owner` members can add members with `owner` role.
+Currently members can have one of three roles - `owner`, `admin`, `member` and `observer`. The user that created the group is self-assigned owner role, the new members are assigned role by the member who adds them - only `owner` and `admin` members can add new members; only `owner` members can add members with `owner` role. `Observer` members only receive messages and aren't allowed to send messages.
 
 ### Messages to manage groups and add members
 
@@ -279,3 +279,54 @@ These message are used for WebRTC calls:
 3. `x.call.answer`: to continue with call connection the initiating clients must reply with `x.call.answer` message. This message contains WebRTC answer and collected ICE candidates. Additional ICE candidates can be sent in `x.call.extra` message.
 
 4. `x.call.end` message is sent to notify the other party that the call is terminated.
+
+## Threat model
+
+This threat model compliments SMP, XFTP, push notifications and XRCP protocols threat models:
+
+- [SimpleX Messaging Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/overview-tjr.md#threat-model);
+- [SimpleX File Transfer Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/xftp.md#threat-model)
+- [Push notifications threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/push-notifications.md#threat-model)
+- [SimpleX Remote Control Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/xrcp.md#threat-model)
+
+#### A user’s contact
+
+*can:*
+
+- send messages prohibited by user's preferences or otherwise act non-compliantly with user's preferences (for example, if message with updated preferences was lost or failed to be processed, or with modified client), in which case user client should treat such messages and actions as prohibited.
+
+- collaborating with user's client, match user's contact with existing group members and/or contacts (see [Probing for duplicate contacts](#probing-for-duplicate-contacts)).
+
+- identify that and when a user is using SimpleX, in case user has delivery receipts enabled, or based on other automated client interactions.
+
+*cannot:*
+
+- match user's contact with existing group members and/or contacts without collaboration of user client - for example, current implementation of chat protocol in SimpleX Chat allows to use incognito profiles (random per conversation profiles) for connecting and joining groups, which disables such collaboration.
+
+#### A group member
+
+*can:*
+
+- send messages prohibited by group's preferences and member restrictions or otherwise act non-compliantly with preferences and restrictions (for example, if decentralized group state diverged, or with modified client), in which case user client should treat such messages and actions as prohibited.
+
+- create a direct contact with user.
+
+- collaborating with user's client, match user's group member record with existing group members and/or contacts.
+
+- send different messages to different group members, or selectively send messages to some members and not send to others.
+
+- identify that and when a user is using SimpleX, in case user has delivery receipts enabled, or based on other automated client interactions.
+
+*cannot:*
+
+- match user's group member record with existing group members and/or contacts without collaboration of user client.
+
+#### A group admin
+
+*can:*
+
+- carry out MITM attack between user and other group member(s) when forwarding invitations for group connections.
+
+- forward different messages to different group members, modify and drop forwarded messages.
+
+- destabilize decentralized group state by sending different group state altering messages (such as additions and removals of members, member role changes, etc.) to different group members, or selectively sending such messages to some members and not sending to others.

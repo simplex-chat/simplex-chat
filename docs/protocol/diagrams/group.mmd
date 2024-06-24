@@ -20,14 +20,25 @@ sequenceDiagram
   end
   A ->> M: x.grp.mem.fwd<br>forward "invitations" and<br>Bob's chat protocol version<br>to all members<br>(via member connections)
 
+  note over M, B: group message forwarding<br>(while connections between members are being established)
+  M -->> B: messages between members and Bob are forwarded by Alice
+  B -->> M: 
+
   note over M, B: 3. establish direct and group member connections
   M ->> B: establish group member connection
 
   opt chat protocol compatible version < 2
     M ->> B: establish direct connection
-    note over M, C: 4. deduplicate new contact
+    note over M, C: 3*. deduplicate new contact
     B ->> M: x.info.probe<br>"probe" is sent to all new members
     B ->> C: x.info.probe.check<br>"probe" hash,<br>in case contact and<br>member profiles match
     C ->> B: x.info.probe.ok<br> original "probe",<br> in case contact and member<br>are the same user
     note over B: merge existing and new contacts if received and sent probe hashes match
   end
+
+  note over M, B: 4. notify inviting member that connection is established
+  M ->> A: x.grp.mem.con
+  B ->> A: x.grp.mem.con
+  note over A: stops forwarding messages
+  M -->> B: messages are sent via group connection without forwarding
+  B -->> M: 
