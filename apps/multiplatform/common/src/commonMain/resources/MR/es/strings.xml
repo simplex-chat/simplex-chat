@@ -1043,7 +1043,7 @@
     <string name="your_XFTP_servers">Servidores XFTP</string>
     <string name="port_verb">Puerto</string>
     <string name="network_proxy_port">puerto %d</string>
-    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Configura <i>Usar hosts .onion</i> a No si el proxy SOCKS no los admite.]]></string>
+    <string name="disable_onion_hosts_when_not_supported">Configura &lt;i&gt;Usar hosts .onion&lt;/i&gt; como &lt;i&gt;No&lt;/&gt; si el proxy SOCKS no los admite.</string>
     <string name="smp_server_test_download_file">Descargar archivo</string>
     <string name="network_socks_toggle_use_socks_proxy">Usar proxy SOCKS</string>
     <string name="host_verb">Host</string>
@@ -1872,4 +1872,6 @@
 \nPor favor, comparte cualquier otro problema con los desarrolladores.</string>
     <string name="copy_error">Error al copiar</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">Este enlace ha sido usado en otro dispositivo móvil, por favor crea un enlace nuevo en el ordenador.</string>
+    <string name="cannot_share_message_alert_title">No se puede enviar el mensaje</string>
+    <string name="cannot_share_message_alert_text">Las preferencias seleccionadas no permiten este mensaje.</string>
 </resources>
