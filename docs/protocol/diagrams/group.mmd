@@ -9,7 +9,7 @@ sequenceDiagram
     A ->> B: x.grp.inv<br>invite Bob to group<br>(via contact connection)
     B ->> A: x.grp.acpt<br>accept invitation<br>(via member connection)<br>establish group member connection
   else join via group link
-    note over A, B: 1b. send and accept group invitation
+    note over A, B: 1b. join via group link and accept request
     B ->> A: join via group link<br>SimpleX contact address
     A ->> B: x.grp.link.inv in SMP confirmation<br>accept joining member request,<br>sending group profile, etc.<br>establish group member connection
     A ->> B: x.grp.link.mem<br>send inviting member profile
