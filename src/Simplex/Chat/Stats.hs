@@ -114,7 +114,7 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
     AgentServersSummary {statsStartedAt, smpServersSessions, smpServersSubs, smpServersStats, xftpServersSessions, xftpServersStats, xftpRcvInProgress, xftpSndInProgress, xftpDelInProgress} = agentSummary
     countUserInAll auId = auId == aUserId currentUser || auId `notElem` hiddenUserIds
     hiddenUserIds = map aUserId $ filter (isJust . viewPwdHash) users
-    smpSummsIntoCategories :: [SMPServerSummary] -> ([SMPServerSummary], [SMPServerSummary], [SMPServerSummary])
+    smpSummsIntoCategories :: Map SMPServer SMPServerSummary -> ([SMPServerSummary], [SMPServerSummary], [SMPServerSummary])
     smpSummsIntoCategories = foldr partitionSummary ([], [], [])
       where
         partitionSummary srvSumm (curr, prev, prox)
@@ -136,44 +136,95 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
           | otherwise = (curr, srvSumm : prev)
         isCurrentlyUsed XFTPServerSummary {sessions, rcvInProgress, sndInProgress, delInProgress} =
           isJust sessions || rcvInProgress || sndInProgress || delInProgress
-    mergeSMPSrvsMaps ::
-      Map (UserId, SMPServer) ServerSessions ->
-      Map (UserId, SMPServer) SMPServerSubs ->
-      Map (UserId, SMPServer) AgentSMPServerStatsData ->
-      Map (UserId, SMPServer) (Maybe ServerSessions, Maybe SMPServerSubs, Maybe AgentSMPServerStatsData)
-    mergeSMPSrvsMaps sessions subs stats = mergedMap3
+    accSMPSrvsSummaries :: (Map SMPServer SMPServerSummary, Map SMPServer SMPServerSummary)
+    accSMPSrvsSummaries = (userSumms3, allSrvSumms3)
       where
-        combinedMap1 = M.foldrWithKey (\k v acc -> M.insertWith combine k (Just v, Nothing, Nothing) acc) M.empty sessions
-        combinedMap2 = M.foldrWithKey (\k v acc -> M.insertWith combine k (Nothing, Just v, Nothing) acc) combinedMap1 subs
-        mergedMap3 = M.foldrWithKey (\k v acc -> M.insertWith combine k (Nothing, Nothing, Just v) acc) combinedMap2 stats
-        combine (m1, m2, m3) (n1, n2, n3) = (m1 <|> n1, m2 <|> n2, m3 <|> n3)
-    accSMPSrvsSummaries :: ([SMPServerSummary], [SMPServerSummary])
-    accSMPSrvsSummaries = (userSrvSummaries, allSrvSummaries)
-      where
-        allSrvSummaries = M.elems allSrvSummariesMap
-        (userSrvSummaries, allSrvSummariesMap) = M.foldrWithKey accumulate initialAcc mergedData
-        mergedData = mergeSMPSrvsMaps smpServersSessions smpServersSubs smpServersStats
-        initialAcc = ([], M.empty)
-        accumulate (auId, server) (sessions, subs, stats) (uAcc, allAcc) =
-          let knownForUser = Just $ server `elem` userSMPSrvs
-              summaryForUser = SMPServerSummary server knownForUser sessions subs stats
-              newUAcc = if auId == aUserId currentUser then summaryForUser : uAcc else uAcc
-              summaryForAll = SMPServerSummary server Nothing sessions subs stats
-              newAllAcc =
-                if countUserInAll auId
-                  then M.insertWith combineSummaries server summaryForAll allAcc
-                  else allAcc
-           in (newUAcc, newAllAcc)
-        combineSummaries
-          (SMPServerSummary _ _ sessions1 subs1 stats1)
-          (SMPServerSummary smpServer known sessions2 subs2 stats2) =
-            SMPServerSummary
-              { smpServer,
-                known,
-                sessions = addServerSessions <$> sessions1 <*> sessions2,
-                subs = addSMPSubs <$> subs1 <*> subs2,
-                stats = addSMPStats <$> stats1 <*> stats2
-              }
+        (userSumms1, allSrvSumms1) = M.foldrWithKey' addSession (M.empty, M.empty) smpServersSessions
+        (userSumms2, allSrvSumms2) = M.foldrWithKey' addSubs (userSumms1, allSrvSumms1) smpServersSubs
+        (userSumms3, allSrvSumms3) = M.foldrWithKey' addStats (userSumms2, allSrvSumms2) smpServersStats
+        addSession :: (UserId, SMPServer) -> ServerSessions -> (Map SMPServer SMPServerSummary, Map SMPServer SMPServerSummary) -> (Map SMPServer SMPServerSummary, Map SMPServer SMPServerSummary)
+        addSession (userId, srv) sess (userSumms, allSrvSumms) = (newUserSumms, newAllSumms)
+          where
+            newUserSumms = M.alter alterUserSumm srv userSumms
+            newAllSumms = if countUserInAll userId then M.alter alterAllSrvSumm srv allSrvSumms else allSrvSumms
+            alterUserSumm :: Maybe SMPServerSummary -> Maybe SMPServerSummary
+            alterUserSumm Nothing =
+              Just SMPServerSummary {smpServer = srv, known = Just $ srv `elem` userSMPSrvs, sessions = Just sess, subs = Nothing, stats = Nothing}
+            alterUserSumm (Just summ) =
+              Just (summ {sessions = Just sess} :: SMPServerSummary)
+            alterAllSrvSumm :: Maybe SMPServerSummary -> Maybe SMPServerSummary
+            alterAllSrvSumm Nothing =
+              Just SMPServerSummary {smpServer = srv, known = Nothing, sessions = Just sess, subs = Nothing, stats = Nothing}
+            alterAllSrvSumm (Just summ@SMPServerSummary {sessions}) =
+              Just (summ {sessions = addServerSessions <$> sessions <*> Just sess} :: SMPServerSummary)
+        addSubs :: (UserId, SMPServer) -> SMPServerSubs -> (Map SMPServer SMPServerSummary, Map SMPServer SMPServerSummary) -> (Map SMPServer SMPServerSummary, Map SMPServer SMPServerSummary)
+        addSubs (userId, srv) sbs (userSumms, allSrvSumms) = (newUserSumms, newAllSumms)
+          where
+            newUserSumms = M.alter alterUserSumm srv userSumms
+            newAllSumms = if countUserInAll userId then M.alter alterAllSrvSumm srv allSrvSumms else allSrvSumms
+            alterUserSumm :: Maybe SMPServerSummary -> Maybe SMPServerSummary
+            alterUserSumm Nothing =
+              Just SMPServerSummary {smpServer = srv, known = Just $ srv `elem` userSMPSrvs, sessions = Nothing, subs = Just sbs, stats = Nothing}
+            alterUserSumm (Just summ) =
+              Just (summ {subs = Just sbs} :: SMPServerSummary)
+            alterAllSrvSumm :: Maybe SMPServerSummary -> Maybe SMPServerSummary
+            alterAllSrvSumm Nothing =
+              Just SMPServerSummary {smpServer = srv, known = Nothing, sessions = Nothing, subs = Just sbs, stats = Nothing}
+            alterAllSrvSumm (Just summ@SMPServerSummary {subs}) =
+              Just (summ {subs = addSMPSubs <$> subs <*> Just sbs} :: SMPServerSummary)
+        addStats :: (UserId, SMPServer) -> AgentSMPServerStatsData -> (Map SMPServer SMPServerSummary, Map SMPServer SMPServerSummary) -> (Map SMPServer SMPServerSummary, Map SMPServer SMPServerSummary)
+        addStats (userId, srv) stts (userSumms, allSrvSumms) = (newUserSumms, newAllSumms)
+          where
+            newUserSumms = M.alter alterUserSumm srv userSumms
+            newAllSumms = if countUserInAll userId then M.alter alterAllSrvSumm srv allSrvSumms else allSrvSumms
+            alterUserSumm :: Maybe SMPServerSummary -> Maybe SMPServerSummary
+            alterUserSumm Nothing =
+              Just SMPServerSummary {smpServer = srv, known = Just $ srv `elem` userSMPSrvs, sessions = Nothing, subs = Nothing, stats = Just stts}
+            alterUserSumm (Just summ) =
+              Just (summ {stats = Just stts} :: SMPServerSummary)
+            alterAllSrvSumm :: Maybe SMPServerSummary -> Maybe SMPServerSummary
+            alterAllSrvSumm Nothing =
+              Just SMPServerSummary {smpServer = srv, known = Nothing, sessions = Nothing, subs = Nothing, stats = Just stts}
+            alterAllSrvSumm (Just summ@SMPServerSummary {stats}) =
+              Just (summ {stats = addSMPStats <$> stats <*> Just stts} :: SMPServerSummary)
+    -- mergeSMPSrvsMaps ::
+    --   Map (UserId, SMPServer) ServerSessions ->
+    --   Map (UserId, SMPServer) SMPServerSubs ->
+    --   Map (UserId, SMPServer) AgentSMPServerStatsData ->
+    --   Map (UserId, SMPServer) (Maybe ServerSessions, Maybe SMPServerSubs, Maybe AgentSMPServerStatsData)
+    -- mergeSMPSrvsMaps sessions subs stats = mergedMap3
+    --   where
+    --     combinedMap1 = M.foldrWithKey (\k v acc -> M.insertWith combine k (Just v, Nothing, Nothing) acc) M.empty sessions
+    --     combinedMap2 = M.foldrWithKey (\k v acc -> M.insertWith combine k (Nothing, Just v, Nothing) acc) combinedMap1 subs
+    --     mergedMap3 = M.foldrWithKey (\k v acc -> M.insertWith combine k (Nothing, Nothing, Just v) acc) combinedMap2 stats
+    --     combine (m1, m2, m3) (n1, n2, n3) = (m1 <|> n1, m2 <|> n2, m3 <|> n3)
+    -- accSMPSrvsSummaries :: ([SMPServerSummary], [SMPServerSummary])
+    -- accSMPSrvsSummaries = (userSrvSummaries, allSrvSummaries)
+    --   where
+    --     allSrvSummaries = M.elems allSrvSummariesMap
+    --     (userSrvSummaries, allSrvSummariesMap) = M.foldrWithKey accumulate initialAcc mergedData
+    --     mergedData = mergeSMPSrvsMaps smpServersSessions smpServersSubs smpServersStats
+    --     initialAcc = ([], M.empty)
+    --     accumulate (auId, server) (sessions, subs, stats) (uAcc, allAcc) =
+    --       let knownForUser = Just $ server `elem` userSMPSrvs
+    --           summaryForUser = SMPServerSummary server knownForUser sessions subs stats
+    --           newUAcc = if auId == aUserId currentUser then summaryForUser : uAcc else uAcc
+    --           summaryForAll = SMPServerSummary server Nothing sessions subs stats
+    --           newAllAcc =
+    --             if countUserInAll auId
+    --               then M.insertWith combineSummaries server summaryForAll allAcc
+    --               else allAcc
+    --        in (newUAcc, newAllAcc)
+    --     combineSummaries
+    --       (SMPServerSummary _ _ sessions1 subs1 stats1)
+    --       (SMPServerSummary smpServer known sessions2 subs2 stats2) =
+    --         SMPServerSummary
+    --           { smpServer,
+    --             known,
+    --             sessions = addServerSessions <$> sessions1 <*> sessions2,
+    --             subs = addSMPSubs <$> subs1 <*> subs2,
+    --             stats = addSMPStats <$> stats1 <*> stats2
+    --           }
     mergeXFTPSrvsMaps ::
       Map (UserId, XFTPServer) ServerSessions ->
       Map (UserId, XFTPServer) AgentXFTPServerStatsData ->
