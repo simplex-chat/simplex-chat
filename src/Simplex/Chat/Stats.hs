@@ -145,48 +145,40 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
         addSession :: (UserId, SMPServer) -> ServerSessions -> (Map SMPServer SMPServerSummary, Map SMPServer SMPServerSummary) -> (Map SMPServer SMPServerSummary, Map SMPServer SMPServerSummary)
         addSession (userId, srv) sess (userSumms, allSrvSumms) = (newUserSumms, newAllSumms)
           where
-            newUserSumms = M.alter alterUserSumm srv userSumms
-            newAllSumms = if countUserInAll userId then M.alter alterAllSrvSumm srv allSrvSumms else allSrvSumms
-            alterUserSumm :: Maybe SMPServerSummary -> Maybe SMPServerSummary
-            alterUserSumm Nothing =
-              Just SMPServerSummary {smpServer = srv, known = Just $ srv `elem` userSMPSrvs, sessions = Just sess, subs = Nothing, stats = Nothing}
-            alterUserSumm (Just summ) =
-              Just (summ {sessions = Just sess} :: SMPServerSummary)
-            alterAllSrvSumm :: Maybe SMPServerSummary -> Maybe SMPServerSummary
-            alterAllSrvSumm Nothing =
-              Just SMPServerSummary {smpServer = srv, known = Nothing, sessions = Just sess, subs = Nothing, stats = Nothing}
-            alterAllSrvSumm (Just summ@SMPServerSummary {sessions}) =
-              Just (summ {sessions = addServerSessions <$> sessions <*> Just sess} :: SMPServerSummary)
+            newUserSumms = M.alter (alterUserSumm srv sess setSummSess) srv userSumms
+            setSummSess summ s = summ {sessions = Just s} :: SMPServerSummary
+            newAllSumms =
+              if countUserInAll userId then M.alter (alterAllSrvSumm srv sess addSummSess) srv allSrvSumms else allSrvSumms
+            addSummSess summ@SMPServerSummary {sessions} s =
+              summ {sessions = addServerSessions <$> sessions <*> Just s} :: SMPServerSummary
         addSubs :: (UserId, SMPServer) -> SMPServerSubs -> (Map SMPServer SMPServerSummary, Map SMPServer SMPServerSummary) -> (Map SMPServer SMPServerSummary, Map SMPServer SMPServerSummary)
         addSubs (userId, srv) sbs (userSumms, allSrvSumms) = (newUserSumms, newAllSumms)
           where
-            newUserSumms = M.alter alterUserSumm srv userSumms
-            newAllSumms = if countUserInAll userId then M.alter alterAllSrvSumm srv allSrvSumms else allSrvSumms
-            alterUserSumm :: Maybe SMPServerSummary -> Maybe SMPServerSummary
-            alterUserSumm Nothing =
-              Just SMPServerSummary {smpServer = srv, known = Just $ srv `elem` userSMPSrvs, sessions = Nothing, subs = Just sbs, stats = Nothing}
-            alterUserSumm (Just summ) =
-              Just (summ {subs = Just sbs} :: SMPServerSummary)
-            alterAllSrvSumm :: Maybe SMPServerSummary -> Maybe SMPServerSummary
-            alterAllSrvSumm Nothing =
-              Just SMPServerSummary {smpServer = srv, known = Nothing, sessions = Nothing, subs = Just sbs, stats = Nothing}
-            alterAllSrvSumm (Just summ@SMPServerSummary {subs}) =
-              Just (summ {subs = addSMPSubs <$> subs <*> Just sbs} :: SMPServerSummary)
+            newUserSumms = M.alter (alterUserSumm srv sbs setSummSubs) srv userSumms
+            setSummSubs summ s = summ {subs = Just s}
+            newAllSumms =
+              if countUserInAll userId then M.alter (alterAllSrvSumm srv sbs addSummSubs) srv allSrvSumms else allSrvSumms
+            addSummSubs summ@SMPServerSummary {subs} s =
+              summ {subs = addSMPSubs <$> subs <*> Just s}
         addStats :: (UserId, SMPServer) -> AgentSMPServerStatsData -> (Map SMPServer SMPServerSummary, Map SMPServer SMPServerSummary) -> (Map SMPServer SMPServerSummary, Map SMPServer SMPServerSummary)
         addStats (userId, srv) stts (userSumms, allSrvSumms) = (newUserSumms, newAllSumms)
           where
-            newUserSumms = M.alter alterUserSumm srv userSumms
-            newAllSumms = if countUserInAll userId then M.alter alterAllSrvSumm srv allSrvSumms else allSrvSumms
-            alterUserSumm :: Maybe SMPServerSummary -> Maybe SMPServerSummary
-            alterUserSumm Nothing =
-              Just SMPServerSummary {smpServer = srv, known = Just $ srv `elem` userSMPSrvs, sessions = Nothing, subs = Nothing, stats = Just stts}
-            alterUserSumm (Just summ) =
-              Just (summ {stats = Just stts} :: SMPServerSummary)
-            alterAllSrvSumm :: Maybe SMPServerSummary -> Maybe SMPServerSummary
-            alterAllSrvSumm Nothing =
-              Just SMPServerSummary {smpServer = srv, known = Nothing, sessions = Nothing, subs = Nothing, stats = Just stts}
-            alterAllSrvSumm (Just summ@SMPServerSummary {stats}) =
-              Just (summ {stats = addSMPStats <$> stats <*> Just stts} :: SMPServerSummary)
+            newUserSumms = M.alter (alterUserSumm srv stts setSummStats) srv userSumms
+            setSummStats summ s = summ {stats = Just s} :: SMPServerSummary
+            newAllSumms =
+              if countUserInAll userId then M.alter (alterAllSrvSumm srv stts addSummStats) srv allSrvSumms else allSrvSumms
+            addSummStats summ@SMPServerSummary {stats} s =
+              summ {stats = addSMPStats <$> stats <*> Just s} :: SMPServerSummary
+        alterUserSumm :: SMPServer -> a -> (SMPServerSummary -> a -> SMPServerSummary) -> Maybe SMPServerSummary -> Maybe SMPServerSummary
+        alterUserSumm srv a f Nothing = Just $ f (newUserSummary srv) a
+        alterUserSumm _ a f (Just summ) = Just $ f summ a
+        newUserSummary :: SMPServer -> SMPServerSummary
+        newUserSummary srv = SMPServerSummary {smpServer = srv, known = Just $ srv `elem` userSMPSrvs, sessions = Nothing, subs = Nothing, stats = Nothing}
+        alterAllSrvSumm :: SMPServer -> a -> (SMPServerSummary -> a -> SMPServerSummary) -> Maybe SMPServerSummary -> Maybe SMPServerSummary
+        alterAllSrvSumm srv a f Nothing = Just $ f (newAllSrvSummary srv) a
+        alterAllSrvSumm _ a f (Just summ) = Just $ f summ a
+        newAllSrvSummary :: SMPServer -> SMPServerSummary
+        newAllSrvSummary srv = SMPServerSummary {smpServer = srv, known = Nothing, sessions = Nothing, subs = Nothing, stats = Nothing}
     -- mergeSMPSrvsMaps ::
     --   Map (UserId, SMPServer) ServerSessions ->
     --   Map (UserId, SMPServer) SMPServerSubs ->
