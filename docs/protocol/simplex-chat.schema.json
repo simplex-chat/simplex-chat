@@ -8,7 +8,7 @@
         "displayName": {
           "type": "string",
           "metadata": {
-            "format": "non-empty string without spaces, the first character must not be # or @"
+            "format": "non-empty string, the first character must not be # or @"
           }
         },
         "fullName": {"type": "string"}
@@ -18,6 +18,13 @@
           "type": "string",
           "metadata": {
             "format": "data URI format for base64 encoded image"
+          }
+        },
+        "contactLink": {"ref": "connReqUri"},
+        "preferences": {
+          "type": "string",
+          "metadata": {
+            "format": "JSON encoded user preferences"
           }
         }
       },
@@ -29,6 +36,8 @@
       },
       "optionalProperties": {
         "file": {"ref": "fileInvitation"},
+        "ttl": {"type": "integer"},
+        "live": {"type": "boolean"},
         "quote": {
           "properties": {
             "msgRef": {"ref": "msgRef"},
@@ -58,6 +67,15 @@
         "image": {
           "text": {"type": "string", "metadata": {"comment": "can be empty"}},
           "image": {"ref": "base64url"}
+        },
+        "video": {
+          "text": {"type": "string", "metadata": {"comment": "can be empty"}},
+          "image": {"ref": "base64url"},
+          "duration": {"type": "integer"}
+        },
+        "voice": {
+          "text": {"type": "string", "metadata": {"comment": "can be empty"}},
+          "duration": {"type": "integer"}
         },
         "file": {
           "text": {"type": "string", "metadata": {"comment": "can be empty"}}
@@ -91,7 +109,31 @@
         "fileSize": {"type": "uint32"}
       },
       "optionalProperties": {
-        "fileConnReq": {"ref": "connReqUri"}
+        "fileDigest": {"ref": "base64url"},
+        "fileConnReq": {"ref": "connReqUri"},
+        "fileDescr": {"ref": "fileDescription"}
+      }
+    },
+    "fileDescription": {
+      "properties": {
+        "fileDescrText": {
+          "type": "string",
+          "metadata": {
+            "format": "XFTP file description part text"
+          }
+        },
+        "fileDescrPartNo": {
+          "type": "integer",
+          "metadata": {
+            "format": "XFTP file description part number"
+          }
+        },
+        "fileDescrComplete": {
+          "type": "boolean",
+          "metadata": {
+            "format": "XFTP file description completion marker"
+          }
+        }
       }
     },
     "linkPreview": {
@@ -100,6 +142,21 @@
         "title": {"type": "string"},
         "description": {"type": "string"},
         "image": {"ref": "base64url"}
+      },
+      "optionalProperties": {
+        "content": {"ref": "linkContent"}
+      }
+    },
+    "linkContent": {
+      "discriminator": "type",
+      "mapping": {
+        "page": {},
+        "image": {},
+        "video": {
+          "optionalProperties": {
+            "duration": {"type": "integer"}
+          }
+        }
       }
     },
     "groupInvitation": {
@@ -111,8 +168,9 @@
       },
       "optionalProperties": {
         "groupLinkId": {"ref": "base64url"},
+        "groupSize": {"type": "integer"},
         "metadata": {
-          "comment": "used to identify invitation via group link"
+          "comment": "groupLinkId is used to identify invitation via group link"
         }
       }
     },
@@ -127,6 +185,15 @@
         "memberId": {"ref": "base64url"},
         "memberRole": {"ref": "groupMemberRole"},
         "profile": {"ref": "profile"}
+      },
+      "optionalProperties": {
+        "v": {"ref": "chatVersionRange"}
+      }
+    },
+    "chatVersionRange": {
+      "type": "string",
+      "metadata": {
+        "format": "chat version range string encoded as `<min>-<max>`, or as `<number>` if min = max"
       }
     },
     "introInvitation": {
