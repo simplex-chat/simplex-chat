@@ -4306,9 +4306,9 @@ This is your link for group %@!</source>
         <target>Las personas pueden conectarse contigo solo mediante los enlaces que compartes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Periodically" xml:space="preserve">
+      <trans-unit id="Periodically" xml:space="preserve" approved="no">
         <source>Periodically</source>
-        <target>Periódico</target>
+        <target state="translated">Periódicamente</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Permanent decryption error" xml:space="preserve">
