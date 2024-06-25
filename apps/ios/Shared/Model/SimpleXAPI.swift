@@ -1334,6 +1334,13 @@ func apiGetVersion() throws -> CoreVersionInfo {
     throw r
 }
 
+func getAgentServersSummary() throws -> PresentedServersSummary {
+    let userId = try currentUserId("getAgentServersSummary")
+    let r = chatSendCmdSync(.getAgentServersSummary(userId: userId))
+    if case let .agentServersSummary(_, serversSummary) = r { return serversSummary }
+    throw r
+}
+
 private func currentUserId(_ funcName: String) throws -> Int64 {
     if let userId = ChatModel.shared.currentUser?.userId {
         return userId

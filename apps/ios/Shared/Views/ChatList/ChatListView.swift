@@ -64,7 +64,7 @@ struct ChatListView: View {
             ConnectDesktopView()
         }
         .sheet(isPresented: $showServersSummary) {
-            Text("Servers summary view")
+            ServersSummaryView()
         }
     }
 
@@ -138,7 +138,7 @@ struct ChatListView: View {
             showServersSummary = true
         } label: {
             Image(systemName: "wifi")
-                .foregroundColor(.accentColor)
+                .foregroundColor(.secondary)
         }
     }
 
