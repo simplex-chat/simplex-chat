@@ -18,12 +18,12 @@ private let sentQuoteColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, o
 
 struct FramedItemView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var scrollModel: ReverseListScrollModel<ChatItem>
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
     @Binding var revealed: Bool
     var maxWidth: CGFloat = .infinity
-    @State var scrollProxy: ScrollViewProxy? = nil
     @State var msgWidth: CGFloat = 0
     @State var imgWidth: CGFloat? = nil
     @State var videoWidth: CGFloat? = nil
@@ -58,10 +58,9 @@ struct FramedItemView: View {
                 if let qi = chatItem.quotedItem {
                     ciQuoteView(qi)
                         .onTapGesture {
-                            if let proxy = scrollProxy,
-                               let ci = m.reversedChatItems.first(where: { $0.id == qi.itemId }) {
+                            if let ci = m.reversedChatItems.first(where: { $0.id == qi.itemId }) {
                                 withAnimation {
-                                    proxy.scrollTo(ci.viewId, anchor: .bottom)
+                                    scrollModel.scrollToItem(id: ci.id)
                                 }
                             }
                         }
@@ -115,7 +114,7 @@ struct FramedItemView: View {
         } else {
             switch (chatItem.content.msgContent) {
             case let .image(text, image):
-                CIImageView(chatItem: chatItem, image: image, maxWidth: maxWidth, imgWidth: $imgWidth, scrollProxy: scrollProxy)
+                CIImageView(chatItem: chatItem, image: image, maxWidth: .infinity, imgWidth: $imgWidth)
                     .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -128,7 +127,7 @@ struct FramedItemView: View {
                     ciMsgContentView(chatItem)
                 }
             case let .video(text, image, duration):
-                CIVideoView(chatItem: chatItem, image: image, duration: duration, maxWidth: maxWidth, videoWidth: $videoWidth, scrollProxy: scrollProxy)
+                CIVideoView(chatItem: chatItem, image: image, duration: duration, maxWidth: .infinity, videoWidth: $videoWidth)
                 .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -164,7 +163,7 @@ struct FramedItemView: View {
     }
 
     @ViewBuilder func framedItemHeader(icon: String? = nil, caption: Text, pad: Bool = false) -> some View {
-        let v = HStack(spacing: 6) {
+        HStack(spacing: 6) {
             if let icon = icon {
                 Image(systemName: icon)
                     .resizable()
@@ -182,11 +181,12 @@ struct FramedItemView: View {
         .overlay(DetermineWidth())
         .frame(minWidth: msgWidth, alignment: .leading)
         .background(chatItemFrameContextColor(chatItem, colorScheme))
-        if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
-            v.frame(maxWidth: mediaWidth, alignment: .leading)
-        } else {
-            v
-        }
+        // TODO: Media width calculations must be done synchronously. Disable for now.
+//        if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
+//            v.frame(maxWidth: mediaWidth, alignment: .leading)
+//        } else {
+//            v
+//        }
     }
 
     @ViewBuilder private func ciQuoteView(_ qi: CIQuote) -> some View {
