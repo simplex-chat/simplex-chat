@@ -98,10 +98,26 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                     }
                 }
                 .store(in: &bag)
+
+            // 5. External state changes will require manual layout updates
+            NotificationCenter.default
+                .addObserver(
+                    self,
+                    selector: #selector(updateLayout),
+                    name: notificationName,
+                    object: nil
+                )
         }
 
         @available(*, unavailable)
         required init?(coder: NSCoder) { fatalError() }
+
+        deinit { NotificationCenter.default.removeObserver(self) }
+
+        @objc private func updateLayout() {
+            tableView.setNeedsLayout()
+            tableView.layoutIfNeeded()
+        }
 
         override func scrollViewDidScroll(_ scrollView: UIScrollView) {
             isNearBottom.send(scrollView.contentOffset.y < scrollView.frame.height)
@@ -138,7 +154,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             dataSource.defaultRowAnimation = .none
             var animatingDifferences = false
             if #available(iOS 16.0, *) {
-                animatingDifferences = (items.count - itemCount) == 1
+                animatingDifferences = itemCount != .zero && abs(items.count - itemCount) < 10
             }
             dataSource.apply(snapshot, animatingDifferences: animatingDifferences)
             itemCount = items.count
@@ -200,8 +216,18 @@ enum ReverseListScrollProxy<Item: Identifiable>: Equatable {
 
 fileprivate let cellReuseId = "hostingCell"
 
+fileprivate let notificationName = NSNotification.Name(rawValue: "reverseListNeedsLayout")
+
 fileprivate extension CGAffineTransform {
     /// Transform that vertically flips the view, preserving it's location
     static let verticalFlip = CGAffineTransform(scaleX: 1, y: -1)
 }
 
+extension NotificationCenter {
+    static func postReverseListNeedsLayout() {
+        NotificationCenter.default.post(
+            name: notificationName,
+            object: nil
+        )
+    }
+}
