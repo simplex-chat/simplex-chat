@@ -85,9 +85,7 @@ struct GroupChatInfoView: View {
                     NavigationLink {
                         ChatWallpaperEditorSheet(chat: chat)
                     } label: {
-                        Image(systemName: "photo")
-                            .foregroundColor(theme.colors.primary)
-                        Text("Chat theme")
+                        Label("Chat theme", systemImage: "photo")
                     }
                 } header: {
                     Text("")

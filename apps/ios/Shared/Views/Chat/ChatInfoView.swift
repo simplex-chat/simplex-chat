@@ -165,9 +165,7 @@ struct ChatInfoView: View {
                     NavigationLink {
                         ChatWallpaperEditorSheet(chat: chat)
                     } label: {
-                        Image(systemName: "photo")
-                            .foregroundColor(theme.colors.primary)
-                        Text("Chat theme")
+                        Label("Chat theme", systemImage: "photo")
                     }
 //                    } else if developerTools {
 //                        synchronizeConnectionButtonForce()
@@ -608,6 +606,7 @@ struct ChatWallpaperEditorSheet: View {
         )
         .navigationTitle("Chat theme")
         .modifier(ThemedBackground())
+        .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             globalThemeUsed = preferred == nil
         }
