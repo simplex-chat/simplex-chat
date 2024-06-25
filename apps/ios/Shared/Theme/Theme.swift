@@ -55,6 +55,7 @@ class AppTheme: ObservableObject, Equatable {
 
 struct ThemedBackground: ViewModifier {
     @EnvironmentObject var theme: AppTheme
+    var grouped: Bool = false
 
     func body(content: Content) -> some View {
         content
@@ -77,6 +78,8 @@ struct ThemedBackground: ViewModifier {
             .background(
                 theme.base == DefaultTheme.SIMPLEX
                 ? Color.clear
+                : grouped && theme.base == DefaultTheme.LIGHT
+                ? LightThemeBackgroundColor
                 : theme.colors.background
             )
     }

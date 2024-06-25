@@ -22,7 +22,7 @@ struct CallSettings: View {
                     NavigationLink {
                         RTCServers()
                             .navigationTitle("Your ICE servers")
-                            .modifier(ThemedBackground())
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("WebRTC ICE servers")
                     }

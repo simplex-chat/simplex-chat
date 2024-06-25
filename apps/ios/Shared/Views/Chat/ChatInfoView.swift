@@ -247,7 +247,7 @@ struct ChatInfoView: View {
                     }
                 }
             }
-            .modifier(ThemedBackground())
+            .modifier(ThemedBackground(grouped: true))
             .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -377,7 +377,7 @@ struct ChatInfoView: View {
             )
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Security code")
-            .modifier(ThemedBackground())
+            .modifier(ThemedBackground(grouped: true))
         } label: {
             Label(
                 contact.verified ? "View security code" : "Verify security code",
@@ -394,7 +394,7 @@ struct ChatInfoView: View {
                 currentFeaturesAllowed: contactUserPrefsToFeaturesAllowed(contact.mergedPreferences)
             )
             .navigationBarTitle("Contact preferences")
-            .modifier(ThemedBackground())
+            .modifier(ThemedBackground(grouped: true))
             .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Contact preferences", systemImage: "switch.2")
@@ -605,7 +605,7 @@ struct ChatWallpaperEditorSheet: View {
             }
         )
         .navigationTitle("Chat theme")
-        .modifier(ThemedBackground())
+        .modifier(ThemedBackground(grouped: true))
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             globalThemeUsed = preferred == nil

@@ -355,7 +355,7 @@ struct ChatListNavLink: View {
                 if case let .contactConnection(contactConnection) = chat.chatInfo {
                     ContactConnectionInfo(contactConnection: contactConnection)
                         .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
-                        .modifier(ThemedBackground())
+                        .modifier(ThemedBackground(grouped: true))
                 }
             }
         }

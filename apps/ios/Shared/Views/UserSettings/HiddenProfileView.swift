@@ -70,7 +70,7 @@ struct HiddenProfileView: View {
                 message: Text(savePasswordError ?? "")
             )
         }
-        .modifier(ThemedBackground())
+        .modifier(ThemedBackground(grouped: true))
     }
 
     var passwordValid: Bool { hidePassword == hidePassword.trimmingCharacters(in: .whitespaces) }

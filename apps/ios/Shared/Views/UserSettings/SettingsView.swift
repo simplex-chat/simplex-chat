@@ -260,7 +260,7 @@ struct SettingsView: View {
                         NavigationLink {
                             UserAddressView(shareViaProfile: user.addressShared)
                                 .navigationTitle("SimpleX address")
-                                .modifier(ThemedBackground())
+                                .modifier(ThemedBackground(grouped: true))
                                 .navigationBarTitleDisplayMode(.large)
                         } label: {
                             settingsRow("qrcode") { Text("Your SimpleX address") }
@@ -269,7 +269,7 @@ struct SettingsView: View {
                         NavigationLink {
                             PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
                                 .navigationTitle("Your preferences")
-                                .modifier(ThemedBackground())
+                                .modifier(ThemedBackground(grouped: true))
                         } label: {
                             settingsRow("switch.2") { Text("Chat preferences") }
                         }
@@ -284,7 +284,7 @@ struct SettingsView: View {
                     NavigationLink {
                         MigrateFromDevice(showSettings: $showSettings, showProgressOnSettings: $showProgress)
                             .navigationTitle("Migrate device")
-                            .modifier(ThemedBackground())
+                            .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
                         settingsRow("tray.and.arrow.up") { Text("Migrate to another device") }
@@ -296,7 +296,7 @@ struct SettingsView: View {
                     NavigationLink {
                         NotificationsView()
                             .navigationTitle("Notifications")
-                            .modifier(ThemedBackground())
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         HStack {
                             notificationsIcon()
@@ -308,7 +308,7 @@ struct SettingsView: View {
                     NavigationLink {
                         NetworkAndServers()
                             .navigationTitle("Network & servers")
-                            .modifier(ThemedBackground())
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         settingsRow("externaldrive.connected.to.line.below") { Text("Network & servers") }
                     }
@@ -317,7 +317,7 @@ struct SettingsView: View {
                     NavigationLink {
                         CallSettings()
                             .navigationTitle("Your calls")
-                            .modifier(ThemedBackground())
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         settingsRow("video") { Text("Audio & video calls") }
                     }
@@ -326,7 +326,7 @@ struct SettingsView: View {
                     NavigationLink {
                         PrivacySettings()
                             .navigationTitle("Your privacy")
-                            .modifier(ThemedBackground())
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         settingsRow("lock") { Text("Privacy & security") }
                     }
@@ -336,7 +336,7 @@ struct SettingsView: View {
                         NavigationLink {
                             AppearanceSettings()
                                 .navigationTitle("Appearance")
-                                .modifier(ThemedBackground())
+                                .modifier(ThemedBackground(grouped: true))
                         } label: {
                             settingsRow("sun.max") { Text("Appearance") }
                         }
@@ -407,7 +407,7 @@ struct SettingsView: View {
                     NavigationLink {
                         DeveloperView()
                             .navigationTitle("Developer tools")
-                            .modifier(ThemedBackground())
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         settingsRow("chevron.left.forwardslash.chevron.right") { Text("Developer tools") }
                     }
@@ -421,7 +421,7 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Your settings")
-            .modifier(ThemedBackground())
+            .modifier(ThemedBackground(grouped: true))
         }
         .onDisappear {
             chatModel.showingTerminal = false
@@ -433,7 +433,7 @@ struct SettingsView: View {
         NavigationLink {
             DatabaseView(showSettings: $showSettings, chatItemTTL: chatModel.chatItemTTL)
                 .navigationTitle("Your chat database")
-                .modifier(ThemedBackground())
+                .modifier(ThemedBackground(grouped: true))
         } label: {
             let color: Color = chatModel.chatDbEncrypted == false ? .orange : .secondary
             settingsRow("internaldrive", color: color) {

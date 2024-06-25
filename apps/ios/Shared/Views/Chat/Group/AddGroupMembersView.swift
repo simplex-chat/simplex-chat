@@ -126,7 +126,7 @@ struct AddGroupMembersViewCommon: View {
         .onChange(of: selectedContacts) { _ in
             searchFocussed = false
         }
-        .modifier(ThemedBackground())
+        .modifier(ThemedBackground(grouped: true))
     }
 
     private func inviteMembersButton() -> some View {

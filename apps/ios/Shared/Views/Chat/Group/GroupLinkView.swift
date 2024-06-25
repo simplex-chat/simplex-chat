@@ -133,7 +133,7 @@ struct GroupLinkView: View {
                 shouldCreate = false
             }
         }
-        .modifier(ThemedBackground())
+        .modifier(ThemedBackground(grouped: true))
     }
 
     private func createGroupLink() {
