@@ -688,50 +688,6 @@ struct ChatWallpaperEditorSheet: View {
     }
 }
 
-//func ChatWallpaperEditorModal(_ chat: Chat) -> some View {
-//    let themes = remember(CurrentColors.collectAsState().value.base) {
-//        (chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes
-//        ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes
-//        ?: ThemeModeOverrides()
-//    }
-//    val globalThemeUsed = remember { stateGetOrPut("globalThemeUsed") { false }  }
-//    val initialTheme = remember(CurrentColors.collectAsState().value.base) {
-//        val preferred = themes.preferredMode(!CurrentColors.value.colors.isLight)
-//        globalThemeUsed.value = preferred == null
-//        preferred ?: ThemeManager.defaultActiveTheme(chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
-//    }
-//    ChatWallpaperEditor(
-//        initialTheme,
-//        applyToMode = if (themes.light == themes.dark) null else initialTheme.mode,
-//        globalThemeUsed = globalThemeUsed,
-//        save = { applyToMode, newTheme ->
-//            save(applyToMode, newTheme, chatModel.getChat(chat.id) ?: chat)
-//        })
-//}
-
-//func save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, chat: Chat) async {
-//    val unchangedThemes: ThemeModeOverrides = ((chat.chatInfo as? ChatInfo.Direct)?.contact?.uiThemes ?: (chat.chatInfo as? ChatInfo.Group)?.groupInfo?.uiThemes) ?: ThemeModeOverrides()
-//    val wallpaperFiles = listOf(unchangedThemes.light?.wallpaper?.imageFile, unchangedThemes.dark?.wallpaper?.imageFile)
-//    var changedThemes: ThemeModeOverrides? = unchangedThemes
-//    val changed = newTheme?.copy(wallpaper = newTheme.wallpaper?.withFilledWallpaperPath())
-//    changedThemes = when (applyToMode) {
-//        null -> changedThemes?.copy(light = changed?.copy(mode = DefaultThemeMode.LIGHT), dark = changed?.copy(mode = DefaultThemeMode.DARK))
-//        DefaultThemeMode.LIGHT -> changedThemes?.copy(light = changed?.copy(mode = applyToMode))
-//        DefaultThemeMode.DARK -> changedThemes?.copy(dark = changed?.copy(mode = applyToMode))
-//    }
-//    changedThemes = if (changedThemes?.light != null || changedThemes?.dark != null) changedThemes else null
-//                        val wallpaperFilesToDelete = wallpaperFiles - changedThemes?.light?.wallpaper?.imageFile - changedThemes?.dark?.wallpaper?.imageFile
-//                        wallpaperFilesToDelete.forEach(::removeWallpaperFile)
-//
-//                        if (controller.apiSetChatUIThemes(chat.remoteHostId, chat.id, changedThemes)) {
-//        if (chat.chatInfo is ChatInfo.Direct) {
-//            chatModel.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(contact = chat.chatInfo.contact.copy(uiThemes = changedThemes)))
-//        } else if (chat.chatInfo is ChatInfo.Group) {
-//            chatModel.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(groupInfo = chat.chatInfo.groupInfo.copy(uiThemes = changedThemes)))
-//        }
-//    }
-//}
-
 func switchAddressAlert(_ switchAddress: @escaping () -> Void) -> Alert {
     Alert(
         title: Text("Change receiving address?"),

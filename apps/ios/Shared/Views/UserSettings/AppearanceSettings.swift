@@ -43,7 +43,7 @@ struct AppearanceSettings: View {
         }
     }()
 
-    @State var perUserTheme: ThemeModeOverride = {/*remember(CurrentColors.collectAsState().value.base, chatModel.currentUser.value) {*/
+    @State var perUserTheme: ThemeModeOverride = {
         ChatModel.shared.currentUser?.uiThemes?.preferredMode(!CurrentColors.colors.isLight) ?? ThemeModeOverride(mode: CurrentColors.base.mode)
     }()
 
