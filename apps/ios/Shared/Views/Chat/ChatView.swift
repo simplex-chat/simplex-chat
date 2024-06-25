@@ -28,6 +28,7 @@ struct ChatView: View {
     @State private var connectionCode: String?
     @State private var loadingItems = false
     @State private var firstPage = false
+    @State private var revealedChatItem: ChatItem?
     @State private var scrollProxy: ReverseListScrollProxy<ChatItem> = .isNearBottom(true)
     @State private var searchMode = false
     @State private var searchText: String = ""
@@ -85,6 +86,9 @@ struct ChatView: View {
             } else {
                 dismiss()
             }
+        }
+        .onChange(of: revealedChatItem) { _ in
+            NotificationCenter.postReverseListNeedsLayout()
         }
         .onDisappear {
             VideoPlayerView.players.removeAll()
@@ -486,6 +490,7 @@ struct ChatView: View {
             itemWidth: maxWidth,
             composeState: $composeState,
             selectedMember: $selectedMember,
+            revealedChatItem: $revealedChatItem,
             chatView: self
         )
     }
@@ -499,13 +504,13 @@ struct ChatView: View {
         @State var itemWidth: CGFloat
         @Binding var composeState: ComposeState
         @Binding var selectedMember: GMember?
+        @Binding var revealedChatItem: ChatItem?
         var chatView: ChatView
 
         @State private var deletingItem: ChatItem? = nil
         @State private var showDeleteMessage = false
         @State private var deletingItems: [Int64] = []
         @State private var showDeleteMessages = false
-        @State private var revealed = false
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
         @State private var showForwardingSheet: Bool = false
@@ -515,6 +520,8 @@ struct ChatView: View {
         @State private var audioPlayer: AudioPlayer?
         @State private var playbackState: VoiceMessagePlaybackState = .noPlayback
         @State private var playbackTime: TimeInterval?
+
+        var revealed: Bool { chatItem == revealedChatItem }
 
         var body: some View {
             let (currIndex, nextItem) = m.getNextChatItem(chatItem)
@@ -614,7 +621,7 @@ struct ChatView: View {
                     chat: chat,
                     chatItem: ci,
                     maxWidth: maxWidth,
-                    revealed: $revealed,
+                    revealed: .constant(revealed),
                     allowMenu: $allowMenu,
                     audioPlayer: $audioPlayer,
                     playbackState: $playbackState,
@@ -763,7 +770,7 @@ struct ChatView: View {
                 if revealed {
                     hideButton()
                 } else if !ci.isDeletedContent {
-                    revealButton()
+                    revealButton(ci)
                 } else if range != nil {
                     expandButton()
                 }
@@ -1002,7 +1009,7 @@ struct ChatView: View {
         private func hideButton() -> Button<some View> {
             Button {
                 withAnimation {
-                    revealed = false
+                    revealedChatItem = nil
                 }
             } label: {
                 Label(
@@ -1074,10 +1081,10 @@ struct ChatView: View {
             }
         }
 
-        private func revealButton() -> Button<some View> {
+        private func revealButton(_ ci: ChatItem) -> Button<some View> {
             Button {
                 withAnimation {
-                    revealed = true
+                    revealedChatItem = ci
                 }
             } label: {
                 Label(
@@ -1090,7 +1097,7 @@ struct ChatView: View {
         private func expandButton() -> Button<some View> {
             Button {
                 withAnimation {
-                    revealed = true
+                    revealedChatItem = chatItem
                 }
             } label: {
                 Label(
@@ -1103,7 +1110,7 @@ struct ChatView: View {
         private func shrinkButton() -> Button<some View> {
             Button {
                 withAnimation {
-                    revealed = false
+                    revealedChatItem = nil
                 }
             } label: {
                 Label (
