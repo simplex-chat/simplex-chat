@@ -183,8 +183,15 @@ struct ServersSummaryView: View {
             .navigationBarTitle("SMP server")
             .navigationBarTitleDisplayMode(.large)
         } label: {
-            Text(serverAddress(server.smpServer))
-                .lineLimit(1)
+            HStack {
+                if let subs = server.subs {
+                    SubscriptionStatusView(activeSubs: subs.ssActive, pendingSubs: subs.ssPending)
+                        .frame(width: 16, alignment: .center)
+                        .padding(.trailing, 4)
+                }
+                Text(serverAddress(server.smpServer))
+                    .lineLimit(1)
+            }
         }
     }
 
@@ -246,6 +253,75 @@ struct ServersSummaryView: View {
         } catch let error {
             logger.error("getAgentServersSummary error: \(responseError(error))")
         }
+    }
+}
+
+struct SubscriptionStatusView: View {
+    @EnvironmentObject var m: ChatModel
+    var activeSubs: Int
+    var pendingSubs: Int
+
+    var body: some View {
+        let netInfo = m.networkInfo
+        if netInfo.online {
+            let (image, color, variableValue, opacity) = networkOnlineImage(netInfo.networkType)
+            if #available(iOS 16.0, *) {
+                Image(systemName: image, variableValue: variableValue)
+                    .foregroundColor(color)
+            } else {
+                Image(systemName: image)
+                    .foregroundColor(color.opacity(opacity))
+            }
+        } else {
+            Image(systemName: "wifi.slash")
+                .foregroundColor(.secondary)
+        }
+    }
+
+    func networkOnlineImage(_ networkType: UserNetworkType) -> (String, Color, Double, Double) {
+        switch networkType {
+        case .cellular:
+            let (color, variableValue, opacity) = cellularbarsColor
+            return ("cellularbars", color, variableValue, opacity)
+        default:
+            let (color, variableValue, opacity) = wifiColor
+            return ("wifi", color, variableValue, opacity)
+        }
+    }
+
+    var wifiColor: (Color, Double, Double) {
+        if activeSubs > 0 {
+            let wifiVariableValue = ( // wifi has 3 sections
+                activeSubsPercentage >= 1 ? 1
+                : (activeSubsPercentage >= 0.5 && activeSubsPercentage < 1) ? 0.6
+                : (activeSubsPercentage > 0 && activeSubsPercentage < 0.5) ? 0.3
+                : 0
+            )
+            return (.accentColor, wifiVariableValue, activeSubsPercentage)
+        } else {
+            return (.secondary, 1, 1)
+        }
+    }
+
+    var cellularbarsColor: (Color, Double, Double) {
+        if activeSubs > 0 {
+            let wifiVariableValue = ( // cellularbars has 4 sections
+                activeSubsPercentage >= 1 ? 1
+                : (activeSubsPercentage >= 0.67 && activeSubsPercentage < 1) ? 0.7
+                : (activeSubsPercentage >= 0.33 && activeSubsPercentage < 0.67) ? 0.45
+                : (activeSubsPercentage > 0 && activeSubsPercentage < 0.33) ? 0.2
+                : 0
+            )
+            return (.accentColor, wifiVariableValue, activeSubsPercentage)
+        } else {
+            return (.secondary, 1, 1)
+        }
+    }
+
+    var activeSubsPercentage: Double {
+        let total = activeSubs + pendingSubs
+        guard total != 0 else { return 0.0 }
+        return Double(activeSubs) / Double(total)
     }
 }
 

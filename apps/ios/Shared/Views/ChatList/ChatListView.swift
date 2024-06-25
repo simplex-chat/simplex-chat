@@ -137,8 +137,8 @@ struct ChatListView: View {
         Button {
             showServersSummary = true
         } label: {
-            Image(systemName: "wifi")
-                .foregroundColor(.secondary)
+            // TODO backend to periodically send updates to model
+            SubscriptionStatusView(activeSubs: 100, pendingSubs: 0)
         }
     }
 
