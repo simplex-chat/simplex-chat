@@ -594,7 +594,21 @@ struct UserWallpaperEditorSheet: View {
             applyToMode: themes.light == themes.dark ? nil : initialTheme.mode,
             globalThemeUsed: $globalThemeUsed,
             save: { applyToMode, newTheme in
-                await save(applyToMode, newTheme, themes, userId)
+                if updateBackendDate + 1 < Date.now {
+                    updateBackendDate = .now
+                    await save(applyToMode, newTheme, themes, userId)
+                } else {
+                    updateBackendTask.cancel()
+                    updateBackendTask = Task {
+                        do {
+                            try await Task.sleep(nanoseconds: 100_000000)
+                            updateBackendDate = .now
+                            await save(applyToMode, newTheme, themes, userId)
+                        } catch {
+                            // ignore
+                        }
+                    }
+                }
             }
         )
         .navigationTitle("Profile theme")
@@ -649,18 +663,10 @@ struct UserWallpaperEditorSheet: View {
         await MainActor.run {
             ChatModel.shared.updateCurrentUserUiThemes(uiThemes: changedThemesConstant)
         }
-        updateBackendTask.cancel()
-        updateBackendTask = Task {
-            do {
-                try await Task.sleep(nanoseconds: 300_000000)
-                if await !apiSetUserUIThemes(userId: userId, themes: changedThemesConstant) {
-                    await MainActor.run {
-                        // If failed to apply for some reason return the old themes
-                        ChatModel.shared.updateCurrentUserUiThemes(uiThemes: oldThemes)
-                    }
-                }
-            } catch {
-                // canceled task
+        if await !apiSetUserUIThemes(userId: userId, themes: changedThemesConstant) {
+            await MainActor.run {
+                // If failed to apply for some reason return the old themes
+                ChatModel.shared.updateCurrentUserUiThemes(uiThemes: oldThemes)
             }
         }
     }
@@ -985,6 +991,8 @@ func setUIAccentColorDefault(_ color: CGColor) {
 }
 
 private var updateBackendTask: Task = Task {}
+private var updateBackendDate: Date = .now - 1
+
 private func saveThemeToDatabase(_ themeUserDestination: (Int64, ThemeModeOverrides?)?) {
     let m = ChatModel.shared
     let oldThemes = m.currentUser?.uiThemes
