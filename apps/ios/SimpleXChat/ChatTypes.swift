@@ -3440,6 +3440,15 @@ public enum MsgContent: Equatable {
         }
     }
 
+    public var isMediaOrFileAttachment: Bool {
+        switch self {
+        case .image: true
+        case .video: true
+        case .file: true
+        default: false
+        }
+    }
+
     var cmdString: String {
         "json \(encodeJSON(self))"
     }

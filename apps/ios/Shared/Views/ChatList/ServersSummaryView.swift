@@ -252,7 +252,7 @@ struct SMPServerSummaryView: View {
             } footer: {
                 if let known = summary.known, known {
                     // TODO open settings?
-                    Text("Server can be configured in **Settings** -> **Network & servers** -> **SMP servers**")
+                    Text("Server is configured in **Settings** -> **Network & servers** -> **SMP servers**.")
                 }
             }
 

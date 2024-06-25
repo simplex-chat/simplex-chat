@@ -20,6 +20,7 @@ import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry)
 import Control.Logger.Simple
 import Control.Monad
+import Simplex.Chat.Stats
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
@@ -84,7 +85,6 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.Types.Util
 import Simplex.Chat.Util (encryptFile, liftIOEither, shuffle)
 import qualified Simplex.Chat.Util as U
 import Simplex.FileTransfer.Client.Main (maxFileSize, maxFileSizeHard)
@@ -104,7 +104,7 @@ import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), Migrati
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
-import Simplex.Messaging.Client (ProxyClientError (..), NetworkConfig (..), defaultNetworkConfig)
+import Simplex.Messaging.Client (NetworkConfig (..), ProxyClientError (..), defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -113,7 +113,7 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolTypeI, SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolTypeI, SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol, ProtocolServer)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
@@ -218,11 +218,12 @@ newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Boo
 newChatController
   ChatDatabase {chatStore, agentStore}
   user
-  cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles, deviceNameForRemote}
-  ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, simpleNetCfg, logLevel, logConnections, logServerHosts, logFile, tbqSize, highlyAvailable}, deviceName, optFilesFolder, optTempDirectory, showReactions, allowInstantFiles, autoAcceptFileSize}
+  cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles, deviceNameForRemote, confirmMigrations}
+  ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, simpleNetCfg, logLevel, logConnections, logServerHosts, logFile, tbqSize, highlyAvailable, yesToUpMigrations}, deviceName, optFilesFolder, optTempDirectory, showReactions, allowInstantFiles, autoAcceptFileSize}
   backgroundMode = do
     let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
-        config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles', autoAcceptFileSize, highlyAvailable}
+        confirmMigrations' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
+        config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles', autoAcceptFileSize, highlyAvailable, confirmMigrations = confirmMigrations'}
         firstTime = dbNew chatStore
     currentUser <- newTVarIO user
     currentRemoteHost <- newTVarIO Nothing
@@ -368,7 +369,7 @@ activeAgentServers ChatConfig {defaultServers} p =
   fromMaybe (cfgServers p defaultServers)
     . nonEmpty
     . map (\ServerCfg {server} -> server)
-    . filter (\ServerCfg {enabled} -> enabled)
+    . filter (\ServerCfg {enabled} -> enabled == SEEnabled)
 
 cfgServers :: UserProtocol p => SProtocolType p -> (DefaultAgentServers -> NonEmpty (ProtoServerWithAuth p))
 cfgServers p DefaultAgentServers {smp, xftp} = case p of
@@ -762,28 +763,31 @@ processChatCommand' vr = \case
             _ -> throwChatError CEInvalidChatItemUpdate
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTGroup -> withGroupLock "updateChatItem" chatId $ do
-      Group gInfo@GroupInfo {groupId} ms <- withStore $ \db -> getGroup db vr user chatId
+      Group gInfo@GroupInfo {groupId, membership} ms <- withStore $ \db -> getGroup db vr user chatId
       assertUserGroupRole gInfo GRAuthor
-      cci <- withStore $ \db -> getGroupCIWithReactions db user gInfo itemId
-      case cci of
-        CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
-          case (ciContent, itemSharedMsgId, editable) of
-            (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
-              let changed = mc /= oldMC
-              if changed || fromMaybe False itemLive
-                then do
-                  (SndMessage {msgId}, _) <- sendGroupMessage user gInfo ms (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
-                  ci' <- withStore' $ \db -> do
-                    currentTs <- liftIO getCurrentTime
-                    when changed $
-                      addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
-                    let edited = itemLive /= Just True
-                    updateGroupChatItem db user groupId ci (CISndMsgContent mc) edited live $ Just msgId
-                  startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
-                  pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci')
-                else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
-            _ -> throwChatError CEInvalidChatItemUpdate
-        CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
+      if prohibitedSimplexLinks gInfo membership mc
+        then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText GFSimplexLinks))
+        else do
+          cci <- withStore $ \db -> getGroupCIWithReactions db user gInfo itemId
+          case cci of
+            CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
+              case (ciContent, itemSharedMsgId, editable) of
+                (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
+                  let changed = mc /= oldMC
+                  if changed || fromMaybe False itemLive
+                    then do
+                      (SndMessage {msgId}, _) <- sendGroupMessage user gInfo ms (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
+                      ci' <- withStore' $ \db -> do
+                        currentTs <- liftIO getCurrentTime
+                        when changed $
+                          addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
+                        let edited = itemLive /= Just True
+                        updateGroupChatItem db user groupId ci (CISndMsgContent mc) edited live $ Just msgId
+                      startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
+                      pure $ CRChatItemUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci')
+                    else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
+                _ -> throwChatError CEInvalidChatItemUpdate
+            CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTLocal -> do
       (nf@NoteFolder {noteFolderId}, cci) <- withStore $ \db -> (,) <$> getNoteFolder db user chatId <*> getLocalChatItem db user chatId itemId
       case cci of
@@ -1311,7 +1315,7 @@ processChatCommand' vr = \case
         servers' = fromMaybe (L.map toServerCfg defServers) $ nonEmpty servers
     pure $ CRUserProtoServers user $ AUPS $ UserProtoServers p servers' defServers
     where
-      toServerCfg server = ServerCfg {server, preset = True, tested = Nothing, enabled = True}
+      toServerCfg server = ServerCfg {server, preset = True, tested = Nothing, enabled = SEEnabled}
   GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
     processChatCommand $ APIGetUserProtoServers userId aProtocol
   APISetUserProtoServers userId (APSC p (ProtoServersConfig servers)) -> withUserId userId $ \user -> withServerProtocol p $ do
@@ -1357,6 +1361,9 @@ processChatCommand' vr = \case
     pure $ CRNetworkConfig cfg
   APISetNetworkInfo info -> lift (withAgent' (`setUserNetworkInfo` info)) >> ok_
   ReconnectAllServers -> withUser' $ \_ -> lift (withAgent' reconnectAllServers) >> ok_
+  ReconnectServer userId srv -> withUserId userId $ \user -> do
+    lift (withAgent' $ \a -> reconnectSMPServer a (aUserId user) srv)
+    ok_
   APISetChatSettings (ChatRef cType chatId) chatSettings -> withUser $ \user -> case cType of
     CTDirect -> do
       ct <- withStore $ \db -> do
@@ -2246,6 +2253,21 @@ processChatCommand' vr = \case
         CLUserContact ucId -> "UserContact " <> show ucId
         CLFile fId -> "File " <> show fId
   DebugEvent event -> toView event >> ok_
+  GetAgentServersSummary userId -> withUserId userId $ \user -> do
+    agentServersSummary <- lift $ withAgent' getAgentServersSummary
+    users <- withStore' getUsers
+    smpServers <- getUserServers user SPSMP
+    xftpServers <- getUserServers user SPXFTP
+    let presentedServersSummary = toPresentedServersSummary agentServersSummary users user smpServers xftpServers
+    pure $ CRAgentServersSummary user presentedServersSummary
+    where
+      getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => User -> SProtocolType p -> CM [ProtocolServer p]
+      getUserServers users protocol = do
+        ChatConfig {defaultServers} <- asks config
+        let defServers = cfgServers protocol defaultServers
+        servers <- map (\ServerCfg {server} -> server) <$> withStore' (`getProtocolServers` users)
+        let srvs = if null servers then L.toList defServers else servers
+        pure $ map protoServer srvs
   GetAgentWorkers -> lift $ CRAgentWorkersSummary <$> withAgent' getAgentWorkersSummary
   GetAgentWorkersDetails -> lift $ CRAgentWorkersDetails <$> withAgent' getAgentWorkersDetails
   GetAgentStats -> lift $ CRAgentStats . map stat <$> withAgent' getAgentStats
@@ -2918,8 +2940,16 @@ prohibitedGroupContent :: GroupInfo -> GroupMember -> MsgContent -> Maybe f -> M
 prohibitedGroupContent gInfo m mc file_
   | isVoice mc && not (groupFeatureMemberAllowed SGFVoice m gInfo) = Just GFVoice
   | not (isVoice mc) && isJust file_ && not (groupFeatureMemberAllowed SGFFiles m gInfo) = Just GFFiles
-  | not (groupFeatureMemberAllowed SGFSimplexLinks m gInfo) && containsFormat isSimplexLink (parseMarkdown $ msgContentText mc) = Just GFSimplexLinks
+  | prohibitedSimplexLinks gInfo m mc = Just GFSimplexLinks
   | otherwise = Nothing
+
+prohibitedSimplexLinks :: GroupInfo -> GroupMember -> MsgContent -> Bool
+prohibitedSimplexLinks gInfo m mc =
+  not (groupFeatureMemberAllowed SGFSimplexLinks m gInfo)
+    && maybe False (any ftIsSimplexLink) (parseMaybeMarkdownList $ msgContentText mc)
+  where
+    ftIsSimplexLink :: FormattedText -> Bool
+    ftIsSimplexLink FormattedText {format} = maybe False isSimplexLink format
 
 roundedFDCount :: Int -> Int
 roundedFDCount n
@@ -3214,7 +3244,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
       throwChatError $ CEFileNotApproved fileId unknownSrvs
 
-getNetworkConfig :: CM' NetworkConfig 
+getNetworkConfig :: CM' NetworkConfig
 getNetworkConfig = withAgent' $ liftIO . getNetworkConfig'
 
 resetRcvCIFileStatus :: User -> FileTransferId -> CIFileStatus 'MDRcv -> CM (Maybe AChatItem)
@@ -5250,18 +5280,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           groupMsgToView gInfo ci' {reactions}
 
     groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> CM ()
-    groupMessageUpdate gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId, memberId} sharedMsgId mc msg@RcvMessage {msgId} brokerTs ttl_ live_ =
-      updateRcvChatItem `catchCINotFound` \_ -> do
-        -- This patches initial sharedMsgId into chat item when locally deleted chat item
-        -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
-        -- Chat item and update message which created it will have different sharedMsgId in this case...
-        let timed_ = rcvGroupCITimed gInfo ttl_
-        ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg (Just sharedMsgId) brokerTs content Nothing timed_ live
-        ci' <- withStore' $ \db -> do
-          createChatItemVersion db (chatItemId' ci) brokerTs mc
-          ci' <- updateGroupChatItem db user groupId ci content True live Nothing
-          blockedMember m ci' $ markGroupChatItemBlocked db user gInfo ci'
-        toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci')
+    groupMessageUpdate gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId, memberId} sharedMsgId mc msg@RcvMessage {msgId} brokerTs ttl_ live_
+      | prohibitedSimplexLinks gInfo m mc =
+          messageWarning $ "x.msg.update ignored: feature not allowed " <> groupFeatureNameText GFSimplexLinks
+      | otherwise = do
+          updateRcvChatItem `catchCINotFound` \_ -> do
+            -- This patches initial sharedMsgId into chat item when locally deleted chat item
+            -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
+            -- Chat item and update message which created it will have different sharedMsgId in this case...
+            let timed_ = rcvGroupCITimed gInfo ttl_
+            ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg (Just sharedMsgId) brokerTs content Nothing timed_ live
+            ci' <- withStore' $ \db -> do
+              createChatItemVersion db (chatItemId' ci) brokerTs mc
+              ci' <- updateGroupChatItem db user groupId ci content True live Nothing
+              blockedMember m ci' $ markGroupChatItemBlocked db user gInfo ci'
+            toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci')
       where
         content = CIRcvMsgContent mc
         live = fromMaybe False live_
@@ -7410,6 +7443,7 @@ chatCommandP =
       "/_network " *> (APISetNetworkConfig <$> jsonP),
       ("/network " <|> "/net ") *> (SetNetworkConfig <$> netCfgP),
       ("/network" <|> "/net") $> APIGetNetworkConfig,
+      "/reconnect " *> (ReconnectServer <$> A.decimal <* A.space <*> strP),
       "/reconnect" $> ReconnectAllServers,
       "/_settings " *> (APISetChatSettings <$> chatRefP <* A.space <*> jsonP),
       "/_member settings #" *> (APISetMemberSettings <$> A.decimal <* A.space <*> A.decimal <* A.space <*> jsonP),
@@ -7592,6 +7626,7 @@ chatCommandP =
       ("/version" <|> "/v") $> ShowVersion,
       "/debug locks" $> DebugLocks,
       "/debug event " *> (DebugEvent <$> jsonP),
+      "/get servers summary " *> (GetAgentServersSummary <$> A.decimal),
       "/get stats" $> GetAgentStats,
       "/reset stats" $> ResetAgentStats,
       "/get subs" $> GetAgentSubs,
@@ -7736,7 +7771,7 @@ chatCommandP =
         (Just <$> (AutoAccept <$> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)))
         (pure Nothing)
     srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
-    toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
+    toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = SEEnabled}
     rcCtrlAddressP = RCCtrlAddress <$> ("addr=" *> strP) <*> (" iface=" *> (jsonP <|> text1P))
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
