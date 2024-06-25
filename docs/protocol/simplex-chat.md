@@ -2,7 +2,7 @@
 title: SimpleX Chat Protocol
 revision: 08.08.2022
 ---
-DRAFT Revision 0.2, 2024-06-24
+Revision 2, 2024-06-24
 
 Evgeny Poberezkin
 
@@ -157,7 +157,7 @@ This message is sent by both sides of the connection during the connection hands
 
 ### Probing for duplicate contacts
 
-As there are no globally unique user identitifiers, when the contact a user is already connected to is added to the group by some other group member, this contact will be added to user's list of contacts as a new contact. To allow merging such contacts, "a probe" (random base64url-encoded 32 bytes) SHOULD be sent to all new members as part of `x.info.probe` message and, in case there is a contact with the same profile, the hash of the probe MAY be sent to it as part of `x.info.probe.check` message. In case both the new member and the existing contact are the same user (they would receive both the probe and its hash), the contact would send back the original probe as part of `x.info.probe.ok` message via the previously existing contact connection – proving to the sender that this new member and the existing contact are the same user, in which case the sender SHOULD merge these two contacts.
+As there are no globally unique user identifiers, when the contact a user is already connected to is added to the group by some other group member, this contact will be added to user's list of contacts as a new contact. To allow merging such contacts, "a probe" (random base64url-encoded 32 bytes) SHOULD be sent to all new members as part of `x.info.probe` message and, in case there is a contact with the same profile, the hash of the probe MAY be sent to it as part of `x.info.probe.check` message. In case both the new member and the existing contact are the same user (they would receive both the probe and its hash), the contact would send back the original probe as part of `x.info.probe.ok` message via the previously existing contact connection – proving to the sender that this new member and the existing contact are the same user, in which case the sender SHOULD merge these two contacts.
 
 Sending clients MAY disable this functionality, and receiving clients MAY ignore probe messages.
 
@@ -214,7 +214,7 @@ SimpleX Chat groups are fully decentralized and do not have any globally unique 
 
 There is a possibility of the attack here: as the introducing member forwards the addresses, they can substitute them with other addresses, performing MITM attack on the communication between existing and introduced members - this is similar to the communication operator being able to perform MITM on any connection between the users. To mitigate this attack this group sub-protocol will be extended to allow validating security of the connection by sending connection verification out-of-band.
 
-Clients are RECOMMENDED to indicate in the UI whether the connection to a group member or contact was made directly or via annother user.
+Clients are RECOMMENDED to indicate in the UI whether the connection to a group member or contact was made directly or via another user.
 
 Each member in the group is identified by a group-wide unique identifier used by all members in the group. This is to allow referencing members in the messages and to allow group message integrity validation.
 
@@ -289,19 +289,21 @@ This threat model compliments SMP, XFTP, push notifications and XRCP protocols t
 - [Push notifications threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/push-notifications.md#threat-model);
 - [SimpleX Remote Control Protocol threat model](https://github.com/simplex-chat/simplexmq/blob/master/protocol/xrcp.md#threat-model).
 
-#### A user’s contact
+#### A user's contact
 
 *can:*
 
 - send messages prohibited by user's preferences or otherwise act non-compliantly with user's preferences (for example, if message with updated preferences was lost or failed to be processed, or with modified client), in which case user client should treat such messages and actions as prohibited.
 
-- collaborating with user's client, match user's contact with existing group members and/or contacts (see [Probing for duplicate contacts](#probing-for-duplicate-contacts)).
+- by exchanging special messages with user's client, match user's contact with existing group members and/or contacts that have identical user profile (see [Probing for duplicate contacts](#probing-for-duplicate-contacts)).
 
-- identify that and when a user is using SimpleX, in case user has delivery receipts enabled, or based on other automated client interactions.
+- identify that and when a user is using SimpleX, in case user has delivery receipts enabled, or based on other automated client responses.
 
 *cannot:*
 
-- match user's contact with existing group members and/or contacts without collaboration of user client - for example, current implementation of chat protocol in SimpleX Chat allows to use incognito profiles (random per conversation profiles) for connecting and joining groups, which disables such collaboration.
+- match user's contact with existing group members and/or contacts with different or with incognito profiles.
+
+- match user's contact without communicating with the user's client.
 
 #### A group member
 
@@ -309,24 +311,34 @@ This threat model compliments SMP, XFTP, push notifications and XRCP protocols t
 
 - send messages prohibited by group's preferences and member restrictions or otherwise act non-compliantly with preferences and restrictions (for example, if decentralized group state diverged, or with modified client), in which case user client should treat such messages and actions as prohibited.
 
-- create a direct contact with user.
+- create a direct contact with a user if group permissions allow it.
 
-- collaborating with user's client, match user's group member record with existing group members and/or contacts.
+- by exchanging special messages with user's client, match user's group member record with the existing group members and/or contacts that have identical user profile.
 
-- send different messages to different group members, or selectively send messages to some members and not send to others.
+- undetectably send different messages to different group members, or selectively send messages to some members and not send to others.
 
-- identify that and when a user is using SimpleX, in case user has delivery receipts enabled, or based on other automated client interactions.
+- identify that and when a user is using SimpleX, in case user has delivery receipts enabled, or based on other automated client responses.
+
+- join the same group several times, from the same or from different user profile, and pretend to be different members.
 
 *cannot:*
 
-- match user's group member record with existing group members and/or contacts without collaboration of user client.
+- match user's contact with existing group members and/or contacts with different or with incognito profiles.
+
+- match user's group member record with existing group members and/or contacts without communication of user's client.
+
+- determine whether two group members with different or with incognito profiles are the same user.
 
 #### A group admin
 
 *can:*
 
-- carry out MITM attack between user and other group member(s) when forwarding invitations for group connections.
+- carry out MITM attack between user and other group member(s) when forwarding invitations for group connections (user can detect such attack by verifying connection security codes out-of-band).
 
-- forward different messages to different group members, modify and drop forwarded messages.
+- undetectably forward different messages to different group members, selectively adding, modifying, and dropping forwarded messages.
 
-- destabilize decentralized group state by sending different group state altering messages (such as additions and removals of members, member role changes, etc.) to different group members, or selectively sending such messages to some members and not sending to others.
+- disrupt decentralized group state by sending different messages that change group state (such as adding or removing members, member role changes, etc.) to different group members, or sending such messages selectively.
+
+*cannot:*
+
+- prove that two group members with incognito profiles is the same user.
