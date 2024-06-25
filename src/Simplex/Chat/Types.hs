@@ -1632,9 +1632,41 @@ data ServerCfg p = ServerCfg
   { server :: ProtoServerWithAuth p,
     preset :: Bool,
     tested :: Maybe Bool,
-    enabled :: Bool
+    enabled :: ServerEnabled
   }
   deriving (Show)
+
+data ServerEnabled
+  = SEDisabled
+  | SEEnabled
+  | -- server is marked as known, but it's not in the list of configured servers;
+    -- e.g., it may be added via an unknown server dialogue and user didn't manually configure it,
+    -- meaning server wasn't tested (or at least such option wasn't presented in UI)
+    -- and it may be inoperable for user due to server password
+    SEKnown
+  deriving (Eq, Show)
+
+pattern DBSEDisabled :: Int
+pattern DBSEDisabled = 0
+
+pattern DBSEEnabled :: Int
+pattern DBSEEnabled = 1
+
+pattern DBSEKnown :: Int
+pattern DBSEKnown = 2
+
+toServerEnabled :: Int -> ServerEnabled
+toServerEnabled = \case
+  DBSEDisabled -> SEDisabled
+  DBSEEnabled -> SEEnabled
+  DBSEKnown -> SEKnown
+  _ -> SEDisabled
+
+fromServerEnabled :: ServerEnabled -> Int
+fromServerEnabled = \case
+  SEDisabled -> DBSEDisabled
+  SEEnabled -> DBSEEnabled
+  SEKnown -> DBSEKnown
 
 data ChatVersion
 
@@ -1763,6 +1795,8 @@ $(JQ.deriveJSON defaultJSON ''Contact)
 $(JQ.deriveJSON defaultJSON ''ContactRef)
 
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "SE") ''ServerEnabled)
 
 instance ProtocolTypeI p => ToJSON (ServerCfg p) where
   toEncoding = $(JQ.mkToEncoding defaultJSON ''ServerCfg)
