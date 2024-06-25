@@ -1034,7 +1034,7 @@
     <string name="delete_member_message__question">メンバーのメッセージを削除しますか？</string>
     <string name="import_theme">テーマのインポート</string>
     <string name="port_verb">ポート</string>
-    <string name="theme_colors_section_title">テーマカラー</string>
+    <string name="theme_colors_section_title">インターフェースカラー</string>
     <string name="stop_sharing">共有を停止</string>
     <string name="invite_friends">友人を招待する</string>
     <string name="you_can_create_it_later">後からでも作成できます</string>
