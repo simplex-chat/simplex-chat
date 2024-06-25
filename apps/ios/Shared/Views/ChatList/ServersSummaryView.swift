@@ -14,6 +14,7 @@ struct ServersSummaryView: View {
     @State private var selectedUserCategory: PresentedUserCategory = .allUsers
     @State private var selectedServerType: PresentedServerType = .smp
     @State private var selectedSMPServer: String? = nil
+    @State private var selectedXFTPServer: String? = nil
 
     enum PresentedUserCategory {
         case currentUser
@@ -115,10 +116,10 @@ struct ServersSummaryView: View {
                 case (.allUsers, .xftp):
                     if summ.allUsedXFTP.count > 0 || summ.allPrevXFTP.count > 0 {
                         if summ.allUsedXFTP.count > 0 {
-                            xftpServersListView(summ.allUsedXFTP, "Currently used")
+                            xftpServersListView(summ.allUsedXFTP, summ.statsStartedAt, "Currently used")
                         }
                         if summ.allPrevXFTP.count > 0 {
-                            xftpServersListView(summ.allPrevXFTP, "Previously used")
+                            xftpServersListView(summ.allPrevXFTP, summ.statsStartedAt, "Previously used")
                         }
                     } else {
                         noCategoryInfoText()
@@ -126,13 +127,21 @@ struct ServersSummaryView: View {
                 case (.currentUser, .xftp):
                     if summ.userUsedXFTP.count > 0 || summ.userPrevXFTP.count > 0 {
                         if summ.userUsedXFTP.count > 0 {
-                            xftpServersListView(summ.userUsedXFTP, "Currently used")
+                            xftpServersListView(summ.userUsedXFTP, summ.statsStartedAt, "Currently used")
                         }
                         if summ.userPrevXFTP.count > 0 {
-                            xftpServersListView(summ.userPrevXFTP, "Previously used")
+                            xftpServersListView(summ.userPrevXFTP, summ.statsStartedAt, "Previously used")
                         }
                     } else {
                         noCategoryInfoText()
+                    }
+                }
+
+                Section {
+                    Button {
+                        // TODO
+                    } label: {
+                        Text("TODO Reset statistics")
                     }
                 }
             }
@@ -185,13 +194,14 @@ struct ServersSummaryView: View {
 
     @ViewBuilder private func xftpServersListView(
         _ servers: [XFTPServerSummary],
+        _ statsStartedAt: Date,
         _ header: LocalizedStringKey? = nil,
         _ footer: LocalizedStringKey? = nil
     ) -> some View {
         let sortedServers = servers.sorted { serverAddress($0.xftpServer).compare(serverAddress($1.xftpServer)) == .orderedAscending }
         Section {
             ForEach(sortedServers) { server in
-                xftpServer(server)
+                xftpServerView(server, statsStartedAt)
             }
         } header: {
             if let header = header {
@@ -204,9 +214,18 @@ struct ServersSummaryView: View {
         }
     }
 
-    private func xftpServer(_ server: XFTPServerSummary) -> some View {
-        Text(serverAddress(server.xftpServer))
-            .lineLimit(1)
+    private func xftpServerView(_ server: XFTPServerSummary, _ statsStartedAt: Date) -> some View {
+        NavigationLink(tag: server.id, selection: $selectedXFTPServer) {
+            XFTPServerSummaryView(
+                summary: server,
+                statsStartedAt: statsStartedAt
+            )
+            .navigationBarTitle("XFTP server")
+            .navigationBarTitleDisplayMode(.large)
+        } label: {
+            Text(serverAddress(server.xftpServer))
+                .lineLimit(1)
+        }
     }
 
     private func noCategoryInfoText() -> some View {
@@ -252,7 +271,7 @@ struct SMPServerSummaryView: View {
             } footer: {
                 if let known = summary.known, known {
                     // TODO open settings?
-                    Text("Server is configured in **Settings** -> **Network & servers** -> **SMP servers**.")
+                    Text("Server is configured in **Settings** → **Network & servers** → **SMP servers**.")
                 }
             }
 
@@ -308,6 +327,68 @@ struct SMPServerSummaryView: View {
                 }
             }
         }
+    }
+}
+
+struct XFTPServerSummaryView: View {
+    var summary: XFTPServerSummary
+    var statsStartedAt: Date
+
+    var body: some View {
+        List {
+            Section {
+                Text(summary.xftpServer)
+                    .textSelection(.enabled)
+                if let known = summary.known, !known {
+                    Button {
+                        // TODO
+                    } label: {
+                        Text("TODO Add as known")
+                    }
+                }
+            } header: {
+                Text("Server address")
+            } footer: {
+                if let known = summary.known, known {
+                    // TODO open settings?
+                    Text("Server can be configured in **Settings** → **Network & servers** → **XFTP servers**")
+                }
+            }
+
+            if let sess = summary.sessions {
+                Section("Sessions") {
+                    infoRow("Connected", "\(sess.ssConnected)")
+                    infoRow("Errors", "\(sess.ssErrors)")
+                    infoRow("Connecting", "\(sess.ssConnecting)")
+                }
+            }
+
+            Section("In progress") {
+                localizedInfoRow("Download", boolYesNo(summary.rcvInProgress))
+                localizedInfoRow("Upload", boolYesNo(summary.sndInProgress))
+                localizedInfoRow("Deletion", boolYesNo(summary.delInProgress))
+            }
+
+            if let stats = summary.stats {
+                Section("Statistics") {
+                    infoRow("Chunks uploaded", "\(stats._uploads)")
+                    infoRow("    attempts", "\(stats._uploadAttempts)")
+                    infoRow("    errors", "\(stats._uploadErrs)")
+                    infoRow("Chunks downloaded", "\(stats._downloads)")
+                    infoRow("    attempts", "\(stats._downloadAttempts)")
+                    infoRow("    AUTH errors", "\(stats._downloadAuthErrs)")
+                    infoRow("    other errors", "\(stats._downloadErrs)")
+                    infoRow("Chunks deleted", "\(stats._deletions)")
+                    infoRow("    attempts", "\(stats._deleteAttempts)")
+                    infoRow("    errors", "\(stats._deleteErrs)")
+                    infoRow("From", localTimestamp(statsStartedAt))
+                }
+            }
+        }
+    }
+
+    private func boolYesNo(_ b: Bool) -> LocalizedStringKey {
+        b ? "yes" : "no"
     }
 }
 
