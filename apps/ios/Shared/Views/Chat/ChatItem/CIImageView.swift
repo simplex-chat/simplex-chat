@@ -16,7 +16,6 @@ struct CIImageView: View {
     let image: String
     let maxWidth: CGFloat
     @Binding var imgWidth: CGFloat?
-    @State var scrollProxy: ScrollViewProxy?
     @State private var showFullScreenImage = false
 
     var body: some View {
@@ -25,7 +24,7 @@ struct CIImageView: View {
             if let uiImage = getLoadedImage(file) {
                 imageView(uiImage)
                 .fullScreenCover(isPresented: $showFullScreenImage) {
-                    FullScreenMediaView(chatItem: chatItem, image: uiImage, showView: $showFullScreenImage, scrollProxy: scrollProxy)
+                    FullScreenMediaView(chatItem: chatItem, image: uiImage, showView: $showFullScreenImage)
                 }
                 .onTapGesture { showFullScreenImage = true }
                 .onChange(of: m.activeCallViewIsCollapsed) { _ in
@@ -90,7 +89,8 @@ struct CIImageView: View {
 
     private func imageView(_ img: UIImage) -> some View {
         let w = img.size.width <= img.size.height ? maxWidth * 0.75 : maxWidth
-        DispatchQueue.main.async { imgWidth = w }
+// TODO: Layout must not be done asynchronously.
+//        DispatchQueue.main.async { imgWidth = w }
         return ZStack(alignment: .topTrailing) {
             if img.imageData == nil {
                 Image(uiImage: img)

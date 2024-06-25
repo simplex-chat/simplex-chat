@@ -14,7 +14,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
 
     let items: Array<Item>
 
-    @Binding var scrollProxy: ReverseListScrollProxy<Item>
+    @Binding var scrollState: ReverseListScrollModel<Item>.State
 
     /// Closure, that returns user interface for a given item
     let content: (Item) -> Content
@@ -24,7 +24,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
     }
 
     func updateUIViewController(_ controller: Controller, context: Context) {
-        if case let .scrollingTo(destination) = scrollProxy, !items.isEmpty {
+        if case let .scrollingTo(destination) = scrollState, !items.isEmpty {
             switch destination {
             case let .item(id):
                 controller.scroll(to: items.firstIndex(where: { $0.id == id }))
@@ -94,7 +94,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                 .removeDuplicates()
                 .sink { isNearBottom in
                     Task(priority: .userInitiated) {
-                        representer.scrollProxy = .isNearBottom(isNearBottom)
+                        representer.scrollState = .isNearBottom(isNearBottom)
                     }
                 }
                 .store(in: &bag)
@@ -154,7 +154,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             dataSource.defaultRowAnimation = .none
             var animatingDifferences = false
             if #available(iOS 16.0, *) {
-                animatingDifferences = itemCount != .zero && abs(items.count - itemCount) < 10
+                animatingDifferences = itemCount != .zero && abs(items.count - itemCount) == 1
             }
             dataSource.apply(snapshot, animatingDifferences: animatingDifferences)
             itemCount = items.count
@@ -195,22 +195,35 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
     }
 }
 
-/// Represents Scroll State of ``ReverseList``
-enum ReverseListScrollProxy<Item: Identifiable>: Equatable {
-    enum Destination: Equatable {
-        case top
-        case item(Item.ID)
-        case bottom
+/// Manages ``ReverseList`` scrolling
+class ReverseListScrollModel<Item: Identifiable>: ObservableObject {
+    /// Represents Scroll State of ``ReverseList``
+    enum State: Equatable {
+        enum Destination: Equatable {
+            case top
+            case item(Item.ID)
+            case bottom
+        }
+
+        case scrollingTo(Destination)
+        case isNearBottom(Bool)
+
+        var isNearBottom: Bool {
+            switch self {
+            case .scrollingTo: false
+            case let .isNearBottom(bool): bool
+            }
+        }
     }
 
-    case scrollingTo(Destination)
-    case isNearBottom(Bool)
+    @Published var state: State = .isNearBottom(true)
 
-    var isNearBottom: Bool {
-        switch self {
-        case .scrollingTo: false
-        case let .isNearBottom(bool): bool
-        }
+    func scrollToBottom() {
+        state = .scrollingTo(.bottom)
+    }
+
+    func scrollToItem(id: Item.ID) {
+        state = .scrollingTo(.item(id))
     }
 }
 
@@ -231,3 +244,4 @@ extension NotificationCenter {
         )
     }
 }
+

@@ -19,6 +19,7 @@ struct ChatView: View {
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
+    @StateObject private var scrollModel = ReverseListScrollModel<ChatItem>()
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -29,7 +30,6 @@ struct ChatView: View {
     @State private var loadingItems = false
     @State private var firstPage = false
     @State private var revealedChatItem: ChatItem?
-    @State private var scrollProxy: ReverseListScrollProxy<ChatItem> = .isNearBottom(true)
     @State private var searchMode = false
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
@@ -90,6 +90,7 @@ struct ChatView: View {
         .onChange(of: revealedChatItem) { _ in
             NotificationCenter.postReverseListNeedsLayout()
         }
+        .environmentObject(scrollModel)
         .onDisappear {
             VideoPlayerView.players.removeAll()
             if chatModel.chatId == cInfo.id && !presentationMode.wrappedValue.isPresented {
@@ -304,7 +305,7 @@ struct ChatView: View {
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
         return GeometryReader { g in
-            ReverseList(items: chatModel.reversedChatItems, scrollProxy: $scrollProxy) { ci in
+            ReverseList(items: chatModel.reversedChatItems, scrollState: $scrollModel.state) { ci in
                 let voiceNoFrame = voiceWithoutFrame(ci)
                 let maxWidth = cInfo.chatType == .group
                                 ? voiceNoFrame
@@ -368,8 +369,8 @@ struct ChatView: View {
                     .foregroundColor(.accentColor)
             }
             .onTapGesture {
-                if let unreadItem = chatModel.reversedChatItems.first(where: { $0.isRcvNew }) {
-                    scrollProxy = .scrollingTo(.item(unreadItem.id))
+                if let unreadItem = chatModel.reversedChatItems.last(where: { $0.isRcvNew }) {
+                    scrollModel.scrollToItem(id: unreadItem.id)
                 }
             }
             .contextMenu {
@@ -379,12 +380,12 @@ struct ChatView: View {
                     Label("Mark read", systemImage: "checkmark")
                 }
             }
-        } else if scrollProxy == .isNearBottom(false) {
+        } else if scrollModel.state == .isNearBottom(false) {
             circleButton {
                 Image(systemName: "chevron.down")
                     .foregroundColor(.accentColor)
             }
-            .onTapGesture { scrollProxy = .scrollingTo(.bottom) }
+            .onTapGesture { scrollModel.scrollToBottom() }
         }
     }
 
