@@ -733,23 +733,18 @@ struct CustomizeThemeColorsSection: View {
 
     var body: some View {
         Section {
-            picker(.PRIMARY)
-            picker(.PRIMARY_VARIANT)
-            picker(.SECONDARY)
-            picker(.SECONDARY_VARIANT)
-            picker(.BACKGROUND)
-            picker(.SURFACE)
-            picker(.TITLE)
-            picker(.PRIMARY_VARIANT2)
+            picker(.PRIMARY, editColor)
+            picker(.PRIMARY_VARIANT, editColor)
+            picker(.SECONDARY, editColor)
+            picker(.SECONDARY_VARIANT, editColor)
+            picker(.BACKGROUND, editColor)
+            picker(.SURFACE, editColor)
+            picker(.TITLE, editColor)
+            picker(.PRIMARY_VARIANT2, editColor)
         } header: {
             Text("Interface colors")
         }
     }
-
-    func picker(_ name: ThemeColor) -> some View {
-        ColorPickerView(name: name, selection: editColor(name))
-    }
-
 }
 
 func editColorBinding(name: ThemeColor, wallpaperType: WallpaperType?, wallpaperImage: Image?, theme: AppTheme, onColorChange: @escaping (Color?) -> Void) -> Binding<Color> {
@@ -810,19 +805,15 @@ struct WallpaperSetupView: View {
         }
 
         if wallpaperType?.isPreset == true || wallpaperType?.isImage == true {
-            picker(.WALLPAPER_BACKGROUND)
-            picker(.WALLPAPER_TINT)
+            picker(.WALLPAPER_BACKGROUND, editColor)
+            picker(.WALLPAPER_TINT, editColor)
         }
 
-        picker(.SENT_MESSAGE)
-        picker(.SENT_QUOTE)
-        picker(.RECEIVED_MESSAGE)
-        picker(.RECEIVED_QUOTE)
+        picker(.SENT_MESSAGE, editColor)
+        picker(.SENT_QUOTE, editColor)
+        picker(.RECEIVED_MESSAGE, editColor)
+        picker(.RECEIVED_QUOTE, editColor)
 
-    }
-
-    func picker(_ name: ThemeColor) -> some View {
-        ColorPickerView(name: name, selection: editColor(name))
     }
 
     private struct WallpaperScaleChooser: View {
@@ -867,6 +858,37 @@ struct WallpaperSetupView: View {
             }
             .frame(height: 36)
         }
+    }
+}
+
+private struct picker: View {
+    var name: ThemeColor
+    @State var color: Color
+    var editColor: (ThemeColor) -> Binding<Color>
+    // Prevent a race between setting a color here and applying externally changed color to the binding
+    @State private var lastColorUpdate: Date = .now
+
+    init(_ name: ThemeColor, _ editColor: @escaping (ThemeColor) -> Binding<Color>) {
+        self.name = name
+        self.color = editColor(name).wrappedValue
+        self.editColor = editColor
+    }
+
+    var body: some View {
+        ColorPickerView(name: name, selection: $color)
+            .onChange(of: color) { newColor in
+                let editedColor = editColor(name)
+                if editedColor.wrappedValue != newColor {
+                    editedColor.wrappedValue = newColor
+                    lastColorUpdate = .now
+                }
+            }
+            .onChange(of: editColor(name).wrappedValue) { newValue in
+                // Allows to update underlying color in the picker when color changed externally, for example, by reseting colors of a theme or changing the theme
+                if lastColorUpdate < Date.now - 1 && newValue != color {
+                    color = newValue
+                }
+            }
     }
 }
 

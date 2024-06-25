@@ -53,9 +53,7 @@ struct UserWallpaperEditor: View {
                 initialSentQuoteColor: theme.appColors.sentQuote,
                 initialReceivedColor: theme.appColors.receivedMessage,
                 initialReceivedQuoteColor: theme.appColors.receivedQuote,
-                editColor: { name in
-                    return editColor(name, theme)
-                },
+                editColor: { name in editColor(name, theme) },
                 onTypeChange: onTypeChange
             )
 
@@ -384,7 +382,6 @@ struct ChatWallpaperEditor: View {
             wallpaperImage: themeModeOverride.type?.image,
             theme: currentTheme.toAppTheme(),
             onColorChange: { color in
-                logger.debug("LALAL COLOR CHANGE \(color?.toReadableHex() ?? "nil")   was  \(currentTheme.wallpaper.background?.toReadableHex() ?? "nil")")
                 preApplyGlobalIfNeeded(themeModeOverride.type)
                 ThemeManager.applyThemeColor(name: name, color: color, pref: $themeModeOverride)
                 currentTheme = ThemeManager.currentColors(nil, themeModeOverride == ThemeModeOverride(mode: initialTheme.mode) ? nil : themeModeOverride, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())

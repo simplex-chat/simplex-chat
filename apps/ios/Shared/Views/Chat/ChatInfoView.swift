@@ -665,7 +665,6 @@ struct ChatWallpaperEditorSheet: View {
             do {
                 try await Task.sleep(nanoseconds: 300_000000)
                 if await apiSetChatUIThemes(chatId: chat.id, themes: changedThemesConstant) {
-                    let _ = logger.debug("LALAL SAVE")
                     if case var ChatInfo.direct(contact) = chat.wrappedValue.chatInfo {
                         contact.uiThemes = changedThemesConstant
                         await MainActor.run {
