@@ -49,10 +49,6 @@ struct UserWallpaperEditor: View {
                 wallpaperType: themeModeOverride.type,
                 base: theme.base,
                 initialWallpaper: theme.wallpaper,
-                initialSentColor: theme.appColors.sentMessage,
-                initialSentQuoteColor: theme.appColors.sentQuote,
-                initialReceivedColor: theme.appColors.receivedMessage,
-                initialReceivedQuoteColor: theme.appColors.receivedQuote,
                 editColor: { name in editColor(name, theme) },
                 onTypeChange: onTypeChange
             )
@@ -211,7 +207,8 @@ struct ChatWallpaperEditor: View {
     @State private var showImageImporter: Bool = false
 
     init(initialTheme: ThemeModeOverride, themeModeOverride: ThemeModeOverride, applyToMode: DefaultThemeMode? = nil, globalThemeUsed: Binding<Bool>, save: @escaping (DefaultThemeMode?, ThemeModeOverride?) async -> Void) {
-        self.currentTheme = ThemeManager.currentColors(nil, themeModeOverride == ThemeModeOverride(mode: initialTheme.mode) ? nil : themeModeOverride, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        let cur = ThemeManager.currentColors(nil, themeModeOverride == ThemeModeOverride(mode: initialTheme.mode) ? nil : themeModeOverride, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        self.currentTheme = cur
         self.initialTheme = initialTheme
         self.themeModeOverride = themeModeOverride
         self.applyToMode = applyToMode
@@ -241,10 +238,6 @@ struct ChatWallpaperEditor: View {
                 wallpaperType: themeModeOverride.type,
                 base: currentTheme.base,
                 initialWallpaper: currentTheme.wallpaper,
-                initialSentColor: currentTheme.appColors.sentMessage,
-                initialSentQuoteColor: currentTheme.appColors.sentQuote,
-                initialReceivedColor: currentTheme.appColors.receivedMessage,
-                initialReceivedQuoteColor: currentTheme.appColors.receivedQuote,
                 editColor: editColor,
                 onTypeChange: onTypeChange
             )
@@ -277,11 +270,13 @@ struct ChatWallpaperEditor: View {
                         await save(themeModeOverride.mode, themeModeOverride)
                     }
                 }
-                .onChange(of: initialTheme.mode) { mode in
-                    themeModeOverride = initialTheme
-                    currentTheme = ThemeManager.currentColors(nil, themeModeOverride == ThemeModeOverride(mode: mode) ? nil : themeModeOverride, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
-                    if applyToMode != nil {
-                        applyToMode = mode
+                .onChange(of: initialTheme) { initial in
+                    if initial.mode != themeModeOverride.mode {
+                        themeModeOverride = initial
+                        currentTheme = ThemeManager.currentColors(nil, themeModeOverride == ThemeModeOverride(mode: initial.mode) ? nil : themeModeOverride, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+                        if applyToMode != nil {
+                            applyToMode = initial.mode
+                        }
                     }
                 }
                 .onChange(of: currentTheme) { _ in

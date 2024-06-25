@@ -484,10 +484,6 @@ struct CustomizeThemeView: View {
                     wallpaperType: wallpaperType,
                     base: baseTheme,
                     initialWallpaper: theme.wallpaper,
-                    initialSentColor: theme.appColors.sentMessage,
-                    initialSentQuoteColor: theme.appColors.sentQuote,
-                    initialReceivedColor: theme.appColors.receivedMessage,
-                    initialReceivedQuoteColor: theme.appColors.receivedQuote,
                     editColor: { name in
                         editColor(name)
                     },
@@ -729,7 +725,7 @@ struct ThemeDestinationPicker: View {
 
 
 struct CustomizeThemeColorsSection: View {
-    @State var editColor: (ThemeColor) -> Binding<Color>
+    var editColor: (ThemeColor) -> Binding<Color>
 
     var body: some View {
         Section {
@@ -775,13 +771,6 @@ struct WallpaperSetupView: View {
     var wallpaperType: WallpaperType?
     var base: DefaultTheme
     var initialWallpaper: AppWallpaper?
-    // LALAL unneeded?
-    var initialSentColor: Color
-    var initialSentQuoteColor: Color
-    var initialReceivedColor: Color
-    var initialReceivedQuoteColor: Color
-    // LALAL
-
     var editColor: (ThemeColor) -> Binding<Color>
     var onTypeChange: (WallpaperType?) -> Void
 
