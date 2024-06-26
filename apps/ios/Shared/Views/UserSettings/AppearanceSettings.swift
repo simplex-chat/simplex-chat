@@ -529,7 +529,7 @@ struct ImportExportThemeSection: View {
     var body: some View {
         Section {
             Button {
-                let overrides = ThemeManager.currentThemeOverridesForExport(perChat, perUser)
+                let overrides = ThemeManager.currentThemeOverridesForExport(nil, perChat, perUser)
                 do {
                     let encoded = try encodeThemeOverrides(overrides)
                     var lines = encoded.split(separator: "\n")

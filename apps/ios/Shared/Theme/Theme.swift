@@ -131,3 +131,66 @@ extension ThemeWallpaper {
         )
     }
 }
+
+extension ThemeModeOverride {
+    func removeSameColors(_ base: DefaultTheme, colorsToCompare tc: ThemeColors) -> ThemeModeOverride {
+        let wallpaperType = WallpaperType.from(wallpaper) ?? WallpaperType.Empty
+        let w: ThemeWallpaper
+        switch wallpaperType {
+        case let WallpaperType.Preset(filename, scale):
+            let p = PresetWallpaper.from(filename)
+            w = ThemeWallpaper(
+                preset: filename,
+                scale: scale ?? wallpaper?.scale,
+                scaleType: nil,
+                background: p?.background[base]?.toReadableHex(),
+                tint: p?.tint[base]?.toReadableHex(),
+                image: nil,
+                imageFile: nil
+            )
+        case WallpaperType.Image:
+            w = ThemeWallpaper(
+                preset: nil,
+                scale: nil,
+                scaleType: WallpaperScaleType.fill,
+                background: Color.clear.toReadableHex(),
+                tint: Color.clear.toReadableHex(),
+                image: nil,
+                imageFile: nil
+            )
+        default:
+            w = ThemeWallpaper()
+        }
+        let wallpaper: ThemeWallpaper? = if let wallpaper {
+            ThemeWallpaper(
+                preset: wallpaper.preset,
+                scale: wallpaper.scale != w.scale ? wallpaper.scale : nil,
+                scaleType: wallpaper.scaleType != w.scaleType ? wallpaper.scaleType : nil,
+                background: wallpaper.background != w.background ? wallpaper.background : nil,
+                tint: wallpaper.tint != w.tint ? wallpaper.tint : nil,
+                image: wallpaper.image,
+                imageFile: wallpaper.imageFile
+            )
+        } else {
+            nil
+        }
+        return ThemeModeOverride(
+            mode: self.mode,
+            colors: ThemeColors(
+                primary: colors.primary != tc.primary ? colors.primary : nil,
+                primaryVariant: colors.primaryVariant != tc.primaryVariant ? colors.primaryVariant : nil,
+                secondary: colors.secondary != tc.secondary ? colors.secondary : nil,
+                secondaryVariant: colors.secondaryVariant != tc.secondaryVariant ? colors.secondaryVariant : nil,
+                background: colors.background != tc.background ? colors.background : nil,
+                surface: colors.surface != tc.surface ? colors.surface : nil,
+                title: colors.title != tc.title ? colors.title : nil,
+                primaryVariant2: colors.primaryVariant2 != tc.primaryVariant2 ? colors.primary : nil,
+                sentMessage: colors.sentMessage != tc.sentMessage ? colors.sentMessage : nil,
+                sentQuote: colors.sentQuote != tc.sentQuote ? colors.sentQuote : nil,
+                receivedMessage: colors.receivedMessage != tc.receivedMessage ? colors.receivedMessage : nil,
+                receivedQuote: colors.receivedQuote != tc.receivedQuote ? colors.receivedQuote : nil
+            ),
+            wallpaper: wallpaper
+        )
+    }
+}

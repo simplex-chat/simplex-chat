@@ -41,7 +41,7 @@ struct UserWallpaperEditor: View {
             .listRowBackground(Color.clear)
             .modifier(WallpaperImporter(showImageImporter: $showImageImporter, onChooseImage: { image in
                 if let filename = saveWallpaperFile(image: image) {
-                    onTypeChange(WallpaperType.Image(filename, 1, WallpaperScaleType.fill))
+                    _ = onTypeCopyFromSameTheme(WallpaperType.Image(filename, 1, WallpaperScaleType.fill))
                 }
             }))
 
@@ -125,8 +125,13 @@ struct UserWallpaperEditor: View {
 
                 CustomizeThemeColorsSection(editColor: { name in editColor(name, theme) })
 
-                ImportExportThemeSection(perChat: nil, perUser: ChatModel.shared.currentUser?.uiThemes) { theme in
-                    let res = ThemeModeOverride(mode: theme.base.mode, colors: theme.colors, wallpaper: theme.wallpaper?.importFromString()).removeSameColors(theme.base)
+                ImportExportThemeSection(perChat: nil, perUser: ChatModel.shared.currentUser?.uiThemes) { imported in
+                    let importedFromString = imported.wallpaper?.importFromString()
+                    let importedType = importedFromString?.toAppWallpaper().type
+                    let currentTheme = ThemeManager.currentColors(nil, nil, nil, themeOverridesDefault.get())
+                    let type: WallpaperType? = if importedType?.sameType(currentTheme.wallpaper.type) == true { nil } else { importedType }
+                    let colors = ThemeManager.currentThemeOverridesForExport(type, nil, nil).colors
+                    let res = ThemeModeOverride(mode: imported.base.mode, colors: imported.colors, wallpaper: importedFromString).removeSameColors(imported.base, colorsToCompare: colors)
                     Task {
                         await MainActor.run {
                             themeModeOverride = res
@@ -240,7 +245,7 @@ struct ChatWallpaperEditor: View {
             .listRowBackground(Color.clear)
             .modifier(WallpaperImporter(showImageImporter: $showImageImporter, onChooseImage: { image in
                 if let filename = saveWallpaperFile(image: image) {
-                    onTypeChange(WallpaperType.Image(filename, 1, WallpaperScaleType.fill))
+                    _ = onTypeCopyFromSameTheme(WallpaperType.Image(filename, 1, WallpaperScaleType.fill))
                 }
             }))
 
@@ -323,8 +328,13 @@ struct ChatWallpaperEditor: View {
 
                 CustomizeThemeColorsSection(editColor: editColor)
 
-                ImportExportThemeSection(perChat: themeModeOverride, perUser: ChatModel.shared.currentUser?.uiThemes) { theme in
-                    let res = ThemeModeOverride(mode: theme.base.mode, colors: theme.colors, wallpaper: theme.wallpaper?.importFromString()).removeSameColors(theme.base)
+                ImportExportThemeSection(perChat: themeModeOverride, perUser: ChatModel.shared.currentUser?.uiThemes) { imported in
+                    let importedFromString = imported.wallpaper?.importFromString()
+                    let importedType = importedFromString?.toAppWallpaper().type
+                    let currentTheme = ThemeManager.currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+                    let type: WallpaperType? = if importedType?.sameType(currentTheme.wallpaper.type) == true { nil } else { importedType }
+                    let colors = ThemeManager.currentThemeOverridesForExport(type, nil, ChatModel.shared.currentUser?.uiThemes).colors
+                    let res = ThemeModeOverride(mode: imported.base.mode, colors: imported.colors, wallpaper: importedFromString).removeSameColors(imported.base, colorsToCompare: colors)
                     Task {
                         await MainActor.run {
                             themeModeOverride = res
