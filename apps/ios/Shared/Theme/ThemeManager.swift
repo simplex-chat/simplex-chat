@@ -75,7 +75,9 @@ class ThemeManager {
         if theme == nil && perUserTheme == nil && perChatTheme == nil && themeOverridesForType == nil {
             return ActiveTheme(name: themeName, base: baseTheme.base, colors: baseTheme.colors, appColors: baseTheme.appColors, wallpaper: baseTheme.wallpaper)
         }
-        let presetWallpaperTheme: ThemeColors? = if let wallpaper = perChatTheme?.wallpaper {
+        let presetWallpaperTheme: ThemeColors? = if let themeOverridesForType, case let WallpaperType.Preset(filename, _) = themeOverridesForType {
+            PresetWallpaper.from(filename)?.colors[baseTheme.base]
+        } else if let wallpaper = perChatTheme?.wallpaper {
             if let preset = wallpaper.preset { PresetWallpaper.from(preset)?.colors[baseTheme.base] } else { nil }
         } else if let wallpaper = perUserTheme?.wallpaper {
             if let preset = wallpaper.preset { PresetWallpaper.from(preset)?.colors[baseTheme.base] } else { nil }
@@ -94,8 +96,8 @@ class ThemeManager {
         )
     }
 
-    static func currentThemeOverridesForExport(_ perChatTheme: ThemeModeOverride?, _ perUserTheme: ThemeModeOverrides?) -> ThemeOverrides {
-        let current = currentColors(nil, perChatTheme, perUserTheme, themeOverridesDefault.get())
+    static func currentThemeOverridesForExport(_ themeOverridesForType: WallpaperType?, _ perChatTheme: ThemeModeOverride?, _ perUserTheme: ThemeModeOverrides?) -> ThemeOverrides {
+        let current = currentColors(themeOverridesForType, perChatTheme, perUserTheme, themeOverridesDefault.get())
         let wType = current.wallpaper.type
         let wBackground = current.wallpaper.background
         let wTint = current.wallpaper.tint
