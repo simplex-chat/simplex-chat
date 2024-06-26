@@ -53,10 +53,10 @@ extension Color {
         var (r, g, b, a): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
         uiColor.getRed(&r, green: &g, blue: &b, alpha: &a)
         return String(format: "#%02x%02x%02x%02x",
-                      Int(a * 255),
-                      Int(r * 255),
-                      Int(g * 255),
-                      Int(b * 255)
+                      Int((a * 255).rounded()),
+                      Int((r * 255).rounded()),
+                      Int((g * 255).rounded()),
+                      Int((b * 255).rounded())
         )
     }
 

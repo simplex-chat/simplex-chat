@@ -180,6 +180,8 @@ class ThemeManager {
                 var w: ThemeWallpaper = ThemeWallpaper.from(type, nil, nil)
                 w.scale = nil
                 w.scaleType = nil
+                w.background = nil
+                w.tint = nil
                 pref.wrappedValue = ThemeModeOverride(mode: CurrentColors.base.mode, wallpaper: w)
             } else {
                 // Make an empty wallpaper to override any top level ones
@@ -201,6 +203,8 @@ class ThemeManager {
         var w = ThemeWallpaper.from(type, nil, nil)
         w.scale = nil
         w.scaleType = nil
+        w.background = nil
+        w.tint = nil
         prevValue.colors = ThemeColors()
         prevValue.wallpaper = w
         pref.wrappedValue = prevValue

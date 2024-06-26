@@ -124,6 +124,16 @@ struct UserWallpaperEditor: View {
                 }
 
                 CustomizeThemeColorsSection(editColor: { name in editColor(name, theme) })
+
+                ImportExportThemeSection(perChat: nil, perUser: ChatModel.shared.currentUser?.uiThemes) { theme in
+                    let res = ThemeModeOverride(mode: theme.base.mode, colors: theme.colors, wallpaper: theme.wallpaper?.importFromString()).removeSameColors(theme.base)
+                    Task {
+                        await MainActor.run {
+                            themeModeOverride = res
+                        }
+                        await save(applyToMode, res)
+                    }
+                }
             } else {
                 AdvancedSettingsButton(theme.colors.primary) { showMore = true }
             }
@@ -207,7 +217,7 @@ struct ChatWallpaperEditor: View {
     @State private var showImageImporter: Bool = false
 
     init(initialTheme: ThemeModeOverride, themeModeOverride: ThemeModeOverride, applyToMode: DefaultThemeMode? = nil, globalThemeUsed: Binding<Bool>, save: @escaping (DefaultThemeMode?, ThemeModeOverride?) async -> Void) {
-        let cur = ThemeManager.currentColors(nil, themeModeOverride == ThemeModeOverride(mode: initialTheme.mode) ? nil : themeModeOverride, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        let cur = ThemeManager.currentColors(nil, globalThemeUsed.wrappedValue ? nil : themeModeOverride, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
         self.currentTheme = cur
         self.initialTheme = initialTheme
         self.themeModeOverride = themeModeOverride
@@ -244,7 +254,7 @@ struct ChatWallpaperEditor: View {
 
             Section {
                 if !globalThemeUsed {
-                    ResetToGlobalThemeButton(false, theme.colors.primary) {
+                    ResetToGlobalThemeButton(ChatModel.shared.currentUser?.uiThemes?.preferredMode(isInDarkTheme()) == nil, theme.colors.primary) {
                         themeModeOverride = ThemeManager.defaultActiveTheme(ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
                         globalThemeUsed = true
                         Task {
@@ -273,7 +283,7 @@ struct ChatWallpaperEditor: View {
                 .onChange(of: initialTheme) { initial in
                     if initial.mode != themeModeOverride.mode {
                         themeModeOverride = initial
-                        currentTheme = ThemeManager.currentColors(nil, themeModeOverride == ThemeModeOverride(mode: initial.mode) ? nil : themeModeOverride, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+                        currentTheme = ThemeManager.currentColors(nil, globalThemeUsed ? nil : themeModeOverride, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
                         if applyToMode != nil {
                             applyToMode = initial.mode
                         }
@@ -287,7 +297,7 @@ struct ChatWallpaperEditor: View {
                     }
                 }
                 .onChange(of: themeModeOverride) { override in
-                    currentTheme = ThemeManager.currentColors(nil, override == ThemeModeOverride(mode: initialTheme.mode) ? nil : override, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+                    currentTheme = ThemeManager.currentColors(nil, globalThemeUsed ? nil : override, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
                 }
             }
 
@@ -312,6 +322,16 @@ struct ChatWallpaperEditor: View {
                 }
 
                 CustomizeThemeColorsSection(editColor: editColor)
+
+                ImportExportThemeSection(perChat: themeModeOverride, perUser: ChatModel.shared.currentUser?.uiThemes) { theme in
+                    let res = ThemeModeOverride(mode: theme.base.mode, colors: theme.colors, wallpaper: theme.wallpaper?.importFromString()).removeSameColors(theme.base)
+                    Task {
+                        await MainActor.run {
+                            themeModeOverride = res
+                        }
+                        await save(applyToMode, res)
+                    }
+                }
             } else {
                 AdvancedSettingsButton(theme.colors.primary) { showMore = true }
             }
@@ -379,7 +399,7 @@ struct ChatWallpaperEditor: View {
             onColorChange: { color in
                 preApplyGlobalIfNeeded(themeModeOverride.type)
                 ThemeManager.applyThemeColor(name: name, color: color, pref: $themeModeOverride)
-                currentTheme = ThemeManager.currentColors(nil, themeModeOverride == ThemeModeOverride(mode: initialTheme.mode) ? nil : themeModeOverride, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+                currentTheme = ThemeManager.currentColors(nil, globalThemeUsed ? nil : themeModeOverride, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
                 Task { await save(applyToMode, themeModeOverride) }
             })
     }
