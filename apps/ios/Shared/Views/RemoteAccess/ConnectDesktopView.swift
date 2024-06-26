@@ -178,7 +178,7 @@ struct ConnectDesktopView: View {
             }
         }
         .navigationTitle("Connect to desktop")
-        .modifier(ThemedBackground())
+        .modifier(ThemedBackground(grouped: true))
     }
 
     private func connectingDesktopView(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo?) -> some View {
@@ -203,7 +203,7 @@ struct ConnectDesktopView: View {
 
             ProgressView().scaleEffect(2)
         }
-        .modifier(ThemedBackground())
+        .modifier(ThemedBackground(grouped: true))
     }
 
     private func searchingDesktopView() -> some View {
@@ -221,7 +221,7 @@ struct ConnectDesktopView: View {
             }
         }
         .navigationTitle("Connecting to desktop")
-        .modifier(ThemedBackground())
+        .modifier(ThemedBackground(grouped: true))
     }
 
     @ViewBuilder private func foundDesktopView(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo, _ compatible: Bool) -> some View {
@@ -249,7 +249,7 @@ struct ConnectDesktopView: View {
             }
         }
         .navigationTitle("Found desktop")
-        .modifier(ThemedBackground())
+        .modifier(ThemedBackground(grouped: true))
 
         if compatible && connectRemoteViaMulticastAuto {
             v.onAppear { confirmKnownDesktop(rc) }
@@ -279,7 +279,7 @@ struct ConnectDesktopView: View {
             }
         }
         .navigationTitle("Verify connection")
-        .modifier(ThemedBackground())
+        .modifier(ThemedBackground(grouped: true))
     }
 
     private func ctrlDeviceNameText(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo?) -> Text {
@@ -320,7 +320,7 @@ struct ConnectDesktopView: View {
             }
         }
         .navigationTitle("Connected to desktop")
-        .modifier(ThemedBackground())
+        .modifier(ThemedBackground(grouped: true))
     }
 
     private func sessionCodeText(_ code: String) -> some View {
@@ -395,7 +395,7 @@ struct ConnectDesktopView: View {
             }
         }
         .navigationTitle("Linked desktops")
-        .modifier(ThemedBackground())
+        .modifier(ThemedBackground(grouped: true))
     }
 
     private func remoteCtrlView(_ rc: RemoteCtrlInfo) -> some View {

@@ -33,6 +33,8 @@ let WarningYellow = Color(255, 192, 0, a: 255)
 let FileLight = Color(183, 190, 199, a: 255)
 let FileDark = Color(101, 101, 106, a: 255)
 
+public let LightThemeBackgroundColor = Color(0xfff2f2f7)
+
 extension Color {
     public init(_ argb: Int64) {
         let a = Double((argb & 0xFF000000) >> 24) / 255.0

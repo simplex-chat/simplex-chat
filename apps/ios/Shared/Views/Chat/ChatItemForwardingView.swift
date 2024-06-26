@@ -55,7 +55,7 @@ struct ChatItemForwardingView: View {
                             .disabled(chatModel.deletedChats.contains(chat.chatInfo.id))
                     }
                 }
-                .modifier(ThemedBackground())
+                .modifier(ThemedBackground(grouped: true))
             } else {
                 ZStack {
                     emptyList()

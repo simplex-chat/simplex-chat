@@ -94,7 +94,7 @@ struct ProtocolServersView: View {
         }
         .sheet(isPresented: $showScanProtoServer) {
             ScanProtocolServer(servers: $servers)
-            .modifier(ThemedBackground())
+            .modifier(ThemedBackground(grouped: true))
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
             if saveDisabled {
@@ -172,7 +172,7 @@ struct ProtocolServersView: View {
                 serverToEdit: srv
             )
             .navigationBarTitle(srv.preset ? "Preset server" : "Your server")
-            .modifier(ThemedBackground())
+            .modifier(ThemedBackground(grouped: true))
             .navigationBarTitleDisplayMode(.large)
         } label: {
             let address = parseServerAddress(srv.server)

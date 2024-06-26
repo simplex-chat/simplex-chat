@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 import CodeScanner
 import AVFoundation
+import SimpleXChat
 
 struct SomeAlert: Identifiable {
     var alert: Alert
@@ -37,6 +38,7 @@ enum NewChatOption: Identifiable {
 
 struct NewChatView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @State var selection: NewChatOption
     @State var showQRCodeScanner = false
     @State private var invitationUsed: Bool = false
@@ -89,7 +91,7 @@ struct NewChatView: View {
             .background(
                 // Rectangle is needed for swipe gesture to work on mostly empty views (creatingLinkProgressView and retryButton)
                 Rectangle()
-                    .fill(AppTheme.shared.colors.background)
+                    .fill(theme.base == DefaultTheme.LIGHT ? LightThemeBackgroundColor : theme.colors.background)
             )
             .animation(.easeInOut(duration: 0.3333), value: selection)
             .gesture(DragGesture(minimumDistance: 20.0, coordinateSpace: .local)
@@ -108,7 +110,7 @@ struct NewChatView: View {
                 }
             )
         }
-        .modifier(ThemedBackground())
+        .modifier(ThemedBackground(grouped: true))
         .onChange(of: invitationUsed) { used in
             if used && !(m.showingInvitation?.connChatUsed ?? true) {
                 m.markShowingInvitationUsed()

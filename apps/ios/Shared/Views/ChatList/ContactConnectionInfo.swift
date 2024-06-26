@@ -83,7 +83,7 @@ struct ContactConnectionInfo: View {
                     }
                 }
             }
-            .modifier(ThemedBackground())
+            .modifier(ThemedBackground(grouped: true))
             if #available(iOS 16, *) {
                 v
             } else {

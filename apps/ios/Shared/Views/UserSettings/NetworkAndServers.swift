@@ -47,7 +47,7 @@ struct NetworkAndServers: View {
                     NavigationLink {
                         ProtocolServersView(serverProtocol: .smp)
                             .navigationTitle("Your SMP servers")
-                            .modifier(ThemedBackground())
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("SMP servers")
                     }
@@ -55,7 +55,7 @@ struct NetworkAndServers: View {
                     NavigationLink {
                         ProtocolServersView(serverProtocol: .xftp)
                             .navigationTitle("Your XFTP servers")
-                            .modifier(ThemedBackground())
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("XFTP servers")
                     }
@@ -75,7 +75,7 @@ struct NetworkAndServers: View {
                     NavigationLink {
                         AdvancedNetworkSettings()
                             .navigationTitle("Network settings")
-                            .modifier(ThemedBackground())
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("Advanced network settings")
                     }
@@ -113,7 +113,7 @@ struct NetworkAndServers: View {
                     NavigationLink {
                         RTCServers()
                             .navigationTitle("Your ICE servers")
-                            .modifier(ThemedBackground())
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("WebRTC ICE servers")
                     }

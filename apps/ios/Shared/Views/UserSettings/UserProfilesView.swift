@@ -112,7 +112,7 @@ struct UserProfilesView: View {
             }
         }
         .navigationTitle("Your chat profiles")
-        .modifier(ThemedBackground())
+        .modifier(ThemedBackground(grouped: true))
         .searchable(text: $searchTextOrPassword, placement: .navigationBarDrawer(displayMode: .always))
         .autocorrectionDisabled(true)
         .textInputAutocapitalization(.never)

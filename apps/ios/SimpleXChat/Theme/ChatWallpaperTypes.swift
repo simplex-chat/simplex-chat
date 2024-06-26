@@ -278,10 +278,10 @@ func wallpaperBackgrounds(light: String) -> [DefaultTheme : Color] {
     ]
 }
 
-public enum WallpaperScaleType/*(val contentScale: ContentScale)*/: String, Codable, CaseIterable {
-    case fill/* (ContentScale.Crop)*/
-    case fit/* (ContentScale.Fit)*/
-    case `repeat`/* (ContentScale.Fit)*/
+public enum WallpaperScaleType: String, Codable, CaseIterable {
+    case fill
+    case fit
+    case `repeat`
 
     public var text: String {
         switch self {
@@ -306,7 +306,7 @@ public enum WallpaperScaleType/*(val contentScale: ContentScale)*/: String, Coda
     }
 }
 
-public enum WallpaperType {
+public enum WallpaperType: Equatable {
     public var image: SwiftUI.Image? {
         if let uiImage {
             return SwiftUI.Image(uiImage: uiImage)

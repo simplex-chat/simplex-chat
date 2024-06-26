@@ -247,7 +247,7 @@ struct GroupMemberInfoView: View {
                 ProgressView().scaleEffect(2)
             }
         }
-        .modifier(ThemedBackground())
+        .modifier(ThemedBackground(grouped: true))
     }
 
     func connectViaAddressButton(_ contactLink: String) -> some View {
