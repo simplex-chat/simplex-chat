@@ -147,6 +147,7 @@ struct ChatView: View {
                         connectionStats = nil
                         customUserProfile = nil
                         connectionCode = nil
+                        theme = buildTheme()
                     }) {
                         ChatInfoView(chat: chat, contact: contact, connectionStats: $connectionStats, customUserProfile: $customUserProfile, localAlias: chat.chatInfo.localAlias, connectionCode: $connectionCode)
                     }
@@ -156,7 +157,7 @@ struct ChatView: View {
                     } label: {
                         ChatInfoToolbar(chat: chat)
                     }
-                    .appSheet(isPresented: $showChatInfoSheet) {
+                    .appSheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
                         GroupChatInfoView(
                             chat: chat,
                             groupInfo: Binding(
