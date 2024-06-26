@@ -134,7 +134,6 @@ extension ThemeWallpaper {
 
 extension ThemeModeOverride {
     func removeSameColors(_ base: DefaultTheme, colorsToCompare tc: ThemeColors) -> ThemeModeOverride {
-        logger.debug("LALAL COLOR \(String(describing: colors))  \(String(describing: tc))")
         let wallpaperType = WallpaperType.from(wallpaper) ?? WallpaperType.Empty
         let w: ThemeWallpaper
         switch wallpaperType {
