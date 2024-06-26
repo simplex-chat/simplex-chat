@@ -1350,6 +1350,13 @@ func resetAgentServersStats() async throws {
     try await sendCommandOkResp(.resetAgentServersStats)
 }
 
+func getAgentSubsSummary() throws -> SMPServerSubs {
+    let userId = try currentUserId("getAgentSubsSummary")
+    let r = chatSendCmdSync(.getAgentSubsSummary(userId: userId))
+    if case let .agentSubsSummary(_, subsSummary) = r { return subsSummary }
+    throw r
+}
+
 private func currentUserId(_ funcName: String) throws -> Int64 {
     if let userId = ChatModel.shared.currentUser?.userId {
         return userId

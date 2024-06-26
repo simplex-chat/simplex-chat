@@ -146,6 +146,7 @@ public enum ChatCommand {
     case showVersion
     case getAgentServersSummary(userId: Int64)
     case resetAgentServersStats
+    case getAgentSubsSummary(userId: Int64)
     case string(String)
 
     public var cmdString: String {
@@ -308,6 +309,7 @@ public enum ChatCommand {
             case .showVersion: return "/version"
             case let .getAgentServersSummary(userId): return "/get servers summary \(userId)"
             case .resetAgentServersStats: return "/reset servers stats"
+            case let .getAgentSubsSummary(userId): return "/get subs summary \(userId)"
             case let .string(str): return str
             }
         }
@@ -445,6 +447,7 @@ public enum ChatCommand {
             case .showVersion: return "showVersion"
             case .getAgentServersSummary: return "getAgentServersSummary"
             case .resetAgentServersStats: return "resetAgentServersStats"
+            case .getAgentSubsSummary: return "getAgentSubsSummary"
             case .string: return "console command"
             }
         }
@@ -674,6 +677,7 @@ public enum ChatResponse: Decodable, Error {
     case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
     case cmdOk(user: UserRef?)
     case agentServersSummary(user: UserRef, serversSummary: PresentedServersSummary)
+    case agentSubsSummary(user: UserRef, subsSummary: SMPServerSubs)
     case chatCmdError(user_: UserRef?, chatError: ChatError)
     case chatError(user_: UserRef?, chatError: ChatError)
     case archiveImported(archiveErrors: [ArchiveError])
@@ -833,6 +837,7 @@ public enum ChatResponse: Decodable, Error {
             case .versionInfo: return "versionInfo"
             case .cmdOk: return "cmdOk"
             case .agentServersSummary: return "agentServersSummary"
+            case .agentSubsSummary: return "agentSubsSummary"
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
             case .archiveImported: return "archiveImported"
@@ -997,6 +1002,7 @@ public enum ChatResponse: Decodable, Error {
             case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
             case .cmdOk: return noDetails
             case let .agentServersSummary(u, serversSummary): return withUser(u, String(describing: serversSummary))
+            case let .agentSubsSummary(u, subsSummary): return withUser(u, String(describing: subsSummary))
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
             case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
             case let .archiveImported(archiveErrors): return String(describing: archiveErrors)
@@ -2308,6 +2314,8 @@ public struct AgentSMPServerStatsData: Codable {
     public var _recvDuplicates: Int
     public var _recvCryptoErrs: Int
     public var _recvErrs: Int
+    public var _ackMsgs: Int
+    public var _ackAttempts: Int
     public var _connCreated: Int
     public var _connSecured: Int
     public var _connCompleted: Int
