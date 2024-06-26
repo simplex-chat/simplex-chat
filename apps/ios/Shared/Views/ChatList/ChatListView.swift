@@ -265,7 +265,14 @@ struct ChatListView: View {
 
 struct SubsStatusIndicator: View {
     @State private var subs: SMPServerSubs = SMPServerSubs(ssActive: 0, ssPending: 0)
+    @State private var timer: Timer? = nil
+    @State private var timerCounter = 0
     @State private var showServersSummary = false
+
+    // Constants for the intervals
+    let initialInterval: TimeInterval = 1.0
+    let regularInterval: TimeInterval = 5.0
+    let initialPhaseDuration: TimeInterval = 10.0 // Duration for initial phase in seconds
 
     var body: some View {
         Button {
@@ -274,12 +281,37 @@ struct SubsStatusIndicator: View {
             SubscriptionStatusView(activeSubs: subs.ssActive, pendingSubs: subs.ssPending)
         }
         .onAppear {
-            // TODO update
-            getSubsSummary()
+            startInitialTimer()
+        }
+        .onDisappear {
+            stopTimer()
         }
         .sheet(isPresented: $showServersSummary) {
             ServersSummaryView()
         }
+    }
+
+    private func startInitialTimer() {
+        timer = Timer.scheduledTimer(withTimeInterval: initialInterval, repeats: true) { _ in
+            getSubsSummary()
+            timerCounter += 1
+            // Switch to the regular timer after the initial phase
+            if timerCounter * Int(initialInterval) >= Int(initialPhaseDuration) {
+                switchToRegularTimer()
+            }
+        }
+    }
+
+    func switchToRegularTimer() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: regularInterval, repeats: true) { _ in
+            getSubsSummary()
+        }
+    }
+
+    func stopTimer() {
+        timer?.invalidate()
+        timer = nil
     }
 
     private func getSubsSummary() {
