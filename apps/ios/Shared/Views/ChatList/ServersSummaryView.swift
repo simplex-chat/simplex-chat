@@ -434,9 +434,14 @@ struct SMPServerSummaryView: View {
     }
 
     private func subsSection(_ subs: SMPServerSubs) -> some View {
-        Section("Subscriptions") {
+        Section {
             infoRow("Active", "\(subs.ssActive)")
             infoRow("Pending", "\(subs.ssPending)")
+        } header: {
+            HStack {
+                Text("Subscriptions")
+                SubscriptionStatusView(activeSubs: subs.ssActive, pendingSubs: subs.ssPending)
+            }
         }
     }
 
