@@ -452,27 +452,37 @@ struct SMPServerSummaryView: View {
         Section("Statistics") {
             infoRow("Starting from", localTimestamp(statsStartedAt))
             infoRow("Messages sent directly", "\(stats._sentDirect)")
-            infoRow("    attempts", "\(stats._sentDirectAttempts)")
+            indentedInfoRow("attempts", "\(stats._sentDirectAttempts)")
             infoRow("Messages sent via proxy", "\(stats._sentViaProxy)")
-            infoRow("    attempts", "\(stats._sentViaProxyAttempts)")
+            indentedInfoRow("attempts", "\(stats._sentViaProxyAttempts)")
             infoRow("Messages sent to proxy", "\(stats._sentProxied)")
-            infoRow("    attempts", "\(stats._sentProxiedAttempts)")
-            infoRow("Send AUTH errors", "\(stats._sentAuthErrs)")
-            infoRow("    QUOTA errors", "\(stats._sentQuotaErrs)")
-            infoRow("    expired", "\(stats._sentExpiredErrs)")
-            infoRow("    other errors", "\(stats._sentOtherErrs)")
+            indentedInfoRow("attempts", "\(stats._sentProxiedAttempts)")
+            infoRow("Sending AUTH errors", "\(stats._sentAuthErrs)")
+            indentedInfoRow("QUOTA errors", "\(stats._sentQuotaErrs)")
+            indentedInfoRow("expired", "\(stats._sentExpiredErrs)")
+            indentedInfoRow("other errors", "\(stats._sentOtherErrs)")
             infoRow("Messages received", "\(stats._recvMsgs)")
-            infoRow("    duplicates", "\(stats._recvDuplicates)")
-            infoRow("    decryption", "\(stats._recvCryptoErrs)")
-            infoRow("    other errors", "\(stats._recvErrs)")
+            indentedInfoRow("duplicates", "\(stats._recvDuplicates)")
+            indentedInfoRow("decryption", "\(stats._recvCryptoErrs)")
+            indentedInfoRow("other errors", "\(stats._recvErrs)")
             infoRow("Connections created", "\(stats._connCreated)")
-            infoRow("    secured", "\(stats._connSecured)")
-            infoRow("    completed", "\(stats._connCompleted)")
+            indentedInfoRow("secured", "\(stats._connSecured)")
+            indentedInfoRow("completed", "\(stats._connCompleted)")
             infoRow("Connections deleted", "\(stats._connDeleted)")
             infoRow("Connections subscribed", "\(stats._connSubscribed)")
-            infoRow("    attempts", "\(stats._connSubAttempts)")
-            infoRow("    errors", "\(stats._connSubErrs)")
+            indentedInfoRow("attempts", "\(stats._connSubAttempts)")
+            indentedInfoRow("errors", "\(stats._connSubErrs)")
         }
+    }
+}
+
+private func indentedInfoRow(_ title: LocalizedStringKey, _ value: String) -> some View {
+    HStack {
+        Text(title)
+            .padding(.leading, 24)
+        Spacer()
+        Text(value)
+            .foregroundStyle(.secondary)
     }
 }
 
@@ -536,15 +546,15 @@ struct XFTPServerSummaryView: View {
         Section("Statistics") {
             infoRow("Starting from", localTimestamp(statsStartedAt))
             infoRow("Chunks uploaded", "\(stats._uploads)")
-            infoRow("    attempts", "\(stats._uploadAttempts)")
-            infoRow("    errors", "\(stats._uploadErrs)")
+            indentedInfoRow("attempts", "\(stats._uploadAttempts)")
+            indentedInfoRow("errors", "\(stats._uploadErrs)")
             infoRow("Chunks downloaded", "\(stats._downloads)")
-            infoRow("    attempts", "\(stats._downloadAttempts)")
-            infoRow("    AUTH errors", "\(stats._downloadAuthErrs)")
-            infoRow("    other errors", "\(stats._downloadErrs)")
+            indentedInfoRow("attempts", "\(stats._downloadAttempts)")
+            indentedInfoRow("AUTH errors", "\(stats._downloadAuthErrs)")
+            indentedInfoRow("other errors", "\(stats._downloadErrs)")
             infoRow("Chunks deleted", "\(stats._deletions)")
-            infoRow("    attempts", "\(stats._deleteAttempts)")
-            infoRow("    errors", "\(stats._deleteErrs)")
+            indentedInfoRow("attempts", "\(stats._deleteAttempts)")
+            indentedInfoRow("errors", "\(stats._deleteErrs)")
         }
     }
 }
