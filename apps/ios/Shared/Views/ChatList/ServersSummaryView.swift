@@ -291,6 +291,7 @@ struct SubscriptionStatusView: View {
     @EnvironmentObject var m: ChatModel
     var activeSubs: Int
     var pendingSubs: Int
+    var variableValueAsPercentage: Bool = false
 
     var body: some View {
         let netInfo = m.networkInfo
@@ -320,13 +321,18 @@ struct SubscriptionStatusView: View {
         }
     }
 
+    // We manipulate variableValue so all "wifi" sections are filled only with 100% active subs,
+    // unless variableValueAsPercentage is true; same for cellularbarsColor
     var wifiColor: (Color, Double, Double) {
         if activeSubs > 0 {
-            let wifiVariableValue = ( // wifi has 3 sections
-                activeSubsPercentage >= 1 ? 1
-                : (activeSubsPercentage >= 0.5 && activeSubsPercentage < 1) ? 0.6
-                : (activeSubsPercentage > 0 && activeSubsPercentage < 0.5) ? 0.3
-                : 0
+            let wifiVariableValue = (
+                variableValueAsPercentage ? activeSubsPercentage
+                :   ( // "wifi" has 3 sections
+                    activeSubsPercentage >= 1 ? 1
+                    : (activeSubsPercentage >= 0.5 && activeSubsPercentage < 1) ? 0.6
+                    : (activeSubsPercentage > 0 && activeSubsPercentage < 0.5) ? 0.3
+                    : 0
+                    )
             )
             return (.accentColor, wifiVariableValue, activeSubsPercentage)
         } else {
@@ -336,12 +342,15 @@ struct SubscriptionStatusView: View {
 
     var cellularbarsColor: (Color, Double, Double) {
         if activeSubs > 0 {
-            let wifiVariableValue = ( // cellularbars has 4 sections
-                activeSubsPercentage >= 1 ? 1
-                : (activeSubsPercentage >= 0.67 && activeSubsPercentage < 1) ? 0.7
-                : (activeSubsPercentage >= 0.33 && activeSubsPercentage < 0.67) ? 0.45
-                : (activeSubsPercentage > 0 && activeSubsPercentage < 0.33) ? 0.2
-                : 0
+            let wifiVariableValue = (
+                variableValueAsPercentage ? activeSubsPercentage
+                : ( // "cellularbars" has 4 sections
+                    activeSubsPercentage >= 1 ? 1
+                    : (activeSubsPercentage >= 0.67 && activeSubsPercentage < 1) ? 0.7
+                    : (activeSubsPercentage >= 0.33 && activeSubsPercentage < 0.67) ? 0.45
+                    : (activeSubsPercentage > 0 && activeSubsPercentage < 0.33) ? 0.2
+                    : 0
+                  )
             )
             return (.accentColor, wifiVariableValue, activeSubsPercentage)
         } else {

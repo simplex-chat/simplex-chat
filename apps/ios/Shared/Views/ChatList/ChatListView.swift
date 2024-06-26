@@ -278,7 +278,7 @@ struct SubsStatusIndicator: View {
         Button {
             showServersSummary = true
         } label: {
-            SubscriptionStatusView(activeSubs: subs.ssActive, pendingSubs: subs.ssPending)
+            SubscriptionStatusView(activeSubs: subs.ssActive, pendingSubs: subs.ssPending, variableValueAsPercentage: true)
         }
         .onAppear {
             startInitialTimer()
