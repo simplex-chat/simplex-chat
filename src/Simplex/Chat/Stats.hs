@@ -5,7 +5,6 @@
 
 module Simplex.Chat.Stats where
 
-import Control.Applicative ((<|>))
 import qualified Data.Aeson.TH as J
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -113,8 +112,7 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
     }
   where
     AgentServersSummary {statsStartedAt, smpServersSessions, smpServersSubs, smpServersStats, xftpServersSessions, xftpServersStats, xftpRcvInProgress, xftpSndInProgress, xftpDelInProgress} = agentSummary
-    countUserInAll auId = auId == aUserId currentUser || auId `notElem` hiddenUserIds
-    hiddenUserIds = map aUserId $ filter (isJust . viewPwdHash) users
+    countUserInAll auId = countUserInAllStats (AgentUserId auId) currentUser users
     smpSummsIntoCategories :: Map SMPServer SMPServerSummary -> ([SMPServerSummary], [SMPServerSummary], [SMPServerSummary])
     smpSummsIntoCategories = foldr partitionSummary ([], [], [])
       where
@@ -213,12 +211,6 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
           ssErrors = ssErrors ss1 + ssErrors ss2,
           ssConnecting = ssConnecting ss1 + ssConnecting ss2
         }
-    addSMPSubs :: SMPServerSubs -> SMPServerSubs -> SMPServerSubs
-    addSMPSubs ss1 ss2 =
-      SMPServerSubs
-        { ssActive = ssActive ss1 + ssActive ss2,
-          ssPending = ssPending ss1 + ssPending ss2
-        }
     addSMPStats :: AgentSMPServerStatsData -> AgentSMPServerStatsData -> AgentSMPServerStatsData
     addSMPStats sd1 sd2 =
       AgentSMPServerStatsData
@@ -236,6 +228,8 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
           _recvDuplicates = _recvDuplicates sd1 + _recvDuplicates sd2,
           _recvCryptoErrs = _recvCryptoErrs sd1 + _recvCryptoErrs sd2,
           _recvErrs = _recvErrs sd1 + _recvErrs sd2,
+          _ackMsgs = _ackMsgs sd1 + _ackMsgs sd2,
+          _ackAttempts = _ackAttempts sd1 + _ackAttempts sd2,
           _connCreated = _connCreated sd1 + _connCreated sd2,
           _connSecured = _connSecured sd1 + _connSecured sd2,
           _connCompleted = _connCompleted sd1 + _connCompleted sd2,
@@ -258,6 +252,19 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
           _deleteAttempts = _deleteAttempts sd1 + _deleteAttempts sd2,
           _deleteErrs = _deleteErrs sd1 + _deleteErrs sd2
         }
+
+countUserInAllStats :: AgentUserId -> User -> [User] -> Bool
+countUserInAllStats (AgentUserId auId) currentUser users =
+  auId == aUserId currentUser || auId `notElem` hiddenUserIds
+  where
+    hiddenUserIds = map aUserId $ filter (isJust . viewPwdHash) users
+
+addSMPSubs :: SMPServerSubs -> SMPServerSubs -> SMPServerSubs
+addSMPSubs ss1 ss2 =
+  SMPServerSubs
+    { ssActive = ssActive ss1 + ssActive ss2,
+      ssPending = ssPending ss1 + ssPending ss2
+    }
 
 $(J.deriveJSON defaultJSON ''SMPServerSummary)
 
