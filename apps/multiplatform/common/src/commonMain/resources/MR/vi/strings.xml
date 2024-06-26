@@ -352,4 +352,17 @@
     <string name="core_version">Phiên bản lõi: v%s</string>
     <string name="correct_name_to">Sửa tên thành %s?</string>
     <string name="copy_error">Sao chép lỗi</string>
+    <string name="v5_4_incognito_groups_descr">Tạo nhóm bằng một hồ sơ ngẫu nhiên.</string>
+    <string name="v5_3_new_desktop_app_descr">Tạo hồ sơ mới trong ứng dụng trên máy tính. 💻</string>
+    <string name="cannot_share_message_alert_title">Không thể gửi tin nhắn</string>
+    <string name="smp_server_test_create_file">Tạo tệp</string>
+    <string name="create_address_and_let_people_connect">Tạo một địa chỉ để cho mọi người kết nối với bạn.</string>
+    <string name="create_group_link">Tạo liên kết nhóm</string>
+    <string name="button_create_group_link">Tạo liên kết</string>
+    <string name="info_row_created_at">Được tạo ra tại</string>
+    <string name="create_address">Tạo địa chỉ</string>
+    <string name="archive_created_on_ts">Được tạo ra vào %1$s</string>
+    <string name="share_text_created_at">Được tạo ra tại: %s</string>
+    <string name="create_chat_profile">Tạo hồ sơ trò chuyện</string>
+    <string name="create_group_button">Tạo nhóm</string>
 </resources>
