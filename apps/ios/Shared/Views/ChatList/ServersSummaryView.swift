@@ -468,7 +468,7 @@ struct SMPServerSummaryView: View {
             indentedInfoRow("other errors", "\(stats._sentOtherErrs)")
             infoRow("Messages received", "\(stats._recvMsgs)")
             indentedInfoRow("duplicates", "\(stats._recvDuplicates)")
-            indentedInfoRow("decryption", "\(stats._recvCryptoErrs)")
+            indentedInfoRow("decryption errors", "\(stats._recvCryptoErrs)")
             indentedInfoRow("other errors", "\(stats._recvErrs)")
             infoRow("Messages acknowledged", "\(stats._ackMsgs)")
             indentedInfoRow("attempts", "\(stats._ackAttempts)")
