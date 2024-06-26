@@ -2265,11 +2265,8 @@ processChatCommand' vr = \case
     where
       getUserSrvs :: forall p. (ProtocolTypeI p, UserProtocol p) => User -> SProtocolType p -> CM [ProtocolServer p]
       getUserSrvs user protocol = do
-        ChatConfig {defaultServers} <- asks config
-        let defServers = cfgServers protocol defaultServers
-        servers <- map (\ServerCfg {server} -> server) <$> withStore' (`getProtocolServers` user)
-        let srvs = if null servers then L.toList defServers else servers
-        pure $ map protoServer srvs
+        (srvCfgs, _) <- getUserServers user protocol
+        pure $ map (\ServerCfg {server} -> protoServer server) (L.toList srvCfgs)
   ResetAgentServersStats -> withAgent resetAgentServersStats >> ok_
   GetAgentSubsSummary userId -> withUserId userId $ \user -> do
     agentSubsSummary <- lift $ withAgent' getAgentSubsSummary
