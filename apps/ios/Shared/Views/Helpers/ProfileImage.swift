@@ -29,7 +29,7 @@ struct ProfileImage: View {
                 .resizable()
                 .foregroundColor(color)
                 .frame(width: size, height: size)
-                .background(backgroundColor != nil ? backgroundColor! : .clear)
+                .background(Circle().fill(backgroundColor != nil ? backgroundColor! : .clear))
         }
     }
 }
