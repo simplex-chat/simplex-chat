@@ -507,6 +507,7 @@ data ChatCommand
   | DebugLocks
   | DebugEvent ChatResponse
   | GetAgentServersSummary UserId
+  | ResetAgentServersStats
   | GetAgentStats
   | ResetAgentStats
   | GetAgentSubs
