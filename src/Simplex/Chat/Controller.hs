@@ -344,6 +344,7 @@ data ChatCommand
   | APIGetUserProtoServers UserId AProtocolType
   | GetUserProtoServers AProtocolType
   | APISetUserProtoServers UserId AProtoServersConfig
+  | APIAddKnownProtoServer UserId AProtoServerWithAuth
   | SetUserProtoServers AProtoServersConfig
   | APITestProtoServer UserId AProtoServerWithAuth
   | TestProtoServer AProtoServerWithAuth

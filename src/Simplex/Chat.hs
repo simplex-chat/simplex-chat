@@ -309,12 +309,12 @@ newChatController
       agentServers :: ChatConfig -> IO InitialAgentServers
       agentServers config@ChatConfig {defaultServers = defServers@DefaultAgentServers {ntf, netCfg}} = do
         users <- withTransaction chatStore getUsers
-        smp' <- getUserServers users SPSMP
-        xftp' <- getUserServers users SPXFTP
+        smp' <- getUsersServers users SPSMP
+        xftp' <- getUsersServers users SPXFTP
         pure InitialAgentServers {smp = smp', xftp = xftp', ntf, netCfg}
         where
-          getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => [User] -> SProtocolType p -> IO (Map UserId (NonEmpty (ProtoServerWithAuth p)))
-          getUserServers users protocol = case users of
+          getUsersServers :: forall p. (ProtocolTypeI p, UserProtocol p) => [User] -> SProtocolType p -> IO (Map UserId (NonEmpty (ProtoServerWithAuth p)))
+          getUsersServers users protocol = case users of
             [] -> pure $ M.fromList [(1, cfgServers protocol defServers)]
             _ -> M.fromList <$> initialServers
             where
@@ -1309,19 +1309,21 @@ processChatCommand' vr = \case
         withStore (\db -> Just <$> getConnectionEntity db vr user agentConnId) `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
     pure CRNtfMessages {user_, connEntity_, msgTs = msgTs', ntfMessages = map ntfMsgInfo msgs}
   APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
-    ChatConfig {defaultServers} <- asks config
-    servers <- withStore' (`getProtocolServers` user)
-    let defServers = cfgServers p defaultServers
-        servers' = fromMaybe (L.map toServerCfg defServers) $ nonEmpty servers
-    pure $ CRUserProtoServers user $ AUPS $ UserProtoServers p servers' defServers
-    where
-      toServerCfg server = ServerCfg {server, preset = True, tested = Nothing, enabled = SEEnabled}
+    (srvCfgs, defServers) <- getUserServers user p
+    pure $ CRUserProtoServers user $ AUPS $ UserProtoServers p srvCfgs defServers
   GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
     processChatCommand $ APIGetUserProtoServers userId aProtocol
-  APISetUserProtoServers userId (APSC p (ProtoServersConfig servers)) -> withUserId userId $ \user -> withServerProtocol p $ do
-    withStore $ \db -> overwriteProtocolServers db user servers
+  APISetUserProtoServers userId (APSC p (ProtoServersConfig srvsCfg)) -> withUserId userId $ \user -> withServerProtocol p $ do
+    withStore $ \db -> overwriteProtocolServers db user srvsCfg
     cfg <- asks config
-    lift $ withAgent' $ \a -> setProtocolServers a (aUserId user) $ activeAgentServers cfg p servers
+    lift $ withAgent' $ \a -> setProtocolServers a (aUserId user) $ activeAgentServers cfg p srvsCfg
+    ok user
+  APIAddKnownProtoServer userId (AProtoServerWithAuth p newSrv) -> withUserId userId $ \user -> withServerProtocol p $ do
+    (srvCfgs, _) <- getUserServers user p
+    when (protoServer newSrv `elem` map (\ServerCfg {server} -> protoServer server) (L.toList srvCfgs)) $
+      throwChatError (CECommandError "server already configured")
+    let newSrvCfg = ServerCfg {server = newSrv, preset = False, tested = Nothing, enabled = SEKnown}
+    withStore $ \db -> overwriteProtocolServers db user (L.toList srvCfgs <> [newSrvCfg])
     ok user
   SetUserProtoServers serversConfig -> withUser $ \User {userId} ->
     processChatCommand $ APISetUserProtoServers userId serversConfig
@@ -2256,18 +2258,15 @@ processChatCommand' vr = \case
   GetAgentServersSummary userId -> withUserId userId $ \user -> do
     agentServersSummary <- lift $ withAgent' getAgentServersSummary
     users <- withStore' getUsers
-    smpServers <- getUserServers user SPSMP
-    xftpServers <- getUserServers user SPXFTP
+    smpServers <- getUserSrvs user SPSMP
+    xftpServers <- getUserSrvs user SPXFTP
     let presentedServersSummary = toPresentedServersSummary agentServersSummary users user smpServers xftpServers
     pure $ CRAgentServersSummary user presentedServersSummary
     where
-      getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => User -> SProtocolType p -> CM [ProtocolServer p]
-      getUserServers users protocol = do
-        ChatConfig {defaultServers} <- asks config
-        let defServers = cfgServers protocol defaultServers
-        servers <- map (\ServerCfg {server} -> server) <$> withStore' (`getProtocolServers` users)
-        let srvs = if null servers then L.toList defServers else servers
-        pure $ map protoServer srvs
+      getUserSrvs :: forall p. (ProtocolTypeI p, UserProtocol p) => User -> SProtocolType p -> CM [ProtocolServer p]
+      getUserSrvs user protocol = do
+        (srvCfgs, _) <- getUserServers user protocol
+        pure $ map (\ServerCfg {server} -> protoServer server) (L.toList srvCfgs)
   ResetAgentServersStats -> withAgent resetAgentServersStats >> ok_
   GetAgentSubsSummary userId -> withUserId userId $ \user -> do
     agentSubsSummary <- lift $ withAgent' getAgentSubsSummary
@@ -2858,6 +2857,16 @@ processChatCommand' vr = \case
       msgInfo <- withStore' (`getLastRcvMsgInfo` connId)
       CRQueueInfo user msgInfo <$> withAgent (`getConnectionQueueInfo` acId)
 
+getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => User -> SProtocolType p -> CM (NonEmpty (ServerCfg p), NonEmpty (ProtoServerWithAuth p))
+getUserServers user p = do
+  ChatConfig {defaultServers} <- asks config
+  servers <- withStore' (`getProtocolServers` user)
+  let defServers = cfgServers p defaultServers
+      userServers = fromMaybe (L.map defServerCfg defServers) $ nonEmpty servers
+  pure (userServers, defServers)
+  where
+    defServerCfg server = ServerCfg {server, preset = True, tested = Nothing, enabled = SEEnabled}
+
 contactCITimed :: Contact -> CM (Maybe CITimed)
 contactCITimed ct = sndContactCITimed False ct Nothing
 
@@ -3242,10 +3251,8 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       S.toList $ S.fromList $ concatMap (\FD.FileChunk {replicas} -> map (\FD.FileChunkReplica {server} -> server) replicas) chunks
     getUnknownSrvs :: [XFTPServer] -> CM [XFTPServer]
     getUnknownSrvs srvs = do
-      ChatConfig {defaultServers = DefaultAgentServers {xftp = defXftp}} <- asks config
-      storedSrvs <- map (\ServerCfg {server} -> protoServer server) <$> withStore' (`getProtocolServers` user)
-      let defXftp' = L.map protoServer defXftp
-          knownSrvs = fromMaybe defXftp' $ nonEmpty storedSrvs
+      (srvCfgs, _) <- getUserServers user SPXFTP
+      let knownSrvs = map (\ServerCfg {server} -> protoServer server) (L.toList srvCfgs)
       pure $ filter (`notElem` knownSrvs) srvs
     ipProtectedForSrvs :: [XFTPServer] -> CM Bool
     ipProtectedForSrvs srvs = do
@@ -7441,6 +7448,7 @@ chatCommandP =
       "/xftp test " *> (TestProtoServer . AProtoServerWithAuth SPXFTP <$> strP),
       "/ntf test " *> (TestProtoServer . AProtoServerWithAuth SPNTF <$> strP),
       "/_servers " *> (APISetUserProtoServers <$> A.decimal <* A.space <*> srvCfgP),
+      "/_known server " *> (APIAddKnownProtoServer <$> A.decimal <* A.space <*> strP),
       "/smp " *> (SetUserProtoServers . APSC SPSMP . ProtoServersConfig . map toServerCfg <$> protocolServersP),
       "/smp default" $> SetUserProtoServers (APSC SPSMP $ ProtoServersConfig []),
       "/xftp " *> (SetUserProtoServers . APSC SPXFTP . ProtoServersConfig . map toServerCfg <$> protocolServersP),
