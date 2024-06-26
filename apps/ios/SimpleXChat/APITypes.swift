@@ -78,6 +78,7 @@ public enum ChatCommand {
     case apiGetNetworkConfig
     case apiSetNetworkInfo(networkInfo: UserNetworkInfo)
     case reconnectAllServers
+    case reconnectServer(userId: Int64, smpServer: String)
     case apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings)
     case apiSetMemberSettings(groupId: Int64, groupMemberId: Int64, memberSettings: GroupMemberSettings)
     case apiContactInfo(contactId: Int64)
@@ -228,6 +229,7 @@ public enum ChatCommand {
             case .apiGetNetworkConfig: return "/network"
             case let .apiSetNetworkInfo(networkInfo): return "/_network info \(encodeJSON(networkInfo))"
             case .reconnectAllServers: return "/reconnect"
+            case let .reconnectServer(userId, smpServer): return "/reconnect \(userId) \(smpServer)"
             case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id)) \(encodeJSON(chatSettings))"
             case let .apiSetMemberSettings(groupId, groupMemberId, memberSettings): return "/_member settings #\(groupId) \(groupMemberId) \(encodeJSON(memberSettings))"
             case let .apiContactInfo(contactId): return "/_info @\(contactId)"
@@ -378,6 +380,7 @@ public enum ChatCommand {
             case .apiGetNetworkConfig: return "apiGetNetworkConfig"
             case .apiSetNetworkInfo: return "apiSetNetworkInfo"
             case .reconnectAllServers: return "reconnectAllServers"
+            case .reconnectServer: return "reconnectServer"
             case .apiSetChatSettings: return "apiSetChatSettings"
             case .apiSetMemberSettings: return "apiSetMemberSettings"
             case .apiContactInfo: return "apiContactInfo"

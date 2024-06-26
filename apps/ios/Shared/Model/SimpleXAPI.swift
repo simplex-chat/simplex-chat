@@ -541,6 +541,11 @@ func reconnectAllServers() async throws {
     try await sendCommandOkResp(.reconnectAllServers)
 }
 
+func reconnectServer(smpServer: String) async throws {
+    let userId = try currentUserId("reconnectServer")
+    try await sendCommandOkResp(.reconnectServer(userId: userId, smpServer: smpServer))
+}
+
 func apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings) async throws {
     try await sendCommandOkResp(.apiSetChatSettings(type: type, id: id, chatSettings: chatSettings))
 }

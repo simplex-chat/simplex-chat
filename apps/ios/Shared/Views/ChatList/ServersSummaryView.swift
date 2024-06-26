@@ -329,6 +329,7 @@ struct SMPServerSummaryView: View {
     var summary: SMPServerSummary
     var showReconnectButton: Bool
     var statsStartedAt: Date
+    @State private var alert: SomeAlert?
 
     var body: some View {
         List {
@@ -346,62 +347,100 @@ struct SMPServerSummaryView: View {
                 Text("Server address")
             } footer: {
                 if let known = summary.known, known {
-                    // TODO open settings?
-                    Text("Server is configured in **Settings** → **Network & servers** → **SMP servers**.")
+                    Text("Server is configured in **Settings** → **Network & servers**.")
                 }
             }
 
             if showReconnectButton {
-                Section {
-                    Button {
-                        // TODO
-                    } label: {
-                        Text("TODO Reconnect")
-                    }
-                }
-            }
-
-            if let sess = summary.sessions {
-                Section("Sessions") {
-                    infoRow("Connected", "\(sess.ssConnected)")
-                    infoRow("Errors", "\(sess.ssErrors)")
-                    infoRow("Connecting", "\(sess.ssConnecting)")
-                }
+                reconnectButtonSection()
             }
 
             if let subs = summary.subs {
-                Section("Subscriptions") {
-                    infoRow("Active", "\(subs.ssActive)")
-                    infoRow("Pending", "\(subs.ssPending)")
-                }
+                subsSection(subs)
+            }
+
+            if let sess = summary.sessions {
+                sessionsSection(sess)
             }
 
             if let stats = summary.stats {
-                Section("Statistics") {
-                    infoRow("Messages sent directly", "\(stats._sentDirect)")
-                    infoRow("    attempts", "\(stats._sentDirectAttempts)")
-                    infoRow("Messages sent via proxy", "\(stats._sentViaProxy)")
-                    infoRow("    attempts", "\(stats._sentViaProxyAttempts)")
-                    infoRow("Messages sent to proxy", "\(stats._sentProxied)")
-                    infoRow("    attempts", "\(stats._sentProxiedAttempts)")
-                    infoRow("Send AUTH errors", "\(stats._sentAuthErrs)")
-                    infoRow("    QUOTA errors", "\(stats._sentQuotaErrs)")
-                    infoRow("    expired", "\(stats._sentExpiredErrs)")
-                    infoRow("    other errors", "\(stats._sentOtherErrs)")
-                    infoRow("Messages received", "\(stats._recvMsgs)")
-                    infoRow("    duplicates", "\(stats._recvDuplicates)")
-                    infoRow("    decryption", "\(stats._recvCryptoErrs)")
-                    infoRow("    other errors", "\(stats._recvErrs)")
-                    infoRow("Connections created", "\(stats._connCreated)")
-                    infoRow("    secured", "\(stats._connSecured)")
-                    infoRow("    completed", "\(stats._connCompleted)")
-                    infoRow("Connections deleted", "\(stats._connDeleted)")
-                    infoRow("Connections subscribed", "\(stats._connSubscribed)")
-                    infoRow("    attempts", "\(stats._connSubAttempts)")
-                    infoRow("    errors", "\(stats._connSubErrs)")
-                    infoRow("From", localTimestamp(statsStartedAt))
-                }
+                statsSection(stats)
             }
+        }
+        .alert(item: $alert) { $0.alert }
+    }
+
+    private func reconnectButtonSection() -> some View {
+        Section {
+            Button {
+                alert = SomeAlert(
+                    alert: Alert(
+                        title: Text("Reconnect server?"),
+                        message: Text("Reconnect server to force message delivery. It uses additional traffic."),
+                        primaryButton: .default(Text("Ok")) {
+                            Task {
+                                do {
+                                    try await reconnectServer(smpServer: summary.smpServer)
+                                } catch let error {
+                                    alert = SomeAlert(
+                                        alert: mkAlert(
+                                            title: "Error reconnecting server",
+                                            message: "\(responseError(error))"
+                                        ),
+                                        id: "error reconnecting server"
+                                    )
+                                }
+                            }
+                        },
+                        secondaryButton: .cancel()
+                    ),
+                    id: "reconnect server question"
+                )
+            } label: {
+                Text("Reconnect")
+            }
+        }
+    }
+
+    private func subsSection(_ subs: SMPServerSubs) -> some View {
+        Section("Subscriptions") {
+            infoRow("Active", "\(subs.ssActive)")
+            infoRow("Pending", "\(subs.ssPending)")
+        }
+    }
+
+    private func sessionsSection(_ sess: ServerSessions) -> some View {
+        Section("Sessions") {
+            infoRow("Connected", "\(sess.ssConnected)")
+            infoRow("Errors", "\(sess.ssErrors)")
+            infoRow("Connecting", "\(sess.ssConnecting)")
+        }
+    }
+
+    private func statsSection(_ stats: AgentSMPServerStatsData) -> some View {
+        Section("Statistics") {
+            infoRow("Starting from", localTimestamp(statsStartedAt))
+            infoRow("Messages sent directly", "\(stats._sentDirect)")
+            infoRow("    attempts", "\(stats._sentDirectAttempts)")
+            infoRow("Messages sent via proxy", "\(stats._sentViaProxy)")
+            infoRow("    attempts", "\(stats._sentViaProxyAttempts)")
+            infoRow("Messages sent to proxy", "\(stats._sentProxied)")
+            infoRow("    attempts", "\(stats._sentProxiedAttempts)")
+            infoRow("Send AUTH errors", "\(stats._sentAuthErrs)")
+            infoRow("    QUOTA errors", "\(stats._sentQuotaErrs)")
+            infoRow("    expired", "\(stats._sentExpiredErrs)")
+            infoRow("    other errors", "\(stats._sentOtherErrs)")
+            infoRow("Messages received", "\(stats._recvMsgs)")
+            infoRow("    duplicates", "\(stats._recvDuplicates)")
+            infoRow("    decryption", "\(stats._recvCryptoErrs)")
+            infoRow("    other errors", "\(stats._recvErrs)")
+            infoRow("Connections created", "\(stats._connCreated)")
+            infoRow("    secured", "\(stats._connSecured)")
+            infoRow("    completed", "\(stats._connCompleted)")
+            infoRow("Connections deleted", "\(stats._connDeleted)")
+            infoRow("Connections subscribed", "\(stats._connSubscribed)")
+            infoRow("    attempts", "\(stats._connSubAttempts)")
+            infoRow("    errors", "\(stats._connSubErrs)")
         }
     }
 }
@@ -426,45 +465,56 @@ struct XFTPServerSummaryView: View {
                 Text("Server address")
             } footer: {
                 if let known = summary.known, known {
-                    // TODO open settings?
-                    Text("Server can be configured in **Settings** → **Network & servers** → **XFTP servers**")
+                    Text("Server is configured in **Settings** → **Network & servers**.")
                 }
             }
 
             if let sess = summary.sessions {
-                Section("Sessions") {
-                    infoRow("Connected", "\(sess.ssConnected)")
-                    infoRow("Errors", "\(sess.ssErrors)")
-                    infoRow("Connecting", "\(sess.ssConnecting)")
-                }
+                sessionsSection(sess)
             }
 
-            Section("In progress") {
-                localizedInfoRow("Download", boolYesNo(summary.rcvInProgress))
-                localizedInfoRow("Upload", boolYesNo(summary.sndInProgress))
-                localizedInfoRow("Deletion", boolYesNo(summary.delInProgress))
-            }
+            inProgressSection()
 
             if let stats = summary.stats {
-                Section("Statistics") {
-                    infoRow("Chunks uploaded", "\(stats._uploads)")
-                    infoRow("    attempts", "\(stats._uploadAttempts)")
-                    infoRow("    errors", "\(stats._uploadErrs)")
-                    infoRow("Chunks downloaded", "\(stats._downloads)")
-                    infoRow("    attempts", "\(stats._downloadAttempts)")
-                    infoRow("    AUTH errors", "\(stats._downloadAuthErrs)")
-                    infoRow("    other errors", "\(stats._downloadErrs)")
-                    infoRow("Chunks deleted", "\(stats._deletions)")
-                    infoRow("    attempts", "\(stats._deleteAttempts)")
-                    infoRow("    errors", "\(stats._deleteErrs)")
-                    infoRow("From", localTimestamp(statsStartedAt))
-                }
+                statsSection(stats)
             }
+        }
+    }
+
+    private func sessionsSection(_ sess: ServerSessions) -> some View {
+        Section("Sessions") {
+            infoRow("Connected", "\(sess.ssConnected)")
+            infoRow("Errors", "\(sess.ssErrors)")
+            infoRow("Connecting", "\(sess.ssConnecting)")
+        }
+    }
+
+    private func inProgressSection() -> some View {
+        Section("In progress") {
+            localizedInfoRow("Download", boolYesNo(summary.rcvInProgress))
+            localizedInfoRow("Upload", boolYesNo(summary.sndInProgress))
+            localizedInfoRow("Deletion", boolYesNo(summary.delInProgress))
         }
     }
 
     private func boolYesNo(_ b: Bool) -> LocalizedStringKey {
         b ? "yes" : "no"
+    }
+
+    private func statsSection(_ stats: AgentXFTPServerStatsData) -> some View {
+        Section("Statistics") {
+            infoRow("Starting from", localTimestamp(statsStartedAt))
+            infoRow("Chunks uploaded", "\(stats._uploads)")
+            infoRow("    attempts", "\(stats._uploadAttempts)")
+            infoRow("    errors", "\(stats._uploadErrs)")
+            infoRow("Chunks downloaded", "\(stats._downloads)")
+            infoRow("    attempts", "\(stats._downloadAttempts)")
+            infoRow("    AUTH errors", "\(stats._downloadAuthErrs)")
+            infoRow("    other errors", "\(stats._downloadErrs)")
+            infoRow("Chunks deleted", "\(stats._deletions)")
+            infoRow("    attempts", "\(stats._deleteAttempts)")
+            infoRow("    errors", "\(stats._deleteErrs)")
+        }
     }
 }
 
