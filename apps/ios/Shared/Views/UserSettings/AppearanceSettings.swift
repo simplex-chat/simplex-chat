@@ -509,71 +509,85 @@ struct CustomizeThemeView: View {
                 }
             }
 
-            Section {
-                Button {
-                    let overrides = ThemeManager.currentThemeOverridesForExport(nil, nil/*chatModel.currentUser.uiThemes*/)
+            ImportExportThemeSection(perChat: nil, perUser: nil, save: { theme in
+                ThemeManager.saveAndApplyThemeOverrides(theme)
+                saveThemeToDatabase(nil)
+            })
+        }
+        /// When changing app theme, user overrides are hidden. User overrides will be returned back after closing Appearance screen, see ThemeDestinationPicker()
+        .interactiveDismissDisabled(true)
+    }
+}
+
+struct ImportExportThemeSection: View {
+    @EnvironmentObject var theme: AppTheme
+    var perChat: ThemeModeOverride?
+    var perUser: ThemeModeOverrides?
+    var save: (ThemeOverrides) -> Void
+    @State private var showFileImporter = false
+
+    var body: some View {
+        Section {
+            Button {
+                let overrides = ThemeManager.currentThemeOverridesForExport(perChat, perUser)
+                do {
+                    let encoded = try encodeThemeOverrides(overrides)
+                    var lines = encoded.split(separator: "\n")
+                    // Removing theme id without using custom serializer or data class
+                    lines.remove(at: 0)
+                    let theme = lines.joined(separator: "\n")
+                    let tempUrl = getTempFilesDirectory().appendingPathComponent("simplex.theme")
+                    try? FileManager.default.removeItem(at: tempUrl)
+                    if FileManager.default.createFile(atPath: tempUrl.path, contents: theme.data(using: .utf8)) {
+                        showShareSheet(items: [tempUrl])
+                    }
+                } catch {
+                    AlertManager.shared.showAlertMsg(title: "Error", message: "Error exporting theme: \(error.localizedDescription)")
+                }
+            } label: {
+                Text("Export theme").foregroundColor(theme.colors.primary)
+            }
+            Button {
+                showFileImporter = true
+            } label: {
+                Text("Import theme").foregroundColor(theme.colors.primary)
+            }
+            .fileImporter(
+                isPresented: $showFileImporter,
+                allowedContentTypes: [.data/*.plainText*/],
+                allowsMultipleSelection: false
+            ) { result in
+                if case let .success(files) = result, let fileURL = files.first {
                     do {
-                        let encoded = try encodeThemeOverrides(overrides)
-                        var lines = encoded.split(separator: "\n")
-                        // Removing theme id without using custom serializer or data class
-                        lines.remove(at: 0)
-                        let theme = lines.joined(separator: "\n")
-                        let tempUrl = getTempFilesDirectory().appendingPathComponent("simplex.theme")
-                        try? FileManager.default.removeItem(at: tempUrl)
-                        if FileManager.default.createFile(atPath: tempUrl.path, contents: theme.data(using: .utf8)) {
-                            showShareSheet(items: [tempUrl])
+                        var fileSize: Int? = nil
+                        if fileURL.startAccessingSecurityScopedResource() {
+                            let resourceValues = try fileURL.resourceValues(forKeys: [.fileSizeKey])
+                            fileSize = resourceValues.fileSize
+                        }
+                        if let fileSize = fileSize,
+                           // Same as Android/desktop
+                           fileSize <= 5_500_000 {
+                            if let string = try? String(contentsOf: fileURL, encoding: .utf8), let theme: ThemeOverrides = decodeYAML("themeId: \(UUID().uuidString)\n" + string) {
+                                save(theme)
+                                logger.error("Saved theme from file")
+                            } else {
+                                logger.error("Error decoding theme file")
+                            }
+                            fileURL.stopAccessingSecurityScopedResource()
+                        } else {
+                            fileURL.stopAccessingSecurityScopedResource()
+                            let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: 5_500_000, countStyle: .binary)
+                            AlertManager.shared.showAlertMsg(
+                                title: "Large file!",
+                                message: "Currently maximum supported file size is \(prettyMaxFileSize)."
+                            )
                         }
                     } catch {
-                        AlertManager.shared.showAlertMsg(title: "Error", message: "Error exporting theme: \(error.localizedDescription)")
-                    }
-                } label: {
-                    Text("Export theme").foregroundColor(theme.colors.primary)
-                }
-                Button {
-                    showFileImporter = true
-                } label: {
-                    Text("Import theme").foregroundColor(theme.colors.primary)
-                }
-                .fileImporter(
-                    isPresented: $showFileImporter,
-                    allowedContentTypes: [.data/*.plainText*/],
-                    allowsMultipleSelection: false
-                ) { result in
-                    if case let .success(files) = result, let fileURL = files.first {
-                        do {
-                            var fileSize: Int? = nil
-                            if fileURL.startAccessingSecurityScopedResource() {
-                                let resourceValues = try fileURL.resourceValues(forKeys: [.fileSizeKey])
-                                fileSize = resourceValues.fileSize
-                            }
-                            if let fileSize = fileSize,
-                               // Same as Android/desktop
-                               fileSize <= 5_500_000 {
-                                if let string = try? String(contentsOf: fileURL, encoding: .utf8), let theme: ThemeOverrides = decodeYAML("themeId: \(UUID().uuidString)\n" + string) {
-                                    ThemeManager.saveAndApplyThemeOverrides(theme)
-                                    saveThemeToDatabase(nil)
-                                    logger.error("Saved theme from file")
-                                } else {
-                                    logger.error("Error decoding theme file")
-                                }
-                                fileURL.stopAccessingSecurityScopedResource()
-                            } else {
-                                fileURL.stopAccessingSecurityScopedResource()
-                                let prettyMaxFileSize = ByteCountFormatter.string(fromByteCount: 5_500_000, countStyle: .binary)
-                                AlertManager.shared.showAlertMsg(
-                                    title: "Large file!",
-                                    message: "Currently maximum supported file size is \(prettyMaxFileSize)."
-                                )
-                            }
-                        } catch {
-                            logger.error("Appearance fileImporter error \(error.localizedDescription)")
-                        }
+                        logger.error("Appearance fileImporter error \(error.localizedDescription)")
                     }
                 }
             }
         }
-        /// When changing app theme, user overrides are hidden. User overrides will be returned back after closing Appearance screen, see ThemeDestinationPicker()
-        .interactiveDismissDisabled(true)
     }
 }
 
@@ -652,7 +666,29 @@ struct UserWallpaperEditorSheet: View {
             changedThemes?.light = light
             changedThemes?.dark = dark
         }
-        changedThemes = if changedThemes?.light != nil || changedThemes?.dark != nil { changedThemes } else { nil }
+        if changedThemes?.light != nil || changedThemes?.dark != nil {
+            let light = changedThemes?.light
+            let dark = changedThemes?.dark
+            let currentMode = CurrentColors.base.mode
+            // same image file for both modes, copy image to make them as different files
+            if var light, var dark, let lightWallpaper = light.wallpaper, let darkWallpaper = dark.wallpaper, let lightImageFile = lightWallpaper.imageFile, let darkImageFile = darkWallpaper.imageFile, lightWallpaper.imageFile == darkWallpaper.imageFile {
+                let imageFile = if currentMode == DefaultThemeMode.light {
+                    darkImageFile
+                } else {
+                    lightImageFile
+                }
+                let filePath = saveWallpaperFile(url: getWallpaperFilePath(imageFile))
+                if currentMode == DefaultThemeMode.light {
+                    dark.wallpaper?.imageFile = filePath
+                    changedThemes = ThemeModeOverrides(light: changedThemes?.light, dark: dark)
+                } else {
+                    light.wallpaper?.imageFile = filePath
+                    changedThemes = ThemeModeOverrides(light: light, dark: changedThemes?.dark)
+                }
+            }
+        } else {
+            changedThemes = nil
+        }
         wallpaperFiles.remove(changedThemes?.light?.wallpaper?.imageFile)
         wallpaperFiles.remove(changedThemes?.dark?.wallpaper?.imageFile)
         wallpaperFiles.forEach(removeWallpaperFile)
@@ -728,7 +764,6 @@ struct ThemeDestinationPicker: View {
         }
     }
 }
-
 
 struct CustomizeThemeColorsSection: View {
     var editColor: (ThemeColor) -> Binding<Color>
