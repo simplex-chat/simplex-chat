@@ -50,12 +50,19 @@ struct ServersSummaryView: View {
     private func shareButton() -> some View {
         Button {
             if let serversSummary = serversSummary {
-                showShareSheet(items: [encodeJSON(serversSummary)]) // TODO prettyJSON
+                showShareSheet(items: [encodePrettyPrinted(serversSummary)])
             }
         } label: {
             Image(systemName: "square.and.arrow.up")
         }
         .disabled(serversSummary == nil)
+    }
+
+    public func encodePrettyPrinted<T: Encodable>(_ value: T) -> String {
+        let encoder = jsonEncoder
+        encoder.outputFormatting = .prettyPrinted
+        let data = try! encoder.encode(value)
+        return String(decoding: data, as: UTF8.self)
     }
 
     private func reloadButton() -> some View {

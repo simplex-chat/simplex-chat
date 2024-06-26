@@ -10,7 +10,7 @@ import Foundation
 import SwiftUI
 
 public let jsonDecoder = getJSONDecoder()
-let jsonEncoder = getJSONEncoder()
+public let jsonEncoder = getJSONEncoder()
 
 public enum ChatCommand {
     case showActiveUser
