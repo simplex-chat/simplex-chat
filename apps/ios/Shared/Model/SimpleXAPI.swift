@@ -1346,6 +1346,10 @@ func getAgentServersSummary() throws -> PresentedServersSummary {
     throw r
 }
 
+func resetAgentServersStats() async throws {
+    try await sendCommandOkResp(.resetAgentServersStats)
+}
+
 private func currentUserId(_ funcName: String) throws -> Int64 {
     if let userId = ChatModel.shared.currentUser?.userId {
         return userId

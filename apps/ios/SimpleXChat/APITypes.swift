@@ -145,6 +145,7 @@ public enum ChatCommand {
     // misc
     case showVersion
     case getAgentServersSummary(userId: Int64)
+    case resetAgentServersStats
     case string(String)
 
     public var cmdString: String {
@@ -306,6 +307,7 @@ public enum ChatCommand {
             case let .apiStandaloneFileInfo(link): return "/_download info \(link)"
             case .showVersion: return "/version"
             case let .getAgentServersSummary(userId): return "/get servers summary \(userId)"
+            case .resetAgentServersStats: return "/reset servers stats"
             case let .string(str): return str
             }
         }
@@ -442,6 +444,7 @@ public enum ChatCommand {
             case .apiStandaloneFileInfo: return "apiStandaloneFileInfo"
             case .showVersion: return "showVersion"
             case .getAgentServersSummary: return "getAgentServersSummary"
+            case .resetAgentServersStats: return "resetAgentServersStats"
             case .string: return "console command"
             }
         }

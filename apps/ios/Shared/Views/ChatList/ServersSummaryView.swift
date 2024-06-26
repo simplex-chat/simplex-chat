@@ -15,6 +15,7 @@ struct ServersSummaryView: View {
     @State private var selectedServerType: PresentedServerType = .smp
     @State private var selectedSMPServer: String? = nil
     @State private var selectedXFTPServer: String? = nil
+    @State private var alert: SomeAlert?
 
     enum PresentedUserCategory {
         case currentUser
@@ -43,6 +44,7 @@ struct ServersSummaryView: View {
         .onAppear {
             getServersSummary()
         }
+        .alert(item: $alert) { $0.alert }
     }
 
     private func shareButton() -> some View {
@@ -88,7 +90,7 @@ struct ServersSummaryView: View {
                 case (.allUsers, .smp):
                     if summ.allUsedSMP.count > 0 || summ.allPrevSMP.count > 0 || summ.allProxSMP.count > 0 {
                         if summ.allUsedSMP.count > 0 {
-                            smpServersListView(summ.allUsedSMP, showReconnectButton: true, summ.statsStartedAt, "Currently used")
+                            smpServersListView(summ.allUsedSMP, showReconnectButton: true, summ.statsStartedAt, "Current session")
                         }
                         if summ.allPrevSMP.count > 0 {
                             smpServersListView(summ.allPrevSMP, showReconnectButton: false, summ.statsStartedAt, "Previously used")
@@ -96,13 +98,14 @@ struct ServersSummaryView: View {
                         if summ.allProxSMP.count > 0 {
                             smpServersListView(summ.allProxSMP, showReconnectButton: false, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
                         }
+                        resetStatsButtonSection()
                     } else {
                         noCategoryInfoText()
                     }
                 case (.currentUser, .smp):
                     if summ.userUsedSMP.count > 0 || summ.userPrevSMP.count > 0 || summ.userProxSMP.count > 0 {
                         if summ.userUsedSMP.count > 0 {
-                            smpServersListView(summ.userUsedSMP, showReconnectButton: true, summ.statsStartedAt, "Currently used")
+                            smpServersListView(summ.userUsedSMP, showReconnectButton: true, summ.statsStartedAt, "Current session")
                         }
                         if summ.userPrevSMP.count > 0 {
                             smpServersListView(summ.userPrevSMP, showReconnectButton: false, summ.statsStartedAt, "Previously used")
@@ -110,38 +113,33 @@ struct ServersSummaryView: View {
                         if summ.userProxSMP.count > 0 {
                             smpServersListView(summ.userProxSMP, showReconnectButton: false, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
                         }
+                        resetStatsButtonSection()
                     } else {
                         noCategoryInfoText()
                     }
                 case (.allUsers, .xftp):
                     if summ.allUsedXFTP.count > 0 || summ.allPrevXFTP.count > 0 {
                         if summ.allUsedXFTP.count > 0 {
-                            xftpServersListView(summ.allUsedXFTP, summ.statsStartedAt, "Currently used")
+                            xftpServersListView(summ.allUsedXFTP, summ.statsStartedAt, "Current session")
                         }
                         if summ.allPrevXFTP.count > 0 {
                             xftpServersListView(summ.allPrevXFTP, summ.statsStartedAt, "Previously used")
                         }
+                        resetStatsButtonSection()
                     } else {
                         noCategoryInfoText()
                     }
                 case (.currentUser, .xftp):
                     if summ.userUsedXFTP.count > 0 || summ.userPrevXFTP.count > 0 {
                         if summ.userUsedXFTP.count > 0 {
-                            xftpServersListView(summ.userUsedXFTP, summ.statsStartedAt, "Currently used")
+                            xftpServersListView(summ.userUsedXFTP, summ.statsStartedAt, "Current session")
                         }
                         if summ.userPrevXFTP.count > 0 {
                             xftpServersListView(summ.userPrevXFTP, summ.statsStartedAt, "Previously used")
                         }
+                        resetStatsButtonSection()
                     } else {
                         noCategoryInfoText()
-                    }
-                }
-
-                Section {
-                    Button {
-                        // TODO
-                    } label: {
-                        Text("TODO Reset statistics")
                     }
                 }
             }
@@ -245,6 +243,39 @@ struct ServersSummaryView: View {
         }
         .listRowBackground(Color.clear)
         .listRowSeparator(.hidden)
+    }
+
+    private func resetStatsButtonSection() -> some View {
+        Section {
+            Button {
+                alert = SomeAlert(
+                    alert: Alert(
+                        title: Text("Reset servers statistics?"),
+                        message: Text("Servers statistics will be reset - this cannot be undone!"),
+                        primaryButton: .destructive(Text("Reset")) {
+                            Task {
+                                do {
+                                    try await resetAgentServersStats()
+                                    getServersSummary()
+                                } catch let error {
+                                    alert = SomeAlert(
+                                        alert: mkAlert(
+                                            title: "Error resetting statistics",
+                                            message: "\(responseError(error))"
+                                        ),
+                                        id: "error resetting statistics"
+                                    )
+                                }
+                            }
+                        },
+                        secondaryButton: .cancel()
+                    ),
+                    id: "reset statistics question"
+                )
+            } label: {
+                Text("Reset statistics")
+            }
+        }
     }
 
     private func getServersSummary() {
