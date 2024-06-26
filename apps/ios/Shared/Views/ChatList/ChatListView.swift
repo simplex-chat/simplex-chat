@@ -20,7 +20,6 @@ struct ChatListView: View {
     @State private var newChatMenuOption: NewChatMenuOption? = nil
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
-    @State private var showServersSummary = false
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
@@ -62,9 +61,6 @@ struct ChatListView: View {
         }
         .sheet(isPresented: $showConnectDesktop) {
             ConnectDesktopView()
-        }
-        .sheet(isPresented: $showServersSummary) {
-            ServersSummaryView()
         }
     }
 
@@ -119,7 +115,7 @@ struct ChatListView: View {
                 HStack(spacing: 4) {
                     Text("Chats")
                         .font(.headline)
-                    subscriptionsStatusIcon()
+                    SubsStatusIndicator()
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
             }
@@ -130,15 +126,6 @@ struct ChatListView: View {
                 case .none: EmptyView()
                 }
             }
-        }
-    }
-
-    private func subscriptionsStatusIcon() -> some View {
-        Button {
-            showServersSummary = true
-        } label: {
-            // TODO backend to periodically send updates to model
-            SubscriptionStatusView(activeSubs: 100, pendingSubs: 0)
         }
     }
 
@@ -272,6 +259,34 @@ struct ChatListView: View {
 
         func viewNameContains(_ cInfo: ChatInfo, _ s: String) -> Bool {
             cInfo.chatViewName.localizedLowercase.contains(s)
+        }
+    }
+}
+
+struct SubsStatusIndicator: View {
+    @State private var subs: SMPServerSubs = SMPServerSubs(ssActive: 0, ssPending: 0)
+    @State private var showServersSummary = false
+
+    var body: some View {
+        Button {
+            showServersSummary = true
+        } label: {
+            SubscriptionStatusView(activeSubs: subs.ssActive, pendingSubs: subs.ssPending)
+        }
+        .onAppear {
+            // TODO update
+            getSubsSummary()
+        }
+        .sheet(isPresented: $showServersSummary) {
+            ServersSummaryView()
+        }
+    }
+
+    private func getSubsSummary() {
+        do {
+            subs = try getAgentSubsSummary()
+        } catch let error {
+            logger.error("getAgentSubsSummary error: \(responseError(error))")
         }
     }
 }

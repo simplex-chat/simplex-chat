@@ -2297,6 +2297,11 @@ public struct ServerSessions: Codable {
 public struct SMPServerSubs: Codable {
     public var ssActive: Int
     public var ssPending: Int
+
+    public init(ssActive: Int, ssPending: Int) {
+        self.ssActive = ssActive
+        self.ssPending = ssPending
+    }
 }
 
 public struct AgentSMPServerStatsData: Codable {
