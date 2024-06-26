@@ -2268,7 +2268,7 @@ processChatCommand' vr = \case
         servers <- map (\ServerCfg {server} -> server) <$> withStore' (`getProtocolServers` users)
         let srvs = if null servers then L.toList defServers else servers
         pure $ map protoServer srvs
-  ResetAgentServersStats -> lift (withAgent' resetAgentServersStats) >> ok_
+  ResetAgentServersStats -> withAgent resetAgentServersStats >> ok_
   GetAgentWorkers -> lift $ CRAgentWorkersSummary <$> withAgent' getAgentWorkersSummary
   GetAgentWorkersDetails -> lift $ CRAgentWorkersDetails <$> withAgent' getAgentWorkersDetails
   GetAgentStats -> lift $ CRAgentStats . map stat <$> withAgent' getAgentStats
