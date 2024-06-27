@@ -158,20 +158,19 @@ We are prioritizing users privacy and security - it would be impossible without 
 
 Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.
 
-Your donations help us raise more funds – any amount, even the price of the cup of coffee, would make a big difference for us.
+Your donations help us raise more funds - any amount, even the price of the cup of coffee, would make a big difference for us.
 
 It is possible to donate via:
 
-- [GitHub](https://github.com/sponsors/simplex-chat) - it is commission-free for us.
-- [OpenCollective](https://opencollective.com/simplex-chat) - it charges a commission, and also accepts donations in crypto-currencies.
+- [GitHub](https://github.com/sponsors/simplex-chat) (commission-free) or [OpenCollective](https://opencollective.com/simplex-chat) (~10% commission).
+- Bitcoin: bc1qd74rc032ek2knhhr3yjq2ajzc5enz3h4qwnxad
 - Monero: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
-- Bitcoin: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
-- BCH: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG
+- BCH: bitcoincash:qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg
+- Ethereum: 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
 - USDT:
-  - BNB Smart Chain: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
-  - Tron: TNnTrKLBmdy2Wn3cAQR98dAVvWhLskQGfW
-- Ethereum: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2
-- Solana: 43tWFWDczgAcn4Rzwkpqg2mqwnQETSiTwznmCgA2tf1L
+  - Ethereum: 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
+- Solana: 7JCf5m3TiHmYKZVr6jCu1KeZVtb9Y1jRMQDU69p5ARnu
+- please ask if you want to donate any other coins.
 
 Thank you,
 
