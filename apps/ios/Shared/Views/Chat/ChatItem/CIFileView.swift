@@ -11,7 +11,6 @@ import SimpleXChat
 
 struct CIFileView: View {
     @EnvironmentObject var m: ChatModel
-    @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var theme: AppTheme
     let file: CIFile?
     let edited: Bool
@@ -31,12 +30,12 @@ struct CIFileView: View {
                         Text(file.fileName)
                             .lineLimit(1)
                             .multilineTextAlignment(.leading)
-                            .foregroundColor(.primary)
+                            .foregroundColor(theme.colors.onBackground)
                         Text(prettyFileSize + metaReserve)
                             .font(.caption)
                             .lineLimit(1)
                             .multilineTextAlignment(.leading)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(theme.colors.secondary)
                     }
                 } else {
                     Text(metaReserve)

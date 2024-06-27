@@ -41,6 +41,7 @@ enum DatabaseAlert: Identifiable {
 
 struct DatabaseView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Binding var showSettings: Bool
     @State private var runChat = false
     @State private var alert: DatabaseAlert? = nil
@@ -82,8 +83,10 @@ struct DatabaseView: View {
                 .disabled(stopped || progressIndicator)
             } header: {
                 Text("Messages")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 Text("This setting applies to messages in your current chat profile **\(m.currentUser?.displayName ?? "")**.")
+                    .foregroundColor(theme.colors.secondary)
             }
 
             Section {
@@ -105,15 +108,17 @@ struct DatabaseView: View {
                 }
             } header: {
                 Text("Run chat")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 if case .documents = dbContainer {
                     Text("Database will be migrated when the app restarts")
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
 
             Section {
                 let unencrypted = m.chatDbEncrypted == false
-                let color: Color = unencrypted ? .orange : .secondary
+                let color: Color = unencrypted ? .orange : theme.colors.secondary
                 settingsRow(unencrypted ? "lock.open" : useKeychain ? "key" : "lock", color: color) {
                     NavigationLink {
                         DatabaseEncryptionView(useKeychain: $useKeychain, migration: false)
@@ -123,7 +128,7 @@ struct DatabaseView: View {
                         Text("Database passphrase")
                     }
                 }
-                settingsRow("square.and.arrow.up") {
+                settingsRow("square.and.arrow.up", color: theme.colors.secondary) {
                     Button("Export database") {
                         if initialRandomDBPassphraseGroupDefault.get() && !unencrypted {
                             alert = .exportProhibited
@@ -132,7 +137,7 @@ struct DatabaseView: View {
                         }
                     }
                 }
-                settingsRow("square.and.arrow.down") {
+                settingsRow("square.and.arrow.down", color: theme.colors.secondary) {
                     Button("Import database", role: .destructive) {
                         showFileImporter = true
                     }
@@ -141,7 +146,7 @@ struct DatabaseView: View {
                     let title: LocalizedStringKey = chatArchiveTimeDefault.get() < chatLastStartGroupDefault.get()
                         ? "Old database archive"
                         : "New database archive"
-                    settingsRow("archivebox") {
+                    settingsRow("archivebox", color: theme.colors.secondary) {
                         NavigationLink {
                             ChatArchiveView(archiveName: archiveName)
                                 .navigationTitle(title)
@@ -151,25 +156,27 @@ struct DatabaseView: View {
                         }
                     }
                 }
-                settingsRow("trash.slash") {
+                settingsRow("trash.slash", color: theme.colors.secondary) {
                     Button("Delete database", role: .destructive) {
                         alert = .deleteChat
                     }
                 }
             } header: {
                 Text("Chat database")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 Text(
                     stopped
                      ? "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts."
                      : "Stop chat to enable database actions"
                 )
+                .foregroundColor(theme.colors.secondary)
             }
             .disabled(!stopped)
 
             if case .group = dbContainer, legacyDatabase {
-                Section("Old database") {
-                    settingsRow("trash") {
+                Section(header: Text("Old database").foregroundColor(theme.colors.secondary)) {
+                    settingsRow("trash", color: theme.colors.secondary) {
                         Button("Delete old database") {
                             alert = .deleteLegacyDatabase
                         }
@@ -184,12 +191,15 @@ struct DatabaseView: View {
                 .disabled(!stopped || appFilesCountAndSize?.0 == 0)
             } header: {
                 Text("Files & media")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 if let (fileCount, size) = appFilesCountAndSize {
                     if fileCount == 0 {
                         Text("No received or sent files")
+                            .foregroundColor(theme.colors.secondary)
                     } else {
                         Text("\(fileCount) file(s) with total size of \(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .binary))")
+                            .foregroundColor(theme.colors.secondary)
                     }
                 }
             }

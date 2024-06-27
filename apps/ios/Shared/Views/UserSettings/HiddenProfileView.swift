@@ -13,6 +13,7 @@ struct HiddenProfileView: View {
     @State var user: User
     @Binding var profileHidden: Bool
     @EnvironmentObject private var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @State private var hidePassword = ""
     @State private var confirmHidePassword = ""
@@ -36,7 +37,7 @@ struct HiddenProfileView: View {
                 PassphraseField(key: $hidePassword, placeholder: "Password to show", valid: passwordValid, showStrength: true)
                 PassphraseField(key: $confirmHidePassword, placeholder: "Confirm password", valid: confirmValid)
 
-                settingsRow("lock") {
+                settingsRow("lock", color: theme.colors.secondary) {
                     Button("Save profile password") {
                         Task {
                             do {
@@ -58,8 +59,10 @@ struct HiddenProfileView: View {
                 .disabled(saveDisabled)
             } header: {
                 Text("Hidden profile password")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 Text("To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.")
+                    .foregroundColor(theme.colors.secondary)
                     .font(.body)
                     .padding(.top, 8)
             }

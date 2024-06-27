@@ -8,7 +8,6 @@ import SimpleXChat
 
 struct UserPicker: View {
     @EnvironmentObject var m: ChatModel
-    @Environment(\.colorScheme) var colorScheme
     @Environment(\.scenePhase) var scenePhase
     @EnvironmentObject var theme: AppTheme
     @Binding var showSettings: Bool
@@ -126,7 +125,7 @@ struct UserPicker: View {
                     .padding(.trailing, 12)
                 Text(user.chatViewName)
                     .fontWeight(user.activeUser ? .medium : .regular)
-                    .foregroundColor(.primary)
+                    .foregroundColor(theme.colors.onBackground)
                     .overlay(DetermineWidth())
                 Spacer()
                 if user.activeUser {
@@ -151,7 +150,7 @@ struct UserPicker: View {
                 Spacer()
                 Image(systemName: icon)
                     .symbolRenderingMode(.monochrome)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             }
             .padding(.horizontal)
             .padding(.vertical, 22)

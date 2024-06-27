@@ -11,12 +11,13 @@ import SimpleXChat
 
 struct SetDeliveryReceiptsView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
 
     var body: some View {
         VStack(spacing: 16) {
             Text("Delivery receipts!")
                 .font(.title)
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
                 .padding(.vertical)
                 .multilineTextAlignment(.center)
 

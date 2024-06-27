@@ -19,7 +19,7 @@ struct MarkedDeletedItemView: View {
     var body: some View {
         (Text(mergedMarkedDeletedText).italic() + Text(" ") + chatItem.timestampText)
         .font(.caption)
-        .foregroundColor(.secondary)
+        .foregroundColor(theme.colors.secondary)
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(chatItemFrameColor(chatItem, theme))

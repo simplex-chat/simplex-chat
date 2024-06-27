@@ -156,6 +156,7 @@ struct ChatView: View {
                         Task { await loadGroupMembers(groupInfo) { showChatInfoSheet = true } }
                     } label: {
                         ChatInfoToolbar(chat: chat)
+                            .tint(theme.colors.primary)
                     }
                     .appSheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
                         GroupChatInfoView(
@@ -285,7 +286,7 @@ struct ChatView: View {
                 Image(systemName: "magnifyingglass")
                 TextField("Search", text: $searchText)
                     .focused($searchFocussed)
-                    .foregroundColor(.primary)
+                    .foregroundColor(theme.colors.onBackground)
                     .frame(maxWidth: .infinity)
 
                 Button {
@@ -295,7 +296,7 @@ struct ChatView: View {
                 }
             }
             .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
             .background(Color(.tertiarySystemFill))
             .cornerRadius(10.0)
 
@@ -382,7 +383,7 @@ struct ChatView: View {
            !contact.nextSendGrpInv {
             Text("connecting…")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
                 .padding(.top)
         } else {
             EmptyView()

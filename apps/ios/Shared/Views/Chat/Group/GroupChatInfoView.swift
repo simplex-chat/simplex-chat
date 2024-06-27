@@ -91,9 +91,10 @@ struct GroupChatInfoView: View {
                     Text("")
                 } footer: {
                     Text("Only group owners can change group preferences.")
+                        .foregroundColor(theme.colors.secondary)
                 }
 
-                Section("\(members.count + 1) members") {
+                Section(header: Text("\(members.count + 1) members").foregroundColor(theme.colors.secondary)) {
                     if groupInfo.canAddMembers {
                         groupLinkButton()
                         if (chat.chatInfo.incognito) {
@@ -105,7 +106,7 @@ struct GroupChatInfoView: View {
                         }
                     }
                     if members.count > 8 {
-                        searchFieldView(text: $searchText, focussed: $searchFocussed)
+                        searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.onBackground, theme.colors.secondary)
                             .padding(.leading, 8)
                     }
                     let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
@@ -135,7 +136,7 @@ struct GroupChatInfoView: View {
                 }
 
                 if developerTools {
-                    Section(header: Text("For console")) {
+                    Section(header: Text("For console").foregroundColor(theme.colors.secondary)) {
                         infoRow("Local name", chat.chatInfo.localDisplayName)
                         infoRow("Database ID", "\(chat.chatInfo.apiId)")
                     }
@@ -228,14 +229,14 @@ struct GroupChatInfoView: View {
                     .padding(.trailing, 2)
                 // TODO server connection status
                 VStack(alignment: .leading) {
-                    let t = Text(member.chatViewName).foregroundColor(member.memberIncognito ? .indigo : .primary)
+                    let t = Text(member.chatViewName).foregroundColor(member.memberIncognito ? .indigo : theme.colors.onBackground)
                     (member.verified ? memberVerifiedShield + t : t)
                         .lineLimit(1)
                     let s = Text(member.memberStatus.shortText)
                     (user ? Text ("you: ") + s : s)
                         .lineLimit(1)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                 }
                 Spacer()
                 memberInfo(member)
@@ -268,12 +269,12 @@ struct GroupChatInfoView: View {
         @ViewBuilder private func memberInfo(_ member: GroupMember) -> some View {
             if member.blocked {
                 Text("blocked")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             } else {
                 let role = member.memberRole
                 if [.owner, .admin, .observer].contains(role) {
                     Text(member.memberRole.text)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
         }
@@ -284,7 +285,7 @@ struct GroupChatInfoView: View {
                     Button {
                         alert = .blockMemberAlert(mem: member)
                     } label: {
-                        Label("Block member", systemImage: "hand.raised").foregroundColor(.secondary)
+                        Label("Block member", systemImage: "hand.raised").foregroundColor(theme.colors.secondary)
                     }
                 } else {
                     Button {
@@ -308,7 +309,7 @@ struct GroupChatInfoView: View {
                     Button {
                         alert = .blockForAllAlert(mem: member)
                     } label: {
-                        Label("Block for all", systemImage: "hand.raised").foregroundColor(.secondary)
+                        Label("Block for all", systemImage: "hand.raised").foregroundColor(theme.colors.secondary)
                     }
                 }
             }
@@ -323,6 +324,14 @@ struct GroupChatInfoView: View {
                         .foregroundColor(Color.red)
                 }
             }
+        }
+
+        private var memberVerifiedShield: Text {
+            (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+                .font(.caption)
+                .baselineOffset(2)
+                .kerning(-2)
+                .foregroundColor(theme.colors.secondary)
         }
     }
 
@@ -538,14 +547,6 @@ func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bo
             Label("Group preferences", systemImage: "switch.2")
         }
     }
-}
-
-private var memberVerifiedShield: Text {
-    (Text(Image(systemName: "checkmark.shield")) + Text(" "))
-        .font(.caption)
-        .baselineOffset(2)
-        .kerning(-2)
-        .foregroundColor(.secondary)
 }
 
 func cantInviteIncognitoAlert() -> Alert {

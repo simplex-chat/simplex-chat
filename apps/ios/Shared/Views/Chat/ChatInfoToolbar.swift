@@ -13,6 +13,7 @@ let chatImageColorLight = Color(red: 0.9, green: 0.9, blue: 0.9)
 let chatImageColorDark = Color(red: 0.2, green: 0.2, blue: 0.2)
 struct ChatInfoToolbar: View {
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
     var imageSize: CGFloat = 32
 
@@ -41,14 +42,14 @@ struct ChatInfoToolbar: View {
                 }
             }
         }
-        .foregroundColor(.primary)
+        .foregroundColor(theme.colors.onBackground)
         .frame(width: 220)
     }
 
     private var contactVerifiedShield: Text {
         (Text(Image(systemName: "checkmark.shield")) + Text(" "))
             .font(.caption)
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
             .baselineOffset(1)
             .kerning(-2)
     }
@@ -57,5 +58,6 @@ struct ChatInfoToolbar: View {
 struct ChatInfoToolbar_Previews: PreviewProvider {
     static var previews: some View {
         ChatInfoToolbar(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []))
+            .environmentObject(CurrentColors.toAppTheme())
     }
 }

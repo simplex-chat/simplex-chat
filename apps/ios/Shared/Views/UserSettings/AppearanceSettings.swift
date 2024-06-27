@@ -31,7 +31,7 @@ struct AppearanceSettings: View {
     @State private var colorMode: DefaultThemeMode? = {
         if currentThemeDefault.get() == DefaultTheme.SYSTEM_THEME_NAME { nil as DefaultThemeMode? } else { CurrentColors.base.mode }
     }()
-    @State private var darkModeTheme: String = UserDefaults.standard.string(forKey: DEFAULT_SYSTEM_DARK_THEME) ?? DefaultTheme.SIMPLEX.themeName
+    @State private var darkModeTheme: String = UserDefaults.standard.string(forKey: DEFAULT_SYSTEM_DARK_THEME) ?? DefaultTheme.DARK.themeName
     @State private var uiTintColor = getUIAccentColorDefault()
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileImageCornerRadius = defaultProfileImageCorner
 
@@ -139,6 +139,7 @@ struct AppearanceSettings: View {
                     }
                 } header: {
                     Text("Themes")
+                        .foregroundColor(theme.colors.secondary)
                 }
                 .onChange(of: profileImageCornerRadius) { _ in
                     saveThemeToDatabase(nil)
@@ -167,7 +168,7 @@ struct AppearanceSettings: View {
                     setUIAccentColorDefault(uiTintColor)
                 }
 
-                Section("Profile images") {
+                Section(header: Text("Profile images").foregroundColor(theme.colors.secondary)) {
                     HStack(spacing: 16) {
                         if let img = m.currentUser?.image, img != "" {
                             ProfileImage(imageStr: img, size: 60)
@@ -181,10 +182,10 @@ struct AppearanceSettings: View {
                             step: 2.5
                         )
                     }
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
                 }
 
-                Section("App icon") {
+                Section(header: Text("App icon").foregroundColor(theme.colors.secondary)) {
                     HStack {
                         updateAppIcon(image: "icon-light", icon: nil, tapped: $iconLightTapped)
                         Spacer().frame(width: 16)
@@ -494,6 +495,7 @@ struct CustomizeThemeView: View {
                 )
             } header: {
                 Text("Chat colors")
+                    .foregroundColor(theme.colors.secondary)
             }
 
             CustomizeThemeColorsSection(editColor: editColor)
@@ -710,6 +712,7 @@ struct UserWallpaperEditorSheet: View {
 
 struct ThemeDestinationPicker: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Binding var themeUserDestination: (Int64, ThemeModeOverrides?)?
     @State var themeUserDest: Int64?
     @Binding var customizeThemeIsOpen: Bool
@@ -766,6 +769,7 @@ struct ThemeDestinationPicker: View {
 }
 
 struct CustomizeThemeColorsSection: View {
+    @EnvironmentObject var theme: AppTheme
     var editColor: (ThemeColor) -> Binding<Color>
 
     var body: some View {
@@ -780,6 +784,7 @@ struct CustomizeThemeColorsSection: View {
             picker(.PRIMARY_VARIANT2, editColor)
         } header: {
             Text("Interface colors")
+                .foregroundColor(theme.colors.secondary)
         }
     }
 }

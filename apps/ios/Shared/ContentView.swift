@@ -108,8 +108,6 @@ struct ContentView: View {
                 initializationView()
             }
         }
-        //.tint(theme.colors.primary)
-        .background(theme.colors.background)
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
         .sheet(isPresented: $showSettings) {
             SettingsView(showSettings: $showSettings)

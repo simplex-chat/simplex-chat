@@ -175,7 +175,7 @@ struct ChatListView: View {
                 }
             }
             if cs.isEmpty && !chatModel.chats.isEmpty {
-                Text("No filtered chats").foregroundColor(.secondary)
+                Text("No filtered chats").foregroundColor(theme.colors.secondary)
             }
         }
     }
@@ -204,7 +204,7 @@ struct ChatListView: View {
 
             Spacer()
             Text("You have no chats")
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
                 .frame(maxWidth: .infinity)
         }
         .padding(.trailing, 6)
@@ -297,7 +297,7 @@ struct ChatListSearchBar: View {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
                     TextField("Search or paste SimpleX link", text: $searchText)
-                        .foregroundColor(searchShowingSimplexLink ? .secondary : .primary)
+                        .foregroundColor(searchShowingSimplexLink ? theme.colors.secondary : theme.colors.onBackground)
                         .disabled(searchShowingSimplexLink)
                         .focused($searchFocussed)
                         .frame(maxWidth: .infinity)
@@ -329,7 +329,7 @@ struct ChatListSearchBar: View {
                     }
                 }
                 .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
                 .background(Color(.tertiarySystemFill))
                 .cornerRadius(10.0)
 

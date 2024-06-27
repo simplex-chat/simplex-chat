@@ -63,8 +63,12 @@ struct ThemedBackground: ViewModifier {
                 theme.base == DefaultTheme.SIMPLEX
                 ? LinearGradient(
                     colors: [
-                        theme.colors.background.lighter(0.4),
-                        theme.colors.background.darker(0.4)
+                        grouped
+                        ? theme.colors.background.lighter(0.4).asGroupedBackground(theme.base.mode)
+                        : theme.colors.background.lighter(0.4),
+                        grouped
+                        ? theme.colors.background.darker(0.4).asGroupedBackground(theme.base.mode)
+                        : theme.colors.background.darker(0.4)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -78,8 +82,8 @@ struct ThemedBackground: ViewModifier {
             .background(
                 theme.base == DefaultTheme.SIMPLEX
                 ? Color.clear
-                : grouped && theme.base == DefaultTheme.LIGHT
-                ? LightThemeBackgroundColor
+                : grouped
+                ? theme.colors.background.asGroupedBackground(theme.base.mode)
                 : theme.colors.background
             )
     }

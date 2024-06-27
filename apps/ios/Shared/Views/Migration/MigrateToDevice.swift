@@ -181,7 +181,7 @@ struct MigrateToDevice: View {
     private func pasteOrScanLinkView() -> some View {
         ZStack {
             List {
-                Section("Scan QR code") {
+                Section(header: Text("Scan QR code").foregroundColor(theme.colors.secondary)) {
                     ScannerInView(showQRCodeScanner: $showQRCodeScanner) { resp in
                         switch resp {
                         case let .success(r):
@@ -198,7 +198,7 @@ struct MigrateToDevice: View {
                     }
                 }
                 if developerTools {
-                    Section("Or paste archive link") {
+                    Section(header: Text("Or paste archive link").foregroundColor(theme.colors.secondary)) {
                         pasteLinkView()
                     }
                 }
@@ -227,6 +227,7 @@ struct MigrateToDevice: View {
             List {
                 Section {} header: {
                     Text("Downloading link details")
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
             progressView()
@@ -241,6 +242,7 @@ struct MigrateToDevice: View {
             List {
                 Section {} header: {
                     Text("Downloading archive")
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
             let ratio = Float(downloadedBytes) / Float(max(totalBytes, 1))
@@ -255,14 +257,16 @@ struct MigrateToDevice: View {
                     try? FileManager.default.removeItem(atPath: archivePath)
                     migrationState = .linkDownloading(link: link)
                 }) {
-                    settingsRow("tray.and.arrow.down") {
+                    settingsRow("tray.and.arrow.down", color: theme.colors.secondary) {
                         Text("Repeat download").foregroundColor(theme.colors.primary)
                     }
                 }
             } header: {
                 Text("Download failed")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 Text("You can give another try.")
+                    .foregroundColor(theme.colors.secondary)
                     .font(.callout)
             }
         }
@@ -278,6 +282,7 @@ struct MigrateToDevice: View {
             List {
                 Section {} header: {
                     Text("Importing archive")
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
             progressView()
@@ -293,14 +298,16 @@ struct MigrateToDevice: View {
                 Button(action: {
                     migrationState = .archiveImport(archivePath: archivePath)
                 }) {
-                    settingsRow("square.and.arrow.down") {
+                    settingsRow("square.and.arrow.down", color: theme.colors.secondary) {
                         Text("Repeat import").foregroundColor(theme.colors.primary)
                     }
                 }
             } header: {
                 Text("Import failed")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 Text("You can give another try.")
+                    .foregroundColor(theme.colors.secondary)
                     .font(.callout)
             }
         }
@@ -334,7 +341,7 @@ struct MigrateToDevice: View {
                     Button(action: {
                         migrationState = .migration(passphrase: passphrase, confirmation: confirmation, useKeychain: useKeychain)
                     }) {
-                        settingsRow("square.and.arrow.down") {
+                        settingsRow("square.and.arrow.down", color: theme.colors.secondary) {
                             Text(button).foregroundColor(theme.colors.primary)
                         }
                     }
@@ -343,8 +350,10 @@ struct MigrateToDevice: View {
                 }
             } header: {
                 Text(header)
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 Text(footer)
+                    .foregroundColor(theme.colors.secondary)
                     .font(.callout)
             }
         }
@@ -355,6 +364,7 @@ struct MigrateToDevice: View {
             List {
                 Section {} header: {
                     Text("Migrating")
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
             progressView()
@@ -382,18 +392,20 @@ struct MigrateToDevice: View {
                         appSettings.networkConfig = updated
                         finishMigration(appSettings)
                     }) {
-                        settingsRow("checkmark") {
+                        settingsRow("checkmark", color: theme.colors.secondary) {
                             Text("Apply").foregroundColor(theme.colors.primary)
                         }
                     }
                 } header: {
                     Text("Confirm network settings")
+                        .foregroundColor(theme.colors.secondary)
                 } footer: {
                     Text("Please confirm that network settings are correct for this device.")
+                        .foregroundColor(theme.colors.secondary)
                         .font(.callout)
                 }
 
-                Section("Network settings") {
+                Section(header: Text("Network settings").foregroundColor(theme.colors.secondary)) {
                     Picker("Use .onion hosts", selection: $onionHosts) {
                         ForEach(OnionHosts.values, id: \.self) { Text($0.text) }
                     }
@@ -569,6 +581,7 @@ struct MigrateToDevice: View {
 }
 
 private struct PassphraseEnteringView: View {
+    @EnvironmentObject var theme: AppTheme
     @Binding var migrationState: MigrationToState?
     @State private var useKeychain = true
     @State var currentKey: String
@@ -580,7 +593,7 @@ private struct PassphraseEnteringView: View {
         ZStack {
             List {
                 Section {
-                    settingsRow("key", color: .secondary) {
+                    settingsRow("key", color: theme.colors.secondary) {
                         Toggle("Save passphrase in Keychain", isOn: $useKeychain)
                     }
 
@@ -609,13 +622,14 @@ private struct PassphraseEnteringView: View {
                             verifyingPassphrase = false
                         }
                     }) {
-                        settingsRow("key", color: .secondary) {
+                        settingsRow("key", color: theme.colors.secondary) {
                             Text("Open chat")
                         }
                     }
                     .disabled(verifyingPassphrase || currentKey.isEmpty)
                 } header: {
                     Text("Enter passphrase")
+                        .foregroundColor(theme.colors.secondary)
                 } footer: {
                     VStack(alignment: .leading, spacing: 16) {
                         if useKeychain {
@@ -626,6 +640,7 @@ private struct PassphraseEnteringView: View {
                             Text("**Warning**: Instant push notifications require passphrase saved in Keychain.")
                         }
                     }
+                    .foregroundColor(theme.colors.secondary)
                     .font(.callout)
                     .padding(.top, 1)
                     .onTapGesture { keyboardVisible = false }

@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct GroupWelcomeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
+    @EnvironmentObject var theme: AppTheme
     @Binding var groupInfo: GroupInfo
     @State var groupProfile: GroupProfile
     @State var welcomeText: String
@@ -70,7 +71,7 @@ struct GroupWelcomeView: View {
                         Group {
                             if welcomeText.isEmpty {
                                 TextEditor(text: Binding.constant(NSLocalizedString("Enter welcome message…", comment: "placeholder")))
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(theme.colors.secondary)
                                     .disabled(true)
                             }
                             TextEditor(text: $welcomeText)

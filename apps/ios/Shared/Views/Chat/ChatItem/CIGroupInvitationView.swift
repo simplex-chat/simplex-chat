@@ -42,7 +42,7 @@ struct CIGroupInvitationView: View {
                                 .overlay(DetermineWidth())
                             (
                                 Text(chatIncognito ? "Tap to join incognito" : "Tap to join")
-                                    .foregroundColor(inProgress ? .secondary : chatIncognito ? .indigo : theme.colors.primary)
+                                    .foregroundColor(inProgress ? theme.colors.secondary : chatIncognito ? .indigo : theme.colors.primary)
                                     .font(.callout)
                                 + Text("   ")
                                 + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy)

@@ -26,6 +26,7 @@ private func typing(_ w: Font.Weight = .light) -> Text {
 
 struct MsgContentView: View {
     @ObservedObject var chat: Chat
+    @EnvironmentObject var theme: AppTheme
     var text: String
     var formattedText: [FormattedText]? = nil
     var sender: String? = nil
@@ -79,7 +80,7 @@ struct MsgContentView: View {
         return (recent ? typingIndicators[typingIdx] : noTyping)
             .font(.body.monospaced())
             .kerning(-2)
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
     }
 
     private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {

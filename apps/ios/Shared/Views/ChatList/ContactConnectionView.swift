@@ -12,6 +12,7 @@ import SimpleXChat
 struct ContactConnectionView: View {
     @EnvironmentObject var m: ChatModel
     @ObservedObject var chat: Chat
+    @EnvironmentObject var theme: AppTheme
     @State private var localAlias = ""
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var showContactConnectionInfo = false
@@ -41,7 +42,7 @@ struct ContactConnectionView: View {
                         .font(.title3)
                         .bold()
                         .allowsTightening(false)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                         .padding(.horizontal, 8)
                         .padding(.top, 1)
                         .padding(.bottom, 0.5)
@@ -54,14 +55,14 @@ struct ContactConnectionView: View {
                         .padding(.trailing, 8)
                         .padding(.vertical, 4)
                         .frame(minWidth: 60, alignment: .trailing)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                 }
                 .padding(.bottom, 2)
 
                 ZStack(alignment: .topTrailing) {
                     Text(contactConnection.description)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    incognitoIcon(contactConnection.incognito)
+                    incognitoIcon(contactConnection.incognito, theme.colors.secondary)
                         .padding(.top, 26)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }

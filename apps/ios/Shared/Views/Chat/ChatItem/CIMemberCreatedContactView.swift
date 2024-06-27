@@ -49,7 +49,7 @@ struct CIMemberCreatedContactView: View {
         }
         r = r + chatItem.timestampText
             .fontWeight(.light)
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
         return r.font(.caption)
     }
     
@@ -57,11 +57,11 @@ struct CIMemberCreatedContactView: View {
         if let member = chatItem.memberDisplayName {
             return Text(member + " " + chatItem.content.text + "  ")
                 .fontWeight(.light)
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
         } else {
             return Text(chatItem.content.text + "  ")
                 .fontWeight(.light)
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
         }
     }
 }

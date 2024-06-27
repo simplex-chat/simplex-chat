@@ -49,7 +49,7 @@ struct ContactConnectionInfo: View {
 
                 Section {
                     if contactConnection.groupLinkId == nil {
-                        settingsRow("pencil") {
+                        settingsRow("pencil", color: theme.colors.secondary) {
                             TextField("Set contact name…", text: $localAlias)
                                 .autocapitalization(.none)
                                 .autocorrectionDisabled(true)
@@ -64,14 +64,15 @@ struct ContactConnectionInfo: View {
                        let connReqInv = contactConnection.connReqInv {
                         SimpleXLinkQRCode(uri: simplexChatLink(connReqInv))
                         incognitoEnabled()
-                        shareLinkButton(connReqInv)
-                        oneTimeLinkLearnMoreButton()
+                        shareLinkButton(connReqInv, theme.colors.secondary)
+                        oneTimeLinkLearnMoreButton(theme.colors.secondary)
                     } else {
                         incognitoEnabled()
-                        oneTimeLinkLearnMoreButton()
+                        oneTimeLinkLearnMoreButton(theme.colors.secondary)
                     }
                 } footer: {
                     sharedProfileInfo(contactConnection.incognito)
+                        .foregroundColor(theme.colors.secondary)
                 }
 
                 Section {
@@ -166,24 +167,24 @@ struct ContactConnectionInfo: View {
     }
 }
 
-private func shareLinkButton(_ connReqInvitation: String) -> some View {
+private func shareLinkButton(_ connReqInvitation: String, _ secondaryColor: Color) -> some View {
     Button {
         showShareSheet(items: [simplexChatLink(connReqInvitation)])
     } label: {
-        settingsRow("square.and.arrow.up") {
+        settingsRow("square.and.arrow.up", color: secondaryColor) {
             Text("Share 1-time link")
         }
     }
 }
 
-private func oneTimeLinkLearnMoreButton() -> some View {
+private func oneTimeLinkLearnMoreButton(_ secondaryColor: Color) -> some View {
     NavigationLink {
         AddContactLearnMore(showTitle: false)
             .navigationTitle("One-time invitation link")
             .modifier(ThemedBackground())
             .navigationBarTitleDisplayMode(.large)
     } label: {
-        settingsRow("info.circle") {
+        settingsRow("info.circle", color: secondaryColor) {
             Text("Learn more")
         }
     }

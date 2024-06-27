@@ -105,6 +105,7 @@ struct AddGroupView: View {
                     sharedGroupProfileInfo(incognitoDefault)
                     Text("Fully decentralized – visible only to members.")
                 }
+                .foregroundColor(theme.colors.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .onTapGesture(perform: hideKeyboard)
             }
@@ -158,7 +159,7 @@ struct AddGroupView: View {
                     Image(systemName: "exclamationmark.circle").foregroundColor(.red)
                 }
             } else {
-                Image(systemName: "pencil").foregroundColor(.secondary)
+                Image(systemName: "pencil").foregroundColor(theme.colors.secondary)
             }
             textField("Enter group name…", text: $profile.displayName)
                 .focused($focusDisplayName)

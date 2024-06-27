@@ -118,12 +118,18 @@ class ThemeManager {
         currentThemeDefault.set(theme)
         CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
         SceneDelegate.windowStatic?.tintColor = UIColor(CurrentColors.colors.primary)
-        SceneDelegate.windowStatic?.backgroundColor = UIColor(CurrentColors.colors.background)
         SceneDelegate.windowStatic?.overrideUserInterfaceStyle = switch currentThemeDefault.get() {
         case DefaultTheme.LIGHT.themeName: .light
         case DefaultTheme.SYSTEM_THEME_NAME: .unspecified
         default: .dark
         }
+        applyNavigationBarColors(CurrentColors.toAppTheme())
+    }
+
+    static func applyNavigationBarColors(_ theme: AppTheme) {
+        UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: UIColor(theme.appColors.title)]
+        UINavigationBar.appearance().largeTitleTextAttributes = [.foregroundColor: UIColor(theme.appColors.title)]
+        UINavigationBar.appearance().tintColor = .white
     }
 
     static func changeDarkTheme(_ theme: String) {

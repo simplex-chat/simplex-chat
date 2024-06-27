@@ -622,11 +622,11 @@ public let DarkColorPalette = Colors(
     primaryVariant: SimplexBlue,
     secondary: HighOrLowlight,
     secondaryVariant: DarkGray,
-    background: Color(0xFF121212),
+    background: Color.black,
     surface: Color(0xFF222222),
     error: Color.red,
-    onBackground: Color(0xFFFFFBFA),
-    onSurface: Color(0xFFFFFBFA),
+    onBackground: Color.white,
+    onSurface: Color.white,
     isLight: false
 )
 public let DarkColorPaletteApp = AppColors(
@@ -667,8 +667,8 @@ public let SimplexColorPalette = Colors(
     background: Color(0xFF111528),
     surface: Color(0xFF121C37),
     error: Color.red,
-    onBackground: Color(0xFFFFFBFA),
-    onSurface: Color(0xFFFFFBFA),
+    onBackground: Color.white,
+    onSurface: Color.white,
     isLight: false
 )
 public let SimplexColorPaletteApp = AppColors(
@@ -688,8 +688,8 @@ public let BlackColorPalette = Colors(
     background: Color(0xff070707),
     surface: Color(0xff161617),
     error: Color.red,
-    onBackground: Color(0xFFFFFBFA),
-    onSurface: Color(0xFFFFFBFA),
+    onBackground: Color.white,
+    onSurface: Color.white,
     isLight: false
 )
 public let BlackColorPaletteApp = AppColors(

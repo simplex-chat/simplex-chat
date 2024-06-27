@@ -101,6 +101,7 @@ struct UserProfilesView: View {
                 }
             } footer: {
                 Text("Tap to activate profile.")
+                    .foregroundColor(theme.colors.secondary)
                     .font(.body)
                     .padding(.top, 8)
 
@@ -212,7 +213,7 @@ struct UserProfilesView: View {
                 actionHeader("Delete profile", user)
                 Section {
                     passwordField
-                    settingsRow("trash") {
+                    settingsRow("trash", color: theme.colors.secondary) {
                         Button("Delete chat profile", role: .destructive) {
                             profileAction = nil
                             Task { await removeUser(user, delSMPQueues, viewPwd: actionPassword) }
@@ -222,6 +223,7 @@ struct UserProfilesView: View {
                 } footer: {
                     if actionEnabled(user) {
                         Text("All chats and messages will be deleted - this cannot be undone!")
+                            .foregroundColor(theme.colors.secondary)
                             .font(.callout)
                     }
                 }
@@ -229,7 +231,7 @@ struct UserProfilesView: View {
                 actionHeader("Unhide profile", user)
                 Section {
                     passwordField
-                    settingsRow("lock.open") {
+                    settingsRow("lock.open", color: theme.colors.secondary) {
                         Button("Unhide chat profile") {
                             profileAction = nil
                             setUserPrivacy(user) { try await apiUnhideUser(user.userId, viewPwd: actionPassword) }
@@ -318,17 +320,17 @@ struct UserProfilesView: View {
                 Text(user.chatViewName)
                 Spacer()
                 if user.activeUser {
-                    Image(systemName: "checkmark").foregroundColor(.primary)
+                    Image(systemName: "checkmark").foregroundColor(theme.colors.onBackground)
                 } else if user.hidden {
-                    Image(systemName: "lock").foregroundColor(.secondary)
+                    Image(systemName: "lock").foregroundColor(theme.colors.secondary)
                 } else if !user.showNtfs {
-                    Image(systemName: "speaker.slash").foregroundColor(.secondary)
+                    Image(systemName: "speaker.slash").foregroundColor(theme.colors.secondary)
                 } else {
                     Image(systemName: "checkmark").foregroundColor(.clear)
                 }
             }
         }
-        .foregroundColor(.primary)
+        .foregroundColor(theme.colors.onBackground)
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             if user.hidden {
                 Button("Unhide") {

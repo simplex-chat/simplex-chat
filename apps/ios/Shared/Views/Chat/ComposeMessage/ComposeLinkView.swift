@@ -82,7 +82,7 @@ struct ComposeLinkView: View {
                 Text(linkPreview.uri.absoluteString)
                     .font(.caption)
                     .lineLimit(1)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             }
             .padding(.vertical, 5)
             .frame(maxWidth: .infinity, minHeight: 60, maxHeight: 60)

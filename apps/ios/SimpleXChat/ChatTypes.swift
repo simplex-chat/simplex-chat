@@ -522,8 +522,8 @@ public struct FeatureEnabled: Decodable {
         : NSLocalizedString("off", comment: "enabled status")
     }
 
-    public var iconColor: Color {
-        forUser ? .green : forContact ? .yellow : .secondary
+    public func iconColor(_ secondaryColor: Color) -> Color {
+        forUser ? .green : forContact ? .yellow : secondaryColor
     }
 }
 
@@ -1151,10 +1151,10 @@ public enum GroupFeatureEnabled: String, Codable, Identifiable {
         }
     }
 
-    public var iconColor: Color {
+    public func iconColor(_ secondaryColor: Color) -> Color {
         switch self {
         case .on: return .green
-        case .off: return .secondary
+        case .off: return secondaryColor
         }
     }
 }
@@ -2656,7 +2656,7 @@ public struct CIMeta: Decodable {
         return false
     }
 
-    public func statusIcon(_ metaColor: Color = .secondary, _ primaryColor: Color = .accentColor) -> (String, Color)? {
+    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (String, Color)? {
         itemStatus.statusIcon(metaColor, primaryColor)
     }
 
@@ -2745,7 +2745,7 @@ public enum CIStatus: Decodable {
         }
     }
 
-    public func statusIcon(_ metaColor: Color = .secondary, _ primaryColor: Color = .accentColor) -> (String, Color)? {
+    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (String, Color)? {
         switch self {
         case .sndNew: return nil
         case .sndSent: return ("checkmark", metaColor)

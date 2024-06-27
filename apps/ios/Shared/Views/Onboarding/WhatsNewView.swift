@@ -444,6 +444,7 @@ func shouldShowWhatsNew() -> Bool {
 
 struct WhatsNewView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
+    @EnvironmentObject var theme: AppTheme
     @State var currentVersion = versionDescriptions.count - 1
     @State var currentVersionNav = versionDescriptions.count - 1
     var viaSettings = false
@@ -455,7 +456,7 @@ struct WhatsNewView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("New in \(v.version)")
                             .font(.title)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(theme.colors.secondary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical)
                         ForEach(v.features, id: \.icon) { f in
@@ -499,7 +500,7 @@ struct WhatsNewView: View {
             HStack(alignment: .center, spacing: 4) {
                 Image(systemName: icon)
                     .symbolRenderingMode(.monochrome)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
                     .frame(minWidth: 30, alignment: .center)
                 Text(title).font(.title3).bold()
             }
