@@ -15,6 +15,7 @@ struct ServersSummaryView: View {
     @State private var selectedServerType: PresentedServerType = .smp
     @State private var selectedSMPServer: String? = nil
     @State private var selectedXFTPServer: String? = nil
+    @State private var timer: Timer? = nil
     @State private var alert: SomeAlert?
 
     enum PresentedUserCategory {
@@ -34,17 +35,29 @@ struct ServersSummaryView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        reloadButton()
-                    }
-                    ToolbarItem(placement: .navigationBarTrailing) {
                         shareButton()
                     }
                 }
         }
         .onAppear {
             getServersSummary()
+            startTimer()
+        }
+        .onDisappear {
+            stopTimer()
         }
         .alert(item: $alert) { $0.alert }
+    }
+
+    private func startTimer() {
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            getServersSummary()
+        }
+    }
+
+    func stopTimer() {
+        timer?.invalidate()
+        timer = nil
     }
 
     private func shareButton() -> some View {
@@ -65,14 +78,6 @@ struct ServersSummaryView: View {
         return String(decoding: data, as: UTF8.self)
     }
 
-    private func reloadButton() -> some View {
-        Button {
-            getServersSummary()
-        } label: {
-            Image(systemName: "arrow.counterclockwise")
-        }
-    }
-
     @ViewBuilder private func viewBody() -> some View {
         if let summ = serversSummary {
             List {
@@ -84,8 +89,8 @@ struct ServersSummaryView: View {
                     .pickerStyle(.segmented)
 
                     Picker("Server type", selection: $selectedServerType) {
-                        Text("SMP").tag(PresentedServerType.smp)
-                        Text("XFTP").tag(PresentedServerType.xftp)
+                        Text("Messages").tag(PresentedServerType.smp)
+                        Text("Files").tag(PresentedServerType.xftp)
                     }
                     .pickerStyle(.segmented)
                 }
@@ -95,59 +100,71 @@ struct ServersSummaryView: View {
 
                 switch (selectedUserCategory, selectedServerType) {
                 case (.allUsers, .smp):
-                    if summ.allUsedSMP.count > 0 || summ.allPrevSMP.count > 0 || summ.allProxSMP.count > 0 {
-                        if summ.allUsedSMP.count > 0 {
-                            smpServersListView(summ.allUsedSMP, showReconnectButton: true, summ.statsStartedAt, "Current session")
-                        }
-                        if summ.allPrevSMP.count > 0 {
-                            smpServersListView(summ.allPrevSMP, showReconnectButton: false, summ.statsStartedAt, "Previously used")
-                        }
-                        if summ.allProxSMP.count > 0 {
-                            smpServersListView(summ.allProxSMP, showReconnectButton: false, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
-                        }
-                        resetStatsButtonSection()
-                    } else {
-                        noCategoryInfoText()
+
+                    SMPSubsView(subs: summ.allSMPTotal.subs)
+
+                    ServerSessionsView(sess: summ.allSMPTotal.sessions)
+
+                    if summ.allUsedSMP.count > 0 {
+                        smpServersListView(summ.allUsedSMP, showReconnectButton: true, summ.statsStartedAt, "Current app session")
                     }
+                    if summ.allPrevSMP.count > 0 {
+                        smpServersListView(summ.allPrevSMP, showReconnectButton: false, summ.statsStartedAt, "Previously used")
+                    }
+                    if summ.allProxSMP.count > 0 {
+                        smpServersListView(summ.allProxSMP, showReconnectButton: false, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
+                    }
+
+                    SMPStatsView(stats: summ.allSMPTotal.stats, statsStartedAt: summ.statsStartedAt)
+
+                    resetStatsButtonSection()
                 case (.currentUser, .smp):
-                    if summ.userUsedSMP.count > 0 || summ.userPrevSMP.count > 0 || summ.userProxSMP.count > 0 {
-                        if summ.userUsedSMP.count > 0 {
-                            smpServersListView(summ.userUsedSMP, showReconnectButton: true, summ.statsStartedAt, "Current session")
-                        }
-                        if summ.userPrevSMP.count > 0 {
-                            smpServersListView(summ.userPrevSMP, showReconnectButton: false, summ.statsStartedAt, "Previously used")
-                        }
-                        if summ.userProxSMP.count > 0 {
-                            smpServersListView(summ.userProxSMP, showReconnectButton: false, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
-                        }
-                        resetStatsButtonSection()
-                    } else {
-                        noCategoryInfoText()
+
+                    SMPSubsView(subs: summ.userSMPTotal.subs)
+
+                    ServerSessionsView(sess: summ.userSMPTotal.sessions)
+
+                    if summ.userUsedSMP.count > 0 {
+                        smpServersListView(summ.userUsedSMP, showReconnectButton: true, summ.statsStartedAt, "Current app session")
                     }
+                    if summ.userPrevSMP.count > 0 {
+                        smpServersListView(summ.userPrevSMP, showReconnectButton: false, summ.statsStartedAt, "Previously used")
+                    }
+                    if summ.userProxSMP.count > 0 {
+                        smpServersListView(summ.userProxSMP, showReconnectButton: false, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
+                    }
+
+                    SMPStatsView(stats: summ.userSMPTotal.stats, statsStartedAt: summ.statsStartedAt)
+
+                    resetStatsButtonSection()
                 case (.allUsers, .xftp):
-                    if summ.allUsedXFTP.count > 0 || summ.allPrevXFTP.count > 0 {
-                        if summ.allUsedXFTP.count > 0 {
-                            xftpServersListView(summ.allUsedXFTP, summ.statsStartedAt, "Current session")
-                        }
-                        if summ.allPrevXFTP.count > 0 {
-                            xftpServersListView(summ.allPrevXFTP, summ.statsStartedAt, "Previously used")
-                        }
-                        resetStatsButtonSection()
-                    } else {
-                        noCategoryInfoText()
+
+                    ServerSessionsView(sess: summ.allXFTPTotal.sessions)
+
+                    if summ.allUsedXFTP.count > 0 {
+                        xftpServersListView(summ.allUsedXFTP, summ.statsStartedAt, "Current app session")
                     }
+                    if summ.allPrevXFTP.count > 0 {
+                        xftpServersListView(summ.allPrevXFTP, summ.statsStartedAt, "Previously used")
+                    }
+
+                    XFTPStatsView(stats: summ.allXFTPTotal.stats, statsStartedAt: summ.statsStartedAt)
+
+                    resetStatsButtonSection()
                 case (.currentUser, .xftp):
-                    if summ.userUsedXFTP.count > 0 || summ.userPrevXFTP.count > 0 {
-                        if summ.userUsedXFTP.count > 0 {
-                            xftpServersListView(summ.userUsedXFTP, summ.statsStartedAt, "Current session")
-                        }
-                        if summ.userPrevXFTP.count > 0 {
-                            xftpServersListView(summ.userPrevXFTP, summ.statsStartedAt, "Previously used")
-                        }
-                        resetStatsButtonSection()
-                    } else {
-                        noCategoryInfoText()
+
+                    ServerSessionsView(sess: summ.userXFTPTotal.sessions)
+
+                    if summ.userUsedXFTP.count > 0 {
+                        xftpServersListView(summ.userUsedXFTP, summ.statsStartedAt, "Current app session")
                     }
+                    if summ.userPrevXFTP.count > 0 {
+                        xftpServersListView(summ.userPrevXFTP, summ.statsStartedAt, "Previously used")
+                    }
+
+                    XFTPStatsView(stats: summ.userXFTPTotal.stats, statsStartedAt: summ.statsStartedAt)
+
+                    resetStatsButtonSection()
                 }
             }
         } else {
@@ -238,18 +255,6 @@ struct ServersSummaryView: View {
             Text(serverAddress(server.xftpServer))
                 .lineLimit(1)
         }
-    }
-
-    private func noCategoryInfoText() -> some View {
-        ZStack {
-            Rectangle()
-                .aspectRatio(contentMode: .fill)
-                .foregroundColor(Color.clear)
-            Text("No info")
-                .foregroundColor(.secondary)
-        }
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
     }
 
     private func resetStatsButtonSection() -> some View {
@@ -383,13 +388,13 @@ struct SMPServerSummaryView: View {
             Section {
                 Text(summary.smpServer)
                     .textSelection(.enabled)
-                if let known = summary.known, !known {
-                    Button {
-                        // TODO
-                    } label: {
-                        Text("TODO Add as known")
-                    }
-                }
+//                if let known = summary.known, !known {
+//                    Button {
+//                        // TODO
+//                    } label: {
+//                        Text("Add as known")
+//                    }
+//                }
             } header: {
                 Text("Server address")
             } footer: {
@@ -403,15 +408,15 @@ struct SMPServerSummaryView: View {
             }
 
             if let subs = summary.subs {
-                subsSection(subs)
+                SMPSubsView(subs: subs)
             }
 
             if let sess = summary.sessions {
-                sessionsSection(sess)
+                ServerSessionsView(sess: sess)
             }
 
             if let stats = summary.stats {
-                statsSection(stats)
+                SMPStatsView(stats: stats, statsStartedAt: statsStartedAt)
             }
         }
         .alert(item: $alert) { $0.alert }
@@ -448,28 +453,42 @@ struct SMPServerSummaryView: View {
             }
         }
     }
+}
 
-    private func subsSection(_ subs: SMPServerSubs) -> some View {
+struct SMPSubsView: View {
+    var subs: SMPServerSubs
+
+    var body: some View {
         Section {
             infoRow("Active", "\(subs.ssActive)")
             infoRow("Pending", "\(subs.ssPending)")
+            infoRow("Total", "\(subs.ssActive + subs.ssPending)")
         } header: {
             HStack {
-                Text("Subscriptions")
+                Text("Message subscriptions")
                 SubscriptionStatusView(activeSubs: subs.ssActive, pendingSubs: subs.ssPending)
             }
         }
     }
+}
 
-    private func sessionsSection(_ sess: ServerSessions) -> some View {
-        Section("Sessions") {
+struct ServerSessionsView: View {
+    var sess: ServerSessions
+
+    var body: some View {
+        Section("Transport sessions") {
             infoRow("Connected", "\(sess.ssConnected)")
             infoRow("Errors", "\(sess.ssErrors)")
             infoRow("Connecting", "\(sess.ssConnecting)")
         }
     }
+}
 
-    private func statsSection(_ stats: AgentSMPServerStatsData) -> some View {
+struct SMPStatsView: View {
+    var stats: AgentSMPServerStatsData
+    var statsStartedAt: Date
+
+    var body: some View {
         Section("Statistics") {
             infoRow("Starting from", localTimestamp(statsStartedAt))
             infoRow("Messages sent directly", "\(stats._sentDirect)")
@@ -488,10 +507,14 @@ struct SMPServerSummaryView: View {
             indentedInfoRow("other errors", "\(stats._recvErrs)")
             infoRow("Messages acknowledged", "\(stats._ackMsgs)")
             indentedInfoRow("attempts", "\(stats._ackAttempts)")
+            indentedInfoRow("NO_MSG errors", "\(stats._ackNoMsgErrs)")
+            indentedInfoRow("other errors", "\(stats._ackOtherErrs)")
             infoRow("Connections created", "\(stats._connCreated)")
             indentedInfoRow("secured", "\(stats._connSecured)")
             indentedInfoRow("completed", "\(stats._connCompleted)")
             infoRow("Connections deleted", "\(stats._connDeleted)")
+            indentedInfoRow("attempts", "\(stats._connDelAttempts)")
+            indentedInfoRow("errors", "\(stats._connDelErrs)")
             infoRow("Connections subscribed", "\(stats._connSubscribed)")
             indentedInfoRow("attempts", "\(stats._connSubAttempts)")
             indentedInfoRow("errors", "\(stats._connSubErrs)")
@@ -518,13 +541,13 @@ struct XFTPServerSummaryView: View {
             Section {
                 Text(summary.xftpServer)
                     .textSelection(.enabled)
-                if let known = summary.known, !known {
-                    Button {
-                        // TODO
-                    } label: {
-                        Text("TODO Add as known")
-                    }
-                }
+//                if let known = summary.known, !known {
+//                    Button {
+//                        // TODO
+//                    } label: {
+//                        Text("Add as known")
+//                    }
+//                }
             } header: {
                 Text("Server address")
             } footer: {
@@ -534,22 +557,14 @@ struct XFTPServerSummaryView: View {
             }
 
             if let sess = summary.sessions {
-                sessionsSection(sess)
+                ServerSessionsView(sess: sess)
             }
 
             inProgressSection()
 
             if let stats = summary.stats {
-                statsSection(stats)
+                XFTPStatsView(stats: stats, statsStartedAt: statsStartedAt)
             }
-        }
-    }
-
-    private func sessionsSection(_ sess: ServerSessions) -> some View {
-        Section("Sessions") {
-            infoRow("Connected", "\(sess.ssConnected)")
-            infoRow("Errors", "\(sess.ssErrors)")
-            infoRow("Connecting", "\(sess.ssConnecting)")
         }
     }
 
@@ -564,14 +579,24 @@ struct XFTPServerSummaryView: View {
     private func boolYesNo(_ b: Bool) -> LocalizedStringKey {
         b ? "yes" : "no"
     }
+}
 
-    private func statsSection(_ stats: AgentXFTPServerStatsData) -> some View {
+struct XFTPStatsView: View {
+    var stats: AgentXFTPServerStatsData
+    var statsStartedAt: Date
+
+    var body: some View {
+        let kb: Int64 = 1024
+        let prettyUploadsSize = ByteCountFormatter.string(fromByteCount: stats._uploadsSize * kb, countStyle: .binary)
+        let prettyDownloadsSize = ByteCountFormatter.string(fromByteCount: stats._downloadsSize * kb, countStyle: .binary)
         Section("Statistics") {
             infoRow("Starting from", localTimestamp(statsStartedAt))
             infoRow("Chunks uploaded", "\(stats._uploads)")
+            indentedInfoRow("size", prettyUploadsSize)
             indentedInfoRow("attempts", "\(stats._uploadAttempts)")
             indentedInfoRow("errors", "\(stats._uploadErrs)")
             infoRow("Chunks downloaded", "\(stats._downloads)")
+            indentedInfoRow("size", prettyDownloadsSize)
             indentedInfoRow("attempts", "\(stats._downloadAttempts)")
             indentedInfoRow("AUTH errors", "\(stats._downloadAuthErrs)")
             indentedInfoRow("other errors", "\(stats._downloadErrs)")

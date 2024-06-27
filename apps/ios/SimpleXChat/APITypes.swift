@@ -2255,27 +2255,39 @@ public struct PresentedServersSummary: Codable {
     public var currentUserServers: ServersSummary
     public var allUsersServers: ServersSummary
 
+    public var allSMPTotal: SMPTotals { self.allUsersServers.smpTotals }
     public var allUsedSMP: [SMPServerSummary] { self.allUsersServers.currentlyUsedSMPServers }
     public var allPrevSMP: [SMPServerSummary] { self.allUsersServers.previouslyUsedSMPServers }
     public var allProxSMP: [SMPServerSummary] { self.allUsersServers.onlyProxiedSMPServers }
 
+    public var userSMPTotal: SMPTotals { self.currentUserServers.smpTotals }
     public var userUsedSMP: [SMPServerSummary] { self.currentUserServers.currentlyUsedSMPServers }
     public var userPrevSMP: [SMPServerSummary] { self.currentUserServers.previouslyUsedSMPServers }
     public var userProxSMP: [SMPServerSummary] { self.currentUserServers.onlyProxiedSMPServers }
 
+    public var allXFTPTotal: XFTPTotals { self.allUsersServers.xftpTotals }
     public var allUsedXFTP: [XFTPServerSummary] { self.allUsersServers.currentlyUsedXFTPServers }
     public var allPrevXFTP: [XFTPServerSummary] { self.allUsersServers.previouslyUsedXFTPServers }
 
+    public var userXFTPTotal: XFTPTotals { self.currentUserServers.xftpTotals }
     public var userUsedXFTP: [XFTPServerSummary] { self.currentUserServers.currentlyUsedXFTPServers }
     public var userPrevXFTP: [XFTPServerSummary] { self.currentUserServers.previouslyUsedXFTPServers }
 }
 
 public struct ServersSummary: Codable {
+    public var smpTotals: SMPTotals
     public var currentlyUsedSMPServers: [SMPServerSummary]
     public var previouslyUsedSMPServers: [SMPServerSummary]
     public var onlyProxiedSMPServers: [SMPServerSummary]
+    public var xftpTotals: XFTPTotals
     public var currentlyUsedXFTPServers: [XFTPServerSummary]
     public var previouslyUsedXFTPServers: [XFTPServerSummary]
+}
+
+public struct SMPTotals: Codable {
+    public var sessions: ServerSessions
+    public var subs: SMPServerSubs
+    public var stats: AgentSMPServerStatsData
 }
 
 public struct SMPServerSummary: Codable, Identifiable {
@@ -2305,29 +2317,38 @@ public struct SMPServerSubs: Codable {
 }
 
 public struct AgentSMPServerStatsData: Codable {
-    public var _sentDirect: Int
-    public var _sentViaProxy: Int
-    public var _sentProxied: Int
-    public var _sentDirectAttempts: Int
-    public var _sentViaProxyAttempts: Int
-    public var _sentProxiedAttempts: Int
-    public var _sentAuthErrs: Int
-    public var _sentQuotaErrs: Int
-    public var _sentExpiredErrs: Int
-    public var _sentOtherErrs: Int
-    public var _recvMsgs: Int
-    public var _recvDuplicates: Int
-    public var _recvCryptoErrs: Int
-    public var _recvErrs: Int
-    public var _ackMsgs: Int
-    public var _ackAttempts: Int
-    public var _connCreated: Int
-    public var _connSecured: Int
-    public var _connCompleted: Int
-    public var _connDeleted: Int
-    public var _connSubscribed: Int
-    public var _connSubAttempts: Int
-    public var _connSubErrs: Int
+    public var _sentDirect: Int64
+    public var _sentViaProxy: Int64
+    public var _sentProxied: Int64
+    public var _sentDirectAttempts: Int64
+    public var _sentViaProxyAttempts: Int64
+    public var _sentProxiedAttempts: Int64
+    public var _sentAuthErrs: Int64
+    public var _sentQuotaErrs: Int64
+    public var _sentExpiredErrs: Int64
+    public var _sentOtherErrs: Int64
+    public var _recvMsgs: Int64
+    public var _recvDuplicates: Int64
+    public var _recvCryptoErrs: Int64
+    public var _recvErrs: Int64
+    public var _ackMsgs: Int64
+    public var _ackAttempts: Int64
+    public var _ackNoMsgErrs: Int64
+    public var _ackOtherErrs: Int64
+    public var _connCreated: Int64
+    public var _connSecured: Int64
+    public var _connCompleted: Int64
+    public var _connDeleted: Int64
+    public var _connDelAttempts: Int64
+    public var _connDelErrs: Int64
+    public var _connSubscribed: Int64
+    public var _connSubAttempts: Int64
+    public var _connSubErrs: Int64
+}
+
+public struct XFTPTotals: Codable {
+    public var sessions: ServerSessions
+    public var stats: AgentXFTPServerStatsData
 }
 
 public struct XFTPServerSummary: Codable, Identifiable {
@@ -2343,14 +2364,16 @@ public struct XFTPServerSummary: Codable, Identifiable {
 }
 
 public struct AgentXFTPServerStatsData: Codable {
-    public var _uploads: Int
-    public var _uploadAttempts: Int
-    public var _uploadErrs: Int
-    public var _downloads: Int
-    public var _downloadAttempts: Int
-    public var _downloadAuthErrs: Int
-    public var _downloadErrs: Int
-    public var _deletions: Int
-    public var _deleteAttempts: Int
-    public var _deleteErrs: Int
+    public var _uploads: Int64
+    public var _uploadsSize: Int64
+    public var _uploadAttempts: Int64
+    public var _uploadErrs: Int64
+    public var _downloads: Int64
+    public var _downloadsSize: Int64
+    public var _downloadAttempts: Int64
+    public var _downloadAuthErrs: Int64
+    public var _downloadErrs: Int64
+    public var _deletions: Int64
+    public var _deleteAttempts: Int64
+    public var _deleteErrs: Int64
 }
