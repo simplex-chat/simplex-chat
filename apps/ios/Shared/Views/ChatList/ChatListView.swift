@@ -271,7 +271,7 @@ struct SubsStatusIndicator: View {
 
     // Constants for the intervals
     let initialInterval: TimeInterval = 1.0
-    let regularInterval: TimeInterval = 5.0
+    let regularInterval: TimeInterval = 3.0
     let initialPhaseDuration: TimeInterval = 10.0 // Duration for initial phase in seconds
 
     var body: some View {
