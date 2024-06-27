@@ -302,10 +302,18 @@ struct ChatView: View {
         ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
     }
 
+    private var filtererdReverseChatItems: Array<ChatItem> {
+        chatModel.reversedChatItems.filter { chatItem in
+            let (_, nextItem) = chatModel.getNextChatItem(chatItem)
+            let ciCategory = chatItem.mergeCategory
+            return !(ciCategory != nil && ciCategory == nextItem?.mergeCategory)
+        }
+    }
+
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
         return GeometryReader { g in
-            ReverseList(items: chatModel.reversedChatItems, scrollState: $scrollModel.state) { ci in
+            ReverseList(items: filtererdReverseChatItems, scrollState: $scrollModel.state) { ci in
                 let voiceNoFrame = voiceWithoutFrame(ci)
                 let maxWidth = cInfo.chatType == .group
                                 ? voiceNoFrame
@@ -456,7 +464,8 @@ struct ChatView: View {
     }
 
     private func loadChatItems(_ cInfo: ChatInfo, _ ci: ChatItem) {
-        if let firstItem = chatModel.reversedChatItems.last, firstItem.id == ci.id {
+        if let firstItem = chatModel.reversedChatItems.last,
+           filtererdReverseChatItems.last?.id == ci.id {
             if loadingItems || firstPage { return }
             loadingItems = true
             Task {
@@ -525,28 +534,18 @@ struct ChatView: View {
         var revealed: Bool { chatItem == revealedChatItem }
 
         var body: some View {
-            let (currIndex, nextItem) = m.getNextChatItem(chatItem)
+            let (currIndex, _) = m.getNextChatItem(chatItem)
             let ciCategory = chatItem.mergeCategory
-            if (ciCategory != nil && ciCategory == nextItem?.mergeCategory) {
-                // memberConnected events and deleted items are aggregated at the last chat item in a row, see ChatItemView
-                ZStack {} // scroll doesn't work if it's EmptyView()
-            } else {
-                let (prevHidden, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
-                let range = itemsRange(currIndex, prevHidden)
-                if revealed, let range = range {
-                    let items = Array(zip(Array(range), m.reversedChatItems[range]))
-                    ForEach(items, id: \.1.viewId) { (i, ci) in
-                        let prev = i == prevHidden ? prevItem : m.reversedChatItems[i + 1]
-                        chatItemView(ci, nil, prev)
-                    }
-                } else {
-                    // Switch branches just to work around context menu problem when 'revealed' changes but size of item isn't
-                    if revealed {
-                        chatItemView(chatItem, range, prevItem)
-                    } else {
-                        chatItemView(chatItem, range, prevItem)
-                    }
+            let (prevHidden, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
+            let range = itemsRange(currIndex, prevHidden)
+            if revealed, let range = range {
+                let items = Array(zip(Array(range), m.reversedChatItems[range]))
+                ForEach(items, id: \.1.viewId) { (i, ci) in
+                    let prev = i == prevHidden ? prevItem : m.reversedChatItems[i + 1]
+                    chatItemView(ci, nil, prev)
                 }
+            } else {
+                chatItemView(chatItem, range, prevItem)
             }
         }
 
