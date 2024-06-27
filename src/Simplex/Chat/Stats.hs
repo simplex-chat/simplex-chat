@@ -230,10 +230,14 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
           _recvErrs = _recvErrs sd1 + _recvErrs sd2,
           _ackMsgs = _ackMsgs sd1 + _ackMsgs sd2,
           _ackAttempts = _ackAttempts sd1 + _ackAttempts sd2,
+          _ackNoMsgErrs = _ackNoMsgErrs sd1 + _ackNoMsgErrs sd2,
+          _ackOtherErrs = _ackOtherErrs sd1 + _ackOtherErrs sd2,
           _connCreated = _connCreated sd1 + _connCreated sd2,
           _connSecured = _connSecured sd1 + _connSecured sd2,
           _connCompleted = _connCompleted sd1 + _connCompleted sd2,
           _connDeleted = _connDeleted sd1 + _connDeleted sd2,
+          _connDelAttempts = _connDelAttempts sd1 + _connDelAttempts sd2,
+          _connDelErrs = _connDelErrs sd1 + _connDelErrs sd2,
           _connSubscribed = _connSubscribed sd1 + _connSubscribed sd2,
           _connSubAttempts = _connSubAttempts sd1 + _connSubAttempts sd2,
           _connSubErrs = _connSubErrs sd1 + _connSubErrs sd2
@@ -242,9 +246,11 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
     addXFTPStats sd1 sd2 =
       AgentXFTPServerStatsData
         { _uploads = _uploads sd1 + _uploads sd2,
+          _uploadsSize = _uploadsSize sd1 + _uploadsSize sd2,
           _uploadAttempts = _uploadAttempts sd1 + _uploadAttempts sd2,
           _uploadErrs = _uploadErrs sd1 + _uploadErrs sd2,
           _downloads = _downloads sd1 + _downloads sd2,
+          _downloadsSize = _downloadsSize sd1 + _downloadsSize sd2,
           _downloadAttempts = _downloadAttempts sd1 + _downloadAttempts sd2,
           _downloadAuthErrs = _downloadAuthErrs sd1 + _downloadAuthErrs sd2,
           _downloadErrs = _downloadErrs sd1 + _downloadErrs sd2,
