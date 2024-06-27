@@ -6,7 +6,7 @@ title: Chat preferences
 
 You control the nature of your conversations with your contacts. You decide what features to enable and what features to disable. Click or tap on the following sections to learn more:
 
-- [Chat preferences](#chat-features)
+- [Chat preferences](#chat-preferences)
 - [Setting chat preferences for all contacts](#setting-chat-preferences-for-all-contacts)
 - [Setting chat preferences for a specific contact](#setting-chat-preferences-for-a-specific-contact)
 
@@ -70,7 +70,7 @@ You can set chat preferences for all your contacts.
 
 ## Setting chat preferences for a specific contact
 
-You can individually set chat preferences for specific contacts.
+You can individually set chat preferences for a specific contact.
 
 #### To set chat preferences for a specific contact:
 
