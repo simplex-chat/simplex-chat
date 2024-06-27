@@ -542,19 +542,19 @@
         <target>Címváltoztatás megszakítása??</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About SimpleX" xml:space="preserve">
+      <trans-unit id="About SimpleX" xml:space="preserve" approved="no">
         <source>About SimpleX</source>
-        <target>A SimpleX névjegye</target>
+        <target state="translated">A SimpleX-ről</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About SimpleX Chat" xml:space="preserve">
+      <trans-unit id="About SimpleX Chat" xml:space="preserve" approved="no">
         <source>About SimpleX Chat</source>
-        <target>A SimpleX Chat névjegye</target>
+        <target state="translated">A SimpleX Chat-ről</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About SimpleX address" xml:space="preserve">
+      <trans-unit id="About SimpleX address" xml:space="preserve" approved="no">
         <source>About SimpleX address</source>
-        <target>A SimpleX azonosítóról</target>
+        <target state="translated">A SimpleX címről</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accent color" xml:space="preserve">
@@ -988,9 +988,9 @@
         <target>Blokkolás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block for all" xml:space="preserve">
+      <trans-unit id="Block for all" xml:space="preserve" approved="no">
         <source>Block for all</source>
-        <target>Mindenki számára letiltva</target>
+        <target state="translated">Letiltás mindenki számára</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block group members" xml:space="preserve">
