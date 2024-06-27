@@ -385,9 +385,9 @@ struct SMPServerSummaryView: View {
                     .textSelection(.enabled)
                 if let known = summary.known, !known {
                     Button {
-                        // TODO
+                        addKnownServer()
                     } label: {
-                        Text("TODO Add as known")
+                        Text("Add as known")
                     }
                 }
             } header: {
@@ -497,6 +497,21 @@ struct SMPServerSummaryView: View {
             indentedInfoRow("errors", "\(stats._connSubErrs)")
         }
     }
+
+    func addKnownServer() {
+        Task {
+            do {
+                try await addKnownProtoServer(server: summary.smpServer)
+                await MainActor.run {
+                    // TODO disable button, etc.
+                }
+            } catch let error {
+                await MainActor.run {
+                    alert = errorAddingServerAlert(error)
+                }
+            }
+        }
+    }
 }
 
 private func indentedInfoRow(_ title: LocalizedStringKey, _ value: String) -> some View {
@@ -509,9 +524,20 @@ private func indentedInfoRow(_ title: LocalizedStringKey, _ value: String) -> so
     }
 }
 
+private func errorAddingServerAlert(_ error: Error) -> SomeAlert {
+    SomeAlert(
+        alert: mkAlert(
+            title: "Error adding server",
+            message: "Make sure server address is in correct format (\(responseError(error)))."
+        ),
+        id: "error saving server"
+    )
+}
+
 struct XFTPServerSummaryView: View {
     var summary: XFTPServerSummary
     var statsStartedAt: Date
+    @State private var alert: SomeAlert?
 
     var body: some View {
         List {
@@ -520,9 +546,9 @@ struct XFTPServerSummaryView: View {
                     .textSelection(.enabled)
                 if let known = summary.known, !known {
                     Button {
-                        // TODO
+                        addKnownServer()
                     } label: {
-                        Text("TODO Add as known")
+                        Text("Add as known")
                     }
                 }
             } header: {
@@ -543,6 +569,7 @@ struct XFTPServerSummaryView: View {
                 statsSection(stats)
             }
         }
+        .alert(item: $alert) { $0.alert }
     }
 
     private func sessionsSection(_ sess: ServerSessions) -> some View {
@@ -578,6 +605,21 @@ struct XFTPServerSummaryView: View {
             infoRow("Chunks deleted", "\(stats._deletions)")
             indentedInfoRow("attempts", "\(stats._deleteAttempts)")
             indentedInfoRow("errors", "\(stats._deleteErrs)")
+        }
+    }
+
+    func addKnownServer() {
+        Task {
+            do {
+                try await addKnownProtoServer(server: summary.xftpServer)
+                await MainActor.run {
+                    // TODO disable button, etc.
+                }
+            } catch let error {
+                await MainActor.run {
+                    alert = errorAddingServerAlert(error)
+                }
+            }
         }
     }
 }

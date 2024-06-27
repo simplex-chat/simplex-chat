@@ -487,6 +487,11 @@ func setUserProtoServers(_ serverProtocol: ServerProtocol, servers: [ServerCfg])
     try await sendCommandOkResp(.apiSetUserProtoServers(userId: userId, serverProtocol: serverProtocol, servers: servers))
 }
 
+func addKnownProtoServer(server: String) async throws {
+    let userId = try currentUserId("addKnownProtoServer")
+    try await sendCommandOkResp(.apiAddKnownProtoServer(userId: userId, server: server))
+}
+
 func testProtoServer(server: String) async throws -> Result<(), ProtocolTestFailure> {
     let userId = try currentUserId("testProtoServer")
     let r = await chatSendCmd(.apiTestProtoServer(userId: userId, server: server))
