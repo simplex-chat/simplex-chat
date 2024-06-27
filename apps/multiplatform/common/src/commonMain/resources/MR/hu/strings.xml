@@ -15,10 +15,10 @@
     <string name="send_disappearing_message_30_seconds">30 másodperc</string>
     <string name="one_time_link_short">Egyszer használatos hivatkozás</string>
     <string name="contact_wants_to_connect_via_call">%1$s szeretne kapcsolatba lépni önnel ezen keresztül:</string>
-    <string name="about_simplex_chat">A SimpleX Chat névjegye</string>
+    <string name="about_simplex_chat">A SimpleX Chat-ről</string>
     <string name="chat_item_ttl_day">1 nap</string>
     <string name="abort_switch_receiving_address">Címváltoztatás megszakítása</string>
-    <string name="about_simplex">A SimpleX névjegye</string>
+    <string name="about_simplex">A SimpleX-ről</string>
     <string name="color_primary">Kiemelés</string>
     <string name="callstatus_accepted">fogadott hívás</string>
     <string name="network_enable_socks_info">Hozzáférés a kiszolgálókhoz SOCKS proxy segítségével a %d porton? A proxyt el kell indítani, mielőtt engedélyezné ezt az opciót.</string>
@@ -1617,7 +1617,7 @@
     <string name="blocked_by_admin_item_description">letiltva az admin által</string>
     <string name="member_blocked_by_admin">Letiltva az admin által</string>
     <string name="rcv_group_event_member_blocked">letiltotta őt: %s</string>
-    <string name="block_for_all">Mindenki számára letiltva</string>
+    <string name="block_for_all">Letiltás mindenki számára</string>
     <string name="block_for_all_question">Mindenki számára letiltja ezt a tagot?</string>
     <string name="blocked_by_admin_items_description">%d üzenet letiltva az admin által</string>
     <string name="unblock_for_all">Letiltás feloldása mindenki számára</string>
