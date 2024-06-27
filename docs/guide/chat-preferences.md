@@ -6,13 +6,13 @@ title: Chat preferences
 
 You control the nature of your conversations with your contacts. You decide what features to enable and what features to disable. Click or tap on the following sections to learn more:
 
-- [Chat features](#chat-features)
-- [Chat preferences](#chat-preferences)
-- [Contact preferences](#contact-preferences)
+- [Chat preferences](#chat-features)
+- [Setting chat preferences for all contacts](#setting-chat-preferences-for-all-contacts)
+- [Setting chat preferences for a specific contact](#setting-chat-preferences-for-a-specific-contact)
 
-## Chat features
+## Chat preferences
 
-These are the available chat features you can configure with the following options:
+Here are the available chat preferences that you can set:
 
 - **Disappearing messages**
   
@@ -40,7 +40,7 @@ These are the available chat features you can configure with the following optio
   
   - `yes (default)` - your contacts can send voice messages, as long as they allow you to.
   
-  - `no` - prohibit your contacts from sending voice messages.
+  - `no` -  your contacts can't send voice messages.
   
   - `always` - your contacts can always send you voice messages, even if they don't allow you to.
 
@@ -48,15 +48,15 @@ These are the available chat features you can configure with the following optio
   
   - `yes (default)` - your contacts can make audio and video calls, as long as they allow you to.
   
-  - `no` - prohibit your contacts from making audio and video calls. 
+  - `no` - your contacts can't send audio and video calls. 
   
   - `always` - your contacts can always make audio and video calls, even if they don't allow you to.
 
-## Chat preferences
+## Setting chat preferences for all contacts
 
-You can configure a default set of chat preferences for all your contacts.
+You can set chat preferences for all your contacts.
 
-#### To configure your chat preferences for all your contacts:
+#### To set your chat preferences for all your contacts:
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
 
@@ -68,11 +68,11 @@ You can configure a default set of chat preferences for all your contacts.
 
 **Please note**: these preferences are automatically applied to new contacts.
 
-## Contact preferences
+## Setting chat preferences for a specific contact
 
 You can individually set chat preferences for specific contacts.
 
-#### To configure chat preferences for a specific contact:
+#### To set chat preferences for a specific contact:
 
 1. Click or tap on your contact.
 
