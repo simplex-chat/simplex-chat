@@ -71,6 +71,7 @@ public enum ChatCommand {
     case apiSendMemberContactInvitation(contactId: Int64, msg: MsgContent)
     case apiGetUserProtoServers(userId: Int64, serverProtocol: ServerProtocol)
     case apiSetUserProtoServers(userId: Int64, serverProtocol: ServerProtocol, servers: [ServerCfg])
+    case apiAddKnownProtoServer(userId: Int64, server: String)
     case apiTestProtoServer(userId: Int64, server: String)
     case apiSetChatItemTTL(userId: Int64, seconds: Int64?)
     case apiGetChatItemTTL(userId: Int64)
@@ -224,6 +225,7 @@ public enum ChatCommand {
             case let .apiSendMemberContactInvitation(contactId, mc): return "/_invite member contact @\(contactId) \(mc.cmdString)"
             case let .apiGetUserProtoServers(userId, serverProtocol): return "/_servers \(userId) \(serverProtocol)"
             case let .apiSetUserProtoServers(userId, serverProtocol, servers): return "/_servers \(userId) \(serverProtocol) \(protoServersStr(servers))"
+            case let .apiAddKnownProtoServer(userId, server): return "/_known server \(userId) \(server)"
             case let .apiTestProtoServer(userId, server): return "/_server test \(userId) \(server)"
             case let .apiSetChatItemTTL(userId, seconds): return "/_ttl \(userId) \(chatItemTTLStr(seconds: seconds))"
             case let .apiGetChatItemTTL(userId): return "/_ttl \(userId)"
@@ -377,6 +379,7 @@ public enum ChatCommand {
             case .apiSendMemberContactInvitation: return "apiSendMemberContactInvitation"
             case .apiGetUserProtoServers: return "apiGetUserProtoServers"
             case .apiSetUserProtoServers: return "apiSetUserProtoServers"
+            case .apiAddKnownProtoServer: return "apiAddKnownProtoServer"
             case .apiTestProtoServer: return "apiTestProtoServer"
             case .apiSetChatItemTTL: return "apiSetChatItemTTL"
             case .apiGetChatItemTTL: return "apiGetChatItemTTL"
