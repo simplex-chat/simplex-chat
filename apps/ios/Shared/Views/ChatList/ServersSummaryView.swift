@@ -103,7 +103,7 @@ struct ServersSummaryView: View {
                     let smpSumm = summ.allUsersSMP
                     let (totals, curr, prev, prox) = (smpSumm.smpTotals, smpSumm.currentlyUsedSMPServers, smpSumm.previouslyUsedSMPServers, smpSumm.onlyProxiedSMPServers)
 
-                    SMPSubsView(subs: totals.subs)
+                    SMPSubsView(subs: totals.subs, showPending: false)
 
                     ServerSessionsView(sess: totals.sessions)
 
@@ -124,7 +124,7 @@ struct ServersSummaryView: View {
                     let smpSumm = summ.currentUserSMP
                     let (totals, curr, prev, prox) = (smpSumm.smpTotals, smpSumm.currentlyUsedSMPServers, smpSumm.previouslyUsedSMPServers, smpSumm.onlyProxiedSMPServers)
 
-                    SMPSubsView(subs: totals.subs)
+                    SMPSubsView(subs: totals.subs, showPending: false)
 
                     ServerSessionsView(sess: totals.sessions)
 
@@ -219,7 +219,7 @@ struct ServersSummaryView: View {
         } label: {
             HStack {
                 if let subs = server.subs {
-                    SubscriptionStatusView(activeSubs: subs.ssActive, pendingSubs: subs.ssPending)
+                    SubscriptionStatusView(subs: subs)
                         .frame(width: 16, alignment: .center)
                         .padding(.trailing, 4)
                 }
@@ -313,79 +313,44 @@ struct ServersSummaryView: View {
 
 struct SubscriptionStatusView: View {
     @EnvironmentObject var m: ChatModel
-    var activeSubs: Int
-    var pendingSubs: Int
-    var variableValueAsPercentage: Bool = false
+    var subs: SMPServerSubs
 
     var body: some View {
         let netInfo = m.networkInfo
         if netInfo.online {
-            let (image, color, variableValue, opacity) = networkOnlineImage(netInfo.networkType)
+            let (color, variableValue, opacity) = onlineIconColor
             if #available(iOS 16.0, *) {
-                Image(systemName: image, variableValue: variableValue)
+                Image(systemName: "dot.radiowaves.up.forward", variableValue: variableValue)
                     .foregroundColor(color)
             } else {
-                Image(systemName: image)
+                Image(systemName: "dot.radiowaves.up.forward")
                     .foregroundColor(color.opacity(opacity))
             }
         } else {
             Image(systemName: "wifi.slash")
-                .foregroundColor(.secondary)
+                .foregroundColor(Color(uiColor: .tertiaryLabel))
         }
     }
 
-    func networkOnlineImage(_ networkType: UserNetworkType) -> (String, Color, Double, Double) {
-        switch networkType {
-        case .cellular:
-            let (color, variableValue, opacity) = cellularbarsColor
-            return ("cellularbars", color, variableValue, opacity)
-        default:
-            let (color, variableValue, opacity) = wifiColor
-            return ("wifi", color, variableValue, opacity)
-        }
-    }
-
-    // We manipulate variableValue so all "wifi" sections are filled only with 100% active subs,
-    // unless variableValueAsPercentage is true; same for cellularbarsColor
-    var wifiColor: (Color, Double, Double) {
-        if activeSubs > 0 {
-            let wifiVariableValue = (
-                variableValueAsPercentage ? activeSubsPercentage
-                :   ( // "wifi" has 3 sections
-                    activeSubsPercentage >= 1 ? 1
-                    : (activeSubsPercentage >= 0.5 && activeSubsPercentage < 1) ? 0.6
-                    : (activeSubsPercentage > 0 && activeSubsPercentage < 0.5) ? 0.3
-                    : 0
-                    )
-            )
-            return (.accentColor, wifiVariableValue, activeSubsPercentage)
+    var onlineIconColor: (Color, Double, Double) {
+        if subs.ssActive > 0 {
+            let variableValue = roundToQuarter()
+            return (.accentColor, variableValue, activeSubsPercentage)
         } else {
-            return (.secondary, 1, 1)
+            return (Color(uiColor: .tertiaryLabel), 1, 1)
         }
     }
 
-    var cellularbarsColor: (Color, Double, Double) {
-        if activeSubs > 0 {
-            let wifiVariableValue = (
-                variableValueAsPercentage ? activeSubsPercentage
-                : ( // "cellularbars" has 4 sections
-                    activeSubsPercentage >= 1 ? 1
-                    : (activeSubsPercentage >= 0.67 && activeSubsPercentage < 1) ? 0.7
-                    : (activeSubsPercentage >= 0.33 && activeSubsPercentage < 0.67) ? 0.45
-                    : (activeSubsPercentage > 0 && activeSubsPercentage < 0.33) ? 0.2
-                    : 0
-                  )
-            )
-            return (.accentColor, wifiVariableValue, activeSubsPercentage)
-        } else {
-            return (.secondary, 1, 1)
-        }
+    func roundToQuarter() -> Double {
+        activeSubsPercentage >= 1 ? 1
+        : activeSubsPercentage <= 0 ? 0
+        : (activeSubsPercentage * 4).rounded() / 4
     }
 
     var activeSubsPercentage: Double {
-        let total = activeSubs + pendingSubs
+        let total = subs.ssActive + subs.ssPending
         guard total != 0 else { return 0.0 }
-        return Double(activeSubs) / Double(total)
+        return Double(subs.ssActive) / Double(total)
     }
 }
 
@@ -420,7 +385,7 @@ struct SMPServerSummaryView: View {
             }
 
             if let subs = summary.subs {
-                SMPSubsView(subs: subs)
+                SMPSubsView(subs: subs, showPending: true)
             }
 
             if let sess = summary.sessions {
@@ -469,6 +434,7 @@ struct SMPServerSummaryView: View {
 
 struct SMPSubsView: View {
     var subs: SMPServerSubs
+    var showPending: Bool
 
     var body: some View {
         Section {
@@ -478,7 +444,7 @@ struct SMPSubsView: View {
         } header: {
             HStack {
                 Text("Message subscriptions")
-                SubscriptionStatusView(activeSubs: subs.ssActive, pendingSubs: subs.ssPending)
+                SubscriptionStatusView(subs: subs)
             }
         }
     }
