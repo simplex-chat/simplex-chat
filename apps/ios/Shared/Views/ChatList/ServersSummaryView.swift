@@ -268,8 +268,15 @@ struct ServersSummaryView: View {
             .navigationBarTitle("XFTP server")
             .navigationBarTitleDisplayMode(.large)
         } label: {
-            Text(serverAddress(srvSumm.xftpServer))
-                .lineLimit(1)
+            HStack {
+                Text(serverAddress(srvSumm.xftpServer))
+                    .lineLimit(1)
+                if srvSumm.rcvInProgress || srvSumm.sndInProgress || srvSumm.delInProgress {
+                    Spacer()
+                    Image(systemName: "arrow.triangle.2.circlepath")
+                        .foregroundColor(.accentColor)
+                }
+            }
         }
     }
 
