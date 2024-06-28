@@ -42,19 +42,59 @@
 
 ## Se connecter aux développeurs via l'app
 
+Vous pouvez vous connecter à l'équipe via l'application en utilisant le bouton "chat avec les développeurs" disponible lorsque vous n'avez pas de conversations dans le profil, "Envoyer des questions et des idées" dans les paramètres de l'application ou via notre [adresse SimpleX](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion). Veuillez vous connecter :
+
 - pour poser des questions
 - suggérer des améliorations
 - partager toute information pertinente
 
+Nous répondons aux questions manuellement, ce qui n'est pas immédiat - cela peut prendre jusqu'à 24 heures.
+
+Si vous souhaitez nous aider à intégrer des modèles linguistiques libres et [rejoindre notre équipe](./docs/JOIN_TEAM.md), n'hésitez pas à nous contacter.
+
 ## Rejoindre des groupes d'utilisateurs
 
-Vous pouvez rejoindre un groupe anglophone pour poser des questions : [#SimpleX users group](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2Fos8FftfoV8zjb2T89fUEjJtF7y64p5av%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAQqMgh0fw2lPhjn3PDIEfAKA_E0-gf8Hr8zzhYnDivRs%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22lBPiveK2mjfUH43SN77R0w%3D%3D%22%7D)
+Vous pouvez rejoindre les groupes créés par d'autres utilisateurs via le nouveau [service d'annuaire](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).
+
+**Veuillez noter** : Les groupes ci-dessous sont créés pour que les utilisateurs puissent poser des questions, faire des suggestions et poser des questions sur SimpleX Chat uniquement.
+
+Vous pouvez également :
+- critiquer l'application et faire des comparaisons avec d'autres messageries.
+- partager de nouveaux messagers que vous pensez être intéressants pour la vie privée, tant que vous ne spammez pas.
+- partager des publications relatives à la protection de la vie privée, de manière occasionnelle.
+- après avoir obtenu l'accord préalable de l'administrateur par message direct, partager le lien d'un groupe que vous avez créé, mais une seule fois. Une fois que le groupe a plus de 10 membres, il peut être soumis au [SimpleX Directory Service](./docs/DIRECTORY.md) où les nouveaux utilisateurs pourront le découvrir.
+
+Vous devez
+- être poli avec les autres utilisateurs
+- éviter le spam (messages trop fréquents, même s'ils sont pertinents)
+- éviter toute attaque personnelle ou hostilité.
+- éviter de partager tout contenu qui n'est pas en rapport avec ce qui précède (cela inclut, mais ne se limite pas à, discuter de politique ou de tout aspect de la société autre que la vie privée, la sécurité, la technologie et les communications, partager tout contenu qui pourrait être considéré comme offensant par d'autres utilisateurs, etc.)
+
+Les messages ne respectant pas ces règles seront supprimés, le droit d'envoyer des messages pourra être révoqué et l'accès des nouveaux membres au groupe pourra être temporairement restreint, afin d'éviter qu'ils ne rejoignent le groupe sous un autre nom - notre modération imparfaite du groupe n'a pas de meilleure solution pour l'instant.
+
+Vous pouvez rejoindre un groupe d'utilisateurs anglophones si vous souhaitez poser des questions : [#SimpleX users group](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2Fos8FftfoV8zjb2T89fUEjJtF7y64p5av%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAQqMgh0fw2lPhjn3PDIEfAKA_E0-gf8Hr8zzhYnDivRs%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22lBPiveK2mjfUH43SN77R0w%3D%3D%22%7D)
+
+Il existe également un groupe [#simplex-devs] (https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FvYCRjIflKNMGYlfTkuHe4B40qSlQ0439%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAHNdcqNbzXZhyMoSBjT2R0-Eb1EPaLyUg3KZjn-kmM1w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22PD20tcXjw7IpkkMCfR6HLA%3D%3D%22%7D) pour les développeurs qui construisent sur la plateforme SimpleX :
+
+- chat bots et automatisations
+- intégrations avec d'autres applications
+- applications et services sociaux
+- etc.
 
 Il existe des groupes dans d'autres langues, dans lesquelles l'interface de l'application a été traduite. Ces groupes servent à tester et à poser des questions aux autres utilisateurs de SimpleX Chat :
 
 [\#SimpleX-DE](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FkIEl7OQzcp-J6aDmjdlQbRJwqkcZE7XR%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAR16PCu02MobRmKAsjzhDWMZcWP9hS8l5AUZi-Gs8z18%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22puYPMCQt11yPUvgmI5jCiw%3D%3D%22%7D) (Germanophone),[\#SimpleX-FR](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FvIHQDxTor53nwnWWTy5cHNwQQAdWN5Hw%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAPdgK1eBnETmgiqEQufbUkydKBJafoRx4iRrtrC2NAGc%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%221FyUryBPza-1ZFFE80Ekbg%3D%3D%22%7D) (Francophone),[\#SimpleX-RU](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FXZyt3hJmWsycpN7Dqve_wbrAqb6myk1R%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAMFVIoytozTEa_QXOgoZFq_oe0IwZBYKvW50trSFXzXo%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22xz05ngjA3pNIxLZ32a8Vxg%3D%3D%22%7D) (Russophone),[\#SimpleX-IT](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2F0weR-ZgDUl7ruOtI_8TZwEsnJP6UiImA%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAq4PSThO9Fvb5ydF48wB0yNbpzCbuQJCW3vZ9BGUfcxk%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22e-iceLA0SctC62eARgYDWg%3D%3D%22%7D) (Italophone).
 
 Vous pouvez rejoindre ces groupes soit en ouvrant ces liens dans l'application, soit en les ouvrant dans un navigateur de bureau et en scannant le code QR.
+
+## Suivez nos mises à jour
+
+Nous publions nos mises à jour et nos communiqués via :
+
+- [Reddit](https://www.reddit.com/r/SimpleXChat/), [Twitter](https://twitter.com/SimpleXChat), [Lemmy](https://lemmy.ml/c/simplex), [Mastodon](https://mastodon.social/@simplex) et [Nostr](https://snort.social/p/npub1exv22uulqnmlluszc4yk92jhs2e5ajcs6mu3t00a6avzjcalj9csm7d828).
+- SimpleX Chat [profil de l'équipe](#connect-to-the-team).
+- [blog](https://simplex.chat/blog/) et [flux RSS](https://simplex.chat/feed.rss).
+- [liste de diffusion](https://simplex.chat/#join-simplex), très rarement.
 
 ## Établir une connexion privée
 
@@ -94,6 +134,7 @@ Langues en préparation : Arabe, Hindi, Japonais, Espagnol et [beaucoup d'autres
 
 Nous serions ravis que vous participiez à notre développement ! Vous pouvez nous aider :
 
+- [partager le thème de couleur](./docs/THEMES.md) que vous utilisez dans l'application Android !
 - en écrivant un tutoriel ou des notes sur les serveurs d'hébergement, l'automatisation des chatbots, etc.
 - en contribuant à la base de connaissances de SimpleX Chat.
 - ou développer des fonctionnalités - merci de vous connecter à nous via le chat pour que nous puissions vous aider à démarrer.
@@ -126,20 +167,34 @@ Fondateur de SimpleX Chat
 
 ## Sommaire
 
-- [Pourquoi la vie privée est importante](#pourquoi-la-vie-privée-est-importante)
-- [L'approche SimpleX de la vie privée et de la sécurité](#lapproche-simplex-de-la-vie-privée-et-de-la-sécurité)
-  - [Confidentialité totale](#confidentialité-totale-de-votre-identité-de-votre-profil-de-vos-contacts-et-de-vos-métadonnées)
-  - [Protection contre le spam et les abus](#protection-contre-le-spam-et-les-abus)
-  - [Propriété et sécurité de vos données](#propriété-contrôle-et-sécurité-totale-de-vos-données)
-  - [Les utilisateurs sont maîtres de leur réseau SimpleX](#les-utilisateurs-sont-maîtres-du-réseau-simplex)
-- [Foire aux questions](#foire-aux-questions)
-- [Nouvelles et mises à jour](#nouvelles-et-mises-à-jour)
-- [Installation rapide d'une application terminale](#⚡-installation-rapide-dune-application-pour-terminal)
-- [Le modèle de la plateforme SimpleX](#le-modèle-de-la-plateforme-simplex)
-- [Vie privée : détails techniques et limites](#vie-privée--détails-techniques-et-limites)
-- [Pour les développeurs](#pour-les-développeurs)
-- [Feuille de route](#feuille-de-route)
-- [Avertissements, contact de sécurité, licence](#avertissements)
+- [SimpleX - la première plateforme de messagerie qui n'a pas le moindre identifiant d'utilisateur - 100% privé par définition !](#simplex---la-première-plateforme-de-messagerie-qui-na-pas-le-moindre-identifiant-dutilisateur---100-privé-par-définition-)
+  - [Bienvenue sur SimpleX Chat !](#bienvenue-sur-simplex-chat-)
+  - [Installer l'app](#installer-lapp)
+  - [Se connecter aux développeurs via l'app](#se-connecter-aux-développeurs-via-lapp)
+  - [Rejoindre des groupes d'utilisateurs](#rejoindre-des-groupes-dutilisateurs)
+  - [Suivez nos mises à jour](#suivez-nos-mises-à-jour)
+  - [Établir une connexion privée](#établir-une-connexion-privée)
+  - [Guide de l'utilisateur (NOUVEAU)](#guide-de-lutilisateur-nouveau)
+  - [Aider à traduire SimpleX Chat](#aider-à-traduire-simplex-chat)
+  - [Contribuer](#contribuer)
+  - [Aidez-nous en faisant des dons](#aidez-nous-en-faisant-des-dons)
+  - [Sommaire](#sommaire)
+  - [Pourquoi la vie privée est importante](#pourquoi-la-vie-privée-est-importante)
+  - [L'approche SimpleX de la vie privée et de la sécurité](#lapproche-simplex-de-la-vie-privée-et-de-la-sécurité)
+    - [Confidentialité totale de votre identité, de votre profil, de vos contacts et de vos métadonnées.](#confidentialité-totale-de-votre-identité-de-votre-profil-de-vos-contacts-et-de-vos-métadonnées)
+    - [La meilleure protection contre le spam et les abus](#la-meilleure-protection-contre-le-spam-et-les-abus)
+    - [Propriété, contrôle et sécurité totale de vos données](#propriété-contrôle-et-sécurité-totale-de-vos-données)
+    - [Les utilisateurs sont maîtres du réseau SimpleX](#les-utilisateurs-sont-maîtres-du-réseau-simplex)
+  - [Foire aux questions](#foire-aux-questions)
+  - [Nouvelles et mises à jour](#nouvelles-et-mises-à-jour)
+  - [⚡ Installation rapide d'une application pour terminal](#-installation-rapide-dune-application-pour-terminal)
+  - [Le modèle de la plateforme SimpleX](#le-modèle-de-la-plateforme-simplex)
+  - [Vie privée : détails techniques et limites](#vie-privée--détails-techniques-et-limites)
+  - [Pour les développeurs](#pour-les-développeurs)
+  - [Feuille de route](#feuille-de-route)
+  - [Avertissements](#avertissements)
+  - [Contact de sécurité](#contact-de-sécurité)
+  - [Licence](#licence)
 
 ## Pourquoi la vie privée est importante
 
@@ -179,7 +234,24 @@ Vous pouvez utiliser SimpleX avec vos propres serveurs et continuer à communiqu
 
 Mises à jour récentes :
 
-[28 mars, 2023. Sortie de la v4.6 - support d'Android 8+ et d'ARMv7a, profiles cachés, outils de modération de communauté, amélioration des appels audio/vidéo et réduction de l'utilisation de la batterie](/blog/20230328-simplex-chat-v4-6-hidden-profiles.md).
+
+[26 avril 2024. Réseau SimpleX : transparence juridiquement contraignante, v5.7 publiée avec de meilleurs appels et messages](./blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md)
+
+[23 mars 2024. Le réseau SimpleX : une vraie vie privée et des profits stables, des non-profits pour les protocoles, v5.6 publié avec un chiffrement e2e résistant aux quanta et une migration de profil simple](./blog/20240323-simplex-network-privacy-non-profit-v5-6-quantum-resistant-e2e-encryption-simple-migration.md)
+
+[14 mars 2024. SimpleX Chat v5.6 beta : ajout de la résistance quantique à l'algorithme Signal double ratchet](./blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md)
+
+[24 janvier 2024. SimpleX Chat : infrastructure gratuite de Linode, v5.5 publiée avec des notes privées, un historique de groupe et une interface utilisateur plus simple pour se connecter](./blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.md)
+
+[25 novembre 2023. Sortie de SimpleX Chat v5.4 : lien entre les applications mobiles et de bureau via un protocole résistant aux quanta, et de bien meilleurs groupes](./blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md).
+
+[25 septembre 2023. Publication de SimpleX Chat v5.3 : application de bureau, chiffrement des fichiers locaux, amélioration des groupes et du service d'annuaire](./blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.md).
+
+[SimpleX Chat : v5.2 disponible avec des accusés de réception des messages](./blog/20230722-simplex-chat-v5-2-message-delivery-receipts.md).
+
+[23 mai 2023. SimpleX Chat : v5.1 avec réactions aux messages et code d'autodestruction](./blog/20230523-simplex-chat-v5-1-message-reactions-self-destruct-passcode.md).
+
+[22 avril 2023. SimpleX Chat : vision et financement, v5.0 disponible avec des vidéos et des fichiers jusqu'à 1gb](./blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.md).
 
 [1er mars, 2023. Protocole de transfert de fichiers SimpleX – envoyer des fichiers volumineux de manière efficace, privée et sécurisée, bientôt intégré dans les applications SimpleX Chat](/blog/20230301-simplex-file-transfer-protocol.md).
 
@@ -227,23 +299,28 @@ SimpleX Chat est un projet en cours - nous publions des améliorations dès qu'e
 
 Ce qui est déjà mis en place :
 
-1. Au lieu des identifiants de profil utilisateur utilisés par toutes les autres plateformes, même les plus privées, SimpleX utilise des identifiants par paire et par file d'attente (2 adresses pour chaque file d'attente de messages unidirectionnelle, avec une 3ème adresse optionnelle pour les notifications push sur iOS, 2 files d'attente dans chaque connexion entre les utilisateurs). Cela rend l'observation du graphe du réseau au niveau de l'application plus difficile, car pour `n` utilisateurs il peut y avoir jusqu'à `n * (n-1)` files de messages.
-2. Chiffrement de bout en bout dans chaque file d'attente de messages en utilisant [NaCl cryptobox](https://nacl.cr.yp.to/box.html). Ce système est ajouté pour permettre la redondance à l'avenir (en faisant passer chaque message par plusieurs serveurs), pour éviter d'avoir le même texte chiffré dans différentes files d'attente (qui ne serait visible pour l'attaquant que si TLS est compromis). Les clés de chiffrement utilisées pour ce chiffrement ne sont pas tournées, mais nous prévoyons de faire tourner les files d'attente. Des clés Curve25519 sont utilisées pour la négociation des clés.
-3. Chiffrement [Double ratchet](https://signal.org/docs/specifications/doubleratchet/) de bout en bout de chaque conversation entre deux utilisateurs (ou membres d'un groupe). Il s'agit du même algorithme que celui utilisé dans Signal et dans de nombreuses autres applications de messagerie ; il fournit à la messagerie OTR un secret avant (chaque message est chiffré par sa propre clé éphémère), une récupération après effraction (les clés sont fréquemment renégociées dans le cadre de l'échange de messages). Deux paires de clés Curve448 sont utilisées pour l'accord de clé initial, la partie initiatrice transmet ces clés via le lien de connexion, la partie acceptante - dans l'en-tête du message de confirmation.
-4. Couche supplémentaire de chiffrement utilisant la cryptobox NaCL pour les messages livrés du serveur au destinataire. Cette couche évite d'avoir tout texte chiffré en commun entre le trafic envoyé et reçu du serveur dans TLS (et il n'y a pas d'identifiants en commun non plus).
-5. Plusieurs niveaux de remplissage de données pour contrer les attaques sur la taille des messages.
-6. À partir de la v2 du protocole SMP (la version actuelle est la v4), toutes les métadonnées des messages, y compris l'heure de réception du message par le serveur (arrondie à la seconde), sont envoyées aux destinataires à l'intérieur d'une enveloppe chiffrée, de sorte que même si le protocole TLS est compromis, il ne peut être observé.
-7. Seul TLS 1.2/1.3 est autorisé pour les connexions client-serveur, limité aux algorithmes cryptographiques : CHACHA20POLY1305_SHA256, Ed25519/Ed448, Curve25519/Curve448.
-8. Pour se protéger contre les attaques par relecture, les serveurs SimpleX exigent le [tlsunique channel binding](https://www.rfc-editor.org/rfc/rfc5929.html) comme identifiant de session dans chaque commande client signée avec une clé éphémère par file d'attente.
-9. Pour protéger votre adresse IP, tous les clients SimpleX Chat permettent d'accéder aux serveurs de messagerie via Tor - voir [v3.1 release announcement](/blog/20220808-simplex-chat-v3.1-chat-groups.md) pour plus de détails.
-10. Chiffrement de la base de données locale avec une phrase secrète - vos contacts, groupes et tous les messages envoyés et reçus sont stockés de manière chiffrée. Si vous avez utilisé SimpleX Chat avant la version 4.0, vous devez activer le chiffrement via les paramètres de l'application.
-11. Isolation du transport - des connexions TCP et des circuits Tor différents sont utilisés pour le trafic de différents profils d'utilisateurs, optionnellement - pour des connexions différentes avec des contacts et des membres de groupes.
+1. Au lieu des identifiants de profil utilisateur utilisés par toutes les autres plateformes, même les plus privées, SimpleX utilise des [identifiants par file d'attente par paire](./docs/GLOSSARY.md#pairwise-pseudonymous-identifier) (2 adresses pour chaque file d'attente de messages unidirectionnelle, avec une 3ème adresse optionnelle pour les notifications push sur iOS, 2 files d'attente dans chaque connexion entre les utilisateurs). Cela rend l'observation du graphe de réseau au niveau de l'application plus difficile, car pour `n` utilisateurs il peut y avoir jusqu'à `n * (n-1)` files d'attente de messages.
+2. [Chiffrement de bout en bout](./docs/GLOSSARY.md#end-to-end-encryption) dans chaque file d'attente de messages à l'aide de [NaCl cryptobox] (https://nacl.cr.yp.to/box.html). Ceci est ajouté pour permettre une redondance dans le futur (en faisant passer chaque message par plusieurs serveurs), pour éviter d'avoir le même texte chiffré dans différentes files d'attente (qui ne serait visible par l'attaquant que si TLS est compromis). Les clés de chiffrement utilisées pour ce chiffrement ne font pas l'objet d'une rotation, mais nous prévoyons de faire tourner les files d'attente. Les clés Curve25519 sont utilisées pour la négociation des clés.
+3. [Double ratchet](./docs/GLOSSARY.md#double-ratchet-algorithm) chiffrement de bout en bout dans chaque conversation entre deux utilisateurs (ou membres d'un groupe). Il s'agit du même algorithme que celui utilisé dans Signal et de nombreuses autres applications de messagerie ; il fournit à la messagerie OTR [forward secrecy](./docs/GLOSSARY.md#forward-secrecy) (chaque message est chiffré par sa propre clé éphémère) et [break-in recovery](./docs/GLOSSARY.md#post-compromise-security) (les clés sont fréquemment renégociées dans le cadre de l'échange de messages). Deux paires de clés Curve448 sont utilisées pour l'[accord de clé] initial (./docs/GLOSSARY.md#key-agreement-protocol), la partie initiatrice transmet ces clés via le lien de connexion, la partie acceptante - dans l'en-tête du message de confirmation.
+4. Couche supplémentaire de chiffrement utilisant NaCL cryptobox pour les messages délivrés par le serveur au destinataire. Cette couche évite d'avoir du texte chiffré en commun entre le trafic envoyé et reçu du serveur dans le cadre de TLS (et il n'y a pas non plus d'identifiants en commun).
+5. Plusieurs niveaux de [content padding](./docs/GLOSSARY.md#message-padding) pour contrecarrer les attaques sur la taille des messages.
+6. Toutes les métadonnées des messages, y compris l'heure à laquelle le message a été reçu par le serveur (arrondie à la seconde), sont envoyées aux destinataires à l'intérieur d'une enveloppe chiffrée, de sorte que même si le protocole TLS est compromis, il ne peut être observé.
+7. Seuls les protocoles TLS 1.2/1.3 sont autorisés pour les connexions client-serveur, limités aux algorithmes cryptographiques : CHACHA20POLY1305_SHA256, Ed25519/Ed448, Curve25519/Curve448.
+8. Pour se protéger contre les attaques par rejeu, les serveurs SimpleX exigent [tlsunique channel binding](https://www.rfc-editor.org/rfc/rfc5929.html) comme identifiant de session dans chaque commande client signée avec une clé éphémère par file d'attente.
+9. Pour protéger votre adresse IP, tous les clients SimpleX Chat supportent l'accès aux serveurs de messagerie via Tor - voir [v3.1 release announcement](./blog/20220808-simplex-chat-v3.1-chat-groups.md) pour plus de détails.
+10. Chiffrement de la base de données locale avec phrase de passe - vos contacts, groupes et tous les messages envoyés et reçus sont stockés de manière chiffrés. Si vous avez utilisé SimpleX Chat avant la version 4.0, vous devez activer le chiffrement via les paramètres de l'application.
+11. Isolation du transport - différentes connexions TCP et circuits Tor sont utilisés pour le trafic de différents profils d'utilisateurs, optionnellement - pour différents contacts et connexions de membres de groupes.
+12. Rotation manuelle de la file d'attente de la messagerie pour déplacer la conversation vers un autre relais SMP.
+13. Envoi de fichiers chiffrés de bout en bout à l'aide du [protocole XFTP] (https://simplex.chat/blog/20230301-simplex-file-transfer-protocol.html).
+14. Chiffrement des fichiers locaux.
 
-Nous prévoyons d'ajouter bientôt :
+Nous prévoyons d'ajouter
 
-1. Rotation automatique des files d'attente de messages. Actuellement, les files d'attente créées entre deux utilisateurs sont utilisées jusqu'à ce que la file d'attente soit modifiée manuellement par l'utilisateur ou que le contact soit supprimé. Nous prévoyons d'ajouter une rotation de file d'attente pour rendre ces identifiants temporaires et les faire tourner selon un calendrier à déterminer (par exemple, tous les X messages, ou toutes les X heures/jours).
-2. Chiffrement des fichiers locaux. Actuellement, les images et les fichiers que vous envoyez et recevez sont stockés dans l'application sans être cryptés, vous pouvez les supprimer via `Paramètres / Base de données phrase secrète et exportation`.
-3. Mélange de messages - ajout d'une latence à la livraison des messages, pour se protéger contre la corrélation du trafic par le temps de transmission des messages.
+1. Des relais SMP pour les expéditeurs et des relais XFTP pour les destinataires afin de réduire le trafic et de dissimuler les adresses IP des relais choisis et potentiellement contrôlés par une autre partie.
+2. Un échange de clés résistant à la postquantification dans le protocole à double cliquet.
+3. Rotation automatique de la file d'attente des messages et redondance. Actuellement, les files d'attente créées entre deux utilisateurs sont utilisées jusqu'à ce qu'elles soient modifiées manuellement par l'utilisateur ou que le contact soit supprimé. Nous prévoyons d'ajouter une rotation automatique des files d'attente afin de rendre ces identifiants temporaires et de les faire tourner selon un calendrier à déterminer (par exemple, tous les X messages, ou toutes les X heures/jours).
+4. Mélange des messages - ajout d'un temps de latence à la livraison des messages, afin de se protéger contre la corrélation du trafic en fonction de l'heure du message.
+5. Constructions reproductibles - il s'agit d'une limitation de la pile de développement, mais nous allons investir pour résoudre ce problème. Les utilisateurs peuvent toujours créer toutes les applications et tous les services à partir du code source.
 
 ## Pour les développeurs
 
@@ -258,63 +335,73 @@ Si vous envisagez de développer avec la plateforme SimpleX, n'hésitez pas à n
 
 ## Feuille de route
 
-- ✅ Déploiement facile de serveur SimpleX avec stockage des messages en mémoire, sans aucune dépendance.
-- ✅ Client terminal (console) avec support des groupes et des fichiers.
-- ✅ Déploiement de serveur SimpleX en un clic sur Linode.
-- ✅ Chiffrement de bout en bout à l'aide du protocole double ratchet avec une couche de chiffrement supplémentaire.
+- ✅ Serveur SimpleX facile à déployer avec stockage des messages en mémoire, sans aucune dépendance.
+- Client terminal (console) avec prise en charge des groupes et des fichiers.
+- ✅ Déploiement du serveur SimpleX en un clic sur Linode.
+- ✅ Chiffrement de bout en bout à l'aide d'un protocole à double cliquet avec une couche de chiffrement supplémentaire.
 - ✅ Applications mobiles v1 pour Android et iOS.
 - ✅ Notifications instantanées privées pour Android utilisant un service d'arrière-plan.
 - ✅ Modèles de chat bot en Haskell.
 - ✅ v2.0 - prise en charge des images et des fichiers dans les applications mobiles.
-- ✅ Suppression manuelle de l'historique des chats.
-- ✅ Appels audio et vidéo WebRTC chiffrés de bout en bout via les apps mobiles.
+- ✅ Suppression manuelle de l'historique du chat.
+- ✅ Appels audio et vidéo WebRTC chiffrés de bout en bout via les applications mobiles.
 - ✅ Notifications instantanées préservant la confidentialité pour iOS à l'aide du service Apple Push Notification.
 - ✅ Exportation et importation de la base de données de chat.
 - ✅ Groupes de discussion dans les applications mobiles.
 - ✅ Connexion aux serveurs de messagerie via Tor.
 - ✅ Double adresse de serveur pour accéder aux serveurs de messagerie en tant que services cachés v3.
-- ✅ Serveur de chat et SDK client TypeScript pour développer des interfaces de chat, des intégrations et des bots de chat (prêt à être annoncé).
-- ✅ Mode incognito pour partager un nouveau nom aléatoire avec chaque contact.
-- ✅ Chiffrement de la base de données de chat.
+- ✅ Serveur de chat et SDK client TypeScript pour développer des interfaces de chat, des intégrations et des chat bots (prêt à être annoncé).
+- ✅ Mode Incognito pour partager un nouveau nom aléatoire avec chaque contact.
+- ✅ Chiffrement de la base de données du chat.
 - ✅ Suppression automatique de l'historique des chats.
 - ✅ Liens pour rejoindre des groupes et améliorer la stabilité des groupes.
-- ✅ Messages vocaux (avec opt-out du destinataire par contact).
+- ✅ Messages vocaux (avec option de refus du destinataire par contact).
 - ✅ Authentification de base pour les serveurs SMP (pour autoriser la création de nouvelles files d'attente).
-- ✅ Affichage des messages supprimés, suppression complète des messages par l'expéditeur (avec opt-in du destinataire par contact).
-- ✅ Blocage des captures d'écran et affichage dans les apps récentes.
+- ✅ Visualisation des messages supprimés, suppression complète des messages par l'expéditeur (avec option d'acceptation du destinataire par contact).
+- ✅ Bloquer les captures d'écran et les afficher dans les applications récentes.
 - ✅ Configuration avancée du serveur.
-- ✅ Messages éphèmére (avec opt-in du destinataire par contact).
-- ✅ Messages "en direct" (dynamique).
-- ✅ Vérification des contacts via un canal distinct extérieur.
-- ✅ Plusieurs profils d'utilisateurs dans la même base de données de chat.
-- ✅ Optionnellement, éviter de réutiliser la même session TCP pour plusieurs connexions.
-- ✅ Conservation des brouillons de message.
-- ✅ Serveur de fichiers pour optimiser l'envoi efficace et privé de fichiers volumineux.
+- ✅ Disparition des messages (avec option de consentement du destinataire par contact).
+- Messages "en direct".
+- ✅ Vérification des contacts via un canal hors bande distinct.
+- ✅ Profils d'utilisateurs multiples dans la même base de données de chat.
+- ✅ Possibilité d'éviter la réutilisation de la même session TCP pour plusieurs connexions.
+- ✅ Préservation des brouillons de messages.
+- Serveur de fichiers pour optimiser l'envoi efficace et privé de fichiers volumineux.
 - ✅ Amélioration des appels audio et vidéo.
-- ✅ Prise en charge d'anciens OS d'Android et des processeurs 32 bits.
-- ✅ Profiles de chat cachés
-- 🏗 Envoi et réception de fichiers volumineux via le [protocole XFTP](/blog/20230301-simplex-file-transfer-protocol.md).
-- 🏗 Messages vidéo
-- 🏗 Redondance et rotation des files d'attente SMP (mode manuel déjà fonctionnel).
-- 🏗 Réduction de l'utilisation de la batterie et du trafic dans les grands groupes.
-- Inclure un message facultatif dans la demande de connexion envoyée via l'adresse de contact.
-- Conversations éphémères/disparaissantes/OTR avec les contacts existants.
-- Mot de passe/pin d'accès (avec mot de passe d'accès alternatif facultatif).
-- Chiffrement des fichiers locaux de l'app.
-- Amélioration de la navigation et de la recherche dans la conversation (développer et faire défiler jusqu'au message cité, faire défiler jusqu'aux résultats de la recherche, etc.)
-- Confirmation de la distribution du message (avec option d'acceptation ou de refus de l'expéditeur par contact, TBC).
-- Partager votre position en privé.
-- Flux/diffusion.
-- Widgets Web pour une interactivité personnalisée dans les chats.
-- Automatismes et règles de chat programmables (réponses/transferts/suppressions/envois automatiques, rappels, etc.)
-- Prise en charge du même profil sur plusieurs appareils.
+- ✅ Prise en charge des anciens systèmes d'exploitation Android et des processeurs 32 bits.
+- Profils de chat cachés.
+- ✅ Envoi et réception de fichiers volumineux via le [protocole XFTP](./blog/20230301-simplex-file-transfer-protocol.md).
+- ✅ Messages vidéo.
+- ✅ Code d'accès à l'application.
+- ✅ Amélioration de l'interface utilisateur de l'application Android.
+- ✅ Mot de passe d'accès alternatif facultatif.
+- Réactions aux messages
+- ✅ Historique de l'édition des messages
+- Réduction de l'utilisation de la batterie et du trafic dans les grands groupes.
+- Confirmation de la livraison du message (avec option de retrait de l'expéditeur par contact).
 - Client de bureau.
-- Serveur d'identité préservant la confidentialité des adresses de contact/groupe basées sur le DNS pour simplifier la connexion et la découverte, mais non utilisé pour délivrer des messages :
+- ✅ Chiffrement des fichiers locaux stockés dans l'application.
+- ✅ Utilisation de profils mobiles à partir de l'application de bureau.
+- ✅ Notes privées.
+- ✅ Améliorer l'envoi de vidéos (y compris le chiffrement des vidéos stockées localement).
+- ✅ Échange de clés résistant aux postquantiques dans le protocole à double cliquet.
+- 🏗 Amélioration de la stabilité et réduction de l'utilisation de la batterie.
+- 🏗 Améliorer l'expérience des nouveaux utilisateurs.
+- 🏗 Grands groupes, communautés et canaux publics.
+- 🏗 Relais de livraison des messages pour les expéditeurs (pour dissimuler l'adresse IP aux serveurs des destinataires et réduire le trafic).
+- Curseur de confidentialité et de sécurité - un moyen simple de définir tous les paramètres en une seule fois.
+- Redondance et rotation de la file d'attente SMP (la fonction manuelle est prise en charge).
+- Inclusion d'un message optionnel dans la demande de connexion envoyée par l'intermédiaire de l'adresse de contact.
+- Amélioration de la navigation et de la recherche dans la conversation (développer et faire défiler le message cité, faire défiler les résultats de la recherche, etc.)
+- Flux/diffusions.
+- Conversations éphémères/disparues/OTR avec les contacts existants.
+- Partage privé de votre position.
+- Widgets Web pour une interactivité personnalisée dans les chats.
+- Automatismes et règles programmables pour les chats (réponses automatiques/transfert/suppression/envoi, rappels, etc.)
+- Serveur d'identité préservant la confidentialité pour les adresses de contact/groupe basées sur le DNS afin de simplifier la connexion et la découverte, mais non utilisées pour délivrer des messages :
   - conservez tous vos contacts et groupes même si vous perdez le domaine.
-  - le serveur ne dispose pas d'informations sur vos contacts et groupes.
-- Serveur hôte pour les grands groupes, les communautés et les canaux publics.
-- Relais de distribution des messages pour les expéditeurs (pour dissimuler l'adresse IP des serveurs des destinataires et réduire le trafic).
-- Relais SMP multi-nœuds à haute capacité.
+  - Le serveur n'a pas d'informations sur vos contacts et vos groupes.
+- Relais SMP multi-nœuds de grande capacité.
 
 
 ## Avertissements
