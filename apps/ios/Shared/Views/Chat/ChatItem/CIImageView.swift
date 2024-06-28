@@ -13,14 +13,64 @@ struct CIImageView: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
     let chatItem: ChatItem
-    let image: String
-    let maxWidth: CGFloat
-    @Binding var imgWidth: CGFloat?
+    let preview: UIImage?
     @State private var showFullScreenImage = false
 
     var body: some View {
         let file = chatItem.file
-        VStack(alignment: .center, spacing: 6) {
+        ZStack {
+            let preview = preview ?? UIImage()
+            imageView(preview)
+                .onTapGesture {
+                    if let file = file {
+                        switch file.fileStatus {
+                        case .rcvInvitation, .rcvAborted:
+                            Task {
+                                if let user = m.currentUser {
+                                    await receiveFile(user: user, fileId: file.fileId)
+                                }
+                            }
+                        case .rcvAccepted:
+                            switch file.fileProtocol {
+                            case .xftp:
+                                AlertManager.shared.showAlertMsg(
+                                    title: "Waiting for image",
+                                    message: "Image will be received when your contact completes uploading it."
+                                )
+                            case .smp:
+                                AlertManager.shared.showAlertMsg(
+                                    title: "Waiting for image",
+                                    message: "Image will be received when your contact is online, please wait or check later!"
+                                )
+                            case .local: ()
+                            }
+                        case .rcvTransfer: () // ?
+                        case .rcvComplete: () // ?
+                        case .rcvCancelled: () // TODO
+                        case let .rcvError(rcvFileError):
+                            AlertManager.shared.showAlert(Alert(
+                                title: Text("File error"),
+                                message: Text(rcvFileError.errorInfo)
+                            ))
+                        case let .rcvWarning(rcvFileError):
+                            AlertManager.shared.showAlert(Alert(
+                                title: Text("Temporary file error"),
+                                message: Text(rcvFileError.errorInfo)
+                            ))
+                        case let .sndError(sndFileError):
+                            AlertManager.shared.showAlert(Alert(
+                                title: Text("File error"),
+                                message: Text(sndFileError.errorInfo)
+                            ))
+                        case let .sndWarning(sndFileError):
+                            AlertManager.shared.showAlert(Alert(
+                                title: Text("Temporary file error"),
+                                message: Text(sndFileError.errorInfo)
+                            ))
+                        default: ()
+                        }
+                    }
+                }
             if let uiImage = getLoadedImage(file) {
                 imageView(uiImage)
                 .fullScreenCover(isPresented: $showFullScreenImage) {
@@ -30,77 +80,23 @@ struct CIImageView: View {
                 .onChange(of: m.activeCallViewIsCollapsed) { _ in
                     showFullScreenImage = false
                 }
-            } else if let data = Data(base64Encoded: dropImagePrefix(image)),
-                      let uiImage = UIImage(data: data) {
-                imageView(uiImage)
-                    .onTapGesture {
-                        if let file = file {
-                            switch file.fileStatus {
-                            case .rcvInvitation, .rcvAborted:
-                                Task {
-                                    if let user = m.currentUser {
-                                        await receiveFile(user: user, fileId: file.fileId)
-                                    }
-                                }
-                            case .rcvAccepted:
-                                switch file.fileProtocol {
-                                case .xftp:
-                                    AlertManager.shared.showAlertMsg(
-                                        title: "Waiting for image",
-                                        message: "Image will be received when your contact completes uploading it."
-                                    )
-                                case .smp:
-                                    AlertManager.shared.showAlertMsg(
-                                        title: "Waiting for image",
-                                        message: "Image will be received when your contact is online, please wait or check later!"
-                                    )
-                                case .local: ()
-                                }
-                            case .rcvTransfer: () // ?
-                            case .rcvComplete: () // ?
-                            case .rcvCancelled: () // TODO
-                            case let .rcvError(rcvFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("File error"),
-                                    message: Text(rcvFileError.errorInfo)
-                                ))
-                            case let .rcvWarning(rcvFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("Temporary file error"),
-                                    message: Text(rcvFileError.errorInfo)
-                                ))
-                            case let .sndError(sndFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("File error"),
-                                    message: Text(sndFileError.errorInfo)
-                                ))
-                            case let .sndWarning(sndFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("Temporary file error"),
-                                    message: Text(sndFileError.errorInfo)
-                                ))
-                            default: ()
-                            }
-                        }
-                    }
             }
-        }
+        }.background(Color(.secondarySystemBackground))
     }
 
     private func imageView(_ img: UIImage) -> some View {
-        let w = img.size.width <= img.size.height ? maxWidth * 0.75 : maxWidth
-// TODO: Layout must not be done asynchronously.
-//        DispatchQueue.main.async { imgWidth = w }
         return ZStack(alignment: .topTrailing) {
             if img.imageData == nil {
                 Image(uiImage: img)
                         .resizable()
                         .scaledToFit()
-                        .frame(width: w)
             } else {
-                SwiftyGif(image: img)
-                        .frame(width: w, height: w * img.size.height / img.size.width)
+                GeometryReader { proxy in
+                    SwiftyGif(image: img)
+                        .frame(width: proxy.size.width, height: proxy.size.height)
                         .scaledToFit()
+                }
+
             }
             loadingIndicator()
         }

@@ -298,10 +298,6 @@ struct ChatView: View {
         .padding(.vertical, 8)
     }
 
-    private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
-        ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
-    }
-
     private var filtererdReverseChatItems: Array<ChatItem> {
         chatModel.reversedChatItems.filter { chatItem in
             let (_, nextItem) = chatModel.getNextChatItem(chatItem)
@@ -314,15 +310,7 @@ struct ChatView: View {
         let cInfo = chat.chatInfo
         return GeometryReader { g in
             ReverseList(items: filtererdReverseChatItems, scrollState: $scrollModel.state) { ci in
-                let voiceNoFrame = voiceWithoutFrame(ci)
-                let maxWidth = cInfo.chatType == .group
-                                ? voiceNoFrame
-                                    ? (g.size.width - 28) - 42
-                                    : (g.size.width - 28) * 0.84 - 42
-                                : voiceNoFrame
-                                    ? (g.size.width - 32)
-                                    : (g.size.width - 32) * 0.84
-                return chatItemView(ci, maxWidth)
+                chatItemView(ci)
                     .onAppear {
                         loadChatItems(cInfo, ci)
                         if ci.isRcvNew {
@@ -492,12 +480,10 @@ struct ChatView: View {
         }
     }
 
-    @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
+    @ViewBuilder private func chatItemView(_ ci: ChatItem) -> some View {
         ChatItemWithMenu(
             chat: chat,
             chatItem: ci,
-            maxWidth: maxWidth,
-            itemWidth: maxWidth,
             composeState: $composeState,
             selectedMember: $selectedMember,
             revealedChatItem: $revealedChatItem,
@@ -510,8 +496,6 @@ struct ChatView: View {
         @Environment(\.colorScheme) var colorScheme
         @ObservedObject var chat: Chat
         var chatItem: ChatItem
-        var maxWidth: CGFloat
-        @State var itemWidth: CGFloat
         @Binding var composeState: ComposeState
         @Binding var selectedMember: GMember?
         @Binding var revealedChatItem: ChatItem?
@@ -584,20 +568,20 @@ struct ChatView: View {
                                 .appSheet(item: $selectedMember) { member in
                                     GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
                                 }
-                            chatItemWithMenu(ci, range, maxWidth)
+                            chatItemWithMenu(ci, range)
                         }
                     }
                     .padding(.top, 5)
                     .padding(.trailing)
                     .padding(.leading, 12)
                 } else {
-                    chatItemWithMenu(ci, range, maxWidth)
+                    chatItemWithMenu(ci, range)
                         .padding(.top, 5)
                         .padding(.trailing)
                         .padding(.leading, memberImageSize + 8 + 12)
                 }
             } else {
-                chatItemWithMenu(ci, range, maxWidth)
+                chatItemWithMenu(ci, range)
                     .padding(.horizontal)
                     .padding(.top, 5)
             }
@@ -614,24 +598,62 @@ struct ChatView: View {
             }
         }
 
-        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat) -> some View {
+        /// Returns media preview for image and video chat images
+        private func chatItemPreview(_ ci: ChatItem) -> UIImage? {
+            ci.content.msgContent
+                .flatMap {
+                    switch $0 {
+                    case let .image(_, image): image
+                    case let .video(_, image, _): image
+                    default: nil
+                    }
+                }
+                .map { dropImagePrefix($0) }
+                .flatMap { Data(base64Encoded: $0) }
+                .flatMap { UIImage(data: $0) }
+        }
+        
+        /// Calculates maximum width of chat item based on the aspect ratio of it's media preview
+        private func maxWidth(preview: UIImage?) -> Double {
+            let shrinkFactor = (preview?.size).flatMap { size in
+                let ratio = size.width / size.height
+                let portrait: Double = 4 / 3
+                let landscape: Double = 3 / 4
+                let normalised: Double = (ratio - portrait) / (landscape - portrait)
+                return max(0, min(1, normalised))
+            }
+            return 320 - 100 * (shrinkFactor ?? .zero)
+        }
+
+        private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
+            ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
+        }
+
+        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?) -> some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
-            VStack(alignment: alignment.horizontal, spacing: 3) {
-                ChatItemView(
-                    chat: chat,
-                    chatItem: ci,
-                    maxWidth: maxWidth,
-                    revealed: .constant(revealed),
-                    allowMenu: $allowMenu,
-                    audioPlayer: $audioPlayer,
-                    playbackState: $playbackState,
-                    playbackTime: $playbackTime
-                )
-                .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
-                .accessibilityLabel("")
-                if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
-                    chatItemReactions(ci)
-                        .padding(.bottom, 4)
+            let preview = chatItemPreview(ci)
+            ChatItemAlignmentContainer(
+                isSent: ci.chatDir.sent,
+                minInset: voiceWithoutFrame(ci) ? .zero : 56,
+                maxWidth: maxWidth(preview: preview)
+            ) {
+                VStack(alignment: alignment.horizontal, spacing: 3) {
+                    ChatItemView(
+                        chat: chat,
+                        chatItem: ci,
+                        preview: preview,
+                        revealed: .constant(revealed),
+                        allowMenu: $allowMenu,
+                        audioPlayer: $audioPlayer,
+                        playbackState: $playbackState,
+                        playbackTime: $playbackTime
+                    )
+                    .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
+                    .accessibilityLabel("")
+                    if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
+                        chatItemReactions(ci)
+                            .padding(.bottom, 4)
+                    }
                 }
             }
                 .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
@@ -649,8 +671,6 @@ struct ChatView: View {
                         deleteMessages()
                     }
                 }
-                .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
-                .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
                 .onDisappear {
                     if ci.content.msgContent?.isVoice == true {
                         allowMenu = true

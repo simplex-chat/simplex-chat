@@ -12,7 +12,7 @@ import SimpleXChat
 struct ChatItemView: View {
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
-    var maxWidth: CGFloat = .infinity
+    let preview: UIImage?
     @Binding var revealed: Bool
     @Binding var allowMenu: Bool
     @Binding var audioPlayer: AudioPlayer?
@@ -21,8 +21,8 @@ struct ChatItemView: View {
     init(
         chat: Chat,
         chatItem: ChatItem,
+        preview: UIImage? = nil,
         showMember: Bool = false,
-        maxWidth: CGFloat = .infinity,
         revealed: Binding<Bool>,
         allowMenu: Binding<Bool> = .constant(false),
         audioPlayer: Binding<AudioPlayer?> = .constant(nil),
@@ -31,7 +31,7 @@ struct ChatItemView: View {
     ) {
         self.chat = chat
         self.chatItem = chatItem
-        self.maxWidth = maxWidth
+        self.preview = preview
         _revealed = revealed
         _allowMenu = allowMenu
         _audioPlayer = audioPlayer
@@ -59,7 +59,7 @@ struct ChatItemView: View {
     }
 
     private func framedItemView() -> some View {
-        FramedItemView(chat: chat, chatItem: chatItem, revealed: $revealed, maxWidth: maxWidth, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
+        FramedItemView(chat: chat, chatItem: chatItem, preview: preview, revealed: $revealed, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
     }
 }
 

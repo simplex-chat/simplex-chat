@@ -86,7 +86,6 @@ struct UserPicker: View {
                 .cornerRadius(16)
                 .shadow(color: .black.opacity(0.12), radius: 24, x: 0, y: 0)
         )
-        .onPreferenceChange(DetermineWidth.Key.self) { chatViewNameWidth = $0 }
         .frame(maxWidth: chatViewNameWidth > 0 ? min(300, chatViewNameWidth + 130) : 300)
         .padding(8)
         .opacity(userPickerVisible ? 1.0 : 0.0)
@@ -132,7 +131,6 @@ struct UserPicker: View {
                 Text(user.chatViewName)
                     .fontWeight(user.activeUser ? .medium : .regular)
                     .foregroundColor(.primary)
-                    .overlay(DetermineWidth())
                 Spacer()
                 if user.activeUser {
                     Image(systemName: "checkmark")
@@ -152,7 +150,6 @@ struct UserPicker: View {
         Button(action: action) {
             HStack(spacing: 0) {
                 Text(title)
-                    .overlay(DetermineWidth())
                 Spacer()
                 Image(systemName: icon)
                     .symbolRenderingMode(.monochrome)
