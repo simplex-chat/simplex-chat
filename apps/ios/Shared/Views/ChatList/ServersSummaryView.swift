@@ -323,11 +323,12 @@ struct ServersSummaryView: View {
 }
 
 struct ConnectionStatusIndicatorView: View {
+    @EnvironmentObject var m: ChatModel
     var subs: SMPServerSubs
     var sess: ServerSessions
 
     var body: some View {
-        let (color, variableValue, opacity, _) = connectionStatusColorAndPercent(subs, sess)
+        let (color, variableValue, opacity, _) = connectionStatusColorAndPercent(m.networkInfo.online, subs, sess)
         if #available(iOS 16.0, *) {
             Image(systemName: "dot.radiowaves.up.forward", variableValue: variableValue)
                 .foregroundColor(color)
@@ -339,18 +340,19 @@ struct ConnectionStatusIndicatorView: View {
 }
 
 struct ConnectionStatusPercentView: View {
+    @EnvironmentObject var m: ChatModel
     var subs: SMPServerSubs
     var sess: ServerSessions
 
     var body: some View {
-        let (_, _, _, statusPercent) = connectionStatusColorAndPercent(subs, sess)
+        let (_, _, _, statusPercent) = connectionStatusColorAndPercent(m.networkInfo.online, subs, sess)
         Text("\(Int(floor(statusPercent * 100)))%")
             .foregroundColor(.secondary)
             .font(.caption)
     }
 }
 
-func connectionStatusColorAndPercent(_ subs: SMPServerSubs, _ sess: ServerSessions) -> (Color, Double, Double, Double) {
+func connectionStatusColorAndPercent(_ online: Bool, _ subs: SMPServerSubs, _ sess: ServerSessions) -> (Color, Double, Double, Double) {
     func roundedToQuarter(_ n: Double) -> Double {
         n >= 1 ? 1
         : n <= 0 ? 0
@@ -361,7 +363,7 @@ func connectionStatusColorAndPercent(_ subs: SMPServerSubs, _ sess: ServerSessio
     let activeSubsRounded = roundedToQuarter(subs.shareOfActive)
     let connectedSessRounded = roundedToQuarter(sess.shareOfConnected)
 
-    return ChatModel.shared.networkInfo.online && (subs.total > 0 || sess.total > 0)
+    return online && (subs.total > 0 || sess.total > 0)
     ? ( // Status to be displayed based on subs
         subs.total > 0
         ? (
