@@ -327,7 +327,7 @@ struct SubscriptionStatusView: View {
                     .foregroundColor(color.opacity(opacity))
             }
         } else {
-            Image(systemName: "wifi.slash")
+            Image(systemName: "dot.radiowaves.up.forward")
                 .foregroundColor(Color(uiColor: .tertiaryLabel))
         }
     }
