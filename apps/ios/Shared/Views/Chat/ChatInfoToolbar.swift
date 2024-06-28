@@ -9,8 +9,6 @@
 import SwiftUI
 import SimpleXChat
 
-let chatImageColorLight = Color(red: 0.9, green: 0.9, blue: 0.9)
-let chatImageColorDark = Color(red: 0.2, green: 0.2, blue: 0.2)
 struct ChatInfoToolbar: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var theme: AppTheme
@@ -27,9 +25,7 @@ struct ChatInfoToolbar: View {
             ChatInfoImage(
                 chat: chat,
                 size: imageSize,
-                color: colorScheme == .dark
-                        ? chatImageColorDark
-                        : chatImageColorLight
+                color: Color(uiColor: .tertiaryLabel)
             )
             .padding(.trailing, 4)
             VStack {

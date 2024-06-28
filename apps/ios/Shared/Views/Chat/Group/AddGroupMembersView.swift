@@ -176,14 +176,14 @@ struct AddGroupMembersViewCommon: View {
         var iconColor: Color
         if prohibitedToInviteIncognito {
             icon = "theatermasks.circle.fill"
-            iconColor = Color(uiColor: .tertiaryLabel)
+            iconColor = Color(uiColor: .tertiaryLabel).asAnotherColorFromSecondary(theme)
         } else {
             if checked {
                 icon = "checkmark.circle.fill"
                 iconColor = theme.colors.primary
             } else {
                 icon = "circle"
-                iconColor = Color(uiColor: .tertiaryLabel)
+                iconColor = Color(uiColor: .tertiaryLabel).asAnotherColorFromSecondary(theme)
             }
         }
         return Button {

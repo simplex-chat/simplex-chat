@@ -27,7 +27,7 @@ public enum DefaultTheme: String, Codable, Equatable {
 
     public func hasChangedAnyColor(_ overrides: ThemeOverrides?) -> Bool {
         if let overrides {
-            overrides.colors != ThemeColors() || overrides.wallpaper != nil && (overrides.wallpaper?.background != nil || overrides.wallpaper?.tint != nil)
+            overrides.colors != ThemeColors() || (overrides.wallpaper != nil && (overrides.wallpaper?.background != nil || overrides.wallpaper?.tint != nil))
         } else {
             false
         }
@@ -630,7 +630,7 @@ public let DarkColorPalette = Colors(
     isLight: false
 )
 public let DarkColorPaletteApp = AppColors(
-    title: SimplexBlue,
+    title: .white,
     primaryVariant2: Color(0xFF18262E),
     sentMessage: Color(0xFF18262E),
     sentQuote: Color(0xFF1D3847),
@@ -651,7 +651,7 @@ public let LightColorPalette = Colors (
     isLight: true
 )
 public let LightColorPaletteApp = AppColors(
-    title: SimplexBlue,
+    title: .black,
     primaryVariant2: Color(0xFFE9F7FF),
     sentMessage: Color(0xFFE9F7FF),
     sentQuote: Color(0xFFD6F0FF),
@@ -672,7 +672,7 @@ public let SimplexColorPalette = Colors(
     isLight: false
 )
 public let SimplexColorPaletteApp = AppColors(
-    title: Color(0xFF267BE5),
+    title: .white,
     primaryVariant2: Color(0xFF172941),
     sentMessage: Color(0xFF172941),
     sentQuote: Color(0xFF1C3A57),
@@ -693,7 +693,7 @@ public let BlackColorPalette = Colors(
     isLight: false
 )
 public let BlackColorPaletteApp = AppColors(
-    title: Color(0xff0077e0),
+    title: .white,
     primaryVariant2: Color(0xff243747),
     sentMessage: Color(0xFF18262E),
     sentQuote: Color(0xFF1D3847),

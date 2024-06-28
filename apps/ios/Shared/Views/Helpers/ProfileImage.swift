@@ -12,6 +12,7 @@ import SimpleXChat
 let defaultProfileImageCorner = 22.5
 
 struct ProfileImage: View {
+    @EnvironmentObject var theme: AppTheme
     var imageStr: String? = nil
     var iconName: String = "person.crop.circle.fill"
     var size: CGFloat
@@ -25,9 +26,10 @@ struct ProfileImage: View {
            let uiImage = UIImage(data: data) {
             clipProfileImage(Image(uiImage: uiImage), size: size, radius: radius)
         } else {
+            let c = color.asAnotherColorFromSecondaryVariant(theme)
             Image(systemName: iconName)
                 .resizable()
-                .foregroundColor(color)
+                .foregroundColor(c)
                 .frame(width: size, height: size)
                 .background(Circle().fill(backgroundColor != nil ? backgroundColor! : .clear))
         }
@@ -50,6 +52,29 @@ private let radiusFactor = (1 - squareToCircleRatio) / 50
         v.frame(width: sz, height: sz)
         .clipShape(RoundedRectangle(cornerRadius: sz * radius / 100, style: .continuous))
         .padding((size - sz) / 2)
+    }
+}
+
+
+extension Color {
+    func asAnotherColorFromSecondary(_ theme: AppTheme) -> Color {
+        return self
+    }
+
+    func asAnotherColorFromSecondaryVariant(_ theme: AppTheme) -> Color {
+        let s = theme.colors.secondaryVariant
+        let l = theme.colors.isLight
+        return switch self {
+        case Color(uiColor: .tertiaryLabel): // ChatView title
+            l ? s.darker(0.05) : s.lighter(0.2)
+        case Color(uiColor: .tertiarySystemFill): // SettingsView, ChatInfoView
+            l ? s.darker(0.065) : s.lighter(0.085)
+        case Color(uiColor: .quaternaryLabel): // ChatListView user picker
+            l ? s.darker(0.1) : s.lighter(0.1)
+        case Color(uiColor: .tertiarySystemGroupedBackground): // ChatListView items, forward view
+            s.asGroupedBackground(theme.base.mode)
+        default: self
+        }
     }
 }
 

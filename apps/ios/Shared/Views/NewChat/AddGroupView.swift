@@ -71,7 +71,7 @@ struct AddGroupView: View {
 
                 ZStack(alignment: .center) {
                     ZStack(alignment: .topTrailing) {
-                        ProfileImage(imageStr: profile.image, size: 128, color: Color(uiColor: .secondarySystemGroupedBackground))
+                        ProfileImage(imageStr: profile.image, size: 128)
                         if profile.image != nil {
                             Button {
                                 profile.image = nil

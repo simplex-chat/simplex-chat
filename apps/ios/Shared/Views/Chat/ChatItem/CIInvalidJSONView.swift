@@ -9,6 +9,7 @@
 import SwiftUI
 
 struct CIInvalidJSONView: View {
+    @EnvironmentObject var theme: AppTheme
     var json: String
     @State private var showJSON = false
     

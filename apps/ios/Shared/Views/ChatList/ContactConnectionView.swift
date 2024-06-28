@@ -30,7 +30,7 @@ struct ContactConnectionView: View {
                     .resizable()
                     .scaledToFill()
                     .frame(width: 48, height: 48)
-                    .foregroundColor(Color(uiColor: .secondarySystemBackground))
+                    .foregroundColor(Color(uiColor: .tertiarySystemGroupedBackground).asAnotherColorFromSecondaryVariant(theme))
                     .onTapGesture { showContactConnectionInfo = true }
             }
             .frame(width: 63, height: 63)

@@ -58,7 +58,7 @@ struct GroupWelcomeView: View {
     }
 
     private func textPreview() -> some View {
-        messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil, showSecrets: false)
+        messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil, showSecrets: false, secondaryColor: theme.colors.secondary)
             .frame(minHeight: 130, alignment: .topLeading)
             .frame(maxWidth: .infinity, alignment: .leading)
     }

@@ -505,7 +505,7 @@ func settingsRow<Content : View>(_ icon: String, color: Color/* = .secondary*/, 
 
 struct ProfilePreview: View {
     var profileOf: NamedChat
-    var color = Color(uiColor: .tertiarySystemFill)
+    var color = Color(uiColor: .tertiarySystemGroupedBackground)
 
     var body: some View {
         HStack {

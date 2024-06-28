@@ -56,7 +56,7 @@ struct ContextItemView: View {
     }
 
     private func contextMsgPreview() -> Text {
-        return attachment() + messageText(contextItem.text, contextItem.formattedText, nil, preview: true, showSecrets: false)
+        return attachment() + messageText(contextItem.text, contextItem.formattedText, nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
 
         func attachment() -> Text {
             switch contextItem.content.msgContent {

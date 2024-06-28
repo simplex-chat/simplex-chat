@@ -267,13 +267,14 @@ struct ChatItemInfoView: View {
     }
 
     private struct TextBubble: View {
+        @EnvironmentObject var theme: AppTheme
         var text: String
         var formattedText: [FormattedText]?
         var sender: String? = nil
         @State private var showSecrets = false
 
         var body: some View {
-            toggleSecrets(formattedText, $showSecrets, messageText(text, formattedText, sender, showSecrets: showSecrets))
+            toggleSecrets(formattedText, $showSecrets, messageText(text, formattedText, sender, showSecrets: showSecrets, secondaryColor: theme.colors.secondary))
         }
     }
 
