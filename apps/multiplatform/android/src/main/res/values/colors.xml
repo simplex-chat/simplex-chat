@@ -2,6 +2,5 @@
 <resources>
   <color name="black">#FF000000</color>
   <color name="white">#FFFFFFFF</color>
-  <color name="highOrLowLight">#8b8786</color>
   <color name="window_background_dark">#121212</color>
 </resources>
