@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>chat.simplex.simplex</id>
+  
+  <name>SimpleX Chat</name>
+  <summary>A private and encrypted messenger without any user IDs (not even random ones)!</summary>
+
+  <developer id="chat.simplex">
+    <name>SimpleX Chat</name>
+  </developer>
+  
+  <metadata_license>MIT</metadata_license>
+  <project_license>AGPL-3.0-or-later</project_license>
+  
+  <description>
+    <p>SimpleX Chat - a private and encrypted messenger without any user IDs (not even random ones)! Security assessment was done by Trail of Bits in November 2022.</p>      
+    <p>SimpleX Chat features:</p>
+    <ol>
+      <li>end-to-end encrypted messages, with editing, replies and deletion of messages.</li>
+      <li>sending end-to-end encrypted images and files.</li>
+      <li>single-use and long-term user addresses.</li>
+      <li>secret chat groups - only group members know it exists and who is the member.</li>
+      <li>end-to-end encrypted audio and video calls.</li>
+      <li>private instant notifications.</li>
+      <li>portable chat profile - you can transfer your chat contacts and history to another device (terminal or mobile).</li>
+    </ol>
+    <p>SimpleX Chat advantages:</p>
+    <ol>
+      <li><em>Full privacy of your identity, profile, contacts and metadata:</em> unlike any other existing messaging platform, SimpleX uses no phone numbers or any other identifiers assigned to the users - not even random numbers. This protects the privacy of who you are communicating with, hiding it from SimpleX platform servers and from any observers.</li>
+      <li><em>Complete protection against spam and abuse:</em> as you have no identifier on SimpleX platform, you cannot be contacted unless you share a one-time invitation link or an optional temporary user address.</li>
+      <li><em>Full ownership, control and security of your data:</em> SimpleX stores all user data on client devices, the messages are only held temporarily on SimpleX relay servers until they are received.</li>
+      <li><em>Decentralized network:</em> you can use SimpleX with your own servers and still communicate with people using the servers that are pre-configured in the apps or any other SimpleX servers.</li>
+    </ol>
+  </description>
+
+  <releases>
+    <release version="5.8.1" date="2024-06-19">
+      <description>
+        <p>General:</p>
+        <ol>
+          <li>fixes in sending/receiving files.</li>
+          <li>better error reporting when connecting to desktop app.</li>
+          <li>prevent forwarding to conversations where conversation preferences do not allow message.</li>
+        </ol>
+        <p>Android and desktop apps:</p>
+        <ol>
+          <li>support transparent theme colors for chat message bubbles.</li>
+          <li>do not reset changed network settings when switching SOCKS proxy on/off</li>
+          <li>fix swipe to reply when animation is disabled.</li>
+          <li>fix bug when duplicate group shown in the UI.</li>
+        </ol>
+      </description>
+    </release>
+  </releases>
+  
+  <content_rating type="oars-1.1" />
+  
+  <url type="homepage">https://simplex.chat/</url>
+  <url type="bugtracker">https://github.com/simplex-chat/simplex-chat/issues</url>
+  <url type="donation">https://opencollective.com/simplex-chat</url>
+  <url type="translate">https://simplex.chat/docs/translations</url>
+  <url type="faq">https://simplex.chat/faq</url>
+  <url type="vcs-browser">https://github.com/simplex-chat/simplex-chat</url>
+  
+  <launchable type="desktop-id">chat.simplex.simplex.desktop</launchable>
+
+  <branding>
+    <color type="primary" scheme_preference="light">#a5f0ff</color>
+    <color type="primary" scheme_preference="dark">#110e26</color>
+  </branding>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://simplex.chat/blog/images/simplex-desktop-light.png</image>
+    </screenshot>
+  </screenshots>
+</component>
