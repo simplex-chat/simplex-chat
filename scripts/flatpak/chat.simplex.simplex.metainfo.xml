@@ -3,7 +3,7 @@
   <id>chat.simplex.simplex</id>
   
   <name>SimpleX Chat</name>
-  <summary>SimpleX - a private & encrypted open-source messenger without any user IDs (not even random ones)!</summary>
+  <summary>SimpleX - a private &amp; encrypted open-source messenger without any user IDs (not even random ones)!</summary>
 
   <developer id="chat.simplex">
     <name>SimpleX Chat</name>
