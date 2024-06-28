@@ -2252,36 +2252,17 @@ public enum MsgType: String, Codable {
 
 public struct PresentedServersSummary: Codable {
     public var statsStartedAt: Date
-    public var currentUserServers: ServersSummary
-    public var allUsersServers: ServersSummary
-
-    public var allSMPTotal: SMPTotals { self.allUsersServers.smpTotals }
-    public var allUsedSMP: [SMPServerSummary] { self.allUsersServers.currentlyUsedSMPServers }
-    public var allPrevSMP: [SMPServerSummary] { self.allUsersServers.previouslyUsedSMPServers }
-    public var allProxSMP: [SMPServerSummary] { self.allUsersServers.onlyProxiedSMPServers }
-
-    public var userSMPTotal: SMPTotals { self.currentUserServers.smpTotals }
-    public var userUsedSMP: [SMPServerSummary] { self.currentUserServers.currentlyUsedSMPServers }
-    public var userPrevSMP: [SMPServerSummary] { self.currentUserServers.previouslyUsedSMPServers }
-    public var userProxSMP: [SMPServerSummary] { self.currentUserServers.onlyProxiedSMPServers }
-
-    public var allXFTPTotal: XFTPTotals { self.allUsersServers.xftpTotals }
-    public var allUsedXFTP: [XFTPServerSummary] { self.allUsersServers.currentlyUsedXFTPServers }
-    public var allPrevXFTP: [XFTPServerSummary] { self.allUsersServers.previouslyUsedXFTPServers }
-
-    public var userXFTPTotal: XFTPTotals { self.currentUserServers.xftpTotals }
-    public var userUsedXFTP: [XFTPServerSummary] { self.currentUserServers.currentlyUsedXFTPServers }
-    public var userPrevXFTP: [XFTPServerSummary] { self.currentUserServers.previouslyUsedXFTPServers }
+    public var allUsersSMP: SMPServersSummary
+    public var allUsersXFTP: XFTPServersSummary
+    public var currentUserSMP: SMPServersSummary
+    public var currentUserXFTP: XFTPServersSummary
 }
 
-public struct ServersSummary: Codable {
+public struct SMPServersSummary: Codable {
     public var smpTotals: SMPTotals
     public var currentlyUsedSMPServers: [SMPServerSummary]
     public var previouslyUsedSMPServers: [SMPServerSummary]
     public var onlyProxiedSMPServers: [SMPServerSummary]
-    public var xftpTotals: XFTPTotals
-    public var currentlyUsedXFTPServers: [XFTPServerSummary]
-    public var previouslyUsedXFTPServers: [XFTPServerSummary]
 }
 
 public struct SMPTotals: Codable {
@@ -2344,6 +2325,12 @@ public struct AgentSMPServerStatsData: Codable {
     public var _connSubscribed: Int64
     public var _connSubAttempts: Int64
     public var _connSubErrs: Int64
+}
+
+public struct XFTPServersSummary: Codable {
+    public var xftpTotals: XFTPTotals
+    public var currentlyUsedXFTPServers: [XFTPServerSummary]
+    public var previouslyUsedXFTPServers: [XFTPServerSummary]
 }
 
 public struct XFTPTotals: Codable {

@@ -100,69 +100,77 @@ struct ServersSummaryView: View {
 
                 switch (selectedUserCategory, selectedServerType) {
                 case (.allUsers, .smp):
+                    let smpSumm = summ.allUsersSMP
+                    let (totals, curr, prev, prox) = (smpSumm.smpTotals, smpSumm.currentlyUsedSMPServers, smpSumm.previouslyUsedSMPServers, smpSumm.onlyProxiedSMPServers)
 
-                    SMPSubsView(subs: summ.allSMPTotal.subs)
+                    SMPSubsView(subs: totals.subs)
 
-                    ServerSessionsView(sess: summ.allSMPTotal.sessions)
+                    ServerSessionsView(sess: totals.sessions)
 
-                    if summ.allUsedSMP.count > 0 {
-                        smpServersListView(summ.allUsedSMP, showReconnectButton: true, summ.statsStartedAt, "Current app session")
+                    if curr.count > 0 {
+                        smpServersListView(curr, showReconnectButton: true, summ.statsStartedAt, "Current app session")
                     }
-                    if summ.allPrevSMP.count > 0 {
-                        smpServersListView(summ.allPrevSMP, showReconnectButton: false, summ.statsStartedAt, "Previously used")
+                    if prev.count > 0 {
+                        smpServersListView(prev, showReconnectButton: false, summ.statsStartedAt, "Previously used")
                     }
-                    if summ.allProxSMP.count > 0 {
-                        smpServersListView(summ.allProxSMP, showReconnectButton: false, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
+                    if prox.count > 0 {
+                        smpServersListView(prox, showReconnectButton: false, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
                     }
 
-                    SMPStatsView(stats: summ.allSMPTotal.stats, statsStartedAt: summ.statsStartedAt)
+                    SMPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
 
                     resetStatsButtonSection()
                 case (.currentUser, .smp):
+                    let smpSumm = summ.currentUserSMP
+                    let (totals, curr, prev, prox) = (smpSumm.smpTotals, smpSumm.currentlyUsedSMPServers, smpSumm.previouslyUsedSMPServers, smpSumm.onlyProxiedSMPServers)
 
-                    SMPSubsView(subs: summ.userSMPTotal.subs)
+                    SMPSubsView(subs: totals.subs)
 
-                    ServerSessionsView(sess: summ.userSMPTotal.sessions)
+                    ServerSessionsView(sess: totals.sessions)
 
-                    if summ.userUsedSMP.count > 0 {
-                        smpServersListView(summ.userUsedSMP, showReconnectButton: true, summ.statsStartedAt, "Current app session")
+                    if curr.count > 0 {
+                        smpServersListView(curr, showReconnectButton: true, summ.statsStartedAt, "Current app session")
                     }
-                    if summ.userPrevSMP.count > 0 {
-                        smpServersListView(summ.userPrevSMP, showReconnectButton: false, summ.statsStartedAt, "Previously used")
+                    if prev.count > 0 {
+                        smpServersListView(prev, showReconnectButton: false, summ.statsStartedAt, "Previously used")
                     }
-                    if summ.userProxSMP.count > 0 {
-                        smpServersListView(summ.userProxSMP, showReconnectButton: false, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
+                    if prox.count > 0 {
+                        smpServersListView(prox, showReconnectButton: false, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
                     }
 
-                    SMPStatsView(stats: summ.userSMPTotal.stats, statsStartedAt: summ.statsStartedAt)
+                    SMPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
 
                     resetStatsButtonSection()
                 case (.allUsers, .xftp):
+                    let xftpSumm = summ.allUsersXFTP
+                    let (totals, curr, prev) = (xftpSumm.xftpTotals, xftpSumm.currentlyUsedXFTPServers, xftpSumm.previouslyUsedXFTPServers)
 
-                    ServerSessionsView(sess: summ.allXFTPTotal.sessions)
+                    ServerSessionsView(sess: totals.sessions)
 
-                    if summ.allUsedXFTP.count > 0 {
-                        xftpServersListView(summ.allUsedXFTP, summ.statsStartedAt, "Current app session")
+                    if curr.count > 0 {
+                        xftpServersListView(curr, summ.statsStartedAt, "Current app session")
                     }
-                    if summ.allPrevXFTP.count > 0 {
-                        xftpServersListView(summ.allPrevXFTP, summ.statsStartedAt, "Previously used")
+                    if prev.count > 0 {
+                        xftpServersListView(prev, summ.statsStartedAt, "Previously used")
                     }
 
-                    XFTPStatsView(stats: summ.allXFTPTotal.stats, statsStartedAt: summ.statsStartedAt)
+                    XFTPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
 
                     resetStatsButtonSection()
                 case (.currentUser, .xftp):
+                    let xftpSumm = summ.currentUserXFTP
+                    let (totals, curr, prev) = (xftpSumm.xftpTotals, xftpSumm.currentlyUsedXFTPServers, xftpSumm.previouslyUsedXFTPServers)
 
-                    ServerSessionsView(sess: summ.userXFTPTotal.sessions)
+                    ServerSessionsView(sess: totals.sessions)
 
-                    if summ.userUsedXFTP.count > 0 {
-                        xftpServersListView(summ.userUsedXFTP, summ.statsStartedAt, "Current app session")
+                    if curr.count > 0 {
+                        xftpServersListView(curr, summ.statsStartedAt, "Current app session")
                     }
-                    if summ.userPrevXFTP.count > 0 {
-                        xftpServersListView(summ.userPrevXFTP, summ.statsStartedAt, "Previously used")
+                    if prev.count > 0 {
+                        xftpServersListView(prev, summ.statsStartedAt, "Previously used")
                     }
 
-                    XFTPStatsView(stats: summ.userXFTPTotal.stats, statsStartedAt: summ.statsStartedAt)
+                    XFTPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
 
                     resetStatsButtonSection()
                 }
