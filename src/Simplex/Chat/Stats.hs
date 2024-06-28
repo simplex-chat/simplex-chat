@@ -19,8 +19,10 @@ import Simplex.Messaging.Protocol
 
 data PresentedServersSummary = PresentedServersSummary
   { statsStartedAt :: UTCTime,
-    currentUserServers :: ServersSummary,
-    allUsersServers :: ServersSummary
+    allUsersSMP :: SMPServersSummary,
+    allUsersXFTP :: XFTPServersSummary,
+    currentUserSMP :: SMPServersSummary,
+    currentUserXFTP :: XFTPServersSummary
   }
   deriving (Show)
 
@@ -28,7 +30,7 @@ data PresentedServersSummary = PresentedServersSummary
 -- so users can differentiate currently used (connected) servers,
 -- previously connected servers that were in use in previous sessions,
 -- and servers that are only proxied (not connected directly).
-data ServersSummary = ServersSummary
+data SMPServersSummary = SMPServersSummary
   { -- SMP totals are calculated from all accounted SMP server summaries
     smpTotals :: SMPTotals,
     -- currently used SMP servers are those with Just in sessions and/or subs in SMPServerSummary;
@@ -41,15 +43,7 @@ data ServersSummary = ServersSummary
     -- only proxied SMP servers are those that aren't (according to current state - sessions and subs)
     -- and weren't (according to stats) connected directly; they would have Nothing in sessions and subs,
     -- and have all of sentDirect, sentProxied, recvMsgs, etc. = 0 in server stats
-    onlyProxiedSMPServers :: [SMPServerSummary],
-    -- XFTP totals are calculated from all accounted XFTP server summaries
-    xftpTotals :: XFTPTotals,
-    -- currently used XFTP servers are those with Just in sessions in XFTPServerSummary,
-    -- and/or have upload/download/deletion in progress;
-    -- all other servers would fall into previously used servers category
-    currentlyUsedXFTPServers :: [XFTPServerSummary],
-    -- previously used XFTP servers are those with Nothing in sessions and don't have any process in progress
-    previouslyUsedXFTPServers :: [XFTPServerSummary]
+    onlyProxiedSMPServers :: [SMPServerSummary]
   }
   deriving (Show)
 
@@ -75,6 +69,18 @@ data SMPServerSummary = SMPServerSummary
     -- or in previous sessions and stats for it were restored; server would fall into a category of
     -- previously used or only proxied servers - see ServersSummary above
     stats :: Maybe AgentSMPServerStatsData
+  }
+  deriving (Show)
+
+data XFTPServersSummary = XFTPServersSummary
+  { -- XFTP totals are calculated from all accounted XFTP server summaries
+    xftpTotals :: XFTPTotals,
+    -- currently used XFTP servers are those with Just in sessions in XFTPServerSummary,
+    -- and/or have upload/download/deletion in progress;
+    -- all other servers would fall into previously used servers category
+    currentlyUsedXFTPServers :: [XFTPServerSummary],
+    -- previously used XFTP servers are those with Nothing in sessions and don't have any process in progress
+    previouslyUsedXFTPServers :: [XFTPServerSummary]
   }
   deriving (Show)
 
@@ -112,25 +118,31 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
       (allXFTPCurr, allXFTPPrev) = xftpSummsIntoCategories allXFTPSrvsSumms
   PresentedServersSummary
     { statsStartedAt,
-      currentUserServers =
-        ServersSummary
-          { smpTotals = userSMPTotals,
-            currentlyUsedSMPServers = userSMPCurr,
-            previouslyUsedSMPServers = userSMPPrev,
-            onlyProxiedSMPServers = userSMPProx,
-            xftpTotals = userXFTPTotals,
-            currentlyUsedXFTPServers = userXFTPCurr,
-            previouslyUsedXFTPServers = userXFTPPrev
-          },
-      allUsersServers =
-        ServersSummary
+      allUsersSMP =
+        SMPServersSummary
           { smpTotals = allSMPTotals,
             currentlyUsedSMPServers = allSMPCurr,
             previouslyUsedSMPServers = allSMPPrev,
-            onlyProxiedSMPServers = allSMPProx,
-            xftpTotals = allXFTPTotals,
+            onlyProxiedSMPServers = allSMPProx
+          },
+      allUsersXFTP =
+        XFTPServersSummary
+          { xftpTotals = allXFTPTotals,
             currentlyUsedXFTPServers = allXFTPCurr,
             previouslyUsedXFTPServers = allXFTPPrev
+          },
+      currentUserSMP =
+        SMPServersSummary
+          { smpTotals = userSMPTotals,
+            currentlyUsedSMPServers = userSMPCurr,
+            previouslyUsedSMPServers = userSMPPrev,
+            onlyProxiedSMPServers = userSMPProx
+          },
+      currentUserXFTP =
+        XFTPServersSummary
+          { xftpTotals = userXFTPTotals,
+            currentlyUsedXFTPServers = userXFTPCurr,
+            previouslyUsedXFTPServers = userXFTPPrev
           }
     }
   where
@@ -271,10 +283,12 @@ $(J.deriveJSON defaultJSON ''SMPTotals)
 
 $(J.deriveJSON defaultJSON ''SMPServerSummary)
 
+$(J.deriveJSON defaultJSON ''SMPServersSummary)
+
 $(J.deriveJSON defaultJSON ''XFTPTotals)
 
 $(J.deriveJSON defaultJSON ''XFTPServerSummary)
 
-$(J.deriveJSON defaultJSON ''ServersSummary)
+$(J.deriveJSON defaultJSON ''XFTPServersSummary)
 
 $(J.deriveJSON defaultJSON ''PresentedServersSummary)
