@@ -64,6 +64,11 @@ jobs:
             cache_path: ~/.cabal/store
             asset_name: simplex-chat-ubuntu-22_04-x86-64
             desktop_asset_name: simplex-desktop-ubuntu-22_04-x86_64.deb
+          - os: ubuntu-24.04
+            ghc: "9.6.3"
+            cache_path: ~/.cabal/store
+            asset_name: simplex-chat-ubuntu-24_04-x86-64
+            desktop_asset_name: simplex-desktop-ubuntu-24_04-x86_64.deb
           - os: macos-latest
             ghc: "9.6.3"
             cache_path: ~/.cabal/store
