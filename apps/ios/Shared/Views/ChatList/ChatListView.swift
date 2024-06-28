@@ -264,7 +264,8 @@ struct ChatListView: View {
 }
 
 struct SubsStatusIndicator: View {
-    @State private var subs: SMPServerSubs = SMPServerSubs(ssActive: 0, ssPending: 0)
+    @State private var subs: SMPServerSubs = SMPServerSubs.newSMPServerSubs
+    @State private var sess: ServerSessions = ServerSessions.newServerSessions
     @State private var timer: Timer? = nil
     @State private var timerCounter = 0
     @State private var showServersSummary = false
@@ -278,7 +279,7 @@ struct SubsStatusIndicator: View {
         Button {
             showServersSummary = true
         } label: {
-            SubscriptionStatusView(subs: subs)
+            SubscriptionStatusView(subs: subs, sess: sess)
         }
         .onAppear {
             startInitialTimer()
@@ -293,7 +294,7 @@ struct SubsStatusIndicator: View {
 
     private func startInitialTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: initialInterval, repeats: true) { _ in
-            getSubsSummary()
+            getServersSummary()
             timerCounter += 1
             // Switch to the regular timer after the initial phase
             if timerCounter * Int(initialInterval) >= Int(initialPhaseDuration) {
@@ -305,7 +306,7 @@ struct SubsStatusIndicator: View {
     func switchToRegularTimer() {
         timer?.invalidate()
         timer = Timer.scheduledTimer(withTimeInterval: regularInterval, repeats: true) { _ in
-            getSubsSummary()
+            getServersSummary()
         }
     }
 
@@ -314,11 +315,12 @@ struct SubsStatusIndicator: View {
         timer = nil
     }
 
-    private func getSubsSummary() {
+    private func getServersSummary() {
         do {
-            subs = try getAgentSubsSummary()
+            let summ = try getAgentServersSummary()
+            (subs, sess) = (summ.allUsersSMP.smpTotals.subs, summ.allUsersSMP.smpTotals.sessions)
         } catch let error {
-            logger.error("getAgentSubsSummary error: \(responseError(error))")
+            logger.error("getAgentServersSummary error: \(responseError(error))")
         }
     }
 }

@@ -2281,12 +2281,35 @@ public struct SMPServerSummary: Codable, Identifiable {
     public var id: String { smpServer }
 
     public var connected: Bool { sessions != nil || subs != nil }
+
+    public var sessionsOrNew: ServerSessions { sessions ?? ServerSessions.newServerSessions }
+
+    public var subsOrNew: SMPServerSubs { subs ?? SMPServerSubs.newSMPServerSubs }
 }
 
 public struct ServerSessions: Codable {
     public var ssConnected: Int
     public var ssErrors: Int
     public var ssConnecting: Int
+
+    public init(ssConnected: Int, ssErrors: Int, ssConnecting: Int) {
+        self.ssConnected = ssConnected
+        self.ssErrors = ssErrors
+        self.ssConnecting = ssConnecting
+    }
+
+    static public var newServerSessions = ServerSessions(
+        ssConnected: 0,
+        ssErrors: 0,
+        ssConnecting: 0
+    )
+
+    public var total: Int { ssConnected + ssErrors + ssConnecting }
+
+    public var shareOfConnected: Double {
+        guard total != 0 else { return 0.0 }
+        return Double(ssConnected) / Double(total)
+    }
 }
 
 public struct SMPServerSubs: Codable {
@@ -2296,6 +2319,18 @@ public struct SMPServerSubs: Codable {
     public init(ssActive: Int, ssPending: Int) {
         self.ssActive = ssActive
         self.ssPending = ssPending
+    }
+
+    static public var newSMPServerSubs = SMPServerSubs(
+        ssActive: 0,
+        ssPending: 0
+    )
+
+    public var total: Int { ssActive + ssPending }
+
+    public var shareOfActive: Double {
+        guard total != 0 else { return 0.0 }
+        return Double(ssActive) / Double(total)
     }
 }
 

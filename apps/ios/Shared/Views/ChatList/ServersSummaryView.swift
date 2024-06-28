@@ -207,10 +207,10 @@ struct ServersSummaryView: View {
         }
     }
 
-    private func smpServerView(_ server: SMPServerSummary, _ showReconnectButton: Bool, _ statsStartedAt: Date) -> some View {
-        NavigationLink(tag: server.id, selection: $selectedSMPServer) {
+    private func smpServerView(_ srvSumm: SMPServerSummary, _ showReconnectButton: Bool, _ statsStartedAt: Date) -> some View {
+        NavigationLink(tag: srvSumm.id, selection: $selectedSMPServer) {
             SMPServerSummaryView(
-                summary: server,
+                summary: srvSumm,
                 showReconnectButton: showReconnectButton,
                 statsStartedAt: statsStartedAt
             )
@@ -218,12 +218,15 @@ struct ServersSummaryView: View {
             .navigationBarTitleDisplayMode(.large)
         } label: {
             HStack {
-                if let subs = server.subs {
-                    SubscriptionStatusView(subs: subs)
-                        .frame(width: 16, alignment: .center)
-                        .padding(.trailing, 4)
+                if srvSumm.connected {
+                    SubscriptionStatusView(
+                        subs: srvSumm.subsOrNew,
+                        sess: srvSumm.sessionsOrNew
+                    )
+                    .frame(width: 16, alignment: .center)
+                    .padding(.trailing, 4)
                 }
-                Text(serverAddress(server.smpServer))
+                Text(serverAddress(srvSumm.smpServer))
                     .lineLimit(1)
             }
         }
@@ -255,16 +258,16 @@ struct ServersSummaryView: View {
         }
     }
 
-    private func xftpServerView(_ server: XFTPServerSummary, _ statsStartedAt: Date) -> some View {
-        NavigationLink(tag: server.id, selection: $selectedXFTPServer) {
+    private func xftpServerView(_ srvSumm: XFTPServerSummary, _ statsStartedAt: Date) -> some View {
+        NavigationLink(tag: srvSumm.id, selection: $selectedXFTPServer) {
             XFTPServerSummaryView(
-                summary: server,
+                summary: srvSumm,
                 statsStartedAt: statsStartedAt
             )
             .navigationBarTitle("XFTP server")
             .navigationBarTitleDisplayMode(.large)
         } label: {
-            Text(serverAddress(server.xftpServer))
+            Text(serverAddress(srvSumm.xftpServer))
                 .lineLimit(1)
         }
     }
@@ -314,43 +317,50 @@ struct ServersSummaryView: View {
 struct SubscriptionStatusView: View {
     @EnvironmentObject var m: ChatModel
     var subs: SMPServerSubs
+    var sess: ServerSessions
 
     var body: some View {
-        let netInfo = m.networkInfo
-        if netInfo.online {
-            let (color, variableValue, opacity) = onlineIconColor
-            if #available(iOS 16.0, *) {
-                Image(systemName: "dot.radiowaves.up.forward", variableValue: variableValue)
-                    .foregroundColor(color)
-            } else {
-                Image(systemName: "dot.radiowaves.up.forward")
-                    .foregroundColor(color.opacity(opacity))
-            }
+        let (color, variableValue, opacity) = iconColor
+        if #available(iOS 16.0, *) {
+            Image(systemName: "dot.radiowaves.up.forward", variableValue: variableValue)
+                .foregroundColor(color)
         } else {
             Image(systemName: "dot.radiowaves.up.forward")
-                .foregroundColor(Color(uiColor: .tertiaryLabel))
+                .foregroundColor(color.opacity(opacity))
         }
     }
 
-    var onlineIconColor: (Color, Double, Double) {
-        if subs.ssActive > 0 {
-            let variableValue = roundToQuarter()
-            return (.accentColor, variableValue, activeSubsPercentage)
-        } else {
-            return (Color(uiColor: .tertiaryLabel), 1, 1)
-        }
+    private var iconColor: (Color, Double, Double) {
+        m.networkInfo.online && (subs.total > 0 || sess.total > 0)
+        ? ( // Status to be displayed based on subs
+            subs.total > 0
+            ? (
+                subs.ssActive == 0
+                ? (
+                    sess.ssConnected == 0 ? noConnColor : (.accentColor, activeSubsRounded, subs.shareOfActive)
+                )
+                : ( // ssActive > 0
+                    sess.ssConnected == 0
+                    ? (.orange, activeSubsRounded, subs.shareOfActive) // This would mean implementation error
+                    : (.accentColor, activeSubsRounded, subs.shareOfActive)
+                  )
+            )
+            // subs.total == 0 and sess.total > 0; Status to be displayed based on sessions
+            : (.accentColor, connectedSessRounded, sess.shareOfConnected)
+        )
+        : noConnColor
     }
 
-    func roundToQuarter() -> Double {
-        activeSubsPercentage >= 1 ? 1
-        : activeSubsPercentage <= 0 ? 0
-        : (activeSubsPercentage * 4).rounded() / 4
-    }
+    private var noConnColor: (Color, Double, Double) { (Color(uiColor: .tertiaryLabel), 1, 1) }
 
-    var activeSubsPercentage: Double {
-        let total = subs.ssActive + subs.ssPending
-        guard total != 0 else { return 0.0 }
-        return Double(subs.ssActive) / Double(total)
+    private var activeSubsRounded: Double { roundedToQuarter(subs.shareOfActive) }
+
+    private var connectedSessRounded: Double { roundedToQuarter(sess.shareOfConnected) }
+
+    private func roundedToQuarter(_ n: Double) -> Double {
+        n >= 1 ? 1
+        : n <= 0 ? 0
+        : (n * 4).rounded() / 4
     }
 }
 
@@ -380,8 +390,17 @@ struct SMPServerSummaryView: View {
                 }
             }
 
-            if showReconnectButton {
-                reconnectButtonSection()
+            if summary.connected && showReconnectButton {
+                Section {
+                    connectionStatusRow()
+                    reconnectButtonSection()
+                } footer: {
+                    if summary.subs != nil {
+                        Text("Connection status is displayed based on Message subscriptions.")
+                    } else if summary.sessions != nil {
+                        Text("Connection status is displayed based on Transport sessions.")
+                    }
+                }
             }
 
             if let subs = summary.subs {
@@ -399,35 +418,44 @@ struct SMPServerSummaryView: View {
         .alert(item: $alert) { $0.alert }
     }
 
+    private func connectionStatusRow() -> some View {
+        HStack {
+            Text("Connection status")
+            Spacer()
+            SubscriptionStatusView(
+                subs: summary.subsOrNew,
+                sess: summary.sessionsOrNew
+            )
+        }
+    }
+
     private func reconnectButtonSection() -> some View {
-        Section {
-            Button {
-                alert = SomeAlert(
-                    alert: Alert(
-                        title: Text("Reconnect server?"),
-                        message: Text("Reconnect server to force message delivery. It uses additional traffic."),
-                        primaryButton: .default(Text("Ok")) {
-                            Task {
-                                do {
-                                    try await reconnectServer(smpServer: summary.smpServer)
-                                } catch let error {
-                                    alert = SomeAlert(
-                                        alert: mkAlert(
-                                            title: "Error reconnecting server",
-                                            message: "\(responseError(error))"
-                                        ),
-                                        id: "error reconnecting server"
-                                    )
-                                }
+        Button {
+            alert = SomeAlert(
+                alert: Alert(
+                    title: Text("Reconnect server?"),
+                    message: Text("Reconnect server to force message delivery. It uses additional traffic."),
+                    primaryButton: .default(Text("Ok")) {
+                        Task {
+                            do {
+                                try await reconnectServer(smpServer: summary.smpServer)
+                            } catch let error {
+                                alert = SomeAlert(
+                                    alert: mkAlert(
+                                        title: "Error reconnecting server",
+                                        message: "\(responseError(error))"
+                                    ),
+                                    id: "error reconnecting server"
+                                )
                             }
-                        },
-                        secondaryButton: .cancel()
-                    ),
-                    id: "reconnect server question"
-                )
-            } label: {
-                Text("Reconnect")
-            }
+                        }
+                    },
+                    secondaryButton: .cancel()
+                ),
+                id: "reconnect server question"
+            )
+        } label: {
+            Text("Reconnect")
         }
     }
 }
@@ -437,15 +465,12 @@ struct SMPSubsView: View {
     var showPending: Bool
 
     var body: some View {
-        Section {
+        Section("Message subscriptions") {
             infoRow("Active", "\(subs.ssActive)")
-            infoRow("Pending", "\(subs.ssPending)")
-            infoRow("Total", "\(subs.ssActive + subs.ssPending)")
-        } header: {
-            HStack {
-                Text("Message subscriptions")
-                SubscriptionStatusView(subs: subs)
+            if showPending {
+                infoRow("Pending", "\(subs.ssPending)")
             }
+            infoRow("Total", "\(subs.total)")
         }
     }
 }
@@ -458,6 +483,7 @@ struct ServerSessionsView: View {
             infoRow("Connected", "\(sess.ssConnected)")
             infoRow("Errors", "\(sess.ssErrors)")
             infoRow("Connecting", "\(sess.ssConnecting)")
+            infoRow("Total", "\(sess.total)")
         }
     }
 }
