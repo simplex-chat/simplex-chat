@@ -33,10 +33,11 @@
     {% include "navbar.html" %}
 
     <section id="article" class="container mt-[25px] mb-[75px] bg-white dark:bg-[#17203D] px-5">
-      <div class="py-6 md:p-[60px]">{{ content | safe }}</div>
+      <div class="py-6 md:p-[60px]">{{ content | applyGlossary | safe }}</div>
     </section>
 
     {% include "footer.html" %}
+    <script src="/js/script.js"></script>
   </body>
 
 </html>
