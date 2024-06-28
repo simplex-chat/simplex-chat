@@ -328,7 +328,8 @@ struct ConnectionStatusIndicatorView: View {
     var sess: ServerSessions
 
     var body: some View {
-        let (color, variableValue, opacity, _) = connectionStatusColorAndPercent(m.networkInfo.online, subs, sess)
+        let onionHosts = networkUseOnionHostsGroupDefault.get()
+        let (color, variableValue, opacity, _) = connectionStatusColorAndPercent(m.networkInfo.online, onionHosts, subs, sess)
         if #available(iOS 16.0, *) {
             Image(systemName: "dot.radiowaves.up.forward", variableValue: variableValue)
                 .foregroundColor(color)
@@ -345,20 +346,22 @@ struct ConnectionStatusPercentView: View {
     var sess: ServerSessions
 
     var body: some View {
-        let (_, _, _, statusPercent) = connectionStatusColorAndPercent(m.networkInfo.online, subs, sess)
+        let onionHosts = networkUseOnionHostsGroupDefault.get()
+        let (_, _, _, statusPercent) = connectionStatusColorAndPercent(m.networkInfo.online, onionHosts, subs, sess)
         Text("\(Int(floor(statusPercent * 100)))%")
             .foregroundColor(.secondary)
             .font(.caption)
     }
 }
 
-func connectionStatusColorAndPercent(_ online: Bool, _ subs: SMPServerSubs, _ sess: ServerSessions) -> (Color, Double, Double, Double) {
+func connectionStatusColorAndPercent(_ online: Bool, _ onionHosts: OnionHosts, _ subs: SMPServerSubs, _ sess: ServerSessions) -> (Color, Double, Double, Double) {
     func roundedToQuarter(_ n: Double) -> Double {
         n >= 1 ? 1
         : n <= 0 ? 0
         : (n * 4).rounded() / 4
     }
 
+    let activeColor: Color = onionHosts == .require ? .indigo : .accentColor
     let noConnColorAndPercent: (Color, Double, Double, Double) = (Color(uiColor: .tertiaryLabel), 1, 1, 0)
     let activeSubsRounded = roundedToQuarter(subs.shareOfActive)
     let connectedSessRounded = roundedToQuarter(sess.shareOfConnected)
@@ -369,16 +372,16 @@ func connectionStatusColorAndPercent(_ online: Bool, _ subs: SMPServerSubs, _ se
         ? (
             subs.ssActive == 0
             ? (
-                sess.ssConnected == 0 ? noConnColorAndPercent : (.accentColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
+                sess.ssConnected == 0 ? noConnColorAndPercent : (activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
             )
             : ( // ssActive > 0
                 sess.ssConnected == 0
                 ? (.orange, activeSubsRounded, subs.shareOfActive, subs.shareOfActive) // This would mean implementation error
-                : (.accentColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
+                : (activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
               )
         )
         // subs.total == 0 and sess.total > 0; Status to be displayed based on sessions
-        : (.accentColor, connectedSessRounded, sess.shareOfConnected, sess.shareOfConnected)
+        : (activeColor, connectedSessRounded, sess.shareOfConnected, sess.shareOfConnected)
     )
     : noConnColorAndPercent
 }
