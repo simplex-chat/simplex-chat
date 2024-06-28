@@ -4,7 +4,7 @@ title: App settings
 
 # App settings
 
-All of the app settings can be found here. Click or tap on the following sections to learn more:
+All of the app settings can be found here. Tap or click on the following sections to learn more:
 
 - [Opening the app settings menu](#opening-the-app-settings-menu)
 - [You](#you)

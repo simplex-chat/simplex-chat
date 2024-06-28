@@ -4,7 +4,7 @@ title: Managing data
 
 # Managing Your Data
 
-SimpleX Chat stores all your data locally on your device; it is not stored on SimpleX servers or anywhere else. Only you have complete control of it. Click or tap on the following sections to learn more:
+SimpleX Chat stores all your data locally on your device; it is not stored on SimpleX servers or anywhere else. Only you have complete control of it. Tap or click on the following sections to learn more:
 
 - [Automatic message deletion](#automatic-message-deletion)
 
@@ -20,7 +20,7 @@ Here you can choose to delete messages from your local chat database after a set
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
 
-2. Click or tap **Database passphrase & export**.
+2. Tap or click **Database passphrase & export**.
 
 3. From the **Delete messages after** dropdown, choose one of the following options:
    
@@ -32,7 +32,7 @@ Here you can choose to delete messages from your local chat database after a set
    
    - `1 day`
 
-4. Click or tap **Delete messages**.
+4. Tap or click **Delete messages**.
 
 **Please note**: This feature does not delete messages for other users, only for you. It is set independently for each chat profile.
 
@@ -49,20 +49,20 @@ On mobile, SimpleX Chat encrypts the database with a random passphrase by defaul
 #### To set a new database passphrase:
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-2. Click or tap **Database passphrase & export**.
+2. Tap or click **Database passphrase & export**.
 3. Toggle **Chat is running** off to stop SimpleX Chat from running.
-4. Click or tap **Database passphrase**.
+4. Tap or click **Database passphrase**.
 5. Enter your current passphrase, if you already have one set up.
 6. Choose your new passphrase.
 7. Confirm your new passphrase.
-8. Click or tap **Update database passphrase**.
+8. Tap or click **Update database passphrase**.
 
 #### To remove your database passphrase from app settings:
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-2. Click or tap **Database passphrase & export**.
+2. Tap or click **Database passphrase & export**.
 3. Toggle **Chat is running** off to stop SimpleX Chat from running.
-4. Click or tap **Database passphrase**.
+4. Tap or click **Database passphrase**.
 5. Toggle **Save passphrase in settings** off.
 
 **Please note**: removing your passphrase from the app's settings will prompt you to manually enter it every time you start the app and this may impact receiving notifications.
@@ -74,10 +74,10 @@ Here you can use this option to open up the current location of your SimpleX Cha
 #### To open database folder on your desktop:
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-2. Click or tap **Database passphrase & export**.
+2. Tap or click **Database passphrase & export**.
 3. Toggle **Chat is running** off to stop SimpleX Chat from running.
-4. Click or tap **Stop**.
-5. Click or tap **Open database folder**. 
+4. Tap or click **Stop**.
+5. Tap or click **Open database folder**. 
 
 ### Export database
 
@@ -86,12 +86,12 @@ Here you can export your chat database to a zipped archive from your old device.
 #### To export your chat database:
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-2. Click or tap **Database passphrase & export**.
+2. Tap or click **Database passphrase & export**.
 3. Toggle **Chat is running** off to stop SimpleX Chat from running.
-4. Click or tap **Stop**.
+4. Tap or click **Stop**.
 5. Confirm it with a fingerprint or PIN, in case you have [SimpleX Lock](./privacy-security.md#simplex-lock) toggled on.
 6. If you didn't set it before, [set a new database passphrase](./managing-data.md#database-passphrase).
-7. Click or tap **Export database**.
+7. Tap or click **Export database**.
 8. Save the file on your device or share it via any available option.
 
 ### Import database
@@ -101,12 +101,12 @@ Here you can import your chat database into a new device from a zipped archive.
 #### To import your chat database:
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-2. Click or tap **Database passphrase & export**.
+2. Tap or click **Database passphrase & export**.
 3. Toggle **Chat is running** off to stop SimpleX Chat from running.
-4. Click or tap **Stop**.
-5. Click or tap **Import database**.
+4. Tap or click **Stop**.
+5. Tap or click **Import database**.
 6. Select the .zip file containing your exported SimpleX Chat data.
-7. Click or tap **Import**.
+7. Tap or click **Import**.
 8. Toggle **Chat is running** on to start the chat or close and restart the app – you will be prompted to enter the passphrase for your chat database.
 
 ### Old database archive (Mobile only)
@@ -116,21 +116,21 @@ Here you can save or delete your database archive.
 #### To save your old database archive:
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-2. Click or tap **Database passphrase & export**.
+2. Tap or click **Database passphrase & export**.
 3. Toggle **Chat is running** off to stop SimpleX Chat from running.
-4. Click or tap **Stop**.
-5. Click or tap **Old database archive**. 
-6. Click or tap **Save archive**. 
+4. Tap or click **Stop**.
+5. Tap or click **Old database archive**. 
+6. Tap or click **Save archive**. 
 
 #### To delete your old database archive:
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-2. Click or tap **Database passphrase & export**.
+2. Tap or click **Database passphrase & export**.
 3. Toggle **Chat is running** off to stop SimpleX Chat from running.
-4. Click or tap **Stop**.
-5. Click or tap **Old database archive**.
-6. Click or tap **Delete archive**.
-7. Click or tap **Delete**.
+4. Tap or click **Stop**.
+5. Tap or click **Old database archive**.
+6. Tap or click **Delete archive**.
+7. Tap or click **Delete**.
 
 ### Delete database
 
@@ -139,11 +139,11 @@ Here you can delete your chat database.
 #### To delete your chat database:
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-2. Click or tap **Database passphrase & export**.
+2. Tap or click **Database passphrase & export**.
 3. Toggle **Chat is running** off to stop SimpleX Chat from running.
-4. Click or tap **Stop**.
-5. Click or tap **Delete database**.
-6. Click or tap **Delete**. 
+4. Tap or click **Stop**.
+5. Tap or click **Delete database**.
+6. Tap or click **Delete**. 
 
 **WARNING**: This action results in a loss of all your SimpleX Chat data! Unless you have just exported the chat database.
 
@@ -156,8 +156,8 @@ You can delete all sent and received files and media stored in the app via this 
 #### To delete files and media:
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-2. Click or tap **Database passphrase & export**.
+2. Tap or click **Database passphrase & export**.
 3. Toggle **Chat is running** off to stop SimpleX Chat from running.
-4. Click or tap **Stop**.
-5. Click or tap **Delete files for all chat profiles**.
-6. Click or tap **Delete files & media**. 
+4. Tap or click **Stop**.
+5. Tap or click **Delete files for all chat profiles**.
+6. Tap or click **Delete files & media**. 

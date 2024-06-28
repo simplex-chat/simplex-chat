@@ -4,7 +4,7 @@ title: Secret groups
 
 # Secret groups
 
-Secret groups are anonymous, decentralized and private. SimpleX servers have zero knowledge of them. Click or tap on the following sections to learn more:
+Secret groups are anonymous, decentralized, and private. SimpleX servers have zero knowledge of them. Tap or click on the following sections to learn more:
 
 - [Member roles and permissions](#member-roles-and-permissions)
 - [Creating a group](#creating-a-group)
@@ -18,18 +18,18 @@ Secret groups are anonymous, decentralized and private. SimpleX servers have zer
 
 `member` - Same as observer, but can send and delete their own messages.
 
-`admin` - Same as member, but can delete other members' messages, remove members from the group, create group link, change the roles of other members, block members for all and invite new members to join the group.
+`admin` - Same as member, but can delete other members' messages, remove members from the group, create group link, change the roles of other members, block members for all, and invite new members to join the group.
 
-`owner` - Same as admin, but can set group preferences, add a welcome message and edit group profile.
+`owner` - Same as admin, but can set group preferences, add a welcome message, and edit group profile.
 
 ## Creating a group
 
 #### To create a group:
 
 1. On Android and desktop, click or tap on the floating pencil button in the bottom-right corner of the screen. On iOS, tap on the pencil button in the top-right corner of the screen.
-2. Click or tap **Create group**.
+2. Tap or click **Create group**.
 3. Enter desired group name.
-4. Click or tap **Create**.
+4. Tap or click **Create**.
 
 ## Managing a group
 
@@ -39,13 +39,13 @@ As a group owner, you can edit your group profile.
 
 #### To edit your group profile:
 
-1. Click or tap on a group chat.
-2. Click or tap on your group's name at the top of the screen.
-3. Click or tap **Edit group profile**.
+1. Tap or click on a group chat.
+2. Tap or click on your group's name at the top of the screen.
+3. Tap or click **Edit group profile**.
 4. Options:
    - Choose a new display name.
    - Choose a new profile picture.
-5. Click or tap **Save group profile**.
+5. Tap or click **Save group profile**.
 
 ### Adding a welcome message
 
@@ -53,11 +53,11 @@ As a group owner, you can add a welcome message that will be shown to new member
 
 #### To add a welcome message:
 
-1. Click or tap on a group chat.
-2. Click or tap on your group's name at the top of the screen.
-3. Click or tap **Add welcome message**.
+1. Tap or click on a group chat.
+2. Tap or click on your group's name at the top of the screen.
+3. Tap or click **Add welcome message**.
 4. Compose your welcome message.
-5. Click or tap **Save and update group profile**.
+5. Tap or click **Save and update group profile**.
 
 ### Setting group preferences
 
@@ -113,15 +113,15 @@ As a group owner, you control the nature of your group chats. You decide what fe
 
 #### To set group preferences:
 
-1. Click or tap on a group chat.
+1. Tap or click on a group chat.
 
-2. Click or tap on your group's name at the top of the screen.
+2. Tap or click on your group's name at the top of the screen.
 
-3. Click or tap **Group preferences**.
+3. Tap or click **Group preferences**.
 
 4. Set your preferences. 
 
-5. Click or tap **Save and notify group members**.
+5. Tap or click **Save and notify group members**.
 
 ### Creating a group link
 
@@ -131,9 +131,9 @@ As a group owner or admin, you can make your group public by creating and sharin
 
 #### To create a group link:
 
-1. Click or tap on a group chat.
-2. Click or tap on your group's name at the top of the screen.
-3. Click or tap **Create group link**.
+1. Tap or click on a group chat.
+2. Tap or click on your group's name at the top of the screen.
+3. Tap or click **Create group link**.
 4. (Optional) Set **Initial role** to **observer**.
 
 **Please note**: deleting your group link won't remove members from your group.
@@ -144,15 +144,15 @@ As a group owner or admin, you can invite members to your group.
 
 #### To invite members to your group:
 
-1. Click or tap on a group chat.
-2. Click or tap on the invite button at the top of the screen to the right of your group's name.
+1. Tap or click on a group chat.
+2. Tap or click on the invite button at the top of the screen to the right of your group's name.
 3. Select contacts you wish to invite.
 4. From the **New member role** dropdown, set the new member's role to one of the following options:
    - `observer`
    - `member`
    - `admin`
    - `owner`
-5. Click or tap **Invite to group**.
+5. Tap or click **Invite to group**.
 
 ### Removing members
 
@@ -160,10 +160,10 @@ As a group owner or admin, you can remove members from your group.
 
 #### To remove a member from your group:
 
-1. Click or tap on a group chat.
-2. Click or tap on your group's name at the top of the screen.
-3. Click or tap on a member.
-4. Click or tap **Remove member**.
+1. Tap or click on a group chat.
+2. Tap or click on your group's name at the top of the screen.
+3. Tap or click on a member.
+4. Tap or click **Remove member**.
 
 ### Setting an initial role for new members joining via link
 
@@ -171,8 +171,8 @@ As a group owner or admin, you can set an initial role for new members when they
 
 #### To set an initial role for new members joining via link:
 
-1. Click or tap on a group chat.
-2. Click or tap on your group's name at the top of the screen.
+1. Tap or click on a group chat.
+2. Tap or click on your group's name at the top of the screen.
 3. Create a group link, if you haven't already.
 4. From the **Initial role** dropdown, choose from the following two options:
    - `member`
@@ -186,9 +186,9 @@ As a group owner or admin, you can change a member's role.
 
 #### To change a member's role:
 
-1. Click or tap on a group chat.
-2. Click or tap on your group's name at the top of the screen to view the list of members.
-3. Click or tap on a member to view their info.
+1. Tap or click on a group chat.
+2. Tap or click on your group's name at the top of the screen to view the list of members.
+3. Tap or click on a member to view their info.
 4. From the **Change role** dropdown, change the member's role to one of the following options:
    - `observer`
    - `member`
@@ -202,8 +202,8 @@ As a group owner or admin, you can moderate group messages. Depending on how the
 #### To moderate a group message:
 
 1. Tap and hold (mobile) or right-click (desktop) on a group message.
-2. Click or tap **Moderate**.
-3. Click or tap **Delete**.
+2. Tap or click **Moderate**.
+3. Tap or click **Delete**.
 
 ### Blocking members
 
@@ -211,10 +211,10 @@ Any member can choose to block another member. Depending on how the **Delete For
 
 #### To block a member:
 
-1. Click or tap on a group chat.
-2. Click or tap on your group's name at the top of the screen.
+1. Tap or click on a group chat.
+2. Tap or click on your group's name at the top of the screen.
 3. Tap and hold (Android) or swipe (iOS) or right-click (desktop) on a member.
-4. Click or tap **Block member**.
+4. Tap or click **Block member**.
 
 **Please note**: Blocking a member only applies to you. Other members can still see their messages. If you are a group owner or admin, you can block a member for all.
 
@@ -241,10 +241,10 @@ Any member can choose to leave a group.
 #### To leave a group:
 
 1. Tap and hold (Android) or swipe left (iOS) or right-click (desktop) on a group.
-2. Click or tap **Leave**.
+2. Tap or click **Leave**.
 
 Alternatively, you can also leave the group from the group info screen:
 
-1. Click or tap on a group chat.
-2. Click or tap on your group's name at the top of the screen.
+1. Tap or click on a group chat.
+2. Tap or click on your group's name at the top of the screen.
 3. Scroll to the bottom, and then click or tap **Leave group**.

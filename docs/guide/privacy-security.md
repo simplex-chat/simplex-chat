@@ -4,7 +4,7 @@ title: Privacy & security
 
 # Privacy and security
 
-SimpleX Chat's default configuration aims to balance privacy, security and convenience. You may want to change the default options to suit your needs. This page lists all the features and options that affect privacy and security. Click or tap on the following sections to learn more:
+SimpleX Chat's default configuration aims to balance privacy, security and convenience. You may want to change the default options to suit your needs. This page lists all the features and options that affect privacy and security. Tap or click on the following sections to learn more:
 
 - [Privacy and security settings](#privacy-and-security-settings)
 - [Security code verification](#security-code-verification)
@@ -25,9 +25,9 @@ This setting affects the ability to use SimpleX Lock - it's disabled by default.
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
 
-2. Click or tap on **Privacy & security**.
+2. Tap or click **Privacy & security**.
 
-3. Click or tap **SimpleX Lock**
+3. Tap or click **SimpleX Lock**
 
 4. From the **Lock mode** dropdown, choose one of the following options:
    
@@ -48,8 +48,8 @@ This setting affects the ability to use SimpleX Lock - it's disabled by default.
 #### To disable it:
 
 1. [Open the app settings menu](#opening-the-app-settings-menu).
-2. Click or tap on **Privacy & security**.
-3. Click or tap **SimpleX Lock**
+2. Tap or click **Privacy & security**.
+3. Tap or click **SimpleX Lock**
 4. Toggle **Enable lock** off.
 5. Confirm your device credentials or SimpleX Lock passcode.
 
@@ -60,7 +60,7 @@ This feature comes in handy when you're in distress and don't want to leave any 
 #### To set a self-destruct passcode:
 
 1. [Open the app settings menu](#opening-the-app-settings-menu).
-2. Click or tap on **Privacy & security**.
+2. Tap or click **Privacy & security**.
 3. If using a mobile device, change lock mode from **System** to **Passcode**.
 4. Toggle **SimpleX Lock** on, if disabled.
 5. Create your SimpleX Lock passcode.
@@ -129,15 +129,15 @@ Although SimpleX Chat always establishes connections via a link passed via an in
 
 #### To verify security code:
 
-1. Click or tap on your contact. 
-2. Click or tap on your contact's name at the top of the screen.
-3. Click or tap **Verify security code**. 
+1. Tap or click on your contact. 
+2. Tap or click on your contact's name at the top of the screen.
+3. Tap or click **Verify security code**. 
 4. Ask your contact to perform the first three steps. 
 
 You and your contact should now see the security code on your screens. This can be verified by one of the following methods:
 
 - `Scan code` - Scan each other's security code in person. If the codes match, then your contact will be marked verified on your device.
-- `Mark verified` - Click or tap this button if you trust the confirmation from your contact that the code is verified.
+- `Mark verified` - Tap or click on this button if you trust the confirmation from your contact that the code is verified.
 
 For more details on security code verification, please read [this blog post](../../blog/20230103-simplex-chat-v4.4-disappearing-messages.md#connection-security-verification).
 
@@ -170,5 +170,3 @@ To connect to SMP relays (messaging servers) and XFTP relays (file servers) via 
 **iOS**: use Orbot app as VPN provider and enable VPN.
 
 You can also change which server addresses are used with the [Use .onion hosts option](./network-and-servers.md#use-onion-hosts).
-
-# 

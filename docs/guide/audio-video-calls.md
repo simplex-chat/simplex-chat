@@ -4,7 +4,7 @@ title: Audio & video calls
 
 # Audio & video calls
 
-SimpleX Chat allows you to make end-to-end encrypted audio and video calls with your contacts via WebRTC. Please note that group calls are not supported at this time. Click or tap on the following sections to learn more:
+SimpleX Chat allows you to make end-to-end encrypted audio and video calls with your contacts via WebRTC. Please note that group calls are not supported at this time. Tap or click on the following sections to learn more:
 
 - [Making and accepting calls](#making-and-accepting-calls)
 - [Call settings](#call-settings)
@@ -13,14 +13,14 @@ SimpleX Chat allows you to make end-to-end encrypted audio and video calls with 
 
 ### To make an audio call:
 
-1. Click or tap on a contact.
-2. Click or tap on the phone icon to the right of your contact's name at the top of the screen.
+1. Tap or click on a contact.
+2. Tap or click on the phone icon to the right of your contact's name at the top of the screen.
 
 ### To make a video call:
 
-1. Click or tap on a contact.
-2. Click or tap on the three vertical dots in the top-right corner of the screen to access more options.
-3. Click or tap **Video call**.
+1. Tap or click on a contact.
+2. Tap or click on the three vertical dots in the top-right corner of the screen to access more options.
+3. Tap or click **Video call**.
 
 ### To accept a call:
 
@@ -43,11 +43,11 @@ SimpleX Chat uses a preset relay server to hide your IP address from your contac
 #### To configure ICE servers:
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-2. Click or tap **Audio and Video calls**.
-3. Click or tap **WebRTC ICE servers**.
+2. Tap or click **Audio and Video calls**.
+3. Tap or click **WebRTC ICE servers**.
 4. Toggle **Configure ICE servers** on.
 5. Enter your ICE server addresses (one per line).
-6. Click or tap **Save**.
+6. Tap or click **Save**.
 
 **Please note**: Unlike messaging relays (SMP servers), the configuration of WebRTC ICE servers is stored on the current device, not in the chat database. If you migrate the chat database to another device, you will need to update this configuration.
 
@@ -87,7 +87,7 @@ For more details, please read [this blog post](../../blog/20230328-simplex-chat-
 Audio and video calls on SimpleX Chat are routed via a TURN relay server by default. Optionally you can disable this and use peer-to-peer (P2P) instead, when it is supported by your network. However, your IP address will be known to your contacts.
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-2. Click or tap **Audio and Video calls**.
+2. Tap or click **Audio and Video calls**.
 3. Toggle **Always use relay** on to use a relay server or off for P2P.
 
 **Please note**: Disabling this option allows P2P calls, but it does not prohibit the use of TURN relays – in case your network providers block P2P connections, the call will still use relays if the are available. To prohibit the use of relays you need to change WebRTC ICE server configuration to only include STUN servers.

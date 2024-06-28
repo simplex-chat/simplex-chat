@@ -4,7 +4,7 @@ title: Network & servers
 
 # Network & servers
 
-You can adjust your network and server settings in SimpleX Chat. Click or tap on the following sections to learn more:
+You can adjust your network and server settings in SimpleX Chat. Tap or click on the following sections to learn more:
 
 - [Messages and Files](#messages-and-files)
 
@@ -72,7 +72,7 @@ SimpleX Chat offers IP address protection for users who need it. It's enabled wh
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
 
-2. Tap **Network and servers**.
+2. Tap or click **Network and servers**.
 
 3. From the **Private routing** dropdown, choose one of the following options:
    

@@ -4,7 +4,7 @@ title: Chat preferences
 
 # Your chat preferences
 
-You control the nature of your conversations with your contacts. You decide what features to enable and what features to disable. Click or tap on the following sections to learn more:
+You control the nature of your conversations with your contacts. You decide what features to enable and what features to disable. Tap or click on the following sections to learn more:
 
 - [Chat preferences](#chat-preferences)
 - [Setting chat preferences for all contacts](#setting-chat-preferences-for-all-contacts)
@@ -60,11 +60,11 @@ You can set chat preferences for all your contacts.
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
 
-2. Click or tap **Chat preferences**.
+2. Tap or click **Chat preferences**.
 
 3. Set your preferences. 
 
-4. Click or tap **Save and notify contacts**.
+4. Tap or click **Save and notify contacts**.
 
 **Please note**: these preferences are automatically applied to new contacts.
 
@@ -74,12 +74,12 @@ You can individually set chat preferences for a specific contact.
 
 #### To set chat preferences for a specific contact:
 
-1. Click or tap on your contact.
+1. Tap or click on your contact.
 
-2. Click or tap on your contact's name at the top of the screen.
+2. Tap or click on your contact's name at the top of the screen.
 
-3. Click or tap **Contact preferences**.
+3. Tap or click **Contact preferences**.
 
 4. Set your preferences.
 
-5. Click or tap **Save and notify contact**.
+5. Tap or click **Save and notify contact**.

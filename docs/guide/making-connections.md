@@ -4,7 +4,7 @@ title: Making connections
 
 # Making connections
 
-Because you have no user ID on the SimpleX platform, nobody can contact you unless you share a one-time invitation or a SimpleX address. Click or tap on the following sections to learn more:
+Because you have no user ID on the SimpleX platform, nobody can contact you unless you share a one-time invitation or a SimpleX address. Tap or click on the following sections to learn more:
 
 - [One-time invitation](#one-time-invitation)
 - [SimpleX address](#simplex-address)
@@ -18,8 +18,8 @@ As the name implies, it can only be used once to connect with someone. You can c
 #### To create and share a one-time invitation with your contact:
 
 1. On Android, tap on the 🖉 (floating pencil) button in the bottom-right corner of the **Chats** screen. On iOS, tap on the 🖉 (pencil) button in the top-right corner of the **Chats** screen.
-2. Click or tap **Add contact**.
-3. Click or tap **Share this 1-time link** to share it with your contact from a distance. Or, you can show your QR code in person for your friend to scan.
+2. Tap or click **Add contact**.
+3. Tap or click **Share this 1-time link** to share it with your contact from a distance. Or, you can show your QR code in person for your friend to scan.
 4. (Optional) Toggle **Incognito** on to share an incognito profile with your contact.
 5. (Optional) Return to the **Chats** screen and then click or tap on the invitation to set a contact name to help remember who it's for.
 
@@ -31,11 +31,11 @@ You can create a SimpleX address for other people to connect with you. When peop
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
 
-2. Click or tap **Your SimpleX address**.
+2. Tap or click **Your SimpleX address**.
 
-3. Click or tap **Create SimpleX address**. 
+3. Tap or click **Create SimpleX address**. 
 
-4. (Optional) Click or tap **Share** to share your SimpleX address with your contacts.
+4. (Optional) Tap or click **Share** to share your SimpleX address with your contacts.
 
 5. (Optional) Publish your SimpleX address on your personal website, email signature or anywhere else for people to see. 
 
@@ -53,17 +53,17 @@ You can securely connect with other users via link or QR code.
 
 #### If you don't have SimpleX Chat installed on your device:
 
-1. Click or tap on the SimpleX link you received from your contact. You'll be redirected to a webpage detailing instructions on how to connect. 
+1. Tap or click on the SimpleX link you received from your contact. You'll be redirected to a webpage detailing instructions on how to connect. 
 
 2. After you've download and installed SimpleX Chat on your device, tap **Open in mobile app** on the webpage to connect with your contact.
 
 #### If you have SimpleX Chat installed on your device:
 
-- Click or tap on the QR code symbol in the right-hand side of the search bar on the **Chats** screen. Scan QR code or paste link you received from your contact to connect with them.
+- Tap or click on the QR code symbol in the right-hand side of the search bar on the **Chats** screen. Scan QR code or paste link you received from your contact to connect with them.
 
 - Copy the SimpleX Link received from your contact. Paste it into the searchbar towards the top of the **Chats** screen. You'll be prompted to share your current chat profile or an incognito profile to connect with them. 
 
-- Click or tap on the SimpleX link you received from them and you'll be prompted to share your current chat profile or an incognito profile with them. 
+- Tap or click on the SimpleX link you received from them and you'll be prompted to share your current chat profile or an incognito profile with them. 
 
 ## One-time invitation vs. SimpleX address
 
