@@ -3,7 +3,7 @@
   <id>chat.simplex.simplex</id>
   
   <name>SimpleX Chat</name>
-  <summary>A private and encrypted messenger without any user IDs (not even random ones)!</summary>
+  <summary>SimpleX - the first messaging platform that has no user identifiers, not even random numbers!</summary>
 
   <developer id="chat.simplex">
     <name>SimpleX Chat</name>
@@ -13,7 +13,8 @@
   <project_license>AGPL-3.0-or-later</project_license>
   
   <description>
-    <p>SimpleX Chat - a private and encrypted messenger without any user IDs (not even random ones)! Security assessment was done by Trail of Bits in November 2022.</p>      
+    <p>SimpleX - the first messaging platform that has no user identifiers, not even random numbers!</p>
+    <p>Security assessment was done by Trail of Bits in November 2022.</p>
     <p>SimpleX Chat features:</p>
     <ol>
       <li>end-to-end encrypted messages, with editing, replies and deletion of messages.</li>
@@ -31,6 +32,9 @@
       <li><em>Full ownership, control and security of your data:</em> SimpleX stores all user data on client devices, the messages are only held temporarily on SimpleX relay servers until they are received.</li>
       <li><em>Decentralized network:</em> you can use SimpleX with your own servers and still communicate with people using the servers that are pre-configured in the apps or any other SimpleX servers.</li>
     </ol>
+    <p>You can connect to anybody you know via link or scan QR code (in the video call or in person) and start sending messages instantly - no emails, phone numbers or passwords needed.</p>
+    <p>Your profile and contacts are only stored in the app on your device - our servers do not have access to this information.</p>
+    <p>All messages are end-to-end encrypted using open-source double-ratchet protocol; the messages are routed via our servers using open-source SimpleX Messaging Protocol.</p>
   </description>
 
   <releases>
