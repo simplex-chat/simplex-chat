@@ -187,7 +187,11 @@ struct ServersSummaryView: View {
         _ header: LocalizedStringKey? = nil,
         _ footer: LocalizedStringKey? = nil
     ) -> some View {
-        let sortedServers = servers.sorted { serverAddress($0.smpServer).compare(serverAddress($1.smpServer)) == .orderedAscending }
+        let sortedServers = servers.sorted {
+            $0.connected == $1.connected
+            ? serverAddress($0.smpServer) < serverAddress($1.smpServer)
+            : $0.connected && !$1.connected
+        }
         Section {
             ForEach(sortedServers) { server in
                 smpServerView(server, showReconnectButton, statsStartedAt)
@@ -235,7 +239,7 @@ struct ServersSummaryView: View {
         _ header: LocalizedStringKey? = nil,
         _ footer: LocalizedStringKey? = nil
     ) -> some View {
-        let sortedServers = servers.sorted { serverAddress($0.xftpServer).compare(serverAddress($1.xftpServer)) == .orderedAscending }
+        let sortedServers = servers.sorted { serverAddress($0.xftpServer) < serverAddress($1.xftpServer) }
         Section {
             ForEach(sortedServers) { server in
                 xftpServerView(server, statsStartedAt)

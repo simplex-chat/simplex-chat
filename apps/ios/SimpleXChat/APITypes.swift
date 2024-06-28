@@ -2279,6 +2279,8 @@ public struct SMPServerSummary: Codable, Identifiable {
     public var stats: AgentSMPServerStatsData?
 
     public var id: String { smpServer }
+
+    public var connected: Bool { sessions != nil || subs != nil }
 }
 
 public struct ServerSessions: Codable {
