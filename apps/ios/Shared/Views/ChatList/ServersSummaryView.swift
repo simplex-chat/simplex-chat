@@ -487,37 +487,50 @@ struct ServerSessionsView: View {
 struct SMPStatsView: View {
     var stats: AgentSMPServerStatsData
     var statsStartedAt: Date
+    @State private var expanded = false
 
     var body: some View {
         Section("Statistics") {
             infoRow("Starting from", localTimestamp(statsStartedAt))
-            infoRow("Messages sent directly", "\(stats._sentDirect)")
-            indentedInfoRow("attempts", "\(stats._sentDirectAttempts)")
-            infoRow("Messages sent via proxy", "\(stats._sentViaProxy)")
-            indentedInfoRow("attempts", "\(stats._sentViaProxyAttempts)")
-            infoRow("Messages sent to proxy", "\(stats._sentProxied)")
-            indentedInfoRow("attempts", "\(stats._sentProxiedAttempts)")
-            infoRow("Sending AUTH errors", "\(stats._sentAuthErrs)")
-            indentedInfoRow("QUOTA errors", "\(stats._sentQuotaErrs)")
-            indentedInfoRow("expired", "\(stats._sentExpiredErrs)")
-            indentedInfoRow("other errors", "\(stats._sentOtherErrs)")
+            infoRow("Messages sent", "\(stats._sentDirect + stats._sentViaProxy)")
+            if expanded {
+                infoRow("Messages sent directly", "\(stats._sentDirect)")
+                indentedInfoRow("attempts", "\(stats._sentDirectAttempts)")
+                infoRow("Messages sent via proxy", "\(stats._sentViaProxy)")
+                indentedInfoRow("attempts", "\(stats._sentViaProxyAttempts)")
+                infoRow("Messages sent to proxy", "\(stats._sentProxied)")
+                indentedInfoRow("attempts", "\(stats._sentProxiedAttempts)")
+                infoRow("Sending AUTH errors", "\(stats._sentAuthErrs)")
+                indentedInfoRow("QUOTA errors", "\(stats._sentQuotaErrs)")
+                indentedInfoRow("expired", "\(stats._sentExpiredErrs)")
+                indentedInfoRow("other errors", "\(stats._sentOtherErrs)")
+            }
             infoRow("Messages received", "\(stats._recvMsgs)")
-            indentedInfoRow("duplicates", "\(stats._recvDuplicates)")
-            indentedInfoRow("decryption errors", "\(stats._recvCryptoErrs)")
-            indentedInfoRow("other errors", "\(stats._recvErrs)")
-            infoRow("Messages acknowledged", "\(stats._ackMsgs)")
-            indentedInfoRow("attempts", "\(stats._ackAttempts)")
-            indentedInfoRow("NO_MSG errors", "\(stats._ackNoMsgErrs)")
-            indentedInfoRow("other errors", "\(stats._ackOtherErrs)")
-            infoRow("Connections created", "\(stats._connCreated)")
-            indentedInfoRow("secured", "\(stats._connSecured)")
-            indentedInfoRow("completed", "\(stats._connCompleted)")
-            infoRow("Connections deleted", "\(stats._connDeleted)")
-            indentedInfoRow("attempts", "\(stats._connDelAttempts)")
-            indentedInfoRow("errors", "\(stats._connDelErrs)")
-            infoRow("Connections subscribed", "\(stats._connSubscribed)")
-            indentedInfoRow("attempts", "\(stats._connSubAttempts)")
-            indentedInfoRow("errors", "\(stats._connSubErrs)")
+            if expanded {
+                indentedInfoRow("duplicates", "\(stats._recvDuplicates)")
+                indentedInfoRow("decryption errors", "\(stats._recvCryptoErrs)")
+                indentedInfoRow("other errors", "\(stats._recvErrs)")
+                infoRow("Messages acknowledged", "\(stats._ackMsgs)")
+                indentedInfoRow("attempts", "\(stats._ackAttempts)")
+                indentedInfoRow("NO_MSG errors", "\(stats._ackNoMsgErrs)")
+                indentedInfoRow("other errors", "\(stats._ackOtherErrs)")
+                infoRow("Connections created", "\(stats._connCreated)")
+                indentedInfoRow("secured", "\(stats._connSecured)")
+                indentedInfoRow("completed", "\(stats._connCompleted)")
+                infoRow("Connections deleted", "\(stats._connDeleted)")
+                indentedInfoRow("attempts", "\(stats._connDelAttempts)")
+                indentedInfoRow("errors", "\(stats._connDelErrs)")
+                infoRow("Connections subscribed", "\(stats._connSubscribed)")
+                indentedInfoRow("attempts", "\(stats._connSubAttempts)")
+                indentedInfoRow("errors", "\(stats._connSubErrs)")
+            }
+            Button {
+                withAnimation {
+                    expanded.toggle()
+                }
+            } label: {
+                Text(expanded ? "Show less" : "Show more")
+            }
         }
     }
 }
@@ -584,6 +597,7 @@ struct XFTPServerSummaryView: View {
 struct XFTPStatsView: View {
     var stats: AgentXFTPServerStatsData
     var statsStartedAt: Date
+    @State private var expanded = false
 
     var body: some View {
         let kb: Int64 = 1024
@@ -593,16 +607,27 @@ struct XFTPStatsView: View {
             infoRow("Starting from", localTimestamp(statsStartedAt))
             infoRow("Chunks uploaded", "\(stats._uploads)")
             indentedInfoRow("size", prettyUploadsSize)
-            indentedInfoRow("attempts", "\(stats._uploadAttempts)")
-            indentedInfoRow("errors", "\(stats._uploadErrs)")
+            if expanded {
+                indentedInfoRow("attempts", "\(stats._uploadAttempts)")
+                indentedInfoRow("errors", "\(stats._uploadErrs)")
+            }
             infoRow("Chunks downloaded", "\(stats._downloads)")
             indentedInfoRow("size", prettyDownloadsSize)
-            indentedInfoRow("attempts", "\(stats._downloadAttempts)")
-            indentedInfoRow("AUTH errors", "\(stats._downloadAuthErrs)")
-            indentedInfoRow("other errors", "\(stats._downloadErrs)")
-            infoRow("Chunks deleted", "\(stats._deletions)")
-            indentedInfoRow("attempts", "\(stats._deleteAttempts)")
-            indentedInfoRow("errors", "\(stats._deleteErrs)")
+            if expanded {
+                indentedInfoRow("attempts", "\(stats._downloadAttempts)")
+                indentedInfoRow("AUTH errors", "\(stats._downloadAuthErrs)")
+                indentedInfoRow("other errors", "\(stats._downloadErrs)")
+                infoRow("Chunks deleted", "\(stats._deletions)")
+                indentedInfoRow("attempts", "\(stats._deleteAttempts)")
+                indentedInfoRow("errors", "\(stats._deleteErrs)")
+            }
+            Button {
+                withAnimation {
+                    expanded.toggle()
+                }
+            } label: {
+                Text(expanded ? "Show less" : "Show more")
+            }
         }
     }
 }
