@@ -13,9 +13,9 @@ struct CIImageView: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
     let chatItem: ChatItem
-    let image: String
+    var preview: UIImage?
     let maxWidth: CGFloat
-    @Binding var imgWidth: CGFloat?
+    var imgWidth: CGFloat?
     @State private var showFullScreenImage = false
 
     var body: some View {
@@ -30,9 +30,8 @@ struct CIImageView: View {
                 .onChange(of: m.activeCallViewIsCollapsed) { _ in
                     showFullScreenImage = false
                 }
-            } else if let data = Data(base64Encoded: dropImagePrefix(image)),
-                      let uiImage = UIImage(data: data) {
-                imageView(uiImage)
+            } else if let preview {
+                imageView(preview)
                     .onTapGesture {
                         if let file = file {
                             switch file.fileStatus {
@@ -89,8 +88,6 @@ struct CIImageView: View {
 
     private func imageView(_ img: UIImage) -> some View {
         let w = img.size.width <= img.size.height ? maxWidth * 0.75 : maxWidth
-// TODO: Layout must not be done asynchronously.
-//        DispatchQueue.main.async { imgWidth = w }
         return ZStack(alignment: .topTrailing) {
             if img.imageData == nil {
                 Image(uiImage: img)
