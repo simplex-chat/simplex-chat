@@ -18,6 +18,8 @@ struct ServersSummaryView: View {
     @State private var timer: Timer? = nil
     @State private var alert: SomeAlert?
 
+    @AppStorage(DEFAULT_SHOW_CONNECTION_STATUS_PERCENT) private var showConnectionStatusPercent = false
+
     enum PresentedUserCategory {
         case currentUser
         case allUsers
@@ -218,16 +220,15 @@ struct ServersSummaryView: View {
             .navigationBarTitleDisplayMode(.large)
         } label: {
             HStack {
-                if srvSumm.connected {
-                    SubscriptionStatusView(
-                        subs: srvSumm.subsOrNew,
-                        sess: srvSumm.sessionsOrNew
-                    )
-                    .frame(width: 16, alignment: .center)
-                    .padding(.trailing, 4)
-                }
                 Text(serverAddress(srvSumm.smpServer))
                     .lineLimit(1)
+                if srvSumm.connected {
+                    Spacer()
+                    if showConnectionStatusPercent {
+                        ConnectionStatusPercentView(subs: srvSumm.subsOrNew, sess: srvSumm.sessionsOrNew)
+                    }
+                    ConnectionStatusIndicatorView(subs: srvSumm.subsOrNew, sess: srvSumm.sessionsOrNew)
+                }
             }
         }
     }
@@ -314,13 +315,12 @@ struct ServersSummaryView: View {
     }
 }
 
-struct SubscriptionStatusView: View {
-    @EnvironmentObject var m: ChatModel
+struct ConnectionStatusIndicatorView: View {
     var subs: SMPServerSubs
     var sess: ServerSessions
 
     var body: some View {
-        let (color, variableValue, opacity) = iconColor
+        let (color, variableValue, opacity, _) = connectionStatusColorAndPercent(subs, sess)
         if #available(iOS 16.0, *) {
             Image(systemName: "dot.radiowaves.up.forward", variableValue: variableValue)
                 .foregroundColor(color)
@@ -329,39 +329,49 @@ struct SubscriptionStatusView: View {
                 .foregroundColor(color.opacity(opacity))
         }
     }
+}
 
-    private var iconColor: (Color, Double, Double) {
-        m.networkInfo.online && (subs.total > 0 || sess.total > 0)
-        ? ( // Status to be displayed based on subs
-            subs.total > 0
-            ? (
-                subs.ssActive == 0
-                ? (
-                    sess.ssConnected == 0 ? noConnColor : (.accentColor, activeSubsRounded, subs.shareOfActive)
-                )
-                : ( // ssActive > 0
-                    sess.ssConnected == 0
-                    ? (.orange, activeSubsRounded, subs.shareOfActive) // This would mean implementation error
-                    : (.accentColor, activeSubsRounded, subs.shareOfActive)
-                  )
-            )
-            // subs.total == 0 and sess.total > 0; Status to be displayed based on sessions
-            : (.accentColor, connectedSessRounded, sess.shareOfConnected)
-        )
-        : noConnColor
+struct ConnectionStatusPercentView: View {
+    var subs: SMPServerSubs
+    var sess: ServerSessions
+
+    var body: some View {
+        let (_, _, _, statusPercent) = connectionStatusColorAndPercent(subs, sess)
+        Text("\(Int(floor(statusPercent * 100)))%")
+            .foregroundColor(.secondary)
+            .font(.caption)
     }
+}
 
-    private var noConnColor: (Color, Double, Double) { (Color(uiColor: .tertiaryLabel), 1, 1) }
-
-    private var activeSubsRounded: Double { roundedToQuarter(subs.shareOfActive) }
-
-    private var connectedSessRounded: Double { roundedToQuarter(sess.shareOfConnected) }
-
-    private func roundedToQuarter(_ n: Double) -> Double {
+func connectionStatusColorAndPercent(_ subs: SMPServerSubs, _ sess: ServerSessions) -> (Color, Double, Double, Double) {
+    func roundedToQuarter(_ n: Double) -> Double {
         n >= 1 ? 1
         : n <= 0 ? 0
         : (n * 4).rounded() / 4
     }
+
+    let noConnColorAndPercent: (Color, Double, Double, Double) = (Color(uiColor: .tertiaryLabel), 1, 1, 0)
+    let activeSubsRounded = roundedToQuarter(subs.shareOfActive)
+    let connectedSessRounded = roundedToQuarter(sess.shareOfConnected)
+
+    return ChatModel.shared.networkInfo.online && (subs.total > 0 || sess.total > 0)
+    ? ( // Status to be displayed based on subs
+        subs.total > 0
+        ? (
+            subs.ssActive == 0
+            ? (
+                sess.ssConnected == 0 ? noConnColorAndPercent : (.accentColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
+            )
+            : ( // ssActive > 0
+                sess.ssConnected == 0
+                ? (.orange, activeSubsRounded, subs.shareOfActive, subs.shareOfActive) // This would mean implementation error
+                : (.accentColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
+              )
+        )
+        // subs.total == 0 and sess.total > 0; Status to be displayed based on sessions
+        : (.accentColor, connectedSessRounded, sess.shareOfConnected, sess.shareOfConnected)
+    )
+    : noConnColorAndPercent
 }
 
 struct SMPServerSummaryView: View {
@@ -369,6 +379,8 @@ struct SMPServerSummaryView: View {
     var showReconnectButton: Bool
     var statsStartedAt: Date
     @State private var alert: SomeAlert?
+
+    @AppStorage(DEFAULT_SHOW_CONNECTION_STATUS_PERCENT) private var showConnectionStatusPercent = false
 
     var body: some View {
         List {
@@ -422,10 +434,10 @@ struct SMPServerSummaryView: View {
         HStack {
             Text("Connection status")
             Spacer()
-            SubscriptionStatusView(
-                subs: summary.subsOrNew,
-                sess: summary.sessionsOrNew
-            )
+            if showConnectionStatusPercent {
+                ConnectionStatusPercentView(subs: summary.subsOrNew, sess: summary.sessionsOrNew)
+            }
+            ConnectionStatusIndicatorView(subs: summary.subsOrNew, sess: summary.sessionsOrNew)
         }
     }
 
