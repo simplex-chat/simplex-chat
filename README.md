@@ -313,10 +313,9 @@ What is already implemented:
 We plan to add:
 
 1. Senders' SMP relays and recipients' XFTP relays to reduce traffic and conceal IP addresses from the relays chosen, and potentially controlled, by another party.
-2. Post-quantum resistant key exchange in double ratchet protocol.
-3. Automatic message queue rotation and redundancy. Currently the queues created between two users are used until the queue is manually changed by the user or contact is deleted. We are planning to add automatic queue rotation to make these identifiers temporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
-4. Message "mixing" - adding latency to message delivery, to protect against traffic correlation by message time.
-5. Reproducible builds – this is the limitation of the development stack, but we will be investing into solving this problem. Users can still build all applications and services from the source code.
+2. Automatic message queue rotation and redundancy. Currently the queues created between two users are used until the queue is manually changed by the user or contact is deleted. We are planning to add automatic queue rotation to make these identifiers temporary and rotate based on some schedule TBC (e.g., every X messages, or every X hours/days).
+3. Message "mixing" - adding latency to message delivery, to protect against traffic correlation by message time.
+4. Reproducible builds – this is the limitation of the development stack, but we will be investing into solving this problem. Users can still build all applications and services from the source code.
 
 ## For developers
 
