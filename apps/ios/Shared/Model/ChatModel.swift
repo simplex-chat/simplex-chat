@@ -723,7 +723,7 @@ struct NTFContactRequest {
     var chatId: String
 }
 
-struct UnreadChatItemCounts {
+struct UnreadChatItemCounts: Equatable {
     var totalBelow: Int
     var unreadBelow: Int
 }

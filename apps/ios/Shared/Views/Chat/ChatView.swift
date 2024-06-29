@@ -9,6 +9,7 @@
 import SwiftUI
 import SimpleXChat
 import SwiftyGif
+import Combine
 
 private let memberImageSize: CGFloat = 34
 
@@ -20,6 +21,7 @@ struct ChatView: View {
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
     @StateObject private var scrollModel = ReverseListScrollModel<ChatItem>()
+    @StateObject private var floatingButtonModel = FloatingButtonModel()
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -60,7 +62,7 @@ struct ChatView: View {
             }
             ZStack(alignment: .bottomTrailing) {
                 chatItemsList()
-                floatingButtons.padding()
+                floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
             }
             connectingText()
             ComposeView(
@@ -302,7 +304,7 @@ struct ChatView: View {
         ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
     }
 
-    private var filtererdReverseChatItems: Array<ChatItem> {
+    private var filteredReverseChatItems: Array<ChatItem> {
         chatModel.reversedChatItems.filter { chatItem in
             let (_, nextItem) = chatModel.getNextChatItem(chatItem)
             let ciCategory = chatItem.mergeCategory
@@ -313,7 +315,7 @@ struct ChatView: View {
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
         return GeometryReader { g in
-            ReverseList(items: filtererdReverseChatItems, scrollState: $scrollModel.state) { ci in
+            ReverseList(items: filteredReverseChatItems, scrollState: $scrollModel.state) { ci in
                 let voiceNoFrame = voiceWithoutFrame(ci)
                 let maxWidth = cInfo.chatType == .group
                                 ? voiceNoFrame
@@ -324,6 +326,7 @@ struct ChatView: View {
                                     : (g.size.width - 32) * 0.84
                 return chatItemView(ci, maxWidth)
                     .onAppear {
+                        floatingButtonModel.appeared(viewId: ci.viewId)
                         loadChatItems(cInfo, ci)
                         if ci.isRcvNew {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
@@ -334,6 +337,9 @@ struct ChatView: View {
                                 }
                             }
                         }
+                    }
+                    .onDisappear {
+                        floatingButtonModel.disappeared(viewId: ci.viewId)
                     }
             }
                 .onTapGesture { hideKeyboard() }
@@ -346,6 +352,9 @@ struct ChatView: View {
                         showChatInfoSheet = false
                         loadChat(chat: c)
                     }
+                }
+                .onChange(of: chatModel.reversedChatItems) { _ in
+                    floatingButtonModel.chatItemsChanged()
                 }
         }
     }
@@ -363,45 +372,110 @@ struct ChatView: View {
             EmptyView()
         }
     }
-    
-    @ViewBuilder
-    var floatingButtons: some View {
-        if (
-            chatModel.reversedChatItems
-                .filter { $0.isRcvNew }
-                .count
-        ) > .zero {
-            circleButton {
-                unreadCountText(chat.chatStats.unreadCount)
-                    .font(.callout)
-                    .foregroundColor(.accentColor)
-            }
-            .onTapGesture {
-                if let unreadItem = chatModel.reversedChatItems.last(where: { $0.isRcvNew }) {
-                    scrollModel.scrollToItem(id: unreadItem.id)
+
+    class FloatingButtonModel: ObservableObject {
+        private enum Event {
+            case appeared(String)
+            case disappeared(String)
+            case chatItemsChanged
+        }
+
+        @Published var unreadChatItemCounts: UnreadChatItemCounts
+
+        private let events = PassthroughSubject<Event, Never>()
+        private var bag = Set<AnyCancellable>()
+
+        init() {
+            unreadChatItemCounts = UnreadChatItemCounts(
+                totalBelow: .zero,
+                unreadBelow: .zero
+            )
+            events
+                .receive(on: DispatchQueue.global(qos: .background))
+                .scan(Set<String>()) { itemsInView, event in
+                    return switch event {
+                    case let .appeared(viewId):
+                        itemsInView.union([viewId])
+                    case let .disappeared(viewId):
+                        itemsInView.subtracting([viewId])
+                    case .chatItemsChanged:
+                        itemsInView
+                    }
                 }
-            }
-            .contextMenu {
-                Button {
-                    Task { await markChatRead(chat) }
-                } label: {
-                    Label("Mark read", systemImage: "checkmark")
-                }
-            }
-        } else if scrollModel.state == .isNearBottom(false) {
-            circleButton {
-                Image(systemName: "chevron.down")
-                    .foregroundColor(.accentColor)
-            }
-            .onTapGesture { scrollModel.scrollToBottom() }
+                .throttle(for: .seconds(1), scheduler: DispatchQueue.main, latest: true)
+                .map { ChatModel.shared.unreadChatItemCounts(itemsInView: $0) }
+                .removeDuplicates()
+                .assign(to: \.unreadChatItemCounts, on: self)
+                .store(in: &bag)
+        }
+
+        func appeared(viewId: String) {
+            events.send(.appeared(viewId))
+        }
+
+        func disappeared(viewId: String) {
+            events.send(.disappeared(viewId))
+        }
+
+        func chatItemsChanged() {
+            events.send(.chatItemsChanged)
         }
     }
 
+    private func floatingButtons(counts: UnreadChatItemCounts) -> some View {
+        VStack {
+            let unreadAbove = chat.chatStats.unreadCount - counts.unreadBelow
+            if unreadAbove > 0 {
+                circleButton {
+                    unreadCountText(unreadAbove)
+                        .font(.callout)
+                        .foregroundColor(.accentColor)
+                }
+                .onTapGesture {
+                    if let oldestUnreadItem = filteredReverseChatItems.last(where: { $0.isRcvNew }) {
+                        scrollModel.scrollToItem(id: oldestUnreadItem.id)
+                    }
+                }
+                .contextMenu {
+                    Button {
+                        Task {
+                            await markChatRead(chat)
+                        }
+                    } label: {
+                        Label("Mark read", systemImage: "checkmark")
+                    }
+                }
+            }
+            Spacer()
+            if counts.unreadBelow > 0 {
+                circleButton {
+                    unreadCountText(counts.unreadBelow)
+                        .font(.callout)
+                        .foregroundColor(.accentColor)
+                }
+                .onTapGesture {
+                    if let latestUnreadItem = filteredReverseChatItems.last(where: { $0.isRcvNew }) {
+                        scrollModel.scrollToItem(id: latestUnreadItem.id)
+                    }
+                }
+            } else if counts.totalBelow > 16 {
+                circleButton {
+                    Image(systemName: "chevron.down")
+                        .foregroundColor(.accentColor)
+                }
+                .onTapGesture { scrollModel.scrollToBottom() }
+            }
+        }
+        .padding()
+    }
+
     private func circleButton<Content: View>(_ content: @escaping () -> Content) -> some View {
-        content()
-            .frame(width: 44, height: 44)
-            .background(Material.thin)
-            .clipShape(Circle())
+        ZStack {
+            Circle()
+                .foregroundColor(Color(uiColor: .tertiarySystemGroupedBackground))
+                .frame(width: 44, height: 44)
+            content()
+        }
     }
 
     private func callButton(_ contact: Contact, _ media: CallMediaType, imageName: String) -> some View {
@@ -465,7 +539,7 @@ struct ChatView: View {
 
     private func loadChatItems(_ cInfo: ChatInfo, _ ci: ChatItem) {
         if let firstItem = chatModel.reversedChatItems.last,
-           filtererdReverseChatItems.last?.id == ci.id {
+           filteredReverseChatItems.last?.id == ci.id {
             if loadingItems || firstPage { return }
             loadingItems = true
             Task {

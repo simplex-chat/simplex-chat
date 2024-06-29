@@ -44,7 +44,6 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
         private let representer: ReverseList
         private var dataSource: UITableViewDiffableDataSource<Section, Item>!
         private var itemCount: Int = .zero
-        private var isNearBottom = PassthroughSubject<Bool, Never>()
         private var bag = Set<AnyCancellable>()
 
         init(representer: ReverseList) {
@@ -89,16 +88,6 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                 return cell
             }
 
-            // 4. Manage Scroll State
-            isNearBottom
-                .removeDuplicates()
-                .sink { isNearBottom in
-                    Task(priority: .userInitiated) {
-                        representer.scrollState = .isNearBottom(isNearBottom)
-                    }
-                }
-                .store(in: &bag)
-
             // 5. External state changes will require manual layout updates
             NotificationCenter.default
                 .addObserver(
@@ -117,10 +106,6 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
         @objc private func updateLayout() {
             tableView.setNeedsLayout()
             tableView.layoutIfNeeded()
-        }
-
-        override func scrollViewDidScroll(_ scrollView: UIScrollView) {
-            isNearBottom.send(scrollView.contentOffset.y < scrollView.frame.height)
         }
 
         /// Hides keyboard, when user begins to scroll.
@@ -144,6 +129,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                     at: .middle,
                     animated: true
                 )
+                Task { representer.scrollState = .atDestination }
             }
         }
 
@@ -206,17 +192,14 @@ class ReverseListScrollModel<Item: Identifiable>: ObservableObject {
         }
 
         case scrollingTo(Destination)
-        case isNearBottom(Bool)
-
-        var isNearBottom: Bool {
-            switch self {
-            case .scrollingTo: false
-            case let .isNearBottom(bool): bool
-            }
-        }
+        case atDestination
     }
 
-    @Published var state: State = .isNearBottom(true)
+    @Published var state: State = .atDestination
+
+    func scrollToTop() {
+        state = .scrollingTo(.top)
+    }
 
     func scrollToBottom() {
         state = .scrollingTo(.bottom)
