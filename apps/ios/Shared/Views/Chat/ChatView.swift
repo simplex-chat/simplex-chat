@@ -304,18 +304,23 @@ struct ChatView: View {
         ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
     }
 
-    private var filteredReverseChatItems: Array<ChatItem> {
-        chatModel.reversedChatItems.filter { chatItem in
-            let (_, nextItem) = chatModel.getNextChatItem(chatItem)
-            let ciCategory = chatItem.mergeCategory
-            return !(ciCategory != nil && ciCategory == nextItem?.mergeCategory)
-        }
+    private func filtered(_ reversedChatItems: Array<ChatItem>) -> Array<ChatItem> {
+        reversedChatItems
+            .enumerated()
+            .filter { (index, chatItem) in
+                if let mergeCategory = chatItem.mergeCategory, index > .zero {
+                    mergeCategory != reversedChatItems[index - 1].mergeCategory
+                } else {
+                    true
+                }
+            }
+            .map { $0.element }
     }
 
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
         return GeometryReader { g in
-            ReverseList(items: filteredReverseChatItems, scrollState: $scrollModel.state) { ci in
+            ReverseList(items: filtered(chatModel.reversedChatItems), scrollState: $scrollModel.state) { ci in
                 let voiceNoFrame = voiceWithoutFrame(ci)
                 let maxWidth = cInfo.chatType == .group
                                 ? voiceNoFrame
@@ -432,7 +437,7 @@ struct ChatView: View {
                         .foregroundColor(.accentColor)
                 }
                 .onTapGesture {
-                    if let oldestUnreadItem = filteredReverseChatItems.last(where: { $0.isRcvNew }) {
+                    if let oldestUnreadItem = filtered(chatModel.reversedChatItems).last(where: { $0.isRcvNew }) {
                         scrollModel.scrollToItem(id: oldestUnreadItem.id)
                     }
                 }
@@ -454,7 +459,7 @@ struct ChatView: View {
                         .foregroundColor(.accentColor)
                 }
                 .onTapGesture {
-                    if let latestUnreadItem = filteredReverseChatItems.last(where: { $0.isRcvNew }) {
+                    if let latestUnreadItem = filtered(chatModel.reversedChatItems).last(where: { $0.isRcvNew }) {
                         scrollModel.scrollToItem(id: latestUnreadItem.id)
                     }
                 }
@@ -539,7 +544,7 @@ struct ChatView: View {
 
     private func loadChatItems(_ cInfo: ChatInfo, _ ci: ChatItem) {
         if let firstItem = chatModel.reversedChatItems.last,
-           filteredReverseChatItems.last?.id == ci.id {
+           filtered(chatModel.reversedChatItems).last?.id == ci.id {
             if loadingItems || firstPage { return }
             loadingItems = true
             Task {
