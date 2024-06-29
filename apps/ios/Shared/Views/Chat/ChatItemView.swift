@@ -59,7 +59,37 @@ struct ChatItemView: View {
     }
 
     private func framedItemView() -> some View {
-        FramedItemView(chat: chat, chatItem: chatItem, revealed: $revealed, maxWidth: maxWidth, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
+        let preview = chatItem.content.msgContent
+            .flatMap {
+                switch $0 {
+                case let .image(_, image): image
+                case let .video(_, image, _): image
+                default: nil
+                }
+            }
+            .map { dropImagePrefix($0) }
+            .flatMap { Data(base64Encoded: $0) }
+            .flatMap { UIImage(data: $0) }
+        let adjustedMaxWidth = {
+            if let preview, preview.size.width <= preview.size.height {
+                maxWidth * 0.75
+            } else {
+                maxWidth
+            }
+        }()
+        return FramedItemView(
+            chat: chat,
+            chatItem: chatItem,
+            preview: preview,
+            revealed: $revealed,
+            maxWidth: maxWidth,
+            imgWidth: adjustedMaxWidth,
+            videoWidth: adjustedMaxWidth,
+            allowMenu: $allowMenu,
+            audioPlayer: $audioPlayer,
+            playbackState: $playbackState,
+            playbackTime: $playbackTime
+        )
     }
 }
 

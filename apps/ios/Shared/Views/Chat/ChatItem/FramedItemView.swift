@@ -22,11 +22,12 @@ struct FramedItemView: View {
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
+    var preview: UIImage?
     @Binding var revealed: Bool
     var maxWidth: CGFloat = .infinity
     @State var msgWidth: CGFloat = 0
-    @State var imgWidth: CGFloat? = nil
-    @State var videoWidth: CGFloat? = nil
+    var imgWidth: CGFloat? = nil
+    var videoWidth: CGFloat? = nil
     @State var metaColor = Color.secondary
     @State var showFullScreenImage = false
     @Binding var allowMenu: Bool
@@ -113,8 +114,8 @@ struct FramedItemView: View {
             .padding(.bottom, 2)
         } else {
             switch (chatItem.content.msgContent) {
-            case let .image(text, image):
-                CIImageView(chatItem: chatItem, image: image, maxWidth: .infinity, imgWidth: $imgWidth)
+            case let .image(text, _):
+                CIImageView(chatItem: chatItem, preview: preview, maxWidth: maxWidth, imgWidth: imgWidth)
                     .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -126,8 +127,8 @@ struct FramedItemView: View {
                 } else {
                     ciMsgContentView(chatItem)
                 }
-            case let .video(text, image, duration):
-                CIVideoView(chatItem: chatItem, image: image, duration: duration, maxWidth: .infinity, videoWidth: $videoWidth)
+            case let .video(text, _, duration):
+                CIVideoView(chatItem: chatItem, preview: preview, duration: duration, maxWidth: maxWidth, videoWidth: videoWidth)
                 .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -163,7 +164,7 @@ struct FramedItemView: View {
     }
 
     @ViewBuilder func framedItemHeader(icon: String? = nil, caption: Text, pad: Bool = false) -> some View {
-        HStack(spacing: 6) {
+        let v = HStack(spacing: 6) {
             if let icon = icon {
                 Image(systemName: icon)
                     .resizable()
@@ -180,13 +181,11 @@ struct FramedItemView: View {
         .padding(.bottom, pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
         .overlay(DetermineWidth())
         .frame(minWidth: msgWidth, alignment: .leading)
-        .background(chatItemFrameContextColor(chatItem, colorScheme))
-        // TODO: Media width calculations must be done synchronously. Disable for now.
-//        if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
-//            v.frame(maxWidth: mediaWidth, alignment: .leading)
-//        } else {
-//            v
-//        }
+        if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
+            v.frame(maxWidth: mediaWidth, alignment: .leading)
+        } else {
+            v
+        }
     }
 
     @ViewBuilder private func ciQuoteView(_ qi: CIQuote) -> some View {
