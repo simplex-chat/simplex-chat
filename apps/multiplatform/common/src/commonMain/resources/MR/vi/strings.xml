@@ -396,4 +396,26 @@
     <string name="custom_time_picker_custom">tùy chỉnh</string>
     <string name="dark_theme">Chủ đề tối</string>
     <string name="database_downgrade">Hạ cấp cơ sở dữ liệu</string>
+    <string name="num_contacts_selected">%d liên hệ đã được chọn</string>
+    <string name="share_text_database_id">ID cơ sở dữ liệu: %d</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored">Cơ sở dữ liệu sẽ được mã hóa và mật khẩu thì được lưu trữ trong Keystore.</string>
+    <string name="database_upgrade">Nâng cấp cơ sở dữ liệu</string>
+    <string name="mtr_error_no_down_migration">Phiên bản cơ sở dữ liệu mới hơn so với ứng dụng, nhưng không có hạ cấp cho: %s</string>
+    <string name="info_row_database_id">ID cơ sở dữ liệu</string>
+    <string name="custom_time_unit_days">ngày</string>
+    <string name="set_password_to_export_desc">Cơ sở dữ liệu được mã hóa bằng một mật khẩu ngẫu nhiên. Vui lòng đổi mật khẩu trước khi xuất dữ liệu.</string>
+    <string name="encrypted_with_random_passphrase">Cơ sở dữ liệu được mã hóa bằng một mật khẩu ngẫu nhiên, bạn có thể thay đổi nó.</string>
+    <string name="database_passphrase">Mật khẩu cơ sở dữ liệu</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Cơ sở dữ liệu sẽ được mã hóa và mật khẩu thì được lưu trữ trong phần cài đặt.</string>
+    <string name="ttl_days">%d ngày</string>
+    <string name="developer_options">Các ID cơ sở dữ liệu và tùy chọn cách ly truyền tải.</string>
+    <string name="ttl_d">%dd</string>
+    <string name="ttl_day">%d ngày</string>
+    <string name="database_will_be_encrypted">Cơ sở dữ liệu sẽ được mã hóa.</string>
+    <string name="database_migration_in_progress">Việc di chuyển cơ sở dữ liệu đang diễn ra.
+\nQuá trình này có thể mất một vài phút.</string>
+    <string name="database_passphrase_and_export">Mật khẩu cơ sở dữ liệu và xuất dữ liệu</string>
+    <string name="passphrase_is_different">Mật khẩu cơ sở dữ liệu khác với mật khẩu được lưu trong Keystore.</string>
+    <string name="database_passphrase_is_required">Mật khẩu cơ sở dữ liệu là cần thiết để mở ứng dụng SimpleX Chat.</string>
+    <string name="database_error">Lỗi cơ sở dữ liệu</string>
 </resources>
