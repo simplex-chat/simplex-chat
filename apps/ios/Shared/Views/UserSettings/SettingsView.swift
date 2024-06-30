@@ -41,10 +41,10 @@ let DEFAULT_CHAT_V3_DB_MIGRATION = "chatV3DBMigration"
 let DEFAULT_DEVELOPER_TOOLS = "developerTools"
 let DEFAULT_ENCRYPTION_STARTED = "encryptionStarted"
 let DEFAULT_ENCRYPTION_STARTED_AT = "encryptionStartedAt"
-let DEFAULT_ACCENT_COLOR_RED = "accentColorRed"
-let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen"
-let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue"
-//let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle"
+let DEFAULT_ACCENT_COLOR_RED = "accentColorRed" // deprecated, only used for migration
+let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen" // deprecated, only used for migration
+let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue" // deprecated, only used for migration
+let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle" // deprecated, only used for migration
 let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
@@ -61,6 +61,7 @@ let DEFAULT_CONFIRM_REMOTE_SESSIONS = "confirmRemoteSessions"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST = "connectRemoteViaMulticast"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "connectRemoteViaMulticastAuto"
 let DEFAULT_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"
+let DEFAULT_LAST_MIGRATED_BUNDLE_VERSION = "lastMigratedBundleVersion"
 
 let DEFAULT_CURRENT_THEME = "currentTheme"
 let DEFAULT_SYSTEM_DARK_THEME = "systemDarkTheme"
@@ -93,7 +94,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_ACCENT_COLOR_RED: 0.000,
     DEFAULT_ACCENT_COLOR_GREEN: 0.533,
     DEFAULT_ACCENT_COLOR_BLUE: 1.000,
-    //DEFAULT_USER_INTERFACE_STYLE: 0,
+    DEFAULT_USER_INTERFACE_STYLE: 0,
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
@@ -157,6 +158,8 @@ let privacyDeliveryReceiptsSet = BoolDefault(defaults: UserDefaults.standard, fo
 let onboardingStageDefault = EnumDefault<OnboardingStage>(defaults: UserDefaults.standard, forKey: DEFAULT_ONBOARDING_STAGE, withDefault: .onboardingComplete)
 
 let customDisappearingMessageTimeDefault = IntDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME)
+
+let lastMigratedBundleVersionDefault = IntDefault(defaults: UserDefaults.standard, forKey: DEFAULT_LAST_MIGRATED_BUNDLE_VERSION)
 
 let currentThemeDefault = StringDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME, withDefault: DefaultTheme.SYSTEM_THEME_NAME)
 let systemDarkThemeDefault = StringDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SYSTEM_DARK_THEME, withDefault: DefaultTheme.DARK.themeName)

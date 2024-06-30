@@ -10,8 +10,6 @@ import SwiftUI
 import SimpleXChat
 import Yams
 
-//let interfaceStyles: [UIUserInterfaceStyle] = [.unspecified, .light, .dark]
-
 let colorModesLocalized: [LocalizedStringKey] = ["System", "Light", "Dark"]
 let colorModesNames: [DefaultThemeMode?] = [nil, DefaultThemeMode.light, DefaultThemeMode.dark]
 
@@ -30,12 +28,10 @@ struct AppearanceSettings: View {
     @EnvironmentObject var theme: AppTheme
     @State private var iconLightTapped = false
     @State private var iconDarkTapped = false
-    //@State private var userInterfaceStyle = getUserInterfaceStyleDefault()
     @State private var colorMode: DefaultThemeMode? = {
         if currentThemeDefault.get() == DefaultTheme.SYSTEM_THEME_NAME { nil as DefaultThemeMode? } else { CurrentColors.base.mode }
     }()
     @State private var darkModeTheme: String = UserDefaults.standard.string(forKey: DEFAULT_SYSTEM_DARK_THEME) ?? DefaultTheme.DARK.themeName
-    @State private var uiTintColor = getUIAccentColorDefault()
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileImageCornerRadius = defaultProfileImageCorner
 
     @State var themeUserDestination: (Int64, ThemeModeOverrides?)? = {
@@ -171,10 +167,6 @@ struct AppearanceSettings: View {
                     } else if currentThemeDefault.get() != DefaultTheme.LIGHT.themeName {
                         ThemeManager.applyTheme(systemDarkThemeDefault.get())
                     }
-                }
-                .onChange(of: uiTintColor) { _ in
-                    sceneDelegate.window?.tintColor = UIColor(cgColor: uiTintColor)
-                    setUIAccentColorDefault(uiTintColor)
                 }
 
                 Section(header: Text("Profile images").foregroundColor(theme.colors.secondary)) {
@@ -1118,24 +1110,24 @@ private func encodeThemeOverrides(_ value: ThemeOverrides) throws -> String {
     return try Yams.serialize(node: node)
 }
 
-//func getUserInterfaceStyleDefault() -> UIUserInterfaceStyle {
-//    switch UserDefaults.standard.integer(forKey: DEFAULT_USER_INTERFACE_STYLE) {
-//    case 1: return .light
-//    case 2: return .dark
-//    default: return .unspecified
-//    }
-//}
-//
-//func setUserInterfaceStyleDefault(_ style: UIUserInterfaceStyle) {
-//    var v: Int
-//    switch style {
-//    case .unspecified: v = 0
-//    case .light: v = 1
-//    case .dark: v = 2
-//    default: v = 0
-//    }
-//    UserDefaults.standard.set(v, forKey: DEFAULT_USER_INTERFACE_STYLE)
-//}
+func getUserInterfaceStyleDefault() -> UIUserInterfaceStyle {
+    switch UserDefaults.standard.integer(forKey: DEFAULT_USER_INTERFACE_STYLE) {
+    case 1: return .light
+    case 2: return .dark
+    default: return .unspecified
+    }
+}
+
+func setUserInterfaceStyleDefault(_ style: UIUserInterfaceStyle) {
+    var v: Int
+    switch style {
+    case .unspecified: v = 0
+    case .light: v = 1
+    case .dark: v = 2
+    default: v = 0
+    }
+    UserDefaults.standard.set(v, forKey: DEFAULT_USER_INTERFACE_STYLE)
+}
 
 struct AppearanceSettings_Previews: PreviewProvider {
     static var previews: some View {

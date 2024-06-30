@@ -9,6 +9,7 @@
 import Foundation
 import UIKit
 import SimpleXChat
+import SwiftUI
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
@@ -162,6 +163,71 @@ class SceneDelegate: NSObject, ObservableObject, UIWindowSceneDelegate {
         self.windowScene = windowScene
         window = windowScene.keyWindow
         SceneDelegate.windowStatic = windowScene.keyWindow
+        runMigrations()
         ThemeManager.applyTheme(currentThemeDefault.get())
+    }
+
+    private func runMigrations() {
+        /// For checking migration
+//        themeOverridesDefault.set([])
+//        currentThemeDefault.set(DefaultTheme.SYSTEM_THEME_NAME)
+//        setUIAccentColorDefault(CGColor.init(red: 0.5, green: 0.3, blue: 0.8, alpha: 1))
+//        setUserInterfaceStyleDefault(.unspecified)
+//        lastMigratedBundleVersionDefault.set(0)
+
+        let bundleVersion = Int(appBuild ?? "0")
+        if let bundleVersion, lastMigratedBundleVersionDefault.get() < bundleVersion {
+            while true {
+                if lastMigratedBundleVersionDefault.get() < 225 {
+                    let userInterfaceStyle = getUserInterfaceStyleDefault()
+                    let defaultAccentColor = Color(cgColor: CGColor(red: 0.000, green: 0.533, blue: 1.000, alpha: 1))
+                    let accentColor = Color(cgColor: getUIAccentColorDefault())
+                    let isAccentChanged = accentColor != defaultAccentColor
+                    let colors = ThemeColors(primary: isAccentChanged ? accentColor.toReadableHex() : nil)
+                    var overrides = themeOverridesDefault.get()
+                    var themeIds = currentThemeIdsDefault.get()
+                    if isAccentChanged {
+                        switch userInterfaceStyle {
+                        case .light:
+                            let light = ThemeOverrides(base: DefaultTheme.LIGHT, colors: colors, wallpaper: ThemeWallpaper(preset: PresetWallpaper.school.filename))
+                            overrides.append(light)
+                            themeOverridesDefault.set(overrides)
+                            themeIds[DefaultTheme.LIGHT.themeName] = light.themeId
+                            currentThemeIdsDefault.set(themeIds)
+                            ThemeManager.applyTheme(DefaultTheme.LIGHT.themeName)
+                        case .dark:
+                            let dark = ThemeOverrides(base: DefaultTheme.DARK, colors: colors, wallpaper: ThemeWallpaper(preset: PresetWallpaper.school.filename))
+                            overrides.append(dark)
+                            themeOverridesDefault.set(overrides)
+                            themeIds[DefaultTheme.DARK.themeName] = dark.themeId
+                            currentThemeIdsDefault.set(themeIds)
+                            ThemeManager.applyTheme(DefaultTheme.DARK.themeName)
+                        case .unspecified:
+                            let light = ThemeOverrides(base: DefaultTheme.LIGHT, colors: colors, wallpaper: ThemeWallpaper(preset: PresetWallpaper.school.filename))
+                            let dark = ThemeOverrides(base: DefaultTheme.DARK, colors: colors, wallpaper: ThemeWallpaper(preset: PresetWallpaper.school.filename))
+                            overrides.append(light)
+                            overrides.append(dark)
+                            themeOverridesDefault.set(overrides)
+                            themeIds[DefaultTheme.LIGHT.themeName] = light.themeId
+                            themeIds[DefaultTheme.DARK.themeName] = dark.themeId
+                            currentThemeIdsDefault.set(themeIds)
+                            ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
+                        @unknown default: ()
+                        }
+                    } else {
+                        let themeName = switch userInterfaceStyle {
+                            case .light: DefaultTheme.LIGHT.themeName
+                            case .dark: DefaultTheme.DARK.themeName
+                            default: DefaultTheme.SYSTEM_THEME_NAME
+                        }
+                        ThemeManager.applyTheme(themeName)
+                    }
+                    lastMigratedBundleVersionDefault.set(225)
+                } else {
+                    lastMigratedBundleVersionDefault.set(bundleVersion)
+                    break
+                }
+            }
+        }
     }
 }
