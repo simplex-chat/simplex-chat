@@ -116,6 +116,7 @@ class ThemeManager {
 
     static func applyTheme(_ theme: String) {
         currentThemeDefault.set(theme)
+        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
         let tint = UIColor(CurrentColors.colors.primary)
         if SceneDelegate.windowStatic?.tintColor != tint {
             SceneDelegate.windowStatic?.tintColor = tint
@@ -129,7 +130,6 @@ class ThemeManager {
             SceneDelegate.windowStatic?.overrideUserInterfaceStyle = style
         }
 //        applyNavigationBarColors(CurrentColors.toAppTheme())
-        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
     }
 
 //    static func applyNavigationBarColors(_ theme: AppTheme) {
