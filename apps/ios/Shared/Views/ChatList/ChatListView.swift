@@ -110,19 +110,18 @@ struct ChatListView<ToolbarContent: View>: View {
                 }
                 
                 if !chatModel.chats.isEmpty && searchVisible {
-                    VStack {
-                        ChatListSearchBar(
-                            searchMode: $searchMode,
-                            searchFocussed: $searchFocussed,
-                            searchText: $searchText,
-                            searchShowingSimplexLink: $searchShowingSimplexLink,
-                            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-                        )
-                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                        .listRowSeparator(.hidden)
-                        .frame(maxWidth: .infinity)
-                        .padding(10)
-                    }
+                    ChatListSearchBar(
+                        searchMode: $searchMode,
+                        searchFocussed: $searchFocussed,
+                        searchText: $searchText,
+                        searchShowingSimplexLink: $searchShowingSimplexLink,
+                        searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+                    )
+                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                    .listRowSeparator(.hidden)
+                    .frame(maxWidth: .infinity)
+                    .padding(10)
+                    .transition(.move(edge: .top))
                 }
             }
             .background(.bar)
@@ -139,10 +138,12 @@ struct ChatListView<ToolbarContent: View>: View {
 
             if frame.maxY <= screenHeight && frame.maxY > screenHeight - frame.height / 2 {
                 if topVisibleRowIndex != index {
-                    if let topVisibleRowIndex = topVisibleRowIndex  {
-                        searchVisible = topVisibleRowIndex > index || index == 0
-                    } else {
-                        searchVisible = true
+                    withAnimation {
+                        searchVisible = if let topVisibleRowIndex  {
+                            topVisibleRowIndex > index || index == 0
+                        } else {
+                            true
+                        }
                     }
                     
                     topVisibleRowIndex = index
@@ -151,10 +152,12 @@ struct ChatListView<ToolbarContent: View>: View {
         } else {
             if frame.minY >= 0 && frame.minY < frame.height / 2 {
                 if topVisibleRowIndex != index {
-                    if let topVisibleRowIndex = topVisibleRowIndex {
-                        searchVisible = topVisibleRowIndex > index
-                    } else {
-                        searchVisible = true
+                    withAnimation {
+                        searchVisible = if let topVisibleRowIndex {
+                            topVisibleRowIndex > index
+                        } else {
+                            true
+                        }
                     }
                     
                     topVisibleRowIndex = index
