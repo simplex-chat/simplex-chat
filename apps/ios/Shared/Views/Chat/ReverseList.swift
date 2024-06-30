@@ -19,6 +19,8 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
     /// Closure, that returns user interface for a given item
     let content: (Item) -> Content
 
+    let loadPage: () -> Void
+
     func makeUIViewController(context: Context) -> Controller {
         Controller(representer: self)
     }
@@ -71,6 +73,9 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             self.dataSource = UITableViewDiffableDataSource<Section, Item>(
                 tableView: tableView
             ) { (tableView, indexPath, item) -> UITableViewCell? in
+                if indexPath.item > self.itemCount - 8, self.itemCount > 8 {
+                    self.representer.loadPage()
+                }
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
                 if #available(iOS 16.0, *) {
                     cell.contentConfiguration = UIHostingConfiguration { self.representer.content(item) }
@@ -88,7 +93,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                 return cell
             }
 
-            // 5. External state changes will require manual layout updates
+            // 4. External state changes will require manual layout updates
             NotificationCenter.default
                 .addObserver(
                     self,
@@ -140,6 +145,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             dataSource.defaultRowAnimation = .none
             var animatingDifferences = false
             if #available(iOS 16.0, *) {
+                // Only animate incremental changes, no animation for full page loads
                 animatingDifferences = itemCount != .zero && abs(items.count - itemCount) == 1
             }
             dataSource.apply(snapshot, animatingDifferences: animatingDifferences)

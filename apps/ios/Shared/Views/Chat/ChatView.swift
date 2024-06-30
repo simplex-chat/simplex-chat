@@ -319,8 +319,9 @@ struct ChatView: View {
 
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
+        let filteredItems = filtered(chatModel.reversedChatItems)
         return GeometryReader { g in
-            ReverseList(items: filtered(chatModel.reversedChatItems), scrollState: $scrollModel.state) { ci in
+            ReverseList(items: filteredItems, scrollState: $scrollModel.state) { ci in
                 let voiceNoFrame = voiceWithoutFrame(ci)
                 let maxWidth = cInfo.chatType == .group
                                 ? voiceNoFrame
@@ -332,7 +333,6 @@ struct ChatView: View {
                 return chatItemView(ci, maxWidth)
                     .onAppear {
                         floatingButtonModel.appeared(viewId: ci.viewId)
-                        loadChatItems(cInfo, ci)
                         if ci.isRcvNew {
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                                 if chatModel.chatId == cInfo.id {
@@ -346,6 +346,8 @@ struct ChatView: View {
                     .onDisappear {
                         floatingButtonModel.disappeared(viewId: ci.viewId)
                     }
+            } loadPage: {
+                loadChatItems(cInfo)
             }
                 .onTapGesture { hideKeyboard() }
                 .onChange(of: searchText) { _ in
@@ -542,24 +544,33 @@ struct ChatView: View {
         }
     }
 
-    private func loadChatItems(_ cInfo: ChatInfo, _ ci: ChatItem) {
-        if let firstItem = chatModel.reversedChatItems.last,
-           filtered(chatModel.reversedChatItems).last?.id == ci.id {
-            if loadingItems || firstPage { return }
-            loadingItems = true
-            Task {
+    private func loadChatItems(_ cInfo: ChatInfo) {
+        Task {
+            if let oldestItem = chatModel.reversedChatItems.last {
+                if loadingItems || firstPage { return }
+                loadingItems = true
                 do {
-                    let items = try await apiGetChatItems(
-                        type: cInfo.chatType,
-                        id: cInfo.apiId,
-                        pagination: .before(chatItemId: firstItem.id, count: 50),
-                        search: searchText
-                    )
+                    var reversedPage = Array<ChatItem>()
+                    var chatItemsAvailable = true
+                    /// Load additional items until the page is +50 large after merging
+                    while chatItemsAvailable && filtered(reversedPage).count < 50 {
+                        let chatItems = try await apiGetChatItems(
+                            type: cInfo.chatType,
+                            id: cInfo.apiId,
+                            pagination: .before(
+                                chatItemId: reversedPage.last?.id ?? oldestItem.id,
+                                count: 50
+                            ),
+                            search: searchText
+                        )
+                        chatItemsAvailable = !chatItems.isEmpty
+                        reversedPage.append(contentsOf: chatItems.reversed())
+                    }
                     await MainActor.run {
-                        if items.count == 0 {
+                        if reversedPage.count == 0 {
                             firstPage = true
                         } else {
-                            chatModel.reversedChatItems.append(contentsOf: items.reversed())
+                            chatModel.reversedChatItems.append(contentsOf: reversedPage)
                         }
                         loadingItems = false
                     }
