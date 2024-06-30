@@ -817,7 +817,7 @@ struct CustomizeThemeColorsSection: View {
             picker(.SECONDARY_VARIANT, editColor)
             picker(.BACKGROUND, editColor)
             picker(.SURFACE, editColor)
-            picker(.TITLE, editColor)
+            //picker(.TITLE, editColor)
             picker(.PRIMARY_VARIANT2, editColor)
         } header: {
             Text("Interface colors")
