@@ -977,27 +977,7 @@ struct ColorPickerView: View {
         case .RECEIVED_QUOTE: true
         default: UIColor(selection.wrappedValue).cgColor.alpha < 1
         }
-        ColorPicker(title(name), selection: selection, supportsOpacity: supportsOpacity)
-
-    }
-
-    func title(_ name: ThemeColor) -> LocalizedStringKey {
-        switch name {
-        case ThemeColor.WALLPAPER_BACKGROUND: "Wallpaper background"
-        case ThemeColor.WALLPAPER_TINT: "Wallpaper accent"
-        case ThemeColor.PRIMARY: "Accent"
-        case ThemeColor.PRIMARY_VARIANT: "Additional accent"
-        case ThemeColor.SECONDARY: "Secondary"
-        case ThemeColor.SECONDARY_VARIANT: "Additional secondary"
-        case ThemeColor.BACKGROUND: "Background"
-        case ThemeColor.SURFACE: "Menus & alerts"
-        case ThemeColor.TITLE: "Title"
-        case ThemeColor.PRIMARY_VARIANT2: "Additional accent 2"
-        case ThemeColor.SENT_MESSAGE: "Sent message"
-        case ThemeColor.SENT_QUOTE: "Sent reply"
-        case ThemeColor.RECEIVED_MESSAGE: "Received message"
-        case ThemeColor.RECEIVED_QUOTE: "Received reply"
-        }
+        ColorPicker(name.text, selection: selection, supportsOpacity: supportsOpacity)
     }
 }
 

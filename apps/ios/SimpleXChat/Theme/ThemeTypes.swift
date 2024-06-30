@@ -209,7 +209,7 @@ public enum ThemeColor {
         case .SECONDARY: "Secondary"
         case .SECONDARY_VARIANT: "Additional secondary"
         case .BACKGROUND: "Background"
-        case .SURFACE: "Menus & alerts"
+        case .SURFACE: "Menus"
         case .TITLE: "Title"
         case .PRIMARY_VARIANT2: "Additional accent 2"
         case .SENT_MESSAGE: "Sent message"
