@@ -109,8 +109,12 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
         deinit { NotificationCenter.default.removeObserver(self) }
 
         @objc private func updateLayout() {
-            tableView.setNeedsLayout()
-            tableView.layoutIfNeeded()
+            if #available(iOS 16.0, *) {
+                tableView.setNeedsLayout()
+                tableView.layoutIfNeeded()
+            } else {
+                tableView.reloadData()
+            }
         }
 
         /// Hides keyboard, when user begins to scroll.
@@ -129,10 +133,14 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
         /// - Parameter indexPath: Item to scroll to - will scroll to beginning of the list, if `nil`
         func scroll(to index: Int?) {
             if let index {
+                var animated = false
+                if #available(iOS 16.0, *) {
+                    animated = true
+                }
                 tableView.scrollToRow(
                     at: IndexPath(row: index, section: .zero),
                     at: .middle,
-                    animated: true
+                    animated: animated
                 )
                 Task { representer.scrollState = .atDestination }
             }
@@ -184,6 +192,11 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                 fatalError("Hosting View not loaded \(hostingController)")
             }
         }
+
+        override func prepareForReuse() {
+            super.prepareForReuse()
+            hostingController.rootView = nil
+        }
     }
 }
 
@@ -234,3 +247,14 @@ extension NotificationCenter {
     }
 }
 
+/// Disable animation on iOS 15
+func withConditionalAnimation<Result>(
+    _ animation: Animation? = .default,
+    _ body: () throws -> Result
+) rethrows -> Result {
+    if #available(iOS 16.0, *) {
+        try withAnimation(animation, body)
+    } else {
+        try body()
+    }
+}

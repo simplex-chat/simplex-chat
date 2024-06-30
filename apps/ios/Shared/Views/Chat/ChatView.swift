@@ -346,6 +346,7 @@ struct ChatView: View {
                     .onDisappear {
                         floatingButtonModel.disappeared(viewId: ci.viewId)
                     }
+                    .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadPage: {
                 loadChatItems(cInfo)
             }
@@ -1098,7 +1099,7 @@ struct ChatView: View {
 
         private func hideButton() -> Button<some View> {
             Button {
-                withAnimation {
+                withConditionalAnimation {
                     revealedChatItem = nil
                 }
             } label: {
@@ -1173,7 +1174,7 @@ struct ChatView: View {
 
         private func revealButton(_ ci: ChatItem) -> Button<some View> {
             Button {
-                withAnimation {
+                withConditionalAnimation {
                     revealedChatItem = ci
                 }
             } label: {
@@ -1186,7 +1187,7 @@ struct ChatView: View {
 
         private func expandButton() -> Button<some View> {
             Button {
-                withAnimation {
+                withConditionalAnimation {
                     revealedChatItem = chatItem
                 }
             } label: {
@@ -1199,7 +1200,7 @@ struct ChatView: View {
 
         private func shrinkButton() -> Button<some View> {
             Button {
-                withAnimation {
+                withConditionalAnimation {
                     revealedChatItem = nil
                 }
             } label: {

@@ -332,12 +332,12 @@ final class ChatModel: ObservableObject {
 
     private func _upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
         if let i = getChatItemIndex(cItem) {
-            withAnimation {
+            withConditionalAnimation {
                 _updateChatItem(at: i, with: cItem)
             }
             return false
         } else {
-            withAnimation(itemAnimation()) {
+            withConditionalAnimation(itemAnimation()) {
                 var ci = cItem
                 if let status = chatItemStatuses.removeValue(forKey: ci.id), case .sndNew = ci.meta.itemStatus {
                     ci.meta.itemStatus = status
@@ -357,7 +357,7 @@ final class ChatModel: ObservableObject {
 
     func updateChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem, status: CIStatus? = nil) {
         if chatId == cInfo.id, let i = getChatItemIndex(cItem) {
-            withAnimation {
+            withConditionalAnimation {
                 _updateChatItem(at: i, with: cItem)
             }
         } else if let status = status {

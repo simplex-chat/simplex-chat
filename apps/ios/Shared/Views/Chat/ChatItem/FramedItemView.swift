@@ -84,6 +84,7 @@ struct FramedItemView: View {
             }
         }
             .background(chatItemFrameColorMaybeImageOrVideo(chatItem, colorScheme))
+            .background(Color(.systemBackground))
             .cornerRadius(18)
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
