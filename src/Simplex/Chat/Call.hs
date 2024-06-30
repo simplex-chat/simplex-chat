@@ -21,10 +21,10 @@ import Data.Time.Clock (UTCTime)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types (Contact, ContactId, User)
-import Simplex.Chat.Types.Util (decodeJSON, encodeJSON)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON)
+import Simplex.Messaging.Util (decodeJSON, encodeJSON)
 
 data Call = Call
   { contactId :: ContactId,

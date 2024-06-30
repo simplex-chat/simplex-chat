@@ -101,7 +101,8 @@ testCoreOpts =
       logAgent = Nothing,
       logFile = Nothing,
       tbqSize = 16,
-      highlyAvailable = False
+      highlyAvailable = False,
+      yesToUpMigrations = False
     }
 
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts

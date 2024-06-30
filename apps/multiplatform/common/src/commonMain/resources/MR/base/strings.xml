@@ -361,6 +361,8 @@
   <string name="share_image">Share media…</string>
   <string name="share_file">Share file…</string>
   <string name="forward_message">Forward message…</string>
+  <string name="cannot_share_message_alert_title">Cannot send message</string>
+  <string name="cannot_share_message_alert_text">Selected chat preferences prohibit this message.</string>
 
   <!-- ComposeView.kt, helpers -->
   <string name="attach">Attach</string>
