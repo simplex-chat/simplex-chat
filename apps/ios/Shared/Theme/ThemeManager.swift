@@ -116,20 +116,39 @@ class ThemeManager {
 
     static func applyTheme(_ theme: String) {
         currentThemeDefault.set(theme)
-        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
-        SceneDelegate.windowStatic?.tintColor = UIColor(CurrentColors.colors.primary)
-        SceneDelegate.windowStatic?.overrideUserInterfaceStyle = switch currentThemeDefault.get() {
-        case DefaultTheme.LIGHT.themeName: .light
-        case DefaultTheme.SYSTEM_THEME_NAME: .unspecified
-        default: .dark
+        let tint = UIColor(CurrentColors.colors.primary)
+        if SceneDelegate.windowStatic?.tintColor != tint {
+            SceneDelegate.windowStatic?.tintColor = tint
+        }
+        let style = switch currentThemeDefault.get() {
+        case DefaultTheme.LIGHT.themeName: UIUserInterfaceStyle.light
+        case DefaultTheme.SYSTEM_THEME_NAME: UIUserInterfaceStyle.unspecified
+        default: UIUserInterfaceStyle.dark
+        }
+        if SceneDelegate.windowStatic?.overrideUserInterfaceStyle != style {
+            SceneDelegate.windowStatic?.overrideUserInterfaceStyle = style
         }
         applyNavigationBarColors(CurrentColors.toAppTheme())
+        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
     }
 
     static func applyNavigationBarColors(_ theme: AppTheme) {
-        UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: UIColor(theme.appColors.title)]
-        UINavigationBar.appearance().largeTitleTextAttributes = [.foregroundColor: UIColor(theme.appColors.title)]
-        UINavigationBar.appearance().tintColor = .white
+        let baseColors = switch theme.base {
+        case DefaultTheme.LIGHT: LightColorPaletteApp
+        case DefaultTheme.DARK: DarkColorPaletteApp
+        case DefaultTheme.SIMPLEX: SimplexColorPaletteApp
+        case DefaultTheme.BLACK: BlackColorPaletteApp
+        }
+        let isDefaultColor = baseColors.title == theme.appColors.title
+
+        let title = UIColor(theme.appColors.title)
+        if !isDefaultColor && UINavigationBar.appearance().titleTextAttributes?.first as? UIColor != title {
+            UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: title]
+            UINavigationBar.appearance().largeTitleTextAttributes = [.foregroundColor: title]
+        } else {
+            UINavigationBar.appearance().titleTextAttributes = nil
+            UINavigationBar.appearance().largeTitleTextAttributes = nil
+        }
     }
 
     static func changeDarkTheme(_ theme: String) {

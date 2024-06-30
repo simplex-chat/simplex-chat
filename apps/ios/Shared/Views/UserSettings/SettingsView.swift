@@ -199,16 +199,23 @@ public class CodableDefault<T: Codable> {
         self.defaultValue = withDefault
     }
 
+    var cache: T? = nil
+
     public func get() -> T {
-        if let value = defaults.string(forKey: key) {
-            return decodeJSON(value) ?? defaultValue
+        if let cache {
+            return cache
+        } else if let value = defaults.string(forKey: key) {
+            let res = decodeJSON(value) ?? defaultValue
+            cache = res
+            return res
         }
         return defaultValue
     }
 
     public func set(_ value: T) {
         defaults.set(encodeJSON(value), forKey: key)
-        defaults.synchronize()
+        cache = value
+        //defaults.synchronize()
     }
 }
 

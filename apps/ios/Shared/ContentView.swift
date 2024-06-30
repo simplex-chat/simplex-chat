@@ -150,6 +150,11 @@ struct ContentView: View {
                 break
             }
         }
+        .onAppear {
+            if sceneDelegate.window?.overrideUserInterfaceStyle == .unspecified {
+                reactOnDarkThemeChanges(colorScheme == .dark)
+            }
+        }
         .onChange(of: colorScheme) { scheme in
             if sceneDelegate.window?.overrideUserInterfaceStyle == .unspecified {
                 reactOnDarkThemeChanges(scheme == .dark)

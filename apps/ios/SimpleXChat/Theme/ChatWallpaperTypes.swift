@@ -356,7 +356,7 @@ public enum WallpaperType: Equatable {
         switch self {
         case let .Preset(_, scale): scale ?? 1
         case let .Image(_, scale, _): scale ?? 1
-        default: 1
+        case .Empty: 1
         }
     }
 

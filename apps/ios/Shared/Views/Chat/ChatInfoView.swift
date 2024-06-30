@@ -583,7 +583,7 @@ struct ChatWallpaperEditorSheet: View {
     @State var chat: Chat
     @State private var themes: ThemeModeOverrides
 
-    init(chat: Chat, themes: ThemeModeOverrides? = nil) {
+    init(chat: Chat) {
         self.chat = chat
         self.themes = if case let ChatInfo.direct(contact) = chat.chatInfo, let uiThemes = contact.uiThemes {
             uiThemes
@@ -611,6 +611,12 @@ struct ChatWallpaperEditorSheet: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             globalThemeUsed = preferred == nil
+        }
+        .onChange(of: theme.base.mode) { _ in
+            globalThemeUsed = themesFromChat(chat).preferredMode(!theme.colors.isLight) == nil
+        }
+        .onChange(of: ChatModel.shared.chatId) { _ in
+            dismiss()
         }
     }
 

@@ -15,8 +15,8 @@ import Yams
 let colorModesLocalized: [LocalizedStringKey] = ["System", "Light", "Dark"]
 let colorModesNames: [DefaultThemeMode?] = [nil, DefaultThemeMode.light, DefaultThemeMode.dark]
 
-let darkThemesLocalized: [LocalizedStringKey] = ["Dark", "SimpleX", "Black"]
-let darkThemesNames: [String] = [DefaultTheme.DARK.themeName, DefaultTheme.SIMPLEX.themeName, DefaultTheme.BLACK.themeName]
+let darkThemes: [String: LocalizedStringKey] = [DefaultTheme.DARK.themeName: "Dark", DefaultTheme.SIMPLEX.themeName: "SimpleX", DefaultTheme.BLACK.themeName: "Black"]
+let darkThemesWithoutBlack: [String: LocalizedStringKey] = [DefaultTheme.DARK.themeName: "Dark", DefaultTheme.SIMPLEX.themeName: "SimpleX"]
 
 let appSettingsURL = URL(string: UIApplication.openSettingsURLString)!
 
@@ -113,8 +113,14 @@ struct AppearanceSettings: View {
                     }
                     .frame(height: 36)
                     Picker("Dark mode colors", selection: $darkModeTheme) {
-                        ForEach(Array(darkThemesNames.enumerated()), id: \.element) { index, darkTheme in
-                            Text(darkThemesLocalized[index])
+                        if theme.base == .BLACK || themeOverridesDefault.get().contains(where: { $0.base == .BLACK }) {
+                            ForEach(Array(darkThemes.keys.enumerated()), id: \.element) { index, key in
+                                Text(darkThemes[key]!)
+                            }
+                        } else {
+                            ForEach(Array(darkThemesWithoutBlack.keys.enumerated()), id: \.element) { index, key in
+                                Text(darkThemesWithoutBlack[key]!)
+                            }
                         }
                     }
                     .frame(height: 36)
@@ -394,7 +400,7 @@ struct WallpaperPresetSelector: View {
         .frame(width: CGFloat(width), height: CGFloat(height))
         .clipShape(RoundedRectangle(cornerRadius: width / 100 * cornerRadius))
         .overlay(RoundedRectangle(cornerRadius: width / 100 * cornerRadius)
-            .strokeBorder(checked ? overrides.colors.primary.opacity(0.8) : overrides.colors.onBackground.opacity(isInDarkTheme() ? 0.2 : 0.1), lineWidth: 1)
+            .strokeBorder(checked ? theme.colors.primary.opacity(0.8) : theme.colors.onBackground.opacity(isInDarkTheme() ? 0.2 : 0.1), lineWidth: 1)
         )
         .onTapGesture {
             onChooseType(background?.toType(baseTheme))
@@ -452,8 +458,13 @@ struct CustomizeThemeView: View {
                     wallpaperImage: wallpaperImage,
                     theme: theme,
                     onColorChange: { color in
-                        ThemeManager.saveAndApplyThemeColor(baseTheme, name, color)
-                        saveThemeToDatabase(nil)
+                        updateBackendTask.cancel()
+                        updateBackendTask = Task {
+                            if (try? await Task.sleep(nanoseconds: 200_000000)) != nil {
+                                ThemeManager.saveAndApplyThemeColor(baseTheme, name, color)
+                                saveThemeToDatabase(nil)
+                            }
+                        }
                     })
             }
             WallpaperPresetSelector(
@@ -490,7 +501,12 @@ struct CustomizeThemeView: View {
                     },
                     onTypeChange: { type in
                         ThemeManager.saveAndApplyWallpaper(baseTheme, type, themeOverridesDefault)
-                        saveThemeToDatabase(nil)
+                        updateBackendTask.cancel()
+                        updateBackendTask = Task {
+                            if (try? await Task.sleep(nanoseconds: 200_000000)) != nil {
+                                saveThemeToDatabase(nil)
+                            }
+                        }
                     }
                 )
             } header: {
@@ -610,20 +626,22 @@ struct UserWallpaperEditorSheet: View {
             applyToMode: themes.light == themes.dark ? nil : initialTheme.mode,
             globalThemeUsed: $globalThemeUsed,
             save: { applyToMode, newTheme in
-                if updateBackendDate + 1 < Date.now {
-                    updateBackendDate = .now
-                    await save(applyToMode, newTheme, themes, userId)
-                } else {
-                    updateBackendTask.cancel()
-                    updateBackendTask = Task {
-                        do {
-                            try await Task.sleep(nanoseconds: 100_000000)
-                            updateBackendDate = .now
-                            await save(applyToMode, newTheme, themes, userId)
-                        } catch {
-                            // ignore
-                        }
-                    }
+                updateBackendTask.cancel()
+                updateBackendTask = Task {
+                    let themes = ChatModel.shared.currentUser?.uiThemes ?? ThemeModeOverrides()
+                    let initialTheme = themes.preferredMode(!theme.colors.isLight) ?? ThemeManager.defaultActiveTheme(ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+
+                    await save(
+                        applyToMode,
+                        newTheme,
+                        themes,
+                        userId,
+                        realtimeUpdate:
+                            initialTheme.wallpaper?.preset != newTheme?.wallpaper?.preset ||
+                            initialTheme.wallpaper?.imageFile != newTheme?.wallpaper?.imageFile ||
+                            initialTheme.wallpaper?.scale != newTheme?.wallpaper?.scale ||
+                            initialTheme.wallpaper?.scaleType != newTheme?.wallpaper?.scaleType
+                    )
                 }
             }
         )
@@ -631,6 +649,9 @@ struct UserWallpaperEditorSheet: View {
         .modifier(ThemedBackground(grouped: true))
         .onAppear {
             globalThemeUsed = preferred == nil
+        }
+        .onChange(of: theme.base.mode) { _ in
+            globalThemeUsed = (ChatModel.shared.currentUser?.uiThemes ?? ThemeModeOverrides()).preferredMode(!theme.colors.isLight) == nil
         }
         .onChange(of: ChatModel.shared.currentUser?.userId) { _ in
             dismiss()
@@ -641,7 +662,8 @@ struct UserWallpaperEditorSheet: View {
         _ applyToMode: DefaultThemeMode?,
         _ newTheme: ThemeModeOverride?,
         _ themes: ThemeModeOverrides?,
-        _ userId: Int64
+        _ userId: Int64,
+        realtimeUpdate: Bool
     ) async {
         let unchangedThemes: ThemeModeOverrides = themes ?? ThemeModeOverrides()
         var wallpaperFiles = Set([unchangedThemes.light?.wallpaper?.imageFile, unchangedThemes.dark?.wallpaper?.imageFile])
@@ -697,10 +719,22 @@ struct UserWallpaperEditorSheet: View {
 
         let oldThemes = ChatModel.shared.currentUser?.uiThemes
         let changedThemesConstant = changedThemes
-        // Update before save to make it work seamless
-        await MainActor.run {
-            ChatModel.shared.updateCurrentUserUiThemes(uiThemes: changedThemesConstant)
+        if realtimeUpdate {
+            await MainActor.run {
+                ChatModel.shared.updateCurrentUserUiThemes(uiThemes: changedThemesConstant)
+            }
         }
+        do {
+            try await Task.sleep(nanoseconds: 200_000000)
+        } catch {
+            return
+        }
+        if !realtimeUpdate {
+            await MainActor.run {
+                ChatModel.shared.updateCurrentUserUiThemes(uiThemes: changedThemesConstant)
+            }
+        }
+
         if await !apiSetUserUIThemes(userId: userId, themes: changedThemesConstant) {
             await MainActor.run {
                 // If failed to apply for some reason return the old themes
@@ -1031,22 +1065,17 @@ func setUIAccentColorDefault(_ color: CGColor) {
 }
 
 private var updateBackendTask: Task = Task {}
-private var updateBackendDate: Date = .now - 1
 
 private func saveThemeToDatabase(_ themeUserDestination: (Int64, ThemeModeOverrides?)?) {
     let m = ChatModel.shared
     let oldThemes = m.currentUser?.uiThemes
     if let themeUserDestination {
-        // Update before save to make it work seamless
-        m.updateCurrentUserUiThemes(uiThemes: themeUserDestination.1)
-    }
-    updateBackendTask.cancel()
-    updateBackendTask = Task {
-        do {
-            try await Task.sleep(nanoseconds: 300_000000)
-        } catch {
-            return
+        DispatchQueue.main.async {
+            // Update before save to make it work seamless
+            m.updateCurrentUserUiThemes(uiThemes: themeUserDestination.1)
         }
+    }
+    Task {
         if themeUserDestination == nil {
             do {
                 try apiSaveAppSettings(settings: AppSettings.current.prepareForExport())
