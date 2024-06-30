@@ -192,7 +192,7 @@ class ThemeManager {
         var themeIds = currentThemeIdsDefault.get()
         themeIds[nonSystemThemeName] = prevValue.themeId
         currentThemeIdsDefault.set(themeIds)
-        CurrentColors = currentColors( nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        applyTheme(nonSystemThemeName)
     }
 
     static func copyFromSameThemeOverrides(_ type: WallpaperType?, _ lowerLevelOverride: ThemeModeOverride?, _ pref: Binding<ThemeModeOverride>) -> Bool {
@@ -279,7 +279,7 @@ class ThemeManager {
         prevValue.wallpaper?.background = nil
         prevValue.wallpaper?.tint = nil
         pref.set(overrides.replace(prevValue))
-        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        applyTheme(currentThemeDefault.get())
     }
 
     static func resetAllThemeColors(_ pref: Binding<ThemeModeOverride>) {
