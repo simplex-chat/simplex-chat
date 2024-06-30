@@ -265,7 +265,7 @@ class ThemeManager {
         var currentThemeIds = currentThemeIdsDefault.get()
         currentThemeIds[nonSystemThemeName] = prevValue.themeId
         currentThemeIdsDefault.set(currentThemeIds)
-        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        applyTheme(nonSystemThemeName)
     }
 
     static func resetAllThemeColors(_ pref: CodableDefault<[ThemeOverrides]>? = nil) {

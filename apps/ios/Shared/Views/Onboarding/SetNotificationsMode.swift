@@ -88,7 +88,7 @@ struct NtfModeSelector: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(mode.label)
                     .font(.headline)
-                    .foregroundColor(selection == mode ? theme.colors.onBackground : theme.colors.secondary)
+                    .foregroundColor(selection == mode ? theme.colors.primary : theme.colors.secondary)
                 Text(ntfModeDescription(mode))
                     .lineLimit(10)
                     .font(.subheadline)
@@ -100,7 +100,7 @@ struct NtfModeSelector: View {
         .clipShape(RoundedRectangle(cornerRadius: 18))
         .overlay(
             RoundedRectangle(cornerRadius: 18)
-                .stroke(selection == mode ? theme.colors.onBackground : Color(uiColor: .secondarySystemFill), lineWidth: 2)
+                .stroke(selection == mode ? theme.colors.primary : Color(uiColor: .secondarySystemFill), lineWidth: 2)
         )
         ._onButtonGesture { down in
             tapped = down

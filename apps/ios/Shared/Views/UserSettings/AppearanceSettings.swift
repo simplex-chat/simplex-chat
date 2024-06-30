@@ -15,8 +15,11 @@ import Yams
 let colorModesLocalized: [LocalizedStringKey] = ["System", "Light", "Dark"]
 let colorModesNames: [DefaultThemeMode?] = [nil, DefaultThemeMode.light, DefaultThemeMode.dark]
 
-let darkThemes: [String: LocalizedStringKey] = [DefaultTheme.DARK.themeName: "Dark", DefaultTheme.SIMPLEX.themeName: "SimpleX", DefaultTheme.BLACK.themeName: "Black"]
-let darkThemesWithoutBlack: [String: LocalizedStringKey] = [DefaultTheme.DARK.themeName: "Dark", DefaultTheme.SIMPLEX.themeName: "SimpleX"]
+let darkThemesLocalized: [LocalizedStringKey] = ["Dark", "SimpleX", "Black"]
+let darkThemesNames: [String] = [DefaultTheme.DARK.themeName, DefaultTheme.SIMPLEX.themeName, DefaultTheme.BLACK.themeName]
+
+let darkThemesWithoutBlackLocalized: [LocalizedStringKey] = ["Dark", "SimpleX"]
+let darkThemesWithoutBlackNames: [String] = [DefaultTheme.DARK.themeName, DefaultTheme.SIMPLEX.themeName]
 
 let appSettingsURL = URL(string: UIApplication.openSettingsURLString)!
 
@@ -114,12 +117,12 @@ struct AppearanceSettings: View {
                     .frame(height: 36)
                     Picker("Dark mode colors", selection: $darkModeTheme) {
                         if theme.base == .BLACK || themeOverridesDefault.get().contains(where: { $0.base == .BLACK }) {
-                            ForEach(Array(darkThemes.keys.enumerated()), id: \.element) { index, key in
-                                Text(darkThemes[key]!)
+                            ForEach(Array(darkThemesNames.enumerated()), id: \.element) { index, darkTheme in
+                                Text(darkThemesLocalized[index])
                             }
                         } else {
-                            ForEach(Array(darkThemesWithoutBlack.keys.enumerated()), id: \.element) { index, key in
-                                Text(darkThemesWithoutBlack[key]!)
+                            ForEach(Array(darkThemesWithoutBlackNames.enumerated()), id: \.element) { index, darkTheme in
+                                Text(darkThemesLocalized[index])
                             }
                         }
                     }

@@ -187,32 +187,24 @@ struct SelectionListView<Item: SelectableItem>: View {
 
     var body: some View {
         ForEach(list) { item in
-            HStack {
-                Text(item.label)
-                Spacer()
-                if selection == item {
-                    Image(systemName: "checkmark")
-                        .resizable().scaledToFit().frame(width: 16)
-                        .foregroundColor(theme.colors.primary)
-                }
-            }
-            .contentShape(Rectangle())
-            .listRowBackground(tapped == item ? Color(uiColor: .secondarySystemFill) : theme.colors.background)
-            .onTapGesture {
+            Button {
                 if selection == item { return }
                 if let f = onSelection {
                     f(item)
                 } else {
                     selection = item
                 }
-            }
-            ._onButtonGesture { down in
-                if down {
-                    tapped = item
-                } else {
-                    tapped = nil
+            } label: {
+                HStack {
+                    Text(item.label).foregroundColor(theme.colors.onBackground)
+                    Spacer()
+                    if selection == item {
+                        Image(systemName: "checkmark")
+                            .resizable().scaledToFit().frame(width: 16)
+                            .foregroundColor(theme.colors.primary)
+                    }
                 }
-            } perform: {}
+            }
         }
         .environment(\.editMode, .constant(.active))
     }
