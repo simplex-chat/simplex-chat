@@ -105,12 +105,14 @@ struct ServersSummaryView: View {
                     let smpSumm = summ.allUsersSMP
                     let (totals, curr, prev, prox) = (smpSumm.smpTotals, smpSumm.currentlyUsedSMPServers, smpSumm.previouslyUsedSMPServers, smpSumm.onlyProxiedSMPServers)
 
+                    SMPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
+
+                    resetStatsButtonSection()
+
                     SMPSubsView(subs: totals.subs, showPending: false)
 
-                    ServerSessionsView(sess: totals.sessions)
-
                     if curr.count > 0 {
-                        smpServersListView(curr, showReconnectButton: true, summ.statsStartedAt, "Current app session")
+                        smpServersListView(curr, showReconnectButton: true, summ.statsStartedAt, "Connected servers")
                     }
                     if prev.count > 0 {
                         smpServersListView(prev, showReconnectButton: false, summ.statsStartedAt, "Previously used")
@@ -119,19 +121,19 @@ struct ServersSummaryView: View {
                         smpServersListView(prox, showReconnectButton: false, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
                     }
 
-                    SMPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
-
-                    resetStatsButtonSection()
+                    ServerSessionsView(sess: totals.sessions)
                 case (.currentUser, .smp):
                     let smpSumm = summ.currentUserSMP
                     let (totals, curr, prev, prox) = (smpSumm.smpTotals, smpSumm.currentlyUsedSMPServers, smpSumm.previouslyUsedSMPServers, smpSumm.onlyProxiedSMPServers)
 
+                    SMPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
+
+                    resetStatsButtonSection()
+
                     SMPSubsView(subs: totals.subs, showPending: false)
 
-                    ServerSessionsView(sess: totals.sessions)
-
                     if curr.count > 0 {
-                        smpServersListView(curr, showReconnectButton: true, summ.statsStartedAt, "Current app session")
+                        smpServersListView(curr, showReconnectButton: true, summ.statsStartedAt, "Connected servers")
                     }
                     if prev.count > 0 {
                         smpServersListView(prev, showReconnectButton: false, summ.statsStartedAt, "Previously used")
@@ -140,41 +142,39 @@ struct ServersSummaryView: View {
                         smpServersListView(prox, showReconnectButton: false, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
                     }
 
-                    SMPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
-
-                    resetStatsButtonSection()
+                    ServerSessionsView(sess: totals.sessions)
                 case (.allUsers, .xftp):
                     let xftpSumm = summ.allUsersXFTP
                     let (totals, curr, prev) = (xftpSumm.xftpTotals, xftpSumm.currentlyUsedXFTPServers, xftpSumm.previouslyUsedXFTPServers)
 
-                    ServerSessionsView(sess: totals.sessions)
+                    XFTPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
+
+                    resetStatsButtonSection()
 
                     if curr.count > 0 {
-                        xftpServersListView(curr, summ.statsStartedAt, "Current app session")
+                        xftpServersListView(curr, summ.statsStartedAt, "Connected servers")
                     }
                     if prev.count > 0 {
                         xftpServersListView(prev, summ.statsStartedAt, "Previously used")
                     }
 
-                    XFTPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
-
-                    resetStatsButtonSection()
+                    ServerSessionsView(sess: totals.sessions)
                 case (.currentUser, .xftp):
                     let xftpSumm = summ.currentUserXFTP
                     let (totals, curr, prev) = (xftpSumm.xftpTotals, xftpSumm.currentlyUsedXFTPServers, xftpSumm.previouslyUsedXFTPServers)
 
-                    ServerSessionsView(sess: totals.sessions)
+                    XFTPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
+
+                    resetStatsButtonSection()
 
                     if curr.count > 0 {
-                        xftpServersListView(curr, summ.statsStartedAt, "Current app session")
+                        xftpServersListView(curr, summ.statsStartedAt, "Connected servers")
                     }
                     if prev.count > 0 {
                         xftpServersListView(prev, summ.statsStartedAt, "Previously used")
                     }
 
-                    XFTPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
-
-                    resetStatsButtonSection()
+                    ServerSessionsView(sess: totals.sessions)
                 }
             }
         } else {
@@ -483,7 +483,7 @@ struct SMPSubsView: View {
 
     var body: some View {
         Section("Message subscriptions") {
-            infoRow("Active", "\(subs.ssActive)")
+            infoRow("Connections subscribed", "\(subs.ssActive)")
             if showPending {
                 infoRow("Pending", "\(subs.ssPending)")
             }
@@ -507,48 +507,16 @@ struct ServerSessionsView: View {
 struct SMPStatsView: View {
     var stats: AgentSMPServerStatsData
     var statsStartedAt: Date
-    @State private var expanded = false
 
     var body: some View {
         Section {
             infoRow("Messages sent", numOrDash(stats._sentDirect + stats._sentViaProxy))
-            if expanded {
-                infoRow("Messages sent directly", numOrDash(stats._sentDirect))
-                indentedInfoRow("attempts", numOrDash(stats._sentDirectAttempts))
-                infoRow("Messages sent via proxy", numOrDash(stats._sentViaProxy))
-                indentedInfoRow("attempts", numOrDash(stats._sentViaProxyAttempts))
-                infoRow("Messages sent to proxy", numOrDash(stats._sentProxied))
-                indentedInfoRow("attempts", numOrDash(stats._sentProxiedAttempts))
-                infoRow("Sending AUTH errors", numOrDash(stats._sentAuthErrs))
-                indentedInfoRow("QUOTA errors", numOrDash(stats._sentQuotaErrs))
-                indentedInfoRow("expired", numOrDash(stats._sentExpiredErrs))
-                indentedInfoRow("other errors", numOrDash(stats._sentOtherErrs))
-            }
             infoRow("Messages received", numOrDash(stats._recvMsgs))
-            if expanded {
-                indentedInfoRow("duplicates", numOrDash(stats._recvDuplicates))
-                indentedInfoRow("decryption errors", numOrDash(stats._recvCryptoErrs))
-                indentedInfoRow("other errors", numOrDash(stats._recvErrs))
-                infoRow("Messages acknowledged", numOrDash(stats._ackMsgs))
-                indentedInfoRow("attempts", numOrDash(stats._ackAttempts))
-                indentedInfoRow("NO_MSG errors", numOrDash(stats._ackNoMsgErrs))
-                indentedInfoRow("other errors", numOrDash(stats._ackOtherErrs))
-                infoRow("Connections created", numOrDash(stats._connCreated))
-                indentedInfoRow("secured", numOrDash(stats._connSecured))
-                indentedInfoRow("completed", numOrDash(stats._connCompleted))
-                infoRow("Connections deleted", numOrDash(stats._connDeleted))
-                indentedInfoRow("attempts", numOrDash(stats._connDelAttempts))
-                indentedInfoRow("errors", numOrDash(stats._connDelErrs))
-                infoRow("Connections subscribed", numOrDash(stats._connSubscribed))
-                indentedInfoRow("attempts", numOrDash(stats._connSubAttempts))
-                indentedInfoRow("errors", numOrDash(stats._connSubErrs))
-            }
-            Button {
-                withAnimation {
-                    expanded.toggle()
-                }
+            NavigationLink {
+                DetailedSMPStatsView(stats: stats, statsStartedAt: statsStartedAt)
+                    .navigationTitle("Detailed statistics")
             } label: {
-                Text(expanded ? "Show less" : "Show more")
+                Text("Open detailed statistics")
             }
         } header: {
             Text("Statistics")
@@ -569,6 +537,50 @@ private func indentedInfoRow(_ title: LocalizedStringKey, _ value: String) -> so
         Spacer()
         Text(value)
             .foregroundStyle(.secondary)
+    }
+}
+
+struct DetailedSMPStatsView: View {
+    var stats: AgentSMPServerStatsData
+    var statsStartedAt: Date
+
+    var body: some View {
+        List {
+            Section {
+                infoRow("Messages sent", numOrDash(stats._sentDirect + stats._sentViaProxy))
+                infoRow("Messages sent directly", numOrDash(stats._sentDirect))
+                indentedInfoRow("attempts", numOrDash(stats._sentDirectAttempts))
+                infoRow("Messages sent via proxy", numOrDash(stats._sentViaProxy))
+                indentedInfoRow("attempts", numOrDash(stats._sentViaProxyAttempts))
+                infoRow("Messages sent to proxy", numOrDash(stats._sentProxied))
+                indentedInfoRow("attempts", numOrDash(stats._sentProxiedAttempts))
+                infoRow("Sending AUTH errors", numOrDash(stats._sentAuthErrs))
+                indentedInfoRow("QUOTA errors", numOrDash(stats._sentQuotaErrs))
+                indentedInfoRow("expired", numOrDash(stats._sentExpiredErrs))
+                indentedInfoRow("other errors", numOrDash(stats._sentOtherErrs))
+                infoRow("Messages received", numOrDash(stats._recvMsgs))
+                indentedInfoRow("duplicates", numOrDash(stats._recvDuplicates))
+                indentedInfoRow("decryption errors", numOrDash(stats._recvCryptoErrs))
+                indentedInfoRow("other errors", numOrDash(stats._recvErrs))
+                infoRow("Messages acknowledged", numOrDash(stats._ackMsgs))
+                indentedInfoRow("attempts", numOrDash(stats._ackAttempts))
+                indentedInfoRow("NO_MSG errors", numOrDash(stats._ackNoMsgErrs))
+                indentedInfoRow("other errors", numOrDash(stats._ackOtherErrs))
+                infoRow("Connections created", numOrDash(stats._connCreated))
+                indentedInfoRow("secured", numOrDash(stats._connSecured))
+                indentedInfoRow("completed", numOrDash(stats._connCompleted))
+                infoRow("Connections deleted", numOrDash(stats._connDeleted))
+                indentedInfoRow("attempts", numOrDash(stats._connDelAttempts))
+                indentedInfoRow("errors", numOrDash(stats._connDelErrs))
+                infoRow("Connections subscribed", numOrDash(stats._connSubscribed))
+                indentedInfoRow("attempts", numOrDash(stats._connSubAttempts))
+                indentedInfoRow("errors", numOrDash(stats._connSubErrs))
+            } header: {
+                Text("Statistics")
+            } footer: {
+                Text("Starting from \(localTimestamp(statsStartedAt)).")
+            }
+        }
     }
 }
 
@@ -608,18 +620,40 @@ struct XFTPStatsView: View {
     @State private var expanded = false
 
     var body: some View {
-        let kb: Int64 = 1024
-        let uploadsSize = stats._uploadsSize == 0 ? "-" : ByteCountFormatter.string(fromByteCount: stats._uploadsSize * kb, countStyle: .binary)
-        let downloadsSize = stats._downloadsSize == 0 ? "-" : ByteCountFormatter.string(fromByteCount: stats._downloadsSize * kb, countStyle: .binary)
         Section {
-            infoRow("Uploaded", uploadsSize)
-            if expanded {
+            infoRow("Uploaded", prettySize(stats._uploadsSize))
+            infoRow("Downloaded", prettySize(stats._downloadsSize))
+            NavigationLink {
+                DetailedXFTPStatsView(stats: stats, statsStartedAt: statsStartedAt)
+                    .navigationTitle("Detailed statistics")
+            } label: {
+                Text("Open detailed statistics")
+            }
+        } header: {
+            Text("Statistics")
+        } footer: {
+            Text("Starting from \(localTimestamp(statsStartedAt)).")
+        }
+    }
+}
+
+private func prettySize(_ sizeInKB: Int64) -> String {
+    let kb: Int64 = 1024
+    return sizeInKB == 0 ? "-" : ByteCountFormatter.string(fromByteCount: sizeInKB * kb, countStyle: .binary)
+}
+
+struct DetailedXFTPStatsView: View {
+    var stats: AgentXFTPServerStatsData
+    var statsStartedAt: Date
+
+    var body: some View {
+        List {
+            Section {
+                infoRow("Uploaded", prettySize(stats._uploadsSize))
                 indentedInfoRow("chunks", numOrDash(stats._uploads))
                 indentedInfoRow("attempts", numOrDash(stats._uploadAttempts))
                 indentedInfoRow("errors", numOrDash(stats._uploadErrs))
-            }
-            infoRow("Downloaded", downloadsSize)
-            if expanded {
+                infoRow("Downloaded", prettySize(stats._downloadsSize))
                 indentedInfoRow("chunks", numOrDash(stats._downloads))
                 indentedInfoRow("attempts", numOrDash(stats._downloadAttempts))
                 indentedInfoRow("AUTH errors", numOrDash(stats._downloadAuthErrs))
@@ -627,18 +661,11 @@ struct XFTPStatsView: View {
                 infoRow("Chunks deleted", numOrDash(stats._deletions))
                 indentedInfoRow("attempts", numOrDash(stats._deleteAttempts))
                 indentedInfoRow("errors", numOrDash(stats._deleteErrs))
+            } header: {
+                Text("Statistics")
+            } footer: {
+                Text("Starting from \(localTimestamp(statsStartedAt)).")
             }
-            Button {
-                withAnimation {
-                    expanded.toggle()
-                }
-            } label: {
-                Text(expanded ? "Show less" : "Show more")
-            }
-        } header: {
-            Text("Statistics")
-        } footer: {
-            Text("Starting from \(localTimestamp(statsStartedAt)).")
         }
     }
 }
