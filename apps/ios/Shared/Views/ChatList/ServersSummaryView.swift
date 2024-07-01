@@ -109,16 +109,16 @@ struct ServersSummaryView: View {
 
                     resetStatsButtonSection()
 
-                    SMPSubsView(subs: totals.subs, showPending: false)
+                    smpSubsSection(totals.subs)
 
                     if curr.count > 0 {
-                        smpServersListView(curr, showReconnectButton: true, summ.statsStartedAt, "Connected servers")
+                        smpServersListView(curr, summ.statsStartedAt, "Connected servers")
                     }
                     if prev.count > 0 {
-                        smpServersListView(prev, showReconnectButton: false, summ.statsStartedAt, "Previously used")
+                        smpServersListView(prev, summ.statsStartedAt, "Previously used")
                     }
                     if prox.count > 0 {
-                        smpServersListView(prox, showReconnectButton: false, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
+                        smpServersListView(prox, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
                     }
 
                     ServerSessionsView(sess: totals.sessions)
@@ -130,16 +130,16 @@ struct ServersSummaryView: View {
 
                     resetStatsButtonSection()
 
-                    SMPSubsView(subs: totals.subs, showPending: false)
+                    smpSubsSection(totals.subs)
 
                     if curr.count > 0 {
-                        smpServersListView(curr, showReconnectButton: true, summ.statsStartedAt, "Connected servers")
+                        smpServersListView(curr, summ.statsStartedAt, "Connected servers")
                     }
                     if prev.count > 0 {
-                        smpServersListView(prev, showReconnectButton: false, summ.statsStartedAt, "Previously used")
+                        smpServersListView(prev, summ.statsStartedAt, "Previously used")
                     }
                     if prox.count > 0 {
-                        smpServersListView(prox, showReconnectButton: false, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
+                        smpServersListView(prox, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
                     }
 
                     ServerSessionsView(sess: totals.sessions)
@@ -182,9 +182,15 @@ struct ServersSummaryView: View {
         }
     }
 
+    private func smpSubsSection(_ subs: SMPServerSubs) -> some View {
+        Section("Message subscriptions") {
+            infoRow("Connections subscribed", "\(subs.ssActive)")
+            infoRow("Total", "\(subs.total)")
+        }
+    }
+
     @ViewBuilder private func smpServersListView(
         _ servers: [SMPServerSummary],
-        showReconnectButton: Bool,
         _ statsStartedAt: Date,
         _ header: LocalizedStringKey? = nil,
         _ footer: LocalizedStringKey? = nil
@@ -196,7 +202,7 @@ struct ServersSummaryView: View {
         }
         Section {
             ForEach(sortedServers) { server in
-                smpServerView(server, showReconnectButton, statsStartedAt)
+                smpServerView(server, statsStartedAt)
             }
         } header: {
             if let header = header {
@@ -209,11 +215,10 @@ struct ServersSummaryView: View {
         }
     }
 
-    private func smpServerView(_ srvSumm: SMPServerSummary, _ showReconnectButton: Bool, _ statsStartedAt: Date) -> some View {
+    private func smpServerView(_ srvSumm: SMPServerSummary, _ statsStartedAt: Date) -> some View {
         NavigationLink(tag: srvSumm.id, selection: $selectedSMPServer) {
             SMPServerSummaryView(
                 summary: srvSumm,
-                showReconnectButton: showReconnectButton,
                 statsStartedAt: statsStartedAt
             )
             .navigationBarTitle("SMP server")
@@ -392,7 +397,6 @@ func connectionStatusColorAndPercent(_ online: Bool, _ onionHosts: OnionHosts, _
 
 struct SMPServerSummaryView: View {
     var summary: SMPServerSummary
-    var showReconnectButton: Bool
     var statsStartedAt: Date
     @State private var alert: SomeAlert?
 
@@ -413,40 +417,39 @@ struct SMPServerSummaryView: View {
                 }
             }
 
-            if summary.hasSubs && showReconnectButton {
-                Section {
-                    connectionStatusRow()
-                    reconnectButtonSection()
-                }
+            if let stats = summary.stats {
+                SMPStatsView(stats: stats, statsStartedAt: statsStartedAt)
             }
 
             if let subs = summary.subs {
-                SMPSubsView(subs: subs, showPending: true)
+                smpSubsSection(subs)
             }
 
             if let sess = summary.sessions {
                 ServerSessionsView(sess: sess)
             }
-
-            if let stats = summary.stats {
-                SMPStatsView(stats: stats, statsStartedAt: statsStartedAt)
-            }
         }
         .alert(item: $alert) { $0.alert }
     }
 
-    private func connectionStatusRow() -> some View {
-        HStack {
-            Text("Connection status")
-            Spacer()
-            if showConnectionStatusPercent {
-                ConnectionStatusPercentView(subs: summary.subsOrNew, sess: summary.sessionsOrNew)
+    private func smpSubsSection(_ subs: SMPServerSubs) -> some View {
+        Section {
+            infoRow("Connections subscribed", "\(subs.ssActive)")
+            infoRow("Pending", "\(subs.ssPending)")
+            infoRow("Total", "\(subs.total)")
+            reconnectButton()
+        } header: {
+            HStack {
+                Text("Message subscriptions")
+                ConnectionStatusIndicatorView(subs: subs, sess: summary.sessionsOrNew)
+                if showConnectionStatusPercent {
+                    ConnectionStatusPercentView(subs: subs, sess: summary.sessionsOrNew)
+                }
             }
-            ConnectionStatusIndicatorView(subs: summary.subsOrNew, sess: summary.sessionsOrNew)
         }
     }
 
-    private func reconnectButtonSection() -> some View {
+    private func reconnectButton() -> some View {
         Button {
             alert = SomeAlert(
                 alert: Alert(
@@ -473,21 +476,6 @@ struct SMPServerSummaryView: View {
             )
         } label: {
             Text("Reconnect")
-        }
-    }
-}
-
-struct SMPSubsView: View {
-    var subs: SMPServerSubs
-    var showPending: Bool
-
-    var body: some View {
-        Section("Message subscriptions") {
-            infoRow("Connections subscribed", "\(subs.ssActive)")
-            if showPending {
-                infoRow("Pending", "\(subs.ssPending)")
-            }
-            infoRow("Total", "\(subs.total)")
         }
     }
 }
@@ -603,12 +591,12 @@ struct XFTPServerSummaryView: View {
                 }
             }
 
-            if let sess = summary.sessions {
-                ServerSessionsView(sess: sess)
-            }
-
             if let stats = summary.stats {
                 XFTPStatsView(stats: stats, statsStartedAt: statsStartedAt)
+            }
+
+            if let sess = summary.sessions {
+                ServerSessionsView(sess: sess)
             }
         }
     }
