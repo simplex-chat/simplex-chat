@@ -565,37 +565,37 @@ struct SMPStatsView: View {
     var body: some View {
         Section("Statistics") {
             infoRow("Starting from", localTimestamp(statsStartedAt))
-            infoRow("Messages sent", "\(stats._sentDirect + stats._sentViaProxy)")
+            infoRow("Messages sent", numOrDash(stats._sentDirect + stats._sentViaProxy))
             if expanded {
-                infoRow("Messages sent directly", "\(stats._sentDirect)")
-                indentedInfoRow("attempts", "\(stats._sentDirectAttempts)")
-                infoRow("Messages sent via proxy", "\(stats._sentViaProxy)")
-                indentedInfoRow("attempts", "\(stats._sentViaProxyAttempts)")
-                infoRow("Messages sent to proxy", "\(stats._sentProxied)")
-                indentedInfoRow("attempts", "\(stats._sentProxiedAttempts)")
-                infoRow("Sending AUTH errors", "\(stats._sentAuthErrs)")
-                indentedInfoRow("QUOTA errors", "\(stats._sentQuotaErrs)")
-                indentedInfoRow("expired", "\(stats._sentExpiredErrs)")
-                indentedInfoRow("other errors", "\(stats._sentOtherErrs)")
+                infoRow("Messages sent directly", numOrDash(stats._sentDirect))
+                indentedInfoRow("attempts", numOrDash(stats._sentDirectAttempts))
+                infoRow("Messages sent via proxy", numOrDash(stats._sentViaProxy))
+                indentedInfoRow("attempts", numOrDash(stats._sentViaProxyAttempts))
+                infoRow("Messages sent to proxy", numOrDash(stats._sentProxied))
+                indentedInfoRow("attempts", numOrDash(stats._sentProxiedAttempts))
+                infoRow("Sending AUTH errors", numOrDash(stats._sentAuthErrs))
+                indentedInfoRow("QUOTA errors", numOrDash(stats._sentQuotaErrs))
+                indentedInfoRow("expired", numOrDash(stats._sentExpiredErrs))
+                indentedInfoRow("other errors", numOrDash(stats._sentOtherErrs))
             }
-            infoRow("Messages received", "\(stats._recvMsgs)")
+            infoRow("Messages received", numOrDash(stats._recvMsgs))
             if expanded {
-                indentedInfoRow("duplicates", "\(stats._recvDuplicates)")
-                indentedInfoRow("decryption errors", "\(stats._recvCryptoErrs)")
-                indentedInfoRow("other errors", "\(stats._recvErrs)")
-                infoRow("Messages acknowledged", "\(stats._ackMsgs)")
-                indentedInfoRow("attempts", "\(stats._ackAttempts)")
-                indentedInfoRow("NO_MSG errors", "\(stats._ackNoMsgErrs)")
-                indentedInfoRow("other errors", "\(stats._ackOtherErrs)")
-                infoRow("Connections created", "\(stats._connCreated)")
-                indentedInfoRow("secured", "\(stats._connSecured)")
-                indentedInfoRow("completed", "\(stats._connCompleted)")
-                infoRow("Connections deleted", "\(stats._connDeleted)")
-                indentedInfoRow("attempts", "\(stats._connDelAttempts)")
-                indentedInfoRow("errors", "\(stats._connDelErrs)")
-                infoRow("Connections subscribed", "\(stats._connSubscribed)")
-                indentedInfoRow("attempts", "\(stats._connSubAttempts)")
-                indentedInfoRow("errors", "\(stats._connSubErrs)")
+                indentedInfoRow("duplicates", numOrDash(stats._recvDuplicates))
+                indentedInfoRow("decryption errors", numOrDash(stats._recvCryptoErrs))
+                indentedInfoRow("other errors", numOrDash(stats._recvErrs))
+                infoRow("Messages acknowledged", numOrDash(stats._ackMsgs))
+                indentedInfoRow("attempts", numOrDash(stats._ackAttempts))
+                indentedInfoRow("NO_MSG errors", numOrDash(stats._ackNoMsgErrs))
+                indentedInfoRow("other errors", numOrDash(stats._ackOtherErrs))
+                infoRow("Connections created", numOrDash(stats._connCreated))
+                indentedInfoRow("secured", numOrDash(stats._connSecured))
+                indentedInfoRow("completed", numOrDash(stats._connCompleted))
+                infoRow("Connections deleted", numOrDash(stats._connDeleted))
+                indentedInfoRow("attempts", numOrDash(stats._connDelAttempts))
+                indentedInfoRow("errors", numOrDash(stats._connDelErrs))
+                infoRow("Connections subscribed", numOrDash(stats._connSubscribed))
+                indentedInfoRow("attempts", numOrDash(stats._connSubAttempts))
+                indentedInfoRow("errors", numOrDash(stats._connSubErrs))
             }
             Button {
                 withAnimation {
@@ -606,6 +606,10 @@ struct SMPStatsView: View {
             }
         }
     }
+}
+
+private func numOrDash(_ n: Int) -> String {
+    n == 0 ? "-" : "\(n)"
 }
 
 private func indentedInfoRow(_ title: LocalizedStringKey, _ value: String) -> some View {
@@ -677,25 +681,25 @@ struct XFTPStatsView: View {
 
     var body: some View {
         let kb: Int64 = 1024
-        let prettyUploadsSize = ByteCountFormatter.string(fromByteCount: stats._uploadsSize * kb, countStyle: .binary)
-        let prettyDownloadsSize = ByteCountFormatter.string(fromByteCount: stats._downloadsSize * kb, countStyle: .binary)
+        let uploadsSize = stats._uploadsSize == 0 ? "-" : ByteCountFormatter.string(fromByteCount: stats._uploadsSize * kb, countStyle: .binary)
+        let downloadsSize = stats._downloadsSize == 0 ? "-" : ByteCountFormatter.string(fromByteCount: stats._downloadsSize * kb, countStyle: .binary)
         Section("Statistics") {
             infoRow("Starting from", localTimestamp(statsStartedAt))
-            infoRow("Chunks uploaded", "\(stats._uploads)")
-            indentedInfoRow("size", prettyUploadsSize)
+            infoRow("Chunks uploaded", numOrDash(stats._uploads))
+            indentedInfoRow("size", uploadsSize)
             if expanded {
-                indentedInfoRow("attempts", "\(stats._uploadAttempts)")
-                indentedInfoRow("errors", "\(stats._uploadErrs)")
+                indentedInfoRow("attempts", numOrDash(stats._uploadAttempts))
+                indentedInfoRow("errors", numOrDash(stats._uploadErrs))
             }
-            infoRow("Chunks downloaded", "\(stats._downloads)")
-            indentedInfoRow("size", prettyDownloadsSize)
+            infoRow("Chunks downloaded", numOrDash(stats._downloads))
+            indentedInfoRow("size", downloadsSize)
             if expanded {
-                indentedInfoRow("attempts", "\(stats._downloadAttempts)")
-                indentedInfoRow("AUTH errors", "\(stats._downloadAuthErrs)")
-                indentedInfoRow("other errors", "\(stats._downloadErrs)")
-                infoRow("Chunks deleted", "\(stats._deletions)")
-                indentedInfoRow("attempts", "\(stats._deleteAttempts)")
-                indentedInfoRow("errors", "\(stats._deleteErrs)")
+                indentedInfoRow("attempts", numOrDash(stats._downloadAttempts))
+                indentedInfoRow("AUTH errors", numOrDash(stats._downloadAuthErrs))
+                indentedInfoRow("other errors", numOrDash(stats._downloadErrs))
+                infoRow("Chunks deleted", numOrDash(stats._deletions))
+                indentedInfoRow("attempts", numOrDash(stats._deleteAttempts))
+                indentedInfoRow("errors", numOrDash(stats._deleteErrs))
             }
             Button {
                 withAnimation {
