@@ -2292,24 +2292,11 @@ public struct ServerSessions: Codable {
     public var ssErrors: Int
     public var ssConnecting: Int
 
-    public init(ssConnected: Int, ssErrors: Int, ssConnecting: Int) {
-        self.ssConnected = ssConnected
-        self.ssErrors = ssErrors
-        self.ssConnecting = ssConnecting
-    }
-
     static public var newServerSessions = ServerSessions(
         ssConnected: 0,
         ssErrors: 0,
         ssConnecting: 0
     )
-
-    public var total: Int { ssConnected + ssErrors + ssConnecting }
-
-    public var shareOfConnected: Double {
-        guard total != 0 else { return 0.0 }
-        return Double(ssConnected) / Double(total)
-    }
 }
 
 public struct SMPServerSubs: Codable {

@@ -364,24 +364,18 @@ func connectionStatusColorAndPercent(_ online: Bool, _ onionHosts: OnionHosts, _
     let activeColor: Color = onionHosts == .require ? .indigo : .accentColor
     let noConnColorAndPercent: (Color, Double, Double, Double) = (Color(uiColor: .tertiaryLabel), 1, 1, 0)
     let activeSubsRounded = roundedToQuarter(subs.shareOfActive)
-    let connectedSessRounded = roundedToQuarter(sess.shareOfConnected)
 
-    return online && (subs.total > 0 || sess.total > 0)
-    ? ( // Status to be displayed based on subs
-        subs.total > 0
+    return online && subs.total > 0
+    ? (
+        subs.ssActive == 0
         ? (
-            subs.ssActive == 0
-            ? (
-                sess.ssConnected == 0 ? noConnColorAndPercent : (activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
-            )
-            : ( // ssActive > 0
-                sess.ssConnected == 0
-                ? (.orange, activeSubsRounded, subs.shareOfActive, subs.shareOfActive) // This would mean implementation error
-                : (activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
-              )
+            sess.ssConnected == 0 ? noConnColorAndPercent : (activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
         )
-        // subs.total == 0 and sess.total > 0; Status to be displayed based on sessions
-        : (activeColor, connectedSessRounded, sess.shareOfConnected, sess.shareOfConnected)
+        : ( // ssActive > 0
+            sess.ssConnected == 0
+            ? (.orange, activeSubsRounded, subs.shareOfActive, subs.shareOfActive) // This would mean implementation error
+            : (activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
+          )
     )
     : noConnColorAndPercent
 }
@@ -396,7 +390,7 @@ struct SMPServerSummaryView: View {
 
     var body: some View {
         List {
-            Section {
+            Section("Server address") {
                 Text(summary.smpServer)
                     .textSelection(.enabled)
 //                if let known = summary.known, !known {
@@ -406,24 +400,12 @@ struct SMPServerSummaryView: View {
 //                        Text("Add as known")
 //                    }
 //                }
-            } header: {
-                Text("Server address")
-            } footer: {
-                if let known = summary.known, known {
-                    Text("Server is configured in **Settings** → **Network & servers**.")
-                }
             }
 
             if summary.connected && showReconnectButton {
                 Section {
                     connectionStatusRow()
                     reconnectButtonSection()
-                } footer: {
-                    if summary.subs != nil {
-                        Text("Connection status is displayed based on Message subscriptions.")
-                    } else if summary.sessions != nil {
-                        Text("Connection status is displayed based on Transport sessions.")
-                    }
                 }
             }
 
@@ -507,7 +489,6 @@ struct ServerSessionsView: View {
             infoRow("Connected", "\(sess.ssConnected)")
             infoRow("Errors", "\(sess.ssErrors)")
             infoRow("Connecting", "\(sess.ssConnecting)")
-            infoRow("Total", "\(sess.total)")
         }
     }
 }
@@ -583,7 +564,7 @@ struct XFTPServerSummaryView: View {
 
     var body: some View {
         List {
-            Section {
+            Section("Server address") {
                 Text(summary.xftpServer)
                     .textSelection(.enabled)
 //                if let known = summary.known, !known {
@@ -593,12 +574,6 @@ struct XFTPServerSummaryView: View {
 //                        Text("Add as known")
 //                    }
 //                }
-            } header: {
-                Text("Server address")
-            } footer: {
-                if let known = summary.known, known {
-                    Text("Server is configured in **Settings** → **Network & servers**.")
-                }
             }
 
             if let sess = summary.sessions {
