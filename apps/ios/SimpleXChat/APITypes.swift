@@ -2280,7 +2280,7 @@ public struct SMPServerSummary: Codable, Identifiable {
 
     public var id: String { smpServer }
 
-    public var connected: Bool { sessions != nil || subs != nil }
+    public var hasSubs: Bool { subs != nil }
 
     public var sessionsOrNew: ServerSessions { sessions ?? ServerSessions.newServerSessions }
 

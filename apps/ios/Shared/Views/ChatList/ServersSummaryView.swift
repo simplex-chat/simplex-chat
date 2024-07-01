@@ -190,9 +190,9 @@ struct ServersSummaryView: View {
         _ footer: LocalizedStringKey? = nil
     ) -> some View {
         let sortedServers = servers.sorted {
-            $0.connected == $1.connected
+            $0.hasSubs == $1.hasSubs
             ? serverAddress($0.smpServer) < serverAddress($1.smpServer)
-            : $0.connected && !$1.connected
+            : $0.hasSubs && !$1.hasSubs
         }
         Section {
             ForEach(sortedServers) { server in
@@ -222,7 +222,7 @@ struct ServersSummaryView: View {
             HStack {
                 Text(serverAddress(srvSumm.smpServer))
                     .lineLimit(1)
-                if srvSumm.connected {
+                if srvSumm.hasSubs {
                     Spacer()
                     if showConnectionStatusPercent {
                         ConnectionStatusPercentView(subs: srvSumm.subsOrNew, sess: srvSumm.sessionsOrNew)
@@ -402,7 +402,7 @@ struct SMPServerSummaryView: View {
 //                }
             }
 
-            if summary.connected && showReconnectButton {
+            if summary.hasSubs && showReconnectButton {
                 Section {
                     connectionStatusRow()
                     reconnectButtonSection()
