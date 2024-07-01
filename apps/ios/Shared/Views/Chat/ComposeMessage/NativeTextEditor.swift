@@ -28,6 +28,7 @@ struct NativeTextEditor: UIViewRepresentable {
     
     func makeUIView(context: Context) -> UITextView {
         let field = CustomUITextField(height: _height)
+        field.backgroundColor = .clear
         field.text = text
         field.textAlignment = alignment(text)
         field.autocapitalizationType = .sentences

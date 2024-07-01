@@ -44,6 +44,7 @@ func invalidJSONView(_ json: String) -> some View {
     }
     .frame(maxHeight: .infinity)
     .padding()
+    .modifier(ThemedBackground())
 }
 
 struct CIInvalidJSONView_Previews: PreviewProvider {

@@ -242,14 +242,8 @@ func apiSuspendChat(timeoutMicroseconds: Int) {
     logger.error("apiSuspendChat error: \(String(describing: r))")
 }
 
-func apiSetTempFolder(tempFolder: String, ctrl: chat_ctrl? = nil) throws {
-    let r = chatSendCmdSync(.setTempFolder(tempFolder: tempFolder), ctrl)
-    if case .cmdOk = r { return }
-    throw r
-}
-
-func apiSetFilesFolder(filesFolder: String, ctrl: chat_ctrl? = nil) throws {
-    let r = chatSendCmdSync(.setFilesFolder(filesFolder: filesFolder), ctrl)
+func apiSetAppFilePaths(filesFolder: String, tempFolder: String, assetsFolder: String, ctrl: chat_ctrl? = nil) throws {
+    let r = chatSendCmdSync(.apiSetAppFilePaths(filesFolder: filesFolder, tempFolder: tempFolder, assetsFolder: assetsFolder), ctrl)
     if case .cmdOk = r { return }
     throw r
 }
@@ -831,6 +825,21 @@ func apiSetConnectionAlias(connId: Int64, localAlias: String) async throws -> Pe
     throw r
 }
 
+func apiSetUserUIThemes(userId: Int64, themes: ThemeModeOverrides?) async -> Bool {
+    let r = await chatSendCmd(.apiSetUserUIThemes(userId: userId, themes: themes))
+    if case .cmdOk = r { return true }
+    logger.error("apiSetUserUIThemes bad response: \(String(describing: r))")
+    return false
+}
+
+func apiSetChatUIThemes(chatId: ChatId, themes: ThemeModeOverrides?) async -> Bool {
+    let r = await chatSendCmd(.apiSetChatUIThemes(chatId: chatId, themes: themes))
+    if case .cmdOk = r { return true }
+    logger.error("apiSetChatUIThemes bad response: \(String(describing: r))")
+    return false
+}
+
+
 func apiCreateUserAddress() async throws -> String {
     let userId = try currentUserId("apiCreateUserAddress")
     let r = await chatSendCmd(.apiCreateMyAddress(userId: userId))
@@ -1353,8 +1362,7 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     if encryptionStartedDefault.get() {
         encryptionStartedDefault.set(false)
     }
-    try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
-    try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+    try apiSetAppFilePaths(filesFolder: getAppFilesDirectory().path, tempFolder: getTempFilesDirectory().path, assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path)
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
@@ -1439,8 +1447,7 @@ func startChatWithTemporaryDatabase(ctrl: chat_ctrl) throws -> User? {
     logger.debug("startChatWithTemporaryDatabase")
     let migrationActiveUser = try? apiGetActiveUser(ctrl: ctrl) ?? apiCreateActiveUser(Profile(displayName: "Temp", fullName: ""), ctrl: ctrl)
     try setNetworkConfig(getNetCfg(), ctrl: ctrl)
-    try apiSetTempFolder(tempFolder: getMigrationTempFilesDirectory().path, ctrl: ctrl)
-    try apiSetFilesFolder(filesFolder: getMigrationTempFilesDirectory().path, ctrl: ctrl)
+    try apiSetAppFilePaths(filesFolder: getMigrationTempFilesDirectory().path, tempFolder: getMigrationTempFilesDirectory().path, assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path, ctrl: ctrl)
     _ = try apiStartChat(ctrl: ctrl)
     return migrationActiveUser
 }

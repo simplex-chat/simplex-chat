@@ -118,6 +118,7 @@ struct DatabaseView: View {
                     NavigationLink {
                         DatabaseEncryptionView(useKeychain: $useKeychain, migration: false)
                             .navigationTitle("Database passphrase")
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("Database passphrase")
                     }
@@ -144,6 +145,7 @@ struct DatabaseView: View {
                         NavigationLink {
                             ChatArchiveView(archiveName: archiveName)
                                 .navigationTitle(title)
+                                .modifier(ThemedBackground(grouped: true))
                         } label: {
                             Text(title)
                         }
@@ -355,6 +357,7 @@ struct DatabaseView: View {
             Task {
                 do {
                     try await apiDeleteStorage()
+                    try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
                     do {
                         let config = ArchiveConfig(archivePath: archivePath.path)
                         let archiveErrors = try await apiImportArchive(config: config)

@@ -79,7 +79,7 @@ struct SimpleXInfo: View {
                         MigrateToDevice(migrationState: $m.migrationState)
                     }
                     .navigationTitle("Migrate here")
-                    .background(colorScheme == .light ? Color(uiColor: .tertiarySystemGroupedBackground) : .clear)
+                    .modifier(ThemedBackground(grouped: true))
                 }
             }
             .sheet(isPresented: $showHowItWorks) {

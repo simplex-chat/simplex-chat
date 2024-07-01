@@ -13,6 +13,7 @@ let SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
 struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
     @Binding var groupInfo: GroupInfo
@@ -81,6 +82,11 @@ struct GroupChatInfoView: View {
                     } else {
                         sendReceiptsOptionDisabled()
                     }
+                    NavigationLink {
+                        ChatWallpaperEditorSheet(chat: chat)
+                    } label: {
+                        Label("Chat theme", systemImage: "photo")
+                    }
                 } header: {
                     Text("")
                 } footer: {
@@ -135,6 +141,7 @@ struct GroupChatInfoView: View {
                     }
                 }
             }
+            .modifier(ThemedBackground(grouped: true))
             .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -210,6 +217,7 @@ struct GroupChatInfoView: View {
     private struct MemberRowView: View {
         var groupInfo: GroupInfo
         @ObservedObject var groupMember: GMember
+        @EnvironmentObject var theme: AppTheme
         var user: Bool = false
         @Binding var alert: GroupChatInfoViewAlert?
 
@@ -282,7 +290,7 @@ struct GroupChatInfoView: View {
                     Button {
                         alert = .unblockMemberAlert(mem: member)
                     } label: {
-                        Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
+                        Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(theme.colors.primary)
                     }
                 }
             }
@@ -294,7 +302,7 @@ struct GroupChatInfoView: View {
                     Button {
                         alert = .unblockForAllAlert(mem: member)
                     } label: {
-                        Label("Unblock for all", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
+                        Label("Unblock for all", systemImage: "hand.raised.slash").foregroundColor(theme.colors.primary)
                     }
                 } else {
                     Button {
@@ -333,6 +341,7 @@ struct GroupChatInfoView: View {
                 creatingGroup: false
             )
             .navigationBarTitle("Group link")
+            .modifier(ThemedBackground(grouped: true))
             .navigationBarTitleDisplayMode(.large)
         } label: {
             if groupLink == nil {
@@ -350,6 +359,7 @@ struct GroupChatInfoView: View {
                 groupProfile: groupInfo.groupProfile
             )
             .navigationBarTitle("Group profile")
+            .modifier(ThemedBackground())
             .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Edit group profile", systemImage: "pencil")
@@ -364,6 +374,7 @@ struct GroupChatInfoView: View {
                 welcomeText: groupInfo.groupProfile.description ?? ""
             )
             .navigationTitle("Welcome message")
+            .modifier(ThemedBackground(grouped: true))
             .navigationBarTitleDisplayMode(.large)
         } label: {
             groupInfo.groupProfile.description == nil
@@ -518,6 +529,7 @@ func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bo
             creatingGroup: creatingGroup
         )
         .navigationBarTitle("Group preferences")
+        .modifier(ThemedBackground(grouped: true))
         .navigationBarTitleDisplayMode(.large)
     } label: {
         if creatingGroup {

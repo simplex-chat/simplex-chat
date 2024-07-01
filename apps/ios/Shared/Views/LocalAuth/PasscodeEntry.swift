@@ -140,7 +140,7 @@ struct PasscodeEntry: View {
             ZStack {
                 Circle()
                     .frame(width: h, height: h)
-                    .foregroundColor(Color(uiColor: .systemBackground))
+                    .foregroundColor(AppTheme.shared.colors.background)
                 label()
             }
         }

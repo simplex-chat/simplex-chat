@@ -205,6 +205,43 @@ func moveTempFileFromURL(_ url: URL) -> CryptoFile? {
     }
 }
 
+func saveWallpaperFile(url: URL) -> String? {
+    let destFile = URL(fileURLWithPath: generateNewFileName(getWallpaperDirectory().path + "/" + "wallpaper", "jpg", fullPath: true))
+    do {
+        try FileManager.default.copyItem(atPath: url.path, toPath: destFile.path)
+        return destFile.lastPathComponent
+    } catch {
+        logger.error("FileUtils.saveWallpaperFile error: \(error.localizedDescription)")
+        return nil
+    }
+}
+
+func saveWallpaperFile(image: UIImage) -> String? {
+    let hasAlpha = imageHasAlpha(image)
+    let destFile = URL(fileURLWithPath: generateNewFileName(getWallpaperDirectory().path + "/" + "wallpaper", hasAlpha ? "png" : "jpg", fullPath: true))
+    let dataResized = resizeImageToDataSize(image, maxDataSize: 5_000_000, hasAlpha: hasAlpha)
+    do {
+        try dataResized!.write(to: destFile)
+        return destFile.lastPathComponent
+    } catch {
+        logger.error("FileUtils.saveWallpaperFile error: \(error.localizedDescription)")
+        return nil
+    }
+}
+
+func removeWallpaperFile(fileName: String? = nil) {
+    do {
+        try FileManager.default.contentsOfDirectory(atPath: getWallpaperDirectory().path).forEach {
+            if URL(fileURLWithPath: $0).lastPathComponent == fileName { try FileManager.default.removeItem(atPath: $0) }
+        }
+    } catch {
+        logger.error("FileUtils.removeWallpaperFile error: \(error.localizedDescription)")
+    }
+    if let fileName {
+        WallpaperType.cachedImages.removeValue(forKey: fileName)
+    }
+}
+
 func generateNewFileName(_ prefix: String, _ ext: String, fullPath: Bool = false) -> String {
     uniqueCombine("\(prefix)_\(getTimestamp()).\(ext)", fullPath: fullPath)
 }

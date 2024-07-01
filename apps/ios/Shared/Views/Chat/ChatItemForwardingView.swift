@@ -38,6 +38,7 @@ struct ChatItemForwardingView: View {
                     }
                 }
         }
+        .modifier(ThemedBackground())
         .alert(item: $alert) { $0.alert }
     }
 
@@ -54,8 +55,13 @@ struct ChatItemForwardingView: View {
                             .disabled(chatModel.deletedChats.contains(chat.chatInfo.id))
                     }
                 }
+                .modifier(ThemedBackground(grouped: true))
             } else {
-                emptyList()
+                ZStack {
+                    emptyList()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .modifier(ThemedBackground())
             }
         }
     }
@@ -109,7 +115,7 @@ struct ChatItemForwardingView: View {
             .foregroundColor(.secondary)
             .frame(maxWidth: .infinity)
     }
-    
+
     @ViewBuilder private func forwardListChatView(_ chat: Chat) -> some View {
         let prohibited = prohibitedByPref(chat)
         Button {

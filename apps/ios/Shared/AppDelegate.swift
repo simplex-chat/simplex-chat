@@ -17,6 +17,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         if #available(iOS 17.0, *) { trackKeyboard() }
         NotificationCenter.default.addObserver(self, selector: #selector(pasteboardChanged), name: UIPasteboard.changedNotification, object: nil)
         removePasscodesIfReinstalled()
+        prepareForLaunch()
         return true
     }
 
@@ -141,6 +142,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         }
     }
 
+    private func prepareForLaunch() {
+        try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
+    }
+
     static func keepScreenOn(_ on: Bool) {
         UIApplication.shared.isIdleTimerDisabled = on
     }
@@ -148,13 +153,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 class SceneDelegate: NSObject, ObservableObject, UIWindowSceneDelegate {
     var window: UIWindow?
+    static var windowStatic: UIWindow?
     var windowScene: UIWindowScene?
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        UITableView.appearance().backgroundColor = .clear
         guard let windowScene = scene as? UIWindowScene else { return }
         self.windowScene = windowScene
         window = windowScene.keyWindow
-        window?.tintColor = UIColor(cgColor: getUIAccentColorDefault())
-        window?.overrideUserInterfaceStyle = getUserInterfaceStyleDefault()
+        SceneDelegate.windowStatic = windowScene.keyWindow
+        ThemeManager.applyTheme(currentThemeDefault.get())
     }
 }

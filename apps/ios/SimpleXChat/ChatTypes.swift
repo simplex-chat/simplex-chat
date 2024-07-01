@@ -26,6 +26,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat {
     public var sendRcptsContacts: Bool
     public var sendRcptsSmallGroups: Bool
     public var viewPwdHash: UserPwdHash?
+    public var uiThemes: ThemeModeOverrides?
 
     public var id: Int64 { userId }
 
@@ -1504,6 +1505,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     var chatTs: Date?
     var contactGroupMemberId: Int64?
     var contactGrpInvSent: Bool
+    public var uiThemes: ThemeModeOverrides?
 
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
@@ -1843,6 +1845,7 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     var createdAt: Date
     var updatedAt: Date
     var chatTs: Date?
+    public var uiThemes: ThemeModeOverrides?
 
     public var id: ChatId { get { "#\(groupId)" } }
     public var apiId: Int64 { get { groupId } }
@@ -2653,8 +2656,8 @@ public struct CIMeta: Decodable {
         return false
     }
 
-    public func statusIcon(_ metaColor: Color = .secondary) -> (String, Color)? {
-        itemStatus.statusIcon(metaColor)
+    public func statusIcon(_ metaColor: Color = .secondary, _ primaryColor: Color = .accentColor) -> (String, Color)? {
+        itemStatus.statusIcon(metaColor, primaryColor)
     }
 
     public static func getSample(_ id: Int64, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> CIMeta {
@@ -2742,7 +2745,7 @@ public enum CIStatus: Decodable {
         }
     }
 
-    public func statusIcon(_ metaColor: Color = .secondary) -> (String, Color)? {
+    public func statusIcon(_ metaColor: Color = .secondary, _ primaryColor: Color = .accentColor) -> (String, Color)? {
         switch self {
         case .sndNew: return nil
         case .sndSent: return ("checkmark", metaColor)
@@ -2754,7 +2757,7 @@ public enum CIStatus: Decodable {
         case .sndErrorAuth: return ("multiply", .red)
         case .sndError: return ("multiply", .red)
         case .sndWarning: return ("exclamationmark.triangle.fill", .orange)
-        case .rcvNew: return ("circlebadge.fill", Color.accentColor)
+        case .rcvNew: return ("circlebadge.fill", primaryColor)
         case .rcvRead: return nil
         case .invalid: return ("questionmark", metaColor)
         }

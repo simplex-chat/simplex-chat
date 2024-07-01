@@ -16,6 +16,7 @@ struct ProfileImage: View {
     var iconName: String = "person.crop.circle.fill"
     var size: CGFloat
     var color = Color(uiColor: .tertiarySystemGroupedBackground)
+    var backgroundColor: Color? = nil
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var radius = defaultProfileImageCorner
 
     var body: some View {
@@ -28,6 +29,7 @@ struct ProfileImage: View {
                 .resizable()
                 .foregroundColor(color)
                 .frame(width: size, height: size)
+                .background(backgroundColor != nil ? backgroundColor! : .clear)
         }
     }
 }

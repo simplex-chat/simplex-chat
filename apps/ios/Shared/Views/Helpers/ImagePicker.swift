@@ -33,6 +33,7 @@ struct LibraryMediaListPicker: UIViewControllerRepresentable {
     typealias UIViewControllerType = PHPickerViewController
     var addMedia: (_ content: UploadContent) async -> Void
     var selectionLimit: Int
+    var filter: PHPickerFilter = .any(of: [.images, .videos])
     var finishedPreprocessing: () -> Void = {}
     var didFinishPicking: (_ didSelectItems: Bool) async -> Void
 
@@ -148,7 +149,7 @@ struct LibraryMediaListPicker: UIViewControllerRepresentable {
 
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var config = PHPickerConfiguration()
-        config.filter = .any(of: [.images, .videos])
+        config.filter = filter
         config.selectionLimit = selectionLimit
         config.selection = .ordered
         config.preferredAssetRepresentationMode = .current
