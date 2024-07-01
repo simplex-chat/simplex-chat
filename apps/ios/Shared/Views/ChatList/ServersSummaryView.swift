@@ -271,12 +271,22 @@ struct ServersSummaryView: View {
             HStack {
                 Text(serverAddress(srvSumm.xftpServer))
                     .lineLimit(1)
-                if srvSumm.rcvInProgress || srvSumm.sndInProgress || srvSumm.delInProgress {
+                if let inProgressIcon = inProgressIcon(srvSumm) {
                     Spacer()
-                    Image(systemName: "arrow.triangle.2.circlepath")
+                    Image(systemName: inProgressIcon)
                         .foregroundColor(.accentColor)
                 }
             }
+        }
+    }
+
+    private func inProgressIcon(_ srvSumm: XFTPServerSummary) -> String? {
+        switch (srvSumm.rcvInProgress, srvSumm.sndInProgress, srvSumm.delInProgress) {
+        case (false, false, false): nil
+        case (true, false, false): "arrow.down"
+        case (false, true, false): "arrow.up"
+        case (false, false, true): "trash"
+        default: "arrow.up.arrow.down"
         }
     }
 
@@ -585,24 +595,10 @@ struct XFTPServerSummaryView: View {
                 ServerSessionsView(sess: sess)
             }
 
-            inProgressSection()
-
             if let stats = summary.stats {
                 XFTPStatsView(stats: stats, statsStartedAt: statsStartedAt)
             }
         }
-    }
-
-    private func inProgressSection() -> some View {
-        Section("In progress") {
-            localizedInfoRow("Download", boolYesNo(summary.rcvInProgress))
-            localizedInfoRow("Upload", boolYesNo(summary.sndInProgress))
-            localizedInfoRow("Deletion", boolYesNo(summary.delInProgress))
-        }
-    }
-
-    private func boolYesNo(_ b: Bool) -> LocalizedStringKey {
-        b ? "yes" : "no"
     }
 }
 
