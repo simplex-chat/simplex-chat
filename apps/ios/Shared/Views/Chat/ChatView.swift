@@ -410,7 +410,7 @@ struct ChatView: View {
                         itemsInView
                     }
                 }
-                .throttle(for: .seconds(1), scheduler: DispatchQueue.main, latest: true)
+                .throttle(for: .seconds(0.2), scheduler: DispatchQueue.main, latest: true)
                 .map { ChatModel.shared.unreadChatItemCounts(itemsInView: $0) }
                 .removeDuplicates()
                 .assign(to: \.unreadChatItemCounts, on: self)
@@ -440,9 +440,7 @@ struct ChatView: View {
                         .foregroundColor(.accentColor)
                 }
                 .onTapGesture {
-                    if let oldestUnreadItem = filtered(chatModel.reversedChatItems).last(where: { $0.isRcvNew }) {
-                        scrollModel.scrollToItem(id: oldestUnreadItem.id)
-                    }
+                    scrollModel.scrollToNextPage()
                 }
                 .contextMenu {
                     Button {

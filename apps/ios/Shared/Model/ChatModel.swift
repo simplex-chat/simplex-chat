@@ -512,11 +512,13 @@ final class ChatModel: ObservableObject {
     }
 
     func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
-        // update preview
-        decreaseUnreadCounter(cInfo)
-        // update current chat
         if chatId == cInfo.id, let i = getChatItemIndex(cItem) {
-            markChatItemRead_(i)
+            if reversedChatItems[i].isRcvNew {
+                // update current chat
+                markChatItemRead_(i)
+                // update preview
+                decreaseUnreadCounter(cInfo)
+            }
         }
     }
 

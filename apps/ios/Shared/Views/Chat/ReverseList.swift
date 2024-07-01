@@ -28,12 +28,12 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
     func updateUIViewController(_ controller: Controller, context: Context) {
         if case let .scrollingTo(destination) = scrollState, !items.isEmpty {
             switch destination {
+            case .nextPage:
+                controller.scrollToNextPage()
             case let .item(id):
-                controller.scroll(to: items.firstIndex(where: { $0.id == id }))
+                controller.scroll(to: items.firstIndex(where: { $0.id == id }), position: .bottom)
             case .bottom:
-                controller.scroll(to: .zero)
-            case .top:
-                controller.scroll(to: items.count - 1)
+                controller.scroll(to: .zero, position: .top)
             }
         } else {
             controller.update(items: items)
@@ -128,10 +128,22 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                     for: nil
                 )
         }
+        
+        /// Scrolls up
+        func scrollToNextPage() {
+            tableView.setContentOffset(
+                CGPoint(
+                    x: tableView.contentOffset.x,
+                    y: tableView.contentOffset.y + tableView.bounds.height
+                ),
+                animated: true
+            )
+            Task { representer.scrollState = .atDestination }
+        }
 
         /// Scrolls to Item at index path
         /// - Parameter indexPath: Item to scroll to - will scroll to beginning of the list, if `nil`
-        func scroll(to index: Int?) {
+        func scroll(to index: Int?, position: UITableView.ScrollPosition) {
             if let index {
                 var animated = false
                 if #available(iOS 16.0, *) {
@@ -139,7 +151,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                 }
                 tableView.scrollToRow(
                     at: IndexPath(row: index, section: .zero),
-                    at: .middle,
+                    at: position,
                     animated: animated
                 )
                 Task { representer.scrollState = .atDestination }
@@ -151,12 +163,10 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             snapshot.appendSections([.main])
             snapshot.appendItems(items)
             dataSource.defaultRowAnimation = .none
-            var animatingDifferences = false
-            if #available(iOS 16.0, *) {
-                // Only animate incremental changes, no animation for full page loads
-                animatingDifferences = itemCount != .zero && abs(items.count - itemCount) == 1
-            }
-            dataSource.apply(snapshot, animatingDifferences: animatingDifferences)
+            dataSource.apply(
+                snapshot,
+                animatingDifferences: itemCount != .zero && abs(items.count - itemCount) == 1
+            )
             itemCount = items.count
         }
     }
@@ -205,7 +215,7 @@ class ReverseListScrollModel<Item: Identifiable>: ObservableObject {
     /// Represents Scroll State of ``ReverseList``
     enum State: Equatable {
         enum Destination: Equatable {
-            case top
+            case nextPage
             case item(Item.ID)
             case bottom
         }
@@ -216,8 +226,8 @@ class ReverseListScrollModel<Item: Identifiable>: ObservableObject {
 
     @Published var state: State = .atDestination
 
-    func scrollToTop() {
-        state = .scrollingTo(.top)
+    func scrollToNextPage() {
+        state = .scrollingTo(.nextPage)
     }
 
     func scrollToBottom() {
