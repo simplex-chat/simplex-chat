@@ -9,7 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
-struct ChatListView: View {
+struct ChatListView<ToolbarContent: View>: View {
     @EnvironmentObject var chatModel: ChatModel
 
     @State private var searchMode = false
@@ -17,9 +17,11 @@ struct ChatListView: View {
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
-
+    @State var topVisibleRowIndex: Int? = nil;
+    @State private var searchVisible: Bool = true;
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = false
+    let toolbarContent: ToolbarContent?
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -27,6 +29,10 @@ struct ChatListView: View {
         } else {
             viewBody
         }
+    }
+    
+    init(@ViewBuilder toolbarContent: () -> ToolbarContent?) {
+        self.toolbarContent = toolbarContent()
     }
 
     private var viewBody: some View {
@@ -55,28 +61,30 @@ struct ChatListView: View {
 
     @ViewBuilder private var chatList: some View {
         let cs = filteredChats()
-        ZStack {
+        ZStack(alignment: .top) {
             VStack {
-                List {
-                    if !chatModel.chats.isEmpty {
-                        ChatListSearchBar(
-                            searchMode: $searchMode,
-                            searchFocussed: $searchFocussed,
-                            searchText: $searchText,
-                            searchShowingSimplexLink: $searchShowingSimplexLink,
-                            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-                        )
-                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                        .listRowSeparator(.hidden)
-                        .frame(maxWidth: .infinity)
+                ScrollViewReader { scrollViewProxy in
+                    List {
+                        Color.clear
+                            .frame(height: oneHandUI ? 80 : 30)
+                        ForEach(cs.indices, id: \.self) { index in
+                            ChatListNavLink(chat: cs[index])
+                                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                                .padding(.trailing, -16)
+                                .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(cs[index].chatInfo.id))
+                                .background(GeometryReader { proxy in
+                                    Color.clear
+                                        .onAppear {
+                                            updateTopVisibleRowIndex(proxy: proxy, index: index)
+                                        }
+                                        .onChange(of: proxy.frame(in: .named("SCROLL")).minY) { _ in
+                                            updateTopVisibleRowIndex(proxy: proxy, index: index)
+                                        }
+                                })
+                        }
+                        .offset(x: -8)
                     }
-                    ForEach(cs, id: \.viewId) { chat in
-                        ChatListNavLink(chat: chat)
-                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                            .padding(.trailing, -16)
-                            .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
-                    }
-                    .offset(x: -8)
+                    .coordinateSpace(name: "SCROLL")
                 }
             }
             .onChange(of: chatModel.chatId) { _ in
@@ -89,6 +97,68 @@ struct ChatListView: View {
                 Text("No filtered chats")
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
+            }
+            
+            VStack {
+                if let tbcontent = toolbarContent, oneHandUI, #available(iOS 16.0, *), !searchFocussed {
+                    tbcontent
+                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 25)
+                        .padding(.bottom, 5)
+                        .toolbar(.hidden, for: .bottomBar)
+                }
+                
+                if !chatModel.chats.isEmpty && searchVisible {
+                    VStack {
+                        ChatListSearchBar(
+                            searchMode: $searchMode,
+                            searchFocussed: $searchFocussed,
+                            searchText: $searchText,
+                            searchShowingSimplexLink: $searchShowingSimplexLink,
+                            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+                        )
+                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                        .listRowSeparator(.hidden)
+                        .frame(maxWidth: .infinity)
+                        .padding(10)
+                    }
+                }
+            }
+            .background(.bar)
+        }
+    }
+    
+
+    
+    private func updateTopVisibleRowIndex(proxy: GeometryProxy, index: Int) {
+        let frame = proxy.frame(in: .named("SCROLL"))
+        
+        if (oneHandUI) {
+            let screenHeight = UIScreen.main.bounds.height
+
+            if frame.maxY <= screenHeight && frame.maxY > screenHeight - frame.height / 2 {
+                if topVisibleRowIndex != index {
+                    if let topVisibleRowIndex = topVisibleRowIndex  {
+                        searchVisible = topVisibleRowIndex > index || index == 0
+                    } else {
+                        searchVisible = true
+                    }
+                    
+                    topVisibleRowIndex = index
+                }
+            }
+        } else {
+            if frame.minY >= 0 && frame.minY < frame.height / 2 {
+                if topVisibleRowIndex != index {
+                    if let topVisibleRowIndex = topVisibleRowIndex {
+                        searchVisible = topVisibleRowIndex > index
+                    } else {
+                        searchVisible = true
+                    }
+                    
+                    topVisibleRowIndex = index
+                }
             }
         }
     }
@@ -275,10 +345,12 @@ struct ChatListView_Previews: PreviewProvider {
 
         ]
         return Group {
-            ChatListView()
-                .environmentObject(chatModel)
-            ChatListView()
-                .environmentObject(ChatModel())
+            ChatListView {
+                EmptyView()
+            }.environmentObject(chatModel)
+            ChatListView {
+                EmptyView()
+            }.environmentObject(ChatModel())
         }
     }
 }

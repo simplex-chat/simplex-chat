@@ -53,6 +53,16 @@ struct HomeView: View {
             ConnectDesktopView()
         }
     }
+    
+    @ViewBuilder private func toolbar() -> some View {
+        settingsButton()
+        Spacer()
+        contactsButton()
+        Spacer()
+        chatsButton()
+        Spacer()
+        newChatButton()
+    }
 
     @ViewBuilder private func homeView() -> some View {
         let v = VStack {
@@ -61,15 +71,10 @@ struct HomeView: View {
             case .chats: withToolbar("Chats", chatListView)
             }
         }
+        
         .toolbar {
             ToolbarItemGroup(placement: .bottomBar) {
-                settingsButton()
-                Spacer()
-                contactsButton()
-                Spacer()
-                chatsButton()
-                Spacer()
-                newChatButton()
+                toolbar()
             }
         }
 
@@ -212,7 +217,11 @@ struct HomeView: View {
 
     @ViewBuilder private func chatListView() -> some View {
         // TODO reverse scale effect for swipe actions
-        ChatListView()
+        ChatListView {
+            HStack {
+                toolbar()
+            }
+        }
     }
 
     @ViewBuilder private func chatView() -> some View {
