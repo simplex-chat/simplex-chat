@@ -16,6 +16,7 @@ struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var theme: AppTheme = buildTheme()
     @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
@@ -118,6 +119,9 @@ struct ChatView: View {
                     }
                 }
             }
+        }
+        .onChange(of: colorScheme) { _ in
+            theme = buildTheme()
         }
         .toolbar {
             ToolbarItem(placement: .principal) {

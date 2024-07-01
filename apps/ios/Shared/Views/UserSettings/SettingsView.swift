@@ -225,7 +225,6 @@ public class CodableDefault<T: Codable> {
 
 struct SettingsView: View {
     @Environment(\.colorScheme) var colorScheme
-    @EnvironmentObject var themes: AppTheme
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var sceneDelegate: SceneDelegate
     @EnvironmentObject var theme: AppTheme
@@ -274,7 +273,7 @@ struct SettingsView: View {
                                 .modifier(ThemedBackground(grouped: true))
                                 .navigationBarTitleDisplayMode(.large)
                         } label: {
-                            settingsRow("qrcode", color: themes.colors.secondary) { Text("Your SimpleX address") }
+                            settingsRow("qrcode", color: theme.colors.secondary) { Text("Your SimpleX address") }
                         }
 
                         NavigationLink {

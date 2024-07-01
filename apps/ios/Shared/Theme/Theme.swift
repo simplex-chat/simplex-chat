@@ -10,18 +10,7 @@ import Foundation
 import SwiftUI
 import SimpleXChat
 
-var CurrentColors: ThemeManager.ActiveTheme = ThemeManager.currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get()) {
-    didSet {
-        AppTheme.shared.name = CurrentColors.name
-        AppTheme.shared.base = CurrentColors.base
-        AppTheme.shared.colors.updateColorsFrom(CurrentColors.colors)
-        AppTheme.shared.appColors.updateColorsFrom(CurrentColors.appColors)
-        AppTheme.shared.wallpaper.updateWallpaperFrom(CurrentColors.wallpaper)
-        DispatchQueue.main.async {
-            AppTheme.shared.objectWillChange.send()
-        }
-    }
-}
+var CurrentColors: ThemeManager.ActiveTheme = ThemeManager.currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
 
 var MenuTextColor: Color { if isInDarkTheme() { AppTheme.shared.colors.onBackground.opacity(0.8) } else { Color.black } }
 var NoteFolderIconColor: Color { AppTheme.shared.appColors.primaryVariant2 }
@@ -50,6 +39,15 @@ class AppTheme: ObservableObject, Equatable {
         lhs.colors == rhs.colors &&
         lhs.appColors == rhs.appColors &&
         lhs.wallpaper == rhs.wallpaper
+    }
+
+    func updateFromCurrentColors() {
+        objectWillChange.send()
+        name = CurrentColors.name
+        base = CurrentColors.base
+        colors.updateColorsFrom(CurrentColors.colors)
+        appColors.updateColorsFrom(CurrentColors.appColors)
+        wallpaper.updateWallpaperFrom(CurrentColors.wallpaper)
     }
 }
 
@@ -89,10 +87,12 @@ struct ThemedBackground: ViewModifier {
     }
 }
 
-func reactOnDarkThemeChanges(_ isDark: Bool) {
-    systemInDarkThemeCurrently = isDark
-    //sceneDelegate.window?.overrideUserInterfaceStyle == .unspecified
-    if currentThemeDefault.get() == DefaultTheme.SYSTEM_THEME_NAME && CurrentColors.colors.isLight == isDark {
+var systemInDarkThemeCurrently: Bool {
+    return UITraitCollection.current.userInterfaceStyle == .dark
+}
+
+func reactOnDarkThemeChanges() {
+    if currentThemeDefault.get() == DefaultTheme.SYSTEM_THEME_NAME && CurrentColors.colors.isLight == systemInDarkThemeCurrently {
         // Change active colors from light to dark and back based on system theme
         ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
     }

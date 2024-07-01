@@ -151,14 +151,15 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            if sceneDelegate.window?.overrideUserInterfaceStyle == .unspecified {
-                reactOnDarkThemeChanges(colorScheme == .dark)
-            }
+            reactOnDarkThemeChanges()
         }
         .onChange(of: colorScheme) { scheme in
-            if sceneDelegate.window?.overrideUserInterfaceStyle == .unspecified {
-                reactOnDarkThemeChanges(scheme == .dark)
-            }
+            // It's needed to update UI colors when iOS wants to make screenshot after going to background,
+            // so when a user changes his global theme from dark to light or back, the app will adapt to it
+            reactOnDarkThemeChanges()
+        }
+        .onChange(of: theme.name) { _ in
+            ThemeManager.adjustWindowStyle()
         }
     }
 

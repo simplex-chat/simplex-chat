@@ -63,13 +63,10 @@ struct AppearanceSettings: View {
                 }
 
                 Section {
-                    let baseTheme = theme.base
-                    let wallpaperType = theme.wallpaper.type
-
                     ThemeDestinationPicker(themeUserDestination: $themeUserDestination, themeUserDest: themeUserDestination?.0, customizeThemeIsOpen: $customizeThemeIsOpen)
 
                     WallpaperPresetSelector(
-                        selectedWallpaper: wallpaperType,
+                        selectedWallpaper: theme.wallpaper.type,
                         currentColors: currentColors,
                         onChooseType: onChooseType
                     )
@@ -87,11 +84,11 @@ struct AppearanceSettings: View {
                         }
                     }))
 
-                    if case let WallpaperType.Image(filename, _, _) = wallpaperType, (themeUserDestination == nil || perUserTheme.wallpaper?.imageFile != nil) {
+                    if case let WallpaperType.Image(filename, _, _) = theme.wallpaper.type, (themeUserDestination == nil || perUserTheme.wallpaper?.imageFile != nil) {
                         Button {
                             if themeUserDestination == nil {
                                 let defaultActiveTheme = ThemeManager.defaultActiveTheme(themeOverridesDefault.get())
-                                ThemeManager.saveAndApplyWallpaper(baseTheme, nil, themeOverridesDefault)
+                                ThemeManager.saveAndApplyWallpaper(theme.base, nil, themeOverridesDefault)
                                 ThemeManager.removeTheme(defaultActiveTheme?.themeId)
                                 removeWallpaperFile(fileName: filename)
                             } else {

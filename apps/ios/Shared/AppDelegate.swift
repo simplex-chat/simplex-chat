@@ -165,6 +165,7 @@ class SceneDelegate: NSObject, ObservableObject, UIWindowSceneDelegate {
         SceneDelegate.windowStatic = windowScene.keyWindow
         runMigrations()
         ThemeManager.applyTheme(currentThemeDefault.get())
+        ThemeManager.adjustWindowStyle()
     }
 
     private func runMigrations() {

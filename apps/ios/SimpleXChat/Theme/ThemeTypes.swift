@@ -701,10 +701,6 @@ public let BlackColorPaletteApp = AppColors(
     receivedQuote: Color(0xff29292b)
 )
 
-public var systemInDarkThemeCurrently: Bool = false
-
-//func isSystemInDarkTheme(): Bool
-
 extension Colors {
     public func updateColorsFrom(_ other: Colors) {
         primary = other.primary

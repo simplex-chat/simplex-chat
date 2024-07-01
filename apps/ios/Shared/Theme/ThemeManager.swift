@@ -117,10 +117,15 @@ class ThemeManager {
     static func applyTheme(_ theme: String) {
         currentThemeDefault.set(theme)
         CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        AppTheme.shared.updateFromCurrentColors()
         let tint = UIColor(CurrentColors.colors.primary)
         if SceneDelegate.windowStatic?.tintColor != tint {
             SceneDelegate.windowStatic?.tintColor = tint
         }
+//        applyNavigationBarColors(CurrentColors.toAppTheme())
+    }
+
+    static func adjustWindowStyle() {
         let style = switch currentThemeDefault.get() {
         case DefaultTheme.LIGHT.themeName: UIUserInterfaceStyle.light
         case DefaultTheme.SYSTEM_THEME_NAME: UIUserInterfaceStyle.unspecified
@@ -129,7 +134,6 @@ class ThemeManager {
         if SceneDelegate.windowStatic?.overrideUserInterfaceStyle != style {
             SceneDelegate.windowStatic?.overrideUserInterfaceStyle = style
         }
-//        applyNavigationBarColors(CurrentColors.toAppTheme())
     }
 
 //    static func applyNavigationBarColors(_ theme: AppTheme) {
@@ -154,6 +158,7 @@ class ThemeManager {
     static func changeDarkTheme(_ theme: String) {
         systemDarkThemeDefault.set(theme)
         CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        AppTheme.shared.updateFromCurrentColors()
     }
 
     static func saveAndApplyThemeColor(_ baseTheme: DefaultTheme, _ name: ThemeColor, _ color: Color? = nil, _ pref: CodableDefault<[ThemeOverrides]>? = nil) {
