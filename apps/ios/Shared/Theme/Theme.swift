@@ -1,5 +1,5 @@
 //
-//  ThemeShared.swift
+//  Theme.swift
 //  SimpleX (iOS)
 //
 //  Created by Avently on 14.06.2024.
