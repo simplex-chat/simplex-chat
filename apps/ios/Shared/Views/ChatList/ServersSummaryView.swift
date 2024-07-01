@@ -518,6 +518,62 @@ private func numOrDash(_ n: Int) -> String {
     n == 0 ? "-" : "\(n)"
 }
 
+struct DetailedSMPStatsView: View {
+    var stats: AgentSMPServerStatsData
+    var statsStartedAt: Date
+
+    var body: some View {
+        List {
+            Section("Sent messages") {
+                infoRow("Sent total", numOrDash(stats._sentDirect + stats._sentViaProxy))
+                infoRowTwoValues("Sent directly", "attempts", numOrDash(stats._sentDirect), numOrDash(stats._sentDirectAttempts))
+                infoRowTwoValues("Sent via proxy", "attempts", numOrDash(stats._sentViaProxy), numOrDash(stats._sentViaProxyAttempts))
+                infoRowTwoValues("Proxied", "attempts", numOrDash(stats._sentProxied), numOrDash(stats._sentProxiedAttempts))
+                Text("Send errors")
+                indentedInfoRow("AUTH", numOrDash(stats._sentAuthErrs))
+                indentedInfoRow("QUOTA", numOrDash(stats._sentQuotaErrs))
+                indentedInfoRow("expired", numOrDash(stats._sentExpiredErrs))
+                indentedInfoRow("other", numOrDash(stats._sentOtherErrs))
+            }
+            Section("Received messages") {
+                infoRow("Received total", numOrDash(stats._recvMsgs))
+                Text("Receive errors")
+                indentedInfoRow("duplicates", numOrDash(stats._recvDuplicates))
+                indentedInfoRow("decryption errors", numOrDash(stats._recvCryptoErrs))
+                indentedInfoRow("other errors", numOrDash(stats._recvErrs))
+                infoRowTwoValues("Acknowledged", "attempts", numOrDash(stats._ackMsgs), numOrDash(stats._ackAttempts))
+                Text("Acknowledgement errors")
+                indentedInfoRow("NO_MSG errors", numOrDash(stats._ackNoMsgErrs))
+                indentedInfoRow("other errors", numOrDash(stats._ackOtherErrs))
+            }
+            Section {
+                infoRow("Created", numOrDash(stats._connCreated))
+                infoRow("Secured", numOrDash(stats._connCreated))
+                infoRow("Completed", numOrDash(stats._connCompleted))
+                infoRowTwoValues("Deleted", "attempts", numOrDash(stats._connDeleted), numOrDash(stats._connDelAttempts))
+                infoRow("Deletion errors", numOrDash(stats._connDelErrs))
+                infoRowTwoValues("Subscribed", "attempts", numOrDash(stats._connSubscribed), numOrDash(stats._connSubAttempts))
+                infoRow("Subscription errors", numOrDash(stats._connSubErrs))
+            } header: {
+                Text("Connections")
+            } footer: {
+                Text("Starting from \(localTimestamp(statsStartedAt)).")
+            }
+        }
+    }
+}
+
+private func infoRowTwoValues(_ title: LocalizedStringKey, _ title2: LocalizedStringKey, _ value: String, _ value2: String) -> some View {
+    HStack {
+        Text(title) + Text(" / ").font(.caption2) + Text(title2).font(.caption2)
+        Spacer()
+        (
+            Text(value) + Text(" / ").font(.caption2) + Text(value2).font(.caption2)
+        )
+        .foregroundStyle(.secondary)
+    }
+}
+
 private func indentedInfoRow(_ title: LocalizedStringKey, _ value: String) -> some View {
     HStack {
         Text(title)
@@ -525,50 +581,6 @@ private func indentedInfoRow(_ title: LocalizedStringKey, _ value: String) -> so
         Spacer()
         Text(value)
             .foregroundStyle(.secondary)
-    }
-}
-
-struct DetailedSMPStatsView: View {
-    var stats: AgentSMPServerStatsData
-    var statsStartedAt: Date
-
-    var body: some View {
-        List {
-            Section {
-                infoRow("Messages sent", numOrDash(stats._sentDirect + stats._sentViaProxy))
-                infoRow("Messages sent directly", numOrDash(stats._sentDirect))
-                indentedInfoRow("attempts", numOrDash(stats._sentDirectAttempts))
-                infoRow("Messages sent via proxy", numOrDash(stats._sentViaProxy))
-                indentedInfoRow("attempts", numOrDash(stats._sentViaProxyAttempts))
-                infoRow("Messages sent to proxy", numOrDash(stats._sentProxied))
-                indentedInfoRow("attempts", numOrDash(stats._sentProxiedAttempts))
-                infoRow("Sending AUTH errors", numOrDash(stats._sentAuthErrs))
-                indentedInfoRow("QUOTA errors", numOrDash(stats._sentQuotaErrs))
-                indentedInfoRow("expired", numOrDash(stats._sentExpiredErrs))
-                indentedInfoRow("other errors", numOrDash(stats._sentOtherErrs))
-                infoRow("Messages received", numOrDash(stats._recvMsgs))
-                indentedInfoRow("duplicates", numOrDash(stats._recvDuplicates))
-                indentedInfoRow("decryption errors", numOrDash(stats._recvCryptoErrs))
-                indentedInfoRow("other errors", numOrDash(stats._recvErrs))
-                infoRow("Messages acknowledged", numOrDash(stats._ackMsgs))
-                indentedInfoRow("attempts", numOrDash(stats._ackAttempts))
-                indentedInfoRow("NO_MSG errors", numOrDash(stats._ackNoMsgErrs))
-                indentedInfoRow("other errors", numOrDash(stats._ackOtherErrs))
-                infoRow("Connections created", numOrDash(stats._connCreated))
-                indentedInfoRow("secured", numOrDash(stats._connSecured))
-                indentedInfoRow("completed", numOrDash(stats._connCompleted))
-                infoRow("Connections deleted", numOrDash(stats._connDeleted))
-                indentedInfoRow("attempts", numOrDash(stats._connDelAttempts))
-                indentedInfoRow("errors", numOrDash(stats._connDelErrs))
-                infoRow("Connections subscribed", numOrDash(stats._connSubscribed))
-                indentedInfoRow("attempts", numOrDash(stats._connSubAttempts))
-                indentedInfoRow("errors", numOrDash(stats._connSubErrs))
-            } header: {
-                Text("Statistics")
-            } footer: {
-                Text("Starting from \(localTimestamp(statsStartedAt)).")
-            }
-        }
     }
 }
 
@@ -636,21 +648,23 @@ struct DetailedXFTPStatsView: View {
 
     var body: some View {
         List {
+            Section("Uploaded files") {
+                infoRow("Size", prettySize(stats._uploadsSize))
+                infoRowTwoValues("Chunks uploaded", "attempts", numOrDash(stats._uploads), numOrDash(stats._uploadAttempts))
+                infoRow("Upload errors", numOrDash(stats._uploadErrs))
+            }
+            Section("Downloaded files") {
+                infoRow("Size", prettySize(stats._downloadsSize))
+                infoRowTwoValues("Chunks downloaded", "attempts", numOrDash(stats._downloads), numOrDash(stats._downloadAttempts))
+                Text("Download errors")
+                indentedInfoRow("AUTH", numOrDash(stats._downloadAuthErrs))
+                indentedInfoRow("other", numOrDash(stats._downloadErrs))
+            }
             Section {
-                infoRow("Uploaded", prettySize(stats._uploadsSize))
-                indentedInfoRow("chunks", numOrDash(stats._uploads))
-                indentedInfoRow("attempts", numOrDash(stats._uploadAttempts))
-                indentedInfoRow("errors", numOrDash(stats._uploadErrs))
-                infoRow("Downloaded", prettySize(stats._downloadsSize))
-                indentedInfoRow("chunks", numOrDash(stats._downloads))
-                indentedInfoRow("attempts", numOrDash(stats._downloadAttempts))
-                indentedInfoRow("AUTH errors", numOrDash(stats._downloadAuthErrs))
-                indentedInfoRow("other errors", numOrDash(stats._downloadErrs))
-                infoRow("Chunks deleted", numOrDash(stats._deletions))
-                indentedInfoRow("attempts", numOrDash(stats._deleteAttempts))
-                indentedInfoRow("errors", numOrDash(stats._deleteErrs))
+                infoRowTwoValues("Chunks deleted", "attempts", numOrDash(stats._deletions), numOrDash(stats._deleteAttempts))
+                infoRow("Deletion errors", numOrDash(stats._deleteErrs))
             } header: {
-                Text("Statistics")
+                Text("Deleted file chunks")
             } footer: {
                 Text("Starting from \(localTimestamp(statsStartedAt)).")
             }
