@@ -75,16 +75,16 @@ struct AppearanceSettings: View {
                     .listRowBackground(Color.clear)
                     .modifier(WallpaperImporter(showImageImporter: $showImageImporter, onChooseImage: { image in
                         if let filename = saveWallpaperFile(image: image) {
-                            if themeUserDestination == nil, case let WallpaperType.Image(filename, _, _) = theme.wallpaper.type {
+                            if themeUserDestination == nil, case let WallpaperType.image(filename, _, _) = theme.wallpaper.type {
                                 removeWallpaperFile(fileName: filename)
-                            } else if let type = perUserTheme.type, case let WallpaperType.Image(filename, _, _) = type {
+                            } else if let type = perUserTheme.type, case let WallpaperType.image(filename, _, _) = type {
                                 removeWallpaperFile(fileName: filename)
                             }
-                            onTypeChange(WallpaperType.Image(filename, 1, WallpaperScaleType.fill))
+                            onTypeChange(WallpaperType.image(filename, 1, WallpaperScaleType.fill))
                         }
                     }))
 
-                    if case let WallpaperType.Image(filename, _, _) = theme.wallpaper.type, (themeUserDestination == nil || perUserTheme.wallpaper?.imageFile != nil) {
+                    if case let WallpaperType.image(filename, _, _) = theme.wallpaper.type, (themeUserDestination == nil || perUserTheme.wallpaper?.imageFile != nil) {
                         Button {
                             if themeUserDestination == nil {
                                 let defaultActiveTheme = ThemeManager.defaultActiveTheme(themeOverridesDefault.get())
@@ -248,12 +248,12 @@ struct AppearanceSettings: View {
 
     private func onChooseType(_ type: WallpaperType?) {
         // don't have image in parent or already selected wallpaper with custom image
-        if let type, case WallpaperType.Image = type {
-            if case WallpaperType.Image = theme.wallpaper.type, themeUserDestination?.1 != nil {
+        if let type, case WallpaperType.image = type {
+            if case WallpaperType.image = theme.wallpaper.type, themeUserDestination?.1 != nil {
                 showImageImporter = true
             } else if currentColors(type).wallpaper.type.image == nil {
                 showImageImporter = true
-            } else if currentColors(type).wallpaper.type.image != nil, case WallpaperType.Image = theme.wallpaper.type, themeUserDestination == nil {
+            } else if currentColors(type).wallpaper.type.image != nil, case WallpaperType.image = theme.wallpaper.type, themeUserDestination == nil {
                 showImageImporter = true
             } else if themeUserDestination == nil {
                 onTypeChange(currentColors(type).wallpaper.type)
@@ -400,13 +400,13 @@ struct WallpaperPresetSelector: View {
     }
 
     func OwnBackgroundItem(_ type: WallpaperType?) -> some View {
-        let overrides = currentColors(WallpaperType.Image("", nil, nil))
+        let overrides = currentColors(WallpaperType.image("", nil, nil))
         let appWallpaper = overrides.wallpaper
         let backgroundColor = appWallpaper.background
         let tintColor = appWallpaper.tint
         let wallpaperImage = appWallpaper.type.image
-        let checked = if let type, case WallpaperType.Image = type, wallpaperImage != nil { true } else { false }
-        let borderColor = if let type, case WallpaperType.Image = type { theme.colors.primary.opacity(0.8) } else { theme.colors.onBackground.opacity(0.1) }
+        let checked = if let type, case WallpaperType.image = type, wallpaperImage != nil { true } else { false }
+        let borderColor = if let type, case WallpaperType.image = type { theme.colors.primary.opacity(0.8) } else { theme.colors.onBackground.opacity(0.1) }
         return ZStack {
             if checked || wallpaperImage != nil {
                 ChatThemePreview(
@@ -427,7 +427,7 @@ struct WallpaperPresetSelector: View {
             .strokeBorder(borderColor, lineWidth: 1)
         )
         .onTapGesture {
-            onChooseType(WallpaperType.Image("", nil, nil))
+            onChooseType(WallpaperType.image("", nil, nil))
         }
       }
 }
@@ -469,7 +469,7 @@ struct CustomizeThemeView: View {
             .listRowInsets(.init())
             .listRowBackground(Color.clear)
 
-            if case let WallpaperType.Image(filename, _, _) = theme.wallpaper.type {
+            if case let WallpaperType.image(filename, _, _) = theme.wallpaper.type {
                 Button {
                     let defaultActiveTheme = ThemeManager.defaultActiveTheme(themeOverridesDefault.get())
                     ThemeManager.saveAndApplyWallpaper(baseTheme, nil, themeOverridesDefault)
@@ -847,10 +847,10 @@ struct WallpaperSetupView: View {
     var onTypeChange: (WallpaperType?) -> Void
 
     var body: some View {
-        if let wallpaperType, case let WallpaperType.Image(_, _, scaleType) = wallpaperType {
+        if let wallpaperType, case let WallpaperType.image(_, _, scaleType) = wallpaperType {
             let wallpaperScaleType = if let scaleType {
                 scaleType
-            } else if let initialWallpaper, case let WallpaperType.Image(_, _, scaleType) = initialWallpaper.type, let scaleType {
+            } else if let initialWallpaper, case let WallpaperType.image(_, _, scaleType) = initialWallpaper.type, let scaleType {
                 scaleType
             } else {
                 WallpaperScaleType.fill
@@ -861,7 +861,7 @@ struct WallpaperSetupView: View {
 
         if let wallpaperType, wallpaperType.isPreset {
             WallpaperScaleChooser(wallpaperScale: Binding.constant(initialWallpaper?.type.scale ?? 1), wallpaperType: wallpaperType, onTypeChange: onTypeChange)
-        } else if let wallpaperType, case let WallpaperType.Image(_, _, scaleType) = wallpaperType, scaleType == WallpaperScaleType.repeat {
+        } else if let wallpaperType, case let WallpaperType.image(_, _, scaleType) = wallpaperType, scaleType == WallpaperScaleType.repeat {
             WallpaperScaleChooser(wallpaperScale: Binding.constant(initialWallpaper?.type.scale ?? 1), wallpaperType: wallpaperType, onTypeChange: onTypeChange)
         }
 
@@ -888,10 +888,10 @@ struct WallpaperSetupView: View {
                     .frame(width: 40, height: 36, alignment: .leading)
                 Slider(
                     value: Binding(get: { wallpaperScale }, set: { scale in
-                        if let wallpaperType, case let WallpaperType.Preset(filename, _) = wallpaperType {
-                            onTypeChange(WallpaperType.Preset(filename, Float("\(scale)".prefix(9))))
-                        } else if let wallpaperType, case let WallpaperType.Image(filename, _, scaleType) = wallpaperType {
-                            onTypeChange(WallpaperType.Image(filename, Float("\(scale)".prefix(9)), scaleType))
+                        if let wallpaperType, case let WallpaperType.preset(filename, _) = wallpaperType {
+                            onTypeChange(WallpaperType.preset(filename, Float("\(scale)".prefix(9))))
+                        } else if let wallpaperType, case let WallpaperType.image(filename, _, scaleType) = wallpaperType {
+                            onTypeChange(WallpaperType.image(filename, Float("\(scale)".prefix(9)), scaleType))
                         }
                     }),
                     in: 0.5...2,
@@ -909,8 +909,8 @@ struct WallpaperSetupView: View {
 
         var body: some View {
             Picker("Scale", selection: Binding(get: { wallpaperScaleType }, set: { scaleType in
-                if let wallpaperType, case let WallpaperType.Image(filename, scale, _) = wallpaperType {
-                    onTypeChange(WallpaperType.Image(filename, scale, scaleType))
+                if let wallpaperType, case let WallpaperType.image(filename, scale, _) = wallpaperType {
+                    onTypeChange(WallpaperType.image(filename, scale, scaleType))
                 }
             })) {
                 ForEach(Array(WallpaperScaleType.allCases), id: \.self) { type in
@@ -1058,10 +1058,10 @@ private func removeUserThemeModeOverrides(_ themeUserDestination: Binding<(Int64
     perUserTheme.wrappedValue = ThemeModeOverride(mode: CurrentColors.base.mode)
     themeUserDestination.wrappedValue = (dest.0, nil)
     var wallpaperFilesToDelete: [String] = []
-    if let type = ChatModel.shared.currentUser?.uiThemes?.light?.type, case let WallpaperType.Image(filename, _, _) = type {
+    if let type = ChatModel.shared.currentUser?.uiThemes?.light?.type, case let WallpaperType.image(filename, _, _) = type {
         wallpaperFilesToDelete.append(filename)
     }
-    if let type = ChatModel.shared.currentUser?.uiThemes?.dark?.type, case let WallpaperType.Image(filename, _, _) = type {
+    if let type = ChatModel.shared.currentUser?.uiThemes?.dark?.type, case let WallpaperType.image(filename, _, _) = type {
         wallpaperFilesToDelete.append(filename)
     }
     wallpaperFilesToDelete.forEach(removeWallpaperFile)

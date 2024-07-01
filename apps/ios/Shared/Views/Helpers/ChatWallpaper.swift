@@ -34,9 +34,9 @@ struct ChatViewBackground: ViewModifier {
                 }
                 context.fill(Path(rect), with: .color(background))
                 switch imageType {
-                case let WallpaperType.Preset(filename, scale):
+                case let WallpaperType.preset(filename, scale):
                     repeatDraw(CGFloat((scale ?? 1) * (PresetWallpaper.from(filename)?.scale ?? 1)))
-                case let WallpaperType.Image(_, scale, scaleType):
+                case let WallpaperType.image(_, scale, scaleType):
                     let scaleType = scaleType ?? WallpaperScaleType.fill
                     switch scaleType {
                     case WallpaperScaleType.repeat: repeatDraw(CGFloat(scale ?? 1))
@@ -76,7 +76,7 @@ struct ChatViewBackground: ViewModifier {
                         }
                         context.fill(Path(rect), with: .color(tint))
                     }
-                case WallpaperType.Empty: ()
+                case WallpaperType.empty: ()
                 }
             }
         )
@@ -87,14 +87,14 @@ extension PresetWallpaper {
     public func toType(_ base: DefaultTheme, _ scale: Float? = nil) -> WallpaperType {
         let scale = if let scale {
             scale
-        } else if let type = ChatModel.shared.currentUser?.uiThemes?.preferredMode(base.mode == DefaultThemeMode.dark)?.wallpaper?.toAppWallpaper().type, type.sameType(WallpaperType.Preset(filename, nil)) {
+        } else if let type = ChatModel.shared.currentUser?.uiThemes?.preferredMode(base.mode == DefaultThemeMode.dark)?.wallpaper?.toAppWallpaper().type, type.sameType(WallpaperType.preset(filename, nil)) {
             type.scale
         } else if let scale = themeOverridesDefault.get().first(where: { $0.wallpaper != nil && $0.wallpaper!.preset == filename })?.wallpaper?.scale {
             scale
         } else {
             Float(1.0)
         }
-        return WallpaperType.Preset(
+        return WallpaperType.preset(
             filename,
             scale
         )

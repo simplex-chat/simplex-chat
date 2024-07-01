@@ -144,7 +144,7 @@ public class AppWallpaper: ObservableObject, NSCopying, Equatable {
     
     @Published public var background: Color? = nil
     @Published public var tint: Color? = nil
-    @Published public var type: WallpaperType = WallpaperType.Empty
+    @Published public var type: WallpaperType = WallpaperType.empty
 
     public init(background: Color?, tint: Color?, type: WallpaperType) {
         self.background = background
@@ -326,25 +326,25 @@ public struct ThemeWallpaper: Codable, Equatable {
         AppWallpaper (
             background: background?.colorFromReadableHex(),
             tint: tint?.colorFromReadableHex(),
-            type: WallpaperType.from(self) ?? WallpaperType.Empty
+            type: WallpaperType.from(self) ?? WallpaperType.empty
         )
     }
 
     public func withFilledWallpaperPath() -> ThemeWallpaper {
         let aw = toAppWallpaper()
         let type = aw.type
-        let preset: String? = if case let WallpaperType.Preset(filename, _) = type { filename } else { nil }
+        let preset: String? = if case let WallpaperType.preset(filename, _) = type { filename } else { nil }
         let scale: Float? = if scale == nil { nil } else {
-            if case let WallpaperType.Preset(_, scale) = type {
+            if case let WallpaperType.preset(_, scale) = type {
                 scale
-            } else if case let WallpaperType.Image(_, scale, _) = type {
+            } else if case let WallpaperType.image(_, scale, _) = type {
                 scale
             } else {
                 nil
             }
         }
-        let scaleType: WallpaperScaleType? = if scaleType == nil { nil } else if case let WallpaperType.Image(_, _, scaleType) = type { scaleType } else { nil }
-        let imageFile: String? = if case let WallpaperType.Image(filename, _, _) = type { filename } else { nil }
+        let scaleType: WallpaperScaleType? = if scaleType == nil { nil } else if case let WallpaperType.image(_, _, scaleType) = type { scaleType } else { nil }
+        let imageFile: String? = if case let WallpaperType.image(filename, _, _) = type { filename } else { nil }
         return ThemeWallpaper (
             preset: preset,
             scale: scale,
@@ -357,10 +357,10 @@ public struct ThemeWallpaper: Codable, Equatable {
     }
 
     public static func from(_ type: WallpaperType, _ background: String?, _ tint: String?) -> ThemeWallpaper {
-        let preset: String? = if case let WallpaperType.Preset(filename, _) = type { filename } else { nil }
-        let scale: Float? = if case let WallpaperType.Preset(_, scale) = type { scale } else if case let WallpaperType.Image(_, scale, _) = type { scale } else { nil }
-        let scaleType: WallpaperScaleType? = if case let WallpaperType.Image(_, _, scaleType) = type  { scaleType } else { nil }
-        let imageFile: String? = if case let WallpaperType.Image(filename, _, _) = type { filename } else { nil }
+        let preset: String? = if case let WallpaperType.preset(filename, _) = type { filename } else { nil }
+        let scale: Float? = if case let WallpaperType.preset(_, scale) = type { scale } else if case let WallpaperType.image(_, scale, _) = type { scale } else { nil }
+        let scaleType: WallpaperScaleType? = if case let WallpaperType.image(_, _, scaleType) = type  { scaleType } else { nil }
+        let imageFile: String? = if case let WallpaperType.image(filename, _, _) = type { filename } else { nil }
         return ThemeWallpaper(
             preset: preset,
             scale: scale,
@@ -392,13 +392,13 @@ public struct ThemeOverrides: Codable, Equatable {
         if base.themeName != themeName {
             return false
         }
-        return if let preset = wallpaper?.preset, let type, case let WallpaperType.Preset(filename, _) = type, preset == filename {
+        return if let preset = wallpaper?.preset, let type, case let WallpaperType.preset(filename, _) = type, preset == filename {
             true
-        } else if wallpaper?.imageFile != nil, let type, case WallpaperType.Image = type {
+        } else if wallpaper?.imageFile != nil, let type, case WallpaperType.image = type {
             true
         } else if wallpaper?.preset == nil && wallpaper?.imageFile == nil && type == nil {
             true
-        } else if wallpaper?.preset == nil && wallpaper?.imageFile == nil, let type, case WallpaperType.Empty = type {
+        } else if wallpaper?.preset == nil && wallpaper?.imageFile == nil, let type, case WallpaperType.empty = type {
             true
         } else {
             false
@@ -476,7 +476,7 @@ public struct ThemeOverrides: Codable, Equatable {
         else if let w = perChatTheme?.wallpaper { mainType = w.toAppWallpaper().type }
         else if let w = perUserTheme?.wallpaper { mainType = w.toAppWallpaper().type }
         else if let w = wallpaper { mainType = w.toAppWallpaper().type }
-        else { return AppWallpaper(background: nil, tint: nil, type: WallpaperType.Empty) }
+        else { return AppWallpaper(background: nil, tint: nil, type: WallpaperType.empty) }
 
         let first: ThemeWallpaper? = if mainType.sameType(perChatTheme?.wallpaper?.toAppWallpaper().type) { perChatTheme?.wallpaper } else { nil }
         let second: ThemeWallpaper? = if mainType.sameType(perUserTheme?.wallpaper?.toAppWallpaper().type) { perUserTheme?.wallpaper } else { nil }
@@ -484,16 +484,16 @@ public struct ThemeOverrides: Codable, Equatable {
 
         let wallpaper: WallpaperType
         switch mainType {
-        case let WallpaperType.Preset(preset, scale):
+        case let WallpaperType.preset(preset, scale):
             let scale = if themeOverridesForType == nil { scale ?? first?.scale ?? second?.scale ?? third?.scale } else { second?.scale ?? third?.scale ?? scale }
-            wallpaper = WallpaperType.Preset(preset, scale)
-        case let WallpaperType.Image(filename, scale, scaleType):
+            wallpaper = WallpaperType.preset(preset, scale)
+        case let WallpaperType.image(filename, scale, scaleType):
             let scale = if themeOverridesForType == nil { scale ?? first?.scale ?? second?.scale ?? third?.scale } else { second?.scale ?? third?.scale ?? scale }
             let scaleType = if themeOverridesForType == nil { scaleType ?? first?.scaleType ?? second?.scaleType ?? third?.scaleType } else { second?.scaleType ?? third?.scaleType ?? scaleType }
             let imageFile = if themeOverridesForType == nil { filename } else { first?.imageFile ?? second?.imageFile ?? third?.imageFile ?? filename }
-            wallpaper = WallpaperType.Image(imageFile, scale, scaleType)
-        case WallpaperType.Empty:
-            wallpaper = WallpaperType.Empty
+            wallpaper = WallpaperType.image(imageFile, scale, scaleType)
+        case WallpaperType.empty:
+            wallpaper = WallpaperType.empty
         }
         let background = (first?.background ?? second?.background ?? third?.background)?.colorFromReadableHex() ?? mainType.defaultBackgroundColor(base, themeBackgroundColor)
         let tint = (first?.tint ?? second?.tint ?? third?.tint)?.colorFromReadableHex() ?? mainType.defaultTintColor(base)
