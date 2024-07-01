@@ -614,13 +614,13 @@ struct XFTPStatsView: View {
         let uploadsSize = stats._uploadsSize == 0 ? "-" : ByteCountFormatter.string(fromByteCount: stats._uploadsSize * kb, countStyle: .binary)
         let downloadsSize = stats._downloadsSize == 0 ? "-" : ByteCountFormatter.string(fromByteCount: stats._downloadsSize * kb, countStyle: .binary)
         Section {
-            indentedInfoRow("Uploaded", uploadsSize)
+            infoRow("Uploaded", uploadsSize)
             if expanded {
                 indentedInfoRow("chunks", numOrDash(stats._uploads))
                 indentedInfoRow("attempts", numOrDash(stats._uploadAttempts))
                 indentedInfoRow("errors", numOrDash(stats._uploadErrs))
             }
-            indentedInfoRow("Downloaded", downloadsSize)
+            infoRow("Downloaded", downloadsSize)
             if expanded {
                 indentedInfoRow("chunks", numOrDash(stats._downloads))
                 indentedInfoRow("attempts", numOrDash(stats._downloadAttempts))
