@@ -189,18 +189,14 @@ struct ServersSummaryView: View {
         _ header: LocalizedStringKey? = nil,
         _ footer: LocalizedStringKey? = nil
     ) -> some View {
-        // Sort by known, then connected, then address
         let sortedServers = servers.sorted {
-            $0.known == $1.known ? (
-                $0.connected == $1.connected
-                ? serverAddress($0.smpServer) < serverAddress($1.smpServer)
-                : $0.connected && !$1.connected
-            ) : ($0.known ?? false) && !($1.known ?? false)
+            $0.connected == $1.connected
+            ? serverAddress($0.smpServer) < serverAddress($1.smpServer)
+            : $0.connected && !$1.connected
         }
-        let reserveIconSpace = sortedServers.contains(where: { $0.known ?? false })
         Section {
             ForEach(sortedServers) { server in
-                smpServerView(server, showReconnectButton, statsStartedAt, reserveIconSpace)
+                smpServerView(server, showReconnectButton, statsStartedAt)
             }
         } header: {
             if let header = header {
@@ -213,7 +209,7 @@ struct ServersSummaryView: View {
         }
     }
 
-    private func smpServerView(_ srvSumm: SMPServerSummary, _ showReconnectButton: Bool, _ statsStartedAt: Date, _ reserveIconSpace: Bool) -> some View {
+    private func smpServerView(_ srvSumm: SMPServerSummary, _ showReconnectButton: Bool, _ statsStartedAt: Date) -> some View {
         NavigationLink(tag: srvSumm.id, selection: $selectedSMPServer) {
             SMPServerSummaryView(
                 summary: srvSumm,
@@ -224,19 +220,6 @@ struct ServersSummaryView: View {
             .navigationBarTitleDisplayMode(.large)
         } label: {
             HStack {
-                Group {
-                    if srvSumm.known ?? false {
-                        Image(systemName: "server.rack")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .foregroundColor(.secondary)
-                    } else if reserveIconSpace {
-                        Color.clear
-                    }
-                }
-                .frame(width: 20, alignment: .center)
-                .padding(.trailing, 4)
-                
                 Text(serverAddress(srvSumm.smpServer))
                     .lineLimit(1)
                 if srvSumm.connected {
@@ -260,16 +243,10 @@ struct ServersSummaryView: View {
         _ header: LocalizedStringKey? = nil,
         _ footer: LocalizedStringKey? = nil
     ) -> some View {
-        // Sort by known, then address
-        let sortedServers = servers.sorted {
-            $0.known == $1.known
-            ? serverAddress($0.xftpServer) < serverAddress($1.xftpServer)
-            : ($0.known ?? false) && !($1.known ?? false)
-        }
-        let reserveIconSpace = sortedServers.contains(where: { $0.known ?? false })
+        let sortedServers = servers.sorted { serverAddress($0.xftpServer) < serverAddress($1.xftpServer) }
         Section {
             ForEach(sortedServers) { server in
-                xftpServerView(server, statsStartedAt, reserveIconSpace)
+                xftpServerView(server, statsStartedAt)
             }
         } header: {
             if let header = header {
@@ -282,7 +259,7 @@ struct ServersSummaryView: View {
         }
     }
 
-    private func xftpServerView(_ srvSumm: XFTPServerSummary, _ statsStartedAt: Date, _ reserveIconSpace: Bool) -> some View {
+    private func xftpServerView(_ srvSumm: XFTPServerSummary, _ statsStartedAt: Date) -> some View {
         NavigationLink(tag: srvSumm.id, selection: $selectedXFTPServer) {
             XFTPServerSummaryView(
                 summary: srvSumm,
@@ -292,19 +269,6 @@ struct ServersSummaryView: View {
             .navigationBarTitleDisplayMode(.large)
         } label: {
             HStack {
-                Group {
-                    if srvSumm.known ?? false {
-                        Image(systemName: "server.rack")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .foregroundColor(.secondary)
-                    } else if reserveIconSpace {
-                        Color.clear
-                    }
-                }
-                .frame(width: 20, alignment: .center)
-                .padding(.trailing, 4)
-
                 Text(serverAddress(srvSumm.xftpServer))
                     .lineLimit(1)
                 if srvSumm.rcvInProgress || srvSumm.sndInProgress || srvSumm.delInProgress {
@@ -446,10 +410,7 @@ struct SMPServerSummaryView: View {
                 Text("Server address")
             } footer: {
                 if let known = summary.known, known {
-                    HStack {
-                        Image(systemName: "server.rack").font(.caption)
-                        Text("Server is configured in **Settings** → **Network & servers**.")
-                    }
+                    Text("Server is configured in **Settings** → **Network & servers**.")
                 }
             }
 
@@ -459,15 +420,9 @@ struct SMPServerSummaryView: View {
                     reconnectButtonSection()
                 } footer: {
                     if summary.subs != nil {
-                        HStack {
-                            Image(systemName: "dot.radiowaves.up.forward")
-                            Text("Connection status is displayed based on Message subscriptions.")
-                        }
+                        Text("Connection status is displayed based on Message subscriptions.")
                     } else if summary.sessions != nil {
-                        HStack {
-                            Image(systemName: "dot.radiowaves.up.forward")
-                            Text("Connection status is displayed based on Transport sessions.")
-                        }
+                        Text("Connection status is displayed based on Transport sessions.")
                     }
                 }
             }
@@ -642,10 +597,7 @@ struct XFTPServerSummaryView: View {
                 Text("Server address")
             } footer: {
                 if let known = summary.known, known {
-                    HStack {
-                        Image(systemName: "server.rack").font(.caption)
-                        Text("Server is configured in **Settings** → **Network & servers**.")
-                    }
+                    Text("Server is configured in **Settings** → **Network & servers**.")
                 }
             }
 
