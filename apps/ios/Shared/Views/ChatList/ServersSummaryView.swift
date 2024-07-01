@@ -393,13 +393,14 @@ struct SMPServerSummaryView: View {
             Section("Server address") {
                 Text(summary.smpServer)
                     .textSelection(.enabled)
-//                if let known = summary.known, !known {
-//                    Button {
-//                        // TODO
-//                    } label: {
-//                        Text("Add as known")
-//                    }
-//                }
+                if summary.known == true {
+                    NavigationLink {
+                        ProtocolServersView(serverProtocol: .smp)
+                            .navigationTitle("Your SMP servers")
+                    } label: {
+                        Text("Open server settings")
+                    }
+                }
             }
 
             if summary.hasSubs && showReconnectButton {
@@ -570,13 +571,14 @@ struct XFTPServerSummaryView: View {
             Section("Server address") {
                 Text(summary.xftpServer)
                     .textSelection(.enabled)
-//                if let known = summary.known, !known {
-//                    Button {
-//                        // TODO
-//                    } label: {
-//                        Text("Add as known")
-//                    }
-//                }
+                if summary.known == true {
+                    NavigationLink {
+                        ProtocolServersView(serverProtocol: .xftp)
+                            .navigationTitle("Your XFTP servers")
+                    } label: {
+                        Text("Open server settings")
+                    }
+                }
             }
 
             if let sess = summary.sessions {
