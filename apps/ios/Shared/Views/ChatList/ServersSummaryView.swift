@@ -499,8 +499,7 @@ struct SMPStatsView: View {
     @State private var expanded = false
 
     var body: some View {
-        Section("Statistics") {
-            infoRow("Starting from", localTimestamp(statsStartedAt))
+        Section {
             infoRow("Messages sent", numOrDash(stats._sentDirect + stats._sentViaProxy))
             if expanded {
                 infoRow("Messages sent directly", numOrDash(stats._sentDirect))
@@ -540,6 +539,10 @@ struct SMPStatsView: View {
             } label: {
                 Text(expanded ? "Show less" : "Show more")
             }
+        } header: {
+            Text("Statistics")
+        } footer: {
+            Text("Starting from \(localTimestamp(statsStartedAt)).")
         }
     }
 }
@@ -610,8 +613,7 @@ struct XFTPStatsView: View {
         let kb: Int64 = 1024
         let uploadsSize = stats._uploadsSize == 0 ? "-" : ByteCountFormatter.string(fromByteCount: stats._uploadsSize * kb, countStyle: .binary)
         let downloadsSize = stats._downloadsSize == 0 ? "-" : ByteCountFormatter.string(fromByteCount: stats._downloadsSize * kb, countStyle: .binary)
-        Section("Statistics") {
-            infoRow("Starting from", localTimestamp(statsStartedAt))
+        Section {
             infoRow("Chunks uploaded", numOrDash(stats._uploads))
             indentedInfoRow("size", uploadsSize)
             if expanded {
@@ -635,6 +637,10 @@ struct XFTPStatsView: View {
             } label: {
                 Text(expanded ? "Show less" : "Show more")
             }
+        } header: {
+            Text("Statistics")
+        } footer: {
+            Text("Starting from \(localTimestamp(statsStartedAt)).")
         }
     }
 }
