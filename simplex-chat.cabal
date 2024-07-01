@@ -146,6 +146,7 @@ library
       Simplex.Chat.Migrations.M20240510_chat_items_via_proxy
       Simplex.Chat.Migrations.M20240515_rcv_files_user_approved_relays
       Simplex.Chat.Migrations.M20240528_quota_err_counter
+      Simplex.Chat.Migrations.M20240530_user_contact_links_user_id
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared

@@ -882,3 +882,4 @@ CREATE INDEX idx_chat_items_fwd_from_group_id ON chat_items(fwd_from_group_id);
 CREATE INDEX idx_chat_items_fwd_from_chat_item_id ON chat_items(
   fwd_from_chat_item_id
 );
+CREATE INDEX idx_user_contact_links_user_id ON user_contact_links(user_id);
