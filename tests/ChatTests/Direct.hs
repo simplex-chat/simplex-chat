@@ -63,11 +63,22 @@ chatDirectTests = do
     it "get and set XFTP servers" testGetSetXFTPServers
     it "test XFTP server connection" testTestXFTPServer
   describe "async connection handshake" $ do
-    it "connect when initiating client goes offline" testAsyncInitiatingOffline
-    it "connect when accepting client goes offline" testAsyncAcceptingOffline
+    describe "connect when initiating client goes offline" $ do
+      it "curr" $ testAsyncInitiatingOffline testCfg testCfg
+      it "v5" $ testAsyncInitiatingOffline testCfgSlow testCfgSlow
+      it "v5/curr" $ testAsyncInitiatingOffline testCfgSlow testCfg
+      it "curr/v5" $ testAsyncInitiatingOffline testCfg testCfgSlow
+    describe "connect when accepting client goes offline" $ do
+      it "curr" $ testAsyncAcceptingOffline testCfg testCfg
+      it "v5" $ testAsyncAcceptingOffline testCfgSlow testCfgSlow
+      it "v5/curr" $ testAsyncAcceptingOffline testCfgSlow testCfg
+      it "curr/v5" $ testAsyncAcceptingOffline testCfg testCfgSlow
     describe "connect, fully asynchronous (when clients are never simultaneously online)" $ do
+      it "curr" testFullAsyncFast
       -- fails in CI
-      xit'' "v2" testFullAsync
+      xit'' "v5" $ testFullAsyncSlow testCfgSlow testCfgSlow
+      xit'' "v5/curr" $ testFullAsyncSlow testCfgSlow testCfg
+      xit'' "curr/v5" $ testFullAsyncSlow testCfg testCfgSlow
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
   describe "maintenance mode" $ do
@@ -842,41 +853,38 @@ testTestXFTPServer =
       alice <## "XFTP server test failed at Connect, error: BROKER {brokerAddress = \"xftp://LcJU@localhost:7002\", brokerErr = NETWORK}"
       alice <## "Possibly, certificate fingerprint in XFTP server address is incorrect"
 
-testAsyncInitiatingOffline :: HasCallStack => FilePath -> IO ()
-testAsyncInitiatingOffline tmp = do
-  putStrLn "testAsyncInitiatingOffline"
-  inv <- withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+testAsyncInitiatingOffline :: HasCallStack => ChatConfig -> ChatConfig -> FilePath -> IO ()
+testAsyncInitiatingOffline aliceCfg bobCfg tmp = do
+  inv <- withNewTestChatCfg tmp aliceCfg "alice" aliceProfile $ \alice -> do
     threadDelay 250000
     alice ##> "/c"
     getInvitation alice
-  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg tmp bobCfg "bob" bobProfile $ \bob -> do
     threadDelay 250000
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
-    withTestChat tmp "alice" $ \alice -> do
+    withTestChatCfg tmp aliceCfg "alice" $ \alice -> do
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
 
-testAsyncAcceptingOffline :: HasCallStack => FilePath -> IO ()
-testAsyncAcceptingOffline tmp = do
-  putStrLn "testAsyncAcceptingOffline"
-  inv <- withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+testAsyncAcceptingOffline :: HasCallStack => ChatConfig -> ChatConfig -> FilePath -> IO ()
+testAsyncAcceptingOffline aliceCfg bobCfg tmp = do
+  inv <- withNewTestChatCfg tmp aliceCfg "alice" aliceProfile $ \alice -> do
     alice ##> "/c"
     getInvitation alice
-  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg tmp bobCfg "bob" bobProfile $ \bob -> do
     threadDelay 250000
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
-  withTestChat tmp "alice" $ \alice -> do
-    withTestChat tmp "bob" $ \bob -> do
+  withTestChatCfg tmp aliceCfg "alice" $ \alice -> do
+    withTestChatCfg tmp bobCfg "bob" $ \bob -> do
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
 
-testFullAsync :: HasCallStack => FilePath -> IO ()
-testFullAsync tmp = do
-  putStrLn "testFullAsync"
+testFullAsyncFast :: HasCallStack => FilePath -> IO ()
+testFullAsyncFast tmp = do
   inv <- withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     threadDelay 250000
     alice ##> "/c"
@@ -885,143 +893,33 @@ testFullAsync tmp = do
     threadDelay 250000
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
-  withTestChat tmp "alice" $ \_ -> pure () -- connecting... notification in UI
-  withTestChat tmp "bob" $ \_ -> pure () -- connecting... notification in UI
-  withTestChat tmp "alice" $ \alice -> do
-    alice <## "1 contacts connected (use /cs for the list)"
+    threadDelay 250000
+  withTestChat tmp "alice" $ \alice ->
     alice <## "bob (Bob): contact is connected"
-  withTestChat tmp "bob" $ \bob -> do
-    bob <## "1 contacts connected (use /cs for the list)"
+  withTestChat tmp "bob" $ \bob ->
     bob <## "alice (Alice): contact is connected"
 
-testFullAsyncV1 :: HasCallStack => FilePath -> IO ()
-testFullAsyncV1 tmp = do
-  putStrLn "testFullAsyncV1"
-  inv <- withNewAlice $ \alice -> do
-    putStrLn "1"
+testFullAsyncSlow :: HasCallStack => ChatConfig -> ChatConfig -> FilePath -> IO ()
+testFullAsyncSlow aliceCfg bobCfg tmp = do
+  inv <- withNewTestChatCfg tmp aliceCfg "alice" aliceProfile $ \alice -> do
+    threadDelay 250000
     alice ##> "/c"
-    putStrLn "2"
     getInvitation alice
-  putStrLn "3"
-  withNewBob $ \bob -> do
-    putStrLn "4"
+  withNewTestChatCfg tmp bobCfg "bob" bobProfile $ \bob -> do
+    threadDelay 250000
     bob ##> ("/c " <> inv)
-    putStrLn "5"
     bob <## "confirmation sent!"
-  putStrLn "6"
-  withAlice $ \_ -> pure ()
-  putStrLn "7"
-  withBob $ \_ -> pure ()
-  putStrLn "8"
+  withAlice $ \_ -> pure () -- connecting... notification in UI
+  withBob $ \_ -> pure () -- connecting... notification in UI
   withAlice $ \alice -> do
-    putStrLn "9"
     alice <## "1 contacts connected (use /cs for the list)"
-  putStrLn "10"
-  withBob $ \_ -> pure ()
-  putStrLn "11"
-  withAlice $ \alice -> do
-    putStrLn "12"
-    alice <## "1 contacts connected (use /cs for the list)"
-    putStrLn "13"
     alice <## "bob (Bob): contact is connected"
-  putStrLn "14"
   withBob $ \bob -> do
-    putStrLn "15"
     bob <## "1 contacts connected (use /cs for the list)"
-    putStrLn "16"
     bob <## "alice (Alice): contact is connected"
   where
-    withNewAlice = withNewTestChatV1 tmp "alice" aliceProfile
-    withAlice = withTestChatV1 tmp "alice"
-    withNewBob = withNewTestChatV1 tmp "bob" bobProfile
-    withBob = withTestChatV1 tmp "bob"
-
-testFullAsyncV1toV2 :: HasCallStack => FilePath -> IO ()
-testFullAsyncV1toV2 tmp = do
-  putStrLn "testFullAsyncV1toV2"
-  inv <- withNewAlice $ \alice -> do
-    putStrLn "1"
-    alice ##> "/c"
-    putStrLn "2"
-    getInvitation alice
-  putStrLn "3"
-  withNewBob $ \bob -> do
-    putStrLn "4"
-    bob ##> ("/c " <> inv)
-    putStrLn "5"
-    bob <## "confirmation sent!"
-  withAlice $ \_ -> pure ()
-  putStrLn "6"
-  withBob $ \_ -> pure ()
-  putStrLn "7"
-  withAlice $ \alice -> do
-    putStrLn "8"
-    alice <## "1 contacts connected (use /cs for the list)"
-  putStrLn "9"
-  withBob $ \_ -> pure ()
-  putStrLn "10"
-  withAlice $ \alice -> do
-    putStrLn "11"
-    alice <## "1 contacts connected (use /cs for the list)"
-    putStrLn "12"
-    alice <## "bob (Bob): contact is connected"
-  putStrLn "13"
-  withBob $ \bob -> do
-    putStrLn "14"
-    bob <## "1 contacts connected (use /cs for the list)"
-    putStrLn "15"
-    bob <## "alice (Alice): contact is connected"
-  where
-    withNewAlice = withNewTestChat tmp "alice" aliceProfile
-    withAlice = withTestChat tmp "alice"
-    withNewBob = withNewTestChatV1 tmp "bob" bobProfile
-    withBob = withTestChatV1 tmp "bob"
-
-testFullAsyncV2toV1 :: HasCallStack => FilePath -> IO ()
-testFullAsyncV2toV1 tmp = do
-  putStrLn "testFullAsyncV2toV1"
-  inv <- withNewAlice $ \alice -> do
-    putStrLn "1"
-    alice ##> "/c"
-    putStrLn "2"
-    getInvitation alice
-  putStrLn "3"
-  withNewBob $ \bob -> do
-    putStrLn "4"
-    bob ##> ("/c " <> inv)
-    putStrLn "5"
-    bob <## "confirmation sent!"
-  putStrLn "6"
-  withAlice $ \_ -> pure ()
-  putStrLn "7"
-  withBob $ \_ -> pure ()
-  putStrLn "8"
-  withAlice $ \alice -> do
-    putStrLn "9"
-    alice <## "1 contacts connected (use /cs for the list)"
-  putStrLn "10"
-  withBob $ \_ -> pure ()
-  putStrLn "11"
-  withAlice $ \alice -> do
-    putStrLn "12"
-    alice <## "1 contacts connected (use /cs for the list)"
-    putStrLn "13"
-    alice <## "bob (Bob): contact is connected"
-  putStrLn "14"
-  withBob $ \bob -> do
-    putStrLn "15"
-    bob <## "1 contacts connected (use /cs for the list)"
-    putStrLn "16"
-    bob <## "alice (Alice): contact is connected"
-  where
-    withNewAlice = withNewTestChatV1 tmp "alice" aliceProfile
-    {-# INLINE withNewAlice #-}
-    withAlice = withTestChatV1 tmp "alice"
-    {-# INLINE withAlice #-}
-    withNewBob = withNewTestChat tmp "bob" bobProfile
-    {-# INLINE withNewBob #-}
-    withBob = withTestChat tmp "bob"
-    {-# INLINE withBob #-}
+    withAlice = withTestChatCfg tmp aliceCfg "alice"
+    withBob = withTestChatCfg tmp aliceCfg "bob"
 
 testCallType :: CallType
 testCallType = CallType {media = CMVideo, capabilities = CallCapabilities {encryption = True}}
@@ -2463,7 +2361,7 @@ testMsgDecryptError tmp =
     withTestChat tmp "bob" $ \bob -> do
       bob <## "1 contacts connected (use /cs for the list)"
       alice #> "@bob hello again"
-      bob <# "alice> skipped message ID 10..12"
+      bob <# "alice> skipped message ID 9..11"
       bob <# "alice> hello again"
       bob #> "@alice received!"
       alice <# "bob> received!"

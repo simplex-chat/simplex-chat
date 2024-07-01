@@ -5,7 +5,6 @@
 
 module Simplex.Chat.Stats where
 
-import Control.Applicative ((<|>))
 import qualified Data.Aeson.TH as J
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
