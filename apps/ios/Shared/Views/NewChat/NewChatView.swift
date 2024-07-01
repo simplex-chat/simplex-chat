@@ -204,6 +204,7 @@ struct NewChatView: View {
 
 private struct InviteView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Binding var invitationUsed: Bool
     @Binding var contactConnection: PendingContactConnection?
     var connReqInvitation: String
@@ -211,7 +212,7 @@ private struct InviteView: View {
 
     var body: some View {
         List {
-            Section("Share this 1-time invite link") {
+            Section(header: Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)) {
                 shareLinkView()
             }
             .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
@@ -222,6 +223,7 @@ private struct InviteView: View {
                 IncognitoToggle(incognitoEnabled: $incognitoDefault)
             } footer: {
                 sharedProfileInfo(incognitoDefault)
+                    .foregroundColor(theme.colors.secondary)
             }
         }
         .onChange(of: incognitoDefault) { incognito in
@@ -258,7 +260,7 @@ private struct InviteView: View {
     }
 
     private func qrCodeView() -> some View {
-        Section("Or show this code") {
+        Section(header: Text("Or show this code").foregroundColor(theme.colors.secondary)) {
             SimpleXLinkQRCode(uri: connReqInvitation, onShare: setInvitationUsed)
                 .padding()
                 .background(
@@ -281,6 +283,7 @@ private struct InviteView: View {
 
 private struct ConnectView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
+    @EnvironmentObject var theme: AppTheme
     @Binding var showQRCodeScanner: Bool
     @Binding var pastedLink: String
     @Binding var alert: NewChatViewAlert?
@@ -288,10 +291,10 @@ private struct ConnectView: View {
 
     var body: some View {
         List {
-            Section("Paste the link you received") {
+            Section(header: Text("Paste the link you received").foregroundColor(theme.colors.secondary)) {
                 pasteLinkView()
             }
-            Section("Or scan QR code") {
+            Section(header: Text("Or scan QR code").foregroundColor(theme.colors.secondary)) {
                 ScannerInView(showQRCodeScanner: $showQRCodeScanner, processQRCode: processQRCode)
             }
         }
@@ -493,7 +496,7 @@ struct IncognitoToggle: View {
         ZStack(alignment: .leading) {
             Image(systemName: incognitoEnabled ? "theatermasks.fill" : "theatermasks")
                 .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
-                .foregroundColor(incognitoEnabled ? Color.indigo : .secondary)
+                .foregroundColor(incognitoEnabled ? Color.indigo : theme.colors.secondary)
                 .font(.system(size: 14))
             Toggle(isOn: $incognitoEnabled) {
                 HStack(spacing: 6) {

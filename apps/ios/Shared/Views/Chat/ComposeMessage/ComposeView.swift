@@ -315,6 +315,7 @@ struct ComposeView: View {
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
+                .tint(theme.colors.primary)
                 if case let .group(g) = chat.chatInfo,
                    !g.fullGroupPreferences.files.on(for: g.membership) {
                     b.disabled(true).onTapGesture {
@@ -364,7 +365,7 @@ struct ComposeView: View {
                     if chat.userIsObserver {
                         Text("you are observer")
                             .italic()
-                            .foregroundColor(.secondary)
+                            .foregroundColor(theme.colors.secondary)
                             .padding(.horizontal, 12)
                             .onTapGesture {
                                 AlertManager.shared.showAlertMsg(
@@ -656,7 +657,7 @@ struct ComposeView: View {
 
     private func msgNotAllowedView(_ reason: LocalizedStringKey, icon: String) -> some View {
         HStack {
-            Image(systemName: icon).foregroundColor(.secondary)
+            Image(systemName: icon).foregroundColor(theme.colors.secondary)
             Text(reason).italic()
         }
         .padding(12)

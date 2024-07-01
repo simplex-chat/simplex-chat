@@ -16,6 +16,7 @@ struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
     @State var theme: AppTheme = buildTheme()
     @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
@@ -119,6 +120,9 @@ struct ChatView: View {
                 }
             }
         }
+        .onChange(of: colorScheme) { _ in
+            theme = buildTheme()
+        }
         .toolbar {
             ToolbarItem(placement: .principal) {
                 if case let .direct(contact) = cInfo {
@@ -147,6 +151,7 @@ struct ChatView: View {
                         connectionStats = nil
                         customUserProfile = nil
                         connectionCode = nil
+                        theme = buildTheme()
                     }) {
                         ChatInfoView(chat: chat, contact: contact, connectionStats: $connectionStats, customUserProfile: $customUserProfile, localAlias: chat.chatInfo.localAlias, connectionCode: $connectionCode)
                     }
@@ -155,8 +160,9 @@ struct ChatView: View {
                         Task { await loadGroupMembers(groupInfo) { showChatInfoSheet = true } }
                     } label: {
                         ChatInfoToolbar(chat: chat)
+                            .tint(theme.colors.primary)
                     }
-                    .appSheet(isPresented: $showChatInfoSheet) {
+                    .appSheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
                         GroupChatInfoView(
                             chat: chat,
                             groupInfo: Binding(
@@ -284,7 +290,7 @@ struct ChatView: View {
                 Image(systemName: "magnifyingglass")
                 TextField("Search", text: $searchText)
                     .focused($searchFocussed)
-                    .foregroundColor(.primary)
+                    .foregroundColor(theme.colors.onBackground)
                     .frame(maxWidth: .infinity)
 
                 Button {
@@ -294,7 +300,7 @@ struct ChatView: View {
                 }
             }
             .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
             .background(Color(.tertiarySystemFill))
             .cornerRadius(10.0)
 
@@ -381,7 +387,7 @@ struct ChatView: View {
            !contact.nextSendGrpInv {
             Text("connecting…")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
                 .padding(.top)
         } else {
             EmptyView()

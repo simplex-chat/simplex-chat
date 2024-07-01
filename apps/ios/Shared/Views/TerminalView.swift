@@ -122,6 +122,7 @@ struct TerminalView: View {
         return ScrollView {
             Text(s.prefix(maxItemSize))
                 .padding()
+                .frame(maxWidth: .infinity)
         }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {

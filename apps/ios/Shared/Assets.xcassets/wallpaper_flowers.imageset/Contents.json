@@ -1,10 +1,12 @@
 {
   "images" : [
     {
+      "filename" : "wallpaper_flowers@1x.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
+      "filename" : "wallpaper_flowers@2x.png",
       "idiom" : "universal",
       "scale" : "2x"
     },

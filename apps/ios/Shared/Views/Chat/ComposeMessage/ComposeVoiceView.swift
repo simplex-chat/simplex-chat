@@ -147,9 +147,11 @@ struct ComposeVoiceView: View {
         } label: {
             Image(systemName: "multiply")
         }
+        .tint(theme.colors.primary)
     }
 
     struct SliderBar: View {
+        @EnvironmentObject var theme: AppTheme
         var length: TimeInterval
         @Binding var progress: TimeInterval?
         var seek: (TimeInterval) -> Void
@@ -158,6 +160,7 @@ struct ComposeVoiceView: View {
             Slider(value: Binding(get: { progress ?? TimeInterval(0) }, set: { seek($0) }), in: 0 ... length)
                 .frame(maxWidth: .infinity)
                 .frame(height: 4)
+                .tint(theme.colors.primary)
         }
     }
 

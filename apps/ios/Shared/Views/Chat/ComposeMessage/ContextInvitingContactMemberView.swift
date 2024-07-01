@@ -14,7 +14,7 @@ struct ContextInvitingContactMemberView: View {
     var body: some View {
         HStack {
             Image(systemName: "message")
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
             Text("Send direct message to connect")
         }
         .padding(12)

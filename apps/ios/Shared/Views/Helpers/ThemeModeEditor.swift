@@ -41,7 +41,7 @@ struct UserWallpaperEditor: View {
             .listRowBackground(Color.clear)
             .modifier(WallpaperImporter(showImageImporter: $showImageImporter, onChooseImage: { image in
                 if let filename = saveWallpaperFile(image: image) {
-                    _ = onTypeCopyFromSameTheme(WallpaperType.Image(filename, 1, WallpaperScaleType.fill))
+                    _ = onTypeCopyFromSameTheme(WallpaperType.image(filename, 1, WallpaperScaleType.fill))
                 }
             }))
 
@@ -182,7 +182,7 @@ struct UserWallpaperEditor: View {
     }
 
     private func onChooseType(_ type: WallpaperType?) {
-        if let type, case WallpaperType.Image = type {
+        if let type, case WallpaperType.image = type {
             if theme.wallpaper.type.isImage || currentColors(type).wallpaper.type.image == nil {
                 showImageImporter = true
             } else {
@@ -245,7 +245,7 @@ struct ChatWallpaperEditor: View {
             .listRowBackground(Color.clear)
             .modifier(WallpaperImporter(showImageImporter: $showImageImporter, onChooseImage: { image in
                 if let filename = saveWallpaperFile(image: image) {
-                    _ = onTypeCopyFromSameTheme(WallpaperType.Image(filename, 1, WallpaperScaleType.fill))
+                    _ = onTypeCopyFromSameTheme(WallpaperType.image(filename, 1, WallpaperScaleType.fill))
                 }
             }))
 
@@ -387,7 +387,7 @@ struct ChatWallpaperEditor: View {
     }
 
     private func onChooseType(_ type: WallpaperType?) {
-        if let type, case WallpaperType.Image = type {
+        if let type, case WallpaperType.image = type {
             if (themeModeOverride.type?.isImage == true && !globalThemeUsed) || currentColors(type).wallpaper.type.image == nil {
                 showImageImporter = true
             } else if !onTypeCopyFromSameTheme(currentColors(type).wallpaper.type) {

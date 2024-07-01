@@ -24,7 +24,7 @@ struct ChatViewBackground: ViewModifier {
                 let rect = CGRectMake(0, 0, size.width, size.height)
                 func repeatDraw(_ imageScale: CGFloat) {
                     image.shading = .color(tint)
-                    let scale = imageScale
+                    let scale = imageScale * 1.57 // for some reason a wallpaper on iOS looks smaller than on Android
                     for h in 0 ... Int(size.height / image.size.height / scale) {
                         for w in 0 ... Int(size.width / image.size.width / scale) {
                             let rect = CGRectMake(CGFloat(w) * image.size.width * scale, CGFloat(h) * image.size.height * scale, image.size.width * scale, image.size.height * scale)
@@ -34,9 +34,9 @@ struct ChatViewBackground: ViewModifier {
                 }
                 context.fill(Path(rect), with: .color(background))
                 switch imageType {
-                case let WallpaperType.Preset(filename, scale):
+                case let WallpaperType.preset(filename, scale):
                     repeatDraw(CGFloat((scale ?? 1) * (PresetWallpaper.from(filename)?.scale ?? 1)))
-                case let WallpaperType.Image(_, scale, scaleType):
+                case let WallpaperType.image(_, scale, scaleType):
                     let scaleType = scaleType ?? WallpaperScaleType.fill
                     switch scaleType {
                     case WallpaperScaleType.repeat: repeatDraw(CGFloat(scale ?? 1))
@@ -76,7 +76,7 @@ struct ChatViewBackground: ViewModifier {
                         }
                         context.fill(Path(rect), with: .color(tint))
                     }
-                case WallpaperType.Empty: ()
+                case WallpaperType.empty: ()
                 }
             }
         )
@@ -87,14 +87,14 @@ extension PresetWallpaper {
     public func toType(_ base: DefaultTheme, _ scale: Float? = nil) -> WallpaperType {
         let scale = if let scale {
             scale
-        } else if let type = ChatModel.shared.currentUser?.uiThemes?.preferredMode(base.mode == DefaultThemeMode.dark)?.wallpaper?.toAppWallpaper().type, type.sameType(WallpaperType.Preset(filename, nil)) {
+        } else if let type = ChatModel.shared.currentUser?.uiThemes?.preferredMode(base.mode == DefaultThemeMode.dark)?.wallpaper?.toAppWallpaper().type, type.sameType(WallpaperType.preset(filename, nil)) {
             type.scale
         } else if let scale = themeOverridesDefault.get().first(where: { $0.wallpaper != nil && $0.wallpaper!.preset == filename })?.wallpaper?.scale {
             scale
         } else {
             Float(1.0)
         }
-        return WallpaperType.Preset(
+        return WallpaperType.preset(
             filename,
             scale
         )

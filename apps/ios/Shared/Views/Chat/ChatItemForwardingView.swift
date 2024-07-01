@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct ChatItemForwardingView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss
 
     var ci: ChatItem
@@ -46,7 +47,7 @@ struct ChatItemForwardingView: View {
         VStack(alignment: .leading) {
             if !chatsToForwardTo.isEmpty {
                 List {
-                    searchFieldView(text: $searchText, focussed: $searchFocused)
+                    searchFieldView(text: $searchText, focussed: $searchFocused, theme.colors.onBackground, theme.colors.secondary)
                         .padding(.leading, 2)
                     let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
                     let chats = s == "" ? chatsToForwardTo : chatsToForwardTo.filter { foundChat($0, s) }
@@ -112,7 +113,7 @@ struct ChatItemForwardingView: View {
 
     private func emptyList() -> some View {
         Text("No filtered chats")
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
             .frame(maxWidth: .infinity)
     }
 
@@ -145,7 +146,7 @@ struct ChatItemForwardingView: View {
                 ChatInfoImage(chat: chat, size: 30)
                     .padding(.trailing, 2)
                 Text(chat.chatInfo.chatViewName)
-                    .foregroundColor(prohibited ? .secondary : .primary)
+                    .foregroundColor(prohibited ? theme.colors.secondary : theme.colors.onBackground)
                     .lineLimit(1)
                 if chat.chatInfo.incognito {
                     Spacer()
@@ -153,7 +154,7 @@ struct ChatItemForwardingView: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 22, height: 22)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -187,5 +188,5 @@ private func canForwardToChat(_ chat: Chat) -> Bool {
         ci: ChatItem.getSample(1, .directSnd, .now, "hello"),
         fromChatInfo: .direct(contact: Contact.sampleData),
         composeState: Binding.constant(ComposeState(message: "hello"))
-    )
+    ).environmentObject(CurrentColors.toAppTheme())
 }

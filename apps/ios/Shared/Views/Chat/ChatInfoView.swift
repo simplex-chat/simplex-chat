@@ -36,14 +36,14 @@ func localizedInfoRow(_ title: LocalizedStringKey, _ value: LocalizedStringKey) 
     }
 }
 
-@ViewBuilder func smpServers(_ title: LocalizedStringKey, _ servers: [String]) -> some View {
+@ViewBuilder func smpServers(_ title: LocalizedStringKey, _ servers: [String], _ secondaryColor: Color) -> some View {
     if servers.count > 0 {
         HStack {
             Text(title).frame(width: 120, alignment: .leading)
             Button(serverHost(servers[0])) {
                 UIPasteboard.general.string = servers.joined(separator: ";")
             }
-            .foregroundColor(.secondary)
+            .foregroundColor(secondaryColor)
             .lineLimit(1)
         }
     }
@@ -144,7 +144,7 @@ struct ChatInfoView: View {
                 .listRowSeparator(.hidden)
 
                 if let customUserProfile = customUserProfile {
-                    Section("Incognito") {
+                    Section(header: Text("Incognito").foregroundColor(theme.colors.secondary)) {
                         HStack {
                             Text("Your random profile")
                             Spacer()
@@ -189,13 +189,15 @@ struct ChatInfoView: View {
                         }
                     } header: {
                         Text("Address")
+                            .foregroundColor(theme.colors.secondary)
                     } footer: {
                         Text("You can share this address with your contacts to let them connect with **\(contact.displayName)**.")
+                            .foregroundColor(theme.colors.secondary)
                     }
                 }
 
                 if contact.ready && contact.active {
-                    Section("Servers") {
+                    Section(header: Text("Servers").foregroundColor(theme.colors.secondary)) {
                         networkStatusRow()
                             .onTapGesture {
                                 alert = .networkStatusAlert
@@ -217,8 +219,8 @@ struct ChatInfoView: View {
                                     || connStats.ratchetSyncSendProhibited
                                 )
                             }
-                            smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer })
-                            smpServers("Sending via", connStats.sndQueuesInfo.map { $0.sndServer })
+                            smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer }, theme.colors.secondary)
+                            smpServers("Sending via", connStats.sndQueuesInfo.map { $0.sndServer }, theme.colors.secondary)
                         }
                     }
                 }
@@ -229,7 +231,7 @@ struct ChatInfoView: View {
                 }
 
                 if developerTools {
-                    Section(header: Text("For console")) {
+                    Section(header: Text("For console").foregroundColor(theme.colors.secondary)) {
                         infoRow("Local name", chat.chatInfo.localDisplayName)
                         infoRow("Database ID", "\(chat.chatInfo.apiId)")
                         Button ("Debug delivery") {
@@ -299,7 +301,7 @@ struct ChatInfoView: View {
             if contact.verified {
                 (
                     Text(Image(systemName: "checkmark.shield"))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                         .font(.title2)
                     + Text(" ")
                     + Text(contact.profile.displayName)
@@ -339,7 +341,7 @@ struct ChatInfoView: View {
                 setContactAlias()
             }
             .multilineTextAlignment(.center)
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
     }
 
     private func setContactAlias() {
@@ -447,7 +449,7 @@ struct ChatInfoView: View {
                 .font(.system(size: 14))
             Spacer()
             Text(chatModel.contactNetworkStatus(contact).statusString)
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
             serverImage()
         }
     }
@@ -455,7 +457,7 @@ struct ChatInfoView: View {
     private func serverImage() -> some View {
         let status = chatModel.contactNetworkStatus(contact)
         return Image(systemName: status.imageName)
-            .foregroundColor(status == .connected ? .green : .secondary)
+            .foregroundColor(status == .connected ? .green : theme.colors.secondary)
             .font(.system(size: 12))
     }
 
@@ -581,7 +583,7 @@ struct ChatWallpaperEditorSheet: View {
     @State var chat: Chat
     @State private var themes: ThemeModeOverrides
 
-    init(chat: Chat, themes: ThemeModeOverrides? = nil) {
+    init(chat: Chat) {
         self.chat = chat
         self.themes = if case let ChatInfo.direct(contact) = chat.chatInfo, let uiThemes = contact.uiThemes {
             uiThemes
@@ -609,6 +611,12 @@ struct ChatWallpaperEditorSheet: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             globalThemeUsed = preferred == nil
+        }
+        .onChange(of: theme.base.mode) { _ in
+            globalThemeUsed = themesFromChat(chat).preferredMode(!theme.colors.isLight) == nil
+        }
+        .onChange(of: ChatModel.shared.chatId) { _ in
+            dismiss()
         }
     }
 

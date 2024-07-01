@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct NotificationsView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @State private var notificationMode: NotificationsMode = ChatModel.shared.notificationMode
     @State private var showAlert: NotificationAlert?
     @State private var legacyDatabase = dbContainerGroupDefault.get() == .documents
@@ -27,6 +28,7 @@ struct NotificationsView: View {
                         } footer: {
                             VStack(alignment: .leading) {
                                 Text(ntfModeDescription(notificationMode))
+                                    .foregroundColor(theme.colors.secondary)
                             }
                             .font(.callout)
                             .padding(.top, 1)
@@ -60,6 +62,7 @@ struct NotificationsView: View {
                         } footer: {
                             VStack(alignment: .leading, spacing: 1) {
                                 Text("You can set lock screen notification preview via settings.")
+                                    .foregroundColor(theme.colors.secondary)
                                 Button("Open Settings") {
                                     DispatchQueue.main.async {
                                         UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
@@ -80,13 +83,15 @@ struct NotificationsView: View {
                 }
 
                 if let server = m.notificationServer {
-                    smpServers("Push server", [server])
+                    smpServers("Push server", [server], theme.colors.secondary)
                 }
             } header: {
                 Text("Push notifications")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 if legacyDatabase {
                     Text("Please restart the app and migrate the database to enable push notifications.")
+                        .foregroundColor(theme.colors.secondary)
                         .font(.callout)
                         .padding(.top, 1)
                 }
@@ -182,32 +187,24 @@ struct SelectionListView<Item: SelectableItem>: View {
 
     var body: some View {
         ForEach(list) { item in
-            HStack {
-                Text(item.label)
-                Spacer()
-                if selection == item {
-                    Image(systemName: "checkmark")
-                        .resizable().scaledToFit().frame(width: 16)
-                        .foregroundColor(theme.colors.primary)
-                }
-            }
-            .contentShape(Rectangle())
-            .listRowBackground(tapped == item ? Color(uiColor: .secondarySystemFill) : theme.colors.background)
-            .onTapGesture {
+            Button {
                 if selection == item { return }
                 if let f = onSelection {
                     f(item)
                 } else {
                     selection = item
                 }
-            }
-            ._onButtonGesture { down in
-                if down {
-                    tapped = item
-                } else {
-                    tapped = nil
+            } label: {
+                HStack {
+                    Text(item.label).foregroundColor(theme.colors.onBackground)
+                    Spacer()
+                    if selection == item {
+                        Image(systemName: "checkmark")
+                            .resizable().scaledToFit().frame(width: 16)
+                            .foregroundColor(theme.colors.primary)
+                    }
                 }
-            } perform: {}
+            }
         }
         .environment(\.editMode, .constant(.active))
     }

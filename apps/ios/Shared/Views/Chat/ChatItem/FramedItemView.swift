@@ -20,7 +20,7 @@ struct FramedItemView: View {
     @State var msgWidth: CGFloat = 0
     @State var imgWidth: CGFloat? = nil
     @State var videoWidth: CGFloat? = nil
-    @State var metaColor = Color.secondary
+    @State private var useWhiteMetaColor: Bool = false
     @State var showFullScreenImage = false
     @Binding var allowMenu: Bool
     @State private var showSecrets = false
@@ -66,19 +66,15 @@ struct FramedItemView: View {
                     .padding(chatItem.content.msgContent != nil ? 0 : 4)
                     .overlay(DetermineWidth())
             }
-            .onPreferenceChange(MetaColorPreferenceKey.self) { metaColor = $0 }
 
             if chatItem.content.msgContent != nil {
-                CIMetaView(chat: chat, chatItem: chatItem, metaColor: metaColor)
+                CIMetaView(chat: chat, chatItem: chatItem, metaColor: useWhiteMetaColor ? Color.white : theme.colors.secondary)
                     .padding(.horizontal, 12)
                     .padding(.bottom, 6)
                     .overlay(DetermineWidth())
                     .accessibilityLabel("")
             }
         }
-            .onAppear {
-                metaColor = metaColor == .secondary ? theme.colors.secondary : metaColor
-            }
             .background(chatItemFrameColorMaybeImageOrVideo(chatItem, theme))
             .cornerRadius(18)
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
@@ -116,10 +112,12 @@ struct FramedItemView: View {
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
                         .frame(width: 0, height: 0)
-                        .preference(
-                            key: MetaColorPreferenceKey.self,
-                            value: .white
-                        )
+                        .onAppear {
+                            useWhiteMetaColor = true
+                        }
+                        .onDisappear {
+                            useWhiteMetaColor = false
+                        }
                 } else {
                     ciMsgContentView(chatItem)
                 }
@@ -129,10 +127,12 @@ struct FramedItemView: View {
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
                     .frame(width: 0, height: 0)
-                    .preference(
-                        key: MetaColorPreferenceKey.self,
-                        value: .white
-                    )
+                    .onAppear {
+                        useWhiteMetaColor = true
+                    }
+                    .onDisappear {
+                        useWhiteMetaColor = false
+                    }
                 } else {
                     ciMsgContentView(chatItem)
                 }
@@ -341,13 +341,6 @@ func isRightToLeft(_ s: String) -> Bool {
         return NSLocale.characterDirection(forLanguage: lang as String) == .rightToLeft
     }
     return false
-}
-
-private struct MetaColorPreferenceKey: PreferenceKey {
-    static var defaultValue = Color.secondary
-    static func reduce(value: inout Color, nextValue: () -> Color) {
-        value = nextValue()
-    }
 }
 
 func onlyImageOrVideo(_ ci: ChatItem) -> Bool {

@@ -10,18 +10,7 @@ import Foundation
 import SwiftUI
 import SimpleXChat
 
-var CurrentColors: ThemeManager.ActiveTheme = ThemeManager.currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get()) {
-    didSet {
-        AppTheme.shared.name = CurrentColors.name
-        AppTheme.shared.base = CurrentColors.base
-        AppTheme.shared.colors.updateColorsFrom(CurrentColors.colors)
-        AppTheme.shared.appColors.updateColorsFrom(CurrentColors.appColors)
-        AppTheme.shared.wallpaper.updateWallpaperFrom(CurrentColors.wallpaper)
-        DispatchQueue.main.async {
-            AppTheme.shared.objectWillChange.send()
-        }
-    }
-}
+var CurrentColors: ThemeManager.ActiveTheme = ThemeManager.currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
 
 var MenuTextColor: Color { if isInDarkTheme() { AppTheme.shared.colors.onBackground.opacity(0.8) } else { Color.black } }
 var NoteFolderIconColor: Color { AppTheme.shared.appColors.primaryVariant2 }
@@ -51,6 +40,15 @@ class AppTheme: ObservableObject, Equatable {
         lhs.appColors == rhs.appColors &&
         lhs.wallpaper == rhs.wallpaper
     }
+
+    func updateFromCurrentColors() {
+        objectWillChange.send()
+        name = CurrentColors.name
+        base = CurrentColors.base
+        colors.updateColorsFrom(CurrentColors.colors)
+        appColors.updateColorsFrom(CurrentColors.appColors)
+        wallpaper.updateWallpaperFrom(CurrentColors.wallpaper)
+    }
 }
 
 struct ThemedBackground: ViewModifier {
@@ -63,8 +61,12 @@ struct ThemedBackground: ViewModifier {
                 theme.base == DefaultTheme.SIMPLEX
                 ? LinearGradient(
                     colors: [
-                        theme.colors.background.lighter(0.4),
-                        theme.colors.background.darker(0.4)
+                        grouped
+                        ? theme.colors.background.lighter(0.4).asGroupedBackground(theme.base.mode)
+                        : theme.colors.background.lighter(0.4),
+                        grouped
+                        ? theme.colors.background.darker(0.4).asGroupedBackground(theme.base.mode)
+                        : theme.colors.background.darker(0.4)
                     ],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -78,17 +80,19 @@ struct ThemedBackground: ViewModifier {
             .background(
                 theme.base == DefaultTheme.SIMPLEX
                 ? Color.clear
-                : grouped && theme.base == DefaultTheme.LIGHT
-                ? LightThemeBackgroundColor
+                : grouped
+                ? theme.colors.background.asGroupedBackground(theme.base.mode)
                 : theme.colors.background
             )
     }
 }
 
-func reactOnDarkThemeChanges(_ isDark: Bool) {
-    systemInDarkThemeCurrently = isDark
-    //sceneDelegate.window?.overrideUserInterfaceStyle == .unspecified
-    if currentThemeDefault.get() == DefaultTheme.SYSTEM_THEME_NAME && CurrentColors.colors.isLight == isDark {
+var systemInDarkThemeCurrently: Bool {
+    return UITraitCollection.current.userInterfaceStyle == .dark
+}
+
+func reactOnDarkThemeChanges() {
+    if currentThemeDefault.get() == DefaultTheme.SYSTEM_THEME_NAME && CurrentColors.colors.isLight == systemInDarkThemeCurrently {
         // Change active colors from light to dark and back based on system theme
         ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
     }
@@ -116,10 +120,10 @@ extension ThemeWallpaper {
     func withFilledWallpaperBase64() -> ThemeWallpaper {
         let aw = toAppWallpaper()
         let type = aw.type
-        let preset: String? = if case let WallpaperType.Preset(filename, _) = type { filename } else { nil }
-        let scale: Float? = if case let WallpaperType.Preset(_, scale) = type { scale } else { if case let WallpaperType.Image(_, scale, _) = type { scale } else { 1.0 } }
-        let scaleType: WallpaperScaleType? = if case let WallpaperType.Image(_, _, scaleType) = type { scaleType } else { nil }
-        let image: String? = if case WallpaperType.Image = type, let image = type.uiImage { resizeImageToStrSize(image, maxDataSize: 5_000_000) } else { nil }
+        let preset: String? = if case let WallpaperType.preset(filename, _) = type { filename } else { nil }
+        let scale: Float? = if case let WallpaperType.preset(_, scale) = type { scale } else { if case let WallpaperType.image(_, scale, _) = type { scale } else { 1.0 } }
+        let scaleType: WallpaperScaleType? = if case let WallpaperType.image(_, _, scaleType) = type { scaleType } else { nil }
+        let image: String? = if case WallpaperType.image = type, let image = type.uiImage { resizeImageToStrSize(image, maxDataSize: 5_000_000) } else { nil }
         return ThemeWallpaper (
             preset: preset,
             scale: scale,
@@ -134,10 +138,10 @@ extension ThemeWallpaper {
 
 extension ThemeModeOverride {
     func removeSameColors(_ base: DefaultTheme, colorsToCompare tc: ThemeColors) -> ThemeModeOverride {
-        let wallpaperType = WallpaperType.from(wallpaper) ?? WallpaperType.Empty
+        let wallpaperType = WallpaperType.from(wallpaper) ?? WallpaperType.empty
         let w: ThemeWallpaper
         switch wallpaperType {
-        case let WallpaperType.Preset(filename, scale):
+        case let WallpaperType.preset(filename, scale):
             let p = PresetWallpaper.from(filename)
             w = ThemeWallpaper(
                 preset: filename,
@@ -148,7 +152,7 @@ extension ThemeModeOverride {
                 image: nil,
                 imageFile: nil
             )
-        case WallpaperType.Image:
+        case WallpaperType.image:
             w = ThemeWallpaper(
                 preset: nil,
                 scale: nil,

@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct CallSettings: View {
+    @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_WEBRTC_POLICY_RELAY) private var webrtcPolicyRelay = true
     @AppStorage(GROUP_DEFAULT_CALL_KIT_ENABLED, store: groupDefaults) private var callKitEnabled = true
     @AppStorage(DEFAULT_CALL_KIT_CALLS_IN_RECENTS) private var callKitCallsInRecents = false
@@ -29,11 +30,14 @@ struct CallSettings: View {
                     Toggle("Always use relay", isOn: $webrtcPolicyRelay)
                 } header: {
                     Text("Settings")
+                        .foregroundColor(theme.colors.secondary)
                 } footer: {
                     if webrtcPolicyRelay {
                         Text("Relay server protects your IP address, but it can observe the duration of the call.")
+                            .foregroundColor(theme.colors.secondary)
                     } else {
                         Text("Relay server is only used if necessary. Another party can observe your IP address.")
+                            .foregroundColor(theme.colors.secondary)
                     }
                 }
 
@@ -47,6 +51,7 @@ struct CallSettings: View {
                         }
                     } header: {
                         Text("Interface")
+                            .foregroundColor(theme.colors.secondary)
                     } footer: {
                         if callKitEnabled {
                             Text("You can accept calls from lock screen, without device and app authentication.")
@@ -56,7 +61,7 @@ struct CallSettings: View {
                     }
                 }
 
-                Section("Limitations") {
+                Section(header: Text("Limitations").foregroundColor(theme.colors.secondary)) {
                     VStack(alignment: .leading, spacing: 8) {
                         textListItem("1.", "Do NOT use SimpleX for emergency calls.")
                         textListItem("2.", "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.")

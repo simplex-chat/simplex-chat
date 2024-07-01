@@ -108,8 +108,6 @@ struct ContentView: View {
                 initializationView()
             }
         }
-        //.tint(theme.colors.primary)
-        .background(theme.colors.background)
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
         .sheet(isPresented: $showSettings) {
             SettingsView(showSettings: $showSettings)
@@ -152,10 +150,16 @@ struct ContentView: View {
                 break
             }
         }
+        .onAppear {
+            reactOnDarkThemeChanges()
+        }
         .onChange(of: colorScheme) { scheme in
-            if sceneDelegate.window?.overrideUserInterfaceStyle == .unspecified {
-                reactOnDarkThemeChanges(scheme == .dark)
-            }
+            // It's needed to update UI colors when iOS wants to make screenshot after going to background,
+            // so when a user changes his global theme from dark to light or back, the app will adapt to it
+            reactOnDarkThemeChanges()
+        }
+        .onChange(of: theme.name) { _ in
+            ThemeManager.adjustWindowStyle()
         }
     }
 

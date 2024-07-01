@@ -73,7 +73,7 @@ struct CIVoiceView: View {
             playbackState: $playbackState,
             playbackTime: $playbackTime
         )
-        .foregroundColor(.secondary)
+        .foregroundColor(theme.colors.secondary)
     }
     
     private func playbackSlider() -> some View {
@@ -90,6 +90,7 @@ struct CIVoiceView: View {
                     allowMenu = true
                 }
             }
+            .tint(theme.colors.primary)
     }
 
     private func metaView() -> some View {
@@ -217,26 +218,26 @@ struct VoiceMessagePlayer: View {
                     startPlayback(recordingSource)
                 }
             } label: {
-                playPauseIcon("play.fill")
+                playPauseIcon("play.fill", theme.colors.primary)
             }
         case .playing:
             Button {
                 audioPlayer?.pause()
                 playbackState = .paused
             } label: {
-                playPauseIcon("pause.fill")
+                playPauseIcon("pause.fill", theme.colors.primary)
             }
         case .paused:
             Button {
                 audioPlayer?.play()
                 playbackState = .playing
             } label: {
-                playPauseIcon("play.fill")
+                playPauseIcon("play.fill", theme.colors.primary)
             }
         }
     }
 
-    private func playPauseIcon(_ image: String, _ color: Color = .accentColor) -> some View {
+    private func playPauseIcon(_ image: String, _ color: Color/* = .accentColor*/) -> some View {
         ZStack {
             Image(systemName: image)
                 .resizable()
@@ -262,7 +263,7 @@ struct VoiceMessagePlayer: View {
                 }
             }
         } label: {
-            playPauseIcon(icon)
+            playPauseIcon(icon, theme.colors.primary)
         }
     }
 

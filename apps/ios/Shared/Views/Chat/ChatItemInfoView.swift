@@ -216,7 +216,7 @@ struct ChatItemInfoView: View {
                     }
                     else {
                         Text("No history")
-                            .foregroundColor(.secondary)
+                            .foregroundColor(theme.colors.secondary)
                             .frame(maxWidth: .infinity)
                     }
                 }
@@ -262,18 +262,19 @@ struct ChatItemInfoView: View {
         } else {
             Text("no text")
                 .italic()
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
         }
     }
 
     private struct TextBubble: View {
+        @EnvironmentObject var theme: AppTheme
         var text: String
         var formattedText: [FormattedText]?
         var sender: String? = nil
         @State private var showSecrets = false
 
         var body: some View {
-            toggleSecrets(formattedText, $showSecrets, messageText(text, formattedText, sender, showSecrets: showSecrets))
+            toggleSecrets(formattedText, $showSecrets, messageText(text, formattedText, sender, showSecrets: showSecrets, secondaryColor: theme.colors.secondary))
         }
     }
 
@@ -362,7 +363,7 @@ struct ChatItemInfoView: View {
                 Divider().padding(.top, 32)
                 Text("Recipient(s) can't see who this message is from.")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             }
         }
     }
@@ -376,23 +377,23 @@ struct ChatItemInfoView: View {
                 VStack(alignment: .leading) {
                     Text("you")
                         .italic()
-                        .foregroundColor(.primary)
+                        .foregroundColor(theme.colors.onBackground)
                     Text(forwardedFromItem.chatInfo.chatViewName)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                         .lineLimit(1)
                 }
             } else if case let .groupRcv(groupMember) = forwardedFromItem.chatItem.chatDir {
                 VStack(alignment: .leading) {
                     Text(groupMember.chatViewName)
-                        .foregroundColor(.primary)
+                        .foregroundColor(theme.colors.onBackground)
                         .lineLimit(1)
                     Text(forwardedFromItem.chatInfo.chatViewName)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                         .lineLimit(1)
                 }
             } else {
                 Text(forwardedFromItem.chatInfo.chatViewName)
-                    .foregroundColor(.primary)
+                    .foregroundColor(theme.colors.onBackground)
                     .lineLimit(1)
             }
         }
@@ -422,7 +423,7 @@ struct ChatItemInfoView: View {
                 }
             } else {
                 Text("No delivery information")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             }
         }
     }
@@ -446,7 +447,7 @@ struct ChatItemInfoView: View {
             Spacer()
             if sentViaProxy == true {
                 Image(systemName: "arrow.forward")
-                    .foregroundColor(.secondary).opacity(0.67)
+                    .foregroundColor(theme.colors.secondary).opacity(0.67)
             }
             let v = Group {
                 if let (icon, statusColor) = status.statusIcon(theme.colors.secondary, theme.colors.primary) {

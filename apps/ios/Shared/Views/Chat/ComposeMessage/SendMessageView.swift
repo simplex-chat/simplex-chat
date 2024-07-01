@@ -50,7 +50,7 @@ struct SendMessageView: View {
                         Text("Voice message…")
                             .font(teFont.italic())
                             .multilineTextAlignment(.leading)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(theme.colors.secondary)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)
                             .frame(maxWidth: .infinity)
@@ -311,7 +311,7 @@ struct SendMessageView: View {
             }
         } label: {
             Image(systemName: "mic")
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
         }
         .disabled(composeState.inProgress)
         .frame(width: 29, height: 29)

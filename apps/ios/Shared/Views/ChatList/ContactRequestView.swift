@@ -33,7 +33,7 @@ struct ContactRequestView: View {
                         .padding(.trailing, 8)
                         .padding(.top, 4)
                         .frame(minWidth: 60, alignment: .trailing)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                 }
                 .padding(.bottom, 2)
 

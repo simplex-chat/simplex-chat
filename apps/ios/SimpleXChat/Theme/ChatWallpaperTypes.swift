@@ -317,8 +317,8 @@ public enum WallpaperType: Equatable {
     public var uiImage: UIImage? {
         let filename: String
         switch self {
-        case let .Preset(f, _): filename = f
-        case let .Image(f, _, _): filename = f
+        case let .preset(f, _): filename = f
+        case let .image(f, _, _): filename = f
         default: return nil
         }
         if filename == "" { return nil }
@@ -326,7 +326,7 @@ public enum WallpaperType: Equatable {
             return image
         } else {
             let res: UIImage?
-            if case let .Preset(filename, _) = self {
+            if case let .preset(filename, _) = self {
                 res = (PresetWallpaper.from(filename) ?? PresetWallpaper.cats).res
             } else {
                 // In case of unintentional image deletion don't crash the app
@@ -340,36 +340,36 @@ public enum WallpaperType: Equatable {
     }
 
     public func sameType(_ other: WallpaperType?) -> Bool {
-        if case let .Preset(filename, _) = self, case let .Preset(otherFilename, _) = other { filename == otherFilename }
-        else if case .Image = self, case .Image = other { true }
-        else if case .Empty = self, case .Empty = other { true }
+        if case let .preset(filename, _) = self, case let .preset(otherFilename, _) = other { filename == otherFilename }
+        else if case .image = self, case .image = other { true }
+        else if case .empty = self, case .empty = other { true }
         else { false }
     }
 
-    public var isPreset: Bool { switch self { case .Preset: true; default: false } }
+    public var isPreset: Bool { switch self { case .preset: true; default: false } }
 
-    public var isImage: Bool { switch self { case .Image: true; default: false } }
+    public var isImage: Bool { switch self { case .image: true; default: false } }
 
-    public var isEmpty: Bool { switch self { case .Empty: true; default: false } }
+    public var isEmpty: Bool { switch self { case .empty: true; default: false } }
 
     public var scale: Float { 
         switch self {
-        case let .Preset(_, scale): scale ?? 1
-        case let .Image(_, scale, _): scale ?? 1
-        default: 1
+        case let .preset(_, scale): scale ?? 1
+        case let .image(_, scale, _): scale ?? 1
+        case .empty: 1
         }
     }
 
-    public func samePreset(other: PresetWallpaper?) -> Bool { if case let .Preset(filename, _) = self, filename == other?.filename { true } else { false } }
+    public func samePreset(other: PresetWallpaper?) -> Bool { if case let .preset(filename, _) = self, filename == other?.filename { true } else { false } }
 
-    case Preset(_ filename: String, _ scale: Float?)
+    case preset(_ filename: String, _ scale: Float?)
 
-    case Image(_ filename: String, _ scale: Float?, _ scaleType: WallpaperScaleType?)
+    case image(_ filename: String, _ scale: Float?, _ scaleType: WallpaperScaleType?)
 
-    case Empty
+    case empty
 
     public func defaultBackgroundColor(_ theme: DefaultTheme, _ themeBackground: Color) -> Color {
-        if case let .Preset(filename, _) = self {
+        if case let .preset(filename, _) = self {
             (PresetWallpaper.from(filename) ?? PresetWallpaper.cats).background[theme]!
         } else {
             themeBackground
@@ -377,9 +377,9 @@ public enum WallpaperType: Equatable {
     }
 
     public func defaultTintColor(_ theme: DefaultTheme) -> Color {
-        if case let .Preset(filename, _) = self {
+        if case let .preset(filename, _) = self {
             (PresetWallpaper.from(filename) ?? PresetWallpaper.cats).tint[theme]!
-        } else if case let .Image(_, _, scaleType) = self, scaleType == WallpaperScaleType.repeat {
+        } else if case let .image(_, _, scaleType) = self, scaleType == WallpaperScaleType.repeat {
             Color.clear
         } else {
             Color.clear
@@ -392,11 +392,11 @@ public enum WallpaperType: Equatable {
         if wallpaper == nil {
             return nil
         } else if let preset = wallpaper?.preset {
-            return WallpaperType.Preset(preset, wallpaper?.scale)
+            return WallpaperType.preset(preset, wallpaper?.scale)
         } else if let imageFile = wallpaper?.imageFile {
-            return WallpaperType.Image(imageFile, wallpaper?.scale, wallpaper?.scaleType)
+            return WallpaperType.image(imageFile, wallpaper?.scale, wallpaper?.scaleType)
         } else {
-            return WallpaperType.Empty
+            return WallpaperType.empty
         }
     }
 }

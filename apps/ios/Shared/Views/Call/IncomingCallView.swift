@@ -44,7 +44,7 @@ struct IncomingCallView: View {
                     cc.endCall(invitation: invitation)
                 }
 
-                callButton("Ignore", "multiply", theme.colors.primary) {
+                callButton("Ignore", "multiply", .primary) {
                     cc.activeCallInvitation = nil
                 }
 
@@ -77,7 +77,7 @@ struct IncomingCallView: View {
                     .frame(width: 24, height: 24)
                 Text(text)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             }
             .frame(minWidth: 44)
         })

@@ -20,7 +20,7 @@ struct CIFeaturePreferenceView: View {
     var body: some View {
         HStack(alignment: .center, spacing: 4) {
             Image(systemName: feature.icon)
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
                 .scaleEffect(feature.iconScale)
             if let ct = chat.chatInfo.contact,
                allowed != .no && ct.allowsFeature(feature) && !ct.userAllowsFeature(feature) {
@@ -41,7 +41,7 @@ struct CIFeaturePreferenceView: View {
     private func featurePreferenceView(acceptText: LocalizedStringKey? = nil) -> some View {
         var r = Text(CIContent.preferenceText(feature, allowed, param) + "  ")
             .fontWeight(.light)
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
         if let acceptText {
             r = r
             + Text(acceptText)
@@ -51,7 +51,7 @@ struct CIFeaturePreferenceView: View {
         }
         r = r + chatItem.timestampText
             .fontWeight(.light)
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
         return r.font(.caption)
     }
 }

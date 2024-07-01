@@ -12,6 +12,7 @@ import CodeScanner
 
 struct ConnectDesktopView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     var viaSettings = false
     @AppStorage(DEFAULT_DEVICE_NAME_FOR_REMOTE_ACCESS) private var deviceName = UIDevice.current.name
@@ -167,7 +168,7 @@ struct ConnectDesktopView: View {
 
     private func connectDesktopView(showScanner: Bool = true) -> some View {
         List {
-            Section("This device name") {
+            Section(header: Text("This device name").foregroundColor(theme.colors.secondary)) {
                 devicesView()
             }
             if showScanner {
@@ -184,13 +185,13 @@ struct ConnectDesktopView: View {
     private func connectingDesktopView(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo?) -> some View {
         ZStack {
             List {
-                Section("Connecting to desktop") {
+                Section(header: Text("Connecting to desktop").foregroundColor(theme.colors.secondary)) {
                     ctrlDeviceNameText(session, rc)
                     ctrlDeviceVersionText(session)
                 }
 
                 if let sessCode = session.sessionCode {
-                    Section("Session code") {
+                    Section(header: Text("Session code").foregroundColor(theme.colors.secondary)) {
                         sessionCodeText(sessCode)
                     }
                 }
@@ -208,10 +209,10 @@ struct ConnectDesktopView: View {
 
     private func searchingDesktopView() -> some View {
         List {
-            Section("This device name") {
+            Section(header: Text("This device name").foregroundColor(theme.colors.secondary)) {
                 devicesView()
             }
-            Section("Found desktop") {
+            Section(header: Text("Found desktop").foregroundColor(theme.colors.secondary)) {
                 Text("Waiting for desktop...").italic()
                 Button {
                     disconnectDesktop()
@@ -226,10 +227,10 @@ struct ConnectDesktopView: View {
 
     @ViewBuilder private func foundDesktopView(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo, _ compatible: Bool) -> some View {
         let v = List {
-            Section("This device name") {
+            Section(header: Text("This device name").foregroundColor(theme.colors.secondary)) {
                 devicesView()
             }
-            Section("Found desktop") {
+            Section(header: Text("Found desktop").foregroundColor(theme.colors.secondary)) {
                 ctrlDeviceNameText(session, rc)
                 ctrlDeviceVersionText(session)
                 if !compatible {
@@ -260,12 +261,12 @@ struct ConnectDesktopView: View {
 
     private func verifySessionView(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo?, _ sessCode: String) -> some View {
         List {
-            Section("Connected to desktop") {
+            Section(header: Text("Connected to desktop").foregroundColor(theme.colors.secondary)) {
                 ctrlDeviceNameText(session, rc)
                 ctrlDeviceVersionText(session)
             }
 
-            Section("Verify code with desktop") {
+            Section(header: Text("Verify code with desktop").foregroundColor(theme.colors.secondary)) {
                 sessionCodeText(sessCode)
                 Button {
                     verifyDesktopSessionCode(sessCode)
@@ -301,13 +302,13 @@ struct ConnectDesktopView: View {
 
     private func activeSessionView(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo) -> some View {
         List {
-            Section("Connected desktop") {
+            Section(header: Text("Connected desktop").foregroundColor(theme.colors.secondary)) {
                 Text(rc.deviceViewName)
                 ctrlDeviceVersionText(session)
             }
 
             if let sessCode = session.sessionCode {
-                Section("Session code") {
+                Section(header: Text("Session code").foregroundColor(theme.colors.secondary)) {
                     sessionCodeText(sessCode)
                 }
             }
@@ -317,6 +318,7 @@ struct ConnectDesktopView: View {
             } footer: {
                 // This is specific to iOS
                 Text("Keep the app open to use it from desktop")
+                    .foregroundColor(theme.colors.secondary)
             }
         }
         .navigationTitle("Connected to desktop")
@@ -341,13 +343,13 @@ struct ConnectDesktopView: View {
     }
 
     private func scanDesctopAddressView() -> some View {
-        Section("Scan QR code from desktop") {
+        Section(header: Text("Scan QR code from desktop").foregroundColor(theme.colors.secondary)) {
             ScannerInView(showQRCodeScanner: $showQRCodeScanner,  processQRCode: processDesktopQRCode, scanMode: .oncePerCode)
         }
     }
 
     private func desktopAddressView() -> some View {
-        Section("Desktop address") {
+        Section(header: Text("Desktop address").foregroundColor(theme.colors.secondary)) {
             if sessionAddress.isEmpty {
                 Button {
                     sessionAddress = UIPasteboard.general.string ?? ""
@@ -360,7 +362,7 @@ struct ConnectDesktopView: View {
                     Text(sessionAddress).lineLimit(1)
                     Spacer()
                     Image(systemName: "multiply.circle.fill")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                         .onTapGesture { sessionAddress = "" }
                 }
             }
@@ -375,7 +377,7 @@ struct ConnectDesktopView: View {
 
     private func linkedDesktopsView() -> some View {
         List {
-            Section("Desktop devices") {
+            Section(header: Text("Desktop devices").foregroundColor(theme.colors.secondary)) {
                 ForEach(remoteCtrls, id: \.remoteCtrlId) { rc in
                     remoteCtrlView(rc)
                 }
@@ -386,7 +388,7 @@ struct ConnectDesktopView: View {
                 }
             }
 
-            Section("Linked desktop options") {
+            Section(header: Text("Linked desktop options").foregroundColor(theme.colors.secondary)) {
                 Toggle("Verify connections", isOn: $confirmRemoteSessions)
                 Toggle("Discover via local network", isOn: $connectRemoteViaMulticast)
                 if connectRemoteViaMulticast {

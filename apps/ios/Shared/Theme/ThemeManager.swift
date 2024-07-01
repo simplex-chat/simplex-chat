@@ -16,7 +16,7 @@ class ThemeManager {
         let base: DefaultTheme
         let colors: Colors
         let appColors: AppColors
-        var wallpaper: AppWallpaper = AppWallpaper(background: nil, tint: nil, type: .Empty)
+        var wallpaper: AppWallpaper = AppWallpaper(background: nil, tint: nil, type: .empty)
 
         func toAppTheme() -> AppTheme {
             AppTheme(name: name, base: base, colors: colors, appColors: appColors, wallpaper: wallpaper)
@@ -75,7 +75,7 @@ class ThemeManager {
         if theme == nil && perUserTheme == nil && perChatTheme == nil && themeOverridesForType == nil {
             return ActiveTheme(name: themeName, base: baseTheme.base, colors: baseTheme.colors, appColors: baseTheme.appColors, wallpaper: baseTheme.wallpaper)
         }
-        let presetWallpaperTheme: ThemeColors? = if let themeOverridesForType, case let WallpaperType.Preset(filename, _) = themeOverridesForType {
+        let presetWallpaperTheme: ThemeColors? = if let themeOverridesForType, case let WallpaperType.preset(filename, _) = themeOverridesForType {
             PresetWallpaper.from(filename)?.colors[baseTheme.base]
         } else if let wallpaper = perChatTheme?.wallpaper {
             if let preset = wallpaper.preset { PresetWallpaper.from(preset)?.colors[baseTheme.base] } else { nil }
@@ -101,7 +101,7 @@ class ThemeManager {
         let wType = current.wallpaper.type
         let wBackground = current.wallpaper.background
         let wTint = current.wallpaper.tint
-        let w: ThemeWallpaper? = if case WallpaperType.Empty = wType {
+        let w: ThemeWallpaper? = if case WallpaperType.empty = wType {
             nil
         } else {
             ThemeWallpaper.from(wType, wBackground?.toReadableHex(), wTint?.toReadableHex()).withFilledWallpaperBase64()
@@ -117,18 +117,48 @@ class ThemeManager {
     static func applyTheme(_ theme: String) {
         currentThemeDefault.set(theme)
         CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
-        SceneDelegate.windowStatic?.tintColor = UIColor(CurrentColors.colors.primary)
-        SceneDelegate.windowStatic?.backgroundColor = UIColor(CurrentColors.colors.background)
-        SceneDelegate.windowStatic?.overrideUserInterfaceStyle = switch currentThemeDefault.get() {
-        case DefaultTheme.LIGHT.themeName: .light
-        case DefaultTheme.SYSTEM_THEME_NAME: .unspecified
-        default: .dark
+        AppTheme.shared.updateFromCurrentColors()
+        let tint = UIColor(CurrentColors.colors.primary)
+        if SceneDelegate.windowStatic?.tintColor != tint {
+            SceneDelegate.windowStatic?.tintColor = tint
+        }
+//        applyNavigationBarColors(CurrentColors.toAppTheme())
+    }
+
+    static func adjustWindowStyle() {
+        let style = switch currentThemeDefault.get() {
+        case DefaultTheme.LIGHT.themeName: UIUserInterfaceStyle.light
+        case DefaultTheme.SYSTEM_THEME_NAME: UIUserInterfaceStyle.unspecified
+        default: UIUserInterfaceStyle.dark
+        }
+        if SceneDelegate.windowStatic?.overrideUserInterfaceStyle != style {
+            SceneDelegate.windowStatic?.overrideUserInterfaceStyle = style
         }
     }
+
+//    static func applyNavigationBarColors(_ theme: AppTheme) {
+//        let baseColors = switch theme.base {
+//        case DefaultTheme.LIGHT: LightColorPaletteApp
+//        case DefaultTheme.DARK: DarkColorPaletteApp
+//        case DefaultTheme.SIMPLEX: SimplexColorPaletteApp
+//        case DefaultTheme.BLACK: BlackColorPaletteApp
+//        }
+//        let isDefaultColor = baseColors.title == theme.appColors.title
+//
+//        let title = UIColor(theme.appColors.title)
+//        if !isDefaultColor && UINavigationBar.appearance().titleTextAttributes?.first as? UIColor != title {
+//            UINavigationBar.appearance().titleTextAttributes = [.foregroundColor: title]
+//            UINavigationBar.appearance().largeTitleTextAttributes = [.foregroundColor: title]
+//        } else {
+//            UINavigationBar.appearance().titleTextAttributes = nil
+//            UINavigationBar.appearance().largeTitleTextAttributes = nil
+//        }
+//    }
 
     static func changeDarkTheme(_ theme: String) {
         systemDarkThemeDefault.set(theme)
         CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        AppTheme.shared.updateFromCurrentColors()
     }
 
     static func saveAndApplyThemeColor(_ baseTheme: DefaultTheme, _ name: ThemeColor, _ color: Color? = nil, _ pref: CodableDefault<[ThemeOverrides]>? = nil) {
@@ -155,7 +185,7 @@ class ThemeManager {
         let theme = overrides.sameTheme(type, baseTheme.themeName)
         var prevValue = theme ?? ThemeOverrides(base: baseTheme)
         prevValue.wallpaper = if let type {
-            if case WallpaperType.Empty = type {
+            if case WallpaperType.empty = type {
                 nil as ThemeWallpaper?
             } else {
                 ThemeWallpaper.from(type, prevValue.wallpaper?.background, prevValue.wallpaper?.tint)
@@ -167,7 +197,7 @@ class ThemeManager {
         var themeIds = currentThemeIdsDefault.get()
         themeIds[nonSystemThemeName] = prevValue.themeId
         currentThemeIdsDefault.set(themeIds)
-        CurrentColors = currentColors( nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        applyTheme(nonSystemThemeName)
     }
 
     static func copyFromSameThemeOverrides(_ type: WallpaperType?, _ lowerLevelOverride: ThemeModeOverride?, _ pref: Binding<ThemeModeOverride>) -> Bool {
@@ -192,10 +222,10 @@ class ThemeManager {
             return true
         }
         var type = sameWallpaper.toAppWallpaper().type
-        if case let WallpaperType.Image(filename, scale, scaleType) = type, sameWallpaper.imageFile == filename {
+        if case let WallpaperType.image(filename, scale, scaleType) = type, sameWallpaper.imageFile == filename {
             // same image file. Needs to be copied first in order to be able to remove the file once it's not needed anymore without affecting main theme override
             if let filename = saveWallpaperFile(url: getWallpaperFilePath(filename)) {
-                type = WallpaperType.Image(filename, scale, scaleType)
+                type = WallpaperType.image(filename, scale, scaleType)
             } else {
                 logger.error("Error while copying wallpaper from global overrides to chat overrides")
                 return false
@@ -240,7 +270,7 @@ class ThemeManager {
         var currentThemeIds = currentThemeIdsDefault.get()
         currentThemeIds[nonSystemThemeName] = prevValue.themeId
         currentThemeIdsDefault.set(currentThemeIds)
-        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        applyTheme(nonSystemThemeName)
     }
 
     static func resetAllThemeColors(_ pref: CodableDefault<[ThemeOverrides]>? = nil) {
@@ -254,7 +284,7 @@ class ThemeManager {
         prevValue.wallpaper?.background = nil
         prevValue.wallpaper?.tint = nil
         pref.set(overrides.replace(prevValue))
-        CurrentColors = currentColors(nil, nil, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        applyTheme(currentThemeDefault.get())
     }
 
     static func resetAllThemeColors(_ pref: Binding<ThemeModeOverride>) {

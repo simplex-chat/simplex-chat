@@ -35,6 +35,7 @@ enum DatabaseEncryptionAlert: Identifiable {
 
 struct DatabaseEncryptionView: View {
     @EnvironmentObject private var m: ChatModel
+    @EnvironmentObject private var theme: AppTheme
     @Binding var useKeychain: Bool
     var migration: Bool
     @State private var alert: DatabaseEncryptionAlert? = nil
@@ -63,7 +64,7 @@ struct DatabaseEncryptionView: View {
 
     private func databaseEncryptionView() -> some View {
         Section {
-            settingsRow(storedKey ? "key.fill" : "key", color: storedKey ? .green : .secondary) {
+            settingsRow(storedKey ? "key.fill" : "key", color: storedKey ? .green : theme.colors.secondary) {
                 Toggle("Save passphrase in Keychain", isOn: $useKeychainToggle)
                     .onChange(of: useKeychainToggle) { _ in
                         if useKeychainToggle {
@@ -85,7 +86,7 @@ struct DatabaseEncryptionView: View {
             PassphraseField(key: $newKey, placeholder: "New passphrase…", valid: validKey(newKey), showStrength: true)
             PassphraseField(key: $confirmNewKey, placeholder: "Confirm new passphrase…", valid: confirmNewKey == "" || newKey == confirmNewKey)
 
-            settingsRow("lock.rotation") {
+            settingsRow("lock.rotation", color: theme.colors.secondary) {
                 Button(migration ? "Set passphrase" : "Update database passphrase") {
                     alert = currentKey == ""
                     ? (useKeychain ? .encryptDatabaseSaved : .encryptDatabase)
@@ -102,6 +103,7 @@ struct DatabaseEncryptionView: View {
             )
         } header: {
             Text(migration ? "Database passphrase" : "")
+                .foregroundColor(theme.colors.secondary)
         } footer: {
             VStack(alignment: .leading, spacing: 16) {
                 if m.chatDbEncrypted == false {
@@ -125,6 +127,7 @@ struct DatabaseEncryptionView: View {
                     }
                 }
             }
+            .foregroundColor(theme.colors.secondary)
             .padding(.top, 1)
             .font(.callout)
         }
@@ -277,6 +280,7 @@ struct DatabaseEncryptionView: View {
 
 
 struct PassphraseField: View {
+    @EnvironmentObject var theme: AppTheme
     @Binding var key: String
     var placeholder: LocalizedStringKey
     var valid: Bool
@@ -287,7 +291,7 @@ struct PassphraseField: View {
     var body: some View {
         ZStack(alignment: .leading) {
             let iconColor = valid
-                            ? (showStrength && key != "" ? PassphraseStrength(passphrase: key).color : .secondary)
+                            ? (showStrength && key != "" ? PassphraseStrength(passphrase: key).color : theme.colors.secondary)
                             : .red
             Image(systemName: valid ? (showKey ? "eye.slash" : "eye") : "exclamationmark.circle")
                 .resizable()

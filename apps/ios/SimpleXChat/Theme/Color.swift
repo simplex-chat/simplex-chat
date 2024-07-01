@@ -52,6 +52,11 @@ extension Color {
         let uiColor: UIColor = .init(self)
         var (r, g, b, a): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
         uiColor.getRed(&r, green: &g, blue: &b, alpha: &a)
+        // Can be negative values and more than 1. Extended color range, making it normal
+        r = min(1, max(0, r))
+        g = min(1, max(0, g))
+        b = min(1, max(0, b))
+        a = min(1, max(0, a))
         return String(format: "#%02x%02x%02x%02x",
                       Int((a * 255).rounded()),
                       Int((r * 255).rounded()),
@@ -72,6 +77,14 @@ extension Color {
         return Color(.sRGB, red: min(r * (1 + factor), 1), green: min(g * (1 + factor), 1), blue: min(b * (1 + factor), 1), opacity: a)
     }
 
+    public func asGroupedBackground(_ mode: DefaultThemeMode) -> Color {
+        let uiColor: UIColor = .init(self)
+        var (r, g, b, a): (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+        uiColor.getRed(&r, green: &g, blue: &b, alpha: &a)
+        return mode == DefaultThemeMode.light
+        ? Color(.sRGB, red: max(0, r - 0.052), green: max(0, g - 0.051), blue: max(0, b - 0.032), opacity: a)
+        : Color(.sRGB, red: min(1, r + 0.11), green: min(1, g + 0.11), blue: min(1, b + 0.115), opacity: a)
+    }
 }
 
 extension String {
