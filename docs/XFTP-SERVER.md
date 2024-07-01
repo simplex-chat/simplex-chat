@@ -75,7 +75,7 @@ Manual installation requires some preliminary actions:
    Group=xftp
    Type=simple
    ExecStart=/usr/local/bin/xftp-server start +RTS -N -RTS
-   ExecStopPost=/usr/bin/env sh -c '[ -e "/var/opt/simplex-xftp/file-server-store.log" ] && cp "/var/opt/simplex-xftp/file-server-store.log" "/var/opt/simplex-xftp/file-server-store.log.$(date +'%FT%T')"'
+   ExecStopPost=/usr/bin/env sh -c '[ -e "/var/opt/simplex-xftp/file-server-store.log" ] && cp "/var/opt/simplex-xftp/file-server-store.log" "/var/opt/simplex-xftp/file-server-store.log.$(date +'%%FT%%T')"'
    LimitNOFILE=65535
    KillSignal=SIGINT
    TimeoutStopSec=infinity
