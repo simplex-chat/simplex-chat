@@ -99,7 +99,7 @@ public enum ChatCommand {
     case apiConnectPlan(userId: Int64, connReq: String)
     case apiConnect(userId: Int64, incognito: Bool, connReq: String)
     case apiConnectContactViaAddress(userId: Int64, incognito: Bool, contactId: Int64)
-    case apiDeleteChat(type: ChatType, id: Int64, notify: Bool?)
+    case apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode)
     case apiClearChat(type: ChatType, id: Int64)
     case apiListContacts(userId: Int64)
     case apiUpdateProfile(userId: Int64, profile: Profile)
@@ -257,11 +257,7 @@ public enum ChatCommand {
             case let .apiConnectPlan(userId, connReq): return "/_connect plan \(userId) \(connReq)"
             case let .apiConnect(userId, incognito, connReq): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connReq)"
             case let .apiConnectContactViaAddress(userId, incognito, contactId): return "/_connect contact \(userId) incognito=\(onOff(incognito)) \(contactId)"
-            case let .apiDeleteChat(type, id, notify): if let notify = notify {
-                return "/_delete \(ref(type, id)) notify=\(onOff(notify))"
-            } else {
-                return "/_delete \(ref(type, id))"
-            }
+            case let .apiDeleteChat(type, id, chatDeleteMode): return "/_delete \(ref(type, id)) \(chatDeleteMode.cmdString)"
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
             case let .apiListContacts(userId): return "/_contacts \(userId)"
             case let .apiUpdateProfile(userId, profile): return "/_profile \(userId) \(encodeJSON(profile))"
@@ -485,10 +481,6 @@ public enum ChatCommand {
         return nil
     }
 
-    private func onOff(_ b: Bool) -> String {
-        b ? "on" : "off"
-    }
-
     private func onOffParam(_ param: String, _ b: Bool?) -> String {
         if let b = b {
             return " \(param)=\(onOff(b))"
@@ -499,6 +491,10 @@ public enum ChatCommand {
     private func maybePwd(_ pwd: String?) -> String {
         pwd == "" || pwd == nil ? "" : " " + encodeJSON(pwd)
     }
+}
+
+private func onOff(_ b: Bool) -> String {
+    b ? "on" : "off"
 }
 
 public struct APIResponse: Decodable {
@@ -1007,6 +1003,20 @@ public func chatError(_ chatResponse: ChatResponse) -> ChatErrorType? {
     case let .chatCmdError(_, .error(error)): return error
     case let .chatError(_, .error(error)): return error
     default: return nil
+    }
+}
+
+public enum ChatDeleteMode: Codable {
+    case full(notify: Bool)
+    case entity(notify: Bool)
+    case messages
+
+    var cmdString: String {
+        switch self {
+        case let .full(notify): "full notify=\(onOff(notify))"
+        case let .entity(notify): "entity notify=\(onOff(notify))"
+        case .messages: "messages"
+        }
     }
 }
 
@@ -2071,6 +2081,7 @@ public struct AppSettings: Codable, Equatable {
     public var androidCallOnLockScreen: AppSettingsLockScreenCalls? = nil
     public var iosCallKitEnabled: Bool? = nil
     public var iosCallKitCallsInRecents: Bool? = nil
+    public var oneHandUI: Bool? = nil
 
     public func prepareForExport() -> AppSettings {
         var empty = AppSettings()
@@ -2095,6 +2106,7 @@ public struct AppSettings: Codable, Equatable {
         if androidCallOnLockScreen != def.androidCallOnLockScreen { empty.androidCallOnLockScreen = androidCallOnLockScreen }
         if iosCallKitEnabled != def.iosCallKitEnabled { empty.iosCallKitEnabled = iosCallKitEnabled }
         if iosCallKitCallsInRecents != def.iosCallKitCallsInRecents { empty.iosCallKitCallsInRecents = iosCallKitCallsInRecents }
+        if oneHandUI != def.oneHandUI { empty.oneHandUI = oneHandUI }
         return empty
     }
 
@@ -2119,7 +2131,8 @@ public struct AppSettings: Codable, Equatable {
             confirmDBUpgrades: false,
             androidCallOnLockScreen: AppSettingsLockScreenCalls.show,
             iosCallKitEnabled: true,
-            iosCallKitCallsInRecents: false
+            iosCallKitCallsInRecents: false,
+            oneHandUI: false
         )
     }
 }

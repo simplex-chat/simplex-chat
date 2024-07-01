@@ -85,7 +85,7 @@ defaultAppSettings =
       uiDarkColorScheme = Just DCSSimplex,
       uiCurrentThemeIds = Nothing,
       uiThemes = Nothing,
-      oneHandUI = Just True
+      oneHandUI = Just False
     }
 
 defaultParseAppSettings :: AppSettings

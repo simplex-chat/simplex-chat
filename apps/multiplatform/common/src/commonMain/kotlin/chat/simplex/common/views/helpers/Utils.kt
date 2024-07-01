@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeOverrides
-import chat.simplex.common.views.chatlist.connectIfOpenedViaUri
+import chat.simplex.common.views.home.connectIfOpenedViaUri
 import chat.simplex.res.MR
 import com.charleskorn.kaml.decodeFromStream
 import dev.icerock.moko.resources.StringResource

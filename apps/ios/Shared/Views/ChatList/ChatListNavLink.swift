@@ -32,10 +32,24 @@ struct ChatListNavLink: View {
     @State private var showJoinGroupDialog = false
     @State private var showContactConnectionInfo = false
     @State private var showInvalidJSON = false
-    @State private var showDeleteContactActionSheet = false
+    @State private var contactNavLinkSheet: ContactNavLinkActionSheet? = nil
     @State private var showConnectContactViaAddressDialog = false
     @State private var inProgress = false
     @State private var progressByTimeout = false
+
+    @AppStorage(DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE) private var showDeleteConversationNotice = true
+
+    enum ContactNavLinkActionSheet: Identifiable {
+        case deleteContactActionSheet
+        case confirmDeleteContactActionSheet
+
+        var id: String {
+            switch self {
+            case .deleteContactActionSheet: return "deleteContactActionSheet"
+            case .confirmDeleteContactActionSheet: return "confirmDeleteContactActionSheet"
+            }
+        }
+    }
 
     var body: some View {
         Group {
@@ -67,12 +81,12 @@ struct ChatListNavLink: View {
 
     @ViewBuilder private func contactNavLink(_ contact: Contact) -> some View {
         Group {
-            if contact.activeConn == nil && contact.profile.contactLink != nil {
+            if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
                 ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
                     .frame(height: rowHeights[dynamicTypeSize])
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button {
-                            showDeleteContactActionSheet = true
+                            contactNavLinkSheet = .deleteContactActionSheet
                         } label: {
                             Label("Delete", systemImage: "trash")
                         }
@@ -100,7 +114,7 @@ struct ChatListNavLink: View {
                     }
                     Button {
                         if contact.ready || !contact.active {
-                            showDeleteContactActionSheet = true
+                            contactNavLinkSheet = .deleteContactActionSheet
                         } else {
                             AlertManager.shared.showAlert(deletePendingContactAlert(chat, contact))
                         }
@@ -112,24 +126,53 @@ struct ChatListNavLink: View {
                 .frame(height: rowHeights[dynamicTypeSize])
             }
         }
-        .actionSheet(isPresented: $showDeleteContactActionSheet) {
-            if contact.ready && contact.active {
-                return ActionSheet(
-                    title: Text("Delete contact?\nThis cannot be undone!"),
-                    buttons: [
-                        .destructive(Text("Delete and notify contact")) { Task { await deleteChat(chat, notify: true) } },
-                        .destructive(Text("Delete")) { Task { await deleteChat(chat, notify: false) } },
-                        .cancel()
-                    ]
-                )
-            } else {
-                return ActionSheet(
-                    title: Text("Delete contact?\nThis cannot be undone!"),
-                    buttons: [
-                        .destructive(Text("Delete")) { Task { await deleteChat(chat) } },
-                        .cancel()
-                    ]
-                )
+        .actionSheet(item: $contactNavLinkSheet) { sheet in
+            switch(sheet) {
+            case .deleteContactActionSheet:
+                if contact.contactStatus == .deletedByUser {
+                    return ActionSheet(
+                        title: Text("Delete conversation?\nThis cannot be undone!"),
+                        buttons: [
+                            .destructive(Text("Delete conversation")) { Task { await deleteChatContact(chat, chatDeleteMode: .full(notify: false)) } },
+                            .cancel()
+                        ]
+                    )
+                } else {
+                    return ActionSheet(
+                        title: Text("Delete contact?"),
+                        buttons: [
+                            .destructive(Text("Delete contact")) { contactNavLinkSheet = .confirmDeleteContactActionSheet },
+                            .destructive(Text("Only delete conversation")) {
+                                Task {
+                                    await deleteChatContact(chat, chatDeleteMode: .messages)
+                                    if showDeleteConversationNotice {
+                                        AlertManager.shared.showAlert(deleteConversationNotice(contact))
+                                    }
+                                }
+                            },
+                            .cancel()
+                        ]
+                    )
+                }
+            case .confirmDeleteContactActionSheet:
+                if contact.ready && contact.active {
+                    return ActionSheet(
+                        title: Text("Notify contact?\nThis cannot be undone!"),
+                        buttons: [
+                            .destructive(Text("Delete and notify contact")) { Task { await deleteChatContact(chat, chatDeleteMode: .full(notify: true)) } },
+                            .destructive(Text("Delete without notification")) { Task { await deleteChatContact(chat, chatDeleteMode: .full(notify: false)) } },
+                            .cancel()
+                        ]
+                    )
+                } else {
+                    return ActionSheet(
+                        title: Text("Confirm contact deletion.\nThis cannot be undone!"),
+                        buttons: [
+                            .destructive(Text("Delete")) { Task { await deleteChatContact(chat, chatDeleteMode: .full(notify: false)) } },
+                            .cancel()
+                        ]
+                    )
+                }
             }
         }
     }
@@ -436,6 +479,17 @@ struct ChatListNavLink: View {
         Alert(
             title: Text("Joining group"),
             message: Text("You joined this group. Connecting to inviting group member.")
+        )
+    }
+
+    private func deleteConversationNotice(_ contact: Contact) -> Alert {
+        return Alert(
+            title: Text("Conversation deleted!"),
+            message: Text("You can still send messages to \(contact.displayName) from the Contacts tab."),
+            primaryButton: .default(Text("Don't show again")) {
+                showDeleteConversationNotice = false
+            },
+            secondaryButton: .default(Text("Ok"))
         )
     }
 

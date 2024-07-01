@@ -23,9 +23,6 @@ struct ChatView: View {
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
     @State private var keyboardVisible = false
-    @State private var connectionStats: ConnectionStats?
-    @State private var customUserProfile: Profile?
-    @State private var connectionCode: String?
     @State private var tableView: UITableView?
     @State private var loadingItems = false
     @State private var firstPage = false
@@ -45,6 +42,7 @@ struct ChatView: View {
     var body: some View {
         if #available(iOS 16.0, *) {
             viewBody
+            .toolbarBackground(.visible, for: .navigationBar)
             .scrollDismissesKeyboard(.immediately)
             .keyboardPadding()
         } else {
@@ -111,32 +109,17 @@ struct ChatView: View {
             ToolbarItem(placement: .principal) {
                 if case let .direct(contact) = cInfo {
                     Button {
-                        Task {
-                            do {
-                                let (stats, profile) = try await apiContactInfo(chat.chatInfo.apiId)
-                                let (ct, code) = try await apiGetContactCode(chat.chatInfo.apiId)
-                                await MainActor.run {
-                                    connectionStats = stats
-                                    customUserProfile = profile
-                                    connectionCode = code
-                                    if contact.activeConn?.connectionCode != ct.activeConn?.connectionCode {
-                                        chat.chatInfo = .direct(contact: ct)
-                                    }
-                                }
-                            } catch let error {
-                                logger.error("apiContactInfo or apiGetContactCode error: \(responseError(error))")
-                            }
-                            await MainActor.run { showChatInfoSheet = true }
-                        }
+                        showChatInfoSheet = true
                     } label: {
                         ChatInfoToolbar(chat: chat)
                     }
-                    .appSheet(isPresented: $showChatInfoSheet, onDismiss: {
-                        connectionStats = nil
-                        customUserProfile = nil
-                        connectionCode = nil
-                    }) {
-                        ChatInfoView(chat: chat, contact: contact, connectionStats: $connectionStats, customUserProfile: $customUserProfile, localAlias: chat.chatInfo.localAlias, connectionCode: $connectionCode)
+                    .appSheet(isPresented: $showChatInfoSheet) {
+                        ChatInfoView(
+                            openedFromChatView: true,
+                            chat: chat,
+                            contact: contact,
+                            localAlias: chat.chatInfo.localAlias
+                        )
                     }
                 } else if case let .group(groupInfo) = cInfo {
                     Button {

@@ -189,7 +189,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
                       code = chatModel.controller.apiGetContactCode(chatRh, chat.chatInfo.apiId)?.second
                       preloadedCode = code
                     }
-                    ChatInfoView(chatModel, (chat.chatInfo as ChatInfo.Direct).contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
+                    ChatInfoView(chatModel, openedFromChatView = true, (chat.chatInfo as ChatInfo.Direct).contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
                   } else if (chat?.chatInfo is ChatInfo.Group) {
                     var link: Pair<String, GroupMemberRole>? by remember(chat.id) { mutableStateOf(preloadedLink) }
                     KeyChangeEffect(chat.id) {
@@ -306,18 +306,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
                 onComplete.invoke()
               }
             },
-            startCall = out@{ media ->
-              withBGApi {
-                val cInfo = chat.chatInfo
-                if (cInfo is ChatInfo.Direct) {
-                  val contactInfo = chatModel.controller.apiContactInfo(chat.remoteHostId, cInfo.contact.contactId)
-                  val profile = contactInfo?.second ?: chatModel.currentUser.value?.profile?.toProfile() ?: return@withBGApi
-                  chatModel.activeCall.value = Call(remoteHostId = chatRh, contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media, userProfile = profile)
-                  chatModel.showCallView.value = true
-                  chatModel.callCommand.add(WCallCommand.Capabilities(media))
-                }
-              }
-            },
+            startCall = out@{ media -> startChatCall(chat, media) },
             endCall = {
               val call = chatModel.activeCall.value
               if (call != null) withBGApi { chatModel.callManager.endCall(call) }
@@ -517,6 +506,19 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         }
       }
       else -> {}
+    }
+  }
+}
+
+fun startChatCall(chat: Chat, media: CallMediaType) {
+  withBGApi {
+    val cInfo = chat.chatInfo
+    if (cInfo is ChatInfo.Direct) {
+      val contactInfo = chatModel.controller.apiContactInfo(chat.remoteHostId, cInfo.contact.contactId)
+      val profile = contactInfo?.second ?: chatModel.currentUser.value?.profile?.toProfile() ?: return@withBGApi
+      chatModel.activeCall.value = Call(remoteHostId = chat.remoteHostId, contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media, userProfile = profile)
+      chatModel.showCallView.value = true
+      chatModel.callCommand.add(WCallCommand.Capabilities(media))
     }
   }
 }

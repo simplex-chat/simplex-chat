@@ -403,6 +403,6 @@ public func chatPasswordHash(_ pwd: String, _ salt: String) -> String {
 
 struct UserProfilesView_Previews: PreviewProvider {
     static var previews: some View {
-        UserProfilesView(showSettings: Binding.constant(true))
+        UserProfilesView(showSettings: Binding.constant(false))
     }
 }
