@@ -120,10 +120,10 @@ extension ThemeWallpaper {
     func withFilledWallpaperBase64() -> ThemeWallpaper {
         let aw = toAppWallpaper()
         let type = aw.type
-        let preset: String? = if case let WallpaperType.Preset(filename, _) = type { filename } else { nil }
-        let scale: Float? = if case let WallpaperType.Preset(_, scale) = type { scale } else { if case let WallpaperType.Image(_, scale, _) = type { scale } else { 1.0 } }
-        let scaleType: WallpaperScaleType? = if case let WallpaperType.Image(_, _, scaleType) = type { scaleType } else { nil }
-        let image: String? = if case WallpaperType.Image = type, let image = type.uiImage { resizeImageToStrSize(image, maxDataSize: 5_000_000) } else { nil }
+        let preset: String? = if case let WallpaperType.preset(filename, _) = type { filename } else { nil }
+        let scale: Float? = if case let WallpaperType.preset(_, scale) = type { scale } else { if case let WallpaperType.image(_, scale, _) = type { scale } else { 1.0 } }
+        let scaleType: WallpaperScaleType? = if case let WallpaperType.image(_, _, scaleType) = type { scaleType } else { nil }
+        let image: String? = if case WallpaperType.image = type, let image = type.uiImage { resizeImageToStrSize(image, maxDataSize: 5_000_000) } else { nil }
         return ThemeWallpaper (
             preset: preset,
             scale: scale,
@@ -138,10 +138,10 @@ extension ThemeWallpaper {
 
 extension ThemeModeOverride {
     func removeSameColors(_ base: DefaultTheme, colorsToCompare tc: ThemeColors) -> ThemeModeOverride {
-        let wallpaperType = WallpaperType.from(wallpaper) ?? WallpaperType.Empty
+        let wallpaperType = WallpaperType.from(wallpaper) ?? WallpaperType.empty
         let w: ThemeWallpaper
         switch wallpaperType {
-        case let WallpaperType.Preset(filename, scale):
+        case let WallpaperType.preset(filename, scale):
             let p = PresetWallpaper.from(filename)
             w = ThemeWallpaper(
                 preset: filename,
@@ -152,7 +152,7 @@ extension ThemeModeOverride {
                 image: nil,
                 imageFile: nil
             )
-        case WallpaperType.Image:
+        case WallpaperType.image:
             w = ThemeWallpaper(
                 preset: nil,
                 scale: nil,
