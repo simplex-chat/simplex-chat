@@ -3018,7 +3018,7 @@ data class ServerCfg(
   val server: String,
   val preset: Boolean,
   val tested: Boolean? = null,
-  val enabled: Boolean
+  val enabled: ServerEnabled
 ) {
   @Transient
   private val createdAt: Date = Date()
@@ -3032,7 +3032,7 @@ data class ServerCfg(
     get() = server.isBlank()
 
   companion object {
-    val empty = ServerCfg(remoteHostId = null, server = "", preset = false, tested = null, enabled = true)
+    val empty = ServerCfg(remoteHostId = null, server = "", preset = false, tested = null, enabled = ServerEnabled.Enabled)
 
     class SampleData(
       val preset: ServerCfg,
@@ -3046,24 +3046,31 @@ data class ServerCfg(
         server = "smp://abcd@smp8.simplex.im",
         preset = true,
         tested = true,
-        enabled = true
+        enabled = ServerEnabled.Enabled
       ),
       custom = ServerCfg(
         remoteHostId = null,
         server = "smp://abcd@smp9.simplex.im",
         preset = false,
         tested = false,
-        enabled = false
+        enabled = ServerEnabled.Disabled
       ),
       untested = ServerCfg(
         remoteHostId = null,
         server = "smp://abcd@smp10.simplex.im",
         preset = false,
         tested = null,
-        enabled = true
+        enabled = ServerEnabled.Enabled
       )
     )
   }
+}
+
+@Serializable
+enum class ServerEnabled {
+  @SerialName("disabled") Disabled,
+  @SerialName("enabled") Enabled,
+  @SerialName("known") Known;
 }
 
 @Serializable
