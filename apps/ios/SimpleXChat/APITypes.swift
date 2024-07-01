@@ -146,7 +146,6 @@ public enum ChatCommand {
     case showVersion
     case getAgentServersSummary(userId: Int64)
     case resetAgentServersStats
-    case getAgentSubsSummary(userId: Int64)
     case string(String)
 
     public var cmdString: String {
@@ -309,7 +308,6 @@ public enum ChatCommand {
             case .showVersion: return "/version"
             case let .getAgentServersSummary(userId): return "/get servers summary \(userId)"
             case .resetAgentServersStats: return "/reset servers stats"
-            case let .getAgentSubsSummary(userId): return "/get subs summary \(userId)"
             case let .string(str): return str
             }
         }
@@ -447,7 +445,6 @@ public enum ChatCommand {
             case .showVersion: return "showVersion"
             case .getAgentServersSummary: return "getAgentServersSummary"
             case .resetAgentServersStats: return "resetAgentServersStats"
-            case .getAgentSubsSummary: return "getAgentSubsSummary"
             case .string: return "console command"
             }
         }
