@@ -1017,6 +1017,7 @@ struct WallpaperImporter: ViewModifier {
 }
 
 
+/// deprecated. Remove in 2025
 func getUIAccentColorDefault() -> CGColor {
     let defs = UserDefaults.standard
     return CGColor(
@@ -1025,15 +1026,6 @@ func getUIAccentColorDefault() -> CGColor {
         blue: defs.double(forKey: DEFAULT_ACCENT_COLOR_BLUE),
         alpha: 1
     )
-}
-
-func setUIAccentColorDefault(_ color: CGColor) {
-    if let cs = color.components {
-        let defs = UserDefaults.standard
-        defs.set(cs[0], forKey: DEFAULT_ACCENT_COLOR_RED)
-        defs.set(cs[1], forKey: DEFAULT_ACCENT_COLOR_GREEN)
-        defs.set(cs[2], forKey: DEFAULT_ACCENT_COLOR_BLUE)
-    }
 }
 
 private var updateBackendTask: Task = Task {}
@@ -1107,23 +1099,13 @@ private func encodeThemeOverrides(_ value: ThemeOverrides) throws -> String {
     return try Yams.serialize(node: node)
 }
 
+/// deprecated. Remove in 2025
 func getUserInterfaceStyleDefault() -> UIUserInterfaceStyle {
     switch UserDefaults.standard.integer(forKey: DEFAULT_USER_INTERFACE_STYLE) {
     case 1: return .light
     case 2: return .dark
     default: return .unspecified
     }
-}
-
-func setUserInterfaceStyleDefault(_ style: UIUserInterfaceStyle) {
-    var v: Int
-    switch style {
-    case .unspecified: v = 0
-    case .light: v = 1
-    case .dark: v = 2
-    default: v = 0
-    }
-    UserDefaults.standard.set(v, forKey: DEFAULT_USER_INTERFACE_STYLE)
 }
 
 struct AppearanceSettings_Previews: PreviewProvider {
