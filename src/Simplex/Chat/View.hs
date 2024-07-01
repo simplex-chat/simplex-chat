@@ -51,7 +51,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import qualified Simplex.FileTransfer.Transport as XFTP
-import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SMPServerSubs (..), SubscriptionsInfo (..))
+import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
@@ -366,7 +366,6 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       "agent locks: " <> viewJSON agentLocks
     ]
   CRAgentServersSummary u serversSummary -> ttyUser u ["agent servers summary: " <> viewJSON serversSummary]
-  CRAgentSubsSummary u SMPServerSubs {ssActive, ssPending} -> ttyUser u ["agent subscriptions summary: active = " <> sShow ssActive <> ", pending = " <> sShow ssPending]
   CRAgentStats stats -> map (plain . intercalate ",") stats
   CRAgentSubs {activeSubs, pendingSubs, removedSubs} ->
     [plain $ "Subscriptions: active = " <> show (sum activeSubs) <> ", pending = " <> show (sum pendingSubs) <> ", removed = " <> show (sum $ M.map length removedSubs)]

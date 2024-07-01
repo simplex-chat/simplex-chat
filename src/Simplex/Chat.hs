@@ -95,7 +95,7 @@ import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SMPServerSubs (..), SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, getNetworkConfig', ipAddressProtected, withLockMap)
+import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, getNetworkConfig', ipAddressProtected, withLockMap)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
@@ -2269,18 +2269,6 @@ processChatCommand' vr = \case
         let srvs = if null servers then L.toList defServers else servers
         pure $ map protoServer srvs
   ResetAgentServersStats -> withAgent resetAgentServersStats >> ok_
-  GetAgentSubsSummary userId -> withUserId userId $ \user -> do
-    agentSubsSummary <- lift $ withAgent' getAgentSubsSummary
-    users <- withStore' getUsers
-    let subs = countSubs agentSubsSummary user users
-    pure $ CRAgentSubsSummary user subs
-    where
-      countSubs agentSubsSummary user users = do
-        M.foldrWithKey' addSubs SMPServerSubs {ssActive = 0, ssPending = 0} agentSubsSummary
-        where
-          addSubs auId subs subsAcc
-            | countUserInAllStats (AgentUserId auId) user users = addSMPSubs subs subsAcc
-            | otherwise = subsAcc
   GetAgentWorkers -> lift $ CRAgentWorkersSummary <$> withAgent' getAgentWorkersSummary
   GetAgentWorkersDetails -> lift $ CRAgentWorkersDetails <$> withAgent' getAgentWorkersDetails
   GetAgentStats -> lift $ CRAgentStats . map stat <$> withAgent' getAgentStats
@@ -7641,7 +7629,6 @@ chatCommandP =
       "/debug event " *> (DebugEvent <$> jsonP),
       "/get servers summary " *> (GetAgentServersSummary <$> A.decimal),
       "/reset servers stats" $> ResetAgentServersStats,
-      "/get subs summary " *> (GetAgentSubsSummary <$> A.decimal),
       "/get stats" $> GetAgentStats,
       "/reset stats" $> ResetAgentStats,
       "/get subs" $> GetAgentSubs,
