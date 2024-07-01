@@ -115,7 +115,7 @@ actual fun ActiveCallView() {
       Log.d(TAG, "received from WebRTCView: $apiMsg")
       val call = chatModel.activeCall.value
       if (call != null) {
-        Log.d(TAG, "has active call $call")
+        Log.d(TAG, "has active call callState: ${call.callState}, localMedia: ${call.localMedia}, peerMedia: ${call.peerMedia}, audioEnabled: ${call.audioEnabled}, connectionInfo: ${call.connectionInfo}")
         val callRh = call.remoteHostId
         when (val r = apiMsg.resp) {
           is WCallResponse.Capabilities -> withBGApi {

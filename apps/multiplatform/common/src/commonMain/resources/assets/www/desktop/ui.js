@@ -7,15 +7,17 @@ const socket = new WebSocket(`ws://${location.host}`);
 socket.addEventListener("open", (_event) => {
     console.log("Opened socket");
     sendMessageToNative = (msg) => {
-        console.log("Message to server");
+        var _a;
+        console.log(`Message to server will be sent: ${(_a = msg.command) === null || _a === void 0 ? void 0 : _a.type}`);
         socket.send(JSON.stringify(msg));
     };
 });
 socket.addEventListener("message", (event) => {
+    var _a;
     const parsed = JSON.parse(event.data);
     reactOnMessageFromServer(parsed);
     processCommand(parsed);
-    console.log("Message from server");
+    console.log(`Message from server finished processing: ${(_a = parsed.command) === null || _a === void 0 ? void 0 : _a.type}`);
 });
 socket.addEventListener("close", (_event) => {
     console.log("Closed socket");

@@ -8,7 +8,7 @@ const socket = new WebSocket(`ws://${location.host}`)
 socket.addEventListener("open", (_event) => {
   console.log("Opened socket")
   sendMessageToNative = (msg: WVApiMessage) => {
-    console.log("Message to server")
+    console.log(`Message to server will be sent: ${msg.command?.type}`)
     socket.send(JSON.stringify(msg))
   }
 })
@@ -17,7 +17,7 @@ socket.addEventListener("message", (event) => {
   const parsed = JSON.parse(event.data)
   reactOnMessageFromServer(parsed)
   processCommand(parsed)
-  console.log("Message from server")
+  console.log(`Message from server finished processing: ${parsed.command?.type}`)
 })
 
 socket.addEventListener("close", (_event) => {

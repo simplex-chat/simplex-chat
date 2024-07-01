@@ -93,8 +93,7 @@ const processCommand = (function () {
                 if (delay)
                     clearTimeout(delay);
                 resolved = true;
-                // console.log("resolveIceCandidates", JSON.stringify(candidates))
-                console.log("resolveIceCandidates");
+                console.log("resolveIceCandidates", JSON.stringify(candidates));
                 const iceCandidates = serialize(candidates);
                 candidates = [];
                 resolve(iceCandidates);
@@ -102,8 +101,7 @@ const processCommand = (function () {
             function sendIceCandidates() {
                 if (candidates.length === 0)
                     return;
-                // console.log("sendIceCandidates", JSON.stringify(candidates))
-                console.log("sendIceCandidates");
+                console.log("sendIceCandidates", JSON.stringify(candidates));
                 const iceCandidates = serialize(candidates);
                 candidates = [];
                 sendMessageToNative({ resp: { type: "ice", iceCandidates } });
@@ -112,6 +110,7 @@ const processCommand = (function () {
     }
     async function initializeCall(config, mediaType, aesKey) {
         var _a;
+        console.log("Initializing call");
         let pc;
         try {
             pc = new RTCPeerConnection(config.peerConnectionConfig);
@@ -154,6 +153,7 @@ const processCommand = (function () {
                 connectionHandler();
         }
         async function connectionHandler() {
+            console.log(`Connection state change: ${pc.connectionState}, ${pc.iceConnectionState}, ${pc.iceGatheringState}, ${pc.signalingState}`);
             sendMessageToNative({
                 resp: {
                     type: "connection",
@@ -209,6 +209,7 @@ const processCommand = (function () {
     }
     async function processCommand(body) {
         const { corrId, command } = body;
+        console.log(`process command: ${command.type}`);
         const pc = activeCall === null || activeCall === void 0 ? void 0 : activeCall.connection;
         let resp;
         try {
@@ -220,6 +221,7 @@ const processCommand = (function () {
                     // This request for local media stream is made to prompt for camera/mic permissions on call start
                     if (command.media)
                         await getLocalMediaStream(command.media, VideoCamera.User);
+                    console.log("Asked video camera permission");
                     const encryption = supportsInsertableStreams(useWorker);
                     resp = { type: "capabilities", capabilities: { encryption } };
                     break;
@@ -251,7 +253,7 @@ const processCommand = (function () {
                         iceCandidates: await activeCall.iceCandidates,
                         capabilities: { encryption },
                     };
-                    // console.log("offer response", JSON.stringify(resp))
+                    console.log("offer response", JSON.stringify(resp));
                     break;
                 }
                 case "offer":
@@ -267,7 +269,7 @@ const processCommand = (function () {
                         const { media, aesKey, iceServers, relay } = command;
                         activeCall = await initializeCall(getCallConfig(!!aesKey, iceServers, relay), media, aesKey);
                         const pc = activeCall.connection;
-                        // console.log("offer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
+                        console.log("offer remoteIceCandidates", JSON.stringify(remoteIceCandidates));
                         await pc.setRemoteDescription(new RTCSessionDescription(offer));
                         const answer = await pc.createAnswer();
                         await pc.setLocalDescription(answer);
@@ -279,7 +281,7 @@ const processCommand = (function () {
                             iceCandidates: await activeCall.iceCandidates,
                         };
                     }
-                    // console.log("answer response", JSON.stringify(resp))
+                    console.log("answer response", JSON.stringify(resp));
                     break;
                 case "answer":
                     if (!pc) {
@@ -294,7 +296,7 @@ const processCommand = (function () {
                     else {
                         const answer = parse(command.answer);
                         const remoteIceCandidates = parse(command.iceCandidates);
-                        // console.log("answer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
+                        console.log("answer remoteIceCandidates", JSON.stringify(remoteIceCandidates));
                         await pc.setRemoteDescription(new RTCSessionDescription(answer));
                         addIceCandidates(pc, remoteIceCandidates);
                         resp = { type: "ok" };
@@ -371,10 +373,11 @@ const processCommand = (function () {
     function addIceCandidates(conn, iceCandidates) {
         for (const c of iceCandidates) {
             conn.addIceCandidate(new RTCIceCandidate(c));
-            // console.log("addIceCandidates", JSON.stringify(c))
+            console.log("addIceCandidates", JSON.stringify(c));
         }
     }
     async function setupMediaStreams(call) {
+        console.log("Setup media streams start");
         const videos = getVideoElements();
         if (!videos)
             throw Error("no video elements");
@@ -389,6 +392,7 @@ const processCommand = (function () {
         // Without doing it manually Firefox shows black screen but video can be played in Picture-in-Picture
         videos.local.play();
         videos.remote.play();
+        console.log("Setup media streams end");
     }
     async function setupEncryptionWorker(call) {
         if (call.aesKey) {
@@ -409,6 +413,7 @@ const processCommand = (function () {
         const pc = call.connection;
         let { localStream } = call;
         for (const track of localStream.getTracks()) {
+            console.log(`Adding local track: ${track.kind}`);
             pc.addTrack(track, localStream);
         }
         if (call.aesKey && call.key) {
@@ -429,6 +434,7 @@ const processCommand = (function () {
                 }
                 for (const stream of event.streams) {
                     for (const track of stream.getTracks()) {
+                        console.log(`Adding remote track: ${track.kind}`);
                         call.remoteStream.addTrack(track);
                     }
                 }
