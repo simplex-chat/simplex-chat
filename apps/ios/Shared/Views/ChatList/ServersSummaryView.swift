@@ -187,6 +187,37 @@ struct ServersSummaryView: View {
         Section("Message subscriptions") {
             infoRow("Connections subscribed", "\(subs.ssActive)")
             infoRow("Total", "\(subs.total)")
+            reconnectAllButton()
+        }
+    }
+
+    private func reconnectAllButton() -> some View {
+        Button {
+            alert = SomeAlert(
+                alert: Alert(
+                    title: Text("Reconnect servers?"),
+                    message: Text("Reconnect all connected servers to force message delivery. It uses additional traffic."),
+                    primaryButton: .default(Text("Ok")) {
+                        Task {
+                            do {
+                                try await reconnectAllServers()
+                            } catch let error {
+                                alert = SomeAlert(
+                                    alert: mkAlert(
+                                        title: "Error reconnecting servers",
+                                        message: "\(responseError(error))"
+                                    ),
+                                    id: "error reconnecting servers"
+                                )
+                            }
+                        }
+                    },
+                    secondaryButton: .cancel()
+                ),
+                id: "reconnect servers question"
+            )
+        } label: {
+            Text("Reconnect servers")
         }
     }
 
