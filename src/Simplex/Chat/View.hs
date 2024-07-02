@@ -366,7 +366,6 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       "agent locks: " <> viewJSON agentLocks
     ]
   CRAgentServersSummary u serversSummary -> ttyUser u ["agent servers summary: " <> viewJSON serversSummary]
-  CRAgentStats stats -> map (plain . intercalate ",") stats
   CRAgentSubs {activeSubs, pendingSubs, removedSubs} ->
     [plain $ "Subscriptions: active = " <> show (sum activeSubs) <> ", pending = " <> show (sum pendingSubs) <> ", removed = " <> show (sum $ M.map length removedSubs)]
       <> ("active subscriptions:" : listSubs activeSubs)
@@ -384,7 +383,6 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     [ "agent workers details:",
       viewJSON agentWorkersDetails -- this would be huge, but copypastable when has its own line
     ]
-  CRAgentMsgCounts {msgCounts} -> ["received messages (total, duplicates):", viewJSON msgCounts]
   CRAgentQueuesInfo {agentQueuesInfo} ->
     [ "agent queues info:",
       plain . LB.unpack $ J.encode agentQueuesInfo

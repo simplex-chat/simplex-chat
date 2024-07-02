@@ -1167,7 +1167,7 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
             server: "smp://abcd@smp9.simplex.im",
             preset: false,
             tested: false,
-            enabled: .enabled
+            enabled: .disabled
         ),
         untested: ServerCfg(
             server: "smp://abcd@smp10.simplex.im",
