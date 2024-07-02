@@ -119,7 +119,7 @@ struct ServersSummaryView: View {
                         smpServersListView(prev, summ.statsStartedAt, "Previously used")
                     }
                     if prox.count > 0 {
-                        smpServersListView(prox, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
+                        smpServersListView(prox, summ.statsStartedAt, "Proxied", "You are not connected to these servers.")
                     }
 
                     ServerSessionsView(sess: totals.sessions)
@@ -140,7 +140,7 @@ struct ServersSummaryView: View {
                         smpServersListView(prev, summ.statsStartedAt, "Previously used")
                     }
                     if prox.count > 0 {
-                        smpServersListView(prox, summ.statsStartedAt, "Proxied", "You are not connected to these servers directly.")
+                        smpServersListView(prox, summ.statsStartedAt, "Proxied", "You are not connected to these servers.")
                     }
 
                     ServerSessionsView(sess: totals.sessions)
