@@ -168,56 +168,56 @@ public class AppWallpaper: ObservableObject, NSCopying, Equatable {
 }
 
 public enum ThemeColor {
-    case PRIMARY
-    case PRIMARY_VARIANT
-    case SECONDARY
-    case SECONDARY_VARIANT
-    case BACKGROUND
-    case SURFACE
-    case TITLE
-    case SENT_MESSAGE
-    case SENT_QUOTE
-    case RECEIVED_MESSAGE
-    case RECEIVED_QUOTE
-    case PRIMARY_VARIANT2
-    case WALLPAPER_BACKGROUND
-    case WALLPAPER_TINT
+    case primary
+    case primaryVariant
+    case secondary
+    case secondaryVariant
+    case background
+    case surface
+    case title
+    case sentMessage
+    case sentQuote
+    case receivedMessage
+    case receivedQuote
+    case primaryVariant2
+    case wallpaperBackground
+    case wallpaperTint
 
     public func fromColors(_ colors: Colors, _ appColors: AppColors, _ appWallpaper: AppWallpaper) -> Color? {
         switch (self) {
-        case .PRIMARY: colors.primary
-        case .PRIMARY_VARIANT: colors.primaryVariant
-        case .SECONDARY: colors.secondary
-        case .SECONDARY_VARIANT: colors.secondaryVariant
-        case .BACKGROUND: colors.background
-        case .SURFACE: colors.surface
-        case .TITLE: appColors.title
-        case .PRIMARY_VARIANT2: appColors.primaryVariant2
-        case .SENT_MESSAGE: appColors.sentMessage
-        case .SENT_QUOTE: appColors.sentQuote
-        case .RECEIVED_MESSAGE: appColors.receivedMessage
-        case .RECEIVED_QUOTE: appColors.receivedQuote
-        case .WALLPAPER_BACKGROUND: appWallpaper.background
-        case .WALLPAPER_TINT: appWallpaper.tint
+        case .primary: colors.primary
+        case .primaryVariant: colors.primaryVariant
+        case .secondary: colors.secondary
+        case .secondaryVariant: colors.secondaryVariant
+        case .background: colors.background
+        case .surface: colors.surface
+        case .title: appColors.title
+        case .primaryVariant2: appColors.primaryVariant2
+        case .sentMessage: appColors.sentMessage
+        case .sentQuote: appColors.sentQuote
+        case .receivedMessage: appColors.receivedMessage
+        case .receivedQuote: appColors.receivedQuote
+        case .wallpaperBackground: appWallpaper.background
+        case .wallpaperTint: appWallpaper.tint
         }
     }
 
     public var text: LocalizedStringKey {
         switch (self) {
-        case .PRIMARY: "Accent"
-        case .PRIMARY_VARIANT: "Additional accent"
-        case .SECONDARY: "Secondary"
-        case .SECONDARY_VARIANT: "Additional secondary"
-        case .BACKGROUND: "Background"
-        case .SURFACE: "Menus"
-        case .TITLE: "Title"
-        case .PRIMARY_VARIANT2: "Additional accent 2"
-        case .SENT_MESSAGE: "Sent message"
-        case .SENT_QUOTE: "Sent reply"
-        case .RECEIVED_MESSAGE: "Received message"
-        case .RECEIVED_QUOTE: "Received reply"
-        case .WALLPAPER_BACKGROUND: "Wallpaper background"
-        case .WALLPAPER_TINT: "Wallpaper accent"
+        case .primary: "Accent"
+        case .primaryVariant: "Additional accent"
+        case .secondary: "Secondary"
+        case .secondaryVariant: "Additional secondary"
+        case .background: "Background"
+        case .surface: "Menus"
+        case .title: "Title"
+        case .primaryVariant2: "Additional accent 2"
+        case .sentMessage: "Sent message"
+        case .sentQuote: "Sent reply"
+        case .receivedMessage: "Received message"
+        case .receivedQuote: "Received reply"
+        case .wallpaperBackground: "Wallpaper background"
+        case .wallpaperTint: "Wallpaper accent"
         }
     }
 }
@@ -409,20 +409,20 @@ public struct ThemeOverrides: Codable, Equatable {
         var c = colors
         var w = wallpaper
         switch name {
-        case ThemeColor.PRIMARY: c.primary = color
-        case ThemeColor.PRIMARY_VARIANT: c.primaryVariant = color
-        case ThemeColor.SECONDARY: c.secondary = color
-        case ThemeColor.SECONDARY_VARIANT: c.secondaryVariant = color
-        case ThemeColor.BACKGROUND: c.background = color
-        case ThemeColor.SURFACE: c.surface = color
-        case ThemeColor.TITLE: c.title = color
-        case ThemeColor.PRIMARY_VARIANT2: c.primaryVariant2 = color
-        case ThemeColor.SENT_MESSAGE: c.sentMessage = color
-        case ThemeColor.SENT_QUOTE: c.sentQuote = color
-        case ThemeColor.RECEIVED_MESSAGE: c.receivedMessage = color
-        case ThemeColor.RECEIVED_QUOTE: c.receivedQuote = color
-        case ThemeColor.WALLPAPER_BACKGROUND: w?.background = color
-        case ThemeColor.WALLPAPER_TINT: w?.tint = color
+        case ThemeColor.primary: c.primary = color
+        case ThemeColor.primaryVariant: c.primaryVariant = color
+        case ThemeColor.secondary: c.secondary = color
+        case ThemeColor.secondaryVariant: c.secondaryVariant = color
+        case ThemeColor.background: c.background = color
+        case ThemeColor.surface: c.surface = color
+        case ThemeColor.title: c.title = color
+        case ThemeColor.primaryVariant2: c.primaryVariant2 = color
+        case ThemeColor.sentMessage: c.sentMessage = color
+        case ThemeColor.sentQuote: c.sentQuote = color
+        case ThemeColor.receivedMessage: c.receivedMessage = color
+        case ThemeColor.receivedQuote: c.receivedQuote = color
+        case ThemeColor.wallpaperBackground: w?.background = color
+        case ThemeColor.wallpaperTint: w?.tint = color
         }
         return ThemeOverrides(themeId: themeId, base: base, colors: c, wallpaper: w)
     }
@@ -590,20 +590,20 @@ public struct ThemeModeOverride: Codable, Equatable {
         var c = colors
         var w = wallpaper
         switch (name) {
-        case ThemeColor.PRIMARY: c.primary = color
-        case ThemeColor.PRIMARY_VARIANT: c.primaryVariant = color
-        case ThemeColor.SECONDARY: c.secondary = color
-        case ThemeColor.SECONDARY_VARIANT: c.secondaryVariant = color
-        case ThemeColor.BACKGROUND: c.background = color
-        case ThemeColor.SURFACE: c.surface = color
-        case ThemeColor.TITLE: c.title = color
-        case ThemeColor.PRIMARY_VARIANT2: c.primaryVariant2 = color
-        case ThemeColor.SENT_MESSAGE: c.sentMessage = color
-        case ThemeColor.SENT_QUOTE: c.sentQuote = color
-        case ThemeColor.RECEIVED_MESSAGE: c.receivedMessage = color
-        case ThemeColor.RECEIVED_QUOTE: c.receivedQuote = color
-        case ThemeColor.WALLPAPER_BACKGROUND: w?.background = color
-        case ThemeColor.WALLPAPER_TINT: w?.tint = color
+        case ThemeColor.primary: c.primary = color
+        case ThemeColor.primaryVariant: c.primaryVariant = color
+        case ThemeColor.secondary: c.secondary = color
+        case ThemeColor.secondaryVariant: c.secondaryVariant = color
+        case ThemeColor.background: c.background = color
+        case ThemeColor.surface: c.surface = color
+        case ThemeColor.title: c.title = color
+        case ThemeColor.primaryVariant2: c.primaryVariant2 = color
+        case ThemeColor.sentMessage: c.sentMessage = color
+        case ThemeColor.sentQuote: c.sentQuote = color
+        case ThemeColor.receivedMessage: c.receivedMessage = color
+        case ThemeColor.receivedQuote: c.receivedQuote = color
+        case ThemeColor.wallpaperBackground: w?.background = color
+        case ThemeColor.wallpaperTint: w?.tint = color
         }
         return ThemeModeOverride(mode: mode, colors: c, wallpaper: w)
     }

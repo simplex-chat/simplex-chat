@@ -91,7 +91,7 @@ struct NewChatView: View {
             .background(
                 // Rectangle is needed for swipe gesture to work on mostly empty views (creatingLinkProgressView and retryButton)
                 Rectangle()
-                    .fill(theme.base == DefaultTheme.LIGHT ? LightThemeBackgroundColor : theme.colors.background)
+                    .fill(theme.base == DefaultTheme.LIGHT ? theme.colors.background.asGroupedBackground(theme.base.mode) : theme.colors.background)
             )
             .animation(.easeInOut(duration: 0.3333), value: selection)
             .gesture(DragGesture(minimumDistance: 20.0, coordinateSpace: .local)

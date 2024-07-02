@@ -800,14 +800,14 @@ struct CustomizeThemeColorsSection: View {
 
     var body: some View {
         Section {
-            picker(.PRIMARY, editColor)
-            picker(.PRIMARY_VARIANT, editColor)
-            picker(.SECONDARY, editColor)
-            picker(.SECONDARY_VARIANT, editColor)
-            picker(.BACKGROUND, editColor)
-            picker(.SURFACE, editColor)
-            //picker(.TITLE, editColor)
-            picker(.PRIMARY_VARIANT2, editColor)
+            picker(.primary, editColor)
+            picker(.primaryVariant, editColor)
+            picker(.secondary, editColor)
+            picker(.secondaryVariant, editColor)
+            picker(.background, editColor)
+            picker(.surface, editColor)
+            //picker(.title, editColor)
+            picker(.primaryVariant2, editColor)
         } header: {
             Text("Interface colors")
                 .foregroundColor(theme.colors.secondary)
@@ -821,20 +821,20 @@ func editColorBinding(name: ThemeColor, wallpaperType: WallpaperType?, wallpaper
         let wallpaperBackgroundColor = theme.wallpaper.background ?? wallpaperType?.defaultBackgroundColor(baseTheme, theme.colors.background) ?? Color.clear
         let wallpaperTintColor = theme.wallpaper.tint ?? wallpaperType?.defaultTintColor(baseTheme) ?? Color.clear
         return switch name {
-        case ThemeColor.WALLPAPER_BACKGROUND: wallpaperBackgroundColor
-        case ThemeColor.WALLPAPER_TINT: wallpaperTintColor
-        case ThemeColor.PRIMARY: theme.colors.primary
-        case ThemeColor.PRIMARY_VARIANT: theme.colors.primaryVariant
-        case ThemeColor.SECONDARY: theme.colors.secondary
-        case ThemeColor.SECONDARY_VARIANT: theme.colors.secondaryVariant
-        case ThemeColor.BACKGROUND: theme.colors.background
-        case ThemeColor.SURFACE: theme.colors.surface
-        case ThemeColor.TITLE: theme.appColors.title
-        case ThemeColor.PRIMARY_VARIANT2: theme.appColors.primaryVariant2
-        case ThemeColor.SENT_MESSAGE: theme.appColors.sentMessage
-        case ThemeColor.SENT_QUOTE: theme.appColors.sentQuote
-        case ThemeColor.RECEIVED_MESSAGE: theme.appColors.receivedMessage
-        case ThemeColor.RECEIVED_QUOTE: theme.appColors.receivedQuote
+        case ThemeColor.wallpaperBackground: wallpaperBackgroundColor
+        case ThemeColor.wallpaperTint: wallpaperTintColor
+        case ThemeColor.primary: theme.colors.primary
+        case ThemeColor.primaryVariant: theme.colors.primaryVariant
+        case ThemeColor.secondary: theme.colors.secondary
+        case ThemeColor.secondaryVariant: theme.colors.secondaryVariant
+        case ThemeColor.background: theme.colors.background
+        case ThemeColor.surface: theme.colors.surface
+        case ThemeColor.title: theme.appColors.title
+        case ThemeColor.primaryVariant2: theme.appColors.primaryVariant2
+        case ThemeColor.sentMessage: theme.appColors.sentMessage
+        case ThemeColor.sentQuote: theme.appColors.sentQuote
+        case ThemeColor.receivedMessage: theme.appColors.receivedMessage
+        case ThemeColor.receivedQuote: theme.appColors.receivedQuote
         }
     }, set: onColorChange)
 }
@@ -866,14 +866,14 @@ struct WallpaperSetupView: View {
         }
 
         if wallpaperType?.isPreset == true || wallpaperType?.isImage == true {
-            picker(.WALLPAPER_BACKGROUND, editColor)
-            picker(.WALLPAPER_TINT, editColor)
+            picker(.wallpaperBackground, editColor)
+            picker(.wallpaperTint, editColor)
         }
 
-        picker(.SENT_MESSAGE, editColor)
-        picker(.SENT_QUOTE, editColor)
-        picker(.RECEIVED_MESSAGE, editColor)
-        picker(.RECEIVED_QUOTE, editColor)
+        picker(.sentMessage, editColor)
+        picker(.sentQuote, editColor)
+        picker(.receivedMessage, editColor)
+        picker(.receivedQuote, editColor)
 
     }
 
@@ -959,11 +959,11 @@ struct ColorPickerView: View {
 
     var body: some View {
         let supportsOpacity = switch name {
-        case .WALLPAPER_TINT: true
-        case .SENT_MESSAGE: true
-        case .SENT_QUOTE: true
-        case .RECEIVED_MESSAGE: true
-        case .RECEIVED_QUOTE: true
+        case .wallpaperTint: true
+        case .sentMessage: true
+        case .sentQuote: true
+        case .receivedMessage: true
+        case .receivedQuote: true
         default: UIColor(selection.wrappedValue).cgColor.alpha < 1
         }
         ColorPicker(name.text, selection: selection, supportsOpacity: supportsOpacity)
