@@ -54,7 +54,6 @@ import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Protocol (AgentErrorType (RCP))
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import Simplex.Messaging.Client (SMPProxyFallback, SMPProxyMode (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -366,7 +365,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       "chat entity locks: " <> viewJSON chatEntityLocks,
       "agent locks: " <> viewJSON agentLocks
     ]
-  CRAgentStats stats -> map (plain . intercalate ",") stats
+  CRAgentServersSummary u serversSummary -> ttyUser u ["agent servers summary: " <> viewJSON serversSummary]
   CRAgentSubs {activeSubs, pendingSubs, removedSubs} ->
     [plain $ "Subscriptions: active = " <> show (sum activeSubs) <> ", pending = " <> show (sum pendingSubs) <> ", removed = " <> show (sum $ M.map length removedSubs)]
       <> ("active subscriptions:" : listSubs activeSubs)
@@ -384,7 +383,6 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     [ "agent workers details:",
       viewJSON agentWorkersDetails -- this would be huge, but copypastable when has its own line
     ]
-  CRAgentMsgCounts {msgCounts} -> ["received messages (total, duplicates):", viewJSON msgCounts]
   CRAgentQueuesInfo {agentQueuesInfo} ->
     [ "agent queues info:",
       plain . LB.unpack $ J.encode agentQueuesInfo

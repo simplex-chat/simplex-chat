@@ -149,6 +149,11 @@ textWithUri = describe "text with Uri" do
     parseMarkdown "http://simplex.chat" `shouldBe` uri "http://simplex.chat"
     parseMarkdown "this is https://simplex.chat" `shouldBe` "this is " <> uri "https://simplex.chat"
     parseMarkdown "https://simplex.chat site" `shouldBe` uri "https://simplex.chat" <> " site"
+    parseMarkdown "SimpleX on GitHub: https://github.com/simplex-chat/" `shouldBe` "SimpleX on GitHub: " <> uri "https://github.com/simplex-chat/"
+    parseMarkdown "SimpleX on GitHub: https://github.com/simplex-chat." `shouldBe` "SimpleX on GitHub: " <> uri "https://github.com/simplex-chat" <> "."
+    parseMarkdown "https://github.com/simplex-chat/ - SimpleX on GitHub" `shouldBe` uri "https://github.com/simplex-chat/" <> " - SimpleX on GitHub"
+    -- parseMarkdown "SimpleX on GitHub (https://github.com/simplex-chat/)" `shouldBe` "SimpleX on GitHub (" <> uri "https://github.com/simplex-chat/" <> ")"
+    parseMarkdown "https://en.m.wikipedia.org/wiki/Servo_(software)" `shouldBe` uri "https://en.m.wikipedia.org/wiki/Servo_(software)"
   it "ignored as markdown" do
     parseMarkdown "_https://simplex.chat" `shouldBe` "_https://simplex.chat"
     parseMarkdown "this is _https://simplex.chat" `shouldBe` "this is _https://simplex.chat"

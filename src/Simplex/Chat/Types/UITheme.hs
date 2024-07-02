@@ -18,6 +18,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_)
+import Simplex.Messaging.Util (decodeJSON, encodeJSON)
 
 data UITheme = UITheme
   { themeId :: Text,
