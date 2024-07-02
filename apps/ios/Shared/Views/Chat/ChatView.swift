@@ -325,15 +325,6 @@ struct ChatView: View {
                 return chatItemView(ci, maxWidth)
                     .onAppear {
                         floatingButtonModel.appeared(viewId: ci.viewId)
-                        if ci.isRcvNew {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                                if chatModel.chatId == cInfo.id {
-                                    Task {
-                                        await apiMarkChatItemRead(cInfo, ci)
-                                    }
-                                }
-                            }
-                        }
                     }
                     .onDisappear {
                         floatingButtonModel.disappeared(viewId: ci.viewId)
@@ -616,14 +607,36 @@ struct ChatView: View {
             let ciCategory = chatItem.mergeCategory
             let (prevHidden, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
             let range = itemsRange(currIndex, prevHidden)
-            if revealed, let range = range {
-                let items = Array(zip(Array(range), m.reversedChatItems[range]))
-                ForEach(items, id: \.1.viewId) { (i, ci) in
-                    let prev = i == prevHidden ? prevItem : m.reversedChatItems[i + 1]
-                    chatItemView(ci, nil, prev)
+            Group {
+                if revealed, let range = range {
+                    let items = Array(zip(Array(range), m.reversedChatItems[range]))
+                    ForEach(items, id: \.1.viewId) { (i, ci) in
+                        let prev = i == prevHidden ? prevItem : m.reversedChatItems[i + 1]
+                        chatItemView(ci, nil, prev)
+                    }
+                } else {
+                    chatItemView(chatItem, range, prevItem)
                 }
-            } else {
-                chatItemView(chatItem, range, prevItem)
+            }
+            .onAppear {
+                markRead(
+                    chatItems: range.flatMap { m.reversedChatItems[$0] } 
+                    ?? [chatItem]
+                )
+            }
+        }
+
+        private func markRead(chatItems: Array<ChatItem>.SubSequence) {
+            let unreadItems = chatItems.filter { $0.isRcvNew }
+            if unreadItems.isEmpty { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                if m.chatId == chat.chatInfo.id {
+                    Task {
+                        for unreadItem in unreadItems {
+                            await apiMarkChatItemRead(chat.chatInfo, unreadItem)
+                        }
+                    }
+                }
             }
         }
 
