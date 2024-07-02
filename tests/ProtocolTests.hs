@@ -34,7 +34,8 @@ queue =
     SMPQueueAddress
       { smpServer = srv,
         senderId = "\223\142z\251",
-        dhPublicKey = "MCowBQYDK2VuAyEAjiswwI3O/NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o="
+        dhPublicKey = "MCowBQYDK2VuAyEAjiswwI3O/NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o=",
+        sndSecure = False
       }
 
 connReqData :: ConnReqUriData
