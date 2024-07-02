@@ -48,7 +48,8 @@ object NtfManager {
   }
 
   private val manager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-  private var prevNtfTime = mutableMapOf<String, Long>()
+  // (UserId, ChatId) -> NotificationId
+  private var prevNtfTime = mutableMapOf<Pair<Long, ChatId>, Long>()
   private val msgNtfTimeoutMs = 30000L
 
   init {
@@ -72,8 +73,23 @@ object NtfManager {
   }
 
   fun cancelNotificationsForChat(chatId: String) {
-    prevNtfTime.remove(chatId)
+    val key = prevNtfTime.keys.firstOrNull { it.second == chatId }
+    prevNtfTime.remove(key)
     manager.cancel(chatId.hashCode())
+    val msgNtfs = manager.activeNotifications.filter { ntf ->
+      ntf.notification.channelId == MessageChannel
+    }
+    if (msgNtfs.size <= 1) {
+      // Have a group notification with no children so cancel it
+      manager.cancel(0)
+    }
+  }
+
+  fun cancelNotificationsForUser(userId: Long) {
+    prevNtfTime.keys.filter { it.first == userId }.forEach {
+      prevNtfTime.remove(it)
+      manager.cancel(it.second.hashCode())
+    }
     val msgNtfs = manager.activeNotifications.filter { ntf ->
       ntf.notification.channelId == MessageChannel
     }
@@ -87,8 +103,8 @@ object NtfManager {
     if (!user.showNotifications) return
     Log.d(TAG, "notifyMessageReceived $chatId")
     val now = Clock.System.now().toEpochMilliseconds()
-    val recentNotification = (now - prevNtfTime.getOrDefault(chatId, 0) < msgNtfTimeoutMs)
-    prevNtfTime[chatId] = now
+    val recentNotification = (now - prevNtfTime.getOrDefault(user.userId to chatId, 0) < msgNtfTimeoutMs)
+    prevNtfTime[user.userId to chatId] = now
     val previewMode = appPreferences.notificationPreviewMode.get()
     val title = if (previewMode == NotificationPreviewMode.HIDDEN.name) generalGetString(MR.strings.notification_preview_somebody) else displayName
     val content = if (previewMode != NotificationPreviewMode.MESSAGE.name) generalGetString(MR.strings.notification_preview_new_message) else msgText
