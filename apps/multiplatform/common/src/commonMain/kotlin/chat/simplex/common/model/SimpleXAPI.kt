@@ -1,9 +1,18 @@
 package chat.simplex.common.model
 
+import SectionItemView
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import chat.simplex.common.views.helpers.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.setNetCfg
 import chat.simplex.common.model.ChatModel.updatingChatsMutex
@@ -12,7 +21,6 @@ import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
-import chat.simplex.common.views.chat.group.toggleShowMemberMessages
 import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
@@ -20,6 +28,7 @@ import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
 import chat.simplex.res.MR
 import com.russhwolf.settings.Settings
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.withLock
@@ -2026,6 +2035,11 @@ object ChatController {
           cleanupFile(r.chatItem_)
         }
       }
+      is CR.RcvFileWarning -> {
+        if (r.chatItem_ != null) {
+          chatItemSimpleUpdate(rhId, r.user, r.chatItem_)
+        }
+      }
       is CR.SndFileStart ->
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
       is CR.SndFileComplete -> {
@@ -2050,6 +2064,11 @@ object ChatController {
         if (r.chatItem_ != null) {
           chatItemSimpleUpdate(rhId, r.user, r.chatItem_)
           cleanupFile(r.chatItem_)
+        }
+      }
+      is CR.SndFileWarning -> {
+        if (r.chatItem_ != null) {
+          chatItemSimpleUpdate(rhId, r.user, r.chatItem_)
         }
       }
       is CR.CallInvitation -> {
@@ -2184,15 +2203,43 @@ object ChatController {
         val sess = chatModel.remoteCtrlSession.value
         if (sess != null) {
           chatModel.remoteCtrlSession.value = null
+          ModalManager.fullscreen.closeModals()
           fun showAlert(chatError: ChatError) {
-            AlertManager.shared.showAlertMsg(
-              generalGetString(MR.strings.remote_ctrl_was_disconnected_title),
-              if (chatError is ChatError.ChatErrorRemoteCtrl) {
-                chatError.remoteCtrlError.localizedString
-              } else {
-                generalGetString(MR.strings.remote_ctrl_disconnected_with_reason).format(chatError.string)
-              }
-            )
+            when {
+              r.rcStopReason is RemoteCtrlStopReason.ConnectionFailed
+                  && r.rcStopReason.chatError is ChatError.ChatErrorAgent
+                  && r.rcStopReason.chatError.agentError is AgentErrorType.RCP
+                  && r.rcStopReason.chatError.agentError.rcpErr is RCErrorType.IDENTITY ->
+                AlertManager.shared.showAlertMsg(
+                  title = generalGetString(MR.strings.remote_ctrl_was_disconnected_title),
+                  text = generalGetString(MR.strings.remote_ctrl_connection_stopped_identity_desc)
+                )
+              else ->
+                AlertManager.shared.showAlertDialogButtonsColumn(
+                  title = generalGetString(MR.strings.remote_ctrl_was_disconnected_title),
+                  text = if (chatError is ChatError.ChatErrorRemoteCtrl) {
+                    chatError.remoteCtrlError.localizedString
+                  } else {
+                    generalGetString(MR.strings.remote_ctrl_connection_stopped_desc)
+                  },
+                  buttons = {
+                    Column {
+                      SectionItemView({
+                        AlertManager.shared.hideAlert()
+                      }) {
+                        Text(stringResource(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                      }
+                      val clipboard = LocalClipboardManager.current
+                      SectionItemView({
+                        clipboard.setText(AnnotatedString(json.encodeToString(r.rcStopReason)))
+                        AlertManager.shared.hideAlert()
+                      }) {
+                        Text(stringResource(MR.strings.copy_error), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                      }
+                    }
+                  }
+                )
+            }
           }
           when (r.rcStopReason) {
             is RemoteCtrlStopReason.DiscoveryFailed -> showAlert(r.rcStopReason.chatError)
@@ -2971,7 +3018,7 @@ data class ServerCfg(
   val server: String,
   val preset: Boolean,
   val tested: Boolean? = null,
-  val enabled: Boolean
+  val enabled: ServerEnabled
 ) {
   @Transient
   private val createdAt: Date = Date()
@@ -2985,7 +3032,7 @@ data class ServerCfg(
     get() = server.isBlank()
 
   companion object {
-    val empty = ServerCfg(remoteHostId = null, server = "", preset = false, tested = null, enabled = true)
+    val empty = ServerCfg(remoteHostId = null, server = "", preset = false, tested = null, enabled = ServerEnabled.Enabled)
 
     class SampleData(
       val preset: ServerCfg,
@@ -2999,24 +3046,31 @@ data class ServerCfg(
         server = "smp://abcd@smp8.simplex.im",
         preset = true,
         tested = true,
-        enabled = true
+        enabled = ServerEnabled.Enabled
       ),
       custom = ServerCfg(
         remoteHostId = null,
         server = "smp://abcd@smp9.simplex.im",
         preset = false,
         tested = false,
-        enabled = false
+        enabled = ServerEnabled.Disabled
       ),
       untested = ServerCfg(
         remoteHostId = null,
         server = "smp://abcd@smp10.simplex.im",
         preset = false,
         tested = null,
-        enabled = true
+        enabled = ServerEnabled.Enabled
       )
     )
   }
+}
+
+@Serializable
+enum class ServerEnabled {
+  @SerialName("disabled") Disabled,
+  @SerialName("enabled") Enabled,
+  @SerialName("known") Known;
 }
 
 @Serializable
@@ -4322,6 +4376,7 @@ sealed class CR {
   @Serializable @SerialName("rcvFileCancelled") class RcvFileCancelled(val user: UserRef, val chatItem_: AChatItem?, val rcvFileTransfer: RcvFileTransfer): CR()
   @Serializable @SerialName("rcvFileSndCancelled") class RcvFileSndCancelled(val user: UserRef, val chatItem: AChatItem, val rcvFileTransfer: RcvFileTransfer): CR()
   @Serializable @SerialName("rcvFileError") class RcvFileError(val user: UserRef, val chatItem_: AChatItem?, val agentError: AgentErrorType, val rcvFileTransfer: RcvFileTransfer): CR()
+  @Serializable @SerialName("rcvFileWarning") class RcvFileWarning(val user: UserRef, val chatItem_: AChatItem?, val agentError: AgentErrorType, val rcvFileTransfer: RcvFileTransfer): CR()
   // sending file events
   @Serializable @SerialName("sndFileStart") class SndFileStart(val user: UserRef, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileComplete") class SndFileComplete(val user: UserRef, val chatItem: AChatItem, val sndFileTransfer: SndFileTransfer): CR()
@@ -4334,7 +4389,8 @@ sealed class CR {
   @Serializable @SerialName("sndFileCompleteXFTP") class SndFileCompleteXFTP(val user: UserRef, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta): CR()
   @Serializable @SerialName("sndStandaloneFileComplete") class SndStandaloneFileComplete(val user: UserRef, val fileTransferMeta: FileTransferMeta, val rcvURIs: List<String>): CR()
   @Serializable @SerialName("sndFileCancelledXFTP") class SndFileCancelledXFTP(val user: UserRef, val chatItem_: AChatItem?, val fileTransferMeta: FileTransferMeta): CR()
-  @Serializable @SerialName("sndFileError") class SndFileError(val user: UserRef, val chatItem_: AChatItem?, val fileTransferMeta: FileTransferMeta): CR()
+  @Serializable @SerialName("sndFileError") class SndFileError(val user: UserRef, val chatItem_: AChatItem?, val fileTransferMeta: FileTransferMeta, val errorMessage: String): CR()
+  @Serializable @SerialName("sndFileWarning") class SndFileWarning(val user: UserRef, val chatItem_: AChatItem?, val fileTransferMeta: FileTransferMeta, val errorMessage: String): CR()
   // call events
   @Serializable @SerialName("callInvitation") class CallInvitation(val callInvitation: RcvCallInvitation): CR()
   @Serializable @SerialName("callInvitations") class CallInvitations(val callInvitations: List<RcvCallInvitation>): CR()
@@ -4493,6 +4549,7 @@ sealed class CR {
     is RcvFileProgressXFTP -> "rcvFileProgressXFTP"
     is SndFileRedirectStartXFTP -> "sndFileRedirectStartXFTP"
     is RcvFileError -> "rcvFileError"
+    is RcvFileWarning -> "rcvFileWarning"
     is SndFileStart -> "sndFileStart"
     is SndFileComplete -> "sndFileComplete"
     is SndFileRcvCancelled -> "sndFileRcvCancelled"
@@ -4502,6 +4559,7 @@ sealed class CR {
     is SndStandaloneFileComplete -> "sndStandaloneFileComplete"
     is SndFileCancelledXFTP -> "sndFileCancelledXFTP"
     is SndFileError -> "sndFileError"
+    is SndFileWarning -> "sndFileWarning"
     is CallInvitations -> "callInvitations"
     is CallInvitation -> "callInvitation"
     is CallOffer -> "callOffer"
@@ -4652,6 +4710,7 @@ sealed class CR {
     is RcvFileProgressXFTP -> withUser(user, "chatItem: ${json.encodeToString(chatItem_)}\nreceivedSize: $receivedSize\ntotalSize: $totalSize")
     is RcvStandaloneFileComplete -> withUser(user, targetPath)
     is RcvFileError -> withUser(user, "chatItem_: ${json.encodeToString(chatItem_)}\nagentError: ${agentError.string}\nrcvFileTransfer: $rcvFileTransfer")
+    is RcvFileWarning -> withUser(user, "chatItem_: ${json.encodeToString(chatItem_)}\nagentError: ${agentError.string}\nrcvFileTransfer: $rcvFileTransfer")
     is SndFileCancelled -> json.encodeToString(chatItem_)
     is SndStandaloneFileCreated -> noDetails()
     is SndFileStartXFTP -> withUser(user, json.encodeToString(chatItem))
@@ -4663,7 +4722,8 @@ sealed class CR {
     is SndFileCompleteXFTP -> withUser(user, json.encodeToString(chatItem))
     is SndStandaloneFileComplete -> withUser(user, rcvURIs.size.toString())
     is SndFileCancelledXFTP -> withUser(user, json.encodeToString(chatItem_))
-    is SndFileError -> withUser(user, json.encodeToString(chatItem_))
+    is SndFileError -> withUser(user, "errorMessage: ${json.encodeToString(errorMessage)}\nchatItem: ${json.encodeToString(chatItem_)}")
+    is SndFileWarning -> withUser(user, "errorMessage: ${json.encodeToString(errorMessage)}\nchatItem: ${json.encodeToString(chatItem_)}")
     is CallInvitations -> "callInvitations: ${json.encodeToString(callInvitations)}"
     is CallInvitation -> "contact: ${callInvitation.contact.id}\ncallType: $callInvitation.callType\nsharedKey: ${callInvitation.sharedKey ?: ""}"
     is CallOffer -> withUser(user, "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}")
@@ -4700,7 +4760,7 @@ sealed class CR {
           (if (remoteCtrl_ == null) "null" else json.encodeToString(remoteCtrl_)) +
           "\nsessionCode: $sessionCode"
     is RemoteCtrlConnected -> json.encodeToString(remoteCtrl)
-    is RemoteCtrlStopped -> noDetails()
+    is RemoteCtrlStopped -> "rcsState: $rcsState\nrcsStopReason: $rcStopReason"
     is ContactPQAllowed -> withUser(user, "contact: ${contact.id}\npqEncryption: $pqEncryption")
     is ContactPQEnabled -> withUser(user, "contact: ${contact.id}\npqEnabled: $pqEnabled")
     is VersionInfo -> "version ${json.encodeToString(versionInfo)}\n\n" +
@@ -4982,8 +5042,6 @@ sealed class ChatErrorType {
       is FileImageSize -> "fileImageSize"
       is FileNotReceived -> "fileNotReceived"
       is FileNotApproved -> "fileNotApproved"
-      // is XFTPRcvFile -> "xftpRcvFile"
-      // is XFTPSndFile -> "xftpSndFile"
       is FallbackToSMPProhibited -> "fallbackToSMPProhibited"
       is InlineFileProhibited -> "inlineFileProhibited"
       is InvalidQuote -> "invalidQuote"
@@ -5061,8 +5119,6 @@ sealed class ChatErrorType {
   @Serializable @SerialName("fileImageSize") class FileImageSize(val filePath: String): ChatErrorType()
   @Serializable @SerialName("fileNotReceived") class FileNotReceived(val fileId: Long): ChatErrorType()
   @Serializable @SerialName("fileNotApproved") class FileNotApproved(val fileId: Long, val unknownServers: List<String>): ChatErrorType()
-  // @Serializable @SerialName("xFTPRcvFile") object XFTPRcvFile: ChatErrorType()
-  // @Serializable @SerialName("xFTPSndFile") object XFTPSndFile: ChatErrorType()
   @Serializable @SerialName("fallbackToSMPProhibited") class FallbackToSMPProhibited(val fileId: Long): ChatErrorType()
   @Serializable @SerialName("inlineFileProhibited") class InlineFileProhibited(val fileId: Long): ChatErrorType()
   @Serializable @SerialName("invalidQuote") object InvalidQuote: ChatErrorType()

@@ -34,7 +34,7 @@ fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: Ser
   val currServers = remember(rhId) { mutableStateOf(servers) }
   val testing = rememberSaveable(rhId) { mutableStateOf(false) }
   val serversUnchanged = remember(servers) { derivedStateOf { servers == currServers.value || testing.value } }
-  val allServersDisabled = remember { derivedStateOf { servers.none { it.enabled } } }
+  val allServersDisabled = remember { derivedStateOf { servers.none { it.enabled == ServerEnabled.Enabled } } }
   val saveDisabled = remember(servers) {
     derivedStateOf {
       servers.isEmpty() ||
@@ -250,12 +250,12 @@ private fun ProtocolServerView(serverProtocol: ServerProtocol, srv: ServerCfg, s
   val address = parseServerAddress(srv.server)
   when {
     address == null || !address.valid || address.serverProtocol != serverProtocol || !uniqueAddress(srv, address, servers) -> InvalidServer()
-    !srv.enabled -> Icon(painterResource(MR.images.ic_do_not_disturb_on), null, tint = MaterialTheme.colors.secondary)
+    srv.enabled != ServerEnabled.Enabled -> Icon(painterResource(MR.images.ic_do_not_disturb_on), null, tint = MaterialTheme.colors.secondary)
     else -> ShowTestStatus(srv)
   }
   Spacer(Modifier.padding(horizontal = 4.dp))
   val text = address?.hostnames?.firstOrNull() ?: srv.server
-  if (srv.enabled) {
+  if (srv.enabled == ServerEnabled.Enabled) {
     Text(text, color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.onBackground, maxLines = 1)
   } else {
     Text(text, maxLines = 1, color = MaterialTheme.colors.secondary)
@@ -292,7 +292,7 @@ private fun addAllPresets(rhId: Long?, presetServers: List<String>, servers: Lis
   val toAdd = ArrayList<ServerCfg>()
   for (srv in presetServers) {
     if (!hasPreset(srv, servers)) {
-      toAdd.add(ServerCfg(remoteHostId = rhId, srv, preset = true, tested = null, enabled = true))
+      toAdd.add(ServerCfg(remoteHostId = rhId, srv, preset = true, tested = null, enabled = ServerEnabled.Enabled))
     }
   }
   return toAdd
@@ -319,7 +319,7 @@ private suspend fun testServers(testing: MutableState<Boolean>, servers: List<Se
 private fun resetTestStatus(servers: List<ServerCfg>): List<ServerCfg> {
   val copy = ArrayList(servers)
   for ((index, server) in servers.withIndex()) {
-    if (server.enabled) {
+    if (server.enabled == ServerEnabled.Enabled) {
       copy.removeAt(index)
       copy.add(index, server.copy(tested = null))
     }
@@ -331,7 +331,7 @@ private suspend fun runServersTest(servers: List<ServerCfg>, m: ChatModel, onUpd
   val fs: MutableMap<String, ProtocolTestFailure> = mutableMapOf()
   val updatedServers = ArrayList<ServerCfg>(servers)
   for ((index, server) in servers.withIndex()) {
-    if (server.enabled) {
+    if (server.enabled == ServerEnabled.Enabled) {
       interruptIfCancelled()
       val (updatedServer, f) = testServerConnection(server, m)
       updatedServers.removeAt(index)

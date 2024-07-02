@@ -60,6 +60,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Remote.Types
+import Simplex.Chat.Stats (PresentedServersSummary)
 import Simplex.Chat.Store (AutoAccept, ChatLockEntity, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -75,7 +76,7 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Messaging.Client (SMPProxyMode (..), SMPProxyFallback (..))
+import Simplex.Messaging.Client (SMPProxyFallback (..), SMPProxyMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -355,6 +356,7 @@ data ChatCommand
   | SetNetworkConfig SimpleNetCfg
   | APISetNetworkInfo UserNetworkInfo
   | ReconnectAllServers
+  | ReconnectServer UserId SMPServer
   | APISetChatSettings ChatRef ChatSettings
   | APISetMemberSettings GroupId GroupMemberId GroupMemberSettings
   | APIContactInfo ContactId
@@ -504,13 +506,11 @@ data ChatCommand
   | ShowVersion
   | DebugLocks
   | DebugEvent ChatResponse
-  | GetAgentStats
-  | ResetAgentStats
+  | GetAgentServersSummary UserId
   | GetAgentSubs
   | GetAgentSubsDetails
   | GetAgentWorkers
   | GetAgentWorkersDetails
-  | GetAgentMsgCounts
   | GetAgentQueuesInfo
   | -- The parser will return this command for strings that start from "//".
     -- This command should be processed in preCmdHook
@@ -654,6 +654,7 @@ data ChatResponse
   | CRRcvFileCancelled {user :: User, chatItem_ :: Maybe AChatItem, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileSndCancelled {user :: User, chatItem :: AChatItem, rcvFileTransfer :: RcvFileTransfer}
   | CRRcvFileError {user :: User, chatItem_ :: Maybe AChatItem, agentError :: AgentErrorType, rcvFileTransfer :: RcvFileTransfer}
+  | CRRcvFileWarning {user :: User, chatItem_ :: Maybe AChatItem, agentError :: AgentErrorType, rcvFileTransfer :: RcvFileTransfer}
   | CRSndFileStart {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileComplete {user :: User, chatItem :: AChatItem, sndFileTransfer :: SndFileTransfer}
   | CRSndFileRcvCancelled {user :: User, chatItem_ :: Maybe AChatItem, sndFileTransfer :: SndFileTransfer}
@@ -666,6 +667,7 @@ data ChatResponse
   | CRSndStandaloneFileComplete {user :: User, fileTransferMeta :: FileTransferMeta, rcvURIs :: [Text]}
   | CRSndFileCancelledXFTP {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta}
   | CRSndFileError {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, errorMessage :: Text}
+  | CRSndFileWarning {user :: User, chatItem_ :: Maybe AChatItem, fileTransferMeta :: FileTransferMeta, errorMessage :: Text}
   | CRUserProfileUpdated {user :: User, fromProfile :: Profile, toProfile :: Profile, updateSummary :: UserProfileUpdateSummary}
   | CRUserProfileImage {user :: User, profile :: Profile}
   | CRContactAliasUpdated {user :: User, toContact :: Contact}
@@ -753,12 +755,11 @@ data ChatResponse
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, chatEntityLocks :: Map String String, agentLocks :: AgentLocks}
-  | CRAgentStats {agentStats :: [[String]]}
+  | CRAgentServersSummary {user :: User, serversSummary :: PresentedServersSummary}
   | CRAgentWorkersDetails {agentWorkersDetails :: AgentWorkersDetails}
   | CRAgentWorkersSummary {agentWorkersSummary :: AgentWorkersSummary}
   | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
-  | CRAgentMsgCounts {msgCounts :: [(Text, (Int, Int))]}
   | CRAgentQueuesInfo {agentQueuesInfo :: AgentQueuesInfo}
   | CRContactDisabled {user :: User, contact :: Contact}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
@@ -1157,8 +1158,6 @@ data ChatErrorType
   | CEFileImageSize {filePath :: FilePath}
   | CEFileNotReceived {fileId :: FileTransferId}
   | CEFileNotApproved {fileId :: FileTransferId, unknownServers :: [XFTPServer]}
-  | CEXFTPRcvFile {fileId :: FileTransferId, agentRcvFileId :: AgentRcvFileId, agentError :: AgentErrorType}
-  | CEXFTPSndFile {fileId :: FileTransferId, agentSndFileId :: AgentSndFileId, agentError :: AgentErrorType}
   | CEFallbackToSMPProhibited {fileId :: FileTransferId}
   | CEInlineFileProhibited {fileId :: FileTransferId}
   | CEInvalidQuote

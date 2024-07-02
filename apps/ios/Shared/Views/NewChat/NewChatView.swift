@@ -11,14 +11,9 @@ import SimpleXChat
 import CodeScanner
 import AVFoundation
 
-enum SomeAlert: Identifiable {
-    case someAlert(alert: Alert, id: String)
-
-    var id: String {
-        switch self {
-        case let .someAlert(_, id): return id
-        }
-    }
+struct SomeAlert: Identifiable {
+    var alert: Alert
+    var id: String
 }
 
 private enum NewChatViewAlert: Identifiable {
@@ -142,8 +137,8 @@ struct NewChatView: View {
             switch(a) {
             case let .planAndConnectAlert(alert):
                 return planAndConnectAlert(alert, dismiss: true, cleanup: { pastedLink = "" })
-            case let .newChatSomeAlert(.someAlert(alert, _)):
-                return alert
+            case let .newChatSomeAlert(a):
+                return a.alert
             }
         }
     }
@@ -181,7 +176,7 @@ struct NewChatView: View {
                     await MainActor.run {
                         creatingConnReq = false
                         if let apiAlert = apiAlert {
-                            alert = .newChatSomeAlert(alert: .someAlert(alert: apiAlert, id: "createInvitation error"))
+                            alert = .newChatSomeAlert(alert: SomeAlert(alert: apiAlert, id: "createInvitation error"))
                         }
                     }
                 }
@@ -315,7 +310,7 @@ private struct ConnectView: View {
                         // showQRCodeScanner = false
                         connect(pastedLink)
                     } else {
-                        alert = .newChatSomeAlert(alert: .someAlert(
+                        alert = .newChatSomeAlert(alert: SomeAlert(
                             alert: mkAlert(title: "Invalid link", message: "The text you pasted is not a SimpleX link."),
                             id: "pasteLinkView: code is not a SimpleX link"
                         ))
@@ -338,14 +333,14 @@ private struct ConnectView: View {
             if strIsSimplexLink(r.string) {
                 connect(link)
             } else {
-                alert = .newChatSomeAlert(alert: .someAlert(
+                alert = .newChatSomeAlert(alert: SomeAlert(
                     alert: mkAlert(title: "Invalid QR code", message: "The code you scanned is not a SimpleX link QR code."),
                     id: "processQRCode: code is not a SimpleX link"
                 ))
             }
         case let .failure(e):
             logger.error("processQRCode QR code error: \(e.localizedDescription)")
-            alert = .newChatSomeAlert(alert: .someAlert(
+            alert = .newChatSomeAlert(alert: SomeAlert(
                 alert: mkAlert(title: "Invalid QR code", message: "Error scanning code: \(e.localizedDescription)"),
                 id: "processQRCode: failure"
             ))
@@ -367,11 +362,12 @@ struct ScannerInView: View {
     @Binding var showQRCodeScanner: Bool
     let processQRCode: (_ resp: Result<ScanResult, ScanError>) -> Void
     @State private var cameraAuthorizationStatus: AVAuthorizationStatus?
+    var scanMode: ScanMode = .continuous
 
     var body: some View {
         Group {
             if showQRCodeScanner, case .authorized = cameraAuthorizationStatus {
-                CodeScannerView(codeTypes: [.qr], scanMode: .continuous, completion: processQRCode)
+                CodeScannerView(codeTypes: [.qr], scanMode: scanMode, completion: processQRCode)
                     .aspectRatio(1, contentMode: .fit)
                     .cornerRadius(12)
                     .listRowBackground(Color.clear)
@@ -435,6 +431,7 @@ struct ScannerInView: View {
         }
     }
 }
+
 
 private func linkTextView(_ link: String) -> some View {
     Text(link)

@@ -47,7 +47,8 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
-import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, RcvFileId, SAEntity (..), SndFileId, UserId)
+import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
@@ -1582,7 +1583,7 @@ instance TextEncoding CommandFunction where
     CFAckMessage -> "ack_message"
     CFDeleteConn -> "delete_conn"
 
-commandExpectedResponse :: CommandFunction -> APartyCmdTag 'Agent
+commandExpectedResponse :: CommandFunction -> AEvtTag
 commandExpectedResponse = \case
   CFCreateConnGrpMemInv -> t INV_
   CFCreateConnGrpInv -> t INV_
@@ -1594,7 +1595,7 @@ commandExpectedResponse = \case
   CFAckMessage -> t OK_
   CFDeleteConn -> t OK_
   where
-    t = APCT SAEConn
+    t = AEvtTag SAEConn
 
 data CommandData = CommandData
   { cmdId :: CommandId,
@@ -1631,9 +1632,41 @@ data ServerCfg p = ServerCfg
   { server :: ProtoServerWithAuth p,
     preset :: Bool,
     tested :: Maybe Bool,
-    enabled :: Bool
+    enabled :: ServerEnabled
   }
   deriving (Show)
+
+data ServerEnabled
+  = SEDisabled
+  | SEEnabled
+  | -- server is marked as known, but it's not in the list of configured servers;
+    -- e.g., it may be added via an unknown server dialogue and user didn't manually configure it,
+    -- meaning server wasn't tested (or at least such option wasn't presented in UI)
+    -- and it may be inoperable for user due to server password
+    SEKnown
+  deriving (Eq, Show)
+
+pattern DBSEDisabled :: Int
+pattern DBSEDisabled = 0
+
+pattern DBSEEnabled :: Int
+pattern DBSEEnabled = 1
+
+pattern DBSEKnown :: Int
+pattern DBSEKnown = 2
+
+toServerEnabled :: Int -> ServerEnabled
+toServerEnabled = \case
+  DBSEDisabled -> SEDisabled
+  DBSEEnabled -> SEEnabled
+  DBSEKnown -> SEKnown
+  _ -> SEDisabled
+
+fromServerEnabled :: ServerEnabled -> Int
+fromServerEnabled = \case
+  SEDisabled -> DBSEDisabled
+  SEEnabled -> DBSEEnabled
+  SEKnown -> DBSEKnown
 
 data ChatVersion
 
@@ -1762,6 +1795,8 @@ $(JQ.deriveJSON defaultJSON ''Contact)
 $(JQ.deriveJSON defaultJSON ''ContactRef)
 
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "SE") ''ServerEnabled)
 
 instance ProtocolTypeI p => ToJSON (ServerCfg p) where
   toEncoding = $(JQ.mkToEncoding defaultJSON ''ServerCfg)
