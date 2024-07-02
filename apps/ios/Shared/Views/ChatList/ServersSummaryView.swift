@@ -713,19 +713,17 @@ struct DetailedXFTPStatsView: View {
                 infoRow("Size", prettySize(stats._uploadsSize))
                 infoRowTwoValues("Chunks uploaded", "attempts", numOrDash(stats._uploads), numOrDash(stats._uploadAttempts))
                 infoRow("Upload errors", numOrDash(stats._uploadErrs))
+                infoRowTwoValues("Chunks deleted", "attempts", numOrDash(stats._deletions), numOrDash(stats._deleteAttempts))
+                infoRow("Deletion errors", numOrDash(stats._deleteErrs))
             }
-            Section("Downloaded files") {
+            Section {
                 infoRow("Size", prettySize(stats._downloadsSize))
                 infoRowTwoValues("Chunks downloaded", "attempts", numOrDash(stats._downloads), numOrDash(stats._downloadAttempts))
                 Text("Download errors")
                 indentedInfoRow("AUTH", numOrDash(stats._downloadAuthErrs))
                 indentedInfoRow("other", numOrDash(stats._downloadErrs))
-            }
-            Section {
-                infoRowTwoValues("Chunks deleted", "attempts", numOrDash(stats._deletions), numOrDash(stats._deleteAttempts))
-                infoRow("Deletion errors", numOrDash(stats._deleteErrs))
             } header: {
-                Text("Deleted file chunks")
+                Text("Downloaded files")
             } footer: {
                 Text("Starting from \(localTimestamp(statsStartedAt)).")
             }
