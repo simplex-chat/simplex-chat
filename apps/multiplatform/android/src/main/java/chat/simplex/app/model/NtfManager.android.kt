@@ -48,7 +48,7 @@ object NtfManager {
   }
 
   private val manager: NotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-  // (UserId, ChatId) -> NotificationId
+  // (UserId, ChatId) -> Time
   private var prevNtfTime = mutableMapOf<Pair<Long, ChatId>, Long>()
   private val msgNtfTimeoutMs = 30000L
 
