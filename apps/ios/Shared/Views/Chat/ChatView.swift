@@ -77,7 +77,6 @@ struct ChatView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             loadChat(chat: chat)
-            loadChatItems(chat.chatInfo)
             initChatView()
         }
         .onChange(of: chatModel.chatId) { cId in
@@ -93,6 +92,11 @@ struct ChatView: View {
         }
         .onChange(of: revealedChatItem) { _ in
             NotificationCenter.postReverseListNeedsLayout()
+        }
+        .onChange(of: chatModel.reversedChatItems) { reversedChatItems in
+            if reversedChatItems.count <= 50 && reversedChatItems.merged.count < 10 {
+                loadChatItems(chat.chatInfo)
+            }
         }
         .environmentObject(scrollModel)
         .onDisappear {
@@ -294,7 +298,6 @@ struct ChatView: View {
                 searchFocussed = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     loadChat(chat: chat)
-                    loadChatItems(chat.chatInfo)
                 }
             }
         }
@@ -342,14 +345,12 @@ struct ChatView: View {
                 .onTapGesture { hideKeyboard() }
                 .onChange(of: searchText) { _ in
                     loadChat(chat: chat, search: searchText)
-                    loadChatItems(chat.chatInfo)
                 }
                 .onChange(of: chatModel.chatId) { chatId in
                     if let chatId, let c = chatModel.getChat(chatId) {
                         chat = c
                         showChatInfoSheet = false
                         loadChat(chat: c)
-                        loadChatItems(chat.chatInfo)
                     }
                 }
                 .onChange(of: chatModel.reversedChatItems) { _ in
