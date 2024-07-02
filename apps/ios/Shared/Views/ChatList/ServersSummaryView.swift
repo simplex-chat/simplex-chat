@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct ServersSummaryView: View {
+    @EnvironmentObject var m: ChatModel
     @State private var serversSummary: PresentedServersSummary? = nil
     @State private var selectedUserCategory: PresentedUserCategory = .allUsers
     @State private var selectedServerType: PresentedServerType = .smp
@@ -227,12 +228,19 @@ struct ServersSummaryView: View {
             HStack {
                 Text(serverAddress(srvSumm.smpServer))
                     .lineLimit(1)
-                if srvSumm.hasSubs {
+                if let subs = srvSumm.subs {
                     Spacer()
                     if showConnectionStatusPercent {
-                        ConnectionStatusPercentView(subs: srvSumm.subsOrNew, sess: srvSumm.sessionsOrNew)
+                        ConnectionStatusPercentView(subs: subs, sess: srvSumm.sessionsOrNew)
                     }
-                    ConnectionStatusIndicatorView(subs: srvSumm.subsOrNew, sess: srvSumm.sessionsOrNew)
+                    ConnectionStatusIndicatorView(subs: subs, sess: srvSumm.sessionsOrNew)
+                } else if let sess = srvSumm.sessions {
+                    Spacer()
+                    Image(systemName: "arrow.up")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 14, height: 14)
+                        .foregroundColor(sessIconColor(sess))
                 }
             }
         }
@@ -240,6 +248,20 @@ struct ServersSummaryView: View {
 
     private func serverAddress(_ server: String) -> String {
         parseServerAddress(server)?.hostnames.first ?? server
+    }
+
+    private func sessIconColor(_ sess: ServerSessions) -> Color {
+        let online = m.networkInfo.online
+        return (
+            online && sess.ssConnected > 0
+            ? sessionActiveColor
+            : Color(uiColor: .tertiaryLabel)
+        )
+    }
+
+    private var sessionActiveColor: Color {
+        let onionHosts = networkUseOnionHostsGroupDefault.get()
+        return onionHosts == .require ? .indigo : .accentColor
     }
 
     @ViewBuilder private func xftpServersListView(
@@ -279,7 +301,10 @@ struct ServersSummaryView: View {
                 if let inProgressIcon = inProgressIcon(srvSumm) {
                     Spacer()
                     Image(systemName: inProgressIcon)
-                        .foregroundColor(.accentColor)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 14, height: 14)
+                        .foregroundColor(sessionActiveColor)
                 }
             }
         }
