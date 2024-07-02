@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.User
 import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.ntfManager
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.UserProfileRow
 import chat.simplex.common.views.database.PassphraseField
@@ -36,6 +37,9 @@ fun HiddenProfileView(
       withBGApi {
         try {
           val u = m.controller.apiHideUser(user, hidePassword)
+          if (!u.activeUser) {
+            ntfManager.cancelNotificationsForUser(u.userId)
+          }
           m.updateUser(u)
           close()
         } catch (e: Exception) {

@@ -498,10 +498,14 @@ object ChatController {
   }
 
   suspend fun changeActiveUser_(rhId: Long?, toUserId: Long?, viewPwd: String?) {
+    val prevActiveUser = chatModel.currentUser.value
     val currentUser = changingActiveUserMutex.withLock {
       (if (toUserId != null) apiSetActiveUser(rhId, toUserId, viewPwd) else apiGetActiveUser(rhId)).also {
         chatModel.currentUser.value = it
       }
+    }
+    if (prevActiveUser?.hidden == true) {
+      ntfManager.cancelNotificationsForUser(prevActiveUser.userId)
     }
     val users = listUsers(rhId)
     chatModel.users.clear()
@@ -2353,6 +2357,8 @@ object ChatController {
     if (!activeUser(rh, user)) {
       notify()
     } else if (chatModel.upsertChatItem(rh, cInfo, cItem)) {
+      notify()
+    } else if (cItem.content is CIContent.RcvCall && cItem.content.status == CICallStatus.Missed) {
       notify()
     }
   }

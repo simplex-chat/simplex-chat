@@ -16,7 +16,7 @@ import java.io.File
 import javax.imageio.ImageIO
 
 object NtfManager {
-  private val prevNtfs = arrayListOf<Pair<ChatId, Slice>>()
+  private val prevNtfs = arrayListOf<Pair<Pair<Long, ChatId>, Slice>>()
   private val prevNtfsMutex: Mutex = Mutex()
 
   fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean {
@@ -45,14 +45,14 @@ object NtfManager {
       generalGetString(MR.strings.accept) to { ntfManager.acceptCallAction(invitation.contact.id) },
       generalGetString(MR.strings.reject) to { ChatModel.callManager.endCall(invitation = invitation) }
     )
-    displayNotificationViaLib(contactId, title, text, prepareIconPath(largeIcon), actions) {
+    displayNotificationViaLib(invitation.user.userId, contactId, title, text, prepareIconPath(largeIcon), actions) {
       ntfManager.openChatAction(invitation.user.userId, contactId)
     }
     return true
   }
 
   fun showMessage(title: String, text: String) {
-    displayNotificationViaLib("MESSAGE", title, text, null, emptyList()) {}
+    displayNotificationViaLib(-1, "MESSAGE", title, text, null, emptyList()) {}
   }
 
   fun hasNotificationsForChat(chatId: ChatId) = false//prevNtfs.any { it.first == chatId }
@@ -60,7 +60,7 @@ object NtfManager {
   fun cancelNotificationsForChat(chatId: ChatId) {
     withBGApi {
       prevNtfsMutex.withLock {
-        val ntf = prevNtfs.firstOrNull { it.first == chatId }
+        val ntf = prevNtfs.firstOrNull { (userChat) -> userChat.second == chatId }
         if (ntf != null) {
           prevNtfs.remove(ntf)
           /*try {
@@ -69,6 +69,16 @@ object NtfManager {
             // Can be java.lang.UnsupportedOperationException, for example. May do nothing
             println("Failed to close notification: ${e.stackTraceToString()}")
           }*/
+        }
+      }
+    }
+  }
+
+  fun cancelNotificationsForUser(userId: Long) {
+    withBGApi {
+      prevNtfsMutex.withLock {
+        prevNtfs.filter { (userChat) -> userChat.first == userId }.forEach {
+          prevNtfs.remove(it)
         }
       }
     }
@@ -95,12 +105,13 @@ object NtfManager {
       else -> base64ToBitmap(image)
     }
 
-    displayNotificationViaLib(chatId, title, content, prepareIconPath(largeIcon), actions.map { it.first.name to it.second }) {
+    displayNotificationViaLib(user.userId, chatId, title, content, prepareIconPath(largeIcon), actions.map { it.first.name to it.second }) {
       ntfManager.openChatAction(user.userId, chatId)
     }
   }
 
   private fun displayNotificationViaLib(
+    userId: Long,
     chatId: String,
     title: String,
     text: String,
@@ -123,7 +134,7 @@ object NtfManager {
     try {
       withBGApi {
         prevNtfsMutex.withLock {
-          prevNtfs.add(chatId to builder.toast())
+          prevNtfs.add(Pair(userId, chatId) to builder.toast())
         }
       }
     } catch (e: Throwable) {
