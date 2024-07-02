@@ -541,6 +541,11 @@ func reconnectAllServers() async throws {
     try await sendCommandOkResp(.reconnectAllServers)
 }
 
+func reconnectServer(smpServer: String) async throws {
+    let userId = try currentUserId("reconnectServer")
+    try await sendCommandOkResp(.reconnectServer(userId: userId, smpServer: smpServer))
+}
+
 func apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings) async throws {
     try await sendCommandOkResp(.apiSetChatSettings(type: type, id: id, chatSettings: chatSettings))
 }
@@ -1332,6 +1337,17 @@ func apiGetVersion() throws -> CoreVersionInfo {
     let r = chatSendCmdSync(.showVersion)
     if case let .versionInfo(info, _, _) = r { return info }
     throw r
+}
+
+func getAgentServersSummary() throws -> PresentedServersSummary {
+    let userId = try currentUserId("getAgentServersSummary")
+    let r = chatSendCmdSync(.getAgentServersSummary(userId: userId))
+    if case let .agentServersSummary(_, serversSummary) = r { return serversSummary }
+    throw r
+}
+
+func resetAgentServersStats() async throws {
+    try await sendCommandOkResp(.resetAgentServersStats)
 }
 
 private func currentUserId(_ funcName: String) throws -> Int64 {
