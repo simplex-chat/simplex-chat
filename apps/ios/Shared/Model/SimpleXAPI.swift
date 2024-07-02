@@ -92,18 +92,22 @@ private func withBGTask<T>(bgDelay: Double? = nil, f: @escaping () -> T) -> T {
     return r
 }
 
-func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, _ ctrl: chat_ctrl? = nil) -> ChatResponse {
-    logger.debug("chatSendCmd \(cmd.cmdType)")
+func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, _ ctrl: chat_ctrl? = nil, log: Bool = true) -> ChatResponse {
+    if log {
+        logger.debug("chatSendCmd \(cmd.cmdType)")
+    }
     let start = Date.now
     let resp = bgTask
                 ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd, ctrl) }
                 : sendSimpleXCmd(cmd, ctrl)
-    logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
-    if case let .response(_, json) = resp {
-        logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
-    }
-    Task {
-        await TerminalItems.shared.addCommand(start, cmd.obfuscated, resp)
+    if log {
+        logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
+        if case let .response(_, json) = resp {
+            logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
+        }
+        Task {
+            await TerminalItems.shared.addCommand(start, cmd.obfuscated, resp)
+        }
     }
     return resp
 }
@@ -1341,8 +1345,9 @@ func apiGetVersion() throws -> CoreVersionInfo {
 
 func getAgentServersSummary() throws -> PresentedServersSummary {
     let userId = try currentUserId("getAgentServersSummary")
-    let r = chatSendCmdSync(.getAgentServersSummary(userId: userId))
+    let r = chatSendCmdSync(.getAgentServersSummary(userId: userId), log: false)
     if case let .agentServersSummary(_, serversSummary) = r { return serversSummary }
+    logger.error("getAgentServersSummary error: \(String(describing: r))")
     throw r
 }
 
