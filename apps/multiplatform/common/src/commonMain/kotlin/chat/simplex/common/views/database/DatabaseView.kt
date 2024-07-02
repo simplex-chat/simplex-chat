@@ -502,6 +502,7 @@ fun deleteChatDatabaseFilesAndState() {
   chatModel.chatItems.clear()
   chatModel.chats.clear()
   chatModel.users.clear()
+  ntfManager.cancelAllNotifications()
 }
 
 private fun exportArchive(
