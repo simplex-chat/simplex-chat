@@ -5,7 +5,6 @@
 
 module Simplex.Chat.Stats where
 
-import Control.Applicative ((<|>))
 import qualified Data.Aeson.TH as J
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -20,8 +19,10 @@ import Simplex.Messaging.Protocol
 
 data PresentedServersSummary = PresentedServersSummary
   { statsStartedAt :: UTCTime,
-    currentUserServers :: ServersSummary,
-    allUsersServers :: ServersSummary
+    allUsersSMP :: SMPServersSummary,
+    allUsersXFTP :: XFTPServersSummary,
+    currentUserSMP :: SMPServersSummary,
+    currentUserXFTP :: XFTPServersSummary
   }
   deriving (Show)
 
@@ -29,8 +30,10 @@ data PresentedServersSummary = PresentedServersSummary
 -- so users can differentiate currently used (connected) servers,
 -- previously connected servers that were in use in previous sessions,
 -- and servers that are only proxied (not connected directly).
-data ServersSummary = ServersSummary
-  { -- currently used SMP servers are those with Just in sessions and/or subs in SMPServerSummary;
+data SMPServersSummary = SMPServersSummary
+  { -- SMP totals are calculated from all accounted SMP server summaries
+    smpTotals :: SMPTotals,
+    -- currently used SMP servers are those with Just in sessions and/or subs in SMPServerSummary;
     -- all other servers would fall either into previously used or only proxied servers category
     currentlyUsedSMPServers :: [SMPServerSummary],
     -- previously used SMP servers are those with Nothing in sessions and subs,
@@ -40,13 +43,14 @@ data ServersSummary = ServersSummary
     -- only proxied SMP servers are those that aren't (according to current state - sessions and subs)
     -- and weren't (according to stats) connected directly; they would have Nothing in sessions and subs,
     -- and have all of sentDirect, sentProxied, recvMsgs, etc. = 0 in server stats
-    onlyProxiedSMPServers :: [SMPServerSummary],
-    -- currently used XFTP servers are those with Just in sessions in XFTPServerSummary,
-    -- and/or have upload/download/deletion in progress;
-    -- all other servers would fall into previously used servers category
-    currentlyUsedXFTPServers :: [XFTPServerSummary],
-    -- previously used XFTP servers are those with Nothing in sessions and don't have any process in progress
-    previouslyUsedXFTPServers :: [XFTPServerSummary]
+    onlyProxiedSMPServers :: [SMPServerSummary]
+  }
+  deriving (Show)
+
+data SMPTotals = SMPTotals
+  { sessions :: ServerSessions,
+    subs :: SMPServerSubs,
+    stats :: AgentSMPServerStatsData
   }
   deriving (Show)
 
@@ -65,6 +69,24 @@ data SMPServerSummary = SMPServerSummary
     -- or in previous sessions and stats for it were restored; server would fall into a category of
     -- previously used or only proxied servers - see ServersSummary above
     stats :: Maybe AgentSMPServerStatsData
+  }
+  deriving (Show)
+
+data XFTPServersSummary = XFTPServersSummary
+  { -- XFTP totals are calculated from all accounted XFTP server summaries
+    xftpTotals :: XFTPTotals,
+    -- currently used XFTP servers are those with Just in sessions in XFTPServerSummary,
+    -- and/or have upload/download/deletion in progress;
+    -- all other servers would fall into previously used servers category
+    currentlyUsedXFTPServers :: [XFTPServerSummary],
+    -- previously used XFTP servers are those with Nothing in sessions and don't have any process in progress
+    previouslyUsedXFTPServers :: [XFTPServerSummary]
+  }
+  deriving (Show)
+
+data XFTPTotals = XFTPTotals
+  { sessions :: ServerSessions,
+    stats :: AgentXFTPServerStatsData
   }
   deriving (Show)
 
@@ -87,34 +109,64 @@ data XFTPServerSummary = XFTPServerSummary
 toPresentedServersSummary :: AgentServersSummary -> [User] -> User -> [SMPServer] -> [XFTPServer] -> PresentedServersSummary
 toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrvs = do
   let (userSMPSrvsSumms, allSMPSrvsSumms) = accSMPSrvsSummaries
+      (userSMPTotals, allSMPTotals) = (accSMPTotals userSMPSrvsSumms, accSMPTotals allSMPSrvsSumms)
       (userSMPCurr, userSMPPrev, userSMPProx) = smpSummsIntoCategories userSMPSrvsSumms
       (allSMPCurr, allSMPPrev, allSMPProx) = smpSummsIntoCategories allSMPSrvsSumms
       (userXFTPSrvsSumms, allXFTPSrvsSumms) = accXFTPSrvsSummaries
+      (userXFTPTotals, allXFTPTotals) = (accXFTPTotals userXFTPSrvsSumms, accXFTPTotals allXFTPSrvsSumms)
       (userXFTPCurr, userXFTPPrev) = xftpSummsIntoCategories userXFTPSrvsSumms
       (allXFTPCurr, allXFTPPrev) = xftpSummsIntoCategories allXFTPSrvsSumms
   PresentedServersSummary
     { statsStartedAt,
-      currentUserServers =
-        ServersSummary
-          { currentlyUsedSMPServers = userSMPCurr,
-            previouslyUsedSMPServers = userSMPPrev,
-            onlyProxiedSMPServers = userSMPProx,
-            currentlyUsedXFTPServers = userXFTPCurr,
-            previouslyUsedXFTPServers = userXFTPPrev
-          },
-      allUsersServers =
-        ServersSummary
-          { currentlyUsedSMPServers = allSMPCurr,
+      allUsersSMP =
+        SMPServersSummary
+          { smpTotals = allSMPTotals,
+            currentlyUsedSMPServers = allSMPCurr,
             previouslyUsedSMPServers = allSMPPrev,
-            onlyProxiedSMPServers = allSMPProx,
+            onlyProxiedSMPServers = allSMPProx
+          },
+      allUsersXFTP =
+        XFTPServersSummary
+          { xftpTotals = allXFTPTotals,
             currentlyUsedXFTPServers = allXFTPCurr,
             previouslyUsedXFTPServers = allXFTPPrev
+          },
+      currentUserSMP =
+        SMPServersSummary
+          { smpTotals = userSMPTotals,
+            currentlyUsedSMPServers = userSMPCurr,
+            previouslyUsedSMPServers = userSMPPrev,
+            onlyProxiedSMPServers = userSMPProx
+          },
+      currentUserXFTP =
+        XFTPServersSummary
+          { xftpTotals = userXFTPTotals,
+            currentlyUsedXFTPServers = userXFTPCurr,
+            previouslyUsedXFTPServers = userXFTPPrev
           }
     }
   where
     AgentServersSummary {statsStartedAt, smpServersSessions, smpServersSubs, smpServersStats, xftpServersSessions, xftpServersStats, xftpRcvInProgress, xftpSndInProgress, xftpDelInProgress} = agentSummary
-    countUserInAll auId = auId == aUserId currentUser || auId `notElem` hiddenUserIds
-    hiddenUserIds = map aUserId $ filter (isJust . viewPwdHash) users
+    countUserInAll auId = countUserInAllStats (AgentUserId auId) currentUser users
+    accSMPTotals :: Map SMPServer SMPServerSummary -> SMPTotals
+    accSMPTotals = M.foldr addTotals initialTotals
+      where
+        initialTotals = SMPTotals {sessions = ServerSessions 0 0 0, subs = SMPServerSubs 0 0, stats = newAgentSMPServerStatsData}
+        addTotals SMPServerSummary {sessions, subs, stats} SMPTotals {sessions = accSess, subs = accSubs, stats = accStats} =
+          SMPTotals
+            { sessions = maybe accSess (accSess `addServerSessions`) sessions,
+              subs = maybe accSubs (accSubs `addSMPSubs`) subs,
+              stats = maybe accStats (accStats `addSMPStatsData`) stats
+            }
+    accXFTPTotals :: Map XFTPServer XFTPServerSummary -> XFTPTotals
+    accXFTPTotals = M.foldr addTotals initialTotals
+      where
+        initialTotals = XFTPTotals {sessions = ServerSessions 0 0 0, stats = newAgentXFTPServerStatsData}
+        addTotals XFTPServerSummary {sessions, stats} XFTPTotals {sessions = accSess, stats = accStats} =
+          XFTPTotals
+            { sessions = maybe accSess (accSess `addServerSessions`) sessions,
+              stats = maybe accStats (accStats `addXFTPStatsData`) stats
+            }
     smpSummsIntoCategories :: Map SMPServer SMPServerSummary -> ([SMPServerSummary], [SMPServerSummary], [SMPServerSummary])
     smpSummsIntoCategories = foldr partitionSummary ([], [], [])
       where
@@ -171,7 +223,7 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
         addSubs :: SMPServerSubs -> SMPServerSummary -> SMPServerSummary
         addSubs s summ@SMPServerSummary {subs} = summ {subs = Just $ maybe s (s `addSMPSubs`) subs}
         addStats :: AgentSMPServerStatsData -> SMPServerSummary -> SMPServerSummary
-        addStats s summ@SMPServerSummary {stats} = summ {stats = Just $ maybe s (s `addSMPStats`) stats}
+        addStats s summ@SMPServerSummary {stats} = summ {stats = Just $ maybe s (s `addSMPStatsData`) stats}
     accXFTPSrvsSummaries :: (Map XFTPServer XFTPServerSummary, Map XFTPServer XFTPServerSummary)
     accXFTPSrvsSummaries = M.foldrWithKey' (addServerData addStats) summs1 xftpServersStats
       where
@@ -205,7 +257,7 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
         addSessions :: ServerSessions -> XFTPServerSummary -> XFTPServerSummary
         addSessions s summ@XFTPServerSummary {sessions} = summ {sessions = Just $ maybe s (s `addServerSessions`) sessions}
         addStats :: AgentXFTPServerStatsData -> XFTPServerSummary -> XFTPServerSummary
-        addStats s summ@XFTPServerSummary {stats} = summ {stats = Just $ maybe s (s `addXFTPStats`) stats}
+        addStats s summ@XFTPServerSummary {stats} = summ {stats = Just $ maybe s (s `addXFTPStatsData`) stats}
     addServerSessions :: ServerSessions -> ServerSessions -> ServerSessions
     addServerSessions ss1 ss2 =
       ServerSessions
@@ -213,56 +265,30 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
           ssErrors = ssErrors ss1 + ssErrors ss2,
           ssConnecting = ssConnecting ss1 + ssConnecting ss2
         }
-    addSMPSubs :: SMPServerSubs -> SMPServerSubs -> SMPServerSubs
-    addSMPSubs ss1 ss2 =
-      SMPServerSubs
-        { ssActive = ssActive ss1 + ssActive ss2,
-          ssPending = ssPending ss1 + ssPending ss2
-        }
-    addSMPStats :: AgentSMPServerStatsData -> AgentSMPServerStatsData -> AgentSMPServerStatsData
-    addSMPStats sd1 sd2 =
-      AgentSMPServerStatsData
-        { _sentDirect = _sentDirect sd1 + _sentDirect sd2,
-          _sentViaProxy = _sentViaProxy sd1 + _sentViaProxy sd2,
-          _sentProxied = _sentProxied sd1 + _sentProxied sd2,
-          _sentDirectAttempts = _sentDirectAttempts sd1 + _sentDirectAttempts sd2,
-          _sentViaProxyAttempts = _sentViaProxyAttempts sd1 + _sentViaProxyAttempts sd2,
-          _sentProxiedAttempts = _sentProxiedAttempts sd1 + _sentProxiedAttempts sd2,
-          _sentAuthErrs = _sentAuthErrs sd1 + _sentAuthErrs sd2,
-          _sentQuotaErrs = _sentQuotaErrs sd1 + _sentQuotaErrs sd2,
-          _sentExpiredErrs = _sentExpiredErrs sd1 + _sentExpiredErrs sd2,
-          _sentOtherErrs = _sentOtherErrs sd1 + _sentOtherErrs sd2,
-          _recvMsgs = _recvMsgs sd1 + _recvMsgs sd2,
-          _recvDuplicates = _recvDuplicates sd1 + _recvDuplicates sd2,
-          _recvCryptoErrs = _recvCryptoErrs sd1 + _recvCryptoErrs sd2,
-          _recvErrs = _recvErrs sd1 + _recvErrs sd2,
-          _connCreated = _connCreated sd1 + _connCreated sd2,
-          _connSecured = _connSecured sd1 + _connSecured sd2,
-          _connCompleted = _connCompleted sd1 + _connCompleted sd2,
-          _connDeleted = _connDeleted sd1 + _connDeleted sd2,
-          _connSubscribed = _connSubscribed sd1 + _connSubscribed sd2,
-          _connSubAttempts = _connSubAttempts sd1 + _connSubAttempts sd2,
-          _connSubErrs = _connSubErrs sd1 + _connSubErrs sd2
-        }
-    addXFTPStats :: AgentXFTPServerStatsData -> AgentXFTPServerStatsData -> AgentXFTPServerStatsData
-    addXFTPStats sd1 sd2 =
-      AgentXFTPServerStatsData
-        { _uploads = _uploads sd1 + _uploads sd2,
-          _uploadAttempts = _uploadAttempts sd1 + _uploadAttempts sd2,
-          _uploadErrs = _uploadErrs sd1 + _uploadErrs sd2,
-          _downloads = _downloads sd1 + _downloads sd2,
-          _downloadAttempts = _downloadAttempts sd1 + _downloadAttempts sd2,
-          _downloadAuthErrs = _downloadAuthErrs sd1 + _downloadAuthErrs sd2,
-          _downloadErrs = _downloadErrs sd1 + _downloadErrs sd2,
-          _deletions = _deletions sd1 + _deletions sd2,
-          _deleteAttempts = _deleteAttempts sd1 + _deleteAttempts sd2,
-          _deleteErrs = _deleteErrs sd1 + _deleteErrs sd2
-        }
+
+countUserInAllStats :: AgentUserId -> User -> [User] -> Bool
+countUserInAllStats (AgentUserId auId) currentUser users =
+  auId == aUserId currentUser || auId `notElem` hiddenUserIds
+  where
+    hiddenUserIds = map aUserId $ filter (isJust . viewPwdHash) users
+
+addSMPSubs :: SMPServerSubs -> SMPServerSubs -> SMPServerSubs
+addSMPSubs ss1 ss2 =
+  SMPServerSubs
+    { ssActive = ssActive ss1 + ssActive ss2,
+      ssPending = ssPending ss1 + ssPending ss2
+    }
+
+$(J.deriveJSON defaultJSON ''SMPTotals)
 
 $(J.deriveJSON defaultJSON ''SMPServerSummary)
 
+$(J.deriveJSON defaultJSON ''SMPServersSummary)
+
+$(J.deriveJSON defaultJSON ''XFTPTotals)
+
 $(J.deriveJSON defaultJSON ''XFTPServerSummary)
 
-$(J.deriveJSON defaultJSON ''ServersSummary)
+$(J.deriveJSON defaultJSON ''XFTPServersSummary)
 
 $(J.deriveJSON defaultJSON ''PresentedServersSummary)
