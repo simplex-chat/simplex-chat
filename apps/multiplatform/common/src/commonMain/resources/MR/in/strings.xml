@@ -16,4 +16,5 @@
     <string name="chat_item_ttl_month">1 bulan</string>
     <string name="chat_item_ttl_week">1 minggu</string>
     <string name="accept_feature">Terima</string>
+    <string name="connect_plan_you_are_already_in_group_vName">Anda sudah bergabung dalam grup <b>%1$s</b>.</string>
 </resources>
