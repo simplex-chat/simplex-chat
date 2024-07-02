@@ -1,2 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="group_info_section_title_num_members">%1$s ANGGOTA</string>
+    <string name="address_section_title">Alamat</string>
+    <string name="moderated_items_description">pesan dihapus admin</string>
+    <string name="send_disappearing_message_1_minute">1 menit</string>
+    <string name="send_disappearing_message_30_seconds">30 detik</string>
+    <string name="send_disappearing_message_5_minutes">5 menit</string>
+    <string name="clear_chat_warning">Semua pesan akan dihapus - ini tidak bisa dikembalikan! Pesan akan HANYA dihapus untukmu.</string>
+    <string name="accept_connection_request__question">Terima permintaan relasi?</string>
+    <string name="learn_more_about_address">Tentang alamat SimpleX</string>
+    <string name="add_contact_tab">Tambah kontak</string>
+    <string name="about_simplex">Tentang SimpleX</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d gagal mendekripsi pesan.</string>
+    <string name="alert_text_fragment_please_report_to_developers">Tolong laporkan hal ini ke pengembang.</string>
+    <string name="chat_item_ttl_month">1 bulan</string>
+    <string name="chat_item_ttl_week">1 minggu</string>
+    <string name="accept_feature">Terima</string>
+</resources>
