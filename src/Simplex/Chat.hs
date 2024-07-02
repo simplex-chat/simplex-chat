@@ -47,7 +47,6 @@ import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
-import Data.Ord (Down (..))
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -95,7 +94,7 @@ import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, getNetworkConfig', ipAddressProtected, withLockMap)
+import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, getNetworkConfig', ipAddressProtected, withLockMap)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
@@ -176,12 +175,11 @@ defaultChatConfig =
 _defaultSMPServers :: NonEmpty SMPServerWithAuth
 _defaultSMPServers =
   L.fromList
-    [ "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion",
-      "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im,jssqzccmrcws6bhmn77vgmhfjmhwlyr3u7puw4erkyoosywgl67slqqd.onion",
-      "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im,rb2pbttocvnbrngnwziclp2f4ckjq65kebafws6g4hy22cdaiv5dwjqd.onion",
-      "smp://1OwYGt-yqOfe2IyVHhxz3ohqo3aCCMjtB-8wn4X_aoY=@smp11.simplex.im,6ioorbm6i3yxmuoezrhjk6f6qgkc4syabh7m3so74xunb5nzr4pwgfqd.onion",
-      "smp://UkMFNAXLXeAAe0beCa4w6X_zp18PwxSaSjY17BKUGXQ=@smp12.simplex.im,ie42b5weq7zdkghocs3mgxdjeuycheeqqmksntj57rmejagmg4eor5yd.onion",
-      "smp://enEkec4hlR3UtKx2NMpOUK_K4ZuDxjWBO1d9Y4YXVaA=@smp14.simplex.im,aspkyu2sopsnizbyfabtsicikr2s4r3ti35jogbcekhm3fsoeyjvgrid.onion"
+    [ "smp://h--vW7ZSkXPeOUpfxlFGgauQmXNFOzGoizak7Ult7cw=@smp15.simplex.im,oauu4bgijybyhczbnxtlggo6hiubahmeutaqineuyy23aojpih3dajad.onion",
+      "smp://hejn2gVIqNU6xjtGM3OwQeuk8ZEbDXVJXAlnSBJBWUA=@smp16.simplex.im,p3ktngodzi6qrf7w64mmde3syuzrv57y55hxabqcq3l5p6oi7yzze6qd.onion",
+      "smp://ZKe4uxF4Z_aLJJOEsC-Y6hSkXgQS5-oc442JQGkyP8M=@smp17.simplex.im,ogtwfxyi3h2h5weftjjpjmxclhb5ugufa5rcyrmg7j4xlch7qsr5nuqd.onion",
+      "smp://PtsqghzQKU83kYTlQ1VKg996dW4Cw4x_bvpKmiv8uns=@smp18.simplex.im,lyqpnwbs2zqfr45jqkncwpywpbtq7jrhxnib5qddtr6npjyezuwd3nqd.onion",
+      "smp://N_McQS3F9TGoh4ER0QstUf55kGnNSd-wXfNPZ7HukcM=@smp19.simplex.im,i53bbtoqhlc365k6kxzwdp5w3cdt433s7bwh3y32rcbml2vztiyyz5id.onion"
     ]
 
 _defaultNtfServers :: [NtfServer]
@@ -2271,15 +2269,6 @@ processChatCommand' vr = \case
   ResetAgentServersStats -> withAgent resetAgentServersStats >> ok_
   GetAgentWorkers -> lift $ CRAgentWorkersSummary <$> withAgent' getAgentWorkersSummary
   GetAgentWorkersDetails -> lift $ CRAgentWorkersDetails <$> withAgent' getAgentWorkersDetails
-  GetAgentStats -> lift $ CRAgentStats . map stat <$> withAgent' getAgentStats
-    where
-      stat (AgentStatsKey {host, clientTs, cmd, res}, count) =
-        map B.unpack [host, clientTs, cmd, res, bshow count]
-  ResetAgentStats -> lift (withAgent' resetAgentStats) >> ok_
-  GetAgentMsgCounts -> lift $ do
-    counts <- map (first decodeLatin1) <$> withAgent' getMsgCounts
-    let allMsgs = foldl' (\(ts, ds) (_, (t, d)) -> (ts + t, ds + d)) (0, 0) counts
-    pure CRAgentMsgCounts {msgCounts = ("all", allMsgs) : sortOn (Down . snd) (filter (\(_, (_, d)) -> d /= 0) counts)}
   GetAgentSubs -> lift $ summary <$> withAgent' getAgentSubscriptions
     where
       summary SubscriptionsInfo {activeSubscriptions, pendingSubscriptions, removedSubscriptions} =
@@ -7629,13 +7618,10 @@ chatCommandP =
       "/debug event " *> (DebugEvent <$> jsonP),
       "/get servers summary " *> (GetAgentServersSummary <$> A.decimal),
       "/reset servers stats" $> ResetAgentServersStats,
-      "/get stats" $> GetAgentStats,
-      "/reset stats" $> ResetAgentStats,
       "/get subs" $> GetAgentSubs,
       "/get subs details" $> GetAgentSubsDetails,
       "/get workers" $> GetAgentWorkers,
       "/get workers details" $> GetAgentWorkersDetails,
-      "/get msgs" $> GetAgentMsgCounts,
       "/get queues" $> GetAgentQueuesInfo,
       "//" *> (CustomChatCommand <$> A.takeByteString)
     ]

@@ -508,13 +508,10 @@ data ChatCommand
   | DebugEvent ChatResponse
   | GetAgentServersSummary UserId
   | ResetAgentServersStats
-  | GetAgentStats
-  | ResetAgentStats
   | GetAgentSubs
   | GetAgentSubsDetails
   | GetAgentWorkers
   | GetAgentWorkersDetails
-  | GetAgentMsgCounts
   | GetAgentQueuesInfo
   | -- The parser will return this command for strings that start from "//".
     -- This command should be processed in preCmdHook
@@ -760,12 +757,10 @@ data ChatResponse
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, chatEntityLocks :: Map String String, agentLocks :: AgentLocks}
   | CRAgentServersSummary {user :: User, serversSummary :: PresentedServersSummary}
-  | CRAgentStats {agentStats :: [[String]]}
   | CRAgentWorkersDetails {agentWorkersDetails :: AgentWorkersDetails}
   | CRAgentWorkersSummary {agentWorkersSummary :: AgentWorkersSummary}
   | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
-  | CRAgentMsgCounts {msgCounts :: [(Text, (Int, Int))]}
   | CRAgentQueuesInfo {agentQueuesInfo :: AgentQueuesInfo}
   | CRContactDisabled {user :: User, contact :: Contact}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}
