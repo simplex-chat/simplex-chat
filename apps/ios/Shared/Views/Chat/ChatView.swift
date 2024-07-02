@@ -77,6 +77,7 @@ struct ChatView: View {
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             loadChat(chat: chat)
+            loadChatItems(chat.chatInfo)
             initChatView()
         }
         .onChange(of: chatModel.chatId) { cId in
@@ -92,11 +93,6 @@ struct ChatView: View {
         }
         .onChange(of: revealedChatItem) { _ in
             NotificationCenter.postReverseListNeedsLayout()
-        }
-        .onChange(of: chatModel.reversedChatItems) { reversedItems in
-            if reversedItems.isEmpty {
-                loadChatItems(chat.chatInfo)
-            }
         }
         .environmentObject(scrollModel)
         .onDisappear {
@@ -298,6 +294,7 @@ struct ChatView: View {
                 searchFocussed = false
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     loadChat(chat: chat)
+                    loadChatItems(chat.chatInfo)
                 }
             }
         }
@@ -309,24 +306,11 @@ struct ChatView: View {
         ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
     }
 
-    private func filtered(_ reversedChatItems: Array<ChatItem>) -> Array<ChatItem> {
-        reversedChatItems
-            .enumerated()
-            .filter { (index, chatItem) in
-                if let mergeCategory = chatItem.mergeCategory, index > .zero {
-                    mergeCategory != reversedChatItems[index - 1].mergeCategory
-                } else {
-                    true
-                }
-            }
-            .map { $0.element }
-    }
-
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
-        let filteredItems = filtered(chatModel.reversedChatItems)
+        let mergedItems = chatModel.reversedChatItems.merged
         return GeometryReader { g in
-            ReverseList(items: filteredItems, scrollState: $scrollModel.state) { ci in
+            ReverseList(items: mergedItems, scrollState: $scrollModel.state) { ci in
                 let voiceNoFrame = voiceWithoutFrame(ci)
                 let maxWidth = cInfo.chatType == .group
                                 ? voiceNoFrame
@@ -358,12 +342,14 @@ struct ChatView: View {
                 .onTapGesture { hideKeyboard() }
                 .onChange(of: searchText) { _ in
                     loadChat(chat: chat, search: searchText)
+                    loadChatItems(chat.chatInfo)
                 }
                 .onChange(of: chatModel.chatId) { chatId in
                     if let chatId, let c = chatModel.getChat(chatId) {
                         chat = c
                         showChatInfoSheet = false
                         loadChat(chat: c)
+                        loadChatItems(chat.chatInfo)
                     }
                 }
                 .onChange(of: chatModel.reversedChatItems) { _ in
@@ -465,7 +451,7 @@ struct ChatView: View {
                         .foregroundColor(.accentColor)
                 }
                 .onTapGesture {
-                    if let latestUnreadItem = filtered(chatModel.reversedChatItems).last(where: { $0.isRcvNew }) {
+                    if let latestUnreadItem = chatModel.reversedChatItems.merged.last(where: { $0.isRcvNew }) {
                         scrollModel.scrollToItem(id: latestUnreadItem.id)
                     }
                 }
@@ -556,7 +542,7 @@ struct ChatView: View {
                 var reversedPage = Array<ChatItem>()
                 var chatItemsAvailable = true
                 /// Load additional items until the page is +50 large after merging
-                while chatItemsAvailable && filtered(reversedPage).count < 50 {
+                while chatItemsAvailable && reversedPage.merged.count < 50 {
                     let chatItems = try await apiGetChatItems(
                         type: cInfo.chatType,
                         id: cInfo.apiId,
@@ -1355,5 +1341,20 @@ struct ChatView_Previews: PreviewProvider {
         @State var showChatInfo = false
         return ChatView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []))
             .environmentObject(chatModel)
+    }
+}
+
+extension Array<ChatItem> {
+    var merged: Array<ChatItem> {
+        self
+            .enumerated()
+            .filter { (index, chatItem) in
+                if let mergeCategory = chatItem.mergeCategory, index > .zero {
+                    mergeCategory != self[index - 1].mergeCategory
+                } else {
+                    true
+                }
+            }
+            .map { $0.element }
     }
 }
