@@ -18,15 +18,16 @@ private let sentQuoteColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, o
 
 struct FramedItemView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var scrollModel: ReverseListScrollModel<ChatItem>
     @Environment(\.colorScheme) var colorScheme
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
+    var preview: UIImage?
     @Binding var revealed: Bool
     var maxWidth: CGFloat = .infinity
-    @State var scrollProxy: ScrollViewProxy? = nil
     @State var msgWidth: CGFloat = 0
-    @State var imgWidth: CGFloat? = nil
-    @State var videoWidth: CGFloat? = nil
+    var imgWidth: CGFloat? = nil
+    var videoWidth: CGFloat? = nil
     @State var metaColor = Color.secondary
     @State var showFullScreenImage = false
     @Binding var allowMenu: Bool
@@ -58,10 +59,9 @@ struct FramedItemView: View {
                 if let qi = chatItem.quotedItem {
                     ciQuoteView(qi)
                         .onTapGesture {
-                            if let proxy = scrollProxy,
-                               let ci = m.reversedChatItems.first(where: { $0.id == qi.itemId }) {
+                            if let ci = m.reversedChatItems.first(where: { $0.id == qi.itemId }) {
                                 withAnimation {
-                                    proxy.scrollTo(ci.viewId, anchor: .bottom)
+                                    scrollModel.scrollToItem(id: ci.id)
                                 }
                             }
                         }
@@ -84,6 +84,7 @@ struct FramedItemView: View {
             }
         }
             .background(chatItemFrameColorMaybeImageOrVideo(chatItem, colorScheme))
+            .background(Color(.systemBackground))
             .cornerRadius(18)
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
@@ -114,8 +115,8 @@ struct FramedItemView: View {
             .padding(.bottom, 2)
         } else {
             switch (chatItem.content.msgContent) {
-            case let .image(text, image):
-                CIImageView(chatItem: chatItem, image: image, maxWidth: maxWidth, imgWidth: $imgWidth, scrollProxy: scrollProxy)
+            case let .image(text, _):
+                CIImageView(chatItem: chatItem, preview: preview, maxWidth: maxWidth, imgWidth: imgWidth)
                     .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -127,8 +128,8 @@ struct FramedItemView: View {
                 } else {
                     ciMsgContentView(chatItem)
                 }
-            case let .video(text, image, duration):
-                CIVideoView(chatItem: chatItem, image: image, duration: duration, maxWidth: maxWidth, videoWidth: $videoWidth, scrollProxy: scrollProxy)
+            case let .video(text, _, duration):
+                CIVideoView(chatItem: chatItem, preview: preview, duration: duration, maxWidth: maxWidth, videoWidth: videoWidth)
                 .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -181,7 +182,6 @@ struct FramedItemView: View {
         .padding(.bottom, pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
         .overlay(DetermineWidth())
         .frame(minWidth: msgWidth, alignment: .leading)
-        .background(chatItemFrameContextColor(chatItem, colorScheme))
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
