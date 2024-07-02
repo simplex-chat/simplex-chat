@@ -64,63 +64,36 @@ As a group owner, you can add a welcome message that will be shown to new member
 As a group owner, you control the nature of your group chats. You decide what features to enable and what features to disable. You can also enable some features for specific roles to control how content is shared in your group. Here are the available group preferences that you can set for your group:
 
 - **Disappearing messages**
-  
   - `on` - All members can send disappearing messages in your group. The timer is set to last for one day by default. You can adjust the timer to a different interval of your choice.
-  
   - `off (default` - no one can send disappearing messages.
-
 - **Direct messages**
-  
   - `on` - either all members, admins, or owners can send direct messages to each other.
-  
   - `off` - no one can send direct messages to each other.
-
 - **Delete for everyone**
-  
   - `on` - all members can irreversibly delete their messages.
-  
   - `off (default)` - No one can irreversibly delete their messages. Instead, they'll only be able to mark their messages as deleted. 
-
 - **Message reactions**
-  
   - `on (default)` - all members can react to each other's messages.
-  
   - `off` - no one can react to each other's messages.
-
 - **Voice messages**
-  
   - `on (default)` - either all members, admins, or owners can send voice messages.
-  
   - `off` - no one can send voice messages.
-
 - **Files and media**
-  
   - `on (default)` - either all members, admins, or owners can send files and media.
-  
   - `off` - no one can send files and media.
-
 - **SimpleX Links**
-  
   - `on (default)` - either all members, admins, or owners can send SimpleX links.
-  
   - `off` - no one can send SimpleX links.
-
 - **Visible history**
-  
   - `on (default)` - new members can see the last 100 messages when they join the group.
-  
   - `off` - new members can't see any chat history when they join the group.
 
 #### To set group preferences:
 
 1. Tap or click on a group chat.
-
 2. Tap or click on your group's name at the top of the screen.
-
 3. Tap or click **Group preferences**.
-
 4. Set your preferences. 
-
 5. Tap or click **Save and notify group members**.
 
 ### Creating a group link

@@ -105,7 +105,6 @@ You can switch between chat profiles.
 There are two methods to migrate your chat profiles from your old device to another device:
 
 - Upload Archive to SimpleX File Servers and Scan QR Code/Paste File Link To Download
-
 - Manually Export and Import Archive
 
 ### Upload Archive to SimpleX File Servers and Scan QR Code/Paste File Link To Download
@@ -115,33 +114,23 @@ This method is recommended for most users. The app creates a zipped archive cont
 #### On your old device:
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-
 2. Click or tap **Migrate to another device**.
-
 3. If you haven't setup a database passphrase yet, you'll be prompted to set one. Once you're done, tap or click **Set passphrase**. A window will appear confirming that your database is now encrypted. Click or tap **Ok**. If you already have a database passphrase, enter it and click or tap **Verify passphrase**.
-
 4. Click or tap **Archive and upload**. 
-
 5. Show QR code or share file link to your new device. 
 
 #### On your new device:
 
 1. Download and install SimpleX Chat. 
-
 2. Open the app. 
-
 3. Click or tap **Migrate from another device**. 
-
 4. Scan QR code or paste the file link from the old device. 
 
 #### On your old device:
 
 1. Click or tap **Finalize migration**.
-
 2. Options:
-   
    - `Start chat (Not recommended)` - using SimpleX Chat with the same database on multiple devices is currently unsupported and will cause message delivery failures.
-   
    - `Delete database from this device (Recommended)` - deleting the database from your old device will avoid message delivery failures on your new device.
 
 ### Manually Export and Import Archive

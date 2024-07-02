@@ -7,9 +7,7 @@ title: Managing data
 SimpleX Chat stores all your data locally on your device; it is not stored on SimpleX servers or anywhere else. Only you have complete control of it. Tap or click on the following sections to learn more:
 
 - [Automatic message deletion](#automatic-message-deletion)
-
 - [Chat database](#chat-database)
-
 - [Delete files & media](#delete-files--media) 
 
 ## Automatic message deletion
@@ -19,19 +17,12 @@ Here you can choose to delete messages from your local chat database after a set
 #### To enable automatic message deletion:
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-
 2. Tap or click **Database passphrase & export**.
-
 3. From the **Delete messages after** dropdown, choose one of the following options:
-   
    - `never (default)`
-   
    - `1 month`
-   
    - `1 week`
-   
    - `1 day`
-
 4. Tap or click **Delete messages**.
 
 **Please note**: This feature does not delete messages for other users, only for you. It is set independently for each chat profile.

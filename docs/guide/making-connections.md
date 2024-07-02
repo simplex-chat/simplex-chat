@@ -25,24 +25,17 @@ As the name implies, it can only be used once to connect with someone. You can c
 
 ## SimpleX address
 
-You can create a SimpleX address for other people to connect with you. When people connect to you via this address, you will receive a connection request that you can accept or reject. You can configure an automatic acceptance of connection requests with a welcome message that will be sent to new contacts when they connect with you. You can also share your SimpleX address on your chat profile, so group members can connect with you and your contacts can share it with others - if this is something you want. 
+You can create a SimpleX address for other people to connect with you. When people connect to you via this address, you will receive a connection request that you can accept or reject. You can configure an automatic acceptance of connection requests with a welcome message that will be sent to new contacts when they connect with you. You can also share your SimpleX address on your chat profile, so group members can connect with you and your contacts can share it with others, if this is something you want.
 
 #### To create and share a SimpleX address:
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-
 2. Tap or click **Your SimpleX address**.
-
 3. Tap or click **Create SimpleX address**. 
-
 4. (Optional) Tap or click **Share** to share your SimpleX address with your contacts.
-
 5. (Optional) Publish your SimpleX address on your personal website, email signature or anywhere else for people to see. 
-
 6. (Optional) Toggle **Auto-accept** to automatically accept connection requests. 
-
 7. (Optional) Toggle **Accept incognito** to share incognito profiles. 
-
 8. (Optional) Add a welcome message. 
 
 **Please note**: if you start receiving too many requests via your SimpleX address, it's safe to delete it from your chat profile – all the connections you've made with this address will remain active, as it's not used to deliver messages.
@@ -54,16 +47,13 @@ You can securely connect with other users via link or QR code.
 #### If you don't have SimpleX Chat installed on your device:
 
 1. Tap or click on the SimpleX link you received from your contact. You'll be redirected to a webpage detailing instructions on how to connect. 
-
 2. After you've download and installed SimpleX Chat on your device, tap **Open in mobile app** on the webpage to connect with your contact.
 
 #### If you have SimpleX Chat installed on your device:
 
-- Tap or click on the QR code symbol in the right-hand side of the search bar on the **Chats** screen. Scan QR code or paste link you received from your contact to connect with them.
-
-- Copy the SimpleX Link received from your contact. Paste it into the searchbar towards the top of the **Chats** screen. You'll be prompted to share your current chat profile or an incognito profile to connect with them. 
-
-- Tap or click on the SimpleX link you received from them and you'll be prompted to share your current chat profile or an incognito profile with them. 
+- Tap or click on the QR code symbol in the right-hand side of the search bar on the **Chats** screen. Scan QR code or paste link you received from your contact. You'll be prompted to share your current chat profile or an incognito profile to connect with them.
+- Copy the SimpleX Link you received from your contact. Paste it into the searchbar towards the top of the **Chats** screen. You'll be prompted to share your current chat profile or an incognito profile to connect with them.
+- Tap or click on the SimpleX link you received from them. You'll be prompted to share your current chat profile or an incognito profile with them.
 
 ## One-time invitation vs. SimpleX address
 
@@ -118,6 +108,6 @@ You can securely connect with other users via link or QR code.
   </tr>
 </table>
 
-<sup>*</sup> Adding optional verified identities that we plan in the future will change it &mdash; the address owner will have an option to request identity verification before accepting the connection.
+<sup>*</sup> Adding optional verified identities that we plan in the future will change it &mdash; the SimpleX address owner will have an option to request identity verification before accepting the connection request.
 
 <sup>**</sup> Connection security code is the cryptographic hash (SHA256) of combined public keys of both sides &mdash; there are 2<sup>256</sup> possible security codes (1 with 77 zeros – about [1000 times smaller](https://www.wolframalpha.com/input?i=2%5E256) than the estimated number of atoms in the visible universe).

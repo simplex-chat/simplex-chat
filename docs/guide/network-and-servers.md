@@ -7,9 +7,7 @@ title: Network & servers
 You can adjust your network and server settings in SimpleX Chat. Tap or click on the following sections to learn more:
 
 - [Messages and Files](#messages-and-files)
-
 - [Private Message Routing](#private-message-routing)
-
 - [Calls](#calls)
 
 ## Messages and Files
@@ -71,22 +69,16 @@ SimpleX Chat offers IP address protection for users who need it. It's enabled wh
 #### To configure private routing:
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-
 2. Tap or click **Network and servers**.
-
 3. From the **Private routing** dropdown, choose one of the following options:
-   
    - `always` - Always use private routing.
    - `unknown relays` - Use private routing with unknown servers.
    - `unprotected (default)` - Use private routing with unknown servers when IP address is not protected.
    - `never` - Do not use private routing.
-
 4. From the **Allow downgrade** dropdown, choose one of the following options:
-   
    - `Yes (default)` - Send messages directly when your or destination server does not support private routing.
    - `When IP hidden` - Send messages directly when IP address is protected and your or destination server does not support private routing.
    - `No` - Do NOT send messages directly, even if your or destination server does not support private routing.
-
 5. (Optional) Toggle **Show message status** on to show that your messages have been privately routed.
 
 ## Calls

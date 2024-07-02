@@ -24,20 +24,13 @@ This setting affects the ability to use SimpleX Lock - it's disabled by default.
 #### To enable it:
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-
 2. Tap or click **Privacy & security**.
-
 3. Tap or click **SimpleX Lock**
-
 4. From the **Lock mode** dropdown, choose one of the following options:
-   
    - `System`
    - `Passcode`
-
 5. Toggle **Enable lock** on. If you've set **Lock mode** to `System`, then you'll be prompted to confirm your device credentials. If you've set **Lock mode** to `Passcode`, then you'll be prompted to create a SimpleX Lock passcode.
-
 6. From the **Lock after** dropdown, choose one of the following options:
-   
    - `10 seconds`
    - `30 seconds`
    - `1 minute`

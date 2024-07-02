@@ -55,23 +55,14 @@ This screen allows you to link your mobile device to your desktop, so that you c
 #### To link your mobile device to your desktop:
 
 1. Download and install the [SimpleX Chat desktop app](https://simplex.chat/downloads/#desktop-app), if you haven't already. 
-
 2. Open SimpleX Chat on your desktop. 
-
 3. If you don't have any chat profiles setup on the desktop app, click **Link a mobile**. 
-
 4. Options:
-   
    - Set a new database passphrase.
-   
    - Use a randomly generated passphrase.  
-
 5. Set **This Device Name** to whatever you want.
-
 6. On your mobile device, [open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-
 7. Click or tap **Use from desktop**. 
-
 8. Scan the QR code on your desktop.  
 
 ### Migrate to another device

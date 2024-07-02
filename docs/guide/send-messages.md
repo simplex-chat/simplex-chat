@@ -62,7 +62,6 @@ You can record voice messages of up to 5 minutes.
 **Please note**: 
 
 1. If the 🎙️ (microphone) button is greyed out, that means voice messages are disabled in your chat. Ask your contact or group owner to enable them.
-
 2. Voice messages are not supported on the desktop app at this time. 
 
 ### Sending disappearing messages
