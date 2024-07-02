@@ -43,6 +43,9 @@ struct ServersSummaryView: View {
                 }
         }
         .onAppear {
+            if m.users.filter({ u in u.user.activeUser || !u.user.hidden }).count == 1 {
+                selectedUserCategory = .currentUser
+            }
             getServersSummary()
             startTimer()
         }
@@ -85,11 +88,13 @@ struct ServersSummaryView: View {
         if let summ = serversSummary {
             List {
                 Group {
-                    Picker("User selection", selection: $selectedUserCategory) {
-                        Text("All users").tag(PresentedUserCategory.allUsers)
-                        Text("Current user").tag(PresentedUserCategory.currentUser)
+                    if m.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
+                        Picker("User selection", selection: $selectedUserCategory) {
+                            Text("All users").tag(PresentedUserCategory.allUsers)
+                            Text("Current user").tag(PresentedUserCategory.currentUser)
+                        }
+                        .pickerStyle(.segmented)
                     }
-                    .pickerStyle(.segmented)
 
                     Picker("Server type", selection: $selectedServerType) {
                         Text("Messages").tag(PresentedServerType.smp)
