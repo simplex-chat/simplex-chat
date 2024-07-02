@@ -18,6 +18,7 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.updatingChatsMutex
 import chat.simplex.common.ui.theme.*
@@ -492,6 +493,7 @@ fun deleteChatDatabaseFilesAndState() {
   wallpapersDir.deleteRecursively()
   wallpapersDir.mkdirs()
   DatabaseUtils.ksDatabasePassword.remove()
+  appPrefs.newDatabaseInitialized.set(false)
   controller.appPrefs.storeDBPassphrase.set(true)
   controller.ctrl = null
 

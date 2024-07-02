@@ -88,8 +88,23 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     chatModel.chatDbStatus.value = res
     if (res != DBMigrationResult.OK) {
       Log.d(TAG, "Unable to migrate successfully: $res")
+      if (!appPrefs.newDatabaseInitialized.get() && DatabaseUtils.hasOnlyOneDatabase(dataDir.absolutePath)) {
+        if (chatModel.incompleteInitedDbRemoved.value) {
+          Log.d(TAG, "Incomplete initialized databases were removed but after repeated migration only one database exists again, not trying to remove again")
+        } else {
+          val dbPath = dbAbsolutePrefixPath
+          File(dbPath + "_chat.db").delete()
+          File(dbPath + "_agent.db").delete()
+          chatModel.incompleteInitedDbRemoved.value = true
+          Log.d(TAG, "Incomplete initialized databases were removed for the first time, repeating migration")
+          chatModel.ctrlInitInProgress.value = false
+          initChatController(useKey, confirmMigrations, startChat)
+        }
+      }
       return
     }
+    appPrefs.newDatabaseInitialized.set(true)
+    chatModel.incompleteInitedDbRemoved.value = false
     platform.androidRestartNetworkObserver()
     controller.apiSetAppFilePaths(
       appFilesDir.absolutePath,

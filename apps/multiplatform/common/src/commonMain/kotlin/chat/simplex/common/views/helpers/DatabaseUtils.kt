@@ -42,6 +42,12 @@ object DatabaseUtils {
   private fun hasAtLeastOneDatabase(rootDir: String): Boolean =
     File(rootDir + File.separator + chatDatabaseFileName).exists() || File(rootDir + File.separator + agentDatabaseFileName).exists()
 
+  fun hasOnlyOneDatabase(rootDir: String): Boolean {
+    val chat = File(rootDir + File.separator + chatDatabaseFileName).exists()
+    val agent = File(rootDir + File.separator + agentDatabaseFileName).exists()
+    return (chat || agent) && (!chat || !agent)
+  }
+
   fun useDatabaseKey(): String {
     Log.d(TAG, "useDatabaseKey ${appPreferences.storeDBPassphrase.get()}")
     var dbKey = ""
