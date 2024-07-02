@@ -179,7 +179,7 @@ class AppPreferences {
   // This flag is set when database is first initialized and resets only when the database is removed.
   // This is needed for recover from incomplete initialization when only one database file is created.
   // If false - the app will clear database folder on missing file and re-initialize.
-  // Note that this situation should never happen because backend will re-create second database automatically if passphrase for the first one is correct
+  // Note that this situation can only happen if passphrase for the first database is incorrect because, otherwise, backend will re-create second database automatically
   val newDatabaseInitialized = mkBoolPreference(SHARED_PREFS_NEW_DATABASE_INITIALIZED, false)
 
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM_THEME_NAME)
