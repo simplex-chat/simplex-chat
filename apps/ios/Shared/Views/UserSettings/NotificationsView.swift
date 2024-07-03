@@ -28,7 +28,7 @@ struct NotificationsView: View {
             if let token = m.deviceToken {
                 return notificationAlert(alert, token)
             } else {
-                return  Alert(title: Text("No device token!"))
+                return Alert(title: Text("No device token!"))
             }
         }
     }
