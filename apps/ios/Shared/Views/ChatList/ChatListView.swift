@@ -220,9 +220,7 @@ struct ChatListView: View {
 
     @ViewBuilder private func chatView() -> some View {
         if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
-            ChatView(chat: chat).onAppear {
-                loadChat(chat: chat)
-            }
+            ChatView(chat: chat)
         }
     }
 
