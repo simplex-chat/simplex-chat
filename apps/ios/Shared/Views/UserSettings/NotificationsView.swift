@@ -150,6 +150,7 @@ struct NotificationsView: View {
                         notificationMode = .off
                         m.notificationMode = .off
                         m.notificationServer = nil
+                        testedSuccess = nil
                     }
                 } catch let error {
                     await MainActor.run {
@@ -167,6 +168,7 @@ struct NotificationsView: View {
                         notificationMode = ntfMode
                         m.notificationMode = ntfMode
                         m.notificationServer = ntfServer
+                        testedSuccess = nil
                     }
                 } catch let error {
                     await MainActor.run {
