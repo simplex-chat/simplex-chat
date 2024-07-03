@@ -586,9 +586,9 @@ struct DetailedSMPStatsView: View {
         List {
             Section("Sent messages") {
                 infoRow("Sent total", numOrDash(stats._sentDirect + stats._sentViaProxy))
-                infoRowTwoValues("Sent directly", "attempts", numOrDash(stats._sentDirect), numOrDash(stats._sentDirectAttempts))
-                infoRowTwoValues("Sent via proxy", "attempts", numOrDash(stats._sentViaProxy), numOrDash(stats._sentViaProxyAttempts))
-                infoRowTwoValues("Proxied", "attempts", numOrDash(stats._sentProxied), numOrDash(stats._sentProxiedAttempts))
+                infoRowTwoValues("Sent directly", "attempts", stats._sentDirect, stats._sentDirectAttempts)
+                infoRowTwoValues("Sent via proxy", "attempts", stats._sentViaProxy, stats._sentViaProxyAttempts)
+                infoRowTwoValues("Proxied", "attempts", stats._sentProxied, stats._sentProxiedAttempts)
                 Text("Send errors")
                 indentedInfoRow("AUTH", numOrDash(stats._sentAuthErrs))
                 indentedInfoRow("QUOTA", numOrDash(stats._sentQuotaErrs))
@@ -601,7 +601,7 @@ struct DetailedSMPStatsView: View {
                 indentedInfoRow("duplicates", numOrDash(stats._recvDuplicates))
                 indentedInfoRow("decryption errors", numOrDash(stats._recvCryptoErrs))
                 indentedInfoRow("other errors", numOrDash(stats._recvErrs))
-                infoRowTwoValues("Acknowledged", "attempts", numOrDash(stats._ackMsgs), numOrDash(stats._ackAttempts))
+                infoRowTwoValues("Acknowledged", "attempts", stats._ackMsgs, stats._ackAttempts)
                 Text("Acknowledgement errors")
                 indentedInfoRow("NO_MSG errors", numOrDash(stats._ackNoMsgErrs))
                 indentedInfoRow("other errors", numOrDash(stats._ackOtherErrs))
@@ -610,9 +610,9 @@ struct DetailedSMPStatsView: View {
                 infoRow("Created", numOrDash(stats._connCreated))
                 infoRow("Secured", numOrDash(stats._connCreated))
                 infoRow("Completed", numOrDash(stats._connCompleted))
-                infoRowTwoValues("Deleted", "attempts", numOrDash(stats._connDeleted), numOrDash(stats._connDelAttempts))
+                infoRowTwoValues("Deleted", "attempts", stats._connDeleted, stats._connDelAttempts)
                 infoRow("Deletion errors", numOrDash(stats._connDelErrs))
-                infoRowTwoValues("Subscribed", "attempts", numOrDash(stats._connSubscribed), numOrDash(stats._connSubAttempts))
+                infoRowTwoValues("Subscribed", "attempts", stats._connSubscribed, stats._connSubAttempts)
                 infoRow("Subscription results ignored", numOrDash(stats._connSubIgnored))
                 infoRow("Subscription errors", numOrDash(stats._connSubErrs))
             } header: {
@@ -624,13 +624,17 @@ struct DetailedSMPStatsView: View {
     }
 }
 
-private func infoRowTwoValues(_ title: LocalizedStringKey, _ title2: LocalizedStringKey, _ value: String, _ value2: String) -> some View {
+private func infoRowTwoValues(_ title: LocalizedStringKey, _ title2: LocalizedStringKey, _ value: Int, _ value2: Int) -> some View {
     HStack {
         Text(title) + Text(" / ").font(.caption2) + Text(title2).font(.caption2)
         Spacer()
-        (
-            Text(value) + Text(" / ").font(.caption2) + Text(value2).font(.caption2)
-        )
+        Group {
+            if value == 0 && value2 == 0 {
+                Text("-")
+            } else {
+                Text(numOrDash(value)) + Text(" / ").font(.caption2) + Text(numOrDash(value2)).font(.caption2)
+            }
+        }
         .foregroundStyle(.secondary)
     }
 }
@@ -712,14 +716,14 @@ struct DetailedXFTPStatsView: View {
         List {
             Section("Uploaded files") {
                 infoRow("Size", prettySize(stats._uploadsSize))
-                infoRowTwoValues("Chunks uploaded", "attempts", numOrDash(stats._uploads), numOrDash(stats._uploadAttempts))
+                infoRowTwoValues("Chunks uploaded", "attempts", stats._uploads, stats._uploadAttempts)
                 infoRow("Upload errors", numOrDash(stats._uploadErrs))
-                infoRowTwoValues("Chunks deleted", "attempts", numOrDash(stats._deletions), numOrDash(stats._deleteAttempts))
+                infoRowTwoValues("Chunks deleted", "attempts", stats._deletions, stats._deleteAttempts)
                 infoRow("Deletion errors", numOrDash(stats._deleteErrs))
             }
             Section {
                 infoRow("Size", prettySize(stats._downloadsSize))
-                infoRowTwoValues("Chunks downloaded", "attempts", numOrDash(stats._downloads), numOrDash(stats._downloadAttempts))
+                infoRowTwoValues("Chunks downloaded", "attempts", stats._downloads, stats._downloadAttempts)
                 Text("Download errors")
                 indentedInfoRow("AUTH", numOrDash(stats._downloadAuthErrs))
                 indentedInfoRow("other", numOrDash(stats._downloadErrs))
