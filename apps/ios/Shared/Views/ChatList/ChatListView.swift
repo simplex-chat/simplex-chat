@@ -268,7 +268,7 @@ struct SubsStatusIndicator: View {
     @State private var timerCounter = 0
     @State private var showServersSummary = false
     
-    @AppStorage(DEFAULT_SHOW_CONNECTION_STATUS_PERCENT) private var showConnectionStatusPercent = false
+    @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
 
     // Constants for the intervals
     let initialInterval: TimeInterval = 1.0
@@ -280,9 +280,9 @@ struct SubsStatusIndicator: View {
             showServersSummary = true
         } label: {
             HStack(spacing: 4) {
-                ConnectionStatusIndicatorView(subs: subs, sess: sess)
-                if showConnectionStatusPercent {
-                    ConnectionStatusPercentView(subs: subs, sess: sess)
+                SubscriptionStatusIndicatorView(subs: subs, sess: sess)
+                if showSubscriptionPercentage {
+                    SubscriptionStatusPercentageView(subs: subs, sess: sess)
                 }
             }
         }

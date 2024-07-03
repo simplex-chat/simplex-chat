@@ -19,7 +19,7 @@ struct ServersSummaryView: View {
     @State private var timer: Timer? = nil
     @State private var alert: SomeAlert?
 
-    @AppStorage(DEFAULT_SHOW_CONNECTION_STATUS_PERCENT) private var showConnectionStatusPercent = false
+    @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
 
     enum PresentedUserCategory {
         case currentUser
@@ -266,10 +266,10 @@ struct ServersSummaryView: View {
                     .lineLimit(1)
                 if let subs = srvSumm.subs {
                     Spacer()
-                    if showConnectionStatusPercent {
-                        ConnectionStatusPercentView(subs: subs, sess: srvSumm.sessionsOrNew)
+                    if showSubscriptionPercentage {
+                        SubscriptionStatusPercentageView(subs: subs, sess: srvSumm.sessionsOrNew)
                     }
-                    ConnectionStatusIndicatorView(subs: subs, sess: srvSumm.sessionsOrNew)
+                    SubscriptionStatusIndicatorView(subs: subs, sess: srvSumm.sessionsOrNew)
                 } else if let sess = srvSumm.sessions {
                     Spacer()
                     Image(systemName: "arrow.up.circle")
@@ -394,14 +394,14 @@ struct ServersSummaryView: View {
     }
 }
 
-struct ConnectionStatusIndicatorView: View {
+struct SubscriptionStatusIndicatorView: View {
     @EnvironmentObject var m: ChatModel
     var subs: SMPServerSubs
     var sess: ServerSessions
 
     var body: some View {
         let onionHosts = networkUseOnionHostsGroupDefault.get()
-        let (color, variableValue, opacity, _) = connectionStatusColorAndPercent(m.networkInfo.online, onionHosts, subs, sess)
+        let (color, variableValue, opacity, _) = subscriptionStatusColorAndPercentage(m.networkInfo.online, onionHosts, subs, sess)
         if #available(iOS 16.0, *) {
             Image(systemName: "dot.radiowaves.up.forward", variableValue: variableValue)
                 .foregroundColor(color)
@@ -412,21 +412,21 @@ struct ConnectionStatusIndicatorView: View {
     }
 }
 
-struct ConnectionStatusPercentView: View {
+struct SubscriptionStatusPercentageView: View {
     @EnvironmentObject var m: ChatModel
     var subs: SMPServerSubs
     var sess: ServerSessions
 
     var body: some View {
         let onionHosts = networkUseOnionHostsGroupDefault.get()
-        let (_, _, _, statusPercent) = connectionStatusColorAndPercent(m.networkInfo.online, onionHosts, subs, sess)
+        let (_, _, _, statusPercent) = subscriptionStatusColorAndPercentage(m.networkInfo.online, onionHosts, subs, sess)
         Text("\(Int(floor(statusPercent * 100)))%")
             .foregroundColor(.secondary)
             .font(.caption)
     }
 }
 
-func connectionStatusColorAndPercent(_ online: Bool, _ onionHosts: OnionHosts, _ subs: SMPServerSubs, _ sess: ServerSessions) -> (Color, Double, Double, Double) {
+func subscriptionStatusColorAndPercentage(_ online: Bool, _ onionHosts: OnionHosts, _ subs: SMPServerSubs, _ sess: ServerSessions) -> (Color, Double, Double, Double) {
     func roundedToQuarter(_ n: Double) -> Double {
         n >= 1 ? 1
         : n <= 0 ? 0
@@ -457,7 +457,7 @@ struct SMPServerSummaryView: View {
     var statsStartedAt: Date
     @State private var alert: SomeAlert?
 
-    @AppStorage(DEFAULT_SHOW_CONNECTION_STATUS_PERCENT) private var showConnectionStatusPercent = false
+    @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
 
     var body: some View {
         List {
@@ -498,9 +498,9 @@ struct SMPServerSummaryView: View {
         } header: {
             HStack {
                 Text("Message subscriptions")
-                ConnectionStatusIndicatorView(subs: subs, sess: summary.sessionsOrNew)
-                if showConnectionStatusPercent {
-                    ConnectionStatusPercentView(subs: subs, sess: summary.sessionsOrNew)
+                SubscriptionStatusIndicatorView(subs: subs, sess: summary.sessionsOrNew)
+                if showSubscriptionPercentage {
+                    SubscriptionStatusPercentageView(subs: subs, sess: summary.sessionsOrNew)
                 }
             }
         }

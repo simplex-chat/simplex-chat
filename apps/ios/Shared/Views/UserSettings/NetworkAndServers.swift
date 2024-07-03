@@ -31,7 +31,7 @@ struct NetworkAndServers: View {
     @EnvironmentObject var m: ChatModel
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
-    @AppStorage(DEFAULT_SHOW_CONNECTION_STATUS_PERCENT) private var showConnectionStatusPercent = false
+    @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
     @State private var cfgLoaded = false
     @State private var currentNetCfg = NetCfg.defaults
     @State private var netCfg = NetCfg.defaults
@@ -59,7 +59,7 @@ struct NetworkAndServers: View {
                         Text("XFTP servers")
                     }
 
-                    Toggle("Show connection status %", isOn: $showConnectionStatusPercent)
+                    Toggle("Subscription percentage", isOn: $showSubscriptionPercentage)
 
                     Picker("Use .onion hosts", selection: $onionHosts) {
                         ForEach(OnionHosts.values, id: \.self) { Text($0.text) }
