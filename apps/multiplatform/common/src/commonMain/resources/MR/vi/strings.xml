@@ -448,4 +448,17 @@
     <string name="deleted_description">đã xóa</string>
     <string name="delete_chat_profile">Xóa hồ sơ trò chuyện</string>
     <string name="delete_chat_profile_question">Xóa hồ sơ trò chuyện?</string>
+    <string name="delete_member_message__question">Xóa tin nhắn thành viên?</string>
+    <string name="for_me_only">Xóa chỉ mình tôi</string>
+    <string name="button_delete_group">Xóa nhóm</string>
+    <string name="delete_pending_connection__question">Xóa kết nối đang chờ?</string>
+    <string name="delete_files_and_media_for_all_users">Xóa tệp cho tất cả các hồ sơ trò chuyện</string>
+    <string name="delete_link_question">Xóa liên kết?</string>
+    <string name="delete_profile">Xóa hồ sơ</string>
+    <string name="full_deletion">Xóa cho mọi người</string>
+    <string name="delete_link">Xóa liên kết</string>
+    <string name="delete_image">Xóa ảnh</string>
+    <string name="delete_messages">Xóa các tin nhắn</string>
+    <string name="delete_group_question">Xóa nhóm?</string>
+    <string name="delete_message__question">Xóa tin nhắn?</string>
 </resources>
