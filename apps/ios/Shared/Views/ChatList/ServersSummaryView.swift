@@ -119,10 +119,10 @@ struct ServersSummaryView: View {
                         smpServersListView(curr, summ.statsStartedAt, "Connected servers")
                     }
                     if prev.count > 0 {
-                        smpServersListView(prev, summ.statsStartedAt, "Previously used")
+                        smpServersListView(prev, summ.statsStartedAt, "Previously connected servers")
                     }
                     if prox.count > 0 {
-                        smpServersListView(prox, summ.statsStartedAt, "Proxied", "You are not connected to these servers.")
+                        smpServersListView(prox, summ.statsStartedAt, "Proxied servers", "You are not connected to these servers. Private message routing is used to deliver messages to them.")
                     }
 
                     ServerSessionsView(sess: totals.sessions)
@@ -138,10 +138,10 @@ struct ServersSummaryView: View {
                         smpServersListView(curr, summ.statsStartedAt, "Connected servers")
                     }
                     if prev.count > 0 {
-                        smpServersListView(prev, summ.statsStartedAt, "Previously used")
+                        smpServersListView(prev, summ.statsStartedAt, "Previously connected servers")
                     }
                     if prox.count > 0 {
-                        smpServersListView(prox, summ.statsStartedAt, "Proxied", "You are not connected to these servers.")
+                        smpServersListView(prox, summ.statsStartedAt, "Proxied servers", "You are not connected to these servers. Private message routing is used to deliver messages to them.")
                     }
 
                     ServerSessionsView(sess: totals.sessions)
@@ -155,7 +155,7 @@ struct ServersSummaryView: View {
                         xftpServersListView(curr, summ.statsStartedAt, "Connected servers")
                     }
                     if prev.count > 0 {
-                        xftpServersListView(prev, summ.statsStartedAt, "Previously used")
+                        xftpServersListView(prev, summ.statsStartedAt, "Previously connected servers")
                     }
 
                     ServerSessionsView(sess: totals.sessions)
@@ -169,7 +169,7 @@ struct ServersSummaryView: View {
                         xftpServersListView(curr, summ.statsStartedAt, "Connected servers")
                     }
                     if prev.count > 0 {
-                        xftpServersListView(prev, summ.statsStartedAt, "Previously used")
+                        xftpServersListView(prev, summ.statsStartedAt, "Previously connected servers")
                     }
 
                     ServerSessionsView(sess: totals.sessions)
@@ -569,7 +569,10 @@ struct SMPStatsView: View {
         } header: {
             Text("Statistics")
         } footer: {
-            Text("Starting from \(localTimestamp(statsStartedAt)).")
+            VStack {
+                Text("Starting from \(localTimestamp(statsStartedAt)).")
+                Text("All data is private to your device.")
+            }
         }
     }
 }
@@ -694,7 +697,10 @@ struct XFTPStatsView: View {
         } header: {
             Text("Statistics")
         } footer: {
-            Text("Starting from \(localTimestamp(statsStartedAt)).")
+            VStack {
+                Text("Starting from \(localTimestamp(statsStartedAt)).")
+                Text("All data is private to your device.")
+            }
         }
     }
 }
