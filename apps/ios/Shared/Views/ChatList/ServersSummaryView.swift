@@ -126,11 +126,6 @@ struct ServersSummaryView: View {
                     }
 
                     ServerSessionsView(sess: totals.sessions)
-
-                    Section {
-                        reconnectAllButton()
-                        resetStatsButton()
-                    }
                 case (.currentUser, .smp):
                     let smpSumm = summ.currentUserSMP
                     let (totals, curr, prev, prox) = (smpSumm.smpTotals, smpSumm.currentlyUsedSMPServers, smpSumm.previouslyUsedSMPServers, smpSumm.onlyProxiedSMPServers)
@@ -150,11 +145,6 @@ struct ServersSummaryView: View {
                     }
 
                     ServerSessionsView(sess: totals.sessions)
-
-                    Section {
-                        reconnectAllButton()
-                        resetStatsButton()
-                    }
                 case (.allUsers, .xftp):
                     let xftpSumm = summ.allUsersXFTP
                     let (totals, curr, prev) = (xftpSumm.xftpTotals, xftpSumm.currentlyUsedXFTPServers, xftpSumm.previouslyUsedXFTPServers)
@@ -169,11 +159,6 @@ struct ServersSummaryView: View {
                     }
 
                     ServerSessionsView(sess: totals.sessions)
-
-                    Section {
-                        reconnectAllButton()
-                        resetStatsButton()
-                    }
                 case (.currentUser, .xftp):
                     let xftpSumm = summ.currentUserXFTP
                     let (totals, curr, prev) = (xftpSumm.xftpTotals, xftpSumm.currentlyUsedXFTPServers, xftpSumm.previouslyUsedXFTPServers)
@@ -188,11 +173,11 @@ struct ServersSummaryView: View {
                     }
 
                     ServerSessionsView(sess: totals.sessions)
+                }
 
-                    Section {
-                        reconnectAllButton()
-                        resetStatsButton()
-                    }
+                Section {
+                    reconnectAllButton()
+                    resetStatsButton()
                 }
             }
         } else {
