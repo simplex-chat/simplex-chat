@@ -880,33 +880,15 @@ window.addEventListener('scroll',changeHeaderBg);
 <p><code>stable-android</code> - used to build stable Android core library with Nix (GHC 8.10.7) - only for Android armv7a.</p>
 </li>
 <li>
-<p><code>stable-ios</code> - used to build stable iOS core library with Nix (GHC 8.10.7) – this branch should be the same as <code>stable-android</code> except Nix configuration files. Deprecated.</p>
-</li>
-<li>
-<p><code>master</code> - branch for beta version releases (GHC 9.6.3).</p>
-</li>
-<li>
-<p><code>master-ghc8107</code> - branch for beta version releases (GHC 8.10.7). Deprecated.</p>
+<p><code>master</code> - branch for beta version releases (compatible with both GHC 9.6.3 and 8.10.7).</p>
 </li>
 <li>
 <p><code>master-android</code> - used to build beta Android core library with Nix (GHC 8.10.7) - only for Android armv7a.</p>
 </li>
-<li>
-<p><code>master-ios</code> - used to build beta iOS core library with Nix (GHC 8.10.7). Deprecated.</p>
-</li>
-<li>
-<p><code>windows-ghc8107</code> - branch for windows core library build (GHC 8.10.7). Deprecated?</p>
-</li>
 </ul>
-<p><code>master-ios</code> and <code>windows-ghc8107</code> branches should be the same as <code>master-ghc8107</code> except Nix configuration files.</p>
 <p><strong>In simplexmq repo</strong></p>
 <ul>
-<li>
-<p><code>master</code> - uses GHC 9.6.3 its commit should be used in <code>master</code> branch of simplex-chat repo.</p>
-</li>
-<li>
-<p><code>master-ghc8107</code> - its commit should be used in <code>master-android</code> (and <code>master-ios</code>) branch of simplex-chat repo. Deprecated.</p>
-</li>
+<li><code>master</code> - compatible with both GHC 9.6.3 and 8.10.7.</li>
 </ul>
 <h2 id="development-and-release-process" tabindex="-1">Development &amp; release process</h2>
 <ol>
@@ -914,18 +896,14 @@ window.addEventListener('scroll',changeHeaderBg);
 <p>Make PRs to <code>master</code> branch <em>only</em> for both simplex-chat and simplexmq repos.</p>
 </li>
 <li>
-<p>If simplexmq repo was changed, to build mobile core libraries you need to merge its <code>master</code> branch into <code>master-ghc8107</code> branch.</p>
-</li>
-<li>
 <p>To build core libraries for Android, iOS and windows:</p>
 </li>
 </ol>
 <ul>
 <li>merge <code>master</code> branch to <code>master-android</code> branch.</li>
-<li>update code to be compatible with GHC 8.10.7 (see below).</li>
 <li>push to GitHub.</li>
 </ul>
-<ol start="4">
+<ol start="3">
 <li>
 <p>All libraries should be built from <code>master</code> branch, Android armv7a - from <code>master-android</code> branch.</p>
 </li>
@@ -941,9 +919,23 @@ window.addEventListener('scroll',changeHeaderBg);
 <li><code>master</code> to <code>master-android</code> (and compile/update code)</li>
 <li><code>master-android</code> to <code>stable-android</code></li>
 </ul>
-<ol start="7">
+<ol start="6">
 <li>Independently, <code>master</code> branch of simplexmq repo should be merged to <code>stable</code> branch on stable releases.</li>
 </ol>
+<h2 id="branches-and-prs" tabindex="-1">Branches and PRs</h2>
+<p>Use change scope (or comma separated scopes) as the first word in the PR names, followed by the colon. Commit name itself should be lowercase, in present tense.</p>
+<p>The PR names in simplex-chat repo are used in release notes, they should describe the solved problem and not the change. Possible PR scopes:</p>
+<ul>
+<li>ios</li>
+<li>android</li>
+<li>desktop</li>
+<li>core</li>
+<li>docs</li>
+<li>website</li>
+<li>ci</li>
+</ul>
+<p>We squash PRs, do not rewrite branch history after the review.</p>
+<p>For some complex features we create feature branches that will be merged once ready - do not make commits directly to them, make PRs to feature branches.</p>
 <h2 id="differences-between-ghc-8107-and-ghc-963" tabindex="-1">Differences between GHC 8.10.7 and GHC 9.6.3</h2>
 <ol>
 <li>The main difference is related to <code>DuplicateRecordFields</code> extension.</li>
