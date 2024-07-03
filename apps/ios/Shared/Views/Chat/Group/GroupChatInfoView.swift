@@ -13,6 +13,7 @@ let SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
 struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
     @Binding var groupInfo: GroupInfo
@@ -81,13 +82,19 @@ struct GroupChatInfoView: View {
                     } else {
                         sendReceiptsOptionDisabled()
                     }
+                    NavigationLink {
+                        ChatWallpaperEditorSheet(chat: chat)
+                    } label: {
+                        Label("Chat theme", systemImage: "photo")
+                    }
                 } header: {
                     Text("")
                 } footer: {
                     Text("Only group owners can change group preferences.")
+                        .foregroundColor(theme.colors.secondary)
                 }
 
-                Section("\(members.count + 1) members") {
+                Section(header: Text("\(members.count + 1) members").foregroundColor(theme.colors.secondary)) {
                     if groupInfo.canAddMembers {
                         groupLinkButton()
                         if (chat.chatInfo.incognito) {
@@ -99,7 +106,7 @@ struct GroupChatInfoView: View {
                         }
                     }
                     if members.count > 8 {
-                        searchFieldView(text: $searchText, focussed: $searchFocussed)
+                        searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.onBackground, theme.colors.secondary)
                             .padding(.leading, 8)
                     }
                     let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
@@ -129,12 +136,13 @@ struct GroupChatInfoView: View {
                 }
 
                 if developerTools {
-                    Section(header: Text("For console")) {
+                    Section(header: Text("For console").foregroundColor(theme.colors.secondary)) {
                         infoRow("Local name", chat.chatInfo.localDisplayName)
                         infoRow("Database ID", "\(chat.chatInfo.apiId)")
                     }
                 }
             }
+            .modifier(ThemedBackground(grouped: true))
             .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -210,6 +218,7 @@ struct GroupChatInfoView: View {
     private struct MemberRowView: View {
         var groupInfo: GroupInfo
         @ObservedObject var groupMember: GMember
+        @EnvironmentObject var theme: AppTheme
         var user: Bool = false
         @Binding var alert: GroupChatInfoViewAlert?
 
@@ -220,14 +229,14 @@ struct GroupChatInfoView: View {
                     .padding(.trailing, 2)
                 // TODO server connection status
                 VStack(alignment: .leading) {
-                    let t = Text(member.chatViewName).foregroundColor(member.memberIncognito ? .indigo : .primary)
+                    let t = Text(member.chatViewName).foregroundColor(member.memberIncognito ? .indigo : theme.colors.onBackground)
                     (member.verified ? memberVerifiedShield + t : t)
                         .lineLimit(1)
                     let s = Text(member.memberStatus.shortText)
                     (user ? Text ("you: ") + s : s)
                         .lineLimit(1)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                 }
                 Spacer()
                 memberInfo(member)
@@ -260,12 +269,12 @@ struct GroupChatInfoView: View {
         @ViewBuilder private func memberInfo(_ member: GroupMember) -> some View {
             if member.blocked {
                 Text("blocked")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             } else {
                 let role = member.memberRole
                 if [.owner, .admin, .observer].contains(role) {
                     Text(member.memberRole.text)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
         }
@@ -276,13 +285,13 @@ struct GroupChatInfoView: View {
                     Button {
                         alert = .blockMemberAlert(mem: member)
                     } label: {
-                        Label("Block member", systemImage: "hand.raised").foregroundColor(.secondary)
+                        Label("Block member", systemImage: "hand.raised").foregroundColor(theme.colors.secondary)
                     }
                 } else {
                     Button {
                         alert = .unblockMemberAlert(mem: member)
                     } label: {
-                        Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
+                        Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(theme.colors.primary)
                     }
                 }
             }
@@ -294,13 +303,13 @@ struct GroupChatInfoView: View {
                     Button {
                         alert = .unblockForAllAlert(mem: member)
                     } label: {
-                        Label("Unblock for all", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
+                        Label("Unblock for all", systemImage: "hand.raised.slash").foregroundColor(theme.colors.primary)
                     }
                 } else {
                     Button {
                         alert = .blockForAllAlert(mem: member)
                     } label: {
-                        Label("Block for all", systemImage: "hand.raised").foregroundColor(.secondary)
+                        Label("Block for all", systemImage: "hand.raised").foregroundColor(theme.colors.secondary)
                     }
                 }
             }
@@ -315,6 +324,14 @@ struct GroupChatInfoView: View {
                         .foregroundColor(Color.red)
                 }
             }
+        }
+
+        private var memberVerifiedShield: Text {
+            (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+                .font(.caption)
+                .baselineOffset(2)
+                .kerning(-2)
+                .foregroundColor(theme.colors.secondary)
         }
     }
 
@@ -333,6 +350,7 @@ struct GroupChatInfoView: View {
                 creatingGroup: false
             )
             .navigationBarTitle("Group link")
+            .modifier(ThemedBackground(grouped: true))
             .navigationBarTitleDisplayMode(.large)
         } label: {
             if groupLink == nil {
@@ -350,6 +368,7 @@ struct GroupChatInfoView: View {
                 groupProfile: groupInfo.groupProfile
             )
             .navigationBarTitle("Group profile")
+            .modifier(ThemedBackground())
             .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Edit group profile", systemImage: "pencil")
@@ -364,6 +383,7 @@ struct GroupChatInfoView: View {
                 welcomeText: groupInfo.groupProfile.description ?? ""
             )
             .navigationTitle("Welcome message")
+            .modifier(ThemedBackground(grouped: true))
             .navigationBarTitleDisplayMode(.large)
         } label: {
             groupInfo.groupProfile.description == nil
@@ -518,6 +538,7 @@ func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bo
             creatingGroup: creatingGroup
         )
         .navigationBarTitle("Group preferences")
+        .modifier(ThemedBackground(grouped: true))
         .navigationBarTitleDisplayMode(.large)
     } label: {
         if creatingGroup {
@@ -526,14 +547,6 @@ func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bo
             Label("Group preferences", systemImage: "switch.2")
         }
     }
-}
-
-private var memberVerifiedShield: Text {
-    (Text(Image(systemName: "checkmark.shield")) + Text(" "))
-        .font(.caption)
-        .baselineOffset(2)
-        .kerning(-2)
-        .foregroundColor(.secondary)
 }
 
 func cantInviteIncognitoAlert() -> Alert {

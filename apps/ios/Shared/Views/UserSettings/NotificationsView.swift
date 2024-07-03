@@ -11,11 +11,30 @@ import SimpleXChat
 
 struct NotificationsView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @State private var notificationMode: NotificationsMode = ChatModel.shared.notificationMode
     @State private var showAlert: NotificationAlert?
     @State private var legacyDatabase = dbContainerGroupDefault.get() == .documents
+    @State private var testing = false
+    @State private var testedSuccess: Bool? = nil
 
     var body: some View {
+        ZStack {
+            viewBody()
+            if testing {
+                ProgressView().scaleEffect(2)
+            }
+        }
+        .alert(item: $showAlert) { alert in
+            if let token = m.deviceToken {
+                return notificationAlert(alert, token)
+            } else {
+                return Alert(title: Text("No device token!"))
+            }
+        }
+    }
+
+    private func viewBody() -> some View {
         List {
             Section {
                 NavigationLink {
@@ -27,20 +46,15 @@ struct NotificationsView: View {
                         } footer: {
                             VStack(alignment: .leading) {
                                 Text(ntfModeDescription(notificationMode))
+                                    .foregroundColor(theme.colors.secondary)
                             }
                             .font(.callout)
                             .padding(.top, 1)
                         }
                     }
                     .navigationTitle("Send notifications")
+                    .modifier(ThemedBackground(grouped: true))
                     .navigationBarTitleDisplayMode(.inline)
-                    .alert(item: $showAlert) { alert in
-                        if let token = m.deviceToken {
-                            return notificationAlert(alert, token)
-                        } else {
-                            return  Alert(title: Text("No device token!"))
-                        }
-                    }
                 } label: {
                     HStack {
                         Text("Send notifications")
@@ -59,6 +73,7 @@ struct NotificationsView: View {
                         } footer: {
                             VStack(alignment: .leading, spacing: 1) {
                                 Text("You can set lock screen notification preview via settings.")
+                                    .foregroundColor(theme.colors.secondary)
                                 Button("Open Settings") {
                                     DispatchQueue.main.async {
                                         UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!, options: [:], completionHandler: nil)
@@ -68,6 +83,7 @@ struct NotificationsView: View {
                         }
                     }
                     .navigationTitle("Show preview")
+                    .modifier(ThemedBackground(grouped: true))
                     .navigationBarTitleDisplayMode(.inline)
                 } label: {
                     HStack {
@@ -78,13 +94,16 @@ struct NotificationsView: View {
                 }
 
                 if let server = m.notificationServer {
-                    smpServers("Push server", [server])
+                    smpServers("Push server", [server], theme.colors.secondary)
+                    testServerButton(server)
                 }
             } header: {
                 Text("Push notifications")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 if legacyDatabase {
                     Text("Please restart the app and migrate the database to enable push notifications.")
+                        .foregroundColor(theme.colors.secondary)
                         .font(.callout)
                         .padding(.top, 1)
                 }
@@ -108,6 +127,11 @@ struct NotificationsView: View {
                 secondaryButton: .cancel() {
                     notificationMode = m.notificationMode
                 }
+            )
+        case let .testFailure(testFailure):
+            return Alert(
+                title: Text("Server test failed!"),
+                message: Text(testFailure.localizedDescription)
             )
         case let .error(title, error):
             return Alert(title: Text(title), message: Text(error))
@@ -133,6 +157,7 @@ struct NotificationsView: View {
                         notificationMode = .off
                         m.notificationMode = .off
                         m.notificationServer = nil
+                        testedSuccess = nil
                     }
                 } catch let error {
                     await MainActor.run {
@@ -150,6 +175,7 @@ struct NotificationsView: View {
                         notificationMode = ntfMode
                         m.notificationMode = ntfMode
                         m.notificationServer = ntfServer
+                        testedSuccess = nil
                     }
                 } catch let error {
                     await MainActor.run {
@@ -159,6 +185,52 @@ struct NotificationsView: View {
                     }
                 }
             }
+        }
+    }
+
+    private func testServerButton(_ server: String) -> some View {
+        HStack {
+            Button("Test server") {
+                testing = true
+                Task {
+                    await testServer(server)
+                    await MainActor.run { testing = false }
+                }
+            }
+            .disabled(testing)
+            if !testing {
+                Spacer()
+                showTestStatus()
+            }
+        }
+    }
+
+    @ViewBuilder func showTestStatus() -> some View {
+        if testedSuccess == true {
+            Image(systemName: "checkmark")
+                .foregroundColor(.green)
+        } else if testedSuccess == false {
+            Image(systemName: "multiply")
+                .foregroundColor(.red)
+        }
+    }
+
+    private func testServer(_ server: String) async {
+        do {
+            let r = try await testProtoServer(server: server)
+            switch r {
+            case .success:
+                await MainActor.run {
+                    testedSuccess = true
+                }
+            case let .failure(f):
+                await MainActor.run {
+                    showAlert = .testFailure(testFailure: f)
+                    testedSuccess = false
+                }
+            }
+        } catch let error {
+            logger.error("testServerConnection \(responseError(error))")
         }
     }
 }
@@ -172,6 +244,7 @@ func ntfModeDescription(_ mode: NotificationsMode) -> LocalizedStringKey {
 }
 
 struct SelectionListView<Item: SelectableItem>: View {
+    @EnvironmentObject var theme: AppTheme
     var list: [Item]
     @Binding var selection: Item
     var onSelection: ((Item) -> Void)?
@@ -179,32 +252,24 @@ struct SelectionListView<Item: SelectableItem>: View {
 
     var body: some View {
         ForEach(list) { item in
-            HStack {
-                Text(item.label)
-                Spacer()
-                if selection == item {
-                    Image(systemName: "checkmark")
-                        .resizable().scaledToFit().frame(width: 16)
-                        .foregroundColor(.accentColor)
-                }
-            }
-            .contentShape(Rectangle())
-            .listRowBackground(Color(uiColor: tapped == item ? .secondarySystemFill : .systemBackground))
-            .onTapGesture {
+            Button {
                 if selection == item { return }
                 if let f = onSelection {
                     f(item)
                 } else {
                     selection = item
                 }
-            }
-            ._onButtonGesture { down in
-                if down {
-                    tapped = item
-                } else {
-                    tapped = nil
+            } label: {
+                HStack {
+                    Text(item.label).foregroundColor(theme.colors.onBackground)
+                    Spacer()
+                    if selection == item {
+                        Image(systemName: "checkmark")
+                            .resizable().scaledToFit().frame(width: 16)
+                            .foregroundColor(theme.colors.primary)
+                    }
                 }
-            } perform: {}
+            }
         }
         .environment(\.editMode, .constant(.active))
     }
@@ -212,11 +277,13 @@ struct SelectionListView<Item: SelectableItem>: View {
 
 enum NotificationAlert: Identifiable {
     case setMode(mode: NotificationsMode)
+    case testFailure(testFailure: ProtocolTestFailure)
     case error(title: LocalizedStringKey, error: String)
 
     var id: String {
         switch self {
         case let .setMode(mode): return "enable \(mode.rawValue)"
+        case let .testFailure(testFailure): return "testFailure \(testFailure.testStep) \(testFailure.testError)"
         case let .error(title, error): return "error \(title): \(error)"
         }
     }

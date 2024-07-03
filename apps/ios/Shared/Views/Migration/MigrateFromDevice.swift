@@ -53,6 +53,7 @@ private enum MigrateFromDeviceViewAlert: Identifiable {
 
 struct MigrateFromDevice: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var showSettings: Bool
     @Binding var showProgressOnSettings: Bool
@@ -177,6 +178,7 @@ struct MigrateFromDevice: View {
             List {
                 Section {} header: {
                     Text("Stopping chat")
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
             progressView()
@@ -188,14 +190,16 @@ struct MigrateFromDevice: View {
             Section {
                 Text(reason)
                 Button(action: stopChat) {
-                    settingsRow("stop.fill") {
+                    settingsRow("stop.fill", color: theme.colors.secondary) {
                         Text("Stop chat").foregroundColor(.red)
                     }
                 }
             } header: {
                 Text("Error stopping chat")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 Text("In order to continue, chat should be stopped.")
+                    .foregroundColor(theme.colors.secondary)
                     .font(.callout)
             }
         }
@@ -214,14 +218,16 @@ struct MigrateFromDevice: View {
         List {
             Section {
                 Button(action: { migrationState = .archiving }) {
-                    settingsRow("tray.and.arrow.up") {
-                        Text("Archive and upload").foregroundColor(.accentColor)
+                    settingsRow("tray.and.arrow.up", color: theme.colors.secondary) {
+                        Text("Archive and upload").foregroundColor(theme.colors.primary)
                     }
                 }
             } header: {
                 Text("Confirm upload")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 Text("All your contacts, conversations and files will be securely encrypted and uploaded in chunks to configured XFTP relays.")
+                    .foregroundColor(theme.colors.secondary)
                     .font(.callout)
             }
         }
@@ -232,6 +238,7 @@ struct MigrateFromDevice: View {
             List {
                 Section {} header: {
                     Text("Archiving database")
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
             progressView()
@@ -246,10 +253,11 @@ struct MigrateFromDevice: View {
             List {
                 Section {} header: {
                     Text("Uploading archive")
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
             let ratio = Float(uploadedBytes) / Float(totalBytes)
-            MigrateFromDevice.largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: uploadedBytes, countStyle: .binary)) uploaded")
+            MigrateFromDevice.largeProgressView(ratio, "\(Int(ratio * 100))%", "\(ByteCountFormatter.string(fromByteCount: uploadedBytes, countStyle: .binary)) uploaded", theme.colors.primary)
         }
         .onAppear {
             startUploading(totalBytes, archivePath)
@@ -262,14 +270,16 @@ struct MigrateFromDevice: View {
                 Button(action: {
                     migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: totalBytes, fileId: 0, archivePath: archivePath, ctrl: nil)
                 }) {
-                    settingsRow("tray.and.arrow.up") {
-                        Text("Repeat upload").foregroundColor(.accentColor)
+                    settingsRow("tray.and.arrow.up", color: theme.colors.secondary) {
+                        Text("Repeat upload").foregroundColor(theme.colors.primary)
                     }
                 }
             } header: {
                 Text("Upload failed")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 Text("You can give another try.")
+                    .foregroundColor(theme.colors.secondary)
                     .font(.callout)
             }
         }
@@ -283,6 +293,7 @@ struct MigrateFromDevice: View {
             List {
                 Section {} header: {
                     Text("Creating archive link")
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
             progressView()
@@ -293,13 +304,13 @@ struct MigrateFromDevice: View {
         List {
             Section {
                 Button(action: { cancelMigration(fileId, ctrl) }) {
-                    settingsRow("multiply") {
+                    settingsRow("multiply", color: theme.colors.secondary) {
                         Text("Cancel migration").foregroundColor(.red)
                     }
                 }
                 Button(action: { finishMigration(fileId, ctrl) }) {
-                    settingsRow("checkmark") {
-                        Text("Finalize migration").foregroundColor(.accentColor)
+                    settingsRow("checkmark", color: theme.colors.secondary) {
+                        Text("Finalize migration").foregroundColor(theme.colors.primary)
                     }
                 }
             } footer: {
@@ -307,9 +318,10 @@ struct MigrateFromDevice: View {
                     Text("**Warning**: the archive will be removed.")
                     Text("Choose _Migrate from another device_ on the new device and scan QR code.")
                 }
+                .foregroundColor(theme.colors.secondary)
                 .font(.callout)
             }
-            Section("Show QR code") {
+            Section(header: Text("Show QR code").foregroundColor(theme.colors.secondary)) {
                 SimpleXLinkQRCode(uri: link)
                     .padding()
                     .background(
@@ -322,7 +334,7 @@ struct MigrateFromDevice: View {
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
             }
 
-            Section("Or securely share this file link") {
+            Section(header: Text("Or securely share this file link").foregroundColor(theme.colors.secondary)) {
                 shareLinkView(link)
             }
             .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
@@ -334,22 +346,24 @@ struct MigrateFromDevice: View {
             List {
                 Section {
                     Button(action: { alert = .startChat() }) {
-                        settingsRow("play.fill") {
+                        settingsRow("play.fill", color: theme.colors.secondary) {
                             Text("Start chat").foregroundColor(.red)
                         }
                     }
                     Button(action: { alert = .deleteChat() }) {
-                        settingsRow("trash.fill") {
-                            Text("Delete database from this device").foregroundColor(.accentColor)
+                        settingsRow("trash.fill", color: theme.colors.secondary) {
+                            Text("Delete database from this device").foregroundColor(theme.colors.primary)
                         }
                     }
                 } header: {
                     Text("Migration complete")
+                        .foregroundColor(theme.colors.secondary)
                 } footer: {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("You **must not** use the same database on two devices.")
                         Text("**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection.")
                     }
+                    .foregroundColor(theme.colors.secondary)
                     .font(.callout)
                 }
             }
@@ -379,7 +393,7 @@ struct MigrateFromDevice: View {
             .truncationMode(.middle)
     }
 
-    static func largeProgressView(_ value: Float, _ title: String, _ description: LocalizedStringKey) -> some View {
+    static func largeProgressView(_ value: Float, _ title: String, _ description: LocalizedStringKey, _ primaryColor: Color) -> some View {
         ZStack {
             VStack {
                 Text(description)
@@ -389,7 +403,7 @@ struct MigrateFromDevice: View {
                 Text(title)
                     .font(.system(size: 54))
                     .bold()
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(primaryColor)
 
                 Text(description)
                     .font(.title3)
@@ -398,7 +412,7 @@ struct MigrateFromDevice: View {
             Circle()
                 .trim(from: 0, to: CGFloat(value))
                 .stroke(
-                    Color.accentColor,
+                    primaryColor,
                     style: StrokeStyle(lineWidth: 27)
                 )
                 .rotationEffect(.degrees(180))
@@ -590,6 +604,7 @@ struct MigrateFromDevice: View {
 }
 
 private struct PassphraseConfirmationView: View {
+    @EnvironmentObject var theme: AppTheme
     @Binding var migrationState: MigrationFromState
     @State private var useKeychain = storeDBPassphraseGroupDefault.get()
     @State private var currentKey: String = ""
@@ -612,15 +627,17 @@ private struct PassphraseConfirmationView: View {
                             verifyingPassphrase = false
                         }
                     }) {
-                        settingsRow(useKeychain ? "key" : "lock", color: .secondary) {
+                        settingsRow(useKeychain ? "key" : "lock", color: theme.colors.secondary) {
                             Text("Verify passphrase")
                         }
                     }
                     .disabled(verifyingPassphrase || currentKey.isEmpty)
                 } header: {
                     Text("Verify database passphrase")
+                        .foregroundColor(theme.colors.secondary)
                 } footer: {
                     Text("Confirm that you remember database passphrase to migrate it.")
+                        .foregroundColor(theme.colors.secondary)
                         .font(.callout)
                 }
                 .onAppear {

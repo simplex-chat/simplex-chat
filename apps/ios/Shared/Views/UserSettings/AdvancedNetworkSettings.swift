@@ -24,6 +24,7 @@ enum NetworkSettingsAlert: Identifiable {
 }
 
 struct AdvancedNetworkSettings: View {
+    @EnvironmentObject var theme: AppTheme
     @State private var netCfg = NetCfg.defaults
     @State private var currentNetCfg = NetCfg.defaults
     @State private var cfgLoaded = false
@@ -69,10 +70,11 @@ struct AdvancedNetworkSettings: View {
                             Text("TCP_KEEPINTVL")
                             Text("TCP_KEEPCNT")
                         }
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                     }
                 } header: {
                         Text("")
+                        .foregroundColor(theme.colors.secondary)
                 } footer: {
                     HStack {
                         Button {

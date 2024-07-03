@@ -14,6 +14,8 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var sceneDelegate: SceneDelegate
 
     var contentAccessAuthenticationExtended: Bool
 
@@ -51,6 +53,16 @@ struct ContentView: View {
     }
 
     var body: some View {
+        if #available(iOS 16.0, *) {
+            allViews()
+                .scrollContentBackground(.hidden)
+        } else {
+            // on iOS 15 scroll view background disabled in SceneDelegate
+            allViews()
+        }
+    }
+
+    @ViewBuilder func allViews() -> some View {
         ZStack {
             let showCallArea = chatModel.activeCall != nil && chatModel.activeCall?.callState != .waitCapabilities && chatModel.activeCall?.callState != .invitationAccepted
             // contentView() has to be in a single branch, so that enabling authentication doesn't trigger re-rendering and close settings.
@@ -138,6 +150,17 @@ struct ContentView: View {
                 break
             }
         }
+        .onAppear {
+            reactOnDarkThemeChanges()
+        }
+        .onChange(of: colorScheme) { scheme in
+            // It's needed to update UI colors when iOS wants to make screenshot after going to background,
+            // so when a user changes his global theme from dark to light or back, the app will adapt to it
+            reactOnDarkThemeChanges()
+        }
+        .onChange(of: theme.name) { _ in
+            ThemeManager.adjustWindowStyle()
+        }
     }
 
     @ViewBuilder private func contentView() -> some View {
@@ -224,8 +247,8 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity )
         .background(
             Rectangle()
-                .fill(.background)
-        ) 
+                .fill(theme.colors.background)
+        )
     }
 
     private func mainView() -> some View {

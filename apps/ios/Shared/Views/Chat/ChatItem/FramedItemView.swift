@@ -9,25 +9,19 @@
 import SwiftUI
 import SimpleXChat
 
-let notesChatColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.21)
-let notesChatColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.19)
-let sentColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.12)
-let sentColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.17)
-private let sentQuoteColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.11)
-private let sentQuoteColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.09)
-
 struct FramedItemView: View {
     @EnvironmentObject var m: ChatModel
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var scrollModel: ReverseListScrollModel<ChatItem>
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
+    var preview: UIImage?
     @Binding var revealed: Bool
     var maxWidth: CGFloat = .infinity
-    @State var scrollProxy: ScrollViewProxy? = nil
     @State var msgWidth: CGFloat = 0
-    @State var imgWidth: CGFloat? = nil
-    @State var videoWidth: CGFloat? = nil
-    @State var metaColor = Color.secondary
+    var imgWidth: CGFloat? = nil
+    var videoWidth: CGFloat? = nil
+    @State private var useWhiteMetaColor: Bool = false
     @State var showFullScreenImage = false
     @Binding var allowMenu: Bool
     @State private var showSecrets = false
@@ -58,10 +52,9 @@ struct FramedItemView: View {
                 if let qi = chatItem.quotedItem {
                     ciQuoteView(qi)
                         .onTapGesture {
-                            if let proxy = scrollProxy,
-                               let ci = m.reversedChatItems.first(where: { $0.id == qi.itemId }) {
+                            if let ci = m.reversedChatItems.first(where: { $0.id == qi.itemId }) {
                                 withAnimation {
-                                    proxy.scrollTo(ci.viewId, anchor: .bottom)
+                                    scrollModel.scrollToItem(id: ci.id)
                                 }
                             }
                         }
@@ -73,17 +66,16 @@ struct FramedItemView: View {
                     .padding(chatItem.content.msgContent != nil ? 0 : 4)
                     .overlay(DetermineWidth())
             }
-            .onPreferenceChange(MetaColorPreferenceKey.self) { metaColor = $0 }
 
             if chatItem.content.msgContent != nil {
-                CIMetaView(chat: chat, chatItem: chatItem, metaColor: metaColor)
+                CIMetaView(chat: chat, chatItem: chatItem, metaColor: useWhiteMetaColor ? Color.white : theme.colors.secondary)
                     .padding(.horizontal, 12)
                     .padding(.bottom, 6)
                     .overlay(DetermineWidth())
                     .accessibilityLabel("")
             }
         }
-            .background(chatItemFrameColorMaybeImageOrVideo(chatItem, colorScheme))
+            .background(chatItemFrameColorMaybeImageOrVideo(chatItem, theme))
             .cornerRadius(18)
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
@@ -114,29 +106,33 @@ struct FramedItemView: View {
             .padding(.bottom, 2)
         } else {
             switch (chatItem.content.msgContent) {
-            case let .image(text, image):
-                CIImageView(chatItem: chatItem, image: image, maxWidth: maxWidth, imgWidth: $imgWidth, scrollProxy: scrollProxy)
+            case let .image(text, _):
+                CIImageView(chatItem: chatItem, preview: preview, maxWidth: maxWidth, imgWidth: imgWidth)
                     .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
                         .frame(width: 0, height: 0)
-                        .preference(
-                            key: MetaColorPreferenceKey.self,
-                            value: .white
-                        )
+                        .onAppear {
+                            useWhiteMetaColor = true
+                        }
+                        .onDisappear {
+                            useWhiteMetaColor = false
+                        }
                 } else {
                     ciMsgContentView(chatItem)
                 }
-            case let .video(text, image, duration):
-                CIVideoView(chatItem: chatItem, image: image, duration: duration, maxWidth: maxWidth, videoWidth: $videoWidth, scrollProxy: scrollProxy)
+            case let .video(text, _, duration):
+                CIVideoView(chatItem: chatItem, preview: preview, duration: duration, maxWidth: maxWidth, videoWidth: videoWidth)
                 .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
                     .frame(width: 0, height: 0)
-                    .preference(
-                        key: MetaColorPreferenceKey.self,
-                        value: .white
-                    )
+                    .onAppear {
+                        useWhiteMetaColor = true
+                    }
+                    .onDisappear {
+                        useWhiteMetaColor = false
+                    }
                 } else {
                     ciMsgContentView(chatItem)
                 }
@@ -175,13 +171,13 @@ struct FramedItemView: View {
                 .font(.caption)
                 .lineLimit(1)
         }
-        .foregroundColor(.secondary)
+        .foregroundColor(theme.colors.secondary)
         .padding(.horizontal, 12)
         .padding(.top, 6)
         .padding(.bottom, pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
         .overlay(DetermineWidth())
         .frame(minWidth: msgWidth, alignment: .leading)
-        .background(chatItemFrameContextColor(chatItem, colorScheme))
+        .background(chatItemFrameContextColor(chatItem, theme))
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
@@ -233,7 +229,7 @@ struct FramedItemView: View {
             // if enable this always, size of the framed voice message item will be incorrect after end of playback
             .overlay { if case .voice = chatItem.content.msgContent {} else { DetermineWidth() } }
             .frame(minWidth: msgWidth, alignment: .leading)
-            .background(chatItemFrameContextColor(chatItem, colorScheme))
+            .background(chatItemFrameContextColor(chatItem, theme))
 
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
@@ -248,7 +244,7 @@ struct FramedItemView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(sender)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                         .lineLimit(1)
                     ciQuotedMsgTextView(qi, lines: 2)
                 }
@@ -347,13 +343,6 @@ func isRightToLeft(_ s: String) -> Bool {
     return false
 }
 
-private struct MetaColorPreferenceKey: PreferenceKey {
-    static var defaultValue = Color.secondary
-    static func reduce(value: inout Color, nextValue: () -> Color) {
-        value = nextValue()
-    }
-}
-
 func onlyImageOrVideo(_ ci: ChatItem) -> Bool {
     if case let .image(text, _) = ci.content.msgContent {
         return ci.meta.itemDeleted == nil && !ci.meta.isLive && ci.quotedItem == nil && ci.meta.itemForwarded == nil && text == ""
@@ -363,22 +352,22 @@ func onlyImageOrVideo(_ ci: ChatItem) -> Bool {
     return false
 }
 
-func chatItemFrameColorMaybeImageOrVideo(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Color {
+func chatItemFrameColorMaybeImageOrVideo(_ ci: ChatItem, _ theme: AppTheme) -> Color {
     onlyImageOrVideo(ci)
     ? Color.clear
-    : chatItemFrameColor(ci, colorScheme)
+    : chatItemFrameColor(ci, theme)
 }
 
-func chatItemFrameColor(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Color {
+func chatItemFrameColor(_ ci: ChatItem, _ theme: AppTheme) -> Color {
     ci.chatDir.sent
-    ? (colorScheme == .light ? sentColorLight : sentColorDark)
-    : Color(uiColor: .tertiarySystemGroupedBackground)
+    ? theme.appColors.sentMessage
+    : theme.appColors.receivedMessage
 }
 
-func chatItemFrameContextColor(_ ci: ChatItem, _ colorScheme: ColorScheme) -> Color {
+func chatItemFrameContextColor(_ ci: ChatItem, _ theme: AppTheme) -> Color {
     ci.chatDir.sent
-    ? (colorScheme == .light ? sentQuoteColorLight : sentQuoteColorDark)
-    : Color(uiColor: .quaternarySystemFill)
+    ? theme.appColors.sentQuote
+    : theme.appColors.receivedQuote
 }
 
 struct FramedItemView_Previews: PreviewProvider {

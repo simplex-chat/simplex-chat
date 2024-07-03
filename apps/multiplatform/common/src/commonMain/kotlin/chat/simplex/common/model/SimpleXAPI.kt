@@ -176,6 +176,12 @@ class AppPreferences {
   val selfDestruct = mkBoolPreference(SHARED_PREFS_SELF_DESTRUCT, false)
   val selfDestructDisplayName = mkStrPreference(SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME, null)
 
+  // This flag is set when database is first initialized and resets only when the database is removed.
+  // This is needed for recover from incomplete initialization when only one database file is created.
+  // If false - the app will clear database folder on missing file and re-initialize.
+  // Note that this situation can only happen if passphrase for the first database is incorrect because, otherwise, backend will re-create second database automatically
+  val newDatabaseInitialized = mkBoolPreference(SHARED_PREFS_NEW_DATABASE_INITIALIZED, false)
+
   val currentTheme = mkStrPreference(SHARED_PREFS_CURRENT_THEME, DefaultTheme.SYSTEM_THEME_NAME)
   val systemDarkTheme = mkStrPreference(SHARED_PREFS_SYSTEM_DARK_THEME, DefaultTheme.SIMPLEX.themeName)
   val currentThemeIds = mkMapPreference(SHARED_PREFS_CURRENT_THEME_IDs, mapOf(), encode = {
@@ -361,6 +367,7 @@ class AppPreferences {
     private const val SHARED_PREFS_ENCRYPTED_SELF_DESTRUCT_PASSPHRASE = "EncryptedSelfDestructPassphrase"
     private const val SHARED_PREFS_INITIALIZATION_VECTOR_SELF_DESTRUCT_PASSPHRASE = "InitializationVectorSelfDestructPassphrase"
     private const val SHARED_PREFS_ENCRYPTION_STARTED_AT = "EncryptionStartedAt"
+    private const val SHARED_PREFS_NEW_DATABASE_INITIALIZED = "NewDatabaseInitialized"
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
     private const val SHARED_PREFS_SELF_DESTRUCT = "LocalAuthenticationSelfDestruct"
     private const val SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME = "LocalAuthenticationSelfDestructDisplayName"
@@ -491,10 +498,14 @@ object ChatController {
   }
 
   suspend fun changeActiveUser_(rhId: Long?, toUserId: Long?, viewPwd: String?) {
+    val prevActiveUser = chatModel.currentUser.value
     val currentUser = changingActiveUserMutex.withLock {
       (if (toUserId != null) apiSetActiveUser(rhId, toUserId, viewPwd) else apiGetActiveUser(rhId)).also {
         chatModel.currentUser.value = it
       }
+    }
+    if (prevActiveUser?.hidden == true) {
+      ntfManager.cancelNotificationsForUser(prevActiveUser.userId)
     }
     val users = listUsers(rhId)
     chatModel.users.clear()
@@ -2346,6 +2357,8 @@ object ChatController {
     if (!activeUser(rh, user)) {
       notify()
     } else if (chatModel.upsertChatItem(rh, cInfo, cItem)) {
+      notify()
+    } else if (cItem.content is CIContent.RcvCall && cItem.content.status == CICallStatus.Missed) {
       notify()
     }
   }

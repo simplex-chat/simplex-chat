@@ -40,7 +40,7 @@ func getLinkPreview(url: URL, cb: @escaping (LinkPreview?) -> Void) {
 }
 
 struct ComposeLinkView: View {
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
     let linkPreview: LinkPreview?
     var cancelPreview: (() -> Void)? = nil
     let cancelEnabled: Bool
@@ -62,7 +62,7 @@ struct ComposeLinkView: View {
         }
         .padding(.vertical, 1)
         .padding(.trailing, 12)
-        .background(colorScheme == .light ? sentColorLight : sentColorDark)
+        .background(theme.appColors.sentMessage)
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
     }
@@ -82,7 +82,7 @@ struct ComposeLinkView: View {
                 Text(linkPreview.uri.absoluteString)
                     .font(.caption)
                     .lineLimit(1)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             }
             .padding(.vertical, 5)
             .frame(maxWidth: .infinity, minHeight: 60, maxHeight: 60)

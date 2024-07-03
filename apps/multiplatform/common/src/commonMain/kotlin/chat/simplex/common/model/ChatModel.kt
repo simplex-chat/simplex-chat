@@ -52,6 +52,7 @@ object ChatModel {
   val chatDbStatus = mutableStateOf<DBMigrationResult?>(null)
   val ctrlInitInProgress = mutableStateOf(false)
   val dbMigrationInProgress = mutableStateOf(false)
+  val incompleteInitializedDbRemoved = mutableStateOf(false)
   val chats = mutableStateListOf<Chat>()
   // map of connections network statuses, key is agent connection id
   val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
