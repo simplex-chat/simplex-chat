@@ -187,8 +187,8 @@ struct ServersSummaryView: View {
 
     private func smpSubsSection(_ totals: SMPTotals) -> some View {
         Section {
-            infoRow("Connections subscribed", "\(totals.subs.ssActive)")
-            infoRow("Total", "\(totals.subs.total)")
+            infoRow("Connections subscribed", numOrDash(totals.subs.ssActive))
+            infoRow("Total", numOrDash(totals.subs.total))
         } header: {
             HStack {
                 Text("Message subscriptions")
@@ -493,9 +493,9 @@ struct SMPServerSummaryView: View {
 
     private func smpSubsSection(_ subs: SMPServerSubs) -> some View {
         Section {
-            infoRow("Connections subscribed", "\(subs.ssActive)")
-            infoRow("Pending", "\(subs.ssPending)")
-            infoRow("Total", "\(subs.total)")
+            infoRow("Connections subscribed", numOrDash(subs.ssActive))
+            infoRow("Pending", numOrDash(subs.ssPending))
+            infoRow("Total", numOrDash(subs.total))
             reconnectButton()
         } header: {
             HStack {
@@ -544,9 +544,9 @@ struct ServerSessionsView: View {
 
     var body: some View {
         Section("Transport sessions") {
-            infoRow("Connected", "\(sess.ssConnected)")
-            infoRow("Errors", "\(sess.ssErrors)")
-            infoRow("Connecting", "\(sess.ssConnecting)")
+            infoRow("Connected", numOrDash(sess.ssConnected))
+            infoRow("Errors", numOrDash(sess.ssErrors))
+            infoRow("Connecting", numOrDash(sess.ssConnecting))
         }
     }
 }
