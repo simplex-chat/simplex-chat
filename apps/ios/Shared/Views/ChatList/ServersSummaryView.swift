@@ -561,7 +561,7 @@ struct SMPStatsView: View {
                 DetailedSMPStatsView(stats: stats, statsStartedAt: statsStartedAt)
                     .navigationTitle("Detailed statistics")
             } label: {
-                Text("Open detailed statistics")
+                Text("Details")
             }
         } header: {
             Text("Statistics")
@@ -685,7 +685,7 @@ struct XFTPStatsView: View {
                 DetailedXFTPStatsView(stats: stats, statsStartedAt: statsStartedAt)
                     .navigationTitle("Detailed statistics")
             } label: {
-                Text("Open detailed statistics")
+                Text("Details")
             }
         } header: {
             Text("Statistics")
