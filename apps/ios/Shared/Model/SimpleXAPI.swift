@@ -92,18 +92,22 @@ private func withBGTask<T>(bgDelay: Double? = nil, f: @escaping () -> T) -> T {
     return r
 }
 
-func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, _ ctrl: chat_ctrl? = nil) -> ChatResponse {
-    logger.debug("chatSendCmd \(cmd.cmdType)")
+func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, _ ctrl: chat_ctrl? = nil, log: Bool = true) -> ChatResponse {
+    if log {
+        logger.debug("chatSendCmd \(cmd.cmdType)")
+    }
     let start = Date.now
     let resp = bgTask
                 ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd, ctrl) }
                 : sendSimpleXCmd(cmd, ctrl)
-    logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
-    if case let .response(_, json) = resp {
-        logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
-    }
-    Task {
-        await TerminalItems.shared.addCommand(start, cmd.obfuscated, resp)
+    if log {
+        logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
+        if case let .response(_, json) = resp {
+            logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
+        }
+        Task {
+            await TerminalItems.shared.addCommand(start, cmd.obfuscated, resp)
+        }
     }
     return resp
 }
@@ -541,6 +545,11 @@ func apiSetNetworkInfo(_ networkInfo: UserNetworkInfo) throws {
 
 func reconnectAllServers() async throws {
     try await sendCommandOkResp(.reconnectAllServers)
+}
+
+func reconnectServer(smpServer: String) async throws {
+    let userId = try currentUserId("reconnectServer")
+    try await sendCommandOkResp(.reconnectServer(userId: userId, smpServer: smpServer))
 }
 
 func apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings) async throws {
@@ -1334,6 +1343,18 @@ func apiGetVersion() throws -> CoreVersionInfo {
     let r = chatSendCmdSync(.showVersion)
     if case let .versionInfo(info, _, _) = r { return info }
     throw r
+}
+
+func getAgentServersSummary() throws -> PresentedServersSummary {
+    let userId = try currentUserId("getAgentServersSummary")
+    let r = chatSendCmdSync(.getAgentServersSummary(userId: userId), log: false)
+    if case let .agentServersSummary(_, serversSummary) = r { return serversSummary }
+    logger.error("getAgentServersSummary error: \(String(describing: r))")
+    throw r
+}
+
+func resetAgentServersStats() async throws {
+    try await sendCommandOkResp(.resetAgentServersStats)
 }
 
 private func currentUserId(_ funcName: String) throws -> Int64 {

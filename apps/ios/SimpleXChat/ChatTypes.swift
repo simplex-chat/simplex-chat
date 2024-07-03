@@ -11,6 +11,7 @@ import SwiftUI
 
 public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var userId: Int64
+    public var agentUserId: String
     var userContactId: Int64
     var localDisplayName: ContactName
     public var profile: LocalProfile
@@ -41,6 +42,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
 
     public static let sampleData = User(
         userId: 1,
+        agentUserId: "abc",
         userContactId: 1,
         localDisplayName: "alice",
         profile: LocalProfile.sampleData,
