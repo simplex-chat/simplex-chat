@@ -10,7 +10,7 @@ import Foundation
 import SwiftUI
 
 public let jsonDecoder = getJSONDecoder()
-let jsonEncoder = getJSONEncoder()
+public let jsonEncoder = getJSONEncoder()
 
 public enum ChatCommand {
     case showActiveUser
@@ -78,6 +78,7 @@ public enum ChatCommand {
     case apiGetNetworkConfig
     case apiSetNetworkInfo(networkInfo: UserNetworkInfo)
     case reconnectAllServers
+    case reconnectServer(userId: Int64, smpServer: String)
     case apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings)
     case apiSetMemberSettings(groupId: Int64, groupMemberId: Int64, memberSettings: GroupMemberSettings)
     case apiContactInfo(contactId: Int64)
@@ -122,6 +123,7 @@ public enum ChatCommand {
     case apiEndCall(contact: Contact)
     case apiGetCallInvitations
     case apiCallStatus(contact: Contact, callStatus: WebRTCCallStatus)
+    // WebRTC calls /
     case apiGetNetworkStatuses
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
@@ -142,6 +144,8 @@ public enum ChatCommand {
     case apiStandaloneFileInfo(url: String)
     // misc
     case showVersion
+    case getAgentServersSummary(userId: Int64)
+    case resetAgentServersStats
     case string(String)
 
     public var cmdString: String {
@@ -226,6 +230,7 @@ public enum ChatCommand {
             case .apiGetNetworkConfig: return "/network"
             case let .apiSetNetworkInfo(networkInfo): return "/_network info \(encodeJSON(networkInfo))"
             case .reconnectAllServers: return "/reconnect"
+            case let .reconnectServer(userId, smpServer): return "/reconnect \(userId) \(smpServer)"
             case let .apiSetChatSettings(type, id, chatSettings): return "/_settings \(ref(type, id)) \(encodeJSON(chatSettings))"
             case let .apiSetMemberSettings(groupId, groupMemberId, memberSettings): return "/_member settings #\(groupId) \(groupMemberId) \(encodeJSON(memberSettings))"
             case let .apiContactInfo(contactId): return "/_info @\(contactId)"
@@ -301,6 +306,8 @@ public enum ChatCommand {
             case let .apiDownloadStandaloneFile(userId, link, file): return "/_download \(userId) \(link) \(file.filePath)"
             case let .apiStandaloneFileInfo(link): return "/_download info \(link)"
             case .showVersion: return "/version"
+            case let .getAgentServersSummary(userId): return "/get servers summary \(userId)"
+            case .resetAgentServersStats: return "/reset servers stats"
             case let .string(str): return str
             }
         }
@@ -375,6 +382,7 @@ public enum ChatCommand {
             case .apiGetNetworkConfig: return "apiGetNetworkConfig"
             case .apiSetNetworkInfo: return "apiSetNetworkInfo"
             case .reconnectAllServers: return "reconnectAllServers"
+            case .reconnectServer: return "reconnectServer"
             case .apiSetChatSettings: return "apiSetChatSettings"
             case .apiSetMemberSettings: return "apiSetMemberSettings"
             case .apiContactInfo: return "apiContactInfo"
@@ -435,6 +443,8 @@ public enum ChatCommand {
             case .apiDownloadStandaloneFile: return "apiDownloadStandaloneFile"
             case .apiStandaloneFileInfo: return "apiStandaloneFileInfo"
             case .showVersion: return "showVersion"
+            case .getAgentServersSummary: return "getAgentServersSummary"
+            case .resetAgentServersStats: return "resetAgentServersStats"
             case .string: return "console command"
             }
         }
@@ -663,6 +673,8 @@ public enum ChatResponse: Decodable, Error {
     // misc
     case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
     case cmdOk(user: UserRef?)
+    case agentServersSummary(user: UserRef, serversSummary: PresentedServersSummary)
+    case agentSubsSummary(user: UserRef, subsSummary: SMPServerSubs)
     case chatCmdError(user_: UserRef?, chatError: ChatError)
     case chatError(user_: UserRef?, chatError: ChatError)
     case archiveImported(archiveErrors: [ArchiveError])
@@ -821,6 +833,8 @@ public enum ChatResponse: Decodable, Error {
             case .contactPQEnabled: return "contactPQEnabled"
             case .versionInfo: return "versionInfo"
             case .cmdOk: return "cmdOk"
+            case .agentServersSummary: return "agentServersSummary"
+            case .agentSubsSummary: return "agentSubsSummary"
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
             case .archiveImported: return "archiveImported"
@@ -984,6 +998,8 @@ public enum ChatResponse: Decodable, Error {
             case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
             case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
             case .cmdOk: return noDetails
+            case let .agentServersSummary(u, serversSummary): return withUser(u, String(describing: serversSummary))
+            case let .agentSubsSummary(u, subsSummary): return withUser(u, String(describing: subsSummary))
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
             case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
             case let .archiveImported(archiveErrors): return String(describing: archiveErrors)
@@ -2229,4 +2245,144 @@ public struct MsgInfo: Codable, Hashable {
 public enum MsgType: String, Codable, Hashable {
     case message
     case quota
+}
+
+public struct PresentedServersSummary: Codable {
+    public var statsStartedAt: Date
+    public var allUsersSMP: SMPServersSummary
+    public var allUsersXFTP: XFTPServersSummary
+    public var currentUserSMP: SMPServersSummary
+    public var currentUserXFTP: XFTPServersSummary
+}
+
+public struct SMPServersSummary: Codable {
+    public var smpTotals: SMPTotals
+    public var currentlyUsedSMPServers: [SMPServerSummary]
+    public var previouslyUsedSMPServers: [SMPServerSummary]
+    public var onlyProxiedSMPServers: [SMPServerSummary]
+}
+
+public struct SMPTotals: Codable {
+    public var sessions: ServerSessions
+    public var subs: SMPServerSubs
+    public var stats: AgentSMPServerStatsData
+}
+
+public struct SMPServerSummary: Codable, Identifiable {
+    public var smpServer: String
+    public var known: Bool?
+    public var sessions: ServerSessions?
+    public var subs: SMPServerSubs?
+    public var stats: AgentSMPServerStatsData?
+
+    public var id: String { smpServer }
+
+    public var hasSubs: Bool { subs != nil }
+
+    public var sessionsOrNew: ServerSessions { sessions ?? ServerSessions.newServerSessions }
+
+    public var subsOrNew: SMPServerSubs { subs ?? SMPServerSubs.newSMPServerSubs }
+}
+
+public struct ServerSessions: Codable {
+    public var ssConnected: Int
+    public var ssErrors: Int
+    public var ssConnecting: Int
+
+    static public var newServerSessions = ServerSessions(
+        ssConnected: 0,
+        ssErrors: 0,
+        ssConnecting: 0
+    )
+}
+
+public struct SMPServerSubs: Codable {
+    public var ssActive: Int
+    public var ssPending: Int
+
+    public init(ssActive: Int, ssPending: Int) {
+        self.ssActive = ssActive
+        self.ssPending = ssPending
+    }
+
+    static public var newSMPServerSubs = SMPServerSubs(
+        ssActive: 0,
+        ssPending: 0
+    )
+
+    public var total: Int { ssActive + ssPending }
+
+    public var shareOfActive: Double {
+        guard total != 0 else { return 0.0 }
+        return Double(ssActive) / Double(total)
+    }
+}
+
+public struct AgentSMPServerStatsData: Codable {
+    public var _sentDirect: Int
+    public var _sentViaProxy: Int
+    public var _sentProxied: Int
+    public var _sentDirectAttempts: Int
+    public var _sentViaProxyAttempts: Int
+    public var _sentProxiedAttempts: Int
+    public var _sentAuthErrs: Int
+    public var _sentQuotaErrs: Int
+    public var _sentExpiredErrs: Int
+    public var _sentOtherErrs: Int
+    public var _recvMsgs: Int
+    public var _recvDuplicates: Int
+    public var _recvCryptoErrs: Int
+    public var _recvErrs: Int
+    public var _ackMsgs: Int
+    public var _ackAttempts: Int
+    public var _ackNoMsgErrs: Int
+    public var _ackOtherErrs: Int
+    public var _connCreated: Int
+    public var _connSecured: Int
+    public var _connCompleted: Int
+    public var _connDeleted: Int
+    public var _connDelAttempts: Int
+    public var _connDelErrs: Int
+    public var _connSubscribed: Int
+    public var _connSubAttempts: Int
+    public var _connSubIgnored: Int
+    public var _connSubErrs: Int
+}
+
+public struct XFTPServersSummary: Codable {
+    public var xftpTotals: XFTPTotals
+    public var currentlyUsedXFTPServers: [XFTPServerSummary]
+    public var previouslyUsedXFTPServers: [XFTPServerSummary]
+}
+
+public struct XFTPTotals: Codable {
+    public var sessions: ServerSessions
+    public var stats: AgentXFTPServerStatsData
+}
+
+public struct XFTPServerSummary: Codable, Identifiable {
+    public var xftpServer: String
+    public var known: Bool?
+    public var sessions: ServerSessions?
+    public var stats: AgentXFTPServerStatsData?
+    public var rcvInProgress: Bool
+    public var sndInProgress: Bool
+    public var delInProgress: Bool
+
+    public var id: String { xftpServer }
+}
+
+public struct AgentXFTPServerStatsData: Codable {
+    public var _uploads: Int
+    public var _uploadsSize: Int64
+    public var _uploadAttempts: Int
+    public var _uploadErrs: Int
+    public var _downloads: Int
+    public var _downloadsSize: Int64
+    public var _downloadAttempts: Int
+    public var _downloadAuthErrs: Int
+    public var _downloadErrs: Int
+    public var _deletions: Int
+    public var _deleteAttempts: Int
+    public var _deleteErrs: Int
 }
