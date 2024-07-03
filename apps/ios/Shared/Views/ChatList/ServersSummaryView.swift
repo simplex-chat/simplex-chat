@@ -113,9 +113,7 @@ struct ServersSummaryView: View {
 
                     SMPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
 
-                    resetStatsButtonSection()
-
-                    smpSubsSection(totals.subs)
+                    smpSubsSection(totals)
 
                     if curr.count > 0 {
                         smpServersListView(curr, summ.statsStartedAt, "Connected servers")
@@ -128,15 +126,18 @@ struct ServersSummaryView: View {
                     }
 
                     ServerSessionsView(sess: totals.sessions)
+
+                    Section {
+                        reconnectAllButton()
+                        resetStatsButton()
+                    }
                 case (.currentUser, .smp):
                     let smpSumm = summ.currentUserSMP
                     let (totals, curr, prev, prox) = (smpSumm.smpTotals, smpSumm.currentlyUsedSMPServers, smpSumm.previouslyUsedSMPServers, smpSumm.onlyProxiedSMPServers)
 
                     SMPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
 
-                    resetStatsButtonSection()
-
-                    smpSubsSection(totals.subs)
+                    smpSubsSection(totals)
 
                     if curr.count > 0 {
                         smpServersListView(curr, summ.statsStartedAt, "Connected servers")
@@ -149,14 +150,17 @@ struct ServersSummaryView: View {
                     }
 
                     ServerSessionsView(sess: totals.sessions)
+
+                    Section {
+                        reconnectAllButton()
+                        resetStatsButton()
+                    }
                 case (.allUsers, .xftp):
                     let xftpSumm = summ.allUsersXFTP
                     let (totals, curr, prev) = (xftpSumm.xftpTotals, xftpSumm.currentlyUsedXFTPServers, xftpSumm.previouslyUsedXFTPServers)
 
                     XFTPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
 
-                    resetStatsButtonSection()
-
                     if curr.count > 0 {
                         xftpServersListView(curr, summ.statsStartedAt, "Connected servers")
                     }
@@ -165,14 +169,17 @@ struct ServersSummaryView: View {
                     }
 
                     ServerSessionsView(sess: totals.sessions)
+
+                    Section {
+                        reconnectAllButton()
+                        resetStatsButton()
+                    }
                 case (.currentUser, .xftp):
                     let xftpSumm = summ.currentUserXFTP
                     let (totals, curr, prev) = (xftpSumm.xftpTotals, xftpSumm.currentlyUsedXFTPServers, xftpSumm.previouslyUsedXFTPServers)
 
                     XFTPStatsView(stats: totals.stats, statsStartedAt: summ.statsStartedAt)
 
-                    resetStatsButtonSection()
-
                     if curr.count > 0 {
                         xftpServersListView(curr, summ.statsStartedAt, "Connected servers")
                     }
@@ -181,6 +188,11 @@ struct ServersSummaryView: View {
                     }
 
                     ServerSessionsView(sess: totals.sessions)
+
+                    Section {
+                        reconnectAllButton()
+                        resetStatsButton()
+                    }
                 }
             }
         } else {
@@ -188,11 +200,18 @@ struct ServersSummaryView: View {
         }
     }
 
-    private func smpSubsSection(_ subs: SMPServerSubs) -> some View {
-        Section("Message subscriptions") {
-            infoRow("Connections subscribed", "\(subs.ssActive)")
-            infoRow("Total", "\(subs.total)")
-            reconnectAllButton()
+    private func smpSubsSection(_ totals: SMPTotals) -> some View {
+        Section {
+            infoRow("Connections subscribed", "\(totals.subs.ssActive)")
+            infoRow("Total", "\(totals.subs.total)")
+        } header: {
+            HStack {
+                Text("Message subscriptions")
+                SubscriptionStatusIndicatorView(subs: totals.subs, sess: totals.sessions)
+                if showSubscriptionPercentage {
+                    SubscriptionStatusPercentageView(subs: totals.subs, sess: totals.sessions)
+                }
+            }
         }
     }
 
@@ -200,7 +219,7 @@ struct ServersSummaryView: View {
         Button {
             alert = SomeAlert(
                 alert: Alert(
-                    title: Text("Reconnect servers?"),
+                    title: Text("Reconnect all servers?"),
                     message: Text("Reconnect all connected servers to force message delivery. It uses additional traffic."),
                     primaryButton: .default(Text("Ok")) {
                         Task {
@@ -222,7 +241,7 @@ struct ServersSummaryView: View {
                 id: "reconnect servers question"
             )
         } label: {
-            Text("Reconnect servers")
+            Text("Reconnect all servers")
         }
     }
 
@@ -352,36 +371,34 @@ struct ServersSummaryView: View {
         }
     }
 
-    private func resetStatsButtonSection() -> some View {
-        Section {
-            Button {
-                alert = SomeAlert(
-                    alert: Alert(
-                        title: Text("Reset servers statistics?"),
-                        message: Text("Servers statistics will be reset - this cannot be undone!"),
-                        primaryButton: .destructive(Text("Reset")) {
-                            Task {
-                                do {
-                                    try await resetAgentServersStats()
-                                    getServersSummary()
-                                } catch let error {
-                                    alert = SomeAlert(
-                                        alert: mkAlert(
-                                            title: "Error resetting statistics",
-                                            message: "\(responseError(error))"
-                                        ),
-                                        id: "error resetting statistics"
-                                    )
-                                }
+    private func resetStatsButton() -> some View {
+        Button {
+            alert = SomeAlert(
+                alert: Alert(
+                    title: Text("Reset all servers statistics?"),
+                    message: Text("Servers statistics will be reset - this cannot be undone!"),
+                    primaryButton: .destructive(Text("Reset")) {
+                        Task {
+                            do {
+                                try await resetAgentServersStats()
+                                getServersSummary()
+                            } catch let error {
+                                alert = SomeAlert(
+                                    alert: mkAlert(
+                                        title: "Error resetting statistics",
+                                        message: "\(responseError(error))"
+                                    ),
+                                    id: "error resetting statistics"
+                                )
                             }
-                        },
-                        secondaryButton: .cancel()
-                    ),
-                    id: "reset statistics question"
-                )
-            } label: {
-                Text("Reset statistics")
-            }
+                        }
+                    },
+                    secondaryButton: .cancel()
+                ),
+                id: "reset statistics question"
+            )
+        } label: {
+            Text("Reset all statistics")
         }
     }
 
