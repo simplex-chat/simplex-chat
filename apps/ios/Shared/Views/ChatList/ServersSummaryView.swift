@@ -122,7 +122,7 @@ struct ServersSummaryView: View {
                         smpServersListView(prev, summ.statsStartedAt, "Previously connected servers")
                     }
                     if prox.count > 0 {
-                        smpServersListView(prox, summ.statsStartedAt, "Proxied servers", "You are not connected to these servers. Private message routing is used to deliver messages to them.")
+                        smpServersListView(prox, summ.statsStartedAt, "Proxied servers", "You are not connected to these servers. Private routing is used to deliver messages to them.")
                     }
 
                     ServerSessionsView(sess: totals.sessions)
@@ -141,7 +141,7 @@ struct ServersSummaryView: View {
                         smpServersListView(prev, summ.statsStartedAt, "Previously connected servers")
                     }
                     if prox.count > 0 {
-                        smpServersListView(prox, summ.statsStartedAt, "Proxied servers", "You are not connected to these servers. Private message routing is used to deliver messages to them.")
+                        smpServersListView(prox, summ.statsStartedAt, "Proxied servers", "You are not connected to these servers. Private routing is used to deliver messages to them.")
                     }
 
                     ServerSessionsView(sess: totals.sessions)
@@ -569,10 +569,7 @@ struct SMPStatsView: View {
         } header: {
             Text("Statistics")
         } footer: {
-            VStack {
-                Text("Starting from \(localTimestamp(statsStartedAt)).")
-                Text("All data is private to your device.")
-            }
+            Text("Starting from \(localTimestamp(statsStartedAt)).") + Text("\n") + Text("All data is private to your device.")
         }
     }
 }
@@ -697,10 +694,7 @@ struct XFTPStatsView: View {
         } header: {
             Text("Statistics")
         } footer: {
-            VStack {
-                Text("Starting from \(localTimestamp(statsStartedAt)).")
-                Text("All data is private to your device.")
-            }
+            Text("Starting from \(localTimestamp(statsStartedAt)).") + Text("\n") + Text("All data is private to your device.")
         }
     }
 }
