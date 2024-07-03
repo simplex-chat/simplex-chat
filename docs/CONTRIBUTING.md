@@ -63,14 +63,12 @@ You will have to add `/opt/homebrew/opt/openssl@1.1/bin` to your PATH in order t
 
 ## Branches and PRs
 
-Name the branch starting with your initials: ns/scope-feature.
-
 Use change scope (or comma separated scopes) as the first word in the PR names, followed by the colon. Commit name itself should be lowercase, in present tense.
 
 The PR names in simplex-chat repo are used in release notes, they should describe the solved problem and not the change. Possible PR scopes:
 - ios
 - android
-- descktop
+- desktop
 - core
 - docs
 - website
