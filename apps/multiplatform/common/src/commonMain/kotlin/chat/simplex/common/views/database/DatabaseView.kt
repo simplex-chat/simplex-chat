@@ -451,7 +451,9 @@ private fun stopChat(m: ChatModel, progressIndicator: MutableState<Boolean>? = n
       platform.androidChatStopped()
       // close chat view for desktop
       chatModel.chatId.value = null
-      ModalManager.end.closeModals()
+      if (appPlatform.isDesktop) {
+        ModalManager.end.closeModals()
+      }
       onStop?.invoke()
     } catch (e: Error) {
       m.chatRunning.value = true
@@ -502,6 +504,7 @@ fun deleteChatDatabaseFilesAndState() {
   chatModel.chatItems.clear()
   chatModel.chats.clear()
   chatModel.users.clear()
+  ntfManager.cancelAllNotifications()
 }
 
 private fun exportArchive(
