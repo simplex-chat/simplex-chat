@@ -2345,6 +2345,7 @@ public struct AgentSMPServerStatsData: Codable {
     public var _connDelErrs: Int
     public var _connSubscribed: Int
     public var _connSubAttempts: Int
+    public var _connSubIgnored: Int
     public var _connSubErrs: Int
 }
 

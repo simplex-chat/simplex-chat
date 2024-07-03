@@ -610,6 +610,7 @@ struct DetailedSMPStatsView: View {
                 infoRowTwoValues("Deleted", "attempts", numOrDash(stats._connDeleted), numOrDash(stats._connDelAttempts))
                 infoRow("Deletion errors", numOrDash(stats._connDelErrs))
                 infoRowTwoValues("Subscribed", "attempts", numOrDash(stats._connSubscribed), numOrDash(stats._connSubAttempts))
+                infoRow("Subscription results ignored", numOrDash(stats._connSubIgnored))
                 infoRow("Subscription errors", numOrDash(stats._connSubErrs))
             } header: {
                 Text("Connections")
