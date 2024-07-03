@@ -1028,7 +1028,7 @@ struct ChatView: View {
             } label: {
                 Label(
                     NSLocalizedString("Translate", comment: "chat item action"),
-                    systemImage: "globe"
+                    systemImage: "character"
                 )
             }
         }
