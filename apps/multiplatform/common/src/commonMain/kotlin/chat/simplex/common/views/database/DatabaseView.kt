@@ -18,6 +18,7 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.updatingChatsMutex
 import chat.simplex.common.ui.theme.*
@@ -450,7 +451,9 @@ private fun stopChat(m: ChatModel, progressIndicator: MutableState<Boolean>? = n
       platform.androidChatStopped()
       // close chat view for desktop
       chatModel.chatId.value = null
-      ModalManager.end.closeModals()
+      if (appPlatform.isDesktop) {
+        ModalManager.end.closeModals()
+      }
       onStop?.invoke()
     } catch (e: Error) {
       m.chatRunning.value = true
@@ -492,6 +495,7 @@ fun deleteChatDatabaseFilesAndState() {
   wallpapersDir.deleteRecursively()
   wallpapersDir.mkdirs()
   DatabaseUtils.ksDatabasePassword.remove()
+  appPrefs.newDatabaseInitialized.set(false)
   controller.appPrefs.storeDBPassphrase.set(true)
   controller.ctrl = null
 
@@ -500,6 +504,7 @@ fun deleteChatDatabaseFilesAndState() {
   chatModel.chatItems.clear()
   chatModel.chats.clear()
   chatModel.users.clear()
+  ntfManager.cancelAllNotifications()
 }
 
 private fun exportArchive(

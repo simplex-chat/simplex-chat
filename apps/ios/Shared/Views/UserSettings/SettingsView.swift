@@ -61,6 +61,7 @@ let DEFAULT_CONFIRM_REMOTE_SESSIONS = "confirmRemoteSessions"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST = "connectRemoteViaMulticast"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "connectRemoteViaMulticastAuto"
 let DEFAULT_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"
+let DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE = "showSubscriptionPercentage"
 
 let DEFAULT_CURRENT_THEME = "currentTheme"
 let DEFAULT_SYSTEM_DARK_THEME = "systemDarkTheme"
@@ -102,6 +103,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST: true,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO: true,
     DEFAULT_SHOW_SENT_VIA_RPOXY: false,
+    DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE: false,
     ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN: AppSettingsLockScreenCalls.show.rawValue,
 
     DEFAULT_THEME_OVERRIDES: "{}",

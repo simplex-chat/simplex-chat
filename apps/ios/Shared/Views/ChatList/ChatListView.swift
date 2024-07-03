@@ -117,9 +117,7 @@ struct ChatListView: View {
                 HStack(spacing: 4) {
                     Text("Chats")
                         .font(.headline)
-                    if chatModel.chats.count > 0 {
-                        toggleFilterButton()
-                    }
+                    SubsStatusIndicator()
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
             }
@@ -130,15 +128,6 @@ struct ChatListView: View {
                 case .none: EmptyView()
                 }
             }
-        }
-    }
-
-    private func toggleFilterButton() -> some View {
-        Button {
-            showUnreadAndFavorites = !showUnreadAndFavorites
-        } label: {
-            Image(systemName: "line.3.horizontal.decrease.circle" + (showUnreadAndFavorites ? ".fill" : ""))
-                .foregroundColor(theme.colors.primary)
         }
     }
 
@@ -224,9 +213,7 @@ struct ChatListView: View {
 
     @ViewBuilder private func chatView() -> some View {
         if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
-            ChatView(chat: chat).onAppear {
-                loadChat(chat: chat)
-            }
+            ChatView(chat: chat)
         }
     }
 
@@ -278,6 +265,75 @@ struct ChatListView: View {
     }
 }
 
+struct SubsStatusIndicator: View {
+    @State private var subs: SMPServerSubs = SMPServerSubs.newSMPServerSubs
+    @State private var sess: ServerSessions = ServerSessions.newServerSessions
+    @State private var timer: Timer? = nil
+    @State private var timerCounter = 0
+    @State private var showServersSummary = false
+
+    @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
+
+    // Constants for the intervals
+    let initialInterval: TimeInterval = 1.0
+    let regularInterval: TimeInterval = 3.0
+    let initialPhaseDuration: TimeInterval = 10.0 // Duration for initial phase in seconds
+
+    var body: some View {
+        Button {
+            showServersSummary = true
+        } label: {
+            HStack(spacing: 4) {
+                SubscriptionStatusIndicatorView(subs: subs, sess: sess)
+                if showSubscriptionPercentage {
+                    SubscriptionStatusPercentageView(subs: subs, sess: sess)
+                }
+            }
+        }
+        .onAppear {
+            startInitialTimer()
+        }
+        .onDisappear {
+            stopTimer()
+        }
+        .sheet(isPresented: $showServersSummary) {
+            ServersSummaryView()
+        }
+    }
+
+    private func startInitialTimer() {
+        timer = Timer.scheduledTimer(withTimeInterval: initialInterval, repeats: true) { _ in
+            getServersSummary()
+            timerCounter += 1
+            // Switch to the regular timer after the initial phase
+            if timerCounter * Int(initialInterval) >= Int(initialPhaseDuration) {
+                switchToRegularTimer()
+            }
+        }
+    }
+
+    func switchToRegularTimer() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: regularInterval, repeats: true) { _ in
+            getServersSummary()
+        }
+    }
+
+    func stopTimer() {
+        timer?.invalidate()
+        timer = nil
+    }
+
+    private func getServersSummary() {
+        do {
+            let summ = try getAgentServersSummary()
+            (subs, sess) = (summ.allUsersSMP.smpTotals.subs, summ.allUsersSMP.smpTotals.sessions)
+        } catch let error {
+            logger.error("getAgentServersSummary error: \(responseError(error))")
+        }
+    }
+}
+
 struct ChatListSearchBar: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -287,9 +343,9 @@ struct ChatListSearchBar: View {
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: String?
     @State private var ignoreSearchTextChange = false
-    @State private var showScanCodeSheet = false
     @State private var alert: PlanAndConnectAlert?
     @State private var sheet: PlanAndConnectActionSheet?
+    @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
         VStack(spacing: 12) {
@@ -306,26 +362,6 @@ struct ChatListSearchBar: View {
                             .onTapGesture {
                                 searchText = ""
                             }
-                    } else if !searchFocussed {
-                        HStack(spacing: 24) {
-                            if m.pasteboardHasStrings {
-                                Image(systemName: "doc")
-                                    .onTapGesture {
-                                        if let str = UIPasteboard.general.string {
-                                            searchText = str
-                                        }
-                                    }
-                            }
-
-                            Image(systemName: "qrcode")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 20, height: 20)
-                                .onTapGesture {
-                                    showScanCodeSheet = true
-                                }
-                        }
-                        .padding(.trailing, 2)
                     }
                 }
                 .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
@@ -340,13 +376,11 @@ struct ChatListSearchBar: View {
                             searchText = ""
                             searchFocussed = false
                         }
+                } else if m.chats.count > 0 {
+                    toggleFilterButton()
                 }
             }
             Divider()
-        }
-        .sheet(isPresented: $showScanCodeSheet) {
-            NewChatView(selection: .connect, showQRCodeScanner: true)
-                .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil) // fixes .refreshable in ChatListView affecting nested view
         }
         .onChange(of: searchFocussed) { sf in
             withAnimation { searchMode = sf }
@@ -378,6 +412,21 @@ struct ChatListSearchBar: View {
         }
         .actionSheet(item: $sheet) { s in
             planAndConnectActionSheet(s, dismiss: true, cleanup: { searchText = "" })
+        }
+    }
+
+    private func toggleFilterButton() -> some View {
+        ZStack {
+            Color.clear
+                .frame(width: 22, height: 22)
+            Image(systemName: showUnreadAndFavorites ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(showUnreadAndFavorites ? theme.colors.primary : theme.colors.secondary)
+                .frame(width: showUnreadAndFavorites ? 22 : 16, height: showUnreadAndFavorites ? 22 : 16)
+                .onTapGesture {
+                    showUnreadAndFavorites = !showUnreadAndFavorites
+                }
         }
     }
 
