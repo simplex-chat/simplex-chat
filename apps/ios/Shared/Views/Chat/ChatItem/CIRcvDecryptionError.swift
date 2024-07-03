@@ -13,6 +13,7 @@ let decryptErrorReason: LocalizedStringKey = "It can happen when you or your con
 
 struct CIRcvDecryptionError: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
     var msgDecryptError: MsgDecryptError
     var msgCount: UInt32
@@ -114,18 +115,18 @@ struct CIRcvDecryptionError: View {
                 }
                 (
                     Text(Image(systemName: "exclamationmark.arrow.triangle.2.circlepath"))
-                        .foregroundColor(syncSupported ? .accentColor : .secondary)
+                        .foregroundColor(syncSupported ? theme.colors.primary : theme.colors.secondary)
                         .font(.callout)
                     + Text(" ")
                     + Text("Fix connection")
-                        .foregroundColor(syncSupported ? .accentColor : .secondary)
+                        .foregroundColor(syncSupported ? theme.colors.primary : theme.colors.secondary)
                         .font(.callout)
                     + Text("   ")
                     + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy)
                 )
             }
             .padding(.horizontal, 12)
-            CIMetaView(chat: chat, chatItem: chatItem)
+            CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
                 .padding(.horizontal, 12)
         }
         .onTapGesture(perform: { onClick() })
@@ -145,7 +146,7 @@ struct CIRcvDecryptionError: View {
                 + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy)
             }
             .padding(.horizontal, 12)
-            CIMetaView(chat: chat, chatItem: chatItem)
+            CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
                 .padding(.horizontal, 12)
         }
         .onTapGesture(perform: { onClick() })

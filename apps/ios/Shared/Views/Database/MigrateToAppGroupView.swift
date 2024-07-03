@@ -189,6 +189,7 @@ struct MigrateToAppGroupView: View {
         Task {
             do {
                 try apiSaveAppSettings(settings: AppSettings.current.prepareForExport())
+                try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
                 try await apiExportArchive(config: config)
                 await MainActor.run { setV3DBMigration(.exported) }
             } catch let error {
@@ -231,6 +232,7 @@ func exportChatArchive(_ storagePath: URL? = nil) async throws -> URL {
     if !ChatModel.shared.chatDbChanged {
         try apiSaveAppSettings(settings: AppSettings.current.prepareForExport())
     }
+    try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
     try await apiExportArchive(config: config)
     if storagePath == nil {
         deleteOldArchive()

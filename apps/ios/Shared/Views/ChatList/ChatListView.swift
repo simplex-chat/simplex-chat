@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Binding var showSettings: Bool
     @State private var searchMode = false
     @FocusState private var searchFocussed
@@ -86,6 +87,7 @@ struct ChatListView: View {
             ))
         }
         .listStyle(.plain)
+        .background(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(searchMode)
         .toolbar {
@@ -143,12 +145,14 @@ struct ChatListView: View {
                             searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
                         )
                         .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                         .frame(maxWidth: .infinity)
                     }
                     ForEach(cs, id: \.viewId) { chat in
                         ChatListNavLink(chat: chat)
                             .padding(.trailing, -16)
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
+                            .listRowBackground(Color.clear)
                     }
                     .offset(x: -8)
                 }
@@ -160,7 +164,7 @@ struct ChatListView: View {
                 }
             }
             if cs.isEmpty && !chatModel.chats.isEmpty {
-                Text("No filtered chats").foregroundColor(.secondary)
+                Text("No filtered chats").foregroundColor(theme.colors.secondary)
             }
         }
     }
@@ -168,7 +172,7 @@ struct ChatListView: View {
     private func unreadBadge(_ text: Text? = Text(" "), size: CGFloat = 18) -> some View {
         Circle()
             .frame(width: size, height: size)
-            .foregroundColor(.accentColor)
+            .foregroundColor(theme.colors.primary)
     }
 
     private func onboardingButtons() -> some View {
@@ -179,7 +183,7 @@ struct ChatListView: View {
                 p.addLine(to: CGPoint(x: 0, y: 10))
                 p.addLine(to: CGPoint(x: 8, y: 0))
             }
-            .fill(Color.accentColor)
+            .fill(theme.colors.primary)
             .frame(width: 20, height: 10)
             .padding(.trailing, 12)
 
@@ -189,7 +193,7 @@ struct ChatListView: View {
 
             Spacer()
             Text("You have no chats")
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
                 .frame(maxWidth: .infinity)
         }
         .padding(.trailing, 6)
@@ -202,7 +206,7 @@ struct ChatListView: View {
                 .padding(.vertical, 10)
                 .padding(.horizontal, 20)
         }
-        .background(Color.accentColor)
+        .background(theme.colors.primary)
         .foregroundColor(.white)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
@@ -267,7 +271,7 @@ struct SubsStatusIndicator: View {
     @State private var timer: Timer? = nil
     @State private var timerCounter = 0
     @State private var showServersSummary = false
-    
+
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
 
     // Constants for the intervals
@@ -332,6 +336,7 @@ struct SubsStatusIndicator: View {
 
 struct ChatListSearchBar: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Binding var searchMode: Bool
     @FocusState.Binding var searchFocussed: Bool
     @Binding var searchText: String
@@ -348,7 +353,7 @@ struct ChatListSearchBar: View {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
                     TextField("Search or paste SimpleX link", text: $searchText)
-                        .foregroundColor(searchShowingSimplexLink ? .secondary : .primary)
+                        .foregroundColor(searchShowingSimplexLink ? theme.colors.secondary : theme.colors.onBackground)
                         .disabled(searchShowingSimplexLink)
                         .focused($searchFocussed)
                         .frame(maxWidth: .infinity)
@@ -360,13 +365,13 @@ struct ChatListSearchBar: View {
                     }
                 }
                 .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
                 .background(Color(.tertiarySystemFill))
                 .cornerRadius(10.0)
 
                 if searchFocussed {
                     Text("Cancel")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(theme.colors.primary)
                         .onTapGesture {
                             searchText = ""
                             searchFocussed = false
@@ -417,7 +422,7 @@ struct ChatListSearchBar: View {
             Image(systemName: showUnreadAndFavorites ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
                 .resizable()
                 .scaledToFit()
-                .foregroundColor(showUnreadAndFavorites ? .accentColor : .secondary)
+                .foregroundColor(showUnreadAndFavorites ? theme.colors.primary : theme.colors.secondary)
                 .frame(width: showUnreadAndFavorites ? 22 : 16, height: showUnreadAndFavorites ? 22 : 16)
                 .onTapGesture {
                     showUnreadAndFavorites = !showUnreadAndFavorites

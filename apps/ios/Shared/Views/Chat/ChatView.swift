@@ -15,8 +15,9 @@ private let memberImageSize: CGFloat = 34
 
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @Environment(\.colorScheme) var colorScheme
+    @State var theme: AppTheme = buildTheme()
     @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
     @State @ObservedObject var chat: Chat
@@ -61,7 +62,16 @@ struct ChatView: View {
                 Divider()
             }
             ZStack(alignment: .bottomTrailing) {
+                let wallpaperImage = theme.wallpaper.type.image
+                let wallpaperType = theme.wallpaper.type
+                let backgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(theme.base, theme.colors.background)
+                let tintColor = theme.wallpaper.tint ?? wallpaperType.defaultTintColor(theme.base)
                 chatItemsList()
+                    .if(wallpaperImage != nil) { view in
+                        view.modifier(
+                            ChatViewBackground(image: wallpaperImage!, imageType: wallpaperType, background: backgroundColor, tint: tintColor)
+                        )
+                }
                 floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
             }
             connectingText()
@@ -74,7 +84,9 @@ struct ChatView: View {
         }
         .padding(.top, 1)
         .navigationTitle(cInfo.chatViewName)
+        .background(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
+        .environmentObject(theme)
         .onAppear {
             loadChat(chat: chat)
             initChatView()
@@ -86,6 +98,7 @@ struct ChatView: View {
                     chat = c
                 }
                 initChatView()
+                theme = buildTheme()
             } else {
                 dismiss()
             }
@@ -112,6 +125,9 @@ struct ChatView: View {
                     }
                 }
             }
+        }
+        .onChange(of: colorScheme) { _ in
+            theme = buildTheme()
         }
         .toolbar {
             ToolbarItem(placement: .principal) {
@@ -141,6 +157,7 @@ struct ChatView: View {
                         connectionStats = nil
                         customUserProfile = nil
                         connectionCode = nil
+                        theme = buildTheme()
                     }) {
                         ChatInfoView(chat: chat, contact: contact, connectionStats: $connectionStats, customUserProfile: $customUserProfile, localAlias: chat.chatInfo.localAlias, connectionCode: $connectionCode)
                     }
@@ -149,8 +166,9 @@ struct ChatView: View {
                         Task { await loadGroupMembers(groupInfo) { showChatInfoSheet = true } }
                     } label: {
                         ChatInfoToolbar(chat: chat)
+                            .tint(theme.colors.primary)
                     }
-                    .appSheet(isPresented: $showChatInfoSheet) {
+                    .appSheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
                         GroupChatInfoView(
                             chat: chat,
                             groupInfo: Binding(
@@ -278,7 +296,7 @@ struct ChatView: View {
                 Image(systemName: "magnifyingglass")
                 TextField("Search", text: $searchText)
                     .focused($searchFocussed)
-                    .foregroundColor(.primary)
+                    .foregroundColor(theme.colors.onBackground)
                     .frame(maxWidth: .infinity)
 
                 Button {
@@ -288,7 +306,7 @@ struct ChatView: View {
                 }
             }
             .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
             .background(Color(.tertiarySystemFill))
             .cornerRadius(10.0)
 
@@ -321,8 +339,8 @@ struct ChatView: View {
             }
             .map { $0.element }
     }
-    
-    
+
+
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
         let mergedItems = filtered(chatModel.reversedChatItems)
@@ -371,7 +389,7 @@ struct ChatView: View {
            !contact.nextSendGrpInv {
             Text("connecting…")
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
                 .padding(.top)
         } else {
             EmptyView()
@@ -434,7 +452,7 @@ struct ChatView: View {
                 circleButton {
                     unreadCountText(unreadAbove)
                         .font(.callout)
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(theme.colors.primary)
                 }
                 .onTapGesture {
                     scrollModel.scrollToNextPage()
@@ -454,7 +472,7 @@ struct ChatView: View {
                 circleButton {
                     unreadCountText(counts.unreadBelow)
                         .font(.callout)
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(theme.colors.primary)
                 }
                 .onTapGesture {
                     if let latestUnreadItem = filtered(chatModel.reversedChatItems).last(where: { $0.isRcvNew }) {
@@ -464,7 +482,7 @@ struct ChatView: View {
             } else if counts.totalBelow > 16 {
                 circleButton {
                     Image(systemName: "chevron.down")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(theme.colors.primary)
                 }
                 .onTapGesture { scrollModel.scrollToBottom() }
             }
@@ -594,7 +612,7 @@ struct ChatView: View {
 
     private struct ChatItemWithMenu: View {
         @EnvironmentObject var m: ChatModel
-        @Environment(\.colorScheme) var colorScheme
+        @EnvironmentObject var theme: AppTheme
         @ObservedObject var chat: Chat
         var chatItem: ChatItem
         var maxWidth: CGFloat
@@ -638,7 +656,7 @@ struct ChatView: View {
             }
             .onAppear {
                 markRead(
-                    chatItems: range.flatMap { m.reversedChatItems[$0] } 
+                    chatItems: range.flatMap { m.reversedChatItems[$0] }
                     ?? [chatItem]
                 )
             }
@@ -678,7 +696,7 @@ struct ChatView: View {
                                 .padding(.top, 7)
                         }
                         HStack(alignment: .top, spacing: 8) {
-                            ProfileImage(imageStr: member.memberProfile.image, size: memberImageSize)
+                            ProfileImage(imageStr: member.memberProfile.image, size: memberImageSize, backgroundColor: theme.colors.background)
                                 .onTapGesture {
                                     if chatView.membersLoaded {
                                         selectedMember = m.getGroupMember(member.groupMemberId)
@@ -803,7 +821,7 @@ struct ChatView: View {
                             Text("\(r.totalReacted)")
                                 .font(.caption)
                                 .fontWeight(r.userReacted ? .bold : .light)
-                                .foregroundColor(r.userReacted ? .accentColor : .secondary)
+                                .foregroundColor(r.userReacted ? theme.colors.primary : theme.colors.secondary)
                         }
                     }
                     .padding(.horizontal, 6)
@@ -1303,6 +1321,27 @@ struct ChatView: View {
                 }
             }
         }
+    }
+}
+
+private func buildTheme() -> AppTheme {
+    if let cId = ChatModel.shared.chatId, let chat = ChatModel.shared.getChat(cId) {
+        let perChatTheme = if case let .direct(contact) = chat.chatInfo {
+            contact.uiThemes?.preferredMode(!AppTheme.shared.colors.isLight)
+        } else if case let .group(groupInfo) = chat.chatInfo {
+            groupInfo.uiThemes?.preferredMode(!AppTheme.shared.colors.isLight)
+        } else {
+            nil as ThemeModeOverride?
+        }
+        let overrides = if perChatTheme != nil {
+            ThemeManager.currentColors(nil, perChatTheme, ChatModel.shared.currentUser?.uiThemes, themeOverridesDefault.get())
+        } else {
+            nil as ThemeManager.ActiveTheme?
+        }
+        let theme = overrides ?? CurrentColors
+        return AppTheme(name: theme.name, base: theme.base, colors: theme.colors, appColors: theme.appColors, wallpaper: theme.wallpaper)
+    } else {
+        return AppTheme.shared
     }
 }
 

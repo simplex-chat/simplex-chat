@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct GroupMemberInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @State var groupInfo: GroupInfo
     @ObservedObject var groupMember: GMember
@@ -120,12 +121,14 @@ struct GroupMemberInfoView: View {
                             }
                         } header: {
                             Text("Address")
+                                .foregroundColor(theme.colors.secondary)
                         } footer: {
                             Text("You can share this address with your contacts to let them connect with **\(member.displayName)**.")
+                                .foregroundColor(theme.colors.secondary)
                         }
                     }
 
-                    Section("Member") {
+                    Section(header: Text("Member").foregroundColor(theme.colors.secondary)) {
                         infoRow("Group", groupInfo.displayName)
 
                         if let roles = member.canChangeRoleTo(groupInfo: groupInfo) {
@@ -147,7 +150,7 @@ struct GroupMemberInfoView: View {
                     }
 
                     if let connStats = connectionStats {
-                        Section("Servers") {
+                        Section(header: Text("Servers").foregroundColor(theme.colors.secondary)) {
                             // TODO network connection status
                             Button("Change receiving address") {
                                 alert = .switchAddressAlert
@@ -165,8 +168,8 @@ struct GroupMemberInfoView: View {
                                     || connStats.ratchetSyncSendProhibited
                                 )
                             }
-                            smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer })
-                            smpServers("Sending via", connStats.sndQueuesInfo.map { $0.sndServer })
+                            smpServers("Receiving via", connStats.rcvQueuesInfo.map { $0.rcvServer }, theme.colors.secondary)
+                            smpServers("Sending via", connStats.sndQueuesInfo.map { $0.sndServer }, theme.colors.secondary)
                         }
                     }
 
@@ -177,7 +180,7 @@ struct GroupMemberInfoView: View {
                     }
 
                     if developerTools {
-                        Section("For console") {
+                        Section(header: Text("For console").foregroundColor(theme.colors.secondary)) {
                             infoRow("Local name", member.localDisplayName)
                             infoRow("Database ID", "\(member.groupMemberId)")
                             Button ("Debug delivery") {
@@ -247,6 +250,7 @@ struct GroupMemberInfoView: View {
                 ProgressView().scaleEffect(2)
             }
         }
+        .modifier(ThemedBackground(grouped: true))
     }
 
     func connectViaAddressButton(_ contactLink: String) -> some View {
@@ -326,7 +330,7 @@ struct GroupMemberInfoView: View {
             if mem.verified {
                 (
                     Text(Image(systemName: "checkmark.shield"))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                         .font(.title2)
                     + Text(" ")
                     + Text(mem.displayName)
@@ -374,6 +378,7 @@ struct GroupMemberInfoView: View {
             )
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Security code")
+            .modifier(ThemedBackground())
         } label: {
             Label(
                 member.verified ? "View security code" : "Verify security code",
@@ -423,7 +428,7 @@ struct GroupMemberInfoView: View {
         Section {
             if mem.blockedByAdmin {
                 Label("Blocked by admin", systemImage: "hand.raised")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             } else if mem.memberSettings.showMessages {
                 blockMemberButton(mem)
             } else {

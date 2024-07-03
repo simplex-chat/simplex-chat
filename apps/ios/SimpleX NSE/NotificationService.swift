@@ -439,8 +439,7 @@ func doStartChat() -> DBMigrationResult? {
         logger.debug("NotificationService active user \(String(describing: user))")
         do {
             try setNetworkConfig(networkConfig)
-            try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
-            try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+            try apiSetAppFilePaths(filesFolder: getAppFilesDirectory().path, tempFolder: getTempFilesDirectory().path, assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path)
             try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
             // prevent suspension while starting chat
             suspendLock.wait()
@@ -660,14 +659,8 @@ func apiSuspendChat(timeoutMicroseconds: Int) -> Bool {
     return false
 }
 
-func apiSetTempFolder(tempFolder: String) throws {
-    let r = sendSimpleXCmd(.setTempFolder(tempFolder: tempFolder))
-    if case .cmdOk = r { return }
-    throw r
-}
-
-func apiSetFilesFolder(filesFolder: String) throws {
-    let r = sendSimpleXCmd(.setFilesFolder(filesFolder: filesFolder))
+func apiSetAppFilePaths(filesFolder: String, tempFolder: String, assetsFolder: String) throws {
+    let r = sendSimpleXCmd(.apiSetAppFilePaths(filesFolder: filesFolder, tempFolder: tempFolder, assetsFolder: assetsFolder))
     if case .cmdOk = r { return }
     throw r
 }

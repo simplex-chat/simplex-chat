@@ -26,6 +26,7 @@ private func typing(_ w: Font.Weight = .light) -> Text {
 
 struct MsgContentView: View {
     @ObservedObject var chat: Chat
+    @EnvironmentObject var theme: AppTheme
     var text: String
     var formattedText: [FormattedText]? = nil
     var sender: String? = nil
@@ -65,7 +66,7 @@ struct MsgContentView: View {
     }
 
     private func msgContentView() -> Text {
-        var v = messageText(text, formattedText, sender, showSecrets: showSecrets)
+        var v = messageText(text, formattedText, sender, showSecrets: showSecrets, secondaryColor: theme.colors.secondary)
         if let mt = meta {
             if mt.isLive {
                 v = v + typingIndicator(mt.recent)
@@ -79,7 +80,7 @@ struct MsgContentView: View {
         return (recent ? typingIndicators[typingIdx] : noTyping)
             .font(.body.monospaced())
             .kerning(-2)
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
     }
 
     private func reserveSpaceForMeta(_ mt: CIMeta) -> Text {
@@ -87,7 +88,7 @@ struct MsgContentView: View {
     }
 }
 
-func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, icon: String? = nil, preview: Bool = false, showSecrets: Bool) -> Text {
+func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, icon: String? = nil, preview: Bool = false, showSecrets: Bool, secondaryColor: Color) -> Text {
     let s = text
     var res: Text
     if let ft = formattedText, ft.count > 0 && ft.count <= 200 {
@@ -102,7 +103,7 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: St
     }
 
     if let i = icon {
-        res = Text(Image(systemName: i)).foregroundColor(Color(uiColor: .tertiaryLabel)) + Text(" ") + res
+        res = Text(Image(systemName: i)).foregroundColor(secondaryColor) + Text(" ") + res
     }
 
     if let s = sender {

@@ -6,13 +6,10 @@
 import SwiftUI
 import SimpleXChat
 
-private let fillColorDark = Color(uiColor: UIColor(red: 0.11, green: 0.11, blue: 0.11, alpha: 255))
-private let fillColorLight = Color(uiColor: UIColor(red: 0.99, green: 0.99, blue: 0.99, alpha: 255))
-
 struct UserPicker: View {
     @EnvironmentObject var m: ChatModel
-    @Environment(\.colorScheme) var colorScheme
     @Environment(\.scenePhase) var scenePhase
+    @EnvironmentObject var theme: AppTheme
     @Binding var showSettings: Bool
     @Binding var showConnectDesktop: Bool
     @Binding var userPickerVisible: Bool
@@ -21,9 +18,6 @@ struct UserPicker: View {
     private let menuButtonHeight: CGFloat = 68
     @State var chatViewNameWidth: CGFloat = 0
 
-    var fillColor: Color {
-        colorScheme == .dark ? fillColorDark : fillColorLight
-    }
 
     var body: some View {
         VStack {
@@ -82,7 +76,7 @@ struct UserPicker: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .background(
             Rectangle()
-                .fill(fillColor)
+                .fill(theme.colors.surface)
                 .cornerRadius(16)
                 .shadow(color: .black.opacity(0.12), radius: 24, x: 0, y: 0)
         )
@@ -131,13 +125,13 @@ struct UserPicker: View {
                     .padding(.trailing, 12)
                 Text(user.chatViewName)
                     .fontWeight(user.activeUser ? .medium : .regular)
-                    .foregroundColor(.primary)
+                    .foregroundColor(theme.colors.onBackground)
                     .overlay(DetermineWidth())
                 Spacer()
                 if user.activeUser {
                     Image(systemName: "checkmark")
                 } else if u.unreadCount > 0 {
-                    unreadCounter(u.unreadCount, color: user.showNtfs ? .accentColor : .secondary)
+                    unreadCounter(u.unreadCount, color: user.showNtfs ? theme.colors.primary : theme.colors.secondary)
                 } else if !user.showNtfs {
                     Image(systemName: "speaker.slash")
                 }
@@ -145,7 +139,7 @@ struct UserPicker: View {
             .padding(.trailing)
             .padding([.leading, .vertical], 12)
         })
-        .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
+        .buttonStyle(PressedButtonStyle(defaultColor: theme.colors.surface, pressedColor: Color(uiColor: .secondarySystemFill)))
     }
 
     private func menuButton(_ title: LocalizedStringKey, icon: String, action: @escaping () -> Void) -> some View {
@@ -156,13 +150,13 @@ struct UserPicker: View {
                 Spacer()
                 Image(systemName: icon)
                     .symbolRenderingMode(.monochrome)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             }
             .padding(.horizontal)
             .padding(.vertical, 22)
             .frame(height: menuButtonHeight)
         }
-        .buttonStyle(PressedButtonStyle(defaultColor: fillColor, pressedColor: Color(uiColor: .secondarySystemFill)))
+        .buttonStyle(PressedButtonStyle(defaultColor: theme.colors.surface, pressedColor: Color(uiColor: .secondarySystemFill)))
     }
 }
 

@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct MarkedDeletedItemView: View {
     @EnvironmentObject var m: ChatModel
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
     @Binding var revealed: Bool
@@ -19,10 +19,10 @@ struct MarkedDeletedItemView: View {
     var body: some View {
         (Text(mergedMarkedDeletedText).italic() + Text(" ") + chatItem.timestampText)
         .font(.caption)
-        .foregroundColor(.secondary)
+        .foregroundColor(theme.colors.secondary)
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(chatItemFrameColor(chatItem, colorScheme))
+        .background(chatItemFrameColor(chatItem, theme))
         .cornerRadius(18)
         .textSelection(.disabled)
     }

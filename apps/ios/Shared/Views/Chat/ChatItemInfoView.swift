@@ -12,7 +12,7 @@ import SimpleXChat
 struct ChatItemInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
     var ci: ChatItem
     @Binding var chatItemInfo: ChatItemInfo?
     @State private var selection: CIInfoTab = .history
@@ -101,12 +101,14 @@ struct ChatItemInfoView: View {
                         Label("History", systemImage: "clock")
                     }
                     .tag(CIInfoTab.history)
+                    .modifier(ThemedBackground())
                 if let qi = ci.quotedItem {
                     quoteTab(qi)
                         .tabItem {
                             Label("In reply to", systemImage: "arrowshape.turn.up.left")
                         }
                         .tag(CIInfoTab.quote)
+                        .modifier(ThemedBackground())
                 }
                 if let forwardedFromItem = chatItemInfo?.forwardedFromChatItem {
                     forwardedFromTab(forwardedFromItem)
@@ -114,6 +116,7 @@ struct ChatItemInfoView: View {
                             Label(local ? "Saved" : "Forwarded", systemImage: "arrowshape.turn.up.forward")
                         }
                         .tag(CIInfoTab.forwarded)
+                        .modifier(ThemedBackground())
                 }
             }
             .onAppear {
@@ -123,6 +126,7 @@ struct ChatItemInfoView: View {
             }
         } else {
             historyTab()
+            .modifier(ThemedBackground())
         }
     }
 
@@ -212,7 +216,7 @@ struct ChatItemInfoView: View {
                     }
                     else {
                         Text("No history")
-                            .foregroundColor(.secondary)
+                            .foregroundColor(theme.colors.secondary)
                             .frame(maxWidth: .infinity)
                     }
                 }
@@ -227,7 +231,7 @@ struct ChatItemInfoView: View {
             textBubble(itemVersion.msgContent.text, itemVersion.formattedText, nil)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(chatItemFrameColor(ci, colorScheme))
+                .background(chatItemFrameColor(ci, theme))
                 .cornerRadius(18)
                 .contextMenu {
                     if itemVersion.msgContent.text != "" {
@@ -258,18 +262,19 @@ struct ChatItemInfoView: View {
         } else {
             Text("no text")
                 .italic()
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
         }
     }
 
     private struct TextBubble: View {
+        @EnvironmentObject var theme: AppTheme
         var text: String
         var formattedText: [FormattedText]?
         var sender: String? = nil
         @State private var showSecrets = false
 
         var body: some View {
-            toggleSecrets(formattedText, $showSecrets, messageText(text, formattedText, sender, showSecrets: showSecrets))
+            toggleSecrets(formattedText, $showSecrets, messageText(text, formattedText, sender, showSecrets: showSecrets, secondaryColor: theme.colors.secondary))
         }
     }
 
@@ -296,7 +301,7 @@ struct ChatItemInfoView: View {
             textBubble(qi.text, qi.formattedText, qi.getSender(nil))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(quotedMsgFrameColor(qi, colorScheme))
+                .background(quotedMsgFrameColor(qi, theme))
                 .cornerRadius(18)
                 .contextMenu {
                     if qi.text != "" {
@@ -320,10 +325,10 @@ struct ChatItemInfoView: View {
         .frame(maxWidth: maxWidth, alignment: .leading)
     }
 
-    func quotedMsgFrameColor(_ qi: CIQuote, _ colorScheme: ColorScheme) -> Color {
+    func quotedMsgFrameColor(_ qi: CIQuote, _ theme: AppTheme) -> Color {
         (qi.chatDir?.sent ?? false)
-        ? (colorScheme == .light ? sentColorLight : sentColorDark)
-        : Color(uiColor: .tertiarySystemGroupedBackground)
+        ? theme.appColors.sentMessage
+        : theme.appColors.receivedMessage
     }
 
     @ViewBuilder private func forwardedFromTab(_ forwardedFromItem: AChatItem) -> some View {
@@ -358,7 +363,7 @@ struct ChatItemInfoView: View {
                 Divider().padding(.top, 32)
                 Text("Recipient(s) can't see who this message is from.")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             }
         }
     }
@@ -372,23 +377,23 @@ struct ChatItemInfoView: View {
                 VStack(alignment: .leading) {
                     Text("you")
                         .italic()
-                        .foregroundColor(.primary)
+                        .foregroundColor(theme.colors.onBackground)
                     Text(forwardedFromItem.chatInfo.chatViewName)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                         .lineLimit(1)
                 }
             } else if case let .groupRcv(groupMember) = forwardedFromItem.chatItem.chatDir {
                 VStack(alignment: .leading) {
                     Text(groupMember.chatViewName)
-                        .foregroundColor(.primary)
+                        .foregroundColor(theme.colors.onBackground)
                         .lineLimit(1)
                     Text(forwardedFromItem.chatInfo.chatViewName)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                         .lineLimit(1)
                 }
             } else {
                 Text(forwardedFromItem.chatInfo.chatViewName)
-                    .foregroundColor(.primary)
+                    .foregroundColor(theme.colors.onBackground)
                     .lineLimit(1)
             }
         }
@@ -418,7 +423,7 @@ struct ChatItemInfoView: View {
                 }
             } else {
                 Text("No delivery information")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             }
         }
     }
@@ -442,10 +447,10 @@ struct ChatItemInfoView: View {
             Spacer()
             if sentViaProxy == true {
                 Image(systemName: "arrow.forward")
-                    .foregroundColor(.secondary).opacity(0.67)
+                    .foregroundColor(theme.colors.secondary).opacity(0.67)
             }
             let v = Group {
-                if let (icon, statusColor) = status.statusIcon(Color.secondary) {
+                if let (icon, statusColor) = status.statusIcon(theme.colors.secondary, theme.colors.primary) {
                     switch status {
                     case .sndRcvd:
                         ZStack(alignment: .trailing) {

@@ -29,6 +29,7 @@ private enum NetworkAlert: Identifiable {
 
 struct NetworkAndServers: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
@@ -48,6 +49,7 @@ struct NetworkAndServers: View {
                     NavigationLink {
                         ProtocolServersView(serverProtocol: .smp)
                             .navigationTitle("Your SMP servers")
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("SMP servers")
                     }
@@ -55,6 +57,7 @@ struct NetworkAndServers: View {
                     NavigationLink {
                         ProtocolServersView(serverProtocol: .xftp)
                             .navigationTitle("Your XFTP servers")
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("XFTP servers")
                     }
@@ -76,13 +79,16 @@ struct NetworkAndServers: View {
                     NavigationLink {
                         AdvancedNetworkSettings()
                             .navigationTitle("Network settings")
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("Advanced network settings")
                     }
                 } header: {
                     Text("Messages & files")
+                        .foregroundColor(theme.colors.secondary)
                 } footer: {
                     Text("Using .onion hosts requires compatible VPN provider.")
+                        .foregroundColor(theme.colors.secondary)
                 }
 
                 Section {
@@ -100,6 +106,7 @@ struct NetworkAndServers: View {
                     Toggle("Show message status", isOn: $showSentViaProxy)
                 } header: {
                     Text("Private message routing")
+                        .foregroundColor(theme.colors.secondary)
                 } footer: {
                     VStack(alignment: .leading) {
                         Text("To protect your IP address, private routing uses your SMP servers to deliver messages.")
@@ -107,18 +114,20 @@ struct NetworkAndServers: View {
                             Text("Show → on messages sent via private routing.")
                         }
                     }
+                    .foregroundColor(theme.colors.secondary)
                 }
 
-                Section("Calls") {
+                Section(header: Text("Calls").foregroundColor(theme.colors.secondary)) {
                     NavigationLink {
                         RTCServers()
                             .navigationTitle("Your ICE servers")
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("WebRTC ICE servers")
                     }
                 }
 
-                Section("Network connection") {
+                Section(header: Text("Network connection").foregroundColor(theme.colors.secondary)) {
                     HStack {
                         Text(m.networkInfo.networkType.text)
                         Spacer()

@@ -13,7 +13,6 @@ import Combine
 
 struct CIVideoView: View {
     @EnvironmentObject var m: ChatModel
-    @Environment(\.colorScheme) var colorScheme
     private let chatItem: ChatItem
     private let preview: UIImage?
     @State private var duration: Int

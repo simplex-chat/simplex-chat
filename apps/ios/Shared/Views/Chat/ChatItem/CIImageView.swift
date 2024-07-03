@@ -11,7 +11,6 @@ import SimpleXChat
 
 struct CIImageView: View {
     @EnvironmentObject var m: ChatModel
-    @Environment(\.colorScheme) var colorScheme
     let chatItem: ChatItem
     var preview: UIImage?
     let maxWidth: CGFloat

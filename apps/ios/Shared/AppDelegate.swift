@@ -9,6 +9,7 @@
 import Foundation
 import UIKit
 import SimpleXChat
+import SwiftUI
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
@@ -17,6 +18,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         if #available(iOS 17.0, *) { trackKeyboard() }
         NotificationCenter.default.addObserver(self, selector: #selector(pasteboardChanged), name: UIPasteboard.changedNotification, object: nil)
         removePasscodesIfReinstalled()
+        prepareForLaunch()
         return true
     }
 
@@ -141,6 +143,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         }
     }
 
+    private func prepareForLaunch() {
+        try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
+    }
+
     static func keepScreenOn(_ on: Bool) {
         UIApplication.shared.isIdleTimerDisabled = on
     }
@@ -148,13 +154,79 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
 class SceneDelegate: NSObject, ObservableObject, UIWindowSceneDelegate {
     var window: UIWindow?
+    static var windowStatic: UIWindow?
     var windowScene: UIWindowScene?
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        UITableView.appearance().backgroundColor = .clear
         guard let windowScene = scene as? UIWindowScene else { return }
         self.windowScene = windowScene
         window = windowScene.keyWindow
-        window?.tintColor = UIColor(cgColor: getUIAccentColorDefault())
-        window?.overrideUserInterfaceStyle = getUserInterfaceStyleDefault()
+        SceneDelegate.windowStatic = windowScene.keyWindow
+        migrateAccentColorAndTheme()
+        ThemeManager.applyTheme(currentThemeDefault.get())
+        ThemeManager.adjustWindowStyle()
+    }
+
+    private func migrateAccentColorAndTheme() {
+        let defs = UserDefaults.standard
+        /// For checking migration
+//        themeOverridesDefault.set([])
+//        currentThemeDefault.set(DefaultTheme.SYSTEM_THEME_NAME)
+//        defs.set(0.5, forKey: DEFAULT_ACCENT_COLOR_RED)
+//        defs.set(0.3, forKey: DEFAULT_ACCENT_COLOR_GREEN)
+//        defs.set(0.8, forKey: DEFAULT_ACCENT_COLOR_BLUE)
+
+        let userInterfaceStyle = getUserInterfaceStyleDefault()
+        if defs.double(forKey: DEFAULT_ACCENT_COLOR_GREEN) == 0 && userInterfaceStyle == .unspecified {
+            // No migration needed or already migrated
+            return
+        }
+
+        let defaultAccentColor = Color(cgColor: CGColor(red: 0.000, green: 0.533, blue: 1.000, alpha: 1))
+        let accentColor = Color(cgColor: getUIAccentColorDefault())
+        if accentColor != defaultAccentColor {
+            let colors = ThemeColors(primary: accentColor.toReadableHex())
+            var overrides = themeOverridesDefault.get()
+            var themeIds = currentThemeIdsDefault.get()
+            switch userInterfaceStyle {
+            case .light:
+                let light = ThemeOverrides(base: DefaultTheme.LIGHT, colors: colors, wallpaper: ThemeWallpaper(preset: PresetWallpaper.school.filename))
+                overrides.append(light)
+                themeOverridesDefault.set(overrides)
+                themeIds[DefaultTheme.LIGHT.themeName] = light.themeId
+                currentThemeIdsDefault.set(themeIds)
+                ThemeManager.applyTheme(DefaultTheme.LIGHT.themeName)
+            case .dark:
+                let dark = ThemeOverrides(base: DefaultTheme.DARK, colors: colors, wallpaper: ThemeWallpaper(preset: PresetWallpaper.school.filename))
+                overrides.append(dark)
+                themeOverridesDefault.set(overrides)
+                themeIds[DefaultTheme.DARK.themeName] = dark.themeId
+                currentThemeIdsDefault.set(themeIds)
+                ThemeManager.applyTheme(DefaultTheme.DARK.themeName)
+            case .unspecified:
+                let light = ThemeOverrides(base: DefaultTheme.LIGHT, colors: colors, wallpaper: ThemeWallpaper(preset: PresetWallpaper.school.filename))
+                let dark = ThemeOverrides(base: DefaultTheme.DARK, colors: colors, wallpaper: ThemeWallpaper(preset: PresetWallpaper.school.filename))
+                overrides.append(light)
+                overrides.append(dark)
+                themeOverridesDefault.set(overrides)
+                themeIds[DefaultTheme.LIGHT.themeName] = light.themeId
+                themeIds[DefaultTheme.DARK.themeName] = dark.themeId
+                currentThemeIdsDefault.set(themeIds)
+                ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
+            @unknown default: ()
+            }
+        } else if userInterfaceStyle != .unspecified {
+            let themeName = switch userInterfaceStyle {
+            case .light: DefaultTheme.LIGHT.themeName
+            case .dark: DefaultTheme.DARK.themeName
+            default: DefaultTheme.SYSTEM_THEME_NAME
+            }
+            ThemeManager.applyTheme(themeName)
+        }
+        defs.removeObject(forKey: DEFAULT_ACCENT_COLOR_RED)
+        defs.removeObject(forKey: DEFAULT_ACCENT_COLOR_GREEN)
+        defs.removeObject(forKey: DEFAULT_ACCENT_COLOR_BLUE)
+        defs.removeObject(forKey: DEFAULT_USER_INTERFACE_STYLE)
     }
 }
