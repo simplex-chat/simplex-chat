@@ -185,6 +185,7 @@
 		8C81482C2BD91CD4002CBEC3 /* AudioDevicePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C81482B2BD91CD4002CBEC3 /* AudioDevicePicker.swift */; };
 		8CC4ED902BD7B8530078AEE8 /* CallAudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */; };
 		8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC956ED2BC0041000412A11 /* NetworkObserver.swift */; };
+		CE81DF912C355E3C001C0A02 /* TranslateSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE81DF902C355E3C001C0A02 /* TranslateSheet.swift */; };
 		CEEA861D2C2ABCB50084E1EA /* ReverseList.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEA861C2C2ABCB50084E1EA /* ReverseList.swift */; };
 		D7197A1829AE89660055C05A /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D7197A1729AE89660055C05A /* WebRTC */; };
 		D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D72A9087294BD7A70047C86D /* NativeTextEditor.swift */; };
@@ -482,6 +483,7 @@
 		8C81482B2BD91CD4002CBEC3 /* AudioDevicePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDevicePicker.swift; sourceTree = "<group>"; };
 		8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallAudioDeviceManager.swift; sourceTree = "<group>"; };
 		8CC956ED2BC0041000412A11 /* NetworkObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkObserver.swift; sourceTree = "<group>"; };
+		CE81DF902C355E3C001C0A02 /* TranslateSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslateSheet.swift; sourceTree = "<group>"; };
 		CEEA861C2C2ABCB50084E1EA /* ReverseList.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReverseList.swift; sourceTree = "<group>"; };
 		D72A9087294BD7A70047C86D /* NativeTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTextEditor.swift; sourceTree = "<group>"; };
 		D741547729AF89AF0022400A /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/StoreKit.framework; sourceTree = DEVELOPER_DIR; };
@@ -660,6 +662,7 @@
 				64C3B0202A0D359700E19930 /* CustomTimePicker.swift */,
 				5CEBD7452A5C0A8F00665FE2 /* KeyboardPadding.swift */,
 				8C05382D2B39887E006436DC /* VideoUtils.swift */,
+				CE81DF902C355E3C001C0A02 /* TranslateSheet.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -1138,6 +1141,7 @@
 				64C06EB52A0A4A7C00792D4D /* ChatItemInfoView.swift in Sources */,
 				640417CE2B29B8C200CCB412 /* NewChatView.swift in Sources */,
 				6440CA03288AECA70062C672 /* AddGroupMembersView.swift in Sources */,
+				CE81DF912C355E3C001C0A02 /* TranslateSheet.swift in Sources */,
 				5C3F1D58284363C400EC8A82 /* PrivacySettings.swift in Sources */,
 				5C55A923283CEDE600C4E99E /* SoundPlayer.swift in Sources */,
 				5C93292F29239A170090FFF9 /* ProtocolServersView.swift in Sources */,

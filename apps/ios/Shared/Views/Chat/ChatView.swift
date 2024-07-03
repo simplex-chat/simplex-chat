@@ -611,6 +611,7 @@ struct ChatView: View {
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
         @State private var showForwardingSheet: Bool = false
+        @State private var translateText: String?
 
         @State private var allowMenu: Bool = true
 
@@ -781,6 +782,7 @@ struct ChatView: View {
                         ChatItemForwardingView(ci: ci, fromChatInfo: chat.chatInfo, composeState: $composeState)
                     }
                 }
+                .translateSheet(text: $translateText)
         }
 
         private func showMemberImage(_ member: GroupMember, _ prevItem: ChatItem?) -> Bool {
@@ -836,6 +838,9 @@ struct ChatView: View {
                 if copyAndShareAllowed {
                     shareButton(ci)
                     copyButton(ci)
+                }
+                if mc.isText {
+                    translateButton(text: mc.text)
                 }
                 if let fileSource = fileSource, fileExists {
                     if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
@@ -1014,6 +1019,17 @@ struct ChatView: View {
                 }
             } label: {
                 Label("Copy", systemImage: "doc.on.doc")
+            }
+        }
+
+        private func translateButton(text: String) -> Button<some View> {
+            Button {
+                translateText = text
+            } label: {
+                Label(
+                    NSLocalizedString("Translate", comment: "chat item action"),
+                    systemImage: "globe"
+                )
             }
         }
 
