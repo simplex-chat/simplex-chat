@@ -839,7 +839,7 @@ struct ChatView: View {
                     shareButton(ci)
                     copyButton(ci)
                 }
-                if mc.isText {
+                if !mc.text.isEmpty {
                     translateButton(text: mc.text)
                 }
                 if let fileSource = fileSource, fileExists {
