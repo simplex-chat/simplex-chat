@@ -1224,8 +1224,8 @@ public enum ProtocolTestStep: String, Decodable, Equatable {
 }
 
 public struct ProtocolTestFailure: Decodable, Error, Equatable {
-    var testStep: ProtocolTestStep
-    var testError: AgentErrorType
+    public var testStep: ProtocolTestStep
+    public var testError: AgentErrorType
 
     public static func == (l: ProtocolTestFailure, r: ProtocolTestFailure) -> Bool {
         l.testStep == r.testStep
