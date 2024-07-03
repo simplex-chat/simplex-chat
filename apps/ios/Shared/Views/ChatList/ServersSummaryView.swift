@@ -35,7 +35,7 @@ struct ServersSummaryView: View {
         NavigationView {
             viewBody()
                 .navigationTitle("Servers info")
-                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarTitleDisplayMode(.large)
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         shareButton()
@@ -577,6 +577,7 @@ struct SMPStatsView: View {
             NavigationLink {
                 DetailedSMPStatsView(stats: stats, statsStartedAt: statsStartedAt)
                     .navigationTitle("Detailed statistics")
+                    .navigationBarTitleDisplayMode(.large)
             } label: {
                 Text("Details")
             }
@@ -701,6 +702,7 @@ struct XFTPStatsView: View {
             NavigationLink {
                 DetailedXFTPStatsView(stats: stats, statsStartedAt: statsStartedAt)
                     .navigationTitle("Detailed statistics")
+                    .navigationBarTitleDisplayMode(.large)
             } label: {
                 Text("Details")
             }
