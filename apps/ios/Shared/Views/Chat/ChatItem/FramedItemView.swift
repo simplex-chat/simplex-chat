@@ -76,8 +76,6 @@ struct FramedItemView: View {
             }
         }
             .background(chatItemFrameColorMaybeImageOrVideo(chatItem, theme))
-            // LALAL: do we need it?
-            //.background(Color(.systemBackground))
             .cornerRadius(18)
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
@@ -179,8 +177,7 @@ struct FramedItemView: View {
         .padding(.bottom, pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
         .overlay(DetermineWidth())
         .frame(minWidth: msgWidth, alignment: .leading)
-        // LALAL: do we need it?
-        //.background(chatItemFrameContextColor(chatItem, theme))
+        .background(chatItemFrameContextColor(chatItem, theme))
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
             v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {

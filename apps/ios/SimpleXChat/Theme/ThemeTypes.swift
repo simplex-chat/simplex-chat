@@ -222,7 +222,7 @@ public enum ThemeColor {
     }
 }
 
-public struct ThemeColors: Codable, Equatable{
+public struct ThemeColors: Codable, Equatable, Hashable {
     public var primary: String? = nil
     public var primaryVariant: String? = nil
     public var secondary: String? = nil
@@ -293,7 +293,7 @@ public struct ThemeColors: Codable, Equatable{
     }
 }
 
-public struct ThemeWallpaper: Codable, Equatable {
+public struct ThemeWallpaper: Codable, Equatable, Hashable {
     public var preset: String?
     public var scale: Float?
     public var scaleType: WallpaperScaleType?
@@ -375,7 +375,7 @@ public struct ThemeWallpaper: Codable, Equatable {
 
 /// If you add new properties, make sure they serialized to YAML correctly, see:
 /// encodeThemeOverrides()
-public struct ThemeOverrides: Codable, Equatable {
+public struct ThemeOverrides: Codable, Equatable, Hashable {
     public var themeId: String = UUID().uuidString
     public var base: DefaultTheme
     public var colors: ThemeColors = ThemeColors()
@@ -559,7 +559,7 @@ extension [ThemeOverrides] {
 
 }
 
-public struct ThemeModeOverrides: Codable {
+public struct ThemeModeOverrides: Codable, Hashable {
     public var light: ThemeModeOverride? = nil
     public var dark: ThemeModeOverride? = nil
 
@@ -573,7 +573,7 @@ public struct ThemeModeOverrides: Codable {
     }
 }
 
-public struct ThemeModeOverride: Codable, Equatable {
+public struct ThemeModeOverride: Codable, Equatable, Hashable {
     public var mode: DefaultThemeMode// = CurrentColors.base.mode
     public var colors: ThemeColors = ThemeColors()
     public var wallpaper: ThemeWallpaper? = nil

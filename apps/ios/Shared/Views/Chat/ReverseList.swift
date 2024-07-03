@@ -90,6 +90,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                 }
                 cell.transform = .verticalFlip
                 cell.selectionStyle = .none
+                cell.backgroundColor = .clear
                 return cell
             }
 
