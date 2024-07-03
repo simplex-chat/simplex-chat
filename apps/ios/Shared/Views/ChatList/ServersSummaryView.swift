@@ -272,11 +272,9 @@ struct ServersSummaryView: View {
                     ConnectionStatusIndicatorView(subs: subs, sess: srvSumm.sessionsOrNew)
                 } else if let sess = srvSumm.sessions {
                     Spacer()
-                    Image(systemName: "arrow.up")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 14, height: 14)
-                        .foregroundColor(sessIconColor(sess))
+                    Image(systemName: "arrow.up.circle")
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(sessIconColor(sess), Color.clear)
                 }
             }
         }
@@ -337,10 +335,8 @@ struct ServersSummaryView: View {
                 if let inProgressIcon = inProgressIcon(srvSumm) {
                     Spacer()
                     Image(systemName: inProgressIcon)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 14, height: 14)
-                        .foregroundColor(sessionActiveColor)
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(sessionActiveColor, Color.clear)
                 }
             }
         }
@@ -349,10 +345,10 @@ struct ServersSummaryView: View {
     private func inProgressIcon(_ srvSumm: XFTPServerSummary) -> String? {
         switch (srvSumm.rcvInProgress, srvSumm.sndInProgress, srvSumm.delInProgress) {
         case (false, false, false): nil
-        case (true, false, false): "arrow.down"
-        case (false, true, false): "arrow.up"
-        case (false, false, true): "trash"
-        default: "arrow.up.arrow.down"
+        case (true, false, false): "arrow.down.circle"
+        case (false, true, false): "arrow.up.circle"
+        case (false, false, true): "trash.circle"
+        default: "arrow.up.arrow.down.circle"
         }
     }
 
