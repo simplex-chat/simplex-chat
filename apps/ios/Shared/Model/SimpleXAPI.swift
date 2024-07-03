@@ -313,8 +313,10 @@ private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
     throw r
 }
 
+let loadItemsPerPage = 50
+
 func apiGetChat(type: ChatType, id: Int64, search: String = "") throws -> Chat {
-    let r = chatSendCmdSync(.apiGetChat(type: type, id: id, pagination: .last(count: 50), search: search))
+    let r = chatSendCmdSync(.apiGetChat(type: type, id: id, pagination: .last(count: loadItemsPerPage), search: search))
     if case let .apiChat(_, chat) = r { return Chat.init(chat) }
     throw r
 }
