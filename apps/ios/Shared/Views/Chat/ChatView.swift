@@ -94,7 +94,7 @@ struct ChatView: View {
             NotificationCenter.postReverseListNeedsLayout()
         }
         .onChange(of: chatModel.reversedChatItems) { reversedChatItems in
-            if reversedChatItems.count <= 50 && reversedChatItems.merged.count < 10 {
+            if reversedChatItems.count <= loadItemsPerPage && filtered(reversedChatItems).count < 10 {
                 loadChatItems(chat.chatInfo)
             }
         }
@@ -309,9 +309,23 @@ struct ChatView: View {
         ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
     }
 
+    private func filtered(_ reversedChatItems: Array<ChatItem>) -> Array<ChatItem> {
+        reversedChatItems
+            .enumerated()
+            .filter { (index, chatItem) in
+                if let mergeCategory = chatItem.mergeCategory, index > .zero {
+                    mergeCategory != reversedChatItems[index - 1].mergeCategory
+                } else {
+                    true
+                }
+            }
+            .map { $0.element }
+    }
+    
+    
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
-        let mergedItems = chatModel.reversedChatItems.merged
+        let mergedItems = filtered(chatModel.reversedChatItems)
         return GeometryReader { g in
             ReverseList(items: mergedItems, scrollState: $scrollModel.state) { ci in
                 let voiceNoFrame = voiceWithoutFrame(ci)
@@ -443,7 +457,7 @@ struct ChatView: View {
                         .foregroundColor(.accentColor)
                 }
                 .onTapGesture {
-                    if let latestUnreadItem = chatModel.reversedChatItems.merged.last(where: { $0.isRcvNew }) {
+                    if let latestUnreadItem = filtered(chatModel.reversedChatItems).last(where: { $0.isRcvNew }) {
                         scrollModel.scrollToItem(id: latestUnreadItem.id)
                     }
                 }
@@ -533,14 +547,18 @@ struct ChatView: View {
             do {
                 var reversedPage = Array<ChatItem>()
                 var chatItemsAvailable = true
-                /// Load additional items until the page is +50 large after merging
-                while chatItemsAvailable && reversedPage.merged.count < 50 {
+                // Load additional items until the page is +50 large after merging
+                while chatItemsAvailable && filtered(reversedPage).count < loadItemsPerPage {
+                    let pagination: ChatPagination =
+                        if let lastItem = reversedPage.last ?? chatModel.reversedChatItems.last {
+                            .before(chatItemId: lastItem.id, count: loadItemsPerPage)
+                        } else {
+                            .last(count: loadItemsPerPage)
+                        }
                     let chatItems = try await apiGetChatItems(
                         type: cInfo.chatType,
                         id: cInfo.apiId,
-                        pagination: (reversedPage.last ?? chatModel.reversedChatItems.last)
-                            .flatMap { ChatPagination.before(chatItemId: $0.id, count: 50) }
-                        ?? .last(count: 50),
+                        pagination: pagination,
                         search: searchText
                     )
                     chatItemsAvailable = !chatItems.isEmpty
@@ -1355,20 +1373,5 @@ struct ChatView_Previews: PreviewProvider {
         @State var showChatInfo = false
         return ChatView(chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []))
             .environmentObject(chatModel)
-    }
-}
-
-extension Array<ChatItem> {
-    var merged: Array<ChatItem> {
-        self
-            .enumerated()
-            .filter { (index, chatItem) in
-                if let mergeCategory = chatItem.mergeCategory, index > .zero {
-                    mergeCategory != self[index - 1].mergeCategory
-                } else {
-                    true
-                }
-            }
-            .map { $0.element }
     }
 }
