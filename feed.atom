@@ -5,7 +5,7 @@
     <link type="application/atom+xml" rel="self" href="https://simplex.chat/feed.atom"/>
     <title>SimpleX Chat Blog</title>
     <subtitle>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</subtitle>
-    <updated>2024-06-04T00:00:00Z</updated>
+    <updated>2024-07-04T00:00:00Z</updated>
     <author>
         <name>SimpleX Chat</name>
         <email>chat@simplex.chat</email>
@@ -2659,6 +2659,44 @@ file ---&amp;gt; |   XFTP   | ------&amp;gt;           XFTP            ----&amp;
 &lt;p&gt;Thank you,&lt;/p&gt;
 &lt;p&gt;Evgeny&lt;/p&gt;
 &lt;p&gt;SimpleX Chat founder&lt;/p&gt;
+</content>
+            <author>
+                <name>SimpleX Chat</name>
+                <email>chat@simplex.chat</email>
+            </author>
+        </entry>
+        <entry>
+            <id>https://simplex.chat/blog/20240704-future-of-privacy-enforcing-privacy-standards.html</id>
+            <!-- <updated>04 Jul 2024</updated> -->
+            <updated>2024-07-04T00:00:00Z</updated>
+            <link rel="alternate" type="text/html" href="https://simplex.chat/blog/20240704-future-of-privacy-enforcing-privacy-standards.html"/>
+            <title>The Future of Privacy: Enforcing Privacy Standards</title>
+            <content type="html">&lt;h1 id=&quot;the-future-of-privacy-enforcing-privacy-standards&quot; tabindex=&quot;-1&quot;&gt;The Future of Privacy: Enforcing Privacy Standards&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Jul 4, 2024&lt;/p&gt;
+&lt;p&gt;&lt;em&gt;By &lt;a href=&quot;https://mastodon.social/@alshafei&quot;&gt;Esra&#39;a al Shafei&lt;/a&gt;&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Recent anti-privacy legislations and proposals in &lt;a href=&quot;https://www.theverge.com/2024/6/19/24181214/eu-chat-control-law-propose-scanning-encrypted-messages-csam&quot;&gt;Europe&lt;/a&gt;, &lt;a href=&quot;https://theconversation.com/section-702-foreign-surveillance-law-lives-on-but-privacy-fight-continues-229253&quot;&gt;the US&lt;/a&gt; and &lt;a href=&quot;https://www.theguardian.com/technology/article/2024/jun/20/meredith-walker-signal-boss-government-encryption-laws&quot;&gt;Australia&lt;/a&gt; threaten to infringe our fundamental right to privacy and to create grave risks to the &lt;a href=&quot;https://simplex.chat/blog/20240601-protecting-children-safety-requires-e2e-encryption.html&quot;&gt;safety&lt;/a&gt; of children and vulnerable people. It&#39;s time we shift the focus: privacy should be a non-negotiable duty of technology providers, not just a right users must constantly fight to protect, and not something that users can be asked to consent away as a condition of access to a service.&lt;/p&gt;
+&lt;p&gt;Tech giants are trying to normalize surveillance capitalism, often with little to no consequences globally. These companies are contributing to a growing ecosystem where opting out of invasive data hoarding practices is becoming increasingly challenging, if not outright impossible. We are being gaslit by the technology executives who try to justify profiteering from AI theft, from &lt;a href=&quot;https://www.computing.co.uk/news/4330395/microsoft-ai-chief-makes-questionable-claims-about-copyright-online-content&quot;&gt;Microsoft&lt;/a&gt; claiming all our content is fair game for their exploitation to unethical startups like &lt;a href=&quot;https://www.theverge.com/2024/6/27/24187405/perplexity-ai-twitter-lie-plagiarism&quot;&gt;Perplexity&lt;/a&gt; turning the word “&lt;a href=&quot;https://x.com/perplexity_ai/status/1789007907092066559&quot;&gt;privacy&lt;/a&gt;” into a marketable farce.&lt;/p&gt;
+&lt;h2 id=&quot;the-ai-hypes-impact-on-privacy&quot; tabindex=&quot;-1&quot;&gt;The AI Hype’s Impact on Privacy&lt;/h2&gt;
+&lt;p&gt;The exaggeration of AI’s actual capabilities and the continuous promotion of its “intelligence” is creating a rat race where tech companies and well-funded startups are evading accountability, as they eagerly collect and exploit more data than ever.&lt;/p&gt;
+&lt;p&gt;They&#39;re prioritizing AI development over user privacy and rights, setting a dangerous precedent for current and future online engagements. They&#39;ve already normalized the use of AI to scan and analyze supposedly private communications - from emails to instant messages - repackaging this intrusion as &amp;quot;productivity tools”. Meanwhile, most consumers actually want &lt;a href=&quot;https://iapp.org/news/a/most-consumers-want-data-privacy-and-will-act-to-defend-it&quot;&gt;more data privacy&lt;/a&gt;, not less, and are increasingly concerned by the lack of it.&lt;/p&gt;
+&lt;p&gt;The legal push towards “client-side scanning”, attacks on end-to-end encryption and the support for pro-surveillance legislation gives credibility to these highly intrusive practices that literally endanger lives. And we know that moral obligations mean nothing to corporations benefiting from these exploitative models, so we have to ensure that our demands for privacy are legally enforceable and non-negotiable.&lt;/p&gt;
+&lt;h2 id=&quot;legal-action&quot; tabindex=&quot;-1&quot;&gt;Legal Action&lt;/h2&gt;
+&lt;p&gt;We are encouraged to see more legal pressure on companies that exploit user data on a daily basis. For example, the European Center for Digital Rights’ (Noyb) &lt;a href=&quot;https://noyb.eu/en/noyb-urges-11-dpas-immediately-stop-metas-abuse-personal-data-ai&quot;&gt;complaints&lt;/a&gt; against Meta’s abuse of personal data to train their AI and, and the demands from the Norwegian Consumer Council to data protection authority to ensure that applicable laws are enforced against Meta considering there is “&lt;a href=&quot;https://www.forbrukerradet.no/side/legal-complaint-against-metas-use-of-personal-content-for-ai-training/&quot;&gt;no way to remove personal data from AI models once Meta has begun the training&lt;/a&gt;”.&lt;/p&gt;
+&lt;p&gt;Noyb is taking a strong stance against &lt;a href=&quot;https://noyb.eu/en/project/cases&quot;&gt;other companies&lt;/a&gt; with similar exploitative models, including facial recognition surveillance tools often misused by law enforcement agencies. Consider &lt;a href=&quot;https://noyb.eu/en/support&quot;&gt;supporting&lt;/a&gt; their ongoing efforts — we strongly believe legal action is one of the most effective means to hold these companies accountable for their persistent abuses, which are otherwise shielded by heavily funded self-serving lobby groups.&lt;/p&gt;
+&lt;h2 id=&quot;privacy-as-a-legal-obligation&quot; tabindex=&quot;-1&quot;&gt;Privacy as a Legal Obligation&lt;/h2&gt;
+&lt;p&gt;We must shift from a defensive stance to a proactive one by proposing privacy legislation that puts users in direct control of their private data.&lt;/p&gt;
+&lt;p&gt;This legislation should:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Establish non-negotiable provider duties for protecting user privacy, with hefty fines and consequences for service operators who do not comply.&lt;/li&gt;
+&lt;li&gt;Prevent providers from circumventing these duties through user consent clauses — it should be legally prohibited to ask for a consent to share user data or to use it for anything other than providing a service.&lt;/li&gt;
+&lt;li&gt;Prevent providers from asking for any more personal information from the users than technically necessary and legally required. For example, asking for a phone number as a condition of access to a service should be made illegal in most cases — it does not provide a sufficient security, exposes users&#39; private information and allows simple aggregation of users&#39; data across multiple services.&lt;/li&gt;
+&lt;li&gt;Create a strong legal framework that cannot be resisted or modified&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;By codifying these principles into law, we can establish a strong technological framework that is built to create more value for end users, while protecting their privacy against data exploitation, criminal use and identity theft. We will continue the fight against illogical legislative proposals designed to normalize mass surveillance, but our efforts should equally gear towards creating and supporting new models and technological foundations that bring us far closer to the reality we urgently need.&lt;/p&gt;
+&lt;h2 id=&quot;collective-action&quot; tabindex=&quot;-1&quot;&gt;Collective Action&lt;/h2&gt;
+&lt;p&gt;There is great work being done by advocacy organizations, and service providers need to contribute to this fight as well by shifting the narrative and reclaiming the term “privacy” from the tech giants who co-opted and corrupted it. We must play a bigger role in supporting users in setting stronger boundaries, making demands, and refusing anything less than genuine privacy and data ownership, while getting comfortable with holding providers accountable for any violations.&lt;/p&gt;
+&lt;p&gt;Privacy should be seen as a fundamental obligation of technology providers, and legislators must actively enforce this expectation. The more consumers make this demand, the more pressure we put on anti-privacy lobbyists with rogue motives, the easier it will be to hold abusers accountable, and the more likely we can collectively ensure that a privacy-first web becomes a reality.&lt;/p&gt;
+&lt;p&gt;You can support privacy today by signing &lt;a href=&quot;https://www.globalencryption.org/2024/05/joint-statement-on-the-dangers-of-the-may-2024-council-of-the-eu-compromise-proposal-on-eu-csam/&quot;&gt;the petition&lt;/a&gt; prepared by Global Encryption Coalition in support of communication privacy. You can also write to your elected representatives, explaining them how data privacy and encrypted communications protect children safety and reduce crime.&lt;/p&gt;
 </content>
             <author>
                 <name>SimpleX Chat</name>
