@@ -3,8 +3,8 @@ layout: layouts/article.html
 title: "The Future of Privacy: Enforcing Privacy Standards"
 date: 2024-07-04
 previewBody: blog_previews/20240704.html
-# image: images/20240704-privacy.png
-# imageWide: true
+image: images/20240704-privacy.jpg
+imageWide: true
 permalink: "/blog/20240704-future-of-privacy-enforcing-privacy-standards.html"
 ---
 
@@ -39,7 +39,7 @@ We must shift from a defensive stance to a proactive one by proposing privacy le
 This legislation should:
 1. Establish non-negotiable provider duties for protecting user privacy, with hefty fines and consequences for service operators who do not comply.
 2. Prevent providers from circumventing these duties through user consent clauses &mdash; it should be legally prohibited to ask for a consent to share user data or to use it for anything other than providing a service.
-3. Prevent providers from asking for any more personal information from the users than technically necessary and legally required. E.g., asking for a phone number as a condition of access to a service should be made illegal in most cases &mdash; it does not provide a sufficient security, exposes users private information and allows simple aggregation of users' data across multiple services.
+3. Prevent providers from asking for any more personal information from the users than technically necessary and legally required. For example, asking for a phone number as a condition of access to a service should be made illegal in most cases &mdash; it does not provide a sufficient security, exposes users' private information and allows simple aggregation of users' data across multiple services.
 4. Create a strong legal framework that cannot be resisted or modified
 
 By codifying these principles into law, we can establish a strong technological framework that is built to create more value for end users, while protecting their privacy against data exploitation, criminal use and identity theft. We will continue the fight against illogical legislative proposals designed to normalize mass surveillance, but our efforts should equally gear towards creating and supporting new models and technological foundations that bring us far closer to the reality we urgently need.
@@ -49,3 +49,5 @@ By codifying these principles into law, we can establish a strong technological 
 There is great work being done by advocacy organizations, and service providers need to contribute to this fight as well by shifting the narrative and reclaiming the term “privacy” from the tech giants who co-opted and corrupted it. We must play a bigger role in supporting users in setting stronger boundaries, making demands, and refusing anything less than genuine privacy and data ownership, while getting comfortable with holding providers accountable for any violations.
 
 Privacy should be seen as a fundamental obligation of technology providers, and legislators must actively enforce this expectation. The more consumers make this demand, the more pressure we put on anti-privacy lobbyists with rogue motives, the easier it will be to hold abusers accountable, and the more likely we can collectively ensure that a privacy-first web becomes a reality.
+
+You can support privacy today by signing [the petition](https://www.globalencryption.org/2024/05/joint-statement-on-the-dangers-of-the-may-2024-council-of-the-eu-compromise-proposal-on-eu-csam/) prepared by Global Encryption Coalition in support of communication privacy. You can also write to your elected representatives, explaining them how data privacy and encrypted communications protect children safety and reduce crime.
