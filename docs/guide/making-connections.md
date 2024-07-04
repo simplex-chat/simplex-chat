@@ -21,7 +21,7 @@ As the name implies, it can only be used once to connect with someone. You can c
 2. Tap or click **Add contact**.
 3. Tap or click **Share this 1-time link** to share it with your contact from a distance. Or, you can show your QR code in person for your friend to scan.
 4. (Optional) Toggle **Incognito** on to share an incognito profile with your contact.
-5. (Optional) Return to the **Chats** screen and then click or tap on the invitation to set a contact name to help remember who it's for.
+5. (Optional) Return to the **Chats** screen and then tap or click on the invitation to set a contact name to help remember who it's for.
 
 ## SimpleX address
 

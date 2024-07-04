@@ -26,7 +26,7 @@ Secret groups are anonymous, decentralized, and private. SimpleX servers have ze
 
 #### To create a group:
 
-1. On Android and desktop, click or tap on the floating pencil button in the bottom-right corner of the screen. On iOS, tap on the pencil button in the top-right corner of the screen.
+1. On Android and desktop, tap or click on the floating pencil button in the bottom-right corner of the screen. On iOS, tap on the pencil button in the top-right corner of the screen.
 2. Tap or click **Create group**.
 3. Enter desired group name.
 4. Tap or click **Create**.
@@ -220,4 +220,4 @@ Alternatively, you can also leave the group from the group info screen:
 
 1. Tap or click on a group chat.
 2. Tap or click on your group's name at the top of the screen.
-3. Scroll to the bottom, and then click or tap **Leave group**.
+3. Scroll to the bottom, and then tap or click **Leave group**.

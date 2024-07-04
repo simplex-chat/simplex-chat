@@ -60,9 +60,9 @@ Download SimpleX Chat [here](https://simplex.chat/downloads/) and follow the ins
 After installing SimpleX Chat:
 
 1. Open the app.
-2. Click or tap **Create your profile**.
+2. Tap or click **Create your profile**.
 3. Enter your desired name.
-4. Click or tap **Create**.
+4. Tap or click **Create**.
 
 **Please note**: Your chat profile is stored locally on your device, it is not stored anywhere else. It is only shared with your contacts.
 
@@ -72,10 +72,10 @@ After creating your first chat profile, the app will then ask you to create a Si
 
 #### To create your SimpleX address:
 
-1. Click or tap **Create SimpleX address**.
-2. (Optional) Click or tap **Share** to share your SimpleX address with your contacts.
-3. (Optional) Click or tap **Invite friends** to send an email invitation to your friends who don't have SimpleX Chat.
-4. Click or tap **Continue**.
+1. Tap or click **Create SimpleX address**.
+2. (Optional) Tap or click **Share** to share your SimpleX address with your contacts.
+3. (Optional) Tap or click **Invite friends** to send an email invitation to your friends who don't have SimpleX Chat.
+4. Tap or click **Continue**.
 
 For more details on what a SimpleX address is, how you can set it up, and what it can be used for, please visit the [Managing Connections page](#simplex-address).
 
@@ -110,9 +110,10 @@ There are links to join several [SimpleX user groups](../../README.md#join-user-
 1. Get a group link either from your contacts or groups, or by finding one online.
 
 2. Options:
-   - Click or tap on the QR code symbol in the right-hand side of the search bar on the **Chats** screen. Scan QR code or paste group link to join.
+   
+   - Tap or click on the QR code symbol in the right-hand side of the search bar on the **Chats** screen. Scan QR code or paste group link to join.
    - Paste the group link into the searchbar towards the top of the **Chats** screen. You'll be prompted to share your current chat profile or an incognito profile.
-   - Click or tap on the group link you received from them and you'll be prompted to share  your current chat profile or an incognito profile with them.
+   - Tap or click on the group link you received from them and you'll be prompted to share  your current chat profile or an incognito profile with them.
 
 ### Connect with the SimpleX Chat team
 
@@ -121,7 +122,7 @@ While you're waiting for your friends to accept your invitations, you can connec
 #### To connect with the SimpleX Chat team later:
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
-2. Click or tap **Send questions and ideas**.
+2. Tap or click **Send questions and ideas**.
 
 ### Explore the app
 

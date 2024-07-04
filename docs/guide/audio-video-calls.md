@@ -28,7 +28,7 @@ When you receive an incoming call, you have three options:
 
 - `accept` - to accept the call.
 - `reject` - to reject the call without notifying the caller.
-- `ignore` - To temporarily ignore the call, so that it can be accepted later. If the caller is still waiting, click or tap the **Answer call** message in your conversation with them.
+- `ignore` - To temporarily ignore the call, so that it can be accepted later. If the caller is still waiting, tap or click the **Answer call** message in your conversation with them.
 
 **Please note**: There is no time limit for the call invitation to remain active - as long as the caller is still waiting, you can accept the call at any time. Calls can be accepted from the lock screen, both on Android (it needs to be enabled via options) and on iOS (by default, using native iOS call interface that can be disabled).
 
