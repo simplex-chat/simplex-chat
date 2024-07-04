@@ -225,14 +225,6 @@ private fun ChatListToolbar(searchInList: State<TextFieldValue>, drawerState: Dr
           color = MaterialTheme.colors.onBackground,
           fontWeight = FontWeight.SemiBold,
         )
-        if (chatModel.chats.size > 0) {
-          val enabled = remember { derivedStateOf { searchInList.value.text.isEmpty() } }
-          if (enabled.value) {
-            ToggleFilterEnabledButton()
-          } else {
-            ToggleFilterDisabledButton()
-          }
-        }
       }
     },
     onTitleClick = null,
@@ -357,33 +349,11 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
         hideSearchOnBack()
       }
     } else {
-      Row {
-        val padding = if (appPlatform.isDesktop) 0.dp else 7.dp
-        val clipboard = LocalClipboardManager.current
-        val clipboardHasText = remember(focused) { chatModel.clipboardHasText }.value
-        if (clipboardHasText) {
-          IconButton(
-            onClick = { searchText.value = searchText.value.copy(clipboard.getText()?.text ?: return@IconButton) },
-            Modifier.size(30.dp).desktopPointerHoverIconHand()
-          ) {
-            Icon(painterResource(MR.images.ic_article), null, tint = MaterialTheme.colors.secondary)
-          }
-        }
-        Spacer(Modifier.width(padding))
-        IconButton(
-          onClick = {
-            val fixedRhId = chatModel.currentRemoteHost.value
-            ModalManager.center.closeModals()
-            ModalManager.center.showModalCloseable { close ->
-              NewChatView(fixedRhId, selection = NewChatOption.CONNECT, showQRCodeScanner = true, close = close)
-            }
-          },
-          Modifier.size(30.dp).desktopPointerHoverIconHand()
-        ) {
-          Icon(painterResource(MR.images.ic_qr_code), null, tint = MaterialTheme.colors.secondary)
-        }
-        Spacer(Modifier.width(padding))
+      val padding = if (appPlatform.isDesktop) 0.dp else 7.dp
+      if (chatModel.chats.size > 0) {
+        ToggleFilterEnabledButton() 
       }
+      Spacer(Modifier.width(padding))
     }
     val focusManager = LocalFocusManager.current
     val keyboardState = getKeyboardState()

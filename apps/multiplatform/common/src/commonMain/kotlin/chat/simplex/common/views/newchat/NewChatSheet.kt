@@ -44,6 +44,11 @@ fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedView
       ModalManager.center.closeModals()
       ModalManager.center.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close) }
     },
+    scanPaste = {
+      closeNewChatSheet(false)
+      ModalManager.center.closeModals()
+      ModalManager.center.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = true, close = close) }
+    },
     createGroup = {
       closeNewChatSheet(false)
       ModalManager.center.closeModals()
@@ -55,15 +60,17 @@ fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedView
 
 private val titles = listOf(
   MR.strings.add_contact_tab,
+  MR.strings.scan_paste_link,
   MR.strings.create_group_button
 )
-private val icons = listOf(MR.images.ic_add_link, MR.images.ic_group)
+private val icons = listOf(MR.images.ic_add_link, MR.images.ic_qr_code, MR.images.ic_group)
 
 @Composable
 private fun NewChatSheetLayout(
   newChatSheetState: StateFlow<AnimatedViewState>,
   stopped: Boolean,
   addContact: () -> Unit,
+  scanPaste: () -> Unit,
   createGroup: () -> Unit,
   closeNewChatSheet: (animated: Boolean) -> Unit,
 ) {
@@ -102,7 +109,7 @@ private fun NewChatSheetLayout(
     verticalArrangement = Arrangement.Bottom,
     horizontalAlignment = Alignment.End
   ) {
-    val actions = remember { listOf(addContact, createGroup) }
+    val actions = remember { listOf(addContact, scanPaste, createGroup) }
     val backgroundColor = if (isInDarkTheme())
       blendARGB(MaterialTheme.colors.primary, Color.Black, 0.7F)
     else
@@ -264,6 +271,7 @@ private fun PreviewNewChatSheet() {
       MutableStateFlow(AnimatedViewState.VISIBLE),
       stopped = false,
       addContact = {},
+      scanPaste = {},
       createGroup = {},
       closeNewChatSheet = {},
     )
