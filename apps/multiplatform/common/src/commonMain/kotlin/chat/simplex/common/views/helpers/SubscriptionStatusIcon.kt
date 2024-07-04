@@ -23,14 +23,17 @@ fun SubscriptionStatusIcon(
       ZeroIcon()
       Icon(painterResource(MR.images.ic_radiowaves_up_forward_1_bar), null, tint = color)
     }
+
     variableValue > 0.25f && variableValue <= 0.5f -> Box {
       ZeroIcon()
       Icon(painterResource(MR.images.ic_radiowaves_up_forward_2_bar), null, tint = color)
     }
+
     variableValue > 0.5f && variableValue <= 0.75f -> Box {
       ZeroIcon()
       Icon(painterResource(MR.images.ic_radiowaves_up_forward_3_bar), null, tint = color)
     }
+
     else -> Icon(painterResource(MR.images.ic_radiowaves_up_forward_4_bar), null, tint = color)
   }
 }
