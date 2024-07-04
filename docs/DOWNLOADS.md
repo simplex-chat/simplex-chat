@@ -21,7 +21,7 @@ You can get the latest beta releases from [GitHub](https://github.com/simplex-ch
 
 You can link your mobile device with desktop to use the same profile remotely, but this is only possible when both devices are connected to the same local network.
 
-**Linux**: [AppImage](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-x86_64.AppImage) or [Flathub](https://flathub.org/apps/chat.simplex.simplex) (most Linux distros), [Ubuntu 20.04](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-20_04-x86_64.deb) (and Debian-based distros), [Ubuntu 22.04](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-22_04-x86_64.deb).
+**Linux**: [AppImage](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-x86_64.AppImage) or [Flatpak](https://flathub.org/apps/chat.simplex.simplex) (most Linux distros), [Ubuntu 20.04](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-20_04-x86_64.deb) (and Debian-based distros), [Ubuntu 22.04](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-22_04-x86_64.deb).
 
 **Mac**: [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-macos-aarch64.dmg) (Apple Silicon), [x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-macos-x86_64.dmg) (Intel).
 
