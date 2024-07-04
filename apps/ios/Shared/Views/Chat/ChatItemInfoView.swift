@@ -232,7 +232,7 @@ struct ChatItemInfoView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(chatItemFrameColor(ci, theme))
-                .cornerRadius(18)
+                .modifier(ChatItemClipped())
                 .contextMenu {
                     if itemVersion.msgContent.text != "" {
                         Button {
@@ -302,7 +302,7 @@ struct ChatItemInfoView: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(quotedMsgFrameColor(qi, theme))
-                .cornerRadius(18)
+                .modifier(ChatItemClipped())
                 .contextMenu {
                     if qi.text != "" {
                         Button {

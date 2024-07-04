@@ -70,7 +70,6 @@ struct CIMsgError: View {
         .padding(.leading, 12)
         .padding(.vertical, 6)
         .background(Color(uiColor: .tertiarySystemGroupedBackground))
-        .cornerRadius(18)
         .textSelection(.disabled)
         .onTapGesture(perform: onTap)
     }

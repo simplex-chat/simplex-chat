@@ -76,7 +76,6 @@ struct FramedItemView: View {
             }
         }
             .background(chatItemFrameColorMaybeImageOrVideo(chatItem, theme))
-            .cornerRadius(18)
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
         if let (title, text) = chatItem.meta.itemStatus.statusInfo {

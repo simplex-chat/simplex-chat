@@ -55,6 +55,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             // 1. Style
             tableView.separatorStyle = .none
             tableView.transform = .verticalFlip
+            tableView.backgroundColor = .clear
 
             // 2. Register cells
             if #available(iOS 16.0, *) {
