@@ -42,6 +42,7 @@ fun NetworkAndServersView() {
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
   val netCfg = remember { chatModel.controller.getNetCfg() }
   val networkUseSocksProxy: MutableState<Boolean> = remember { mutableStateOf(netCfg.useSocksProxy) }
+  val networkShowSubscriptionPercentage: MutableState<Boolean> = remember { mutableStateOf(netCfg.showSubscriptionPercentage) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   val onionHosts = remember { mutableStateOf(netCfg.onionHosts) }
   val sessionMode = remember { mutableStateOf(netCfg.sessionMode) }
@@ -53,6 +54,7 @@ fun NetworkAndServersView() {
     currentRemoteHost = currentRemoteHost,
     developerTools = developerTools,
     networkUseSocksProxy = networkUseSocksProxy,
+    networkShowSubscriptionPercentage = networkShowSubscriptionPercentage,
     onionHosts = onionHosts,
     sessionMode = sessionMode,
     smpProxyMode = smpProxyMode,
@@ -116,6 +118,9 @@ fun NetworkAndServersView() {
           }
         )
       }
+    },
+    toggleNetworkShowSubscriptionPercentage = { enable ->
+      networkShowSubscriptionPercentage.value = enable
     },
     useOnion = {
       if (onionHosts.value == it) return@NetworkAndServersLayout
@@ -230,12 +235,14 @@ fun NetworkAndServersView() {
   currentRemoteHost: RemoteHostInfo?,
   developerTools: Boolean,
   networkUseSocksProxy: MutableState<Boolean>,
+  networkShowSubscriptionPercentage: MutableState<Boolean>,
   onionHosts: MutableState<OnionHosts>,
   sessionMode: MutableState<TransportSessionMode>,
   smpProxyMode: MutableState<SMPProxyMode>,
   smpProxyFallback: MutableState<SMPProxyFallback>,
   proxyPort: State<Int>,
   toggleSocksProxy: (Boolean) -> Unit,
+  toggleNetworkShowSubscriptionPercentage: (Boolean) -> Unit,
   useOnion: (OnionHosts) -> Unit,
   updateSessionMode: (TransportSessionMode) -> Unit,
   updateSMPProxyMode: (SMPProxyMode) -> Unit,
@@ -256,6 +263,7 @@ fun NetworkAndServersView() {
         SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.xftp_servers), { ModalManager.start.showCustomModal { close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.XFTP, close) } })
 
         if (currentRemoteHost == null) {
+          SettingsPreferenceItem(painterResource(MR.images.ic_radiowaves_up_forward_4_bar),stringResource(MR.strings.subscription_percentage), chatModel.controller.appPrefs.networkShowSubscriptionPercentage)
           UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showModal, chatModel.controller.appPrefs.networkProxyHostPort, false)
           UseOnionHosts(onionHosts, networkUseSocksProxy, showModal, useOnion)
           if (developerTools) {
@@ -677,8 +685,10 @@ fun PreviewNetworkAndServersLayout() {
       currentRemoteHost = null,
       developerTools = true,
       networkUseSocksProxy = remember { mutableStateOf(true) },
+      networkShowSubscriptionPercentage = remember { mutableStateOf(false) },
       proxyPort = remember { mutableStateOf(9050) },
       toggleSocksProxy = {},
+      toggleNetworkShowSubscriptionPercentage = {},
       onionHosts = remember { mutableStateOf(OnionHosts.PREFER) },
       sessionMode = remember { mutableStateOf(TransportSessionMode.User) },
       smpProxyMode = remember { mutableStateOf(SMPProxyMode.Never) },
