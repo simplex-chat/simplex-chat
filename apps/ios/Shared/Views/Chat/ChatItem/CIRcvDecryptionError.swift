@@ -132,7 +132,6 @@ struct CIRcvDecryptionError: View {
         .onTapGesture(perform: { onClick() })
         .padding(.vertical, 6)
         .background(Color(uiColor: .tertiarySystemGroupedBackground))
-        .cornerRadius(18)
         .textSelection(.disabled)
     }
 
@@ -152,7 +151,6 @@ struct CIRcvDecryptionError: View {
         .onTapGesture(perform: { onClick() })
         .padding(.vertical, 6)
         .background(Color(uiColor: .tertiarySystemGroupedBackground))
-        .cornerRadius(18)
         .textSelection(.disabled)
     }
 

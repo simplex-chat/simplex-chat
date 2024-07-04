@@ -754,6 +754,7 @@ struct ChatView: View {
                     playbackState: $playbackState,
                     playbackTime: $playbackTime
                 )
+                .modifier(ChatItemClipped(ci))
                 .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
                 .accessibilityLabel("")
                 if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {

@@ -195,6 +195,7 @@
 		8C9BC2652C240D5200875A27 /* ThemeModeEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C9BC2642C240D5100875A27 /* ThemeModeEditor.swift */; };
 		8CC4ED902BD7B8530078AEE8 /* CallAudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */; };
 		8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC956ED2BC0041000412A11 /* NetworkObserver.swift */; };
+		CE984D4B2C36C5D500E3AEFF /* ChatItemClipShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE984D4A2C36C5D500E3AEFF /* ChatItemClipShape.swift */; };
 		CEEA861D2C2ABCB50084E1EA /* ReverseList.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEA861C2C2ABCB50084E1EA /* ReverseList.swift */; };
 		D7197A1829AE89660055C05A /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D7197A1729AE89660055C05A /* WebRTC */; };
 		D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D72A9087294BD7A70047C86D /* NativeTextEditor.swift */; };
@@ -501,6 +502,7 @@
 		8C9BC2642C240D5100875A27 /* ThemeModeEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeModeEditor.swift; sourceTree = "<group>"; };
 		8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallAudioDeviceManager.swift; sourceTree = "<group>"; };
 		8CC956ED2BC0041000412A11 /* NetworkObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkObserver.swift; sourceTree = "<group>"; };
+		CE984D4A2C36C5D500E3AEFF /* ChatItemClipShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemClipShape.swift; sourceTree = "<group>"; };
 		CEEA861C2C2ABCB50084E1EA /* ReverseList.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReverseList.swift; sourceTree = "<group>"; };
 		D72A9087294BD7A70047C86D /* NativeTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTextEditor.swift; sourceTree = "<group>"; };
 		D741547729AF89AF0022400A /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/StoreKit.framework; sourceTree = DEVELOPER_DIR; };
@@ -683,6 +685,7 @@
 				8C7F8F0D2C19C0C100D16888 /* ViewModifiers.swift */,
 				8C74C3ED2C1B942300039E77 /* ChatWallpaper.swift */,
 				8C9BC2642C240D5100875A27 /* ThemeModeEditor.swift */,
+				CE984D4A2C36C5D500E3AEFF /* ChatItemClipShape.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -1225,6 +1228,7 @@
 				5C7505A827B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */,
 				5C10D88A28F187F300E58BF0 /* FullScreenMediaView.swift in Sources */,
 				D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */,
+				CE984D4B2C36C5D500E3AEFF /* ChatItemClipShape.swift in Sources */,
 				64D0C2C629FAC1EC00B38D5F /* AddContactLearnMore.swift in Sources */,
 				5C3A88D127DF57800060F1C2 /* FramedItemView.swift in Sources */,
 				5C65F343297D45E100B67AF3 /* VersionView.swift in Sources */,
