@@ -36,6 +36,7 @@ struct ServersSummaryView: View {
             viewBody()
                 .navigationTitle("Servers info")
                 .navigationBarTitleDisplayMode(.large)
+                .modifier(ThemedBackground(grouped: true))
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         shareButton()
@@ -264,6 +265,7 @@ struct ServersSummaryView: View {
             )
             .navigationBarTitle("SMP server")
             .navigationBarTitleDisplayMode(.large)
+            .modifier(ThemedBackground(grouped: true))
         } label: {
             HStack {
                 Text(serverAddress(srvSumm.smpServer))
@@ -332,6 +334,7 @@ struct ServersSummaryView: View {
             )
             .navigationBarTitle("XFTP server")
             .navigationBarTitleDisplayMode(.large)
+            .modifier(ThemedBackground(grouped: true))
         } label: {
             HStack {
                 Text(serverAddress(srvSumm.xftpServer))
@@ -470,6 +473,7 @@ struct SMPServerSummaryView: View {
                     NavigationLink {
                         ProtocolServersView(serverProtocol: .smp)
                             .navigationTitle("Your SMP servers")
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("Open server settings")
                     }
@@ -563,6 +567,7 @@ struct SMPStatsView: View {
                 DetailedSMPStatsView(stats: stats, statsStartedAt: statsStartedAt)
                     .navigationTitle("Detailed statistics")
                     .navigationBarTitleDisplayMode(.large)
+                    .modifier(ThemedBackground(grouped: true))
             } label: {
                 Text("Details")
             }
@@ -662,6 +667,7 @@ struct XFTPServerSummaryView: View {
                     NavigationLink {
                         ProtocolServersView(serverProtocol: .xftp)
                             .navigationTitle("Your XFTP servers")
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("Open server settings")
                     }
@@ -692,6 +698,7 @@ struct XFTPStatsView: View {
                 DetailedXFTPStatsView(stats: stats, statsStartedAt: statsStartedAt)
                     .navigationTitle("Detailed statistics")
                     .navigationBarTitleDisplayMode(.large)
+                    .modifier(ThemedBackground(grouped: true))
             } label: {
                 Text("Details")
             }
