@@ -115,7 +115,7 @@ This method is recommended for most users. The app creates a zipped archive cont
 
 1. [Open the app settings menu](./app-settings.md#opening-the-app-settings-menu).
 2. Tap or click **Migrate to another device**.
-3. If you haven't setup a database passphrase yet, you'll be prompted to set one. Once you're done, tap or click **Set passphrase**. A window will appear confirming that your database is now encrypted. Tap or click **Ok**. If you already have a database passphrase, enter it and click or tap **Verify passphrase**.
+3. If you haven't setup a database passphrase yet, you'll be prompted to set one. Once you're done, tap or click **Set passphrase**. A window will appear confirming that your database is now encrypted. Tap or click **Ok**. If you already have a database passphrase, enter it and tap or click **Verify passphrase**.
 4. Tap or click **Archive and upload**. 
 5. Show QR code or share file link to your new device. 
 
@@ -207,4 +207,4 @@ With incognito mode, you can protect the privacy of your chat profile from new c
 
 - Copy the SimpleX Link received from your contact. Paste it into the searchbar towards the top of the **Chats** screen. Tap or click **Use new incognito profile**.
 
-- Tap or click on the SimpleX link you received from them inside the app. Then click or tap **Use new incognito profile**.
+- Tap or click on the SimpleX link you received from them inside the app. Then tap or click **Use new incognito profile**.
