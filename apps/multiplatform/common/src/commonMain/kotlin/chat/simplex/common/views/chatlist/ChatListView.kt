@@ -219,12 +219,13 @@ private fun ChatListToolbar(searchInList: State<TextFieldValue>, drawerState: Dr
       }
     },
     title = {
-      Row(verticalAlignment = Alignment.CenterVertically) {
+      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
         Text(
           stringResource(MR.strings.your_chats),
           color = MaterialTheme.colors.onBackground,
           fontWeight = FontWeight.SemiBold,
         )
+        SubscriptionStatusIndicator()
       }
     },
     onTitleClick = null,
@@ -447,23 +448,6 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
           }
           .background(MaterialTheme.colors.background)
       ) {
-        // / demo - TODO remove
-        Row(
-          Modifier.padding(DEFAULT_PADDING),
-          horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-          SubscriptionStatusIcon(color = MaterialTheme.colors.primary, variableValue = 0f)
-          SubscriptionStatusIcon(color = MaterialTheme.colors.primary, variableValue = 0.25f)
-          SubscriptionStatusIcon(color = MaterialTheme.colors.primary, variableValue = 0.5f)
-          SubscriptionStatusIcon(color = MaterialTheme.colors.primary, variableValue = 0.75f)
-          SubscriptionStatusIcon(color = MaterialTheme.colors.primary, variableValue = 1f)
-          SubscriptionStatusIcon(color = Indigo, variableValue = 0f)
-          SubscriptionStatusIcon(color = Indigo, variableValue = 0.5f)
-          SubscriptionStatusIcon(color = Indigo, variableValue = 1f)
-          SubscriptionStatusIcon(color = MaterialTheme.colors.secondary, variableValue = 1f)
-        }
-        Divider()
-        // TODO remove /
         ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
         Divider()
       }

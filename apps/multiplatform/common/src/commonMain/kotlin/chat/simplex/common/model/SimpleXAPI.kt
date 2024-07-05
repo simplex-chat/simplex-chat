@@ -3534,8 +3534,8 @@ data class SMPServerSubs(
   val total: Int
     get() = ssActive + ssPending
 
-  val shareOfActive: Double
-    get() = if (total != 0) ssActive.toDouble() / total else 0.0
+  val shareOfActive: Float
+    get() = if (total != 0) ssActive.toFloat() / total else 0f
 }
 
 @Serializable
