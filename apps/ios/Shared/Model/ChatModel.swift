@@ -702,7 +702,7 @@ final class ChatModel: ObservableObject {
             }
             i += 1
         }
-        return UnreadChatItemCounts(totalBelow: totalBelow, unreadBelow: unreadBelow)
+        return UnreadChatItemCounts(isNearBottom: totalBelow < 16, unreadBelow: unreadBelow)
     }
 
     func topItemInView(itemsInView: Set<String>) -> ChatItem? {
@@ -740,7 +740,7 @@ struct NTFContactRequest {
 }
 
 struct UnreadChatItemCounts: Equatable {
-    var totalBelow: Int
+    var isNearBottom: Bool
     var unreadBelow: Int
 }
 
