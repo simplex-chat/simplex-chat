@@ -27,7 +27,6 @@ import qualified Data.Text as T
 import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
 import Simplex.Chat.Util ()
-import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), closeSQLiteStore, keyString, sqlString, storeKey)
 import Simplex.Messaging.Util
 import System.FilePath
@@ -128,8 +127,7 @@ data StorageFiles = StorageFiles
 
 storageFiles :: CM' StorageFiles
 storageFiles = do
-  ChatController {chatStore, filesFolder, assetsDirectory, smpAgent} <- ask
-  let agentStore = agentClientStore smpAgent
+  ChatController {chatStore, agentStore, filesFolder, assetsDirectory} <- ask
   filesPath <- readTVarIO filesFolder
   assetsPath <- readTVarIO assetsDirectory
   pure StorageFiles {chatStore, agentStore, filesPath, assetsPath}

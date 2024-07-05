@@ -94,7 +94,7 @@ import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, getNetworkConfig', ipAddressProtected, withLockMap)
+import Simplex.Messaging.Agent.Client (SubInfo (..), getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, getNetworkConfig', ipAddressProtected, withLockMap)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
@@ -225,8 +225,9 @@ newChatController
         firstTime = dbNew chatStore
     currentUser <- newTVarIO user
     currentRemoteHost <- newTVarIO Nothing
-    servers <- agentServers config
-    smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore backgroundMode
+    servers <- agentServers chatStore config
+    ac <- getSMPAgentClient aCfg {tbqSize} servers agentStore backgroundMode
+    smpAgent <- newTVarIO $ Just ac
     agentAsync <- newTVarIO Nothing
     random <- liftIO C.newRandom
     eventSeq <- newTVarIO 0
@@ -265,6 +266,7 @@ newChatController
           smpAgent,
           agentAsync,
           chatStore,
+          agentStore,
           chatStoreChanged,
           random,
           eventSeq,
@@ -304,22 +306,23 @@ newChatController
             smp' = fromMaybe defSmp (nonEmpty smpServers)
             xftp' = fromMaybe defXftp (nonEmpty xftpServers)
          in defaultServers {smp = smp', xftp = xftp', netCfg = updateNetworkConfig defaultNetworkConfig simpleNetCfg}
-      agentServers :: ChatConfig -> IO InitialAgentServers
-      agentServers config@ChatConfig {defaultServers = defServers@DefaultAgentServers {ntf, netCfg}} = do
-        users <- withTransaction chatStore getUsers
-        smp' <- getUserServers users SPSMP
-        xftp' <- getUserServers users SPXFTP
-        pure InitialAgentServers {smp = smp', xftp = xftp', ntf, netCfg}
-        where
-          getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => [User] -> SProtocolType p -> IO (Map UserId (NonEmpty (ProtoServerWithAuth p)))
-          getUserServers users protocol = case users of
-            [] -> pure $ M.fromList [(1, cfgServers protocol defServers)]
-            _ -> M.fromList <$> initialServers
-            where
-              initialServers :: IO [(UserId, NonEmpty (ProtoServerWithAuth p))]
-              initialServers = mapM (\u -> (aUserId u,) <$> userServers u) users
-              userServers :: User -> IO (NonEmpty (ProtoServerWithAuth p))
-              userServers user' = activeAgentServers config protocol <$> withTransaction chatStore (`getProtocolServers` user')
+
+agentServers :: SQLiteStore -> ChatConfig -> IO InitialAgentServers
+agentServers chatStore config@ChatConfig {defaultServers = defServers@DefaultAgentServers {ntf, netCfg}} = do
+  users <- withTransaction chatStore getUsers
+  smp' <- getUsersServers users SPSMP
+  xftp' <- getUsersServers users SPXFTP
+  pure InitialAgentServers {smp = smp', xftp = xftp', ntf, netCfg}
+  where
+    getUsersServers :: forall p. (ProtocolTypeI p, UserProtocol p) => [User] -> SProtocolType p -> IO (Map UserId (NonEmpty (ProtoServerWithAuth p)))
+    getUsersServers users protocol = case users of
+      [] -> pure $ M.fromList [(1, cfgServers protocol defServers)]
+      _ -> M.fromList <$> initialServers
+      where
+        initialServers :: IO [(UserId, NonEmpty (ProtoServerWithAuth p))]
+        initialServers = mapM (\u -> (aUserId u,) <$> userServers u) users
+        userServers :: User -> IO (NonEmpty (ProtoServerWithAuth p))
+        userServers user' = activeAgentServers config protocol <$> withTransaction chatStore (`getProtocolServers` user')
 
 updateNetworkConfig :: NetworkConfig -> SimpleNetCfg -> NetworkConfig
 updateNetworkConfig cfg SimpleNetCfg {socksProxy, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors} =
@@ -374,23 +377,24 @@ cfgServers p DefaultAgentServers {smp, xftp} = case p of
   SPSMP -> smp
   SPXFTP -> xftp
 
-startChatController :: Bool -> CM' (Async ())
+startChatController :: Bool -> CM (Async ())
 startChatController mainApp = do
-  asks smpAgent >>= liftIO . resumeAgentClient
-  unless mainApp $ chatWriteVar' subscriptionMode SMOnlyCreate
-  users <- fromRight [] <$> runExceptT (withStore' getUsers)
-  restoreCalls
+  withAgent' resumeAgentClient
+  lift $ unless mainApp $ chatWriteVar' subscriptionMode SMOnlyCreate
+  users <- withStore' getUsers
+  lift restoreCalls
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)
   where
     start s users = do
+      startAgentAsync s users mainApp
       a1 <- async agentSubscriber
       a2 <-
         if mainApp
-          then Just <$> async (subscribeUsers False users)
+          then Just <$> async (lift $ subscribeUsers False users)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
-      when mainApp $ do
+      when mainApp $ lift $ do
         startXFTP
         void $ forkIO $ startFilesToReceive users
         startCleanupManager
@@ -414,6 +418,15 @@ startChatController mainApp = do
         forM_ ttl $ \_ -> do
           startExpireCIThread user
           setExpireCIFlag user True
+
+startAgentAsync :: AgentAsync -> [User] -> Bool -> CM ()
+startAgentAsync agentAsync users mainApp = do
+  a1 <- async agentSubscriber
+  a2 <-
+    if mainApp
+      then Just <$> async (lift $ subscribeUsers False users)
+      else pure Nothing
+  atomically . writeTVar agentAsync $ Just (a1, a2)
 
 subscribeUsers :: Bool -> [User] -> CM' ()
 subscribeUsers onlyNeeded users = do
@@ -448,24 +461,30 @@ restoreCalls = do
   calls <- asks currentCalls
   atomically $ writeTVar calls callsMap
 
-stopChatController :: ChatController -> IO ()
-stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
-  readTVarIO remoteHostSessions >>= mapM_ (cancelRemoteHost False . snd)
-  atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (cancelRemoteCtrl False . snd)
-  disconnectAgentClient smpAgent
-  readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
-  closeFiles sndFiles
-  closeFiles rcvFiles
-  atomically $ do
-    keys <- M.keys <$> readTVar expireCIFlags
-    forM_ keys $ \k -> TM.insert k False expireCIFlags
-    writeTVar s Nothing
+stopChatController :: ChatController -> CM ()
+stopChatController ChatController {agentAsync, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
+  liftIO $ do
+    readTVarIO remoteHostSessions >>= mapM_ (cancelRemoteHost False . snd)
+    atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (cancelRemoteCtrl False . snd)
+  withAgent' disconnectAgentClient
+  stopAgentAsync agentAsync
+  liftIO $ do
+    closeFiles sndFiles
+    closeFiles rcvFiles
+    atomically $ do
+      keys <- M.keys <$> readTVar expireCIFlags
+      forM_ keys $ \k -> TM.insert k False expireCIFlags
+      writeTVar agentAsync Nothing
   where
     closeFiles :: TVar (Map Int64 Handle) -> IO ()
     closeFiles files = do
       fs <- readTVarIO files
       mapM_ hClose fs
       atomically $ writeTVar files M.empty
+
+stopAgentAsync :: AgentAsync -> CM ()
+stopAgentAsync agentAsync = do
+  readTVarIO agentAsync >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
 
 execChatCommand :: Maybe RemoteHostId -> ByteString -> CM' ChatResponse
 execChatCommand rh s = do
@@ -611,13 +630,13 @@ processChatCommand' vr = \case
   StartChat mainApp -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged . lift $ startChatController mainApp $> CRChatStarted
+      _ -> checkStoreNotChanged $ startChatController mainApp $> CRChatStarted
   APIStopChat -> do
-    ask >>= liftIO . stopChatController
+    ask >>= stopChatController
     pure CRChatStopped
   APIActivateChat restoreChat -> withUser $ \_ -> do
     lift $ when restoreChat restoreCalls
-    lift $ withAgent' foregroundAgent
+    withAgent' foregroundAgent
     chatWriteVar chatActivated True
     when restoreChat $ do
       users <- withStore' getUsers
@@ -630,7 +649,7 @@ processChatCommand' vr = \case
     chatWriteVar chatActivated False
     lift $ setAllExpireCIFlags False
     stopRemoteCtrl
-    lift $ withAgent' (`suspendAgent` t)
+    withAgent' (`suspendAgent` t)
     ok_
   ResubscribeAllConnections -> withStore' getUsers >>= lift . subscribeUsers False >> ok_
   -- has to be called before StartChat
@@ -676,9 +695,9 @@ processChatCommand' vr = \case
   ExecChatStoreSQL query -> CRSQLResult <$> withStore' (`execSQL` query)
   ExecAgentStoreSQL query -> CRSQLResult <$> withAgent (`execAgentStoreSQL` query)
   SlowSQLQueries -> do
-    ChatController {chatStore, smpAgent} <- ask
+    ChatController {chatStore, agentStore} <- ask
     chatQueries <- slowQueries chatStore
-    agentQueries <- slowQueries $ agentClientStore smpAgent
+    agentQueries <- slowQueries agentStore
     pure CRSlowSQLQueries {chatQueries, agentQueries}
     where
       slowQueries st =
@@ -1319,12 +1338,12 @@ processChatCommand' vr = \case
   APISetUserProtoServers userId (APSC p (ProtoServersConfig servers)) -> withUserId userId $ \user -> withServerProtocol p $ do
     withStore $ \db -> overwriteProtocolServers db user servers
     cfg <- asks config
-    lift $ withAgent' $ \a -> setProtocolServers a (aUserId user) $ activeAgentServers cfg p servers
+    withAgent' $ \a -> setProtocolServers a (aUserId user) $ activeAgentServers cfg p servers
     ok user
   SetUserProtoServers serversConfig -> withUser $ \User {userId} ->
     processChatCommand $ APISetUserProtoServers userId serversConfig
   APITestProtoServer userId srv@(AProtoServerWithAuth _ server) -> withUserId userId $ \user ->
-    lift $ CRServerTestResult user srv <$> withAgent' (\a -> testProtocolServer a (aUserId user) server)
+    CRServerTestResult user srv <$> withAgent' (\a -> testProtocolServer a (aUserId user) server)
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand $ APITestProtoServer userId srv
   APISetChatItemTTL userId newTTL_ -> withUserId userId $ \user ->
@@ -1350,17 +1369,27 @@ processChatCommand' vr = \case
     pure $ CRChatItemTTL user ttl
   GetChatItemTTL -> withUser' $ \User {userId} -> do
     processChatCommand $ APIGetChatItemTTL userId
-  APISetNetworkConfig cfg -> withUser' $ \_ -> lift (withAgent' (`setNetworkConfig` cfg)) >> ok_
+  APISetNetworkConfig cfg -> withUser' $ \_ -> withAgent' (`setNetworkConfig` cfg) >> ok_
   APIGetNetworkConfig -> withUser' $ \_ ->
-    CRNetworkConfig <$> lift getNetworkConfig
+    CRNetworkConfig <$> getNetworkConfig
   SetNetworkConfig netCfg -> do
-    cfg <- lift getNetworkConfig
+    cfg <- getNetworkConfig
     void . processChatCommand $ APISetNetworkConfig $ updateNetworkConfig cfg netCfg
     pure $ CRNetworkConfig cfg
-  APISetNetworkInfo info -> lift (withAgent' (`setUserNetworkInfo` info)) >> ok_
-  ReconnectAllServers -> withUser' $ \_ -> lift (withAgent' reconnectAllServers) >> ok_
+  APISetNetworkInfo info -> withAgent' (`setUserNetworkInfo` info) >> ok_
+  ReconnectAgent -> withUser' $ \_ -> do
+    ChatController {smpAgent, agentAsync, chatStore, agentStore, config = config@ChatConfig {agentConfig}} <- ask
+    stopAgentAsync agentAsync
+    withAgent' disposeAgentClient
+    atomically $ writeTVar smpAgent Nothing
+    servers <- liftIO $ agentServers chatStore config
+    smpAgent' <- liftIO $ getSMPAgentClient agentConfig servers agentStore False
+    atomically $ writeTVar smpAgent (Just smpAgent')
+    users <- withStore' getUsers
+    startAgentAsync agentAsync users True
+    ok_
   ReconnectServer userId srv -> withUserId userId $ \user -> do
-    lift (withAgent' $ \a -> reconnectSMPServer a (aUserId user) srv)
+    withAgent' $ \a -> reconnectSMPServer a (aUserId user) srv
     ok_
   APISetChatSettings (ChatRef cType chatId) chatSettings -> withUser $ \user -> case cType of
     CTDirect -> do
@@ -1572,7 +1601,7 @@ processChatCommand' vr = \case
     -- [incognito] generate profile to send
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     let profileToSend = userProfileToSend user incognitoProfile Nothing False
-    lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOn cReq) >>= \case
+    withAgent' (\a -> connRequestPQSupport a PQSupportOn cReq) >>= \case
       Nothing -> throwChatError CEInvalidConnReq
       -- TODO PQ the error above should be CEIncompatibleConnReqVersion, also the same API should be called in Plan
       Just (agentV, pqSup') -> do
@@ -2145,7 +2174,7 @@ processChatCommand' vr = \case
                 forM_ (liveRcvFileTransferPath ftr) $ \filePath -> do
                   fsFilePath <- lift $ toFSFilePath filePath
                   liftIO $ removeFile fsFilePath `catchAll_` pure ()
-                lift . forM_ agentRcvFileId $ \(AgentRcvFileId aFileId) ->
+                forM_ agentRcvFileId $ \(AgentRcvFileId aFileId) ->
                   withAgent' (`xftpDeleteRcvFile` aFileId)
                 aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
                 pure $ CRRcvFileCancelled user aci_ ftr
@@ -2236,7 +2265,7 @@ processChatCommand' vr = \case
     chatMigrations <- map upMigration <$> withStore' (Migrations.getCurrent . DB.conn)
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
-  DebugLocks -> lift $ do
+  DebugLocks -> do
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     chatEntityLocks <- getLocks =<< asks entityLocks
     agentLocks <- withAgent' debugAgentLocks
@@ -2252,7 +2281,7 @@ processChatCommand' vr = \case
         CLFile fId -> "File " <> show fId
   DebugEvent event -> toView event >> ok_
   GetAgentServersSummary userId -> withUserId userId $ \user -> do
-    agentServersSummary <- lift $ withAgent' getAgentServersSummary
+    agentServersSummary <- withAgent' getAgentServersSummary
     users <- withStore' getUsers
     smpServers <- getUserServers user SPSMP
     xftpServers <- getUserServers user SPXFTP
@@ -2267,9 +2296,9 @@ processChatCommand' vr = \case
         let srvs = if null servers then L.toList defServers else servers
         pure $ map protoServer srvs
   ResetAgentServersStats -> withAgent resetAgentServersStats >> ok_
-  GetAgentWorkers -> lift $ CRAgentWorkersSummary <$> withAgent' getAgentWorkersSummary
-  GetAgentWorkersDetails -> lift $ CRAgentWorkersDetails <$> withAgent' getAgentWorkersDetails
-  GetAgentSubs -> lift $ summary <$> withAgent' getAgentSubscriptions
+  GetAgentWorkers -> CRAgentWorkersSummary <$> withAgent' getAgentWorkersSummary
+  GetAgentWorkersDetails -> CRAgentWorkersDetails <$> withAgent' getAgentWorkersDetails
+  GetAgentSubs -> summary <$> withAgent' getAgentSubscriptions
     where
       summary SubscriptionsInfo {activeSubscriptions, pendingSubscriptions, removedSubscriptions} =
         CRAgentSubs
@@ -2282,8 +2311,8 @@ processChatCommand' vr = \case
           accSubErrors m = \case
             SubInfo {server, subError = Just e} -> M.alter (Just . maybe [e] (e :)) server m
             _ -> m
-  GetAgentSubsDetails -> lift $ CRAgentSubsDetails <$> withAgent' getAgentSubscriptions
-  GetAgentQueuesInfo -> lift $ CRAgentQueuesInfo <$> withAgent' getAgentQueuesInfo
+  GetAgentSubsDetails -> CRAgentSubsDetails <$> withAgent' getAgentSubscriptions
+  GetAgentQueuesInfo -> CRAgentQueuesInfo <$> withAgent' getAgentQueuesInfo
   -- CustomChatCommand is unsupported, it can be processed in preCmdHook
   -- in a modified CLI app or core - the hook should return Either ChatResponse ChatCommand
   CustomChatCommand _cmd -> withUser $ \user -> pure $ chatCmdError (Just user) "not supported"
@@ -2404,7 +2433,7 @@ processChatCommand' vr = \case
       -- 0) toggle disabled - PQSupportOff
       -- 1) toggle enabled, address supports PQ (connRequestPQSupport returns Just True) - PQSupportOn, enable support with compression
       -- 2) toggle enabled, address doesn't support PQ - PQSupportOn but without compression, with version range indicating support
-      lift (withAgent' $ \a -> connRequestPQSupport a pqSup cReq) >>= \case
+      withAgent' (\a -> connRequestPQSupport a pqSup cReq) >>= \case
         Nothing -> throwChatError CEInvalidConnReq
         Just (agentV, _) -> do
           let chatV = agentToChatVersion agentV
@@ -2989,8 +3018,8 @@ cancelFilesInProgress user filesInfo = do
   lift . void . withStoreBatch' $ \db -> map (updateRcvFileCancelled db) rfs
   let xsfIds = mapMaybe (\(FileTransferMeta {fileId, xftpSndFile}, _) -> (,fileId) <$> xftpSndFile) sfs
       xrfIds = mapMaybe (\RcvFileTransfer {fileId, xftpRcvFile} -> (,fileId) <$> xftpRcvFile) rfs
-  lift $ agentXFTPDeleteSndFilesRemote user xsfIds
-  lift $ agentXFTPDeleteRcvFiles xrfIds
+  agentXFTPDeleteSndFilesRemote user xsfIds
+  agentXFTPDeleteRcvFiles xrfIds
   let smpSFConnIds = concatMap (\(ft, sfts) -> mapMaybe (smpSndFileConnId ft) sfts) sfs
       smpRFConnIds = mapMaybe smpRcvFileConnId rfs
   deleteAgentConnectionsAsync user smpSFConnIds
@@ -3226,7 +3255,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       pure $ filter (`notElem` knownSrvs) srvs
     ipProtectedForSrvs :: [XFTPServer] -> CM Bool
     ipProtectedForSrvs srvs = do
-      netCfg <- lift getNetworkConfig
+      netCfg <- getNetworkConfig
       pure $ all (ipAddressProtected netCfg) srvs
     relaysNotApproved :: [XFTPServer] -> CM ()
     relaysNotApproved unknownSrvs = do
@@ -3234,7 +3263,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
       throwChatError $ CEFileNotApproved fileId unknownSrvs
 
-getNetworkConfig :: CM' NetworkConfig
+getNetworkConfig :: CM NetworkConfig
 getNetworkConfig = withAgent' $ liftIO . getNetworkConfig'
 
 resetRcvCIFileStatus :: User -> FileTransferId -> CIFileStatus 'MDRcv -> CM (Maybe AChatItem)
@@ -3382,22 +3411,32 @@ deleteGroupLink_ user gInfo conn = do
   deleteAgentConnectionAsync user $ aConnId conn
   withStore' $ \db -> deleteGroupLink db user gInfo
 
-agentSubscriber :: CM' ()
+-- agentSubscriber :: CM' ()
+-- agentSubscriber = do
+--   q <- asks $ subQ . smpAgent
+--   forever (atomically (readTBQueue q) >>= process)
+--     `E.catchAny` \e -> do
+--       toView' $ CRChatError Nothing $ ChatErrorAgent (CRITICAL True $ "Message reception stopped: " <> show e) Nothing
+--       E.throwIO e
+agentSubscriber :: CM ()
 agentSubscriber = do
-  q <- asks $ subQ . smpAgent
-  forever (atomically (readTBQueue q) >>= process)
-    `E.catchAny` \e -> do
-      toView' $ CRChatError Nothing $ ChatErrorAgent (CRITICAL True $ "Message reception stopped: " <> show e) Nothing
-      E.throwIO e
+  asks smpAgent
+    >>= readTVarIO
+    >>= maybe (throwChatError CENoAgentClient) run'
   where
-    process :: (ACorrId, EntityId, AEvt) -> CM' ()
+    run' AgentClient {subQ = q} =
+      forever (atomically (readTBQueue q) >>= process)
+        `E.catchAny` \e -> do
+          toView $ CRChatError Nothing $ ChatErrorAgent (CRITICAL True $ "Message reception stopped: " <> show e) Nothing
+          E.throwIO e
+    process :: (ACorrId, EntityId, AEvt) -> CM ()
     process (corrId, entId, AEvt e msg) = run $ case e of
       SAENone -> processAgentMessageNoConn msg
       SAEConn -> processAgentMessage corrId entId msg
       SAERcvFile -> processAgentMsgRcvFile corrId entId msg
       SAESndFile -> processAgentMsgSndFile corrId entId msg
       where
-        run action = action `catchChatError'` (toView' . CRChatError Nothing)
+        run action = action `catchChatError` (toView . CRChatError Nothing)
 
 type AgentBatchSubscribe = AgentClient -> [ConnId] -> ExceptT AgentErrorType IO (Map ConnId (Either AgentErrorType ()))
 
@@ -3762,7 +3801,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
     withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
       Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
       _ -> do
-        lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
+        withAgent' (`xftpDeleteSndFileInternal` aFileId)
         throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
   where
     withEntityLock_ :: Maybe ChatRef -> CM a -> CM a
@@ -3786,7 +3825,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
           ci <- withStore $ \db -> lookupChatItemByFileId db vr user fileId
           case ci of
             Nothing -> do
-              lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
+              withAgent' (`xftpDeleteSndFileInternal` aFileId)
               withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText rfds)
               case rfds of
                 [] -> sendFileError (FileErrOther "no receiver descriptions") "no receiver descriptions" vr ft
@@ -3809,7 +3848,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
                       msgDeliveryId <- sendFileDescription sft rfd sharedMsgId $ sendDirectContactMessage user ct
                       withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
-                      lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
+                      withAgent' (`xftpDeleteSndFileInternal` aFileId)
                     (_, _, SMDSnd, GroupChat g@GroupInfo {groupId}) -> do
                       ms <- withStore' $ \db -> getGroupMembers db vr user g
                       let rfdsMemberFTs = zip rfds $ memberFTs ms
@@ -3819,7 +3858,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       ci' <- withStore $ \db -> do
                         liftIO $ updateCIFileStatus db user fileId CIFSSndComplete
                         getChatItemByFileId db vr user fileId
-                      lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
+                      withAgent' (`xftpDeleteSndFileInternal` aFileId)
                       toView $ CRSndFileCompleteXFTP user ci' ft
                       where
                         memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
@@ -3870,7 +3909,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
           ci <- withStore $ \db -> do
             liftIO $ updateFileCancelled db user fileId (CIFSSndError ferr)
             lookupChatItemByFileId db vr user fileId
-          lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
+          withAgent' (`xftpDeleteSndFileInternal` aFileId)
           toView $ CRSndFileError user ci ft err
 
 agentFileError :: AgentErrorType -> FileError
@@ -3905,7 +3944,7 @@ processAgentMsgRcvFile _corrId aFileId msg = do
     withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
       Just user -> process user fileId `catchChatError` (toView . CRChatError (Just user))
       _ -> do
-        lift $ withAgent' (`xftpDeleteRcvFile` aFileId)
+        withAgent' (`xftpDeleteRcvFile` aFileId)
         throwChatError $ CENoRcvFileUser $ AgentRcvFileId aFileId
   where
     withEntityLock_ :: Maybe ChatRef -> CM a -> CM a
@@ -6560,7 +6599,7 @@ cancelSndFile user FileTransferMeta {fileId, xftpSndFile} fts sendCancel = do
       catMaybes <$> forM fts (\ft -> cancelSndFileTransfer user ft sendCancel)
     Just xsf -> do
       forM_ fts (\ft -> cancelSndFileTransfer user ft False)
-      lift (agentXFTPDeleteSndFileRemote user xsf fileId) `catchChatError` (toView . CRChatError (Just user))
+      agentXFTPDeleteSndFileRemote user xsf fileId `catchChatError` (toView . CRChatError (Just user))
       pure []
 
 -- TODO v6.0 remove
@@ -7068,27 +7107,27 @@ deleteAgentConnectionsAsync' user acIds waitDelivery = do
 
 agentXFTPDeleteRcvFile :: RcvFileId -> FileTransferId -> CM ()
 agentXFTPDeleteRcvFile aFileId fileId = do
-  lift $ withAgent' (`xftpDeleteRcvFile` aFileId)
+  withAgent' (`xftpDeleteRcvFile` aFileId)
   withStore' $ \db -> setRcvFTAgentDeleted db fileId
 
-agentXFTPDeleteRcvFiles :: [(XFTPRcvFile, FileTransferId)] -> CM' ()
+agentXFTPDeleteRcvFiles :: [(XFTPRcvFile, FileTransferId)] -> CM ()
 agentXFTPDeleteRcvFiles rcvFiles = do
   let rcvFiles' = filter (not . agentRcvFileDeleted . fst) rcvFiles
       rfIds = mapMaybe fileIds rcvFiles'
   withAgent' $ \a -> xftpDeleteRcvFiles a (map fst rfIds)
-  void . withStoreBatch' $ \db -> map (setRcvFTAgentDeleted db . snd) rfIds
+  void . lift . withStoreBatch' $ \db -> map (setRcvFTAgentDeleted db . snd) rfIds
   where
     fileIds :: (XFTPRcvFile, FileTransferId) -> Maybe (RcvFileId, FileTransferId)
     fileIds (XFTPRcvFile {agentRcvFileId = Just (AgentRcvFileId aFileId)}, fileId) = Just (aFileId, fileId)
     fileIds _ = Nothing
 
-agentXFTPDeleteSndFileRemote :: User -> XFTPSndFile -> FileTransferId -> CM' ()
+agentXFTPDeleteSndFileRemote :: User -> XFTPSndFile -> FileTransferId -> CM ()
 agentXFTPDeleteSndFileRemote user xsf fileId =
   agentXFTPDeleteSndFilesRemote user [(xsf, fileId)]
 
-agentXFTPDeleteSndFilesRemote :: User -> [(XFTPSndFile, FileTransferId)] -> CM' ()
+agentXFTPDeleteSndFilesRemote :: User -> [(XFTPSndFile, FileTransferId)] -> CM ()
 agentXFTPDeleteSndFilesRemote user sndFiles = do
-  (_errs, redirects) <- partitionEithers <$> withStoreBatch' (\db -> map (lookupFileTransferRedirectMeta db user . snd) sndFiles)
+  (_errs, redirects) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (lookupFileTransferRedirectMeta db user . snd) sndFiles)
   let redirects' = mapMaybe mapRedirectMeta $ concat redirects
       sndFilesAll = redirects' <> sndFiles
       sndFilesAll' = filter (not . agentSndFileDeleted . fst) sndFilesAll
@@ -7098,7 +7137,7 @@ agentXFTPDeleteSndFilesRemote user sndFiles = do
   (sfsNoDescr, sfsWithDescr) <- partitionSndDescr sndFilesAll' [] []
   withAgent' $ \a -> xftpDeleteSndFilesInternal a sfsNoDescr
   withAgent' $ \a -> xftpDeleteSndFilesRemote a (aUserId user) sfsWithDescr
-  void . withStoreBatch' $ \db -> map (setSndFTAgentDeleted db user . (\(_, fId) -> fId)) sndFilesAll'
+  void . lift . withStoreBatch' $ \db -> map (setSndFTAgentDeleted db user . (\(_, fId) -> fId)) sndFilesAll'
   where
     mapRedirectMeta :: FileTransferMeta -> Maybe (XFTPSndFile, FileTransferId)
     mapRedirectMeta FileTransferMeta {fileId = fileId, xftpSndFile = Just sndFileRedirect} = Just (sndFileRedirect, fileId)
@@ -7107,13 +7146,13 @@ agentXFTPDeleteSndFilesRemote user sndFiles = do
       [(XFTPSndFile, FileTransferId)] ->
       [SndFileId] ->
       [(SndFileId, ValidFileDescription 'FSender)] ->
-      CM' ([SndFileId], [(SndFileId, ValidFileDescription 'FSender)])
+      CM ([SndFileId], [(SndFileId, ValidFileDescription 'FSender)])
     partitionSndDescr [] filesWithoutDescr filesWithDescr = pure (filesWithoutDescr, filesWithDescr)
     partitionSndDescr ((XFTPSndFile {agentSndFileId = AgentSndFileId aFileId, privateSndFileDescr}, _) : xsfs) filesWithoutDescr filesWithDescr =
       case privateSndFileDescr of
         Nothing -> partitionSndDescr xsfs (aFileId : filesWithoutDescr) filesWithDescr
         Just sfdText ->
-          tryChatError' (parseFileDescription sfdText) >>= \case
+          tryChatError (parseFileDescription sfdText) >>= \case
             Left _ -> partitionSndDescr xsfs (aFileId : filesWithoutDescr) filesWithDescr
             Right sfd -> partitionSndDescr xsfs filesWithoutDescr ((aFileId, sfd) : filesWithDescr)
 
@@ -7434,7 +7473,7 @@ chatCommandP =
       ("/network " <|> "/net ") *> (SetNetworkConfig <$> netCfgP),
       ("/network" <|> "/net") $> APIGetNetworkConfig,
       "/reconnect " *> (ReconnectServer <$> A.decimal <* A.space <*> strP),
-      "/reconnect" $> ReconnectAllServers,
+      "/reconnect" $> ReconnectAgent,
       "/_settings " *> (APISetChatSettings <$> chatRefP <* A.space <*> jsonP),
       "/_member settings #" *> (APISetMemberSettings <$> A.decimal <* A.space <*> A.decimal <* A.space <*> jsonP),
       "/_info #" *> (APIGroupMemberInfo <$> A.decimal <* A.space <*> A.decimal),

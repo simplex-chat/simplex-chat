@@ -1923,6 +1923,7 @@ viewChatError :: Bool -> ChatLogLevel -> Bool -> ChatError -> [StyledString]
 viewChatError isCmd logLevel testView = \case
   ChatError err -> case err of
     CENoActiveUser -> ["error: active user is required"]
+    CENoAgentClient -> ["error: agent client not found"]
     CENoConnectionUser agentConnId -> ["error: message user not found, conn id: " <> sShow agentConnId | logLevel <= CLLError]
     CENoSndFileUser aFileId -> ["error: snd file user not found, file id: " <> sShow aFileId | logLevel <= CLLError]
     CENoRcvFileUser aFileId -> ["error: rcv file user not found, file id: " <> sShow aFileId | logLevel <= CLLError]

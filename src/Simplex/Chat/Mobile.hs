@@ -253,14 +253,14 @@ chatMigrateInitKey dbFilePrefix dbKey keepKey confirm backgroundMode = runExcept
         dbError e = Left . DBMErrorSQL dbFile $ show e
 
 chatCloseStore :: ChatController -> IO String
-chatCloseStore ChatController {chatStore, smpAgent} = handleErr $ do
+chatCloseStore ChatController {chatStore, agentStore} = handleErr $ do
   closeSQLiteStore chatStore
-  closeSQLiteStore $ agentClientStore smpAgent
+  closeSQLiteStore agentStore
 
 chatReopenStore :: ChatController -> IO String
-chatReopenStore ChatController {chatStore, smpAgent} = handleErr $ do
+chatReopenStore ChatController {chatStore, agentStore} = handleErr $ do
   reopenSQLiteStore chatStore
-  reopenSQLiteStore (agentClientStore smpAgent)
+  reopenSQLiteStore agentStore
 
 handleErr :: IO () -> IO String
 handleErr a = (a $> "") `catch` (pure . show @SomeException)

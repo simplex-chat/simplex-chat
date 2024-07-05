@@ -142,7 +142,7 @@ startRemoteHost rh_ rcAddrPrefs_ port_ = do
     Just (rhId, multicast) -> do
       rh@RemoteHost {hostPairing} <- withStore $ \db -> getRemoteHost db rhId
       pure (RHId rhId, multicast, Just $ remoteHostInfo rh $ Just RHSStarting, hostPairing) -- get from the database, start multicast if requested
-    Nothing -> lift . withAgent' $ \a -> (RHNew,False,Nothing,) <$> rcNewHostPairing a
+    Nothing -> (RHNew,False,Nothing,) <$> withAgent (lift . rcNewHostPairing)
   sseq <- startRemoteHostSession rhKey
   ctrlAppInfo <- mkCtrlAppInfo
   (localAddrs, invitation, rchClient, vars) <- handleConnectError rhKey sseq . withAgent $ \a -> rcConnectHost a pairing (J.toJSON ctrlAppInfo) multicast rcAddrPrefs_ port_

@@ -69,7 +69,7 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
-import Simplex.Messaging.Agent.Client (AgentLocks, ServerQueueInfo, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, UserNetworkInfo)
+import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, ServerQueueInfo, UserNetworkInfo)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
@@ -199,13 +199,16 @@ defaultInlineFilesConfig =
 
 data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLiteStore}
 
+type AgentAsync = TVar (Maybe (Async (), Maybe (Async ())))
+
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
     currentRemoteHost :: TVar (Maybe RemoteHostId),
     firstTime :: Bool,
-    smpAgent :: AgentClient,
-    agentAsync :: TVar (Maybe (Async (), Maybe (Async ()))),
+    smpAgent :: TVar (Maybe AgentClient),
+    agentAsync :: AgentAsync,
     chatStore :: SQLiteStore,
+    agentStore :: SQLiteStore,
     chatStoreChanged :: TVar Bool, -- if True, chat should be fully restarted
     random :: TVar ChaChaDRG,
     eventSeq :: TVar Int,
@@ -354,7 +357,7 @@ data ChatCommand
   | APIGetNetworkConfig
   | SetNetworkConfig SimpleNetCfg
   | APISetNetworkInfo UserNetworkInfo
-  | ReconnectAllServers
+  | ReconnectAgent
   | ReconnectServer UserId SMPServer
   | APISetChatSettings ChatRef ChatSettings
   | APISetMemberSettings GroupId GroupMemberId GroupMemberSettings
@@ -1103,6 +1106,7 @@ data ChatError
 
 data ChatErrorType
   = CENoActiveUser
+  | CENoAgentClient
   | CENoConnectionUser {agentConnId :: AgentConnId}
   | CENoSndFileUser {agentSndFileId :: AgentSndFileId}
   | CENoRcvFileUser {agentRcvFileId :: AgentRcvFileId}
@@ -1415,11 +1419,15 @@ withStoreBatch' actions = withStoreBatch $ fmap (fmap Right) . actions
 withAgent :: (AgentClient -> ExceptT AgentErrorType IO a) -> CM a
 withAgent action =
   asks smpAgent
-    >>= liftIO . runExceptT . action
-    >>= liftEither . first (`ChatErrorAgent` Nothing)
+    >>= readTVarIO
+    >>= maybe (throwChatError CENoAgentClient) run
+  where
+    run sa =
+      (liftIO . runExceptT . action) sa
+        >>= liftEither . first (`ChatErrorAgent` Nothing)
 
-withAgent' :: (AgentClient -> IO a) -> CM' a
-withAgent' action = asks smpAgent >>= liftIO . action
+withAgent' :: (AgentClient -> IO a) -> CM a
+withAgent' action = withAgent $ lift . action
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
 
