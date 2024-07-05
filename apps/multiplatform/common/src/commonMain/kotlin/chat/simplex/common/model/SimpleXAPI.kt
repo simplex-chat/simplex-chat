@@ -413,17 +413,14 @@ object ChatController {
 
   fun hasChatCtrl() = ctrl != -1L && ctrl != null
 
-  suspend fun getAgentServersSummary(rh: Long?): PresentedServersSummary {
+  suspend fun getAgentServersSummary(rh: Long?): PresentedServersSummary? {
     val userId = currentUserId("getAgentServersSummary")
 
     val r = sendCmd(rh, CC.GetAgentServersSummary(userId))
 
-    if (r is CR.AgentServersSummary) {
-      return r.serversSummary;
-    } else {
-      Log.e(TAG, "getAgentServersSummary bad response: ${r.responseType} ${r.details}")
-      throw Exception("failed to get agent servers summary ${r.responseType} ${r.details}")
-    }
+    if (r is CR.AgentServersSummary) return r.serversSummary
+    Log.e(TAG, "getAgentServersSummary bad response: ${r.responseType} ${r.details}")
+    return null
   }
 
   suspend fun resetAgentServersStats() {
