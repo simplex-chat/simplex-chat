@@ -413,6 +413,23 @@ object ChatController {
 
   fun hasChatCtrl() = ctrl != -1L && ctrl != null
 
+  suspend fun getAgentServersSummary(rh: Long?): PresentedServersSummary {
+    val userId = currentUserId("getAgentServersSummary")
+
+    val r = sendCmd(rh, CC.GetAgentServersSummary(userId))
+
+    if (r is CR.AgentServersSummary) {
+      return r.serversSummary;
+    } else {
+      Log.e(TAG, "getAgentServersSummary bad response: ${r.responseType} ${r.details}")
+      throw Exception("failed to get agent servers summary ${r.responseType} ${r.details}")
+    }
+  }
+
+  suspend fun resetAgentServersStats() {
+    sendCommandOkResp(null, CC.ResetAgentServersStats())
+  }
+
   private suspend fun currentUserId(funcName: String): Long = changingActiveUserMutex.withLock {
     val userId = chatModel.currentUser.value?.userId
     if (userId == null) {
@@ -917,6 +934,19 @@ object ChatController {
           generalGetString(MR.strings.error_setting_network_config),
           "${r.responseType}: ${r.details}"
         )
+        false
+      }
+    }
+  }
+
+  suspend fun reconnectServer(rh: Long?, server: String): Boolean {
+    val userId = currentUserId("reconnectServer")
+
+    val r = sendCmd(rh, CC.ReconnectServer(userId, server))
+    return when (r) {
+      is CR.CmdOk -> true
+      else -> {
+        Log.e(TAG, "reconnectServer bad response: ${r.responseType} ${r.details}")
         false
       }
     }
@@ -2582,6 +2612,7 @@ sealed class CC {
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
   class APIGetNetworkConfig: CC()
   class APISetNetworkInfo(val networkInfo: UserNetworkInfo): CC()
+  class ReconnectServer(val userId: Long, val server: String): CC()
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
   class ApiSetMemberSettings(val groupId: Long, val groupMemberId: Long, val memberSettings: GroupMemberSettings): CC()
   class APIContactInfo(val contactId: Long): CC()
@@ -2653,6 +2684,8 @@ sealed class CC {
   class ApiStandaloneFileInfo(val url: String): CC()
   // misc
   class ShowVersion(): CC()
+  class ResetAgentServersStats(): CC()
+  class GetAgentServersSummary(val userId: Long): CC()
 
   val cmdString: String get() = when (this) {
     is Console -> cmd
@@ -2729,6 +2762,7 @@ sealed class CC {
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
     is APIGetNetworkConfig -> "/network"
     is APISetNetworkInfo -> "/_network info ${json.encodeToString(networkInfo)}"
+    is ReconnectServer -> "/reconnect $userId $server"
     is APISetChatSettings -> "/_settings ${chatRef(type, id)} ${json.encodeToString(chatSettings)}"
     is ApiSetMemberSettings -> "/_member settings #$groupId $groupMemberId ${json.encodeToString(memberSettings)}"
     is APIContactInfo -> "/_info @$contactId"
@@ -2809,6 +2843,8 @@ sealed class CC {
     is ApiDownloadStandaloneFile -> "/_download $userId $url ${file.filePath}"
     is ApiStandaloneFileInfo -> "/_download info $url"
     is ShowVersion -> "/version"
+    is ResetAgentServersStats -> "/reset servers stats"
+    is GetAgentServersSummary -> "/get servers summary $userId"
   }
 
   val cmdType: String get() = when (this) {
@@ -2869,6 +2905,7 @@ sealed class CC {
     is APISetNetworkConfig -> "apiSetNetworkConfig"
     is APIGetNetworkConfig -> "apiGetNetworkConfig"
     is APISetNetworkInfo -> "apiSetNetworkInfo"
+    is ReconnectServer -> "reconnectServer"
     is APISetChatSettings -> "apiSetChatSettings"
     is ApiSetMemberSettings -> "apiSetMemberSettings"
     is APIContactInfo -> "apiContactInfo"
@@ -2938,6 +2975,8 @@ sealed class CC {
     is ApiDownloadStandaloneFile -> "apiDownloadStandaloneFile"
     is ApiStandaloneFileInfo -> "apiStandaloneFileInfo"
     is ShowVersion -> "showVersion"
+    is ResetAgentServersStats -> "resetAgentServersStats"
+    is GetAgentServersSummary -> "getAgentServersSummary"
   }
 
   class ItemRange(val from: Long, val to: Long)
@@ -3433,6 +3472,160 @@ data class TimedMessagesPreference(
       get() = listOf(600, 3600, 86400, 7 * 86400, 30 * 86400, 3 * 30 * 86400, null)
   }
 }
+
+@Serializable
+data class PresentedServersSummary(
+  val statsStartedAt: Instant,
+  val allUsersSMP: SMPServersSummary,
+  val allUsersXFTP: XFTPServersSummary,
+  val currentUserSMP: SMPServersSummary,
+  val currentUserXFTP: XFTPServersSummary
+)
+
+@Serializable
+data class SMPServersSummary(
+  val smpTotals: SMPTotals,
+  val currentlyUsedSMPServers: List<SMPServerSummary>,
+  val previouslyUsedSMPServers: List<SMPServerSummary>,
+  val onlyProxiedSMPServers: List<SMPServerSummary>
+)
+
+@Serializable
+data class SMPTotals(
+  val sessions: ServerSessions,
+  val subs: SMPServerSubs,
+  val stats: AgentSMPServerStatsData
+)
+
+@Serializable
+data class SMPServerSummary(
+  val smpServer: String,
+  val known: Boolean? = null,
+  val sessions: ServerSessions? = null,
+  val subs: SMPServerSubs? = null,
+  val stats: AgentSMPServerStatsData? = null
+) {
+  val id: String
+    get() = smpServer
+
+  val hasSubs: Boolean
+    get() = subs != null
+
+  val sessionsOrNew: ServerSessions
+    get() = sessions ?: ServerSessions.newServerSessions
+
+  val subsOrNew: SMPServerSubs
+    get() = subs ?: SMPServerSubs.newSMPServerSubs
+}
+
+@Serializable
+data class ServerSessions(
+  val ssConnected: Int,
+  val ssErrors: Int,
+  val ssConnecting: Int
+) {
+  companion object {
+    val newServerSessions = ServerSessions(
+      ssConnected = 0,
+      ssErrors = 0,
+      ssConnecting = 0
+    )
+  }
+}
+
+@Serializable
+data class SMPServerSubs(
+  val ssActive: Int,
+  val ssPending: Int
+) {
+  companion object {
+    val newSMPServerSubs = SMPServerSubs(
+      ssActive = 0,
+      ssPending = 0
+    )
+  }
+
+  val total: Int
+    get() = ssActive + ssPending
+
+  val shareOfActive: Double
+    get() = if (total != 0) ssActive.toDouble() / total else 0.0
+}
+
+@Serializable
+data class AgentSMPServerStatsData(
+  val _sentDirect: Int,
+  val _sentViaProxy: Int,
+  val _sentProxied: Int,
+  val _sentDirectAttempts: Int,
+  val _sentViaProxyAttempts: Int,
+  val _sentProxiedAttempts: Int,
+  val _sentAuthErrs: Int,
+  val _sentQuotaErrs: Int,
+  val _sentExpiredErrs: Int,
+  val _sentOtherErrs: Int,
+  val _recvMsgs: Int,
+  val _recvDuplicates: Int,
+  val _recvCryptoErrs: Int,
+  val _recvErrs: Int,
+  val _ackMsgs: Int,
+  val _ackAttempts: Int,
+  val _ackNoMsgErrs: Int,
+  val _ackOtherErrs: Int,
+  val _connCreated: Int,
+  val _connSecured: Int,
+  val _connCompleted: Int,
+  val _connDeleted: Int,
+  val _connDelAttempts: Int,
+  val _connDelErrs: Int,
+  val _connSubscribed: Int,
+  val _connSubAttempts: Int,
+  val _connSubIgnored: Int,
+  val _connSubErrs: Int
+)
+
+@Serializable
+data class XFTPServersSummary(
+  val xftpTotals: XFTPTotals,
+  val currentlyUsedXFTPServers: List<XFTPServerSummary>,
+  val previouslyUsedXFTPServers: List<XFTPServerSummary>
+)
+
+@Serializable
+data class XFTPTotals(
+  val sessions: ServerSessions,
+  val stats: AgentXFTPServerStatsData
+)
+
+@Serializable
+data class XFTPServerSummary(
+  val xftpServer: String,
+  val known: Boolean? = null,
+  val sessions: ServerSessions? = null,
+  val stats: AgentXFTPServerStatsData? = null,
+  val rcvInProgress: Boolean,
+  val sndInProgress: Boolean,
+  val delInProgress: Boolean
+) {
+  val id: String
+    get() = xftpServer
+}
+
+@Serializable
+data class AgentXFTPServerStatsData(
+  val _uploads: Int,
+  val _uploadsSize: Long,
+  val _uploadAttempts: Int,
+  val _uploadErrs: Int,
+  val _downloads: Int,
+  val _downloadsSize: Long,
+  val _downloadAttempts: Int,
+  val _downloadAuthErrs: Int,
+  val _downloadErrs: Int,
+  val _deletions: Int,
+  val _deleteAttempts: Int,
+  val _deleteErrs: Int
+)
 
 sealed class CustomTimeUnit {
   object Second: CustomTimeUnit()
@@ -4445,6 +4638,7 @@ sealed class CR {
   @Serializable @SerialName("chatError") class ChatRespError(val user_: UserRef?, val chatError: ChatError): CR()
   @Serializable @SerialName("archiveImported") class ArchiveImported(val archiveErrors: List<ArchiveError>): CR()
   @Serializable @SerialName("appSettings") class AppSettingsR(val appSettings: AppSettings): CR()
+  @Serializable @SerialName("agentServersSummary") class AgentServersSummary(val user: UserRef, val serversSummary: PresentedServersSummary): CR()
   // general
   @Serializable class Response(val type: String, val json: String): CR()
   @Serializable class Invalid(val str: String): CR()
@@ -4604,6 +4798,7 @@ sealed class CR {
     is ContactPQAllowed -> "contactPQAllowed"
     is ContactPQEnabled -> "contactPQEnabled"
     is VersionInfo -> "versionInfo"
+    is AgentServersSummary -> "agentServersSummary"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
     is ChatRespError -> "chatError"
@@ -4782,6 +4977,7 @@ sealed class CR {
     is RemoteCtrlStopped -> "rcsState: $rcsState\nrcsStopReason: $rcStopReason"
     is ContactPQAllowed -> withUser(user, "contact: ${contact.id}\npqEncryption: $pqEncryption")
     is ContactPQEnabled -> withUser(user, "contact: ${contact.id}\npqEnabled: $pqEnabled")
+    is AgentServersSummary -> withUser(user, json.encodeToString(serversSummary))
     is VersionInfo -> "version ${json.encodeToString(versionInfo)}\n\n" +
         "chat migrations: ${json.encodeToString(chatMigrations.map { it.upName })}\n\n" +
         "agent migrations: ${json.encodeToString(agentMigrations.map { it.upName })}"
