@@ -747,7 +747,7 @@ struct ThemeDestinationPicker: View {
         let values = [(nil, "All profiles")] + m.users.filter { $0.user.activeUser }.map { ($0.user.userId, $0.user.chatViewName)}
 
         if values.contains(where: { (userId, text) in userId == themeUserDestination?.0 }) {
-            Picker("Apply to mode", selection: $themeUserDest) {
+            Picker("Apply to", selection: $themeUserDest) {
                 ForEach(values, id: \.0) { (_, text) in
                     Text(text)
                 }
