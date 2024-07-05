@@ -2474,7 +2474,6 @@ object ChatController {
     val smpPingInterval = appPrefs.networkSMPPingInterval.get()
     val smpPingCount = appPrefs.networkSMPPingCount.get()
     val enableKeepAlive = appPrefs.networkEnableKeepAlive.get()
-    val showSubscriptionPercentage = appPrefs.networkShowSubscriptionPercentage.get()
     val tcpKeepAlive = if (enableKeepAlive) {
       val keepIdle = appPrefs.networkTCPKeepIdle.get()
       val keepIntvl = appPrefs.networkTCPKeepIntvl.get()
@@ -2496,8 +2495,7 @@ object ChatController {
       rcvConcurrency = rcvConcurrency,
       tcpKeepAlive = tcpKeepAlive,
       smpPingInterval = smpPingInterval,
-      smpPingCount = smpPingCount,
-      showSubscriptionPercentage = showSubscriptionPercentage
+      smpPingCount = smpPingCount
     )
   }
 
@@ -2517,7 +2515,6 @@ object ChatController {
     appPrefs.networkRcvConcurrency.set(cfg.rcvConcurrency)
     appPrefs.networkSMPPingInterval.set(cfg.smpPingInterval)
     appPrefs.networkSMPPingCount.set(cfg.smpPingCount)
-    appPrefs.networkShowSubscriptionPercentage.set(cfg.showSubscriptionPercentage)
     if (cfg.tcpKeepAlive != null) {
       appPrefs.networkEnableKeepAlive.set(true)
       appPrefs.networkTCPKeepIdle.set(cfg.tcpKeepAlive.keepIdle)
@@ -3238,7 +3235,6 @@ data class NetCfg(
   val smpPingInterval: Long, // microseconds
   val smpPingCount: Int,
   val logTLSErrors: Boolean = false,
-  val showSubscriptionPercentage: Boolean = false
 ) {
   val useSocksProxy: Boolean get() = socksProxy != null
   val enableKeepAlive: Boolean get() = tcpKeepAlive != null

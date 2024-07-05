@@ -42,7 +42,7 @@ fun NetworkAndServersView() {
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
   val netCfg = remember { chatModel.controller.getNetCfg() }
   val networkUseSocksProxy: MutableState<Boolean> = remember { mutableStateOf(netCfg.useSocksProxy) }
-  val networkShowSubscriptionPercentage: MutableState<Boolean> = remember { mutableStateOf(netCfg.showSubscriptionPercentage) }
+  val networkShowSubscriptionPercentage: MutableState<Boolean> = remember { mutableStateOf(chatModel.controller.appPrefs.networkShowSubscriptionPercentage.get()) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   val onionHosts = remember { mutableStateOf(netCfg.onionHosts) }
   val sessionMode = remember { mutableStateOf(netCfg.sessionMode) }
