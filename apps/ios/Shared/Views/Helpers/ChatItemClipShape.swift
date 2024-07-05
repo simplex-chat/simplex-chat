@@ -38,12 +38,17 @@ struct ChatItemClipped: ViewModifier {
                 switch chatItem.content {
                 case 
                     .sndMsgContent, 
-                    .rcvMsgContent, 
+                    .rcvMsgContent,
+                    .rcvDecryptionError,
+                    .rcvGroupInvitation,
+                    .sndGroupInvitation,
                     .sndDeleted, 
-                    .rcvDeleted, 
+                    .rcvDeleted,
+                    .rcvIntegrityError,
                     .sndModerated, 
                     .rcvModerated, 
-                    .rcvBlocked: 18
+                    .rcvBlocked,
+                    .invalidJSON: 18
                 default: 8
                 }
             }()
