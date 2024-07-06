@@ -219,13 +219,18 @@ private fun ChatListToolbar(searchInList: State<TextFieldValue>, drawerState: Dr
       }
     },
     title = {
-      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
           stringResource(MR.strings.your_chats),
           color = MaterialTheme.colors.onBackground,
           fontWeight = FontWeight.SemiBold,
         )
-        SubscriptionStatusIndicator()
+        SubscriptionStatusIndicator(
+          click = {
+            ModalManager.center.closeModals()
+            ModalManager.center.showModalCloseable { _ -> ServersSummaryView(chatModel.currentRemoteHost.value) }
+          }
+        )
       }
     },
     onTitleClick = null,
