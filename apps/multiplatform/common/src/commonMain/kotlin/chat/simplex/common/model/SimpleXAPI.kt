@@ -423,8 +423,8 @@ object ChatController {
     return null
   }
 
-  suspend fun resetAgentServersStats(rh: Long?) {
-    sendCommandOkResp(rh, CC.ResetAgentServersStats())
+  suspend fun resetAgentServersStats(rh: Long?): Boolean {
+    return sendCommandOkResp(rh, CC.ResetAgentServersStats())
   }
 
   private suspend fun currentUserId(funcName: String): Long = changingActiveUserMutex.withLock {
@@ -940,6 +940,10 @@ object ChatController {
     val userId = currentUserId("reconnectServer")
 
     return sendCommandOkResp(rh, CC.ReconnectServer(userId, server))
+  }
+
+  suspend fun reconnectAllServers(rh: Long?): Boolean {
+    return sendCommandOkResp(rh, CC.ReconnectAllServers())
   }
 
   suspend fun apiSetSettings(rh: Long?, type: ChatType, id: Long, settings: ChatSettings): Boolean {
@@ -2600,6 +2604,7 @@ sealed class CC {
   class APIGetNetworkConfig: CC()
   class APISetNetworkInfo(val networkInfo: UserNetworkInfo): CC()
   class ReconnectServer(val userId: Long, val server: String): CC()
+  class ReconnectAllServers: CC()
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
   class ApiSetMemberSettings(val groupId: Long, val groupMemberId: Long, val memberSettings: GroupMemberSettings): CC()
   class APIContactInfo(val contactId: Long): CC()
@@ -2750,6 +2755,7 @@ sealed class CC {
     is APIGetNetworkConfig -> "/network"
     is APISetNetworkInfo -> "/_network info ${json.encodeToString(networkInfo)}"
     is ReconnectServer -> "/reconnect $userId $server"
+    is ReconnectAllServers -> "/reconnect"
     is APISetChatSettings -> "/_settings ${chatRef(type, id)} ${json.encodeToString(chatSettings)}"
     is ApiSetMemberSettings -> "/_member settings #$groupId $groupMemberId ${json.encodeToString(memberSettings)}"
     is APIContactInfo -> "/_info @$contactId"
@@ -2893,6 +2899,7 @@ sealed class CC {
     is APIGetNetworkConfig -> "apiGetNetworkConfig"
     is APISetNetworkInfo -> "apiSetNetworkInfo"
     is ReconnectServer -> "reconnectServer"
+    is ReconnectAllServers -> "reconnectAllServers"
     is APISetChatSettings -> "apiSetChatSettings"
     is ApiSetMemberSettings -> "apiSetMemberSettings"
     is APIContactInfo -> "apiContactInfo"
