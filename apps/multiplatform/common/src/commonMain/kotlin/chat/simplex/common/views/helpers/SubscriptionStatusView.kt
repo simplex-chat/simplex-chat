@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.AgentSMPServerStatsData
+import chat.simplex.common.model.AgentXFTPServerStatsData
 import chat.simplex.common.model.ChatController.chatModel
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.OnionHosts
@@ -49,6 +50,7 @@ import chat.simplex.common.model.SMPServerSummary
 import chat.simplex.common.model.SMPTotals
 import chat.simplex.common.model.ServerAddress.Companion.parseServerAddress
 import chat.simplex.common.model.ServerSessions
+import chat.simplex.common.model.XFTPServerSummary
 import chat.simplex.common.model.localTimestamp
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
@@ -61,6 +63,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
+import java.text.DecimalFormat
 import kotlin.math.floor
 import kotlin.math.roundToInt
 import kotlin.time.Duration
@@ -193,8 +196,8 @@ enum class PresentedServerType {
   SMP, XFTP
 }
 
-fun numOrDash(n: Int): String {
-  return if (n == 0) "-" else n.toString()
+fun numOrDash(n: Number): String {
+  return if (n.toLong() == 0L) "-" else n.toString()
 }
 
 @Composable
@@ -264,6 +267,71 @@ private fun SmpServersListView(servers: List<SMPServerSummary>, statsStartedAt: 
   }
 }
 
+fun prettySize(sizeInKB: Long): String {
+  if (sizeInKB == 0L) {
+    return "-"
+  }
+
+  val sizeInBytes = sizeInKB * 1024
+  val units = arrayOf("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+  var size = sizeInBytes.toDouble()
+  var unitIndex = 0
+
+  while (size >= 1024 && unitIndex < units.size - 1) {
+    size /= 1024
+    unitIndex++
+  }
+
+  val formatter = DecimalFormat("#,##0.#")
+  return "${formatter.format(size)} ${units[unitIndex]}"
+}
+
+@Composable
+private fun inProgressIcon(srvSumm: XFTPServerSummary): Unit? {
+  return when {
+    !srvSumm.rcvInProgress && !srvSumm.sndInProgress && !srvSumm.delInProgress -> null
+    srvSumm.rcvInProgress && !srvSumm.sndInProgress && !srvSumm.delInProgress -> Icon(painterResource(MR.images.ic_arrow_downward),"download", tint = MaterialTheme.colors.secondary)
+    !srvSumm.rcvInProgress && srvSumm.sndInProgress && !srvSumm.delInProgress -> Icon(painterResource(MR.images.ic_arrow_upward), "upload", tint = MaterialTheme.colors.secondary)
+    !srvSumm.rcvInProgress && !srvSumm.sndInProgress && srvSumm.delInProgress -> Icon(painterResource(MR.images.ic_delete), "deleted", tint = MaterialTheme.colors.secondary)
+    else -> Icon(painterResource(MR.images.ic_expand_all), "upload and download", tint = MaterialTheme.colors.secondary)
+  }
+}
+
+@Composable
+private fun XftpServerView(srvSumm: XFTPServerSummary, statsStartedAt: Instant) {
+  SectionItemViewSpaceBetween(
+    click = {
+      ModalManager.start.showCustomModal { _ -> Text("Server") }
+    }
+  ) {
+    Column(
+      modifier = Modifier.fillMaxWidth(),
+      verticalArrangement = Arrangement.Center,
+    ) {
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+      ) {
+        Text(serverAddress(srvSumm.xftpServer))
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+          inProgressIcon(srvSumm)
+          RowLinkIcon("see server details")
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun XftpServersListView(servers: List<XFTPServerSummary>, statsStartedAt: Instant, header: String? = null) {
+  val sortedServers = servers.sortedBy { serverAddress(it.xftpServer) }
+
+  SectionView(header) {
+    sortedServers.map { svr -> XftpServerView(svr, statsStartedAt)}
+  }
+}
+
 @Composable
 private fun RowLinkIcon(contentDescription: String) {
   return Icon(painterResource(MR.images.ic_chevron_right), contentDescription, tint = MaterialTheme.colors.secondary)
@@ -318,6 +386,37 @@ private fun SMPSubscriptionsSection(totals: SMPTotals) {
       )
     }
   }
+}
+
+@Composable
+fun XFTPStatsView(stats: AgentXFTPServerStatsData, statsStartedAt: Instant) {
+  SectionView(generalGetString(MR.strings.servers_info_statistics_section_header)) {
+    InfoRow(
+      generalGetString(MR.strings.servers_info_uploaded),
+      prettySize(stats._uploadsSize)
+    )
+    InfoRow(
+      generalGetString(MR.strings.servers_info_downloaded),
+      prettySize(stats._downloadsSize)
+    )
+    SectionItemViewSpaceBetween(
+      click = {
+        ModalManager.start.showCustomModal { _ -> Text("Hello") }
+      }
+    ) {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier.fillMaxWidth(),
+      ) {
+        Text(text = generalGetString(MR.strings.servers_info_details), color = MaterialTheme.colors.onBackground)
+        RowLinkIcon("see details")
+      }
+    }
+  }
+  SectionTextFooter(
+    String.format(stringResource(MR.strings.servers_info_private_data_disclaimer), localTimestamp(statsStartedAt))
+  )
 }
 
 @Composable
@@ -505,7 +604,48 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
             }
 
             PresentedServerType.XFTP.ordinal -> {
-              Text("XFTP")
+              val castedSummary = serversSummary!!
+              val xftpSummary = castedSummary.currentUserXFTP
+              val totals = xftpSummary.xftpTotals
+              val statsStartedAt = castedSummary.statsStartedAt
+              val currentlyUsedXFTPServers = xftpSummary.currentlyUsedXFTPServers
+              val previouslyUsedXFTPServers = xftpSummary.previouslyUsedXFTPServers
+
+              XFTPStatsView(totals.stats, statsStartedAt)
+              Divider(
+                Modifier.padding(
+                  start = DEFAULT_PADDING_HALF,
+                  top = 32.dp,
+                  end = DEFAULT_PADDING_HALF,
+                  bottom = 30.dp
+                )
+              )
+
+              if (currentlyUsedXFTPServers.isNotEmpty()) {
+                XftpServersListView(currentlyUsedXFTPServers, statsStartedAt, generalGetString(MR.strings.servers_info_connected_servers_section_header))
+                Divider(
+                  Modifier.padding(
+                    start = DEFAULT_PADDING_HALF,
+                    top = 32.dp,
+                    end = DEFAULT_PADDING_HALF,
+                    bottom = 30.dp
+                  )
+                )
+              }
+
+              if (previouslyUsedXFTPServers.isNotEmpty()) {
+                XftpServersListView(previouslyUsedXFTPServers, statsStartedAt, generalGetString(MR.strings.servers_info_previously_connected_servers_section_header))
+                Divider(
+                  Modifier.padding(
+                    start = DEFAULT_PADDING_HALF,
+                    top = 32.dp,
+                    end = DEFAULT_PADDING_HALF,
+                    bottom = 30.dp
+                  )
+                )
+              }
+
+              ServerSessionsView(totals.sessions)
             }
 
           }
