@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -38,7 +37,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -229,10 +227,15 @@ private fun serverAddress(server: String): String {
 }
 
 @Composable
-private fun SmpServerView(srvSumm: SMPServerSummary, statsStartedAt: Instant) {
+private fun SmpServerView(srvSumm: SMPServerSummary, statsStartedAt: Instant, rh: RemoteHostInfo?) {
   SectionItemViewSpaceBetween(
     click = {
-      ModalManager.start.showCustomModal { _ -> Text("Server") }
+      ModalManager.start.showCustomModal { close -> SMPServerSummaryView(
+        rh = rh,
+        close = close,
+        summary = srvSumm,
+        statsStartedAt = statsStartedAt)
+      }
     }
   ) {
     Column(
@@ -257,12 +260,12 @@ private fun SmpServerView(srvSumm: SMPServerSummary, statsStartedAt: Instant) {
 }
 
 @Composable
-private fun SmpServersListView(servers: List<SMPServerSummary>, statsStartedAt: Instant, header: String? = null, footer: String? = null) {
+private fun SmpServersListView(servers: List<SMPServerSummary>, statsStartedAt: Instant, header: String? = null, footer: String? = null, rh: RemoteHostInfo?) {
   val sortedServers = servers.sortedWith(compareBy<SMPServerSummary> { !it.hasSubs }
     .thenBy { serverAddress(it.smpServer) })
 
   SectionView(header) {
-    sortedServers.map { svr -> SmpServerView(svr, statsStartedAt)}
+    sortedServers.map { svr -> SmpServerView(srvSumm = svr, statsStartedAt = statsStartedAt, rh = rh)}
   }
   if (footer != null) {
     SectionTextFooter(
@@ -398,6 +401,58 @@ private fun SMPSubscriptionsSection(totals: SMPTotals) {
         generalGetString(MR.strings.servers_info_subscriptions_total),
         numOrDash(totals.subs.total)
       )
+    }
+  }
+}
+
+@Composable
+private fun SMPSubscriptionsSection(subs: SMPServerSubs, summary: SMPServerSummary, rh: RemoteHostInfo?) {
+  Column {
+    Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+      Text(generalGetString(MR.strings.servers_info_subscriptions_section_header), color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
+      SubscriptionStatusIndicatorView(subs, summary.sessionsOrNew)
+    }
+    Column(Modifier.padding(PaddingValues()).fillMaxWidth()) {
+      InfoRow(
+        generalGetString(MR.strings.servers_info_subscriptions_connections_subscribed),
+        numOrDash(subs.ssActive)
+      )
+      InfoRow(
+        generalGetString(MR.strings.servers_info_subscriptions_connections_pending),
+        numOrDash(subs.ssPending)
+      )
+      InfoRow(
+        generalGetString(MR.strings.servers_info_subscriptions_total),
+        numOrDash(subs.total)
+      )
+      SectionItemViewSpaceBetween {
+        Row {
+          Text(
+            stringResource(MR.strings.reconnect),
+            modifier = Modifier.clickable() {
+              AlertManager.shared.showAlertDialog(
+                title = generalGetString(MR.strings.servers_info_reconnect_server_title),
+                text = generalGetString(MR.strings.servers_info_reconnect_server_message),
+                dismissText = generalGetString(MR.strings.servers_info_modal_dismiss),
+                destructive = true,
+                onConfirm = {
+                  withBGApi {
+                    val success = controller.reconnectServer(rh?.remoteHostId, summary.smpServer)
+
+                    if (!success) {
+                      AlertManager.shared.showAlertMsg(
+                        title = generalGetString(MR.strings.servers_info_modal_error_title),
+                        text = generalGetString(MR.strings.servers_info_reconnect_server_error)
+                      )
+                    }
+                  }
+                }
+              )
+            },
+            color = MaterialTheme.colors.primary
+          )
+        }
+      }
     }
   }
 }
@@ -604,6 +659,98 @@ fun XFTPServerSummaryLayout(summary: XFTPServerSummary, statsStartedAt: Instant,
 }
 
 @Composable
+fun SMPServerSummaryLayout(summary: SMPServerSummary, statsStartedAt: Instant, rh: RemoteHostInfo?) {
+  SectionView("SERVER ADDRESS") {
+    SelectionContainer {
+      Text(
+        summary.smpServer,
+        Modifier.padding(start = DEFAULT_PADDING, top = 5.dp, end = DEFAULT_PADDING, bottom = 10.dp),
+        style = TextStyle(
+          fontFamily = FontFamily.Monospace, fontSize = 16.sp,
+          color = MaterialTheme.colors.secondary
+        )
+      )
+    }
+    if (summary.known == true) {
+      Text(
+        "Open server settings",
+        modifier = Modifier.padding(DEFAULT_PADDING).clickable() {
+          ModalManager.start.showCustomModal { close -> ProtocolServersView(chatModel, rhId = rh?.remoteHostId, ServerProtocol.SMP, close) }
+        },
+        color = MaterialTheme.colors.primary
+      )
+    }
+
+    if (summary.stats != null) {
+      Divider(
+        Modifier.padding(
+          start = DEFAULT_PADDING_HALF,
+          top = 32.dp,
+          end = DEFAULT_PADDING_HALF,
+          bottom = 30.dp
+        )
+      )
+      SMPStatsView(stats = summary.stats, remoteHostInfo = rh, statsStartedAt = statsStartedAt)
+    }
+
+    if (summary.subs != null) {
+      Divider(
+        Modifier.padding(
+          start = DEFAULT_PADDING_HALF,
+          top = 32.dp,
+          end = DEFAULT_PADDING_HALF,
+          bottom = 30.dp
+        )
+      )
+      SMPSubscriptionsSection(subs = summary.subs, summary = summary, rh = rh)
+    }
+
+    if (summary.sessions != null) {
+      Divider(
+        Modifier.padding(
+          start = DEFAULT_PADDING_HALF,
+          top = 32.dp,
+          end = DEFAULT_PADDING_HALF,
+          bottom = 30.dp
+        )
+      )
+      ServerSessionsView(summary.sessions)
+    }
+  }
+
+  SectionBottomSpacer()
+}
+
+@Composable
+fun ModalData.SMPServerSummaryView(
+  rh: RemoteHostInfo?,
+  close: () -> Unit,
+  summary: SMPServerSummary,
+  statsStartedAt: Instant
+) {
+  ModalView(
+    close = {
+      close()
+    }
+  ) {
+    ColumnWithScrollBar(
+      Modifier.fillMaxSize(),
+    ) {
+      Box(contentAlignment = Alignment.Center) {
+        val bottomPadding = DEFAULT_PADDING
+        AppBarTitle(
+          stringResource(MR.strings.smp_server),
+          hostDevice(rh?.remoteHostId),
+          bottomPadding = bottomPadding
+        )
+      }
+      SMPServerSummaryLayout(summary, statsStartedAt, rh)
+    }
+  }
+}
+
+
+@Composable
 fun ModalData.DetailedXFTPStatsView(
   rh: RemoteHostInfo?,
   close: () -> Unit,
@@ -630,7 +777,6 @@ fun ModalData.DetailedXFTPStatsView(
     }
   }
 }
-
 
 @Composable
 fun ModalData.DetailedSMPStatsView(
@@ -659,7 +805,6 @@ fun ModalData.DetailedSMPStatsView(
     }
   }
 }
-
 
 @Composable
 fun ModalData.XFTPServerSummaryView(
@@ -835,7 +980,12 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
               )
 
               if (currentlyUsedSMPServers.isNotEmpty()) {
-                SmpServersListView(currentlyUsedSMPServers, statsStartedAt, generalGetString(MR.strings.servers_info_connected_servers_section_header))
+                SmpServersListView(
+                  servers = currentlyUsedSMPServers,
+                  statsStartedAt= statsStartedAt,
+                  header = generalGetString(MR.strings.servers_info_connected_servers_section_header),
+                  rh = rh
+                )
                 Divider(
                   Modifier.padding(
                     start = DEFAULT_PADDING_HALF,
@@ -847,7 +997,12 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
               }
 
               if (previouslyUsedSMPServers.isNotEmpty()) {
-                SmpServersListView(previouslyUsedSMPServers, statsStartedAt, generalGetString(MR.strings.servers_info_previously_connected_servers_section_header))
+                SmpServersListView(
+                  servers = previouslyUsedSMPServers,
+                  statsStartedAt= statsStartedAt,
+                  header = generalGetString(MR.strings.servers_info_previously_connected_servers_section_header),
+                  rh = rh
+                )
                 Divider(
                   Modifier.padding(
                     start = DEFAULT_PADDING_HALF,
@@ -859,7 +1014,13 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
               }
 
               if (proxySMPServers.isNotEmpty()) {
-                SmpServersListView(proxySMPServers, statsStartedAt, generalGetString(MR.strings.servers_info_proxied_servers_section_header), generalGetString(MR.strings.servers_info_proxied_servers_section_footer))
+                SmpServersListView(
+                  servers = proxySMPServers,
+                  statsStartedAt= statsStartedAt,
+                  header = generalGetString(MR.strings.servers_info_proxied_servers_section_header),
+                  footer = generalGetString(MR.strings.servers_info_proxied_servers_section_footer),
+                  rh = rh
+                )
                 Divider(
                   Modifier.padding(
                     start = DEFAULT_PADDING_HALF,
