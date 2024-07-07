@@ -75,8 +75,12 @@ import kotlin.math.roundToInt
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
+enum class SubscriptionColorType {
+  ACTIVE, ONION_ACTIVE, DISCONNECTED, ACTIVE_DISCONNECTED
+}
+
 data class SubscriptionStatus(
-  val color: Color,
+  val color: SubscriptionColorType,
   val variableValue: Float,
   val opacity: Float,
   val statusPercent: Float
@@ -97,15 +101,15 @@ fun subscriptionStatusColorAndPercentage(
     }
   }
 
-  val activeColor: Color = if (onionHosts == OnionHosts.REQUIRED) Color(0xFF4B0082) else Color(0xFF00796B)
-  val noConnColorAndPercent = SubscriptionStatus(Color(0xFFB0BEC5), 1f, 1f, 0f)
+  val activeColor: SubscriptionColorType = if (onionHosts == OnionHosts.REQUIRED) SubscriptionColorType.ONION_ACTIVE else SubscriptionColorType.ACTIVE
+  val noConnColorAndPercent = SubscriptionStatus(SubscriptionColorType.DISCONNECTED, 1f, 1f, 0f)
   val activeSubsRounded = roundedToQuarter(subs.shareOfActive)
 
   return if (online && subs.total > 0) {
     if (subs.ssActive == 0) {
       if (sess.ssConnected == 0) noConnColorAndPercent else SubscriptionStatus(activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
-    } else { // ssActive > 0
-      if (sess.ssConnected == 0) SubscriptionStatus(Color(0xFFFFA500), activeSubsRounded, subs.shareOfActive, subs.shareOfActive) // This would mean implementation error
+    } else {
+      if (sess.ssConnected == 0) SubscriptionStatus(SubscriptionColorType.ACTIVE_DISCONNECTED, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
       else SubscriptionStatus(activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
     }
   } else noConnColorAndPercent
@@ -121,7 +125,14 @@ fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, sess: ServerSessions, l
 
   Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
     if (pref.state.value && leadingPercentage) Text(percentageText, color = MaterialTheme.colors.secondary)
-    SubscriptionStatusIcon(color = MaterialTheme.colors.primary, variableValue = statusColorAndPercentage.variableValue)
+    SubscriptionStatusIcon(
+      color = when(statusColorAndPercentage.color) {
+        SubscriptionColorType.ACTIVE -> MaterialTheme.colors.primary
+        SubscriptionColorType.ONION_ACTIVE -> MaterialTheme.colors.primaryVariant
+        SubscriptionColorType.ACTIVE_DISCONNECTED -> MaterialTheme.colors.onBackground
+        SubscriptionColorType.DISCONNECTED -> MaterialTheme.colors.error
+      },
+      variableValue = statusColorAndPercentage.variableValue)
     if (pref.state.value && !leadingPercentage) Text(percentageText, color = MaterialTheme.colors.secondary)
   }
 }
