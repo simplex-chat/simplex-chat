@@ -116,6 +116,18 @@ fun subscriptionStatusColorAndPercentage(
 }
 
 @Composable
+private fun SectionDivider() {
+  Divider(
+    Modifier.padding(
+      start = DEFAULT_PADDING_HALF,
+      top = 32.dp,
+      end = DEFAULT_PADDING_HALF,
+      bottom = 30.dp
+    )
+  )
+}
+
+@Composable
 fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, sess: ServerSessions, leadingPercentage: Boolean = false) {
   val netCfg = remember { chatModel.controller.getNetCfg() }
   val onionHosts = remember { netCfg.onionHosts }
@@ -531,14 +543,7 @@ fun DetailedSMPStatsLayout(stats: AgentSMPServerStatsData, statsStartedAt: Insta
     IndentedInfoRow(generalGetString(MR.strings.expired_label), numOrDash(stats._sentExpiredErrs))
     IndentedInfoRow(generalGetString(MR.strings.other_label), numOrDash(stats._sentOtherErrs))
   }
-  Divider(
-    Modifier.padding(
-      start = DEFAULT_PADDING_HALF,
-      top = 32.dp,
-      end = DEFAULT_PADDING_HALF,
-      bottom = 30.dp
-    )
-  )
+  SectionDivider()
   SectionView(generalGetString(MR.strings.servers_info_detailed_statistics_received_messages_header).uppercase()) {
     InfoRow(generalGetString(MR.strings.servers_info_detailed_statistics_received_total), numOrDash(stats._recvMsgs))
     SectionItemViewSpaceBetween {
@@ -558,14 +563,7 @@ fun DetailedSMPStatsLayout(stats: AgentSMPServerStatsData, statsStartedAt: Insta
     IndentedInfoRow(generalGetString(MR.strings.no_msg_errors), numOrDash(stats._ackNoMsgErrs))
     IndentedInfoRow(generalGetString(MR.strings.other_errors), numOrDash(stats._ackOtherErrs))
   }
-  Divider(
-    Modifier.padding(
-      start = DEFAULT_PADDING_HALF,
-      top = 32.dp,
-      end = DEFAULT_PADDING_HALF,
-      bottom = 30.dp
-    )
-  )
+  SectionDivider()
   SectionView(generalGetString(MR.strings.connections).uppercase()) {
     InfoRow(generalGetString(MR.strings.created), numOrDash(stats._connCreated))
     InfoRow(generalGetString(MR.strings.secured), numOrDash(stats._connCreated))
@@ -592,14 +590,7 @@ fun DetailedXFTPStatsLayout(stats: AgentXFTPServerStatsData, statsStartedAt: Ins
     InfoRowTwoValues(generalGetString(MR.strings.chunks_deleted), generalGetString(MR.strings.attempts_label), stats._deletions, stats._deleteAttempts)
     InfoRow(generalGetString(MR.strings.deletion_errors), numOrDash(stats._deleteErrs))
   }
-  Divider(
-    Modifier.padding(
-      start = DEFAULT_PADDING_HALF,
-      top = 32.dp,
-      end = DEFAULT_PADDING_HALF,
-      bottom = 30.dp
-    )
-  )
+  SectionDivider()
   SectionView(generalGetString(MR.strings.downloaded_files).uppercase()) {
     InfoRow(generalGetString(MR.strings.size), prettySize(stats._downloadsSize))
     InfoRowTwoValues(generalGetString(MR.strings.chunks_downloaded), generalGetString(MR.strings.attempts_label), stats._downloads, stats._downloadAttempts)
@@ -642,26 +633,12 @@ fun XFTPServerSummaryLayout(summary: XFTPServerSummary, statsStartedAt: Instant,
     }
 
     if (summary.stats != null) {
-      Divider(
-        Modifier.padding(
-          start = DEFAULT_PADDING_HALF,
-          top = 32.dp,
-          end = DEFAULT_PADDING_HALF,
-          bottom = 30.dp
-        )
-      )
+      SectionDivider()
       XFTPStatsView(stats = summary.stats, rh = rh, statsStartedAt = statsStartedAt)
     }
 
     if (summary.sessions != null) {
-      Divider(
-        Modifier.padding(
-          start = DEFAULT_PADDING_HALF,
-          top = 32.dp,
-          end = DEFAULT_PADDING_HALF,
-          bottom = 30.dp
-        )
-      )
+      SectionDivider()
       ServerSessionsView(summary.sessions)
     }
   }
@@ -693,38 +670,17 @@ fun SMPServerSummaryLayout(summary: SMPServerSummary, statsStartedAt: Instant, r
     }
 
     if (summary.stats != null) {
-      Divider(
-        Modifier.padding(
-          start = DEFAULT_PADDING_HALF,
-          top = 32.dp,
-          end = DEFAULT_PADDING_HALF,
-          bottom = 30.dp
-        )
-      )
+      SectionDivider()
       SMPStatsView(stats = summary.stats, remoteHostInfo = rh, statsStartedAt = statsStartedAt)
     }
 
     if (summary.subs != null) {
-      Divider(
-        Modifier.padding(
-          start = DEFAULT_PADDING_HALF,
-          top = 32.dp,
-          end = DEFAULT_PADDING_HALF,
-          bottom = 30.dp
-        )
-      )
+      SectionDivider()
       SMPSubscriptionsSection(subs = summary.subs, summary = summary, rh = rh)
     }
 
     if (summary.sessions != null) {
-      Divider(
-        Modifier.padding(
-          start = DEFAULT_PADDING_HALF,
-          top = 32.dp,
-          end = DEFAULT_PADDING_HALF,
-          bottom = 30.dp
-        )
-      )
+      SectionDivider()
       ServerSessionsView(summary.sessions)
     }
   }
@@ -851,8 +807,9 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
     Modifier.fillMaxSize(),
   ) {
     var timer: Job? by remember { mutableStateOf(null) }
+    var showUserSelection by remember { mutableStateOf(false) }
     var serversSummary by remember { mutableStateOf<PresentedServersSummary?>(null) }
-    //val selectedUserCategory = remember { stateGetOrPut("selection") { PresentedUserCategory.ALL_USERS } }
+    val selectedUserCategory = remember { stateGetOrPut("selectedUserCategory") { PresentedUserCategory.ALL_USERS } }
     val selectedServerType = remember { stateGetOrPut("serverTypeSelection") { PresentedServerType.SMP } }
 
     val scope = rememberCoroutineScope()
@@ -867,7 +824,9 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
     LaunchedEffect(Unit) {
       if (chatModel.users.count { u -> u.user.activeUser || !u.user.hidden } == 1
       ) {
-        //selectedUserCategory.value = PresentedUserCategory.CURRENT_USER
+        selectedUserCategory.value = PresentedUserCategory.CURRENT_USER
+      } else {
+        showUserSelection = true
       }
       getServersSummary()
       timer = timer ?: scope.launch {
@@ -901,15 +860,14 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
         return Text(generalGetString(MR.strings.servers_info_missing))
       }
 
-//      val userTabTitles = PresentedUserCategory.entries.map {
-//        when (it) {
-//          PresentedUserCategory.CURRENT_USER ->
-//            stringResource(MR.strings.current_user)
-//
-//          PresentedUserCategory.ALL_USERS ->
-//            stringResource(MR.strings.all_users)
-//        }
-//      }
+      val userOptions by remember {
+        mutableStateOf(
+          listOf(
+            PresentedUserCategory.ALL_USERS to generalGetString(MR.strings.all_users),
+            PresentedUserCategory.CURRENT_USER to generalGetString(MR.strings.current_user),
+          )
+        )
+      }
 
       val serverTypeTabTitles = PresentedServerType.entries.map {
         when (it) {
@@ -928,6 +886,18 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
 
       KeyChangeEffect(serverTypePagerState.currentPage) {
         selectedServerType.value = PresentedServerType.values()[serverTypePagerState.currentPage]
+      }
+      if (showUserSelection) {
+        ExposedDropDownSettingRow(
+          generalGetString(MR.strings.servers_info_target),
+          userOptions,
+          selectedUserCategory,
+          icon = null,
+          enabled = remember { mutableStateOf(true) },
+          onSelected = {
+            selectedUserCategory.value = it
+          }
+        )
       }
       TabRow(
         selectedTabIndex = serverTypePagerState.currentPage,
@@ -964,7 +934,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
           when (index) {
             PresentedServerType.SMP.ordinal -> {
               val castedSummary = serversSummary!!
-              val smpSummary = castedSummary.currentUserSMP;
+              val smpSummary = if (selectedUserCategory.value == PresentedUserCategory.CURRENT_USER) castedSummary.currentUserSMP else castedSummary.allUsersSMP;
               val totals = smpSummary.smpTotals
               val currentlyUsedSMPServers = smpSummary.currentlyUsedSMPServers
               val previouslyUsedSMPServers = smpSummary.previouslyUsedSMPServers
@@ -972,23 +942,9 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
               val statsStartedAt = castedSummary.statsStartedAt
 
               SMPStatsView(totals.stats, statsStartedAt, rh)
-              Divider(
-                Modifier.padding(
-                  start = DEFAULT_PADDING_HALF,
-                  top = 32.dp,
-                  end = DEFAULT_PADDING_HALF,
-                  bottom = 30.dp
-                )
-              )
+              SectionDivider()
               SMPSubscriptionsSection(totals)
-              Divider(
-                Modifier.padding(
-                  start = DEFAULT_PADDING_HALF,
-                  top = 32.dp,
-                  end = DEFAULT_PADDING_HALF,
-                  bottom = 30.dp
-                )
-              )
+              SectionDivider()
 
               if (currentlyUsedSMPServers.isNotEmpty()) {
                 SmpServersListView(
@@ -997,14 +953,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
                   header = generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
                   rh = rh
                 )
-                Divider(
-                  Modifier.padding(
-                    start = DEFAULT_PADDING_HALF,
-                    top = 32.dp,
-                    end = DEFAULT_PADDING_HALF,
-                    bottom = 30.dp
-                  )
-                )
+                SectionDivider()
               }
 
               if (previouslyUsedSMPServers.isNotEmpty()) {
@@ -1014,14 +963,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
                   header = generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
                   rh = rh
                 )
-                Divider(
-                  Modifier.padding(
-                    start = DEFAULT_PADDING_HALF,
-                    top = 32.dp,
-                    end = DEFAULT_PADDING_HALF,
-                    bottom = 30.dp
-                  )
-                )
+                SectionDivider()
               }
 
               if (proxySMPServers.isNotEmpty()) {
@@ -1032,14 +974,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
                   footer = generalGetString(MR.strings.servers_info_proxied_servers_section_footer),
                   rh = rh
                 )
-                Divider(
-                  Modifier.padding(
-                    start = DEFAULT_PADDING_HALF,
-                    top = 32.dp,
-                    end = DEFAULT_PADDING_HALF,
-                    bottom = 30.dp
-                  )
-                )
+                SectionDivider()
               }
 
               ServerSessionsView(totals.sessions)
@@ -1047,58 +982,30 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
 
             PresentedServerType.XFTP.ordinal -> {
               val castedSummary = serversSummary!!
-              val xftpSummary = castedSummary.currentUserXFTP
+              val xftpSummary = if (selectedUserCategory.value == PresentedUserCategory.CURRENT_USER) castedSummary.currentUserXFTP else castedSummary.allUsersXFTP
               val totals = xftpSummary.xftpTotals
               val statsStartedAt = castedSummary.statsStartedAt
               val currentlyUsedXFTPServers = xftpSummary.currentlyUsedXFTPServers
               val previouslyUsedXFTPServers = xftpSummary.previouslyUsedXFTPServers
 
               XFTPStatsView(totals.stats, statsStartedAt, rh)
-              Divider(
-                Modifier.padding(
-                  start = DEFAULT_PADDING_HALF,
-                  top = 32.dp,
-                  end = DEFAULT_PADDING_HALF,
-                  bottom = 30.dp
-                )
-              )
+              SectionDivider()
 
               if (currentlyUsedXFTPServers.isNotEmpty()) {
                 XftpServersListView(currentlyUsedXFTPServers, statsStartedAt, generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(), rh)
-                Divider(
-                  Modifier.padding(
-                    start = DEFAULT_PADDING_HALF,
-                    top = 32.dp,
-                    end = DEFAULT_PADDING_HALF,
-                    bottom = 30.dp
-                  )
-                )
+                SectionDivider()
               }
 
               if (previouslyUsedXFTPServers.isNotEmpty()) {
                 XftpServersListView(previouslyUsedXFTPServers, statsStartedAt, generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(), rh)
-                Divider(
-                  Modifier.padding(
-                    start = DEFAULT_PADDING_HALF,
-                    top = 32.dp,
-                    end = DEFAULT_PADDING_HALF,
-                    bottom = 30.dp
-                  )
-                )
+                SectionDivider()
               }
 
               ServerSessionsView(totals.sessions)
             }
 
           }
-          Divider(
-            Modifier.padding(
-              start = DEFAULT_PADDING_HALF,
-              top = 32.dp,
-              end = DEFAULT_PADDING_HALF,
-              bottom = 30.dp
-            )
-          )
+          SectionDivider()
 
           SectionItemViewSpaceBetween {
             Row {
