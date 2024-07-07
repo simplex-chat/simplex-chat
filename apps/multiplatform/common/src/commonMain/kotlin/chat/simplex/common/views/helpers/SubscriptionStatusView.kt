@@ -215,7 +215,7 @@ enum class PresentedServerType {
 
 @Composable
 private fun ServerSessionsView(sess: ServerSessions) {
-  SectionView(generalGetString(MR.strings.servers_info_transport_sessions_section_header)) {
+  SectionView(generalGetString(MR.strings.servers_info_transport_sessions_section_header).uppercase()) {
     InfoRow(
       generalGetString(MR.strings.number_of_servers_connected),
       numOrDash(sess.ssConnected)
@@ -362,7 +362,7 @@ private fun RowLinkIcon(contentDescription: String) {
 
 @Composable
 private fun SMPStatsView(stats: AgentSMPServerStatsData, statsStartedAt: Instant, remoteHostInfo: RemoteHostInfo?) {
-  SectionView(generalGetString(MR.strings.servers_info_statistics_section_header)) {
+  SectionView(generalGetString(MR.strings.servers_info_statistics_section_header).uppercase()) {
     InfoRow(
       generalGetString(MR.strings.servers_info_messages_sent),
       numOrDash(stats._sentDirect + stats._sentViaProxy)
@@ -400,7 +400,7 @@ private fun SMPStatsView(stats: AgentSMPServerStatsData, statsStartedAt: Instant
 private fun SMPSubscriptionsSection(totals: SMPTotals) {
   Column {
     Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-      Text(generalGetString(MR.strings.servers_info_subscriptions_section_header), color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
+      Text(generalGetString(MR.strings.servers_info_subscriptions_section_header).uppercase(), color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
       SubscriptionStatusIndicatorView(totals.subs, totals.sessions)
     }
     Column(Modifier.padding(PaddingValues()).fillMaxWidth()) {
@@ -420,7 +420,7 @@ private fun SMPSubscriptionsSection(totals: SMPTotals) {
 private fun SMPSubscriptionsSection(subs: SMPServerSubs, summary: SMPServerSummary, rh: RemoteHostInfo?) {
   Column {
     Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-      Text(generalGetString(MR.strings.servers_info_subscriptions_section_header), color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
+      Text(generalGetString(MR.strings.servers_info_subscriptions_section_header).uppercase(), color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
       SubscriptionStatusIndicatorView(subs, summary.sessionsOrNew)
     }
     Column(Modifier.padding(PaddingValues()).fillMaxWidth()) {
@@ -470,7 +470,7 @@ private fun SMPSubscriptionsSection(subs: SMPServerSubs, summary: SMPServerSumma
 
 @Composable
 fun XFTPStatsView(stats: AgentXFTPServerStatsData, statsStartedAt: Instant, rh: RemoteHostInfo?) {
-  SectionView(generalGetString(MR.strings.servers_info_statistics_section_header)) {
+  SectionView(generalGetString(MR.strings.servers_info_statistics_section_header).uppercase()) {
     InfoRow(
       generalGetString(MR.strings.servers_info_uploaded),
       prettySize(stats._uploadsSize)
@@ -516,20 +516,20 @@ private fun IndentedInfoRow(title: String, desc: String) {
 
 @Composable
 fun DetailedSMPStatsLayout(stats: AgentSMPServerStatsData, statsStartedAt: Instant) {
-  SectionView(generalGetString(MR.strings.servers_info_detailed_statistics_sent_messages_header)) {
+  SectionView(generalGetString(MR.strings.servers_info_detailed_statistics_sent_messages_header).uppercase()) {
     InfoRow(generalGetString(MR.strings.servers_info_detailed_statistics_sent_messages_total), numOrDash(stats._sentDirect + stats._sentViaProxy))
-    InfoRowTwoValues("Sent directly", "attempts", stats._sentDirect, stats._sentDirectAttempts)
-    InfoRowTwoValues("Sent via proxy", "attempts", stats._sentViaProxy, stats._sentViaProxyAttempts)
-    InfoRowTwoValues("Proxied", "attempts", stats._sentProxied, stats._sentProxiedAttempts)
+    InfoRowTwoValues(generalGetString(MR.strings.sent_directly), generalGetString(MR.strings.attempts_label), stats._sentDirect, stats._sentDirectAttempts)
+    InfoRowTwoValues(generalGetString(MR.strings.sent_via_proxy), generalGetString(MR.strings.attempts_label), stats._sentViaProxy, stats._sentViaProxyAttempts)
+    InfoRowTwoValues(generalGetString(MR.strings.proxied), generalGetString(MR.strings.attempts_label), stats._sentProxied, stats._sentProxiedAttempts)
     SectionItemViewSpaceBetween {
       Row {
-        Text("Send errors", color = MaterialTheme.colors.onBackground)
+        Text(generalGetString(MR.strings.send_errors), color = MaterialTheme.colors.onBackground)
       }
     }
-    IndentedInfoRow("AUTH", numOrDash(stats._sentAuthErrs))
-    IndentedInfoRow("QUOTA", numOrDash(stats._sentQuotaErrs))
-    IndentedInfoRow("expired", numOrDash(stats._sentExpiredErrs))
-    IndentedInfoRow("other", numOrDash(stats._sentOtherErrs))
+    IndentedInfoRow(generalGetString(MR.strings.auth), numOrDash(stats._sentAuthErrs))
+    IndentedInfoRow(generalGetString(MR.strings.quota), numOrDash(stats._sentQuotaErrs))
+    IndentedInfoRow(generalGetString(MR.strings.expired_label), numOrDash(stats._sentExpiredErrs))
+    IndentedInfoRow(generalGetString(MR.strings.other_label), numOrDash(stats._sentOtherErrs))
   }
   Divider(
     Modifier.padding(
@@ -539,24 +539,24 @@ fun DetailedSMPStatsLayout(stats: AgentSMPServerStatsData, statsStartedAt: Insta
       bottom = 30.dp
     )
   )
-  SectionView("RECEIVED MESSAGES") {
-    InfoRow("Received total", numOrDash(stats._recvMsgs))
+  SectionView(generalGetString(MR.strings.servers_info_detailed_statistics_received_messages_header).uppercase()) {
+    InfoRow(generalGetString(MR.strings.servers_info_detailed_statistics_received_total), numOrDash(stats._recvMsgs))
     SectionItemViewSpaceBetween {
       Row {
-        Text("Receive errors", color = MaterialTheme.colors.onBackground)
+        Text(generalGetString(MR.strings.servers_info_detailed_statistics_receive_errors), color = MaterialTheme.colors.onBackground)
       }
     }
-    IndentedInfoRow("duplicates", numOrDash(stats._recvDuplicates))
-    IndentedInfoRow("decryption errors", numOrDash(stats._recvCryptoErrs))
-    IndentedInfoRow("other errors", numOrDash(stats._recvErrs))
-    InfoRowTwoValues("Acknowledged", "attempts", stats._ackMsgs, stats._ackAttempts)
+    IndentedInfoRow(generalGetString(MR.strings.duplicates_label), numOrDash(stats._recvDuplicates))
+    IndentedInfoRow(generalGetString(MR.strings.decryption_errors), numOrDash(stats._recvCryptoErrs))
+    IndentedInfoRow(generalGetString(MR.strings.other_errors), numOrDash(stats._recvErrs))
+    InfoRowTwoValues(generalGetString(MR.strings.acknowledged), generalGetString(MR.strings.attempts_label), stats._ackMsgs, stats._ackAttempts)
     SectionItemViewSpaceBetween {
       Row {
-        Text("Acknowledgement errors", color = MaterialTheme.colors.onBackground)
+        Text(generalGetString(MR.strings.acknowledgement_errors), color = MaterialTheme.colors.onBackground)
       }
     }
-    IndentedInfoRow("NO_MSG errors", numOrDash(stats._ackNoMsgErrs))
-    IndentedInfoRow("other errors", numOrDash(stats._ackOtherErrs))
+    IndentedInfoRow(generalGetString(MR.strings.no_msg_errors), numOrDash(stats._ackNoMsgErrs))
+    IndentedInfoRow(generalGetString(MR.strings.other_errors), numOrDash(stats._ackOtherErrs))
   }
   Divider(
     Modifier.padding(
@@ -566,15 +566,15 @@ fun DetailedSMPStatsLayout(stats: AgentSMPServerStatsData, statsStartedAt: Insta
       bottom = 30.dp
     )
   )
-  SectionView("CONNECTIONS") {
-    InfoRow("Created", numOrDash(stats._connCreated))
-    InfoRow("Secured", numOrDash(stats._connCreated))
-    InfoRow("Completed", numOrDash(stats._connCompleted))
-    InfoRowTwoValues("Deleted", "attempts", stats._connDeleted, stats._connDelAttempts)
-    InfoRow("Deletion errors", numOrDash(stats._connDelErrs))
-    InfoRowTwoValues("Subscribed", "attempts", stats._connSubscribed, stats._connSubAttempts)
-    InfoRow("Subscription results ignored", numOrDash(stats._connSubIgnored))
-    InfoRow("Subscription errors", numOrDash(stats._connSubErrs))
+  SectionView(generalGetString(MR.strings.connections).uppercase()) {
+    InfoRow(generalGetString(MR.strings.created), numOrDash(stats._connCreated))
+    InfoRow(generalGetString(MR.strings.secured), numOrDash(stats._connCreated))
+    InfoRow(generalGetString(MR.strings.completed), numOrDash(stats._connCompleted))
+    InfoRowTwoValues(generalGetString(MR.strings.deleted), generalGetString(MR.strings.attempts_label), stats._connDeleted, stats._connDelAttempts)
+    InfoRow(generalGetString(MR.strings.deletion_errors), numOrDash(stats._connDelErrs))
+    InfoRowTwoValues(generalGetString(MR.strings.subscribed), generalGetString(MR.strings.attempts_label), stats._connSubscribed, stats._connSubAttempts)
+    InfoRow(generalGetString(MR.strings.subscription_results_ignored), numOrDash(stats._connSubIgnored))
+    InfoRow(generalGetString(MR.strings.subscription_errors), numOrDash(stats._connSubErrs))
   }
   SectionTextFooter(
     String.format(stringResource(MR.strings.servers_info_starting_from), localTimestamp(statsStartedAt))
@@ -585,12 +585,12 @@ fun DetailedSMPStatsLayout(stats: AgentSMPServerStatsData, statsStartedAt: Insta
 
 @Composable
 fun DetailedXFTPStatsLayout(stats: AgentXFTPServerStatsData, statsStartedAt: Instant) {
-  SectionView("UPLOADED FILES") {
-    InfoRow("Size", prettySize(stats._uploadsSize))
-    InfoRowTwoValues("Chunks uploaded", "attempts", stats._uploads, stats._uploadAttempts)
-    InfoRow("Upload errors", numOrDash(stats._uploadErrs))
-    InfoRowTwoValues("Chunks deleted", "attempts", stats._deletions, stats._deleteAttempts)
-    InfoRow("Deletion errors", numOrDash(stats._deleteErrs))
+  SectionView(generalGetString(MR.strings.uploaded_files).uppercase()) {
+    InfoRow(generalGetString(MR.strings.size), prettySize(stats._uploadsSize))
+    InfoRowTwoValues(generalGetString(MR.strings.chunks_uploaded), generalGetString(MR.strings.attempts_label), stats._uploads, stats._uploadAttempts)
+    InfoRow(generalGetString(MR.strings.upload_errors), numOrDash(stats._uploadErrs))
+    InfoRowTwoValues(generalGetString(MR.strings.chunks_deleted), generalGetString(MR.strings.attempts_label), stats._deletions, stats._deleteAttempts)
+    InfoRow(generalGetString(MR.strings.deletion_errors), numOrDash(stats._deleteErrs))
   }
   Divider(
     Modifier.padding(
@@ -600,16 +600,16 @@ fun DetailedXFTPStatsLayout(stats: AgentXFTPServerStatsData, statsStartedAt: Ins
       bottom = 30.dp
     )
   )
-  SectionView("DOWNLOADED FILES") {
-    InfoRow("Size", prettySize(stats._downloadsSize))
-    InfoRowTwoValues("Chunks downloaded", "attempts", stats._downloads, stats._downloadAttempts)
+  SectionView(generalGetString(MR.strings.downloaded_files).uppercase()) {
+    InfoRow(generalGetString(MR.strings.size), prettySize(stats._downloadsSize))
+    InfoRowTwoValues(generalGetString(MR.strings.chunks_downloaded), generalGetString(MR.strings.attempts_label), stats._downloads, stats._downloadAttempts)
     SectionItemViewSpaceBetween {
       Row {
-        Text("Download errors", color = MaterialTheme.colors.onBackground)
+        Text(generalGetString(MR.strings.download_errors), color = MaterialTheme.colors.onBackground)
       }
     }
-    IndentedInfoRow("AUTH", numOrDash(stats._downloadAuthErrs))
-    IndentedInfoRow("other", numOrDash(stats._downloadErrs))
+    IndentedInfoRow(generalGetString(MR.strings.auth), numOrDash(stats._downloadAuthErrs))
+    IndentedInfoRow(generalGetString(MR.strings.other_label), numOrDash(stats._downloadErrs))
   }
   SectionTextFooter(
     String.format(stringResource(MR.strings.servers_info_starting_from), localTimestamp(statsStartedAt))
@@ -620,7 +620,7 @@ fun DetailedXFTPStatsLayout(stats: AgentXFTPServerStatsData, statsStartedAt: Ins
 
 @Composable
 fun XFTPServerSummaryLayout(summary: XFTPServerSummary, statsStartedAt: Instant, rh: RemoteHostInfo?) {
-  SectionView("SERVER ADDRESS") {
+  SectionView(generalGetString(MR.strings.server_address).uppercase()) {
     SelectionContainer {
       Text(
         summary.xftpServer,
@@ -633,7 +633,7 @@ fun XFTPServerSummaryLayout(summary: XFTPServerSummary, statsStartedAt: Instant,
     }
     if (summary.known == true) {
       Text(
-        "Open server settings",
+        generalGetString(MR.strings.open_server_settings_button),
         modifier = Modifier.padding(DEFAULT_PADDING).clickable() {
           ModalManager.start.showCustomModal { close -> ProtocolServersView(chatModel, rhId = rh?.remoteHostId, ServerProtocol.XFTP, close) }
         },
@@ -671,7 +671,7 @@ fun XFTPServerSummaryLayout(summary: XFTPServerSummary, statsStartedAt: Instant,
 
 @Composable
 fun SMPServerSummaryLayout(summary: SMPServerSummary, statsStartedAt: Instant, rh: RemoteHostInfo?) {
-  SectionView("SERVER ADDRESS") {
+  SectionView(generalGetString(MR.strings.server_address).uppercase()) {
     SelectionContainer {
       Text(
         summary.smpServer,
@@ -684,7 +684,7 @@ fun SMPServerSummaryLayout(summary: SMPServerSummary, statsStartedAt: Instant, r
     }
     if (summary.known == true) {
       Text(
-        "Open server settings",
+        generalGetString(MR.strings.open_server_settings_button),
         modifier = Modifier.padding(DEFAULT_PADDING).clickable() {
           ModalManager.start.showCustomModal { close -> ProtocolServersView(chatModel, rhId = rh?.remoteHostId, ServerProtocol.SMP, close) }
         },
@@ -898,7 +898,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
         )
       }
       if (serversSummary == null) {
-        return Text("No info, try to reload")
+        return Text(generalGetString(MR.strings.servers_info_missing))
       }
 
 //      val userTabTitles = PresentedUserCategory.entries.map {
@@ -994,7 +994,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
                 SmpServersListView(
                   servers = currentlyUsedSMPServers,
                   statsStartedAt= statsStartedAt,
-                  header = generalGetString(MR.strings.servers_info_connected_servers_section_header),
+                  header = generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
                   rh = rh
                 )
                 Divider(
@@ -1011,7 +1011,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
                 SmpServersListView(
                   servers = previouslyUsedSMPServers,
                   statsStartedAt= statsStartedAt,
-                  header = generalGetString(MR.strings.servers_info_previously_connected_servers_section_header),
+                  header = generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
                   rh = rh
                 )
                 Divider(
@@ -1028,7 +1028,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
                 SmpServersListView(
                   servers = proxySMPServers,
                   statsStartedAt= statsStartedAt,
-                  header = generalGetString(MR.strings.servers_info_proxied_servers_section_header),
+                  header = generalGetString(MR.strings.servers_info_proxied_servers_section_header).uppercase(),
                   footer = generalGetString(MR.strings.servers_info_proxied_servers_section_footer),
                   rh = rh
                 )
@@ -1064,7 +1064,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
               )
 
               if (currentlyUsedXFTPServers.isNotEmpty()) {
-                XftpServersListView(currentlyUsedXFTPServers, statsStartedAt, generalGetString(MR.strings.servers_info_connected_servers_section_header), rh)
+                XftpServersListView(currentlyUsedXFTPServers, statsStartedAt, generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(), rh)
                 Divider(
                   Modifier.padding(
                     start = DEFAULT_PADDING_HALF,
@@ -1076,7 +1076,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
               }
 
               if (previouslyUsedXFTPServers.isNotEmpty()) {
-                XftpServersListView(previouslyUsedXFTPServers, statsStartedAt, generalGetString(MR.strings.servers_info_previously_connected_servers_section_header), rh)
+                XftpServersListView(previouslyUsedXFTPServers, statsStartedAt, generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(), rh)
                 Divider(
                   Modifier.padding(
                     start = DEFAULT_PADDING_HALF,
