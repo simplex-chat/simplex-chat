@@ -393,7 +393,7 @@ private fun SMPSubscriptionsSection(totals: SMPTotals) {
 }
 
 @Composable
-fun XFTPStatsView(stats: AgentXFTPServerStatsData, statsStartedAt: Instant) {
+fun XFTPStatsView(stats: AgentXFTPServerStatsData, statsStartedAt: Instant, rh: RemoteHostInfo?) {
   SectionView(generalGetString(MR.strings.servers_info_statistics_section_header)) {
     InfoRow(
       generalGetString(MR.strings.servers_info_uploaded),
@@ -405,7 +405,12 @@ fun XFTPStatsView(stats: AgentXFTPServerStatsData, statsStartedAt: Instant) {
     )
     SectionItemViewSpaceBetween(
       click = {
-        ModalManager.start.showCustomModal { _ -> Text("Hello") }
+        ModalManager.start.showCustomModal { close -> DetailedXFTPStatsView(
+          rh = rh,
+          close = close,
+          stats = stats,
+          statsStartedAt = statsStartedAt)
+        }
       }
     ) {
       Row(
@@ -501,6 +506,70 @@ fun DetailedSMPStatsLayout(stats: AgentSMPServerStatsData, statsStartedAt: Insta
 
   SectionBottomSpacer()
 }
+
+@Composable
+fun DetailedXFTPStatsLayout(stats: AgentXFTPServerStatsData, statsStartedAt: Instant) {
+  SectionView("UPLOADED FILES") {
+    InfoRow("Size", prettySize(stats._uploadsSize))
+    InfoRowTwoValues("Chunks uploaded", "attempts", stats._uploads, stats._uploadAttempts)
+    InfoRow("Upload errors", numOrDash(stats._uploadErrs))
+    InfoRowTwoValues("Chunks deleted", "attempts", stats._deletions, stats._deleteAttempts)
+    InfoRow("Deletion errors", numOrDash(stats._deleteErrs))
+  }
+  Divider(
+    Modifier.padding(
+      start = DEFAULT_PADDING_HALF,
+      top = 32.dp,
+      end = DEFAULT_PADDING_HALF,
+      bottom = 30.dp
+    )
+  )
+  SectionView("DOWNLOADED FILES") {
+    InfoRow("Size", prettySize(stats._downloadsSize))
+    InfoRowTwoValues("Chunks downloaded", "attempts", stats._downloads, stats._downloadAttempts)
+    SectionItemViewSpaceBetween {
+      Row {
+        Text("Download errors", color = MaterialTheme.colors.onBackground)
+      }
+    }
+    IndentedInfoRow("AUTH", numOrDash(stats._downloadAuthErrs))
+    IndentedInfoRow("other", numOrDash(stats._downloadErrs))
+  }
+  SectionTextFooter(
+    String.format(stringResource(MR.strings.servers_info_starting_from), localTimestamp(statsStartedAt))
+  )
+
+  SectionBottomSpacer()
+}
+
+@Composable
+fun ModalData.DetailedXFTPStatsView(
+  rh: RemoteHostInfo?,
+  close: () -> Unit,
+  stats: AgentXFTPServerStatsData,
+  statsStartedAt: Instant
+) {
+  ModalView(
+    close = {
+      close()
+    }
+  ) {
+    ColumnWithScrollBar(
+      Modifier.fillMaxSize(),
+    ) {
+      Box(contentAlignment = Alignment.Center) {
+        val bottomPadding = DEFAULT_PADDING
+        AppBarTitle(
+          stringResource(MR.strings.servers_info_detailed_statistics),
+          hostDevice(rh?.remoteHostId),
+          bottomPadding = bottomPadding
+        )
+      }
+      DetailedXFTPStatsLayout(stats, statsStartedAt)
+    }
+  }
+}
+
 
 @Composable
 fun ModalData.DetailedSMPStatsView(
@@ -722,7 +791,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
               val currentlyUsedXFTPServers = xftpSummary.currentlyUsedXFTPServers
               val previouslyUsedXFTPServers = xftpSummary.previouslyUsedXFTPServers
 
-              XFTPStatsView(totals.stats, statsStartedAt)
+              XFTPStatsView(totals.stats, statsStartedAt, rh)
               Divider(
                 Modifier.padding(
                   start = DEFAULT_PADDING_HALF,
