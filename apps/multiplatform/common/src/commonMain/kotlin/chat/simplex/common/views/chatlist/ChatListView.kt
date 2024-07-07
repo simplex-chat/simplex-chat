@@ -35,6 +35,7 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.serialization.json.Json
 import java.net.URI
 
 @Composable
@@ -200,6 +201,7 @@ private fun ChatListToolbar(searchInList: State<TextFieldValue>, drawerState: Dr
     }
   }
   val scope = rememberCoroutineScope()
+  val clipboard = LocalClipboardManager.current
   DefaultTopAppBar(
     navigationButton = {
       if (chatModel.users.isEmpty() && !chatModel.desktopNoUserNoRemote) {
@@ -228,7 +230,20 @@ private fun ChatListToolbar(searchInList: State<TextFieldValue>, drawerState: Dr
         SubscriptionStatusIndicator(
           click = {
             ModalManager.center.closeModals()
-            ModalManager.center.showModalCloseable { _ -> ServersSummaryView(chatModel.currentRemoteHost.value) }
+            ModalManager.center.showModalCloseable(
+              endButtons = {
+                if (it != null) {
+                  ShareButton {
+                    val json = Json {
+                      prettyPrint = true
+                    }
+
+                    val text = json.encodeToString(PresentedServersSummary.serializer(), it)
+                    clipboard.shareText(text)
+                  }
+                }
+              }
+            ) { _ -> ServersSummaryView(chatModel.currentRemoteHost.value) }
           }
         )
       }

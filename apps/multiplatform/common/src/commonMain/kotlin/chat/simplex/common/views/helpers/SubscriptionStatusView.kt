@@ -37,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -57,6 +58,7 @@ import chat.simplex.common.model.ServerSessions
 import chat.simplex.common.model.XFTPServerSummary
 import chat.simplex.common.model.localTimestamp
 import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.shareText
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.usersettings.ProtocolServersView
@@ -150,11 +152,12 @@ fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, sess: ServerSessions, l
 }
 
 @Composable
-fun SubscriptionStatusIndicator(click: (() -> Unit)? = null, ) {
+fun SubscriptionStatusIndicator(click: ((PresentedServersSummary?) -> Unit)? = null, ) {
   var subs by remember { mutableStateOf(SMPServerSubs.newSMPServerSubs) }
   var sess by remember { mutableStateOf(ServerSessions.newServerSessions) }
   var timerCounter by remember { mutableStateOf(0) }
   var timer: Job? by remember { mutableStateOf(null) }
+  var summary: PresentedServersSummary? by remember { mutableStateOf(null) }
 
   val initialInterval: Duration = 1.seconds
   val regularInterval: Duration = 3.seconds
@@ -164,11 +167,11 @@ fun SubscriptionStatusIndicator(click: (() -> Unit)? = null, ) {
 
   fun setServersSummary() {
     withBGApi {
-      val summary: PresentedServersSummary? = chatModel.controller.getAgentServersSummary(chatModel.remoteHostId())
+      summary = chatModel.controller.getAgentServersSummary(chatModel.remoteHostId())
 
-      if (summary != null) {
-        subs = summary.allUsersSMP.smpTotals.subs
-        sess = summary.allUsersSMP.smpTotals.sessions
+      summary?.let {
+        subs = it.allUsersSMP.smpTotals.subs
+        sess = it.allUsersSMP.smpTotals.sessions
       }
     }
   }
@@ -212,7 +215,7 @@ fun SubscriptionStatusIndicator(click: (() -> Unit)? = null, ) {
     startInitialTimer()
   }
 
-  Row(if (click != null) Modifier.clickable(onClick = click) else Modifier) {
+  Row(if (click != null) Modifier.clickable(onClick = { click(summary) }) else Modifier) {
     SubscriptionStatusIndicatorView(subs = subs, sess = sess)
   }
 }
@@ -809,9 +812,10 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
     var timer: Job? by remember { mutableStateOf(null) }
     var showUserSelection by remember { mutableStateOf(false) }
     var serversSummary by remember { mutableStateOf<PresentedServersSummary?>(null) }
-    val selectedUserCategory = remember { stateGetOrPut("selectedUserCategory") { PresentedUserCategory.ALL_USERS } }
-    val selectedServerType = remember { stateGetOrPut("serverTypeSelection") { PresentedServerType.SMP } }
-
+    val selectedUserCategory =
+      remember { stateGetOrPut("selectedUserCategory") { PresentedUserCategory.ALL_USERS } }
+    val selectedServerType =
+      remember { stateGetOrPut("serverTypeSelection") { PresentedServerType.SMP } }
     val scope = rememberCoroutineScope()
     val fetchInterval: Duration = 1.seconds
 
@@ -915,7 +919,9 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
             text = { Text(it, fontSize = 13.sp) },
             icon = {
               Icon(
-                if (PresentedServerType.SMP.ordinal == index) painterResource(MR.images.ic_mail) else painterResource(MR.images.ic_download),
+                if (PresentedServerType.SMP.ordinal == index) painterResource(MR.images.ic_mail) else painterResource(
+                  MR.images.ic_download
+                ),
                 it
               )
             },
@@ -925,16 +931,22 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
         }
       }
 
-      HorizontalPager(state = serverTypePagerState, Modifier.fillMaxSize(), verticalAlignment = Alignment.Top) { index ->
+      HorizontalPager(
+        state = serverTypePagerState,
+        Modifier.fillMaxSize(),
+        verticalAlignment = Alignment.Top
+      ) { index ->
         ColumnWithScrollBar(
           Modifier
             .fillMaxSize(),
-          verticalArrangement = Arrangement.Top) {
+          verticalArrangement = Arrangement.Top
+        ) {
           Spacer(Modifier.height(DEFAULT_PADDING))
           when (index) {
             PresentedServerType.SMP.ordinal -> {
               val castedSummary = serversSummary!!
-              val smpSummary = if (selectedUserCategory.value == PresentedUserCategory.CURRENT_USER) castedSummary.currentUserSMP else castedSummary.allUsersSMP;
+              val smpSummary =
+                if (selectedUserCategory.value == PresentedUserCategory.CURRENT_USER) castedSummary.currentUserSMP else castedSummary.allUsersSMP;
               val totals = smpSummary.smpTotals
               val currentlyUsedSMPServers = smpSummary.currentlyUsedSMPServers
               val previouslyUsedSMPServers = smpSummary.previouslyUsedSMPServers
@@ -949,7 +961,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
               if (currentlyUsedSMPServers.isNotEmpty()) {
                 SmpServersListView(
                   servers = currentlyUsedSMPServers,
-                  statsStartedAt= statsStartedAt,
+                  statsStartedAt = statsStartedAt,
                   header = generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
                   rh = rh
                 )
@@ -959,7 +971,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
               if (previouslyUsedSMPServers.isNotEmpty()) {
                 SmpServersListView(
                   servers = previouslyUsedSMPServers,
-                  statsStartedAt= statsStartedAt,
+                  statsStartedAt = statsStartedAt,
                   header = generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
                   rh = rh
                 )
@@ -969,7 +981,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
               if (proxySMPServers.isNotEmpty()) {
                 SmpServersListView(
                   servers = proxySMPServers,
-                  statsStartedAt= statsStartedAt,
+                  statsStartedAt = statsStartedAt,
                   header = generalGetString(MR.strings.servers_info_proxied_servers_section_header).uppercase(),
                   footer = generalGetString(MR.strings.servers_info_proxied_servers_section_footer),
                   rh = rh
@@ -982,7 +994,8 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
 
             PresentedServerType.XFTP.ordinal -> {
               val castedSummary = serversSummary!!
-              val xftpSummary = if (selectedUserCategory.value == PresentedUserCategory.CURRENT_USER) castedSummary.currentUserXFTP else castedSummary.allUsersXFTP
+              val xftpSummary =
+                if (selectedUserCategory.value == PresentedUserCategory.CURRENT_USER) castedSummary.currentUserXFTP else castedSummary.allUsersXFTP
               val totals = xftpSummary.xftpTotals
               val statsStartedAt = castedSummary.statsStartedAt
               val currentlyUsedXFTPServers = xftpSummary.currentlyUsedXFTPServers
@@ -992,12 +1005,22 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
               SectionDivider()
 
               if (currentlyUsedXFTPServers.isNotEmpty()) {
-                XftpServersListView(currentlyUsedXFTPServers, statsStartedAt, generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(), rh)
+                XftpServersListView(
+                  currentlyUsedXFTPServers,
+                  statsStartedAt,
+                  generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
+                  rh
+                )
                 SectionDivider()
               }
 
               if (previouslyUsedXFTPServers.isNotEmpty()) {
-                XftpServersListView(previouslyUsedXFTPServers, statsStartedAt, generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(), rh)
+                XftpServersListView(
+                  previouslyUsedXFTPServers,
+                  statsStartedAt,
+                  generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
+                  rh
+                )
                 SectionDivider()
               }
 
@@ -1069,6 +1092,5 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
         }
       }
     }
-
-    }
+  }
 }
