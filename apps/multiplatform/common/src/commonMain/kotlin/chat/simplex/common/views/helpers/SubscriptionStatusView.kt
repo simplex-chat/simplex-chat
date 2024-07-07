@@ -1,6 +1,7 @@
 package chat.simplex.common.views.helpers
 
 import InfoRow
+import InfoRowTwoValues
 import SectionBottomSpacer
 import SectionItemViewSpaceBetween
 import SectionTextFooter
@@ -36,6 +37,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.AgentSMPServerStatsData
@@ -63,6 +65,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
+import numOrDash
 import java.text.DecimalFormat
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -194,10 +197,6 @@ enum class PresentedUserCategory {
 
 enum class PresentedServerType {
   SMP, XFTP
-}
-
-fun numOrDash(n: Number): String {
-  return if (n.toLong() == 0L) "-" else n.toString()
 }
 
 @Composable
@@ -338,7 +337,7 @@ private fun RowLinkIcon(contentDescription: String) {
 }
 
 @Composable
-private fun SMPStatsView(stats: AgentSMPServerStatsData, statsStartedAt: Instant) {
+private fun SMPStatsView(stats: AgentSMPServerStatsData, statsStartedAt: Instant, remoteHostInfo: RemoteHostInfo?) {
   SectionView(generalGetString(MR.strings.servers_info_statistics_section_header)) {
     InfoRow(
       generalGetString(MR.strings.servers_info_messages_sent),
@@ -350,7 +349,12 @@ private fun SMPStatsView(stats: AgentSMPServerStatsData, statsStartedAt: Instant
     )
     SectionItemViewSpaceBetween(
       click = {
-        ModalManager.start.showCustomModal { _ -> Text("Hello") }
+        ModalManager.start.showCustomModal { close -> DetailedSMPStatsView(
+          rh = remoteHostInfo,
+          close = close,
+          stats = stats,
+          statsStartedAt = statsStartedAt)
+        }
       }
     ) {
       Row(
@@ -417,6 +421,113 @@ fun XFTPStatsView(stats: AgentXFTPServerStatsData, statsStartedAt: Instant) {
   SectionTextFooter(
     String.format(stringResource(MR.strings.servers_info_private_data_disclaimer), localTimestamp(statsStartedAt))
   )
+}
+
+@Composable
+private fun IndentedInfoRow(title: String, desc: String) {
+  InfoRow(title, desc, padding = PaddingValues(
+    start = 24.dp + DEFAULT_PADDING,
+    end = DEFAULT_PADDING,
+    bottom = DEFAULT_PADDING,
+    top = DEFAULT_PADDING)
+  )
+}
+
+@Composable
+fun DetailedSMPStatsLayout(stats: AgentSMPServerStatsData, statsStartedAt: Instant) {
+  SectionView(generalGetString(MR.strings.servers_info_detailed_statistics_sent_messages_header)) {
+    InfoRow(generalGetString(MR.strings.servers_info_detailed_statistics_sent_messages_total), numOrDash(stats._sentDirect + stats._sentViaProxy))
+    InfoRowTwoValues("Sent directly", "attempts", stats._sentDirect, stats._sentDirectAttempts)
+    InfoRowTwoValues("Sent via proxy", "attempts", stats._sentViaProxy, stats._sentViaProxyAttempts)
+    InfoRowTwoValues("Proxied", "attempts", stats._sentProxied, stats._sentProxiedAttempts)
+    SectionItemViewSpaceBetween {
+      Row {
+        Text("Send errors", color = MaterialTheme.colors.onBackground)
+      }
+    }
+    IndentedInfoRow("AUTH", numOrDash(stats._sentAuthErrs))
+    IndentedInfoRow("QUOTA", numOrDash(stats._sentQuotaErrs))
+    IndentedInfoRow("expired", numOrDash(stats._sentExpiredErrs))
+    IndentedInfoRow("other", numOrDash(stats._sentOtherErrs))
+  }
+  Divider(
+    Modifier.padding(
+      start = DEFAULT_PADDING_HALF,
+      top = 32.dp,
+      end = DEFAULT_PADDING_HALF,
+      bottom = 30.dp
+    )
+  )
+  SectionView("RECEIVED MESSAGES") {
+    InfoRow("Received total", numOrDash(stats._recvMsgs))
+    SectionItemViewSpaceBetween {
+      Row {
+        Text("Receive errors", color = MaterialTheme.colors.onBackground)
+      }
+    }
+    IndentedInfoRow("duplicates", numOrDash(stats._recvDuplicates))
+    IndentedInfoRow("decryption errors", numOrDash(stats._recvCryptoErrs))
+    IndentedInfoRow("other errors", numOrDash(stats._recvErrs))
+    InfoRowTwoValues("Acknowledged", "attempts", stats._ackMsgs, stats._ackAttempts)
+    SectionItemViewSpaceBetween {
+      Row {
+        Text("Acknowledgement errors", color = MaterialTheme.colors.onBackground)
+      }
+    }
+    IndentedInfoRow("NO_MSG errors", numOrDash(stats._ackNoMsgErrs))
+    IndentedInfoRow("other errors", numOrDash(stats._ackOtherErrs))
+  }
+  Divider(
+    Modifier.padding(
+      start = DEFAULT_PADDING_HALF,
+      top = 32.dp,
+      end = DEFAULT_PADDING_HALF,
+      bottom = 30.dp
+    )
+  )
+  SectionView("CONNECTIONS") {
+    InfoRow("Created", numOrDash(stats._connCreated))
+    InfoRow("Secured", numOrDash(stats._connCreated))
+    InfoRow("Completed", numOrDash(stats._connCompleted))
+    InfoRowTwoValues("Deleted", "attempts", stats._connDeleted, stats._connDelAttempts)
+    InfoRow("Deletion errors", numOrDash(stats._connDelErrs))
+    InfoRowTwoValues("Subscribed", "attempts", stats._connSubscribed, stats._connSubAttempts)
+    InfoRow("Subscription results ignored", numOrDash(stats._connSubIgnored))
+    InfoRow("Subscription errors", numOrDash(stats._connSubErrs))
+  }
+  SectionTextFooter(
+    String.format(stringResource(MR.strings.servers_info_starting_from), localTimestamp(statsStartedAt))
+  )
+
+  SectionBottomSpacer()
+}
+
+@Composable
+fun ModalData.DetailedSMPStatsView(
+  rh: RemoteHostInfo?,
+  close: () -> Unit,
+  stats: AgentSMPServerStatsData,
+  statsStartedAt: Instant
+) {
+  ModalView(
+    close = {
+      close()
+    }
+  ) {
+    ColumnWithScrollBar(
+      Modifier.fillMaxSize(),
+    ) {
+      Box(contentAlignment = Alignment.Center) {
+        val bottomPadding = DEFAULT_PADDING
+        AppBarTitle(
+          stringResource(MR.strings.servers_info_detailed_statistics),
+          hostDevice(rh?.remoteHostId),
+          bottomPadding = bottomPadding
+        )
+      }
+      DetailedSMPStatsLayout(stats, statsStartedAt)
+    }
+  }
 }
 
 @Composable
@@ -545,7 +656,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
               val proxySMPServers = smpSummary.onlyProxiedSMPServers
               val statsStartedAt = castedSummary.statsStartedAt
 
-              SMPStatsView(totals.stats, statsStartedAt)
+              SMPStatsView(totals.stats, statsStartedAt, rh)
               Divider(
                 Modifier.padding(
                   start = DEFAULT_PADDING_HALF,
