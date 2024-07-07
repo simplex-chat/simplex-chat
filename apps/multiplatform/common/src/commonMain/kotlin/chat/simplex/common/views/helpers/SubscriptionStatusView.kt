@@ -944,89 +944,91 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
           Spacer(Modifier.height(DEFAULT_PADDING))
           when (index) {
             PresentedServerType.SMP.ordinal -> {
-              val castedSummary = serversSummary!!
-              val smpSummary =
-                if (selectedUserCategory.value == PresentedUserCategory.CURRENT_USER) castedSummary.currentUserSMP else castedSummary.allUsersSMP;
-              val totals = smpSummary.smpTotals
-              val currentlyUsedSMPServers = smpSummary.currentlyUsedSMPServers
-              val previouslyUsedSMPServers = smpSummary.previouslyUsedSMPServers
-              val proxySMPServers = smpSummary.onlyProxiedSMPServers
-              val statsStartedAt = castedSummary.statsStartedAt
+              serversSummary?.let {
+                val smpSummary =
+                  if (selectedUserCategory.value == PresentedUserCategory.CURRENT_USER) it.currentUserSMP else it.allUsersSMP;
+                val totals = smpSummary.smpTotals
+                val currentlyUsedSMPServers = smpSummary.currentlyUsedSMPServers
+                val previouslyUsedSMPServers = smpSummary.previouslyUsedSMPServers
+                val proxySMPServers = smpSummary.onlyProxiedSMPServers
+                val statsStartedAt = it.statsStartedAt
 
-              SMPStatsView(totals.stats, statsStartedAt, rh)
-              SectionDivider()
-              SMPSubscriptionsSection(totals)
-              SectionDivider()
-
-              if (currentlyUsedSMPServers.isNotEmpty()) {
-                SmpServersListView(
-                  servers = currentlyUsedSMPServers,
-                  statsStartedAt = statsStartedAt,
-                  header = generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
-                  rh = rh
-                )
+                SMPStatsView(totals.stats, statsStartedAt, rh)
                 SectionDivider()
-              }
-
-              if (previouslyUsedSMPServers.isNotEmpty()) {
-                SmpServersListView(
-                  servers = previouslyUsedSMPServers,
-                  statsStartedAt = statsStartedAt,
-                  header = generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
-                  rh = rh
-                )
+                SMPSubscriptionsSection(totals)
                 SectionDivider()
-              }
 
-              if (proxySMPServers.isNotEmpty()) {
-                SmpServersListView(
-                  servers = proxySMPServers,
-                  statsStartedAt = statsStartedAt,
-                  header = generalGetString(MR.strings.servers_info_proxied_servers_section_header).uppercase(),
-                  footer = generalGetString(MR.strings.servers_info_proxied_servers_section_footer),
-                  rh = rh
-                )
-                SectionDivider()
-              }
+                if (currentlyUsedSMPServers.isNotEmpty()) {
+                  SmpServersListView(
+                    servers = currentlyUsedSMPServers,
+                    statsStartedAt = statsStartedAt,
+                    header = generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
+                    rh = rh
+                  )
+                  SectionDivider()
+                }
 
-              ServerSessionsView(totals.sessions)
+                if (previouslyUsedSMPServers.isNotEmpty()) {
+                  SmpServersListView(
+                    servers = previouslyUsedSMPServers,
+                    statsStartedAt = statsStartedAt,
+                    header = generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
+                    rh = rh
+                  )
+                  SectionDivider()
+                }
+
+                if (proxySMPServers.isNotEmpty()) {
+                  SmpServersListView(
+                    servers = proxySMPServers,
+                    statsStartedAt = statsStartedAt,
+                    header = generalGetString(MR.strings.servers_info_proxied_servers_section_header).uppercase(),
+                    footer = generalGetString(MR.strings.servers_info_proxied_servers_section_footer),
+                    rh = rh
+                  )
+                  SectionDivider()
+                }
+
+                ServerSessionsView(totals.sessions)
+              }
             }
 
             PresentedServerType.XFTP.ordinal -> {
-              val castedSummary = serversSummary!!
-              val xftpSummary =
-                if (selectedUserCategory.value == PresentedUserCategory.CURRENT_USER) castedSummary.currentUserXFTP else castedSummary.allUsersXFTP
-              val totals = xftpSummary.xftpTotals
-              val statsStartedAt = castedSummary.statsStartedAt
-              val currentlyUsedXFTPServers = xftpSummary.currentlyUsedXFTPServers
-              val previouslyUsedXFTPServers = xftpSummary.previouslyUsedXFTPServers
+              serversSummary?.let {
+                val xftpSummary =
+                  if (selectedUserCategory.value == PresentedUserCategory.CURRENT_USER) it.currentUserXFTP else it.allUsersXFTP
+                val totals = xftpSummary.xftpTotals
+                val statsStartedAt = it.statsStartedAt
+                val currentlyUsedXFTPServers = xftpSummary.currentlyUsedXFTPServers
+                val previouslyUsedXFTPServers = xftpSummary.previouslyUsedXFTPServers
 
-              XFTPStatsView(totals.stats, statsStartedAt, rh)
-              SectionDivider()
-
-              if (currentlyUsedXFTPServers.isNotEmpty()) {
-                XftpServersListView(
-                  currentlyUsedXFTPServers,
-                  statsStartedAt,
-                  generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
-                  rh
-                )
+                XFTPStatsView(totals.stats, statsStartedAt, rh)
                 SectionDivider()
+
+                if (currentlyUsedXFTPServers.isNotEmpty()) {
+                  XftpServersListView(
+                    currentlyUsedXFTPServers,
+                    statsStartedAt,
+                    generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
+                    rh
+                  )
+                  SectionDivider()
+                }
+
+                if (previouslyUsedXFTPServers.isNotEmpty()) {
+                  XftpServersListView(
+                    previouslyUsedXFTPServers,
+                    statsStartedAt,
+                    generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
+                    rh
+                  )
+                  SectionDivider()
+                }
+
+                ServerSessionsView(totals.sessions)
               }
 
-              if (previouslyUsedXFTPServers.isNotEmpty()) {
-                XftpServersListView(
-                  previouslyUsedXFTPServers,
-                  statsStartedAt,
-                  generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
-                  rh
-                )
-                SectionDivider()
-              }
-
-              ServerSessionsView(totals.sessions)
             }
-
           }
           SectionDivider()
 
