@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -58,9 +59,9 @@ import chat.simplex.common.model.ServerSessions
 import chat.simplex.common.model.XFTPServerSummary
 import chat.simplex.common.model.localTimestamp
 import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.platform.shareText
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
+import chat.simplex.common.ui.theme.DEFAULT_SPACE_AFTER_ICON
 import chat.simplex.common.views.usersettings.ProtocolServersView
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -255,6 +256,7 @@ private fun serverAddress(server: String): String {
 @Composable
 private fun SmpServerView(srvSumm: SMPServerSummary, statsStartedAt: Instant, rh: RemoteHostInfo?) {
   SectionItemViewSpaceBetween(
+    padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF + DEFAULT_SPACE_AFTER_ICON),
     click = {
       ModalManager.start.showCustomModal { close -> SMPServerSummaryView(
         rh = rh,
@@ -333,6 +335,7 @@ private fun inProgressIcon(srvSumm: XFTPServerSummary): Unit? {
 @Composable
 private fun XftpServerView(srvSumm: XFTPServerSummary, statsStartedAt: Instant, rh: RemoteHostInfo?) {
   SectionItemViewSpaceBetween(
+    padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF + DEFAULT_SPACE_AFTER_ICON),
     click = {
       ModalManager.start.showCustomModal { close -> XFTPServerSummaryView(
         rh = rh,
@@ -372,7 +375,10 @@ private fun XftpServersListView(servers: List<XFTPServerSummary>, statsStartedAt
 
 @Composable
 private fun RowLinkIcon(contentDescription: String) {
-  return Icon(painterResource(MR.images.ic_chevron_right), contentDescription, tint = MaterialTheme.colors.secondary)
+  return Icon(
+    painterResource(MR.images.ic_arrow_forward_ios), contentDescription, tint = MaterialTheme.colors.secondary,
+    modifier = Modifier.padding(start = DEFAULT_PADDING.div(4)).size(20.dp)
+  )
 }
 
 @Composable
@@ -387,6 +393,7 @@ private fun SMPStatsView(stats: AgentSMPServerStatsData, statsStartedAt: Instant
       numOrDash(stats._recvMsgs)
     )
     SectionItemViewSpaceBetween(
+      padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF + DEFAULT_SPACE_AFTER_ICON),
       click = {
         ModalManager.start.showCustomModal { close -> DetailedSMPStatsView(
           rh = remoteHostInfo,
@@ -495,6 +502,7 @@ fun XFTPStatsView(stats: AgentXFTPServerStatsData, statsStartedAt: Instant, rh: 
       prettySize(stats._downloadsSize)
     )
     SectionItemViewSpaceBetween(
+      padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF + DEFAULT_SPACE_AFTER_ICON),
       click = {
         ModalManager.start.showCustomModal { close -> DetailedXFTPStatsView(
           rh = rh,
@@ -507,7 +515,7 @@ fun XFTPStatsView(stats: AgentXFTPServerStatsData, statsStartedAt: Instant, rh: 
       Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(),
       ) {
         Text(text = generalGetString(MR.strings.servers_info_details), color = MaterialTheme.colors.onBackground)
         RowLinkIcon("see details")
