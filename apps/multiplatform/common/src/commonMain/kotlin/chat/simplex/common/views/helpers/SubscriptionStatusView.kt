@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.LeadingIconTab
@@ -38,6 +39,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.AgentSMPServerStatsData
@@ -51,12 +54,14 @@ import chat.simplex.common.model.SMPServerSubs
 import chat.simplex.common.model.SMPServerSummary
 import chat.simplex.common.model.SMPTotals
 import chat.simplex.common.model.ServerAddress.Companion.parseServerAddress
+import chat.simplex.common.model.ServerProtocol
 import chat.simplex.common.model.ServerSessions
 import chat.simplex.common.model.XFTPServerSummary
 import chat.simplex.common.model.localTimestamp
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
+import chat.simplex.common.views.usersettings.ProtocolServersView
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -297,10 +302,15 @@ private fun inProgressIcon(srvSumm: XFTPServerSummary): Unit? {
 }
 
 @Composable
-private fun XftpServerView(srvSumm: XFTPServerSummary, statsStartedAt: Instant) {
+private fun XftpServerView(srvSumm: XFTPServerSummary, statsStartedAt: Instant, rh: RemoteHostInfo?) {
   SectionItemViewSpaceBetween(
     click = {
-      ModalManager.start.showCustomModal { _ -> Text("Server") }
+      ModalManager.start.showCustomModal { close -> XFTPServerSummaryView(
+        rh = rh,
+        close = close,
+        summary = srvSumm,
+        statsStartedAt = statsStartedAt)
+      }
     }
   ) {
     Column(
@@ -323,11 +333,11 @@ private fun XftpServerView(srvSumm: XFTPServerSummary, statsStartedAt: Instant) 
 }
 
 @Composable
-private fun XftpServersListView(servers: List<XFTPServerSummary>, statsStartedAt: Instant, header: String? = null) {
+private fun XftpServersListView(servers: List<XFTPServerSummary>, statsStartedAt: Instant, header: String? = null, rh: RemoteHostInfo?) {
   val sortedServers = servers.sortedBy { serverAddress(it.xftpServer) }
 
   SectionView(header) {
-    sortedServers.map { svr -> XftpServerView(svr, statsStartedAt)}
+    sortedServers.map { svr -> XftpServerView(svr, statsStartedAt, rh)}
   }
 }
 
@@ -543,6 +553,57 @@ fun DetailedXFTPStatsLayout(stats: AgentXFTPServerStatsData, statsStartedAt: Ins
 }
 
 @Composable
+fun XFTPServerSummaryLayout(summary: XFTPServerSummary, statsStartedAt: Instant, rh: RemoteHostInfo?) {
+  SectionView("SERVER ADDRESS") {
+    SelectionContainer {
+      Text(
+        summary.xftpServer,
+        Modifier.padding(start = DEFAULT_PADDING, top = 5.dp, end = DEFAULT_PADDING, bottom = 10.dp),
+        style = TextStyle(
+          fontFamily = FontFamily.Monospace, fontSize = 16.sp,
+          color = MaterialTheme.colors.secondary
+        )
+      )
+    }
+    if (summary.known == true) {
+      Text(
+        "Open server settings",
+        modifier = Modifier.padding(DEFAULT_PADDING).clickable() {
+          ModalManager.start.showCustomModal { close -> ProtocolServersView(chatModel, rhId = rh?.remoteHostId, ServerProtocol.XFTP, close) }
+        },
+        color = MaterialTheme.colors.primary
+      )
+    }
+
+    if (summary.stats != null) {
+      Divider(
+        Modifier.padding(
+          start = DEFAULT_PADDING_HALF,
+          top = 32.dp,
+          end = DEFAULT_PADDING_HALF,
+          bottom = 30.dp
+        )
+      )
+      XFTPStatsView(stats = summary.stats, rh = rh, statsStartedAt = statsStartedAt)
+    }
+
+    if (summary.sessions != null) {
+      Divider(
+        Modifier.padding(
+          start = DEFAULT_PADDING_HALF,
+          top = 32.dp,
+          end = DEFAULT_PADDING_HALF,
+          bottom = 30.dp
+        )
+      )
+      ServerSessionsView(summary.sessions)
+    }
+  }
+
+  SectionBottomSpacer()
+}
+
+@Composable
 fun ModalData.DetailedXFTPStatsView(
   rh: RemoteHostInfo?,
   close: () -> Unit,
@@ -595,6 +656,35 @@ fun ModalData.DetailedSMPStatsView(
         )
       }
       DetailedSMPStatsLayout(stats, statsStartedAt)
+    }
+  }
+}
+
+
+@Composable
+fun ModalData.XFTPServerSummaryView(
+  rh: RemoteHostInfo?,
+  close: () -> Unit,
+  summary: XFTPServerSummary,
+  statsStartedAt: Instant
+) {
+  ModalView(
+    close = {
+      close()
+    }
+  ) {
+    ColumnWithScrollBar(
+      Modifier.fillMaxSize(),
+    ) {
+      Box(contentAlignment = Alignment.Center) {
+        val bottomPadding = DEFAULT_PADDING
+        AppBarTitle(
+          stringResource(MR.strings.xftp_server),
+          hostDevice(rh?.remoteHostId),
+          bottomPadding = bottomPadding
+        )
+      }
+      XFTPServerSummaryLayout(summary, statsStartedAt, rh)
     }
   }
 }
@@ -802,7 +892,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
               )
 
               if (currentlyUsedXFTPServers.isNotEmpty()) {
-                XftpServersListView(currentlyUsedXFTPServers, statsStartedAt, generalGetString(MR.strings.servers_info_connected_servers_section_header))
+                XftpServersListView(currentlyUsedXFTPServers, statsStartedAt, generalGetString(MR.strings.servers_info_connected_servers_section_header), rh)
                 Divider(
                   Modifier.padding(
                     start = DEFAULT_PADDING_HALF,
@@ -814,7 +904,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
               }
 
               if (previouslyUsedXFTPServers.isNotEmpty()) {
-                XftpServersListView(previouslyUsedXFTPServers, statsStartedAt, generalGetString(MR.strings.servers_info_previously_connected_servers_section_header))
+                XftpServersListView(previouslyUsedXFTPServers, statsStartedAt, generalGetString(MR.strings.servers_info_previously_connected_servers_section_header), rh)
                 Divider(
                   Modifier.padding(
                     start = DEFAULT_PADDING_HALF,
