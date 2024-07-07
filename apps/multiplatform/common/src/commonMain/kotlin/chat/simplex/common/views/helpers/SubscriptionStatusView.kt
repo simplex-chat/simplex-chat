@@ -38,7 +38,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -81,6 +80,7 @@ import kotlin.time.Duration.Companion.seconds
 enum class SubscriptionColorType {
   ACTIVE, ONION_ACTIVE, DISCONNECTED, ACTIVE_DISCONNECTED
 }
+val PADDING_FOR_ARROW_ROW = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF + 7.dp)
 
 data class SubscriptionStatus(
   val color: SubscriptionColorType,
@@ -131,6 +131,17 @@ private fun SectionDivider() {
 }
 
 @Composable
+private fun SubscriptionStatusIndicatorPercentage(percentageText: String, leadingPercentage: Boolean) {
+  Text(
+    percentageText,
+    color = MaterialTheme.colors.secondary,
+    fontSize = 12.sp,
+    style = MaterialTheme.typography.caption,
+    modifier = if (leadingPercentage) Modifier.padding(end = DEFAULT_SPACE_AFTER_ICON) else Modifier.padding(start = DEFAULT_SPACE_AFTER_ICON)
+  )
+}
+
+@Composable
 fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, sess: ServerSessions, leadingPercentage: Boolean = false) {
   val netCfg = remember { chatModel.controller.getNetCfg() }
   val onionHosts = remember { netCfg.onionHosts }
@@ -138,8 +149,10 @@ fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, sess: ServerSessions, l
   val pref = remember { chatModel.controller.appPrefs.networkShowSubscriptionPercentage }
   val percentageText = "${(floor(statusColorAndPercentage.statusPercent * 100)).toInt()}%"
 
-  Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-    if (pref.state.value && leadingPercentage) Text(percentageText, color = MaterialTheme.colors.secondary)
+  Row(
+    verticalAlignment = Alignment.CenterVertically,
+  ) {
+    if (pref.state.value && leadingPercentage) SubscriptionStatusIndicatorPercentage(percentageText, true)
     SubscriptionStatusIcon(
       color = when(statusColorAndPercentage.color) {
         SubscriptionColorType.ACTIVE -> MaterialTheme.colors.primary
@@ -147,8 +160,9 @@ fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, sess: ServerSessions, l
         SubscriptionColorType.ACTIVE_DISCONNECTED -> MaterialTheme.colors.onBackground
         SubscriptionColorType.DISCONNECTED -> MaterialTheme.colors.error
       },
+      modifier = Modifier.size(16.dp),
       variableValue = statusColorAndPercentage.variableValue)
-    if (pref.state.value && !leadingPercentage) Text(percentageText, color = MaterialTheme.colors.secondary)
+    if (pref.state.value && !leadingPercentage) SubscriptionStatusIndicatorPercentage(percentageText, false)
   }
 }
 
@@ -256,7 +270,7 @@ private fun serverAddress(server: String): String {
 @Composable
 private fun SmpServerView(srvSumm: SMPServerSummary, statsStartedAt: Instant, rh: RemoteHostInfo?) {
   SectionItemViewSpaceBetween(
-    padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF + DEFAULT_SPACE_AFTER_ICON),
+    padding = PADDING_FOR_ARROW_ROW,
     click = {
       ModalManager.start.showCustomModal { close -> SMPServerSummaryView(
         rh = rh,
@@ -276,7 +290,7 @@ private fun SmpServerView(srvSumm: SMPServerSummary, statsStartedAt: Instant, rh
         horizontalArrangement = Arrangement.SpaceBetween
       ) {
         Text(serverAddress(srvSumm.smpServer))
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
           if (srvSumm.subs != null && srvSumm.sessions != null) {
             SubscriptionStatusIndicatorView(subs = srvSumm.subs, sess = srvSumm.sessions, leadingPercentage = true)
           }
@@ -335,7 +349,7 @@ private fun inProgressIcon(srvSumm: XFTPServerSummary): Unit? {
 @Composable
 private fun XftpServerView(srvSumm: XFTPServerSummary, statsStartedAt: Instant, rh: RemoteHostInfo?) {
   SectionItemViewSpaceBetween(
-    padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF + DEFAULT_SPACE_AFTER_ICON),
+    padding = PADDING_FOR_ARROW_ROW,
     click = {
       ModalManager.start.showCustomModal { close -> XFTPServerSummaryView(
         rh = rh,
@@ -355,7 +369,7 @@ private fun XftpServerView(srvSumm: XFTPServerSummary, statsStartedAt: Instant, 
         horizontalArrangement = Arrangement.SpaceBetween
       ) {
         Text(serverAddress(srvSumm.xftpServer))
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
           inProgressIcon(srvSumm)
           RowLinkIcon("see server details")
         }
@@ -377,7 +391,7 @@ private fun XftpServersListView(servers: List<XFTPServerSummary>, statsStartedAt
 private fun RowLinkIcon(contentDescription: String) {
   return Icon(
     painterResource(MR.images.ic_arrow_forward_ios), contentDescription, tint = MaterialTheme.colors.secondary,
-    modifier = Modifier.padding(start = DEFAULT_PADDING.div(4)).size(20.dp)
+    modifier = Modifier.padding(start = DEFAULT_PADDING.div(4)).size(12.dp)
   )
 }
 
@@ -393,7 +407,7 @@ private fun SMPStatsView(stats: AgentSMPServerStatsData, statsStartedAt: Instant
       numOrDash(stats._recvMsgs)
     )
     SectionItemViewSpaceBetween(
-      padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF + DEFAULT_SPACE_AFTER_ICON),
+      padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF + 7.dp),
       click = {
         ModalManager.start.showCustomModal { close -> DetailedSMPStatsView(
           rh = remoteHostInfo,
@@ -421,9 +435,13 @@ private fun SMPStatsView(stats: AgentSMPServerStatsData, statsStartedAt: Instant
 @Composable
 private fun SMPSubscriptionsSection(totals: SMPTotals) {
   Column {
-    Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-      Text(generalGetString(MR.strings.servers_info_subscriptions_section_header).uppercase(), color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
-      SubscriptionStatusIndicatorView(totals.subs, totals.sessions)
+    Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+      Column {
+        Text(generalGetString(MR.strings.servers_info_subscriptions_section_header).uppercase(), color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
+      }
+      Column(Modifier.padding(start = DEFAULT_SPACE_AFTER_ICON)) {
+        SubscriptionStatusIndicatorView(totals.subs, totals.sessions)
+      }
     }
     Column(Modifier.padding(PaddingValues()).fillMaxWidth()) {
       InfoRow(
@@ -441,7 +459,7 @@ private fun SMPSubscriptionsSection(totals: SMPTotals) {
 @Composable
 private fun SMPSubscriptionsSection(subs: SMPServerSubs, summary: SMPServerSummary, rh: RemoteHostInfo?) {
   Column {
-    Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
       Text(generalGetString(MR.strings.servers_info_subscriptions_section_header).uppercase(), color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
       SubscriptionStatusIndicatorView(subs, summary.sessionsOrNew)
     }
@@ -502,7 +520,7 @@ fun XFTPStatsView(stats: AgentXFTPServerStatsData, statsStartedAt: Instant, rh: 
       prettySize(stats._downloadsSize)
     )
     SectionItemViewSpaceBetween(
-      padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF + DEFAULT_SPACE_AFTER_ICON),
+      padding = PADDING_FOR_ARROW_ROW,
       click = {
         ModalManager.start.showCustomModal { close -> DetailedXFTPStatsView(
           rh = rh,
