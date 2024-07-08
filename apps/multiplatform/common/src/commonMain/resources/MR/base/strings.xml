@@ -2098,7 +2098,7 @@
   <string name="servers_info_subscriptions_connections_subscribed">Connections subscribed</string>
   <string name="servers_info_subscriptions_connections_pending">Pending</string>
   <string name="servers_info_subscriptions_total">Total</string>
-  <string name="servers_info_connected_servers_section_header">Connected Servers</string>
+  <string name="servers_info_connected_servers_section_header">Connected servers</string>
   <string name="servers_info_previously_connected_servers_section_header">Previously connected servers</string>
   <string name="servers_info_proxied_servers_section_header">Proxied servers</string>
   <string name="servers_info_proxied_servers_section_footer">You are not connected to these servers. Private routing is used to deliver messages to them.</string>
