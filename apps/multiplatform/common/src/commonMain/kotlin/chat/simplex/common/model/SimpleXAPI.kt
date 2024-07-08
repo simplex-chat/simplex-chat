@@ -416,7 +416,7 @@ object ChatController {
   suspend fun getAgentServersSummary(rh: Long?): PresentedServersSummary? {
     val userId = currentUserId("getAgentServersSummary")
 
-    val r = sendCmd(rh, CC.GetAgentServersSummary(userId))
+    val r = sendCmd(rh, CC.GetAgentServersSummary(userId), log = false)
 
     if (r is CR.AgentServersSummary) return r.serversSummary
     Log.e(TAG, "getAgentServersSummary bad response: ${r.responseType} ${r.details}")
@@ -585,20 +585,24 @@ object ChatController {
     }
   }
 
-  suspend fun sendCmd(rhId: Long?, cmd: CC, otherCtrl: ChatCtrl? = null): CR {
+  suspend fun sendCmd(rhId: Long?, cmd: CC, otherCtrl: ChatCtrl? = null, log: Boolean = true): CR {
     val ctrl = otherCtrl ?: ctrl ?: throw Exception("Controller is not initialized")
 
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
-      chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))
-      Log.d(TAG, "sendCmd: ${cmd.cmdType}")
+      if (log) {
+        chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))
+        Log.d(TAG, "sendCmd: ${cmd.cmdType}")
+      }
       val json = if (rhId == null) chatSendCmd(ctrl, c) else chatSendRemoteCmd(ctrl, rhId.toInt(), c)
       val r = APIResponse.decodeStr(json)
-      Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
-      if (r.resp is CR.Response || r.resp is CR.Invalid) {
-        Log.d(TAG, "sendCmd response json $json")
+      if (log) {
+        Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
+        if (r.resp is CR.Response || r.resp is CR.Invalid) {
+          Log.d(TAG, "sendCmd response json $json")
+        }
+        chatModel.addTerminalItem(TerminalItem.resp(rhId, r.resp))
       }
-      chatModel.addTerminalItem(TerminalItem.resp(rhId, r.resp))
       r.resp
     }
   }
