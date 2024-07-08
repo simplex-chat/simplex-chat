@@ -305,27 +305,11 @@ private fun ToggleFilterEnabledButton() {
     Icon(
       painterResource(MR.images.ic_filter_list),
       null,
-      tint = if (pref.state.value) MaterialTheme.colors.background else MaterialTheme.colors.primary,
+      tint = if (pref.state.value) MaterialTheme.colors.background else MaterialTheme.colors.secondary,
       modifier = Modifier
         .padding(3.dp)
         .background(color = if (pref.state.value) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
-        .border(width = 1.dp, color = MaterialTheme.colors.primary, shape = RoundedCornerShape(50))
-        .padding(3.dp)
-        .size(16.dp)
-    )
-  }
-}
-
-@Composable
-private fun ToggleFilterDisabledButton() {
-  IconButton({}, enabled = false) {
-    Icon(
-      painterResource(MR.images.ic_filter_list),
-      null,
-      tint = MaterialTheme.colors.secondary,
-      modifier = Modifier
-        .padding(3.dp)
-        .border(width = 1.dp, color = MaterialTheme.colors.secondary, shape = RoundedCornerShape(50))
+        .border(width = 1.dp, color = if (pref.state.value) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
         .padding(3.dp)
         .size(16.dp)
     )
