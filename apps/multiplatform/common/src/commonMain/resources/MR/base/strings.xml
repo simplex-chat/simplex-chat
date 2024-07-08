@@ -2093,7 +2093,7 @@
   <string name="servers_info_messages_sent">Messages sent</string>
   <string name="servers_info_messages_received">Messages received</string>
   <string name="servers_info_details">Details</string>
-  <string name="servers_info_private_data_disclaimer">Starting from %s \nAll data is private to your device.</string>
+  <string name="servers_info_private_data_disclaimer">Starting from %s.\nAll data is private to your device.</string>
   <string name="servers_info_subscriptions_section_header">Messages subscriptions</string>
   <string name="servers_info_subscriptions_connections_subscribed">Connections subscribed</string>
   <string name="servers_info_subscriptions_connections_pending">Pending</string>
@@ -2103,16 +2103,15 @@
   <string name="servers_info_proxied_servers_section_header">Proxied servers</string>
   <string name="servers_info_proxied_servers_section_footer">You are not connected to these servers. Private routing is used to deliver messages to them.</string>
   <string name="servers_info_reconnect_servers_title">Reconnect servers?</string>
-  <string name="servers_info_reconnect_server_title">Reconnect servers?</string>
   <string name="servers_info_reconnect_servers_message">Reconnect all connected servers to force message delivery. It uses additional traffic.</string>
+  <string name="servers_info_reconnect_server_title">Reconnect server?</string>
   <string name="servers_info_reconnect_server_message">Reconnect server to force message delivery. It uses additional traffic.</string>
-  <string name="servers_info_modal_dismiss">Cancel</string>
   <string name="servers_info_reconnect_servers_error">Error reconnecting servers</string>
   <string name="servers_info_reconnect_server_error">Error reconnecting server</string>
   <string name="servers_info_modal_error_title">Error</string>
   <string name="servers_info_reconnect_all_servers_button">Reconnect all servers</string>
   <string name="servers_info_reset_stats">Reset all statistics</string>
-  <string name="servers_info_reset_stats_alert_title">Reset all servers statistics?</string>
+  <string name="servers_info_reset_stats_alert_title">Reset all statistics?</string>
   <string name="servers_info_reset_stats_alert_message">Servers statistics will be reset - this cannot be undone!</string>
   <string name="servers_info_reset_stats_alert_confirm">Reset</string>
   <string name="servers_info_reset_stats_alert_error_title">Error resetting statistics</string>
@@ -2129,7 +2128,7 @@
   <string name="xftp_server">XFTP server</string>
   <string name="reconnect">Reconnect</string>
   <string name="attempts_label">attempts</string>
-  <string name="sent_directly">Sent Directly</string>
+  <string name="sent_directly">Sent directly</string>
   <string name="sent_via_proxy">Sent via proxy</string>
   <string name="proxied">Proxied</string>
   <string name="send_errors">Send errors</string>
@@ -2150,7 +2149,7 @@
   <string name="deleted">Deleted</string>
   <string name="deletion_errors">Deletion errors</string>
   <string name="subscribed">Subscribed</string>
-  <string name="subscription_results_ignored">Subscription results ignored</string>
+  <string name="subscription_results_ignored">Subscriptions ignored</string>
   <string name="subscription_errors">Subscription errors</string>
   <string name="uploaded_files">Uploaded files</string>
   <string name="size">Size</string>

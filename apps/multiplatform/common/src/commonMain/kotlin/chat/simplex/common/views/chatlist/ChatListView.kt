@@ -221,7 +221,7 @@ private fun ChatListToolbar(searchInList: State<TextFieldValue>, drawerState: Dr
       }
     },
     title = {
-      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON * 2)) {
+      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
         Text(
           stringResource(MR.strings.your_chats),
           color = MaterialTheme.colors.onBackground,

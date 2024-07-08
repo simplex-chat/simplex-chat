@@ -4,6 +4,7 @@ import InfoRow
 import InfoRowTwoValues
 import SectionBottomSpacer
 import SectionDividerSpaced
+import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionTextFooter
 import SectionView
@@ -150,7 +151,7 @@ fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, sess: ServerSessions, l
 }
 
 @Composable
-fun SubscriptionStatusIndicator(click: ((PresentedServersSummary?) -> Unit)? = null, ) {
+fun SubscriptionStatusIndicator(click: ((PresentedServersSummary?) -> Unit)) {
   var subs by remember { mutableStateOf(SMPServerSubs.newSMPServerSubs) }
   var sess by remember { mutableStateOf(ServerSessions.newServerSessions) }
   var timerCounter by remember { mutableStateOf(0) }
@@ -213,7 +214,7 @@ fun SubscriptionStatusIndicator(click: ((PresentedServersSummary?) -> Unit)? = n
     startInitialTimer()
   }
 
-  Row(if (click != null) Modifier.clickable(onClick = { click(summary) }) else Modifier) {
+  SimpleButtonFrame(click = { click(summary) }) {
     SubscriptionStatusIndicatorView(subs = subs, sess = sess)
   }
 }
@@ -473,36 +474,38 @@ private fun SMPSubscriptionsSection(subs: SMPServerSubs, summary: SMPServerSumma
         generalGetString(MR.strings.servers_info_subscriptions_total),
         numOrDash(subs.total)
       )
-      SectionItemViewSpaceBetween {
-        Row {
-          Text(
-            stringResource(MR.strings.reconnect),
-            modifier = Modifier.clickable() {
-              AlertManager.shared.showAlertDialog(
-                title = generalGetString(MR.strings.servers_info_reconnect_server_title),
-                text = generalGetString(MR.strings.servers_info_reconnect_server_message),
-                dismissText = generalGetString(MR.strings.servers_info_modal_dismiss),
-                destructive = true,
-                onConfirm = {
-                  withBGApi {
-                    val success = controller.reconnectServer(rh?.remoteHostId, summary.smpServer)
+      ReconnectServerButton(rh, summary.smpServer)
+    }
+  }
+}
 
-                    if (!success) {
-                      AlertManager.shared.showAlertMsg(
-                        title = generalGetString(MR.strings.servers_info_modal_error_title),
-                        text = generalGetString(MR.strings.servers_info_reconnect_server_error)
-                      )
-                    }
-                  }
-                }
-              )
-            },
-            color = MaterialTheme.colors.primary
+@Composable
+private fun ReconnectServerButton(rh: RemoteHostInfo?, server: String) {
+  SectionItemView(click = { reconnectServerAlert(rh, server) }) {
+    Text(
+      stringResource(MR.strings.reconnect),
+      color = MaterialTheme.colors.primary
+    )
+  }
+}
+
+private fun reconnectServerAlert(rh: RemoteHostInfo?, server: String) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.servers_info_reconnect_server_title),
+    text = generalGetString(MR.strings.servers_info_reconnect_server_message),
+    onConfirm = {
+      withBGApi {
+        val success = controller.reconnectServer(rh?.remoteHostId, server)
+
+        if (!success) {
+          AlertManager.shared.showAlertMsg(
+            title = generalGetString(MR.strings.servers_info_modal_error_title),
+            text = generalGetString(MR.strings.servers_info_reconnect_server_error)
           )
         }
       }
     }
-  }
+  )
 }
 
 @Composable
@@ -1046,62 +1049,10 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
           }
 
           SectionDividerSpaced()
-          SectionItemViewSpaceBetween {
-            Row {
-              Text(
-                stringResource(MR.strings.servers_info_reconnect_all_servers_button),
-                modifier = Modifier.clickable() {
-                  AlertManager.shared.showAlertDialog(
-                    title = generalGetString(MR.strings.servers_info_reconnect_servers_title),
-                    text = generalGetString(MR.strings.servers_info_reconnect_servers_message),
-                    dismissText = generalGetString(MR.strings.servers_info_modal_dismiss),
-                    destructive = true,
-                    onConfirm = {
-                      withBGApi {
-                        val success = controller.reconnectAllServers(rh?.remoteHostId)
 
-                        if (!success) {
-                          AlertManager.shared.showAlertMsg(
-                            title = generalGetString(MR.strings.servers_info_modal_error_title),
-                            text = generalGetString(MR.strings.servers_info_reconnect_servers_error)
-                          )
-                        }
-                      }
-                    }
-                  )
-                },
-                color = MaterialTheme.colors.primary
-              )
-            }
-          }
-
-          SectionItemViewSpaceBetween {
-            Row {
-              Text(
-                stringResource(MR.strings.servers_info_reset_stats),
-                modifier = Modifier.clickable() {
-                  AlertManager.shared.showAlertDialog(
-                    title = generalGetString(MR.strings.servers_info_reset_stats_alert_title),
-                    text = generalGetString(MR.strings.servers_info_reset_stats_alert_message),
-                    dismissText = generalGetString(MR.strings.servers_info_modal_dismiss),
-                    destructive = true,
-                    onConfirm = {
-                      withBGApi {
-                        val success = controller.resetAgentServersStats(rh?.remoteHostId)
-
-                        if (!success) {
-                          AlertManager.shared.showAlertMsg(
-                            title = generalGetString(MR.strings.servers_info_modal_error_title),
-                            text = generalGetString(MR.strings.servers_info_reset_stats_alert_error_title)
-                          )
-                        }
-                      }
-                    }
-                  )
-                },
-                color = MaterialTheme.colors.primary
-              )
-            }
+          SectionView {
+            ReconnectAllServersButton(rh)
+            ResetStatisticsButton(rh)
           }
 
           SectionBottomSpacer()
@@ -1109,4 +1060,64 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
       }
     }
   }
+}
+
+@Composable
+private fun ReconnectAllServersButton(rh: RemoteHostInfo?) {
+  SectionItemView(click = { reconnectAllServersAlert(rh) }) {
+    Text(
+      stringResource(MR.strings.servers_info_reconnect_all_servers_button),
+      color = MaterialTheme.colors.primary
+    )
+  }
+}
+
+private fun reconnectAllServersAlert(rh: RemoteHostInfo?) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.servers_info_reconnect_servers_title),
+    text = generalGetString(MR.strings.servers_info_reconnect_servers_message),
+    onConfirm = {
+      withBGApi {
+        val success = controller.reconnectAllServers(rh?.remoteHostId)
+
+        if (!success) {
+          AlertManager.shared.showAlertMsg(
+            title = generalGetString(MR.strings.servers_info_modal_error_title),
+            text = generalGetString(MR.strings.servers_info_reconnect_servers_error)
+          )
+        }
+      }
+    }
+  )
+}
+
+@Composable
+private fun ResetStatisticsButton(rh: RemoteHostInfo?) {
+  SectionItemView(click = { resetStatisticsAlert(rh) }) {
+    Text(
+      stringResource(MR.strings.servers_info_reset_stats),
+      color = MaterialTheme.colors.primary
+    )
+  }
+}
+
+private fun resetStatisticsAlert(rh: RemoteHostInfo?) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.servers_info_reset_stats_alert_title),
+    text = generalGetString(MR.strings.servers_info_reset_stats_alert_message),
+    confirmText = generalGetString(MR.strings.servers_info_reset_stats_alert_confirm),
+    destructive = true,
+    onConfirm = {
+      withBGApi {
+        val success = controller.resetAgentServersStats(rh?.remoteHostId)
+
+        if (!success) {
+          AlertManager.shared.showAlertMsg(
+            title = generalGetString(MR.strings.servers_info_modal_error_title),
+            text = generalGetString(MR.strings.servers_info_reset_stats_alert_error_title)
+          )
+        }
+      }
+    }
+  )
 }
