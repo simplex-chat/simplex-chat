@@ -100,6 +100,9 @@ class ModalManager(private val placement: ModalPlacement? = null) {
 
   fun hasModalsOpen() = modalCount.value > 0
 
+  val hasModalsOpen: Boolean
+  @Composable get () = remember { modalCount }.value > 0
+
   fun closeModal() {
     if (modalViews.isNotEmpty()) {
       if (modalViews.lastOrNull()?.first == false) modalViews.removeAt(modalViews.lastIndex)
