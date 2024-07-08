@@ -418,13 +418,18 @@ private fun SMPStatsView(stats: AgentSMPServerStatsData, statsStartedAt: Instant
 @Composable
 private fun SMPSubscriptionsSection(totals: SMPTotals) {
   Column {
-    Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically) {
-      Column {
-        Text(generalGetString(MR.strings.servers_info_subscriptions_section_header).uppercase(), color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
-      }
-      Column(Modifier.padding(start = DEFAULT_SPACE_AFTER_ICON)) {
-        SubscriptionStatusIndicatorView(totals.subs, totals.sessions)
-      }
+    Row(
+      Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON * 2)
+    ) {
+      Text(
+        generalGetString(MR.strings.servers_info_subscriptions_section_header).uppercase(),
+        color = MaterialTheme.colors.secondary,
+        style = MaterialTheme.typography.body2,
+        fontSize = 12.sp
+      )
+      SubscriptionStatusIndicatorView(totals.subs, totals.sessions)
     }
     Column(Modifier.padding(PaddingValues()).fillMaxWidth()) {
       InfoRow(
@@ -442,8 +447,17 @@ private fun SMPSubscriptionsSection(totals: SMPTotals) {
 @Composable
 private fun SMPSubscriptionsSection(subs: SMPServerSubs, summary: SMPServerSummary, rh: RemoteHostInfo?) {
   Column {
-    Row(Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
-      Text(generalGetString(MR.strings.servers_info_subscriptions_section_header).uppercase(), color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
+    Row(
+      Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON * 2)
+    ) {
+      Text(
+        generalGetString(MR.strings.servers_info_subscriptions_section_header).uppercase(),
+        color = MaterialTheme.colors.secondary,
+        style = MaterialTheme.typography.body2,
+        fontSize = 12.sp
+      )
       SubscriptionStatusIndicatorView(subs, summary.sessionsOrNew)
     }
     Column(Modifier.padding(PaddingValues()).fillMaxWidth()) {
