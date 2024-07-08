@@ -5,7 +5,6 @@ import InfoRowTwoValues
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
-import SectionItemViewSpaceBetween
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.clickable
@@ -76,7 +75,6 @@ import kotlin.time.Duration.Companion.seconds
 enum class SubscriptionColorType {
   ACTIVE, ONION_ACTIVE, DISCONNECTED, ACTIVE_DISCONNECTED
 }
-val PADDING_FOR_ARROW_ROW = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF + 7.dp)
 
 data class SubscriptionStatus(
   val color: SubscriptionColorType,
@@ -252,46 +250,37 @@ private fun serverAddress(server: String): String {
 }
 
 @Composable
-private fun SmpServerView(srvSumm: SMPServerSummary, statsStartedAt: Instant, rh: RemoteHostInfo?) {
-  SectionItemViewSpaceBetween(
-    padding = PADDING_FOR_ARROW_ROW,
+private fun SMPServerView(srvSumm: SMPServerSummary, statsStartedAt: Instant, rh: RemoteHostInfo?) {
+  SectionItemView(
     click = {
-      ModalManager.start.showCustomModal { close -> SMPServerSummaryView(
-        rh = rh,
-        close = close,
-        summary = srvSumm,
-        statsStartedAt = statsStartedAt)
+      ModalManager.start.showCustomModal { close ->
+        SMPServerSummaryView(
+          rh = rh,
+          close = close,
+          summary = srvSumm,
+          statsStartedAt = statsStartedAt
+        )
       }
     }
   ) {
-    Column(
-      modifier = Modifier.fillMaxWidth(),
-      verticalArrangement = Arrangement.Center,
-    ) {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-      ) {
-        Text(serverAddress(srvSumm.smpServer))
-        Row(horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
-          if (srvSumm.subs != null && srvSumm.sessions != null) {
-            SubscriptionStatusIndicatorView(subs = srvSumm.subs, sess = srvSumm.sessions, leadingPercentage = true)
-          }
-          RowLinkIcon("see server details")
-        }
-      }
+    Text(
+      serverAddress(srvSumm.smpServer),
+      modifier = Modifier.weight(10f, fill = true)
+    )
+    if (srvSumm.subs != null && srvSumm.sessions != null) {
+      Spacer(Modifier.fillMaxWidth().weight(1f))
+      SubscriptionStatusIndicatorView(subs = srvSumm.subs, sess = srvSumm.sessions, leadingPercentage = true)
     }
   }
 }
 
 @Composable
-private fun SmpServersListView(servers: List<SMPServerSummary>, statsStartedAt: Instant, header: String? = null, footer: String? = null, rh: RemoteHostInfo?) {
+private fun SMPServersListView(servers: List<SMPServerSummary>, statsStartedAt: Instant, header: String? = null, footer: String? = null, rh: RemoteHostInfo?) {
   val sortedServers = servers.sortedWith(compareBy<SMPServerSummary> { !it.hasSubs }
     .thenBy { serverAddress(it.smpServer) })
 
   SectionView(header) {
-    sortedServers.map { svr -> SmpServerView(srvSumm = svr, statsStartedAt = statsStartedAt, rh = rh) }
+    sortedServers.map { svr -> SMPServerView(srvSumm = svr, statsStartedAt = statsStartedAt, rh = rh) }
   }
   if (footer != null) {
     SectionTextFooter(
@@ -320,63 +309,47 @@ fun prettySize(sizeInKB: Long): String {
 }
 
 @Composable
-private fun inProgressIcon(srvSumm: XFTPServerSummary): Unit? {
+private fun XFTPServerView(srvSumm: XFTPServerSummary, statsStartedAt: Instant, rh: RemoteHostInfo?) {
+  SectionItemView(
+    click = {
+      ModalManager.start.showCustomModal { close ->
+        XFTPServerSummaryView(
+          rh = rh,
+          close = close,
+          summary = srvSumm,
+          statsStartedAt = statsStartedAt
+        )
+      }
+    }
+  ) {
+    Text(
+      serverAddress(srvSumm.xftpServer),
+      modifier = Modifier.weight(10f, fill = true)
+    )
+    if (srvSumm.rcvInProgress || srvSumm.sndInProgress || srvSumm.delInProgress) {
+      Spacer(Modifier.fillMaxWidth().weight(1f))
+      XFTPServerInProgressIcon(srvSumm)
+    }
+  }
+}
+
+@Composable
+private fun XFTPServerInProgressIcon(srvSumm: XFTPServerSummary) {
   return when {
-    !srvSumm.rcvInProgress && !srvSumm.sndInProgress && !srvSumm.delInProgress -> null
     srvSumm.rcvInProgress && !srvSumm.sndInProgress && !srvSumm.delInProgress -> Icon(painterResource(MR.images.ic_arrow_downward),"download", tint = MaterialTheme.colors.secondary)
     !srvSumm.rcvInProgress && srvSumm.sndInProgress && !srvSumm.delInProgress -> Icon(painterResource(MR.images.ic_arrow_upward), "upload", tint = MaterialTheme.colors.secondary)
-    !srvSumm.rcvInProgress && !srvSumm.sndInProgress && srvSumm.delInProgress -> Icon(painterResource(MR.images.ic_delete), "deleted", tint = MaterialTheme.colors.secondary)
+    !srvSumm.rcvInProgress && !srvSumm.sndInProgress && srvSumm.delInProgress -> Icon(painterResource(MR.images.ic_delete), "deletion", tint = MaterialTheme.colors.secondary)
     else -> Icon(painterResource(MR.images.ic_expand_all), "upload and download", tint = MaterialTheme.colors.secondary)
   }
 }
 
 @Composable
-private fun XftpServerView(srvSumm: XFTPServerSummary, statsStartedAt: Instant, rh: RemoteHostInfo?) {
-  SectionItemViewSpaceBetween(
-    padding = PADDING_FOR_ARROW_ROW,
-    click = {
-      ModalManager.start.showCustomModal { close -> XFTPServerSummaryView(
-        rh = rh,
-        close = close,
-        summary = srvSumm,
-        statsStartedAt = statsStartedAt)
-      }
-    }
-  ) {
-    Column(
-      modifier = Modifier.fillMaxWidth(),
-      verticalArrangement = Arrangement.Center,
-    ) {
-      Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-      ) {
-        Text(serverAddress(srvSumm.xftpServer))
-        Row(horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
-          inProgressIcon(srvSumm)
-          RowLinkIcon("see server details")
-        }
-      }
-    }
-  }
-}
-
-@Composable
-private fun XftpServersListView(servers: List<XFTPServerSummary>, statsStartedAt: Instant, header: String? = null, rh: RemoteHostInfo?) {
+private fun XFTPServersListView(servers: List<XFTPServerSummary>, statsStartedAt: Instant, header: String? = null, rh: RemoteHostInfo?) {
   val sortedServers = servers.sortedBy { serverAddress(it.xftpServer) }
 
   SectionView(header) {
-    sortedServers.map { svr -> XftpServerView(svr, statsStartedAt, rh) }
+    sortedServers.map { svr -> XFTPServerView(svr, statsStartedAt, rh) }
   }
-}
-
-@Composable
-private fun RowLinkIcon(contentDescription: String) {
-  return Icon(
-    painterResource(MR.images.ic_arrow_forward_ios), contentDescription, tint = MaterialTheme.colors.secondary,
-    modifier = Modifier.padding(start = DEFAULT_PADDING.div(4)).size(12.dp)
-  )
 }
 
 @Composable
@@ -390,8 +363,7 @@ private fun SMPStatsView(stats: AgentSMPServerStatsData, statsStartedAt: Instant
       generalGetString(MR.strings.servers_info_messages_received),
       numOrDash(stats._recvMsgs)
     )
-    SectionItemViewSpaceBetween(
-      padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF + 7.dp),
+    SectionItemView(
       click = {
         ModalManager.start.showCustomModal { close -> DetailedSMPStatsView(
           rh = remoteHostInfo,
@@ -401,14 +373,7 @@ private fun SMPStatsView(stats: AgentSMPServerStatsData, statsStartedAt: Instant
         }
       }
     ) {
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier.fillMaxWidth(),
-        ) {
-        Text(text = generalGetString(MR.strings.servers_info_details), color = MaterialTheme.colors.onBackground)
-        RowLinkIcon("see details")
-      }
+      Text(text = generalGetString(MR.strings.servers_info_details), color = MaterialTheme.colors.onBackground)
     }
   }
   SectionTextFooter(
@@ -519,8 +484,7 @@ fun XFTPStatsView(stats: AgentXFTPServerStatsData, statsStartedAt: Instant, rh: 
       generalGetString(MR.strings.servers_info_downloaded),
       prettySize(stats._downloadsSize)
     )
-    SectionItemViewSpaceBetween(
-      padding = PADDING_FOR_ARROW_ROW,
+    SectionItemView (
       click = {
         ModalManager.start.showCustomModal { close -> DetailedXFTPStatsView(
           rh = rh,
@@ -530,14 +494,7 @@ fun XFTPStatsView(stats: AgentXFTPServerStatsData, statsStartedAt: Instant, rh: 
         }
       }
     ) {
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier.fillMaxWidth().padding(),
-      ) {
-        Text(text = generalGetString(MR.strings.servers_info_details), color = MaterialTheme.colors.onBackground)
-        RowLinkIcon("see details")
-      }
+      Text(text = generalGetString(MR.strings.servers_info_details), color = MaterialTheme.colors.onBackground)
     }
   }
   SectionTextFooter(
@@ -968,7 +925,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
                 SectionDividerSpaced()
 
                 if (currentlyUsedSMPServers.isNotEmpty()) {
-                  SmpServersListView(
+                  SMPServersListView(
                     servers = currentlyUsedSMPServers,
                     statsStartedAt = statsStartedAt,
                     header = generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
@@ -978,7 +935,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
                 }
 
                 if (previouslyUsedSMPServers.isNotEmpty()) {
-                  SmpServersListView(
+                  SMPServersListView(
                     servers = previouslyUsedSMPServers,
                     statsStartedAt = statsStartedAt,
                     header = generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
@@ -988,7 +945,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
                 }
 
                 if (proxySMPServers.isNotEmpty()) {
-                  SmpServersListView(
+                  SMPServersListView(
                     servers = proxySMPServers,
                     statsStartedAt = statsStartedAt,
                     header = generalGetString(MR.strings.servers_info_proxied_servers_section_header).uppercase(),
@@ -1015,7 +972,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
                 SectionDividerSpaced()
 
                 if (currentlyUsedXFTPServers.isNotEmpty()) {
-                  XftpServersListView(
+                  XFTPServersListView(
                     currentlyUsedXFTPServers,
                     statsStartedAt,
                     generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
@@ -1025,7 +982,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
                 }
 
                 if (previouslyUsedXFTPServers.isNotEmpty()) {
-                  XftpServersListView(
+                  XFTPServersListView(
                     previouslyUsedXFTPServers,
                     statsStartedAt,
                     generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
