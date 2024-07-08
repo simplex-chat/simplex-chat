@@ -117,9 +117,8 @@ private fun SubscriptionStatusIndicatorPercentage(percentageText: String) {
 
 @Composable
 fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, sess: ServerSessions, leadingPercentage: Boolean = false) {
-  val netCfg = remember { chatModel.controller.getNetCfg() }
-  val socksProxy = remember { netCfg.socksProxy }
-  val statusColorAndPercentage = subscriptionStatusColorAndPercentage(chatModel.networkInfo.value.online, socksProxy, subs, sess)
+  val netCfg = rememberUpdatedState(chatModel.controller.getNetCfg())
+  val statusColorAndPercentage = subscriptionStatusColorAndPercentage(chatModel.networkInfo.value.online, netCfg.value.socksProxy, subs, sess)
   val pref = remember { chatModel.controller.appPrefs.networkShowSubscriptionPercentage }
   val percentageText = "${(floor(statusColorAndPercentage.statusPercent * 100)).toInt()}%"
 
@@ -209,9 +208,8 @@ private fun SessIconColor(sess: ServerSessions): Color {
 
 @Composable
 private fun SessionActiveColor(): Color {
-  val netCfg = remember { chatModel.controller.getNetCfg() }
-  val socksProxy = remember { netCfg.socksProxy }
-  return if (socksProxy != null) Indigo else MaterialTheme.colors.primary
+  val netCfg = rememberUpdatedState(chatModel.controller.getNetCfg())
+  return if (netCfg.value.socksProxy != null) Indigo else MaterialTheme.colors.primary
 }
 
 @Composable
