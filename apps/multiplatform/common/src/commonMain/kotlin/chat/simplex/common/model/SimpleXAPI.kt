@@ -3498,9 +3498,6 @@ data class SMPServerSummary(
   val subs: SMPServerSubs? = null,
   val stats: AgentSMPServerStatsData? = null
 ) {
-  val id: String
-    get() = smpServer
-
   val hasSubs: Boolean
     get() = subs != null
 
@@ -3599,10 +3596,7 @@ data class XFTPServerSummary(
   val rcvInProgress: Boolean,
   val sndInProgress: Boolean,
   val delInProgress: Boolean
-) {
-  val id: String
-    get() = xftpServer
-}
+) {}
 
 @Serializable
 data class AgentXFTPServerStatsData(

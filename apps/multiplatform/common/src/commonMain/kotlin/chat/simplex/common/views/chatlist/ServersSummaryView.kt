@@ -614,13 +614,11 @@ fun XFTPServerSummaryLayout(summary: XFTPServerSummary, statsStartedAt: Instant,
       )
     }
     if (summary.known == true) {
-      Text(
-        generalGetString(MR.strings.open_server_settings_button),
-        modifier = Modifier.padding(DEFAULT_PADDING).clickable() {
-          ModalManager.start.showCustomModal { close -> ProtocolServersView(chatModel, rhId = rh?.remoteHostId, ServerProtocol.XFTP, close) }
-        },
-        color = MaterialTheme.colors.primary
-      )
+      SectionItemView(click = {
+        ModalManager.start.showCustomModal { close -> ProtocolServersView(chatModel, rhId = rh?.remoteHostId, ServerProtocol.XFTP, close) }
+      }) {
+        Text(generalGetString(MR.strings.open_server_settings_button))
+      }
     }
 
     if (summary.stats != null) {
@@ -651,13 +649,11 @@ fun SMPServerSummaryLayout(summary: SMPServerSummary, statsStartedAt: Instant, r
       )
     }
     if (summary.known == true) {
-      Text(
-        generalGetString(MR.strings.open_server_settings_button),
-        modifier = Modifier.padding(DEFAULT_PADDING).clickable() {
-          ModalManager.start.showCustomModal { close -> ProtocolServersView(chatModel, rhId = rh?.remoteHostId, ServerProtocol.SMP, close) }
-        },
-        color = MaterialTheme.colors.primary
-      )
+      SectionItemView(click = {
+        ModalManager.start.showCustomModal { close -> ProtocolServersView(chatModel, rhId = rh?.remoteHostId, ServerProtocol.SMP, close) }
+      }) {
+        Text(generalGetString(MR.strings.open_server_settings_button))
+      }
     }
 
     if (summary.stats != null) {
