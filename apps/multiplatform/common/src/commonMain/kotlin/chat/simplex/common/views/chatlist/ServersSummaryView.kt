@@ -22,11 +22,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.Icon
-import androidx.compose.material.LeadingIconTab
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.TabRow
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -894,7 +890,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
             stringResource(MR.strings.messages_section_title)
 
           PresentedServerType.XFTP ->
-            stringResource(MR.strings.files_and_media_section)
+            stringResource(MR.strings.servers_info_files_tab)
         }
       }
 
@@ -924,7 +920,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
         contentColor = MaterialTheme.colors.primary,
       ) {
         serverTypeTabTitles.forEachIndexed { index, it ->
-          LeadingIconTab(
+          Tab(
             selected = serverTypePagerState.currentPage == index,
             onClick = {
               scope.launch {
@@ -932,14 +928,6 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
               }
             },
             text = { Text(it, fontSize = 13.sp) },
-            icon = {
-              Icon(
-                if (PresentedServerType.SMP.ordinal == index) painterResource(MR.images.ic_mail) else painterResource(
-                  MR.images.ic_download
-                ),
-                it
-              )
-            },
             selectedContentColor = MaterialTheme.colors.primary,
             unselectedContentColor = MaterialTheme.colors.secondary,
           )

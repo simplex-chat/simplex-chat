@@ -2080,6 +2080,7 @@
 
   <!-- ServersSummaryView.kt -->
   <string name="servers_info">Servers info</string>
+  <string name="servers_info_files_tab">Files</string>
   <string name="servers_info_missing">No info, try to reload</string>
   <string name="servers_info_target">Showing info for</string>
   <string name="all_users">All users</string>
