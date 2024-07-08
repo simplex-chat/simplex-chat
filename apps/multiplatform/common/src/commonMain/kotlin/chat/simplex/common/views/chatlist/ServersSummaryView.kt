@@ -54,9 +54,7 @@ import chat.simplex.common.model.ServerSessions
 import chat.simplex.common.model.XFTPServerSummary
 import chat.simplex.common.model.localTimestamp
 import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.ui.theme.DEFAULT_PADDING
-import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
-import chat.simplex.common.ui.theme.DEFAULT_SPACE_AFTER_ICON
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.ProtocolServersView
 import chat.simplex.res.MR
@@ -116,13 +114,12 @@ fun subscriptionStatusColorAndPercentage(
 }
 
 @Composable
-private fun SubscriptionStatusIndicatorPercentage(percentageText: String, leadingPercentage: Boolean) {
+private fun SubscriptionStatusIndicatorPercentage(percentageText: String) {
   Text(
     percentageText,
     color = MaterialTheme.colors.secondary,
     fontSize = 12.sp,
-    style = MaterialTheme.typography.caption,
-    modifier = if (leadingPercentage) Modifier.padding(end = DEFAULT_SPACE_AFTER_ICON) else Modifier.padding(start = DEFAULT_SPACE_AFTER_ICON)
+    style = MaterialTheme.typography.caption
   )
 }
 
@@ -136,18 +133,19 @@ fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, sess: ServerSessions, l
 
   Row(
     verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)
   ) {
-    if (pref.state.value && leadingPercentage) SubscriptionStatusIndicatorPercentage(percentageText, true)
+    if (pref.state.value && leadingPercentage) SubscriptionStatusIndicatorPercentage(percentageText)
     SubscriptionStatusIcon(
       color = when(statusColorAndPercentage.color) {
         SubscriptionColorType.ACTIVE -> MaterialTheme.colors.primary
-        SubscriptionColorType.ONION_ACTIVE -> MaterialTheme.colors.primaryVariant
-        SubscriptionColorType.ACTIVE_DISCONNECTED -> MaterialTheme.colors.onBackground
-        SubscriptionColorType.DISCONNECTED -> MaterialTheme.colors.error
+        SubscriptionColorType.ONION_ACTIVE -> Indigo
+        SubscriptionColorType.ACTIVE_DISCONNECTED -> MaterialTheme.colors.secondary
+        SubscriptionColorType.DISCONNECTED -> MaterialTheme.colors.secondary
       },
       modifier = Modifier.size(16.dp),
       variableValue = statusColorAndPercentage.variableValue)
-    if (pref.state.value && !leadingPercentage) SubscriptionStatusIndicatorPercentage(percentageText, false)
+    if (pref.state.value && !leadingPercentage) SubscriptionStatusIndicatorPercentage(percentageText)
   }
 }
 
