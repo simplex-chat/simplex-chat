@@ -23,14 +23,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,7 +35,6 @@ import chat.simplex.common.model.AgentSMPServerStatsData
 import chat.simplex.common.model.AgentXFTPServerStatsData
 import chat.simplex.common.model.ChatController.chatModel
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.OnionHosts
 import chat.simplex.common.model.PresentedServersSummary
 import chat.simplex.common.model.RemoteHostInfo
 import chat.simplex.common.model.SMPServerSubs
@@ -73,7 +65,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 enum class SubscriptionColorType {
-  ACTIVE, ONION_ACTIVE, DISCONNECTED, ACTIVE_DISCONNECTED
+  ACTIVE, ACTIVE_SOCKS_PROXY, DISCONNECTED, ACTIVE_DISCONNECTED
 }
 
 data class SubscriptionStatus(
@@ -85,7 +77,7 @@ data class SubscriptionStatus(
 
 fun subscriptionStatusColorAndPercentage(
   online: Boolean,
-  onionHosts: OnionHosts,
+  socksProxy: String?,
   subs: SMPServerSubs,
   sess: ServerSessions
 ): SubscriptionStatus {
@@ -98,16 +90,22 @@ fun subscriptionStatusColorAndPercentage(
     }
   }
 
-  val activeColor: SubscriptionColorType = if (onionHosts == OnionHosts.REQUIRED) SubscriptionColorType.ONION_ACTIVE else SubscriptionColorType.ACTIVE
+  val activeColor: SubscriptionColorType = if (socksProxy != null) SubscriptionColorType.ACTIVE_SOCKS_PROXY else SubscriptionColorType.ACTIVE
   val noConnColorAndPercent = SubscriptionStatus(SubscriptionColorType.DISCONNECTED, 1f, 1f, 0f)
   val activeSubsRounded = roundedToQuarter(subs.shareOfActive)
 
   return if (online && subs.total > 0) {
     if (subs.ssActive == 0) {
-      if (sess.ssConnected == 0) noConnColorAndPercent else SubscriptionStatus(activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
-    } else {
-      if (sess.ssConnected == 0) SubscriptionStatus(SubscriptionColorType.ACTIVE_DISCONNECTED, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
-      else SubscriptionStatus(activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
+      if (sess.ssConnected == 0)
+        noConnColorAndPercent
+      else
+        SubscriptionStatus(activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
+    } else { // ssActive > 0
+      if (sess.ssConnected == 0)
+        // This would mean implementation error
+        SubscriptionStatus(SubscriptionColorType.ACTIVE_DISCONNECTED, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
+      else
+        SubscriptionStatus(activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
     }
   } else noConnColorAndPercent
 }
@@ -125,8 +123,8 @@ private fun SubscriptionStatusIndicatorPercentage(percentageText: String) {
 @Composable
 fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, sess: ServerSessions, leadingPercentage: Boolean = false) {
   val netCfg = remember { chatModel.controller.getNetCfg() }
-  val onionHosts = remember { netCfg.onionHosts }
-  val statusColorAndPercentage = subscriptionStatusColorAndPercentage(chatModel.networkInfo.value.online, onionHosts, subs, sess)
+  val socksProxy = remember { netCfg.socksProxy }
+  val statusColorAndPercentage = subscriptionStatusColorAndPercentage(chatModel.networkInfo.value.online, socksProxy, subs, sess)
   val pref = remember { chatModel.controller.appPrefs.networkShowSubscriptionPercentage }
   val percentageText = "${(floor(statusColorAndPercentage.statusPercent * 100)).toInt()}%"
 
@@ -138,8 +136,8 @@ fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, sess: ServerSessions, l
     SubscriptionStatusIcon(
       color = when(statusColorAndPercentage.color) {
         SubscriptionColorType.ACTIVE -> MaterialTheme.colors.primary
-        SubscriptionColorType.ONION_ACTIVE -> Indigo
-        SubscriptionColorType.ACTIVE_DISCONNECTED -> MaterialTheme.colors.secondary
+        SubscriptionColorType.ACTIVE_SOCKS_PROXY -> Indigo
+        SubscriptionColorType.ACTIVE_DISCONNECTED -> WarningOrange
         SubscriptionColorType.DISCONNECTED -> MaterialTheme.colors.secondary
       },
       modifier = Modifier.size(16.dp),
@@ -267,11 +265,27 @@ private fun SMPServerView(srvSumm: SMPServerSummary, statsStartedAt: Instant, rh
       serverAddress(srvSumm.smpServer),
       modifier = Modifier.weight(10f, fill = true)
     )
-    if (srvSumm.subs != null && srvSumm.sessions != null) {
+    if (srvSumm.subs != null) {
       Spacer(Modifier.fillMaxWidth().weight(1f))
-      SubscriptionStatusIndicatorView(subs = srvSumm.subs, sess = srvSumm.sessions, leadingPercentage = true)
+      SubscriptionStatusIndicatorView(subs = srvSumm.subs, sess = srvSumm.sessionsOrNew, leadingPercentage = true)
+    } else if (srvSumm.sessions != null) {
+      Spacer(Modifier.fillMaxWidth().weight(1f))
+      Icon(painterResource(MR.images.ic_arrow_upward), contentDescription = null, tint = SessIconColor(srvSumm.sessions))
     }
   }
+}
+
+@Composable
+private fun SessIconColor(sess: ServerSessions): Color {
+  val online = chatModel.networkInfo.value.online
+  return if (online && sess.ssConnected > 0) SessionActiveColor() else MaterialTheme.colors.secondary
+}
+
+@Composable
+private fun SessionActiveColor(): Color {
+  val netCfg = remember { chatModel.controller.getNetCfg() }
+  val socksProxy = remember { netCfg.socksProxy }
+  return if (socksProxy != null) Indigo else MaterialTheme.colors.primary
 }
 
 @Composable
@@ -336,10 +350,10 @@ private fun XFTPServerView(srvSumm: XFTPServerSummary, statsStartedAt: Instant, 
 @Composable
 private fun XFTPServerInProgressIcon(srvSumm: XFTPServerSummary) {
   return when {
-    srvSumm.rcvInProgress && !srvSumm.sndInProgress && !srvSumm.delInProgress -> Icon(painterResource(MR.images.ic_arrow_downward),"download", tint = MaterialTheme.colors.secondary)
-    !srvSumm.rcvInProgress && srvSumm.sndInProgress && !srvSumm.delInProgress -> Icon(painterResource(MR.images.ic_arrow_upward), "upload", tint = MaterialTheme.colors.secondary)
-    !srvSumm.rcvInProgress && !srvSumm.sndInProgress && srvSumm.delInProgress -> Icon(painterResource(MR.images.ic_delete), "deletion", tint = MaterialTheme.colors.secondary)
-    else -> Icon(painterResource(MR.images.ic_expand_all), "upload and download", tint = MaterialTheme.colors.secondary)
+    srvSumm.rcvInProgress && !srvSumm.sndInProgress && !srvSumm.delInProgress -> Icon(painterResource(MR.images.ic_arrow_downward),"download", tint = SessionActiveColor())
+    !srvSumm.rcvInProgress && srvSumm.sndInProgress && !srvSumm.delInProgress -> Icon(painterResource(MR.images.ic_arrow_upward), "upload", tint = SessionActiveColor())
+    !srvSumm.rcvInProgress && !srvSumm.sndInProgress && srvSumm.delInProgress -> Icon(painterResource(MR.images.ic_delete), "deletion", tint = SessionActiveColor())
+    else -> Icon(painterResource(MR.images.ic_expand_all), "upload and download", tint = SessionActiveColor())
   }
 }
 
