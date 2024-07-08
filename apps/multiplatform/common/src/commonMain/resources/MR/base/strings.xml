@@ -2086,9 +2086,9 @@
   <string name="all_users">All users</string>
   <string name="current_user">Current user</string>
   <string name="servers_info_transport_sessions_section_header">Transport sessions</string>
-  <string name="number_of_servers_connected">Connected</string>
-  <string name="number_of_servers_connecting">Connecting</string>
-  <string name="number_of_servers_with_connection_errors">Errors</string>
+  <string name="servers_info_sessions_connected">Connected</string>
+  <string name="servers_info_sessions_connecting">Connecting</string>
+  <string name="servers_info_sessions_errors">Errors</string>
   <string name="servers_info_statistics_section_header">Statistics</string>
   <string name="servers_info_messages_sent">Messages sent</string>
   <string name="servers_info_messages_received">Messages received</string>

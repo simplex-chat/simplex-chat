@@ -230,15 +230,15 @@ enum class PresentedServerType {
 private fun ServerSessionsView(sess: ServerSessions) {
   SectionView(generalGetString(MR.strings.servers_info_transport_sessions_section_header).uppercase()) {
     InfoRow(
-      generalGetString(MR.strings.number_of_servers_connected),
+      generalGetString(MR.strings.servers_info_sessions_connected),
       numOrDash(sess.ssConnected)
     )
     InfoRow(
-      generalGetString(MR.strings.number_of_servers_with_connection_errors),
+      generalGetString(MR.strings.servers_info_sessions_errors),
       numOrDash(sess.ssErrors)
     )
     InfoRow(
-      generalGetString(MR.strings.number_of_servers_connecting),
+      generalGetString(MR.strings.servers_info_sessions_connecting),
       numOrDash(sess.ssConnecting)
     )
   }
