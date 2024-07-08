@@ -7,7 +7,6 @@ import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,17 +51,13 @@ import chat.simplex.common.views.usersettings.ProtocolServersView
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import numOrDash
 import java.text.DecimalFormat
 import kotlin.math.floor
 import kotlin.math.roundToInt
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 enum class SubscriptionColorType {
   ACTIVE, ACTIVE_SOCKS_PROXY, DISCONNECTED, ACTIVE_DISCONNECTED
