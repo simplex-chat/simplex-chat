@@ -547,12 +547,7 @@ fun XFTPStatsView(stats: AgentXFTPServerStatsData, statsStartedAt: Instant, rh: 
 
 @Composable
 private fun IndentedInfoRow(title: String, desc: String) {
-  InfoRow(title, desc, padding = PaddingValues(
-    start = 24.dp + DEFAULT_PADDING,
-    end = DEFAULT_PADDING,
-    bottom = DEFAULT_PADDING,
-    top = DEFAULT_PADDING)
-  )
+  InfoRow(title, desc, padding = PaddingValues(start = 24.dp + DEFAULT_PADDING, end = DEFAULT_PADDING))
 }
 
 @Composable
@@ -562,40 +557,38 @@ fun DetailedSMPStatsLayout(stats: AgentSMPServerStatsData, statsStartedAt: Insta
     InfoRowTwoValues(generalGetString(MR.strings.sent_directly), generalGetString(MR.strings.attempts_label), stats._sentDirect, stats._sentDirectAttempts)
     InfoRowTwoValues(generalGetString(MR.strings.sent_via_proxy), generalGetString(MR.strings.attempts_label), stats._sentViaProxy, stats._sentViaProxyAttempts)
     InfoRowTwoValues(generalGetString(MR.strings.proxied), generalGetString(MR.strings.attempts_label), stats._sentProxied, stats._sentProxiedAttempts)
-    SectionItemViewSpaceBetween {
-      Row {
-        Text(generalGetString(MR.strings.send_errors), color = MaterialTheme.colors.onBackground)
-      }
+    SectionItemView {
+      Text(generalGetString(MR.strings.send_errors), color = MaterialTheme.colors.onBackground)
     }
-    IndentedInfoRow(generalGetString(MR.strings.auth), numOrDash(stats._sentAuthErrs))
-    IndentedInfoRow(generalGetString(MR.strings.quota), numOrDash(stats._sentQuotaErrs))
+    IndentedInfoRow("AUTH", numOrDash(stats._sentAuthErrs))
+    IndentedInfoRow("QUOTA", numOrDash(stats._sentQuotaErrs))
     IndentedInfoRow(generalGetString(MR.strings.expired_label), numOrDash(stats._sentExpiredErrs))
     IndentedInfoRow(generalGetString(MR.strings.other_label), numOrDash(stats._sentOtherErrs))
   }
+
   SectionDividerSpaced()
+
   SectionView(generalGetString(MR.strings.servers_info_detailed_statistics_received_messages_header).uppercase()) {
     InfoRow(generalGetString(MR.strings.servers_info_detailed_statistics_received_total), numOrDash(stats._recvMsgs))
-    SectionItemViewSpaceBetween {
-      Row {
-        Text(generalGetString(MR.strings.servers_info_detailed_statistics_receive_errors), color = MaterialTheme.colors.onBackground)
-      }
+    SectionItemView {
+      Text(generalGetString(MR.strings.servers_info_detailed_statistics_receive_errors), color = MaterialTheme.colors.onBackground)
     }
     IndentedInfoRow(generalGetString(MR.strings.duplicates_label), numOrDash(stats._recvDuplicates))
     IndentedInfoRow(generalGetString(MR.strings.decryption_errors), numOrDash(stats._recvCryptoErrs))
     IndentedInfoRow(generalGetString(MR.strings.other_errors), numOrDash(stats._recvErrs))
     InfoRowTwoValues(generalGetString(MR.strings.acknowledged), generalGetString(MR.strings.attempts_label), stats._ackMsgs, stats._ackAttempts)
-    SectionItemViewSpaceBetween {
-      Row {
-        Text(generalGetString(MR.strings.acknowledgement_errors), color = MaterialTheme.colors.onBackground)
-      }
+    SectionItemView {
+      Text(generalGetString(MR.strings.acknowledgement_errors), color = MaterialTheme.colors.onBackground)
     }
-    IndentedInfoRow(generalGetString(MR.strings.no_msg_errors), numOrDash(stats._ackNoMsgErrs))
+    IndentedInfoRow("NO_MSG errors", numOrDash(stats._ackNoMsgErrs))
     IndentedInfoRow(generalGetString(MR.strings.other_errors), numOrDash(stats._ackOtherErrs))
   }
+
   SectionDividerSpaced()
+
   SectionView(generalGetString(MR.strings.connections).uppercase()) {
     InfoRow(generalGetString(MR.strings.created), numOrDash(stats._connCreated))
-    InfoRow(generalGetString(MR.strings.secured), numOrDash(stats._connCreated))
+    InfoRow(generalGetString(MR.strings.secured), numOrDash(stats._connSecured))
     InfoRow(generalGetString(MR.strings.completed), numOrDash(stats._connCompleted))
     InfoRowTwoValues(generalGetString(MR.strings.deleted), generalGetString(MR.strings.attempts_label), stats._connDeleted, stats._connDelAttempts)
     InfoRow(generalGetString(MR.strings.deletion_errors), numOrDash(stats._connDelErrs))
@@ -623,12 +616,10 @@ fun DetailedXFTPStatsLayout(stats: AgentXFTPServerStatsData, statsStartedAt: Ins
   SectionView(generalGetString(MR.strings.downloaded_files).uppercase()) {
     InfoRow(generalGetString(MR.strings.size), prettySize(stats._downloadsSize))
     InfoRowTwoValues(generalGetString(MR.strings.chunks_downloaded), generalGetString(MR.strings.attempts_label), stats._downloads, stats._downloadAttempts)
-    SectionItemViewSpaceBetween {
-      Row {
-        Text(generalGetString(MR.strings.download_errors), color = MaterialTheme.colors.onBackground)
-      }
+    SectionItemView {
+      Text(generalGetString(MR.strings.download_errors), color = MaterialTheme.colors.onBackground)
     }
-    IndentedInfoRow(generalGetString(MR.strings.auth), numOrDash(stats._downloadAuthErrs))
+    IndentedInfoRow("AUTH", numOrDash(stats._downloadAuthErrs))
     IndentedInfoRow(generalGetString(MR.strings.other_label), numOrDash(stats._downloadErrs))
   }
   SectionTextFooter(

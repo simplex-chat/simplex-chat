@@ -297,26 +297,19 @@ fun InfoRowTwoValues(
   title2: String,
   value: Int,
   value2: Int,
-  icon: Painter? = null,
-  iconTint: Color? = null,
   textColor: Color = MaterialTheme.colors.onBackground
 ) {
   SectionItemViewSpaceBetween {
     Row(
       verticalAlignment = Alignment.Bottom
     ) {
-      val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
-      if (icon != null) {
-        Icon(
-          painter = icon,
-          contentDescription = null,
-          modifier = Modifier.padding(end = 8.dp).size(iconSize),
-          tint = iconTint ?: MaterialTheme.colors.secondary
-        )
-      }
       Text(
-        text = "$title / ",
+        text = title,
         color = textColor,
+      )
+      Text(
+        text = " / ",
+        fontSize = 12.sp,
       )
       Text(
         text = title2,

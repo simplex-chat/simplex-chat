@@ -2132,8 +2132,6 @@
   <string name="sent_via_proxy">Sent via proxy</string>
   <string name="proxied">Proxied</string>
   <string name="send_errors">Send errors</string>
-  <string name="auth">AUTH</string>
-  <string name="quota">QUOTA</string>
   <string name="expired_label">expired</string>
   <string name="other_label">other</string>
   <string name="duplicates_label">duplicates</string>
@@ -2141,7 +2139,6 @@
   <string name="other_errors">other errors</string>
   <string name="acknowledged">Acknowledged</string>
   <string name="acknowledgement_errors">Acknowledgement errors</string>
-  <string name="no_msg_errors">NO_MSG errors</string>
   <string name="connections">Connections</string>
   <string name="created">Created</string>
   <string name="secured">Secured</string>
