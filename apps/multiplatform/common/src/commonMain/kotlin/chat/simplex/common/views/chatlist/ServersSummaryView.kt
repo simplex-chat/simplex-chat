@@ -1,4 +1,4 @@
-package chat.simplex.common.views.helpers
+package chat.simplex.common.views.chatlist
 
 import InfoRow
 import InfoRowTwoValues
@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.LeadingIconTab
 import androidx.compose.material.MaterialTheme
@@ -62,6 +61,7 @@ import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.ui.theme.DEFAULT_SPACE_AFTER_ICON
+import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.ProtocolServersView
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -296,7 +296,7 @@ private fun SmpServersListView(servers: List<SMPServerSummary>, statsStartedAt: 
     .thenBy { serverAddress(it.smpServer) })
 
   SectionView(header) {
-    sortedServers.map { svr -> SmpServerView(srvSumm = svr, statsStartedAt = statsStartedAt, rh = rh)}
+    sortedServers.map { svr -> SmpServerView(srvSumm = svr, statsStartedAt = statsStartedAt, rh = rh) }
   }
   if (footer != null) {
     SectionTextFooter(
@@ -372,7 +372,7 @@ private fun XftpServersListView(servers: List<XFTPServerSummary>, statsStartedAt
   val sortedServers = servers.sortedBy { serverAddress(it.xftpServer) }
 
   SectionView(header) {
-    sortedServers.map { svr -> XftpServerView(svr, statsStartedAt, rh)}
+    sortedServers.map { svr -> XftpServerView(svr, statsStartedAt, rh) }
   }
 }
 
