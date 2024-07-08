@@ -146,75 +146,6 @@ fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, sess: ServerSessions, l
   }
 }
 
-@Composable
-fun SubscriptionStatusIndicator(click: ((PresentedServersSummary?) -> Unit)) {
-  var subs by remember { mutableStateOf(SMPServerSubs.newSMPServerSubs) }
-  var sess by remember { mutableStateOf(ServerSessions.newServerSessions) }
-  var timerCounter by remember { mutableStateOf(0) }
-  var timer: Job? by remember { mutableStateOf(null) }
-  var summary: PresentedServersSummary? by remember { mutableStateOf(null) }
-
-  val initialInterval: Duration = 1.seconds
-  val regularInterval: Duration = 3.seconds
-  val initialPhaseDuration: Duration = 10.seconds
-
-  val scope = rememberCoroutineScope()
-
-  fun setServersSummary() {
-    withBGApi {
-      summary = chatModel.controller.getAgentServersSummary(chatModel.remoteHostId())
-
-      summary?.let {
-        subs = it.allUsersSMP.smpTotals.subs
-        sess = it.allUsersSMP.smpTotals.sessions
-      }
-    }
-  }
-
-  fun stopTimer() {
-    timer?.cancel()
-    timer = null
-  }
-
-  fun switchToRegularTimer() {
-    stopTimer()
-    timer = timer ?: scope.launch {
-      while (true) {
-        delay(regularInterval.inWholeMilliseconds)
-        setServersSummary()
-      }
-    }
-  }
-
-  fun startInitialTimer() {
-    timer = timer ?: scope.launch {
-      while (true) {
-        delay(initialInterval.inWholeMilliseconds)
-        setServersSummary()
-        timerCounter++
-        if (timerCounter *  initialInterval.inWholeSeconds >= initialPhaseDuration.inWholeSeconds) {
-          switchToRegularTimer()
-        }
-      }
-    }
-  }
-
-  DisposableEffect(Unit) {
-    onDispose {
-      stopTimer()
-      scope.cancel()
-    }
-  }
-
-  LaunchedEffect(Unit) {
-    startInitialTimer()
-  }
-
-  SimpleButtonFrame(click = { click(summary) }) {
-    SubscriptionStatusIndicatorView(subs = subs, sess = sess)
-  }
-}
-
 enum class PresentedUserCategory {
   CURRENT_USER, ALL_USERS
 }
@@ -789,25 +720,16 @@ fun ModalData.XFTPServerSummaryView(
 }
 
 @Composable
-fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
+fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableState<PresentedServersSummary?>) {
   Column(
     Modifier.fillMaxSize(),
   ) {
-    var timer: Job? by remember { mutableStateOf(null) }
     var showUserSelection by remember { mutableStateOf(false) }
-    var serversSummary by remember { mutableStateOf<PresentedServersSummary?>(null) }
     val selectedUserCategory =
       remember { stateGetOrPut("selectedUserCategory") { PresentedUserCategory.ALL_USERS } }
     val selectedServerType =
       remember { stateGetOrPut("serverTypeSelection") { PresentedServerType.SMP } }
     val scope = rememberCoroutineScope()
-    val fetchInterval: Duration = 1.seconds
-
-    fun getServersSummary() {
-      withBGApi {
-        serversSummary = chatModel.controller.getAgentServersSummary(chatModel.remoteHostId())
-      }
-    }
 
     LaunchedEffect(Unit) {
       if (chatModel.users.count { u -> u.user.activeUser || !u.user.hidden } == 1
@@ -816,19 +738,10 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
       } else {
         showUserSelection = true
       }
-      getServersSummary()
-      timer = timer ?: scope.launch {
-        while (true) {
-          delay(fetchInterval.inWholeMilliseconds)
-          getServersSummary()
-        }
-      }
     }
 
     DisposableEffect(Unit) {
       onDispose {
-        timer?.cancel()
-        timer = null
         scope.cancel()
       }
     }
@@ -844,7 +757,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
           bottomPadding = bottomPadding
         )
       }
-      if (serversSummary == null) {
+      if (serversSummary.value == null) {
         return Text(generalGetString(MR.strings.servers_info_missing))
       }
 
@@ -920,7 +833,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
           Spacer(Modifier.height(DEFAULT_PADDING))
           when (index) {
             PresentedServerType.SMP.ordinal -> {
-              serversSummary?.let {
+              serversSummary.value?.let {
                 val smpSummary =
                   if (selectedUserCategory.value == PresentedUserCategory.CURRENT_USER) it.currentUserSMP else it.allUsersSMP;
                 val totals = smpSummary.smpTotals
@@ -970,7 +883,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?) {
             }
 
             PresentedServerType.XFTP.ordinal -> {
-              serversSummary?.let {
+              serversSummary.value?.let {
                 val xftpSummary =
                   if (selectedUserCategory.value == PresentedUserCategory.CURRENT_USER) it.currentUserXFTP else it.allUsersXFTP
                 val totals = xftpSummary.xftpTotals

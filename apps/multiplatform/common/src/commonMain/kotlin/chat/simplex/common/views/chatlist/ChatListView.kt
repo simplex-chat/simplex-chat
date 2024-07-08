@@ -37,6 +37,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.json.Json
 import java.net.URI
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
@@ -183,7 +185,9 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 
 @Composable
 private fun ChatListToolbar(searchInList: State<TextFieldValue>, drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean) {
+  val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
+
   if (stopped) {
     barButtons.add {
       IconButton(onClick = {
@@ -228,22 +232,24 @@ private fun ChatListToolbar(searchInList: State<TextFieldValue>, drawerState: Dr
           fontWeight = FontWeight.SemiBold,
         )
         SubscriptionStatusIndicator(
+          serversSummary = serversSummary,
           click = {
             ModalManager.start.closeModals()
             ModalManager.start.showModalCloseable(
               endButtons = {
-                if (it != null) {
+                val summary = serversSummary.value
+                if (summary != null) {
                   ShareButton {
                     val json = Json {
                       prettyPrint = true
                     }
 
-                    val text = json.encodeToString(PresentedServersSummary.serializer(), it)
+                    val text = json.encodeToString(PresentedServersSummary.serializer(), summary)
                     clipboard.shareText(text)
                   }
                 }
               }
-            ) { _ -> ServersSummaryView(chatModel.currentRemoteHost.value) }
+            ) { ServersSummaryView(chatModel.currentRemoteHost.value, serversSummary) }
           }
         )
       }
@@ -254,6 +260,54 @@ private fun ChatListToolbar(searchInList: State<TextFieldValue>, drawerState: Dr
     buttons = barButtons
   )
   Divider(Modifier.padding(top = AppBarHeight))
+}
+
+@Composable
+fun SubscriptionStatusIndicator(serversSummary: MutableState<PresentedServersSummary?>, click: (() -> Unit)) {
+  var subs by remember { mutableStateOf(SMPServerSubs.newSMPServerSubs) }
+  var sess by remember { mutableStateOf(ServerSessions.newServerSessions) }
+  var timer: Job? by remember { mutableStateOf(null) }
+
+  val fetchInterval: Duration = 1.seconds
+
+  val scope = rememberCoroutineScope()
+
+  fun setServersSummary() {
+    withBGApi {
+      serversSummary.value = chatModel.controller.getAgentServersSummary(chatModel.remoteHostId())
+
+      serversSummary.value?.let {
+        subs = it.allUsersSMP.smpTotals.subs
+        sess = it.allUsersSMP.smpTotals.sessions
+      }
+    }
+  }
+
+  LaunchedEffect(Unit) {
+    setServersSummary()
+    timer = timer ?: scope.launch {
+      while (true) {
+        delay(fetchInterval.inWholeMilliseconds)
+        setServersSummary()
+      }
+    }
+  }
+
+  fun stopTimer() {
+    timer?.cancel()
+    timer = null
+  }
+
+  DisposableEffect(Unit) {
+    onDispose {
+      stopTimer()
+      scope.cancel()
+    }
+  }
+
+  SimpleButtonFrame(click = click) {
+    SubscriptionStatusIndicatorView(subs = subs, sess = sess)
+  }
 }
 
 @Composable
