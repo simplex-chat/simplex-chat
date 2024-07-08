@@ -229,8 +229,8 @@ private fun ChatListToolbar(searchInList: State<TextFieldValue>, drawerState: Dr
         )
         SubscriptionStatusIndicator(
           click = {
-            ModalManager.center.closeModals()
-            ModalManager.center.showModalCloseable(
+            ModalManager.start.closeModals()
+            ModalManager.start.showModalCloseable(
               endButtons = {
                 if (it != null) {
                   ShareButton {
