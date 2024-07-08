@@ -753,175 +753,178 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
         )
       }
       if (serversSummary.value == null) {
-        return Text(generalGetString(MR.strings.servers_info_missing))
-      }
-
-      val userOptions by remember {
-        mutableStateOf(
-          listOf(
-            PresentedUserCategory.ALL_USERS to generalGetString(MR.strings.all_users),
-            PresentedUserCategory.CURRENT_USER to generalGetString(MR.strings.current_user),
-          )
-        )
-      }
-
-      val serverTypeTabTitles = PresentedServerType.entries.map {
-        when (it) {
-          PresentedServerType.SMP ->
-            stringResource(MR.strings.messages_section_title)
-
-          PresentedServerType.XFTP ->
-            stringResource(MR.strings.servers_info_files_tab)
-        }
-      }
-
-      val serverTypePagerState = rememberPagerState(
-        initialPage = selectedServerType.value.ordinal,
-        initialPageOffsetFraction = 0f
-      ) { PresentedServerType.entries.size }
-
-      KeyChangeEffect(serverTypePagerState.currentPage) {
-        selectedServerType.value = PresentedServerType.values()[serverTypePagerState.currentPage]
-      }
-      if (showUserSelection) {
-        ExposedDropDownSettingRow(
-          generalGetString(MR.strings.servers_info_target),
-          userOptions,
-          selectedUserCategory,
-          icon = null,
-          enabled = remember { mutableStateOf(true) },
-          onSelected = {
-            selectedUserCategory.value = it
-          }
-        )
-      }
-      TabRow(
-        selectedTabIndex = serverTypePagerState.currentPage,
-        backgroundColor = Color.Transparent,
-        contentColor = MaterialTheme.colors.primary,
-      ) {
-        serverTypeTabTitles.forEachIndexed { index, it ->
-          Tab(
-            selected = serverTypePagerState.currentPage == index,
-            onClick = {
-              scope.launch {
-                serverTypePagerState.animateScrollToPage(index)
-              }
-            },
-            text = { Text(it, fontSize = 13.sp) },
-            selectedContentColor = MaterialTheme.colors.primary,
-            unselectedContentColor = MaterialTheme.colors.secondary,
-          )
-        }
-      }
-
-      HorizontalPager(
-        state = serverTypePagerState,
-        Modifier.fillMaxSize(),
-        verticalAlignment = Alignment.Top
-      ) { index ->
-        ColumnWithScrollBar(
-          Modifier
-            .fillMaxSize(),
-          verticalArrangement = Arrangement.Top
+        Box(
+          modifier = Modifier
+            .fillMaxSize()
         ) {
-          Spacer(Modifier.height(DEFAULT_PADDING))
-          when (index) {
-            PresentedServerType.SMP.ordinal -> {
-              serversSummary.value?.let {
-                val smpSummary =
-                  if (selectedUserCategory.value == PresentedUserCategory.CURRENT_USER) it.currentUserSMP else it.allUsersSMP;
-                val totals = smpSummary.smpTotals
-                val currentlyUsedSMPServers = smpSummary.currentlyUsedSMPServers
-                val previouslyUsedSMPServers = smpSummary.previouslyUsedSMPServers
-                val proxySMPServers = smpSummary.onlyProxiedSMPServers
-                val statsStartedAt = it.statsStartedAt
+          Text(generalGetString(MR.strings.servers_info_missing), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
+        }
+      } else {
+        val userOptions by remember {
+          mutableStateOf(
+            listOf(
+              PresentedUserCategory.ALL_USERS to generalGetString(MR.strings.all_users),
+              PresentedUserCategory.CURRENT_USER to generalGetString(MR.strings.current_user),
+            )
+          )
+        }
+        val serverTypeTabTitles = PresentedServerType.entries.map {
+          when (it) {
+            PresentedServerType.SMP ->
+              stringResource(MR.strings.messages_section_title)
 
-                SMPStatsView(totals.stats, statsStartedAt, rh)
-                SectionDividerSpaced()
-                SMPSubscriptionsSection(totals)
-                SectionDividerSpaced()
+            PresentedServerType.XFTP ->
+              stringResource(MR.strings.servers_info_files_tab)
+          }
+        }
+        val serverTypePagerState = rememberPagerState(
+          initialPage = selectedServerType.value.ordinal,
+          initialPageOffsetFraction = 0f
+        ) { PresentedServerType.entries.size }
 
-                if (currentlyUsedSMPServers.isNotEmpty()) {
-                  SMPServersListView(
-                    servers = currentlyUsedSMPServers,
-                    statsStartedAt = statsStartedAt,
-                    header = generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
-                    rh = rh
-                  )
-                  SectionDividerSpaced()
+        KeyChangeEffect(serverTypePagerState.currentPage) {
+          selectedServerType.value = PresentedServerType.values()[serverTypePagerState.currentPage]
+        }
+        if (showUserSelection) {
+          ExposedDropDownSettingRow(
+            generalGetString(MR.strings.servers_info_target),
+            userOptions,
+            selectedUserCategory,
+            icon = null,
+            enabled = remember { mutableStateOf(true) },
+            onSelected = {
+              selectedUserCategory.value = it
+            }
+          )
+        }
+        TabRow(
+          selectedTabIndex = serverTypePagerState.currentPage,
+          backgroundColor = Color.Transparent,
+          contentColor = MaterialTheme.colors.primary,
+        ) {
+          serverTypeTabTitles.forEachIndexed { index, it ->
+            Tab(
+              selected = serverTypePagerState.currentPage == index,
+              onClick = {
+                scope.launch {
+                  serverTypePagerState.animateScrollToPage(index)
                 }
+              },
+              text = { Text(it, fontSize = 13.sp) },
+              selectedContentColor = MaterialTheme.colors.primary,
+              unselectedContentColor = MaterialTheme.colors.secondary,
+            )
+          }
+        }
 
-                if (previouslyUsedSMPServers.isNotEmpty()) {
-                  SMPServersListView(
-                    servers = previouslyUsedSMPServers,
-                    statsStartedAt = statsStartedAt,
-                    header = generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
-                    rh = rh
-                  )
+        HorizontalPager(
+          state = serverTypePagerState,
+          Modifier.fillMaxSize(),
+          verticalAlignment = Alignment.Top
+        ) { index ->
+          ColumnWithScrollBar(
+            Modifier
+              .fillMaxSize(),
+            verticalArrangement = Arrangement.Top
+          ) {
+            Spacer(Modifier.height(DEFAULT_PADDING))
+            when (index) {
+              PresentedServerType.SMP.ordinal -> {
+                serversSummary.value?.let {
+                  val smpSummary =
+                    if (selectedUserCategory.value == PresentedUserCategory.CURRENT_USER) it.currentUserSMP else it.allUsersSMP;
+                  val totals = smpSummary.smpTotals
+                  val currentlyUsedSMPServers = smpSummary.currentlyUsedSMPServers
+                  val previouslyUsedSMPServers = smpSummary.previouslyUsedSMPServers
+                  val proxySMPServers = smpSummary.onlyProxiedSMPServers
+                  val statsStartedAt = it.statsStartedAt
+
+                  SMPStatsView(totals.stats, statsStartedAt, rh)
                   SectionDividerSpaced()
-                }
-
-                if (proxySMPServers.isNotEmpty()) {
-                  SMPServersListView(
-                    servers = proxySMPServers,
-                    statsStartedAt = statsStartedAt,
-                    header = generalGetString(MR.strings.servers_info_proxied_servers_section_header).uppercase(),
-                    footer = generalGetString(MR.strings.servers_info_proxied_servers_section_footer),
-                    rh = rh
-                  )
+                  SMPSubscriptionsSection(totals)
                   SectionDividerSpaced()
-                }
 
-                ServerSessionsView(totals.sessions)
+                  if (currentlyUsedSMPServers.isNotEmpty()) {
+                    SMPServersListView(
+                      servers = currentlyUsedSMPServers,
+                      statsStartedAt = statsStartedAt,
+                      header = generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
+                      rh = rh
+                    )
+                    SectionDividerSpaced()
+                  }
+
+                  if (previouslyUsedSMPServers.isNotEmpty()) {
+                    SMPServersListView(
+                      servers = previouslyUsedSMPServers,
+                      statsStartedAt = statsStartedAt,
+                      header = generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
+                      rh = rh
+                    )
+                    SectionDividerSpaced()
+                  }
+
+                  if (proxySMPServers.isNotEmpty()) {
+                    SMPServersListView(
+                      servers = proxySMPServers,
+                      statsStartedAt = statsStartedAt,
+                      header = generalGetString(MR.strings.servers_info_proxied_servers_section_header).uppercase(),
+                      footer = generalGetString(MR.strings.servers_info_proxied_servers_section_footer),
+                      rh = rh
+                    )
+                    SectionDividerSpaced()
+                  }
+
+                  ServerSessionsView(totals.sessions)
+                }
+              }
+
+              PresentedServerType.XFTP.ordinal -> {
+                serversSummary.value?.let {
+                  val xftpSummary =
+                    if (selectedUserCategory.value == PresentedUserCategory.CURRENT_USER) it.currentUserXFTP else it.allUsersXFTP
+                  val totals = xftpSummary.xftpTotals
+                  val statsStartedAt = it.statsStartedAt
+                  val currentlyUsedXFTPServers = xftpSummary.currentlyUsedXFTPServers
+                  val previouslyUsedXFTPServers = xftpSummary.previouslyUsedXFTPServers
+
+                  XFTPStatsView(totals.stats, statsStartedAt, rh)
+                  SectionDividerSpaced()
+
+                  if (currentlyUsedXFTPServers.isNotEmpty()) {
+                    XFTPServersListView(
+                      currentlyUsedXFTPServers,
+                      statsStartedAt,
+                      generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
+                      rh
+                    )
+                    SectionDividerSpaced()
+                  }
+
+                  if (previouslyUsedXFTPServers.isNotEmpty()) {
+                    XFTPServersListView(
+                      previouslyUsedXFTPServers,
+                      statsStartedAt,
+                      generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
+                      rh
+                    )
+                    SectionDividerSpaced()
+                  }
+
+                  ServerSessionsView(totals.sessions)
+                }
               }
             }
 
-            PresentedServerType.XFTP.ordinal -> {
-              serversSummary.value?.let {
-                val xftpSummary =
-                  if (selectedUserCategory.value == PresentedUserCategory.CURRENT_USER) it.currentUserXFTP else it.allUsersXFTP
-                val totals = xftpSummary.xftpTotals
-                val statsStartedAt = it.statsStartedAt
-                val currentlyUsedXFTPServers = xftpSummary.currentlyUsedXFTPServers
-                val previouslyUsedXFTPServers = xftpSummary.previouslyUsedXFTPServers
+            SectionDividerSpaced()
 
-                XFTPStatsView(totals.stats, statsStartedAt, rh)
-                SectionDividerSpaced()
-
-                if (currentlyUsedXFTPServers.isNotEmpty()) {
-                  XFTPServersListView(
-                    currentlyUsedXFTPServers,
-                    statsStartedAt,
-                    generalGetString(MR.strings.servers_info_connected_servers_section_header).uppercase(),
-                    rh
-                  )
-                  SectionDividerSpaced()
-                }
-
-                if (previouslyUsedXFTPServers.isNotEmpty()) {
-                  XFTPServersListView(
-                    previouslyUsedXFTPServers,
-                    statsStartedAt,
-                    generalGetString(MR.strings.servers_info_previously_connected_servers_section_header).uppercase(),
-                    rh
-                  )
-                  SectionDividerSpaced()
-                }
-
-                ServerSessionsView(totals.sessions)
-              }
+            SectionView {
+              ReconnectAllServersButton(rh)
+              ResetStatisticsButton(rh)
             }
+
+            SectionBottomSpacer()
           }
-
-          SectionDividerSpaced()
-
-          SectionView {
-            ReconnectAllServersButton(rh)
-            ResetStatisticsButton(rh)
-          }
-
-          SectionBottomSpacer()
         }
       }
     }
