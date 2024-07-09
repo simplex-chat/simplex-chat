@@ -2531,6 +2531,7 @@ deleteCIModeration db GroupInfo {groupId} itemMemberId (Just sharedMsgId) =
     "DELETE FROM chat_item_moderations WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?"
     (groupId, itemMemberId, sharedMsgId)
 
+-- createGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> GroupSndStatus -> IO ()
 createGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> CIStatus 'MDSnd -> IO ()
 createGroupSndStatus db itemId memberId status =
   DB.execute
@@ -2538,6 +2539,7 @@ createGroupSndStatus db itemId memberId status =
     "INSERT INTO group_snd_item_statuses (chat_item_id, group_member_id, group_snd_item_status) VALUES (?,?,?)"
     (itemId, memberId, status)
 
+-- getGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> ExceptT StoreError IO GroupSndStatus
 getGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> ExceptT StoreError IO (CIStatus 'MDSnd)
 getGroupSndStatus db itemId memberId =
   ExceptT . firstRow fromOnly (SENoGroupSndStatus itemId memberId) $
@@ -2551,6 +2553,7 @@ getGroupSndStatus db itemId memberId =
       |]
       (itemId, memberId)
 
+-- updateGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> GroupSndStatus -> IO ()
 updateGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> CIStatus 'MDSnd -> IO ()
 updateGroupSndStatus db itemId memberId status = do
   currentTs <- liftIO getCurrentTime
@@ -2589,6 +2592,7 @@ getGroupSndStatuses db itemId =
     memStatus (groupMemberId, memberDeliveryStatus, sentViaProxy) =
       MemberDeliveryStatus {groupMemberId, memberDeliveryStatus, sentViaProxy}
 
+-- getGroupSndStatusCounts :: DB.Connection -> ChatItemId -> IO [(GroupSndStatus, Int)]
 getGroupSndStatusCounts :: DB.Connection -> ChatItemId -> IO [(CIStatus 'MDSnd, Int)]
 getGroupSndStatusCounts db itemId =
   DB.query

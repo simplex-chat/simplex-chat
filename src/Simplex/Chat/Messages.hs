@@ -903,6 +903,35 @@ instance StrEncoding SndCIStatusProgress where
       "complete" -> pure SSPComplete
       _ -> fail "bad SndCIStatusProgress"
 
+data GroupSndStatus
+  = GSSNew
+  | GSSForwarded
+  | GSSInactive
+  | GSSSent
+  | GSSRcvd {msgRcptStatus :: MsgReceiptStatus}
+  | GSSError {agentError :: SndError}
+  | GSSWarning {agentError :: SndError}
+  | GSSInvalid {text :: Text}
+
+deriving instance Eq GroupSndStatus
+
+deriving instance Show GroupSndStatus
+
+instance StrEncoding GroupSndStatus where
+  strEncode = \case
+    GSSNew -> "gss_new"
+    GSSForwarded -> "gss_forwarded"
+    GSSInactive -> "gss_inactive"
+    GSSSent -> "gss_sent"
+    GSSRcvd msgRcptStatus -> "gss_rcvd " <> strEncode msgRcptStatus
+    GSSError sndErr -> "gss_error " <> strEncode sndErr
+    GSSWarning sndErr -> "gss_warning " <> strEncode sndErr
+    GSSInvalid {} -> "invalid"
+  strP = do
+    -- try to parse new encoding
+    -- if fails, try to parse CIStatus encoding for backwards compatibility
+    pure $ GSSInvalid ""
+
 type ChatItemId = Int64
 
 type ChatItemTs = UTCTime
@@ -1176,6 +1205,7 @@ mkItemVersion ChatItem {content, meta} = version <$> ciMsgContent content
 
 data MemberDeliveryStatus = MemberDeliveryStatus
   { groupMemberId :: GroupMemberId,
+    -- memberDeliveryStatus :: GroupSndStatus,
     memberDeliveryStatus :: CIStatus 'MDSnd,
     sentViaProxy :: Maybe Bool
   }
@@ -1233,6 +1263,8 @@ instance MsgDirectionI d => ToField (CIStatus d) where toField = toField . decod
 instance (Typeable d, MsgDirectionI d) => FromField (CIStatus d) where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
 instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GSS") ''GroupSndStatus)
 
 $(JQ.deriveJSON defaultJSON ''MemberDeliveryStatus)
 
