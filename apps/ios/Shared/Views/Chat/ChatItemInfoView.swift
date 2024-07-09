@@ -415,7 +415,7 @@ struct ChatItemInfoView: View {
     }
 
     @ViewBuilder private func memberDeliveryStatusesView(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        LazyVStack(alignment: .leading, spacing: 12) {
             let mss = membersStatuses(memberDeliveryStatuses)
             if !mss.isEmpty {
                 ForEach(mss, id: \.0.groupMemberId) { memberStatus in
