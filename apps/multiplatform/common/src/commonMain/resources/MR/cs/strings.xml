@@ -1839,4 +1839,19 @@
     <string name="theme_remove_image">Odebrat obrázek</string>
     <string name="wallpaper_preview_hello_bob">Dobré ráno!</string>
     <string name="color_mode_light">Světlé</string>
+    <string name="snd_error_auth">Špatný klíč nebo neznámé spojení - pravděpodobně je spojení smazáno.</string>
+    <string name="file_error_auth">Špatný klíč nebo neznámá adresa části souboru - soubor je pravděpodobně odstraněn.</string>
+    <string name="network_smp_proxy_mode_unprotected">Nechráněno</string>
+    <string name="network_smp_proxy_mode_unknown_description">Použít soukromé směrování s neznámými servery.</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Použit soukromé směrování s neznámými servery, když IP adresa není chráněna.</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Bez Tor nebo VPN bude vaše IP adresa viditelná souborovým serverům.</string>
+    <string name="info_row_debug_delivery">Ladit doručování</string>
+    <string name="v5_8_message_delivery_descr">Snížena spotřeba baterie.</string>
+    <string name="file_not_approved_title">Neznámé servery!</string>
+    <string name="file_not_approved_descr">Bez Tor nebo VPN bude vaše IP adresa viditelná pro tyto XFTP relé:
+\n%1$s.</string>
+    <string name="network_smp_proxy_fallback_allow_protected">Když je IP adresa skryta</string>
+    <string name="network_smp_proxy_fallback_allow">Ano</string>
+    <string name="color_wallpaper_tint">Zbarvení tapety</string>
+    <string name="color_wallpaper_background">Pozadí tapety</string>
 </resources>
