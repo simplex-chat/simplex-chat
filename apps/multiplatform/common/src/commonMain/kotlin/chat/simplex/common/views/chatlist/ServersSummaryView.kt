@@ -767,18 +767,6 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
         KeyChangeEffect(serverTypePagerState.currentPage) {
           selectedServerType.value = PresentedServerType.values()[serverTypePagerState.currentPage]
         }
-        if (showUserSelection) {
-          ExposedDropDownSettingRow(
-            generalGetString(MR.strings.servers_info_target),
-            userOptions,
-            selectedUserCategory,
-            icon = null,
-            enabled = remember { mutableStateOf(true) },
-            onSelected = {
-              selectedUserCategory.value = it
-            }
-          )
-        }
         TabRow(
           selectedTabIndex = serverTypePagerState.currentPage,
           backgroundColor = Color.Transparent,
@@ -810,6 +798,19 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
             verticalArrangement = Arrangement.Top
           ) {
             Spacer(Modifier.height(DEFAULT_PADDING))
+            if (showUserSelection) {
+              ExposedDropDownSettingRow(
+                generalGetString(MR.strings.servers_info_target),
+                userOptions,
+                selectedUserCategory,
+                icon = null,
+                enabled = remember { mutableStateOf(true) },
+                onSelected = {
+                  selectedUserCategory.value = it
+                }
+              )
+              SectionDividerSpaced()
+            }
             when (index) {
               PresentedServerType.SMP.ordinal -> {
                 serversSummary.value?.let {
