@@ -60,6 +60,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Remote.Types
+import Simplex.Chat.Stats (PresentedServersSummary)
 import Simplex.Chat.Store (AutoAccept, ChatLockEntity, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -68,14 +69,14 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
-import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, UserNetworkInfo)
+import Simplex.Messaging.Agent.Client (AgentLocks, ServerQueueInfo, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, UserNetworkInfo)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Messaging.Client (SMPProxyMode (..), SMPProxyFallback (..))
+import Simplex.Messaging.Client (SMPProxyFallback (..), SMPProxyMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -84,7 +85,6 @@ import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SMPMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServer, XFTPServerWithAuth, userProtocol)
-import Simplex.Messaging.Server.QueueStore.QueueInfo
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxy, TransportHost)
@@ -505,13 +505,12 @@ data ChatCommand
   | ShowVersion
   | DebugLocks
   | DebugEvent ChatResponse
-  | GetAgentStats
-  | ResetAgentStats
+  | GetAgentServersSummary UserId
+  | ResetAgentServersStats
   | GetAgentSubs
   | GetAgentSubsDetails
   | GetAgentWorkers
   | GetAgentWorkersDetails
-  | GetAgentMsgCounts
   | GetAgentQueuesInfo
   | -- The parser will return this command for strings that start from "//".
     -- This command should be processed in preCmdHook
@@ -577,7 +576,7 @@ data ChatResponse
   | CRContactInfo {user :: User, contact :: Contact, connectionStats_ :: Maybe ConnectionStats, customUserProfile :: Maybe Profile}
   | CRGroupInfo {user :: User, groupInfo :: GroupInfo, groupSummary :: GroupSummary}
   | CRGroupMemberInfo {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
-  | CRQueueInfo {user :: User, rcvMsgInfo :: Maybe RcvMsgInfo, queueInfo :: QueueInfo}
+  | CRQueueInfo {user :: User, rcvMsgInfo :: Maybe RcvMsgInfo, queueInfo :: ServerQueueInfo}
   | CRContactSwitchStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
   | CRGroupMemberSwitchStarted {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats :: ConnectionStats}
   | CRContactSwitchAborted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
@@ -756,12 +755,11 @@ data ChatResponse
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, chatEntityLocks :: Map String String, agentLocks :: AgentLocks}
-  | CRAgentStats {agentStats :: [[String]]}
+  | CRAgentServersSummary {user :: User, serversSummary :: PresentedServersSummary}
   | CRAgentWorkersDetails {agentWorkersDetails :: AgentWorkersDetails}
   | CRAgentWorkersSummary {agentWorkersSummary :: AgentWorkersSummary}
   | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
   | CRAgentSubsDetails {agentSubs :: SubscriptionsInfo}
-  | CRAgentMsgCounts {msgCounts :: [(Text, (Int, Int))]}
   | CRAgentQueuesInfo {agentQueuesInfo :: AgentQueuesInfo}
   | CRContactDisabled {user :: User, contact :: Contact}
   | CRConnectionDisabled {connectionEntity :: ConnectionEntity}

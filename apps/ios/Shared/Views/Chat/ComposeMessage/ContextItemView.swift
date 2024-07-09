@@ -10,7 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct ContextItemView: View {
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
     let contextItem: ChatItem
     let contextIcon: String
@@ -23,10 +23,10 @@ struct ContextItemView: View {
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 16, height: 16)
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
             if showSender, let sender = contextItem.memberDisplayName {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(sender).font(.caption).foregroundColor(.secondary)
+                    Text(sender).font(.caption).foregroundColor(theme.colors.secondary)
                     msgContentView(lines: 2)
                 }
             } else {
@@ -40,11 +40,12 @@ struct ContextItemView: View {
             } label: {
                 Image(systemName: "multiply")
             }
+            .tint(theme.colors.primary)
         }
         .padding(12)
         .frame(minHeight: 50)
         .frame(maxWidth: .infinity)
-        .background(chatItemFrameColor(contextItem, colorScheme))
+        .background(chatItemFrameColor(contextItem, theme))
         .padding(.top, 8)
     }
 
@@ -55,7 +56,7 @@ struct ContextItemView: View {
     }
 
     private func contextMsgPreview() -> Text {
-        return attachment() + messageText(contextItem.text, contextItem.formattedText, nil, preview: true, showSecrets: false)
+        return attachment() + messageText(contextItem.text, contextItem.formattedText, nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
 
         func attachment() -> Text {
             switch contextItem.content.msgContent {

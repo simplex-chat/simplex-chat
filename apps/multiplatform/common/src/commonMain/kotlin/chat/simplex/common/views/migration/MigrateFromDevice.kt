@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.startChat
 import chat.simplex.common.model.ChatController.startChatWithTemporaryDatabase
@@ -38,6 +39,7 @@ import kotlinx.serialization.*
 import java.io.File
 import java.net.URLEncoder
 import kotlin.math.max
+import kotlin.math.sqrt
 
 @Serializable
 data class MigrationFileLinkData(
@@ -426,7 +428,8 @@ fun LargeProgressView(value: Float, title: String, description: String) {
   Box(Modifier.padding(DEFAULT_PADDING).fillMaxSize(), contentAlignment = Alignment.Center) {
     CircularProgressIndicator(
       progress = value,
-      (if (appPlatform.isDesktop) Modifier.size(DEFAULT_START_MODAL_WIDTH) else Modifier.size(windowWidth() - DEFAULT_PADDING * 2))
+      (if (appPlatform.isDesktop) Modifier.size(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier) else Modifier.size(windowWidth() - DEFAULT_PADDING *
+          2))
         .rotate(-90f),
       color = MaterialTheme.colors.primary,
       strokeWidth = 25.dp

@@ -367,6 +367,7 @@ private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, de
       }
     }
     m.removeUser(user)
+    ntfManager.cancelNotificationsForUser(user.userId)
   } catch (e: Exception) {
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_deleting_user), e.stackTraceToString())
   }

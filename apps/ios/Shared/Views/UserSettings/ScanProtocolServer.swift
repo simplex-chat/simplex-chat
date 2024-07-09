@@ -40,7 +40,7 @@ struct ScanProtocolServer: View {
         switch resp {
         case let .success(r):
             if parseServerAddress(r.string) != nil {
-                servers.append(ServerCfg(server: r.string, preset: false, tested: nil, enabled: true))
+                servers.append(ServerCfg(server: r.string, preset: false, tested: nil, enabled: .enabled))
                 dismiss()
             } else {
                 showAddressError = true

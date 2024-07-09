@@ -523,9 +523,10 @@ getProtocolServers db User {userId} =
       (userId, decodeLatin1 $ strEncode protocol)
   where
     protocol = protocolTypeI @p
-    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Bool) -> ServerCfg p
-    toServerCfg (host, port, keyHash, auth_, preset, tested, enabled) =
+    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Int) -> ServerCfg p
+    toServerCfg (host, port, keyHash, auth_, preset, tested, enabledInt) =
       let server = ProtoServerWithAuth (ProtocolServer protocol host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
+          enabled = toServerEnabled enabledInt
        in ServerCfg {server, preset, tested, enabled}
 
 overwriteProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> [ServerCfg p] -> ExceptT StoreError IO ()
@@ -542,7 +543,7 @@ overwriteProtocolServers db User {userId} servers =
             (protocol, host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
           VALUES (?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((protocol, host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_) :. (preset, tested, enabled, userId, currentTs, currentTs))
+        ((protocol, host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_) :. (preset, tested, fromServerEnabled enabled, userId, currentTs, currentTs))
     pure $ Right ()
   where
     protocol = decodeLatin1 $ strEncode $ protocolTypeI @p

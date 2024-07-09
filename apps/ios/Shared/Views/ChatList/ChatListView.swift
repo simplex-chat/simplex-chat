@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Binding var showSettings: Bool
     @State private var searchMode = false
     @FocusState private var searchFocussed
@@ -86,6 +87,7 @@ struct ChatListView: View {
             ))
         }
         .listStyle(.plain)
+        .background(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(searchMode)
         .toolbar {
@@ -115,9 +117,7 @@ struct ChatListView: View {
                 HStack(spacing: 4) {
                     Text("Chats")
                         .font(.headline)
-                    if chatModel.chats.count > 0 {
-                        toggleFilterButton()
-                    }
+                    SubsStatusIndicator()
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
             }
@@ -128,15 +128,6 @@ struct ChatListView: View {
                 case .none: EmptyView()
                 }
             }
-        }
-    }
-
-    private func toggleFilterButton() -> some View {
-        Button {
-            showUnreadAndFavorites = !showUnreadAndFavorites
-        } label: {
-            Image(systemName: "line.3.horizontal.decrease.circle" + (showUnreadAndFavorites ? ".fill" : ""))
-                .foregroundColor(.accentColor)
         }
     }
 
@@ -154,12 +145,14 @@ struct ChatListView: View {
                             searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
                         )
                         .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
                         .frame(maxWidth: .infinity)
                     }
                     ForEach(cs, id: \.viewId) { chat in
                         ChatListNavLink(chat: chat)
                             .padding(.trailing, -16)
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
+                            .listRowBackground(Color.clear)
                     }
                     .offset(x: -8)
                 }
@@ -171,7 +164,7 @@ struct ChatListView: View {
                 }
             }
             if cs.isEmpty && !chatModel.chats.isEmpty {
-                Text("No filtered chats").foregroundColor(.secondary)
+                Text("No filtered chats").foregroundColor(theme.colors.secondary)
             }
         }
     }
@@ -179,7 +172,7 @@ struct ChatListView: View {
     private func unreadBadge(_ text: Text? = Text(" "), size: CGFloat = 18) -> some View {
         Circle()
             .frame(width: size, height: size)
-            .foregroundColor(.accentColor)
+            .foregroundColor(theme.colors.primary)
     }
 
     private func onboardingButtons() -> some View {
@@ -190,7 +183,7 @@ struct ChatListView: View {
                 p.addLine(to: CGPoint(x: 0, y: 10))
                 p.addLine(to: CGPoint(x: 8, y: 0))
             }
-            .fill(Color.accentColor)
+            .fill(theme.colors.primary)
             .frame(width: 20, height: 10)
             .padding(.trailing, 12)
 
@@ -200,7 +193,7 @@ struct ChatListView: View {
 
             Spacer()
             Text("You have no chats")
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
                 .frame(maxWidth: .infinity)
         }
         .padding(.trailing, 6)
@@ -213,16 +206,14 @@ struct ChatListView: View {
                 .padding(.vertical, 10)
                 .padding(.horizontal, 20)
         }
-        .background(Color.accentColor)
+        .background(theme.colors.primary)
         .foregroundColor(.white)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     @ViewBuilder private func chatView() -> some View {
         if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
-            ChatView(chat: chat).onAppear {
-                loadChat(chat: chat)
-            }
+            ChatView(chat: chat)
         }
     }
 
@@ -274,17 +265,87 @@ struct ChatListView: View {
     }
 }
 
+struct SubsStatusIndicator: View {
+    @State private var subs: SMPServerSubs = SMPServerSubs.newSMPServerSubs
+    @State private var sess: ServerSessions = ServerSessions.newServerSessions
+    @State private var timer: Timer? = nil
+    @State private var timerCounter = 0
+    @State private var showServersSummary = false
+
+    @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
+
+    // Constants for the intervals
+    let initialInterval: TimeInterval = 1.0
+    let regularInterval: TimeInterval = 3.0
+    let initialPhaseDuration: TimeInterval = 10.0 // Duration for initial phase in seconds
+
+    var body: some View {
+        Button {
+            showServersSummary = true
+        } label: {
+            HStack(spacing: 4) {
+                SubscriptionStatusIndicatorView(subs: subs, sess: sess)
+                if showSubscriptionPercentage {
+                    SubscriptionStatusPercentageView(subs: subs, sess: sess)
+                }
+            }
+        }
+        .onAppear {
+            startInitialTimer()
+        }
+        .onDisappear {
+            stopTimer()
+        }
+        .sheet(isPresented: $showServersSummary) {
+            ServersSummaryView()
+        }
+    }
+
+    private func startInitialTimer() {
+        timer = Timer.scheduledTimer(withTimeInterval: initialInterval, repeats: true) { _ in
+            getServersSummary()
+            timerCounter += 1
+            // Switch to the regular timer after the initial phase
+            if timerCounter * Int(initialInterval) >= Int(initialPhaseDuration) {
+                switchToRegularTimer()
+            }
+        }
+    }
+
+    func switchToRegularTimer() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: regularInterval, repeats: true) { _ in
+            getServersSummary()
+        }
+    }
+
+    func stopTimer() {
+        timer?.invalidate()
+        timer = nil
+    }
+
+    private func getServersSummary() {
+        do {
+            let summ = try getAgentServersSummary()
+            (subs, sess) = (summ.allUsersSMP.smpTotals.subs, summ.allUsersSMP.smpTotals.sessions)
+        } catch let error {
+            logger.error("getAgentServersSummary error: \(responseError(error))")
+        }
+    }
+}
+
 struct ChatListSearchBar: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Binding var searchMode: Bool
     @FocusState.Binding var searchFocussed: Bool
     @Binding var searchText: String
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: String?
     @State private var ignoreSearchTextChange = false
-    @State private var showScanCodeSheet = false
     @State private var alert: PlanAndConnectAlert?
     @State private var sheet: PlanAndConnectActionSheet?
+    @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
         VStack(spacing: 12) {
@@ -292,7 +353,7 @@ struct ChatListSearchBar: View {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
                     TextField("Search or paste SimpleX link", text: $searchText)
-                        .foregroundColor(searchShowingSimplexLink ? .secondary : .primary)
+                        .foregroundColor(searchShowingSimplexLink ? theme.colors.secondary : theme.colors.onBackground)
                         .disabled(searchShowingSimplexLink)
                         .focused($searchFocussed)
                         .frame(maxWidth: .infinity)
@@ -301,47 +362,25 @@ struct ChatListSearchBar: View {
                             .onTapGesture {
                                 searchText = ""
                             }
-                    } else if !searchFocussed {
-                        HStack(spacing: 24) {
-                            if m.pasteboardHasStrings {
-                                Image(systemName: "doc")
-                                    .onTapGesture {
-                                        if let str = UIPasteboard.general.string {
-                                            searchText = str
-                                        }
-                                    }
-                            }
-
-                            Image(systemName: "qrcode")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 20, height: 20)
-                                .onTapGesture {
-                                    showScanCodeSheet = true
-                                }
-                        }
-                        .padding(.trailing, 2)
                     }
                 }
                 .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
                 .background(Color(.tertiarySystemFill))
                 .cornerRadius(10.0)
 
                 if searchFocussed {
                     Text("Cancel")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(theme.colors.primary)
                         .onTapGesture {
                             searchText = ""
                             searchFocussed = false
                         }
+                } else if m.chats.count > 0 {
+                    toggleFilterButton()
                 }
             }
             Divider()
-        }
-        .sheet(isPresented: $showScanCodeSheet) {
-            NewChatView(selection: .connect, showQRCodeScanner: true)
-                .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil) // fixes .refreshable in ChatListView affecting nested view
         }
         .onChange(of: searchFocussed) { sf in
             withAnimation { searchMode = sf }
@@ -373,6 +412,21 @@ struct ChatListSearchBar: View {
         }
         .actionSheet(item: $sheet) { s in
             planAndConnectActionSheet(s, dismiss: true, cleanup: { searchText = "" })
+        }
+    }
+
+    private func toggleFilterButton() -> some View {
+        ZStack {
+            Color.clear
+                .frame(width: 22, height: 22)
+            Image(systemName: showUnreadAndFavorites ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(showUnreadAndFavorites ? theme.colors.primary : theme.colors.secondary)
+                .frame(width: showUnreadAndFavorites ? 22 : 16, height: showUnreadAndFavorites ? 22 : 16)
+                .onTapGesture {
+                    showUnreadAndFavorites = !showUnreadAndFavorites
+                }
         }
     }
 

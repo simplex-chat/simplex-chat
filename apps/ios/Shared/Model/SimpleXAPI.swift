@@ -92,18 +92,22 @@ private func withBGTask<T>(bgDelay: Double? = nil, f: @escaping () -> T) -> T {
     return r
 }
 
-func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, _ ctrl: chat_ctrl? = nil) -> ChatResponse {
-    logger.debug("chatSendCmd \(cmd.cmdType)")
+func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, _ ctrl: chat_ctrl? = nil, log: Bool = true) -> ChatResponse {
+    if log {
+        logger.debug("chatSendCmd \(cmd.cmdType)")
+    }
     let start = Date.now
     let resp = bgTask
                 ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd, ctrl) }
                 : sendSimpleXCmd(cmd, ctrl)
-    logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
-    if case let .response(_, json) = resp {
-        logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
-    }
-    Task {
-        await TerminalItems.shared.addCommand(start, cmd.obfuscated, resp)
+    if log {
+        logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
+        if case let .response(_, json) = resp {
+            logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
+        }
+        Task {
+            await TerminalItems.shared.addCommand(start, cmd.obfuscated, resp)
+        }
     }
     return resp
 }
@@ -242,14 +246,8 @@ func apiSuspendChat(timeoutMicroseconds: Int) {
     logger.error("apiSuspendChat error: \(String(describing: r))")
 }
 
-func apiSetTempFolder(tempFolder: String, ctrl: chat_ctrl? = nil) throws {
-    let r = chatSendCmdSync(.setTempFolder(tempFolder: tempFolder), ctrl)
-    if case .cmdOk = r { return }
-    throw r
-}
-
-func apiSetFilesFolder(filesFolder: String, ctrl: chat_ctrl? = nil) throws {
-    let r = chatSendCmdSync(.setFilesFolder(filesFolder: filesFolder), ctrl)
+func apiSetAppFilePaths(filesFolder: String, tempFolder: String, assetsFolder: String, ctrl: chat_ctrl? = nil) throws {
+    let r = chatSendCmdSync(.apiSetAppFilePaths(filesFolder: filesFolder, tempFolder: tempFolder, assetsFolder: assetsFolder), ctrl)
     if case .cmdOk = r { return }
     throw r
 }
@@ -309,8 +307,10 @@ private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
     throw r
 }
 
+let loadItemsPerPage = 50
+
 func apiGetChat(type: ChatType, id: Int64, search: String = "") throws -> Chat {
-    let r = chatSendCmdSync(.apiGetChat(type: type, id: id, pagination: .last(count: 50), search: search))
+    let r = chatSendCmdSync(.apiGetChat(type: type, id: id, pagination: .last(count: loadItemsPerPage), search: search))
     if case let .apiChat(_, chat) = r { return Chat.init(chat) }
     throw r
 }
@@ -539,6 +539,11 @@ func apiSetNetworkInfo(_ networkInfo: UserNetworkInfo) throws {
 
 func reconnectAllServers() async throws {
     try await sendCommandOkResp(.reconnectAllServers)
+}
+
+func reconnectServer(smpServer: String) async throws {
+    let userId = try currentUserId("reconnectServer")
+    try await sendCommandOkResp(.reconnectServer(userId: userId, smpServer: smpServer))
 }
 
 func apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings) async throws {
@@ -830,6 +835,21 @@ func apiSetConnectionAlias(connId: Int64, localAlias: String) async throws -> Pe
     if case let .connectionAliasUpdated(_, toConnection) = r { return toConnection }
     throw r
 }
+
+func apiSetUserUIThemes(userId: Int64, themes: ThemeModeOverrides?) async -> Bool {
+    let r = await chatSendCmd(.apiSetUserUIThemes(userId: userId, themes: themes))
+    if case .cmdOk = r { return true }
+    logger.error("apiSetUserUIThemes bad response: \(String(describing: r))")
+    return false
+}
+
+func apiSetChatUIThemes(chatId: ChatId, themes: ThemeModeOverrides?) async -> Bool {
+    let r = await chatSendCmd(.apiSetChatUIThemes(chatId: chatId, themes: themes))
+    if case .cmdOk = r { return true }
+    logger.error("apiSetChatUIThemes bad response: \(String(describing: r))")
+    return false
+}
+
 
 func apiCreateUserAddress() async throws -> String {
     let userId = try currentUserId("apiCreateUserAddress")
@@ -1334,6 +1354,18 @@ func apiGetVersion() throws -> CoreVersionInfo {
     throw r
 }
 
+func getAgentServersSummary() throws -> PresentedServersSummary {
+    let userId = try currentUserId("getAgentServersSummary")
+    let r = chatSendCmdSync(.getAgentServersSummary(userId: userId), log: false)
+    if case let .agentServersSummary(_, serversSummary) = r { return serversSummary }
+    logger.error("getAgentServersSummary error: \(String(describing: r))")
+    throw r
+}
+
+func resetAgentServersStats() async throws {
+    try await sendCommandOkResp(.resetAgentServersStats)
+}
+
 private func currentUserId(_ funcName: String) throws -> Int64 {
     if let userId = ChatModel.shared.currentUser?.userId {
         return userId
@@ -1353,8 +1385,7 @@ func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = ni
     if encryptionStartedDefault.get() {
         encryptionStartedDefault.set(false)
     }
-    try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
-    try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+    try apiSetAppFilePaths(filesFolder: getAppFilesDirectory().path, tempFolder: getTempFilesDirectory().path, assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path)
     try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
@@ -1439,8 +1470,7 @@ func startChatWithTemporaryDatabase(ctrl: chat_ctrl) throws -> User? {
     logger.debug("startChatWithTemporaryDatabase")
     let migrationActiveUser = try? apiGetActiveUser(ctrl: ctrl) ?? apiCreateActiveUser(Profile(displayName: "Temp", fullName: ""), ctrl: ctrl)
     try setNetworkConfig(getNetCfg(), ctrl: ctrl)
-    try apiSetTempFolder(tempFolder: getMigrationTempFilesDirectory().path, ctrl: ctrl)
-    try apiSetFilesFolder(filesFolder: getMigrationTempFilesDirectory().path, ctrl: ctrl)
+    try apiSetAppFilePaths(filesFolder: getMigrationTempFilesDirectory().path, tempFolder: getMigrationTempFilesDirectory().path, assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path, ctrl: ctrl)
     _ = try apiStartChat(ctrl: ctrl)
     return migrationActiveUser
 }

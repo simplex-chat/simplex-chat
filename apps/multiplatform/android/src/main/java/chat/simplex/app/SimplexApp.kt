@@ -179,6 +179,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean = NtfManager.notifyCallInvitation(invitation)
       override fun hasNotificationsForChat(chatId: String): Boolean = NtfManager.hasNotificationsForChat(chatId)
       override fun cancelNotificationsForChat(chatId: String) = NtfManager.cancelNotificationsForChat(chatId)
+      override fun cancelNotificationsForUser(userId: Long) = NtfManager.cancelNotificationsForUser(userId)
       override fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) = NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions.map { it.first })
       override fun androidCreateNtfChannelsMaybeShowAlert() = NtfManager.createNtfChannelsMaybeShowAlert()
       override fun cancelCallNotification() = NtfManager.cancelCallNotification()

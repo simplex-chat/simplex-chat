@@ -44,6 +44,11 @@ extension AppSettings {
         if let val = androidCallOnLockScreen { def.setValue(val.rawValue, forKey: ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN) }
         if let val = iosCallKitEnabled { callKitEnabledGroupDefault.set(val) }
         if let val = iosCallKitCallsInRecents { def.setValue(val, forKey: DEFAULT_CALL_KIT_CALLS_IN_RECENTS) }
+        if let val = uiProfileImageCornerRadius { def.setValue(val, forKey: DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) }
+        if let val = uiColorScheme { def.setValue(val, forKey: DEFAULT_CURRENT_THEME) }
+        if let val = uiDarkColorScheme { def.setValue(val, forKey: DEFAULT_SYSTEM_DARK_THEME) }
+        if let val = uiCurrentThemeIds { def.setValue(val, forKey: DEFAULT_CURRENT_THEME_IDS) }
+        if let val = uiThemes { def.setValue(val.skipDuplicates(), forKey: DEFAULT_THEME_OVERRIDES) }
     }
 
     public static var current: AppSettings {
@@ -69,6 +74,11 @@ extension AppSettings {
         c.androidCallOnLockScreen = AppSettingsLockScreenCalls(rawValue: def.string(forKey: ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN)!)
         c.iosCallKitEnabled = callKitEnabledGroupDefault.get()
         c.iosCallKitCallsInRecents = def.bool(forKey: DEFAULT_CALL_KIT_CALLS_IN_RECENTS)
+        c.uiProfileImageCornerRadius = def.float(forKey: DEFAULT_PROFILE_IMAGE_CORNER_RADIUS)
+        c.uiColorScheme = currentThemeDefault.get()
+        c.uiDarkColorScheme = systemDarkThemeDefault.get()
+        c.uiCurrentThemeIds = currentThemeIdsDefault.get()
+        c.uiThemes = themeOverridesDefault.get()
         return c
     }
 }

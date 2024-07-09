@@ -10,7 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct CILinkView: View {
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
     let linkPreview: LinkPreview
 
     var body: some View {
@@ -32,7 +32,7 @@ struct CILinkView: View {
                 Text(linkPreview.uri.absoluteString)
                     .font(.caption)
                     .lineLimit(1)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             }
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity, alignment: .leading)

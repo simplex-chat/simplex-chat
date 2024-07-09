@@ -11,9 +11,9 @@ import SimpleXChat
 
 struct ChatItemView: View {
     @ObservedObject var chat: Chat
+    @EnvironmentObject var theme: AppTheme
     var chatItem: ChatItem
     var maxWidth: CGFloat = .infinity
-    @State var scrollProxy: ScrollViewProxy? = nil
     @Binding var revealed: Bool
     @Binding var allowMenu: Bool
     @Binding var audioPlayer: AudioPlayer?
@@ -24,7 +24,6 @@ struct ChatItemView: View {
         chatItem: ChatItem,
         showMember: Bool = false,
         maxWidth: CGFloat = .infinity,
-        scrollProxy: ScrollViewProxy? = nil,
         revealed: Binding<Bool>,
         allowMenu: Binding<Bool> = .constant(false),
         audioPlayer: Binding<AudioPlayer?> = .constant(nil),
@@ -34,7 +33,6 @@ struct ChatItemView: View {
         self.chat = chat
         self.chatItem = chatItem
         self.maxWidth = maxWidth
-        _scrollProxy = .init(initialValue: scrollProxy)
         _revealed = revealed
         _allowMenu = allowMenu
         _audioPlayer = audioPlayer
@@ -62,12 +60,43 @@ struct ChatItemView: View {
     }
 
     private func framedItemView() -> some View {
-        FramedItemView(chat: chat, chatItem: chatItem, revealed: $revealed, maxWidth: maxWidth, scrollProxy: scrollProxy, allowMenu: $allowMenu, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
+        let preview = chatItem.content.msgContent
+            .flatMap {
+                switch $0 {
+                case let .image(_, image): image
+                case let .video(_, image, _): image
+                default: nil
+                }
+            }
+            .map { dropImagePrefix($0) }
+            .flatMap { Data(base64Encoded: $0) }
+            .flatMap { UIImage(data: $0) }
+        let adjustedMaxWidth = {
+            if let preview, preview.size.width <= preview.size.height {
+                maxWidth * 0.75
+            } else {
+                maxWidth
+            }
+        }()
+        return FramedItemView(
+            chat: chat,
+            chatItem: chatItem,
+            preview: preview,
+            revealed: $revealed,
+            maxWidth: maxWidth,
+            imgWidth: adjustedMaxWidth,
+            videoWidth: adjustedMaxWidth,
+            allowMenu: $allowMenu,
+            audioPlayer: $audioPlayer,
+            playbackState: $playbackState,
+            playbackTime: $playbackTime
+        )
     }
 }
 
 struct ChatItemContentView<Content: View>: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
     @Binding var revealed: Bool
@@ -97,14 +126,14 @@ struct ChatItemContentView<Content: View>: View {
         case .sndGroupEvent: eventItemView()
         case .rcvConnEvent: eventItemView()
         case .sndConnEvent: eventItemView()
-        case let .rcvChatFeature(feature, enabled, _): chatFeatureView(feature, enabled.iconColor)
-        case let .sndChatFeature(feature, enabled, _): chatFeatureView(feature, enabled.iconColor)
+        case let .rcvChatFeature(feature, enabled, _): chatFeatureView(feature, enabled.iconColor(theme.colors.secondary))
+        case let .sndChatFeature(feature, enabled, _): chatFeatureView(feature, enabled.iconColor(theme.colors.secondary))
         case let .rcvChatPreference(feature, allowed, param):
             CIFeaturePreferenceView(chat: chat, chatItem: chatItem, feature: feature, allowed: allowed, param: param)
         case let .sndChatPreference(feature, _, _):
-            CIChatFeatureView(chat: chat, chatItem: chatItem, revealed: $revealed, feature: feature, icon: feature.icon, iconColor: .secondary)
-        case let .rcvGroupFeature(feature, preference, _, role): chatFeatureView(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor)
-        case let .sndGroupFeature(feature, preference, _, role): chatFeatureView(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor)
+            CIChatFeatureView(chat: chat, chatItem: chatItem, revealed: $revealed, feature: feature, icon: feature.icon, iconColor: theme.colors.secondary)
+        case let .rcvGroupFeature(feature, preference, _, role): chatFeatureView(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor(theme.colors.secondary))
+        case let .sndGroupFeature(feature, preference, _, role): chatFeatureView(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor(theme.colors.secondary))
         case let .rcvChatFeatureRejected(feature): chatFeatureView(feature, .red)
         case let .rcvGroupFeatureRejected(feature): chatFeatureView(feature, .red)
         case .sndModerated: deletedItemView()
@@ -131,20 +160,20 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private func eventItemView() -> some View {
-        return CIEventView(eventText: eventItemViewText())
+        CIEventView(eventText: eventItemViewText(theme.colors.secondary))
     }
 
-    private func eventItemViewText() -> Text {
+    private func eventItemViewText(_ secondaryColor: Color) -> Text {
         if !revealed, let t = mergedGroupEventText {
-            return chatEventText(t + Text(" ") + chatItem.timestampText)
+            return chatEventText(t + Text(" ") + chatItem.timestampText, secondaryColor)
         } else if let member = chatItem.memberDisplayName {
             return Text(member + " ")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(secondaryColor)
                     .fontWeight(.light)
-                + chatEventText(chatItem)
+                + chatEventText(chatItem, secondaryColor)
         } else {
-            return chatEventText(chatItem)
+            return chatEventText(chatItem, secondaryColor)
         }
     }
 
@@ -179,7 +208,7 @@ struct ChatItemContentView<Content: View>: View {
         info.pqEnabled
         ? Text("Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery.")
             .font(.caption)
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
             .fontWeight(.light)
         : e2eeInfoNoPQText()
     }
@@ -187,24 +216,24 @@ struct ChatItemContentView<Content: View>: View {
     private func e2eeInfoNoPQText() -> Text {
         Text("Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery.")
             .font(.caption)
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
             .fontWeight(.light)
     }
 }
 
-func chatEventText(_ text: Text) -> Text {
+func chatEventText(_ text: Text, _ secondaryColor: Color) -> Text {
     text
         .font(.caption)
-        .foregroundColor(.secondary)
+        .foregroundColor(secondaryColor)
         .fontWeight(.light)
 }
 
-func chatEventText(_ eventText: LocalizedStringKey, _ ts: Text) -> Text {
-    chatEventText(Text(eventText) + Text(" ") + ts)
+func chatEventText(_ eventText: LocalizedStringKey, _ ts: Text, _ secondaryColor: Color) -> Text {
+    chatEventText(Text(eventText) + Text(" ") + ts, secondaryColor)
 }
 
-func chatEventText(_ ci: ChatItem) -> Text {
-    chatEventText("\(ci.content.text)", ci.timestampText)
+func chatEventText(_ ci: ChatItem, _ secondaryColor: Color) -> Text {
+    chatEventText("\(ci.content.text)", ci.timestampText, secondaryColor)
 }
 
 struct ChatItemView_Previews: PreviewProvider {

@@ -13,16 +13,13 @@ import Combine
 
 struct CIVideoView: View {
     @EnvironmentObject var m: ChatModel
-    @Environment(\.colorScheme) var colorScheme
     private let chatItem: ChatItem
-    private let image: String
+    private let preview: UIImage?
     @State private var duration: Int
     @State private var progress: Int = 0
     @State private var videoPlaying: Bool = false
     private let maxWidth: CGFloat
-    @Binding private var videoWidth: CGFloat?
-    @State private var scrollProxy: ScrollViewProxy?
-    @State private var preview: UIImage? = nil
+    private var videoWidth: CGFloat?
     @State private var player: AVPlayer?
     @State private var fullPlayer: AVPlayer?
     @State private var url: URL?
@@ -33,13 +30,12 @@ struct CIVideoView: View {
     @State private var fullScreenTimeObserver: Any? = nil
     @State private var publisher: AnyCancellable? = nil
 
-    init(chatItem: ChatItem, image: String, duration: Int, maxWidth: CGFloat, videoWidth: Binding<CGFloat?>, scrollProxy: ScrollViewProxy?) {
+    init(chatItem: ChatItem, preview: UIImage?, duration: Int, maxWidth: CGFloat, videoWidth: CGFloat?) {
         self.chatItem = chatItem
-        self.image = image
+        self.preview = preview
         self._duration = State(initialValue: duration)
         self.maxWidth = maxWidth
-        self._videoWidth = videoWidth
-        self.scrollProxy = scrollProxy
+        self.videoWidth = videoWidth
         if let url = getLoadedVideo(chatItem.file) {
             let decrypted = chatItem.file?.fileSource?.cryptoArgs == nil ? url : chatItem.file?.fileSource?.decryptedGet()
             self._urlDecrypted = State(initialValue: decrypted)
@@ -48,10 +44,6 @@ struct CIVideoView: View {
                 self._fullPlayer = State(initialValue: AVPlayer(url: decrypted))
             }
             self._url = State(initialValue: url)
-        }
-        if let data = Data(base64Encoded: dropImagePrefix(image)),
-           let uiImage = UIImage(data: data) {
-            self._preview = State(initialValue: uiImage)
         }
     }
 
@@ -63,9 +55,8 @@ struct CIVideoView: View {
                     videoView(player, decrypted, file, preview, duration)
                 } else if let file = file, let defaultPreview = preview, file.loaded && urlDecrypted == nil {
                     videoViewEncrypted(file, defaultPreview, duration)
-                } else if let data = Data(base64Encoded: dropImagePrefix(image)),
-                          let uiImage = UIImage(data: data) {
-                    imageView(uiImage)
+                } else if let preview {
+                    imageView(preview)
                     .onTapGesture {
                         if let file = file {
                             switch file.fileStatus {
@@ -152,7 +143,6 @@ struct CIVideoView: View {
 
     private func videoView(_ player: AVPlayer, _ url: URL, _ file: CIFile, _ preview: UIImage, _ duration: Int) -> some View {
         let w = preview.size.width <= preview.size.height ? maxWidth * 0.75 : maxWidth
-        DispatchQueue.main.async { videoWidth = w }
         return ZStack(alignment: .topTrailing) {
             ZStack(alignment: .center) {
                 let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
@@ -252,7 +242,6 @@ struct CIVideoView: View {
 
     private func imageView(_ img: UIImage) -> some View {
         let w = img.size.width <= img.size.height ? maxWidth * 0.75 : maxWidth
-        DispatchQueue.main.async { videoWidth = w }
         return ZStack(alignment: .topTrailing) {
             Image(uiImage: img)
             .resizable()
