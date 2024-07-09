@@ -8,12 +8,14 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
+import kotlin.math.sqrt
 
 @Composable
 fun ModalView(
@@ -89,7 +91,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     if (placement == ModalPlacement.CENTER) {
       ChatModel.chatId.value = null
     } else if (placement == ModalPlacement.END) {
-      desktopExpandWindowToWidth(DEFAULT_START_MODAL_WIDTH + DEFAULT_MIN_CENTER_MODAL_WIDTH + DEFAULT_END_MODAL_WIDTH)
+      desktopExpandWindowToWidth(DEFAULT_START_MODAL_WIDTH * sqrt(appPrefs.fontScale.get()) + DEFAULT_MIN_CENTER_MODAL_WIDTH + DEFAULT_END_MODAL_WIDTH * sqrt(appPrefs.fontScale.get()))
     }
   }
 
@@ -99,6 +101,9 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   }
 
   fun hasModalsOpen() = modalCount.value > 0
+
+  val hasModalsOpen: Boolean
+  @Composable get () = remember { modalCount }.value > 0
 
   fun closeModal() {
     if (modalViews.isNotEmpty()) {

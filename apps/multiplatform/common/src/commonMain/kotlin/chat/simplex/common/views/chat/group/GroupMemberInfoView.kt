@@ -358,13 +358,6 @@ fun GroupMemberInfoLayout(
       } else {
         InfoRow(stringResource(MR.strings.role_in_group), member.memberRole.text)
       }
-      val conn = member.activeConn
-      if (conn != null) {
-        val connLevelDesc =
-          if (conn.connLevel == 0) stringResource(MR.strings.conn_level_desc_direct)
-          else String.format(generalGetString(MR.strings.conn_level_desc_indirect), conn.connLevel)
-        InfoRow(stringResource(MR.strings.info_row_connection), connLevelDesc)
-      }
     }
     if (cStats != null) {
       SectionDividerSpaced()
@@ -401,6 +394,13 @@ fun GroupMemberInfoLayout(
       SectionView(title = stringResource(MR.strings.section_title_for_console)) {
         InfoRow(stringResource(MR.strings.info_row_local_name), member.localDisplayName)
         InfoRow(stringResource(MR.strings.info_row_database_id), member.groupMemberId.toString())
+        val conn = member.activeConn
+        if (conn != null) {
+          val connLevelDesc =
+            if (conn.connLevel == 0) stringResource(MR.strings.conn_level_desc_direct)
+            else String.format(generalGetString(MR.strings.conn_level_desc_indirect), conn.connLevel)
+          InfoRow(stringResource(MR.strings.info_row_connection), connLevelDesc)
+        }
         SectionItemView({
           withBGApi {
             val info = controller.apiGroupMemberQueueInfo(rhId, groupInfo.apiId, member.groupMemberId)

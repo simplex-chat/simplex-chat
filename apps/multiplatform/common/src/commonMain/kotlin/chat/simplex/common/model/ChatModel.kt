@@ -1172,18 +1172,22 @@ data class Connection(
   val pqSndEnabled: Boolean? = null,
   val pqRcvEnabled: Boolean? = null,
   val connectionStats: ConnectionStats? = null,
-  val authErrCounter: Int
+  val authErrCounter: Int,
+  val quotaErrCounter: Int
 ) {
   val id: ChatId get() = ":$connId"
 
   val connDisabled: Boolean
     get() = authErrCounter >= 10 // authErrDisableCount in core
 
+  val connInactive: Boolean
+    get() = quotaErrCounter >= 5 // quotaErrInactiveCount in core
+
   val connPQEnabled: Boolean
     get() = pqSndEnabled == true && pqRcvEnabled == true
 
   companion object {
-    val sampleData = Connection(connId = 1, agentConnId = "abc", connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, peerChatVRange = VersionRange(1, 1), customUserProfileId = null, pqSupport = false, pqEncryption = false, authErrCounter = 0)
+    val sampleData = Connection(connId = 1, agentConnId = "abc", connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, peerChatVRange = VersionRange(1, 1), customUserProfileId = null, pqSupport = false, pqEncryption = false, authErrCounter = 0, quotaErrCounter = 0)
   }
 }
 
@@ -2353,6 +2357,48 @@ enum class SndCIStatusProgress {
 }
 
 @Serializable
+sealed class GroupSndStatus {
+  @Serializable @SerialName("new") class New: GroupSndStatus()
+  @Serializable @SerialName("forwarded") class Forwarded: GroupSndStatus()
+  @Serializable @SerialName("inactive") class Inactive: GroupSndStatus()
+  @Serializable @SerialName("sent") class Sent: GroupSndStatus()
+  @Serializable @SerialName("rcvd") class Rcvd(val msgRcptStatus: MsgReceiptStatus): GroupSndStatus()
+  @Serializable @SerialName("error") class Error(val agentError: SndError): GroupSndStatus()
+  @Serializable @SerialName("warning") class Warning(val agentError: SndError): GroupSndStatus()
+  @Serializable @SerialName("invalid") class Invalid(val text: String): GroupSndStatus()
+
+  fun statusIcon(
+    primaryColor: Color,
+    metaColor: Color = CurrentColors.value.colors.secondary,
+    paleMetaColor: Color = CurrentColors.value.colors.secondary
+  ): Pair<ImageResource, Color> =
+    when (this) {
+      is New -> MR.images.ic_more_horiz to metaColor
+      is Forwarded -> MR.images.ic_chevron_right_2 to metaColor
+      is Inactive -> MR.images.ic_person_off to metaColor
+      is Sent -> MR.images.ic_check_filled to metaColor
+      is Rcvd -> when(this.msgRcptStatus) {
+        MsgReceiptStatus.Ok -> MR.images.ic_double_check to metaColor
+        MsgReceiptStatus.BadMsgHash -> MR.images.ic_double_check to Color.Red
+      }
+      is Error -> MR.images.ic_close to Color.Red
+      is Warning -> MR.images.ic_warning_filled to WarningOrange
+      is Invalid -> MR.images.ic_question_mark to metaColor
+    }
+
+  val statusInto: Pair<String, String>? get() = when (this) {
+    is New -> null
+    is Forwarded -> generalGetString(MR.strings.message_forwarded_title) to generalGetString(MR.strings.message_forwarded_desc)
+    is Inactive -> generalGetString(MR.strings.member_inactive_title) to generalGetString(MR.strings.member_inactive_desc)
+    is Sent -> null
+    is Rcvd -> null
+    is Error -> generalGetString(MR.strings.message_delivery_error_title) to agentError.errorInfo
+    is Warning -> generalGetString(MR.strings.message_delivery_warning_title) to agentError.errorInfo
+    is Invalid -> "Invalid status" to this.text
+  }
+}
+
+@Serializable
 sealed class CIDeleted {
   @Serializable @SerialName("deleted") class Deleted(val deletedTs: Instant?): CIDeleted()
   @Serializable @SerialName("blocked") class Blocked(val deletedTs: Instant?): CIDeleted()
@@ -3466,7 +3512,7 @@ data class ChatItemVersion(
 @Serializable
 data class MemberDeliveryStatus(
   val groupMemberId: Long,
-  val memberDeliveryStatus: CIStatus,
+  val memberDeliveryStatus: GroupSndStatus,
   val sentViaProxy: Boolean?
 )
 
