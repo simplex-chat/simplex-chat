@@ -301,11 +301,11 @@ fun ChatPreviewView(
       val n = chat.chatStats.unreadCount
       val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
       val sp17 = with(LocalDensity.current) { 17.sp.toDp() }
-      val sp24 = with(LocalDensity.current) { 24.sp.toDp() }
-      val sp50 = with(LocalDensity.current) { 50.sp.toDp() }
+      val sp21 = with(LocalDensity.current) { 21.sp.toDp() }
+      val sp46 = with(LocalDensity.current) { 46.sp.toDp() }
       if (n > 0 || chat.chatStats.unreadChat) {
         Box(
-          Modifier.padding(top = sp24),
+          Modifier.padding(top = sp21),
           contentAlignment = Alignment.Center
         ) {
           Text(
@@ -321,7 +321,7 @@ fun ChatPreviewView(
         }
       } else if (showNtfsIcon) {
         Box(
-          Modifier.padding(top = sp24),
+          Modifier.padding(top = sp21),
           contentAlignment = Alignment.Center
         ) {
           Icon(
@@ -336,7 +336,7 @@ fun ChatPreviewView(
         }
       } else if (chat.chatInfo.chatSettings?.favorite == true) {
         Box(
-          Modifier.padding(top = sp24),
+          Modifier.padding(top = sp21),
           contentAlignment = Alignment.Center
         ) {
           Icon(
@@ -351,7 +351,7 @@ fun ChatPreviewView(
         }
       }
       Box(
-        Modifier.padding(top = sp50),
+        Modifier.padding(top = sp46),
         contentAlignment = Alignment.Center
       ) {
         chatStatusImage()
