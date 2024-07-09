@@ -65,10 +65,11 @@ struct GroupMemberInfoView: View {
         }
     }
 
-    private func knownDirectChat(_ contactId: Int64) -> Chat? {
+    private func knownDirectChat(_ contactId: Int64) -> (Chat, Contact)? {
         if let chat = chatModel.getContactChat(contactId),
-           chat.chatInfo.contact?.directOrUsed == true {
-            return chat
+           let contact = chat.chatInfo.contact,
+           contact.directOrUsed == true {
+            return (chat, contact)
         } else {
             return nil
         }
@@ -81,18 +82,35 @@ struct GroupMemberInfoView: View {
                 List {
                     groupMemberInfoHeader(member)
                         .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                    
+                    HStack {
+                        if let contactId = member.memberContactId, let (chat, contact) = knownDirectChat(contactId) {
+                            knownDirectChatButton(chat)
+                            Spacer()
+                            callButton(contact)
+                            Spacer()
+                            videoButton(contact)
+                        } else if groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
+                            if let contactId = member.memberContactId {
+                                newDirectChatButton(contactId)
+                            } else if member.activeConn?.peerChatVRange.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) ?? false {
+                                createMemberContactButton()
+                            }
+                            Spacer()
+                            InfoViewActionButtonLayout(image: "phone.fill", title: "call")
+                                .disabled(true)
+                            Spacer()
+                            InfoViewActionButtonLayout(image: "video.fill", title: "video")
+                                .disabled(true)
+                        }
+                    }
+                    .padding(.horizontal)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
 
                     if member.memberActive {
                         Section {
-                            if let contactId = member.memberContactId, let chat = knownDirectChat(contactId) {
-                                knownDirectChatButton(chat)
-                            } else if groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
-                                if let contactId = member.memberContactId {
-                                    newDirectChatButton(contactId)
-                                } else if member.activeConn?.peerChatVRange.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) ?? false {
-                                    createMemberContactButton()
-                                }
-                            }
                             if let code = connectionCode { verifyCodeButton(code) }
                             if let connStats = connectionStats,
                                connStats.ratchetSyncAllowed {
@@ -268,58 +286,71 @@ struct GroupMemberInfoView: View {
     }
 
     func knownDirectChatButton(_ chat: Chat) -> some View {
-        Button {
-            dismissAllSheets(animated: true)
-            DispatchQueue.main.async {
-                chatModel.chatId = chat.id
-            }
-        } label: {
-            Label("Send direct message", systemImage: "message")
-        }
-    }
-
-    func newDirectChatButton(_ contactId: Int64) -> some View {
-        Button {
-            do {
-                let chat = try apiGetChat(type: .direct, id: contactId)
-                chatModel.addChat(chat)
+        InfoViewActionButtonLayout(image: "message.fill", title: "message")
+            .onTapGesture {
                 dismissAllSheets(animated: true)
                 DispatchQueue.main.async {
                     chatModel.chatId = chat.id
                 }
-            } catch let error {
-                logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
             }
-        } label: {
-            Label("Send direct message", systemImage: "message")
-        }
+    }
+
+    func newDirectChatButton(_ contactId: Int64) -> some View {
+        InfoViewActionButtonLayout(image: "message.fill", title: "message")
+            .onTapGesture {
+                do {
+                    let chat = try apiGetChat(type: .direct, id: contactId)
+                    chatModel.addChat(chat)
+                    dismissAllSheets(animated: true)
+                    DispatchQueue.main.async {
+                        chatModel.chatId = chat.id
+                    }
+                } catch let error {
+                    logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
+                }
+            }
     }
 
     func createMemberContactButton() -> some View {
-        Button {
-            progressIndicator = true
-            Task {
-                do {
-                    let memberContact = try await apiCreateMemberContact(groupInfo.apiId, groupMember.groupMemberId)
-                    await MainActor.run {
-                        progressIndicator = false
-                        chatModel.addChat(Chat(chatInfo: .direct(contact: memberContact)))
-                        dismissAllSheets(animated: true)
-                        chatModel.chatId = memberContact.id
-                        chatModel.setContactNetworkStatus(memberContact, .connected)
-                    }
-                } catch let error {
-                    logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")
-                    let a = getErrorAlert(error, "Error creating member contact")
-                    await MainActor.run {
-                        progressIndicator = false
-                        alert = .error(title: a.title, error: a.message)
+        InfoViewActionButtonLayout(image: "message.fill", title: "message")
+            .onTapGesture {
+                progressIndicator = true
+                Task {
+                    do {
+                        let memberContact = try await apiCreateMemberContact(groupInfo.apiId, groupMember.groupMemberId)
+                        await MainActor.run {
+                            progressIndicator = false
+                            chatModel.addChat(Chat(chatInfo: .direct(contact: memberContact)))
+                            dismissAllSheets(animated: true)
+                            chatModel.chatId = memberContact.id
+                            chatModel.setContactNetworkStatus(memberContact, .connected)
+                        }
+                    } catch let error {
+                        logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")
+                        let a = getErrorAlert(error, "Error creating member contact")
+                        await MainActor.run {
+                            progressIndicator = false
+                            alert = .error(title: a.title, error: a.message)
+                        }
                     }
                 }
             }
-        } label: {
-            Label("Send direct message", systemImage: "message")
-        }
+    }
+
+    private func callButton(_ contact: Contact) -> some View {
+        InfoViewActionButtonLayout(image: "phone.fill", title: "call")
+            .onTapGesture {
+                CallController.shared.startCall(contact, .audio)
+            }
+            .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall != nil)
+    }
+
+    private func videoButton(_ contact: Contact) -> some View {
+        InfoViewActionButtonLayout(image: "video.fill", title: "video")
+            .onTapGesture {
+                CallController.shared.startCall(contact, .video)
+            }
+            .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall != nil)
     }
 
     private func groupMemberInfoHeader(_ mem: GroupMember) -> some View {

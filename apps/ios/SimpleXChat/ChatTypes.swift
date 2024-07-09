@@ -1289,6 +1289,15 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
             }
         }
     }
+    
+    public var chatDeleted: Bool {
+        get {
+            switch self {
+            case let .direct(contact): return contact.chatDeleted
+            default: return false
+            }
+        }
+    }
 
     public var sendMsgEnabled: Bool {
         get {
@@ -1508,7 +1517,8 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     var contactGroupMemberId: Int64?
     var contactGrpInvSent: Bool
     public var uiThemes: ThemeModeOverrides?
-
+    public var chatDeleted: Bool
+    
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
@@ -1574,13 +1584,15 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         mergedPreferences: ContactUserPreferences.sampleData,
         createdAt: .now,
         updatedAt: .now,
-        contactGrpInvSent: false
+        contactGrpInvSent: false,
+        chatDeleted: false
     )
 }
 
 public enum ContactStatus: String, Decodable, Hashable {
     case active = "active"
     case deleted = "deleted"
+    case deletedByUser = "deletedByUser"
 }
 
 public struct ContactRef: Decodable, Equatable, Hashable {

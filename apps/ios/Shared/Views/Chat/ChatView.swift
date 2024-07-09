@@ -134,32 +134,18 @@ struct ChatView: View {
                 if case let .direct(contact) = cInfo {
                     Button {
                         Task {
-                            do {
-                                let (stats, profile) = try await apiContactInfo(chat.chatInfo.apiId)
-                                let (ct, code) = try await apiGetContactCode(chat.chatInfo.apiId)
-                                await MainActor.run {
-                                    connectionStats = stats
-                                    customUserProfile = profile
-                                    connectionCode = code
-                                    if contact.activeConn?.connectionCode != ct.activeConn?.connectionCode {
-                                        chat.chatInfo = .direct(contact: ct)
-                                    }
-                                }
-                            } catch let error {
-                                logger.error("apiContactInfo or apiGetContactCode error: \(responseError(error))")
-                            }
-                            await MainActor.run { showChatInfoSheet = true }
+                            showChatInfoSheet = true
                         }
                     } label: {
                         ChatInfoToolbar(chat: chat)
                     }
-                    .appSheet(isPresented: $showChatInfoSheet, onDismiss: {
-                        connectionStats = nil
-                        customUserProfile = nil
-                        connectionCode = nil
-                        theme = buildTheme()
-                    }) {
-                        ChatInfoView(chat: chat, contact: contact, connectionStats: $connectionStats, customUserProfile: $customUserProfile, localAlias: chat.chatInfo.localAlias, connectionCode: $connectionCode)
+                    .appSheet(isPresented: $showChatInfoSheet) {
+                        ChatInfoView(
+                            openedFromChatView: true,
+                            chat: chat,
+                            contact: contact,
+                            localAlias: chat.chatInfo.localAlias
+                        )
                     }
                 } else if case let .group(groupInfo) = cInfo {
                     Button {

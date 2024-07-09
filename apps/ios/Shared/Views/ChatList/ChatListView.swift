@@ -22,7 +22,8 @@ struct ChatListView: View {
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
-
+    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = false
+    
     var body: some View {
         if #available(iOS 16.0, *) {
             viewBody.scrollDismissesKeyboard(.immediately)
@@ -68,7 +69,9 @@ struct ChatListView: View {
     private var chatListView: some View {
         VStack {
             chatList
+            toolbar
         }
+        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .onDisappear() { withAnimation { userPickerVisible = false } }
         .refreshable {
             AlertManager.shared.showAlert(Alert(
@@ -90,7 +93,10 @@ struct ChatListView: View {
         .background(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(searchMode)
-        .toolbar {
+    }
+    
+    @ViewBuilder private var toolbar: some View {
+        let t = VStack{}.toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 let user = chatModel.currentUser ?? User.sampleData
                 ZStack(alignment: .topTrailing) {
@@ -129,6 +135,14 @@ struct ChatListView: View {
                 }
             }
         }
+        
+        if #unavailable(iOS 16) {
+            t
+        } else if oneHandUI {
+            t.toolbarBackground(.visible, for: .navigationBar)
+        } else {
+            t.toolbarBackground(.visible, for: .bottomBar)
+        }
     }
 
     @ViewBuilder private var chatList: some View {
@@ -144,12 +158,14 @@ struct ChatListView: View {
                             searchShowingSimplexLink: $searchShowingSimplexLink,
                             searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
                         )
+                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                         .frame(maxWidth: .infinity)
                     }
                     ForEach(cs, id: \.viewId) { chat in
                         ChatListNavLink(chat: chat)
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .padding(.trailing, -16)
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
                             .listRowBackground(Color.clear)
@@ -164,7 +180,9 @@ struct ChatListView: View {
                 }
             }
             if cs.isEmpty && !chatModel.chats.isEmpty {
-                Text("No filtered chats").foregroundColor(theme.colors.secondary)
+                Text("No filtered chats")
+                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                    .foregroundColor(.secondary)
             }
         }
     }
@@ -223,16 +241,18 @@ struct ChatListView: View {
         } else {
             let s = searchString()
             return s == "" && !showUnreadAndFavorites
-            ? chatModel.chats
+            ? chatModel.chats.filter { chat in !chat.chatInfo.chatDeleted }
             : chatModel.chats.filter { chat in
                 let cInfo = chat.chatInfo
                 switch cInfo {
                 case let .direct(contact):
-                    return s == ""
-                    ? filtered(chat)
-                    : (viewNameContains(cInfo, s) ||
-                       contact.profile.displayName.localizedLowercase.contains(s) ||
-                       contact.fullName.localizedLowercase.contains(s))
+                    return !contact.chatDeleted && (
+                        s == ""
+                        ? filtered(chat)
+                        : (viewNameContains(cInfo, s) ||
+                           contact.profile.displayName.localizedLowercase.contains(s) ||
+                           contact.fullName.localizedLowercase.contains(s))
+                    )
                 case let .group(gInfo):
                     return s == ""
                     ? (filtered(chat) || gInfo.membership.memberStatus == .memInvited)

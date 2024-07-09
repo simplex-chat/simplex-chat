@@ -46,6 +46,7 @@ let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen" // deprecated, only used for
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue" // deprecated, only used for migration
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle" // deprecated, only used for migration
 let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
+let DEFAULT_ONE_HAND_UI = "oneHandUI"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
 let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
@@ -60,6 +61,8 @@ let DEFAULT_DEVICE_NAME_FOR_REMOTE_ACCESS = "deviceNameForRemoteAccess"
 let DEFAULT_CONFIRM_REMOTE_SESSIONS = "confirmRemoteSessions"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST = "connectRemoteViaMulticast"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "connectRemoteViaMulticastAuto"
+let DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE = "showDeleteConversationNotice"
+let DEFAULT_SHOW_DELETE_CONTACT_NOTICE = "showDeleteContactNotice"
 let DEFAULT_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"
 let DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE = "showSubscriptionPercentage"
 
@@ -92,6 +95,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_DEVELOPER_TOOLS: false,
     DEFAULT_ENCRYPTION_STARTED: false,
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
+    DEFAULT_ONE_HAND_UI: false,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
@@ -102,6 +106,8 @@ let appDefaults: [String: Any] = [
     DEFAULT_CONFIRM_REMOTE_SESSIONS: false,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST: true,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO: true,
+    DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE: true,
+    DEFAULT_SHOW_DELETE_CONTACT_NOTICE: true,
     DEFAULT_SHOW_SENT_VIA_RPOXY: false,
     DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE: false,
     ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN: AppSettingsLockScreenCalls.show.rawValue,
