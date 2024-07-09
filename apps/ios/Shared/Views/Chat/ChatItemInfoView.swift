@@ -428,7 +428,7 @@ struct ChatItemInfoView: View {
         }
     }
 
-    private func membersStatuses(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> [(GroupMember, CIStatus, Bool?)] {
+    private func membersStatuses(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> [(GroupMember, GroupSndStatus, Bool?)] {
         memberDeliveryStatuses.compactMap({ mds in
             if let mem = chatModel.getGroupMember(mds.groupMemberId) {
                 return (mem.wrapped, mds.memberDeliveryStatus, mds.sentViaProxy)
@@ -438,7 +438,7 @@ struct ChatItemInfoView: View {
         })
     }
 
-    private func memberDeliveryStatusView(_ member: GroupMember, _ status: CIStatus, _ sentViaProxy: Bool?) -> some View {
+    private func memberDeliveryStatusView(_ member: GroupMember, _ status: GroupSndStatus, _ sentViaProxy: Bool?) -> some View {
         HStack{
             ProfileImage(imageStr: member.image, size: 30)
                 .padding(.trailing, 2)
@@ -452,7 +452,7 @@ struct ChatItemInfoView: View {
             let v = Group {
                 if let (icon, statusColor) = status.statusIcon(theme.colors.secondary, theme.colors.primary) {
                     switch status {
-                    case .sndRcvd:
+                    case .rcvd:
                         ZStack(alignment: .trailing) {
                             Image(systemName: icon)
                                 .foregroundColor(statusColor.opacity(0.67))
