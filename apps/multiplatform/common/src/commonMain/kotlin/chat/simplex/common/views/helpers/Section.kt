@@ -276,8 +276,8 @@ fun TextIconSpaced(extraPadding: Boolean = false) {
 }
 
 @Composable
-fun InfoRow(title: String, value: String, icon: Painter? = null, iconTint: Color? = null, textColor: Color = MaterialTheme.colors.onBackground) {
-  SectionItemViewSpaceBetween {
+fun InfoRow(title: String, value: String, icon: Painter? = null, iconTint: Color? = null, textColor: Color = MaterialTheme.colors.onBackground, padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING)) {
+  SectionItemViewSpaceBetween(padding = padding) {
     Row {
       val iconSize = with(LocalDensity.current) { 21.sp.toDp() }
       if (icon != null) Icon(icon, title, Modifier.padding(end = 8.dp).size(iconSize), tint = iconTint ?: MaterialTheme.colors.secondary)
@@ -286,6 +286,61 @@ fun InfoRow(title: String, value: String, icon: Painter? = null, iconTint: Color
     Text(value, color = MaterialTheme.colors.secondary)
   }
 }
+
+fun numOrDash(n: Number): String = if (n.toLong() == 0L) "-" else n.toString()
+
+@Composable
+fun InfoRowTwoValues(
+  title: String,
+  title2: String,
+  value: Int,
+  value2: Int,
+  textColor: Color = MaterialTheme.colors.onBackground
+) {
+  SectionItemViewSpaceBetween {
+    Row(
+      verticalAlignment = Alignment.Bottom
+    ) {
+      Text(
+        text = title,
+        color = textColor,
+      )
+      Text(
+        text = " / ",
+        fontSize = 12.sp,
+      )
+      Text(
+        text = title2,
+        color = textColor,
+        fontSize = 12.sp,
+      )
+    }
+    Row(verticalAlignment = Alignment.Bottom) {
+      if (value == 0 && value2 == 0) {
+        Text(
+          text = "-",
+          color = MaterialTheme.colors.secondary
+        )
+      } else {
+        Text(
+          text = numOrDash(value),
+          color = MaterialTheme.colors.secondary,
+        )
+        Text(
+          text = " / ",
+          color = MaterialTheme.colors.secondary,
+          fontSize = 12.sp,
+        )
+        Text(
+          text = numOrDash(value2),
+          color = MaterialTheme.colors.secondary,
+          fontSize = 12.sp,
+        )
+      }
+    }
+  }
+}
+
 
 @Composable
 fun InfoRowEllipsis(title: String, value: String, onClick: () -> Unit) {

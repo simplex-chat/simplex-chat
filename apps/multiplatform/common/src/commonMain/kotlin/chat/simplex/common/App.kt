@@ -353,7 +353,7 @@ fun DesktopScreen(settingsState: SettingsViewState) {
     }
     val (userPickerState, scaffoldState ) = settingsState
     val scope = rememberCoroutineScope()
-    if (scaffoldState.drawerState.isOpen) {
+    if (scaffoldState.drawerState.isOpen || (ModalManager.start.hasModalsOpen && !ModalManager.center.hasModalsOpen)) {
       Box(
         Modifier
           .fillMaxSize()

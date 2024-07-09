@@ -140,7 +140,7 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
       }
     }
 
-    HorizontalPager(state = pagerState, Modifier.fillMaxSize(), verticalAlignment = Alignment.Top) { index ->
+    HorizontalPager(state = pagerState, Modifier.fillMaxSize(), verticalAlignment = Alignment.Top, userScrollEnabled = appPlatform.isAndroid) { index ->
       // LALAL SCROLLBAR DOESN'T WORK
       ColumnWithScrollBar(
         Modifier
