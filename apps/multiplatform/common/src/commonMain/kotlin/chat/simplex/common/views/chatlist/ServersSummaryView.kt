@@ -26,6 +26,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -126,6 +127,7 @@ fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, sess: ServerSessions, l
     horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)
   ) {
     if (pref.state.value && leadingPercentage) SubscriptionStatusIndicatorPercentage(percentageText)
+    val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
     SubscriptionStatusIcon(
       color = when(statusColorAndPercentage.color) {
         SubscriptionColorType.ACTIVE -> MaterialTheme.colors.primary
@@ -133,7 +135,7 @@ fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, sess: ServerSessions, l
         SubscriptionColorType.ACTIVE_DISCONNECTED -> WarningOrange
         SubscriptionColorType.DISCONNECTED -> MaterialTheme.colors.secondary
       },
-      modifier = Modifier.size(16.dp),
+      modifier = Modifier.size(sp16),
       variableValue = statusColorAndPercentage.variableValue)
     if (pref.state.value && !leadingPercentage) SubscriptionStatusIndicatorPercentage(percentageText)
   }

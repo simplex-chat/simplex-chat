@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeOverrides
 import chat.simplex.common.views.chatlist.connectIfOpenedViaUri
@@ -518,6 +519,15 @@ fun includeMoreFailedComposables() {
   }
   lastExecutedComposables.clear()
 }
+
+val fontSizeMultiplier: Float
+  @Composable get() = remember { appPrefs.fontScale.state }.value
+
+val fontSizeSqrtMultiplier: Float
+  @Composable get() = sqrt(remember { appPrefs.fontScale.state }.value)
+
+val desktopDensityScaleMultiplier: Float
+  @Composable get() = if (appPlatform.isDesktop) remember { appPrefs.densityScale.state }.value else 1f
 
 @Composable
 fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenGone: () -> Unit) {

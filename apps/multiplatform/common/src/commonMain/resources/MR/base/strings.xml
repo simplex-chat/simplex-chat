@@ -1606,6 +1606,8 @@
   <string name="color_wallpaper_background">Wallpaper background</string>
   <string name="color_wallpaper_tint">Wallpaper accent</string>
   <string name="theme_remove_image">Remove image</string>
+  <string name="appearance_font_size">Font size</string>
+  <string name="appearance_zoom">Zoom</string>
 
   <!-- Wallpapers -->
   <string name="wallpaper_preview_hello_alice">Good afternoon!</string>

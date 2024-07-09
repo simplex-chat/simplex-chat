@@ -125,11 +125,11 @@ private fun NewChatSheetLayout(
           Box(contentAlignment = Alignment.CenterEnd) {
             Button(
               actions[index],
-              shape = RoundedCornerShape(21.dp),
+              shape = RoundedCornerShape(21.dp * fontSizeSqrtMultiplier),
               colors = ButtonDefaults.textButtonColors(backgroundColor = backgroundColor),
               elevation = null,
               contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF),
-              modifier = Modifier.height(42.dp)
+              modifier = Modifier.height(42.dp * fontSizeSqrtMultiplier)
             ) {
               Text(
                 stringResource(titles[index]),
@@ -140,7 +140,7 @@ private fun NewChatSheetLayout(
               Icon(
                 painterResource(icons[index]),
                 stringResource(titles[index]),
-                Modifier.size(42.dp),
+                Modifier.size(42.dp * fontSizeSqrtMultiplier),
                 tint = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.primary
               )
             }
@@ -152,7 +152,7 @@ private fun NewChatSheetLayout(
     }
     FloatingActionButton(
       onClick = { if (!stopped) closeNewChatSheet(true) },
-      Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING),
+      Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING).size(AppBarHeight * fontSizeSqrtMultiplier),
       elevation = FloatingActionButtonDefaults.elevation(
         defaultElevation = 0.dp,
         pressedElevation = 0.dp,
@@ -164,11 +164,11 @@ private fun NewChatSheetLayout(
     ) {
       Icon(
         painterResource(MR.images.ic_edit_filled), stringResource(MR.strings.add_contact_or_create_group),
-        Modifier.graphicsLayer { alpha = 1 - animatedFloat.value }
+        Modifier.graphicsLayer { alpha = 1 - animatedFloat.value }.size(24.dp * fontSizeSqrtMultiplier)
       )
       Icon(
         painterResource(MR.images.ic_close), stringResource(MR.strings.add_contact_or_create_group),
-        Modifier.graphicsLayer { alpha = animatedFloat.value }
+        Modifier.graphicsLayer { alpha = animatedFloat.value }.size(24.dp * fontSizeSqrtMultiplier)
       )
     }
   }
