@@ -16,13 +16,14 @@ class ShareViewController: UIHostingController<ShareView> {
 
     @objc init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(rootView: ShareView(model: model))
+        model.completion = { self.extensionContext!.completeRequest(returningItems: []) }
     }
 
     @available(*, unavailable)
     required init?(coder aDecoder: NSCoder) { fatalError() }
 
     override func viewDidLoad() {
-        // TODO: We should support sharing multiple items
+        // TODO: We should support sharing multiple items at some point
         if let item = extensionContext?.inputItems.first as? NSExtensionItem {
             model.item = item
         }

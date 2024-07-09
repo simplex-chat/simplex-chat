@@ -21,12 +21,13 @@ class ShareModel: ObservableObject {
     @Published var comment = String()
     @Published var selected: ChatData?
 
+    var completion: (() -> Void)!
 
     private let allChats = PassthroughSubject<Array<ChatData>, Never>()
     private var cancellables = Set<AnyCancellable>()
 
     init() {
-        initChats()
+        Task { await setup() }
 
         // Throttled search filters chats
         $search
@@ -55,10 +56,9 @@ class ShareModel: ObservableObject {
     func send() async {
         guard let item else { fatalError("Missing Extension Item") }
         guard let chat = selected else { return }
-        
         let url = try! await url(attachment: item.attachments!.first!)!
         let cryptoFile = saveFileFromURL(url)!
-        let response = sendSimpleXCmd(
+        let _ = sendSimpleXCmd(
             .apiSendMessage(
                 type: chat.chatInfo.chatType,
                 id: chat.chatInfo.apiId,
@@ -69,25 +69,16 @@ class ShareModel: ObservableObject {
                 ttl: nil
             )
         )
-    }
-
-    func saveToTemporaryDirectory(data: Data, typeIdentifier: String) -> URL? {
-        let tempDirectory = FileManager.default.temporaryDirectory
-        let fileExtension = (UTType(typeIdentifier)?.preferredFilenameExtension) ?? "tmp"
-        let tempURL = tempDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension(fileExtension)
-        do {
-            try data.write(to: tempURL)
-            return tempURL
-        } catch {
-            print("Error saving data to temporary directory: \(error)")
-            return nil
+        Task {
+            try! await Task.sleep(for: .seconds(2))
+            completion()
         }
     }
 
     private func url(attachment: NSItemProvider) async throws -> URL? {
         try await withCheckedThrowingContinuation { cont in
-            // TODO: This returns a progress for shoving a loading bar
-            attachment.loadFileRepresentation(for: UTType.data, openInPlace: true) { url, bool, error in
+            // TODO: This call returns a progress for showing a loading bar
+            let _ = attachment.loadFileRepresentation(for: UTType.data, openInPlace: true) { url, bool, error in
                 if let url = url {
                     cont.resume(returning: url)
                 } else if let error = error {
@@ -99,18 +90,44 @@ class ShareModel: ObservableObject {
         }
     }
 
-    private func initChats() {
-        Task {
-            registerGroupDefaults()
-            haskell_init_se()
-            let _ = chatMigrateInit()
-            guard case let .activeUser(user: user) = sendSimpleXCmd(.showActiveUser) else {
-                fatalError("No active user")
-            }
-            guard case let .apiChats(user: _, chats: chats) = sendSimpleXCmd(.apiGetChats(userId: user.userId)) else {
-                fatalError("No chats available")
-            }
-            allChats.send(chats)
-        }
+    private func setup() async {
+        registerGroupDefaults()
+        haskell_init_se()
+        let (_, result) = chatMigrateInit()
+        guard (
+            result == .ok
+        ) else { fatalError("Unexpected database result") }
+
+        guard case let .activeUser(user: user) = sendSimpleXCmd(
+            .showActiveUser
+        ) else { fatalError("No active user") }
+
+        guard case .cmdOk = sendSimpleXCmd(
+            .apiSetNetworkConfig(networkConfig: getNetCfg())
+        ) else { fatalError("Error setting up networking") }
+
+        guard case .cmdOk = sendSimpleXCmd(
+            .apiSetAppFilePaths(
+                filesFolder: getAppFilesDirectory().path,
+                tempFolder: getTempFilesDirectory().path,
+                assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path
+            )
+        ) else { fatalError("Error settting up file paths") }
+
+        guard case .chatStarted = sendSimpleXCmd(
+            .startChat(mainApp: false)
+        ) else { fatalError("Unable to start chat") }
+
+        guard case let .apiChats(user: _, chats: chats) = sendSimpleXCmd(
+            .apiGetChats(userId: user.userId)
+        ) else { fatalError("No chats available") }
+
+        await MainActor.run { allChats.send(chats) }
+    }
+
+    private func teardown() {
+        guard case .chatStopped = sendSimpleXCmd(
+            .apiStopChat
+        ) else { fatalError("Unable to stop chat") }
     }
 }
