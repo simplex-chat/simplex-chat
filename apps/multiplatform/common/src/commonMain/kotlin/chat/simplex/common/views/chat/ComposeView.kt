@@ -13,10 +13,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontStyle
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.filesToDelete
@@ -884,7 +886,7 @@ fun ComposeView(
             && !nextSendGrpInv.value
       IconButton(
         attachmentClicked,
-        Modifier.padding(bottom = if (appPlatform.isAndroid) 0.dp else 7.dp),
+        Modifier.padding(bottom = if (appPlatform.isAndroid) 0.dp else with(LocalDensity.current) { 7.sp.toDp() }),
         enabled = attachmentEnabled
       ) {
         Icon(
