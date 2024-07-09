@@ -45,6 +45,7 @@ import chat.simplex.common.model.ServerSessions
 import chat.simplex.common.model.XFTPServerSummary
 import chat.simplex.common.model.localTimestamp
 import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.ProtocolServersView
@@ -790,7 +791,8 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
         HorizontalPager(
           state = serverTypePagerState,
           Modifier.fillMaxSize(),
-          verticalAlignment = Alignment.Top
+          verticalAlignment = Alignment.Top,
+          userScrollEnabled = appPlatform.isAndroid
         ) { index ->
           ColumnWithScrollBar(
             Modifier
