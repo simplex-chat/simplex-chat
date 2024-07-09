@@ -92,7 +92,7 @@ fun ChatPreviewView(
     Icon(painterResource(MR.images.ic_verified_user), null, Modifier.size(sp19).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
   }
 
-  fun messageDraft(draft: ComposeState): Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>> {
+  fun messageDraft(draft: ComposeState, sp20: Dp): Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>> {
     fun attachment(): Pair<ImageResource, String?>? =
       when (draft.preview) {
         is ComposePreview.FilePreview -> MR.images.ic_draft_filled to draft.preview.fileName
@@ -117,12 +117,12 @@ fun ChatPreviewView(
       "editIcon" to InlineTextContent(
         Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.TextCenter)
       ) {
-        Icon(painterResource(MR.images.ic_edit_note), null, tint = MaterialTheme.colors.primary)
+        Icon(painterResource(MR.images.ic_edit_note), null, Modifier.size(sp20), tint = MaterialTheme.colors.primary)
       },
       "attachmentIcon" to InlineTextContent(
         Placeholder(20.sp, 20.sp, PlaceholderVerticalAlign.TextCenter)
       ) {
-        Icon(if (attachment?.first != null) painterResource(attachment.first) else painterResource(MR.images.ic_edit_note), null, tint = MaterialTheme.colors.secondary)
+        Icon(if (attachment?.first != null) painterResource(attachment.first) else painterResource(MR.images.ic_edit_note), null, Modifier.size(sp20), tint = MaterialTheme.colors.secondary)
       }
     )
     return inlineContentBuilder to inlineContent
@@ -169,8 +169,9 @@ fun ChatPreviewView(
     val ci = chat.chatItems.lastOrNull()
     if (ci != null) {
       if (showChatPreviews || (chatModelDraftChatId == chat.id && chatModelDraft != null)) {
+        val sp20 = with(LocalDensity.current) { 20.sp.toDp() }
         val (text: CharSequence, inlineTextContent) = when {
-          chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { chatModelDraft.message to messageDraft(chatModelDraft) }
+          chatModelDraftChatId == chat.id && chatModelDraft != null -> remember(chatModelDraft) { chatModelDraft.message to messageDraft(chatModelDraft, sp20) }
           ci.meta.itemDeleted == null -> ci.text to null
           else -> markedDeletedText(ci.meta) to null
         }
