@@ -11,10 +11,10 @@ import SimpleXChat
 
 struct ChatPreviewView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
     @Binding var progressByTimeout: Bool
     @State var deleting: Bool = false
-    @Environment(\.colorScheme) var colorScheme
     var darkGreen = Color(red: 0, green: 0.5, blue: 0)
 
     @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
@@ -36,7 +36,7 @@ struct ChatPreviewView: View {
                     (cItem?.timestampText ?? formatTimestampText(chat.chatInfo.chatTs))
                         .font(.subheadline)
                         .frame(minWidth: 60, alignment: .trailing)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                         .padding(.top, 4)
                 }
                 .padding(.bottom, 4)
@@ -94,9 +94,9 @@ struct ChatPreviewView: View {
         case let .group(groupInfo):
             let v = previewTitle(t)
             switch (groupInfo.membership.memberStatus) {
-            case .memInvited: v.foregroundColor(deleting ? .secondary : chat.chatInfo.incognito ? .indigo : .accentColor)
-            case .memAccepted: v.foregroundColor(.secondary)
-            default: if deleting  { v.foregroundColor(.secondary) } else { v }
+            case .memInvited: v.foregroundColor(deleting ? theme.colors.secondary : chat.chatInfo.incognito ? .indigo : theme.colors.primary)
+            case .memAccepted: v.foregroundColor(theme.colors.secondary)
+            default: if deleting  { v.foregroundColor(theme.colors.secondary) } else { v }
             }
         default: previewTitle(t)
         }
@@ -108,7 +108,7 @@ struct ChatPreviewView: View {
 
     private var verifiedIcon: Text {
         (Text(Image(systemName: "checkmark.shield")) + Text(" "))
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
             .baselineOffset(1)
             .kerning(-2)
     }
@@ -133,11 +133,11 @@ struct ChatPreviewView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 4)
                     .frame(minWidth: 18, minHeight: 18)
-                    .background(chat.chatInfo.ntfsEnabled || chat.chatInfo.chatType == .local ? Color.accentColor : Color.secondary)
+                    .background(chat.chatInfo.ntfsEnabled || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
                     .cornerRadius(10)
             } else if !chat.chatInfo.ntfsEnabled && chat.chatInfo.chatType != .local {
                 Image(systemName: "speaker.slash.fill")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             } else if chat.chatInfo.chatSettings?.favorite ?? false {
                 Image(systemName: "star.fill")
                     .resizable()
@@ -151,9 +151,9 @@ struct ChatPreviewView: View {
 
     private func messageDraft(_ draft: ComposeState) -> Text {
         let msg = draft.message
-        return image("rectangle.and.pencil.and.ellipsis", color: .accentColor)
+        return image("rectangle.and.pencil.and.ellipsis", color: theme.colors.primary)
                 + attachment()
-                + messageText(msg, parseSimpleXMarkdown(msg), nil, preview: true, showSecrets: false)
+                + messageText(msg, parseSimpleXMarkdown(msg), nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
 
         func image(_ s: String, color: Color = Color(uiColor: .tertiaryLabel)) -> Text {
             Text(Image(systemName: s)).foregroundColor(color) + Text(" ")
@@ -172,7 +172,7 @@ struct ChatPreviewView: View {
     func chatItemPreview(_ cItem: ChatItem) -> Text {
         let itemText = cItem.meta.itemDeleted == nil ? cItem.text : markedDeletedText()
         let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
-        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: attachment(), preview: true, showSecrets: false)
+        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: attachment(), preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
 
         // same texts are in markedDeletedText in MarkedDeletedItemView, but it returns LocalizedStringKey;
         // can be refactored into a single function if functions calling these are changed to return same type
@@ -206,7 +206,7 @@ struct ChatPreviewView: View {
             case let .direct(contact):
                 if contact.activeConn == nil && contact.profile.contactLink != nil {
                     chatPreviewInfoText("Tap to Connect")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(theme.colors.primary)
                 } else if !contact.ready && contact.activeConn != nil {
                     if contact.nextSendGrpInv {
                         chatPreviewInfoText("send direct message")
@@ -257,38 +257,38 @@ struct ChatPreviewView: View {
         case let .direct(contact):
             if contact.active && contact.activeConn != nil {
                 switch (chatModel.contactNetworkStatus(contact)) {
-                case .connected: incognitoIcon(chat.chatInfo.incognito)
+                case .connected: incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary)
                 case .error:
                     Image(systemName: "exclamationmark.circle")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 17, height: 17)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                 default:
                     ProgressView()
                 }
             } else {
-                incognitoIcon(chat.chatInfo.incognito)
+                incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary)
             }
         case .group:
             if progressByTimeout {
                 ProgressView()
             } else {
-                incognitoIcon(chat.chatInfo.incognito)
+                incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary)
             }
         default:
-            incognitoIcon(chat.chatInfo.incognito)
+            incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary)
         }
     }
 }
 
-@ViewBuilder func incognitoIcon(_ incognito: Bool) -> some View {
+@ViewBuilder func incognitoIcon(_ incognito: Bool, _ secondaryColor: Color) -> some View {
     if incognito {
         Image(systemName: "theatermasks")
             .resizable()
             .scaledToFit()
             .frame(width: 22, height: 22)
-            .foregroundColor(.secondary)
+            .foregroundColor(secondaryColor)
     } else {
         EmptyView()
     }

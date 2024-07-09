@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct CIMemberCreatedContactView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     var chatItem: ChatItem
     
     var body: some View {
@@ -43,12 +44,12 @@ struct CIMemberCreatedContactView: View {
             r = r
             + Text(openText)
                 .fontWeight(.medium)
-                .foregroundColor(.accentColor)
+                .foregroundColor(theme.colors.primary)
             + Text("  ")
         }
         r = r + chatItem.timestampText
             .fontWeight(.light)
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
         return r.font(.caption)
     }
     
@@ -56,11 +57,11 @@ struct CIMemberCreatedContactView: View {
         if let member = chatItem.memberDisplayName {
             return Text(member + " " + chatItem.content.text + "  ")
                 .fontWeight(.light)
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
         } else {
             return Text(chatItem.content.text + "  ")
                 .fontWeight(.light)
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
         }
     }
 }

@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct AddGroupView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
     @State private var chat: Chat?
@@ -70,7 +71,7 @@ struct AddGroupView: View {
 
                 ZStack(alignment: .center) {
                     ZStack(alignment: .topTrailing) {
-                        ProfileImage(imageStr: profile.image, size: 128, color: Color(uiColor: .secondarySystemGroupedBackground))
+                        ProfileImage(imageStr: profile.image, size: 128)
                         if profile.image != nil {
                             Button {
                                 profile.image = nil
@@ -95,7 +96,7 @@ struct AddGroupView: View {
             Section {
                 groupNameTextField()
                 Button(action: createGroup) {
-                    settingsRow("checkmark", color: .accentColor) { Text("Create group") }
+                    settingsRow("checkmark", color: theme.colors.primary) { Text("Create group") }
                 }
                 .disabled(!canCreateProfile())
                 IncognitoToggle(incognitoEnabled: $incognitoDefault)
@@ -104,6 +105,7 @@ struct AddGroupView: View {
                     sharedGroupProfileInfo(incognitoDefault)
                     Text("Fully decentralized – visible only to members.")
                 }
+                .foregroundColor(theme.colors.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .onTapGesture(perform: hideKeyboard)
             }
@@ -144,6 +146,7 @@ struct AddGroupView: View {
                 profile.image = nil
             }
         }
+        .modifier(ThemedBackground(grouped: true))
     }
 
     func groupNameTextField() -> some View {
@@ -156,7 +159,7 @@ struct AddGroupView: View {
                     Image(systemName: "exclamationmark.circle").foregroundColor(.red)
                 }
             } else {
-                Image(systemName: "pencil").foregroundColor(.secondary)
+                Image(systemName: "pencil").foregroundColor(theme.colors.secondary)
             }
             textField("Enter group name…", text: $profile.displayName)
                 .focused($focusDisplayName)

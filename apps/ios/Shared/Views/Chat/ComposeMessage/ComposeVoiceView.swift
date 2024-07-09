@@ -25,7 +25,7 @@ func voiceMessageTime_(_ time: TimeInterval?) -> String {
 
 struct ComposeVoiceView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
     var recordingFileName: String
     @Binding var recordingTime: TimeInterval?
     @Binding var recordingState: VoiceMessageRecordingState
@@ -50,7 +50,7 @@ struct ComposeVoiceView: View {
         }
         .padding(.vertical, 1)
         .frame(height: ComposeVoiceView.previewHeight)
-        .background(colorScheme == .light ? sentColorLight : sentColorDark)
+        .background(theme.appColors.sentMessage)
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
     }
@@ -80,7 +80,7 @@ struct ComposeVoiceView: View {
                     Button {
                         startPlayback()
                     } label: {
-                        playPauseIcon("play.fill")
+                        playPauseIcon("play.fill", theme.colors.primary)
                     }
                     Text(voiceMessageTime_(recordingTime))
                 case .playing:
@@ -88,7 +88,7 @@ struct ComposeVoiceView: View {
                         audioPlayer?.pause()
                         playbackState = .paused
                     } label: {
-                        playPauseIcon("pause.fill")
+                        playPauseIcon("pause.fill", theme.colors.primary)
                     }
                     Text(voiceMessageTime_(playbackTime))
                 case .paused:
@@ -96,7 +96,7 @@ struct ComposeVoiceView: View {
                         audioPlayer?.play()
                         playbackState = .playing
                     } label: {
-                        playPauseIcon("play.fill")
+                        playPauseIcon("play.fill", theme.colors.primary)
                     }
                     Text(voiceMessageTime_(playbackTime))
                 }
@@ -131,7 +131,7 @@ struct ComposeVoiceView: View {
         }
     }
 
-    private func playPauseIcon(_ image: String, _ color: Color = .accentColor) -> some View {
+    private func playPauseIcon(_ image: String, _ color: Color) -> some View {
         Image(systemName: image)
             .resizable()
             .aspectRatio(contentMode: .fit)
@@ -147,9 +147,11 @@ struct ComposeVoiceView: View {
         } label: {
             Image(systemName: "multiply")
         }
+        .tint(theme.colors.primary)
     }
 
     struct SliderBar: View {
+        @EnvironmentObject var theme: AppTheme
         var length: TimeInterval
         @Binding var progress: TimeInterval?
         var seek: (TimeInterval) -> Void
@@ -158,10 +160,12 @@ struct ComposeVoiceView: View {
             Slider(value: Binding(get: { progress ?? TimeInterval(0) }, set: { seek($0) }), in: 0 ... length)
                 .frame(maxWidth: .infinity)
                 .frame(height: 4)
+                .tint(theme.colors.primary)
         }
     }
 
     private struct ProgressBar: View {
+        @EnvironmentObject var theme: AppTheme
         var length: TimeInterval
         @Binding var progress: TimeInterval?
 
@@ -169,7 +173,7 @@ struct ComposeVoiceView: View {
             GeometryReader { geometry in
                 ZStack {
                     Rectangle()
-                        .fill(Color.accentColor)
+                        .fill(theme.colors.primary)
                         .frame(width: min(CGFloat((progress ?? TimeInterval(0)) / length) * geometry.size.width, geometry.size.width), height: 4)
                         .animation(.linear, value: progress)
                 }

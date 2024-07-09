@@ -12,6 +12,7 @@ import SwiftUI
 import SimpleXChat
 
 struct FramedCIVoiceView: View {
+    @EnvironmentObject var theme: AppTheme
     var chatItem: ChatItem
     let recordingFile: CIFile?
     let duration: Int
@@ -42,7 +43,7 @@ struct FramedCIVoiceView: View {
                 playbackState: $playbackState,
                 playbackTime: $playbackTime
             )
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
             .frame(width: 50, alignment: .leading)
             if .playing == playbackState || (playbackTime ?? 0) > 0 || !allowMenu {
                 playbackSlider()

@@ -14,6 +14,7 @@ private let howToUrl = URL(string: "https://simplex.chat/docs/server.html")!
 struct ProtocolServersView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject private var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.editMode) private var editMode
     let serverProtocol: ServerProtocol
     @State private var currServers: [ServerCfg] = []
@@ -67,8 +68,10 @@ struct ProtocolServersView: View {
                 }
             } header: {
                 Text("\(proto) servers")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 Text("The servers for new connections of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
+                    .foregroundColor(theme.colors.secondary)
                     .lineLimit(10)
             }
 
@@ -94,6 +97,7 @@ struct ProtocolServersView: View {
         }
         .sheet(isPresented: $showScanProtoServer) {
             ScanProtocolServer(servers: $servers)
+            .modifier(ThemedBackground(grouped: true))
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
             if saveDisabled {
@@ -172,6 +176,7 @@ struct ProtocolServersView: View {
                 serverEnabled: srv.enabled == .enabled
             )
             .navigationBarTitle(srv.preset ? "Preset server" : "Your server")
+            .modifier(ThemedBackground(grouped: true))
             .navigationBarTitleDisplayMode(.large)
         } label: {
             let address = parseServerAddress(srv.server)
@@ -183,7 +188,7 @@ struct ProtocolServersView: View {
                         } else if !uniqueAddress(srv, address) {
                             Image(systemName: "exclamationmark.circle").foregroundColor(.red)
                         } else if srv.enabled != .enabled {
-                            Image(systemName: "slash.circle").foregroundColor(.secondary)
+                            Image(systemName: "slash.circle").foregroundColor(theme.colors.secondary)
                         } else {
                             showTestStatus(server: srv)
                         }
@@ -198,7 +203,7 @@ struct ProtocolServersView: View {
                 if srv.enabled == .enabled {
                     v
                 } else {
-                    v.foregroundColor(.secondary)
+                    v.foregroundColor(theme.colors.secondary)
                 }
             }
         }

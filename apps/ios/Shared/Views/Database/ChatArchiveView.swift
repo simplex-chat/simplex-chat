@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct ChatArchiveView: View {
+    @EnvironmentObject var theme: AppTheme
     var archiveName: String
     @AppStorage(DEFAULT_CHAT_ARCHIVE_NAME) private var chatArchiveName: String?
     @AppStorage(DEFAULT_CHAT_ARCHIVE_TIME) private var chatArchiveTime: Double = 0
@@ -20,14 +21,14 @@ struct ChatArchiveView: View {
         let fileTs = chatArchiveTimeDefault.get()
         List {
             Section {
-                settingsRow("square.and.arrow.up") {
+                settingsRow("square.and.arrow.up", color: theme.colors.secondary) {
                     Button {
                         showShareSheet(items: [fileUrl])
                     } label: {
                         Text("Save archive")
                     }
                 }
-                settingsRow("trash") {
+                settingsRow("trash", color: theme.colors.secondary) {
                     Button {
                         showDeleteAlert = true
                     } label: {
@@ -36,8 +37,10 @@ struct ChatArchiveView: View {
                 }
             } header: {
                 Text("Chat archive")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 Text("Created on \(fileTs)")
+                    .foregroundColor(theme.colors.secondary)
             }
         }
         .alert(isPresented: $showDeleteAlert) {

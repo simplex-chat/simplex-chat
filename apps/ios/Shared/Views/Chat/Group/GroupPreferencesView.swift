@@ -18,6 +18,7 @@ private let featureRoles: [(role: GroupMemberRole?, text: LocalizedStringKey)] =
 struct GroupPreferencesView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Binding var groupInfo: GroupInfo
     @State var preferences: FullGroupPreferences
     @State var currentPreferences: FullGroupPreferences
@@ -73,7 +74,7 @@ struct GroupPreferencesView: View {
 
     private func featureSection(_ feature: GroupFeature, _ enableFeature: Binding<GroupFeatureEnabled>, _ enableForRole: Binding<GroupMemberRole?>? = nil) -> some View {
         Section {
-            let color: Color = enableFeature.wrappedValue == .on ? .green : .secondary
+            let color: Color = enableFeature.wrappedValue == .on ? .green : theme.colors.secondary
             let icon = enableFeature.wrappedValue == .on ? feature.iconFilled : feature.icon
             let timedOn = feature == .timedMessages && enableFeature.wrappedValue == .on
             if groupInfo.canEdit {
@@ -111,18 +112,19 @@ struct GroupPreferencesView: View {
                 }
                 if enableFeature.wrappedValue == .on, let enableForRole {
                     HStack {
-                        Text("Enabled for").foregroundColor(.secondary)
+                        Text("Enabled for").foregroundColor(theme.colors.secondary)
                         Spacer()
                         Text(
                             featureRoles.first(where: { fr in fr.role == enableForRole.wrappedValue })?.text
                             ?? "all members"
                         )
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                     }
                 }
             }
         } footer: {
             Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.canEdit))
+                .foregroundColor(theme.colors.secondary)
         }
         .onChange(of: enableFeature.wrappedValue) { enabled in
             if case .off = enabled {
