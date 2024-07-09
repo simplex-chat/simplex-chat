@@ -873,7 +873,7 @@ ciCreateStatus content = case msgDirection @d of
   SMDSnd -> ciStatusNew
   SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
 
-membersGroupItemStatus :: [(CIStatus 'MDSnd, Int)] -> CIStatus 'MDSnd
+membersGroupItemStatus :: [(GroupSndStatus, Int)] -> CIStatus 'MDSnd
 membersGroupItemStatus memStatusCounts
   | rcvdOk == total = CISSndRcvd MROk SSPComplete
   | rcvdOk + rcvdBad == total = CISSndRcvd MRBadMsgHash SSPComplete
@@ -884,9 +884,9 @@ membersGroupItemStatus memStatusCounts
   | otherwise = CISSndNew
   where
     total = sum $ map snd memStatusCounts
-    rcvdOk = fromMaybe 0 $ lookup (CISSndRcvd MROk SSPComplete) memStatusCounts
-    rcvdBad = fromMaybe 0 $ lookup (CISSndRcvd MRBadMsgHash SSPComplete) memStatusCounts
-    sent = fromMaybe 0 $ lookup (CISSndSent SSPComplete) memStatusCounts
+    rcvdOk = fromMaybe 0 $ lookup (GSSRcvd MROk) memStatusCounts
+    rcvdBad = fromMaybe 0 $ lookup (GSSRcvd MRBadMsgHash) memStatusCounts
+    sent = fromMaybe 0 $ lookup GSSSent memStatusCounts
 
 data SndCIStatusProgress
   = SSPPartial
@@ -917,20 +917,37 @@ deriving instance Eq GroupSndStatus
 
 deriving instance Show GroupSndStatus
 
+-- Preserve CIStatus encoding for backwards compatibility
 instance StrEncoding GroupSndStatus where
   strEncode = \case
-    GSSNew -> "gss_new"
-    GSSForwarded -> "gss_forwarded"
-    GSSInactive -> "gss_inactive"
-    GSSSent -> "gss_sent"
-    GSSRcvd msgRcptStatus -> "gss_rcvd " <> strEncode msgRcptStatus
-    GSSError sndErr -> "gss_error " <> strEncode sndErr
-    GSSWarning sndErr -> "gss_warning " <> strEncode sndErr
+    GSSNew -> "snd_new"
+    GSSForwarded -> "snd_forwarded"
+    GSSInactive -> "snd_inactive"
+    GSSSent -> "snd_sent"
+    GSSRcvd msgRcptStatus -> "snd_rcvd " <> strEncode msgRcptStatus
+    GSSError sndErr -> "snd_error " <> strEncode sndErr
+    GSSWarning sndErr -> "snd_warning " <> strEncode sndErr
     GSSInvalid {} -> "invalid"
-  strP = do
-    -- try to parse new encoding
-    -- if fails, try to parse CIStatus encoding for backwards compatibility
-    pure $ GSSInvalid ""
+  strP =
+    (statusP <* A.endOfInput) -- see ACIStatus decoding
+      <|> (GSSInvalid . safeDecodeUtf8 <$> A.takeByteString)
+    where
+      statusP =
+        A.takeTill (== ' ') >>= \case
+          "snd_new" -> pure GSSNew
+          "snd_forwarded" -> pure GSSForwarded
+          "snd_inactive" -> pure GSSInactive
+          "snd_sent" -> do
+            _sndProgress <- (A.space *> strP) <|> pure SSPComplete
+            pure GSSSent
+          "snd_rcvd" -> do
+            msgRcptStatus <- A.space *> strP
+            _sndProgress <- (A.space *> strP) <|> pure SSPComplete
+            pure $ GSSRcvd msgRcptStatus
+          "snd_error_auth" -> pure $ GSSError SndErrAuth
+          "snd_error" -> GSSError <$> (A.space *> strP)
+          "snd_warning" -> GSSWarning <$> (A.space *> strP)
+          _ -> fail "bad status"
 
 type ChatItemId = Int64
 
@@ -1205,8 +1222,7 @@ mkItemVersion ChatItem {content, meta} = version <$> ciMsgContent content
 
 data MemberDeliveryStatus = MemberDeliveryStatus
   { groupMemberId :: GroupMemberId,
-    -- memberDeliveryStatus :: GroupSndStatus,
-    memberDeliveryStatus :: CIStatus 'MDSnd,
+    memberDeliveryStatus :: GroupSndStatus,
     sentViaProxy :: Maybe Bool
   }
   deriving (Eq, Show)
@@ -1265,6 +1281,10 @@ instance (Typeable d, MsgDirectionI d) => FromField (CIStatus d) where fromField
 instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GSS") ''GroupSndStatus)
+
+instance ToField GroupSndStatus where toField = toField . decodeLatin1 . strEncode
+
+instance FromField GroupSndStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
 $(JQ.deriveJSON defaultJSON ''MemberDeliveryStatus)
 

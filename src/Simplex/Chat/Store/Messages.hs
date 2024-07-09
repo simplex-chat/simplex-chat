@@ -2531,16 +2531,14 @@ deleteCIModeration db GroupInfo {groupId} itemMemberId (Just sharedMsgId) =
     "DELETE FROM chat_item_moderations WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?"
     (groupId, itemMemberId, sharedMsgId)
 
--- createGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> GroupSndStatus -> IO ()
-createGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> CIStatus 'MDSnd -> IO ()
+createGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> GroupSndStatus -> IO ()
 createGroupSndStatus db itemId memberId status =
   DB.execute
     db
     "INSERT INTO group_snd_item_statuses (chat_item_id, group_member_id, group_snd_item_status) VALUES (?,?,?)"
     (itemId, memberId, status)
 
--- getGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> ExceptT StoreError IO GroupSndStatus
-getGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> ExceptT StoreError IO (CIStatus 'MDSnd)
+getGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> ExceptT StoreError IO GroupSndStatus
 getGroupSndStatus db itemId memberId =
   ExceptT . firstRow fromOnly (SENoGroupSndStatus itemId memberId) $
     DB.query
@@ -2553,8 +2551,7 @@ getGroupSndStatus db itemId memberId =
       |]
       (itemId, memberId)
 
--- updateGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> GroupSndStatus -> IO ()
-updateGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> CIStatus 'MDSnd -> IO ()
+updateGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> GroupSndStatus -> IO ()
 updateGroupSndStatus db itemId memberId status = do
   currentTs <- liftIO getCurrentTime
   DB.execute
@@ -2592,8 +2589,7 @@ getGroupSndStatuses db itemId =
     memStatus (groupMemberId, memberDeliveryStatus, sentViaProxy) =
       MemberDeliveryStatus {groupMemberId, memberDeliveryStatus, sentViaProxy}
 
--- getGroupSndStatusCounts :: DB.Connection -> ChatItemId -> IO [(GroupSndStatus, Int)]
-getGroupSndStatusCounts :: DB.Connection -> ChatItemId -> IO [(CIStatus 'MDSnd, Int)]
+getGroupSndStatusCounts :: DB.Connection -> ChatItemId -> IO [(GroupSndStatus, Int)]
 getGroupSndStatusCounts db itemId =
   DB.query
     db
