@@ -865,7 +865,7 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
 
 @Composable
 private fun ContactVerifiedShield() {
-  Icon(painterResource(MR.images.ic_verified_user), null, Modifier.size(18.dp).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
+  Icon(painterResource(MR.images.ic_verified_user), null, Modifier.size(18.dp * desktopFontSizeSqrtMultiplier).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
 }
 
 data class CIListState(val scrolled: Boolean, val itemCount: Int, val keyboardState: KeyboardState)
