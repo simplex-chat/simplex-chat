@@ -526,6 +526,9 @@ val desktopFontSizeMultiplier: Float
 val desktopFontSizeSqrtMultiplier: Float
   @Composable get() = if (appPlatform.isDesktop) sqrt(remember { appPrefs.fontScale.state }.value) else 1f
 
+val desktopDensityScaleMultiplier: Float
+  @Composable get() = if (appPlatform.isDesktop) remember { appPrefs.densityScale.state }.value else 1f
+
 @Composable
 fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenGone: () -> Unit) {
   DisposableEffect(Unit) {

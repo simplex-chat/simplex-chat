@@ -25,6 +25,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.delay
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @Composable
 actual fun AppearanceView(m: ChatModel) {
@@ -68,6 +69,9 @@ fun AppearanceScope.AppearanceLayout(
     SectionDividerSpaced(maxBottomPadding = true)
     FontScaleSection()
 
+    SectionDividerSpaced(maxBottomPadding = true)
+    DensityScaleSection()
+
     SectionBottomSpacer()
   }
 }
@@ -103,6 +107,50 @@ fun FontScaleSection() {
         },
         onValueChangeFinished = {
           appPrefs.fontScale.set(localFontScale.value)
+        },
+        colors = SliderDefaults.colors(
+          activeTickColor = Color.Transparent,
+          inactiveTickColor = Color.Transparent,
+        )
+      )
+    }
+  }
+}
+
+@Composable
+fun DensityScaleSection() {
+  val localDensityScale = remember { mutableStateOf(appPrefs.densityScale.get()) }
+  SectionView(stringResource(MR.strings.appearance_zoom).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+    Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+      Box(Modifier.size(60.dp)
+        .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
+        .clip(RoundedCornerShape(percent = 22))
+        .clickable {
+          localDensityScale.value = 1f
+          appPrefs.densityScale.set(localDensityScale.value)
+        },
+        contentAlignment = Alignment.Center) {
+        CompositionLocalProvider(
+          LocalDensity provides Density(LocalDensity.current.density * localDensityScale.value, LocalDensity.current.fontScale)
+        ) {
+          Text("${(localDensityScale.value * 100).roundToInt()}%",
+            color = if (localDensityScale.value == 1f) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground,
+            fontSize = 12.sp,
+            maxLines = 1
+          )
+        }
+      }
+      Spacer(Modifier.width(10.dp))
+      Slider(
+        localDensityScale.value,
+        valueRange = 1f..1.5f,
+        steps = 10,
+        onValueChange = {
+          val diff = it % 0.05f
+          localDensityScale.value = it + (if (diff >= 0.025f) -diff + 0.05f else -diff)
+        },
+        onValueChangeFinished = {
+          appPrefs.densityScale.set(localDensityScale.value)
         },
         colors = SliderDefaults.colors(
           activeTickColor = Color.Transparent,
