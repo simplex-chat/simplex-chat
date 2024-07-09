@@ -38,6 +38,18 @@
   </description>
 
   <releases>
+    <release version="5.8.2" date="2024-07-02">
+      <url type="details">https://github.com/simplex-chat/simplex-chat/releases/tag/v5.8.2</url>
+      <description>
+        <p>General:</p>
+        <ol>
+          <li>missed call notification.</li>
+          <li>remove notifications of hidden/removed user profiles.</li>
+          <li>support for faster connection with the new contacts (disabled in this version).</li>
+          <li>general fixes.</li>
+        </ol>
+      </description>
+    </release>
     <release version="5.8.1" date="2024-06-19">
       <description>
         <p>General:</p>

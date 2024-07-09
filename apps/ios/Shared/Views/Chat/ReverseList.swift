@@ -55,6 +55,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             // 1. Style
             tableView.separatorStyle = .none
             tableView.transform = .verticalFlip
+            tableView.backgroundColor = .clear
 
             // 2. Register cells
             if #available(iOS 16.0, *) {
@@ -180,6 +181,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
         /// Updates content of the cell
         /// For reference: https://noahgilmore.com/blog/swiftui-self-sizing-cells/
         func set(content: Hosted, parent: UIViewController) {
+            hostingController.view.backgroundColor = .clear
             hostingController.rootView = content
             if let hostingView = hostingController.view {
                 hostingView.invalidateIntrinsicContentSize()

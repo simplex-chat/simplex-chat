@@ -36,6 +36,7 @@ struct ServersSummaryView: View {
             viewBody()
                 .navigationTitle("Servers info")
                 .navigationBarTitleDisplayMode(.large)
+                .modifier(ThemedBackground(grouped: true))
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         shareButton()
@@ -264,6 +265,7 @@ struct ServersSummaryView: View {
             )
             .navigationBarTitle("SMP server")
             .navigationBarTitleDisplayMode(.large)
+            .modifier(ThemedBackground(grouped: true))
         } label: {
             HStack {
                 Text(serverAddress(srvSumm.smpServer))
@@ -332,6 +334,7 @@ struct ServersSummaryView: View {
             )
             .navigationBarTitle("XFTP server")
             .navigationBarTitleDisplayMode(.large)
+            .modifier(ThemedBackground(grouped: true))
         } label: {
             HStack {
                 Text(serverAddress(srvSumm.xftpServer))
@@ -360,7 +363,7 @@ struct ServersSummaryView: View {
         Button {
             alert = SomeAlert(
                 alert: Alert(
-                    title: Text("Reset all servers statistics?"),
+                    title: Text("Reset all statistics?"),
                     message: Text("Servers statistics will be reset - this cannot be undone!"),
                     primaryButton: .destructive(Text("Reset")) {
                         Task {
@@ -422,7 +425,7 @@ struct SubscriptionStatusPercentageView: View {
     var body: some View {
         let onionHosts = networkUseOnionHostsGroupDefault.get()
         let (_, _, _, statusPercent) = subscriptionStatusColorAndPercentage(m.networkInfo.online, onionHosts, subs, sess)
-        Text("\(Int(floor(statusPercent * 100)))%")
+        Text(verbatim: "\(Int(floor(statusPercent * 100)))%")
             .foregroundColor(.secondary)
             .font(.caption)
     }
@@ -470,6 +473,7 @@ struct SMPServerSummaryView: View {
                     NavigationLink {
                         ProtocolServersView(serverProtocol: .smp)
                             .navigationTitle("Your SMP servers")
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("Open server settings")
                     }
@@ -563,6 +567,7 @@ struct SMPStatsView: View {
                 DetailedSMPStatsView(stats: stats, statsStartedAt: statsStartedAt)
                     .navigationTitle("Detailed statistics")
                     .navigationBarTitleDisplayMode(.large)
+                    .modifier(ThemedBackground(grouped: true))
             } label: {
                 Text("Details")
             }
@@ -590,21 +595,21 @@ struct DetailedSMPStatsView: View {
                 infoRowTwoValues("Sent via proxy", "attempts", stats._sentViaProxy, stats._sentViaProxyAttempts)
                 infoRowTwoValues("Proxied", "attempts", stats._sentProxied, stats._sentProxiedAttempts)
                 Text("Send errors")
-                indentedInfoRow("AUTH", numOrDash(stats._sentAuthErrs))
-                indentedInfoRow("QUOTA", numOrDash(stats._sentQuotaErrs))
-                indentedInfoRow("expired", numOrDash(stats._sentExpiredErrs))
-                indentedInfoRow("other", numOrDash(stats._sentOtherErrs))
+                infoRow(Text(verbatim: "AUTH"), numOrDash(stats._sentAuthErrs)).padding(.leading, 24)
+                infoRow(Text(verbatim: "QUOTA"), numOrDash(stats._sentQuotaErrs)).padding(.leading, 24)
+                infoRow("expired", numOrDash(stats._sentExpiredErrs)).padding(.leading, 24)
+                infoRow("other", numOrDash(stats._sentOtherErrs)).padding(.leading, 24)
             }
             Section("Received messages") {
                 infoRow("Received total", numOrDash(stats._recvMsgs))
                 Text("Receive errors")
-                indentedInfoRow("duplicates", numOrDash(stats._recvDuplicates))
-                indentedInfoRow("decryption errors", numOrDash(stats._recvCryptoErrs))
-                indentedInfoRow("other errors", numOrDash(stats._recvErrs))
+                infoRow("duplicates", numOrDash(stats._recvDuplicates)).padding(.leading, 24)
+                infoRow("decryption errors", numOrDash(stats._recvCryptoErrs)).padding(.leading, 24)
+                infoRow("other errors", numOrDash(stats._recvErrs)).padding(.leading, 24)
                 infoRowTwoValues("Acknowledged", "attempts", stats._ackMsgs, stats._ackAttempts)
                 Text("Acknowledgement errors")
-                indentedInfoRow("NO_MSG errors", numOrDash(stats._ackNoMsgErrs))
-                indentedInfoRow("other errors", numOrDash(stats._ackOtherErrs))
+                infoRow(Text(verbatim: "NO_MSG errors"), numOrDash(stats._ackNoMsgErrs)).padding(.leading, 24)
+                infoRow("other errors", numOrDash(stats._ackOtherErrs)).padding(.leading, 24)
             }
             Section {
                 infoRow("Created", numOrDash(stats._connCreated))
@@ -613,7 +618,7 @@ struct DetailedSMPStatsView: View {
                 infoRowTwoValues("Deleted", "attempts", stats._connDeleted, stats._connDelAttempts)
                 infoRow("Deletion errors", numOrDash(stats._connDelErrs))
                 infoRowTwoValues("Subscribed", "attempts", stats._connSubscribed, stats._connSubAttempts)
-                infoRow("Subscription results ignored", numOrDash(stats._connSubIgnored))
+                infoRow("Subscriptions ignored", numOrDash(stats._connSubIgnored))
                 infoRow("Subscription errors", numOrDash(stats._connSubErrs))
             } header: {
                 Text("Connections")
@@ -626,26 +631,16 @@ struct DetailedSMPStatsView: View {
 
 private func infoRowTwoValues(_ title: LocalizedStringKey, _ title2: LocalizedStringKey, _ value: Int, _ value2: Int) -> some View {
     HStack {
-        Text(title) + Text(" / ").font(.caption2) + Text(title2).font(.caption2)
+        Text(title) + Text(verbatim: " / ").font(.caption2) + Text(title2).font(.caption2)
         Spacer()
         Group {
             if value == 0 && value2 == 0 {
-                Text("-")
+                Text(verbatim: "-")
             } else {
-                Text(numOrDash(value)) + Text(" / ").font(.caption2) + Text(numOrDash(value2)).font(.caption2)
+                Text(numOrDash(value)) + Text(verbatim: " / ").font(.caption2) + Text(numOrDash(value2)).font(.caption2)
             }
         }
         .foregroundStyle(.secondary)
-    }
-}
-
-private func indentedInfoRow(_ title: LocalizedStringKey, _ value: String) -> some View {
-    HStack {
-        Text(title)
-            .padding(.leading, 24)
-        Spacer()
-        Text(value)
-            .foregroundStyle(.secondary)
     }
 }
 
@@ -662,6 +657,7 @@ struct XFTPServerSummaryView: View {
                     NavigationLink {
                         ProtocolServersView(serverProtocol: .xftp)
                             .navigationTitle("Your XFTP servers")
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("Open server settings")
                     }
@@ -692,6 +688,7 @@ struct XFTPStatsView: View {
                 DetailedXFTPStatsView(stats: stats, statsStartedAt: statsStartedAt)
                     .navigationTitle("Detailed statistics")
                     .navigationBarTitleDisplayMode(.large)
+                    .modifier(ThemedBackground(grouped: true))
             } label: {
                 Text("Details")
             }
@@ -725,8 +722,8 @@ struct DetailedXFTPStatsView: View {
                 infoRow("Size", prettySize(stats._downloadsSize))
                 infoRowTwoValues("Chunks downloaded", "attempts", stats._downloads, stats._downloadAttempts)
                 Text("Download errors")
-                indentedInfoRow("AUTH", numOrDash(stats._downloadAuthErrs))
-                indentedInfoRow("other", numOrDash(stats._downloadErrs))
+                infoRow(Text(verbatim: "AUTH"), numOrDash(stats._downloadAuthErrs)).padding(.leading, 24)
+                infoRow("other", numOrDash(stats._downloadErrs)).padding(.leading, 24)
             } header: {
                 Text("Downloaded files")
             } footer: {

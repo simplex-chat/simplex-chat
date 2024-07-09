@@ -25,7 +25,6 @@ struct DeletedItemView: View {
         .padding(.leading, 12)
         .padding(.vertical, 6)
         .background(chatItemFrameColor(chatItem, theme))
-        .cornerRadius(18)
         .textSelection(.disabled)
     }
 }

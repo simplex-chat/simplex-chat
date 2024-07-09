@@ -410,7 +410,7 @@ struct ChatView: View {
 
         init() {
             unreadChatItemCounts = UnreadChatItemCounts(
-                totalBelow: .zero,
+                isNearBottom: true,
                 unreadBelow: .zero
             )
             events
@@ -425,9 +425,9 @@ struct ChatView: View {
                         itemsInView
                     }
                 }
-                .throttle(for: .seconds(0.2), scheduler: DispatchQueue.main, latest: true)
                 .map { ChatModel.shared.unreadChatItemCounts(itemsInView: $0) }
                 .removeDuplicates()
+                .throttle(for: .seconds(0.2), scheduler: DispatchQueue.main, latest: true)
                 .assign(to: \.unreadChatItemCounts, on: self)
                 .store(in: &bag)
         }
@@ -479,7 +479,7 @@ struct ChatView: View {
                         scrollModel.scrollToItem(id: latestUnreadItem.id)
                     }
                 }
-            } else if counts.totalBelow > 16 {
+            } else if !counts.isNearBottom {
                 circleButton {
                     Image(systemName: "chevron.down")
                         .foregroundColor(theme.colors.primary)
@@ -754,6 +754,7 @@ struct ChatView: View {
                     playbackState: $playbackState,
                     playbackTime: $playbackTime
                 )
+                .modifier(ChatItemClipped(ci))
                 .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
                 .accessibilityLabel("")
                 if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
