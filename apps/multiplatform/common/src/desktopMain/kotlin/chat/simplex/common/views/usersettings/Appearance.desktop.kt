@@ -3,7 +3,7 @@ package chat.simplex.common.views.usersettings
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionView
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.*
@@ -76,7 +77,14 @@ fun FontScaleSection() {
   val localFontScale = remember { mutableStateOf(appPrefs.fontScale.get()) }
   SectionView(stringResource(MR.strings.appearance_font_size).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-      Box(Modifier.size(60.dp).background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22)), contentAlignment = Alignment.Center) {
+      Box(Modifier.size(60.dp)
+        .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
+        .clip(RoundedCornerShape(percent = 22))
+        .clickable {
+          localFontScale.value = 1f
+          appPrefs.fontScale.set(localFontScale.value)
+        },
+        contentAlignment = Alignment.Center) {
         CompositionLocalProvider(
           LocalDensity provides Density(LocalDensity.current.density, localFontScale.value)
         ) {
