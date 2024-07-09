@@ -3,20 +3,27 @@ package chat.simplex.common.views.usersettings
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.SharedPreference
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.delay
 import java.util.Locale
-import kotlin.math.roundToInt
 
 @Composable
 actual fun AppearanceView(m: ChatModel) {
@@ -66,14 +73,34 @@ fun AppearanceScope.AppearanceLayout(
 
 @Composable
 fun FontScaleSection() {
-  val scaleValues = (setOf(0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2f) + appPrefs.fontScale.state.value)
-    .toList().sortedBy { it }.map { it to "${(it * 100).roundToInt()}%" }
-  SectionView(stringResource(MR.strings.interface_preferences_section_title).uppercase()) {
-    ExposedDropDownSettingRow(
-      stringResource(MR.strings.appearance_font_scale),
-      values = scaleValues,
-      selection = appPrefs.fontScale.state,
-      onSelected = { appPrefs.fontScale.set(it) }
-    )
+  val localFontScale = remember { mutableStateOf(appPrefs.fontScale.get()) }
+  SectionView(stringResource(MR.strings.appearance_font_size).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+    Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+      Box(Modifier.size(60.dp).background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22)), contentAlignment = Alignment.Center) {
+        CompositionLocalProvider(
+          LocalDensity provides Density(LocalDensity.current.density, localFontScale.value)
+        ) {
+          Text("Aa")
+        }
+      }
+      Spacer(Modifier.width(10.dp))
+//      Text("${(localFontScale.value * 100).roundToInt()}%", Modifier.width(70.dp), textAlign = TextAlign.Center, fontSize = 12.sp)
+      Slider(
+        localFontScale.value,
+        valueRange = 0.5f..2f,
+        steps = 15,
+        onValueChange = {
+          val diff = it % 0.1f
+          localFontScale.value = it + (if (diff >= 0.05f) -diff + 0.1f else -diff)
+        },
+        onValueChangeFinished = {
+          appPrefs.fontScale.set(localFontScale.value)
+        },
+        colors = SliderDefaults.colors(
+          activeTickColor = Color.Transparent,
+          inactiveTickColor = Color.Transparent,
+        )
+      )
+    }
   }
 }
