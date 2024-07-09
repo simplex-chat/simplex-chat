@@ -923,8 +923,8 @@ instance StrEncoding GroupSndStatus where
     GSSNew -> "snd_new"
     GSSForwarded -> "snd_forwarded"
     GSSInactive -> "snd_inactive"
-    GSSSent -> "snd_sent"
-    GSSRcvd msgRcptStatus -> "snd_rcvd " <> strEncode msgRcptStatus
+    GSSSent -> "snd_sent complete"
+    GSSRcvd msgRcptStatus -> "snd_rcvd " <> strEncode msgRcptStatus <> " complete"
     GSSError sndErr -> "snd_error " <> strEncode sndErr
     GSSWarning sndErr -> "snd_warning " <> strEncode sndErr
     GSSInvalid {} -> "invalid"
@@ -937,13 +937,8 @@ instance StrEncoding GroupSndStatus where
           "snd_new" -> pure GSSNew
           "snd_forwarded" -> pure GSSForwarded
           "snd_inactive" -> pure GSSInactive
-          "snd_sent" -> do
-            _sndProgress <- (A.space *> strP) <|> pure SSPComplete
-            pure GSSSent
-          "snd_rcvd" -> do
-            msgRcptStatus <- A.space *> strP
-            _sndProgress <- (A.space *> strP) <|> pure SSPComplete
-            pure $ GSSRcvd msgRcptStatus
+          "snd_sent" -> GSSSent <$ " complete"
+          "snd_rcvd" -> GSSRcvd <$> (_strP <* " complete")
           "snd_error_auth" -> pure $ GSSError SndErrAuth
           "snd_error" -> GSSError <$> (A.space *> strP)
           "snd_warning" -> GSSWarning <$> (A.space *> strP)
