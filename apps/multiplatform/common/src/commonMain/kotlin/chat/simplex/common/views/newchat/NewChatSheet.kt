@@ -164,11 +164,11 @@ private fun NewChatSheetLayout(
     ) {
       Icon(
         painterResource(MR.images.ic_edit_filled), stringResource(MR.strings.add_contact_or_create_group),
-        Modifier.graphicsLayer { alpha = 1 - animatedFloat.value }
+        Modifier.graphicsLayer { alpha = 1 - animatedFloat.value }.size(24.dp * desktopFontSizeSqrtMultiplier)
       )
       Icon(
         painterResource(MR.images.ic_close), stringResource(MR.strings.add_contact_or_create_group),
-        Modifier.graphicsLayer { alpha = animatedFloat.value }
+        Modifier.graphicsLayer { alpha = animatedFloat.value }.size(24.dp * desktopFontSizeSqrtMultiplier)
       )
     }
   }
