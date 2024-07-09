@@ -2786,14 +2786,19 @@ processChatCommand' vr = \case
               (fInv_, ciFile_) <- L.unzip <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
               timed_ <- sndGroupCITimed live gInfo itemTTL
               (msgContainer, quotedItem_) <- prepareGroupMsg user gInfo mc quotedItemId_ itemForwarded fInv_ timed_ live
-              (msg, sentToMembers) <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
+              (msg, groupSndResult) <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
               ci <- saveSndChatItem' user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ itemForwarded timed_ live
-              withStore' $ \db ->
-                forM_ sentToMembers $ \GroupMember {groupMemberId} ->
-                  createGroupSndStatus db (chatItemId' ci) groupMemberId GSSNew -- TODO forwarded, inactive
+              withStore' $ \db -> do
+                let GroupSndResult {sentTo, pending, forwarded} = groupSndResult
+                createMemberSndStatuses db ci sentTo GSSNew
+                createMemberSndStatuses db ci forwarded GSSForwarded
+                createMemberSndStatuses db ci pending GSSInactive
               forM_ (timed_ >>= timedDeleteAt') $
                 startProximateTimedItemThread user (ChatRef CTGroup groupId, chatItemId' ci)
               pure $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
+              where
+                createMemberSndStatuses db ci ms' gss =
+                  forM_ ms' $ \GroupMember {groupMemberId} -> createGroupSndStatus db (chatItemId' ci) groupMemberId gss
         notAllowedError f = pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText f))
         setupSndFileTransfer :: Group -> Int -> CM (Maybe (FileInvitation, CIFile 'MDSnd))
         setupSndFileTransfer g n = forM file_ $ \file -> do
@@ -6778,7 +6783,7 @@ deliverMessagesB msgReqs = do
 
 -- TODO combine profile update and message into one batch
 -- Take into account that it may not fit, and that we currently don't support sending multiple messages to the same connection in one call.
-sendGroupMessage :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM (SndMessage, [GroupMember])
+sendGroupMessage :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM (SndMessage, GroupSndResult)
 sendGroupMessage user gInfo members chatMsgEvent = do
   when shouldSendProfileUpdate $
     sendProfileUpdate `catchChatError` (\e -> toView (CRChatError (Just user) e))
@@ -6800,12 +6805,18 @@ sendGroupMessage user gInfo members chatMsgEvent = do
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
 
-sendGroupMessage' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM (SndMessage, [GroupMember])
+data GroupSndResult = GroupSndResult
+  { sentTo :: [GroupMember],
+    pending :: [GroupMember],
+    forwarded :: [GroupMember]
+  }
+
+sendGroupMessage' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM (SndMessage, GroupSndResult)
 sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
   msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent (GroupId groupId)
   recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
   let msgFlags = MsgFlags {notification = hasNotification $ toCMEventTag chatMsgEvent}
-      (toSend, pending, _, dups) = foldr addMember ([], [], S.empty, 0 :: Int) recipientMembers
+      (toSend, pending, forwarded, _, dups) = foldr addMember ([], [], [], S.empty, 0 :: Int) recipientMembers
       -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
       msgReqs = map (\(_, conn) -> (conn, msgFlags, msgBody, msgId)) toSend
   when (dups /= 0) $ logError $ "sendGroupMessage: " <> tshow dups <> " duplicate members"
@@ -6813,8 +6824,13 @@ sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
   let errors = lefts delivered
   unless (null errors) $ toView $ CRChatErrors (Just user) errors
   stored <- lift . withStoreBatch' $ \db -> map (\m -> createPendingGroupMessage db (groupMemberId' m) msgId Nothing) pending
-  let sentToMembers = filterSent delivered toSend fst <> filterSent stored pending id
-  pure (msg, sentToMembers)
+  let gsr =
+        GroupSndResult
+          { sentTo = filterSent delivered toSend fst,
+            pending = filterSent stored pending id,
+            forwarded
+          }
+  pure (msg, gsr)
   where
     shuffleMembers :: [GroupMember] -> IO [GroupMember]
     shuffleMembers ms = do
@@ -6822,12 +6838,13 @@ sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
       liftM2 (<>) (shuffle adminMs) (shuffle otherMs)
       where
         isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
-    addMember m acc@(toSend, pending, !mIds, !dups) = case memberSendAction chatMsgEvent members m of
+    addMember m acc@(toSend, pending, forwarded, !mIds, !dups) = case memberSendAction chatMsgEvent members m of
       Just a
-        | mId `S.member` mIds -> (toSend, pending, mIds, dups + 1)
+        | mId `S.member` mIds -> (toSend, pending, forwarded, mIds, dups + 1)
         | otherwise -> case a of
-            MSASend conn -> ((m, conn) : toSend, pending, mIds', dups)
-            MSAPending -> (toSend, m : pending, mIds', dups)
+            MSASend conn -> ((m, conn) : toSend, pending, forwarded, mIds', dups)
+            MSAPending -> (toSend, m : pending, forwarded, mIds', dups)
+            MSAForwarded -> (toSend, pending, m : forwarded, mIds', dups)
       Nothing -> acc
       where
         mId = groupMemberId' m
@@ -6835,7 +6852,7 @@ sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
     filterSent :: [Either ChatError a] -> [mem] -> (mem -> GroupMember) -> [GroupMember]
     filterSent rs ms mem = [mem m | (Right _, m) <- zip rs ms]
 
-data MemberSendAction = MSASend Connection | MSAPending
+data MemberSendAction = MSASend Connection | MSAPending | MSAForwarded
 
 memberSendAction :: ChatMsgEvent e -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
 memberSendAction chatMsgEvent members m@GroupMember {invitedByGroupMemberId} = case memberConn m of
@@ -6847,7 +6864,7 @@ memberSendAction chatMsgEvent members m@GroupMember {invitedByGroupMemberId} = c
     | otherwise -> pendingOrForwarded
   where
     pendingOrForwarded
-      | forwardSupported && isForwardedGroupMsg chatMsgEvent = Nothing
+      | forwardSupported && isForwardedGroupMsg chatMsgEvent = Just MSAForwarded
       | isXGrpMsgForward chatMsgEvent = Nothing
       | otherwise = Just MSAPending
       where
@@ -6872,6 +6889,7 @@ sendGroupMemberMessage user m@GroupMember {groupMemberId} chatMsgEvent groupId i
     messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction chatMsgEvent [m] m) $ \case
       MSASend conn -> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId >> postDeliver
       MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
+      MSAForwarded -> pure ()
 
 -- TODO ensure order - pending messages interleave with user input messages
 sendPendingGroupMessages :: User -> GroupMember -> Connection -> CM ()
