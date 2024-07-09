@@ -35,7 +35,10 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.serialization.json.Json
 import java.net.URI
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
@@ -69,7 +72,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val scope = rememberCoroutineScope()
   val (userPickerState, scaffoldState ) = settingsState
-  Scaffold(topBar = { Box(Modifier.padding(end = endPadding)) { ChatListToolbar(searchText, scaffoldState.drawerState, userPickerState, stopped)} },
+  Scaffold(topBar = { Box(Modifier.padding(end = endPadding)) { ChatListToolbar(scaffoldState.drawerState, userPickerState, stopped)} },
     scaffoldState = scaffoldState,
     drawerContent = {
       tryOrShowError("Settings", error = { ErrorSettingsView() }) {
@@ -181,8 +184,10 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatListToolbar(searchInList: State<TextFieldValue>, drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean) {
+private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean) {
+  val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
+
   if (stopped) {
     barButtons.add {
       IconButton(onClick = {
@@ -200,6 +205,7 @@ private fun ChatListToolbar(searchInList: State<TextFieldValue>, drawerState: Dr
     }
   }
   val scope = rememberCoroutineScope()
+  val clipboard = LocalClipboardManager.current
   DefaultTopAppBar(
     navigationButton = {
       if (chatModel.users.isEmpty() && !chatModel.desktopNoUserNoRemote) {
@@ -219,20 +225,33 @@ private fun ChatListToolbar(searchInList: State<TextFieldValue>, drawerState: Dr
       }
     },
     title = {
-      Row(verticalAlignment = Alignment.CenterVertically) {
+      Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
         Text(
           stringResource(MR.strings.your_chats),
           color = MaterialTheme.colors.onBackground,
           fontWeight = FontWeight.SemiBold,
         )
-        if (chatModel.chats.size > 0) {
-          val enabled = remember { derivedStateOf { searchInList.value.text.isEmpty() } }
-          if (enabled.value) {
-            ToggleFilterEnabledButton()
-          } else {
-            ToggleFilterDisabledButton()
+        SubscriptionStatusIndicator(
+          serversSummary = serversSummary,
+          click = {
+            ModalManager.start.closeModals()
+            ModalManager.start.showModalCloseable(
+              endButtons = {
+                val summary = serversSummary.value
+                if (summary != null) {
+                  ShareButton {
+                    val json = Json {
+                      prettyPrint = true
+                    }
+
+                    val text = json.encodeToString(PresentedServersSummary.serializer(), summary)
+                    clipboard.shareText(text)
+                  }
+                }
+              }
+            ) { ServersSummaryView(chatModel.currentRemoteHost.value, serversSummary) }
           }
-        }
+        )
       }
     },
     onTitleClick = null,
@@ -241,6 +260,53 @@ private fun ChatListToolbar(searchInList: State<TextFieldValue>, drawerState: Dr
     buttons = barButtons
   )
   Divider(Modifier.padding(top = AppBarHeight))
+}
+
+@Composable
+fun SubscriptionStatusIndicator(serversSummary: MutableState<PresentedServersSummary?>, click: (() -> Unit)) {
+  var subs by remember { mutableStateOf(SMPServerSubs.newSMPServerSubs) }
+  var sess by remember { mutableStateOf(ServerSessions.newServerSessions) }
+  var timer: Job? by remember { mutableStateOf(null) }
+
+  val fetchInterval: Duration = 1.seconds
+
+  val scope = rememberCoroutineScope()
+
+  fun setServersSummary() {
+    withBGApi {
+      serversSummary.value = chatModel.controller.getAgentServersSummary(chatModel.remoteHostId())
+
+      serversSummary.value?.let {
+        subs = it.allUsersSMP.smpTotals.subs
+        sess = it.allUsersSMP.smpTotals.sessions
+      }
+    }
+  }
+
+  LaunchedEffect(Unit) {
+    setServersSummary()
+    timer = timer ?: scope.launch {
+      while (true) {
+        delay(fetchInterval.inWholeMilliseconds)
+        setServersSummary()
+      }
+    }
+  }
+
+  fun stopTimer() {
+    timer?.cancel()
+    timer = null
+  }
+
+  DisposableEffect(Unit) {
+    onDispose {
+      stopTimer()
+    }
+  }
+
+  SimpleButtonFrame(click = click) {
+    SubscriptionStatusIndicatorView(subs = subs, sess = sess)
+  }
 }
 
 @Composable
@@ -292,27 +358,11 @@ private fun ToggleFilterEnabledButton() {
     Icon(
       painterResource(MR.images.ic_filter_list),
       null,
-      tint = if (pref.state.value) MaterialTheme.colors.background else MaterialTheme.colors.primary,
+      tint = if (pref.state.value) MaterialTheme.colors.background else MaterialTheme.colors.secondary,
       modifier = Modifier
         .padding(3.dp)
         .background(color = if (pref.state.value) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
-        .border(width = 1.dp, color = MaterialTheme.colors.primary, shape = RoundedCornerShape(50))
-        .padding(3.dp)
-        .size(16.dp)
-    )
-  }
-}
-
-@Composable
-private fun ToggleFilterDisabledButton() {
-  IconButton({}, enabled = false) {
-    Icon(
-      painterResource(MR.images.ic_filter_list),
-      null,
-      tint = MaterialTheme.colors.secondary,
-      modifier = Modifier
-        .padding(3.dp)
-        .border(width = 1.dp, color = MaterialTheme.colors.secondary, shape = RoundedCornerShape(50))
+        .border(width = 1.dp, color = if (pref.state.value) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
         .padding(3.dp)
         .size(16.dp)
     )
@@ -357,33 +407,11 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
         hideSearchOnBack()
       }
     } else {
-      Row {
-        val padding = if (appPlatform.isDesktop) 0.dp else 7.dp
-        val clipboard = LocalClipboardManager.current
-        val clipboardHasText = remember(focused) { chatModel.clipboardHasText }.value
-        if (clipboardHasText) {
-          IconButton(
-            onClick = { searchText.value = searchText.value.copy(clipboard.getText()?.text ?: return@IconButton) },
-            Modifier.size(30.dp).desktopPointerHoverIconHand()
-          ) {
-            Icon(painterResource(MR.images.ic_article), null, tint = MaterialTheme.colors.secondary)
-          }
-        }
-        Spacer(Modifier.width(padding))
-        IconButton(
-          onClick = {
-            val fixedRhId = chatModel.currentRemoteHost.value
-            ModalManager.center.closeModals()
-            ModalManager.center.showModalCloseable { close ->
-              NewChatView(fixedRhId, selection = NewChatOption.CONNECT, showQRCodeScanner = true, close = close)
-            }
-          },
-          Modifier.size(30.dp).desktopPointerHoverIconHand()
-        ) {
-          Icon(painterResource(MR.images.ic_qr_code), null, tint = MaterialTheme.colors.secondary)
-        }
-        Spacer(Modifier.width(padding))
+      val padding = if (appPlatform.isDesktop) 0.dp else 7.dp
+      if (chatModel.chats.size > 0) {
+        ToggleFilterEnabledButton() 
       }
+      Spacer(Modifier.width(padding))
     }
     val focusManager = LocalFocusManager.current
     val keyboardState = getKeyboardState()
