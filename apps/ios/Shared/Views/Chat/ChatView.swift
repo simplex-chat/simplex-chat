@@ -718,10 +718,13 @@ struct ChatView: View {
                     .padding(.trailing)
                     .padding(.leading, 12)
                 } else {
-                    chatItemWithMenu(ci, range, maxWidth)
-                        .padding(.top, 5)
-                        .padding(.trailing)
-                        .padding(.leading, memberImageSize + 8 + 12)
+                    HStack(alignment: .top, spacing: 8) {
+                        Spacer(minLength: memberImageSize)
+                        chatItemWithMenu(ci, range, maxWidth)
+                            .padding(.top, 5)
+                            .padding(.trailing)
+                            .padding(.leading, 12)
+                    }
                 }
             } else {
                 chatItemWithMenu(ci, range, maxWidth)
