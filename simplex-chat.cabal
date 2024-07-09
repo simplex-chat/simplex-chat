@@ -226,7 +226,7 @@ library
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
-    , tls >=1.7.0 && <1.8
+    , tls >=2.0.6 && <2.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -289,7 +289,7 @@ executable simplex-bot
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
-    , tls >=1.7.0 && <1.8
+    , tls >=2.0.6 && <2.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -352,7 +352,7 @@ executable simplex-bot-advanced
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
-    , tls >=1.7.0 && <1.8
+    , tls >=2.0.6 && <2.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -418,7 +418,7 @@ executable simplex-broadcast-bot
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
-    , tls >=1.7.0 && <1.8
+    , tls >=2.0.6 && <2.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -482,7 +482,7 @@ executable simplex-chat
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
-    , tls >=1.7.0 && <1.8
+    , tls >=2.0.6 && <2.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , websockets ==0.12.*
@@ -552,7 +552,7 @@ executable simplex-directory-service
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
-    , tls >=1.7.0 && <1.8
+    , tls >=2.0.6 && <2.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -651,7 +651,7 @@ test-suite simplex-chat-test
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
-    , tls >=1.7.0 && <1.8
+    , tls >=2.0.6 && <2.1
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
