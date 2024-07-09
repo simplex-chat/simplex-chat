@@ -47,10 +47,11 @@ fun ChatPreviewView(
 
   @Composable
   fun inactiveIcon() {
+    val sp18 = with(LocalDensity.current) { 18.sp.toDp() }
     Icon(
       painterResource(MR.images.ic_cancel_filled),
       stringResource(MR.strings.icon_descr_group_inactive),
-      Modifier.size(18.dp).background(MaterialTheme.colors.background, CircleShape),
+      Modifier.size(sp18).background(MaterialTheme.colors.background, CircleShape),
       tint = MaterialTheme.colors.secondary
     )
   }
@@ -87,7 +88,8 @@ fun ChatPreviewView(
 
   @Composable
   fun VerifiedIcon() {
-    Icon(painterResource(MR.images.ic_verified_user), null, Modifier.size(19.dp).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
+    val sp19 = with(LocalDensity.current) { 19.sp.toDp() }
+    Icon(painterResource(MR.images.ic_verified_user), null, Modifier.size(sp19).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
   }
 
   fun messageDraft(draft: ComposeState): Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>> {
@@ -220,10 +222,11 @@ fun ChatPreviewView(
 
   @Composable
   fun progressView() {
+    val sp15 = with(LocalDensity.current) { 15.sp.toDp() }
     CircularProgressIndicator(
       Modifier
         .padding(horizontal = 2.dp)
-        .size(15.dp),
+        .size(sp15),
       color = MaterialTheme.colors.secondary,
       strokeWidth = 1.5.dp
     )
@@ -231,6 +234,7 @@ fun ChatPreviewView(
 
   @Composable
   fun chatStatusImage() {
+    val sp19 = with(LocalDensity.current) { 19.sp.toDp() }
     if (cInfo is ChatInfo.Direct) {
       if (cInfo.contact.active && cInfo.contact.activeConn != null) {
         val descr = contactNetworkStatus?.statusString
@@ -244,7 +248,7 @@ fun ChatPreviewView(
               contentDescription = descr,
               tint = MaterialTheme.colors.secondary,
               modifier = Modifier
-                .size(19.dp)
+                .size(sp19)
             )
 
           else ->
@@ -266,7 +270,7 @@ fun ChatPreviewView(
 
   Row {
     Box(contentAlignment = Alignment.BottomEnd) {
-      ChatInfoImage(cInfo, size = 72.dp)
+      ChatInfoImage(cInfo, size = 72.dp * desktopFontSizeSqrtMultiplier)
       Box(Modifier.padding(end = 6.dp, bottom = 6.dp)) {
         chatPreviewImageOverlayIcon()
       }
@@ -295,9 +299,12 @@ fun ChatPreviewView(
       )
       val n = chat.chatStats.unreadCount
       val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
+      val sp17 = with(LocalDensity.current) { 17.sp.toDp() }
+      val sp24 = with(LocalDensity.current) { 24.sp.toDp() }
+      val sp50 = with(LocalDensity.current) { 50.sp.toDp() }
       if (n > 0 || chat.chatStats.unreadChat) {
         Box(
-          Modifier.padding(top = 24.dp),
+          Modifier.padding(top = sp24),
           contentAlignment = Alignment.Center
         ) {
           Text(
@@ -313,7 +320,7 @@ fun ChatPreviewView(
         }
       } else if (showNtfsIcon) {
         Box(
-          Modifier.padding(top = 24.dp),
+          Modifier.padding(top = sp24),
           contentAlignment = Alignment.Center
         ) {
           Icon(
@@ -323,12 +330,12 @@ fun ChatPreviewView(
             modifier = Modifier
               .padding(horizontal = 3.dp)
               .padding(vertical = 1.dp)
-              .size(17.dp)
+              .size(sp17)
           )
         }
       } else if (chat.chatInfo.chatSettings?.favorite == true) {
         Box(
-          Modifier.padding(top = 24.dp),
+          Modifier.padding(top = sp24),
           contentAlignment = Alignment.Center
         ) {
           Icon(
@@ -338,12 +345,12 @@ fun ChatPreviewView(
             modifier = Modifier
               .padding(horizontal = 3.dp)
               .padding(vertical = 1.dp)
-              .size(17.dp)
+              .size(sp17)
           )
         }
       }
       Box(
-        Modifier.padding(top = 50.dp),
+        Modifier.padding(top = sp50),
         contentAlignment = Alignment.Center
       ) {
         chatStatusImage()
@@ -355,12 +362,13 @@ fun ChatPreviewView(
 @Composable
 fun IncognitoIcon(incognito: Boolean) {
   if (incognito) {
+    val sp21 = with(LocalDensity.current) { 21.sp.toDp() }
     Icon(
       painterResource(MR.images.ic_theater_comedy),
       contentDescription = null,
       tint = MaterialTheme.colors.secondary,
       modifier = Modifier
-        .size(21.dp)
+        .size(sp21)
     )
   }
 }

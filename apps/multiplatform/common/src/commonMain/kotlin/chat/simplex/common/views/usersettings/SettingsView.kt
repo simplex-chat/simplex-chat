@@ -174,11 +174,14 @@ fun SettingsLayout(
       Box(
         Modifier
         .fillMaxWidth()
+        .height(AppBarHeight * desktopFontSizeSqrtMultiplier)
         .background(MaterialTheme.colors.background)
         .background(if (isInDarkTheme()) ToolbarDark else ToolbarLight)
-        .padding(start = 4.dp, top = 8.dp)
+        .padding(start = 4.dp, top = 8.dp),
+        contentAlignment = Alignment.CenterStart
       ) {
-        NavigationButtonBack(closeSettings)
+        val sp24 = with(LocalDensity.current) { 24.sp.toDp() }
+        NavigationButtonBack(closeSettings, height = sp24)
       }
     }
   }

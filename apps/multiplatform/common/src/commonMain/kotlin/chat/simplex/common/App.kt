@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.usersettings.SetDeliveryReceiptsView
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.CreateFirstProfile
@@ -36,6 +37,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlin.math.sqrt
 
 data class SettingsViewState(
   val userPickerState: MutableStateFlow<AnimatedViewState>,
@@ -333,21 +335,21 @@ fun EndPartOfScreen() {
 fun DesktopScreen(settingsState: SettingsViewState) {
   Box {
     // 56.dp is a size of unused space of settings drawer
-    Box(Modifier.width(DEFAULT_START_MODAL_WIDTH + 56.dp)) {
+    Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * desktopFontSizeSqrtMultiplier + 56.dp)) {
       StartPartOfScreen(settingsState)
     }
-    Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH)) {
+    Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH * desktopFontSizeSqrtMultiplier)) {
       ModalManager.start.showInView()
       SwitchingUsersView()
     }
-    Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH).clipToBounds()) {
+    Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * desktopFontSizeSqrtMultiplier).clipToBounds()) {
       Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
         CenterPartOfScreen()
       }
       if (ModalManager.end.hasModalsOpen()) {
         VerticalDivider()
       }
-      Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH).clipToBounds()) {
+      Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH * desktopFontSizeSqrtMultiplier).clipToBounds()) {
         EndPartOfScreen()
       }
     }
@@ -357,14 +359,14 @@ fun DesktopScreen(settingsState: SettingsViewState) {
       Box(
         Modifier
           .fillMaxSize()
-          .padding(start = DEFAULT_START_MODAL_WIDTH)
+          .padding(start = DEFAULT_START_MODAL_WIDTH * desktopFontSizeSqrtMultiplier)
           .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {
             ModalManager.start.closeModals()
             scope.launch { settingsState.scaffoldState.drawerState.close() }
           })
       )
     }
-    VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH))
+    VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * desktopFontSizeSqrtMultiplier))
     tryOrShowError("UserPicker", error = {}) {
       UserPicker(chatModel, userPickerState) {
         scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }

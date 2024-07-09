@@ -821,9 +821,9 @@ fun ChatInfoToolbar(
     buttons = barButtons
   )
 
-  Divider(Modifier.padding(top = AppBarHeight))
+  Divider(Modifier.padding(top = AppBarHeight * desktopFontSizeSqrtMultiplier))
 
-  Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd).offset(y = AppBarHeight)) {
+  Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd).offset(y = AppBarHeight * desktopFontSizeSqrtMultiplier)) {
     DefaultDropdownMenu(showMenu) {
       menuItems.forEach { it() }
     }
@@ -837,9 +837,9 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (cInfo.incognito) {
-      IncognitoImage(size = 36.dp, Indigo)
+      IncognitoImage(size = 36.dp * desktopFontSizeSqrtMultiplier, Indigo)
     }
-    ChatInfoImage(cInfo, size = imageSize, iconColor)
+    ChatInfoImage(cInfo, size = imageSize * desktopFontSizeSqrtMultiplier, iconColor)
     Column(
       Modifier.padding(start = 8.dp),
       horizontalAlignment = Alignment.CenterHorizontally
@@ -1283,7 +1283,7 @@ val MEMBER_IMAGE_SIZE: Dp = 38.dp
 
 @Composable
 fun MemberImage(member: GroupMember) {
-  ProfileImage(MEMBER_IMAGE_SIZE, member.memberProfile.image, backgroundColor = MaterialTheme.colors.background)
+  ProfileImage(MEMBER_IMAGE_SIZE * desktopFontSizeSqrtMultiplier, member.memberProfile.image, backgroundColor = MaterialTheme.colors.background)
 }
 
 @Composable

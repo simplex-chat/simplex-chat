@@ -225,8 +225,8 @@ object AppearanceScope {
     }
 
     if (appPlatform.isDesktop) {
-      val itemWidth = (DEFAULT_START_MODAL_WIDTH - DEFAULT_PADDING * 2 - DEFAULT_PADDING_HALF * 3) / 4
-      val itemHeight = (DEFAULT_START_MODAL_WIDTH - DEFAULT_PADDING * 2) / 4
+      val itemWidth = (DEFAULT_START_MODAL_WIDTH * desktopFontSizeSqrtMultiplier - DEFAULT_PADDING * 2 - DEFAULT_PADDING_HALF * 3) / 4
+      val itemHeight = (DEFAULT_START_MODAL_WIDTH * desktopFontSizeSqrtMultiplier - DEFAULT_PADDING * 2) / 4
       val rows = ceil((PresetWallpaper.entries.size + 2) / 4f).roundToInt()
       LazyVerticalGrid(
         columns = GridCells.Fixed(4),
