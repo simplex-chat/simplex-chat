@@ -197,6 +197,7 @@ class AppPreferences {
   }, settingsThemes)
   val themeOverrides = mkThemeOverridesPreference()
   val profileImageCornerRadius = mkFloatPreference(SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS, 22.5f)
+  val fontScale = mkFloatPreference(SHARED_PREFS_FONT_SCALE, 1f)
 
   val whatsNewVersion = mkStrPreference(SHARED_PREFS_WHATS_NEW_VERSION, null)
   val lastMigratedVersionCode = mkIntPreference(SHARED_PREFS_LAST_MIGRATED_VERSION_CODE, 0)
@@ -378,6 +379,7 @@ class AppPreferences {
     private const val SHARED_PREFS_THEMES_OLD = "Themes"
     private const val SHARED_PREFS_THEME_OVERRIDES = "ThemeOverrides"
     private const val SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS = "ProfileImageCornerRadius"
+    private const val SHARED_PREFS_FONT_SCALE = "FontScale"
     private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
     private const val SHARED_PREFS_LAST_MIGRATED_VERSION_CODE = "LastMigratedVersionCode"
     private const val SHARED_PREFS_CUSTOM_DISAPPEARING_MESSAGE_TIME = "CustomDisappearingMessageTime"

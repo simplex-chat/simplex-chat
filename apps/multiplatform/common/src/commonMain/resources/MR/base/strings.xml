@@ -756,6 +756,7 @@
   <string name="appearance_settings">Appearance</string>
   <string name="customize_theme_title">Customize theme</string>
   <string name="theme_colors_section_title">INTERFACE COLORS</string>
+  <string name="interface_preferences_section_title">Interface preferences</string>
   <string name="app_version_title">App version</string>
   <string name="app_version_name">App version: v%s</string>
   <string name="app_version_code">App build: %s</string>
@@ -1604,6 +1605,7 @@
   <string name="color_wallpaper_background">Wallpaper background</string>
   <string name="color_wallpaper_tint">Wallpaper accent</string>
   <string name="theme_remove_image">Remove image</string>
+  <string name="appearance_font_scale">Font scale</string>
 
   <!-- Wallpapers -->
   <string name="wallpaper_preview_hello_alice">Good afternoon!</string>

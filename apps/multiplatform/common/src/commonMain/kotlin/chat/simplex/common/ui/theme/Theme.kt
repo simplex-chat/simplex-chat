@@ -6,6 +6,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.ChatController.appPrefs
@@ -777,6 +779,7 @@ fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
     typography = Typography,
     shapes = Shapes,
     content = {
+      val density = if (appPlatform.isAndroid) LocalDensity.current else Density(LocalDensity.current.density, LocalDensity.current.fontScale * remember { appPrefs.fontScale.state }.value)
       val rememberedAppColors = remember {
         // Explicitly creating a new object here so we don't mutate the initial [appColors]
         // provided, and overwrite the values set in it.
@@ -791,6 +794,7 @@ fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
         LocalContentColor provides MaterialTheme.colors.onBackground,
         LocalAppColors provides rememberedAppColors,
         LocalAppWallpaper provides rememberedWallpaper,
+        LocalDensity provides density,
         content = content)
     }
   )
