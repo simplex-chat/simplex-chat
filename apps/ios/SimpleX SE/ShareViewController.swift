@@ -7,40 +7,24 @@
 //
 
 import UIKit
-import OSLog
 import SwiftUI
 import SimpleXChat
 
-let logger = Logger()
-
 @objc(ShareViewController)
 class ShareViewController: UIHostingController<ShareView> {
+    let model = ShareModel()
 
-    @objc
-    init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
-        super.init(rootView: ShareView())
-        initialise()
+    @objc init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
+        super.init(rootView: ShareView(model: model))
     }
-    
+
     @available(*, unavailable)
-    required init?(coder aDecoder: NSCoder) {
-        fatalError()
-    }
+    required init?(coder aDecoder: NSCoder) { fatalError() }
 
-    private func initialise() {
-        haskell_init_se()
-        let (_, dbStatus) = chatMigrateInit(
-            confirmMigrations: defaultMigrationConfirmation(),
-            backgroundMode: false
-        )
-        logger.debug("\(String(describing: dbStatus))") // ok
-        let activeUser = sendSimpleXCmd(.showActiveUser)
-        logger.debug("\(activeUser)") // .noActiveUser
-    }
-}
-
-struct ShareView: View {
-    var body: some View {
-        Text("Share Extension")
+    override func viewDidLoad() {
+        // TODO: We should support sharing multiple items
+        if let item = extensionContext?.inputItems.first as? NSExtensionItem {
+            model.item = item
+        }
     }
 }
