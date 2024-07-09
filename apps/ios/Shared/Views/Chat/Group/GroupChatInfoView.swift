@@ -232,8 +232,7 @@ struct GroupChatInfoView: View {
                     let t = Text(member.chatViewName).foregroundColor(member.memberIncognito ? .indigo : theme.colors.onBackground)
                     (member.verified ? memberVerifiedShield + t : t)
                         .lineLimit(1)
-                    let s = Text(member.memberStatus.shortText)
-                    (user ? Text ("you: ") + s : s)
+                    (user ? Text ("you: ") + Text(member.memberStatus.shortText) : Text(memberConnStatus(member)))
                         .lineLimit(1)
                         .font(.caption)
                         .foregroundColor(theme.colors.secondary)
@@ -263,6 +262,16 @@ struct GroupChatInfoView: View {
                 } else {
                     v
                 }
+            }
+        }
+
+        private func memberConnStatus(_ member: GroupMember) -> LocalizedStringKey {
+            if member.activeConn?.connDisabled ?? false {
+                return "disabled"
+            } else if member.activeConn?.connInactive ?? false {
+                return "inactive"
+            } else {
+                return member.memberStatus.shortText
             }
         }
 

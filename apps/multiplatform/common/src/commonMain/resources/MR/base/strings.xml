@@ -325,9 +325,9 @@
   <string name="download_file">Download</string>
 
   <string name="message_forwarded_title">Message forwarded</string>
-  <string name="message_forwarded_desc">Connection is not established yet, message is forwarded by group admin.</string>
+  <string name="message_forwarded_desc">No direct connection yet, message is forwarded by admin.</string>
   <string name="member_inactive_title">Member inactive</string>
-  <string name="member_inactive_desc">Message is pending delivery when member becomes active.</string>
+  <string name="member_inactive_desc">Message may be delivered later if member becomes active.</string>
 
   <!-- CIMetaView.kt -->
   <string name="icon_descr_edited">edited</string>
