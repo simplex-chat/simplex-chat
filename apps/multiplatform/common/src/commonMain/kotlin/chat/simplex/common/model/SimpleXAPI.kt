@@ -423,9 +423,7 @@ object ChatController {
     return null
   }
 
-  suspend fun resetAgentServersStats(rh: Long?): Boolean {
-    return sendCommandOkResp(rh, CC.ResetAgentServersStats())
-  }
+  suspend fun resetAgentServersStats(rh: Long?): Boolean = sendCommandOkResp(rh, CC.ResetAgentServersStats())
 
   private suspend fun currentUserId(funcName: String): Long = changingActiveUserMutex.withLock {
     val userId = chatModel.currentUser.value?.userId
@@ -946,9 +944,7 @@ object ChatController {
     return sendCommandOkResp(rh, CC.ReconnectServer(userId, server))
   }
 
-  suspend fun reconnectAllServers(rh: Long?): Boolean {
-    return sendCommandOkResp(rh, CC.ReconnectAllServers())
-  }
+  suspend fun reconnectAllServers(rh: Long?): Boolean = sendCommandOkResp(rh, CC.ReconnectAllServers())
 
   suspend fun apiSetSettings(rh: Long?, type: ChatType, id: Long, settings: ChatSettings): Boolean {
     val r = sendCmd(rh, CC.APISetChatSettings(type, id, settings))

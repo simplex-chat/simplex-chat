@@ -301,7 +301,6 @@ fun SubscriptionStatusIndicator(serversSummary: MutableState<PresentedServersSum
   DisposableEffect(Unit) {
     onDispose {
       stopTimer()
-      scope.cancel()
     }
   }
 

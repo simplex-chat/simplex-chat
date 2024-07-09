@@ -287,9 +287,7 @@ fun InfoRow(title: String, value: String, icon: Painter? = null, iconTint: Color
   }
 }
 
-fun numOrDash(n: Number): String {
-  return if (n.toLong() == 0L) "-" else n.toString()
-}
+fun numOrDash(n: Number): String = if (n.toLong() == 0L) "-" else n.toString()
 
 @Composable
 fun InfoRowTwoValues(

@@ -77,12 +77,10 @@ fun subscriptionStatusColorAndPercentage(
   sess: ServerSessions
 ): SubscriptionStatus {
 
-  fun roundedToQuarter(n: Float): Float {
-    return when {
-      n >= 1 -> 1f
-      n <= 0 -> 0f
-      else -> (n * 4).roundToInt() / 4f
-    }
+  fun roundedToQuarter(n: Float): Float = when {
+    n >= 1 -> 1f
+    n <= 0 -> 0f
+    else -> (n * 4).roundToInt() / 4f
   }
 
   val activeColor: SubscriptionColorType = if (socksProxy != null) SubscriptionColorType.ACTIVE_SOCKS_PROXY else SubscriptionColorType.ACTIVE
@@ -607,9 +605,7 @@ fun ModalData.SMPServerSummaryView(
   statsStartedAt: Instant
 ) {
   ModalView(
-    close = {
-      close()
-    }
+    close = close
   ) {
     ColumnWithScrollBar(
       Modifier.fillMaxSize(),
@@ -636,9 +632,7 @@ fun ModalData.DetailedXFTPStatsView(
   statsStartedAt: Instant
 ) {
   ModalView(
-    close = {
-      close()
-    }
+    close = close
   ) {
     ColumnWithScrollBar(
       Modifier.fillMaxSize(),
@@ -664,9 +658,7 @@ fun ModalData.DetailedSMPStatsView(
   statsStartedAt: Instant
 ) {
   ModalView(
-    close = {
-      close()
-    }
+    close = close
   ) {
     ColumnWithScrollBar(
       Modifier.fillMaxSize(),
@@ -692,9 +684,7 @@ fun ModalData.XFTPServerSummaryView(
   statsStartedAt: Instant
 ) {
   ModalView(
-    close = {
-      close()
-    }
+    close = close
   ) {
     ColumnWithScrollBar(
       Modifier.fillMaxSize(),
@@ -730,12 +720,6 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
         selectedUserCategory.value = PresentedUserCategory.CURRENT_USER
       } else {
         showUserSelection = true
-      }
-    }
-
-    DisposableEffect(Unit) {
-      onDispose {
-        scope.cancel()
       }
     }
 
