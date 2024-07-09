@@ -450,23 +450,19 @@ struct ChatItemInfoView: View {
                     .foregroundColor(theme.colors.secondary).opacity(0.67)
             }
             let v = Group {
-                if let (icon, statusColor) = status.statusIcon(theme.colors.secondary, theme.colors.primary) {
-                    switch status {
-                    case .rcvd:
-                        ZStack(alignment: .trailing) {
-                            Image(systemName: icon)
-                                .foregroundColor(statusColor.opacity(0.67))
-                                .padding(.trailing, 6)
-                            Image(systemName: icon)
-                                .foregroundColor(statusColor.opacity(0.67))
-                        }
-                    default:
+                let (icon, statusColor) = status.statusIcon(theme.colors.secondary, theme.colors.primary)
+                switch status {
+                case .rcvd:
+                    ZStack(alignment: .trailing) {
                         Image(systemName: icon)
-                            .foregroundColor(statusColor)
+                            .foregroundColor(statusColor.opacity(0.67))
+                            .padding(.trailing, 6)
+                        Image(systemName: icon)
+                            .foregroundColor(statusColor.opacity(0.67))
                     }
-                } else {
-                    Image(systemName: "ellipsis")
-                        .foregroundColor(Color.secondary)
+                default:
+                    Image(systemName: icon)
+                        .foregroundColor(statusColor)
                 }
             }
 

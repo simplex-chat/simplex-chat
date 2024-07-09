@@ -2862,9 +2862,9 @@ public enum GroupSndStatus: Decodable, Hashable {
     case warning(agentError: SndError)
     case invalid(text: String)
 
-    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (String, Color)? {
+    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (String, Color) {
         switch self {
-        case .new: return nil
+        case .new: return ("ellipsis", metaColor)
         case .forwarded: return ("chevron.forward.2", metaColor)
         case .inactive: return ("person.badge.minus", metaColor)
         case .sent: return ("checkmark", metaColor)
