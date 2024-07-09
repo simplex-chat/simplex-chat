@@ -2374,7 +2374,7 @@ sealed class GroupSndStatus {
   ): Pair<ImageResource, Color> =
     when (this) {
       is New -> MR.images.ic_more_horiz to metaColor
-      is Forwarded -> MR.images.ic_fast_forward to metaColor
+      is Forwarded -> MR.images.ic_chevron_right_2 to metaColor
       is Inactive -> MR.images.ic_person_off to metaColor
       is Sent -> MR.images.ic_check_filled to metaColor
       is Rcvd -> when(this.msgRcptStatus) {
