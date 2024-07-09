@@ -104,22 +104,41 @@ object AppearanceScope {
         }
         Spacer(Modifier.width(10.dp))
         //      Text("${(localFontScale.value * 100).roundToInt()}%", Modifier.width(70.dp), textAlign = TextAlign.Center, fontSize = 12.sp)
-        Slider(
-          localFontScale.value,
-          valueRange = 0.7f..1.5f,
-          steps = 9,
-          onValueChange = {
-            val diff = it % 0.1f
-            localFontScale.value = String.format(Locale.US, "%.1f", it + (if (diff >= 0.05f) -diff + 0.1f else -diff)).toFloatOrNull() ?: 1f
-          },
-          onValueChangeFinished = {
-            appPrefs.fontScale.set(localFontScale.value)
-          },
-          colors = SliderDefaults.colors(
-            activeTickColor = Color.Transparent,
-            inactiveTickColor = Color.Transparent,
+        if (appPlatform.isAndroid) {
+          Slider(
+            localFontScale.value,
+            valueRange = 0.75f..1.25f,
+            steps = 11,
+            onValueChange = {
+              val diff = it % 0.05f
+              localFontScale.value = String.format(Locale.US, "%.2f", it + (if (diff >= 0.025f) -diff + 0.05f else -diff)).toFloatOrNull() ?: 1f
+            },
+            onValueChangeFinished = {
+              appPrefs.fontScale.set(localFontScale.value)
+            },
+            colors = SliderDefaults.colors(
+              activeTickColor = Color.Transparent,
+              inactiveTickColor = Color.Transparent,
+            )
           )
-        )
+        } else {
+          Slider(
+            localFontScale.value,
+            valueRange = 0.7f..1.5f,
+            steps = 9,
+            onValueChange = {
+              val diff = it % 0.1f
+              localFontScale.value = String.format(Locale.US, "%.1f", it + (if (diff >= 0.05f) -diff + 0.1f else -diff)).toFloatOrNull() ?: 1f
+            },
+            onValueChangeFinished = {
+              appPrefs.fontScale.set(localFontScale.value)
+            },
+            colors = SliderDefaults.colors(
+              activeTickColor = Color.Transparent,
+              inactiveTickColor = Color.Transparent,
+            )
+          )
+        }
       }
     }
   }
