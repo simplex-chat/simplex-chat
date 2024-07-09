@@ -271,7 +271,7 @@ fun ChatPreviewView(
 
   Row {
     Box(contentAlignment = Alignment.BottomEnd) {
-      ChatInfoImage(cInfo, size = 72.dp * desktopFontSizeSqrtMultiplier)
+      ChatInfoImage(cInfo, size = 72.dp * fontSizeSqrtMultiplier)
       Box(Modifier.padding(end = 6.dp, bottom = 6.dp)) {
         chatPreviewImageOverlayIcon()
       }

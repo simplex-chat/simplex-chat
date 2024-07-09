@@ -520,11 +520,11 @@ fun includeMoreFailedComposables() {
   lastExecutedComposables.clear()
 }
 
-val desktopFontSizeMultiplier: Float
-  @Composable get() = if (appPlatform.isDesktop) remember { appPrefs.fontScale.state }.value else 1f
+val fontSizeMultiplier: Float
+  @Composable get() = remember { appPrefs.fontScale.state }.value
 
-val desktopFontSizeSqrtMultiplier: Float
-  @Composable get() = if (appPlatform.isDesktop) sqrt(remember { appPrefs.fontScale.state }.value) else 1f
+val fontSizeSqrtMultiplier: Float
+  @Composable get() = sqrt(remember { appPrefs.fontScale.state }.value)
 
 val desktopDensityScaleMultiplier: Float
   @Composable get() = if (appPlatform.isDesktop) remember { appPrefs.densityScale.state }.value else 1f

@@ -77,47 +77,6 @@ fun AppearanceScope.AppearanceLayout(
 }
 
 @Composable
-fun FontScaleSection() {
-  val localFontScale = remember { mutableStateOf(appPrefs.fontScale.get()) }
-  SectionView(stringResource(MR.strings.appearance_font_size).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-    Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-      Box(Modifier.size(60.dp)
-        .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
-        .clip(RoundedCornerShape(percent = 22))
-        .clickable {
-          localFontScale.value = 1f
-          appPrefs.fontScale.set(localFontScale.value)
-        },
-        contentAlignment = Alignment.Center) {
-        CompositionLocalProvider(
-          LocalDensity provides Density(LocalDensity.current.density, localFontScale.value)
-        ) {
-          Text("Aa", color = if (localFontScale.value == 1f) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground)
-        }
-      }
-      Spacer(Modifier.width(10.dp))
-//      Text("${(localFontScale.value * 100).roundToInt()}%", Modifier.width(70.dp), textAlign = TextAlign.Center, fontSize = 12.sp)
-      Slider(
-        localFontScale.value,
-        valueRange = 0.5f..2f,
-        steps = 15,
-        onValueChange = {
-          val diff = it % 0.1f
-          localFontScale.value = it + (if (diff >= 0.05f) -diff + 0.1f else -diff)
-        },
-        onValueChangeFinished = {
-          appPrefs.fontScale.set(localFontScale.value)
-        },
-        colors = SliderDefaults.colors(
-          activeTickColor = Color.Transparent,
-          inactiveTickColor = Color.Transparent,
-        )
-      )
-    }
-  }
-}
-
-@Composable
 fun DensityScaleSection() {
   val localDensityScale = remember { mutableStateOf(appPrefs.densityScale.get()) }
   SectionView(stringResource(MR.strings.appearance_zoom).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
@@ -133,7 +92,7 @@ fun DensityScaleSection() {
         CompositionLocalProvider(
           LocalDensity provides Density(LocalDensity.current.density * localDensityScale.value, LocalDensity.current.fontScale)
         ) {
-          Text("${(localDensityScale.value * 100).roundToInt()}%",
+          Text("${localDensityScale.value}",
             color = if (localDensityScale.value == 1f) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground,
             fontSize = 12.sp,
             maxLines = 1
@@ -143,11 +102,11 @@ fun DensityScaleSection() {
       Spacer(Modifier.width(10.dp))
       Slider(
         localDensityScale.value,
-        valueRange = 1f..1.5f,
-        steps = 10,
+        valueRange = 1f..2f,
+        steps = 11,
         onValueChange = {
-          val diff = it % 0.05f
-          localDensityScale.value = it + (if (diff >= 0.025f) -diff + 0.05f else -diff)
+          val diff = it % 0.1f
+          localDensityScale.value = String.format(Locale.US, "%.1f", it + (if (diff >= 0.05f) -diff + 0.1f else -diff)).toFloatOrNull() ?: 1f
         },
         onValueChangeFinished = {
           appPrefs.densityScale.set(localDensityScale.value)

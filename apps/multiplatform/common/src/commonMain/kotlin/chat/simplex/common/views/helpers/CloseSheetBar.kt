@@ -22,13 +22,13 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
   Column(
     Modifier
       .fillMaxWidth()
-      .heightIn(min = AppBarHeight * desktopFontSizeSqrtMultiplier)
+      .heightIn(min = AppBarHeight * fontSizeSqrtMultiplier)
       .padding(horizontal = AppBarHorizontalPadding)
   ) {
     Row(
       content = {
         Row(
-          Modifier.fillMaxWidth().height(AppBarHeight * desktopFontSizeSqrtMultiplier),
+          Modifier.fillMaxWidth().height(AppBarHeight * fontSizeSqrtMultiplier),
           horizontalArrangement = Arrangement.SpaceBetween,
           verticalAlignment = Alignment.CenterVertically
         ) {

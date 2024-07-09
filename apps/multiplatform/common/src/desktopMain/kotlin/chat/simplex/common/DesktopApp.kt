@@ -197,7 +197,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
   if (remember { ChatController.appPrefs.developerTools.state }.value && remember { ChatController.appPrefs.terminalAlwaysVisible.state }.value && remember { ChatController.appPrefs.appLanguage.state }.value != "") {
     var hiddenUntilRestart by remember { mutableStateOf(false) }
     if (!hiddenUntilRestart) {
-      val cWindowState = rememberWindowState(placement = WindowPlacement.Floating, width = DEFAULT_START_MODAL_WIDTH * desktopFontSizeSqrtMultiplier, height =
+      val cWindowState = rememberWindowState(placement = WindowPlacement.Floating, width = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier, height =
       768.dp)
       Window(state = cWindowState, onCloseRequest = { hiddenUntilRestart = true }, title = stringResource(MR.strings.chat_console)) {
         SimpleXTheme {

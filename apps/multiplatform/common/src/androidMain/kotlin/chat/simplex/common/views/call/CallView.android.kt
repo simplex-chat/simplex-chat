@@ -554,7 +554,7 @@ fun CallPermissionsView(pipActive: Boolean, hasVideo: Boolean, cancel: () -> Uni
     }
   } else {
     ColumnWithScrollBar(Modifier.fillMaxSize()) {
-      Spacer(Modifier.height(AppBarHeight * desktopFontSizeSqrtMultiplier))
+      Spacer(Modifier.height(AppBarHeight * fontSizeSqrtMultiplier))
 
       AppBarTitle(stringResource(MR.strings.permissions_required))
       Spacer(Modifier.weight(1f))

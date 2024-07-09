@@ -335,21 +335,21 @@ fun EndPartOfScreen() {
 fun DesktopScreen(settingsState: SettingsViewState) {
   Box {
     // 56.dp is a size of unused space of settings drawer
-    Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * desktopFontSizeSqrtMultiplier + 56.dp)) {
+    Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier + 56.dp)) {
       StartPartOfScreen(settingsState)
     }
-    Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH * desktopFontSizeSqrtMultiplier)) {
+    Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
       ModalManager.start.showInView()
       SwitchingUsersView()
     }
-    Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * desktopFontSizeSqrtMultiplier).clipToBounds()) {
+    Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
       Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
         CenterPartOfScreen()
       }
       if (ModalManager.end.hasModalsOpen()) {
         VerticalDivider()
       }
-      Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH * desktopFontSizeSqrtMultiplier).clipToBounds()) {
+      Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
         EndPartOfScreen()
       }
     }
@@ -359,14 +359,14 @@ fun DesktopScreen(settingsState: SettingsViewState) {
       Box(
         Modifier
           .fillMaxSize()
-          .padding(start = DEFAULT_START_MODAL_WIDTH * desktopFontSizeSqrtMultiplier)
+          .padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
           .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {
             ModalManager.start.closeModals()
             scope.launch { settingsState.scaffoldState.drawerState.close() }
           })
       )
     }
-    VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * desktopFontSizeSqrtMultiplier))
+    VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
     tryOrShowError("UserPicker", error = {}) {
       UserPicker(chatModel, userPickerState) {
         scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }

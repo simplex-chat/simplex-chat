@@ -428,7 +428,7 @@ fun LargeProgressView(value: Float, title: String, description: String) {
   Box(Modifier.padding(DEFAULT_PADDING).fillMaxSize(), contentAlignment = Alignment.Center) {
     CircularProgressIndicator(
       progress = value,
-      (if (appPlatform.isDesktop) Modifier.size(DEFAULT_START_MODAL_WIDTH * desktopFontSizeSqrtMultiplier) else Modifier.size(windowWidth() - DEFAULT_PADDING *
+      (if (appPlatform.isDesktop) Modifier.size(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier) else Modifier.size(windowWidth() - DEFAULT_PADDING *
           2))
         .rotate(-90f),
       color = MaterialTheme.colors.primary,

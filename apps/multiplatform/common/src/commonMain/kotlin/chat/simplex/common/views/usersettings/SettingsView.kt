@@ -174,7 +174,7 @@ fun SettingsLayout(
       Box(
         Modifier
         .fillMaxWidth()
-        .height(AppBarHeight * desktopFontSizeSqrtMultiplier)
+        .height(AppBarHeight * fontSizeSqrtMultiplier)
         .background(MaterialTheme.colors.background)
         .background(if (isInDarkTheme()) ToolbarDark else ToolbarLight)
         .padding(start = 4.dp, top = 8.dp),

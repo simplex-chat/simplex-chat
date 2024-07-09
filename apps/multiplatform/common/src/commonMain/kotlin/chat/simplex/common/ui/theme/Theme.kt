@@ -779,7 +779,7 @@ fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
     typography = Typography,
     shapes = Shapes,
     content = {
-      val density = if (appPlatform.isAndroid) LocalDensity.current else Density(LocalDensity.current.density * desktopDensityScaleMultiplier, LocalDensity.current.fontScale * desktopFontSizeMultiplier)
+      val density = Density(LocalDensity.current.density * desktopDensityScaleMultiplier, LocalDensity.current.fontScale * fontSizeMultiplier)
       val rememberedAppColors = remember {
         // Explicitly creating a new object here so we don't mutate the initial [appColors]
         // provided, and overwrite the values set in it.

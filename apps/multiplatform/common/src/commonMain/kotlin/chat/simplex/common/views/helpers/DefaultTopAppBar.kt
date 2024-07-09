@@ -85,7 +85,7 @@ private fun TopAppBar(
   Box(
     modifier
       .fillMaxWidth()
-      .height(AppBarHeight * desktopFontSizeSqrtMultiplier)
+      .height(AppBarHeight * fontSizeSqrtMultiplier)
       .background(backgroundColor)
       .padding(horizontal = 4.dp),
     contentAlignment = Alignment.CenterStart,

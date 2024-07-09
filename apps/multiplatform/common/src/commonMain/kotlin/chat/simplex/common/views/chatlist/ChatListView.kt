@@ -91,7 +91,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
               if (newChatSheetState.value.isVisible()) hideNewChatSheet(true) else showNewChatSheet()
             }
           },
-          Modifier.padding(end = DEFAULT_PADDING - 16.dp + endPadding, bottom = DEFAULT_PADDING - 16.dp).size(AppBarHeight * desktopFontSizeSqrtMultiplier),
+          Modifier.padding(end = DEFAULT_PADDING - 16.dp + endPadding, bottom = DEFAULT_PADDING - 16.dp).size(AppBarHeight * fontSizeSqrtMultiplier),
           elevation = FloatingActionButtonDefaults.elevation(
             defaultElevation = 0.dp,
             pressedElevation = 0.dp,
@@ -101,7 +101,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
           backgroundColor = if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           contentColor = Color.White
         ) {
-          Icon(if (!newChatSheetState.collectAsState().value.isVisible()) painterResource(MR.images.ic_edit_filled) else painterResource(MR.images.ic_close), stringResource(MR.strings.add_contact_or_create_group), Modifier.size(24.dp * desktopFontSizeSqrtMultiplier))
+          Icon(if (!newChatSheetState.collectAsState().value.isVisible()) painterResource(MR.images.ic_edit_filled) else painterResource(MR.images.ic_close), stringResource(MR.strings.add_contact_or_create_group), Modifier.size(24.dp * fontSizeSqrtMultiplier))
         }
       }
     }
@@ -259,7 +259,7 @@ private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableSt
     onSearchValueChanged = {},
     buttons = barButtons
   )
-  Divider(Modifier.padding(top = AppBarHeight * desktopFontSizeSqrtMultiplier))
+  Divider(Modifier.padding(top = AppBarHeight * fontSizeSqrtMultiplier))
 }
 
 @Composable
@@ -316,7 +316,7 @@ fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> U
       Box {
         ProfileImage(
           image = image,
-          size = 37.dp * desktopFontSizeSqrtMultiplier,
+          size = 37.dp * fontSizeSqrtMultiplier,
           color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)
         )
         if (!allRead) {
@@ -389,7 +389,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
   Row(verticalAlignment = Alignment.CenterVertically) {
     val focusRequester = remember { FocusRequester() }
     var focused by remember { mutableStateOf(false) }
-    Icon(painterResource(MR.images.ic_search), null, Modifier.padding(horizontal = DEFAULT_PADDING_HALF).size(24.dp * desktopFontSizeSqrtMultiplier), tint = MaterialTheme.colors.secondary)
+    Icon(painterResource(MR.images.ic_search), null, Modifier.padding(horizontal = DEFAULT_PADDING_HALF).size(24.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.secondary)
     SearchTextField(
       Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
       placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
