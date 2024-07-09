@@ -2883,7 +2883,7 @@ public enum GroupSndStatus: Decodable, Hashable {
         switch self {
         case .new: return nil
         case .forwarded: return (
-                NSLocalizedString("Message fowarded", comment: "item status text"),
+                NSLocalizedString("Message forwarded", comment: "item status text"),
                 NSLocalizedString("Connection is not established yet, message is forwarded by group admin.", comment: "item status description")
             )
         case .inactive: return (
