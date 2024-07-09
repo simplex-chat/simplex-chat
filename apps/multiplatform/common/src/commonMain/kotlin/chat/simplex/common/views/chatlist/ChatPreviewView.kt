@@ -302,10 +302,11 @@ fun ChatPreviewView(
       val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
       val sp17 = with(LocalDensity.current) { 17.sp.toDp() }
       val sp21 = with(LocalDensity.current) { 21.sp.toDp() }
+      val sp23 = with(LocalDensity.current) { 23.sp.toDp() }
       val sp46 = with(LocalDensity.current) { 46.sp.toDp() }
       if (n > 0 || chat.chatStats.unreadChat) {
         Box(
-          Modifier.padding(top = sp21),
+          Modifier.padding(top = sp23, end = with(LocalDensity.current) { 3.sp.toDp() }),
           contentAlignment = Alignment.Center
         ) {
           Text(
