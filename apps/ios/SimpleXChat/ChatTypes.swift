@@ -2884,11 +2884,11 @@ public enum GroupSndStatus: Decodable, Hashable {
         case .new: return nil
         case .forwarded: return (
                 NSLocalizedString("Message forwarded", comment: "item status text"),
-                NSLocalizedString("Connection is not established yet, message is forwarded by group admin.", comment: "item status description")
+                NSLocalizedString("No direct connection yet, message is forwarded by admin.", comment: "item status description")
             )
         case .inactive: return (
                 NSLocalizedString("Member inactive", comment: "item status text"),
-                NSLocalizedString("Message is pending delivery when member becomes active.", comment: "item status description")
+                NSLocalizedString("Message may be delivered later if member becomes active.", comment: "item status description")
             )
         case .sent: return nil
         case .rcvd: return nil
