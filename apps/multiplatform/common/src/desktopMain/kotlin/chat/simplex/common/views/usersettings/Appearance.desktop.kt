@@ -80,7 +80,7 @@ fun FontScaleSection() {
         CompositionLocalProvider(
           LocalDensity provides Density(LocalDensity.current.density, localFontScale.value)
         ) {
-          Text("Aa")
+          Text("Aa", color = if (localFontScale.value == 1f) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground)
         }
       }
       Spacer(Modifier.width(10.dp))
