@@ -207,6 +207,7 @@ struct GroupChatInfoView: View {
                         let groupMembers = await apiListMembers(groupInfo.groupId)
                         await MainActor.run {
                             chatModel.groupMembers = groupMembers.map { GMember.init($0) }
+                            chatModel.populateGroupMembersIndexes()
                         }
                     }
                 }
