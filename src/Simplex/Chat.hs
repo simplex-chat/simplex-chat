@@ -5993,14 +5993,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       withStore' $ \db -> updateGroupMemberStatusById db userId groupMemberId GSMemIntroInvited
 
     xGrpMemInv :: GroupInfo -> GroupMember -> MemberId -> IntroInvitation -> CM ()
-    xGrpMemInv gInfo@GroupInfo {groupId} m memId introInv = do
+    xGrpMemInv gInfo m memId introInv = do
       case memberCategory m of
         GCInviteeMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
             Left _ -> messageError "x.grp.mem.inv error: referenced member does not exist"
             Right reMember -> do
               GroupMemberIntro {introId} <- withStore $ \db -> saveIntroInvitation db reMember m introInv
-              sendGroupMemberMessage user reMember (XGrpMemFwd (memberInfo m) introInv) groupId (Just introId) $
+              sendGroupMemberMessage user gInfo reMember (XGrpMemFwd (memberInfo m) introInv) (Just introId) $
                 withStore' $
                   \db -> updateIntroStatus db introId GMIntroInvForwarded
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
@@ -6812,7 +6812,7 @@ data GroupSndResult = GroupSndResult
   }
 
 sendGroupMessage' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM (SndMessage, GroupSndResult)
-sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
+sendGroupMessage' user gInfo@GroupInfo {groupId} members chatMsgEvent = do
   msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent (GroupId groupId)
   recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
   let msgFlags = MsgFlags {notification = hasNotification $ toCMEventTag chatMsgEvent}
@@ -6838,7 +6838,7 @@ sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
       liftM2 (<>) (shuffle adminMs) (shuffle otherMs)
       where
         isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
-    addMember m acc@(toSend, pending, forwarded, !mIds, !dups) = case memberSendAction chatMsgEvent members m of
+    addMember m acc@(toSend, pending, forwarded, !mIds, !dups) = case memberSendAction gInfo chatMsgEvent members m of
       Just a
         | mId `S.member` mIds -> (toSend, pending, forwarded, mIds, dups + 1)
         | otherwise -> case a of
@@ -6854,8 +6854,8 @@ sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
 
 data MemberSendAction = MSASend Connection | MSAPending | MSAForwarded
 
-memberSendAction :: ChatMsgEvent e -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
-memberSendAction chatMsgEvent members m@GroupMember {invitedByGroupMemberId} = case memberConn m of
+memberSendAction :: GroupInfo -> ChatMsgEvent e -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
+memberSendAction gInfo chatMsgEvent members m = case memberConn m of
   Nothing -> pendingOrForwarded
   Just conn@Connection {connStatus}
     | connDisabled conn || connStatus == ConnDeleted -> Nothing
@@ -6863,30 +6863,38 @@ memberSendAction chatMsgEvent members m@GroupMember {invitedByGroupMemberId} = c
     | connStatus == ConnSndReady || connStatus == ConnReady -> Just (MSASend conn)
     | otherwise -> pendingOrForwarded
   where
-    pendingOrForwarded
-      | forwardSupported && isForwardedGroupMsg chatMsgEvent = Just MSAForwarded
-      | isXGrpMsgForward chatMsgEvent = Nothing
-      | otherwise = Just MSAPending
+    pendingOrForwarded = case memberCategory m of
+      GCUserMember -> Nothing -- shouldn't happen
+      GCInviteeMember -> Just MSAPending
+      GCHostMember -> Just MSAPending
+      GCPreMember -> forwardSupportedOrPending (invitedByGroupMemberId $ membership gInfo)
+      GCPostMember -> forwardSupportedOrPending (invitedByGroupMemberId m)
       where
-        forwardSupported = m `supportsVersion` groupForwardVersion && invitingMemberSupportsForward
-        invitingMemberSupportsForward = case invitedByGroupMemberId of
-          Just invMemberId ->
-            -- can be optimized for large groups by replacing [GroupMember] with Map GroupMemberId GroupMember
-            case find (\m' -> groupMemberId' m' == invMemberId) members of
-              Just invitingMember -> invitingMember `supportsVersion` groupForwardVersion
+        forwardSupportedOrPending invitingMemberId_
+          | membersSupport && isForwardedGroupMsg chatMsgEvent = Just MSAForwarded
+          | isXGrpMsgForward = Nothing
+          | otherwise = Just MSAPending
+          where
+            membersSupport =
+              m `supportsVersion` groupForwardVersion && invitingMemberSupportsForward
+            invitingMemberSupportsForward = case invitingMemberId_ of
+              Just invMemberId ->
+                -- can be optimized for large groups by replacing [GroupMember] with Map GroupMemberId GroupMember
+                case find (\m' -> groupMemberId' m' == invMemberId) members of
+                  Just invitingMember -> invitingMember `supportsVersion` groupForwardVersion
+                  Nothing -> False
               Nothing -> False
-          Nothing -> False
-        isXGrpMsgForward ev = case ev of
-          XGrpMsgForward {} -> True
-          _ -> False
+            isXGrpMsgForward = case chatMsgEvent of
+              XGrpMsgForward {} -> True
+              _ -> False
 
-sendGroupMemberMessage :: MsgEncodingI e => User -> GroupMember -> ChatMsgEvent e -> Int64 -> Maybe Int64 -> CM () -> CM ()
-sendGroupMemberMessage user m@GroupMember {groupMemberId} chatMsgEvent groupId introId_ postDeliver = do
+sendGroupMemberMessage :: MsgEncodingI e => User -> GroupInfo -> GroupMember -> ChatMsgEvent e -> Maybe Int64 -> CM () -> CM ()
+sendGroupMemberMessage user gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} chatMsgEvent introId_ postDeliver = do
   msg <- createSndMessage chatMsgEvent (GroupId groupId)
   messageMember msg `catchChatError` (\e -> toView (CRChatError (Just user) e))
   where
     messageMember :: SndMessage -> CM ()
-    messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction chatMsgEvent [m] m) $ \case
+    messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction gInfo chatMsgEvent [m] m) $ \case
       MSASend conn -> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId >> postDeliver
       MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
       MSAForwarded -> pure ()
