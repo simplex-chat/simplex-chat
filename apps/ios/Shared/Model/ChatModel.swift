@@ -47,7 +47,11 @@ final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
     @Published var v3DBMigration: V3DBMigrationState = v3DBMigrationDefault.get()
-    @Published var currentUser: User?
+    @Published var currentUser: User? {
+        didSet {
+            ThemeManager.applyTheme(currentThemeDefault.get())
+        }
+    }
     @Published var users: [UserInfo] = []
     @Published var chatInitialized = false
     @Published var chatRunning: Bool?
@@ -69,6 +73,7 @@ final class ChatModel: ObservableObject {
     var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
     @Published var chatToTop: String?
     @Published var groupMembers: [GMember] = []
+    @Published var groupMembersIndexes: Dictionary<Int64, Int> = [:] // groupMemberId to index in groupMembers list
     // items in the terminal view
     @Published var showingTerminal = false
     @Published var terminalItems: [TerminalItem] = []
@@ -176,8 +181,18 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func populateGroupMembersIndexes() {
+        groupMembersIndexes.removeAll()
+        for (i, member) in groupMembers.enumerated() {
+            groupMembersIndexes[member.groupMemberId] = i
+        }
+    }
+
     func getGroupMember(_ groupMemberId: Int64) -> GMember? {
-        groupMembers.first { $0.groupMemberId == groupMemberId }
+        if let i = groupMembersIndexes[groupMemberId] {
+            return groupMembers[i]
+        }
+        return nil
     }
 
     private func getChatIndex(_ id: String) -> Int? {
@@ -332,12 +347,12 @@ final class ChatModel: ObservableObject {
 
     private func _upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
         if let i = getChatItemIndex(cItem) {
-            withAnimation {
+            withConditionalAnimation {
                 _updateChatItem(at: i, with: cItem)
             }
             return false
         } else {
-            withAnimation(itemAnimation()) {
+            withConditionalAnimation(itemAnimation()) {
                 var ci = cItem
                 if let status = chatItemStatuses.removeValue(forKey: ci.id), case .sndNew = ci.meta.itemStatus {
                     ci.meta.itemStatus = status
@@ -357,7 +372,7 @@ final class ChatModel: ObservableObject {
 
     func updateChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem, status: CIStatus? = nil) {
         if chatId == cInfo.id, let i = getChatItemIndex(cItem) {
-            withAnimation {
+            withConditionalAnimation {
                 _updateChatItem(at: i, with: cItem)
             }
         } else if let status = status {
@@ -420,6 +435,16 @@ final class ChatModel: ObservableObject {
                 users[i].user = current
             }
         }
+    }
+
+    func updateCurrentUserUiThemes(uiThemes: ThemeModeOverrides?) {
+        guard var current = currentUser else { return }
+        current.uiThemes = uiThemes
+        let i = users.firstIndex(where: { $0.user.userId == current.userId })
+        if let i {
+            users[i].user = current
+        }
+        currentUser = current
     }
 
     func addLiveDummy(_ chatInfo: ChatInfo) -> ChatItem {
@@ -512,11 +537,13 @@ final class ChatModel: ObservableObject {
     }
 
     func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
-        // update preview
-        decreaseUnreadCounter(cInfo)
-        // update current chat
         if chatId == cInfo.id, let i = getChatItemIndex(cItem) {
-            markChatItemRead_(i)
+            if reversedChatItems[i].isRcvNew {
+                // update current chat
+                markChatItemRead_(i)
+                // update preview
+                decreaseUnreadCounter(cInfo)
+            }
         }
     }
 
@@ -651,14 +678,17 @@ final class ChatModel: ObservableObject {
         }
         // update current chat
         if chatId == groupInfo.id {
-            if let i = groupMembers.firstIndex(where: { $0.groupMemberId == member.groupMemberId }) {
+            if let i = groupMembersIndexes[member.groupMemberId] {
                 withAnimation(.default) {
                     self.groupMembers[i].wrapped = member
                     self.groupMembers[i].created = Date.now
                 }
                 return false
             } else {
-                withAnimation { groupMembers.append(GMember(member)) }
+                withAnimation {
+                    groupMembers.append(GMember(member))
+                    groupMembersIndexes[member.groupMemberId] = groupMembers.count - 1
+                }
                 return true
             }
         } else {
@@ -686,7 +716,7 @@ final class ChatModel: ObservableObject {
             }
             i += 1
         }
-        return UnreadChatItemCounts(totalBelow: totalBelow, unreadBelow: unreadBelow)
+        return UnreadChatItemCounts(isNearBottom: totalBelow < 16, unreadBelow: unreadBelow)
     }
 
     func topItemInView(itemsInView: Set<String>) -> ChatItem? {
@@ -723,8 +753,8 @@ struct NTFContactRequest {
     var chatId: String
 }
 
-struct UnreadChatItemCounts {
-    var totalBelow: Int
+struct UnreadChatItemCounts: Equatable {
+    var isNearBottom: Bool
     var unreadBelow: Int
 }
 

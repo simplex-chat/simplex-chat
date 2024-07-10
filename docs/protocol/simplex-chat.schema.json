@@ -8,7 +8,7 @@
         "displayName": {
           "type": "string",
           "metadata": {
-            "format": "non-empty string without spaces, the first character must not be # or @"
+            "format": "non-empty string, the first character must not be # or @"
           }
         },
         "fullName": {"type": "string"}
@@ -18,6 +18,39 @@
           "type": "string",
           "metadata": {
             "format": "data URI format for base64 encoded image"
+          }
+        },
+        "contactLink": {"ref": "connReqUri"},
+        "preferences": {
+          "type": "string",
+          "metadata": {
+            "format": "JSON encoded user preferences"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "groupProfile": {
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "metadata": {
+            "format": "non-empty string, the first character must not be # or @"
+          }
+        },
+        "fullName": {"type": "string"}
+      },
+      "optionalProperties": {
+        "image": {
+          "type": "string",
+          "metadata": {
+            "format": "data URI format for base64 encoded image"
+          }
+        },
+        "groupPreferences": {
+          "type": "string",
+          "metadata": {
+            "format": "JSON encoded user preferences"
           }
         }
       },
@@ -29,6 +62,8 @@
       },
       "optionalProperties": {
         "file": {"ref": "fileInvitation"},
+        "ttl": {"type": "integer"},
+        "live": {"type": "boolean"},
         "quote": {
           "properties": {
             "msgRef": {"ref": "msgRef"},
@@ -56,15 +91,45 @@
           }
         },
         "image": {
-          "text": {"type": "string", "metadata": {"comment": "can be empty"}},
-          "image": {"ref": "base64url"}
+          "properties": {
+            "text": {"type": "string", "metadata": {"comment": "can be empty"}},
+            "image": {"ref": "base64url"}
+          }
+        },
+        "video": {
+          "properties": {
+            "text": {"type": "string", "metadata": {"comment": "can be empty"}},
+            "image": {"ref": "base64url"},
+            "duration": {"type": "integer"}
+          }
+        },
+        "voice": {
+          "properties": {
+            "text": {"type": "string", "metadata": {"comment": "can be empty"}},
+            "duration": {"type": "integer"}
+          }
         },
         "file": {
-          "text": {"type": "string", "metadata": {"comment": "can be empty"}}
+          "properties": {
+            "text": {"type": "string", "metadata": {"comment": "can be empty"}}
+          }
         }
       },
       "metadata": {
         "comment": "it is RECOMMENDED that the clients support other values in `type` properties showing them as text messages in case `text` property is present"
+      }
+    },
+    "msgReaction" : {
+      "discriminator": "type",
+      "mapping": {
+        "emoji": {
+          "properties": {
+            "emoji": {
+              "type": "string",
+              "metadata": {"comment": "emoji character"}
+            }
+          }
+        }
       }
     },
     "msgRef": {
@@ -91,7 +156,31 @@
         "fileSize": {"type": "uint32"}
       },
       "optionalProperties": {
-        "fileConnReq": {"ref": "connReqUri"}
+        "fileDigest": {"ref": "base64url"},
+        "fileConnReq": {"ref": "connReqUri"},
+        "fileDescr": {"ref": "fileDescription"}
+      }
+    },
+    "fileDescription": {
+      "properties": {
+        "fileDescrText": {
+          "type": "string",
+          "metadata": {
+            "format": "XFTP file description part text"
+          }
+        },
+        "fileDescrPartNo": {
+          "type": "integer",
+          "metadata": {
+            "format": "XFTP file description part number"
+          }
+        },
+        "fileDescrComplete": {
+          "type": "boolean",
+          "metadata": {
+            "format": "XFTP file description completion marker"
+          }
+        }
       }
     },
     "linkPreview": {
@@ -100,6 +189,21 @@
         "title": {"type": "string"},
         "description": {"type": "string"},
         "image": {"ref": "base64url"}
+      },
+      "optionalProperties": {
+        "content": {"ref": "linkContent"}
+      }
+    },
+    "linkContent": {
+      "discriminator": "type",
+      "mapping": {
+        "page": {},
+        "image": {},
+        "video": {
+          "optionalProperties": {
+            "duration": {"type": "integer"}
+          }
+        }
       }
     },
     "groupInvitation": {
@@ -107,13 +211,25 @@
         "fromMember": {"ref": "memberIdRole"},
         "invitedMember": {"ref": "memberIdRole"},
         "connRequest": {"ref": "connReqUri"},
-        "groupProfile": {"ref": "profile"}
+        "groupProfile": {"ref": "groupProfile"}
       },
       "optionalProperties": {
         "groupLinkId": {"ref": "base64url"},
+        "groupSize": {"type": "integer"},
         "metadata": {
-          "comment": "used to identify invitation via group link"
+          "comment": "groupLinkId is used to identify invitation via group link"
         }
+      }
+    },
+    "groupLinkInvitation": {
+      "properties": {
+        "fromMember": {"ref": "memberIdRole"},
+        "fromMemberName": {"type": "string"},
+        "invitedMember": {"ref": "memberIdRole"},
+        "groupProfile": {"ref": "groupProfile"}
+      },
+      "optionalProperties": {
+        "groupSize": {"type": "integer"}
       }
     },
     "memberIdRole": {
@@ -127,16 +243,35 @@
         "memberId": {"ref": "base64url"},
         "memberRole": {"ref": "groupMemberRole"},
         "profile": {"ref": "profile"}
+      },
+      "optionalProperties": {
+        "v": {"ref": "chatVersionRange"}
+      }
+    },
+    "memberRestrictions": {
+      "properties": {
+        "restriction": {"ref": "memberRestrictionStatus"}
+      }
+    },
+    "memberRestrictionStatus": {
+      "enum": ["blocked", "unrestricted"]
+    },
+    "chatVersionRange": {
+      "type": "string",
+      "metadata": {
+        "format": "chat version range string encoded as `<min>-<max>`, or as `<number>` if min = max"
       }
     },
     "introInvitation": {
       "properties": {
-        "groupConnReq": {"ref": "connReqUri"},
+        "groupConnReq": {"ref": "connReqUri"}
+      },
+      "optionalProperties": {
         "directConnReq": {"ref": "connReqUri"}
       }
     },
     "groupMemberRole": {
-      "enum": ["author", "member", "admin", "owner"]
+      "enum": ["observer", "author", "member", "admin", "owner"]
     },
     "callInvitation": {
       "properties": {
@@ -257,6 +392,17 @@
         "params": {"ref": "msgContainer"}
       }
     },
+    "x.msg.file.descr": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "msgId": {"ref": "base64url"},
+            "fileDescr": {"ref": "fileDescription"}
+          }
+        }
+      }
+    },
     "x.msg.update": {
       "properties": {
         "msgId": {"ref": "base64url"},
@@ -264,6 +410,10 @@
           "properties": {
             "msgId": {"ref": "base64url"},
             "content": {"ref": "msgContent"}
+          },
+          "optionalProperties": {
+            "ttl": {"type": "integer"},
+            "live": {"type": "boolean"}
           }
         }
       }
@@ -274,6 +424,24 @@
         "params": {
           "properties": {
             "msgId": {"ref": "base64url"}
+          },
+          "optionalProperties": {
+            "memberId": {"ref": "base64url"}
+          }
+        }
+      }
+    },
+    "x.msg.react": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "msgId": {"ref": "base64url"},
+            "reaction": {"ref": "msgReaction"},
+            "add": {"type": "boolean"}
+          },
+          "optionalProperties": {
+            "memberId": {"ref": "base64url"}
           }
         }
       }
@@ -294,8 +462,10 @@
         "params": {
           "properties": {
             "msgId": {"ref": "base64url"},
-            "fileConnReq": {"ref": "connReqUri"},
             "fileName": {"type": "string"}
+          },
+          "optionalProperties": {
+            "fileConnReq": {"ref": "connReqUri"}
           }
         }
       }
@@ -307,6 +477,14 @@
           "properties": {
             "msgId": {"ref": "base64url"}
           }
+        }
+      }
+    },
+    "x.direct.del": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {}
         }
       }
     },
@@ -330,6 +508,26 @@
         }
       }
     },
+    "x.grp.link.inv": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "groupLinkInvitation": {"ref": "groupLinkInvitation"}
+          }
+        }
+      }
+    },
+    "x.grp.link.mem": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "profile": {"ref": "profile"}
+          }
+        }
+      }
+    },
     "x.grp.mem.new": {
       "properties": {
         "msgId": {"ref": "base64url"},
@@ -346,6 +544,9 @@
         "params": {
           "properties": {
             "memberInfo": {"ref": "memberInfo"}
+          },
+          "optionalProperties": {
+            "memberRestrictions": {"ref": "memberRestrictions"}
           }
         }
       }
@@ -394,6 +595,27 @@
         }
       }
     },
+    "x.grp.mem.restrict": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberId": {"ref": "base64url"},
+            "memberRestrictions": {"ref": "memberRestrictions"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.con": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberId": {"ref": "base64url"}
+          }
+        }
+      }
+    },
     "x.grp.mem.del": {
       "properties": {
         "msgId": {"ref": "base64url"},
@@ -425,7 +647,42 @@
         "msgId": {"ref": "base64url"},
         "params": {
           "properties": {
-            "groupProfile": {"ref": "profile"}
+            "groupProfile": {"ref": "groupProfile"}
+          }
+        }
+      }
+    },
+    "x.grp.direct.inv": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "connReq": {"ref": "connReqUri"}
+          },
+          "optionalProperties": {
+            "content": {"ref": "msgContent"}
+          }
+        }
+      }
+    },
+    "x.grp.msg.forward": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberId": {"ref": "base64url"},
+            "msg": {
+              "type": "string",
+              "metadata": {
+                "format": "JSON encoded chat message"
+              }
+            },
+            "msgTs": {
+              "type": "string",
+              "metadata": {
+                "format": "ISO8601 UTC time of the message"
+              }
+            }
           }
         }
       }
@@ -436,7 +693,7 @@
         "params": {
           "properties": {
             "callId": {"ref": "base64url"},
-            "invitation": {}
+            "invitation": {"ref": "callInvitation"}
           }
         }
       }

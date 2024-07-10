@@ -137,6 +137,9 @@ fun AppearanceScope.AppearanceLayout(
       }
     }
 
+    SectionDividerSpaced(maxBottomPadding = true)
+    FontScaleSection()
+
     SectionBottomSpacer()
   }
 }

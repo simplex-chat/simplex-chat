@@ -331,7 +331,7 @@ disconnect: off
 
 [WEB]
 # Set path to generate static mini-site for server information and qr codes/links
-static_path: <WRITABLE_PATH_TO_STORE_WEBSITE>
+static_path: /var/opt/simplex/www
 
 # Run an embedded server on this port
 # Onion sites can use any port and register it in the hidden service config.
@@ -601,13 +601,7 @@ SMP-server versions starting from `v5.8.0-beta.0` can be configured to PROXY smp
 
 SMP-server versions starting from `v5.8.0` can be configured to serve Web page with server information that can include admin info, server info, provider info, etc. Run the following commands as `root` user.
 
-1. Create folder to store webserver static files and assign correct permissions:
-
-   ```sh
-   mkdir -p /var/www/smp-server-web && chown smp:smp /var/www/smp-server-web
-   ```
-
-2. Add the following to your smp-server configuration (please modify fields in [INFORMATION] section to include relevant information):
+1. Add the following to your smp-server configuration (please modify fields in [INFORMATION] section to include relevant information):
 
    ```sh
    vim /etc/opt/simplex/smp-server.ini
@@ -615,7 +609,7 @@ SMP-server versions starting from `v5.8.0` can be configured to serve Web page w
 
    ```ini
    [WEB]
-   static_path: /var/www/smp-server-web
+   static_path: /var/opt/simplex/www
 
    [INFORMATION]
    # AGPLv3 license requires that you make any source code modifications
@@ -656,7 +650,7 @@ SMP-server versions starting from `v5.8.0` can be configured to serve Web page w
    hosting_country: <HOSTING_PROVIDER_LOCATION> 
    ```
 
-3. Install the webserver. For easy deployment we'll describe the installtion process of [Caddy](https://caddyserver.com) webserver on Ubuntu server:
+2. Install the webserver. For easy deployment we'll describe the installtion process of [Caddy](https://caddyserver.com) webserver on Ubuntu server:
 
    1. Install the packages:
 
@@ -684,7 +678,7 @@ SMP-server versions starting from `v5.8.0` can be configured to serve Web page w
 
    [Full Caddy instllation instructions](https://caddyserver.com/docs/install)
 
-4. Replace Caddy configuration with the following (don't forget to replace `<YOUR_DOMAIN>`):
+3. Replace Caddy configuration with the following (don't forget to replace `<YOUR_DOMAIN>`):
 
    ```sh
    vim /etc/caddy/Caddyfile
@@ -692,20 +686,20 @@ SMP-server versions starting from `v5.8.0` can be configured to serve Web page w
 
    ```caddy
    <YOUR_DOMAIN> {
-     root * /var/www/simplex
+     root * /var/opt/simplex/www
      file_server
    }
    ```
 
-5. Enable and start Caddy service:
+4. Enable and start Caddy service:
 
    ```sh
    systemctl enable --now caddy
    ```
 
-6. Upgrade your smp-server to latest version - [Updating your smp server](#updating-your-smp-server)
+5. Upgrade your smp-server to latest version - [Updating your smp server](#updating-your-smp-server)
 
-7. Access the webpage you've deployed from your browser. You should see the smp-server information that you've provided in your ini file.
+6. Access the webpage you've deployed from your browser. You should see the smp-server information that you've provided in your ini file.
 
 ## Documentation
 

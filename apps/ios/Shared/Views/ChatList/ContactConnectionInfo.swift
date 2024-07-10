@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct ContactConnectionInfo: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @State var contactConnection: PendingContactConnection
     @State private var alert: CCInfoAlert?
@@ -48,7 +49,7 @@ struct ContactConnectionInfo: View {
 
                 Section {
                     if contactConnection.groupLinkId == nil {
-                        settingsRow("pencil") {
+                        settingsRow("pencil", color: theme.colors.secondary) {
                             TextField("Set contact name…", text: $localAlias)
                                 .autocapitalization(.none)
                                 .autocorrectionDisabled(true)
@@ -63,14 +64,15 @@ struct ContactConnectionInfo: View {
                        let connReqInv = contactConnection.connReqInv {
                         SimpleXLinkQRCode(uri: simplexChatLink(connReqInv))
                         incognitoEnabled()
-                        shareLinkButton(connReqInv)
-                        oneTimeLinkLearnMoreButton()
+                        shareLinkButton(connReqInv, theme.colors.secondary)
+                        oneTimeLinkLearnMoreButton(theme.colors.secondary)
                     } else {
                         incognitoEnabled()
-                        oneTimeLinkLearnMoreButton()
+                        oneTimeLinkLearnMoreButton(theme.colors.secondary)
                     }
                 } footer: {
                     sharedProfileInfo(contactConnection.incognito)
+                        .foregroundColor(theme.colors.secondary)
                 }
 
                 Section {
@@ -82,6 +84,7 @@ struct ContactConnectionInfo: View {
                     }
                 }
             }
+            .modifier(ThemedBackground(grouped: true))
             if #available(iOS 16, *) {
                 v
             } else {
@@ -149,7 +152,7 @@ struct ContactConnectionInfo: View {
                 HStack(spacing: 6) {
                     Text("Incognito")
                     Image(systemName: "info.circle")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(theme.colors.primary)
                         .font(.system(size: 14))
                 }
                 .onTapGesture {
@@ -164,23 +167,24 @@ struct ContactConnectionInfo: View {
     }
 }
 
-private func shareLinkButton(_ connReqInvitation: String) -> some View {
+private func shareLinkButton(_ connReqInvitation: String, _ secondaryColor: Color) -> some View {
     Button {
         showShareSheet(items: [simplexChatLink(connReqInvitation)])
     } label: {
-        settingsRow("square.and.arrow.up") {
+        settingsRow("square.and.arrow.up", color: secondaryColor) {
             Text("Share 1-time link")
         }
     }
 }
 
-private func oneTimeLinkLearnMoreButton() -> some View {
+private func oneTimeLinkLearnMoreButton(_ secondaryColor: Color) -> some View {
     NavigationLink {
         AddContactLearnMore(showTitle: false)
             .navigationTitle("One-time invitation link")
+            .modifier(ThemedBackground())
             .navigationBarTitleDisplayMode(.large)
     } label: {
-        settingsRow("info.circle") {
+        settingsRow("info.circle", color: secondaryColor) {
             Text("Learn more")
         }
     }

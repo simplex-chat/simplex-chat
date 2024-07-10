@@ -44,6 +44,11 @@ fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedView
       ModalManager.center.closeModals()
       ModalManager.center.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close) }
     },
+    scanPaste = {
+      closeNewChatSheet(false)
+      ModalManager.center.closeModals()
+      ModalManager.center.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = true, close = close) }
+    },
     createGroup = {
       closeNewChatSheet(false)
       ModalManager.center.closeModals()
@@ -55,15 +60,17 @@ fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedView
 
 private val titles = listOf(
   MR.strings.add_contact_tab,
+  MR.strings.scan_paste_link,
   MR.strings.create_group_button
 )
-private val icons = listOf(MR.images.ic_add_link, MR.images.ic_group)
+private val icons = listOf(MR.images.ic_add_link, MR.images.ic_qr_code, MR.images.ic_group)
 
 @Composable
 private fun NewChatSheetLayout(
   newChatSheetState: StateFlow<AnimatedViewState>,
   stopped: Boolean,
   addContact: () -> Unit,
+  scanPaste: () -> Unit,
   createGroup: () -> Unit,
   closeNewChatSheet: (animated: Boolean) -> Unit,
 ) {
@@ -102,7 +109,7 @@ private fun NewChatSheetLayout(
     verticalArrangement = Arrangement.Bottom,
     horizontalAlignment = Alignment.End
   ) {
-    val actions = remember { listOf(addContact, createGroup) }
+    val actions = remember { listOf(addContact, scanPaste, createGroup) }
     val backgroundColor = if (isInDarkTheme())
       blendARGB(MaterialTheme.colors.primary, Color.Black, 0.7F)
     else
@@ -118,11 +125,11 @@ private fun NewChatSheetLayout(
           Box(contentAlignment = Alignment.CenterEnd) {
             Button(
               actions[index],
-              shape = RoundedCornerShape(21.dp),
+              shape = RoundedCornerShape(21.dp * fontSizeSqrtMultiplier),
               colors = ButtonDefaults.textButtonColors(backgroundColor = backgroundColor),
               elevation = null,
               contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF),
-              modifier = Modifier.height(42.dp)
+              modifier = Modifier.height(42.dp * fontSizeSqrtMultiplier)
             ) {
               Text(
                 stringResource(titles[index]),
@@ -133,7 +140,7 @@ private fun NewChatSheetLayout(
               Icon(
                 painterResource(icons[index]),
                 stringResource(titles[index]),
-                Modifier.size(42.dp),
+                Modifier.size(42.dp * fontSizeSqrtMultiplier),
                 tint = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.primary
               )
             }
@@ -145,7 +152,7 @@ private fun NewChatSheetLayout(
     }
     FloatingActionButton(
       onClick = { if (!stopped) closeNewChatSheet(true) },
-      Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING),
+      Modifier.padding(end = DEFAULT_PADDING, bottom = DEFAULT_PADDING).size(AppBarHeight * fontSizeSqrtMultiplier),
       elevation = FloatingActionButtonDefaults.elevation(
         defaultElevation = 0.dp,
         pressedElevation = 0.dp,
@@ -157,11 +164,11 @@ private fun NewChatSheetLayout(
     ) {
       Icon(
         painterResource(MR.images.ic_edit_filled), stringResource(MR.strings.add_contact_or_create_group),
-        Modifier.graphicsLayer { alpha = 1 - animatedFloat.value }
+        Modifier.graphicsLayer { alpha = 1 - animatedFloat.value }.size(24.dp * fontSizeSqrtMultiplier)
       )
       Icon(
         painterResource(MR.images.ic_close), stringResource(MR.strings.add_contact_or_create_group),
-        Modifier.graphicsLayer { alpha = animatedFloat.value }
+        Modifier.graphicsLayer { alpha = animatedFloat.value }.size(24.dp * fontSizeSqrtMultiplier)
       )
     }
   }
@@ -264,6 +271,7 @@ private fun PreviewNewChatSheet() {
       MutableStateFlow(AnimatedViewState.VISIBLE),
       stopped = false,
       addContact = {},
+      scanPaste = {},
       createGroup = {},
       closeNewChatSheet = {},
     )

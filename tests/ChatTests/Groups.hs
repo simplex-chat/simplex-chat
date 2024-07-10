@@ -90,6 +90,7 @@ chatGroupTests = do
   describe "group links without contact connection plan" $ do
     it "group link without contact - known group" testPlanGroupLinkNoContactKnown
     it "group link without contact - connecting" testPlanGroupLinkNoContactConnecting
+    it "group link without contact - connecting (slow handshake)" testPlanGroupLinkNoContactConnectingSlow
   describe "group message errors" $ do
     it "show message decryption error" testGroupMsgDecryptError
     it "should report ratchet de-synchronization, synchronize ratchets" testGroupSyncRatchet
@@ -2527,7 +2528,7 @@ testPlanHostContactDeletedGroupLinkKnown =
 
 testPlanGroupLinkOwn :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkOwn tmp =
-  withNewTestChatCfg tmp testCfgGroupLinkViaContact "alice" aliceProfile $ \alice -> do
+  withNewTestChatCfg tmp (mkCfgGroupLinkViaContact testCfgSlow) "alice" aliceProfile $ \alice -> do
     threadDelay 100000
     alice ##> "/g team"
     alice <## "group #team is created"
@@ -2630,7 +2631,7 @@ testPlanGroupLinkConnecting tmp = do
     bob ##> ("/c " <> gLink)
     bob <## "group link: connecting"
   where
-    cfg = testCfgGroupLinkViaContact
+    cfg = mkCfgGroupLinkViaContact testCfgSlow
 
 testPlanGroupLinkLeaveRejoin :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkLeaveRejoin =
@@ -3228,6 +3229,52 @@ testPlanGroupLinkNoContactConnecting tmp = do
   withTestChat tmp "bob" $ \bob -> do
     threadDelay 500000
     bob <## "#team: joining the group..."
+    bob <## "#team: you joined the group"
+
+    bob ##> ("/_connect plan 1 " <> gLink)
+    bob <## "group link: known group #team"
+    bob <## "use #team <message> to send messages"
+
+    let gLinkSchema2 = linkAnotherSchema gLink
+    bob ##> ("/_connect plan 1 " <> gLinkSchema2)
+    bob <## "group link: known group #team"
+    bob <## "use #team <message> to send messages"
+
+    bob ##> ("/c " <> gLink)
+    bob <## "group link: known group #team"
+    bob <## "use #team <message> to send messages"
+
+testPlanGroupLinkNoContactConnectingSlow :: HasCallStack => FilePath -> IO ()
+testPlanGroupLinkNoContactConnectingSlow tmp = do
+  gLink <- withNewTestChatCfg tmp testCfgSlow "alice" aliceProfile $ \alice -> do
+    alice ##> "/g team"
+    alice <## "group #team is created"
+    alice <## "to add members use /a team <name> or /create link #team"
+    alice ##> "/create link #team"
+    getGroupLink alice "team" GRMember True
+  withNewTestChatCfg tmp testCfgSlow "bob" bobProfile $ \bob -> do
+    threadDelay 100000
+
+    bob ##> ("/c " <> gLink)
+    bob <## "connection request sent!"
+
+    bob ##> ("/_connect plan 1 " <> gLink)
+    bob <## "group link: connecting, allowed to reconnect"
+
+    let gLinkSchema2 = linkAnotherSchema gLink
+    bob ##> ("/_connect plan 1 " <> gLinkSchema2)
+    bob <## "group link: connecting, allowed to reconnect"
+
+    threadDelay 100000
+  withTestChatCfg tmp testCfgSlow "alice" $ \alice -> do
+    alice
+      <### [ "1 group links active",
+             "#team: group is empty",
+             "bob (Bob): accepting request to join group #team..."
+           ]
+  withTestChatCfg tmp testCfgSlow "bob" $ \bob -> do
+    threadDelay 500000
+    bob <## "#team: joining the group..."
 
     bob ##> ("/_connect plan 1 " <> gLink)
     bob <## "group link: connecting to group #team"
@@ -3253,7 +3300,7 @@ testGroupMsgDecryptError tmp =
       bob <## "1 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       alice #> "#team hello again"
-      bob <# "#team alice> skipped message ID 10..12"
+      bob <# "#team alice> skipped message ID 9..11"
       bob <# "#team alice> hello again"
       bob #> "#team received!"
       alice <# "#team bob> received!"

@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct CIVoiceView: View {
     @ObservedObject var chat: Chat
+    @EnvironmentObject var theme: AppTheme
     var chatItem: ChatItem
     let recordingFile: CIFile?
     let duration: Int
@@ -72,7 +73,7 @@ struct CIVoiceView: View {
             playbackState: $playbackState,
             playbackTime: $playbackTime
         )
-        .foregroundColor(.secondary)
+        .foregroundColor(theme.colors.secondary)
     }
     
     private func playbackSlider() -> some View {
@@ -89,10 +90,11 @@ struct CIVoiceView: View {
                     allowMenu = true
                 }
             }
+            .tint(theme.colors.primary)
     }
 
     private func metaView() -> some View {
-        CIMetaView(chat: chat, chatItem: chatItem)
+        CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)
     }
 }
 
@@ -118,7 +120,7 @@ struct VoiceMessagePlayerTime: View {
 
 struct VoiceMessagePlayer: View {
     @EnvironmentObject var chatModel: ChatModel
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
     var chatItem: ChatItem
     var recordingFile: CIFile?
     var recordingTime: TimeInterval
@@ -216,26 +218,26 @@ struct VoiceMessagePlayer: View {
                     startPlayback(recordingSource)
                 }
             } label: {
-                playPauseIcon("play.fill")
+                playPauseIcon("play.fill", theme.colors.primary)
             }
         case .playing:
             Button {
                 audioPlayer?.pause()
                 playbackState = .paused
             } label: {
-                playPauseIcon("pause.fill")
+                playPauseIcon("pause.fill", theme.colors.primary)
             }
         case .paused:
             Button {
                 audioPlayer?.play()
                 playbackState = .playing
             } label: {
-                playPauseIcon("play.fill")
+                playPauseIcon("play.fill", theme.colors.primary)
             }
         }
     }
 
-    private func playPauseIcon(_ image: String, _ color: Color = .accentColor) -> some View {
+    private func playPauseIcon(_ image: String, _ color: Color/* = .accentColor*/) -> some View {
         ZStack {
             Image(systemName: image)
                 .resizable()
@@ -244,7 +246,7 @@ struct VoiceMessagePlayer: View {
                 .foregroundColor(color)
                 .padding(.leading, image == "play.fill" ? 4 : 0)
                 .frame(width: 56, height: 56)
-                .background(showBackground ? chatItemFrameColor(chatItem, colorScheme) : .clear)
+                .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
                 .clipShape(Circle())
             if recordingTime > 0 {
                 ProgressCircle(length: recordingTime, progress: $playbackTime)
@@ -261,11 +263,12 @@ struct VoiceMessagePlayer: View {
                 }
             }
         } label: {
-            playPauseIcon(icon)
+            playPauseIcon(icon, theme.colors.primary)
         }
     }
 
     private struct ProgressCircle: View {
+        @EnvironmentObject var theme: AppTheme
         var length: TimeInterval
         @Binding var progress: TimeInterval?
 
@@ -273,7 +276,7 @@ struct VoiceMessagePlayer: View {
             Circle()
                 .trim(from: 0, to: ((progress ?? TimeInterval(0)) / length))
                 .stroke(
-                    Color.accentColor,
+                    theme.colors.primary,
                     style: StrokeStyle(lineWidth: 3)
                 )
                 .rotationEffect(.degrees(-90))
@@ -288,7 +291,7 @@ struct VoiceMessagePlayer: View {
             .frame(width: size, height: size)
             .foregroundColor(Color(uiColor: .tertiaryLabel))
             .frame(width: 56, height: 56)
-            .background(showBackground ? chatItemFrameColor(chatItem, colorScheme) : .clear)
+            .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
             .clipShape(Circle())
     }
 
@@ -296,7 +299,7 @@ struct VoiceMessagePlayer: View {
         ProgressView()
             .frame(width: 30, height: 30)
             .frame(width: 56, height: 56)
-            .background(showBackground ? chatItemFrameColor(chatItem, colorScheme) : .clear)
+            .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
             .clipShape(Circle())
     }
 

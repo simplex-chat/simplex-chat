@@ -28,6 +28,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ClickableText
@@ -41,6 +42,7 @@ fun NetworkAndServersView() {
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
   val netCfg = remember { chatModel.controller.getNetCfg() }
   val networkUseSocksProxy: MutableState<Boolean> = remember { mutableStateOf(netCfg.useSocksProxy) }
+  val networkShowSubscriptionPercentage: MutableState<Boolean> = remember { mutableStateOf(chatModel.controller.appPrefs.networkShowSubscriptionPercentage.get()) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   val onionHosts = remember { mutableStateOf(netCfg.onionHosts) }
   val sessionMode = remember { mutableStateOf(netCfg.sessionMode) }
@@ -52,12 +54,15 @@ fun NetworkAndServersView() {
     currentRemoteHost = currentRemoteHost,
     developerTools = developerTools,
     networkUseSocksProxy = networkUseSocksProxy,
+    networkShowSubscriptionPercentage = networkShowSubscriptionPercentage,
     onionHosts = onionHosts,
     sessionMode = sessionMode,
     smpProxyMode = smpProxyMode,
     smpProxyFallback = smpProxyFallback,
     proxyPort = proxyPort,
     toggleSocksProxy = { enable ->
+      val def = NetCfg.defaults
+      val proxyDef = NetCfg.proxyDefaults
       if (enable) {
         AlertManager.shared.showAlertDialog(
           title = generalGetString(MR.strings.network_enable_socks),
@@ -65,7 +70,19 @@ fun NetworkAndServersView() {
           confirmText = generalGetString(MR.strings.confirm_verb),
           onConfirm = {
             withBGApi {
-              val conf = NetCfg.proxyDefaults.withHostPort(chatModel.controller.appPrefs.networkProxyHostPort.get())
+              var conf = controller.getNetCfg().withHostPort(controller.appPrefs.networkProxyHostPort.get())
+              if (conf.tcpConnectTimeout == def.tcpConnectTimeout) {
+                conf = conf.copy(tcpConnectTimeout = proxyDef.tcpConnectTimeout)
+              }
+              if (conf.tcpTimeout == def.tcpTimeout) {
+                conf = conf.copy(tcpTimeout = proxyDef.tcpTimeout)
+              }
+              if (conf.tcpTimeoutPerKb == def.tcpTimeoutPerKb) {
+                conf = conf.copy(tcpTimeoutPerKb = proxyDef.tcpTimeoutPerKb)
+              }
+              if (conf.rcvConcurrency == def.rcvConcurrency) {
+                conf = conf.copy(rcvConcurrency = proxyDef.rcvConcurrency)
+              }
               chatModel.controller.apiSetNetworkConfig(conf)
               chatModel.controller.setNetCfg(conf)
               networkUseSocksProxy.value = true
@@ -80,7 +97,19 @@ fun NetworkAndServersView() {
           confirmText = generalGetString(MR.strings.confirm_verb),
           onConfirm = {
             withBGApi {
-              val conf = NetCfg.defaults
+              var conf = controller.getNetCfg().copy(socksProxy = null)
+              if (conf.tcpConnectTimeout == proxyDef.tcpConnectTimeout) {
+                conf = conf.copy(tcpConnectTimeout = def.tcpConnectTimeout)
+              }
+              if (conf.tcpTimeout == proxyDef.tcpTimeout) {
+                conf = conf.copy(tcpTimeout = def.tcpTimeout)
+              }
+              if (conf.tcpTimeoutPerKb == proxyDef.tcpTimeoutPerKb) {
+                conf = conf.copy(tcpTimeoutPerKb = def.tcpTimeoutPerKb)
+              }
+              if (conf.rcvConcurrency == proxyDef.rcvConcurrency) {
+                conf = conf.copy(rcvConcurrency = def.rcvConcurrency)
+              }
               chatModel.controller.apiSetNetworkConfig(conf)
               chatModel.controller.setNetCfg(conf)
               networkUseSocksProxy.value = false
@@ -89,6 +118,9 @@ fun NetworkAndServersView() {
           }
         )
       }
+    },
+    toggleNetworkShowSubscriptionPercentage = { enable ->
+      networkShowSubscriptionPercentage.value = enable
     },
     useOnion = {
       if (onionHosts.value == it) return@NetworkAndServersLayout
@@ -203,12 +235,14 @@ fun NetworkAndServersView() {
   currentRemoteHost: RemoteHostInfo?,
   developerTools: Boolean,
   networkUseSocksProxy: MutableState<Boolean>,
+  networkShowSubscriptionPercentage: MutableState<Boolean>,
   onionHosts: MutableState<OnionHosts>,
   sessionMode: MutableState<TransportSessionMode>,
   smpProxyMode: MutableState<SMPProxyMode>,
   smpProxyFallback: MutableState<SMPProxyFallback>,
   proxyPort: State<Int>,
   toggleSocksProxy: (Boolean) -> Unit,
+  toggleNetworkShowSubscriptionPercentage: (Boolean) -> Unit,
   useOnion: (OnionHosts) -> Unit,
   updateSessionMode: (TransportSessionMode) -> Unit,
   updateSMPProxyMode: (SMPProxyMode) -> Unit,
@@ -229,6 +263,7 @@ fun NetworkAndServersView() {
         SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.xftp_servers), { ModalManager.start.showCustomModal { close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.XFTP, close) } })
 
         if (currentRemoteHost == null) {
+          SettingsPreferenceItem(painterResource(MR.images.ic_radiowaves_up_forward_4_bar),stringResource(MR.strings.subscription_percentage), chatModel.controller.appPrefs.networkShowSubscriptionPercentage)
           UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showModal, chatModel.controller.appPrefs.networkProxyHostPort, false)
           UseOnionHosts(onionHosts, networkUseSocksProxy, showModal, useOnion)
           if (developerTools) {
@@ -650,8 +685,10 @@ fun PreviewNetworkAndServersLayout() {
       currentRemoteHost = null,
       developerTools = true,
       networkUseSocksProxy = remember { mutableStateOf(true) },
+      networkShowSubscriptionPercentage = remember { mutableStateOf(false) },
       proxyPort = remember { mutableStateOf(9050) },
       toggleSocksProxy = {},
+      toggleNetworkShowSubscriptionPercentage = {},
       onionHosts = remember { mutableStateOf(OnionHosts.PREFER) },
       sessionMode = remember { mutableStateOf(TransportSessionMode.User) },
       smpProxyMode = remember { mutableStateOf(SMPProxyMode.Never) },

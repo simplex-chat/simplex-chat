@@ -175,8 +175,10 @@ private fun UseServerSection(
       Text(stringResource(MR.strings.smp_servers_test_server), color = if (valid && !testing) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
       ShowTestStatus(server)
     }
-    val enabled = rememberUpdatedState(server.enabled)
-    PreferenceToggle(stringResource(MR.strings.smp_servers_use_server_for_new_conn), enabled.value) { onUpdate(server.copy(enabled = it)) }
+    val enabled = rememberUpdatedState(server.enabled == ServerEnabled.Enabled)
+    PreferenceToggle(stringResource(MR.strings.smp_servers_use_server_for_new_conn), enabled.value) { enable ->
+      onUpdate(server.copy(enabled = if (enable) ServerEnabled.Enabled else ServerEnabled.Disabled))
+    }
     SectionItemView(onDelete, disabled = testing) {
       Text(stringResource(MR.strings.smp_servers_delete_server), color = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.error)
     }

@@ -11,9 +11,11 @@ import SimpleXChat
 
 struct ProtocolServerView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
+    @EnvironmentObject var theme: AppTheme
     let serverProtocol: ServerProtocol
     @Binding var server: ServerCfg
     @State var serverToEdit: ServerCfg
+    @State var serverEnabled: Bool
     @State private var showTestFailure = false
     @State private var testing = false
     @State private var testFailure: ProtocolTestFailure?
@@ -49,7 +51,7 @@ struct ProtocolServerView: View {
     private func presetServer() -> some View {
         return VStack {
             List {
-                Section("Preset server address") {
+                Section(header: Text("Preset server address").foregroundColor(theme.colors.secondary)) {
                     Text(serverToEdit.server)
                         .textSelection(.enabled)
                 }
@@ -75,6 +77,7 @@ struct ProtocolServerView: View {
                 } header: {
                     HStack {
                         Text("Your server address")
+                            .foregroundColor(theme.colors.secondary)
                         if !valid {
                             Spacer()
                             Image(systemName: "exclamationmark.circle").foregroundColor(.red)
@@ -83,7 +86,7 @@ struct ProtocolServerView: View {
                 }
                 useServerSection(valid)
                 if valid {
-                    Section("Add to another device") {
+                    Section(header: Text("Add to another device").foregroundColor(theme.colors.secondary)) {
                         MutableQRCode(uri: $serverToEdit.server)
                             .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12))
                     }
@@ -93,7 +96,7 @@ struct ProtocolServerView: View {
     }
 
     private func useServerSection(_ valid: Bool) -> some View {
-        Section("Use server") {
+        Section(header: Text("Use server").foregroundColor(theme.colors.secondary)) {
             HStack {
                 Button("Test server") {
                     testing = true
@@ -110,7 +113,10 @@ struct ProtocolServerView: View {
                 Spacer()
                 showTestStatus(server: serverToEdit)
             }
-            Toggle("Use for new connections", isOn: $serverToEdit.enabled)
+            Toggle("Use for new connections", isOn: $serverEnabled)
+                .onChange(of: serverEnabled) { enabled in
+                    serverToEdit.enabled = enabled ? .enabled : .disabled
+                }
         }
     }
 }
@@ -179,7 +185,8 @@ struct ProtocolServerView_Previews: PreviewProvider {
         ProtocolServerView(
             serverProtocol: .smp,
             server: Binding.constant(ServerCfg.sampleData.custom),
-            serverToEdit: ServerCfg.sampleData.custom
+            serverToEdit: ServerCfg.sampleData.custom,
+            serverEnabled: true
         )
     }
 }

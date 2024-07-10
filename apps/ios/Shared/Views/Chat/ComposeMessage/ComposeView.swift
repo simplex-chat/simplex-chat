@@ -254,6 +254,7 @@ enum UploadContent: Equatable {
 
 struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
     @Binding var composeState: ComposeState
     @Binding var keyboardVisible: Bool
@@ -286,6 +287,7 @@ struct ComposeView: View {
             if chat.chatInfo.contact?.nextSendGrpInv ?? false {
                 ContextInvitingContactMemberView()
             }
+            // preference checks should match checks in forwarding list
             let simplexLinkProhibited = hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
             let fileProhibited = composeState.attachmentPreview && !chat.groupFeatureEnabled(.files)
             let voiceProhibited = composeState.voicePreview && !chat.chatInfo.featureEnabled(.voice)
@@ -313,6 +315,7 @@ struct ComposeView: View {
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
+                .tint(theme.colors.primary)
                 if case let .group(g) = chat.chatInfo,
                    !g.fullGroupPreferences.files.on(for: g.membership) {
                     b.disabled(true).onTapGesture {
@@ -353,16 +356,16 @@ struct ComposeView: View {
                         keyboardVisible: $keyboardVisible,
                         sendButtonColor: chat.chatInfo.incognito
                             ? .indigo.opacity(colorScheme == .dark ? 1 : 0.7)
-                            : .accentColor
+                            : theme.colors.primary
                     )
                     .padding(.trailing, 12)
-                    .background(.background)
+                    .background(theme.colors.background)
                     .disabled(!chat.userCanSend)
 
                     if chat.userIsObserver {
                         Text("you are observer")
                             .italic()
-                            .foregroundColor(.secondary)
+                            .foregroundColor(theme.colors.secondary)
                             .padding(.horizontal, 12)
                             .onTapGesture {
                                 AlertManager.shared.showAlertMsg(
@@ -654,7 +657,7 @@ struct ComposeView: View {
 
     private func msgNotAllowedView(_ reason: LocalizedStringKey, icon: String) -> some View {
         HStack {
-            Image(systemName: icon).foregroundColor(.secondary)
+            Image(systemName: icon).foregroundColor(theme.colors.secondary)
             Text(reason).italic()
         }
         .padding(12)
@@ -1065,7 +1068,7 @@ struct ComposeView: View {
         } else {
             nil
         }
-        let simplexLink = parsedMsg.contains(where: { ft in ft.format?.isSimplexLink ?? false })
+        let simplexLink = parsedMsgHasSimplexLink(parsedMsg)
         return (url, simplexLink)
     }
 
@@ -1103,6 +1106,10 @@ struct ComposeView: View {
         pendingLinkUrl = nil
         cancelledLinks = []
     }
+}
+
+func parsedMsgHasSimplexLink(_ parsedMsg: [FormattedText]) -> Bool {
+    parsedMsg.contains(where: { ft in ft.format?.isSimplexLink ?? false })
 }
 
 struct ComposeView_Previews: PreviewProvider {

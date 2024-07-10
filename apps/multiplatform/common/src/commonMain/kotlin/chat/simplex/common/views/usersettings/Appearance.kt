@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -78,6 +79,66 @@ object AppearanceScope {
             inactiveTickColor = Color.Transparent,
           )
         )
+      }
+    }
+  }
+
+  @Composable
+  fun FontScaleSection() {
+    val localFontScale = remember { mutableStateOf(appPrefs.fontScale.get()) }
+    SectionView(stringResource(MR.strings.appearance_font_size).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+      Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(60.dp)
+          .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
+          .clip(RoundedCornerShape(percent = 22))
+          .clickable {
+            localFontScale.value = 1f
+            appPrefs.fontScale.set(localFontScale.value)
+          },
+          contentAlignment = Alignment.Center) {
+          CompositionLocalProvider(
+            LocalDensity provides Density(LocalDensity.current.density, localFontScale.value)
+          ) {
+            Text("Aa", color = if (localFontScale.value == 1f) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground)
+          }
+        }
+        Spacer(Modifier.width(10.dp))
+        //      Text("${(localFontScale.value * 100).roundToInt()}%", Modifier.width(70.dp), textAlign = TextAlign.Center, fontSize = 12.sp)
+        if (appPlatform.isAndroid) {
+          Slider(
+            localFontScale.value,
+            valueRange = 0.75f..1.25f,
+            steps = 11,
+            onValueChange = {
+              val diff = it % 0.05f
+              localFontScale.value = String.format(Locale.US, "%.2f", it + (if (diff >= 0.025f) -diff + 0.05f else -diff)).toFloatOrNull() ?: 1f
+            },
+            onValueChangeFinished = {
+              appPrefs.fontScale.set(localFontScale.value)
+            },
+            colors = SliderDefaults.colors(
+              activeTickColor = Color.Transparent,
+              inactiveTickColor = Color.Transparent,
+            )
+          )
+        } else {
+          Slider(
+            localFontScale.value,
+            valueRange = 0.7f..1.5f,
+            steps = 9,
+            onValueChange = {
+              val diff = it % 0.1f
+              localFontScale.value = String.format(Locale.US, "%.1f", it + (if (diff >= 0.05f) -diff + 0.1f else -diff)).toFloatOrNull() ?: 1f
+            },
+            onValueChangeFinished = {
+              appPrefs.fontScale.set(localFontScale.value)
+            },
+            colors = SliderDefaults.colors(
+              activeTickColor = Color.Transparent,
+              inactiveTickColor = Color.Transparent,
+            )
+          )
+        }
       }
     }
   }
@@ -225,8 +286,8 @@ object AppearanceScope {
     }
 
     if (appPlatform.isDesktop) {
-      val itemWidth = (DEFAULT_START_MODAL_WIDTH - DEFAULT_PADDING * 2 - DEFAULT_PADDING_HALF * 3) / 4
-      val itemHeight = (DEFAULT_START_MODAL_WIDTH - DEFAULT_PADDING * 2) / 4
+      val itemWidth = (DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier - DEFAULT_PADDING * 2 - DEFAULT_PADDING_HALF * 3) / 4
+      val itemHeight = (DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier - DEFAULT_PADDING * 2) / 4
       val rows = ceil((PresetWallpaper.entries.size + 2) / 4f).roundToInt()
       LazyVerticalGrid(
         columns = GridCells.Fixed(4),

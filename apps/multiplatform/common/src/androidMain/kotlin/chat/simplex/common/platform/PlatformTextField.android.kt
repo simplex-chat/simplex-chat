@@ -29,6 +29,7 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.core.widget.doOnTextChanged
 import chat.simplex.common.R
 import chat.simplex.common.helpers.toURI
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.views.chat.*
@@ -107,7 +108,7 @@ actual fun PlatformTextField(
     editText.maxLines = 16
     editText.inputType = InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or editText.inputType
     editText.setTextColor(textColor.toArgb())
-    editText.textSize = textStyle.value.fontSize.value
+    editText.textSize = textStyle.value.fontSize.value * appPrefs.fontScale.get()
     val drawable = androidAppContext.getDrawable(R.drawable.send_msg_view_background)!!
     DrawableCompat.setTint(drawable, tintColor.toArgb())
     editText.background = drawable
@@ -135,7 +136,7 @@ actual fun PlatformTextField(
     editText
   }) {
     it.setTextColor(textColor.toArgb())
-    it.textSize = textStyle.value.fontSize.value
+    it.textSize = textStyle.value.fontSize.value * appPrefs.fontScale.get()
     DrawableCompat.setTint(it.background, tintColor.toArgb())
     it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview
     it.isFocusableInTouchMode = it.isFocusable

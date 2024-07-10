@@ -17,8 +17,8 @@ import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
-import Simplex.Chat.Types.Util (encodeJSON)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
+import Simplex.Messaging.Util (encodeJSON)
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
 
@@ -42,6 +42,7 @@ chatProfileTests = do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
     it "connecting via contact address" testPlanAddressConnecting
+    it "connecting via contact address (slow handshake)" testPlanAddressConnectingSlow
     it "re-connect with deleted contact" testPlanAddressContactDeletedReconnected
     it "contact via address" testPlanAddressContactViaAddress
   describe "incognito" $ do
@@ -51,6 +52,7 @@ chatProfileTests = do
     it "set connection incognito" testSetConnectionIncognito
     it "reset connection incognito" testResetConnectionIncognito
     it "set connection incognito prohibited during negotiation" testSetConnectionIncognitoProhibitedDuringNegotiation
+    it "set connection incognito prohibited during negotiation (slow handshake)" testSetConnectionIncognitoProhibitedDuringNegotiationSlow
     it "connection incognito unchanged errors" testConnectionIncognitoUnchangedErrors
     it "set, reset, set connection incognito" testSetResetSetConnectionIncognito
     it "join group incognito" testJoinGroupIncognito
@@ -706,6 +708,49 @@ testPlanAddressConnecting tmp = do
     alice <## "bob (Bob): accepting contact request..."
   withTestChat tmp "bob" $ \bob -> do
     threadDelay 500000
+    bob <## "alice (Alice): contact is connected"
+    bob @@@ [("@alice", "Audio/video calls: enabled")]
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "contact address: known contact alice"
+    bob <## "use @alice <message> to send messages"
+
+    let cLinkSchema2 = linkAnotherSchema cLink
+    bob ##> ("/_connect plan 1 " <> cLinkSchema2)
+    bob <## "contact address: known contact alice"
+    bob <## "use @alice <message> to send messages"
+
+    bob ##> ("/c " <> cLink)
+    bob <## "contact address: known contact alice"
+    bob <## "use @alice <message> to send messages"
+
+testPlanAddressConnectingSlow :: HasCallStack => FilePath -> IO ()
+testPlanAddressConnectingSlow tmp = do
+  cLink <- withNewTestChatCfg tmp testCfgSlow "alice" aliceProfile $ \alice -> do
+    alice ##> "/ad"
+    getContactLink alice True
+  withNewTestChatCfg tmp testCfgSlow "bob" bobProfile $ \bob -> do
+    threadDelay 100000
+
+    bob ##> ("/c " <> cLink)
+    bob <## "connection request sent!"
+
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "contact address: connecting, allowed to reconnect"
+
+    let cLinkSchema2 = linkAnotherSchema cLink
+    bob ##> ("/_connect plan 1 " <> cLinkSchema2)
+    bob <## "contact address: connecting, allowed to reconnect"
+
+    threadDelay 100000
+  withTestChatCfg tmp testCfgSlow "alice" $ \alice -> do
+    alice <## "Your address is active! To show: /sa"
+    alice <## "bob (Bob) wants to connect to you!"
+    alice <## "to accept: /ac bob"
+    alice <## "to reject: /rc bob (the sender will NOT be notified)"
+    alice ##> "/ac bob"
+    alice <## "bob (Bob): accepting contact request..."
+  withTestChatCfg tmp testCfgSlow "bob" $ \bob -> do
+    threadDelay 500000
     bob @@@ [("@alice", "")]
     bob ##> ("/_connect plan 1 " <> cLink)
     bob <## "contact address: connecting to contact alice"
@@ -1050,9 +1095,30 @@ testSetConnectionIncognitoProhibitedDuringNegotiation tmp = do
     bob <## "confirmation sent!"
   withTestChat tmp "alice" $ \alice -> do
     threadDelay 250000
+    alice <## "bob (Bob): contact is connected"
     alice ##> "/_set incognito :1 on"
     alice <## "chat db error: SEPendingConnectionNotFound {connId = 1}"
     withTestChat tmp "bob" $ \bob -> do
+      bob <## "alice (Alice): contact is connected"
+      alice <##> bob
+      alice `hasContactProfiles` ["alice", "bob"]
+      bob `hasContactProfiles` ["alice", "bob"]
+
+testSetConnectionIncognitoProhibitedDuringNegotiationSlow :: HasCallStack => FilePath -> IO ()
+testSetConnectionIncognitoProhibitedDuringNegotiationSlow tmp = do
+  inv <- withNewTestChatCfg tmp testCfgSlow "alice" aliceProfile $ \alice -> do
+    threadDelay 250000
+    alice ##> "/connect"
+    getInvitation alice
+  withNewTestChatCfg tmp testCfgSlow "bob" bobProfile $ \bob -> do
+    threadDelay 250000
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+  withTestChatCfg tmp testCfgSlow "alice" $ \alice -> do
+    threadDelay 250000
+    alice ##> "/_set incognito :1 on"
+    alice <## "chat db error: SEPendingConnectionNotFound {connId = 1}"
+    withTestChatCfg tmp testCfgSlow "bob" $ \bob -> do
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -2032,10 +2098,19 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
     threadDelay 1000000
     bob ##> "/c"
     inv <- getInvitation bob
-    bob ##> ("#team " <> inv)
+    bob ##> ("#team \"" <> inv <> "\\ntest\"")
+    bob <## "bad chat command: feature not allowed SimpleX links"
+    bob ##> ("/_send #1 json {\"msgContent\": {\"type\": \"text\", \"text\": \"" <> inv <> "\\ntest\"}}")
     bob <## "bad chat command: feature not allowed SimpleX links"
     (alice </)
     (cath </)
+    bob `send` ("@alice \"" <> inv <> "\\ntest\"")
+    bob <# ("@alice " <> inv)
+    bob <## "test"
+    alice <# ("bob> " <> inv)
+    alice <## "test"
+    bob ##> "#team <- @alice https://simplex.chat"
+    bob <## "bad chat command: feature not allowed SimpleX links"
     alice #> ("#team " <> inv)
     bob <# ("#team alice> " <> inv)
     cath <# ("#team alice> " <> inv)

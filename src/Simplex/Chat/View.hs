@@ -55,7 +55,7 @@ import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestSte
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
-import Simplex.Messaging.Client (SMPProxyMode (..), SMPProxyFallback)
+import Simplex.Messaging.Client (SMPProxyFallback, SMPProxyMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
@@ -67,7 +67,7 @@ import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import Simplex.Messaging.Version hiding (version)
-import Simplex.RemoteControl.Types (RCCtrlAddress (..))
+import Simplex.RemoteControl.Types (RCCtrlAddress (..), RCErrorType (..))
 import System.Console.ANSI.Types
 
 type CurrentTime = UTCTime
@@ -350,7 +350,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     ]
   CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, ctrlDeviceName} ->
     ["remote controller " <> sShow rcId <> " session started with " <> plain ctrlDeviceName]
-  CRRemoteCtrlStopped {} -> ["remote controller stopped"]
+  CRRemoteCtrlStopped {rcStopReason} -> viewRemoteCtrlStopped rcStopReason
   CRContactPQEnabled u c (CR.PQEncryption pqOn) -> ttyUser u [ttyContact' c <> ": " <> (if pqOn then "quantum resistant" else "standard") <> " end-to-end encryption enabled"]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
@@ -365,7 +365,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       "chat entity locks: " <> viewJSON chatEntityLocks,
       "agent locks: " <> viewJSON agentLocks
     ]
-  CRAgentStats stats -> map (plain . intercalate ",") stats
+  CRAgentServersSummary u serversSummary -> ttyUser u ["agent servers summary: " <> viewJSON serversSummary]
   CRAgentSubs {activeSubs, pendingSubs, removedSubs} ->
     [plain $ "Subscriptions: active = " <> show (sum activeSubs) <> ", pending = " <> show (sum pendingSubs) <> ", removed = " <> show (sum $ M.map length removedSubs)]
       <> ("active subscriptions:" : listSubs activeSubs)
@@ -383,7 +383,6 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     [ "agent workers details:",
       viewJSON agentWorkersDetails -- this would be huge, but copypastable when has its own line
     ]
-  CRAgentMsgCounts {msgCounts} -> ["received messages (total, duplicates):", viewJSON msgCounts]
   CRAgentQueuesInfo {agentQueuesInfo} ->
     [ "agent queues info:",
       plain . LB.unpack $ J.encode agentQueuesInfo
@@ -1843,7 +1842,7 @@ viewCallAnswer ct WebRTCSession {rtcSession = answer, rtcIceCandidates = iceCand
   [ ttyContact' ct <> " continued the WebRTC call",
     "To connect, please paste the data below in your browser window you opened earlier and click Connect button",
     "",
-    viewJSON  WCCallAnswer {answer, iceCandidates}
+    viewJSON WCCallAnswer {answer, iceCandidates}
   ]
 
 callMediaStr :: CallType -> StyledString
@@ -1913,6 +1912,12 @@ viewRemoteCtrl CtrlAppInfo {deviceName, appVersionRange = AppVersionRange _ (App
       | ctrlVersion > v = " (newer than this app - upgrade it" <> showCompatible <> ")"
       | otherwise = ""
     showCompatible = if compatible then "" else ", " <> bold' "not compatible"
+
+viewRemoteCtrlStopped :: RemoteCtrlStopReason -> [StyledString]
+viewRemoteCtrlStopped = \case
+  RCSRConnectionFailed (ChatErrorAgent (RCP RCEIdentity) _) ->
+    ["remote controller stopped: this link was used with another controller, please create a new link on the host"]
+  _ -> ["remote controller stopped"]
 
 viewChatError :: Bool -> ChatLogLevel -> Bool -> ChatError -> [StyledString]
 viewChatError isCmd logLevel testView = \case
