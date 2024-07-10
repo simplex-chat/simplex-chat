@@ -246,10 +246,10 @@ fun GroupMemberInfoLayout(
   verifyClicked: () -> Unit,
 ) {
   val cStats = connStats.value
-  fun knownDirectChat(contactId: Long): Chat? {
+  fun knownDirectChat(contactId: Long): Pair<Chat, Contact>? {
     val chat = getContactChat(contactId)
     return if (chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directOrUsed) {
-      chat
+      chat to chat.chatInfo.contact
     } else {
       null
     }
@@ -309,17 +309,37 @@ fun GroupMemberInfoLayout(
 
     val contactId = member.memberContactId
 
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 10.dp),
+      horizontalArrangement = Arrangement.Center,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      val knownChat = if (contactId != null) knownDirectChat(contactId) else null
+      if (knownChat != null) {
+        val (chat, contact) = knownChat
+        OpenChatButton(onClick = { openDirectChat(contact.contactId) })
+        Spacer(Modifier.width(10.dp))
+        CallButton(chat, contact)
+        Spacer(Modifier.width(10.dp))
+        VideoButton(chat, contact)
+      } else if (groupInfo.fullGroupPreferences.directMessages.on(groupInfo.membership)) {
+        if (contactId != null) {
+          OpenChatButton(onClick = { openDirectChat(contactId) })
+        } else {
+          OpenChatButton(onClick = { createMemberContact() })
+        }
+        Spacer(Modifier.width(10.dp))
+        InfoViewActionButton(painterResource(MR.images.ic_call_filled), generalGetString(MR.strings.info_view_call_button), disabled = true, onClick = {})
+        Spacer(Modifier.width(10.dp))
+        InfoViewActionButton(painterResource(MR.images.ic_videocam_filled), generalGetString(MR.strings.info_view_video_button), disabled = true, onClick = {})
+      }
+    }
+    SectionSpacer()
+
     if (member.memberActive) {
       SectionView {
-        if (contactId != null && knownDirectChat(contactId) != null) {
-          OpenChatButton(onClick = { openDirectChat(contactId) })
-        } else if (groupInfo.fullGroupPreferences.directMessages.on(groupInfo.membership)) {
-          if (contactId != null) {
-            OpenChatButton(onClick = { openDirectChat(contactId) })
-          } else if (member.activeConn?.peerChatVRange?.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) == true) {
-            OpenChatButton(onClick = { createMemberContact() })
-          }
-        }
         if (connectionCode != null) {
           VerifyCodeButton(member.verified, verifyClicked)
         }
@@ -513,12 +533,11 @@ fun RemoveMemberButton(onClick: () -> Unit) {
 
 @Composable
 fun OpenChatButton(onClick: () -> Unit) {
-  SettingsActionItem(
-    painterResource(MR.images.ic_chat),
-    stringResource(MR.strings.button_send_direct_message),
-    click = onClick,
-    textColor = MaterialTheme.colors.primary,
-    iconColor = MaterialTheme.colors.primary,
+  InfoViewActionButton(
+    icon = painterResource(MR.images.ic_chat_bubble_filled),
+    title = generalGetString(MR.strings.info_view_message_button),
+    disabled = false,
+    onClick = onClick
   )
 }
 

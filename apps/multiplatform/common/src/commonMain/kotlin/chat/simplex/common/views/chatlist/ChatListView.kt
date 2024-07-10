@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.TextRange
@@ -72,7 +73,8 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val scope = rememberCoroutineScope()
   val (userPickerState, scaffoldState ) = settingsState
-  Scaffold(topBar = { Box(Modifier.padding(end = endPadding)) { ChatListToolbar(scaffoldState.drawerState, userPickerState, stopped)} },
+  Scaffold(topBar = { Box(Modifier.padding(end = endPadding)) { ChatListTopBar(stopped) } },
+    bottomBar = { Box(Modifier.padding(end = endPadding)) { ChatListBottomToolbar(scaffoldState.drawerState, userPickerState) } },
     scaffoldState = scaffoldState,
     drawerContent = {
       tryOrShowError("Settings", error = { ErrorSettingsView() }) {
@@ -184,10 +186,10 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean) {
+private fun ChatListTopBar(stopped: Boolean) {
   val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
-  val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
 
+  val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   if (stopped) {
     barButtons.add {
       IconButton(onClick = {
@@ -204,26 +206,10 @@ private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableSt
       }
     }
   }
-  val scope = rememberCoroutineScope()
+
   val clipboard = LocalClipboardManager.current
+
   DefaultTopAppBar(
-    navigationButton = {
-      if (chatModel.users.isEmpty() && !chatModel.desktopNoUserNoRemote) {
-        NavigationButtonMenu { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } }
-      } else {
-        val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
-        val allRead = users
-          .filter { u -> !u.user.activeUser && !u.user.hidden }
-          .all { u -> u.unreadCount == 0 }
-        UserProfileButton(chatModel.currentUser.value?.profile?.image, allRead) {
-          if (users.size == 1 && chatModel.remoteHosts.isEmpty()) {
-            scope.launch { drawerState.open() }
-          } else {
-            userPickerState.value = AnimatedViewState.VISIBLE
-          }
-        }
-      }
-    },
     title = {
       Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
         Text(
@@ -259,7 +245,89 @@ private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableSt
     onSearchValueChanged = {},
     buttons = barButtons
   )
-  Divider(Modifier.padding(top = AppBarHeight * fontSizeSqrtMultiplier))
+  Divider(Modifier.padding(top = AppBarHeight))
+}
+
+@Composable
+fun SettingsButton(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>) {
+  val scope = rememberCoroutineScope()
+  if (chatModel.users.isEmpty() && !chatModel.desktopNoUserNoRemote) {
+    NavigationButtonMenu { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } }
+  } else {
+    val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
+    val allRead = users
+      .filter { u -> !u.user.activeUser && !u.user.hidden }
+      .all { u -> u.unreadCount == 0 }
+
+    UserProfileButton(chatModel.currentUser.value?.profile?.image, allRead) {
+      if (users.size == 1 && chatModel.remoteHosts.isEmpty()) {
+        scope.launch { drawerState.open() }
+      } else {
+        userPickerState.value = AnimatedViewState.VISIBLE
+      }
+    }
+  }
+}
+
+@Composable
+fun toolbarIcon(icon: Painter) {
+  Icon(
+    icon,
+    contentDescription = null,
+    Modifier.size(24.dp * fontSizeSqrtMultiplier),
+    tint = MaterialTheme.colors.secondary
+  )
+}
+
+@Composable
+fun ChatListToolbarButton(icon: @Composable () -> Unit, title: String, onClick: () -> Unit) {
+  Surface(
+    Modifier
+      .size(56.dp * fontSizeSqrtMultiplier),
+    shape = RoundedCornerShape(10.dp),
+    color = Color.Transparent,
+  ) {
+    Column(
+      Modifier
+        .clickable { onClick () },
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center
+    ) {
+      icon()
+      Text(
+        title,
+        style = MaterialTheme.typography.subtitle2.copy(fontWeight = FontWeight.Normal, fontSize = 12.sp * fontSizeSqrtMultiplier),
+        color = MaterialTheme.colors.secondary
+      )
+    }
+  }
+}
+
+@Composable
+private fun ChatListBottomToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>) {
+  Box(
+    Modifier
+      .fillMaxWidth()
+      .height(BottomAppBarHeight)
+      .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f))
+  ) {
+    Divider()
+    Row(
+      Modifier
+        .fillMaxHeight()
+        .fillMaxWidth(),
+      horizontalArrangement = Arrangement.SpaceEvenly,
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      SettingsButton(drawerState, userPickerState)
+
+      ChatListToolbarButton(
+        icon = { toolbarIcon(painterResource(MR.images.ic_chat_bubble_filled)) },
+        title = generalGetString(MR.strings.your_chats),
+        onClick = {  }
+      )
+    }
+  }
 }
 
 @Composable
@@ -311,26 +379,33 @@ fun SubscriptionStatusIndicator(serversSummary: MutableState<PresentedServersSum
 
 @Composable
 fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> Unit) {
-  Row(verticalAlignment = Alignment.CenterVertically) {
-    IconButton(onClick = onButtonClicked) {
+  ChatListToolbarButton(
+    icon = {
       Box {
         ProfileImage(
           image = image,
-          size = 37.dp * fontSizeSqrtMultiplier,
-          color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)
+          size = 24.dp * fontSizeSqrtMultiplier,
+          color = MaterialTheme.colors.secondaryVariant.mixWith(
+            MaterialTheme.colors.onBackground,
+            0.97f
+          )
         )
         if (!allRead) {
           unreadBadge()
         }
       }
-    }
-    if (appPlatform.isDesktop) {
-      val h by remember { chatModel.currentRemoteHost }
-      if (h != null) {
-        Spacer(Modifier.width(12.dp))
-        HostDisconnectButton {
-          stopRemoteHostAndReloadHosts(h!!, true)
-        }
+    },
+    onClick = onButtonClicked,
+    title = generalGetString(MR.strings.toolbar_settings),
+
+    )
+
+  if (appPlatform.isDesktop) {
+    val h by remember { chatModel.currentRemoteHost }
+    if (h != null) {
+      Spacer(Modifier.width(12.dp))
+      HostDisconnectButton {
+        stopRemoteHostAndReloadHosts(h!!, true)
       }
     }
   }
@@ -537,17 +612,18 @@ private fun filteredChats(
   } else {
     val s = if (searchShowingSimplexLink.value) "" else searchText.trim().lowercase()
     if (s.isEmpty() && !showUnreadAndFavorites)
-      chats
+      chats.filter { chat -> !chat.chatInfo.chatDeleted }
     else {
       chats.filter { chat ->
         when (val cInfo = chat.chatInfo) {
-          is ChatInfo.Direct -> if (s.isEmpty()) {
-            chat.id == chatModel.chatId.value || filtered(chat)
-          } else {
-            (viewNameContains(cInfo, s) ||
-                cInfo.contact.profile.displayName.lowercase().contains(s) ||
-                cInfo.contact.fullName.lowercase().contains(s))
-          }
+          is ChatInfo.Direct -> !chat.chatInfo.chatDeleted && (
+            if (s.isEmpty()) {
+              chat.id == chatModel.chatId.value || filtered(chat)
+            } else {
+              (viewNameContains(cInfo, s) ||
+                      cInfo.contact.profile.displayName.lowercase().contains(s) ||
+                      cInfo.contact.fullName.lowercase().contains(s))
+            })
           is ChatInfo.Group -> if (s.isEmpty()) {
             chat.id == chatModel.chatId.value || filtered(chat) || cInfo.groupInfo.membership.memberStatus == GroupMemberStatus.MemInvited
           } else {

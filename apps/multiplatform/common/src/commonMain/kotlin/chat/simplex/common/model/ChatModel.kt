@@ -780,6 +780,7 @@ interface SomeChat {
   val id: ChatId
   val apiId: Long
   val ready: Boolean
+  val chatDeleted: Boolean
   val sendMsgEnabled: Boolean
   val ntfsEnabled: Boolean
   val incognito: Boolean
@@ -860,6 +861,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val id get() = contact.id
     override val apiId get() = contact.apiId
     override val ready get() = contact.ready
+    override val chatDeleted get() = contact.chatDeleted
     override val sendMsgEnabled get() = contact.sendMsgEnabled
     override val ntfsEnabled get() = contact.ntfsEnabled
     override val incognito get() = contact.incognito
@@ -884,6 +886,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val id get() = groupInfo.id
     override val apiId get() = groupInfo.apiId
     override val ready get() = groupInfo.ready
+    override val chatDeleted get() = groupInfo.chatDeleted
     override val sendMsgEnabled get() = groupInfo.sendMsgEnabled
     override val ntfsEnabled get() = groupInfo.ntfsEnabled
     override val incognito get() = groupInfo.incognito
@@ -908,6 +911,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val id get() = noteFolder.id
     override val apiId get() = noteFolder.apiId
     override val ready get() = noteFolder.ready
+    override val chatDeleted get() = noteFolder.chatDeleted
     override val sendMsgEnabled get() = noteFolder.sendMsgEnabled
     override val ntfsEnabled get() = noteFolder.ntfsEnabled
     override val incognito get() = noteFolder.incognito
@@ -932,6 +936,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val id get() = contactRequest.id
     override val apiId get() = contactRequest.apiId
     override val ready get() = contactRequest.ready
+    override val chatDeleted get() = contactRequest.chatDeleted
     override val sendMsgEnabled get() = contactRequest.sendMsgEnabled
     override val ntfsEnabled get() = contactRequest.ntfsEnabled
     override val incognito get() = contactRequest.incognito
@@ -956,6 +961,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val id get() = contactConnection.id
     override val apiId get() = contactConnection.apiId
     override val ready get() = contactConnection.ready
+    override val chatDeleted get() = contactConnection.chatDeleted
     override val sendMsgEnabled get() = contactConnection.sendMsgEnabled
     override val ntfsEnabled get() = false
     override val incognito get() = contactConnection.incognito
@@ -981,6 +987,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val id get() = ""
     override val apiId get() = 0L
     override val ready get() = false
+    override val chatDeleted get() = false
     override val sendMsgEnabled get() = false
     override val ntfsEnabled get() = false
     override val incognito get() = false
@@ -1057,6 +1064,7 @@ data class Contact(
   val chatTs: Instant?,
   val contactGroupMemberId: Long? = null,
   val contactGrpInvSent: Boolean,
+  override val chatDeleted: Boolean,
   val uiThemes: ThemeModeOverrides? = null,
 ): SomeChat, NamedChat {
   override val chatType get() = ChatType.Direct
@@ -1130,6 +1138,7 @@ data class Contact(
       updatedAt = Clock.System.now(),
       chatTs = Clock.System.now(),
       contactGrpInvSent = false,
+      chatDeleted = false,
       uiThemes = null,
     )
   }
@@ -1138,7 +1147,8 @@ data class Contact(
 @Serializable
 enum class ContactStatus {
   @SerialName("active") Active,
-  @SerialName("deleted") Deleted;
+  @SerialName("deleted") Deleted,
+  @SerialName("deletedByUser") DeletedByUser;
 }
 
 @Serializable
@@ -1281,6 +1291,7 @@ data class GroupInfo (
   override val id get() = "#$groupId"
   override val apiId get() = groupId
   override val ready get() = membership.memberActive
+  override val chatDeleted get() = false
   override val sendMsgEnabled get() = membership.memberActive
   override val ntfsEnabled get() = chatSettings.enableNtfs == MsgFilter.All
   override val incognito get() = membership.memberIncognito
@@ -1586,6 +1597,7 @@ class NoteFolder(
   override val chatType get() = ChatType.Local
   override val id get() = "*$noteFolderId"
   override val apiId get() = noteFolderId
+  override val chatDeleted get() = false
   override val ready get() = true
   override val sendMsgEnabled get() = true
   override val ntfsEnabled get() = false
@@ -1622,6 +1634,7 @@ class UserContactRequest (
   override val chatType get() = ChatType.ContactRequest
   override val id get() = "<@$contactRequestId"
   override val apiId get() = contactRequestId
+  override val chatDeleted get() = false
   override val ready get() = true
   override val sendMsgEnabled get() = false
   override val ntfsEnabled get() = false
@@ -1661,6 +1674,7 @@ class PendingContactConnection(
   override val chatType get() = ChatType.ContactConnection
   override val id get () = ":$pccConnId"
   override val apiId get() = pccConnId
+  override val chatDeleted get() = false
   override val ready get() = false
   override val sendMsgEnabled get() = false
   override val ntfsEnabled get() = false
