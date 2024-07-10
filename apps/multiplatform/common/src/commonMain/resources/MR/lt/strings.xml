@@ -1763,4 +1763,26 @@
     <string name="simplex_links_not_allowed">SimpleX nuorodos neleidžiamos</string>
     <string name="v5_7_call_sounds_descr">Kai jungiami garso ir vaizdo skambučiai.</string>
     <string name="v5_7_quantum_resistant_encryption_descr">Bus įjungta tiesioginiuose pokalbiuose!</string>
+    <string name="dark_mode_colors">Juodo režimo spalvos</string>
+    <string name="v5_8_safe_files_descr">Patvirtinkite failus iš nežinomų serverių.</string>
+    <string name="snd_error_relay">Paskirties serverio klaida: %1$s</string>
+    <string name="ci_status_other_error">Klaida: %1$s</string>
+    <string name="color_mode_dark">Tamsu</string>
+    <string name="color_mode">Spalvos režimas</string>
+    <string name="theme_destination_app_theme">Programėlės tema</string>
+    <string name="color_primary_variant2">Pridėtinis akcentas 2</string>
+    <string name="wallpaper_advanced_settings">Pažangūs nustatymai</string>
+    <string name="chat_theme_apply_to_all_modes">Visi spalvų režimai</string>
+    <string name="network_smp_proxy_mode_always">Visada</string>
+    <string name="settings_section_title_chat_colors">Pokalbio spalvos</string>
+    <string name="chat_theme_apply_to_dark_mode">Juodas režimas</string>
+    <string name="theme_black">Juoda</string>
+    <string name="snd_error_quota">Talpa viršyta – gavėjas negavo anksčiau išsiųstų žinučių.</string>
+    <string name="settings_section_title_chat_theme">Pokalbio tema</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">NESIŲSTI žinučių tiesiogiai, net jei jūsų ar paskirties serveris nepalaiko privataus maršruto.</string>
+    <string name="network_smp_proxy_mode_always_description">Visada naudoti privatų maršrutą.</string>
+    <string name="network_smp_proxy_mode_never_description">NENAUDOTI privataus maršruto.</string>
+    <string name="network_smp_proxy_fallback_allow">Taip</string>
+    <string name="copy_error">Kopijavimo klaida</string>
+    <string name="chat_theme_apply_to_mode">Pritaikyti prie</string>
 </resources>

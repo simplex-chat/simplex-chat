@@ -716,7 +716,7 @@
     <string name="delete_files_and_media_all">حذف تمام پرونده‌ها</string>
     <string name="correct_name_to">اصلاح نام به %s؟</string>
     <string name="onboarding_notifications_mode_subtitle">بعدا از طریق تنظیمات قابل تغییر است.</string>
-    <string name="icon_descr_call_rejected">تماس بی‌پاسخ</string>
+    <string name="icon_descr_call_rejected">تماس پذیرفته نشده</string>
     <string name="alert_title_msg_bad_hash">هش پیام ناصحیح</string>
     <string name="alert_text_msg_bad_hash">هش پیام قبلی متفاوت است.</string>
     <string name="alert_title_msg_bad_id">شناسه پیام ناصحیح</string>
@@ -753,7 +753,7 @@
     <string name="icon_descr_audio_off">صدا خاموش</string>
     <string name="icon_descr_speaker_off">بلندگو خاموش</string>
     <string name="icon_descr_speaker_on">بلندگو روشن</string>
-    <string name="icon_descr_call_connecting">در حال اتصال</string>
+    <string name="icon_descr_call_connecting">در حال اتصال تماس</string>
     <string name="enable_lock">فعال کردن قفل</string>
     <string name="passcode_set">کد عبور تعیین شد!</string>
     <string name="passcode_changed">کد عبور تغییر کرد!</string>
@@ -1351,11 +1351,11 @@
     <string name="allow_to_send_files">اجازه ارسال پرونده‌ها و رسانه را می‌دهید.</string>
     <string name="group_members_can_delete">اعضای گروه می‌توانند پیام‌های ارسالی را به صورت غیرقابل برگشت حذف کنند. (۲۴ ساعت)</string>
     <string name="delete_after">حذف بعد از</string>
-    <string name="chat_preferences">تنظیمات گپ</string>
+    <string name="chat_preferences">تنظیمات گفت‌و‌گو</string>
     <string name="files_and_media">پرونده‌ها و رسانه</string>
     <string name="audio_video_calls">تماس‌های صوتی/تصویری</string>
     <string name="available_in_v51">"
-\nموجود در v5.1"</string>
+\nموجود در نسخه 5.1"</string>
     <string name="allow_your_contacts_to_send_voice_messages">به مخاطبان خود اجازه ارسال پیام‌های صوتی می‌دهید.</string>
     <string name="allow_irreversible_message_deletion_only_if">فقط زمانی اجازه حذف پیام‌ها به صورت غیرقابل برگشت را می‌دهید که مخاطب شما این اجازه را به شما بدهد. (۲۴ ساعت)</string>
     <string name="disappearing_messages_are_prohibited">پیام‌های ناپدید شونده در این گروه ممنوع هستند.</string>
@@ -1853,4 +1853,17 @@
     <string name="v5_8_private_routing_descr">از نشانی IP خود در برابر واسطه‌های پیام‌رسانی انتخاب شده توسط مخاطبانتان محافظت کنید.
 \nدر تنظیمات «شبکه و سرورها» فعال کنید.</string>
     <string name="v5_8_safe_files">دریافت امن پرونده‌ها</string>
+    <string name="file_error_no_file">پرونده یافت نشد - احتمالا حذف یا لغو شده.</string>
+    <string name="file_error_auth">کلید اشتباه یا نشانی پرونده ناشناخته - به احتمال زیاد پرونده حذف شده است.</string>
+    <string name="file_error">خطای پرونده</string>
+    <string name="temporary_file_error">خطای پرونده موقت</string>
+    <string name="info_row_file_status">وضعیت پرونده</string>
+    <string name="info_row_message_status">وضعیت پیام</string>
+    <string name="share_text_file_status">وضعیت پرونده: %s</string>
+    <string name="share_text_message_status">وضعیت پیام: %s</string>
+    <string name="copy_error">خطای کپی</string>
+    <string name="remote_ctrl_connection_stopped_desc">لطفا بررسی کنید که تلفن همراه و کامپیوتر به شبکه محلی یکسانی متصل هستند، و فایروال کامپیوتر شما اجازه اتصال را میدهد.
+\nلطفا هر مشکل دیگری را با توسعه‌دهندگان به اشتراک بگذارید.</string>
+    <string name="remote_ctrl_connection_stopped_identity_desc">این لینک توسط موبایل دیگری استفاده شده است، لطفا لینک جدیدی در کامپیوتر بسازید.</string>
+    <string name="file_error_relay">خطای سرور پرونده:%1$s</string>
 </resources>

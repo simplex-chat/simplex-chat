@@ -1771,4 +1771,87 @@
     <string name="e2ee_info_no_pq"><![CDATA[Zprávy, soubory a hovory jsou chráněny <b>koncovým</b> šifrováním s dokonalým dopředným utajením, odmítnutím a obnovením po vloupání.]]></string>
     <string name="wallpaper_advanced_settings">Pokročilé nastavení</string>
     <string name="chat_theme_apply_to_all_modes">Všechny barevné režimy</string>
+    <string name="snd_error_quota">Překročená kapacita - příjemci neobdrží dříve poslané zprávy.</string>
+    <string name="network_smp_proxy_mode_always">Vždy</string>
+    <string name="chat_theme_apply_to_mode">Použít na</string>
+    <string name="v5_8_safe_files_descr">Potvrdit soubory z neznámých serverů.</string>
+    <string name="chat_theme_apply_to_dark_mode">Tmavý mód</string>
+    <string name="theme_destination_app_theme">Téma aplikace</string>
+    <string name="network_smp_proxy_mode_always_description">Vždy užít soukromé směrování.</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Povolit downgrade</string>
+    <string name="copy_error">Kopírovat chybu</string>
+    <string name="settings_section_title_chat_colors">Barvy chatu</string>
+    <string name="settings_section_title_chat_theme">Téma chatu</string>
+    <string name="color_primary_variant2">Další zbarvení 2</string>
+    <string name="theme_black">Černé</string>
+    <string name="color_mode">Mód barvy</string>
+    <string name="color_mode_dark">Tmavé</string>
+    <string name="dark_mode_colors">Mód tmavých barev</string>
+    <string name="message_queue_info">Informace o frontě zpráv</string>
+    <string name="chat_theme_apply_to_light_mode">Světlý mód</string>
+    <string name="v5_8_chat_themes_descr">Upravtesi svůj chat, aby vypadal jinak!</string>
+    <string name="snd_error_relay">Chyba cílového serveru: %1$s</string>
+    <string name="ci_status_other_error">Chyba: %1$s</string>
+    <string name="snd_error_proxy_relay">Předávací server: %1$s
+\nChyba cílového serveru: %2$s</string>
+    <string name="snd_error_proxy">Předávací server: %1$s
+\nChyba: %2$s</string>
+    <string name="message_delivery_warning_title">Upozornění doručování zpráv</string>
+    <string name="snd_error_expired">Problémy se sítí - zpráva vypršela po mnoha pokusech o odeslání.</string>
+    <string name="network_smp_proxy_mode_private_routing">Soukromé směrování</string>
+    <string name="file_error_no_file">Soubor nebyl nalezen - s největší pravděpodobností byl soubor odstraněn nebo zrušen.</string>
+    <string name="file_error_relay">Chyba souboru serveru: %1$s</string>
+    <string name="cannot_share_message_alert_title">Nelze odeslat zprávu</string>
+    <string name="file_error">Chyba souboru</string>
+    <string name="network_smp_proxy_mode_never_description">NEpoužívat soukromé směrování.</string>
+    <string name="update_network_smp_proxy_fallback_question">Záložní směrování zpráv</string>
+    <string name="update_network_smp_proxy_mode_question">Režim přeposílání zpráv</string>
+    <string name="network_smp_proxy_mode_never">Nikdy</string>
+    <string name="error_initializing_web_view">Chyba inicializace WebView. Aktualizujte systém na novou verzi. Prosím kontaktujte vývojáře.
+\nChyba: %s</string>
+    <string name="protect_ip_address">Ochrana IP adresy</string>
+    <string name="info_row_file_status">Status souboru</string>
+    <string name="info_row_message_status">Status zprávy</string>
+    <string name="share_text_file_status">Status souboru: %s</string>
+    <string name="share_text_message_status">Stav zprávy: %s</string>
+    <string name="message_queue_info_none">žádné</string>
+    <string name="wallpaper_scale_fill">Vyplnit</string>
+    <string name="wallpaper_scale_repeat">Opakovat</string>
+    <string name="chat_theme_reset_to_user_theme">Obnovit uživatelské téma</string>
+    <string name="chat_theme_reset_to_app_theme">Obnovit téma aplikace</string>
+    <string name="v5_8_safe_files">Bezpečné přijímání souborů</string>
+    <string name="v5_8_chat_themes">Nové motivy chatu</string>
+    <string name="v5_8_private_routing">Soukromé směrování zpráv 🚀</string>
+    <string name="v5_8_private_routing_descr">Chraňte vaši IP adresu před relé zpráv, které jste si vybrali.
+\nPovolit v nastavení *Síť &amp; servery*.</string>
+    <string name="v5_8_message_delivery">Vylepšené doručování zpráv</string>
+    <string name="v5_8_persian_ui">Perské UI</string>
+    <string name="remote_ctrl_connection_stopped_desc">Prosím zkontrolujte, že mobil a desktop jsou připojeny ke stejné místní síti, a že stolní firewall umožňuje připojení.
+\nProsím sdělte jakékoli další problémy vývojářům.</string>
+    <string name="network_smp_proxy_fallback_prohibit">Ne</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">NEposílejte zprávy přímo, i když váš nebo cílový server nepodporuje soukromé směrování.</string>
+    <string name="settings_section_title_files">SOUBORY</string>
+    <string name="settings_section_title_private_message_routing">SOUKROMÉ SMĚROVÁNÍ ZPRÁV</string>
+    <string name="settings_section_title_user_theme">Téma profilu</string>
+    <string name="color_received_quote">Přijata odpověď</string>
+    <string name="reset_single_color">Obnovit barvu</string>
+    <string name="wallpaper_preview_hello_alice">Dobré odpoledne!</string>
+    <string name="theme_remove_image">Odebrat obrázek</string>
+    <string name="wallpaper_preview_hello_bob">Dobré ráno!</string>
+    <string name="color_mode_light">Světlé</string>
+    <string name="snd_error_auth">Špatný klíč nebo neznámé spojení - pravděpodobně je spojení smazáno.</string>
+    <string name="file_error_auth">Špatný klíč nebo neznámá adresa části souboru - soubor je pravděpodobně odstraněn.</string>
+    <string name="network_smp_proxy_mode_unprotected">Nechráněno</string>
+    <string name="network_smp_proxy_mode_unknown_description">Použít soukromé směrování s neznámými servery.</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Použit soukromé směrování s neznámými servery, když IP adresa není chráněna.</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Bez Tor nebo VPN bude vaše IP adresa viditelná souborovým serverům.</string>
+    <string name="info_row_debug_delivery">Ladit doručování</string>
+    <string name="v5_8_message_delivery_descr">Snížena spotřeba baterie.</string>
+    <string name="file_not_approved_title">Neznámé servery!</string>
+    <string name="file_not_approved_descr">Bez Tor nebo VPN bude vaše IP adresa viditelná pro tyto XFTP relé:
+\n%1$s.</string>
+    <string name="network_smp_proxy_fallback_allow_protected">Když je IP adresa skryta</string>
+    <string name="network_smp_proxy_fallback_allow">Ano</string>
+    <string name="color_wallpaper_tint">Zbarvení tapety</string>
+    <string name="color_wallpaper_background">Pozadí tapety</string>
 </resources>

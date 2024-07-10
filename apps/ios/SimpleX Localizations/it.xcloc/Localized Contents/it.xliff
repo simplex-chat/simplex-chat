@@ -1835,8 +1835,9 @@ Questo è il tuo link una tantum!</target>
         <target>Il database verrà migrato al riavvio dell'app</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Debug delivery" xml:space="preserve">
+      <trans-unit id="Debug delivery" xml:space="preserve" approved="no">
         <source>Debug delivery</source>
+        <target state="translated">Debug della consegna</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Decentralized" xml:space="preserve">
@@ -3922,6 +3923,7 @@ Questo è il tuo link per il gruppo %@!</target>
       </trans-unit>
       <trans-unit id="Message queue info" xml:space="preserve">
         <source>Message queue info</source>
+        <target state="translated">Info coda messaggi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reactions" xml:space="preserve">
@@ -4700,9 +4702,9 @@ Errore: %@</target>
         <target>Nomi di file privati</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private message routing" xml:space="preserve">
+      <trans-unit id="Private message routing" xml:space="preserve" approved="no">
         <source>Private message routing</source>
-        <target>Instradamento privato messaggi</target>
+        <target state="translated">Instradamento privato dei messaggi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private message routing 🚀" xml:space="preserve">
@@ -8099,10 +8101,13 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <target>invia messaggio diretto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve">
+      <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve" approved="no">
         <source>server queue info: %1$@
 
 last received msg: %2$@</source>
+        <target state="translated">info coda server: %1$@
+
+ultimo msg ricevuto: %2$@</target>
         <note>queue info</note>
       </trans-unit>
       <trans-unit id="set new contact address" xml:space="preserve">

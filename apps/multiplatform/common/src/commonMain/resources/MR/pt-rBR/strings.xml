@@ -1637,4 +1637,25 @@
     <string name="v5_3_new_desktop_app_descr">Criar novo perfil no aplicativo de desktop. 💻</string>
     <string name="v5_3_encrypt_local_files">Criptografar arquivos armazenados &amp; arquivos de mídia</string>
     <string name="v5_3_new_desktop_app">Novo aplicativo de desktop!</string>
+    <string name="migrate_from_device_archiving_database">Arquivando banco de dados</string>
+    <string name="migrate_from_device_cancel_migration">Cancelar migração</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption">&lt;b&gt;Por Favor,note que&lt;/b&gt;&lt;/b&gt;: usando o mesmo banco de dados em dois dispositivos vai quebrar a descriptografia das mensagens das suas conexões, como proteção de segurança.</string>
+    <string name="migrate_to_device_apply_onion">Aplicar</string>
+    <string name="theme_destination_app_theme">Tema do aplicativo</string>
+    <string name="theme_black">Preto</string>
+    <string name="audio_device_bluetooth">Bluetooth</string>
+    <string name="migrate_from_device_archive_and_upload">Arquivar e enviar</string>
+    <string name="chat_theme_apply_to_mode">Aplicar para</string>
+    <string name="v5_6_safer_groups_descr">Administradores podem bloquear um membro para todos.</string>
+    <string name="v5_6_app_data_migration">Migração de dados do aplicativo</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Todos os seus contatos,conversas e arquivos irão ser criptografados seguramente e enviados em partes para relays de XFTP configurados.</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><b>Aviso</b>: o arquivo irá ser deletado.</string>
+    <string name="network_type_cellular">Rede móvel</string>
+    <string name="network_smp_proxy_mode_always">Sempre</string>
+    <string name="network_smp_proxy_mode_always_description">Sempre usar roteamento privado.</string>
+    <string name="permissions_camera">Câmera</string>
+    <string name="permissions_camera_and_record_audio">Câmera e microfone</string>
+    <string name="allow_to_send_simplex_links">Permitir o envio de links do SimpleX.</string>
+    <string name="feature_roles_all_members">Todos os membros</string>
+    <string name="wallpaper_advanced_settings">Configurações avançadas</string>
 </resources>
