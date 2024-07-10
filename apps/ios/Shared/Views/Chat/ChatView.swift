@@ -121,6 +121,7 @@ struct ChatView: View {
                         chatModel.chatItemStatuses = [:]
                         chatModel.reversedChatItems = []
                         chatModel.groupMembers = []
+                        chatModel.groupMembersIndexes.removeAll()
                         membersLoaded = false
                     }
                 }
@@ -255,6 +256,7 @@ struct ChatView: View {
         await MainActor.run {
             if chatModel.chatId == groupInfo.id {
                 chatModel.groupMembers = groupMembers.map { GMember.init($0) }
+                chatModel.populateGroupMembersIndexes()
                 membersLoaded = true
                 updateView()
             }
