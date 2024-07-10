@@ -37,7 +37,6 @@ struct ChatView: View {
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
     // opening GroupMemberInfoView on member icon
-    @State private var membersLoaded = false
     @State private var selectedMember: GMember? = nil
     // opening GroupLinkView on link button (incognito)
     @State private var showGroupLinkSheet: Bool = false
@@ -121,7 +120,7 @@ struct ChatView: View {
                         chatModel.chatItemStatuses = [:]
                         chatModel.reversedChatItems = []
                         chatModel.groupMembers = []
-                        membersLoaded = false
+                        chatModel.membersLoaded = false
                     }
                 }
             }
@@ -163,7 +162,7 @@ struct ChatView: View {
                     }
                 } else if case let .group(groupInfo) = cInfo {
                     Button {
-                        Task { await loadGroupMembers(groupInfo) { showChatInfoSheet = true } }
+                        Task { await chatModel.loadGroupMembers(groupInfo) { showChatInfoSheet = true } }
                     } label: {
                         ChatInfoToolbar(chat: chat)
                             .tint(theme.colors.primary)
@@ -246,17 +245,6 @@ struct ChatView: View {
                 default:
                     EmptyView()
                 }
-            }
-        }
-    }
-
-    private func loadGroupMembers(_ groupInfo: GroupInfo, updateView: @escaping () -> Void = {}) async {
-        let groupMembers = await apiListMembers(groupInfo.groupId)
-        await MainActor.run {
-            if chatModel.chatId == groupInfo.id {
-                chatModel.groupMembers = groupMembers.map { GMember.init($0) }
-                membersLoaded = true
-                updateView()
             }
         }
     }
@@ -475,9 +463,7 @@ struct ChatView: View {
                         .foregroundColor(theme.colors.primary)
                 }
                 .onTapGesture {
-                    if let latestUnreadItem = filtered(chatModel.reversedChatItems).last(where: { $0.isRcvNew }) {
-                        scrollModel.scrollToItem(id: latestUnreadItem.id)
-                    }
+                    scrollModel.scrollToBottom()
                 }
             } else if !counts.isNearBottom {
                 circleButton {
@@ -532,7 +518,7 @@ struct ChatView: View {
     private func addMembersButton() -> some View {
         Button {
             if case let .group(gInfo) = chat.chatInfo {
-                Task { await loadGroupMembers(gInfo) { showAddMembersSheet = true } }
+                Task { await chatModel.loadGroupMembers(gInfo) { showAddMembersSheet = true } }
             }
         } label: {
             Image(systemName: "person.crop.circle.badge.plus")
@@ -602,25 +588,21 @@ struct ChatView: View {
             chat: chat,
             chatItem: ci,
             maxWidth: maxWidth,
-            itemWidth: maxWidth,
             composeState: $composeState,
             selectedMember: $selectedMember,
-            revealedChatItem: $revealedChatItem,
-            chatView: self
+            revealedChatItem: $revealedChatItem
         )
     }
 
     private struct ChatItemWithMenu: View {
-        @EnvironmentObject var m: ChatModel
+        let m = ChatModel.shared
+        let chat: Chat
+        let chatItem: ChatItem
+        let maxWidth: CGFloat
         @EnvironmentObject var theme: AppTheme
-        @ObservedObject var chat: Chat
-        var chatItem: ChatItem
-        var maxWidth: CGFloat
-        @State var itemWidth: CGFloat
         @Binding var composeState: ComposeState
         @Binding var selectedMember: GMember?
         @Binding var revealedChatItem: ChatItem?
-        var chatView: ChatView
 
         @State private var deletingItem: ChatItem? = nil
         @State private var showDeleteMessage = false
@@ -698,11 +680,11 @@ struct ChatView: View {
                         HStack(alignment: .top, spacing: 8) {
                             ProfileImage(imageStr: member.memberProfile.image, size: memberImageSize, backgroundColor: theme.colors.background)
                                 .onTapGesture {
-                                    if chatView.membersLoaded {
+                                    if m.membersLoaded {
                                         selectedMember = m.getGroupMember(member.groupMemberId)
                                     } else {
                                         Task {
-                                            await chatView.loadGroupMembers(groupInfo) {
+                                            await m.loadGroupMembers(groupInfo) {
                                                 selectedMember = m.getGroupMember(member.groupMemberId)
                                             }
                                         }
@@ -1097,7 +1079,7 @@ struct ChatView: View {
                             chatItemInfo = ciInfo
                         }
                         if case let .group(gInfo) = chat.chatInfo {
-                            await chatView.loadGroupMembers(gInfo)
+                            await m.loadGroupMembers(gInfo)
                         }
                     } catch let error {
                         logger.error("apiGetChatItemInfo error: \(responseError(error))")
