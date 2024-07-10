@@ -6864,29 +6864,29 @@ memberSendAction gInfo chatMsgEvent members m = case memberConn m of
     | otherwise -> pendingOrForwarded
   where
     pendingOrForwarded = case memberCategory m of
-        GCUserMember -> Nothing -- shouldn't happen
-        GCInviteeMember -> Just MSAPending
-        GCHostMember -> Just MSAPending
-        GCPreMember -> forwardSupportedOrPending (invitedByGroupMemberId $ membership gInfo)
-        GCPostMember -> forwardSupportedOrPending (invitedByGroupMemberId m)
+      GCUserMember -> Nothing -- shouldn't happen
+      GCInviteeMember -> Just MSAPending
+      GCHostMember -> Just MSAPending
+      GCPreMember -> forwardSupportedOrPending (invitedByGroupMemberId $ membership gInfo)
+      GCPostMember -> forwardSupportedOrPending (invitedByGroupMemberId m)
       where
         forwardSupportedOrPending invitingMemberId_
           | membersSupport && isForwardedGroupMsg chatMsgEvent = Just MSAForwarded
-          | isXGrpMsgForward chatMsgEvent = Nothing
+          | isXGrpMsgForward = Nothing
           | otherwise = Just MSAPending
           where
-          membersSupport =
-            m `supportsVersion` groupForwardVersion && invitingMemberSupportsForward invitingMemberId_
-        invitingMemberSupportsForward = \case
-          Just invMemberId ->
-            -- can be optimized for large groups by replacing [GroupMember] with Map GroupMemberId GroupMember
-            case find (\m' -> groupMemberId' m' == invMemberId) members of
-              Just invitingMember -> invitingMember `supportsVersion` groupForwardVersion
+            membersSupport =
+              m `supportsVersion` groupForwardVersion && invitingMemberSupportsForward
+            invitingMemberSupportsForward = case invitingMemberId_ of
+              Just invMemberId ->
+                -- can be optimized for large groups by replacing [GroupMember] with Map GroupMemberId GroupMember
+                case find (\m' -> groupMemberId' m' == invMemberId) members of
+                  Just invitingMember -> invitingMember `supportsVersion` groupForwardVersion
+                  Nothing -> False
               Nothing -> False
-          Nothing -> False
-        isXGrpMsgForward ev = case ev of
-          XGrpMsgForward {} -> True
-          _ -> False
+            isXGrpMsgForward = case chatMsgEvent of
+              XGrpMsgForward {} -> True
+              _ -> False
 
 sendGroupMemberMessage :: MsgEncodingI e => User -> GroupInfo -> GroupMember -> ChatMsgEvent e -> Maybe Int64 -> CM () -> CM ()
 sendGroupMemberMessage user gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} chatMsgEvent introId_ postDeliver = do
