@@ -201,6 +201,7 @@ final class ChatModel: ObservableObject {
         await MainActor.run {
             if chatId == groupInfo.id {
                 self.groupMembers = groupMembers.map { GMember.init($0) }
+                self.populateGroupMembersIndexes()
                 self.membersLoaded = true
                 updateView()
             }
