@@ -65,6 +65,7 @@ object ChatModel {
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
   val groupMembers = mutableStateListOf<GroupMember>()
+  val groupMembersIndexes = mutableStateMapOf<Long, Int>()
 
   val terminalItems = mutableStateOf<List<TerminalItem>>(listOf())
   val userAddress = mutableStateOf<UserContactLinkRec?>(null)
@@ -170,7 +171,23 @@ object ChatModel {
   fun getChat(id: String): Chat? = chats.toList().firstOrNull { it.id == id }
   fun getContactChat(contactId: Long): Chat? = chats.toList().firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
   fun getGroupChat(groupId: Long): Chat? = chats.toList().firstOrNull { it.chatInfo is ChatInfo.Group && it.chatInfo.apiId == groupId }
-  fun getGroupMember(groupMemberId: Long): GroupMember? = groupMembers.firstOrNull { it.groupMemberId == groupMemberId }
+
+  fun populateGroupMembersIndexes() {
+    groupMembersIndexes.clear()
+    groupMembers.forEachIndexed { i, member ->
+      groupMembersIndexes[member.groupMemberId] = i
+    }
+  }
+
+  fun getGroupMember(groupMemberId: Long): GroupMember? {
+    val memberIndex = groupMembersIndexes[groupMemberId]
+    return if (memberIndex != null) {
+      groupMembers[memberIndex]
+    } else {
+      null
+    }
+  }
+
   private fun getChatIndex(rhId: Long?, id: String): Int = chats.toList().indexOfFirst { it.id == id && it.remoteHostId == rhId }
   fun addChat(chat: Chat) = chats.add(index = 0, chat)
 
@@ -620,12 +637,13 @@ object ChatModel {
     }
     // update current chat
     return if (chatId.value == groupInfo.id) {
-      val memberIndex = groupMembers.indexOfFirst { it.groupMemberId == member.groupMemberId }
-      if (memberIndex >= 0) {
+      val memberIndex = groupMembersIndexes[member.groupMemberId]
+      if (memberIndex != null) {
         groupMembers[memberIndex] = member
         false
       } else {
         groupMembers.add(member)
+        groupMembersIndexes[member.groupMemberId] = groupMembers.size - 1
         true
       }
     } else {

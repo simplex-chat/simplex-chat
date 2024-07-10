@@ -73,6 +73,7 @@ final class ChatModel: ObservableObject {
     var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
     @Published var chatToTop: String?
     @Published var groupMembers: [GMember] = []
+    @Published var groupMembersIndexes: Dictionary<Int64, Int> = [:] // groupMemberId to index in groupMembers list
     @Published var membersLoaded = false
     // items in the terminal view
     @Published var showingTerminal = false
@@ -181,8 +182,18 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func populateGroupMembersIndexes() {
+        groupMembersIndexes.removeAll()
+        for (i, member) in groupMembers.enumerated() {
+            groupMembersIndexes[member.groupMemberId] = i
+        }
+    }
+
     func getGroupMember(_ groupMemberId: Int64) -> GMember? {
-        groupMembers.first { $0.groupMemberId == groupMemberId }
+        if let i = groupMembersIndexes[groupMemberId] {
+            return groupMembers[i]
+        }
+        return nil
     }
 
     func loadGroupMembers(_ groupInfo: GroupInfo, updateView: @escaping () -> Void = {}) async {
@@ -682,14 +693,17 @@ final class ChatModel: ObservableObject {
         }
         // update current chat
         if chatId == groupInfo.id {
-            if let i = groupMembers.firstIndex(where: { $0.groupMemberId == member.groupMemberId }) {
+            if let i = groupMembersIndexes[member.groupMemberId] {
                 withAnimation(.default) {
                     self.groupMembers[i].wrapped = member
                     self.groupMembers[i].created = Date.now
                 }
                 return false
             } else {
-                withAnimation { groupMembers.append(GMember(member)) }
+                withAnimation {
+                    groupMembers.append(GMember(member))
+                    groupMembersIndexes[member.groupMemberId] = groupMembers.count - 1
+                }
                 return true
             }
         } else {
