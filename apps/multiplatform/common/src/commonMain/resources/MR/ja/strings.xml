@@ -1594,8 +1594,8 @@
     <string name="group_member_status_unknown">ステータス不明</string>
     <string name="v5_5_private_notes">プライベートノート</string>
     <string name="v5_5_message_delivery">メッセージ配信の改善</string>
-    <string name="e2ee_info_no_pq">メッセージ、ファイル、通話は、前方秘匿性、否認防止および侵入復元性を備えた <b>エンドツーエンドの暗号化</b>によって保護されます。</string>
-    <string name="e2ee_info_pq">メッセージ、ファイル、通話は、前方秘匿性、否認防止および侵入復元性を備えた <b>耐量子E2E暗号化</b>によって保護されます。</string>
+    <string name="e2ee_info_no_pq"><![CDATA[メッセージ、ファイル、通話は、前方秘匿性、否認防止および侵入復元性を備えた <b>エンドツーエンドの暗号化</b>によって保護されます。]]></string>
+    <string name="e2ee_info_pq"><![CDATA[メッセージ、ファイル、通話は、前方秘匿性、否認防止および侵入復元性を備えた <b>耐量子E2E暗号化</b>によって保護されます。]]></string>
     <string name="e2ee_info_no_pq_short">このチャットはエンドツーエンド暗号化により保護されています。</string>
     <string name="e2ee_info_pq_short">このチャットは耐量子エンドツーエンド暗号化により保護されています。</string>
     <string name="note_folder_local_display_name">プライベートノート</string>

@@ -1150,9 +1150,9 @@
         <target>Kapazität überschritten - der Empfänger hat die zuvor gesendeten Nachrichten nicht empfangen.</target>
         <note>snd error text</note>
       </trans-unit>
-      <trans-unit id="Cellular" xml:space="preserve" approved="no">
+      <trans-unit id="Cellular" xml:space="preserve">
         <source>Cellular</source>
-        <target state="translated">Mobilfunknetz</target>
+        <target>Mobilfunknetz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change" xml:space="preserve">
@@ -1835,9 +1835,9 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target>Die Datenbank wird beim nächsten Start der App migriert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Debug delivery" xml:space="preserve" approved="no">
+      <trans-unit id="Debug delivery" xml:space="preserve">
         <source>Debug delivery</source>
-        <target state="translated">Debugging-Zustellung</target>
+        <target>Debugging-Zustellung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Decentralized" xml:space="preserve">
@@ -3923,7 +3923,7 @@ Das ist Ihr Link für die Gruppe %@!</target>
       </trans-unit>
       <trans-unit id="Message queue info" xml:space="preserve">
         <source>Message queue info</source>
-        <target state="translated">Nachrichten-Warteschlangen-Information</target>
+        <target>Nachrichten-Warteschlangen-Information</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reactions" xml:space="preserve">
@@ -4816,10 +4816,10 @@ Fehler: %@</target>
         <target>App-Bildschirm schützen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve" approved="no">
+      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve">
         <source>Protect your IP address from the messaging relays chosen by your contacts.
 Enable in *Network &amp; servers* settings.</source>
-        <target state="translated">Schützen Sie Ihre IP-Adresse vor den Nachrichten-Relais, die Ihre Kontakte ausgewählt haben.
+        <target>Schützen Sie Ihre IP-Adresse vor den Nachrichten-Relais, die Ihre Kontakte ausgewählt haben.
 Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -8101,11 +8101,11 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Direktnachricht senden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve" approved="no">
+      <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve">
         <source>server queue info: %1$@
 
 last received msg: %2$@</source>
-        <target state="translated">Server-Warteschlangen-Information: %1$@
+        <target>Server-Warteschlangen-Information: %1$@
 
 Zuletzt empfangene Nachricht: %2$@</target>
         <note>queue info</note>

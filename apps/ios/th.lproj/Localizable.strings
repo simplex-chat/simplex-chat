@@ -259,9 +259,6 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "ด้านบน จากนั้นเลือก:";
 
-/* No comment provided by engineer. */
-"Accent color" = "สีเน้น";
-
 /* accept contact request via notification
    accept incoming call via notification */
 "Accept" = "รับ";
@@ -639,9 +636,6 @@
 /* No comment provided by engineer. */
 "colored" = "มีสี";
 
-/* No comment provided by engineer. */
-"Colors" = "สี";
-
 /* server test step */
 "Compare file" = "เปรียบเทียบไฟล์";
 
@@ -765,7 +759,7 @@
 /* No comment provided by engineer. */
 "Continue" = "ดำเนินการต่อ";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "คัดลอก";
 
 /* No comment provided by engineer. */
@@ -1386,7 +1380,8 @@
 /* No comment provided by engineer. */
 "Error: " = "ผิดพลาด: ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "ข้อผิดพลาด: % @";
 
 /* No comment provided by engineer. */
@@ -2974,9 +2969,6 @@
 
 /* No comment provided by engineer. */
 "The servers for new connections of your current chat profile **%@**." = "เซิร์ฟเวอร์สำหรับการเชื่อมต่อใหม่ของโปรไฟล์การแชทปัจจุบันของคุณ **%@**";
-
-/* No comment provided by engineer. */
-"Theme" = "ธีม";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "การตั้งค่าเหล่านี้ใช้สำหรับโปรไฟล์ปัจจุบันของคุณ **%@**";

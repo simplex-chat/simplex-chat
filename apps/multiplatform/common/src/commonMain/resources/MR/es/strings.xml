@@ -355,8 +355,8 @@
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Si has recibido un enlace de invitación a SimpleX Chat puedes abrirlo en tu navegador:</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Si seleccionas rechazar, el remitente NO será notificado.</string>
     <string name="invalid_contact_link">¡Enlace no válido!</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Si no puedes reunirte en persona, puedes <b>escanear el código QR por videollamada</b>, o tu contacto puede compartir un enlace de invitación.</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Si no puedes reunirte en persona, <b>muestra el código QR por videollamada</b>, o comparte el enlace.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Si no puedes reunirte en persona, puedes <b>escanear el código QR por videollamada</b>, o tu contacto puede compartir un enlace de invitación.]]></string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Si no puedes reunirte en persona, <b>muestra el código QR por videollamada</b>, o comparte el enlace.]]></string>
     <string name="how_to">Cómo</string>
     <string name="ignore">Ignorar</string>
     <string name="error_deleting_database">Error al eliminar base de datos</string>
@@ -616,7 +616,7 @@
     <string name="image_descr_profile_image">imagen del perfil</string>
     <string name="prohibit_sending_voice_messages">No se permiten mensajes de voz.</string>
     <string name="protect_app_screen">Proteger la pantalla de la aplicación</string>
-    <string name="read_more_in_github_with_link">Conoce más en nuestro &lt;font color=#0088ff&gt;repositorio GitHub&lt;/font&gt; .</string>
+    <string name="read_more_in_github_with_link"><![CDATA[Conoce más en nuestro <font color="#0088ff">repositorio GitHub</font> .]]></string>
     <string name="icon_descr_record_voice_message">Grabar mensaje de voz</string>
     <string name="rcv_group_event_member_deleted">ha expulsado a %1$s</string>
     <string name="send_link_previews">Enviar previsualizacion de enlaces</string>
@@ -1043,7 +1043,7 @@
     <string name="your_XFTP_servers">Servidores XFTP</string>
     <string name="port_verb">Puerto</string>
     <string name="network_proxy_port">puerto %d</string>
-    <string name="disable_onion_hosts_when_not_supported">Configura &lt;i&gt;Usar hosts .onion&lt;/i&gt; como &lt;i&gt;No&lt;/&gt; si el proxy SOCKS no los admite.</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Configura <i>Usar hosts .onion</i> como <i>No</i> si el proxy SOCKS no los admite.]]></string>
     <string name="smp_server_test_download_file">Descargar archivo</string>
     <string name="network_socks_toggle_use_socks_proxy">Usar proxy SOCKS</string>
     <string name="host_verb">Host</string>
@@ -1123,7 +1123,7 @@
     <string name="group_welcome_preview">Vista previa</string>
     <string name="opening_database">Abriendo base de datos…</string>
     <string name="error_setting_address">Error al introducir dirección</string>
-    <string name="read_more_in_user_guide_with_link">Conoce más en la &lt;font color=#0088ff&gt;Guía de Usuario&lt;/font&gt;.</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[Conoce más en la <font color="#0088ff">Guía de Usuario</font>.]]></string>
     <string name="one_time_link_short">Enlace un uso</string>
     <string name="simplex_address">Dirección SimpleX</string>
     <string name="you_can_accept_or_reject_connection">Cuando alguien solicite conectarse podrás aceptar o rechazar su solicitud.</string>

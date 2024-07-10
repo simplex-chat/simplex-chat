@@ -259,7 +259,7 @@
     <string name="clear_chat_button">Xóa cuộc trò chuyện</string>
     <string name="clear_chat_menu_action">Xóa</string>
     <string name="in_developing_title">Sắp ra mắt!</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">Chọn <i>Di chuyển từ một thiết bị khác</i>trên thiết bị mới và quét mã QR.</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Chọn <i>Di chuyển từ một thiết bị khác</i>trên thiết bị mới và quét mã QR.]]></string>
     <string name="clear_verb">Xóa</string>
     <string name="clear_chat_question">Xóa cuộc trò chuyện?</string>
     <string name="configure_ICE_servers">Cài đặt cấu hình cho các máy chủ ICE</string>
@@ -316,7 +316,7 @@
 \n- đánh dấu đã nhận (tối đa 20 thành viên).
 \n- nhanh hơn và ổn định hơn.</string>
     <string name="remote_ctrl_was_disconnected_title">Kết nối đã bị ngắt</string>
-    <string name="remote_host_error_bad_state">Kết nối tới điện thoại <b>%s</b> đang ở trong tình trạng không tốt</string>
+    <string name="remote_host_error_bad_state"><![CDATA[Kết nối tới điện thoại <b>%s</b> đang ở trong tình trạng không tốt]]></string>
     <string name="connect_to_desktop">Kết nối tới máy tính</string>
     <string name="connection_timeout">Hết thời gian chờ kết nối</string>
     <string name="connection_error">Lỗi kết nối</string>
@@ -465,7 +465,7 @@
     <string name="remote_ctrl_error_busy">Máy tính đang bận</string>
     <string name="remote_ctrl_error_inactive">Máy tính đang không hoạt động</string>
     <string name="remote_ctrl_error_disconnected">Máy tính đã bị ngắt kết nối</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 máy tính: quét mã QR được hiển thị ở trong ứng dụng, với <b>Quét mã QR</b>.</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 máy tính: quét mã QR được hiển thị ở trong ứng dụng, với <b>Quét mã QR</b>.]]></string>
     <string name="smp_servers_delete_server">Xóa máy chủ</string>
     <string name="smp_server_test_delete_queue">Xóa hàng đợi</string>
     <string name="settings_developer_tools">Công cụ nhà phát triển</string>

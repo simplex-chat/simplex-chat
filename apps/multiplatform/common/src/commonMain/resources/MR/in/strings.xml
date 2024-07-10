@@ -2,7 +2,7 @@
 <resources>
     <string name="group_info_section_title_num_members">%1$s ANGGOTA</string>
     <string name="address_section_title">Alamat</string>
-    <string name="moderated_items_description">pesan dihapus admin</string>
+    <string name="moderated_items_description">%1$d pesan dihapus admin %2$s</string>
     <string name="send_disappearing_message_1_minute">1 menit</string>
     <string name="send_disappearing_message_30_seconds">30 detik</string>
     <string name="send_disappearing_message_5_minutes">5 menit</string>
@@ -16,7 +16,7 @@
     <string name="chat_item_ttl_month">1 bulan</string>
     <string name="chat_item_ttl_week">1 minggu</string>
     <string name="accept_feature">Terima</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Anda sudah bergabung dalam grup <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Anda sudah bergabung dalam grup <b>%1$s</b>.]]></string>
     <string name="call_service_notification_audio_call">Panggilan suara</string>
     <string name="abort_switch_receiving_address_confirm">Batal</string>
     <string name="allow_voice_messages_question">izinkan pesan suara?</string>

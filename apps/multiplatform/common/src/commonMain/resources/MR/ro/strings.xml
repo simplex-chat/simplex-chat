@@ -387,7 +387,7 @@
     <string name="rcv_conn_event_switch_queue_phase_changing">se schimbă adresa…</string>
     <string name="icon_descr_contact_checked">Contact verificat</string>
     <string name="info_row_created_at">Creat la</string>
-    <string name="migrate_from_device_choose_migrate_from_another_device">Alege <i>Migrează de pe alt dispozitiv</i> pe dispozitivul nou și scanează codul QR.</string>
+    <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Alege <i>Migrează de pe alt dispozitiv</i> pe dispozitivul nou și scanează codul QR.]]></string>
     <string name="connect_via_contact_link">Te conectezi prin adresa de contact?</string>
     <string name="connect_via_invitation_link">Te conectezi printr-un link unic?</string>
     <string name="connect_via_link_incognito">Conectare incognito</string>
@@ -477,7 +477,7 @@
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">se schimbă adresa pentru %s…</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Și tu și contactul tău puteți trimite mesaje temporare.</string>
     <string name="cannot_receive_file">Nu se pot primi fișiere</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Poate fi dezactivat în setări</b> – notificările vor fi încă afișate cât timp aplicația rulează.</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Poate fi dezactivat în setări</b> – notificările vor fi încă afișate cât timp aplicația rulează.]]></string>
     <string name="notifications_mode_periodic_desc">Verifică mesajele noi la fiecare 10 minute timp de până la 1 minut</string>
     <string name="you_have_no_chats">Nu ai conversații</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contactul și toate mesajele vor fi șterse - acest lucru nu poate fi anulat!</string>
@@ -550,7 +550,7 @@
     <string name="group_connection_pending">se conectează…</string>
     <string name="change_lock_mode">Schimbați modul de blocare</string>
     <string name="app_version_code">Versiunea aplicației: %s</string>
-    <string name="network_session_mode_user_description">O conexiune separată TCP (și SOCKS credential), va fi folosită <b>pentru fiecare profil de conversație pe care le aveți în aplicație</b></string>
+    <string name="network_session_mode_user_description"><![CDATA[O conexiune separată TCP (și SOCKS credential), va fi folosită <b>pentru fiecare profil de conversație pe care le aveți în aplicație</b>]]></string>
     <string name="network_smp_proxy_fallback_allow_downgrade">Permiteți downgrade-ul</string>
     <string name="network_session_mode_entity_description">O conexiune separată TCP (și SOCKS credential) va fi folosită <b>pentru fiecare contact și membru de grup</b>
 \n<b>Va rugăm considerați că:</b> dacă aveți prea multe conexiuni, consumul dumneavoastră de baterie și trafic de internet pot fi considerabil mai mari, iar unele conexiuni pot eșua.</string>
@@ -558,7 +558,7 @@
     <string name="connecting_to_desktop">Se conectează la desktop</string>
     <string name="icon_descr_asked_to_receive">Rugat să primească imaginea</string>
     <string name="connection_request_sent">Cerere de conexiune trimisă!</string>
-    <string name="socks_proxy_setting_limitations"><b>Vă rugăm să rețineți:</b> mesajele și releurile pentru fișiere sunt conectate printr-un proxy SOCKS. Apelurile ți trimiterea de previzualizări a link-urilor folosesc o conexiune directă.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Vă rugăm să rețineți:</b> mesajele și releurile pentru fișiere sunt conectate printr-un proxy SOCKS. Apelurile ți trimiterea de previzualizări a link-urilor folosesc o conexiune directă.]]></string>
     <string name="callstate_connected">conectat</string>
     <string name="confirm_passcode">Confirmați codul de access</string>
     <string name="confirm_database_upgrades">Confirmare actualizare bază de date</string>
@@ -582,13 +582,13 @@
     <string name="callstatus_connecting">se conectează apelul…</string>
     <string name="group_member_status_intro_invitation">se conectează (invetație la introducere)</string>
     <string name="callstate_connecting">se conectează…</string>
-    <string name="remote_host_error_bad_state">Conexiunea la telefonul <b>%s</b> este într-o stare proastă</string>
+    <string name="remote_host_error_bad_state"><![CDATA[Conexiunea la telefonul <b>%s</b> este într-o stare proastă]]></string>
     <string name="migrate_to_device_confirm_network_settings">Confirmați setările de rețea</string>
     <string name="display_name_connecting">se conectează…</string>
     <string name="connection_error_auth">Eroare de conexiune (AUTENTIFICARE)</string>
     <string name="turning_off_service_and_periodic">Optimizarea pentru baterie este activă, vom opri serviciile din fundal și cererile periodice pentru mesaje noi. Le puteți reactiva din setări.</string>
     <string name="icon_descr_server_status_connected">conectat</string>
-    <string name="create_group_button_to_create_new_group"><b>Crează un grup:</b> pentru a crea un nou grup.</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>Crează un grup:</b> pentru a crea un nou grup.]]></string>
     <string name="clear_chat_question">Ștergeți conversația?</string>
     <string name="clear_chat_menu_action">Ștergeți</string>
     <string name="clear_chat_button">Ștergeți conversația</string>
@@ -600,7 +600,7 @@
     <string name="migrate_from_device_all_data_will_be_uploaded">Toate contactele, conversațiile și fișierele dumneavoastră vor fi encriptate într-un mod sigur și încărcate pe bucăți pe releurile XFTP configurate.</string>
     <string name="icon_descr_video_asked_to_receive">Rugat să primească videoclipul</string>
     <string name="smp_server_test_compare_file">Comparați fișierul</string>
-    <string name="impossible_to_recover_passphrase"><b>Vă rugăm să rețineți</b>: nu veți putea recupera sau schimba parola dacă o veți pierde.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Vă rugăm să rețineți</b>: nu veți putea recupera sau schimba parola dacă o veți pierde.]]></string>
     <string name="rcv_group_event_changed_your_role">schimbat rolul dumneavoastră la %s</string>
     <string name="server_connected">conectat</string>
     <string name="server_connecting">se conectează</string>
@@ -611,10 +611,10 @@
     <string name="configure_ICE_servers">Configurare servere ICE</string>
     <string name="rcv_group_event_member_created_contact">conectat direct</string>
     <string name="group_member_status_announced">se conectează (anunțat)</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Cel mai bun pentru baterie.</b> Veți primi notificări doar când aplicația rulează (FĂRĂ servicii de fundal).</string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Cel mai bun pentru baterie.</b> Veți primi notificări doar când aplicația rulează (FĂRĂ servicii de fundal).]]></string>
     <string name="icon_descr_call_connecting">Se conectează apelul</string>
     <string name="group_member_status_complete">complet</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>Vă rugăm să rețineți</b>: folosind aceeași bază de date pe două dispozitive, va intrerupe decripția mesajelor de la conexiunile dumneavoastră, ca protecție de securitate.</string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Vă rugăm să rețineți</b>: folosind aceeași bază de date pe două dispozitive, va intrerupe decripția mesajelor de la conexiunile dumneavoastră, ca protecție de securitate.]]></string>
     <string name="migrate_from_device_confirm_upload">Confirmați încărcarea</string>
     <string name="migrate_from_device_confirm_you_remember_passphrase">Confirmați că țineți minte parola de la baza de date pentru a o migra.</string>
     <string name="chat_archive_section">ARHIVĂ CONVERSAȚIE</string>
