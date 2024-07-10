@@ -249,22 +249,7 @@ struct ChatView: View {
             }
         }
     }
-
-<<<<<<< HEAD
-=======
-    private func loadGroupMembers(_ groupInfo: GroupInfo, updateView: @escaping () -> Void = {}) async {
-        let groupMembers = await apiListMembers(groupInfo.groupId)
-        await MainActor.run {
-            if chatModel.chatId == groupInfo.id {
-                chatModel.groupMembers = groupMembers.map { GMember.init($0) }
-                chatModel.populateGroupMembersIndexes()
-                membersLoaded = true
-                updateView()
-            }
-        }
-    }
-
->>>>>>> master
+    
     private func initChatView() {
         let cInfo = chat.chatInfo
         // This check prevents the call to apiContactInfo after the app is suspended, and the database is closed.
