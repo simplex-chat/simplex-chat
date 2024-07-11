@@ -9,6 +9,7 @@
 import SwiftUI
 
 struct ShareView: View {
+    let assetSize: Double = 32
     @ObservedObject var model: ShareModel
 
     var body: some View {
@@ -16,25 +17,13 @@ struct ShareView: View {
             VStack(spacing: .zero) {
                 List(model.chats, selection: $model.selected) { chat in
                     HStack {
-                        ProfileImage(imageStr: chat.chatInfo.image)
+                        profileImage(imageString: chat.chatInfo.image, size: assetSize)
                         Text(chat.chatInfo.displayName)
                         Spacer()
-                        Image(systemName: chat == model.selected ? "record.circle" : "circle")
-                            .imageScale(.large)
-                            .foregroundStyle(Color.accentColor)
+                        radioButton(selected: chat == model.selected)
                     }.tag(chat)
                 }
-                HStack {
-                    TextField("Comment", text: $model.comment, axis: .vertical)
-                        .textFieldStyle(.roundedBorder)
-                    Button() {
-                        Task { await model.send() }
-                    } label: {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .resizable()
-                            .frame(width: 32, height: 32)
-                    }.disabled(model.selected == nil)
-                }.padding()
+                compose
             }
             .navigationTitle("Share")
             .environment(\.editMode, .constant(.active))
@@ -43,23 +32,27 @@ struct ShareView: View {
             placement: .navigationBarDrawer(displayMode: .always)
         )
     }
-}
 
-// TODO: Reuse view from the App?
-struct ProfileImage: View {
-    let imageStr: String?
-    let size: Double = 32
+    private var compose: some View {
+        HStack {
+            TextField("Comment", text: $model.comment, axis: .vertical)
+                .textFieldStyle(.roundedBorder)
+            Button() {
+                Task { await model.send() }
+            } label: {
+                Image(systemName: "arrow.up.circle.fill")
+                    .resizable()
+                    .frame(width: assetSize, height: assetSize)
+            }.disabled(model.selected == nil)
+        }.padding()
+    }
 
-    var body: some View {
+    private func profileImage(imageString: String?, size: Double) -> some View {
         Group {
-            if let image = imageStr,
-               let data = Data(base64Encoded: dropImagePrefix(image)),
-               let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
+            if let uiImage = UIImage(imageString: imageString) {
+                Image(uiImage: uiImage).resizable()
             } else {
-                Image(systemName: "person.crop.circle.fill")
-                    .resizable()
+                Image(systemName: "person.crop.circle.fill").resizable()
             }
         }
         .foregroundStyle(Color(.tertiaryLabel))
@@ -67,10 +60,9 @@ struct ProfileImage: View {
         .clipShape(Circle())
     }
 
-    func dropImagePrefix(_ s: String) -> String {
-        func dropPrefix(_ s: String, _ prefix: String) -> String {
-            s.hasPrefix(prefix) ? String(s.dropFirst(prefix.count)) : s
-        }
-        return dropPrefix(dropPrefix(s, "data:image/png;base64,"), "data:image/jpg;base64,")
+    private func radioButton(selected: Bool) -> some View {
+        Image(systemName: selected ? "record.circle" : "circle")
+            .imageScale(.large)
+            .foregroundStyle(Color.accentColor)
     }
 }

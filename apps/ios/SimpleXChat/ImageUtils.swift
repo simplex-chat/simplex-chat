@@ -340,4 +340,13 @@ extension UIImage {
         }
         return self
     }
+
+
+    public convenience init?(imageString: String?) {
+        if let imageString, let data = Data(base64Encoded: dropImagePrefix(imageString)) {
+            self.init(data: data)
+        } else {
+            return nil
+        }
+    }
 }

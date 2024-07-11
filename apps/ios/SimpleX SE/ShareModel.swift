@@ -56,7 +56,7 @@ class ShareModel: ObservableObject {
     func send() async {
         guard let item else { fatalError("Missing Extension Item") }
         guard let chat = selected else { return }
-        let url = try! await url(attachment: item.attachments!.first!)!
+        let url = try! await url(attachment: item.attachments!.first!, type: .data)!
         let cryptoFile = saveFileFromURL(url)!
         let _ = sendSimpleXCmd(
             .apiSendMessage(
@@ -75,10 +75,10 @@ class ShareModel: ObservableObject {
         }
     }
 
-    private func url(attachment: NSItemProvider) async throws -> URL? {
+    private func url(attachment: NSItemProvider, type: UTType) async throws -> URL? {
         try await withCheckedThrowingContinuation { cont in
             // TODO: This call returns a progress for showing a loading bar
-            let _ = attachment.loadFileRepresentation(for: UTType.data, openInPlace: true) { url, bool, error in
+            let _ = attachment.loadFileRepresentation(for: type, openInPlace: true) { url, bool, error in
                 if let url = url {
                     cont.resume(returning: url)
                 } else if let error = error {
@@ -123,11 +123,5 @@ class ShareModel: ObservableObject {
         ) else { fatalError("No chats available") }
 
         await MainActor.run { allChats.send(chats) }
-    }
-
-    private func teardown() {
-        guard case .chatStopped = sendSimpleXCmd(
-            .apiStopChat
-        ) else { fatalError("Unable to stop chat") }
     }
 }
