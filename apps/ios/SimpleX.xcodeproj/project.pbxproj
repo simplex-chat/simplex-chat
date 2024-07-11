@@ -196,14 +196,13 @@
 		8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC956ED2BC0041000412A11 /* NetworkObserver.swift */; };
 		CE38A29A2C3FCA54005ED185 /* ImageUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBD2859295711D700EC2CF4 /* ImageUtils.swift */; };
 		CE38A29C2C3FCD72005ED185 /* SwiftyGif in Frameworks */ = {isa = PBXBuildFile; productRef = CE38A29B2C3FCD72005ED185 /* SwiftyGif */; };
+		CE38A2A02C4034D9005ED185 /* ShareError.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE38A29F2C4034D9005ED185 /* ShareError.swift */; };
 		CE984D4B2C36C5D500E3AEFF /* ChatItemClipShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE984D4A2C36C5D500E3AEFF /* ChatItemClipShape.swift */; };
 		CEE723AA2C3BD3D70009AE93 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE723A92C3BD3D70009AE93 /* ShareViewController.swift */; };
 		CEE723B12C3BD3D70009AE93 /* SimpleX SE.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = CEE723A72C3BD3D70009AE93 /* SimpleX SE.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		CEE723CF2C3C21C90009AE93 /* SimpleXChat.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; };
 		CEE723D02C3C21C90009AE93 /* SimpleXChat.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		CEE723F02C3D25C70009AE93 /* ShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE723EF2C3D25C70009AE93 /* ShareView.swift */; };
 		CEE723F22C3D25ED0009AE93 /* ShareModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE723F12C3D25ED0009AE93 /* ShareModel.swift */; };
-		CEE723F32C3D342F0009AE93 /* ImageUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBD2859295711D700EC2CF4 /* ImageUtils.swift */; };
 		CEEA861D2C2ABCB50084E1EA /* ReverseList.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEA861C2C2ABCB50084E1EA /* ReverseList.swift */; };
 		D7197A1829AE89660055C05A /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D7197A1729AE89660055C05A /* WebRTC */; };
 		D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D72A9087294BD7A70047C86D /* NativeTextEditor.swift */; };
@@ -537,6 +536,7 @@
 		8C9BC2642C240D5100875A27 /* ThemeModeEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThemeModeEditor.swift; sourceTree = "<group>"; };
 		8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallAudioDeviceManager.swift; sourceTree = "<group>"; };
 		8CC956ED2BC0041000412A11 /* NetworkObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkObserver.swift; sourceTree = "<group>"; };
+		CE38A29F2C4034D9005ED185 /* ShareError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareError.swift; sourceTree = "<group>"; };
 		CE984D4A2C36C5D500E3AEFF /* ChatItemClipShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemClipShape.swift; sourceTree = "<group>"; };
 		CEE723A72C3BD3D70009AE93 /* SimpleX SE.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "SimpleX SE.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		CEE723A92C3BD3D70009AE93 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
@@ -900,7 +900,6 @@
 				5C9FD96A27A56D4D0075386C /* JSON.swift */,
 				5CDCAD7D2818941F00503DA2 /* API.swift */,
 				5CDCAD80281A7E2700503DA2 /* Notifications.swift */,
-				5CBD2859295711D700EC2CF4 /* ImageUtils.swift */,
 				64DAE1502809D9F5000DA960 /* FileUtils.swift */,
 				5CBD2859295711D700EC2CF4 /* ImageUtils.swift */,
 				5C9D81182AA7A4F1001D49FD /* CryptoFile.swift */,
@@ -1021,6 +1020,7 @@
 			children = (
 				CEE723D42C3C21F50009AE93 /* SimpleX SE.entitlements */,
 				CEE723AE2C3BD3D70009AE93 /* Info.plist */,
+				CE38A29F2C4034D9005ED185 /* ShareError.swift */,
 				CEE723F12C3D25ED0009AE93 /* ShareModel.swift */,
 				CEE723EF2C3D25C70009AE93 /* ShareView.swift */,
 				CEE723A92C3BD3D70009AE93 /* ShareViewController.swift */,
@@ -1136,7 +1136,6 @@
 			buildConfigurationList = CEE723B42C3BD3D70009AE93 /* Build configuration list for PBXNativeTarget "SimpleX SE" */;
 			buildPhases = (
 				CEE723A32C3BD3D70009AE93 /* Sources */,
-				CEE723A42C3BD3D70009AE93 /* Frameworks */,
 				CEE723A52C3BD3D70009AE93 /* Resources */,
 				CEE723D32C3C21C90009AE93 /* Embed Frameworks */,
 			);
@@ -1478,6 +1477,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CEE723F02C3D25C70009AE93 /* ShareView.swift in Sources */,
+				CE38A2A02C4034D9005ED185 /* ShareError.swift in Sources */,
 				CEE723F22C3D25ED0009AE93 /* ShareModel.swift in Sources */,
 				CEE723AA2C3BD3D70009AE93 /* ShareViewController.swift in Sources */,
 			);

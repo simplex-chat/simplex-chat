@@ -2,17 +2,14 @@
 //  ShareModel.swift
 //  SimpleX SE
 //
-//  Created by User on 09/07/2024.
+//  Created by Levitating Pineapple on 09/07/2024.
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
 
 import UniformTypeIdentifiers
-import OSLog
 import SwiftUI
 import Combine
 import SimpleXChat
-
-let logger = Logger()
 
 class ShareModel: ObservableObject {
     @Published var item: NSExtensionItem?
@@ -20,24 +17,29 @@ class ShareModel: ObservableObject {
     @Published var search = String()
     @Published var comment = String()
     @Published var selected: ChatData?
+    @Published var isLoaded = false
     @Published var error: ShareError?
 
-    var completion: (() -> Void)!
+    var completion: (() -> Void)?
 
     private let allChats = PassthroughSubject<Array<ChatData>, Never>()
     private var bag = Set<AnyCancellable>()
 
     init() {
+        // Attempt loading chats
         Task {
             switch fetchChats() {
             case let .success(chats):
-                await MainActor.run { self.chats = chats }
+                await MainActor.run {
+                    self.chats = chats
+                    withAnimation { self.isLoaded = true }
+                }
             case let .failure(error):
-                await MainActor.run { self.error = error }
+                await MainActor.run { self.error = .fetchChats(error) }
             }
         }
 
-        // Throttled search filters chats
+        // Binding: Filter chats based on debounced search query
         $search
             .removeDuplicates()
             .throttle(for: .milliseconds(300), scheduler: RunLoop.current, latest: true)
@@ -51,7 +53,7 @@ class ShareModel: ObservableObject {
             .assign(to: \.chats, on: self)
             .store(in: &bag)
 
-        // Deselect a chat, when filtered by the search
+        // Binding: Filtering out chat deselects it
         $chats
             .map { chats in
                 Set(chats).contains(self.selected) ? self.selected : nil
@@ -61,29 +63,45 @@ class ShareModel: ObservableObject {
             .store(in: &bag)
     }
 
-    func send() async {
-        guard let item else { fatalError("Missing Extension Item") }
-        guard let chat = selected else { return }
-        let url = try! await url(attachment: item.attachments!.first!, type: .data)!
-        let cryptoFile = saveFileFromURL(url)!
-        let _ = sendSimpleXCmd(
-            .apiSendMessage(
-                type: chat.chatInfo.chatType,
-                id: chat.chatInfo.apiId,
-                file: cryptoFile,
-                quotedItemId: nil,
-                msg: .file(comment),
-                live: false,
-                ttl: nil
-            )
-        )
+    func send() {
         Task {
-            try! await Task.sleep(for: .seconds(2))
-            completion()
+            switch await self.sendMessage() {
+            case .success:
+                try? await Task.sleep(for: .seconds(2))
+                completion?()
+            case let .failure(error):
+                self.error = .sendMessage(error)
+            }
         }
     }
 
-    private func fetchChats() -> Result<Array<ChatData>, ShareError> {
+    private func sendMessage() async -> Result<AChatItem, ShareError.SendMessage> {
+        guard let chat = selected else { return .failure(.noChatWasSelected) }
+        guard let attachment = item?.attachments?.first else { return .failure(.missingAttachment) }
+        do {
+            let url = try await url(attachment: attachment, type: .data)
+            guard let cryptoFile = saveFileFromURL(url) else{ return .failure(.encryptFileFailure) }
+            let chatResponse = sendSimpleXCmd(
+                .apiSendMessage(
+                    type: chat.chatInfo.chatType,
+                    id: chat.chatInfo.apiId,
+                    file: cryptoFile,
+                    quotedItemId: nil,
+                    msg: .file(comment),
+                    live: false,
+                    ttl: nil
+                )
+            )
+            return switch chatResponse {
+            case let .newChatItem(_, chatItem): .success(chatItem)
+            default: .failure(.sendMessageFailure)
+            }
+        } catch {
+            return .failure(.loadFileRepresentation(error))
+        }
+    }
+
+    private func fetchChats() -> Result<Array<ChatData>, ShareError.FetchChats> {
         registerGroupDefaults()
         haskell_init_se()
         let (_, result) = chatMigrateInit()
@@ -109,34 +127,22 @@ class ShareModel: ObservableObject {
             return .failure(.unableToStartChat)
         }
         guard case let .apiChats(user: _, chats: chats) = sendSimpleXCmd(.apiGetChats(userId: user.userId)) else {
-            return .failure(.unableToFetchChats)
+            return .failure(.unableToFetchChats(user))
         }
         return .success(chats)
     }
 }
 
-fileprivate func url(attachment: NSItemProvider, type: UTType) async throws -> URL? {
+fileprivate func url(attachment: NSItemProvider, type: UTType) async throws -> URL {
     try await withCheckedThrowingContinuation { cont in
-        // TODO: This call returns a progress for showing a loading bar
         let _ = attachment.loadFileRepresentation(for: type, openInPlace: true) { url, bool, error in
             if let url = url {
                 cont.resume(returning: url)
             } else if let error = error {
                 cont.resume(throwing: error)
             } else {
-                cont.resume(returning: nil)
+                fatalError("Either `url` or `error` must be present")
             }
         }
     }
-}
-
-enum ShareError: Error, CustomStringConvertible {
-    case unexpectedMigrationResult(DBMigrationResult)
-    case noActiveUser
-    case networkConfigurationFailure
-    case unableToSetupFilePaths
-    case unableToStartChat
-    case unableToFetchChats
-
-    var description: String { "\(self)" }
 }

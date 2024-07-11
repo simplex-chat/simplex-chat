@@ -2,49 +2,66 @@
 //  ShareView.swift
 //  SimpleX SE
 //
-//  Created by User on 09/07/2024.
+//  Created by Levitating Pineapple on 09/07/2024.
 //  Copyright © 2024 SimpleX Chat. All rights reserved.
 //
 
 import SwiftUI
 
 struct ShareView: View {
-    let assetSize: Double = 32
     @ObservedObject var model: ShareModel
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: .zero) {
-                List(model.chats, selection: $model.selected) { chat in
-                    HStack {
-                        profileImage(imageString: chat.chatInfo.image, size: assetSize)
-                        Text(chat.chatInfo.displayName)
-                        Spacer()
-                        radioButton(selected: chat == model.selected)
-                    }.tag(chat)
+            ZStack(alignment: .bottom) {
+                if model.isLoaded {
+                    List(selection: $model.selected) {
+                        ForEach(model.chats) { chat in
+                            HStack {
+                                profileImage(imageString: chat.chatInfo.image, size: 36)
+                                Text(chat.chatInfo.displayName)
+                                Spacer()
+                                radioButton(selected: chat == model.selected)
+                            }.tag(chat)
+                        }
+                        composeSpacer
+                    }.listStyle(.plain)
+                } else {
+                    ProgressView().frame(maxHeight: .infinity)
                 }
                 compose
             }
             .navigationTitle("Share")
-            .environment(\.editMode, .constant(.active))
-        }.searchable(
+        }
+        .searchable(
             text: $model.search,
             placement: .navigationBarDrawer(displayMode: .always)
         )
+        .alert(
+            isPresented: .constant(model.error != nil),
+            error: model.error
+        ) { Button("Dismiss") { model.completion?() } }
     }
 
     private var compose: some View {
         HStack {
             TextField("Comment", text: $model.comment, axis: .vertical)
                 .textFieldStyle(.roundedBorder)
-            Button() {
-                Task { await model.send() }
-            } label: {
+            Button(action: model.send) {
                 Image(systemName: "arrow.up.circle.fill")
                     .resizable()
-                    .frame(width: assetSize, height: assetSize)
+                    .frame(width: 36, height: 36)
             }.disabled(model.selected == nil)
-        }.padding()
+        }
+        .padding(8)
+        .background(Material.bar)
+    }
+
+    private var composeSpacer: some View {
+        Text(" " + model.comment)
+            .padding(.trailing, 36)
+            .padding(8)
+            .opacity(.zero)
     }
 
     private func profileImage(imageString: String?, size: Double) -> some View {
