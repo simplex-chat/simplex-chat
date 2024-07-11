@@ -596,7 +596,7 @@ struct ChatView: View {
     }
 
     private struct ChatItemWithMenu: View {
-        let m = ChatModel.shared
+        @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
         @ObservedObject var chat: Chat
         let chatItem: ChatItem
