@@ -68,7 +68,7 @@ struct ChatItemView: View {
                 default: nil
                 }
             }
-            .flatMap { UIImage(imageString: $0) }
+            .flatMap { UIImage(base64Encoded: $0) }
         let adjustedMaxWidth = {
             if let preview, preview.size.width <= preview.size.height {
                 maxWidth * 0.75

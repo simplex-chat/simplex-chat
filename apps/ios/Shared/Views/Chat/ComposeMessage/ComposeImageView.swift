@@ -18,7 +18,7 @@ struct ComposeImageView: View {
     var body: some View {
         HStack(alignment: .center, spacing: 8) {
             let imgs: [UIImage] = images.compactMap { image in
-                UIImage(imageString: image)
+                UIImage(base64Encoded: image)
             }
             if imgs.count == 0 {
                 ProgressView()
