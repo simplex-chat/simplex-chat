@@ -292,6 +292,18 @@ func chatErrorString(_ err: ChatError) -> String {
     return String(describing: err)
 }
 
+public func readableError(_ err: Error) -> String {
+    if let r = err as? ChatResponse {
+        switch r {
+        case let .chatCmdError(_, chatError): return chatError.readableError
+        case let .chatError(_, chatError): return chatError.readableError
+        default: return "\(String(describing: r.responseType)), details: \(String(describing: r.details))"
+        }
+    } else {
+        return String(describing: err)
+    }
+}
+
 public enum DBMigrationResult: Decodable, Equatable {
     case ok
     case invalidConfirmation

@@ -1746,6 +1746,14 @@ public enum ChatError: Decodable, Hashable {
     case errorDatabase(databaseError: DatabaseError)
     case errorRemoteCtrl(remoteCtrlError: RemoteCtrlError)
     case invalidJSON(json: String)
+
+    public var readableError: String {
+        return switch self {
+        case let .error(errorType): "Chat error: \(errorType.readableError)"
+        case let .errorAgent(agentError): "Agent error: \(agentError.readableError)"
+        default: "TODO - other errors"
+        }
+    }
 }
 
 public enum ChatErrorType: Decodable, Hashable {
@@ -1825,6 +1833,13 @@ public enum ChatErrorType: Decodable, Hashable {
     case peerChatVRangeIncompatible
     case internalError(message: String)
     case exception(message: String)
+
+    public var readableError: String {
+        switch self {
+        case .noActiveUser: return "No active user"
+        default: return "TODO - other errors"
+        }
+    }
 }
 
 public enum StoreError: Decodable, Hashable {
@@ -1912,6 +1927,13 @@ public enum AgentErrorType: Decodable, Hashable {
     case INTERNAL(internalErr: String)
     case CRITICAL(offerRestart: Bool, criticalErr: String)
     case INACTIVE
+
+    public var readableError: String {
+        return switch self {
+        case let .CMD(cmdErr): "Command error: \(cmdErr.readableError)"
+        default: "TODO - other errors"
+        }
+    }
 }
 
 public enum CommandErrorType: Decodable, Hashable {
@@ -1920,6 +1942,13 @@ public enum CommandErrorType: Decodable, Hashable {
     case NO_CONN
     case SIZE
     case LARGE
+
+    public var readableError: String {
+        return switch self {
+        case .PROHIBITED: "Prohibited command"
+        default: "TODO - other errors"
+        }
+    }
 }
 
 public enum ConnectionErrorType: Decodable, Hashable {
@@ -1944,10 +1973,19 @@ public enum ProtocolErrorType: Decodable, Hashable {
     case SESSION
     case CMD(cmdErr: ProtocolCommandError)
     case AUTH
+    case CRYPTO
     case QUOTA
     case NO_MSG
     case LARGE_MSG
+    case EXPIRED
     case INTERNAL
+}
+
+public enum ProxyError: Decodable, Hashable {
+    case PROTOCOL(protocolErr: ProtocolErrorType)
+    case BROKER(brokerErr: BrokerErrorType)
+    case BASIC_AUTH
+    case NO_SESSION
 }
 
 public enum XFTPErrorType: Decodable, Hashable {
