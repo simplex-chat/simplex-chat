@@ -564,52 +564,12 @@ func joinGroup(_ groupId: Int64, _ onComplete: @escaping () async -> Void) {
     }
 }
 
-struct ErrorAlert {
-    var title: LocalizedStringKey
-    var message: LocalizedStringKey
-}
-
 func getErrorAlert(_ error: Error, _ title: LocalizedStringKey) -> ErrorAlert {
-    switch error as? ChatResponse {
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TIMEOUT))):
-        return ErrorAlert(title: "Connection timeout", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .NETWORK))):
-        return ErrorAlert(title: "Connection error", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .HOST))):
-        return ErrorAlert(title: "Connection error", message: "Server address is incompatible with network settings: \(serverHostname(addr)).")
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TRANSPORT(.version)))):
-        return ErrorAlert(title: "Connection error", message: "Server version is incompatible with network settings: \(serverHostname(addr)).")
-    case let .chatCmdError(_, .errorAgent(.SMP(.PROXY(proxyErr)))):
-        return if let alert = proxyErrorAlert(proxyErr) {
-            alert
-        } else {
-            ErrorAlert(title: title, message: "Error: \(responseError(error))")
-        }
-    case let .chatCmdError(_, .errorAgent(.PROXY(_, _, .protocolError(.PROXY(proxyErr))))):
-        return if let alert = proxyErrorAlert(proxyErr) {
-            alert
-        } else {
-            ErrorAlert(title: title, message: "Error: \(responseError(error))")
-        }
-    default:
+    if let r = error as? ChatResponse,
+       let alert = getNetworkErrorAlert(r) {
+        return alert
+    } else {
         return ErrorAlert(title: title, message: "Error: \(responseError(error))")
-    }
-}
-
-private func proxyErrorAlert(_ proxyErr: ProxyError) -> ErrorAlert? {
-    switch proxyErr {
-    case .BROKER(brokerErr: .TIMEOUT):
-        return ErrorAlert(title: "Private routing error", message: "Please try later.")
-    case .BROKER(brokerErr: .NETWORK):
-        return ErrorAlert(title: "Private routing error", message: "Please try later.")
-    case .NO_SESSION:
-        return ErrorAlert(title: "Private routing error", message: "Please try later.")
-    case .BROKER(brokerErr: .HOST):
-        return ErrorAlert(title: "Private routing error", message: "Server address is incompatible with network settings.")
-    case .BROKER(brokerErr: .TRANSPORT(.version)):
-        return ErrorAlert(title: "Private routing error", message: "Server version is incompatible with network settings.")
-    default:
-        return nil
     }
 }
 
