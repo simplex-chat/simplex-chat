@@ -44,7 +44,7 @@ private fun applyAppLocale() {
   Locale.setDefault(Locale.forLanguageTag(lang))
 }
 
-actual fun chooseGitHubReleaseAssets(release: GitHubRelease): List<GitHubAsset> {
+fun chooseGitHubReleaseAssets(release: GitHubRelease): List<GitHubAsset> {
   val process = Runtime.getRuntime().exec("which dpkg").onExit().join()
   val isDebianBased = process.exitValue() == 0
   // Show all available .deb packages and user will choose the one that works on his system
@@ -56,7 +56,7 @@ actual fun chooseGitHubReleaseAssets(release: GitHubRelease): List<GitHubAsset> 
   return res
 }
 
-actual fun installAppUpdate(file: File) {
+fun installAppUpdate(file: File) {
   when {
     desktopPlatform.isLinux() -> {
       val process = Runtime.getRuntime().exec("xdg-open ${file.absolutePath}").onExit().join()

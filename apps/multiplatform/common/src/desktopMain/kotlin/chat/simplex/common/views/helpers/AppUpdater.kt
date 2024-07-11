@@ -24,19 +24,6 @@ import java.io.File
 import java.net.InetSocketAddress
 import java.net.Proxy
 
-enum class AppUpdatesChannel {
-  NONE,
-  STABLE,
-  BETA;
-
-  val text: String
-    get() = when (this) {
-      NONE -> generalGetString(MR.strings.app_check_for_updates_none)
-      STABLE -> generalGetString(MR.strings.app_check_for_updates_stable)
-      BETA -> generalGetString(MR.strings.app_check_for_updates_beta)
-    }
-}
-
 @Serializable
 data class GitHubRelease(
   val id: Long,

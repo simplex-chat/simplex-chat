@@ -3,8 +3,8 @@ package chat.simplex.common.platform
 import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.DefaultTheme
-import chat.simplex.common.views.helpers.*
-import java.io.File
+import chat.simplex.common.views.helpers.generalGetString
+import chat.simplex.res.MR
 import java.util.*
 
 enum class AppPlatform {
@@ -57,6 +57,15 @@ fun runMigrations() {
   }
 }
 
-expect fun chooseGitHubReleaseAssets(release: GitHubRelease): List<GitHubAsset>
+enum class AppUpdatesChannel {
+  NONE,
+  STABLE,
+  BETA;
 
-expect fun installAppUpdate(file: File)
+  val text: String
+    get() = when (this) {
+      NONE -> generalGetString(MR.strings.app_check_for_updates_none)
+      STABLE -> generalGetString(MR.strings.app_check_for_updates_stable)
+      BETA -> generalGetString(MR.strings.app_check_for_updates_beta)
+    }
+}
