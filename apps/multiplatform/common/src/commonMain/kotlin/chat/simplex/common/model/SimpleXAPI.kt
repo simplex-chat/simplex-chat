@@ -5500,6 +5500,7 @@ sealed class AgentErrorType {
     is SMP -> "SMP ${smpErr.string}"
     // is NTF -> "NTF ${ntfErr.string}"
     is XFTP -> "XFTP ${xftpErr.string}"
+    is PROXY -> "PROXY $proxyServer $relayServer ${proxyErr.string}"
     is RCP -> "RCP ${rcpErr.string}"
     is BROKER -> "BROKER ${brokerErr.string}"
     is AGENT -> "AGENT ${agentErr.string}"
@@ -5512,6 +5513,7 @@ sealed class AgentErrorType {
   @Serializable @SerialName("SMP") class SMP(val smpErr: SMPErrorType): AgentErrorType()
   // @Serializable @SerialName("NTF") class NTF(val ntfErr: SMPErrorType): AgentErrorType()
   @Serializable @SerialName("XFTP") class XFTP(val xftpErr: XFTPErrorType): AgentErrorType()
+  @Serializable @SerialName("PROXY") class PROXY(val proxyServer: String, val relayServer: String, val proxyErr: ProxyClientError): AgentErrorType()
   @Serializable @SerialName("RCP") class RCP(val rcpErr: RCErrorType): AgentErrorType()
   @Serializable @SerialName("BROKER") class BROKER(val brokerAddress: String, val brokerErr: BrokerErrorType): AgentErrorType()
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
@@ -5576,20 +5578,40 @@ sealed class SMPErrorType {
     is BLOCK -> "BLOCK"
     is SESSION -> "SESSION"
     is CMD -> "CMD ${cmdErr.string}"
+    is PROXY -> "PROXY ${proxyErr.string}"
     is AUTH -> "AUTH"
+    is CRYPTO -> "CRYPTO"
     is QUOTA -> "QUOTA"
     is NO_MSG -> "NO_MSG"
     is LARGE_MSG -> "LARGE_MSG"
+    is EXPIRED -> "EXPIRED"
     is INTERNAL -> "INTERNAL"
   }
   @Serializable @SerialName("BLOCK") class BLOCK: SMPErrorType()
   @Serializable @SerialName("SESSION") class SESSION: SMPErrorType()
   @Serializable @SerialName("CMD") class CMD(val cmdErr: ProtocolCommandError): SMPErrorType()
+  @Serializable @SerialName("PROXY") class PROXY(val proxyErr: ProxyError): SMPErrorType()
   @Serializable @SerialName("AUTH") class AUTH: SMPErrorType()
+  @Serializable @SerialName("CRYPTO") class CRYPTO: SMPErrorType()
   @Serializable @SerialName("QUOTA") class QUOTA: SMPErrorType()
   @Serializable @SerialName("NO_MSG") class NO_MSG: SMPErrorType()
   @Serializable @SerialName("LARGE_MSG") class LARGE_MSG: SMPErrorType()
+  @Serializable @SerialName("EXPIRED") class EXPIRED: SMPErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL: SMPErrorType()
+}
+
+@Serializable
+sealed class ProxyError {
+  val string: String get() = when (this) {
+    is PROTOCOL -> "PROTOCOL ${protocolErr.string}"
+    is BROKER -> "BROKER ${brokerErr.string}"
+    is BASIC_AUTH -> "BASIC_AUTH"
+    is NO_SESSION -> "NO_SESSION"
+  }
+  @Serializable @SerialName("PROTOCOL") class PROTOCOL(val protocolErr: SMPErrorType): ProxyError()
+  @Serializable @SerialName("BROKER") class BROKER(val brokerErr: BrokerErrorType): ProxyError()
+  @Serializable @SerialName("BASIC_AUTH") class BASIC_AUTH: ProxyError()
+  @Serializable @SerialName("NO_SESSION") class NO_SESSION: ProxyError()
 }
 
 @Serializable
@@ -5690,6 +5712,18 @@ sealed class XFTPErrorType {
   @Serializable @SerialName("TIMEOUT") object TIMEOUT: XFTPErrorType()
   @Serializable @SerialName("REDIRECT") class REDIRECT(val redirectError: String): XFTPErrorType()
   @Serializable @SerialName("INTERNAL") object INTERNAL: XFTPErrorType()
+}
+
+@Serializable
+sealed class ProxyClientError {
+  val string: String get() = when (this) {
+    is ProxyProtocolError -> "ProxyProtocolError $protocolErr"
+    is ProxyUnexpectedResponse -> "ProxyUnexpectedResponse $responseStr"
+    is ProxyResponseError -> "ProxyResponseError $responseErr"
+  }
+  @Serializable @SerialName("protocolError") class ProxyProtocolError(val protocolErr: SMPErrorType): ProxyClientError()
+  @Serializable @SerialName("unexpectedResponse") class ProxyUnexpectedResponse(val responseStr: String): ProxyClientError()
+  @Serializable @SerialName("responseError") class ProxyResponseError(val responseErr: SMPErrorType): ProxyClientError()
 }
 
 @Serializable
