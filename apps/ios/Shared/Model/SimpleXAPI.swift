@@ -1103,6 +1103,21 @@ func networkErrorAlert(_ r: ChatResponse) -> Alert? {
             title: "Connection error",
             message: "Please check your network connection with \(serverHostname(addr)) and try again."
         )
+    case .chatCmdError(_, .errorAgent(.PROXY(_, _, .protocolError(.PROXY(.BROKER(brokerErr: .TIMEOUT)))))):
+        return mkAlert(
+            title: "Temporary proxy error",
+            message: "Please try again."
+        )
+    case .chatCmdError(_, .errorAgent(.PROXY(_, _, .protocolError(.PROXY(.BROKER(brokerErr: .NETWORK)))))):
+        return mkAlert(
+            title: "Temporary proxy error",
+            message: "Please try again."
+        )
+    case .chatCmdError(_, .errorAgent(.PROXY(_, _, .protocolError(.PROXY(.NO_SESSION))))):
+        return mkAlert(
+            title: "Temporary proxy error",
+            message: "Please try again."
+        )
     default:
         return nil
     }

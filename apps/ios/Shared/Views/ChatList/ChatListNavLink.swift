@@ -575,6 +575,12 @@ func getErrorAlert(_ error: Error, _ title: LocalizedStringKey) -> ErrorAlert {
         return ErrorAlert(title: "Connection timeout", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
     case let .chatCmdError(_, .errorAgent(.BROKER(addr, .NETWORK))):
         return ErrorAlert(title: "Connection error", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
+    case .chatCmdError(_, .errorAgent(.PROXY(_, _, .protocolError(.PROXY(.BROKER(brokerErr: .TIMEOUT)))))):
+        return ErrorAlert(title: "Temporary proxy error", message: "Please try again.")
+    case .chatCmdError(_, .errorAgent(.PROXY(_, _, .protocolError(.PROXY(.BROKER(brokerErr: .NETWORK)))))):
+        return ErrorAlert(title: "Temporary proxy error", message: "Please try again.")
+    case .chatCmdError(_, .errorAgent(.PROXY(_, _, .protocolError(.PROXY(.NO_SESSION))))):
+        return ErrorAlert(title: "Temporary proxy error", message: "Please try again.")
     default:
         return ErrorAlert(title: title, message: "Error: \(responseError(error))")
     }
