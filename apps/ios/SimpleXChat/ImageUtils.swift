@@ -197,7 +197,6 @@ public func moveTempFileFromURL(_ url: URL) -> CryptoFile? {
             try FileManager.default.moveItem(at: url, to: getAppFilePath(fileName))
             savedFile = CryptoFile.plain(fileName)
         }
-        
         return savedFile
     } catch {
         logger.error("ImageUtils.moveTempFileFromURL error: \(error.localizedDescription)")
@@ -341,9 +340,8 @@ extension UIImage {
         return self
     }
 
-
-    public convenience init?(imageString: String?) {
-        if let imageString, let data = Data(base64Encoded: dropImagePrefix(imageString)) {
+    public convenience init?(base64Encoded: String?) {
+        if let base64Encoded, let data = Data(base64Encoded: dropImagePrefix(base64Encoded)) {
             self.init(data: data)
         } else {
             return nil

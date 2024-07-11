@@ -194,7 +194,8 @@
 		8C9BC2652C240D5200875A27 /* ThemeModeEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C9BC2642C240D5100875A27 /* ThemeModeEditor.swift */; };
 		8CC4ED902BD7B8530078AEE8 /* CallAudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */; };
 		8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC956ED2BC0041000412A11 /* NetworkObserver.swift */; };
-		CE38A29E2C3FE20B005ED185 /* SwiftyGif in Frameworks */ = {isa = PBXBuildFile; productRef = CE38A29D2C3FE20B005ED185 /* SwiftyGif */; };
+		CE38A29A2C3FCA54005ED185 /* ImageUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBD2859295711D700EC2CF4 /* ImageUtils.swift */; };
+		CE38A29C2C3FCD72005ED185 /* SwiftyGif in Frameworks */ = {isa = PBXBuildFile; productRef = CE38A29B2C3FCD72005ED185 /* SwiftyGif */; };
 		CE984D4B2C36C5D500E3AEFF /* ChatItemClipShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE984D4A2C36C5D500E3AEFF /* ChatItemClipShape.swift */; };
 		CEE723AA2C3BD3D70009AE93 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE723A92C3BD3D70009AE93 /* ShareViewController.swift */; };
 		CEE723B12C3BD3D70009AE93 /* SimpleX SE.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = CEE723A72C3BD3D70009AE93 /* SimpleX SE.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -599,15 +600,7 @@
 				E50581022C3DDD7F009C3F71 /* libHSsimplex-chat-6.0.0.0-IhofDzGnTMcDdW5i3Fb7xN-ghc9.6.3.a in Frameworks */,
 				E50581062C3DDD9D009C3F71 /* Yams in Frameworks */,
 				E50581042C3DDD7F009C3F71 /* libHSsimplex-chat-6.0.0.0-IhofDzGnTMcDdW5i3Fb7xN.a in Frameworks */,
-				CE38A29E2C3FE20B005ED185 /* SwiftyGif in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		CEE723A42C3BD3D70009AE93 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				CEE723CF2C3C21C90009AE93 /* SimpleXChat.framework in Frameworks */,
+				CE38A29C2C3FCD72005ED185 /* SwiftyGif in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -907,6 +900,7 @@
 				5C9FD96A27A56D4D0075386C /* JSON.swift */,
 				5CDCAD7D2818941F00503DA2 /* API.swift */,
 				5CDCAD80281A7E2700503DA2 /* Notifications.swift */,
+				5CBD2859295711D700EC2CF4 /* ImageUtils.swift */,
 				64DAE1502809D9F5000DA960 /* FileUtils.swift */,
 				5CBD2859295711D700EC2CF4 /* ImageUtils.swift */,
 				5C9D81182AA7A4F1001D49FD /* CryptoFile.swift */,
@@ -1131,7 +1125,7 @@
 			name = SimpleXChat;
 			packageProductDependencies = (
 				E50581052C3DDD9D009C3F71 /* Yams */,
-				CE38A29D2C3FE20B005ED185 /* SwiftyGif */,
+				CE38A29B2C3FCD72005ED185 /* SwiftyGif */,
 			);
 			productName = SimpleXChat;
 			productReference = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */;
@@ -1469,7 +1463,7 @@
 				5CE2BA90284533A300EC33A6 /* JSON.swift in Sources */,
 				5CE2BA8B284533A300EC33A6 /* ChatTypes.swift in Sources */,
 				5CE2BA8F284533A300EC33A6 /* APITypes.swift in Sources */,
-				CEE723F32C3D342F0009AE93 /* ImageUtils.swift in Sources */,
+				CE38A29A2C3FCA54005ED185 /* ImageUtils.swift in Sources */,
 				5C9D811A2AA8727A001D49FD /* CryptoFile.swift in Sources */,
 				5CE2BA8C284533A300EC33A6 /* AppGroup.swift in Sources */,
 				8C74C3E52C1B900600039E77 /* ThemeTypes.swift in Sources */,
@@ -2214,7 +2208,7 @@
 			package = 8C73C1162C21E17B00892670 /* XCRemoteSwiftPackageReference "Yams" */;
 			productName = Yams;
 		};
-		CE38A29D2C3FE20B005ED185 /* SwiftyGif */ = {
+		CE38A29B2C3FCD72005ED185 /* SwiftyGif */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = D77B92DA2952372200A5A1CC /* XCRemoteSwiftPackageReference "SwiftyGif" */;
 			productName = SwiftyGif;

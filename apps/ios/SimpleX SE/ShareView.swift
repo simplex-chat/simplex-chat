@@ -49,7 +49,7 @@ struct ShareView: View {
 
     private func profileImage(imageString: String?, size: Double) -> some View {
         Group {
-            if let uiImage = UIImage(imageString: imageString) {
+            if let uiImage = UIImage(base64Encoded: imageString) {
                 Image(uiImage: uiImage).resizable()
             } else {
                 Image(systemName: "person.crop.circle.fill").resizable()
