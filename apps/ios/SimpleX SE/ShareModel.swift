@@ -20,14 +20,22 @@ class ShareModel: ObservableObject {
     @Published var search = String()
     @Published var comment = String()
     @Published var selected: ChatData?
+    @Published var error: ShareError?
 
     var completion: (() -> Void)!
 
     private let allChats = PassthroughSubject<Array<ChatData>, Never>()
-    private var cancellables = Set<AnyCancellable>()
+    private var bag = Set<AnyCancellable>()
 
     init() {
-        Task { await setup() }
+        Task {
+            switch fetchChats() {
+            case let .success(chats):
+                await MainActor.run { self.chats = chats }
+            case let .failure(error):
+                await MainActor.run { self.error = error }
+            }
+        }
 
         // Throttled search filters chats
         $search
@@ -41,7 +49,7 @@ class ShareModel: ObservableObject {
             }
             .receive(on: DispatchQueue.main)
             .assign(to: \.chats, on: self)
-            .store(in: &cancellables)
+            .store(in: &bag)
 
         // Deselect a chat, when filtered by the search
         $chats
@@ -50,7 +58,7 @@ class ShareModel: ObservableObject {
             }
             .receive(on: DispatchQueue.main)
             .assign(to: \.selected, on: self)
-            .store(in: &cancellables)
+            .store(in: &bag)
     }
 
     func send() async {
@@ -75,53 +83,60 @@ class ShareModel: ObservableObject {
         }
     }
 
-    private func url(attachment: NSItemProvider, type: UTType) async throws -> URL? {
-        try await withCheckedThrowingContinuation { cont in
-            // TODO: This call returns a progress for showing a loading bar
-            let _ = attachment.loadFileRepresentation(for: type, openInPlace: true) { url, bool, error in
-                if let url = url {
-                    cont.resume(returning: url)
-                } else if let error = error {
-                    cont.resume(throwing: error)
-                } else {
-                    cont.resume(returning: nil)
-                }
-            }
-        }
-    }
-
-    private func setup() async {
+    private func fetchChats() -> Result<Array<ChatData>, ShareError> {
         registerGroupDefaults()
         haskell_init_se()
         let (_, result) = chatMigrateInit()
-        guard (
-            result == .ok
-        ) else { fatalError("Unexpected database result") }
-
-        guard case let .activeUser(user: user) = sendSimpleXCmd(
-            .showActiveUser
-        ) else { fatalError("No active user") }
-
-        guard case .cmdOk = sendSimpleXCmd(
-            .apiSetNetworkConfig(networkConfig: getNetCfg())
-        ) else { fatalError("Error setting up networking") }
-
+        guard (result == .ok) else {
+            return .failure(.unexpectedMigrationResult(result))
+        }
+        guard case let .activeUser(user: user) = sendSimpleXCmd(.showActiveUser) else {
+            return .failure(.noActiveUser)
+        }
+        guard case .cmdOk = sendSimpleXCmd(.apiSetNetworkConfig(networkConfig: getNetCfg())) else {
+            return .failure(.networkConfigurationFailure)
+        }
         guard case .cmdOk = sendSimpleXCmd(
             .apiSetAppFilePaths(
                 filesFolder: getAppFilesDirectory().path,
                 tempFolder: getTempFilesDirectory().path,
                 assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path
             )
-        ) else { fatalError("Error settting up file paths") }
-
-        guard case .chatStarted = sendSimpleXCmd(
-            .startChat(mainApp: false)
-        ) else { fatalError("Unable to start chat") }
-
-        guard case let .apiChats(user: _, chats: chats) = sendSimpleXCmd(
-            .apiGetChats(userId: user.userId)
-        ) else { fatalError("No chats available") }
-
-        await MainActor.run { allChats.send(chats) }
+        ) else {
+            return .failure(.unableToSetupFilePaths)
+        }
+        guard case .chatStarted = sendSimpleXCmd(.startChat(mainApp: false)) else {
+            return .failure(.unableToStartChat)
+        }
+        guard case let .apiChats(user: _, chats: chats) = sendSimpleXCmd(.apiGetChats(userId: user.userId)) else {
+            return .failure(.unableToFetchChats)
+        }
+        return .success(chats)
     }
+}
+
+fileprivate func url(attachment: NSItemProvider, type: UTType) async throws -> URL? {
+    try await withCheckedThrowingContinuation { cont in
+        // TODO: This call returns a progress for showing a loading bar
+        let _ = attachment.loadFileRepresentation(for: type, openInPlace: true) { url, bool, error in
+            if let url = url {
+                cont.resume(returning: url)
+            } else if let error = error {
+                cont.resume(throwing: error)
+            } else {
+                cont.resume(returning: nil)
+            }
+        }
+    }
+}
+
+enum ShareError: Error, CustomStringConvertible {
+    case unexpectedMigrationResult(DBMigrationResult)
+    case noActiveUser
+    case networkConfigurationFailure
+    case unableToSetupFilePaths
+    case unableToStartChat
+    case unableToFetchChats
+
+    var description: String { "\(self)" }
 }
