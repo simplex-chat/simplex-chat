@@ -597,10 +597,10 @@ struct ChatView: View {
 
     private struct ChatItemWithMenu: View {
         let m = ChatModel.shared
-        let chat: Chat
+        @EnvironmentObject var theme: AppTheme
+        @ObservedObject var chat: Chat
         let chatItem: ChatItem
         let maxWidth: CGFloat
-        @EnvironmentObject var theme: AppTheme
         @Binding var composeState: ComposeState
         @Binding var selectedMember: GMember?
         @Binding var revealedChatItem: ChatItem?
