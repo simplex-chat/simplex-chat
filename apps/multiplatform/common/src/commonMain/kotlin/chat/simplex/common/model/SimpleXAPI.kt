@@ -1809,6 +1809,80 @@ object ChatController {
         )
         true
       }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.BROKER
+          && r.chatError.agentError.brokerErr is BrokerErrorType.HOST -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.connection_error),
+          String.format(generalGetString(MR.strings.network_error_broker_host_desc), serverHostname(r.chatError.agentError.brokerAddress))
+        )
+        true
+      }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.BROKER
+          && r.chatError.agentError.brokerErr is BrokerErrorType.TRANSPORT
+          && r.chatError.agentError.brokerErr.transportErr is SMPTransportError.Version -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.connection_error),
+          String.format(generalGetString(MR.strings.network_error_broker_version_desc), serverHostname(r.chatError.agentError.brokerAddress))
+        )
+        true
+      }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.SMP
+          && r.chatError.agentError.smpErr is SMPErrorType.PROXY ->
+        proxyErrorAlert(r.chatError.agentError.smpErr.proxyErr)
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.PROXY
+          && r.chatError.agentError.proxyErr is ProxyClientError.ProxyProtocolError
+          && r.chatError.agentError.proxyErr.protocolErr is SMPErrorType.PROXY ->
+        proxyErrorAlert(r.chatError.agentError.proxyErr.protocolErr.proxyErr)
+      else -> false
+    }
+  }
+
+  private fun proxyErrorAlert(pe: ProxyError): Boolean {
+    return when {
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.TIMEOUT -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          generalGetString(MR.strings.please_try_later)
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.NETWORK -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          generalGetString(MR.strings.please_try_later)
+        )
+        true
+      }
+      pe is ProxyError.NO_SESSION -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          generalGetString(MR.strings.please_try_later)
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.HOST -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          generalGetString(MR.strings.srv_error_host)
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.TRANSPORT
+          && pe.brokerErr.transportErr is SMPTransportError.Version -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          generalGetString(MR.strings.srv_error_version)
+        )
+        true
+      }
       else -> false
     }
   }
