@@ -19,7 +19,7 @@ module Simplex.Chat.Store.Connections
 where
 
 import Control.Applicative ((<|>))
-import Control.Monad
+import Control.Monad (forM)
 import Control.Monad.Except
 import Data.Int (Int64)
 import Data.Maybe (catMaybes, fromMaybe)
@@ -28,7 +28,6 @@ import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
-import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ConnId)
@@ -213,19 +212,17 @@ getContactConnEntityByConnReqHash db vr user@User {userId} (cReqHash1, cReqHash2
         (userId, cReqHash1, cReqHash2, ConnDeleted)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db vr user) connId_
 
-getConnectionsToSubscribe :: DB.Connection -> VersionRangeChat -> IO ([ConnId], [ConnectionEntity])
-getConnectionsToSubscribe db vr = do
-  aConnIds <- map fromOnly <$> DB.query_ db "SELECT agent_conn_id FROM connections where to_subscribe = 1"
-  entities <- forM aConnIds $ \acId -> do
-    getUserByAConnId db acId >>= \case
-      Just user -> eitherToMaybe <$> runExceptT (getConnectionEntity db vr user acId)
-      Nothing -> pure Nothing
-  unsetConnectionToSubscribe db
+getConnectionsToSubscribe :: DB.Connection -> VersionRangeChat -> User -> IO ([ConnId], [ConnectionEntity])
+getConnectionsToSubscribe db vr user@User {userId} = do
+  aConnIds <- map fromOnly <$> DB.query db "SELECT agent_conn_id FROM connections WHERE to_subscribe = 1 AND user_id = ?" (Only userId)
+  entities <- forM aConnIds $ \acId ->
+    eitherToMaybe <$> runExceptT (getConnectionEntity db vr user acId)
+  unsetConnectionToSubscribe db user
   let connIds = map (\(AgentConnId connId) -> connId) aConnIds
   pure (connIds, catMaybes entities)
 
-unsetConnectionToSubscribe :: DB.Connection -> IO ()
-unsetConnectionToSubscribe db = DB.execute_ db "UPDATE connections SET to_subscribe = 0 WHERE to_subscribe = 1"
+unsetConnectionToSubscribe :: DB.Connection -> User -> IO ()
+unsetConnectionToSubscribe db User {userId} = DB.execute db "UPDATE connections SET to_subscribe = 0 WHERE user_id = ? AND to_subscribe = 1" (Only userId)
 
 deleteConnectionRecord :: DB.Connection -> User -> Int64 -> IO ()
 deleteConnectionRecord db User {userId} cId = do

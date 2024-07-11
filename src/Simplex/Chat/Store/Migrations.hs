@@ -110,6 +110,7 @@ import Simplex.Chat.Migrations.M20240501_chat_deleted
 import Simplex.Chat.Migrations.M20240510_chat_items_via_proxy
 import Simplex.Chat.Migrations.M20240515_rcv_files_user_approved_relays
 import Simplex.Chat.Migrations.M20240528_quota_err_counter
+import Simplex.Chat.Migrations.M20240530_user_contact_links_user_id
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -219,7 +220,8 @@ schemaMigrations =
     ("20240501_chat_deleted", m20240501_chat_deleted, Just down_m20240501_chat_deleted),
     ("20240510_chat_items_via_proxy", m20240510_chat_items_via_proxy, Just down_m20240510_chat_items_via_proxy),
     ("20240515_rcv_files_user_approved_relays", m20240515_rcv_files_user_approved_relays, Just down_m20240515_rcv_files_user_approved_relays),
-    ("20240528_quota_err_counter", m20240528_quota_err_counter, Just down_m20240528_quota_err_counter)
+    ("20240528_quota_err_counter", m20240528_quota_err_counter, Just down_m20240528_quota_err_counter),
+    ("20240530_user_contact_links_user_id", m20240530_user_contact_links_user_id, Just down_m20240530_user_contact_links_user_id)
   ]
 
 -- | The list of migrations in ascending order by date

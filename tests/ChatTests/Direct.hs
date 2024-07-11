@@ -1346,6 +1346,7 @@ testUsersSubscribeAfterRestart :: HasCallStack => FilePath -> IO ()
 testUsersSubscribeAfterRestart tmp = do
   withNewTestChat tmp "bob" bobProfile $ \bob -> do
     withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+      threadDelay 100000
       connectUsers alice bob
       alice <##> bob
 
@@ -1356,8 +1357,7 @@ testUsersSubscribeAfterRestart tmp = do
 
     withTestChat tmp "alice" $ \alice -> do
       -- second user is active
-      alice <## "1 contacts connected (use /cs for the list)"
-      alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
+      alice <### ["1 contacts connected (use /cs for the list)", "[user: alice] 1 contacts connected (use /cs for the list)"]
 
       -- second user receives message
       alice <##> bob
@@ -1691,8 +1691,7 @@ testUsersRestartCIExpiration tmp = do
       showActiveUser alice "alice (Alice)"
 
     withTestChatCfg tmp cfg "alice" $ \alice -> do
-      alice <## "1 contacts connected (use /cs for the list)"
-      alice <## "[user: alisa] 1 contacts connected (use /cs for the list)"
+      alice <### ["1 contacts connected (use /cs for the list)", "[user: alisa] 1 contacts connected (use /cs for the list)"]
 
       -- first user messages
       alice ##> "/user alice"
@@ -1790,8 +1789,7 @@ testEnableCIExpirationOnlyForOneUser tmp = do
       alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
     withTestChatCfg tmp cfg "alice" $ \alice -> do
-      alice <## "1 contacts connected (use /cs for the list)"
-      alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
+      alice <### ["1 contacts connected (use /cs for the list)", "[user: alice] 1 contacts connected (use /cs for the list)"]
 
       -- messages are not deleted for second user after restart
       alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
@@ -1846,8 +1844,7 @@ testDisableCIExpirationOnlyForOneUser tmp = do
       alice #$> ("/_get chat @4 count=100", chat, [])
 
     withTestChatCfg tmp cfg "alice" $ \alice -> do
-      alice <## "1 contacts connected (use /cs for the list)"
-      alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
+      alice <### ["1 contacts connected (use /cs for the list)", "[user: alice] 1 contacts connected (use /cs for the list)"]
 
       -- second user still has ttl configured after restart
       alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
@@ -1953,8 +1950,10 @@ testUsersTimedMessages tmp = do
       alice <# "bob> alisa 4"
 
     withTestChat tmp "alice" $ \alice -> do
-      alice <## "1 contacts connected (use /cs for the list)"
-      alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
+      alice
+        <### [ "1 contacts connected (use /cs for the list)",
+               "[user: alice] 1 contacts connected (use /cs for the list)"
+             ]
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"

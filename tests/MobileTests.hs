@@ -136,10 +136,10 @@ networkStatuses =
 #endif
 
 networkStatusesSwift :: LB.ByteString
-networkStatusesSwift = "{\"resp\":{\"_owsf\":true,\"networkStatuses\":{\"user_\":" <> userJSON <> ",\"networkStatuses\":[]}}}"
+networkStatusesSwift = "{\"resp\":{\"_owsf\":true,\"networkStatuses\":{\"networkStatuses\":[]}}}"
 
 networkStatusesTagged :: LB.ByteString
-networkStatusesTagged = "{\"resp\":{\"type\":\"networkStatuses\",\"user_\":" <> userJSON <> ",\"networkStatuses\":[]}}"
+networkStatusesTagged = "{\"resp\":{\"type\":\"networkStatuses\",\"networkStatuses\":[]}}"
 
 memberSubSummary :: LB.ByteString
 memberSubSummary =
@@ -222,8 +222,7 @@ testChatApi tmp = do
   chatSendCmd cc "/u" `shouldReturn` activeUser
   chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
-  chatRecvMsg cc `shouldReturn` networkStatuses
-  chatRecvMsg cc `shouldReturn` userContactSubSummary
+  chatSendCmd cc "/_network_statuses" `shouldReturn` networkStatuses
   chatRecvMsgWait cc 10000 `shouldReturn` ""
   chatParseMarkdown "hello" `shouldBe` "{}"
   chatParseMarkdown "*hello*" `shouldBe` parsedMarkdown

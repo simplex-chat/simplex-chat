@@ -56,6 +56,7 @@ module Simplex.Chat.Store.Direct
     incQuotaErrCounter,
     setQuotaErrCounter,
     getUserContacts,
+    getUserContactConnIds,
     createOrUpdateContactRequest,
     getContactRequest',
     getContactRequest,
@@ -839,19 +840,9 @@ getUserByContactRequestId db contactRequestId =
   ExceptT . firstRow toUser (SEUserNotFoundByContactRequestId contactRequestId) $
     DB.query db (userQuery <> " JOIN contact_requests cr ON cr.user_id = u.user_id WHERE cr.contact_request_id = ?") (Only contactRequestId)
 
-getPendingContactConnections :: DB.Connection -> User -> IO [PendingContactConnection]
-getPendingContactConnections db User {userId} = do
-  map toPendingContactConnection
-    <$> DB.queryNamed
-      db
-      [sql|
-        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id, custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
-        FROM connections
-        WHERE user_id = :user_id
-          AND conn_type = :conn_type
-          AND contact_id IS NULL
-      |]
-      [":user_id" := userId, ":conn_type" := ConnContact]
+getPendingContactConnections :: DB.Connection -> User -> IO [ConnId]
+getPendingContactConnections db User {userId} =
+  map fromOnly <$> DB.query db "SELECT agent_conn_id FROM connections WHERE user_id = ? AND conn_type = ? AND contact_id IS NULL" (userId, ConnContact)
 
 getContactConnections :: DB.Connection -> VersionRangeChat -> UserId -> Contact -> IO [Connection]
 getContactConnections db vr userId Contact {contactId} =
@@ -872,6 +863,33 @@ getContactConnections db vr userId Contact {contactId} =
         (userId, userId, contactId)
     connections [] = pure []
     connections rows = pure $ map (toConnection vr) rows
+
+getUserContactConnIds :: DB.Connection -> User -> IO [ConnId]
+getUserContactConnIds db User {userId} =
+  map fromOnly
+    <$> DB.query
+        db
+        [sql|
+          SELECT c.agent_conn_id
+          FROM contacts ct
+          LEFT JOIN connections c ON c.contact_id = ct.contact_id
+          WHERE ct.user_id = ?
+            AND ct.contact_status = ?
+            AND ct.deleted = 0
+            AND
+              c.connection_id = (
+                SELECT cc_connection_id FROM (
+                  SELECT
+                    cc.connection_id AS cc_connection_id,
+                    cc.created_at AS cc_created_at
+                  FROM connections cc
+                  WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
+                  ORDER BY cc_created_at DESC
+                  LIMIT 1
+                )
+              )
+        |]
+        (userId, CSActive)
 
 getConnectionById :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO Connection
 getConnectionById db vr User {userId} connId = ExceptT $ do

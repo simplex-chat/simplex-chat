@@ -679,9 +679,10 @@ data ChatResponse
   | CRSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
   | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
-  | CRContactSubError {user :: User, contact :: Contact, chatError :: ChatError}
-  | CRContactSubSummary {user :: User, contactSubscriptions :: [ContactSubStatus]}
-  | CRUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]}
+  | CRContactSubSummary {user :: User, okSubs :: Int, errSubs :: Int}
+  | CRContactSubError {user :: User, contactName :: ContactName, chatError :: ChatError}
+  | CRUserAddrSubStatus {user :: User, userContactError :: Maybe ChatError}
+  | CRUserGroupLinksSubSummary {user :: User, okSubs :: Int, errSubs :: Int}
   | CRNetworkStatus {networkStatus :: NetworkStatus, connections :: [AgentConnId]}
   | CRNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]}
   | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
@@ -718,10 +719,10 @@ data ChatResponse
   | CRNewMemberContactSentInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRNewMemberContactReceivedInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRContactAndMemberAssociated {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember, updatedContact :: Contact}
-  | CRMemberSubError {user :: User, groupInfo :: GroupInfo, member :: GroupMember, chatError :: ChatError}
-  | CRMemberSubSummary {user :: User, memberSubscriptions :: [MemberSubStatus]}
+  | CRMemberSubError {user :: User, groupInfo :: GroupInfo, contactName :: ContactName, chatError :: ChatError}
+  | CRMemberSubSummary {user :: User, okSubs :: Int, errSubs :: Int}
   | CRGroupSubscribed {user :: User, groupInfo :: GroupInfo}
-  | CRPendingSubSummary {user :: User, pendingSubscriptions :: [PendingSubStatus]}
+  | CRPendingSubSummary {user :: User, okSubs :: Int, errSubs :: Int}
   | CRSndFileSubError {user :: User, sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | CRRcvFileSubError {user :: User, rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
   | CRCallInvitation {callInvitation :: RcvCallInvitation}
@@ -730,8 +731,6 @@ data ChatResponse
   | CRCallExtraInfo {user :: User, contact :: Contact, extraInfo :: WebRTCExtraInfo}
   | CRCallEnded {user :: User, contact :: Contact}
   | CRCallInvitations {callInvitations :: [RcvCallInvitation]}
-  | CRUserContactLinkSubscribed -- TODO delete
-  | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
   | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
