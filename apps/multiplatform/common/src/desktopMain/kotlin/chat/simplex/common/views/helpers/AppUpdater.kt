@@ -155,7 +155,10 @@ private fun downloadAsset(asset: GitHubAsset) {
         response.body?.use { body ->
           body.byteStream().use { stream ->
             createTmpFileAndDelete { file ->
-              stream.copyTo(file.outputStream())
+			  // It's important to close output stream (with use{}), otherwise, Windows cannot rename the file
+			  file.outputStream().use { output ->
+			    stream.copyTo(output)
+			  }
               val newFile = File(file.parentFile, asset.name)
               file.renameTo(newFile)
 
@@ -166,7 +169,9 @@ private fun downloadAsset(asset: GitHubAsset) {
                   Column {
                     SectionItemView({
                       AlertManager.shared.hideAlert()
-                      installAppUpdate(newFile)
+                      withLongRunningApi {
+					    installAppUpdate(newFile)
+					  }
                     }) {
                       Text(generalGetString(MR.strings.app_check_for_updates_button_install), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
                     }
@@ -202,7 +207,7 @@ private fun chooseGitHubReleaseAssets(release: GitHubRelease): List<GitHubAsset>
   return res
 }
 
-private fun installAppUpdate(file: File) {
+private suspend fun installAppUpdate(file: File) {
   when {
     desktopPlatform.isLinux() -> {
       val process = Runtime.getRuntime().exec("xdg-open ${file.absolutePath}").onExit().join()
@@ -211,7 +216,12 @@ private fun installAppUpdate(file: File) {
         Log.e(TAG, "Error starting installation: ${process.inputReader().use { it.readLines().joinToString("\n") }}${process.errorStream.use { String(it.readAllBytes()) }}")
         // Failed to start installation. show directory with the file for manual installation
         desktopOpenDir(file.parentFile)
-      }
+      } else {
+	    withApi {
+		  showToast(generalGetString(MR.strings.app_check_for_updates_installed_successfully))
+		}
+	  }
+	  file.delete()
     }
     desktopPlatform.isWindows() -> {
       val process = Runtime.getRuntime().exec("msiexec /i ${file.absolutePath}"/* /qb */).onExit().join()
@@ -220,7 +230,12 @@ private fun installAppUpdate(file: File) {
         Log.e(TAG, "Error starting installation: ${process.inputReader().use { it.readLines().joinToString("\n") }}${process.errorStream.use { String(it.readAllBytes()) }}")
         // Failed to start installation. show directory with the file for manual installation
         desktopOpenDir(file.parentFile)
-      }
+      } else {
+	    withApi {
+		  showToast(generalGetString(MR.strings.app_check_for_updates_installed_successfully))
+		}
+	  }
+	  file.delete()
     }
     desktopPlatform.isMac() -> {
       val process = Runtime.getRuntime().exec("hdiutil mount ${file.absolutePath}").onExit().join()
@@ -237,8 +252,12 @@ private fun installAppUpdate(file: File) {
         Log.e(TAG, "Error copying the app: ${process.inputReader().use { it.readLines().joinToString("\n") }}${process.errorStream.use { String(it.readAllBytes()) }}")
         // Failed to start installation. show directory with the file for manual installation
         desktopOpenDir(file.parentFile)
-      }
+      } else {
+	    withApi {
+		  showToast(generalGetString(MR.strings.app_check_for_updates_installed_successfully))
+		}
+	  }
+	  file.delete()
     }
   }
-  //  file.delete()
 }

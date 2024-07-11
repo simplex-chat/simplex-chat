@@ -782,6 +782,7 @@
   <string name="app_check_for_updates_download_completed_desc">Update is ready to be installed</string>
   <string name="app_check_for_updates_button_open">Open file location</string>
   <string name="app_check_for_updates_button_install">Install</string>
+  <string name="app_check_for_updates_installed_successfully">Installed successfully. Please, restart the app</string>
 
   <string name="show_dev_options">Show:</string>
   <string name="hide_dev_options">Hide:</string>
