@@ -1103,47 +1103,38 @@ func networkErrorAlert(_ r: ChatResponse) -> Alert? {
             title: "Connection error",
             message: "Please check your network connection with \(serverHostname(addr)) and try again."
         )
-    case .chatCmdError(_, .errorAgent(.SMP(.PROXY(.BROKER(brokerErr: .TIMEOUT))))):
+    case let .chatCmdError(_, .errorAgent(.SMP(.PROXY(proxyErr)))):
+        return proxyErrorAlert(proxyErr)
+    case let .chatCmdError(_, .errorAgent(.PROXY(_, _, .protocolError(.PROXY(proxyErr))))):
+        return proxyErrorAlert(proxyErr)
+    default:
+        return nil
+    }
+}
+
+private func proxyErrorAlert(_ proxyErr: ProxyError) -> Alert? {
+    switch proxyErr {
+    case .BROKER(brokerErr: .TIMEOUT):
         return mkAlert(
             title: "Temporary private routing error",
             message: "Please try again."
         )
-    case .chatCmdError(_, .errorAgent(.SMP(.PROXY(.BROKER(brokerErr: .NETWORK))))):
+    case .BROKER(brokerErr: .NETWORK):
         return mkAlert(
             title: "Temporary private routing error",
             message: "Please try again."
         )
-    case .chatCmdError(_, .errorAgent(.SMP(.PROXY(.BROKER(brokerErr: .HOST))))):
+    case .NO_SESSION:
+        return mkAlert(
+            title: "Temporary private routing error",
+            message: "Please try again."
+        )
+    case .BROKER(brokerErr: .HOST):
         return mkAlert(
             title: "Private routing error",
             message: "Server address is incompatible with network settings."
         )
-    case .chatCmdError(_, .errorAgent(.SMP(.PROXY(.BROKER(brokerErr: .TRANSPORT(.version)))))):
-        return mkAlert(
-            title: "Private routing error",
-            message: "Server version is incompatible with network settings."
-        )
-    case .chatCmdError(_, .errorAgent(.PROXY(_, _, .protocolError(.PROXY(.BROKER(brokerErr: .TIMEOUT)))))):
-        return mkAlert(
-            title: "Temporary private routing error",
-            message: "Please try again."
-        )
-    case .chatCmdError(_, .errorAgent(.PROXY(_, _, .protocolError(.PROXY(.BROKER(brokerErr: .NETWORK)))))):
-        return mkAlert(
-            title: "Temporary private routing error",
-            message: "Please try again."
-        )
-    case .chatCmdError(_, .errorAgent(.PROXY(_, _, .protocolError(.PROXY(.NO_SESSION))))):
-        return mkAlert(
-            title: "Temporary private routing error",
-            message: "Please try again."
-        )
-    case .chatCmdError(_, .errorAgent(.PROXY(_, _, .protocolError(.PROXY(.BROKER(brokerErr: .HOST)))))):
-        return mkAlert(
-            title: "Private routing error",
-            message: "Server address is incompatible with network settings."
-        )
-    case .chatCmdError(_, .errorAgent(.PROXY(_, _, .protocolError(.PROXY(.BROKER(brokerErr: .TRANSPORT(.version))))))):
+    case .BROKER(brokerErr: .TRANSPORT(.version)):
         return mkAlert(
             title: "Private routing error",
             message: "Server version is incompatible with network settings."
