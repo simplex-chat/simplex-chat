@@ -95,7 +95,7 @@ import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, getNetworkConfig', ipAddressProtected, withLockMap)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), ServerCfg (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
@@ -112,7 +112,7 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolTypeI, SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI, SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
@@ -148,7 +148,7 @@ defaultChatConfig =
         DefaultAgentServers
           { smp = _defaultSMPServers,
             ntf = _defaultNtfServers,
-            xftp = defaultXFTPServers,
+            xftp = L.map (presetServerCfg True) defaultXFTPServers,
             netCfg = defaultNetworkConfig
           },
       tbqSize = 1024,
@@ -172,15 +172,20 @@ defaultChatConfig =
       chatHooks = defaultChatHooks
     }
 
-_defaultSMPServers :: NonEmpty SMPServerWithAuth
+_defaultSMPServers :: NonEmpty (ServerCfg 'PSMP)
 _defaultSMPServers =
-  L.fromList
-    [ "smp://h--vW7ZSkXPeOUpfxlFGgauQmXNFOzGoizak7Ult7cw=@smp15.simplex.im,oauu4bgijybyhczbnxtlggo6hiubahmeutaqineuyy23aojpih3dajad.onion",
-      "smp://hejn2gVIqNU6xjtGM3OwQeuk8ZEbDXVJXAlnSBJBWUA=@smp16.simplex.im,p3ktngodzi6qrf7w64mmde3syuzrv57y55hxabqcq3l5p6oi7yzze6qd.onion",
-      "smp://ZKe4uxF4Z_aLJJOEsC-Y6hSkXgQS5-oc442JQGkyP8M=@smp17.simplex.im,ogtwfxyi3h2h5weftjjpjmxclhb5ugufa5rcyrmg7j4xlch7qsr5nuqd.onion",
-      "smp://PtsqghzQKU83kYTlQ1VKg996dW4Cw4x_bvpKmiv8uns=@smp18.simplex.im,lyqpnwbs2zqfr45jqkncwpywpbtq7jrhxnib5qddtr6npjyezuwd3nqd.onion",
-      "smp://N_McQS3F9TGoh4ER0QstUf55kGnNSd-wXfNPZ7HukcM=@smp19.simplex.im,i53bbtoqhlc365k6kxzwdp5w3cdt433s7bwh3y32rcbml2vztiyyz5id.onion"
-    ]
+  L.fromList $
+    map
+      (presetServerCfg True)
+      [ "smp://h--vW7ZSkXPeOUpfxlFGgauQmXNFOzGoizak7Ult7cw=@smp15.simplex.im,oauu4bgijybyhczbnxtlggo6hiubahmeutaqineuyy23aojpih3dajad.onion",
+        "smp://hejn2gVIqNU6xjtGM3OwQeuk8ZEbDXVJXAlnSBJBWUA=@smp16.simplex.im,p3ktngodzi6qrf7w64mmde3syuzrv57y55hxabqcq3l5p6oi7yzze6qd.onion",
+        "smp://ZKe4uxF4Z_aLJJOEsC-Y6hSkXgQS5-oc442JQGkyP8M=@smp17.simplex.im,ogtwfxyi3h2h5weftjjpjmxclhb5ugufa5rcyrmg7j4xlch7qsr5nuqd.onion",
+        "smp://PtsqghzQKU83kYTlQ1VKg996dW4Cw4x_bvpKmiv8uns=@smp18.simplex.im,lyqpnwbs2zqfr45jqkncwpywpbtq7jrhxnib5qddtr6npjyezuwd3nqd.onion",
+        "smp://N_McQS3F9TGoh4ER0QstUf55kGnNSd-wXfNPZ7HukcM=@smp19.simplex.im,i53bbtoqhlc365k6kxzwdp5w3cdt433s7bwh3y32rcbml2vztiyyz5id.onion"
+      ]
+      <> map
+        (presetServerCfg False)
+        []
 
 _defaultNtfServers :: [NtfServer]
 _defaultNtfServers =
@@ -301,8 +306,8 @@ newChatController
       configServers :: DefaultAgentServers
       configServers =
         let DefaultAgentServers {smp = defSmp, xftp = defXftp} = defaultServers
-            smp' = fromMaybe defSmp (nonEmpty smpServers)
-            xftp' = fromMaybe defXftp (nonEmpty xftpServers)
+            smp' = maybe defSmp (L.map enabledServerCfg) (nonEmpty smpServers)
+            xftp' = maybe defXftp (L.map enabledServerCfg) (nonEmpty xftpServers)
          in defaultServers {smp = smp', xftp = xftp', netCfg = updateNetworkConfig defaultNetworkConfig simpleNetCfg}
       agentServers :: ChatConfig -> IO InitialAgentServers
       agentServers config@ChatConfig {defaultServers = defServers@DefaultAgentServers {ntf, netCfg}} = do
@@ -311,14 +316,14 @@ newChatController
         xftp' <- getUserServers users SPXFTP
         pure InitialAgentServers {smp = smp', xftp = xftp', ntf, netCfg}
         where
-          getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => [User] -> SProtocolType p -> IO (Map UserId (NonEmpty (ProtoServerWithAuth p)))
+          getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => [User] -> SProtocolType p -> IO (Map UserId (NonEmpty (ServerCfg p)))
           getUserServers users protocol = case users of
             [] -> pure $ M.fromList [(1, cfgServers protocol defServers)]
             _ -> M.fromList <$> initialServers
             where
-              initialServers :: IO [(UserId, NonEmpty (ProtoServerWithAuth p))]
+              initialServers :: IO [(UserId, NonEmpty (ServerCfg p))]
               initialServers = mapM (\u -> (aUserId u,) <$> userServers u) users
-              userServers :: User -> IO (NonEmpty (ProtoServerWithAuth p))
+              userServers :: User -> IO (NonEmpty (ServerCfg p))
               userServers user' = activeAgentServers config protocol <$> withTransaction chatStore (`getProtocolServers` user')
 
 updateNetworkConfig :: NetworkConfig -> SimpleNetCfg -> NetworkConfig
@@ -362,14 +367,13 @@ withFileLock :: String -> Int64 -> CM a -> CM a
 withFileLock name = withEntityLock name . CLFile
 {-# INLINE withFileLock #-}
 
-activeAgentServers :: UserProtocol p => ChatConfig -> SProtocolType p -> [ServerCfg p] -> NonEmpty (ProtoServerWithAuth p)
+activeAgentServers :: UserProtocol p => ChatConfig -> SProtocolType p -> [ServerCfg p] -> NonEmpty (ServerCfg p)
 activeAgentServers ChatConfig {defaultServers} p =
   fromMaybe (cfgServers p defaultServers)
     . nonEmpty
-    . map (\ServerCfg {server} -> server)
-    . filter (\ServerCfg {enabled} -> enabled == SEEnabled)
+    . filter (\ServerCfg {enabled} -> enabled)
 
-cfgServers :: UserProtocol p => SProtocolType p -> (DefaultAgentServers -> NonEmpty (ProtoServerWithAuth p))
+cfgServers :: UserProtocol p => SProtocolType p -> (DefaultAgentServers -> NonEmpty (ServerCfg p))
 cfgServers p DefaultAgentServers {smp, xftp} = case p of
   SPSMP -> smp
   SPXFTP -> xftp
@@ -529,7 +533,7 @@ processChatCommand' vr = \case
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
     where
-      chooseServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> CM (NonEmpty (ProtoServerWithAuth p), [ServerCfg p])
+      chooseServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> CM (NonEmpty (ServerCfg p), [ServerCfg p])
       chooseServers protocol
         | sameServers =
             asks currentUser >>= readTVarIO >>= \case
@@ -1310,10 +1314,8 @@ processChatCommand' vr = \case
     ChatConfig {defaultServers} <- asks config
     servers <- withStore' (`getProtocolServers` user)
     let defServers = cfgServers p defaultServers
-        servers' = fromMaybe (L.map toServerCfg defServers) $ nonEmpty servers
+        servers' = fromMaybe defServers $ nonEmpty servers
     pure $ CRUserProtoServers user $ AUPS $ UserProtoServers p servers' defServers
-    where
-      toServerCfg server = ServerCfg {server, preset = True, tested = Nothing, enabled = SEEnabled}
   GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
     processChatCommand $ APIGetUserProtoServers userId aProtocol
   APISetUserProtoServers userId (APSC p (ProtoServersConfig servers)) -> withUserId userId $ \user -> withServerProtocol p $ do
@@ -2263,9 +2265,9 @@ processChatCommand' vr = \case
       getUserServers users protocol = do
         ChatConfig {defaultServers} <- asks config
         let defServers = cfgServers protocol defaultServers
-        servers <- map (\ServerCfg {server} -> server) <$> withStore' (`getProtocolServers` users)
+        servers <- withStore' (`getProtocolServers` users)
         let srvs = if null servers then L.toList defServers else servers
-        pure $ map protoServer srvs
+        pure $ map (\ServerCfg {server} -> protoServer server) srvs
   ResetAgentServersStats -> withAgent resetAgentServersStats >> ok_
   GetAgentWorkers -> lift $ CRAgentWorkersSummary <$> withAgent' getAgentWorkersSummary
   GetAgentWorkersDetails -> lift $ CRAgentWorkersDetails <$> withAgent' getAgentWorkersDetails
@@ -3225,9 +3227,8 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
     getUnknownSrvs :: [XFTPServer] -> CM [XFTPServer]
     getUnknownSrvs srvs = do
       ChatConfig {defaultServers = DefaultAgentServers {xftp = defXftp}} <- asks config
-      storedSrvs <- map (\ServerCfg {server} -> protoServer server) <$> withStore' (`getProtocolServers` user)
-      let defXftp' = L.map protoServer defXftp
-          knownSrvs = fromMaybe defXftp' $ nonEmpty storedSrvs
+      storedSrvs <- withStore' (`getProtocolServers` user)
+      let knownSrvs = L.map (\ServerCfg {server} -> protoServer server) $ fromMaybe defXftp $ nonEmpty storedSrvs
       pure $ filter (`notElem` knownSrvs) srvs
     ipProtectedForSrvs :: [XFTPServer] -> CM Bool
     ipProtectedForSrvs srvs = do
@@ -7444,9 +7445,9 @@ chatCommandP =
       "/xftp test " *> (TestProtoServer . AProtoServerWithAuth SPXFTP <$> strP),
       "/ntf test " *> (TestProtoServer . AProtoServerWithAuth SPNTF <$> strP),
       "/_servers " *> (APISetUserProtoServers <$> A.decimal <* A.space <*> srvCfgP),
-      "/smp " *> (SetUserProtoServers . APSC SPSMP . ProtoServersConfig . map toServerCfg <$> protocolServersP),
+      "/smp " *> (SetUserProtoServers . APSC SPSMP . ProtoServersConfig . map enabledServerCfg <$> protocolServersP),
       "/smp default" $> SetUserProtoServers (APSC SPSMP $ ProtoServersConfig []),
-      "/xftp " *> (SetUserProtoServers . APSC SPXFTP . ProtoServersConfig . map toServerCfg <$> protocolServersP),
+      "/xftp " *> (SetUserProtoServers . APSC SPXFTP . ProtoServersConfig . map enabledServerCfg <$> protocolServersP),
       "/xftp default" $> SetUserProtoServers (APSC SPXFTP $ ProtoServersConfig []),
       "/_servers " *> (APIGetUserProtoServers <$> A.decimal <* A.space <*> strP),
       "/smp" $> GetUserProtoServers (AProtocolType SPSMP),
@@ -7785,7 +7786,6 @@ chatCommandP =
         (Just <$> (AutoAccept <$> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)))
         (pure Nothing)
     srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
-    toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = SEEnabled}
     rcCtrlAddressP = RCCtrlAddress <$> ("addr=" *> strP) <*> (" iface=" *> (jsonP <|> text1P))
     text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char

@@ -48,12 +48,13 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
+import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..))
 import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
-import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
+import Simplex.Messaging.Protocol (ProtoServerWithAuth)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
@@ -1628,45 +1629,14 @@ data NoteFolder = NoteFolder
 
 type NoteFolderId = Int64
 
-data ServerCfg p = ServerCfg
-  { server :: ProtoServerWithAuth p,
-    preset :: Bool,
-    tested :: Maybe Bool,
-    enabled :: ServerEnabled
-  }
-  deriving (Show)
+enabledServerCfg :: ProtoServerWithAuth p -> ServerCfg p
+enabledServerCfg = serverCfg_ False True
 
-data ServerEnabled
-  = SEDisabled
-  | SEEnabled
-  | -- server is marked as known, but it's not in the list of configured servers;
-    -- e.g., it may be added via an unknown server dialogue and user didn't manually configure it,
-    -- meaning server wasn't tested (or at least such option wasn't presented in UI)
-    -- and it may be inoperable for user due to server password
-    SEKnown
-  deriving (Eq, Show)
+presetServerCfg :: Bool -> ProtoServerWithAuth p -> ServerCfg p
+presetServerCfg = serverCfg_ True
 
-pattern DBSEDisabled :: Int
-pattern DBSEDisabled = 0
-
-pattern DBSEEnabled :: Int
-pattern DBSEEnabled = 1
-
-pattern DBSEKnown :: Int
-pattern DBSEKnown = 2
-
-toServerEnabled :: Int -> ServerEnabled
-toServerEnabled = \case
-  DBSEDisabled -> SEDisabled
-  DBSEEnabled -> SEEnabled
-  DBSEKnown -> SEKnown
-  _ -> SEDisabled
-
-fromServerEnabled :: ServerEnabled -> Int
-fromServerEnabled = \case
-  SEDisabled -> DBSEDisabled
-  SEEnabled -> DBSEEnabled
-  SEKnown -> DBSEKnown
+serverCfg_ :: Bool -> Bool -> ProtoServerWithAuth p -> ServerCfg p
+serverCfg_ preset enabled server = ServerCfg {server, preset, tested = Nothing, enabled}
 
 data ChatVersion
 
@@ -1795,12 +1765,3 @@ $(JQ.deriveJSON defaultJSON ''Contact)
 $(JQ.deriveJSON defaultJSON ''ContactRef)
 
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
-
-$(JQ.deriveJSON (enumJSON $ dropPrefix "SE") ''ServerEnabled)
-
-instance ProtocolTypeI p => ToJSON (ServerCfg p) where
-  toEncoding = $(JQ.mkToEncoding defaultJSON ''ServerCfg)
-  toJSON = $(JQ.mkToJSON defaultJSON ''ServerCfg)
-
-instance ProtocolTypeI p => FromJSON (ServerCfg p) where
-  parseJSON = $(JQ.mkParseJSON defaultJSON ''ServerCfg)
