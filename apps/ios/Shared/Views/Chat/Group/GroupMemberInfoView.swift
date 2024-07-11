@@ -141,12 +141,6 @@ struct GroupMemberInfoView: View {
                         } else {
                             infoRow("Role", member.memberRole.text)
                         }
-
-                        // TODO invited by - need to get contact by contact id
-                        if let conn = member.activeConn {
-                            let connLevelDesc = conn.connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), conn.connLevel)
-                            infoRow("Connection", connLevelDesc)
-                        }
                     }
 
                     if let connStats = connectionStats {
@@ -183,6 +177,10 @@ struct GroupMemberInfoView: View {
                         Section(header: Text("For console").foregroundColor(theme.colors.secondary)) {
                             infoRow("Local name", member.localDisplayName)
                             infoRow("Database ID", "\(member.groupMemberId)")
+                            if let conn = member.activeConn {
+                                let connLevelDesc = conn.connLevel == 0 ? NSLocalizedString("direct", comment: "connection level description") : String.localizedStringWithFormat(NSLocalizedString("indirect (%d)", comment: "connection level description"), conn.connLevel)
+                                infoRow("Connection", connLevelDesc)
+                            }
                             Button ("Debug delivery") {
                                 Task {
                                     do {

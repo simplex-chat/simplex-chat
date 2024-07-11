@@ -3869,6 +3869,10 @@ To jest twój link do grupy %@!</target>
         <target>Członek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Member inactive" xml:space="preserve">
+        <source>Member inactive</source>
+        <note>item status text</note>
+      </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
         <source>Member role will be changed to "%@". All group members will be notified.</source>
         <target>Rola członka grupy zostanie zmieniona na "%@". Wszyscy członkowie grupy zostaną powiadomieni.</target>
@@ -3907,6 +3911,14 @@ To jest twój link do grupy %@!</target>
         <source>Message draft</source>
         <target>Wersja robocza wiadomości</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message forwarded" xml:space="preserve">
+        <source>Message forwarded</source>
+        <note>item status text</note>
+      </trans-unit>
+      <trans-unit id="Message may be delivered later if member becomes active." xml:space="preserve">
+        <source>Message may be delivered later if member becomes active.</source>
+        <note>item status description</note>
       </trans-unit>
       <trans-unit id="Message queue info" xml:space="preserve">
         <source>Message queue info</source>
@@ -4221,6 +4233,10 @@ To jest twój link do grupy %@!</target>
         <source>No device token!</source>
         <target>Brak tokenu urządzenia!</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No direct connection yet, message is forwarded by admin." xml:space="preserve">
+        <source>No direct connection yet, message is forwarded by admin.</source>
+        <note>item status description</note>
       </trans-unit>
       <trans-unit id="No filtered chats" xml:space="preserve">
         <source>No filtered chats</source>
@@ -7797,6 +7813,10 @@ Serwery SimpleX nie mogą zobaczyć Twojego profilu.</target>
       <trans-unit id="iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." xml:space="preserve">
         <source>iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications.</source>
         <target>iOS Keychain będzie używany do bezpiecznego przechowywania hasła po ponownym uruchomieniu aplikacji lub zmianie hasła - pozwoli to na otrzymywanie powiadomień push.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="inactive" xml:space="preserve">
+        <source>inactive</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="incognito via contact address link" xml:space="preserve">

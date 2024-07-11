@@ -159,6 +159,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               AudioPlayer.stop()
               chatModel.chatId.value = null
               chatModel.groupMembers.clear()
+              chatModel.groupMembersIndexes.clear()
             },
             info = {
               if (ModalManager.end.hasModalsOpen()) {
@@ -821,9 +822,9 @@ fun ChatInfoToolbar(
     buttons = barButtons
   )
 
-  Divider(Modifier.padding(top = AppBarHeight))
+  Divider(Modifier.padding(top = AppBarHeight * fontSizeSqrtMultiplier))
 
-  Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd).offset(y = AppBarHeight)) {
+  Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd).offset(y = AppBarHeight * fontSizeSqrtMultiplier)) {
     DefaultDropdownMenu(showMenu) {
       menuItems.forEach { it() }
     }
@@ -837,9 +838,9 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (cInfo.incognito) {
-      IncognitoImage(size = 36.dp, Indigo)
+      IncognitoImage(size = 36.dp * fontSizeSqrtMultiplier, Indigo)
     }
-    ChatInfoImage(cInfo, size = imageSize, iconColor)
+    ChatInfoImage(cInfo, size = imageSize * fontSizeSqrtMultiplier, iconColor)
     Column(
       Modifier.padding(start = 8.dp),
       horizontalAlignment = Alignment.CenterHorizontally
@@ -865,7 +866,7 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
 
 @Composable
 private fun ContactVerifiedShield() {
-  Icon(painterResource(MR.images.ic_verified_user), null, Modifier.size(18.dp).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
+  Icon(painterResource(MR.images.ic_verified_user), null, Modifier.size(18.dp * fontSizeSqrtMultiplier).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
 }
 
 data class CIListState(val scrolled: Boolean, val itemCount: Int, val keyboardState: KeyboardState)
@@ -1283,7 +1284,7 @@ val MEMBER_IMAGE_SIZE: Dp = 38.dp
 
 @Composable
 fun MemberImage(member: GroupMember) {
-  ProfileImage(MEMBER_IMAGE_SIZE, member.memberProfile.image, backgroundColor = MaterialTheme.colors.background)
+  ProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, member.memberProfile.image, backgroundColor = MaterialTheme.colors.background)
 }
 
 @Composable

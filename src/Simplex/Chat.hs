@@ -2786,14 +2786,19 @@ processChatCommand' vr = \case
               (fInv_, ciFile_) <- L.unzip <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
               timed_ <- sndGroupCITimed live gInfo itemTTL
               (msgContainer, quotedItem_) <- prepareGroupMsg user gInfo mc quotedItemId_ itemForwarded fInv_ timed_ live
-              (msg, sentToMembers) <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
+              (msg, groupSndResult) <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
               ci <- saveSndChatItem' user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ itemForwarded timed_ live
-              withStore' $ \db ->
-                forM_ sentToMembers $ \GroupMember {groupMemberId} ->
-                  createGroupSndStatus db (chatItemId' ci) groupMemberId CISSndNew
+              withStore' $ \db -> do
+                let GroupSndResult {sentTo, pending, forwarded} = groupSndResult
+                createMemberSndStatuses db ci sentTo GSSNew
+                createMemberSndStatuses db ci forwarded GSSForwarded
+                createMemberSndStatuses db ci pending GSSInactive
               forM_ (timed_ >>= timedDeleteAt') $
                 startProximateTimedItemThread user (ChatRef CTGroup groupId, chatItemId' ci)
               pure $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
+              where
+                createMemberSndStatuses db ci ms' gss =
+                  forM_ ms' $ \GroupMember {groupMemberId} -> createGroupSndStatus db (chatItemId' ci) groupMemberId gss
         notAllowedError f = pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText f))
         setupSndFileTransfer :: Group -> Int -> CM (Maybe (FileInvitation, CIFile 'MDSnd))
         setupSndFileTransfer g n = forM file_ $ \file -> do
@@ -4574,7 +4579,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         continued <- continueSending connEntity conn
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
-        updateGroupItemStatus gInfo m conn msgId (CISSndSent SSPComplete) (Just $ isJust proxy)
+        updateGroupItemStatus gInfo m conn msgId GSSSent (Just $ isJust proxy)
         when continued $ sendPendingGroupMessages user m conn
       SWITCH qd phase cStats -> do
         toView $ CRGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
@@ -4615,15 +4620,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         continued <- continueSending connEntity conn
         when continued $ sendPendingGroupMessages user m conn
       MWARN msgId err -> do
-        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (CISSndWarning $ agentSndError err)
+        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (GSSWarning $ agentSndError err)
         processConnMWARN connEntity conn err
       MERR msgId err -> do
-        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (CISSndError $ agentSndError err)
+        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) (GSSError $ agentSndError err)
         -- group errors are silenced to reduce load on UI event log
         -- toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         processConnMERR connEntity conn err
       MERRS msgIds err -> do
-        let newStatus = CISSndError $ agentSndError err
+        let newStatus = GSSError $ agentSndError err
         -- error cannot be AUTH error here
         withStore' $ \db -> forM_ msgIds $ \msgId ->
           updateGroupItemErrorStatus db msgId (groupMemberId' m) newStatus `catchAll_` pure ()
@@ -4634,7 +4639,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       -- TODO add debugging output
       _ -> pure ()
       where
-        updateGroupItemErrorStatus :: DB.Connection -> AgentMsgId -> GroupMemberId -> CIStatus 'MDSnd -> IO ()
+        updateGroupItemErrorStatus :: DB.Connection -> AgentMsgId -> GroupMemberId -> GroupSndStatus -> IO ()
         updateGroupItemErrorStatus db msgId groupMemberId newStatus = do
           chatItemId_ <- getChatItemIdByAgentMsgId db connId msgId
           forM_ chatItemId_ $ \itemId -> updateGroupMemSndStatus' db itemId groupMemberId newStatus
@@ -5988,14 +5993,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       withStore' $ \db -> updateGroupMemberStatusById db userId groupMemberId GSMemIntroInvited
 
     xGrpMemInv :: GroupInfo -> GroupMember -> MemberId -> IntroInvitation -> CM ()
-    xGrpMemInv gInfo@GroupInfo {groupId} m memId introInv = do
+    xGrpMemInv gInfo m memId introInv = do
       case memberCategory m of
         GCInviteeMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
             Left _ -> messageError "x.grp.mem.inv error: referenced member does not exist"
             Right reMember -> do
               GroupMemberIntro {introId} <- withStore $ \db -> saveIntroInvitation db reMember m introInv
-              sendGroupMemberMessage user reMember (XGrpMemFwd (memberInfo m) introInv) groupId (Just introId) $
+              sendGroupMemberMessage user gInfo reMember (XGrpMemFwd (memberInfo m) introInv) (Just introId) $
                 withStore' $
                   \db -> updateIntroStatus db introId GMIntroInvForwarded
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
@@ -6290,7 +6295,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta `catchChatError` \_ -> pure ()
       forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} -> do
         withStore' $ \db -> updateSndMsgDeliveryStatus db connId agentMsgId $ MDSSndRcvd msgRcptStatus
-        updateGroupItemStatus gInfo m conn agentMsgId (CISSndRcvd msgRcptStatus SSPComplete) Nothing
+        updateGroupItemStatus gInfo m conn agentMsgId (GSSRcvd msgRcptStatus) Nothing
 
     updateDirectItemsStatus :: Contact -> Connection -> [AgentMsgId] -> CIStatus 'MDSnd -> CM ()
     updateDirectItemsStatus ct conn msgIds newStatus = do
@@ -6314,20 +6319,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | otherwise -> Just <$> updateDirectChatItemStatus db user ct itemId newStatus
         _ -> pure Nothing
 
-    updateGroupMemSndStatus :: ChatItemId -> GroupMemberId -> CIStatus 'MDSnd -> CM Bool
+    updateGroupMemSndStatus :: ChatItemId -> GroupMemberId -> GroupSndStatus -> CM Bool
     updateGroupMemSndStatus itemId groupMemberId newStatus =
       withStore' $ \db -> updateGroupMemSndStatus' db itemId groupMemberId newStatus
 
-    updateGroupMemSndStatus' :: DB.Connection -> ChatItemId -> GroupMemberId -> CIStatus 'MDSnd -> IO Bool
+    updateGroupMemSndStatus' :: DB.Connection -> ChatItemId -> GroupMemberId -> GroupSndStatus -> IO Bool
     updateGroupMemSndStatus' db itemId groupMemberId newStatus =
       runExceptT (getGroupSndStatus db itemId groupMemberId) >>= \case
-        Right (CISSndRcvd _ _) -> pure False
+        Right (GSSRcvd _) -> pure False
         Right memStatus
           | memStatus == newStatus -> pure False
           | otherwise -> updateGroupSndStatus db itemId groupMemberId newStatus $> True
         _ -> pure False
 
-    updateGroupItemStatus :: GroupInfo -> GroupMember -> Connection -> AgentMsgId -> CIStatus 'MDSnd -> Maybe Bool -> CM ()
+    updateGroupItemStatus :: GroupInfo -> GroupMember -> Connection -> AgentMsgId -> GroupSndStatus -> Maybe Bool -> CM ()
     updateGroupItemStatus gInfo@GroupInfo {groupId} GroupMember {groupMemberId} Connection {connId} msgId newMemStatus viaProxy_ =
       withStore' (\db -> getGroupChatItemByAgentMsgId db user groupId connId msgId) >>= \case
         Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemStatus = CISSndRcvd _ SSPComplete}}) -> pure ()
@@ -6778,7 +6783,7 @@ deliverMessagesB msgReqs = do
 
 -- TODO combine profile update and message into one batch
 -- Take into account that it may not fit, and that we currently don't support sending multiple messages to the same connection in one call.
-sendGroupMessage :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM (SndMessage, [GroupMember])
+sendGroupMessage :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM (SndMessage, GroupSndResult)
 sendGroupMessage user gInfo members chatMsgEvent = do
   when shouldSendProfileUpdate $
     sendProfileUpdate `catchChatError` (\e -> toView (CRChatError (Just user) e))
@@ -6800,12 +6805,18 @@ sendGroupMessage user gInfo members chatMsgEvent = do
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
 
-sendGroupMessage' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM (SndMessage, [GroupMember])
-sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
+data GroupSndResult = GroupSndResult
+  { sentTo :: [GroupMember],
+    pending :: [GroupMember],
+    forwarded :: [GroupMember]
+  }
+
+sendGroupMessage' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM (SndMessage, GroupSndResult)
+sendGroupMessage' user gInfo@GroupInfo {groupId} members chatMsgEvent = do
   msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent (GroupId groupId)
   recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
   let msgFlags = MsgFlags {notification = hasNotification $ toCMEventTag chatMsgEvent}
-      (toSend, pending, _, dups) = foldr addMember ([], [], S.empty, 0 :: Int) recipientMembers
+      (toSend, pending, forwarded, _, dups) = foldr addMember ([], [], [], S.empty, 0 :: Int) recipientMembers
       -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
       msgReqs = map (\(_, conn) -> (conn, msgFlags, msgBody, msgId)) toSend
   when (dups /= 0) $ logError $ "sendGroupMessage: " <> tshow dups <> " duplicate members"
@@ -6813,8 +6824,13 @@ sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
   let errors = lefts delivered
   unless (null errors) $ toView $ CRChatErrors (Just user) errors
   stored <- lift . withStoreBatch' $ \db -> map (\m -> createPendingGroupMessage db (groupMemberId' m) msgId Nothing) pending
-  let sentToMembers = filterSent delivered toSend fst <> filterSent stored pending id
-  pure (msg, sentToMembers)
+  let gsr =
+        GroupSndResult
+          { sentTo = filterSent delivered toSend fst,
+            pending = filterSent stored pending id,
+            forwarded
+          }
+  pure (msg, gsr)
   where
     shuffleMembers :: [GroupMember] -> IO [GroupMember]
     shuffleMembers ms = do
@@ -6822,12 +6838,13 @@ sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
       liftM2 (<>) (shuffle adminMs) (shuffle otherMs)
       where
         isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
-    addMember m acc@(toSend, pending, !mIds, !dups) = case memberSendAction chatMsgEvent members m of
+    addMember m acc@(toSend, pending, forwarded, !mIds, !dups) = case memberSendAction gInfo chatMsgEvent members m of
       Just a
-        | mId `S.member` mIds -> (toSend, pending, mIds, dups + 1)
+        | mId `S.member` mIds -> (toSend, pending, forwarded, mIds, dups + 1)
         | otherwise -> case a of
-            MSASend conn -> ((m, conn) : toSend, pending, mIds', dups)
-            MSAPending -> (toSend, m : pending, mIds', dups)
+            MSASend conn -> ((m, conn) : toSend, pending, forwarded, mIds', dups)
+            MSAPending -> (toSend, m : pending, forwarded, mIds', dups)
+            MSAForwarded -> (toSend, pending, m : forwarded, mIds', dups)
       Nothing -> acc
       where
         mId = groupMemberId' m
@@ -6835,10 +6852,10 @@ sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
     filterSent :: [Either ChatError a] -> [mem] -> (mem -> GroupMember) -> [GroupMember]
     filterSent rs ms mem = [mem m | (Right _, m) <- zip rs ms]
 
-data MemberSendAction = MSASend Connection | MSAPending
+data MemberSendAction = MSASend Connection | MSAPending | MSAForwarded
 
-memberSendAction :: ChatMsgEvent e -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
-memberSendAction chatMsgEvent members m@GroupMember {invitedByGroupMemberId} = case memberConn m of
+memberSendAction :: GroupInfo -> ChatMsgEvent e -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
+memberSendAction gInfo chatMsgEvent members m = case memberConn m of
   Nothing -> pendingOrForwarded
   Just conn@Connection {connStatus}
     | connDisabled conn || connStatus == ConnDeleted -> Nothing
@@ -6846,32 +6863,41 @@ memberSendAction chatMsgEvent members m@GroupMember {invitedByGroupMemberId} = c
     | connStatus == ConnSndReady || connStatus == ConnReady -> Just (MSASend conn)
     | otherwise -> pendingOrForwarded
   where
-    pendingOrForwarded
-      | forwardSupported && isForwardedGroupMsg chatMsgEvent = Nothing
-      | isXGrpMsgForward chatMsgEvent = Nothing
-      | otherwise = Just MSAPending
+    pendingOrForwarded = case memberCategory m of
+      GCUserMember -> Nothing -- shouldn't happen
+      GCInviteeMember -> Just MSAPending
+      GCHostMember -> Just MSAPending
+      GCPreMember -> forwardSupportedOrPending (invitedByGroupMemberId $ membership gInfo)
+      GCPostMember -> forwardSupportedOrPending (invitedByGroupMemberId m)
       where
-        forwardSupported = m `supportsVersion` groupForwardVersion && invitingMemberSupportsForward
-        invitingMemberSupportsForward = case invitedByGroupMemberId of
-          Just invMemberId ->
-            -- can be optimized for large groups by replacing [GroupMember] with Map GroupMemberId GroupMember
-            case find (\m' -> groupMemberId' m' == invMemberId) members of
-              Just invitingMember -> invitingMember `supportsVersion` groupForwardVersion
+        forwardSupportedOrPending invitingMemberId_
+          | membersSupport && isForwardedGroupMsg chatMsgEvent = Just MSAForwarded
+          | isXGrpMsgForward = Nothing
+          | otherwise = Just MSAPending
+          where
+            membersSupport =
+              m `supportsVersion` groupForwardVersion && invitingMemberSupportsForward
+            invitingMemberSupportsForward = case invitingMemberId_ of
+              Just invMemberId ->
+                -- can be optimized for large groups by replacing [GroupMember] with Map GroupMemberId GroupMember
+                case find (\m' -> groupMemberId' m' == invMemberId) members of
+                  Just invitingMember -> invitingMember `supportsVersion` groupForwardVersion
+                  Nothing -> False
               Nothing -> False
-          Nothing -> False
-        isXGrpMsgForward ev = case ev of
-          XGrpMsgForward {} -> True
-          _ -> False
+            isXGrpMsgForward = case chatMsgEvent of
+              XGrpMsgForward {} -> True
+              _ -> False
 
-sendGroupMemberMessage :: MsgEncodingI e => User -> GroupMember -> ChatMsgEvent e -> Int64 -> Maybe Int64 -> CM () -> CM ()
-sendGroupMemberMessage user m@GroupMember {groupMemberId} chatMsgEvent groupId introId_ postDeliver = do
+sendGroupMemberMessage :: MsgEncodingI e => User -> GroupInfo -> GroupMember -> ChatMsgEvent e -> Maybe Int64 -> CM () -> CM ()
+sendGroupMemberMessage user gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} chatMsgEvent introId_ postDeliver = do
   msg <- createSndMessage chatMsgEvent (GroupId groupId)
   messageMember msg `catchChatError` (\e -> toView (CRChatError (Just user) e))
   where
     messageMember :: SndMessage -> CM ()
-    messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction chatMsgEvent [m] m) $ \case
+    messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction gInfo chatMsgEvent [m] m) $ \case
       MSASend conn -> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId >> postDeliver
       MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
+      MSAForwarded -> pure ()
 
 -- TODO ensure order - pending messages interleave with user input messages
 sendPendingGroupMessages :: User -> GroupMember -> Connection -> CM ()
