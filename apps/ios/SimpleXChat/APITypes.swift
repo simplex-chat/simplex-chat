@@ -1980,7 +1980,7 @@ public enum XFTPErrorType: Decodable, Hashable {
 
 public enum ProxyClientError: Decodable, Hashable {
     case protocolError(protocolErr: ProtocolErrorType)
-    case unexpectedResponse(response: String)
+    case unexpectedResponse(responseStr: String)
     case responseError(responseErr: ProtocolErrorType)
 }
 
