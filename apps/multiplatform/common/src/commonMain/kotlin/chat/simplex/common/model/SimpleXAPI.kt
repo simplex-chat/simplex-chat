@@ -5636,12 +5636,14 @@ sealed class ProtocolCommandError {
 sealed class SMPTransportError {
   val string: String get() = when (this) {
     is BadBlock -> "badBlock"
+    is Version -> "version"
     is LargeMsg -> "largeMsg"
     is BadSession -> "badSession"
     is NoServerAuth -> "noServerAuth"
     is Handshake -> "handshake ${handshakeErr.string}"
   }
   @Serializable @SerialName("badBlock") class BadBlock: SMPTransportError()
+  @Serializable @SerialName("version") class Version: SMPTransportError()
   @Serializable @SerialName("largeMsg") class LargeMsg: SMPTransportError()
   @Serializable @SerialName("badSession") class BadSession: SMPTransportError()
   @Serializable @SerialName("noServerAuth") class NoServerAuth: SMPTransportError()
