@@ -102,8 +102,7 @@ extension ThemeWallpaper {
     public func importFromString() -> ThemeWallpaper {
         if preset == nil, let image {
             // Need to save image from string and to save its path
-            if let data = Data(base64Encoded: dropImagePrefix(image)),
-               let parsed = UIImage(data: data),
+            if let parsed = UIImage(imageString: image),
                let filename = saveWallpaperFile(image: parsed) {
                 var copy = self
                 copy.image = nil

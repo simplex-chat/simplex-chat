@@ -69,8 +69,7 @@ struct ComposeLinkView: View {
 
     private func linkPreviewView(_ linkPreview: LinkPreview) -> some View {
         HStack(alignment: .center, spacing: 8) {
-            if let data = Data(base64Encoded: dropImagePrefix(linkPreview.image)),
-               let uiImage = UIImage(data: data) {
+            if let uiImage = UIImage(imageString: linkPreview.image) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)

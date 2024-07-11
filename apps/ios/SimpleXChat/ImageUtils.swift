@@ -7,18 +7,18 @@
 //
 
 import Foundation
-import SimpleXChat
 import SwiftUI
 import AVKit
+import SwiftyGif
 
-func getLoadedFileSource(_ file: CIFile?) -> CryptoFile? {
+public func getLoadedFileSource(_ file: CIFile?) -> CryptoFile? {
     if let file = file, file.loaded {
         return file.fileSource
     }
     return nil
 }
 
-func getLoadedImage(_ file: CIFile?) -> UIImage? {
+public func getLoadedImage(_ file: CIFile?) -> UIImage? {
     if let fileSource = getLoadedFileSource(file) {
         let filePath = getAppFilePath(fileSource.filePath)
         do {
@@ -37,7 +37,7 @@ func getLoadedImage(_ file: CIFile?) -> UIImage? {
     return nil
 }
 
-func getFileData(_ path: URL, _ cfArgs: CryptoFileArgs?) throws -> Data {
+public func getFileData(_ path: URL, _ cfArgs: CryptoFileArgs?) throws -> Data {
     if let cfArgs = cfArgs {
         return try readCryptoFile(path: path.path, cryptoArgs: cfArgs)
     } else {
@@ -45,7 +45,7 @@ func getFileData(_ path: URL, _ cfArgs: CryptoFileArgs?) throws -> Data {
     }
 }
 
-func getLoadedVideo(_ file: CIFile?) -> URL? {
+public func getLoadedVideo(_ file: CIFile?) -> URL? {
     if let fileSource = getLoadedFileSource(file) {
         let filePath = getAppFilePath(fileSource.filePath)
         if FileManager.default.fileExists(atPath: filePath.path) {
@@ -55,13 +55,13 @@ func getLoadedVideo(_ file: CIFile?) -> URL? {
     return nil
 }
 
-func saveAnimImage(_ image: UIImage) -> CryptoFile? {
+public func saveAnimImage(_ image: UIImage) -> CryptoFile? {
     let fileName = generateNewFileName("IMG", "gif")
     guard let imageData = image.imageData else { return nil }
     return saveFile(imageData, fileName, encrypted: privacyEncryptLocalFilesGroupDefault.get())
 }
 
-func saveImage(_ uiImage: UIImage) -> CryptoFile? {
+public func saveImage(_ uiImage: UIImage) -> CryptoFile? {
     let hasAlpha = imageHasAlpha(uiImage)
     let ext = hasAlpha ? "png" : "jpg"
     if let imageDataResized = resizeImageToDataSize(uiImage, maxDataSize: MAX_IMAGE_SIZE, hasAlpha: hasAlpha) {
@@ -71,7 +71,7 @@ func saveImage(_ uiImage: UIImage) -> CryptoFile? {
     return nil
 }
 
-func cropToSquare(_ image: UIImage) -> UIImage {
+public func cropToSquare(_ image: UIImage) -> UIImage {
     let size = image.size
     let side = min(size.width, size.height)
     let newSize = CGSize(width: side, height: side)
@@ -84,7 +84,7 @@ func cropToSquare(_ image: UIImage) -> UIImage {
     return resizeImage(image, newBounds: CGRect(origin: .zero, size: newSize), drawIn: CGRect(origin: origin, size: size), hasAlpha: imageHasAlpha(image))
 }
 
-func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64, hasAlpha: Bool) -> Data? {
+public func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64, hasAlpha: Bool) -> Data? {
     var img = image
     var data = hasAlpha ? img.pngData() : img.jpegData(compressionQuality: 0.85)
     var dataSize = data?.count ?? 0
@@ -99,7 +99,7 @@ func resizeImageToDataSize(_ image: UIImage, maxDataSize: Int64, hasAlpha: Bool)
     return data
 }
 
-func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int64) -> String? {
+public func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int64) -> String? {
     var img = image
     let hasAlpha = imageHasAlpha(image)
     var str = compressImageStr(img, hasAlpha: hasAlpha)
@@ -115,7 +115,7 @@ func resizeImageToStrSize(_ image: UIImage, maxDataSize: Int64) -> String? {
     return str
 }
 
-func compressImageStr(_ image: UIImage, _ compressionQuality: CGFloat = 0.85, hasAlpha: Bool) -> String? {
+public func compressImageStr(_ image: UIImage, _ compressionQuality: CGFloat = 0.85, hasAlpha: Bool) -> String? {
     let ext = hasAlpha ? "png" : "jpg"
     if let data = hasAlpha ? image.pngData() : image.jpegData(compressionQuality: compressionQuality) {
         return "data:image/\(ext);base64,\(data.base64EncodedString())"
@@ -138,7 +138,7 @@ private func resizeImage(_ image: UIImage, newBounds: CGRect, drawIn: CGRect, ha
     }
 }
 
-func imageHasAlpha(_ img: UIImage) -> Bool {
+public func imageHasAlpha(_ img: UIImage) -> Bool {
     if let cgImage = img.cgImage {
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedFirst.rawValue)
@@ -158,7 +158,7 @@ func imageHasAlpha(_ img: UIImage) -> Bool {
     return false
 }
 
-func saveFileFromURL(_ url: URL) -> CryptoFile? {
+public func saveFileFromURL(_ url: URL) -> CryptoFile? {
     let encrypted = privacyEncryptLocalFilesGroupDefault.get()
     let savedFile: CryptoFile?
     if url.startAccessingSecurityScopedResource() {
@@ -184,7 +184,7 @@ func saveFileFromURL(_ url: URL) -> CryptoFile? {
     return savedFile
 }
 
-func moveTempFileFromURL(_ url: URL) -> CryptoFile? {
+public func moveTempFileFromURL(_ url: URL) -> CryptoFile? {
     do {
         let encrypted = privacyEncryptLocalFilesGroupDefault.get()
         let fileName = uniqueCombine(url.lastPathComponent)
@@ -197,7 +197,6 @@ func moveTempFileFromURL(_ url: URL) -> CryptoFile? {
             try FileManager.default.moveItem(at: url, to: getAppFilePath(fileName))
             savedFile = CryptoFile.plain(fileName)
         }
-        ChatModel.shared.filesToDelete.remove(url)
         return savedFile
     } catch {
         logger.error("ImageUtils.moveTempFileFromURL error: \(error.localizedDescription)")
@@ -205,7 +204,7 @@ func moveTempFileFromURL(_ url: URL) -> CryptoFile? {
     }
 }
 
-func saveWallpaperFile(url: URL) -> String? {
+public func saveWallpaperFile(url: URL) -> String? {
     let destFile = URL(fileURLWithPath: generateNewFileName(getWallpaperDirectory().path + "/" + "wallpaper", "jpg", fullPath: true))
     do {
         try FileManager.default.copyItem(atPath: url.path, toPath: destFile.path)
@@ -216,7 +215,7 @@ func saveWallpaperFile(url: URL) -> String? {
     }
 }
 
-func saveWallpaperFile(image: UIImage) -> String? {
+public func saveWallpaperFile(image: UIImage) -> String? {
     let hasAlpha = imageHasAlpha(image)
     let destFile = URL(fileURLWithPath: generateNewFileName(getWallpaperDirectory().path + "/" + "wallpaper", hasAlpha ? "png" : "jpg", fullPath: true))
     let dataResized = resizeImageToDataSize(image, maxDataSize: 5_000_000, hasAlpha: hasAlpha)
@@ -229,7 +228,7 @@ func saveWallpaperFile(image: UIImage) -> String? {
     }
 }
 
-func removeWallpaperFile(fileName: String? = nil) {
+public func removeWallpaperFile(fileName: String? = nil) {
     do {
         try FileManager.default.contentsOfDirectory(atPath: getWallpaperDirectory().path).forEach {
             if URL(fileURLWithPath: $0).lastPathComponent == fileName { try FileManager.default.removeItem(atPath: $0) }
@@ -242,7 +241,7 @@ func removeWallpaperFile(fileName: String? = nil) {
     }
 }
 
-func generateNewFileName(_ prefix: String, _ ext: String, fullPath: Bool = false) -> String {
+public func generateNewFileName(_ prefix: String, _ ext: String, fullPath: Bool = false) -> String {
     uniqueCombine("\(prefix)_\(getTimestamp()).\(ext)", fullPath: fullPath)
 }
 
@@ -274,7 +273,7 @@ private func getTimestamp() -> String {
     return df.string(from: Date())
 }
 
-func dropImagePrefix(_ s: String) -> String {
+public func dropImagePrefix(_ s: String) -> String {
     dropPrefix(dropPrefix(s, "data:image/png;base64,"), "data:image/jpg;base64,")
 }
 
@@ -283,7 +282,7 @@ private func dropPrefix(_ s: String, _ prefix: String) -> String {
 }
 
 extension AVAsset {
-    func generatePreview() -> (UIImage, Int)? {
+    public func generatePreview() -> (UIImage, Int)? {
         let generator = AVAssetImageGenerator(asset: self)
         generator.appliesPreferredTrackTransform = true
         var actualTime = CMTimeMake(value: 0, timescale: 0)
@@ -295,7 +294,7 @@ extension AVAsset {
 }
 
 extension UIImage {
-    func replaceColor(_ from: UIColor, _ to: UIColor) -> UIImage {
+    public func replaceColor(_ from: UIColor, _ to: UIColor) -> UIImage {
         if let cgImage = cgImage {
             let colorSpace = CGColorSpaceCreateDeviceRGB()
             let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedFirst.rawValue)
@@ -339,5 +338,13 @@ extension UIImage {
             }
         }
         return self
+    }
+
+    public convenience init?(imageString: String?) {
+        if let imageString, let data = Data(base64Encoded: dropImagePrefix(imageString)) {
+            self.init(data: data)
+        } else {
+            return nil
+        }
     }
 }
