@@ -3,6 +3,7 @@ package chat.simplex.common.platform
 import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.DefaultTheme
+import chat.simplex.common.views.helpers.*
 import java.io.File
 import java.util.*
 
@@ -55,3 +56,7 @@ fun runMigrations() {
     }
   }
 }
+
+expect fun chooseGitHubReleaseAssets(release: GitHubRelease): List<GitHubAsset>
+
+expect fun installAppUpdate(file: File)

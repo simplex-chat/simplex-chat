@@ -26,9 +26,13 @@ actual val databaseExportDir: File = tmpDir
 actual val remoteHostsDir: File = File(dataDir.absolutePath + File.separator + "remote_hosts")
 
 actual fun desktopOpenDatabaseDir() {
+  desktopOpenDir(dataDir)
+}
+
+actual fun desktopOpenDir(dir: File) {
   if (Desktop.isDesktopSupported()) {
     try {
-      Desktop.getDesktop().open(dataDir);
+      Desktop.getDesktop().open(dir);
     } catch (e: IOException) {
       Log.e(TAG, e.stackTraceToString())
       AlertManager.shared.showAlertMsg(
