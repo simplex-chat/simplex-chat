@@ -155,10 +155,10 @@ private fun downloadAsset(asset: GitHubAsset) {
         response.body?.use { body ->
           body.byteStream().use { stream ->
             createTmpFileAndDelete { file ->
-			  // It's important to close output stream (with use{}), otherwise, Windows cannot rename the file
-			  file.outputStream().use { output ->
-			    stream.copyTo(output)
-			  }
+              // It's important to close output stream (with use{}), otherwise, Windows cannot rename the file
+              file.outputStream().use { output ->
+                stream.copyTo(output)
+              }
               val newFile = File(file.parentFile, asset.name)
               file.renameTo(newFile)
 
@@ -170,8 +170,8 @@ private fun downloadAsset(asset: GitHubAsset) {
                     SectionItemView({
                       AlertManager.shared.hideAlert()
                       withLongRunningApi {
-					    installAppUpdate(newFile)
-					  }
+                        installAppUpdate(newFile)
+                      }
                     }) {
                       Text(generalGetString(MR.strings.app_check_for_updates_button_install), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
                     }
@@ -217,11 +217,11 @@ private suspend fun installAppUpdate(file: File) {
         // Failed to start installation. show directory with the file for manual installation
         desktopOpenDir(file.parentFile)
       } else {
-	    withApi {
-		  showToast(generalGetString(MR.strings.app_check_for_updates_installed_successfully))
-		}
-	  }
-	  file.delete()
+        withApi {
+          showToast(generalGetString(MR.strings.app_check_for_updates_installed_successfully))
+        }
+      }
+      file.delete()
     }
     desktopPlatform.isWindows() -> {
       val process = Runtime.getRuntime().exec("msiexec /i ${file.absolutePath}"/* /qb */).onExit().join()
@@ -231,11 +231,11 @@ private suspend fun installAppUpdate(file: File) {
         // Failed to start installation. show directory with the file for manual installation
         desktopOpenDir(file.parentFile)
       } else {
-	    withApi {
-		  showToast(generalGetString(MR.strings.app_check_for_updates_installed_successfully))
-		}
-	  }
-	  file.delete()
+        withApi {
+          showToast(generalGetString(MR.strings.app_check_for_updates_installed_successfully))
+        }
+      }
+      file.delete()
     }
     desktopPlatform.isMac() -> {
       val process = Runtime.getRuntime().exec("hdiutil mount ${file.absolutePath}").onExit().join()
@@ -253,11 +253,11 @@ private suspend fun installAppUpdate(file: File) {
         // Failed to start installation. show directory with the file for manual installation
         desktopOpenDir(file.parentFile)
       } else {
-	    withApi {
-		  showToast(generalGetString(MR.strings.app_check_for_updates_installed_successfully))
-		}
-	  }
-	  file.delete()
+        withApi {
+          showToast(generalGetString(MR.strings.app_check_for_updates_installed_successfully))
+        }
+      }
+      file.delete()
     }
   }
 }
