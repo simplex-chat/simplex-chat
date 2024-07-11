@@ -220,8 +220,8 @@ private suspend fun installAppUpdate(file: File) {
         withApi {
           showToast(generalGetString(MR.strings.app_check_for_updates_installed_successfully))
         }
+        file.delete()
       }
-      file.delete()
     }
     desktopPlatform.isWindows() -> {
       val process = Runtime.getRuntime().exec("msiexec /i ${file.absolutePath}"/* /qb */).onExit().join()
@@ -234,30 +234,34 @@ private suspend fun installAppUpdate(file: File) {
         withApi {
           showToast(generalGetString(MR.strings.app_check_for_updates_installed_successfully))
         }
+        file.delete()
       }
-      file.delete()
     }
     desktopPlatform.isMac() -> {
-      val process = Runtime.getRuntime().exec("hdiutil mount ${file.absolutePath}").onExit().join()
-      val startedInstallation = process.exitValue() == 0
-      if (!startedInstallation) {
-        Log.e(TAG, "Error starting installation: ${process.inputReader().use { it.readLines().joinToString("\n") }}${process.errorStream.use { String(it.readAllBytes()) }}")
-        // Failed to start installation. show directory with the file for manual installation
-        desktopOpenDir(file.parentFile)
-        return
-      }
-      var process2 = Runtime.getRuntime().exec("cp -R /Volumes/SimpleX/SimpleX.app /Applications").onExit().join()
-      val copiedSuccessfully = process.exitValue() == 0
-      if (!copiedSuccessfully) {
-        Log.e(TAG, "Error copying the app: ${process.inputReader().use { it.readLines().joinToString("\n") }}${process.errorStream.use { String(it.readAllBytes()) }}")
-        // Failed to start installation. show directory with the file for manual installation
-        desktopOpenDir(file.parentFile)
-      } else {
-        withApi {
-          showToast(generalGetString(MR.strings.app_check_for_updates_installed_successfully))
+      try {
+        val process = Runtime.getRuntime().exec("hdiutil mount ${file.absolutePath}").onExit().join()
+        val startedInstallation = process.exitValue() == 0
+        if (!startedInstallation) {
+          Log.e(TAG, "Error starting installation: ${process.inputReader().use { it.readLines().joinToString("\n") }}${process.errorStream.use { String(it.readAllBytes()) }}")
+          // Failed to start installation. show directory with the file for manual installation
+          desktopOpenDir(file.parentFile)
+          return
         }
+        var process2 = Runtime.getRuntime().exec("cp -R /Volumes/SimpleX/SimpleX.app /Applications").onExit().join()
+        val copiedSuccessfully = process2.exitValue() == 0
+        if (!copiedSuccessfully) {
+          Log.e(TAG, "Error copying the app: ${process.inputReader().use { it.readLines().joinToString("\n") }}${process.errorStream.use { String(it.readAllBytes()) }}")
+          // Failed to start installation. show directory with the file for manual installation
+          desktopOpenDir(file.parentFile)
+        } else {
+          withApi {
+            showToast(generalGetString(MR.strings.app_check_for_updates_installed_successfully))
+          }
+          file.delete()
+        }
+      } finally {
+        val process3 = Runtime.getRuntime().exec("hdiutil unmount /Volumes/SimpleX").onExit().join()
       }
-      file.delete()
     }
   }
 }
