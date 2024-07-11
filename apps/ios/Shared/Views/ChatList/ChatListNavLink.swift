@@ -575,6 +575,10 @@ func getErrorAlert(_ error: Error, _ title: LocalizedStringKey) -> ErrorAlert {
         return ErrorAlert(title: "Connection timeout", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
     case let .chatCmdError(_, .errorAgent(.BROKER(addr, .NETWORK))):
         return ErrorAlert(title: "Connection error", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
+    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .HOST))):
+        return ErrorAlert(title: "Connection error", message: "Server address is incompatible with network settings: \(serverHostname(addr)).")
+    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TRANSPORT(.version)))):
+        return ErrorAlert(title: "Connection error", message: "Server version is incompatible with network settings: \(serverHostname(addr)).")
     case let .chatCmdError(_, .errorAgent(.SMP(.PROXY(proxyErr)))):
         return if let alert = proxyErrorAlert(proxyErr) {
             alert
@@ -595,11 +599,11 @@ func getErrorAlert(_ error: Error, _ title: LocalizedStringKey) -> ErrorAlert {
 private func proxyErrorAlert(_ proxyErr: ProxyError) -> ErrorAlert? {
     switch proxyErr {
     case .BROKER(brokerErr: .TIMEOUT):
-        return ErrorAlert(title: "Temporary private routing error", message: "Please try again.")
+        return ErrorAlert(title: "Private routing error", message: "Please try later.")
     case .BROKER(brokerErr: .NETWORK):
-        return ErrorAlert(title: "Temporary private routing error", message: "Please try again.")
+        return ErrorAlert(title: "Private routing error", message: "Please try later.")
     case .NO_SESSION:
-        return ErrorAlert(title: "Temporary private routing error", message: "Please try again.")
+        return ErrorAlert(title: "Private routing error", message: "Please try later.")
     case .BROKER(brokerErr: .HOST):
         return ErrorAlert(title: "Private routing error", message: "Server address is incompatible with network settings.")
     case .BROKER(brokerErr: .TRANSPORT(.version)):
