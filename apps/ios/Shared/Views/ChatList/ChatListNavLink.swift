@@ -575,6 +575,10 @@ func getErrorAlert(_ error: Error, _ title: LocalizedStringKey) -> ErrorAlert {
         return ErrorAlert(title: "Connection timeout", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
     case let .chatCmdError(_, .errorAgent(.BROKER(addr, .NETWORK))):
         return ErrorAlert(title: "Connection error", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
+    case .chatCmdError(_, .errorAgent(.SMP(.PROXY(.BROKER(brokerErr: .TIMEOUT))))):
+        return ErrorAlert(title: "Temporary private routing error", message: "Please try again.")
+    case .chatCmdError(_, .errorAgent(.SMP(.PROXY(.BROKER(brokerErr: .NETWORK))))):
+        return ErrorAlert(title: "Temporary private routing error", message: "Please try again.")
     case .chatCmdError(_, .errorAgent(.SMP(.PROXY(.BROKER(brokerErr: .HOST))))):
         return ErrorAlert(title: "Private routing error", message: "Server address is incompatible with network settings.")
     case .chatCmdError(_, .errorAgent(.SMP(.PROXY(.BROKER(brokerErr: .TRANSPORT(.version)))))):

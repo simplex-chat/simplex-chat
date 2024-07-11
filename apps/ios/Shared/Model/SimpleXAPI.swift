@@ -1103,6 +1103,16 @@ func networkErrorAlert(_ r: ChatResponse) -> Alert? {
             title: "Connection error",
             message: "Please check your network connection with \(serverHostname(addr)) and try again."
         )
+    case .chatCmdError(_, .errorAgent(.SMP(.PROXY(.BROKER(brokerErr: .TIMEOUT))))):
+        return mkAlert(
+            title: "Temporary private routing error",
+            message: "Please try again."
+        )
+    case .chatCmdError(_, .errorAgent(.SMP(.PROXY(.BROKER(brokerErr: .NETWORK))))):
+        return mkAlert(
+            title: "Temporary private routing error",
+            message: "Please try again."
+        )
     case .chatCmdError(_, .errorAgent(.SMP(.PROXY(.BROKER(brokerErr: .HOST))))):
         return mkAlert(
             title: "Private routing error",
