@@ -2013,6 +2013,7 @@ public enum ProtocolCommandError: Decodable, Hashable {
 
 public enum ProtocolTransportError: Decodable, Hashable {
     case badBlock
+    case version
     case largeMsg
     case badSession
     case noServerAuth
