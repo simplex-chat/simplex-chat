@@ -58,13 +58,13 @@ fun runMigrations() {
 }
 
 enum class AppUpdatesChannel {
-  NONE,
+  DISABLED,
   STABLE,
   BETA;
 
   val text: String
     get() = when (this) {
-      NONE -> generalGetString(MR.strings.app_check_for_updates_none)
+      DISABLED -> generalGetString(MR.strings.app_check_for_updates_disabled)
       STABLE -> generalGetString(MR.strings.app_check_for_updates_stable)
       BETA -> generalGetString(MR.strings.app_check_for_updates_beta)
     }

@@ -32,10 +32,5 @@ fun VersionInfoView(info: CoreVersionInfo) {
       val simplexmqCommit = if (info.simplexmqCommit.length >= 7) info.simplexmqCommit.substring(startIndex = 0, endIndex = 7) else info.simplexmqCommit
       Text(String.format(stringResource(MR.strings.core_simplexmq_version), info.simplexmqVersion, simplexmqCommit))
     }
-    SectionDividerSpaced(maxBottomPadding = false)
-    AppUpdateSection()
   }
 }
-
-@Composable
-expect fun AppUpdateSection()

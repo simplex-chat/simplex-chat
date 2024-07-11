@@ -48,8 +48,6 @@ kotlin {
         // Resources
         api("dev.icerock.moko:resources:0.23.0")
         api("dev.icerock.moko:resources-compose:0.23.0")
-
-        api("com.squareup.okhttp3:okhttp:4.12.0")
       }
     }
     val commonTest by getting {
@@ -107,6 +105,7 @@ kotlin {
         implementation("uk.co.caprica:vlcj:4.8.2")
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd:efb2ebf85a")
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd-websocket:efb2ebf85a")
+        implementation("com.squareup.okhttp3:okhttp:4.12.0")
       }
     }
     val desktopTest by getting

@@ -770,19 +770,20 @@
   <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
   <string name="app_updates">Updates</string>
   <string name="app_check_for_updates">Check for updates</string>
-  <string name="app_check_for_updates_none">None</string>
-  <string name="app_check_for_updates_stable">Stable versions</string>
-  <string name="app_check_for_updates_beta">Beta versions</string>
+  <string name="app_check_for_updates_disabled">Disabled</string>
+  <string name="app_check_for_updates_stable">Stable</string>
+  <string name="app_check_for_updates_beta">Beta</string>
   <string name="app_check_for_updates_update_available">Update available: %s</string>
   <string name="app_check_for_updates_button_download">Download %s (%s)</string>
   <string name="app_check_for_updates_button_skip">Skip this version</string>
-  <string name="app_check_for_updates_button_read_more">Read more</string>
   <string name="app_check_for_updates_download_started">Starting download in background, don\'t close the app</string>
   <string name="app_check_for_updates_download_completed_title">Download completed</string>
   <string name="app_check_for_updates_download_completed_desc">Update is ready to be installed</string>
   <string name="app_check_for_updates_button_open">Open file location</string>
   <string name="app_check_for_updates_button_install">Install</string>
-  <string name="app_check_for_updates_installed_successfully">Installed successfully. Please, restart the app</string>
+  <string name="app_check_for_updates_installed_successfully_title">Installed successfully</string>
+  <string name="app_check_for_updates_installed_successfully_desc">Please, restart the app</string>
+  <string name="app_check_for_updates_button_remind_later">Remind later</string>
 
   <string name="show_dev_options">Show:</string>
   <string name="hide_dev_options">Hide:</string>
