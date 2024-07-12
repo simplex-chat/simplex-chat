@@ -1388,7 +1388,7 @@ func apiGetVersion() throws -> CoreVersionInfo {
 
 func getAgentServersSummary() throws -> PresentedServersSummary {
     let userId = try currentUserId("getAgentServersSummary")
-    let r = chatSendCmdSync(.getAgentServersSummary(userId: userId), log: true)
+    let r = chatSendCmdSync(.getAgentServersSummary(userId: userId), log: false)
     if case let .agentServersSummary(_, serversSummary) = r { return serversSummary }
     logger.error("getAgentServersSummary error: \(String(describing: r))")
     throw r
