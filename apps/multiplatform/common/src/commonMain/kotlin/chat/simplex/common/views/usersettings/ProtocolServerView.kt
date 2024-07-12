@@ -183,8 +183,8 @@ private fun UseServerSection(
       checked = enabled.value
     ) {
       onUpdate(server.copy(enabled = it))
-
     }
+    
     SectionItemView(onDelete, disabled = testing) {
       Text(stringResource(MR.strings.smp_servers_delete_server), color = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.error)
     }
