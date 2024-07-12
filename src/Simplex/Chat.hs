@@ -2265,13 +2265,11 @@ processChatCommand' vr = \case
     let presentedServersSummary = toPresentedServersSummary agentServersSummary users user smpServers xftpServers
     pure $ CRAgentServersSummary user presentedServersSummary
     where
-      getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => User -> SProtocolType p -> CM [ProtocolServer p]
+      getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => User -> SProtocolType p -> CM (NonEmpty (ProtocolServer p))
       getUserServers users protocol = do
-        ChatConfig {defaultServers} <- asks config
-        let defServers = cfgServers protocol defaultServers
+        cfg <- asks config
         servers <- withStore' (`getProtocolServers` users)
-        let srvs = if null servers then L.toList defServers else servers
-        pure $ map (\ServerCfg {server} -> protoServer server) srvs
+        pure $ L.map (\ServerCfg {server} -> protoServer server) $ useServers cfg protocol servers
   ResetAgentServersStats -> withAgent resetAgentServersStats >> ok_
   GetAgentWorkers -> lift $ CRAgentWorkersSummary <$> withAgent' getAgentWorkersSummary
   GetAgentWorkersDetails -> lift $ CRAgentWorkersDetails <$> withAgent' getAgentWorkersDetails
@@ -3230,9 +3228,9 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       S.toList $ S.fromList $ concatMap (\FD.FileChunk {replicas} -> map (\FD.FileChunkReplica {server} -> server) replicas) chunks
     getUnknownSrvs :: [XFTPServer] -> CM [XFTPServer]
     getUnknownSrvs srvs = do
-      ChatConfig {defaultServers = DefaultAgentServers {xftp = defXftp}} <- asks config
+      cfg <- asks config
       storedSrvs <- withStore' (`getProtocolServers` user)
-      let knownSrvs = L.map (\ServerCfg {server} -> protoServer server) $ fromMaybe defXftp $ nonEmpty storedSrvs
+      let knownSrvs = L.map (\ServerCfg {server} -> protoServer server) $ useServers cfg SPXFTP storedSrvs
       pure $ filter (`notElem` knownSrvs) srvs
     ipProtectedForSrvs :: [XFTPServer] -> CM Bool
     ipProtectedForSrvs srvs = do
