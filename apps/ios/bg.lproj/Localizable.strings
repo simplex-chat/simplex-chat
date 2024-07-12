@@ -337,9 +337,6 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "по-горе, след това избери:";
 
-/* No comment provided by engineer. */
-"Accent color" = "Основен цвят";
-
 /* accept contact request via notification
    accept incoming call via notification */
 "Accept" = "Приеми";
@@ -647,7 +644,7 @@
 /* rcv group event chat item */
 "blocked %@" = "блокиран %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item */
 "blocked by admin" = "блокиран от админ";
 
 /* No comment provided by engineer. */
@@ -831,9 +828,6 @@
 /* No comment provided by engineer. */
 "colored" = "цветен";
 
-/* No comment provided by engineer. */
-"Colors" = "Цветове";
-
 /* server test step */
 "Compare file" = "Сравни файл";
 
@@ -1011,7 +1005,7 @@
 /* No comment provided by engineer. */
 "Continue" = "Продължи";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "Копирай";
 
 /* No comment provided by engineer. */
@@ -1779,7 +1773,8 @@
 /* No comment provided by engineer. */
 "Error: " = "Грешка: ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "Грешка: %@";
 
 /* No comment provided by engineer. */
@@ -3790,9 +3785,6 @@
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Текстът, който поставихте, не е SimpleX линк за връзка.";
-
-/* No comment provided by engineer. */
-"Theme" = "Тема";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Тези настройки са за текущия ви профил **%@**.";

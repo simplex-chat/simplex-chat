@@ -5,9 +5,11 @@
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.2" build-num="14C18"/>
     </header>
     <body>
-      <trans-unit id="&#10;" xml:space="preserve">
+      <trans-unit id="&#10;" xml:space="preserve" approved="no">
         <source>
 </source>
+        <target state="needs-translation">
+</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="&#10;Available in v5.1" xml:space="preserve">
@@ -50,16 +52,19 @@ Available in v5.1</source>
         <target state="translated">#secreto#</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@" xml:space="preserve">
+      <trans-unit id="%@" xml:space="preserve" approved="no">
         <source>%@</source>
+        <target state="needs-translation">%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ %@" xml:space="preserve">
+      <trans-unit id="%@ %@" xml:space="preserve" approved="no">
         <source>%@ %@</source>
+        <target state="needs-translation">%@ %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ / %@" xml:space="preserve">
+      <trans-unit id="%@ / %@" xml:space="preserve" approved="no">
         <source>%@ / %@</source>
+        <target state="needs-translation">%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve" approved="no">
@@ -117,12 +122,14 @@ Available in v5.1</source>
         <target state="translated">%d mensagem(s) ignorada(s)</target>
         <note>integrity error chat item</note>
       </trans-unit>
-      <trans-unit id="%lld" xml:space="preserve">
+      <trans-unit id="%lld" xml:space="preserve" approved="no">
         <source>%lld</source>
+        <target state="needs-translation">%lld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld %@" xml:space="preserve">
+      <trans-unit id="%lld %@" xml:space="preserve" approved="no">
         <source>%lld %@</source>
+        <target state="needs-translation">%lld %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld contact(s) selected" xml:space="preserve" approved="no">
@@ -155,24 +162,29 @@ Available in v5.1</source>
         <target state="translated">%lld segundos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldd" xml:space="preserve">
+      <trans-unit id="%lldd" xml:space="preserve" approved="no">
         <source>%lldd</source>
+        <target state="needs-translation">%lldd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldh" xml:space="preserve">
+      <trans-unit id="%lldh" xml:space="preserve" approved="no">
         <source>%lldh</source>
+        <target state="needs-translation">%lldh</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldk" xml:space="preserve">
+      <trans-unit id="%lldk" xml:space="preserve" approved="no">
         <source>%lldk</source>
+        <target state="needs-translation">%lldk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldm" xml:space="preserve">
+      <trans-unit id="%lldm" xml:space="preserve" approved="no">
         <source>%lldm</source>
+        <target state="needs-translation">%lldm</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lldmth" xml:space="preserve">
+      <trans-unit id="%lldmth" xml:space="preserve" approved="no">
         <source>%lldmth</source>
+        <target state="needs-translation">%lldmth</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%llds" xml:space="preserve">
@@ -193,8 +205,9 @@ Available in v5.1</source>
         <target state="translated">%u mensagens ignoradas.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="(" xml:space="preserve">
+      <trans-unit id="(" xml:space="preserve" approved="no">
         <source>(</source>
+        <target state="needs-translation">(</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=")" xml:space="preserve">
@@ -4539,6 +4552,31 @@ SimpleX servers cannot see your profile.</source>
         <source>Confirm upload</source>
         <target state="translated">Confirmar envio</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ downloaded" xml:space="preserve" approved="no">
+        <source>%@ downloaded</source>
+        <target state="translated">%@ baixado</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="# %@" xml:space="preserve" approved="no">
+        <source># %@</source>
+        <target state="needs-translation"># %@</target>
+        <note>copied message info title, # &lt;title&gt;</note>
+      </trans-unit>
+      <trans-unit id="%@:" xml:space="preserve" approved="no">
+        <source>%@:</source>
+        <target state="needs-translation">%@:</target>
+        <note>copied message info</note>
+      </trans-unit>
+      <trans-unit id="%@ (current)" xml:space="preserve" approved="no">
+        <source>%@ (current)</source>
+        <target state="translated">%@(atual)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ (current):" xml:space="preserve" approved="no">
+        <source>%@ (current):</source>
+        <target state="translated">%@ (atual):</target>
+        <note>copied message info</note>
       </trans-unit>
     </body>
   </file>
