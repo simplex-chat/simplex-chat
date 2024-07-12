@@ -1125,7 +1125,7 @@ public struct UserProtoServers: Decodable {
     public var presetServers: [ServerCfg]
 }
 
-public struct ServerCfg: Identifiable, Equatable, Codable {
+public struct ServerCfg: Identifiable, Equatable, Codable, Hashable {
     public var server: String
     public var preset: Bool
     public var tested: Bool?
