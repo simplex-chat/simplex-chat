@@ -149,7 +149,7 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
     AgentServersSummary {statsStartedAt, smpServersSessions, smpServersSubs, smpServersStats, xftpServersSessions, xftpServersStats, xftpRcvInProgress, xftpSndInProgress, xftpDelInProgress} = agentSummary
     countUserInAll auId = countUserInAllStats (AgentUserId auId) currentUser users
     accSMPTotals :: Map SMPServer SMPServerSummary -> SMPTotals
-    accSMPTotals = M.foldr addTotals initialTotals
+    accSMPTotals = M.foldr' addTotals initialTotals
       where
         initialTotals = SMPTotals {sessions = ServerSessions 0 0 0, subs = SMPServerSubs 0 0, stats = newAgentSMPServerStatsData}
         addTotals SMPServerSummary {sessions, subs, stats} SMPTotals {sessions = accSess, subs = accSubs, stats = accStats} =
@@ -159,7 +159,7 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
               stats = maybe accStats (accStats `addSMPStatsData`) stats
             }
     accXFTPTotals :: Map XFTPServer XFTPServerSummary -> XFTPTotals
-    accXFTPTotals = M.foldr addTotals initialTotals
+    accXFTPTotals = M.foldr' addTotals initialTotals
       where
         initialTotals = XFTPTotals {sessions = ServerSessions 0 0 0, stats = newAgentXFTPServerStatsData}
         addTotals XFTPServerSummary {sessions, stats} XFTPTotals {sessions = accSess, stats = accStats} =
@@ -168,7 +168,7 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
               stats = maybe accStats (accStats `addXFTPStatsData`) stats
             }
     smpSummsIntoCategories :: Map SMPServer SMPServerSummary -> ([SMPServerSummary], [SMPServerSummary], [SMPServerSummary])
-    smpSummsIntoCategories = foldr partitionSummary ([], [], [])
+    smpSummsIntoCategories = M.foldr' partitionSummary ([], [], [])
       where
         partitionSummary srvSumm (curr, prev, prox)
           | isCurrentlyUsed srvSumm = (srvSumm : curr, prev, prox)
@@ -182,7 +182,7 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
           Just AgentSMPServerStatsData {_sentDirect, _sentProxied, _sentDirectAttempts, _sentProxiedAttempts, _recvMsgs, _connCreated, _connSecured, _connSubscribed, _connSubAttempts} ->
             _sentDirect > 0 || _sentProxied > 0 || _sentDirectAttempts > 0 || _sentProxiedAttempts > 0 || _recvMsgs > 0 || _connCreated > 0 || _connSecured > 0 || _connSubscribed > 0 || _connSubAttempts > 0
     xftpSummsIntoCategories :: Map XFTPServer XFTPServerSummary -> ([XFTPServerSummary], [XFTPServerSummary])
-    xftpSummsIntoCategories = foldr partitionSummary ([], [])
+    xftpSummsIntoCategories = M.foldr' partitionSummary ([], [])
       where
         partitionSummary srvSumm (curr, prev)
           | isCurrentlyUsed srvSumm = (srvSumm : curr, prev)
