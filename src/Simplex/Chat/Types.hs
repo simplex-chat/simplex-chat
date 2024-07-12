@@ -48,13 +48,11 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..))
 import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
-import Simplex.Messaging.Protocol (ProtoServerWithAuth)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
@@ -1628,15 +1626,6 @@ data NoteFolder = NoteFolder
   deriving (Eq, Show)
 
 type NoteFolderId = Int64
-
-enabledServerCfg :: ProtoServerWithAuth p -> ServerCfg p
-enabledServerCfg = serverCfg_ False True
-
-presetServerCfg :: Bool -> ProtoServerWithAuth p -> ServerCfg p
-presetServerCfg = serverCfg_ True
-
-serverCfg_ :: Bool -> Bool -> ProtoServerWithAuth p -> ServerCfg p
-serverCfg_ preset enabled server = ServerCfg {server, preset, tested = Nothing, enabled}
 
 data ChatVersion
 
