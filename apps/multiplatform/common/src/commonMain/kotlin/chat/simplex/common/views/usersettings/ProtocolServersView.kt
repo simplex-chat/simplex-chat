@@ -198,7 +198,7 @@ private fun ProtocolServersLayout(
   ) {
     AppBarTitle(stringResource(if (serverProtocol == ServerProtocol.SMP) MR.strings.your_SMP_servers else MR.strings.your_XFTP_servers))
 
-    SectionView(stringResource(if (serverProtocol == ServerProtocol.SMP) MR.strings.smp_servers else MR.strings.xftp_servers).uppercase()) {
+    SectionView(stringResource(if (serverProtocol == ServerProtocol.SMP) MR.strings.smp_servers_configured else MR.strings.xftp_servers_configured).uppercase()) {
       for (srv in servers.filter { it.preset || it.enabled }) {
         SectionItemView({ showServer(srv) }, disabled = testing) {
           ProtocolServerView(serverProtocol, srv, servers, testing)
