@@ -1122,7 +1122,7 @@ public struct ProtoServersConfig: Codable {
 public struct UserProtoServers: Decodable {
     public var serverProtocol: ServerProtocol
     public var protoServers: [ServerCfg]
-    public var presetServers: [String]
+    public var presetServers: [ServerCfg]
 }
 
 public struct ServerCfg: Identifiable, Equatable, Codable {

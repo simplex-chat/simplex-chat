@@ -18,7 +18,7 @@ struct ProtocolServersView: View {
     @Environment(\.editMode) private var editMode
     let serverProtocol: ServerProtocol
     @State private var currServers: [ServerCfg] = []
-    @State private var presetServers: [String] = []
+    @State private var presetServers: [ServerCfg] = []
     @State private var servers: [ServerCfg] = []
     @State private var selectedServer: String? = nil
     @State private var showAddServer = false
@@ -240,13 +240,13 @@ struct ProtocolServersView: View {
     private func addAllPresets() {
         for srv in presetServers {
             if !hasPreset(srv) {
-                servers.append(ServerCfg(server: srv, preset: true, tested: nil, enabled: true))
+                servers.append(srv)
             }
         }
     }
 
-    private func hasPreset(_ srv: String) -> Bool {
-        servers.contains(where: { $0.server == srv })
+    private func hasPreset(_ srv: ServerCfg) -> Bool {
+        servers.contains(where: { $0.server == srv.server })
     }
 
     private func testServers() {
