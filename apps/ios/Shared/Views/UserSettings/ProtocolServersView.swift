@@ -198,7 +198,7 @@ struct ProtocolServersView: View {
     }
 
     private var allServersDisabled: Bool {
-        (configuredServers + otherServers).allSatisfy { !$0.enabled }
+        allServers.allSatisfy { !$0.enabled }
     }
 
     private func protocolServerView(_ server: Binding<ServerCfg>) -> some View {
