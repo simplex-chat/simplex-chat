@@ -14,15 +14,16 @@ import SimpleXChat
 class ShareModel: ObservableObject {
     @Published var item: NSExtensionItem?
     @Published var chats = Array<ChatData>()
+    @Published var decodedImages = Dictionary<Int, UIImage>()
     @Published var search = String()
     @Published var comment = String()
     @Published var selected: ChatData?
     @Published var isLoaded = false
+    @Published var progress: Double?
     @Published var error: ShareError?
 
     var completion: (() -> Void)?
-
-    private let allChats = PassthroughSubject<Array<ChatData>, Never>()
+    private let chatsSubject = PassthroughSubject<Array<ChatData>, Never>()
     private var bag = Set<AnyCancellable>()
 
     init() {
@@ -31,7 +32,7 @@ class ShareModel: ObservableObject {
             switch fetchChats() {
             case let .success(chats):
                 await MainActor.run {
-                    self.chats = chats
+                    self.chatsSubject.send(chats)
                     withAnimation { self.isLoaded = true }
                 }
             case let .failure(error):
@@ -43,7 +44,7 @@ class ShareModel: ObservableObject {
         $search
             .removeDuplicates()
             .throttle(for: .milliseconds(300), scheduler: RunLoop.current, latest: true)
-            .combineLatest(allChats)
+            .combineLatest(chatsSubject)
             .map { (search, chats) in
                 search.isEmpty
                 ? chats
@@ -61,14 +62,29 @@ class ShareModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .assign(to: \.selected, on: self)
             .store(in: &bag)
+        
+        // Binding: Decodes chat images
+        chatsSubject
+            .map { chats in
+                chats
+                    .compactMap { $0.chatInfo.image }
+                    .reduce(into: Dictionary<Int, UIImage>()) { decoded, image in
+                        if let uiImage = UIImage(base64Encoded: image) {
+                            decoded[image.hashValue] = uiImage
+                        }
+                    }
+            }
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.decodedImages, on: self)
+            .store(in: &bag)
     }
 
     func send() {
         Task {
             switch await self.sendMessage() {
-            case .success:
-                try? await Task.sleep(for: .seconds(2))
-                completion?()
+            case let .success(aChatItem):
+                await MainActor.run { progress = .zero }
+                startEventLoop(for: aChatItem)
             case let .failure(error):
                 self.error = .sendMessage(error)
             }
@@ -79,8 +95,11 @@ class ShareModel: ObservableObject {
         guard let chat = selected else { return .failure(.noChatWasSelected) }
         guard let attachment = item?.attachments?.first else { return .failure(.missingAttachment) }
         do {
-            let url = try await url(attachment: attachment, type: .data)
-            guard let cryptoFile = saveFileFromURL(url) else{ return .failure(.encryptFileFailure) }
+            guard let type = attachment.firstMatching(of: [.image, .movie, .data]) else {
+                return .failure(.unsupportedFormat)
+            }
+            let url = try await attachment.inPlaceUrl(type: type)
+            guard let cryptoFile = saveFileFromURL(url) else { return .failure(.encryptFile) }
             let chatResponse = sendSimpleXCmd(
                 .apiSendMessage(
                     type: chat.chatInfo.chatType,
@@ -94,7 +113,7 @@ class ShareModel: ObservableObject {
             )
             return switch chatResponse {
             case let .newChatItem(_, chatItem): .success(chatItem)
-            default: .failure(.sendMessageFailure)
+            default: .failure(.sendMessage)
             }
         } catch {
             return .failure(.loadFileRepresentation(error))
@@ -131,18 +150,50 @@ class ShareModel: ObservableObject {
         }
         return .success(chats)
     }
-}
 
-fileprivate func url(attachment: NSItemProvider, type: UTType) async throws -> URL {
-    try await withCheckedThrowingContinuation { cont in
-        let _ = attachment.loadFileRepresentation(for: type, openInPlace: true) { url, bool, error in
-            if let url = url {
-                cont.resume(returning: url)
-            } else if let error = error {
-                cont.resume(throwing: error)
-            } else {
-                fatalError("Either `url` or `error` must be present")
+    private func startEventLoop(for sent: AChatItem) {
+        Task {
+            while true {
+                switch recvSimpleXMsg() {
+                case let .sndFileProgressXFTP(_, aChatItem, _, sentSize, totalSize):
+                    if let id = aChatItem?.chatItem.id, id == sent.chatItem.id {
+                        await MainActor.run {
+                            withAnimation { self.progress = Double(sentSize) / Double(totalSize) }
+                        }
+                    }
+                case let .sndFileCompleteXFTP(_, aChatItem, _):
+                    if aChatItem.chatItem.id == sent.chatItem.id {
+                        await MainActor.run {
+                            withAnimation { self.progress = 1 }
+                            self.completion!()
+                        }
+                    }
+                default: break
+                }
             }
         }
+    }
+}
+
+extension NSItemProvider {
+    fileprivate func inPlaceUrl(type: UTType) async throws -> URL {
+        try await withCheckedThrowingContinuation { cont in
+            let _ = loadFileRepresentation(for: type, openInPlace: true) { url, bool, error in
+                if let url = url {
+                    cont.resume(returning: url)
+                } else if let error = error {
+                    cont.resume(throwing: error)
+                } else {
+                    fatalError("Either `url` or `error` must be present")
+                }
+            }
+        }
+    }
+
+    fileprivate func firstMatching(of types: Array<UTType>) -> UTType? {
+        for type in types {
+            if hasItemConformingToTypeIdentifier(type.identifier) { return type }
+        }
+        return nil
     }
 }

@@ -18,18 +18,22 @@ struct ShareView: View {
                     List(selection: $model.selected) {
                         ForEach(model.chats) { chat in
                             HStack {
-                                profileImage(imageString: chat.chatInfo.image, size: 36)
+                                profileImage(base64Encoded: chat.chatInfo.image, size: 36)
                                 Text(chat.chatInfo.displayName)
                                 Spacer()
                                 radioButton(selected: chat == model.selected)
                             }.tag(chat)
                         }
-                        composeSpacer
+                        commentSpacer
                     }.listStyle(.plain)
                 } else {
                     ProgressView().frame(maxHeight: .infinity)
                 }
-                compose
+                if let progress = model.progress {
+                    loadingBar(progress: progress)
+                } else {
+                    composeComment
+                }
             }
             .navigationTitle("Share")
         }
@@ -43,7 +47,7 @@ struct ShareView: View {
         ) { Button("Dismiss") { model.completion?() } }
     }
 
-    private var compose: some View {
+    private var composeComment: some View {
         HStack {
             TextField("Comment", text: $model.comment, axis: .vertical)
                 .textFieldStyle(.roundedBorder)
@@ -57,16 +61,27 @@ struct ShareView: View {
         .background(Material.bar)
     }
 
-    private var composeSpacer: some View {
-        Text(" " + model.comment)
+    private func loadingBar(progress: Double) -> some View {
+        VStack {
+            Text("Sending File")
+            ProgressView(value: progress)
+        }
+        .padding()
+        .background(Material.ultraThin)
+    }
+
+    /// Spacer, which matches the height of comment text field
+    private var commentSpacer: some View {
+        Text("\u{200B}" + model.comment)
             .padding(.trailing, 36)
             .padding(8)
             .opacity(.zero)
+            .listRowSeparator(.hidden)
     }
 
-    private func profileImage(imageString: String?, size: Double) -> some View {
+    private func profileImage(base64Encoded: String?, size: Double) -> some View {
         Group {
-            if let uiImage = UIImage(base64Encoded: imageString) {
+            if let uiImage = model.decodedImages[base64Encoded?.hashValue ?? .zero] {
                 Image(uiImage: uiImage).resizable()
             } else {
                 Image(systemName: "person.crop.circle.fill").resizable()

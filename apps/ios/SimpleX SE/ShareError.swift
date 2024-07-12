@@ -21,24 +21,33 @@ enum ShareError: LocalizedError {
     }
 
     enum SendMessage: LocalizedError {
-        case missingAttachment
         case noChatWasSelected
+        case missingAttachment
+        case unsupportedFormat
+        case imageDecoding
+        case encryptFile
+        case previewGeneration
+        case sendMessage
         case loadFileRepresentation(Error)
-        case encryptFileFailure
-        case sendMessageFailure
 
         public var errorDescription: String? {
             switch self {
-            case .missingAttachment: 
-                "Missing Attachment"
-            case .noChatWasSelected: 
+            case .noChatWasSelected:
                 "No chat was selected"
-            case .loadFileRepresentation(let error): 
-                "File could not be loaded: \(error.localizedDescription)"
-            case .encryptFileFailure: 
+            case .missingAttachment:
+                "No file has been selected"
+            case .unsupportedFormat:
+                "This file format is not supported"
+            case .imageDecoding:
+                "Unable to decode image"
+            case .encryptFile:
                 "File encryption has failed"
-            case .sendMessageFailure: 
+            case .previewGeneration:
+                "Thumbnail generation has failed"
+            case .sendMessage:
                 "Message has failed to be sent"
+            case .loadFileRepresentation(let error):
+                "File could not be loaded: \(error.localizedDescription)"
             }
         }
     }

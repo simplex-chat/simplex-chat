@@ -22,10 +22,9 @@ class ShareViewController: UIHostingController<ShareView> {
     required init?(coder aDecoder: NSCoder) { fatalError() }
 
     override func viewDidLoad() {
-        // TODO: We should support sharing multiple items at some point
         if let item = extensionContext?.inputItems.first as? NSExtensionItem {
             model.completion = { self.extensionContext!.completeRequest(returningItems: [item]) }
-            model.item = item
+            Task { await MainActor.run { model.item = item } }
         }
     }
 }
