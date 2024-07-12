@@ -1906,6 +1906,7 @@ public enum AgentErrorType: Decodable, Hashable {
     case SMP(smpErr: ProtocolErrorType)
     case NTF(ntfErr: ProtocolErrorType)
     case XFTP(xftpErr: XFTPErrorType)
+    case PROXY(proxyServer: String, relayServer: String, proxyErr: ProxyClientError)
     case RCP(rcpErr: RCErrorType)
     case BROKER(brokerAddress: String, brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
@@ -1943,11 +1944,21 @@ public enum ProtocolErrorType: Decodable, Hashable {
     case BLOCK
     case SESSION
     case CMD(cmdErr: ProtocolCommandError)
+    indirect case PROXY(proxyErr: ProxyError)
     case AUTH
+    case CRYPTO
     case QUOTA
     case NO_MSG
     case LARGE_MSG
+    case EXPIRED
     case INTERNAL
+}
+
+public enum ProxyError: Decodable, Hashable {
+    case PROTOCOL(protocolErr: ProtocolErrorType)
+    case BROKER(brokerErr: BrokerErrorType)
+    case BASIC_AUTH
+    case NO_SESSION
 }
 
 public enum XFTPErrorType: Decodable, Hashable {
@@ -1965,6 +1976,12 @@ public enum XFTPErrorType: Decodable, Hashable {
     case TIMEOUT
     case REDIRECT(redirectError: String)
     case INTERNAL
+}
+
+public enum ProxyClientError: Decodable, Hashable {
+    case protocolError(protocolErr: ProtocolErrorType)
+    case unexpectedResponse(responseStr: String)
+    case responseError(responseErr: ProtocolErrorType)
 }
 
 public enum RCErrorType: Decodable, Hashable {
@@ -1996,6 +2013,7 @@ public enum ProtocolCommandError: Decodable, Hashable {
 
 public enum ProtocolTransportError: Decodable, Hashable {
     case badBlock
+    case version
     case largeMsg
     case badSession
     case noServerAuth
