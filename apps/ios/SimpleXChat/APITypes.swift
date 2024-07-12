@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftUI
+import Yams
 
 public let jsonDecoder = getJSONDecoder()
 public let jsonEncoder = getJSONEncoder()
