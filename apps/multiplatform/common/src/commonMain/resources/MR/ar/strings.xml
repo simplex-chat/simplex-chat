@@ -31,7 +31,7 @@
     <string name="smp_servers_add_to_another_device">أضِف إلى جهاز آخر</string>
     <string name="users_delete_all_chats_deleted">سيتم حذف جميع الدردشات والرسائل - لا يمكن التراجع عن هذا!</string>
     <string name="network_enable_socks_info">الوصول إلى الخوادم عبر بروكسي SOCKS على المنفذ %d؟ يجب بدء تشغيل الوكيل قبل تمكين هذا الخيار.</string>
-    <string name="smp_servers_add">أضِف خادم…</string>
+    <string name="smp_servers_add">أضِف خادم</string>
     <string name="network_settings">إعدادات الشبكة المتقدمة</string>
     <string name="all_group_members_will_remain_connected">سيبقى جميع أعضاء المجموعة على اتصال.</string>
     <string name="allow_disappearing_messages_only_if">السماح باختفاء الرسائل فقط إذا سمحت جهة اتصالك بذلك.</string>

@@ -249,7 +249,7 @@
     <string name="accept_contact_incognito_button">Accetta in incognito</string>
     <string name="clear_chat_warning">Tutti i messaggi verranno eliminati, non è reversibile! I messaggi verranno eliminati SOLO per te.</string>
     <string name="smp_servers_preset_add">Aggiungi server preimpostati</string>
-    <string name="smp_servers_add">Aggiungi server…</string>
+    <string name="smp_servers_add">Aggiungi server</string>
     <string name="network_settings">Impostazioni di rete avanzate</string>
     <string name="about_simplex">Riguardo SimpleX</string>
     <string name="callstatus_accepted">chiamata accettata</string>

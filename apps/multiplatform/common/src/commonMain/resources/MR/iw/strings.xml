@@ -18,7 +18,7 @@
     <string name="clear_chat_warning">כל ההודעות יימחקו – לא ניתן לבטל זאת! ההודעות יימחקו רק עבורך.</string>
     <string name="accept_contact_incognito_button">אשר זהות נסתרת</string>
     <string name="smp_servers_preset_add">הוסף שרתים מוגדרים מראש</string>
-    <string name="smp_servers_add">הוסף שרת…</string>
+    <string name="smp_servers_add">הוסף שרת</string>
     <string name="network_enable_socks_info">לגשת לשרתים דרך פרוקסי SOCKS בפורט %d\? הפרוקסי חייב לפעול לפני הפעלת אפשרות זו.</string>
     <string name="network_settings">הגדרות רשת מתקדמות</string>
     <string name="appearance_settings">מראה</string>

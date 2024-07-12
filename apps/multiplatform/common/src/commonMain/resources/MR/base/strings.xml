@@ -672,10 +672,11 @@
   <string name="send_us_an_email">Send us email</string>
   <string name="chat_lock">SimpleX Lock</string>
   <string name="chat_console">Chat console</string>
-  <string name="smp_servers">SMP servers</string>
+  <string name="smp_servers">Configured SMP servers</string>
+  <string name="smp_servers_other">Other SMP servers</string>
   <string name="smp_servers_preset_address">Preset server address</string>
   <string name="smp_servers_preset_add">Add preset servers</string>
-  <string name="smp_servers_add">Add server…</string>
+  <string name="smp_servers_add">Add server</string>
   <string name="smp_servers_test_server">Test server</string>
   <string name="smp_servers_test_servers">Test servers</string>
   <string name="smp_servers_save">Save servers</string>
@@ -694,7 +695,8 @@
   <string name="smp_servers_delete_server">Delete server</string>
   <string name="smp_servers_per_user">The servers for new connections of your current chat profile</string>
   <string name="smp_save_servers_question">Save servers?</string>
-  <string name="xftp_servers">XFTP servers</string>
+  <string name="xftp_servers">Configured XFTP servers</string>
+  <string name="xftp_servers_other">Other XFTP servers</string>
   <string name="subscription_percentage">Subscription percentage</string>
   <string name="install_simplex_chat_for_terminal">Install SimpleX Chat for terminal</string>
   <string name="star_on_github">Star on GitHub</string>

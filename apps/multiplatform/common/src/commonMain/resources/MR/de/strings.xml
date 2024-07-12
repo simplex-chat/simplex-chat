@@ -355,7 +355,7 @@
     <string name="smp_servers">SMP-Server</string>
     <string name="smp_servers_preset_address">Voreingestellte Serveradresse</string>
     <string name="smp_servers_preset_add">Füge voreingestellte Server hinzu</string>
-    <string name="smp_servers_add">Füge Server hinzu…</string>
+    <string name="smp_servers_add">Füge Server hinzu</string>
     <string name="smp_servers_test_server">Teste Server</string>
     <string name="smp_servers_test_servers">Teste alle Server</string>
     <string name="smp_servers_save">Alle Server speichern</string>

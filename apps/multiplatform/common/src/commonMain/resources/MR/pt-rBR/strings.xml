@@ -110,7 +110,7 @@
     <string name="connect_via_link_or_qr">Conectar via link/QR code</string>
     <string name="clear_chat_warning">Todas as mensagens serão excluídas - isso não pode ser desfeito! As mensagens serão excluídas APENAS para você.</string>
     <string name="smp_servers_preset_add">Adicionar servidores pré-definidos</string>
-    <string name="smp_servers_add">Adicionar servidor…</string>
+    <string name="smp_servers_add">Adicionar servidor</string>
     <string name="create_your_profile">Crie seu perfil</string>
     <string name="icon_descr_context">Ícone de contexto</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contato e todas as mensagens serão excluídas - isso não pode ser desfeito!</string>

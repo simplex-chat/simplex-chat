@@ -290,7 +290,7 @@
     <string name="you_will_be_connected_when_group_host_device_is_online">Zostaniesz połączony do grupy, gdy urządzenie gospodarza grupy będzie online, proszę czekać lub sprawdzić później!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Zostaniesz połączony, gdy urządzenie Twojego kontaktu będzie online, proszę czekać lub sprawdzić później!</string>
     <string name="smp_servers_preset_add">Dodaj gotowe serwery</string>
-    <string name="smp_servers_add">Dodaj serwer…</string>
+    <string name="smp_servers_add">Dodaj serwer</string>
     <string name="smp_servers_add_to_another_device">Dodaj do innego urządzenia</string>
     <string name="chat_console">Konsola czatu</string>
     <string name="smp_servers_check_address">Sprawdź adres serwera i spróbuj ponownie.</string>

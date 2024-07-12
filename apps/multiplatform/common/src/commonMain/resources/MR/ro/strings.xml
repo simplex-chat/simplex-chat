@@ -5,7 +5,7 @@
     <string name="send_disappearing_message_30_seconds">30 secunde</string>
     <string name="accept_contact_button">Acceptă</string>
     <string name="accept_contact_incognito_button">Acceptă incognito</string>
-    <string name="smp_servers_add">Adaugă server…</string>
+    <string name="smp_servers_add">Adaugă server</string>
     <string name="network_settings">Setări de rețea avansate</string>
     <string name="contact_wants_to_connect_via_call">%1$s dorește să se conecteze cu tine prin</string>
     <string name="accept_call_on_lock_screen">Acceptă</string>

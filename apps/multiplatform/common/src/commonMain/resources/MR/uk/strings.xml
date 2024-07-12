@@ -55,7 +55,7 @@
     <string name="keychain_allows_to_receive_ntfs">Після перезапуску додатка або зміни ключової фрази буде використано сховище ключів Android для безпечного збереження ключової фрази - це дозволить отримувати сповіщення.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Дозвольте вашим контактам надсилати голосові повідомлення.</string>
     <string name="accept_contact_incognito_button">Прийняти інкогніто</string>
-    <string name="smp_servers_add">Додати сервер…</string>
+    <string name="smp_servers_add">Додати сервер</string>
     <string name="group_member_role_admin">адміністратор</string>
     <string name="button_add_welcome_message">Додати привітання</string>
     <string name="all_group_members_will_remain_connected">Всі члени групи залишаться підключеними.</string>

@@ -199,19 +199,11 @@ private fun ProtocolServersLayout(
     AppBarTitle(stringResource(if (serverProtocol == ServerProtocol.SMP) MR.strings.your_SMP_servers else MR.strings.your_XFTP_servers))
 
     SectionView(stringResource(if (serverProtocol == ServerProtocol.SMP) MR.strings.smp_servers else MR.strings.xftp_servers).uppercase()) {
-      for (srv in servers) {
+      for (srv in servers.filter { it.preset || it.enabled }) {
         SectionItemView({ showServer(srv) }, disabled = testing) {
           ProtocolServerView(serverProtocol, srv, servers, testing)
         }
       }
-      SettingsActionItem(
-        painterResource(MR.images.ic_add),
-        stringResource(MR.strings.smp_servers_add),
-        addServer,
-        disabled = testing,
-        textColor = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
-        iconColor = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-      )
     }
     SectionTextFooter(
       remember(currentUser?.displayName) {
@@ -225,6 +217,24 @@ private fun ProtocolServersLayout(
       }
     )
     SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+
+    SectionView(stringResource(if (serverProtocol == ServerProtocol.SMP) MR.strings.smp_servers_other else MR.strings.xftp_servers_other).uppercase()) {
+      for (srv in servers.filter { !(it.preset || it.enabled) }) {
+        SectionItemView({ showServer(srv) }, disabled = testing) {
+          ProtocolServerView(serverProtocol, srv, servers, testing)
+        }
+      }
+      SettingsActionItem(
+        painterResource(MR.images.ic_add),
+        stringResource(MR.strings.smp_servers_add),
+        addServer,
+        disabled = testing,
+        textColor = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
+        iconColor = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
+      )
+    }
+    SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
+
     SectionView {
       SectionItemView(resetServers, disabled = serversUnchanged) {
         Text(stringResource(MR.strings.reset_verb), color = if (!serversUnchanged) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
