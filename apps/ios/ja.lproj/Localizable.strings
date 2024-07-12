@@ -360,7 +360,7 @@
 "Add profile" = "プロフィールを追加";
 
 /* No comment provided by engineer. */
-"Add server…" = "サーバを追加…";
+"Add server" = "サーバを追加";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "QRコードでサーバを追加する。";

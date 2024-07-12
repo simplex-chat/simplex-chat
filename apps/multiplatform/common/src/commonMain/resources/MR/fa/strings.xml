@@ -539,7 +539,7 @@
     <string name="chat_with_the_founder">ایده‌ها و سوالات را ارسال کنید</string>
     <string name="send_us_an_email">به ما ایمیل بفرستید</string>
     <string name="chat_lock">قفل SimpleX</string>
-    <string name="smp_servers_add">افزودن سرور…</string>
+    <string name="smp_servers_add">افزودن سرور</string>
     <string name="smp_servers_test_servers">آزمایش سرورها</string>
     <string name="smp_servers_save">ذخیره سرورها</string>
     <string name="smp_servers_test_failed">عدم موفقیت آزمایش سرور!</string>

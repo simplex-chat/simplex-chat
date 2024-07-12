@@ -38,7 +38,7 @@
     <string name="abort_switch_receiving_address_desc">Adres değişikliği iptal edilecek. Eski alıcı adresi kullanılacaktır.</string>
     <string name="send_disappearing_message_1_minute">1 dakika</string>
     <string name="clear_chat_warning">Tüm mesajlar silinecektir. Bu, geri alınamaz! Mesajlar, YALNIZCA senin için silinecektir.</string>
-    <string name="smp_servers_add">Sunucu ekle…</string>
+    <string name="smp_servers_add">Sunucu ekle</string>
     <string name="database_passphrase_and_export">Veri tabanı ayarları</string>
     <string name="one_time_link_short">tek kullanımlık bağlantı</string>
     <string name="network_settings">Gelişmiş ağ ayarları</string>

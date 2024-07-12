@@ -39,7 +39,7 @@
     <string name="accept_contact_incognito_button">Accepteer incognito</string>
     <string name="smp_servers_preset_add">Vooraf ingestelde servers toevoegen</string>
     <string name="users_add">Profiel toevoegen</string>
-    <string name="smp_servers_add">Server toevoegen…</string>
+    <string name="smp_servers_add">Server toevoegen</string>
     <string name="smp_servers_add_to_another_device">Toevoegen aan een ander apparaat</string>
     <string name="v4_2_group_links_desc">Beheerders kunnen de uitnodiging links naar groepen aanmaken.</string>
     <string name="v4_3_improved_server_configuration_desc">Servers toevoegen door QR-codes te scannen.</string>

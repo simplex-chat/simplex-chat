@@ -21,7 +21,7 @@
     <string name="v4_3_improved_server_configuration_desc">QRコードでサーバを追加</string>
     <string name="smp_servers_add_to_another_device">別の端末に追加</string>
     <string name="users_add">プロフィールを追加</string>
-    <string name="smp_servers_add">サーバを追加…</string>
+    <string name="smp_servers_add">サーバを追加</string>
     <string name="network_enable_socks_info">SOCKSプロキシ(ポート%d)経由で接続しますか？(※設定する前にプロキシ起動が必要※)</string>
     <string name="users_delete_all_chats_deleted">全チャットとメッセージが削除されます(※元に戻せません※)！</string>
     <string name="allow_your_contacts_to_send_voice_messages">送信相手からの音声メッセージを許可する。</string>

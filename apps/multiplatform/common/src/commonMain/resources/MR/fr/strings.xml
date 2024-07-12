@@ -313,7 +313,7 @@
     <string name="scan_code_from_contacts_app">Scannez le code de sécurité depuis l\'application de votre contact.</string>
     <string name="to_verify_compare">Pour vérifier le chiffrement de bout en bout avec votre contact, comparez (ou scannez) le code sur vos appareils.</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Si vous ne pouvez pas vous rencontrer en personne, vous pouvez <b>scanner un code QR lors d\'un appel vidéo</b>, ou votre contact peut partager un lien d\'invitation.]]></string>
-    <string name="smp_servers_add">Ajouter un serveur…</string>
+    <string name="smp_servers_add">Ajouter un serveur</string>
     <string name="markdown_in_messages">Markdown dans les messages</string>
     <string name="smp_servers_preset_add">Ajouter des serveurs prédéfinis</string>
     <string name="use_simplex_chat_servers__question">Utiliser les serveurs SimpleX Chat \?</string>

@@ -165,7 +165,7 @@
     <string name="block_member_desc">Minden %s által írt új üzenet elrejtésre kerül!</string>
     <string name="app_version_name">Alkalmazás verzió: v%s</string>
     <string name="allow_calls_only_if">A hívások kezdeményezése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</string>
-    <string name="smp_servers_add">Kiszolgáló hozzáadása…</string>
+    <string name="smp_servers_add">Kiszolgáló hozzáadása</string>
     <string name="icon_descr_audio_on">Hang bekapcsolva</string>
     <string name="audio_call_no_encryption">hanghívás (nem e2e titkosított)</string>
     <string name="blocked_item_description">letiltva</string>

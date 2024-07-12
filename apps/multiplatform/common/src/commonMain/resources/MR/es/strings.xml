@@ -30,7 +30,7 @@
     <string name="accept_connection_request__question">¿Aceptar solicitud de conexión\?</string>
     <string name="accept_contact_incognito_button">Aceptar incógnito</string>
     <string name="clear_chat_warning">Se eliminarán todos los mensajes SOLO para tí. ¡No podrá deshacerse!</string>
-    <string name="smp_servers_add">Añadir servidor…</string>
+    <string name="smp_servers_add">Añadir servidor</string>
     <string name="network_enable_socks_info">¿Acceder a los servidores a través del proxy SOCKS en el puerto %d\? El proxy debe iniciarse antes de activar esta opción.</string>
     <string name="all_your_contacts_will_remain_connected">Todos tus contactos permanecerán conectados.</string>
     <string name="appearance_settings">Apariencia</string>

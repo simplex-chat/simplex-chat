@@ -16,7 +16,7 @@
     <string name="send_disappearing_message_30_seconds">30 sekuntia</string>
     <string name="send_disappearing_message_5_minutes">5 minuuttia</string>
     <string name="allow_disappearing_messages_only_if">Salli katoavat viestit vain, jos kontaktisi sallii ne.</string>
-    <string name="smp_servers_add">Lisää palvelin…</string>
+    <string name="smp_servers_add">Lisää palvelin</string>
     <string name="button_add_welcome_message">Lisää tervetuloviesti</string>
     <string name="allow_to_send_voice">Salli ääniviestien lähettäminen.</string>
     <string name="one_time_link_short">Kertakäyttölinkki</string>

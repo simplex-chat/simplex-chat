@@ -8,7 +8,7 @@
     <string name="smp_servers_preset_add">Přidat přednastavené servery</string>
     <string name="network_settings">Pokročilá nastavení sítě</string>
     <string name="accept">Přijmout</string>
-    <string name="smp_servers_add">Přidat server…</string>
+    <string name="smp_servers_add">Přidat server</string>
     <string name="network_enable_socks_info">Přistupovat k serverům přes SOCKS proxy na portu %d\? Před povolením této možnosti musí být spuštěna proxy.</string>
     <string name="accept_feature">Přijmout</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Povolit svým kontaktům odesílat mizící zprávy.</string>
