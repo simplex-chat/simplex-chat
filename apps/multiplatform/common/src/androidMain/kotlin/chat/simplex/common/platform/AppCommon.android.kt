@@ -1,21 +1,11 @@
 package chat.simplex.common.platform
 
 import android.annotation.SuppressLint
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageInfo
-import android.content.pm.PackageInstaller
-import android.content.pm.PackageManager
 import android.net.LocalServerSocket
-import android.net.Uri
-import android.os.Build
 import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.core.content.FileProvider
 import androidx.fragment.app.FragmentActivity
-import chat.simplex.common.helpers.APPLICATION_ID
-import chat.simplex.common.views.helpers.*
 import java.io.*
 import java.lang.ref.WeakReference
 import java.util.*
