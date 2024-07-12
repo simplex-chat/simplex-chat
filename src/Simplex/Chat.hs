@@ -112,7 +112,7 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI, SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), EntityId, ErrorType (..), MsgBody, MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer, userProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
@@ -544,13 +544,12 @@ processChatCommand' vr = \case
         | sameServers =
             asks currentUser >>= readTVarIO >>= \case
               Nothing -> throwChatError CENoActiveUser
-              Just user -> do
-                servers <- withStore' (`getProtocolServers` user)
-                cfg <- asks config
-                pure (useServers cfg protocol servers, servers)
-        | otherwise = do
-            defServers <- asks $ defaultServers . config
-            pure (cfgServers protocol defServers, [])
+              Just user -> chosenServers =<< withStore' (`getProtocolServers` user)
+        | otherwise = chosenServers []
+        where
+          chosenServers servers = do
+            cfg <- asks config
+            pure (useServers cfg protocol servers, servers)
       storeServers user servers =
         unless (null servers) . withStore $
           \db -> overwriteProtocolServers db user servers
@@ -1322,11 +1321,13 @@ processChatCommand' vr = \case
     pure $ CRUserProtoServers user $ AUPS $ UserProtoServers p (useServers cfg p servers) (cfgServers p defaultServers)
   GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
     processChatCommand $ APIGetUserProtoServers userId aProtocol
-  APISetUserProtoServers userId (APSC p (ProtoServersConfig servers)) -> withUserId userId $ \user -> withServerProtocol p $ do
-    withStore $ \db -> overwriteProtocolServers db user servers
-    cfg <- asks config
-    lift $ withAgent' $ \a -> setProtocolServers a (aUserId user) $ useServers cfg p servers
-    ok user
+  APISetUserProtoServers userId (APSC p (ProtoServersConfig servers))
+    | null servers || any (\ServerCfg {enabled} -> enabled) servers -> withUserId userId $ \user -> withServerProtocol p $ do
+        withStore $ \db -> overwriteProtocolServers db user servers
+        cfg <- asks config
+        lift $ withAgent' $ \a -> setProtocolServers a (aUserId user) $ useServers cfg p servers
+        ok user
+    | otherwise -> withUserId userId $ \user -> pure $ chatCmdError (Just user) "all servers are disabled"
   SetUserProtoServers serversConfig -> withUser $ \User {userId} ->
     processChatCommand $ APISetUserProtoServers userId serversConfig
   APITestProtoServer userId srv@(AProtoServerWithAuth _ server) -> withUserId userId $ \user ->
@@ -2260,16 +2261,10 @@ processChatCommand' vr = \case
   GetAgentServersSummary userId -> withUserId userId $ \user -> do
     agentServersSummary <- lift $ withAgent' getAgentServersSummary
     users <- withStore' getUsers
-    smpServers <- getUserServers user SPSMP
-    xftpServers <- getUserServers user SPXFTP
+    smpServers <- getUserProtocolServers user SPSMP
+    xftpServers <- getUserProtocolServers user SPXFTP
     let presentedServersSummary = toPresentedServersSummary agentServersSummary users user smpServers xftpServers
     pure $ CRAgentServersSummary user presentedServersSummary
-    where
-      getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => User -> SProtocolType p -> CM (NonEmpty (ProtocolServer p))
-      getUserServers users protocol = do
-        cfg <- asks config
-        servers <- withStore' (`getProtocolServers` users)
-        pure $ L.map (\ServerCfg {server} -> protoServer server) $ useServers cfg protocol servers
   ResetAgentServersStats -> withAgent resetAgentServersStats >> ok_
   GetAgentWorkers -> lift $ CRAgentWorkersSummary <$> withAgent' getAgentWorkersSummary
   GetAgentWorkersDetails -> lift $ CRAgentWorkersDetails <$> withAgent' getAgentWorkersDetails
@@ -3228,9 +3223,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       S.toList $ S.fromList $ concatMap (\FD.FileChunk {replicas} -> map (\FD.FileChunkReplica {server} -> server) replicas) chunks
     getUnknownSrvs :: [XFTPServer] -> CM [XFTPServer]
     getUnknownSrvs srvs = do
-      cfg <- asks config
-      storedSrvs <- withStore' (`getProtocolServers` user)
-      let knownSrvs = L.map (\ServerCfg {server} -> protoServer server) $ useServers cfg SPXFTP storedSrvs
+      knownSrvs <- getUserProtocolServers user SPXFTP
       pure $ filter (`notElem` knownSrvs) srvs
     ipProtectedForSrvs :: [XFTPServer] -> CM Bool
     ipProtectedForSrvs srvs = do
@@ -3241,6 +3234,11 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
       forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
       throwChatError $ CEFileNotApproved fileId unknownSrvs
+
+getUserProtocolServers :: (ProtocolTypeI p, UserProtocol p) => User -> SProtocolType p -> CM (NonEmpty (ProtocolServer p))
+getUserProtocolServers user p = do
+  cfg <- asks config
+  L.map (\ServerCfg {server} -> protoServer server) . useServers cfg p <$> withStore' (`getProtocolServers` user)
 
 getNetworkConfig :: CM' NetworkConfig
 getNetworkConfig = withAgent' $ liftIO . getNetworkConfig'
