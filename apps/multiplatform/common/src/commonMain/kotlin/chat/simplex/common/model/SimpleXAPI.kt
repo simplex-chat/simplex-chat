@@ -3138,7 +3138,7 @@ data class ProtoServersConfig(
 data class UserProtocolServers(
   val serverProtocol: ServerProtocol,
   val protoServers: List<ServerCfg>,
-  val presetServers: List<String>,
+  val presetServers: List<ServerCfg>,
 )
 
 @Serializable
@@ -3147,7 +3147,7 @@ data class ServerCfg(
   val server: String,
   val preset: Boolean,
   val tested: Boolean? = null,
-  val enabled: ServerEnabled
+  val enabled: Boolean
 ) {
   @Transient
   private val createdAt: Date = Date()
@@ -3161,7 +3161,7 @@ data class ServerCfg(
     get() = server.isBlank()
 
   companion object {
-    val empty = ServerCfg(remoteHostId = null, server = "", preset = false, tested = null, enabled = ServerEnabled.Enabled)
+    val empty = ServerCfg(remoteHostId = null, server = "", preset = false, tested = null, enabled = false)
 
     class SampleData(
       val preset: ServerCfg,
@@ -3175,31 +3175,24 @@ data class ServerCfg(
         server = "smp://abcd@smp8.simplex.im",
         preset = true,
         tested = true,
-        enabled = ServerEnabled.Enabled
+        enabled = true
       ),
       custom = ServerCfg(
         remoteHostId = null,
         server = "smp://abcd@smp9.simplex.im",
         preset = false,
         tested = false,
-        enabled = ServerEnabled.Disabled
+        enabled = false
       ),
       untested = ServerCfg(
         remoteHostId = null,
         server = "smp://abcd@smp10.simplex.im",
         preset = false,
         tested = null,
-        enabled = ServerEnabled.Enabled
+        enabled = true
       )
     )
   }
-}
-
-@Serializable
-enum class ServerEnabled {
-  @SerialName("disabled") Disabled,
-  @SerialName("enabled") Enabled,
-  @SerialName("known") Known;
 }
 
 @Serializable

@@ -46,7 +46,7 @@
     <string name="icon_descr_asked_to_receive">ขอรับภาพ</string>
     <string name="icon_descr_video_asked_to_receive">ขอรับวิดีโอ</string>
     <string name="clear_chat_warning">ข้อความทั้งหมดจะถูกลบ - การดำเนินการนี้ไม่สามารถยกเลิกได้! ข้อความจะถูกลบสำหรับคุณเท่านั้น</string>
-    <string name="smp_servers_add">เพิ่มเซิร์ฟเวอร์…</string>
+    <string name="smp_servers_add">เพิ่มเซิร์ฟเวอร์</string>
     <string name="app_version_title">เวอร์ชันแอป</string>
     <string name="app_version_name">เวอร์ชันแอป: v%s</string>
     <string name="all_your_contacts_will_remain_connected">ผู้ติดต่อทั้งหมดของคุณจะยังคงเชื่อมต่ออยู่.</string>

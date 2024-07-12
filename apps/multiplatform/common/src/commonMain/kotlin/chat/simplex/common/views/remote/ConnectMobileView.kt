@@ -97,7 +97,7 @@ fun ConnectMobileLayout(
     SectionView(generalGetString(MR.strings.this_device_name).uppercase()) {
       DeviceNameField(deviceName.value ?: "") { updateDeviceName(it) }
       SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
-      PreferenceToggle(stringResource(MR.strings.multicast_discoverable_via_local_network), remember { controller.appPrefs.offerRemoteMulticast.state }.value) {
+      PreferenceToggle(stringResource(MR.strings.multicast_discoverable_via_local_network), checked = remember { controller.appPrefs.offerRemoteMulticast.state }.value) {
         controller.appPrefs.offerRemoteMulticast.set(it)
       }
       SectionDividerSpaced(maxBottomPadding = false)

@@ -31,7 +31,7 @@
     <string name="smp_servers_add_to_another_device">أضِف إلى جهاز آخر</string>
     <string name="users_delete_all_chats_deleted">سيتم حذف جميع الدردشات والرسائل - لا يمكن التراجع عن هذا!</string>
     <string name="network_enable_socks_info">الوصول إلى الخوادم عبر بروكسي SOCKS على المنفذ %d؟ يجب بدء تشغيل الوكيل قبل تمكين هذا الخيار.</string>
-    <string name="smp_servers_add">أضِف خادم…</string>
+    <string name="smp_servers_add">أضِف خادم</string>
     <string name="network_settings">إعدادات الشبكة المتقدمة</string>
     <string name="all_group_members_will_remain_connected">سيبقى جميع أعضاء المجموعة على اتصال.</string>
     <string name="allow_disappearing_messages_only_if">السماح باختفاء الرسائل فقط إذا سمحت جهة اتصالك بذلك.</string>
@@ -1856,4 +1856,19 @@
 \nError: %s</string>
     <string name="v5_8_message_delivery">تحسين تسليم الرسائل</string>
     <string name="v5_8_message_delivery_descr">مع انخفاض استخدام البطارية.</string>
+    <string name="file_error_auth">مفتاح خاطئ أو عنوان مجموعة الملف غير معروف - على الأرجح حُذف الملف.</string>
+    <string name="file_error_relay">خطأ في خادم الملفات: %1$s</string>
+    <string name="file_error">خطأ في الملف</string>
+    <string name="temporary_file_error">خطأ في الملف مؤقت</string>
+    <string name="info_row_message_status">حالة الرسالة</string>
+    <string name="file_error_no_file">لم يتم العثور على الملف - على الأرجح حُذف الملف أو إلغاؤه.</string>
+    <string name="info_row_file_status">حالة الملف</string>
+    <string name="share_text_file_status">حالة الملف: %s</string>
+    <string name="share_text_message_status">حالة الرسالة: %s</string>
+    <string name="copy_error">خطأ في النسخ</string>
+    <string name="remote_ctrl_connection_stopped_identity_desc">تم استخدام هذا الرابط مع جهاز محمول آخر، يُرجى إنشاء رابط جديد على سطح المكتب.</string>
+    <string name="remote_ctrl_connection_stopped_desc">يُرجى التحقق من اتصال الهاتف المحمول وسطح المكتب بنفس الشبكة المحلية، وأن جدار حماية سطح المكتب يسمح بالاتصال.
+\nيُرجى مشاركة أي مشاكل أُخرى مع المطورين.</string>
+    <string name="cannot_share_message_alert_title">لا يمكن إرسال الرسالة</string>
+    <string name="cannot_share_message_alert_text">تفضيلات الدردشة المحدّدة تحظر هذه الرسالة.</string>
 </resources>

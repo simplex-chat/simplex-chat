@@ -358,9 +358,9 @@
         <target state="translated">使用二維碼掃描以新增伺服器。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add server…" xml:space="preserve" approved="no">
-        <source>Add server…</source>
-        <target state="translated">新增伺服器…</target>
+      <trans-unit id="Add server" xml:space="preserve" approved="no">
+        <source>Add server</source>
+        <target state="translated">新增伺服器</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve" approved="no">
