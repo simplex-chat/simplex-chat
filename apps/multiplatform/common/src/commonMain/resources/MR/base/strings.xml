@@ -783,6 +783,7 @@
   <string name="app_check_for_updates_button_install">Install</string>
   <string name="app_check_for_updates_installed_successfully_title">Installed successfully</string>
   <string name="app_check_for_updates_installed_successfully_desc">Please, restart the app</string>
+  <string name="app_check_for_updates_canceled">Update downloading was canceled</string>
   <string name="app_check_for_updates_button_remind_later">Remind later</string>
 
   <string name="show_dev_options">Show:</string>

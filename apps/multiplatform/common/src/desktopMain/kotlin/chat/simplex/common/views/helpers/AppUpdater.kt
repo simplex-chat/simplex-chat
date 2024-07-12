@@ -71,7 +71,6 @@ private fun createUpdateJob() {
 fun checkForUpdate() {
   val client = setupHttpClient()
   try {
-    // LALAL
     val request = Request.Builder().url("https://api.github.com/repos/simplex-chat/simplex-chat/releases").addHeader("User-agent", "curl").build()
     client.newCall(request).execute().use { response ->
       response.body?.use {
@@ -92,7 +91,11 @@ fun checkForUpdate() {
 //        if (release.id == appPrefs.appSkippedUpdate.get() || release.name == currentVersionName || release.name == redactedCurrentVersionName) {
 //          return
 //        }
-        val assets = chooseGitHubReleaseAssets(release).ifEmpty { return }
+        val assets = chooseGitHubReleaseAssets(release)
+        // No need to show an alert if no suitable packages were found. But for Flatpak users it's useful to see release notes anyway
+        if (assets.isEmpty() && !isRunningFromFlatpak()) {
+          return
+        }
         val lines = ArrayList<String>()
         for (line in release.body.lines()) {
           if (line == "Commits:") break
@@ -194,7 +197,12 @@ private suspend fun downloadAsset(asset: GitHubAsset) {
   try {
     val request = Request.Builder().url(asset.browserDownloadUrl).addHeader("User-agent", "curl").build()
     val call = client.newCall(request)
-    chatModel.updatingRequest = Closeable { call.cancel(); println("LALAL CANCELLED") }
+    chatModel.updatingRequest = Closeable {
+      call.cancel()
+      withApi {
+        showToast(generalGetString(MR.strings.app_check_for_updates_canceled))
+      }
+    }
     call.execute().use { response ->
       response.body?.use { body ->
         body.byteStream().use { stream ->
@@ -212,19 +220,24 @@ private suspend fun downloadAsset(asset: GitHubAsset) {
               dismissible = false,
               buttons = {
                 Column {
-                  SectionItemView({
-                    AlertManager.shared.hideAlert()
-                    chatModel.updatingProgress.value = -1f
-                    withLongRunningApi {
-                      try {
-                        installAppUpdate(newFile)
-                      } finally {
-                        chatModel.updatingProgress.value = null
+                  // It's problematic to install .deb package because it requires either root or GUI package installer which is not available on
+                  // Debian by default. Let the user install it manually only
+                  if (!asset.name.lowercase().endsWith(".deb")) {
+                    SectionItemView({
+                      AlertManager.shared.hideAlert()
+                      chatModel.updatingProgress.value = -1f
+                      withLongRunningApi {
+                        try {
+                          installAppUpdate(newFile)
+                        } finally {
+                          chatModel.updatingProgress.value = null
+                        }
                       }
+                    }) {
+                      Text(generalGetString(MR.strings.app_check_for_updates_button_install), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
                     }
-                  }) {
-                    Text(generalGetString(MR.strings.app_check_for_updates_button_install), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
                   }
+
                   SectionItemView({
                     desktopOpenDir(newFile.parentFile)
                   }) {
@@ -249,12 +262,14 @@ private suspend fun downloadAsset(asset: GitHubAsset) {
   }
 }
 
+private fun isRunningFromFlatpak(): Boolean = System.getenv("container") == "flatpak"
 
 private fun chooseGitHubReleaseAssets(release: GitHubRelease): List<GitHubAsset> {
-  val process = Runtime.getRuntime().exec("which dpkg").onExit().join()
-  val isDebianBased = process.exitValue() == 0
-  // Show all available .deb packages and user will choose the one that works on his system
-  val res = if (isDebianBased) {
+  val res = if (isRunningFromFlatpak()) {
+    // No need to show download options for Flatpak users
+    emptyList()
+  } else if (Runtime.getRuntime().exec("which dpkg").onExit().join().exitValue() == 0) {
+    // Show all available .deb packages and user will choose the one that works on his system (for Debian derivatives)
     release.assets.filter { it.name.lowercase().endsWith(".deb") }
   } else {
     release.assets.filter { it.name == desktopPlatform.githubAssetName }
