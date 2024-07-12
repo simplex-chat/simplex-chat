@@ -3138,7 +3138,7 @@ data class ProtoServersConfig(
 data class UserProtocolServers(
   val serverProtocol: ServerProtocol,
   val protoServers: List<ServerCfg>,
-  val presetServers: List<String>,
+  val presetServers: List<ServerCfg>,
 )
 
 @Serializable
@@ -3161,7 +3161,7 @@ data class ServerCfg(
     get() = server.isBlank()
 
   companion object {
-    val empty = ServerCfg(remoteHostId = null, server = "", preset = false, tested = null, enabled = true)
+    val empty = ServerCfg(remoteHostId = null, server = "", preset = false, tested = null, enabled = false)
 
     class SampleData(
       val preset: ServerCfg,

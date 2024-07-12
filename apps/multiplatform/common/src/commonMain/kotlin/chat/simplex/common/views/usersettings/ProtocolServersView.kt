@@ -28,7 +28,7 @@ import chat.simplex.res.MR
 
 @Composable
 fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: ServerProtocol, close: () -> Unit) {
-  var presetServers by remember(rhId) { mutableStateOf(emptyList<String>()) }
+  var presetServers by remember(rhId) { mutableStateOf(emptyList<ServerCfg>()) }
   var servers by remember { stateGetOrPut("servers") { emptyList<ServerCfg>() } }
   var serversAlreadyLoaded by remember { stateGetOrPut("serversAlreadyLoaded") { false } }
   val currServers = remember(rhId) { mutableStateOf(servers) }
@@ -285,21 +285,21 @@ private fun uniqueAddress(s: ServerCfg, address: ServerAddress, servers: List<Se
   }
 }
 
-private fun hasAllPresets(presetServers: List<String>, servers: List<ServerCfg>, m: ChatModel): Boolean =
+private fun hasAllPresets(presetServers: List<ServerCfg>, servers: List<ServerCfg>, m: ChatModel): Boolean =
   presetServers.all { hasPreset(it, servers) } ?: true
 
-private fun addAllPresets(rhId: Long?, presetServers: List<String>, servers: List<ServerCfg>, m: ChatModel): List<ServerCfg> {
+private fun addAllPresets(rhId: Long?, presetServers: List<ServerCfg>, servers: List<ServerCfg>, m: ChatModel): List<ServerCfg> {
   val toAdd = ArrayList<ServerCfg>()
   for (srv in presetServers) {
     if (!hasPreset(srv, servers)) {
-      toAdd.add(ServerCfg(remoteHostId = rhId, srv, preset = true, tested = null, enabled = true))
+      toAdd.add(srv)
     }
   }
   return toAdd
 }
 
-private fun hasPreset(srv: String, servers: List<ServerCfg>): Boolean =
-  servers.any { it.server == srv }
+private fun hasPreset(srv: ServerCfg, servers: List<ServerCfg>): Boolean =
+  servers.any { it.server == srv.server }
 
 private suspend fun testServers(testing: MutableState<Boolean>, servers: List<ServerCfg>, m: ChatModel, onUpdated: (List<ServerCfg>) -> Unit) {
   val resetStatus = resetTestStatus(servers)
