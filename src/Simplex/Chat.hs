@@ -2253,17 +2253,19 @@ processChatCommand' vr = \case
   DebugEvent event -> toView event >> ok_
   GetAgentServersSummary userId -> withUserId userId $ \user -> do
     agentServersSummary <- lift $ withAgent' getAgentServersSummary
-    users <- withStore' getUsers
-    smpServers <- getUserServers user SPSMP
-    xftpServers <- getUserServers user SPXFTP
+    ChatConfig {defaultServers} <- asks config
+    (users, smpServers, xftpServers) <- withStore' $ \db -> do
+      users <- getUsers db
+      smpServers <- getUserServers db user SPSMP defaultServers
+      xftpServers <- getUserServers db user SPXFTP defaultServers
+      pure (users, smpServers, xftpServers)
     let presentedServersSummary = toPresentedServersSummary agentServersSummary users user smpServers xftpServers
     pure $ CRAgentServersSummary user presentedServersSummary
     where
-      getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => User -> SProtocolType p -> CM [ProtocolServer p]
-      getUserServers users protocol = do
-        ChatConfig {defaultServers} <- asks config
-        let defServers = cfgServers protocol defaultServers
-        servers <- map (\ServerCfg {server} -> server) <$> withStore' (`getProtocolServers` users)
+      getUserServers :: forall p. (ProtocolTypeI p, UserProtocol p) => DB.Connection -> User -> SProtocolType p -> DefaultAgentServers -> IO [ProtocolServer p]
+      getUserServers db users protocol defSrvs = do
+        let defServers = cfgServers protocol defSrvs
+        servers <- map (\ServerCfg {server} -> server) <$> getProtocolServers db users
         let srvs = if null servers then L.toList defServers else servers
         pure $ map protoServer srvs
   ResetAgentServersStats -> withAgent resetAgentServersStats >> ok_
