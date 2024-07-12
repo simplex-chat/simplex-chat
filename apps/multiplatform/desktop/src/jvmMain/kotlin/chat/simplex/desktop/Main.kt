@@ -8,10 +8,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.platform.DesktopPlatform
 import chat.simplex.common.showApp
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.OnboardingStage
 import kotlinx.coroutines.*
 import java.io.File
 
@@ -75,6 +77,21 @@ private fun initHaskell() {
     @Composable
     override fun desktopScrollBar(state: ScrollState, modifier: Modifier, scrollBarAlpha: Animatable<Float, AnimationVector1D>, scrollJob: MutableState<Job>, reversed: Boolean) {
       DesktopScrollBar(rememberScrollbarAdapter(scrollState = state), modifier, scrollBarAlpha, scrollJob, reversed)
+    }
+
+    @Composable
+    override fun desktopShowAppUpdateNotice() {
+      LaunchedEffect(Unit) {
+        if (
+          !chatModel.controller.appPrefs.appUpdateNoticeShown.get()
+          && chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete
+          && chatModel.chats.size > 3
+          && chatModel.activeCallInvitation.value == null
+        ) {
+          appPrefs.appUpdateNoticeShown.set(true)
+          showAppUpdateNotice()
+        }
+      }
     }
   }
 }

@@ -161,7 +161,8 @@ class AppPreferences {
   val showMuteProfileAlert = mkBoolPreference(SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT, true)
   val appLanguage = mkStrPreference(SHARED_PREFS_APP_LANGUAGE, null)
   val appUpdateChannel = mkEnumPreference(SHARED_PREFS_APP_UPDATE_CHANNEL, AppUpdatesChannel.DISABLED) { AppUpdatesChannel.entries.firstOrNull { it.name == this } }
-  val appSkippedUpdate = mkLongPreference(SHARED_PREFS_APP_SKIPPED_UPDATE, 0)
+  val appSkippedUpdate = mkStrPreference(SHARED_PREFS_APP_SKIPPED_UPDATE, "")
+  val appUpdateNoticeShown = mkBoolPreference(SHARED_PREFS_APP_UPDATE_NOTICE_SHOWN, false)
 
   val onboardingStage = mkEnumPreference(SHARED_PREFS_ONBOARDING_STAGE, OnboardingStage.OnboardingComplete) { OnboardingStage.values().firstOrNull { it.name == this } }
   val migrationToStage = mkStrPreference(SHARED_PREFS_MIGRATION_TO_STAGE, null)
@@ -335,6 +336,7 @@ class AppPreferences {
     private const val SHARED_PREFS_APP_LANGUAGE = "AppLanguage"
     private const val SHARED_PREFS_APP_UPDATE_CHANNEL = "AppUpdateChannel"
     private const val SHARED_PREFS_APP_SKIPPED_UPDATE = "AppSkippedUpdate"
+    private const val SHARED_PREFS_APP_UPDATE_NOTICE_SHOWN = "AppUpdateNoticeShown"
     private const val SHARED_PREFS_ONBOARDING_STAGE = "OnboardingStage"
     const val SHARED_PREFS_MIGRATION_TO_STAGE = "MigrationToStage"
     const val SHARED_PREFS_MIGRATION_FROM_STAGE = "MigrationFromStage"

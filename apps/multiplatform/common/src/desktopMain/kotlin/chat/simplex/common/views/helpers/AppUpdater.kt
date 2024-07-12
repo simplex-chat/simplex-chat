@@ -27,7 +27,8 @@ import java.net.Proxy
 
 @Serializable
 data class GitHubRelease(
-  val id: Long,
+  @SerialName("tag_name")
+  val tagName: String,
   @SerialName("html_url")
   val htmlUrl: String,
   val name: String,
@@ -49,6 +50,39 @@ data class GitHubAsset(
   val isAppImage: Boolean = name.lowercase().contains(".appimage")
 )
 
+fun showAppUpdateNotice() {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    generalGetString(MR.strings.app_check_for_updates_notice_title),
+    text = generalGetString(MR.strings.app_check_for_updates_notice_desc),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          appPrefs.appUpdateChannel.set(AppUpdatesChannel.STABLE)
+          setupUpdateChecker()
+        }) {
+          Text(generalGetString(MR.strings.app_check_for_updates_stable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          appPrefs.appUpdateChannel.set(AppUpdatesChannel.BETA)
+          setupUpdateChecker()
+        }) {
+          Text(generalGetString(MR.strings.app_check_for_updates_beta), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          appPrefs.appUpdateChannel.set(AppUpdatesChannel.DISABLED)
+        }) {
+          Text(generalGetString(MR.strings.app_check_for_updates_notice_disable), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+    }
+  )
+}
+
 private var updateCheckerJob: Job = Job()
 fun setupUpdateChecker() = withLongRunningApi {
   updateCheckerJob.cancel()
@@ -69,6 +103,7 @@ private fun createUpdateJob() {
 
 
 fun checkForUpdate() {
+  Log.d(TAG, "Checking for update")
   val client = setupHttpClient()
   try {
     val request = Request.Builder().url("https://api.github.com/repos/simplex-chat/simplex-chat/releases").addHeader("User-agent", "curl").build()
@@ -87,13 +122,14 @@ fun checkForUpdate() {
           currentVersionName.substringBefore('-').count { it == '.' } == 1 -> "${currentVersionName}.0"
           else -> currentVersionName
         }
-        // LALAL
-//        if (release.id == appPrefs.appSkippedUpdate.get() || release.name == currentVersionName || release.name == redactedCurrentVersionName) {
-//          return
-//        }
+        if (release.tagName == appPrefs.appSkippedUpdate.get() || release.tagName == currentVersionName || release.tagName == redactedCurrentVersionName) {
+          Log.d(TAG, "Skipping update because of the same version or skipped version")
+          return
+        }
         val assets = chooseGitHubReleaseAssets(release)
         // No need to show an alert if no suitable packages were found. But for Flatpak users it's useful to see release notes anyway
         if (assets.isEmpty() && !isRunningFromFlatpak()) {
+          Log.d(TAG, "No assets to download for current system")
           return
         }
         val lines = ArrayList<String>()
@@ -168,7 +204,7 @@ private fun setupHttpClient(): OkHttpClient {
 }
 
 private fun skipRelease(release: GitHubRelease) {
-  appPrefs.appSkippedUpdate.set(release.id)
+  appPrefs.appSkippedUpdate.set(release.tagName)
 }
 
 private suspend fun downloadAsset(asset: GitHubAsset) {
@@ -216,7 +252,6 @@ private suspend fun downloadAsset(asset: GitHubAsset) {
 
             AlertManager.shared.showAlertDialogButtonsColumn(
               generalGetString(MR.strings.app_check_for_updates_download_completed_title),
-              text = generalGetString(MR.strings.app_check_for_updates_download_completed_desc),
               dismissible = false,
               buttons = {
                 Column {
@@ -287,9 +322,10 @@ private suspend fun installAppUpdate(file: File) = withContext(Dispatchers.IO) {
         // Failed to start installation. show directory with the file for manual installation
         desktopOpenDir(file.parentFile)
       } else {
-        withApi {
-          ntfManager.showMessage(generalGetString(MR.strings.app_check_for_updates_installed_successfully_title), generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc))
-        }
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(MR.strings.app_check_for_updates_installed_successfully_title),
+          text = generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc)
+        )
         file.delete()
       }
     }
@@ -301,9 +337,10 @@ private suspend fun installAppUpdate(file: File) = withContext(Dispatchers.IO) {
         // Failed to start installation. show directory with the file for manual installation
         desktopOpenDir(file.parentFile)
       } else {
-        withApi {
-          ntfManager.showMessage(generalGetString(MR.strings.app_check_for_updates_installed_successfully_title), generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc))
-        }
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(MR.strings.app_check_for_updates_installed_successfully_title),
+          text = generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc)
+        )
         file.delete()
       }
     }
@@ -324,9 +361,10 @@ private suspend fun installAppUpdate(file: File) = withContext(Dispatchers.IO) {
           // Failed to start installation. show directory with the file for manual installation
           desktopOpenDir(file.parentFile)
         } else {
-          withApi {
-            ntfManager.showMessage(generalGetString(MR.strings.app_check_for_updates_installed_successfully_title), generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc))
-          }
+          AlertManager.shared.showAlertMsg(
+            title = generalGetString(MR.strings.app_check_for_updates_installed_successfully_title),
+            text = generalGetString(MR.strings.app_check_for_updates_installed_successfully_desc)
+          )
           file.delete()
         }
       } finally {
