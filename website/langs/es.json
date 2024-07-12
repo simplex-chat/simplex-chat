@@ -12,7 +12,7 @@
     "donate": "Donación",
     "copyright-label": "© 2020-2024 SimpleX | Proyecto de Código Abierto",
     "simplex-chat-protocol": "Protocolo de SimpleX Chat",
-    "terms-and-privacy-policy": "Términos y Política de Privacidad",
+    "terms-and-privacy-policy": "Política de Privacidad",
     "hero-header": "Privacidad redefinida",
     "hero-overlay-1-textlink": "¿Por qué los ID de usuario son perjudiciales para la privacidad?",
     "hero-overlay-2-textlink": "¿Cómo funciona SimpleX?",
@@ -242,7 +242,7 @@
     "stable-versions-built-by-f-droid-org": "Versión estable compilada por F-Droid.org",
     "f-droid-page-f-droid-org-repo-section-text": "Los repositorios de SimpleX Chat y F-Droid.org firman con distinto certificado. Para cambiar, por favor <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>exportar</a> la base de datos y reinstala la aplicación.",
     "signing-key-fingerprint": "Huella digital de la clave de firma (SHA-256)",
-    "releases-to-this-repo-are-done-1-2-days-later": "Las versiones aparecen 1-2 días más tarde en este repositorio",
+    "releases-to-this-repo-are-done-1-2-days-later": "Las versiones aparecen varios días más tarde en este repositorio",
     "comparison-section-list-point-4a": "Los servidores de retransmisión no pueden comprometer la encriptación e2e. Para evitar posibles ataques, verifique el código de seguridad mediante un canal alternativo",
     "hero-overlay-3-title": "Evaluación de la seguridad",
     "hero-overlay-card-3-p-2": "Trail of Bits revisó la criptografía y los componentes de red de la plataforma SimpleX en noviembre de 2022.",
@@ -253,5 +253,7 @@
     "docs-dropdown-9": "Descargas",
     "please-enable-javascript": "Habilita JavaScript para ver el código QR.",
     "please-use-link-in-mobile-app": "Usa el enlace en la apliación móvil,",
-    "docs-dropdown-10": "Transparencia"
+    "docs-dropdown-10": "Transparencia",
+    "docs-dropdown-11": "FAQ",
+    "docs-dropdown-12": "Seguridad"
 }

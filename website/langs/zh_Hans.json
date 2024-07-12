@@ -57,7 +57,7 @@
     "simplex-chat-protocol": "SimpleX 聊天协议",
     "smp-protocol": "SMP协议",
     "chat-protocol": "聊天协议",
-    "copyright-label": "© 2020-2023 SimpleX | 开源项目",
+    "copyright-label": "© 2020-2024 SimpleX | 开源项目",
     "terminal-cli": "命令行程式",
     "simplex-explained-tab-1-p-1": "您可以创建联系人和群组，并进行双向对话，就像是任何其他即时通讯软件一样。",
     "hero-p-1": "其他应用——如Signal、Matrix、Session、Briar、Jami、Cwtch 等——都需要用户 ID。<br>而SimpleX 不需要用户ID，连<strong>随机生成</strong>的也不需要。<br>这从根本上改善了您的隐私。",
