@@ -185,7 +185,16 @@ _defaultSMPServers =
       ]
       <> map
         (presetServerCfg False)
-        []
+        [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im,o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion",
+          "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im,jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion",
+          "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion",
+          "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion",
+          "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im,jssqzccmrcws6bhmn77vgmhfjmhwlyr3u7puw4erkyoosywgl67slqqd.onion",
+          "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im,rb2pbttocvnbrngnwziclp2f4ckjq65kebafws6g4hy22cdaiv5dwjqd.onion",
+          "smp://1OwYGt-yqOfe2IyVHhxz3ohqo3aCCMjtB-8wn4X_aoY=@smp11.simplex.im,6ioorbm6i3yxmuoezrhjk6f6qgkc4syabh7m3so74xunb5nzr4pwgfqd.onion",
+          "smp://UkMFNAXLXeAAe0beCa4w6X_zp18PwxSaSjY17BKUGXQ=@smp12.simplex.im,ie42b5weq7zdkghocs3mgxdjeuycheeqqmksntj57rmejagmg4eor5yd.onion",
+          "smp://enEkec4hlR3UtKx2NMpOUK_K4ZuDxjWBO1d9Y4YXVaA=@smp14.simplex.im,aspkyu2sopsnizbyfabtsicikr2s4r3ti35jogbcekhm3fsoeyjvgrid.onion"
+        ]
 
 _defaultNtfServers :: [NtfServer]
 _defaultNtfServers =
@@ -324,7 +333,7 @@ newChatController
               initialServers :: IO [(UserId, NonEmpty (ServerCfg p))]
               initialServers = mapM (\u -> (aUserId u,) <$> userServers u) users
               userServers :: User -> IO (NonEmpty (ServerCfg p))
-              userServers user' = activeAgentServers config protocol <$> withTransaction chatStore (`getProtocolServers` user')
+              userServers user' = useServers config protocol <$> withTransaction chatStore (`getProtocolServers` user')
 
 updateNetworkConfig :: NetworkConfig -> SimpleNetCfg -> NetworkConfig
 updateNetworkConfig cfg SimpleNetCfg {socksProxy, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors} =
@@ -367,11 +376,8 @@ withFileLock :: String -> Int64 -> CM a -> CM a
 withFileLock name = withEntityLock name . CLFile
 {-# INLINE withFileLock #-}
 
-activeAgentServers :: UserProtocol p => ChatConfig -> SProtocolType p -> [ServerCfg p] -> NonEmpty (ServerCfg p)
-activeAgentServers ChatConfig {defaultServers} p =
-  fromMaybe (cfgServers p defaultServers)
-    . nonEmpty
-    . filter (\ServerCfg {enabled} -> enabled)
+useServers :: UserProtocol p => ChatConfig -> SProtocolType p -> [ServerCfg p] -> NonEmpty (ServerCfg p)
+useServers ChatConfig {defaultServers} p = fromMaybe (cfgServers p defaultServers) . nonEmpty
 
 cfgServers :: UserProtocol p => SProtocolType p -> (DefaultAgentServers -> NonEmpty (ServerCfg p))
 cfgServers p DefaultAgentServers {smp, xftp} = case p of
@@ -541,7 +547,7 @@ processChatCommand' vr = \case
               Just user -> do
                 servers <- withStore' (`getProtocolServers` user)
                 cfg <- asks config
-                pure (activeAgentServers cfg protocol servers, servers)
+                pure (useServers cfg protocol servers, servers)
         | otherwise = do
             defServers <- asks $ defaultServers . config
             pure (cfgServers protocol defServers, [])
@@ -1311,17 +1317,15 @@ processChatCommand' vr = \case
         withStore (\db -> Just <$> getConnectionEntity db vr user agentConnId) `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
     pure CRNtfMessages {user_, connEntity_, msgTs = msgTs', ntfMessages = map ntfMsgInfo msgs}
   APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
-    ChatConfig {defaultServers} <- asks config
+    cfg@ChatConfig {defaultServers} <- asks config
     servers <- withStore' (`getProtocolServers` user)
-    let defServers = cfgServers p defaultServers
-        servers' = fromMaybe defServers $ nonEmpty servers
-    pure $ CRUserProtoServers user $ AUPS $ UserProtoServers p servers' defServers
+    pure $ CRUserProtoServers user $ AUPS $ UserProtoServers p (useServers cfg p servers) (cfgServers p defaultServers)
   GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
     processChatCommand $ APIGetUserProtoServers userId aProtocol
   APISetUserProtoServers userId (APSC p (ProtoServersConfig servers)) -> withUserId userId $ \user -> withServerProtocol p $ do
     withStore $ \db -> overwriteProtocolServers db user servers
     cfg <- asks config
-    lift $ withAgent' $ \a -> setProtocolServers a (aUserId user) $ activeAgentServers cfg p servers
+    lift $ withAgent' $ \a -> setProtocolServers a (aUserId user) $ useServers cfg p servers
     ok user
   SetUserProtoServers serversConfig -> withUser $ \User {userId} ->
     processChatCommand $ APISetUserProtoServers userId serversConfig
@@ -6302,7 +6306,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     updateDirectItemsStatus ct conn msgIds newStatus = do
       cis_ <- withStore' $ \db -> forM msgIds $ \msgId -> runExceptT $ updateDirectItemStatus' db ct conn msgId newStatus
       -- only send the last expired item event to view
-      case catMaybes $ rights $ reverse cis_ of
+      case reverse $ catMaybes $ rights cis_ of
         ci : _ -> toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
         _ -> pure ()
 
@@ -6787,7 +6791,7 @@ deliverMessagesB msgReqs = do
 sendGroupMessage :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM (SndMessage, GroupSndResult)
 sendGroupMessage user gInfo members chatMsgEvent = do
   when shouldSendProfileUpdate $
-    sendProfileUpdate `catchChatError` (\e -> toView (CRChatError (Just user) e))
+    sendProfileUpdate `catchChatError` (toView . CRChatError (Just user))
   sendGroupMessage' user gInfo members chatMsgEvent
   where
     User {profile = p, userMemberProfileUpdatedAt} = user
@@ -6892,7 +6896,7 @@ memberSendAction gInfo chatMsgEvent members m = case memberConn m of
 sendGroupMemberMessage :: MsgEncodingI e => User -> GroupInfo -> GroupMember -> ChatMsgEvent e -> Maybe Int64 -> CM () -> CM ()
 sendGroupMemberMessage user gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} chatMsgEvent introId_ postDeliver = do
   msg <- createSndMessage chatMsgEvent (GroupId groupId)
-  messageMember msg `catchChatError` (\e -> toView (CRChatError (Just user) e))
+  messageMember msg `catchChatError` (toView . CRChatError (Just user))
   where
     messageMember :: SndMessage -> CM ()
     messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction gInfo chatMsgEvent [m] m) $ \case
@@ -7125,7 +7129,7 @@ agentXFTPDeleteSndFilesRemote user sndFiles = do
   (sfsNoDescr, sfsWithDescr) <- partitionSndDescr sndFilesAll' [] []
   withAgent' $ \a -> xftpDeleteSndFilesInternal a sfsNoDescr
   withAgent' $ \a -> xftpDeleteSndFilesRemote a (aUserId user) sfsWithDescr
-  void . withStoreBatch' $ \db -> map (setSndFTAgentDeleted db user . (\(_, fId) -> fId)) sndFilesAll'
+  void . withStoreBatch' $ \db -> map (setSndFTAgentDeleted db user . snd) sndFilesAll'
   where
     mapRedirectMeta :: FileTransferMeta -> Maybe (XFTPSndFile, FileTransferId)
     mapRedirectMeta FileTransferMeta {fileId = fileId, xftpSndFile = Just sndFileRedirect} = Just (sndFileRedirect, fileId)
