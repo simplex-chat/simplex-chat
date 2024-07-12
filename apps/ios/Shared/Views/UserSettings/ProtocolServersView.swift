@@ -109,7 +109,7 @@ struct ProtocolServersView: View {
             }
         }
         .toolbar { EditButton() }
-        .confirmationDialog("Add server…", isPresented: $showAddServer, titleVisibility: .hidden) {
+        .confirmationDialog("Add server", isPresented: $showAddServer, titleVisibility: .hidden) {
             Button("Enter server manually") {
                 otherServers.append(ServerCfg.empty)
                 selectedServer = allServers.last?.id

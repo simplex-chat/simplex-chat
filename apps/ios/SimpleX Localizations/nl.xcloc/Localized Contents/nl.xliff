@@ -615,9 +615,9 @@
         <target>Servers toevoegen door QR-codes te scannen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add server…" xml:space="preserve">
-        <source>Add server…</source>
-        <target>Server toevoegen…</target>
+      <trans-unit id="Add server" xml:space="preserve">
+        <source>Add server</source>
+        <target>Server toevoegen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
