@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftUI
+import Yams
 
 public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var userId: Int64
