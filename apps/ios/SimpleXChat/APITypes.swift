@@ -1129,13 +1129,13 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
     public var server: String
     public var preset: Bool
     public var tested: Bool?
-    public var enabled: ServerEnabled
+    public var enabled: Bool
     var createdAt = Date()
 //    public var sendEnabled: Bool // can we potentially want to prevent sending on the servers we use to receive?
 // Even if we don't see the use case, it's probably better to allow it in the model
 // In any case, "trusted/known" servers are out of scope of this change
 
-    public init(server: String, preset: Bool, tested: Bool?, enabled: ServerEnabled) {
+    public init(server: String, preset: Bool, tested: Bool?, enabled: Bool) {
         self.server = server
         self.preset = preset
         self.tested = tested
@@ -1148,7 +1148,7 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
 
     public var id: String { "\(server) \(createdAt)" }
 
-    public static var empty = ServerCfg(server: "", preset: false, tested: nil, enabled: .enabled)
+    public static var empty = ServerCfg(server: "", preset: false, tested: nil, enabled: true)
 
     public var isEmpty: Bool {
         server.trimmingCharacters(in: .whitespaces) == ""
@@ -1165,19 +1165,19 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
             server: "smp://abcd@smp8.simplex.im",
             preset: true,
             tested: true,
-            enabled: .enabled
+            enabled: true
         ),
         custom: ServerCfg(
             server: "smp://abcd@smp9.simplex.im",
             preset: false,
             tested: false,
-            enabled: .disabled
+            enabled: false
         ),
         untested: ServerCfg(
             server: "smp://abcd@smp10.simplex.im",
             preset: false,
             tested: nil,
-            enabled: .enabled
+            enabled: true
         )
     )
 
@@ -1187,12 +1187,6 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
         case tested
         case enabled
     }
-}
-
-public enum ServerEnabled: String, Codable {
-    case disabled
-    case enabled
-    case known
 }
 
 public enum ProtocolTestStep: String, Decodable, Equatable {

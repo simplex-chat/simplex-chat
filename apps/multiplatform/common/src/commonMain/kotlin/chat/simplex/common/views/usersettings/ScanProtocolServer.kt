@@ -7,7 +7,6 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ServerAddress.Companion.parseServerAddress
 import chat.simplex.common.model.ServerCfg
-import chat.simplex.common.model.ServerEnabled
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCodeScanner
@@ -26,7 +25,7 @@ fun ScanProtocolServerLayout(rhId: Long?, onNext: (ServerCfg) -> Unit) {
     QRCodeScanner { text ->
       val res = parseServerAddress(text)
       if (res != null) {
-        onNext(ServerCfg(remoteHostId = rhId, text, false, null, ServerEnabled.Enabled))
+        onNext(ServerCfg(remoteHostId = rhId, text, false, null, true))
       } else {
         AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.smp_servers_invalid_address),
