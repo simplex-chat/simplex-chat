@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.ChatController.appPrefs
@@ -283,7 +284,7 @@ private suspend fun downloadAsset(asset: GitHubAsset) {
                     AlertManager.shared.hideAlert()
                     newFile.delete()
                   }) {
-                    Text(generalGetString(MR.strings.app_check_for_updates_button_remind_later), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+                    Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
                   }
                 }
               }
