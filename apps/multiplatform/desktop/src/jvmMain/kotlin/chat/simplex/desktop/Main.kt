@@ -81,7 +81,7 @@ private fun initHaskell() {
 
     @Composable
     override fun desktopShowAppUpdateNotice() {
-      LaunchedEffect(Unit) {
+      LaunchedEffect(chatModel.chats.size) {
         if (
           !chatModel.controller.appPrefs.appUpdateNoticeShown.get()
           && chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete
