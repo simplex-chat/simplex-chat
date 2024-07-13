@@ -1998,7 +1998,7 @@
     <string name="other_errors">Andere Fehler</string>
     <string name="proxied">Proxy</string>
     <string name="servers_info_detailed_statistics_receive_errors">Fehler beim Empfang</string>
-    <string name="reconnect">Erneut verbinden</string>
+    <string name="reconnect">Neu verbinden</string>
     <string name="app_check_for_updates_disabled">Deaktiviert</string>
     <string name="app_check_for_updates_beta">Beta</string>
     <string name="app_check_for_updates_download_started">App-Aktualisierung wird heruntergeladen. App nicht schließen!</string>
@@ -2025,4 +2025,23 @@
     <string name="servers_info_missing">Keine Information - es wird versucht neu zu laden</string>
     <string name="app_check_for_updates_button_open">Dateispeicherort öffnen</string>
     <string name="other_label">andere</string>
+    <string name="network_error_broker_host_desc">Die Server-Adresse ist nicht mit den Netzwerk-Einstellungen kompatibel: %1$s.</string>
+    <string name="scan_paste_link">Link scannen / einfügen</string>
+    <string name="servers_info_reconnect_all_servers_button">Alle Server neu verbinden</string>
+    <string name="servers_info_reconnect_server_title">Server neu verbinden?</string>
+    <string name="servers_info_reconnect_servers_title">Alle Server neu verbinden?</string>
+    <string name="servers_info_reconnect_servers_message">Um die Auslieferung von Nachrichten zu erzwingen, werden alle Server neu verbunden. Dafür wird weiterer Datenverkehr benötigt.</string>
+    <string name="servers_info_reconnect_server_message">Um die Auslieferung von Nachrichten zu erzwingen, wird der Server neu verbunden. Dafür wird weiterer Datenverkehr benötigt.</string>
+    <string name="servers_info_reset_stats_alert_confirm">Zurücksetzen</string>
+    <string name="servers_info_reset_stats">Alle Statistiken zurücksetzen</string>
+    <string name="servers_info_reset_stats_alert_title">Alle Statistiken zurücksetzen?</string>
+    <string name="servers_info_detailed_statistics_sent_messages_header">Gesendete Nachrichten</string>
+    <string name="servers_info_detailed_statistics_sent_messages_total">Summe aller gesendeten Nachrichten</string>
+    <string name="secured">Abgesichert</string>
+    <string name="send_errors">Fehler beim Senden</string>
+    <string name="sent_directly">Direkt gesendet</string>
+    <string name="sent_via_proxy">Über einen Proxy gesendet</string>
+    <string name="server_address">Server-Adresse</string>
+    <string name="app_check_for_updates_button_remind_later">Später erinnern</string>
+    <string name="servers_info">Server-Informationen</string>
 </resources>
