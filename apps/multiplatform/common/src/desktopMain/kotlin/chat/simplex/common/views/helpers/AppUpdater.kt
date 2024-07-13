@@ -362,6 +362,7 @@ private suspend fun installAppUpdate(file: File) = withContext(Dispatchers.IO) {
           return@withContext
         }
         volume = lastLine
+        File("/Applications/SimpleX.app").renameTo(File("/Applications/SimpleX-old.app"))
         val process2 = Runtime.getRuntime().exec(arrayOf("cp", "-R", "${volume}/SimpleX.app", "/Applications")).onExit().join()
         val copiedSuccessfully = process2.exitValue() == 0
         if (!copiedSuccessfully) {
@@ -377,6 +378,11 @@ private suspend fun installAppUpdate(file: File) = withContext(Dispatchers.IO) {
         }
       } finally {
         Runtime.getRuntime().exec(arrayOf("hdiutil", "unmount", volume)).onExit().join()
+        if (!File("/Applications/SimpleX.app").exists()) {
+          File("/Applications/SimpleX-old.app").renameTo(File("/Applications/SimpleX.app"))
+        } else {
+          File("/Applications/SimpleX-old.app").deleteRecursively()
+        }
       }
     }
   }
