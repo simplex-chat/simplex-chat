@@ -249,7 +249,7 @@
     <string name="accept_contact_incognito_button">Accetta in incognito</string>
     <string name="clear_chat_warning">Tutti i messaggi verranno eliminati, non è reversibile! I messaggi verranno eliminati SOLO per te.</string>
     <string name="smp_servers_preset_add">Aggiungi server preimpostati</string>
-    <string name="smp_servers_add">Aggiungi server…</string>
+    <string name="smp_servers_add">Aggiungi server</string>
     <string name="network_settings">Impostazioni di rete avanzate</string>
     <string name="about_simplex">Riguardo SimpleX</string>
     <string name="callstatus_accepted">chiamata accettata</string>
@@ -1797,7 +1797,7 @@
     <string name="network_smp_proxy_fallback_prohibit_description">NON inviare messaggi direttamente, anche se il tuo server o quello di destinazione non supporta l\'instradamento privato.</string>
     <string name="network_smp_proxy_mode_never_description">NON usare l\'instradamento privato.</string>
     <string name="network_smp_proxy_fallback_prohibit">No</string>
-    <string name="settings_section_title_private_message_routing">INSTRADAMENTO PRIVATO MESSAGGI</string>
+    <string name="settings_section_title_private_message_routing">INSTRADAMENTO PRIVATO DEI MESSAGGI</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Invia messaggi direttamente quando l\'indirizzo IP è protetto e il tuo server o quello di destinazione non supporta l\'instradamento privato.</string>
     <string name="private_routing_explanation">Per proteggere il tuo indirizzo IP, l\'instradamento privato usa i tuoi server SMP per consegnare i messaggi.</string>
     <string name="network_smp_proxy_mode_unprotected">Non protetto</string>
@@ -1858,4 +1858,19 @@
 \n
 \nultimo msg ricevuto: %2$s</string>
     <string name="info_row_debug_delivery">Debug della consegna</string>
+    <string name="share_text_message_status">Stato del messaggio: %s</string>
+    <string name="share_text_file_status">Stato del file: %s</string>
+    <string name="file_error_auth">Chiave sbagliata o indirizzo sconosciuto per frammento del file - probabilmente il file è stato eliminato.</string>
+    <string name="file_error_no_file">File non trovato - probabilmente è stato eliminato o annullato.</string>
+    <string name="info_row_message_status">Stato del messaggio</string>
+    <string name="info_row_file_status">Stato del file</string>
+    <string name="file_error_relay">Errore del server del file: %1$s</string>
+    <string name="file_error">Errore del file</string>
+    <string name="temporary_file_error">Errore del file temporaneo</string>
+    <string name="remote_ctrl_connection_stopped_desc">Controlla che mobile e desktop siano collegati alla stessa rete locale e che il firewall del desktop consenta la connessione.
+\nSi prega di condividere qualsiasi altro problema con gli sviluppatori.</string>
+    <string name="remote_ctrl_connection_stopped_identity_desc">Questo link è stato usato con un altro dispositivo mobile, creane uno nuovo sul desktop.</string>
+    <string name="copy_error">Copia errore</string>
+    <string name="cannot_share_message_alert_title">Impossibile inviare il messaggio</string>
+    <string name="cannot_share_message_alert_text">Le preferenze della chat selezionata vietano questo messaggio.</string>
 </resources>

@@ -337,9 +337,6 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "yukarı çıkın, ardından seçin:";
 
-/* No comment provided by engineer. */
-"Accent color" = "Vurgu rengi";
-
 /* accept contact request via notification
    accept incoming call via notification */
 "Accept" = "Kabul et";
@@ -369,7 +366,7 @@
 "Add profile" = "Profil ekle";
 
 /* No comment provided by engineer. */
-"Add server…" = "Sunucu ekle…";
+"Add server" = "Sunucu ekle";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "Karekod taratarak sunucuları ekleyin.";
@@ -653,7 +650,7 @@
 /* rcv group event chat item */
 "blocked %@" = "engellendi %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item */
 "blocked by admin" = "yönetici tarafından engellendi";
 
 /* No comment provided by engineer. */
@@ -840,9 +837,6 @@
 /* No comment provided by engineer. */
 "colored" = "renklendirilmiş";
 
-/* No comment provided by engineer. */
-"Colors" = "Renkler";
-
 /* server test step */
 "Compare file" = "Dosya karşılaştır";
 
@@ -1023,7 +1017,7 @@
 /* No comment provided by engineer. */
 "Continue" = "Devam et";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "Kopyala";
 
 /* No comment provided by engineer. */
@@ -1166,6 +1160,9 @@
 
 /* time unit */
 "days" = "gün";
+
+/* No comment provided by engineer. */
+"Debug delivery" = "Hata ayıklama teslimatı";
 
 /* No comment provided by engineer. */
 "Decentralized" = "Merkezi Olmayan";
@@ -1800,7 +1797,8 @@
 /* No comment provided by engineer. */
 "Error: " = "Hata: ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "Hata: %@";
 
 /* No comment provided by engineer. */
@@ -2495,6 +2493,9 @@
 
 /* No comment provided by engineer. */
 "Message draft" = "Mesaj taslağı";
+
+/* No comment provided by engineer. */
+"Message queue info" = "Mesaj kuyruğu bilgisi";
 
 /* chat feature */
 "Message reactions" = "Mesaj tepkileri";
@@ -3518,6 +3519,9 @@
 /* srv error text. */
 "Server address is incompatible with network settings." = "Sunucu adresi ağ ayarlarıyla uyumlu değil.";
 
+/* queue info */
+"server queue info: %@\n\nlast received msg: %@" = "sunucu kuyruk bilgisi: %1$@\n\nson alınan msj: %2$@";
+
 /* server test error */
 "Server requires authorization to create queues, check password" = "Sunucunun sıra oluşturması için yetki gereklidir, şifreyi kontrol edin";
 
@@ -3871,9 +3875,6 @@
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Yapıştırdığın metin bir SimpleX bağlantısı değildir.";
-
-/* No comment provided by engineer. */
-"Theme" = "Tema";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Bu ayarlar mevcut profiliniz **%@** içindir.";
