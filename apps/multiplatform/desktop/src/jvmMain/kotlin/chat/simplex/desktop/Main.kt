@@ -81,7 +81,7 @@ private fun initHaskell() {
 
     @Composable
     override fun desktopShowAppUpdateNotice() {
-      LaunchedEffect(chatModel.chats.size) {
+      fun showNoticeIfNeeded() {
         if (
           !chatModel.controller.appPrefs.appUpdateNoticeShown.get()
           && chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete
@@ -90,6 +90,16 @@ private fun initHaskell() {
         ) {
           appPrefs.appUpdateNoticeShown.set(true)
           showAppUpdateNotice()
+        }
+      }
+      // Will show notice if chats were loaded before that moment and number of chats > 3
+      LaunchedEffect(Unit) {
+        showNoticeIfNeeded()
+      }
+      // Will show notice if chats were loaded later (a lot of chats/slow query) and number of chats > 3
+      KeyChangeEffect(chatModel.chats.size) { oldSize ->
+        if (oldSize == 0) {
+          showNoticeIfNeeded()
         }
       }
     }
