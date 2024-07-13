@@ -46,4 +46,7 @@
     <string name="network_smp_proxy_mode_always">Selalu</string>
     <string name="settings_section_title_app">APLIKASI</string>
     <string name="appearance_settings">Tampilan</string>
+    <string name="about_simplex_chat">Tentang SimpleX Chat</string>
+    <string name="accept">Terima</string>
+    <string name="accept_call_on_lock_screen">Terima</string>
 </resources>
