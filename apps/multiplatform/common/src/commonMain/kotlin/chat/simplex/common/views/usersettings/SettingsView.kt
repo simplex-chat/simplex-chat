@@ -73,6 +73,9 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, drawerSt
     withAuth = ::doWithAuth,
     drawerState = drawerState,
   )
+  KeyChangeEffect(chatModel.updatingProgress.value != null) {
+    drawerState.close()
+  }
 }
 
 val simplexTeamUri =

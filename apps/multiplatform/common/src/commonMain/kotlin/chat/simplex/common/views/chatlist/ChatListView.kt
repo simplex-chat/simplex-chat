@@ -1,6 +1,8 @@
 package chat.simplex.common.views.chatlist
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
@@ -30,6 +32,8 @@ import chat.simplex.common.views.onboarding.shouldShowWhatsNew
 import chat.simplex.common.views.usersettings.SettingsView
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
+import chat.simplex.common.views.chat.group.ProgressIndicator
+import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
@@ -187,8 +191,24 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean) {
   val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
-
-  if (stopped) {
+  val updatingProgress = remember { chatModel.updatingProgress }.value
+  if (updatingProgress != null) {
+    barButtons.add {
+      val interactionSource = remember { MutableInteractionSource() }
+      val hovered = interactionSource.collectIsHoveredAsState().value
+      IconButton(onClick = {
+        chatModel.updatingRequest?.close()
+      }, Modifier.hoverable(interactionSource)) {
+        if (hovered) {
+          Icon(painterResource(MR.images.ic_close), null, tint = WarningOrange)
+        } else if (updatingProgress == -1f) {
+          CIFileViewScope.progressIndicator()
+        } else {
+          CIFileViewScope.progressCircle((updatingProgress * 100).toLong(), 100)
+        }
+      }
+    }
+  } else if (stopped) {
     barButtons.add {
       IconButton(onClick = {
         AlertManager.shared.showAlertMsg(
