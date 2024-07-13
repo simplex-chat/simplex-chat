@@ -280,9 +280,6 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "edellä, valitse sitten:";
 
-/* No comment provided by engineer. */
-"Accent color" = "Korostusväri";
-
 /* accept contact request via notification
    accept incoming call via notification */
 "Accept" = "Hyväksy";
@@ -309,7 +306,7 @@
 "Add profile" = "Lisää profiili";
 
 /* No comment provided by engineer. */
-"Add server…" = "Lisää palvelin…";
+"Add server" = "Lisää palvelin";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "Lisää palvelimia skannaamalla QR-koodeja.";
@@ -663,9 +660,6 @@
 /* No comment provided by engineer. */
 "colored" = "värillinen";
 
-/* No comment provided by engineer. */
-"Colors" = "Värit";
-
 /* server test step */
 "Compare file" = "Vertaa tiedostoa";
 
@@ -795,7 +789,7 @@
 /* No comment provided by engineer. */
 "Continue" = "Jatka";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "Kopioi";
 
 /* No comment provided by engineer. */
@@ -1434,7 +1428,8 @@
 /* No comment provided by engineer. */
 "Error: " = "Virhe: ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "Virhe: %@";
 
 /* No comment provided by engineer. */
@@ -3055,9 +3050,6 @@
 
 /* No comment provided by engineer. */
 "The servers for new connections of your current chat profile **%@**." = "Palvelimet nykyisen keskusteluprofiilisi uusille yhteyksille **%@**.";
-
-/* No comment provided by engineer. */
-"Theme" = "Teema";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Nämä asetukset koskevat nykyistä profiiliasi **%@**.";

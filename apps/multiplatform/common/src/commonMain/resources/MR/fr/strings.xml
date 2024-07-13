@@ -313,7 +313,7 @@
     <string name="scan_code_from_contacts_app">Scannez le code de sécurité depuis l\'application de votre contact.</string>
     <string name="to_verify_compare">Pour vérifier le chiffrement de bout en bout avec votre contact, comparez (ou scannez) le code sur vos appareils.</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Si vous ne pouvez pas vous rencontrer en personne, vous pouvez <b>scanner un code QR lors d\'un appel vidéo</b>, ou votre contact peut partager un lien d\'invitation.]]></string>
-    <string name="smp_servers_add">Ajouter un serveur…</string>
+    <string name="smp_servers_add">Ajouter un serveur</string>
     <string name="markdown_in_messages">Markdown dans les messages</string>
     <string name="smp_servers_preset_add">Ajouter des serveurs prédéfinis</string>
     <string name="use_simplex_chat_servers__question">Utiliser les serveurs SimpleX Chat \?</string>
@@ -1858,4 +1858,19 @@
     <string name="color_mode_system">Système</string>
     <string name="error_initializing_web_view">Erreur d\'initialisation de WebView. Mettez votre système à jour avec la nouvelle version. Veuillez contacter les développeurs.
 \nErreur : %s</string>
+    <string name="file_error_no_file">Fichier introuvable - le fichier a probablement été supprimé ou annulé.</string>
+    <string name="file_error_auth">Mauvaise clé ou adresse inconnue du bloc de données du fichier - le fichier est probablement supprimé.</string>
+    <string name="file_error_relay">Erreur du serveur de fichiers : %1$s</string>
+    <string name="file_error">Erreur de fichier</string>
+    <string name="temporary_file_error">Erreur de fichier temporaire</string>
+    <string name="info_row_file_status">Statut du fichier</string>
+    <string name="share_text_file_status">Statut du fichier: %s</string>
+    <string name="info_row_message_status">Statut du message</string>
+    <string name="share_text_message_status">Statut du message: %s</string>
+    <string name="copy_error">Erreur de copie</string>
+    <string name="remote_ctrl_connection_stopped_desc">Veuillez vérifier que le mobile et l\'ordinateur sont connectés au même réseau local et que le pare-feu de l\'ordinateur autorise la connexion.
+\nVeuillez faire part de tout autre problème aux développeurs.</string>
+    <string name="remote_ctrl_connection_stopped_identity_desc">Ce lien a été utilisé avec un autre appareil mobile, veuillez créer un nouveau lien sur le desktop.</string>
+    <string name="cannot_share_message_alert_title">Impossible d\'envoyer le message</string>
+    <string name="cannot_share_message_alert_text">Les paramètres de chat sélectionnés ne permettent pas l\'envoi de ce message.</string>
 </resources>

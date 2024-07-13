@@ -266,23 +266,19 @@ struct ChatListView: View {
 }
 
 struct SubsStatusIndicator: View {
-    @State private var subs: SMPServerSubs = SMPServerSubs.newSMPServerSubs
-    @State private var sess: ServerSessions = ServerSessions.newServerSessions
+    @State private var serversSummary: PresentedServersSummary?
     @State private var timer: Timer? = nil
     @State private var timerCounter = 0
     @State private var showServersSummary = false
 
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
 
-    // Constants for the intervals
-    let initialInterval: TimeInterval = 1.0
-    let regularInterval: TimeInterval = 3.0
-    let initialPhaseDuration: TimeInterval = 10.0 // Duration for initial phase in seconds
-
     var body: some View {
         Button {
             showServersSummary = true
         } label: {
+            let subs = serversSummary?.allUsersSMP.smpTotals.subs ?? SMPServerSubs.newSMPServerSubs
+            let sess = serversSummary?.allUsersSMP.smpTotals.sessions ?? ServerSessions.newServerSessions
             HStack(spacing: 4) {
                 SubscriptionStatusIndicatorView(subs: subs, sess: sess)
                 if showSubscriptionPercentage {
@@ -291,31 +287,21 @@ struct SubsStatusIndicator: View {
             }
         }
         .onAppear {
-            startInitialTimer()
+            startTimer()
         }
         .onDisappear {
             stopTimer()
         }
         .sheet(isPresented: $showServersSummary) {
-            ServersSummaryView()
+            ServersSummaryView(serversSummary: $serversSummary)
         }
     }
 
-    private func startInitialTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: initialInterval, repeats: true) { _ in
-            getServersSummary()
-            timerCounter += 1
-            // Switch to the regular timer after the initial phase
-            if timerCounter * Int(initialInterval) >= Int(initialPhaseDuration) {
-                switchToRegularTimer()
+    private func startTimer() {
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if AppChatState.shared.value == .active {
+                getServersSummary()
             }
-        }
-    }
-
-    func switchToRegularTimer() {
-        timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: regularInterval, repeats: true) { _ in
-            getServersSummary()
         }
     }
 
@@ -326,8 +312,7 @@ struct SubsStatusIndicator: View {
 
     private func getServersSummary() {
         do {
-            let summ = try getAgentServersSummary()
-            (subs, sess) = (summ.allUsersSMP.smpTotals.subs, summ.allUsersSMP.smpTotals.sessions)
+            serversSummary = try getAgentServersSummary()
         } catch let error {
             logger.error("getAgentServersSummary error: \(responseError(error))")
         }

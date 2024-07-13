@@ -286,41 +286,26 @@ private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableSt
 fun SubscriptionStatusIndicator(serversSummary: MutableState<PresentedServersSummary?>, click: (() -> Unit)) {
   var subs by remember { mutableStateOf(SMPServerSubs.newSMPServerSubs) }
   var sess by remember { mutableStateOf(ServerSessions.newServerSessions) }
-  var timer: Job? by remember { mutableStateOf(null) }
-
-  val fetchInterval: Duration = 1.seconds
-
   val scope = rememberCoroutineScope()
 
-  fun setServersSummary() {
-    withBGApi {
-      serversSummary.value = chatModel.controller.getAgentServersSummary(chatModel.remoteHostId())
+  suspend fun setServersSummary() {
+    serversSummary.value = chatModel.controller.getAgentServersSummary(chatModel.remoteHostId())
 
-      serversSummary.value?.let {
-        subs = it.allUsersSMP.smpTotals.subs
-        sess = it.allUsersSMP.smpTotals.sessions
-      }
+    serversSummary.value?.let {
+      subs = it.allUsersSMP.smpTotals.subs
+      sess = it.allUsersSMP.smpTotals.sessions
     }
   }
 
   LaunchedEffect(Unit) {
     setServersSummary()
-    timer = timer ?: scope.launch {
-      while (true) {
-        delay(fetchInterval.inWholeMilliseconds)
-        setServersSummary()
+    scope.launch {
+      while (isActive) {
+        delay(1.seconds)
+        if ((appPlatform.isDesktop || chatModel.chatId.value == null) && !ModalManager.start.hasModalsOpen() && !ModalManager.fullscreen.hasModalsOpen() && isAppVisibleAndFocused()) {
+          setServersSummary()
+        }
       }
-    }
-  }
-
-  fun stopTimer() {
-    timer?.cancel()
-    timer = null
-  }
-
-  DisposableEffect(Unit) {
-    onDispose {
-      stopTimer()
     }
   }
 

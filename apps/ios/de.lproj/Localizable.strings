@@ -337,9 +337,6 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "Danach die gewünschte Aktion auswählen:";
 
-/* No comment provided by engineer. */
-"Accent color" = "Akzentfarbe";
-
 /* accept contact request via notification
    accept incoming call via notification */
 "Accept" = "Annehmen";
@@ -369,7 +366,7 @@
 "Add profile" = "Profil hinzufügen";
 
 /* No comment provided by engineer. */
-"Add server…" = "Füge Server hinzu…";
+"Add server" = "Füge Server hinzu";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "Fügen Sie Server durch Scannen der QR Codes hinzu.";
@@ -653,7 +650,7 @@
 /* rcv group event chat item */
 "blocked %@" = "%@ wurde blockiert";
 
-/* marked deleted chat item preview text */
+/* blocked chat item */
 "blocked by admin" = "wurde vom Administrator blockiert";
 
 /* No comment provided by engineer. */
@@ -726,7 +723,7 @@
 "Capacity exceeded - recipient did not receive previously sent messages." = "Kapazität überschritten - der Empfänger hat die zuvor gesendeten Nachrichten nicht empfangen.";
 
 /* No comment provided by engineer. */
-"Cellular" = "Zellulär";
+"Cellular" = "Mobilfunknetz";
 
 /* No comment provided by engineer. */
 "Change" = "Ändern";
@@ -839,9 +836,6 @@
 
 /* No comment provided by engineer. */
 "colored" = "farbig";
-
-/* No comment provided by engineer. */
-"Colors" = "Farben";
 
 /* server test step */
 "Compare file" = "Datei vergleichen";
@@ -1023,7 +1017,7 @@
 /* No comment provided by engineer. */
 "Continue" = "Weiter";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "Kopieren";
 
 /* No comment provided by engineer. */
@@ -1166,6 +1160,9 @@
 
 /* time unit */
 "days" = "Tage";
+
+/* No comment provided by engineer. */
+"Debug delivery" = "Debugging-Zustellung";
 
 /* No comment provided by engineer. */
 "Decentralized" = "Dezentral";
@@ -1800,7 +1797,8 @@
 /* No comment provided by engineer. */
 "Error: " = "Fehler: ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "Fehler: %@";
 
 /* No comment provided by engineer. */
@@ -2496,6 +2494,9 @@
 /* No comment provided by engineer. */
 "Message draft" = "Nachrichtenentwurf";
 
+/* No comment provided by engineer. */
+"Message queue info" = "Nachrichten-Warteschlangen-Information";
+
 /* chat feature */
 "Message reactions" = "Reaktionen auf Nachrichten";
 
@@ -3060,7 +3061,7 @@
 "Protect your chat profiles with a password!" = "Ihre Chat-Profile mit einem Passwort schützen!";
 
 /* No comment provided by engineer. */
-"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Schützen Sie Ihre IP-Adresse vor den Nachrichten-Relais , die Ihre Kontakte ausgewählt haben.\nAktivieren Sie es in den *Netzwerk & Server* Einstellungen.";
+"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Schützen Sie Ihre IP-Adresse vor den Nachrichten-Relais, die Ihre Kontakte ausgewählt haben.\nAktivieren Sie es in den *Netzwerk & Server* Einstellungen.";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Protokollzeitüberschreitung";
@@ -3518,6 +3519,9 @@
 /* srv error text. */
 "Server address is incompatible with network settings." = "Die Server-Adresse ist nicht mit den Netzwerk-Einstellungen kompatibel.";
 
+/* queue info */
+"server queue info: %@\n\nlast received msg: %@" = "Server-Warteschlangen-Information: %1$@\n\nZuletzt empfangene Nachricht: %2$@";
+
 /* server test error */
 "Server requires authorization to create queues, check password" = "Um Warteschlangen zu erzeugen benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort";
 
@@ -3871,9 +3875,6 @@
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Der von Ihnen eingefügte Text ist kein SimpleX-Link.";
-
-/* No comment provided by engineer. */
-"Theme" = "Design";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Diese Einstellungen betreffen Ihr aktuelles Profil **%@**.";

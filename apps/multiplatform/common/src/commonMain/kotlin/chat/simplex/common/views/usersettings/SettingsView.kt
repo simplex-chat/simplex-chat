@@ -419,13 +419,15 @@ fun SettingsPreferenceItem(
 @Composable
 fun PreferenceToggle(
   text: String,
+  disabled: Boolean = false,
   checked: Boolean,
   onChange: (Boolean) -> Unit = {},
 ) {
-  SettingsActionItemWithContent(null, text, extraPadding = true,) {
+  SettingsActionItemWithContent(null, text, disabled = disabled, extraPadding = true,) {
     DefaultSwitch(
       checked = checked,
       onCheckedChange = onChange,
+      enabled = !disabled
     )
   }
 }
