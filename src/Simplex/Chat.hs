@@ -2260,11 +2260,14 @@ processChatCommand' vr = \case
   DebugEvent event -> toView event >> ok_
   GetAgentServersSummary userId -> withUserId userId $ \user -> do
     agentServersSummary <- lift $ withAgent' getAgentServersSummary
-    users <- withStore' getUsers
-    smpServers <- getUserProtocolServers user SPSMP
-    xftpServers <- getUserProtocolServers user SPXFTP
+    cfg <- asks config
+    (users, smpServers, xftpServers) <-
+      withStore' $ \db -> (,,) <$> getUsers db <*> getServers db cfg user SPSMP <*> getServers db cfg user SPXFTP
     let presentedServersSummary = toPresentedServersSummary agentServersSummary users user smpServers xftpServers
     pure $ CRAgentServersSummary user presentedServersSummary
+    where
+      getServers :: (ProtocolTypeI p, UserProtocol p) => DB.Connection -> ChatConfig -> User -> SProtocolType p -> IO (NonEmpty (ProtocolServer p))
+      getServers db cfg user p = L.map (\ServerCfg {server} -> protoServer server) . useServers cfg p <$> getProtocolServers db user
   ResetAgentServersStats -> withAgent resetAgentServersStats >> ok_
   GetAgentWorkers -> lift $ CRAgentWorkersSummary <$> withAgent' getAgentWorkersSummary
   GetAgentWorkersDetails -> lift $ CRAgentWorkersDetails <$> withAgent' getAgentWorkersDetails
@@ -3223,7 +3226,8 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       S.toList $ S.fromList $ concatMap (\FD.FileChunk {replicas} -> map (\FD.FileChunkReplica {server} -> server) replicas) chunks
     getUnknownSrvs :: [XFTPServer] -> CM [XFTPServer]
     getUnknownSrvs srvs = do
-      knownSrvs <- getUserProtocolServers user SPXFTP
+      cfg <- asks config
+      knownSrvs <- L.map (\ServerCfg {server} -> protoServer server) . useServers cfg SPXFTP <$> withStore' (`getProtocolServers` user)
       pure $ filter (`notElem` knownSrvs) srvs
     ipProtectedForSrvs :: [XFTPServer] -> CM Bool
     ipProtectedForSrvs srvs = do
@@ -3234,11 +3238,6 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
       forM_ aci_ $ \aci -> toView $ CRChatItemUpdated user aci
       throwChatError $ CEFileNotApproved fileId unknownSrvs
-
-getUserProtocolServers :: (ProtocolTypeI p, UserProtocol p) => User -> SProtocolType p -> CM (NonEmpty (ProtocolServer p))
-getUserProtocolServers user p = do
-  cfg <- asks config
-  L.map (\ServerCfg {server} -> protoServer server) . useServers cfg p <$> withStore' (`getProtocolServers` user)
 
 getNetworkConfig :: CM' NetworkConfig
 getNetworkConfig = withAgent' $ liftIO . getNetworkConfig'
