@@ -1908,7 +1908,7 @@
     <string name="sent_directly">Közvetlenül küldött</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">Összes elküldött</string>
     <string name="sent_via_proxy">Proxy-n keresztül küldve</string>
-    <string name="smp_server">SMP kiszolgáló</string>
+    <string name="smp_server">SMP-kiszolgáló</string>
     <string name="servers_info_starting_from">Kezdve ettől: %s.</string>
     <string name="servers_info_uploaded">Feltöltve</string>
     <string name="xftp_server">XFTP-kiszolgálók</string>
@@ -1954,9 +1954,15 @@
     <string name="servers_info_reconnect_server_message">A kiszolgálóhoz való újrakapcsolódás az üzenet kézbesítésének kikényszerítéséhez. Ez további adatforgalmat használ.</string>
     <string name="servers_info_detailed_statistics_sent_messages_header">Elküldött üzenetek</string>
     <string name="servers_info_transport_sessions_section_header">Munkamenet átvitele</string>
-    <string name="servers_info_subscriptions_total">Összes</string>
+    <string name="servers_info_subscriptions_total">Összesen</string>
     <string name="servers_info_statistics_section_header">Statisztikák</string>
     <string name="servers_info_target">Információk megjelenítése ehhez:</string>
     <string name="network_error_broker_version_desc">A kiszolgáló verziója nem kompatibilis az alkalmazással: %1$s.</string>
     <string name="servers_info_proxied_servers_section_footer">Ön nem kapcsolódik ezekhez a kiszolgálókhoz. A privát útválasztás az üzenetek kézbesítésére szolgál.</string>
+    <string name="servers_info_subscriptions_connections_subscribed">Feliratkozott kapcsolatok</string>
+    <string name="servers_info_subscriptions_section_header">Üzenet feliratkozások</string>
+    <string name="subscribed">Feliratkozva</string>
+    <string name="subscription_errors">Feliratkozási hibák</string>
+    <string name="subscription_results_ignored">Elutasított feliratkozások</string>
+    <string name="subscription_percentage">Feliratkozási százalék</string>
 </resources>
