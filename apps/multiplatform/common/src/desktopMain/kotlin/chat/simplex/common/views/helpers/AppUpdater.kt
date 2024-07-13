@@ -377,11 +377,14 @@ private suspend fun installAppUpdate(file: File) = withContext(Dispatchers.IO) {
           file.delete()
         }
       } finally {
-        Runtime.getRuntime().exec(arrayOf("hdiutil", "unmount", volume)).onExit().join()
-        if (!File("/Applications/SimpleX.app").exists()) {
-          File("/Applications/SimpleX-old.app").renameTo(File("/Applications/SimpleX.app"))
-        } else {
-          File("/Applications/SimpleX-old.app").deleteRecursively()
+        try {
+          Runtime.getRuntime().exec(arrayOf("hdiutil", "unmount", volume)).onExit().join()
+        } finally {
+          if (!File("/Applications/SimpleX.app").exists()) {
+            File("/Applications/SimpleX-old.app").renameTo(File("/Applications/SimpleX.app"))
+          } else {
+            Runtime.getRuntime().exec("rm -rf /Applications/SimpleX-old.app").onExit().join()
+          }
         }
       }
     }
