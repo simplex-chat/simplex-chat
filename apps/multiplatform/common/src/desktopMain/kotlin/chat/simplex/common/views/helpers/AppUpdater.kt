@@ -345,19 +345,27 @@ private suspend fun installAppUpdate(file: File) = withContext(Dispatchers.IO) {
       }
     }
     desktopPlatform.isMac() -> {
+      // Default mount point if no other DMGs were mounted before
+      var volume = "/Volumes/SimpleX"
       try {
         val process = Runtime.getRuntime().exec("hdiutil mount ${file.absolutePath}").onExit().join()
         val startedInstallation = process.exitValue() == 0
-        if (!startedInstallation) {
+        val lines = process.inputReader().use { it.readLines() }
+        // This is needed for situations when mount point has non-default path. 
+        // For example, when a user already had mounted SimpleX.dmg before and default mount point is not available.
+        // Mac will make volume like /Volumes/SimpleX 1
+        val lastLine = lines.lastOrNull()?.substringAfterLast('\t')
+        if (!startedInstallation || lastLine == null || !lastLine.lowercase().contains("/volumes/")) {
           Log.e(TAG, "Error starting installation: ${process.inputReader().use { it.readLines().joinToString("\n") }}${process.errorStream.use { String(it.readAllBytes()) }}")
           // Failed to start installation. show directory with the file for manual installation
           desktopOpenDir(file.parentFile)
           return@withContext
         }
-        val process2 = Runtime.getRuntime().exec("cp -R /Volumes/SimpleX/SimpleX.app /Applications").onExit().join()
+        volume = lastLine
+        val process2 = Runtime.getRuntime().exec(arrayOf("cp", "-R", "${volume}/SimpleX.app", "/Applications")).onExit().join()
         val copiedSuccessfully = process2.exitValue() == 0
         if (!copiedSuccessfully) {
-          Log.e(TAG, "Error copying the app: ${process.inputReader().use { it.readLines().joinToString("\n") }}${process.errorStream.use { String(it.readAllBytes()) }}")
+          Log.e(TAG, "Error copying the app: ${process2.inputReader().use { it.readLines().joinToString("\n") }}${process2.errorStream.use { String(it.readAllBytes()) }}")
           // Failed to start installation. show directory with the file for manual installation
           desktopOpenDir(file.parentFile)
         } else {
@@ -368,7 +376,7 @@ private suspend fun installAppUpdate(file: File) = withContext(Dispatchers.IO) {
           file.delete()
         }
       } finally {
-        Runtime.getRuntime().exec("hdiutil unmount /Volumes/SimpleX").onExit().join()
+        Runtime.getRuntime().exec(arrayOf("hdiutil", "unmount", volume)).onExit().join()
       }
     }
   }
