@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
 
 module Simplex.Chat.Bot where
 
@@ -73,7 +74,7 @@ sendComposedMessage' cc ctId quotedItemId msgContent = do
 
 deleteMessage :: ChatController -> Contact -> ChatItemId -> IO ()
 deleteMessage cc ct chatItemId = do
-  let cmd = APIDeleteChatItem (contactRef ct) chatItemId CIDMInternal
+  let cmd = APIDeleteChatItem (contactRef ct) [chatItemId] CIDMInternal
   sendChatCmd cc cmd >>= \case
     CRChatItemDeleted {} -> printLog cc CLLInfo $ "deleted message from " <> contactInfo ct
     r -> putStrLn $ "unexpected delete message response: " <> show r
