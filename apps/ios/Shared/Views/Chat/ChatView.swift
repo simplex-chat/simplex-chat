@@ -671,7 +671,12 @@ struct ChatView: View {
                 if prevItem == nil || showMemberImage(member, prevItem) || prevMember != nil {
                     VStack(alignment: .leading, spacing: 4) {
                         if ci.content.showMemberName {
-                            Text(memberNames(member, prevMember, memCount))
+                            let t = if memCount == 1 && member.memberRole > .member {
+                                Text(member.memberRole.text + " ").fontWeight(.semibold) + Text(member.displayName)
+                            } else {
+                                Text(memberNames(member, prevMember, memCount))
+                            }
+                            t
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(2)
