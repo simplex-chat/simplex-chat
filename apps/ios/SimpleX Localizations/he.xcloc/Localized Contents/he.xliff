@@ -403,9 +403,9 @@ Available in v5.1</source>
         <target state="translated">הוספת שרתים על ידי סריקת קוד QR.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add server…" xml:space="preserve" approved="no">
-        <source>Add server…</source>
-        <target state="translated">הוסף שרת…</target>
+      <trans-unit id="Add server" xml:space="preserve" approved="no">
+        <source>Add server</source>
+        <target state="translated">הוסף שרת</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve" approved="no">

@@ -337,9 +337,6 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "вище, а потім обирайте:";
 
-/* No comment provided by engineer. */
-"Accent color" = "Акцентний колір";
-
 /* accept contact request via notification
    accept incoming call via notification */
 "Accept" = "Прийняти";
@@ -369,7 +366,7 @@
 "Add profile" = "Додати профіль";
 
 /* No comment provided by engineer. */
-"Add server…" = "Додати сервер…";
+"Add server" = "Додати сервер";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "Додайте сервери, відсканувавши QR-код.";
@@ -653,7 +650,7 @@
 /* rcv group event chat item */
 "blocked %@" = "заблоковано %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item */
 "blocked by admin" = "заблоковано адміністратором";
 
 /* No comment provided by engineer. */
@@ -840,9 +837,6 @@
 /* No comment provided by engineer. */
 "colored" = "кольоровий";
 
-/* No comment provided by engineer. */
-"Colors" = "Кольори";
-
 /* server test step */
 "Compare file" = "Порівняти файл";
 
@@ -1023,7 +1017,7 @@
 /* No comment provided by engineer. */
 "Continue" = "Продовжуйте";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "Копіювати";
 
 /* No comment provided by engineer. */
@@ -1166,6 +1160,9 @@
 
 /* time unit */
 "days" = "днів";
+
+/* No comment provided by engineer. */
+"Debug delivery" = "Доставка налагодження";
 
 /* No comment provided by engineer. */
 "Decentralized" = "Децентралізований";
@@ -1800,7 +1797,8 @@
 /* No comment provided by engineer. */
 "Error: " = "Помилка: ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "Помилка: %@";
 
 /* No comment provided by engineer. */
@@ -2495,6 +2493,9 @@
 
 /* No comment provided by engineer. */
 "Message draft" = "Чернетка повідомлення";
+
+/* No comment provided by engineer. */
+"Message queue info" = "Інформація про чергу повідомлень";
 
 /* chat feature */
 "Message reactions" = "Реакції на повідомлення";
@@ -3518,6 +3519,9 @@
 /* srv error text. */
 "Server address is incompatible with network settings." = "Адреса сервера несумісна з налаштуваннями мережі.";
 
+/* queue info */
+"server queue info: %@\n\nlast received msg: %@" = "інформація про чергу на сервері: %1$@\n\nостаннє отримане повідомлення: %2$@";
+
 /* server test error */
 "Server requires authorization to create queues, check password" = "Сервер вимагає авторизації для створення черг, перевірте пароль";
 
@@ -3871,9 +3875,6 @@
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Текст, який ви вставили, не є посиланням SimpleX.";
-
-/* No comment provided by engineer. */
-"Theme" = "Тема";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Ці налаштування стосуються вашого поточного профілю **%@**.";

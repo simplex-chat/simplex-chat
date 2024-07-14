@@ -1,8 +1,10 @@
 package chat.simplex.common.views.chatlist
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.BoxScope.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.TextRange
@@ -33,6 +34,7 @@ import chat.simplex.common.views.onboarding.shouldShowWhatsNew
 import chat.simplex.common.views.usersettings.SettingsView
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
+import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
@@ -40,7 +42,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.json.Json
 import java.net.URI
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
@@ -77,8 +78,29 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val scope = rememberCoroutineScope()
   val (userPickerState, scaffoldState ) = settingsState
-  Scaffold(topBar = { Box(Modifier.padding(end = endPadding)) { ChatListTopBar(stopped) } },
-    bottomBar = { Box(Modifier.padding(end = endPadding)) { ChatListBottomToolbar(scaffoldState.drawerState, userPickerState) } },
+  Scaffold(
+    topBar = {
+      if (!oneHandUI.state.value) {
+        Box(Modifier.padding(end = endPadding)) {
+          ChatListToolbar(
+            scaffoldState.drawerState,
+            userPickerState,
+            stopped
+          )
+        }
+      }
+    },
+    bottomBar = {
+      if (oneHandUI.state.value) {
+        Box(Modifier.padding(end = endPadding)) {
+          ChatListToolbar(
+            scaffoldState.drawerState,
+            userPickerState,
+            stopped
+          )
+        }
+      }
+    },
     scaffoldState = scaffoldState,
     drawerContent = {
       tryOrShowError("Settings", error = { ErrorSettingsView() }) {
@@ -156,7 +178,12 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   }
   if (appPlatform.isAndroid) {
     tryOrShowError("UserPicker", error = {}) {
-      UserPicker(chatModel, userPickerState) {
+
+      UserPicker(
+        chatModel = chatModel,
+        userPickerState = userPickerState,
+        containerModifier = Modifier.padding(bottom = AppBarHeight),
+        contentAlignment = if (oneHandUI.state.value) Alignment.BottomStart else Alignment.TopStart) {
         scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
         userPickerState.value = AnimatedViewState.GONE
       }
@@ -202,11 +229,27 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatListTopBar(stopped: Boolean) {
+private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean) {
   val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
-
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
-  if (stopped) {
+  val updatingProgress = remember { chatModel.updatingProgress }.value
+  if (updatingProgress != null) {
+    barButtons.add {
+      val interactionSource = remember { MutableInteractionSource() }
+      val hovered = interactionSource.collectIsHoveredAsState().value
+      IconButton(onClick = {
+        chatModel.updatingRequest?.close()
+      }, Modifier.hoverable(interactionSource)) {
+        if (hovered) {
+          Icon(painterResource(MR.images.ic_close), null, tint = WarningOrange)
+        } else if (updatingProgress == -1f) {
+          CIFileViewScope.progressIndicator()
+        } else {
+          CIFileViewScope.progressCircle((updatingProgress * 100).toLong(), 100)
+        }
+      }
+    }
+  } else if (stopped) {
     barButtons.add {
       IconButton(onClick = {
         AlertManager.shared.showAlertMsg(
@@ -222,10 +265,26 @@ private fun ChatListTopBar(stopped: Boolean) {
       }
     }
   }
-
+  val scope = rememberCoroutineScope()
   val clipboard = LocalClipboardManager.current
-
   DefaultTopAppBar(
+    navigationButton = {
+      if (chatModel.users.isEmpty() && !chatModel.desktopNoUserNoRemote) {
+        NavigationButtonMenu { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } }
+      } else {
+        val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
+        val allRead = users
+          .filter { u -> !u.user.activeUser && !u.user.hidden }
+          .all { u -> u.unreadCount == 0 }
+        UserProfileButton(chatModel.currentUser.value?.profile?.image, allRead) {
+          if (users.size == 1 && chatModel.remoteHosts.isEmpty()) {
+            scope.launch { drawerState.open() }
+          } else {
+            userPickerState.value = AnimatedViewState.VISIBLE
+          }
+        }
+      }
+    },
     title = {
       Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(DEFAULT_SPACE_AFTER_ICON)) {
         Text(
@@ -261,130 +320,33 @@ private fun ChatListTopBar(stopped: Boolean) {
     onSearchValueChanged = {},
     buttons = barButtons
   )
-  Divider(Modifier.padding(top = AppBarHeight))
-}
-
-@Composable
-fun SettingsButton(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>) {
-  val scope = rememberCoroutineScope()
-  if (chatModel.users.isEmpty() && !chatModel.desktopNoUserNoRemote) {
-    NavigationButtonMenu { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } }
-  } else {
-    val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
-    val allRead = users
-      .filter { u -> !u.user.activeUser && !u.user.hidden }
-      .all { u -> u.unreadCount == 0 }
-
-    UserProfileButton(chatModel.currentUser.value?.profile?.image, allRead) {
-      if (users.size == 1 && chatModel.remoteHosts.isEmpty()) {
-        scope.launch { drawerState.open() }
-      } else {
-        userPickerState.value = AnimatedViewState.VISIBLE
-      }
-    }
-  }
-}
-
-@Composable
-fun toolbarIcon(icon: Painter) {
-  Icon(
-    icon,
-    contentDescription = null,
-    Modifier.size(24.dp * fontSizeSqrtMultiplier),
-    tint = MaterialTheme.colors.secondary
-  )
-}
-
-@Composable
-fun ChatListToolbarButton(icon: @Composable () -> Unit, title: String, onClick: () -> Unit) {
-  Surface(
-    Modifier
-      .size(56.dp * fontSizeSqrtMultiplier),
-    shape = RoundedCornerShape(10.dp),
-    color = Color.Transparent,
-  ) {
-    Column(
-      Modifier
-        .clickable { onClick () },
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.Center
-    ) {
-      icon()
-      Text(
-        title,
-        style = MaterialTheme.typography.subtitle2.copy(fontWeight = FontWeight.Normal, fontSize = 12.sp * fontSizeSqrtMultiplier),
-        color = MaterialTheme.colors.secondary
-      )
-    }
-  }
-}
-
-@Composable
-private fun ChatListBottomToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>) {
-  Box(
-    Modifier
-      .fillMaxWidth()
-      .height(BottomAppBarHeight)
-      .background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f))
-  ) {
-    Divider()
-    Row(
-      Modifier
-        .fillMaxHeight()
-        .fillMaxWidth(),
-      horizontalArrangement = Arrangement.SpaceEvenly,
-      verticalAlignment = Alignment.CenterVertically,
-    ) {
-      SettingsButton(drawerState, userPickerState)
-
-      ChatListToolbarButton(
-        icon = { toolbarIcon(painterResource(MR.images.ic_chat_bubble_filled)) },
-        title = generalGetString(MR.strings.your_chats),
-        onClick = {  }
-      )
-    }
-  }
+  Divider(Modifier.padding(top = AppBarHeight * fontSizeSqrtMultiplier))
 }
 
 @Composable
 fun SubscriptionStatusIndicator(serversSummary: MutableState<PresentedServersSummary?>, click: (() -> Unit)) {
   var subs by remember { mutableStateOf(SMPServerSubs.newSMPServerSubs) }
   var sess by remember { mutableStateOf(ServerSessions.newServerSessions) }
-  var timer: Job? by remember { mutableStateOf(null) }
-
-  val fetchInterval: Duration = 1.seconds
-
   val scope = rememberCoroutineScope()
 
-  fun setServersSummary() {
-    withBGApi {
-      serversSummary.value = chatModel.controller.getAgentServersSummary(chatModel.remoteHostId())
+  suspend fun setServersSummary() {
+    serversSummary.value = chatModel.controller.getAgentServersSummary(chatModel.remoteHostId())
 
-      serversSummary.value?.let {
-        subs = it.allUsersSMP.smpTotals.subs
-        sess = it.allUsersSMP.smpTotals.sessions
-      }
+    serversSummary.value?.let {
+      subs = it.allUsersSMP.smpTotals.subs
+      sess = it.allUsersSMP.smpTotals.sessions
     }
   }
 
   LaunchedEffect(Unit) {
     setServersSummary()
-    timer = timer ?: scope.launch {
-      while (true) {
-        delay(fetchInterval.inWholeMilliseconds)
-        setServersSummary()
+    scope.launch {
+      while (isActive) {
+        delay(1.seconds)
+        if ((appPlatform.isDesktop || chatModel.chatId.value == null) && !ModalManager.start.hasModalsOpen() && !ModalManager.fullscreen.hasModalsOpen() && isAppVisibleAndFocused()) {
+          setServersSummary()
+        }
       }
-    }
-  }
-
-  fun stopTimer() {
-    timer?.cancel()
-    timer = null
-  }
-
-  DisposableEffect(Unit) {
-    onDispose {
-      stopTimer()
     }
   }
 
@@ -395,37 +357,31 @@ fun SubscriptionStatusIndicator(serversSummary: MutableState<PresentedServersSum
 
 @Composable
 fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> Unit) {
-  ChatListToolbarButton(
-    icon = {
+  Row(verticalAlignment = Alignment.CenterVertically) {
+    IconButton(onClick = onButtonClicked) {
       Box {
         ProfileImage(
           image = image,
-          size = 24.dp * fontSizeSqrtMultiplier,
-          color = MaterialTheme.colors.secondaryVariant.mixWith(
-            MaterialTheme.colors.onBackground,
-            0.97f
-          )
+          size = 37.dp * fontSizeSqrtMultiplier,
+          color = MaterialTheme.colors.secondaryVariant.mixWith(MaterialTheme.colors.onBackground, 0.97f)
         )
         if (!allRead) {
           unreadBadge()
         }
       }
-    },
-    onClick = onButtonClicked,
-    title = generalGetString(MR.strings.toolbar_settings),
-
-    )
-
-  if (appPlatform.isDesktop) {
-    val h by remember { chatModel.currentRemoteHost }
-    if (h != null) {
-      Spacer(Modifier.width(12.dp))
-      HostDisconnectButton {
-        stopRemoteHostAndReloadHosts(h!!, true)
+    }
+    if (appPlatform.isDesktop) {
+      val h by remember { chatModel.currentRemoteHost }
+      if (h != null) {
+        Spacer(Modifier.width(12.dp))
+        HostDisconnectButton {
+          stopRemoteHostAndReloadHosts(h!!, true)
+        }
       }
     }
   }
 }
+
 
 @Composable
 private fun BoxScope.unreadBadge(text: String? = "") {
@@ -507,7 +463,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
     } else {
       val padding = if (appPlatform.isDesktop) 0.dp else 7.dp
       if (chatModel.chats.size > 0) {
-        ToggleFilterEnabledButton() 
+        ToggleFilterEnabledButton()
       }
       Spacer(Modifier.width(padding))
     }
@@ -668,18 +624,17 @@ private fun filteredChats(
   } else {
     val s = if (searchShowingSimplexLink.value) "" else searchText.trim().lowercase()
     if (s.isEmpty() && !showUnreadAndFavorites)
-      chats.filter { chat -> !chat.chatInfo.chatDeleted }
+      chats
     else {
       chats.filter { chat ->
         when (val cInfo = chat.chatInfo) {
-          is ChatInfo.Direct -> !chat.chatInfo.chatDeleted && (
-            if (s.isEmpty()) {
-              chat.id == chatModel.chatId.value || filtered(chat)
-            } else {
-              (viewNameContains(cInfo, s) ||
-                      cInfo.contact.profile.displayName.lowercase().contains(s) ||
-                      cInfo.contact.fullName.lowercase().contains(s))
-            })
+          is ChatInfo.Direct -> if (s.isEmpty()) {
+            chat.id == chatModel.chatId.value || filtered(chat)
+          } else {
+            (viewNameContains(cInfo, s) ||
+                    cInfo.contact.profile.displayName.lowercase().contains(s) ||
+                    cInfo.contact.fullName.lowercase().contains(s))
+          }
           is ChatInfo.Group -> if (s.isEmpty()) {
             chat.id == chatModel.chatId.value || filtered(chat) || cInfo.groupInfo.membership.memberStatus == GroupMemberStatus.MemInvited
           } else {
@@ -697,8 +652,8 @@ private fun filteredChats(
 
 private fun filtered(chat: Chat): Boolean =
   (chat.chatInfo.chatSettings?.favorite ?: false) ||
-      chat.chatStats.unreadChat ||
-      (chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0)
+          chat.chatStats.unreadChat ||
+          (chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0)
 
 private fun viewNameContains(cInfo: ChatInfo, s: String): Boolean =
   cInfo.chatViewName.lowercase().contains(s.lowercase())

@@ -1091,19 +1091,51 @@ func deleteRemoteCtrl(_ rcId: Int64) async throws {
     try await sendCommandOkResp(.deleteRemoteCtrl(remoteCtrlId: rcId))
 }
 
-func networkErrorAlert(_ r: ChatResponse) -> Alert? {
+struct ErrorAlert {
+    var title: LocalizedStringKey
+    var message: LocalizedStringKey
+}
+
+func getNetworkErrorAlert(_ r: ChatResponse) -> ErrorAlert? {
     switch r {
     case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TIMEOUT))):
-        return mkAlert(
-            title: "Connection timeout",
-            message: "Please check your network connection with \(serverHostname(addr)) and try again."
-        )
+        return ErrorAlert(title: "Connection timeout", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
     case let .chatCmdError(_, .errorAgent(.BROKER(addr, .NETWORK))):
-        return mkAlert(
-            title: "Connection error",
-            message: "Please check your network connection with \(serverHostname(addr)) and try again."
-        )
+        return ErrorAlert(title: "Connection error", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
+    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .HOST))):
+        return ErrorAlert(title: "Connection error", message: "Server address is incompatible with network settings: \(serverHostname(addr)).")
+    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TRANSPORT(.version)))):
+        return ErrorAlert(title: "Connection error", message: "Server version is incompatible with your app: \(serverHostname(addr)).")
+    case let .chatCmdError(_, .errorAgent(.SMP(.PROXY(proxyErr)))):
+        return proxyErrorAlert(proxyErr)
+    case let .chatCmdError(_, .errorAgent(.PROXY(_, _, .protocolError(.PROXY(proxyErr))))):
+        return proxyErrorAlert(proxyErr)
     default:
+        return nil
+    }
+}
+
+private func proxyErrorAlert(_ proxyErr: ProxyError) -> ErrorAlert? {
+    switch proxyErr {
+    case .BROKER(brokerErr: .TIMEOUT):
+        return ErrorAlert(title: "Private routing error", message: "Please try later.")
+    case .BROKER(brokerErr: .NETWORK):
+        return ErrorAlert(title: "Private routing error", message: "Please try later.")
+    case .NO_SESSION:
+        return ErrorAlert(title: "Private routing error", message: "Please try later.")
+    case .BROKER(brokerErr: .HOST):
+        return ErrorAlert(title: "Private routing error", message: "Server address is incompatible with network settings.")
+    case .BROKER(brokerErr: .TRANSPORT(.version)):
+        return ErrorAlert(title: "Private routing error", message: "Server version is incompatible with network settings.")
+    default:
+        return nil
+    }
+}
+
+func networkErrorAlert(_ r: ChatResponse) -> Alert? {
+    if let alert = getNetworkErrorAlert(r) {
+        return mkAlert(title: alert.title, message: alert.message)
+    } else {
         return nil
     }
 }
@@ -1207,7 +1239,7 @@ func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
     do {
         logger.debug("apiMarkChatItemRead: \(cItem.id)")
         try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, itemRange: (cItem.id, cItem.id))
-        await MainActor.run { ChatModel.shared.markChatItemRead(cInfo, cItem) }
+        await ChatModel.shared.markChatItemRead(cInfo, cItem)
     } catch {
         logger.error("apiMarkChatItemRead apiChatRead error: \(responseError(error))")
     }

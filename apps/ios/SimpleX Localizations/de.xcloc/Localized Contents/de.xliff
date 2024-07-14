@@ -615,9 +615,9 @@
         <target>Fügen Sie Server durch Scannen der QR Codes hinzu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add server…" xml:space="preserve">
-        <source>Add server…</source>
-        <target>Füge Server hinzu…</target>
+      <trans-unit id="Add server" xml:space="preserve">
+        <source>Add server</source>
+        <target>Füge Server hinzu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
@@ -1152,7 +1152,7 @@
       </trans-unit>
       <trans-unit id="Cellular" xml:space="preserve">
         <source>Cellular</source>
-        <target>Zellulär</target>
+        <target>Mobilfunknetz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change" xml:space="preserve">
@@ -1837,6 +1837,7 @@ Das ist Ihr eigener Einmal-Link!</target>
       </trans-unit>
       <trans-unit id="Debug delivery" xml:space="preserve">
         <source>Debug delivery</source>
+        <target>Debugging-Zustellung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Decentralized" xml:space="preserve">
@@ -3922,6 +3923,7 @@ Das ist Ihr Link für die Gruppe %@!</target>
       </trans-unit>
       <trans-unit id="Message queue info" xml:space="preserve">
         <source>Message queue info</source>
+        <target>Nachrichten-Warteschlangen-Information</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reactions" xml:space="preserve">
@@ -4817,7 +4819,7 @@ Fehler: %@</target>
       <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve">
         <source>Protect your IP address from the messaging relays chosen by your contacts.
 Enable in *Network &amp; servers* settings.</source>
-        <target>Schützen Sie Ihre IP-Adresse vor den Nachrichten-Relais , die Ihre Kontakte ausgewählt haben.
+        <target>Schützen Sie Ihre IP-Adresse vor den Nachrichten-Relais, die Ihre Kontakte ausgewählt haben.
 Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -8103,6 +8105,9 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <source>server queue info: %1$@
 
 last received msg: %2$@</source>
+        <target>Server-Warteschlangen-Information: %1$@
+
+Zuletzt empfangene Nachricht: %2$@</target>
         <note>queue info</note>
       </trans-unit>
       <trans-unit id="set new contact address" xml:space="preserve">

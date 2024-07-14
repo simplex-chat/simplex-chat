@@ -337,9 +337,6 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "hier boven, kies dan:";
 
-/* No comment provided by engineer. */
-"Accent color" = "Accent kleur";
-
 /* accept contact request via notification
    accept incoming call via notification */
 "Accept" = "Accepteer";
@@ -369,7 +366,7 @@
 "Add profile" = "Profiel toevoegen";
 
 /* No comment provided by engineer. */
-"Add server…" = "Server toevoegen…";
+"Add server" = "Server toevoegen";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "Servers toevoegen door QR-codes te scannen.";
@@ -653,7 +650,7 @@
 /* rcv group event chat item */
 "blocked %@" = "geblokkeerd %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item */
 "blocked by admin" = "geblokkeerd door beheerder";
 
 /* No comment provided by engineer. */
@@ -840,9 +837,6 @@
 /* No comment provided by engineer. */
 "colored" = "gekleurd";
 
-/* No comment provided by engineer. */
-"Colors" = "Kleuren";
-
 /* server test step */
 "Compare file" = "Bestand vergelijken";
 
@@ -1023,7 +1017,7 @@
 /* No comment provided by engineer. */
 "Continue" = "Doorgaan";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "Kopiëren";
 
 /* No comment provided by engineer. */
@@ -1166,6 +1160,9 @@
 
 /* time unit */
 "days" = "dagen";
+
+/* No comment provided by engineer. */
+"Debug delivery" = "Foutopsporing bezorging";
 
 /* No comment provided by engineer. */
 "Decentralized" = "Gedecentraliseerd";
@@ -1800,7 +1797,8 @@
 /* No comment provided by engineer. */
 "Error: " = "Fout: ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "Fout: %@";
 
 /* No comment provided by engineer. */
@@ -2495,6 +2493,9 @@
 
 /* No comment provided by engineer. */
 "Message draft" = "Concept bericht";
+
+/* No comment provided by engineer. */
+"Message queue info" = "Informatie over berichtenwachtrij";
 
 /* chat feature */
 "Message reactions" = "Reacties op berichten";
@@ -3518,6 +3519,9 @@
 /* srv error text. */
 "Server address is incompatible with network settings." = "Serveradres is niet compatibel met netwerkinstellingen.";
 
+/* queue info */
+"server queue info: %@\n\nlast received msg: %@" = "informatie over serverwachtrij: %1$@\n\nlaatst ontvangen bericht: %2$@";
+
 /* server test error */
 "Server requires authorization to create queues, check password" = "Server vereist autorisatie om wachtrijen te maken, controleer wachtwoord";
 
@@ -3871,9 +3875,6 @@
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "De tekst die u hebt geplakt is geen SimpleX link.";
-
-/* No comment provided by engineer. */
-"Theme" = "Thema";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Deze instellingen zijn voor uw huidige profiel **%@**.";

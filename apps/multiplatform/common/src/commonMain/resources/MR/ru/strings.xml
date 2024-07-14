@@ -354,7 +354,7 @@
     <string name="smp_servers">SMP серверы</string>
     <string name="smp_servers_preset_address">Адрес сервера по умолчанию</string>
     <string name="smp_servers_preset_add">Добавить серверы по умолчанию</string>
-    <string name="smp_servers_add">Добавить сервер…</string>
+    <string name="smp_servers_add">Добавить сервер</string>
     <string name="smp_servers_test_server">Тестировать сервер</string>
     <string name="smp_servers_test_servers">Тестировать серверы</string>
     <string name="smp_servers_save">Сохранить серверы</string>
