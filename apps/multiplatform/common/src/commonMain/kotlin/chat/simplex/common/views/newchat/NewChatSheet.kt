@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -19,12 +20,15 @@ import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.model.RemoteHostInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.contacts.ContactTypeTabs
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,9 +37,85 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
+fun ModalData.NewChatView(rh: RemoteHostInfo?) {
+  Column(
+    Modifier.fillMaxSize(),
+  ) {
+    Box(contentAlignment = Alignment.Center) {
+      val bottomPadding = DEFAULT_PADDING
+      AppBarTitle(
+        stringResource(MR.strings.new_chat),
+        hostDevice(rh?.remoteHostId),
+        bottomPadding = bottomPadding
+      )
+    }
+    val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(
+      TextFieldValue("")
+    ) }
+
+    ContactTypeTabs(
+      searchText = searchText,
+      contactActions = {
+        NewChatOptions(
+          addContact = {
+            ModalManager.center.closeModals()
+            ModalManager.center.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close) }
+          },
+          scanPaste = {
+            ModalManager.center.closeModals()
+            ModalManager.center.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = true, close = close) }
+          },
+          createGroup = {
+            ModalManager.center.closeModals()
+            ModalManager.center.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close) }
+          }
+        )
+      }
+    )
+  }
+}
+
+@Composable
+fun NewChatOptions(addContact: () -> Unit, scanPaste: () -> Unit, createGroup: () -> Unit) {
+  val actions = remember { listOf(addContact, scanPaste, createGroup) }
+  val backgroundColor = if (isInDarkTheme())
+    blendARGB(MaterialTheme.colors.primary, Color.Black, 0.7F)
+  else
+    MaterialTheme.colors.background
+
+  LazyColumn {
+    items(actions.size) { index ->
+      Row {
+        Box(contentAlignment = Alignment.Center) {
+          Button(
+            actions[index],
+            shape = RoundedCornerShape(21.dp * fontSizeSqrtMultiplier),
+            colors = ButtonDefaults.textButtonColors(backgroundColor = backgroundColor),
+            elevation = null,
+            contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF),
+            modifier = Modifier.height(42.dp * fontSizeSqrtMultiplier)
+          ) {
+            Icon(
+              painterResource(icons[index]),
+              stringResource(titles[index]),
+              Modifier.size(42.dp * fontSizeSqrtMultiplier),
+              tint = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.primary
+            )
+            Text(
+              stringResource(titles[index]),
+              color = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.primary,
+              fontWeight = FontWeight.Medium,
+            )
+          }
+        }
+      }
+    }
+  }
+}
+
+@Composable
 fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedViewState>, stopped: Boolean, closeNewChatSheet: (animated: Boolean) -> Unit) {
   // TODO close new chat if remote host changes in model
-  if (newChatSheetState.collectAsState().value.isVisible()) BackHandler { closeNewChatSheet(true) }
   NewChatSheetLayout(
     newChatSheetState,
     stopped,
@@ -50,7 +130,6 @@ fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedView
       ModalManager.center.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = true, close = close) }
     },
     createGroup = {
-      closeNewChatSheet(false)
       ModalManager.center.closeModals()
       ModalManager.center.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close) }
     },
