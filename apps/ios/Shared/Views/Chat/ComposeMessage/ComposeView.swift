@@ -377,7 +377,7 @@ struct ComposeView: View {
                 }
             }
         }
-        .background(Color(uiColor: .tertiarySystemGroupedBackground).opacity(0.7))
+        .background(Color(uiColor: .tertiarySystemGroupedBackground))
         .onChange(of: composeState.message) { msg in
             if composeState.linkPreviewAllowed {
                 if msg.count > 0 {

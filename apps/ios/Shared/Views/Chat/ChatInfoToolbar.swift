@@ -28,7 +28,7 @@ struct ChatInfoToolbar: View {
                 color: Color(uiColor: .tertiaryLabel)
             )
             .padding(.trailing, 4)
-            VStack {
+            VStack(spacing: 0) {
                 let t = Text(cInfo.displayName).font(.headline)
                 (cInfo.contact?.verified == true ? contactVerifiedShield + t : t)
                     .lineLimit(1)
