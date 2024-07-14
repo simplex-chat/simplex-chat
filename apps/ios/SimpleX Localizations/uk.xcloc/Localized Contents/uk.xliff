@@ -615,9 +615,9 @@
         <target>Додайте сервери, відсканувавши QR-код.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add server…" xml:space="preserve">
-        <source>Add server…</source>
-        <target>Додати сервер…</target>
+      <trans-unit id="Add server" xml:space="preserve">
+        <source>Add server</source>
+        <target>Додати сервер</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
@@ -1837,6 +1837,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Debug delivery" xml:space="preserve">
         <source>Debug delivery</source>
+        <target>Доставка налагодження</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Decentralized" xml:space="preserve">
@@ -3922,6 +3923,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Message queue info" xml:space="preserve">
         <source>Message queue info</source>
+        <target>Інформація про чергу повідомлень</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reactions" xml:space="preserve">
@@ -8103,6 +8105,9 @@ SimpleX servers cannot see your profile.</source>
         <source>server queue info: %1$@
 
 last received msg: %2$@</source>
+        <target>інформація про чергу на сервері: %1$@
+
+останнє отримане повідомлення: %2$@</target>
         <note>queue info</note>
       </trans-unit>
       <trans-unit id="set new contact address" xml:space="preserve">

@@ -100,7 +100,6 @@
 		5CB924D727A8563F00ACCCDD /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924D627A8563F00ACCCDD /* SettingsView.swift */; };
 		5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB924E027A867BA00ACCCDD /* UserProfile.swift */; };
 		5CB9250D27A9432000ACCCDD /* ChatListNavLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CB9250C27A9432000ACCCDD /* ChatListNavLink.swift */; };
-		5CBD285A295711D700EC2CF4 /* ImageUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBD2859295711D700EC2CF4 /* ImageUtils.swift */; };
 		5CBD285C29575B8E00EC2CF4 /* WhatsNewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBD285B29575B8E00EC2CF4 /* WhatsNewView.swift */; };
 		5CBE6C12294487F7002D9531 /* VerifyCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBE6C11294487F7002D9531 /* VerifyCodeView.swift */; };
 		5CBE6C142944CC12002D9531 /* ScanCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBE6C132944CC12002D9531 /* ScanCodeView.swift */; };
@@ -195,6 +194,8 @@
 		8C9BC2652C240D5200875A27 /* ThemeModeEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C9BC2642C240D5100875A27 /* ThemeModeEditor.swift */; };
 		8CC4ED902BD7B8530078AEE8 /* CallAudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */; };
 		8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC956ED2BC0041000412A11 /* NetworkObserver.swift */; };
+		CE38A29A2C3FCA54005ED185 /* ImageUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBD2859295711D700EC2CF4 /* ImageUtils.swift */; };
+		CE38A29C2C3FCD72005ED185 /* SwiftyGif in Frameworks */ = {isa = PBXBuildFile; productRef = CE38A29B2C3FCD72005ED185 /* SwiftyGif */; };
 		CE984D4B2C36C5D500E3AEFF /* ChatItemClipShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE984D4A2C36C5D500E3AEFF /* ChatItemClipShape.swift */; };
 		CEEA861D2C2ABCB50084E1EA /* ReverseList.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEA861C2C2ABCB50084E1EA /* ReverseList.swift */; };
 		D7197A1829AE89660055C05A /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D7197A1729AE89660055C05A /* WebRTC */; };
@@ -560,6 +561,7 @@
 				E50581022C3DDD7F009C3F71 /* libHSsimplex-chat-6.0.0.0-IhofDzGnTMcDdW5i3Fb7xN-ghc9.6.3.a in Frameworks */,
 				E50581062C3DDD9D009C3F71 /* Yams in Frameworks */,
 				E50581042C3DDD7F009C3F71 /* libHSsimplex-chat-6.0.0.0-IhofDzGnTMcDdW5i3Fb7xN.a in Frameworks */,
+				CE38A29C2C3FCD72005ED185 /* SwiftyGif in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -658,7 +660,6 @@
 				5CF937212B25034A00E1D781 /* NSESubscriber.swift */,
 				5CB346E82869E8BA001FD2EF /* PushEnvironment.swift */,
 				5C93293E2928E0FD0090FFF9 /* AudioRecPlay.swift */,
-				5CBD2859295711D700EC2CF4 /* ImageUtils.swift */,
 				8CC956ED2BC0041000412A11 /* NetworkObserver.swift */,
 			);
 			path = Model;
@@ -858,6 +859,7 @@
 				5C9FD96A27A56D4D0075386C /* JSON.swift */,
 				5CDCAD7D2818941F00503DA2 /* API.swift */,
 				5CDCAD80281A7E2700503DA2 /* Notifications.swift */,
+				5CBD2859295711D700EC2CF4 /* ImageUtils.swift */,
 				64DAE1502809D9F5000DA960 /* FileUtils.swift */,
 				5C9D81182AA7A4F1001D49FD /* CryptoFile.swift */,
 				5C00168028C4FE760094D739 /* KeyChain.swift */,
@@ -1068,6 +1070,7 @@
 			name = SimpleXChat;
 			packageProductDependencies = (
 				E50581052C3DDD9D009C3F71 /* Yams */,
+				CE38A29B2C3FCD72005ED185 /* SwiftyGif */,
 			);
 			productName = SimpleXChat;
 			productReference = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */;
@@ -1205,7 +1208,6 @@
 				6432857C2925443C00FBE5C8 /* GroupPreferencesView.swift in Sources */,
 				5C93293129239BED0090FFF9 /* ProtocolServerView.swift in Sources */,
 				5C9CC7AD28C55D7800BEF955 /* DatabaseEncryptionView.swift in Sources */,
-				5CBD285A295711D700EC2CF4 /* ImageUtils.swift in Sources */,
 				8C74C3EC2C1B92A900039E77 /* Theme.swift in Sources */,
 				6419EC562AB8BC8B004A607A /* ContextInvitingContactMemberView.swift in Sources */,
 				5CE4407927ADB701007B033A /* EmojiItemView.swift in Sources */,
@@ -1376,6 +1378,7 @@
 				5CE2BA90284533A300EC33A6 /* JSON.swift in Sources */,
 				5CE2BA8B284533A300EC33A6 /* ChatTypes.swift in Sources */,
 				5CE2BA8F284533A300EC33A6 /* APITypes.swift in Sources */,
+				CE38A29A2C3FCA54005ED185 /* ImageUtils.swift in Sources */,
 				5C9D811A2AA8727A001D49FD /* CryptoFile.swift in Sources */,
 				5CE2BA8C284533A300EC33A6 /* AppGroup.swift in Sources */,
 				8C74C3E52C1B900600039E77 /* ThemeTypes.swift in Sources */,
@@ -2022,6 +2025,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8C73C1162C21E17B00892670 /* XCRemoteSwiftPackageReference "Yams" */;
 			productName = Yams;
+		};
+		CE38A29B2C3FCD72005ED185 /* SwiftyGif */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D77B92DA2952372200A5A1CC /* XCRemoteSwiftPackageReference "SwiftyGif" */;
+			productName = SwiftyGif;
 		};
 		D7197A1729AE89660055C05A /* WebRTC */ = {
 			isa = XCSwiftPackageProductDependency;

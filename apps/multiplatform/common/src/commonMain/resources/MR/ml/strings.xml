@@ -109,7 +109,7 @@
     <string name="back">തിരികെ</string>
     <string name="mute_chat">നിശബ്ദമാക്കുക</string>
     <string name="icon_descr_help">സഹായം</string>
-    <string name="smp_servers_add">സെർവർ ചേർക്കുക…</string>
+    <string name="smp_servers_add">സെർവർ ചേർക്കുക</string>
     <string name="smp_servers_add_to_another_device">മറ്റൊരു ഉപകരണത്തിലേക്ക് ചേർക്കുക</string>
     <string name="auto_accept_contact">സ്വയമേവ സ്വീകരിക്കുക</string>
     <string name="callstate_waiting_for_confirmation">സ്ഥിരീകരണത്തിനായി കാത്തിരിക്കുന്നു…</string>

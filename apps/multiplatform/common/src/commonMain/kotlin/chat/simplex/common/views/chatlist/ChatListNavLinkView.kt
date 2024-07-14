@@ -253,7 +253,9 @@ suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
     }
   }
   chatModel.groupMembers.clear()
+  chatModel.groupMembersIndexes.clear()
   chatModel.groupMembers.addAll(newMembers)
+  chatModel.populateGroupMembersIndexes()
 }
 
 @Composable

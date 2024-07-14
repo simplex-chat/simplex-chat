@@ -159,6 +159,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               AudioPlayer.stop()
               chatModel.chatId.value = null
               chatModel.groupMembers.clear()
+              chatModel.groupMembersIndexes.clear()
             },
             info = {
               if (ModalManager.end.hasModalsOpen()) {

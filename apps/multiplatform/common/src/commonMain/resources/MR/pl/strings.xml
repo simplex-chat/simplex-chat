@@ -290,7 +290,7 @@
     <string name="you_will_be_connected_when_group_host_device_is_online">Zostaniesz połączony do grupy, gdy urządzenie gospodarza grupy będzie online, proszę czekać lub sprawdzić później!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Zostaniesz połączony, gdy urządzenie Twojego kontaktu będzie online, proszę czekać lub sprawdzić później!</string>
     <string name="smp_servers_preset_add">Dodaj gotowe serwery</string>
-    <string name="smp_servers_add">Dodaj serwer…</string>
+    <string name="smp_servers_add">Dodaj serwer</string>
     <string name="smp_servers_add_to_another_device">Dodaj do innego urządzenia</string>
     <string name="chat_console">Konsola czatu</string>
     <string name="smp_servers_check_address">Sprawdź adres serwera i spróbuj ponownie.</string>
@@ -1858,4 +1858,19 @@
     <string name="theme_destination_app_theme">Motyw aplikacji</string>
     <string name="chat_theme_reset_to_app_theme">Zresetuj do motywu aplikacji</string>
     <string name="chat_theme_reset_to_user_theme">Zresetuj do motywu użytkownika</string>
+    <string name="file_error_no_file">Nie odnaleziono pliku - najprawdopodobniej plik został usunięty lub anulowany.</string>
+    <string name="info_row_file_status">Status pliku</string>
+    <string name="info_row_message_status">Status wiadomości</string>
+    <string name="share_text_file_status">Status pliku: %s</string>
+    <string name="share_text_message_status">Status wiadomości: %s</string>
+    <string name="copy_error">Kopiuj błąd</string>
+    <string name="remote_ctrl_connection_stopped_identity_desc">Ten link dostał użyty z innym urządzeniem mobilnym, proszę stworzyć nowy link na komputerze.</string>
+    <string name="file_error">Błąd pliku</string>
+    <string name="file_error_relay">Błąd serwera plików: %1$s</string>
+    <string name="remote_ctrl_connection_stopped_desc">Sprawdź, czy telefon i komputer są podłączone do tej samej sieci lokalnej i czy zapora sieciowa komputera umożliwia połączenie.
+\nProszę podzielić się innymi problemami z deweloperami.</string>
+    <string name="temporary_file_error">Tymczasowy błąd pliku</string>
+    <string name="file_error_auth">Zły klucz lub nieznany adres fragmentu pliku - najprawdopodobniej plik został usunięty.</string>
+    <string name="cannot_share_message_alert_title">Nie można wysłać wiadomości</string>
+    <string name="cannot_share_message_alert_text">Wybrane preferencje czatu zabraniają tej wiadomości.</string>
 </resources>

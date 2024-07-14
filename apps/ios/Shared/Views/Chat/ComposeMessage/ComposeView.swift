@@ -849,6 +849,7 @@ struct ComposeView: View {
         func sendVideo(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
             let (image, data) = imageData
             if case let .video(_, url, duration) = data, let savedFile = moveTempFileFromURL(url) {
+                ChatModel.shared.filesToDelete.remove(url)
                 return await send(.video(text: text, image: image, duration: duration), quoted: quoted, file: savedFile, live: live, ttl: ttl)
             }
             return nil
