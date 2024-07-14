@@ -46,6 +46,7 @@ struct ChatView: View {
     var body: some View {
         if #available(iOS 16.0, *) {
             viewBody
+            .toolbarBackground(.visible, for: .navigationBar)
             .scrollDismissesKeyboard(.immediately)
             .keyboardPadding()
         } else {
@@ -697,19 +698,19 @@ struct ChatView: View {
                             chatItemWithMenu(ci, range, maxWidth)
                         }
                     }
-                    .padding(.top, 5)
+                    .padding(.bottom, 5)
                     .padding(.trailing)
                     .padding(.leading, 12)
                 } else {
                     chatItemWithMenu(ci, range, maxWidth)
-                        .padding(.top, 5)
+                        .padding(.bottom, 5)
                         .padding(.trailing)
                         .padding(.leading, memberImageSize + 8 + 12)
                 }
             } else {
                 chatItemWithMenu(ci, range, maxWidth)
                     .padding(.horizontal)
-                    .padding(.top, 5)
+                    .padding(.bottom, 5)
             }
         }
 

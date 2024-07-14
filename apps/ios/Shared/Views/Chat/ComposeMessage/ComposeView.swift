@@ -284,6 +284,7 @@ struct ComposeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            Divider()
             if chat.chatInfo.contact?.nextSendGrpInv ?? false {
                 ContextInvitingContactMemberView()
             }
@@ -359,7 +360,6 @@ struct ComposeView: View {
                             : theme.colors.primary
                     )
                     .padding(.trailing, 12)
-                    .background(theme.colors.background)
                     .disabled(!chat.userCanSend)
 
                     if chat.userIsObserver {
@@ -377,6 +377,7 @@ struct ComposeView: View {
                 }
             }
         }
+        .background(Color(uiColor: .tertiarySystemGroupedBackground).opacity(0.7))
         .onChange(of: composeState.message) { msg in
             if composeState.linkPreviewAllowed {
                 if msg.count > 0 {
