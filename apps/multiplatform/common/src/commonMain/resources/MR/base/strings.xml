@@ -2215,4 +2215,10 @@
   <string name="download_errors">Download errors</string>
   <string name="server_address">Server address</string>
   <string name="open_server_settings_button">Open server settings</string>
+
+  <!-- ContactsView.kt -->
+  <string name="contact_type_new">New</string>
+  <string name="contact_type_removed">Removed</string>
+  <string name="contact_type_recent">Recent</string>
+  <string name="no_filtered_contacts">No filtered contacts</string>
 </resources>

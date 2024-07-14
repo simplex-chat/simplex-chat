@@ -126,7 +126,10 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
         FloatingActionButton(
           onClick = {
             if (!stopped) {
-              if (newChatSheetState.value.isVisible()) hideNewChatSheet(true) else showNewChatSheet()
+              ModalManager.start.closeModals()
+              ModalManager.start.showModalCloseable{
+                NewChatView(rh = chatModel.currentRemoteHost.value)
+              }
             }
           },
           Modifier
