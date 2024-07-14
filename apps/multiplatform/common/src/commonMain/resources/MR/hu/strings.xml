@@ -1965,4 +1965,22 @@
     <string name="subscription_errors">Feliratkozási hibák</string>
     <string name="subscription_results_ignored">Elutasított feliratkozások</string>
     <string name="subscription_percentage">Feliratkozási százalék</string>
+    <string name="app_check_for_updates_download_completed_title">Az alkalmazás frissítése letöltésre került</string>
+    <string name="app_check_for_updates">Frissítések keresése</string>
+    <string name="app_check_for_updates_notice_title">Frissítések keresése</string>
+    <string name="app_check_for_updates_download_started">Alkalmazásfrissítés letöltése, nem zárja be az alkalmazást</string>
+    <string name="app_check_for_updates_button_download">Letöltés %s (%s)</string>
+    <string name="app_check_for_updates_installed_successfully_title">Sikeresen telepítve</string>
+    <string name="app_check_for_updates_button_install">Frissítés telepítése</string>
+    <string name="app_check_for_updates_button_open">Fájl helyének megnyitása</string>
+    <string name="app_check_for_updates_installed_successfully_desc">Indítsa újra az alkalmazást.</string>
+    <string name="app_check_for_updates_button_remind_later">Emlékeztetés később</string>
+    <string name="app_check_for_updates_button_skip">Hagyja ki ezt a verziót</string>
+    <string name="app_check_for_updates_notice_desc">Ha értesítést szeretne kapni az új kiadásokról, kapcsolja be a stabil vagy béta verziók időszakos ellenőrzését.</string>
+    <string name="app_check_for_updates_update_available">Frissítés elérhető: %s</string>
+    <string name="app_check_for_updates_canceled">A frissítés letöltése megszakítva</string>
+    <string name="app_check_for_updates_beta">Béta</string>
+    <string name="app_check_for_updates_notice_disable">Letiltás</string>
+    <string name="app_check_for_updates_disabled">Letiltva</string>
+    <string name="app_check_for_updates_stable">Stabil</string>
 </resources>
