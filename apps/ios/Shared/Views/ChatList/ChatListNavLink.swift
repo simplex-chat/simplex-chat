@@ -564,18 +564,11 @@ func joinGroup(_ groupId: Int64, _ onComplete: @escaping () async -> Void) {
     }
 }
 
-struct ErrorAlert {
-    var title: LocalizedStringKey
-    var message: LocalizedStringKey
-}
-
 func getErrorAlert(_ error: Error, _ title: LocalizedStringKey) -> ErrorAlert {
-    switch error as? ChatResponse {
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TIMEOUT))):
-        return ErrorAlert(title: "Connection timeout", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .NETWORK))):
-        return ErrorAlert(title: "Connection error", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
-    default:
+    if let r = error as? ChatResponse,
+       let alert = getNetworkErrorAlert(r) {
+        return alert
+    } else {
         return ErrorAlert(title: title, message: "Error: \(responseError(error))")
     }
 }

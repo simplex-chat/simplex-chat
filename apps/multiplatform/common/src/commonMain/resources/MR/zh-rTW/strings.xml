@@ -15,7 +15,7 @@
     <string name="group_member_role_admin">管理員</string>
     <string name="above_then_preposition_continuation">然後，選按：</string>
     <string name="smp_servers_preset_add">新增預設伺服器</string>
-    <string name="smp_servers_add">新增伺服器…</string>
+    <string name="smp_servers_add">新增伺服器</string>
     <string name="accept">接受</string>
     <string name="auth_unavailable">認證無效</string>
     <string name="allow_verb">允許</string>

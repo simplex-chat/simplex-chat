@@ -39,11 +39,13 @@ import kotlin.math.roundToInt
 fun UserPicker(
   chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,
+  containerModifier: Modifier = Modifier,
+  contentAlignment: Alignment = Alignment.TopStart,
   showSettings: Boolean = true,
   showCancel: Boolean = false,
   cancelClicked: () -> Unit = {},
   useFromDesktopClicked: () -> Unit = {},
-  settingsClicked: () -> Unit = {},
+  settingsClicked: () -> Unit = {}
 ) {
   val scope = rememberCoroutineScope()
   var newChat by remember { mutableStateOf(userPickerState.value) }
@@ -149,18 +151,17 @@ fun UserPicker(
     .graphicsLayer {
       alpha = animatedFloat.value
       translationY = (animatedFloat.value - 1) * xOffset
-    }
+    },
+    contentAlignment = contentAlignment
   ) {
     Column(
-      Modifier
-        .align(Alignment.BottomStart)
-        .padding(bottom = BottomAppBarHeight)
+      containerModifier
         .widthIn(min = 260.dp)
         .width(IntrinsicSize.Min)
         .height(IntrinsicSize.Min)
         .shadow(8.dp, RoundedCornerShape(corner = CornerSize(25.dp)), clip = true)
         .background(MaterialTheme.colors.surface, RoundedCornerShape(corner = CornerSize(25.dp)))
-        .clip(RoundedCornerShape(corner = CornerSize(25.dp)))
+        .clip(RoundedCornerShape(corner = CornerSize(25.dp))),
     ) {
       val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {

@@ -4,7 +4,7 @@
     <string name="contact_wants_to_connect_via_call">%1$s иска да се свърже с вас чрез</string>
     <string name="send_disappearing_message_1_minute">1 минута</string>
     <string name="v4_3_improved_server_configuration_desc">Добави сървъри чрез сканиране на QR кодове.</string>
-    <string name="smp_servers_add">Добави сървър…</string>
+    <string name="smp_servers_add">Добави сървър</string>
     <string name="group_member_role_admin">админ</string>
     <string name="button_add_welcome_message">Добави съобщение при посрещане</string>
     <string name="v5_1_self_destruct_passcode_descr">Всички данни се изтриват при въвеждане.</string>
