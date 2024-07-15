@@ -53,7 +53,7 @@ struct ShareView: View {
 
     private var compose: some View {
         VStack(spacing: .zero) {
-            Divider()
+            Divider().overlay(Color.secondary.opacity(0.7))
             HStack {
                 TextField("Comment", text: $model.comment, axis: .vertical)
                     .contentShape(Rectangle())
@@ -66,11 +66,11 @@ struct ShareView: View {
                         .padding(6)
                 }
             }
-            .background(Color(.systemBackground))
+            .background(Color(.systemBackground.withAlphaComponent(0.5)))
             .clipShape(RoundedRectangle(cornerRadius: 20))
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
-                    .strokeBorder(.tertiary, lineWidth: 1).opacity(0.6)
+                    .strokeBorder(.secondary, lineWidth: 0.5).opacity(0.7)
             )
             .padding(8)
             .background(Material.bar)
