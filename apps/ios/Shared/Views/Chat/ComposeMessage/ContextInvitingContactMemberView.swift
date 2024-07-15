@@ -20,7 +20,7 @@ struct ContextInvitingContactMemberView: View {
         .padding(12)
         .frame(minHeight: 54)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.appColors.sentMessage)
+        .background(.thinMaterial)
     }
 }
 

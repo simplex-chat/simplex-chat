@@ -672,7 +672,7 @@ struct ComposeView: View {
         .padding(12)
         .frame(minHeight: 54)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(uiColor: .tertiarySystemGroupedBackground))
+        .background(.thinMaterial)
     }
 
     @ViewBuilder private func contextItemView() -> some View {
