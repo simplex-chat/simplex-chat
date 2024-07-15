@@ -273,8 +273,8 @@ fun ChatPreviewView(
   }
 
   Row {
-    Box(contentAlignment = Alignment.BottomEnd) {
-      ChatInfoImage(cInfo, size = 72.dp * fontSizeSqrtMultiplier, shadow = true)
+    Box(Modifier.offset(x = (((fontSizeMultiplier - fontSizeSqrtMultiplier) * 8)).sp.toDp(), y = (((fontSizeMultiplier - fontSizeSqrtMultiplier) * 15)).sp.toDp()), contentAlignment = Alignment.BottomEnd) {
+      ChatInfoImage(cInfo, size = 72.dp * fontSizeSqrtMultiplier)
       Box(Modifier.padding(end = 6.sp.toDp(), bottom = 6.sp.toDp())) {
         chatPreviewImageOverlayIcon()
       }
@@ -300,11 +300,11 @@ fun ChatPreviewView(
       val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
       if (n > 0 || chat.chatStats.unreadChat) {
         Box(
-          Modifier.padding(top = 24.5.sp.toDp())) {
+          Modifier.padding(top = 23.sp.toDp())) {
           Text(
             if (n > 0) unreadCountStr(n) else "",
             color = Color.White,
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             modifier = Modifier
               .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
               .badgeLayout()
@@ -314,7 +314,7 @@ fun ChatPreviewView(
         }
       } else if (showNtfsIcon) {
         Box(
-          Modifier.padding(top = 24.sp.toDp())) {
+          Modifier.padding(top = 22.sp.toDp())) {
           Icon(
             painterResource(MR.images.ic_notifications_off_filled),
             contentDescription = generalGetString(MR.strings.notifications),
@@ -326,7 +326,7 @@ fun ChatPreviewView(
         }
       } else if (chat.chatInfo.chatSettings?.favorite == true) {
         Box(
-          Modifier.padding(top = 22.sp.toDp())) {
+          Modifier.padding(top = 20.5.sp.toDp())) {
           Icon(
             painterResource(MR.images.ic_star_filled),
             contentDescription = generalGetString(MR.strings.favorite_chat),
@@ -384,7 +384,7 @@ fun unreadCountStr(n: Int): String {
     )
     Text(
       ts,
-      Modifier.padding(bottom = 2.sp.toDp()).offset(x = if (appPlatform.isDesktop) 1.5.sp.toDp() else 0.dp),
+      Modifier.padding(bottom = 5.sp.toDp()).offset(x = if (appPlatform.isDesktop) 1.5.sp.toDp() else 0.dp),
       color = MaterialTheme.colors.secondary,
       style = MaterialTheme.typography.body2.copy(fontSize = 13.sp),
     )

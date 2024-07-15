@@ -23,7 +23,7 @@ import chat.simplex.res.MR
 fun ContactConnectionView(contactConnection: PendingContactConnection) {
   Row {
     Box(Modifier.size(72.dp * fontSizeSqrtMultiplier), contentAlignment = Alignment.Center) {
-      ProfileImage(size = 54.dp * fontSizeSqrtMultiplier, null, if (contactConnection.initiated) MR.images.ic_add_link else MR.images.ic_link, shadow = true)
+      ProfileImage(size = 54.dp * fontSizeSqrtMultiplier, null, if (contactConnection.initiated) MR.images.ic_add_link else MR.images.ic_link)
     }
     Column(
       modifier = Modifier

@@ -284,7 +284,7 @@ fun UserProfilePickerItem(
         Text(
           unreadCountStr(unreadCount),
           color = Color.White,
-          fontSize = 11.sp,
+          fontSize = 10.sp,
           modifier = Modifier
             .background(MaterialTheme.colors.primaryVariant, shape = CircleShape)
             .padding(2.dp)

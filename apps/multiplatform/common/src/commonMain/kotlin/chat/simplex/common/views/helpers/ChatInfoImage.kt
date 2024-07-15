@@ -35,7 +35,7 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
       is ChatInfo.Local -> MR.images.ic_folder_filled
       else -> MR.images.ic_account_circle_filled
     }
-  ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor, shadow = shadow)
+  ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor)
 }
 
 @Composable
@@ -55,10 +55,8 @@ fun ProfileImage(
   image: String? = null,
   icon: ImageResource = MR.images.ic_account_circle_filled,
   color: Color = MaterialTheme.colors.secondaryVariant,
-  backgroundColor: Color? = null,
-  shadow: Boolean = false
+  backgroundColor: Color? = null
 ) {
-  val shadow = false
   Box(Modifier.size(size)) {
     if (image == null) {
       val iconToReplace = when (icon) {
@@ -74,14 +72,14 @@ fun ProfileImage(
           iconToReplace,
           contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
           tint = color,
-          modifier = Modifier.then(if (shadow) Modifier.shadow(elevation = 5.dp, spotColor = Color(0x80000000), ambientColor = Color(0x80000000)) else Modifier).fillMaxSize()
+          modifier = Modifier.fillMaxSize()
         )
       } else {
         Icon(
           painterResource(icon),
           contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
           tint = color,
-          modifier = Modifier.then(if (shadow) Modifier.shadow(elevation = 5.dp, spotColor = Color(0x80000000), ambientColor = Color(0x80000000)) else Modifier).fillMaxSize()
+          modifier = Modifier.fillMaxSize()
         )
       }
     } else {
@@ -90,7 +88,7 @@ fun ProfileImage(
         imageBitmap,
         stringResource(MR.strings.image_descr_profile_image),
         contentScale = ContentScale.Crop,
-        modifier = ProfileIconModifier(size).then(if (shadow) Modifier.shadow(elevation = 5.dp, spotColor = Color(0x80000000), ambientColor = Color(0x80000000)) else Modifier)
+        modifier = ProfileIconModifier(size)
       )
     }
   }
