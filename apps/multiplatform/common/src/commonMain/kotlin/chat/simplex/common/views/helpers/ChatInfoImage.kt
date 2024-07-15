@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
@@ -27,14 +28,14 @@ import dev.icerock.moko.resources.ImageResource
 import kotlin.math.max
 
 @Composable
-fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant) {
+fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false) {
   val icon =
     when (chatInfo) {
       is ChatInfo.Group -> MR.images.ic_supervised_user_circle_filled
       is ChatInfo.Local -> MR.images.ic_folder_filled
       else -> MR.images.ic_account_circle_filled
     }
-  ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor)
+  ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor, shadow = shadow)
 }
 
 @Composable
@@ -54,8 +55,10 @@ fun ProfileImage(
   image: String? = null,
   icon: ImageResource = MR.images.ic_account_circle_filled,
   color: Color = MaterialTheme.colors.secondaryVariant,
-  backgroundColor: Color? = null
+  backgroundColor: Color? = null,
+  shadow: Boolean = false
 ) {
+  val shadow = false
   Box(Modifier.size(size)) {
     if (image == null) {
       val iconToReplace = when (icon) {
@@ -71,14 +74,14 @@ fun ProfileImage(
           iconToReplace,
           contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
           tint = color,
-          modifier = Modifier.fillMaxSize()
+          modifier = Modifier.then(if (shadow) Modifier.shadow(elevation = 5.dp, spotColor = Color(0x80000000), ambientColor = Color(0x80000000)) else Modifier).fillMaxSize()
         )
       } else {
         Icon(
           painterResource(icon),
           contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
           tint = color,
-          modifier = Modifier.fillMaxSize()
+          modifier = Modifier.then(if (shadow) Modifier.shadow(elevation = 5.dp, spotColor = Color(0x80000000), ambientColor = Color(0x80000000)) else Modifier).fillMaxSize()
         )
       }
     } else {
@@ -87,7 +90,7 @@ fun ProfileImage(
         imageBitmap,
         stringResource(MR.strings.image_descr_profile_image),
         contentScale = ContentScale.Crop,
-        modifier = ProfileIconModifier(size)
+        modifier = ProfileIconModifier(size).then(if (shadow) Modifier.shadow(elevation = 5.dp, spotColor = Color(0x80000000), ambientColor = Color(0x80000000)) else Modifier)
       )
     }
   }
