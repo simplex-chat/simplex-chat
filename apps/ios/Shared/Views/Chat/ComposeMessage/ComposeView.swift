@@ -377,7 +377,7 @@ struct ComposeView: View {
                 }
             }
         }
-        .background(BlurView(style: .systemThinMaterial).ignoresSafeArea())
+        .background(.thinMaterial)
         .onChange(of: composeState.message) { msg in
             if composeState.linkPreviewAllowed {
                 if msg.count > 0 {
@@ -1112,17 +1112,6 @@ struct ComposeView: View {
 
 func parsedMsgHasSimplexLink(_ parsedMsg: [FormattedText]) -> Bool {
     parsedMsg.contains(where: { ft in ft.format?.isSimplexLink ?? false })
-}
-
-struct BlurView: UIViewRepresentable {
-    let style: UIBlurEffect.Style
-
-    func makeUIView(context: Context) -> UIVisualEffectView {
-        let view = UIVisualEffectView(effect: UIBlurEffect(style: style))
-        return view
-    }
-
-    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {}
 }
 
 struct ComposeView_Previews: PreviewProvider {
