@@ -47,7 +47,6 @@ struct ComposeImageView: View {
         .padding(.trailing, 12)
         .background(theme.appColors.sentMessage)
         .frame(maxWidth: .infinity)
-        .padding(.top, 8)
     }
 }
 

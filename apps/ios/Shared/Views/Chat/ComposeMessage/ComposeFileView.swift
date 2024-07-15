@@ -35,6 +35,5 @@ struct ComposeFileView: View {
         .frame(height: 50)
         .background(theme.appColors.sentMessage)
         .frame(maxWidth: .infinity)
-        .padding(.top, 8)
     }
 }

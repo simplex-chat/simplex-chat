@@ -52,7 +52,6 @@ struct ComposeVoiceView: View {
         .frame(height: ComposeVoiceView.previewHeight)
         .background(theme.appColors.sentMessage)
         .frame(maxWidth: .infinity)
-        .padding(.top, 8)
     }
 
     private func recordingMode() -> some View {

@@ -46,7 +46,6 @@ struct ContextItemView: View {
         .frame(minHeight: 50)
         .frame(maxWidth: .infinity)
         .background(chatItemFrameColor(contextItem, theme))
-        .padding(.top, 8)
     }
 
     private func msgContentView(lines: Int) -> some View {
