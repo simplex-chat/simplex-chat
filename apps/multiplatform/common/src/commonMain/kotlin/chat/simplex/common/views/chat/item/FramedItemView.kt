@@ -176,7 +176,7 @@ fun FramedItemView(
 
   @Composable
   fun ciFileView(ci: ChatItem, text: String) {
-    CIFileView(ci.file, ci.meta.itemEdited, showMenu, receiveFile)
+    CIFileView(ci.file, ci.meta.itemEdited, showMenu, false, receiveFile)
     if (text != "" || ci.meta.isLive) {
       CIMarkdownText(ci, chatTTL, linkMode = linkMode, uriHandler, showViaProxy = showViaProxy)
     }
@@ -246,7 +246,7 @@ fun FramedItemView(
                 }
               }
               is MsgContent.MCVideo -> {
-                CIVideoView(image = mc.image, mc.duration, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, receiveFile)
+                CIVideoView(image = mc.image, mc.duration, file = ci.file, imageProvider ?: return@PriorityLayout, showMenu, receiveFile = receiveFile)
                 if (mc.text == "" && !ci.meta.isLive) {
                   metaColor = Color.White
                 } else {

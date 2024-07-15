@@ -31,6 +31,7 @@ fun CIVideoView(
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
+  smallView: Boolean = false,
   receiveFile: (Long) -> Unit
 ) {
   Box(
@@ -63,10 +64,12 @@ fun CIVideoView(
       val autoPlay = remember { mutableStateOf(false) }
       val uriDecrypted = remember(filePath) { mutableStateOf(if (file.fileSource?.cryptoArgs == null) uri else file.fileSource.decryptedGet()) }
       val decrypted = uriDecrypted.value
-      if (decrypted != null) {
+      if (decrypted != null && smallView) {
+        SmallVideoView(decrypted, file, preview, duration * 1000L, openFullscreen = openFullscreen)
+      } else if (decrypted != null) {
         VideoView(decrypted, file, preview, duration * 1000L, autoPlay, showMenu, openFullscreen = openFullscreen)
       } else {
-        VideoViewEncrypted(uriDecrypted, file, preview, duration * 1000L, autoPlay, showMenu, openFullscreen = openFullscreen)
+        VideoViewEncrypted(uriDecrypted, file, preview, duration * 1000L, autoPlay, showMenu, smallView, openFullscreen = openFullscreen)
       }
     } else {
       Box {
@@ -99,15 +102,17 @@ fun CIVideoView(
           onLongClick = {
             showMenu.value = true
           })
-        if (file != null) {
+        if (file != null && !smallView) {
           DurationProgress(file, remember { mutableStateOf(false) }, remember { mutableStateOf(duration * 1000L) }, remember { mutableStateOf(0L) }/*, soundEnabled*/)
         }
         if (file?.fileStatus is CIFileStatus.RcvInvitation || file?.fileStatus is CIFileStatus.RcvAborted) {
-          PlayButton(error = false, { showMenu.value = true }) { receiveFileIfValidSize(file, receiveFile) }
+          PlayButton(error = false, smallView, { showMenu.value = true }) { receiveFileIfValidSize(file, receiveFile) }
         }
       }
     }
-    fileStatusIcon(file)
+    if (!smallView || file?.fileStatus !is CIFileStatus.RcvInvitation) {
+      fileStatusIcon(file)
+    }
   }
 }
 
@@ -119,6 +124,7 @@ private fun VideoViewEncrypted(
   defaultDuration: Long,
   autoPlay: MutableState<Boolean>,
   showMenu: MutableState<Boolean>,
+  smallView: Boolean,
   openFullscreen: () -> Unit,
 ) {
   var decryptionInProgress by rememberSaveable(file.fileName) { mutableStateOf(false) }
@@ -126,9 +132,9 @@ private fun VideoViewEncrypted(
   Box {
     VideoPreviewImageView(defaultPreview, if (decryptionInProgress) {{}} else openFullscreen, onLongClick)
     if (decryptionInProgress) {
-      VideoDecryptionProgress(onLongClick = onLongClick)
+      VideoDecryptionProgress(smallView, onLongClick = onLongClick)
     } else {
-      PlayButton(false, onLongClick = onLongClick) {
+      PlayButton(false, smallView = smallView, onLongClick = onLongClick) {
         decryptionInProgress = true
         withBGApi {
           try {
@@ -140,7 +146,30 @@ private fun VideoViewEncrypted(
         }
       }
     }
-    DurationProgress(file, remember { mutableStateOf(false) }, remember { mutableStateOf(defaultDuration) }, remember { mutableStateOf(0L) })
+    if (!smallView) {
+      DurationProgress(file, remember { mutableStateOf(false) }, remember { mutableStateOf(defaultDuration) }, remember { mutableStateOf(0L) })
+    }
+  }
+}
+
+@Composable
+private fun SmallVideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defaultDuration: Long, openFullscreen: () -> Unit) {
+  val player = remember(uri) { VideoPlayerHolder.getOrCreate(uri, true, defaultPreview, defaultDuration, true) }
+  val preview by remember { player.preview }
+  //  val soundEnabled by rememberSaveable(uri.path) { player.soundEnabled }
+  val brokenVideo by rememberSaveable(uri.path) { player.brokenVideo }
+  Box {
+    val windowWidth = LocalWindowWidth()
+    val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH }
+    PlayerView(
+      player,
+      width,
+      onClick = openFullscreen,
+      onLongClick = {},
+      {}
+    )
+    VideoPreviewImageView(preview, openFullscreen, onLongClick = {})
+    PlayButton(brokenVideo, onLongClick = {}, smallView = true, onClick = openFullscreen)
   }
 }
 
@@ -188,7 +217,7 @@ private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defau
     if (showPreview.value) {
       VideoPreviewImageView(preview, openFullscreen, onLongClick)
       if (!autoPlay.value) {
-        PlayButton(brokenVideo, onLongClick = onLongClick, play)
+        PlayButton(brokenVideo, onLongClick = onLongClick, onClick = play)
       }
     }
     DurationProgress(file, videoPlaying, duration, progress/*, soundEnabled*/)
@@ -199,7 +228,7 @@ private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defau
 expect fun PlayerView(player: VideoPlayer, width: Dp, onClick: () -> Unit, onLongClick: () -> Unit, stop: () -> Unit)
 
 @Composable
-private fun BoxScope.PlayButton(error: Boolean = false, onLongClick: () -> Unit, onClick: () -> Unit) {
+private fun BoxScope.PlayButton(error: Boolean = false, smallView: Boolean = false, onLongClick: () -> Unit, onClick: () -> Unit) {
   Surface(
     Modifier.align(Alignment.Center),
     color = Color.Black.copy(alpha = 0.25f),
@@ -208,7 +237,7 @@ private fun BoxScope.PlayButton(error: Boolean = false, onLongClick: () -> Unit,
   ) {
     Box(
       Modifier
-        .defaultMinSize(minWidth = 40.dp, minHeight = 40.dp)
+        .defaultMinSize(minWidth = if (smallView) 20.dp else 40.dp, minHeight = if (smallView) 20.dp else 40.dp)
         .combinedClickable(onClick = onClick, onLongClick = onLongClick)
         .onRightClick { onLongClick.invoke() },
       contentAlignment = Alignment.Center
@@ -223,7 +252,7 @@ private fun BoxScope.PlayButton(error: Boolean = false, onLongClick: () -> Unit,
 }
 
 @Composable
-fun BoxScope.VideoDecryptionProgress(onLongClick: () -> Unit) {
+fun BoxScope.VideoDecryptionProgress(smallView: Boolean, onLongClick: () -> Unit) {
   Surface(
     Modifier.align(Alignment.Center),
     color = Color.Black.copy(alpha = 0.25f),
@@ -232,14 +261,14 @@ fun BoxScope.VideoDecryptionProgress(onLongClick: () -> Unit) {
   ) {
     Box(
       Modifier
-        .defaultMinSize(minWidth = 40.dp, minHeight = 40.dp)
+        .defaultMinSize(minWidth = if (smallView) 20.dp else 40.dp, minHeight = if (smallView) 20.dp else 40.dp)
         .combinedClickable(onClick = {}, onLongClick = onLongClick)
         .onRightClick { onLongClick.invoke() },
       contentAlignment = Alignment.Center
     ) {
       CircularProgressIndicator(
         Modifier
-          .size(30.dp),
+          .size(if (smallView) 20.dp else 30.dp),
         color = Color.White,
         strokeWidth = 2.5.dp
       )

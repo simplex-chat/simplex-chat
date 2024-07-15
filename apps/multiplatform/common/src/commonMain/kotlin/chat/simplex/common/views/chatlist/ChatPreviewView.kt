@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chatlist
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.InlineTextContent
@@ -17,17 +16,19 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chat.ComposePreview
-import chat.simplex.common.views.chat.ComposeState
-import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.GroupInfo
-import chat.simplex.common.platform.appPlatform
-import chat.simplex.common.platform.chatModel
-import chat.simplex.common.views.chat.item.markedDeletedText
+import chat.simplex.common.platform.*
+import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.chat.item.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 
@@ -286,6 +287,46 @@ fun ChatPreviewView(
     ) {
       chatPreviewTitle()
       Row(Modifier.heightIn(min = 46.sp.toDp()).padding(top = 3.sp.toDp())) {
+        val ci = chat.chatItems.lastOrNull()
+        val mc = ci?.content?.msgContent
+        val provider by remember(chat.id, ci?.id) {
+          mutableStateOf({ providerForGallery(0, chat.chatItems, ci?.id ?: 0) {} })
+        }
+        val uriHandler = LocalUriHandler.current
+        when (mc) {
+          is MsgContent.MCLink -> SmallContentPreview {
+            IconButton({ uriHandler.openUriCatching(mc.preview.uri) }) {
+              Image(base64ToBitmap(mc.preview.image), null, contentScale = ContentScale.Crop)
+            }
+          }
+          is MsgContent.MCImage -> SmallContentPreview {
+            CIImageView(image = mc.image, file = ci.file, provider, remember { mutableStateOf(false) }) {
+              val user = chatModel.currentUser.value ?: return@CIImageView
+              withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
+            }
+          }
+          is MsgContent.MCVideo -> SmallContentPreview {
+            CIVideoView(image = mc.image, mc.duration, file = ci.file, provider, remember { mutableStateOf(false) }, smallView = true) {
+              val user = chatModel.currentUser.value ?: return@CIVideoView
+              withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
+            }
+          }
+          /*is MsgContent.MCVoice -> SmallContentPreview {
+            CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = false, ci, cInfo.timedMessagesTTL, showViaProxy = false, longClick = {}) {
+              val user = chatModel.currentUser.value ?: return@CIVoiceView
+              withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
+            }
+          }*/
+          is MsgContent.MCFile -> SmallContentPreview {
+            CIFileView(ci.file, false, remember { mutableStateOf(false) }, smallView = true) {
+              val user = chatModel.currentUser.value ?: return@CIFileView
+              withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
+            }
+          }
+          else -> {
+
+          }
+        }
         chatPreviewText()
       }
     }
@@ -343,6 +384,13 @@ fun ChatPreviewView(
         chatStatusImage()
       }
     }
+  }
+}
+
+@Composable
+fun SmallContentPreview(content: @Composable () -> Unit) {
+  Box(Modifier.padding(top = 5.sp.toDp(), end = 8.sp.toDp()).size(36.sp.toDp()).clip(RoundedCornerShape(22))) {
+    content()
   }
 }
 

@@ -29,6 +29,7 @@ fun CIFileView(
   file: CIFile?,
   edited: Boolean,
   showMenu: MutableState<Boolean>,
+  smallView: Boolean = false,
   receiveFile: (Long) -> Unit
 ) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
@@ -186,31 +187,33 @@ fun CIFileView(
         onClick = { fileAction() },
         onLongClick = { showMenu.value = true }
       )
-      .padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
+      .padding(if (smallView) PaddingValues() else PaddingValues(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp)),
     //Modifier.clickable(enabled = file?.fileSource != null) { if (file?.fileSource != null && getLoadedFilePath(file) != null) openFile(file.fileSource) }.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
     verticalAlignment = Alignment.Bottom,
     horizontalArrangement = Arrangement.spacedBy(2.dp)
   ) {
     fileIndicator()
-    val metaReserve = if (edited)
-      "                       "
-    else
-      "                   "
-    if (file != null) {
-      Column {
-        Text(
-          file.fileName,
-          maxLines = 1
-        )
-        Text(
-          formatBytes(file.fileSize) + metaReserve,
-          color = MaterialTheme.colors.secondary,
-          fontSize = 14.sp,
-          maxLines = 1
-        )
+    if (!smallView) {
+      val metaReserve = if (edited)
+        "                       "
+      else
+        "                   "
+      if (file != null) {
+        Column {
+          Text(
+            file.fileName,
+            maxLines = 1
+          )
+          Text(
+            formatBytes(file.fileSize) + metaReserve,
+            color = MaterialTheme.colors.secondary,
+            fontSize = 14.sp,
+            maxLines = 1
+          )
+        }
+      } else {
+        Text(metaReserve)
       }
-    } else {
-      Text(metaReserve)
     }
   }
 }

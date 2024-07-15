@@ -174,7 +174,7 @@ private fun VideoViewEncrypted(uriUnencrypted: MutableState<URI?>, fileSource: C
   }
   Box(contentAlignment = Alignment.Center) {
     VideoPreviewImageViewFullScreen(defaultPreview, {}, {})
-    VideoDecryptionProgress {}
+    VideoDecryptionProgress(smallView = false) {}
   }
 }
 

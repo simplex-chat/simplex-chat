@@ -1416,7 +1416,7 @@ sealed class ProviderMedia {
   data class Video(val uri: URI, val fileSource: CryptoFile?, val preview: String): ProviderMedia()
 }
 
-private fun providerForGallery(
+fun providerForGallery(
   listStateIndex: Int,
   chatItems: List<ChatItem>,
   cItemId: Long,
