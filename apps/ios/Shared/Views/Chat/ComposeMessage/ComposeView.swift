@@ -670,7 +670,7 @@ struct ComposeView: View {
             Text(reason).italic()
         }
         .padding(12)
-        .frame(minHeight: 50)
+        .frame(minHeight: 54)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(uiColor: .tertiarySystemGroupedBackground))
     }
