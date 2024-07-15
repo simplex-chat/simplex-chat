@@ -287,6 +287,7 @@ struct ComposeView: View {
             Divider()
             if chat.chatInfo.contact?.nextSendGrpInv ?? false {
                 ContextInvitingContactMemberView()
+                Divider()
             }
             // preference checks should match checks in forwarding list
             let simplexLinkProhibited = hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
@@ -294,10 +295,13 @@ struct ComposeView: View {
             let voiceProhibited = composeState.voicePreview && !chat.chatInfo.featureEnabled(.voice)
             if simplexLinkProhibited {
                 msgNotAllowedView("SimpleX links not allowed", icon: "link")
+                Divider()
             } else if fileProhibited {
                 msgNotAllowedView("Files and media not allowed", icon: "doc")
+                Divider()
             } else if voiceProhibited {
                 msgNotAllowedView("Voice messages not allowed", icon: "mic")
+                Divider()
             }
             contextItemView()
             switch (composeState.editing, composeState.preview) {
@@ -626,6 +630,7 @@ struct ComposeView: View {
                 cancelPreview: cancelLinkPreview,
                 cancelEnabled: !composeState.inProgress
             )
+            Divider()
         case let .mediaPreviews(mediaPreviews: media):
             ComposeImageView(
                 images: media.map { (img, _) in img },
@@ -634,6 +639,7 @@ struct ComposeView: View {
                     chosenMedia = []
                 },
                 cancelEnabled: !composeState.editing && !composeState.inProgress)
+            Divider()
         case let .voicePreview(recordingFileName, _):
             ComposeVoiceView(
                 recordingFileName: recordingFileName,
@@ -646,6 +652,7 @@ struct ComposeView: View {
                 cancelEnabled: !composeState.editing && !composeState.inProgress,
                 stopPlayback: $stopPlayback
             )
+            Divider()
         case let .filePreview(fileName, _):
             ComposeFileView(
                 fileName: fileName,
@@ -653,6 +660,7 @@ struct ComposeView: View {
                     composeState = composeState.copy(preview: .noPreview)
                 },
                 cancelEnabled: !composeState.editing && !composeState.inProgress)
+            Divider()
         }
     }
 
@@ -679,6 +687,7 @@ struct ComposeView: View {
                 contextIcon: "arrowshape.turn.up.left",
                 cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
             )
+            Divider()
         case let .editingItem(chatItem: editingItem):
             ContextItemView(
                 chat: chat,
@@ -686,6 +695,7 @@ struct ComposeView: View {
                 contextIcon: "pencil",
                 cancelContextItem: { clearState() }
             )
+            Divider()
         case let .forwardingItem(chatItem: forwardedItem, _):
             ContextItemView(
                 chat: chat,
@@ -694,6 +704,7 @@ struct ComposeView: View {
                 cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) },
                 showSender: false
             )
+            Divider()
         }
     }
 
