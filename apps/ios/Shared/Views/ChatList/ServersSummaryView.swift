@@ -178,7 +178,7 @@ struct ServersSummaryView: View {
             infoRow("Total", numOrDash(totals.subs.total))
         } header: {
             HStack {
-                Text("Message push")
+                Text("Message reception")
                 SubscriptionStatusIndicatorView(subs: totals.subs, sess: totals.sessions)
                 if showSubscriptionPercentage {
                     SubscriptionStatusPercentageView(subs: totals.subs, sess: totals.sessions)
@@ -480,7 +480,7 @@ struct SMPServerSummaryView: View {
             reconnectButton()
         } header: {
             HStack {
-                Text("Message push")
+                Text("Message reception")
                 SubscriptionStatusIndicatorView(subs: subs, sess: summary.sessionsOrNew)
                 if showSubscriptionPercentage {
                     SubscriptionStatusPercentageView(subs: subs, sess: summary.sessionsOrNew)

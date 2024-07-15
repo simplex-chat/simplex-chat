@@ -2130,7 +2130,7 @@
   <string name="servers_info_messages_received">Messages received</string>
   <string name="servers_info_details">Details</string>
   <string name="servers_info_private_data_disclaimer">Starting from %s.\nAll data is private to your device.</string>
-  <string name="servers_info_subscriptions_section_header">Message push</string>
+  <string name="servers_info_subscriptions_section_header">Message reception</string>
   <string name="servers_info_subscriptions_connections_subscribed">Active connections</string>
   <string name="servers_info_subscriptions_connections_pending">Pending</string>
   <string name="servers_info_subscriptions_total">Total</string>
