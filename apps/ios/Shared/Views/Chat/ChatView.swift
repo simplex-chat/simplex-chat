@@ -45,10 +45,14 @@ struct ChatView: View {
 
     var body: some View {
         if #available(iOS 16.0, *) {
-            viewBody
-            .toolbarBackground(.visible, for: .navigationBar)
+            let v = viewBody
             .scrollDismissesKeyboard(.immediately)
             .keyboardPadding()
+            if (searchMode) {
+                v.toolbarBackground(.thinMaterial, for: .navigationBar)
+            } else {
+                v.toolbarBackground(.visible, for: .navigationBar)
+            }
         } else {
             viewBody
         }

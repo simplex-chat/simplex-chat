@@ -28,15 +28,17 @@ struct ChatInfoToolbar: View {
                 color: Color(uiColor: .tertiaryLabel)
             )
             .padding(.trailing, 4)
-            VStack(spacing: 0) {
-                let t = Text(cInfo.displayName).font(.headline)
-                (cInfo.contact?.verified == true ? contactVerifiedShield + t : t)
-                    .lineLimit(1)
-                if cInfo.fullName != "" && cInfo.displayName != cInfo.fullName {
-                    Text(cInfo.fullName).font(.subheadline)
-                        .lineLimit(1)
+            let t = Text(cInfo.displayName).font(.headline)
+            (cInfo.contact?.verified == true ? contactVerifiedShield + t : t)
+                .lineLimit(1)
+                .if (cInfo.fullName != "" && cInfo.displayName != cInfo.fullName) { v in
+                    VStack(spacing: 0) {
+                        v
+                        Text(cInfo.fullName).font(.subheadline)
+                            .lineLimit(1)
+                            .padding(.top, -2)
+                    }
                 }
-            }
         }
         .foregroundColor(theme.colors.onBackground)
         .frame(width: 220)
