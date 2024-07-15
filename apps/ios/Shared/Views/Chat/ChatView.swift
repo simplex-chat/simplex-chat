@@ -510,6 +510,7 @@ struct ChatView: View {
     private func searchButton() -> some View {
         Button {
             searchMode = true
+            searchFocussed = true
             searchText = ""
         } label: {
             Label("Search", systemImage: "magnifyingglass")
