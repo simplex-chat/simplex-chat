@@ -25,6 +25,7 @@ import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.GroupInfo
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.chat.item.markedDeletedText
 import chat.simplex.res.MR
@@ -47,11 +48,10 @@ fun ChatPreviewView(
 
   @Composable
   fun inactiveIcon() {
-    val sp18 = with(LocalDensity.current) { 18.sp.toDp() }
     Icon(
       painterResource(MR.images.ic_cancel_filled),
       stringResource(MR.strings.icon_descr_group_inactive),
-      Modifier.size(sp18).background(MaterialTheme.colors.background, CircleShape),
+      Modifier.size(18.sp.toDp()).background(MaterialTheme.colors.background, CircleShape),
       tint = MaterialTheme.colors.secondary
     )
   }
@@ -88,8 +88,7 @@ fun ChatPreviewView(
 
   @Composable
   fun VerifiedIcon() {
-    val sp19 = with(LocalDensity.current) { 19.sp.toDp() }
-    Icon(painterResource(MR.images.ic_verified_user), null, Modifier.size(sp19).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
+    Icon(painterResource(MR.images.ic_verified_user), null, Modifier.size(19.sp.toDp()).padding(end = 3.sp.toDp(), top = 1.sp.toDp()), tint = MaterialTheme.colors.secondary)
   }
 
   fun messageDraft(draft: ComposeState, sp20: Dp): Pair<AnnotatedString.Builder.() -> Unit, Map<String, InlineTextContent>> {
@@ -193,7 +192,12 @@ fun ChatPreviewView(
           senderBold = true,
           maxLines = 2,
           overflow = TextOverflow.Ellipsis,
-          style = MaterialTheme.typography.body1.copy(color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight, lineHeight = 22.sp),
+          style = TextStyle(
+            fontFamily = Inter,
+            fontSize = 15.sp,
+            color = if (isInDarkTheme()) MessagePreviewDark else MessagePreviewLight,
+            lineHeight = 21.sp
+          ),
           inlineContent = inlineTextContent,
           modifier = Modifier.fillMaxWidth(),
         )
@@ -223,11 +227,10 @@ fun ChatPreviewView(
 
   @Composable
   fun progressView() {
-    val sp15 = with(LocalDensity.current) { 15.sp.toDp() }
     CircularProgressIndicator(
       Modifier
-        .padding(horizontal = 2.dp)
-        .size(sp15),
+        .size(15.sp.toDp())
+        .offset(y = 2.sp.toDp()),
       color = MaterialTheme.colors.secondary,
       strokeWidth = 1.5.dp
     )
@@ -235,7 +238,6 @@ fun ChatPreviewView(
 
   @Composable
   fun chatStatusImage() {
-    val sp19 = with(LocalDensity.current) { 19.sp.toDp() }
     if (cInfo is ChatInfo.Direct) {
       if (cInfo.contact.active && cInfo.contact.activeConn != null) {
         val descr = contactNetworkStatus?.statusString
@@ -249,7 +251,8 @@ fun ChatPreviewView(
               contentDescription = descr,
               tint = MaterialTheme.colors.secondary,
               modifier = Modifier
-                .size(sp19)
+                .size(19.sp.toDp())
+                .offset(x = 2.sp.toDp())
             )
 
           else ->
@@ -272,18 +275,17 @@ fun ChatPreviewView(
   Row {
     Box(contentAlignment = Alignment.BottomEnd) {
       ChatInfoImage(cInfo, size = 72.dp * fontSizeSqrtMultiplier)
-      Box(Modifier.padding(end = 6.dp, bottom = 6.dp)) {
+      Box(Modifier.padding(end = 6.sp.toDp(), bottom = 6.sp.toDp())) {
         chatPreviewImageOverlayIcon()
       }
     }
     Column(
       modifier = Modifier
-        .padding(horizontal = 8.dp)
+        .padding(start = 8.dp, end = 8.sp.toDp())
         .weight(1F)
     ) {
       chatPreviewTitle()
-      val height = with(LocalDensity.current) { 46.sp.toDp() }
-      Row(Modifier.heightIn(min = height)) {
+      Row(Modifier.heightIn(min = 46.sp.toDp()).padding(top = 3.sp.toDp())) {
         chatPreviewText()
       }
     }
@@ -292,67 +294,50 @@ fun ChatPreviewView(
       contentAlignment = Alignment.TopEnd
     ) {
       val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.chatTs)
-      Text(
-        ts,
-        color = MaterialTheme.colors.secondary,
-        style = MaterialTheme.typography.body2,
-        modifier = Modifier.padding(bottom = 5.dp)
-      )
+      ChatListTimestampView(ts)
       val n = chat.chatStats.unreadCount
       val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
-      val sp17 = with(LocalDensity.current) { 17.sp.toDp() }
-      val sp21 = with(LocalDensity.current) { 21.sp.toDp() }
-      val sp23 = with(LocalDensity.current) { 23.sp.toDp() }
-      val sp46 = with(LocalDensity.current) { 46.sp.toDp() }
       if (n > 0 || chat.chatStats.unreadChat) {
         Box(
-          Modifier.padding(top = sp23, end = with(LocalDensity.current) { 3.sp.toDp() }),
-          contentAlignment = Alignment.Center
-        ) {
+          Modifier.padding(top = 24.5.sp.toDp())) {
           Text(
             if (n > 0) unreadCountStr(n) else "",
             color = Color.White,
-            fontSize = 11.sp,
+            fontSize = 10.sp,
             modifier = Modifier
               .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
               .badgeLayout()
-              .padding(horizontal = 3.dp)
-              .padding(vertical = 1.dp)
+              .padding(horizontal = 3.sp.toDp())
+              .padding(vertical = 1.sp.toDp())
           )
         }
       } else if (showNtfsIcon) {
         Box(
-          Modifier.padding(top = sp21),
-          contentAlignment = Alignment.Center
-        ) {
+          Modifier.padding(top = 22.sp.toDp())) {
           Icon(
             painterResource(MR.images.ic_notifications_off_filled),
             contentDescription = generalGetString(MR.strings.notifications),
             tint = MaterialTheme.colors.secondary,
             modifier = Modifier
-              .padding(horizontal = 3.dp)
-              .padding(vertical = 1.dp)
-              .size(sp17)
+              .size(17.sp.toDp())
+              .offset(x = 2.5.sp.toDp())
           )
         }
       } else if (chat.chatInfo.chatSettings?.favorite == true) {
         Box(
-          Modifier.padding(top = sp21),
-          contentAlignment = Alignment.Center
-        ) {
+          Modifier.padding(top = 20.sp.toDp())) {
           Icon(
             painterResource(MR.images.ic_star_filled),
             contentDescription = generalGetString(MR.strings.favorite_chat),
             tint = MaterialTheme.colors.secondary,
             modifier = Modifier
-              .padding(horizontal = 3.dp)
-              .padding(vertical = 1.dp)
-              .size(sp17)
+              .size(20.sp.toDp())
+              .offset(x = 2.5.sp.toDp())
           )
         }
       }
       Box(
-        Modifier.padding(top = sp46),
+        Modifier.padding(top = 46.sp.toDp()),
         contentAlignment = Alignment.Center
       ) {
         chatStatusImage()
@@ -364,13 +349,13 @@ fun ChatPreviewView(
 @Composable
 fun IncognitoIcon(incognito: Boolean) {
   if (incognito) {
-    val sp21 = with(LocalDensity.current) { 21.sp.toDp() }
     Icon(
       painterResource(MR.images.ic_theater_comedy),
       contentDescription = null,
       tint = MaterialTheme.colors.secondary,
       modifier = Modifier
-        .size(sp21)
+        .size(21.sp.toDp())
+        .offset(x = 1.sp.toDp())
     )
   }
 }
@@ -386,6 +371,23 @@ private fun groupInvitationPreviewText(currentUserProfileDisplayName: String?, g
 @Composable
 fun unreadCountStr(n: Int): String {
   return if (n < 1000) "$n" else "${n / 1000}" + stringResource(MR.strings.thousand_abbreviation)
+}
+
+@Composable fun ChatListTimestampView(ts: String) {
+  Box(contentAlignment = Alignment.BottomStart) {
+    // This should be the same font style as in title to make date located on the same line as title
+    Text(
+      " ",
+      style = MaterialTheme.typography.h3,
+      fontWeight = FontWeight.Bold,
+    )
+    Text(
+      ts,
+      Modifier.padding(bottom = 5.sp.toDp()).offset(x = if (appPlatform.isDesktop) 1.5.sp.toDp() else 0.dp),
+      color = MaterialTheme.colors.secondary,
+      style = MaterialTheme.typography.body2.copy(fontSize = 13.sp),
+    )
+  }
 }
 
 @Preview/*(
