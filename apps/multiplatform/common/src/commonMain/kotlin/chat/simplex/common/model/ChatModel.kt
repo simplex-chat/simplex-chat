@@ -28,6 +28,7 @@ import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
+import java.io.Closeable
 import java.io.File
 import java.net.URI
 import java.time.format.DateTimeFormatter
@@ -121,6 +122,9 @@ object ChatModel {
 
   val clipboardHasText = mutableStateOf(false)
   val networkInfo = mutableStateOf(UserNetworkInfo(networkType = UserNetworkType.OTHER, online = true))
+
+  val updatingProgress = mutableStateOf(null as Float?)
+  var updatingRequest: Closeable? = null
 
   val updatingChatsMutex: Mutex = Mutex()
   val changingActiveUserMutex: Mutex = Mutex()

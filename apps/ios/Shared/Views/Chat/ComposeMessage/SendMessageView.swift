@@ -44,6 +44,7 @@ struct SendMessageView: View {
 
     var body: some View {
         ZStack {
+            let composeShape = RoundedRectangle(cornerSize: CGSize(width: 20, height: 20))
             HStack(alignment: .bottom) {
                 ZStack(alignment: .leading) {
                     if case .voicePreview = composeState.preview {
@@ -84,10 +85,9 @@ struct SendMessageView: View {
                 }
             }
             .padding(.vertical, 1)
-            .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .strokeBorder(.tertiary, lineWidth: 1).opacity(0.5)
-            )
+            .background(theme.colors.background)
+            .clipShape(composeShape)
+            .overlay(composeShape.strokeBorder(.tertiary, lineWidth: 1).opacity(0.5))
         }
         .onChange(of: composeState.message, perform: { text in updateFont(text) })
         .onChange(of: composeState.inProgress) { inProgress in

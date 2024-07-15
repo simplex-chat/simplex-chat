@@ -63,8 +63,8 @@ struct ComposeLinkView: View {
         .padding(.vertical, 1)
         .padding(.trailing, 12)
         .background(theme.appColors.sentMessage)
+        .frame(minHeight: 54)
         .frame(maxWidth: .infinity)
-        .padding(.top, 8)
     }
 
     private func linkPreviewView(_ linkPreview: LinkPreview) -> some View {
