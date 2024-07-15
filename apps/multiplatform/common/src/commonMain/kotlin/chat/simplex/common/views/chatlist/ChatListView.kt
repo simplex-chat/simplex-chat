@@ -100,10 +100,10 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
             .padding(end = DEFAULT_PADDING - 16.dp + endPadding, bottom = DEFAULT_PADDING - 16.dp)
             .size(AppBarHeight * fontSizeSqrtMultiplier),
           elevation = FloatingActionButtonDefaults.elevation(
-            defaultElevation = 5.dp,
-            pressedElevation = 5.dp,
-            hoveredElevation = 5.dp,
-            focusedElevation = 5.dp,
+            defaultElevation = 0.dp,
+            pressedElevation = 0.dp,
+            hoveredElevation = 0.dp,
+            focusedElevation = 0.dp,
           ),
           backgroundColor = if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           contentColor = Color.White

@@ -273,7 +273,7 @@ fun ChatPreviewView(
   }
 
   Row {
-    Box(Modifier.offset(x = (((fontSizeMultiplier - fontSizeSqrtMultiplier) * 8)).sp.toDp(), y = (((fontSizeMultiplier - fontSizeSqrtMultiplier) * 15)).sp.toDp()), contentAlignment = Alignment.BottomEnd) {
+    Box(Modifier.align(Alignment.CenterVertically), contentAlignment = Alignment.BottomEnd) {
       ChatInfoImage(cInfo, size = 72.dp * fontSizeSqrtMultiplier)
       Box(Modifier.padding(end = 6.sp.toDp(), bottom = 6.sp.toDp())) {
         chatPreviewImageOverlayIcon()
@@ -281,12 +281,11 @@ fun ChatPreviewView(
     }
     Column(
       modifier = Modifier
-        .padding(horizontal = 8.sp.toDp())
+        .padding(start = 8.dp, end = 8.sp.toDp())
         .weight(1F)
     ) {
       chatPreviewTitle()
-      val height = with(LocalDensity.current) { 46.sp.toDp() }
-      Row(Modifier.heightIn(min = height).padding(top = 3.sp.toDp())) {
+      Row(Modifier.heightIn(min = 46.sp.toDp()).padding(top = 3.sp.toDp()).background(Color.Blue)) {
         chatPreviewText()
       }
     }

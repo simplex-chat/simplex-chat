@@ -27,7 +27,7 @@ fun ContactConnectionView(contactConnection: PendingContactConnection) {
     }
     Column(
       modifier = Modifier
-        .padding(horizontal = 8.sp.toDp())
+        .padding(start = 8.dp / fontSizeSqrtMultiplier, end = 8.sp.toDp())
         .weight(1F)
     ) {
       Text(
@@ -38,10 +38,9 @@ fun ContactConnectionView(contactConnection: PendingContactConnection) {
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colors.secondary
       )
-      val height = with(LocalDensity.current) { 46.sp.toDp() }
       Text(
         contactConnection.description,
-        Modifier.heightIn(min = height).padding(top = 3.sp.toDp()),
+        Modifier.heightIn(min = 46.sp.toDp()).padding(top = 3.sp.toDp()),
         maxLines = 2,
         style = TextStyle(
           fontFamily = Inter,

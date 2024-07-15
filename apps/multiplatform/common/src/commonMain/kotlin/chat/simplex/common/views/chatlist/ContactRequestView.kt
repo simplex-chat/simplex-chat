@@ -24,7 +24,7 @@ fun ContactRequestView(contactRequest: ChatInfo.ContactRequest) {
     ChatInfoImage(contactRequest, size = 72.dp * fontSizeSqrtMultiplier)
     Column(
       modifier = Modifier
-        .padding(horizontal = 8.sp.toDp())
+        .padding(start = 8.dp, end = 8.sp.toDp())
         .weight(1F)
     ) {
       Text(
@@ -35,10 +35,9 @@ fun ContactRequestView(contactRequest: ChatInfo.ContactRequest) {
         fontWeight = FontWeight.Bold,
         color = MaterialTheme.colors.primary,
       )
-      val height = with(LocalDensity.current) { 46.sp.toDp() }
       Text(
         stringResource(MR.strings.contact_wants_to_connect_with_you),
-        Modifier.heightIn(min = height).padding(top = 3.sp.toDp()),
+        Modifier.heightIn(min = 46.sp.toDp()).padding(top = 3.sp.toDp()),
         maxLines = 2,
         style = TextStyle(
           fontFamily = Inter,
