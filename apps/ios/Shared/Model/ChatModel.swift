@@ -774,7 +774,7 @@ struct UnreadChatItemCounts: Equatable {
     var unreadBelow: Int
 }
 
-final class Chat: ObservableObject, Identifiable {
+final class Chat: ObservableObject, Identifiable, ChatLike {
     @Published var chatInfo: ChatInfo
     @Published var chatItems: [ChatItem]
     @Published var chatStats: ChatStats

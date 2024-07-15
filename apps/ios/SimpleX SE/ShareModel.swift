@@ -48,8 +48,9 @@ class ShareModel: ObservableObject {
             .map { (search, chats) in
                 search.isEmpty
                 ? chats
-                : chats.filter { $0.chatInfo.chatViewName.localizedCaseInsensitiveContains(search) }
+                : chats.filter { foundChat($0, search) }
             }
+            .map { filterChatsToForwardTo(chats: $0) }
             .receive(on: DispatchQueue.main)
             .assign(to: \.chats, on: self)
             .store(in: &bag)
