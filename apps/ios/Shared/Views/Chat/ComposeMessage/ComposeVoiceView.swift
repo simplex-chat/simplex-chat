@@ -50,8 +50,9 @@ struct ComposeVoiceView: View {
         }
         .padding(.vertical, 1)
         .frame(height: ComposeVoiceView.previewHeight)
-        .background(composeContextItemBackground())
+        .background(theme.appColors.sentMessage)
         .frame(maxWidth: .infinity)
+        .padding(.top, 8)
     }
 
     private func recordingMode() -> some View {
