@@ -9,6 +9,13 @@
 import SwiftUI
 import SimpleXChat
 
+func composeContextItemBackground() -> some View {
+    Rectangle()
+        .fill(.thinMaterial)
+        .shadow(color: .black.opacity(0.12), radius: 2, x: 0, y: 0)
+        .mask(Rectangle().padding(.bottom, -8))
+}
+
 struct ContextItemView: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
@@ -45,8 +52,7 @@ struct ContextItemView: View {
         .padding(12)
         .frame(minHeight: 50)
         .frame(maxWidth: .infinity)
-        .background(chatItemFrameColor(contextItem, theme))
-        .padding(.top, 8)
+        .background(composeContextItemBackground())
     }
 
     private func msgContentView(lines: Int) -> some View {

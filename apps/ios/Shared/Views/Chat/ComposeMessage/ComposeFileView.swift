@@ -33,8 +33,7 @@ struct ComposeFileView: View {
         .padding(.vertical, 1)
         .padding(.trailing, 12)
         .frame(height: 50)
-        .background(theme.appColors.sentMessage)
+        .background(composeContextItemBackground())
         .frame(maxWidth: .infinity)
-        .padding(.top, 8)
     }
 }
