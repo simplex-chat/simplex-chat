@@ -56,22 +56,17 @@ struct ChatView: View {
 
     private var viewBody: some View {
         let cInfo = chat.chatInfo
+        let wallpaperImage = theme.wallpaper.type.image
+        let wallpaperType = theme.wallpaper.type
+        let backgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(theme.base, theme.colors.background)
+        let tintColor = theme.wallpaper.tint ?? wallpaperType.defaultTintColor(theme.base)
         return VStack(spacing: 0) {
             if searchMode {
                 searchToolbar()
                 Divider()
             }
             ZStack(alignment: .bottomTrailing) {
-                let wallpaperImage = theme.wallpaper.type.image
-                let wallpaperType = theme.wallpaper.type
-                let backgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(theme.base, theme.colors.background)
-                let tintColor = theme.wallpaper.tint ?? wallpaperType.defaultTintColor(theme.base)
                 chatItemsList()
-                    .if(wallpaperImage != nil) { view in
-                        view.modifier(
-                            ChatViewBackground(image: wallpaperImage!, imageType: wallpaperType, background: backgroundColor, tint: tintColor)
-                        )
-                }
                 floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
             }
             connectingText()
@@ -82,7 +77,11 @@ struct ChatView: View {
             )
             .disabled(!cInfo.sendMsgEnabled)
         }
-        .padding(.top, 1)
+        .if(wallpaperImage != nil) { view in
+            view.modifier(
+                ChatViewBackground(image: wallpaperImage!, imageType: wallpaperType, background: backgroundColor, tint: tintColor)
+            )
+        }
         .navigationTitle(cInfo.chatViewName)
         .background(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)

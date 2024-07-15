@@ -283,8 +283,7 @@ struct ComposeView: View {
     @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
 
     var body: some View {
-        VStack(spacing: 0) {
-            Divider()
+        VStack {
             if chat.chatInfo.contact?.nextSendGrpInv ?? false {
                 ContextInvitingContactMemberView()
             }
@@ -305,79 +304,83 @@ struct ComposeView: View {
             case (true, .voicePreview): EmptyView() // ? we may allow playback when editing is allowed
             default: previewView()
             }
-            HStack (alignment: .bottom) {
-                let b = Button {
-                    showChooseSource = true
-                } label: {
-                    Image(systemName: "paperclip")
-                        .resizable()
-                }
-                .disabled(composeState.attachmentDisabled || !chat.userCanSend || (chat.chatInfo.contact?.nextSendGrpInv ?? false))
-                .frame(width: 25, height: 25)
-                .padding(.bottom, 12)
-                .padding(.leading, 12)
-                .tint(theme.colors.primary)
-                if case let .group(g) = chat.chatInfo,
-                   !g.fullGroupPreferences.files.on(for: g.membership) {
-                    b.disabled(true).onTapGesture {
-                        AlertManager.shared.showAlertMsg(
-                            title: "Files and media prohibited!",
-                            message: "Only group owners can enable files and media."
-                        )
+            
+            VStack(spacing: 0) {
+                Divider()
+                HStack (alignment: .bottom) {
+                    let b = Button {
+                        showChooseSource = true
+                    } label: {
+                        Image(systemName: "paperclip")
+                            .resizable()
                     }
-                } else {
-                    b
-                }
-                ZStack(alignment: .leading) {
-                    SendMessageView(
-                        composeState: $composeState,
-                        sendMessage: { ttl in
-                            sendMessage(ttl: ttl)
-                            resetLinkPreview()
-                        },
-                        sendLiveMessage: chat.chatInfo.chatType != .local ? sendLiveMessage : nil,
-                        updateLiveMessage: updateLiveMessage,
-                        cancelLiveMessage: {
-                            composeState.liveMessage = nil
-                            chatModel.removeLiveDummy()
-                        },
-                        nextSendGrpInv: chat.chatInfo.contact?.nextSendGrpInv ?? false,
-                        voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
-                        disableSendButton: simplexLinkProhibited || fileProhibited || voiceProhibited,
-                        showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
-                        startVoiceMessageRecording: {
-                            Task {
-                                await startVoiceMessageRecording()
-                            }
-                        },
-                        finishVoiceMessageRecording: finishVoiceMessageRecording,
-                        allowVoiceMessagesToContact: allowVoiceMessagesToContact,
-                        timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
-                        onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
-                        keyboardVisible: $keyboardVisible,
-                        sendButtonColor: chat.chatInfo.incognito
+                        .disabled(composeState.attachmentDisabled || !chat.userCanSend || (chat.chatInfo.contact?.nextSendGrpInv ?? false))
+                        .frame(width: 25, height: 25)
+                        .padding(.bottom, 12)
+                        .padding(.leading, 12)
+                        .tint(theme.colors.primary)
+                    if case let .group(g) = chat.chatInfo,
+                       !g.fullGroupPreferences.files.on(for: g.membership) {
+                        b.disabled(true).onTapGesture {
+                            AlertManager.shared.showAlertMsg(
+                                title: "Files and media prohibited!",
+                                message: "Only group owners can enable files and media."
+                            )
+                        }
+                    } else {
+                        b
+                    }
+                    ZStack(alignment: .leading) {
+                        SendMessageView(
+                            composeState: $composeState,
+                            sendMessage: { ttl in
+                                sendMessage(ttl: ttl)
+                                resetLinkPreview()
+                            },
+                            sendLiveMessage: chat.chatInfo.chatType != .local ? sendLiveMessage : nil,
+                            updateLiveMessage: updateLiveMessage,
+                            cancelLiveMessage: {
+                                composeState.liveMessage = nil
+                                chatModel.removeLiveDummy()
+                            },
+                            nextSendGrpInv: chat.chatInfo.contact?.nextSendGrpInv ?? false,
+                            voiceMessageAllowed: chat.chatInfo.featureEnabled(.voice),
+                            disableSendButton: simplexLinkProhibited || fileProhibited || voiceProhibited,
+                            showEnableVoiceMessagesAlert: chat.chatInfo.showEnableVoiceMessagesAlert,
+                            startVoiceMessageRecording: {
+                                Task {
+                                    await startVoiceMessageRecording()
+                                }
+                            },
+                            finishVoiceMessageRecording: finishVoiceMessageRecording,
+                            allowVoiceMessagesToContact: allowVoiceMessagesToContact,
+                            timedMessageAllowed: chat.chatInfo.featureEnabled(.timedMessages),
+                            onMediaAdded: { media in if !media.isEmpty { chosenMedia = media }},
+                            keyboardVisible: $keyboardVisible,
+                            sendButtonColor: chat.chatInfo.incognito
                             ? .indigo.opacity(colorScheme == .dark ? 1 : 0.7)
                             : theme.colors.primary
-                    )
-                    .padding(.trailing, 12)
-                    .disabled(!chat.userCanSend)
-
-                    if chat.userIsObserver {
-                        Text("you are observer")
-                            .italic()
-                            .foregroundColor(theme.colors.secondary)
-                            .padding(.horizontal, 12)
-                            .onTapGesture {
-                                AlertManager.shared.showAlertMsg(
-                                    title: "You can't send messages!",
-                                    message: "Please contact group admin."
-                                )
-                            }
+                        )
+                        .padding(.trailing, 12)
+                        .disabled(!chat.userCanSend)
+                        
+                        if chat.userIsObserver {
+                            Text("you are observer")
+                                .italic()
+                                .foregroundColor(theme.colors.secondary)
+                                .padding(.horizontal, 12)
+                                .onTapGesture {
+                                    AlertManager.shared.showAlertMsg(
+                                        title: "You can't send messages!",
+                                        message: "Please contact group admin."
+                                    )
+                                }
+                        }
                     }
                 }
             }
+            .background(BlurView(style: .systemThinMaterial).ignoresSafeArea())
         }
-        .background(BlurView(style: .systemThinMaterial).ignoresSafeArea())
         .onChange(of: composeState.message) { msg in
             if composeState.linkPreviewAllowed {
                 if msg.count > 0 {
