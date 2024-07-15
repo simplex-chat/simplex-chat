@@ -45,9 +45,14 @@ struct ChatView: View {
 
     var body: some View {
         if #available(iOS 16.0, *) {
-            viewBody
+            let v = viewBody
             .scrollDismissesKeyboard(.immediately)
             .keyboardPadding()
+            if (searchMode) {
+                v.toolbarBackground(.thinMaterial, for: .navigationBar)
+            } else {
+                v.toolbarBackground(.visible, for: .navigationBar)
+            }
         } else {
             viewBody
         }
@@ -81,7 +86,6 @@ struct ChatView: View {
             )
             .disabled(!cInfo.sendMsgEnabled)
         }
-        .padding(.top, 1)
         .navigationTitle(cInfo.chatViewName)
         .background(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
@@ -310,8 +314,9 @@ struct ChatView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
+        .background(.thinMaterial)
     }
-
+    
     private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
         ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
     }
@@ -702,19 +707,19 @@ struct ChatView: View {
                             chatItemWithMenu(ci, range, maxWidth)
                         }
                     }
-                    .padding(.top, 5)
+                    .padding(.bottom, 5)
                     .padding(.trailing)
                     .padding(.leading, 12)
                 } else {
                     chatItemWithMenu(ci, range, maxWidth)
-                        .padding(.top, 5)
+                        .padding(.bottom, 5)
                         .padding(.trailing)
                         .padding(.leading, memberImageSize + 8 + 12)
                 }
             } else {
                 chatItemWithMenu(ci, range, maxWidth)
                     .padding(.horizontal)
-                    .padding(.top, 5)
+                    .padding(.bottom, 5)
             }
         }
 
