@@ -314,10 +314,10 @@ newChatController
     where
       configServers :: DefaultAgentServers
       configServers =
-        let DefaultAgentServers {smp = defSmp, xftp = defXftp} = defaultServers
+        let DefaultAgentServers {smp = defSmp, xftp = defXftp, netCfg} = defaultServers
             smp' = maybe defSmp (L.map enabledServerCfg) (nonEmpty smpServers)
             xftp' = maybe defXftp (L.map enabledServerCfg) (nonEmpty xftpServers)
-         in defaultServers {smp = smp', xftp = xftp', netCfg = updateNetworkConfig defaultNetworkConfig simpleNetCfg}
+         in defaultServers {smp = smp', xftp = xftp', netCfg = updateNetworkConfig netCfg simpleNetCfg}
       agentServers :: ChatConfig -> IO InitialAgentServers
       agentServers config@ChatConfig {defaultServers = defServers@DefaultAgentServers {ntf, netCfg}} = do
         users <- withTransaction chatStore getUsers
@@ -1360,9 +1360,9 @@ processChatCommand' vr = \case
   APISetNetworkConfig cfg -> withUser' $ \_ -> lift (withAgent' (`setNetworkConfig` cfg)) >> ok_
   APIGetNetworkConfig -> withUser' $ \_ ->
     CRNetworkConfig <$> lift getNetworkConfig
-  SetNetworkConfig netCfg -> do
-    cfg <- lift getNetworkConfig
-    void . processChatCommand $ APISetNetworkConfig $ updateNetworkConfig cfg netCfg
+  SetNetworkConfig simpleNetCfg -> do
+    cfg <- (`updateNetworkConfig` simpleNetCfg) <$> lift getNetworkConfig
+    void . processChatCommand $ APISetNetworkConfig cfg
     pure $ CRNetworkConfig cfg
   APISetNetworkInfo info -> lift (withAgent' (`setUserNetworkInfo` info)) >> ok_
   ReconnectAllServers -> withUser' $ \_ -> lift (withAgent' reconnectAllServers) >> ok_
@@ -7770,7 +7770,7 @@ chatCommandP =
         <|> ("no" $> TMEDisableKeepTTL)
     netCfgP = do
       socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP)
-      socksMode <- " socks-mode" *> strP <|> pure SMAlways
+      socksMode <- " socks-mode=" *> strP <|> pure SMAlways
       smpProxyMode_ <- optional $ " smp-proxy=" *> strP
       smpProxyFallback_ <- optional $ " smp-proxy-fallback=" *> strP
       t_ <- optional $ " timeout=" *> A.decimal
