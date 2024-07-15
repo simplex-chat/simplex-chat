@@ -299,7 +299,7 @@ fun ChatPreviewView(
       val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
       if (n > 0 || chat.chatStats.unreadChat) {
         Box(
-          Modifier.padding(top = 23.sp.toDp())) {
+          Modifier.padding(top = 24.5.sp.toDp())) {
           Text(
             if (n > 0) unreadCountStr(n) else "",
             color = Color.White,
@@ -325,7 +325,7 @@ fun ChatPreviewView(
         }
       } else if (chat.chatInfo.chatSettings?.favorite == true) {
         Box(
-          Modifier.padding(top = 20.5.sp.toDp())) {
+          Modifier.padding(top = 20.sp.toDp())) {
           Icon(
             painterResource(MR.images.ic_star_filled),
             contentDescription = generalGetString(MR.strings.favorite_chat),
