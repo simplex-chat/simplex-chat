@@ -1,5 +1,6 @@
 package chat.simplex.common.views.contacts
 
+import SectionView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -114,7 +115,11 @@ fun ContactTypeTabs(contactActions: @Composable () -> Unit, searchText: MutableS
         selectedContactType.value = ContactType.values()[contactTypePagerState.currentPage]
     }
     val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
-    ContactsSearchBar(listState, searchText)
+    SectionView {
+        Divider()
+        ContactsSearchBar(listState, searchText)
+        Divider()
+    }
     contactActions()
 
     TabRow(

@@ -1,5 +1,8 @@
 package chat.simplex.common.views.newchat
 
+import SectionItemView
+import SectionView
+import TextIconSpaced
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
@@ -22,6 +25,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatModel
@@ -76,39 +80,21 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?) {
 }
 
 @Composable
+fun NewChatButton(icon: Painter, text: String, click: () -> Unit, textColor: Color = Color.Unspecified, iconColor: Color = MaterialTheme.colors.secondary, disabled: Boolean = false, extraPadding: Boolean = false) {
+  SectionItemView(click, disabled = disabled) {
+    Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else iconColor)
+    TextIconSpaced(extraPadding)
+    Text(text, color = if (disabled) MaterialTheme.colors.secondary else textColor)
+  }
+}
+
+@Composable
 fun NewChatOptions(addContact: () -> Unit, scanPaste: () -> Unit, createGroup: () -> Unit) {
   val actions = remember { listOf(addContact, scanPaste, createGroup) }
-  val backgroundColor = if (isInDarkTheme())
-    blendARGB(MaterialTheme.colors.primary, Color.Black, 0.7F)
-  else
-    MaterialTheme.colors.background
 
   LazyColumn {
     items(actions.size) { index ->
-      Row {
-        Box(contentAlignment = Alignment.Center) {
-          Button(
-            actions[index],
-            shape = RoundedCornerShape(21.dp * fontSizeSqrtMultiplier),
-            colors = ButtonDefaults.textButtonColors(backgroundColor = backgroundColor),
-            elevation = null,
-            contentPadding = PaddingValues(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF),
-            modifier = Modifier.height(42.dp * fontSizeSqrtMultiplier)
-          ) {
-            Icon(
-              painterResource(icons[index]),
-              stringResource(titles[index]),
-              Modifier.size(42.dp * fontSizeSqrtMultiplier),
-              tint = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.primary
-            )
-            Text(
-              stringResource(titles[index]),
-              color = if (isInDarkTheme()) MaterialTheme.colors.primary else MaterialTheme.colors.primary,
-              fontWeight = FontWeight.Medium,
-            )
-          }
-        }
-      }
+      NewChatButton(icon = painterResource(icons[index]), text = stringResource(titles[index]), click = actions[index], extraPadding = true)
     }
   }
 }
