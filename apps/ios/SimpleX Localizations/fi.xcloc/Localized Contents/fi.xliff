@@ -124,11 +124,6 @@
         <target>%@ on vahvistettu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ servers" xml:space="preserve">
-        <source>%@ servers</source>
-        <target>%@ palvelimet</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="%@ uploaded" xml:space="preserve">
         <source>%@ uploaded</source>
         <note>No comment provided by engineer.</note>
@@ -567,6 +562,10 @@
         <source>Acknowledgement errors</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Active connections" xml:space="preserve">
+        <source>Active connections</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve">
         <source>Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</source>
         <target>Lisää osoite profiiliisi, jotta kontaktisi voivat jakaa sen muiden kanssa. Profiilipäivitys lähetetään kontakteillesi.</target>
@@ -586,14 +585,14 @@
         <target>Lisää profiili</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add servers by scanning QR codes." xml:space="preserve">
-        <source>Add servers by scanning QR codes.</source>
-        <target>Lisää palvelimia skannaamalla QR-koodeja.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Add server" xml:space="preserve">
         <source>Add server</source>
         <target>Lisää palvelin</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add servers by scanning QR codes." xml:space="preserve">
+        <source>Add servers by scanning QR codes.</source>
+        <target>Lisää palvelimia skannaamalla QR-koodeja.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
@@ -1298,6 +1297,10 @@
         <target>Määritä ICE-palvelimet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Configured %@ servers" xml:space="preserve">
+        <source>Configured %@ servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
         <source>Confirm</source>
         <target>Vahvista</target>
@@ -1458,10 +1461,6 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Connections" xml:space="preserve">
         <source>Connections</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Connections subscribed" xml:space="preserve">
-        <source>Connections subscribed</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact allows" xml:space="preserve">
@@ -3773,6 +3772,10 @@ This is your link for group %@!</source>
         <target>Viestireaktiot ovat kiellettyjä tässä ryhmässä.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Message reception" xml:space="preserve">
+        <source>Message reception</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Message routing fallback" xml:space="preserve">
         <source>Message routing fallback</source>
         <note>No comment provided by engineer.</note>
@@ -3792,10 +3795,6 @@ This is your link for group %@!</source>
       <trans-unit id="Message status: %@" xml:space="preserve">
         <source>Message status: %@</source>
         <note>copied message info</note>
-      </trans-unit>
-      <trans-unit id="Message subscriptions" xml:space="preserve">
-        <source>Message subscriptions</source>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message text" xml:space="preserve">
         <source>Message text</source>
@@ -4287,6 +4286,10 @@ This is your link for group %@!</source>
         <source>Other</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Other %@ servers" xml:space="preserve">
+        <source>Other %@ servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
         <source>PING count</source>
         <target>PING-määrä</target>
@@ -4445,6 +4448,10 @@ Error: %@</source>
         <target>Säilytä tunnuslause turvallisesti, ET voi muuttaa sitä, jos kadotat sen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Please try later." xml:space="preserve">
+        <source>Please try later.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Polish interface" xml:space="preserve">
         <source>Polish interface</source>
         <target>Puolalainen käyttöliittymä</target>
@@ -4508,6 +4515,10 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Private routing" xml:space="preserve">
         <source>Private routing</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Private routing error" xml:space="preserve">
+        <source>Private routing error</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
@@ -5386,6 +5397,10 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Server address is incompatible with network settings.</source>
         <note>srv error text.</note>
       </trans-unit>
+      <trans-unit id="Server address is incompatible with network settings: %@." xml:space="preserve">
+        <source>Server address is incompatible with network settings: %@.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
         <source>Server requires authorization to create queues, check password</source>
         <target>Palvelin vaatii valtuutuksen jonojen luomiseen, tarkista salasana</target>
@@ -5408,6 +5423,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Server version is incompatible with network settings." xml:space="preserve">
         <source>Server version is incompatible with network settings.</source>
         <note>srv error text</note>
+      </trans-unit>
+      <trans-unit id="Server version is incompatible with your app: %@." xml:space="preserve">
+        <source>Server version is incompatible with your app: %@.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Servers" xml:space="preserve">
         <source>Servers</source>
