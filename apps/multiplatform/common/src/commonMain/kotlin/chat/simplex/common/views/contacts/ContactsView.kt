@@ -1,11 +1,15 @@
 package chat.simplex.common.views.contacts
 
+import SectionDividerSpaced
+import SectionItemView
 import SectionView
+import TextIconSpaced
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,6 +28,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
@@ -35,6 +40,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.toUpperCase
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -57,6 +63,7 @@ import chat.simplex.common.platform.chatModel
 import chat.simplex.common.platform.getKeyboardState
 import chat.simplex.common.platform.hideKeyboard
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chatlist.DetailedSMPStatsView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.strHasSingleSimplexLink
 import chat.simplex.res.MR
@@ -64,110 +71,121 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
+import java.util.HashSet
 
 
 enum class ContactType {
-    RECENT, NEW, REMOVED
+    CARD, REQUEST, RECENT, CONNECTED_VIA_GROUP, REMOVED, UNKNOWN
 }
 
-private fun contactChats(c: List<Chat>, contactType: ContactType): List<Chat> {
-    return c.filter { chat ->
-        when (val cInfo = chat.chatInfo) {
-            is ChatInfo.Direct -> when (contactType) {
-                ContactType.REMOVED -> cInfo.contact.contactStatus == ContactStatus.DeletedByUser || cInfo.contact.contactStatus == ContactStatus.Deleted
-                ContactType.NEW -> false
-                ContactType.RECENT -> cInfo.contact.contactStatus != ContactStatus.DeletedByUser && cInfo.contact.contactStatus != ContactStatus.Deleted
+private fun contactChats(c: List<Chat>, contactTypes: List<ContactType>): List<Chat> {
+    return c.filter { chat -> contactTypes.contains(getContactType(chat)) }
+}
+
+private fun getContactType(chat: Chat): ContactType {
+    return when (val cInfo = chat.chatInfo) {
+        is ChatInfo.ContactRequest -> ContactType.REQUEST
+        is ChatInfo.Direct -> {
+            val contact = cInfo.contact;
+
+            when {
+                contact.activeConn == null && contact.profile.contactLink != null -> ContactType.CARD
+                contact.contactStatus == ContactStatus.DeletedByUser || contact.contactStatus == ContactStatus.Deleted -> ContactType.REMOVED
+                else -> ContactType.RECENT
             }
-            is ChatInfo.ContactRequest -> when (contactType) {
-                ContactType.NEW -> true
-                else -> false
+        }
+        is ChatInfo.Group -> {
+            when {
+                cInfo.groupInfo.sendMsgEnabled -> ContactType.CONNECTED_VIA_GROUP
+                else -> ContactType.UNKNOWN
             }
-            else -> false
+        }
+        else -> ContactType.UNKNOWN
+    }
+}
+
+val chatsByTypeComparator = Comparator<Chat> { chat1, chat2 ->
+    val chat1Type = getContactType(chat1)
+    val chat2Type = getContactType(chat2)
+
+    when {
+        chat1Type.ordinal < chat2Type.ordinal -> -1
+        chat1Type.ordinal > chat2Type.ordinal -> 1
+
+        else -> chat2.chatInfo.chatTs.compareTo(chat1.chatInfo.chatTs)
+    }
+}
+
+@Composable
+fun ContactActionsSection(contactActions: @Composable () -> Unit) {
+    contactActions()
+    Spacer(Modifier.height(DEFAULT_PADDING))
+
+    val archived = remember { contactChats(chatModel.chats, listOf(ContactType.REMOVED)) }
+
+    if (archived.isNotEmpty()) {
+        SectionView {
+            SectionItemView(
+                click = {
+                    //
+                }
+            ) {
+                Icon(
+                    painterResource(MR.images.ic_folder_open),
+                    contentDescription = stringResource(MR.strings.contact_type_deleted),
+                    tint = MaterialTheme.colors.secondary,
+                )
+                TextIconSpaced(extraPadding = true)
+                Text(text = stringResource(MR.strings.contact_type_deleted), color = MaterialTheme.colors.onBackground)
+            }
         }
     }
 }
 
 @Composable
-fun ContactTypeTabs(contactActions: @Composable () -> Unit, searchText: MutableState<TextFieldValue>) {
-    val scope = rememberCoroutineScope()
-    val selectedContactType =
-        remember { mutableStateOf(ContactType.RECENT) }
-
-    val contactTypeTabTitles = ContactType.entries.map {
-        when (it) {
-            ContactType.NEW ->
-                stringResource(MR.strings.contact_type_new)
-
-            ContactType.RECENT ->
-                stringResource(MR.strings.contact_type_recent)
-
-            ContactType.REMOVED ->
-                stringResource(MR.strings.contact_type_removed)
-        }
-    }
-
-    val contactTypePagerState = rememberPagerState(
-        initialPage = selectedContactType.value.ordinal,
-        initialPageOffsetFraction = 0f
-    ) { ContactType.entries.size }
-
-    KeyChangeEffect(contactTypePagerState.currentPage) {
-        selectedContactType.value = ContactType.values()[contactTypePagerState.currentPage]
-    }
+fun ContactsView(contactActions: @Composable () -> Unit) {
     val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
+    var searchFocused by remember { mutableStateOf(false) }
+    val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(
+        TextFieldValue("")
+    ) }
+
     SectionView {
         Divider()
-        ContactsSearchBar(listState, searchText)
+        ContactsSearchBar(
+            listState = listState,
+            searchText = searchText,
+            focused = searchFocused,
+            onFocusChanged = {
+                searchFocused = it
+            }
+        )
         Divider()
     }
-    contactActions()
 
-    TabRow(
-        selectedTabIndex = contactTypePagerState.currentPage,
-        backgroundColor = Color.Transparent,
-        contentColor = MaterialTheme.colors.primary,
-    ) {
-        contactTypeTabTitles.forEachIndexed { index, it ->
-            Tab(
-                selected = contactTypePagerState.currentPage == index,
-                onClick = {
-                    scope.launch {
-                        contactTypePagerState.animateScrollToPage(index)
-                    }
-                },
-                text = { Text(it, fontSize = 13.sp) },
-                selectedContentColor = MaterialTheme.colors.primary,
-                unselectedContentColor = MaterialTheme.colors.secondary,
-            )
-        }
+    if (!searchFocused) {
+        ContactActionsSection(contactActions)
     }
 
-    HorizontalPager(
-        state = contactTypePagerState,
-        Modifier.fillMaxSize(),
-        verticalAlignment = Alignment.Top,
-        userScrollEnabled = appPlatform.isAndroid
-    ) { index ->
-        val contactType = when (index) {
-            ContactType.NEW.ordinal -> ContactType.NEW
-            ContactType.RECENT.ordinal -> ContactType.RECENT
-            ContactType.REMOVED.ordinal -> ContactType.REMOVED
-            else -> ContactType.RECENT
-        }
+    Spacer(Modifier.height(DEFAULT_PADDING))
 
-        ContactsList(listState = listState, chatModel = chatModel, searchText = searchText, contactType = contactType)
+    SectionView(title = stringResource(MR.strings.contact_list_header_title).uppercase(), padding = PaddingValues(DEFAULT_PADDING)) {
+        ContactsList(listState = listState, chatModel = chatModel, searchText = searchText, contactType = ContactType.RECENT)
+    }
+
+    if (searchFocused) {
+        ContactActionsSection(contactActions)
     }
 }
 
 
 @Composable
-fun ContactsSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>) {
+fun ContactsSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, focused: Boolean, onFocusChanged: (hasFocus: Boolean) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         val focusRequester = remember { FocusRequester() }
-        var focused by remember { mutableStateOf(false) }
         Icon(painterResource(MR.images.ic_search), null, Modifier.padding(horizontal = DEFAULT_PADDING_HALF), tint = MaterialTheme.colors.secondary)
         SearchTextField(
-            Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
+            Modifier.weight(1f).onFocusChanged { onFocusChanged(it.hasFocus) }.focusRequester(focusRequester),
             placeholder = stringResource(MR.strings.search_verb),
             alwaysVisible = true,
             searchText = searchText,
@@ -245,7 +263,7 @@ fun ContactsList(listState: LazyListState, chatModel: ChatModel, searchText: Mut
     }
     val showUnreadAndFavorites =
         remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
-    val allChats = remember { contactChats(chatModel.chats, contactType) }
+    val allChats = remember { contactChats(chatModel.chats, listOf(ContactType.CARD, ContactType.RECENT, ContactType.REQUEST)) }
 
     val filteredContactChats = filteredContactChats(
         showUnreadAndFavorites = showUnreadAndFavorites,
@@ -302,14 +320,19 @@ private fun filteredContactChats(
     searchText: String,
     contactChats: List<Chat>
 ): List<Chat> {
-    val s = searchText.trim().lowercase()
-
     return contactChats
         .filter { chat -> filterChat(
             chat = chat,
             searchText = searchText,
             showUnreadAndFavorites = showUnreadAndFavorites) }
-        .sortedByDescending { it.chatInfo.chatTs }
+        .distinctBy { chat ->
+            when (val cInfo = chat.chatInfo) {
+                is ChatInfo.ContactRequest -> cInfo.contactRequest.contactRequestId
+                is ChatInfo.Direct -> cInfo.contact.contactId
+                else -> cInfo.id
+            }
+        }
+        .sortedWith(chatsByTypeComparator)
 }
 
 private fun viewNameContains(cInfo: ChatInfo, s: String): Boolean =

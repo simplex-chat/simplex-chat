@@ -3,6 +3,7 @@ package chat.simplex.common.views.contacts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -99,6 +100,19 @@ fun ContactPreviewView(
 
         Spacer(Modifier.fillMaxWidth().weight(1f))
 
+        if (chat.chatInfo is ChatInfo.ContactRequest) {
+            Text(
+                text = generalGetString(MR.strings.contact_type_new).uppercase(),
+                color = MaterialTheme.colors.onPrimary,
+                fontSize = 10.sp * fontSizeMultiplier,
+                modifier = Modifier
+                    .background(MaterialTheme.colors.primary, shape = CircleShape)
+                    .badgeLayout()
+                    .padding(horizontal = 4.dp)
+                    .padding(vertical = 2.dp)
+            )
+        }
+
         if (chat.chatInfo.chatSettings?.favorite == true) {
             Icon(
                 painterResource(MR.images.ic_star_filled),
@@ -111,6 +125,7 @@ fun ContactPreviewView(
                 Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
             }
         }
+
 
         if (chat.chatInfo.incognito) {
             Icon(

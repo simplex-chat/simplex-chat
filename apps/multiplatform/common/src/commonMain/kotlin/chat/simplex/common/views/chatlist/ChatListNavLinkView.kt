@@ -662,7 +662,7 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
   }
 }
 
-fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
+fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel, onSuccess: () -> Unit = {}) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.accept_connection_request__question),
     text = AnnotatedString(generalGetString(MR.strings.if_you_choose_to_reject_the_sender_will_not_be_notified)),
@@ -671,12 +671,14 @@ fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactReque
         SectionItemView({
           AlertManager.shared.hideAlert()
           acceptContactRequest(rhId, incognito = false, contactRequest.apiId, contactRequest, true, chatModel)
+          onSuccess()
         }) {
           Text(generalGetString(MR.strings.accept_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
           acceptContactRequest(rhId, incognito = true, contactRequest.apiId, contactRequest, true, chatModel)
+          onSuccess()
         }) {
           Text(generalGetString(MR.strings.accept_contact_incognito_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
