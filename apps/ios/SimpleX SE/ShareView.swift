@@ -52,26 +52,29 @@ struct ShareView: View {
     }
 
     private var compose: some View {
-        HStack {
-            TextField("Comment", text: $model.comment, axis: .vertical)
-                .contentShape(Rectangle())
-                .padding(.horizontal, 12)
-                .padding(.vertical, 4)
-            Button(action: model.send) {
-                Image(systemName: "arrow.up.circle.fill")
-                    .resizable()
-                    .frame(width: 32, height: 32)
-                    .padding(4)
+        VStack(spacing: .zero) {
+            Divider()
+            HStack {
+                TextField("Comment", text: $model.comment, axis: .vertical)
+                    .contentShape(Rectangle())
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                Button(action: model.send) {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .resizable()
+                        .frame(width: 28, height: 28)
+                        .padding(6)
+                }
             }
+            .background(Color(.systemBackground))
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .strokeBorder(.tertiary, lineWidth: 1).opacity(0.6)
+            )
+            .padding(8)
+            .background(Material.bar)
         }
-        .background(Color(.systemBackground).opacity(0.4))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .strokeBorder(.tertiary, lineWidth: 1).opacity(0.5)
-        )
-        .padding(8)
-        .background(Material.bar)
     }
 
     private func loadingBar(progress: Double) -> some View {
