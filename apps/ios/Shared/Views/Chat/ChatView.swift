@@ -57,10 +57,10 @@ struct ChatView: View {
     private var viewBody: some View {
         let cInfo = chat.chatInfo
         return VStack(spacing: 0) {
-            if searchMode {
-                searchToolbar()
-                Divider()
-            }
+//            if searchMode {
+//                searchToolbar()
+//                Divider()
+//            }
             ZStack(alignment: .bottomTrailing) {
                 let wallpaperImage = theme.wallpaper.type.image
                 let wallpaperType = theme.wallpaper.type
@@ -82,7 +82,9 @@ struct ChatView: View {
             )
             .disabled(!cInfo.sendMsgEnabled)
         }
-        .padding(.top, 1)
+        .if(searchMode) {
+            $0.searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
+        }
         .navigationTitle(cInfo.chatViewName)
         .background(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
