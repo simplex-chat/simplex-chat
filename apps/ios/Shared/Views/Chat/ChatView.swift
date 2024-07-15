@@ -35,6 +35,7 @@ struct ChatView: View {
     @State private var revealedChatItem: ChatItem?
     @State private var searchMode = false
     @State private var searchText: String = ""
+    @FocusState private var searchFocussed
     // opening GroupMemberInfoView on member icon
     @State private var selectedMember: GMember? = nil
     // opening GroupLinkView on link button (incognito)
@@ -56,6 +57,10 @@ struct ChatView: View {
     private var viewBody: some View {
         let cInfo = chat.chatInfo
         return VStack(spacing: 0) {
+            if searchMode {
+                searchToolbar()
+                Divider()
+            }
             ZStack(alignment: .bottomTrailing) {
                 let wallpaperImage = theme.wallpaper.type.image
                 let wallpaperType = theme.wallpaper.type
@@ -76,12 +81,6 @@ struct ChatView: View {
                 keyboardVisible: $keyboardVisible
             )
             .disabled(!cInfo.sendMsgEnabled)
-        }
-        .if(searchMode) { v in
-            v.searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
-        }
-        .onChange(of: chatModel.keyboardShown) { shown in
-            if !shown { searchMode = false }
         }
         .navigationTitle(cInfo.chatViewName)
         .background(theme.colors.background)
@@ -280,6 +279,40 @@ struct ChatView: View {
         }
     }
 
+    private func searchToolbar() -> some View {
+        HStack(spacing: 12) {
+            HStack(spacing: 4) {
+                Image(systemName: "magnifyingglass")
+                TextField("Search", text: $searchText)
+                    .focused($searchFocussed)
+                    .foregroundColor(theme.colors.onBackground)
+                    .frame(maxWidth: .infinity)
+
+                Button {
+                    searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill").opacity(searchText == "" ? 0 : 1)
+                }
+            }
+            .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
+            .foregroundColor(theme.colors.secondary)
+            .background(Color(.tertiarySystemFill))
+            .cornerRadius(10.0)
+
+            Button ("Cancel") {
+                searchText = ""
+                searchMode = false
+                searchFocussed = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    loadChat(chat: chat)
+                }
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(.thinMaterial)
+    }
+    
     private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
         ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
     }
