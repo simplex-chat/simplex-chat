@@ -54,15 +54,6 @@ class ShareModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .assign(to: \.chats, on: self)
             .store(in: &bag)
-
-        // Binding: Filtering out chat deselects it
-        $chats
-            .map { chats in
-                Set(chats).contains(self.selected) ? self.selected : nil
-            }
-            .receive(on: DispatchQueue.main)
-            .assign(to: \.selected, on: self)
-            .store(in: &bag)
         
         // Binding: Decodes chat images
         chatsSubject
