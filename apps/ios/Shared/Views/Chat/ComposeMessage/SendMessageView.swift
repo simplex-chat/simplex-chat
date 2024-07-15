@@ -85,8 +85,8 @@ struct SendMessageView: View {
             }
             .padding(.vertical, 1)
             .overlay(
-            RoundedRectangle(cornerSize: CGSize(width: 20, height: 20))
-                .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
+            RoundedRectangle(cornerRadius: 20)
+                .strokeBorder(.tertiary, lineWidth: 1).opacity(0.5)
             )
         }
         .onChange(of: composeState.message, perform: { text in updateFont(text) })

@@ -67,10 +67,8 @@ struct ShareView: View {
         .background(Color(.systemBackground).opacity(0.4))
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .overlay(
-            RoundedRectangle(cornerRadius: 20).stroke(
-                Color(.tertiaryLabel),
-                lineWidth: 1
-            )
+            RoundedRectangle(cornerRadius: 20)
+                .strokeBorder(.tertiary, lineWidth: 1).opacity(0.5)
         )
         .padding(8)
         .background(Material.bar)
