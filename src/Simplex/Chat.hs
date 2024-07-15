@@ -103,7 +103,7 @@ import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), Migrati
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
-import Simplex.Messaging.Client (NetworkConfig (..), ProxyClientError (..), defaultNetworkConfig)
+import Simplex.Messaging.Client (NetworkConfig (..), ProxyClientError (..), SocksMode (SMAlways), defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -336,11 +336,11 @@ newChatController
               userServers user' = useServers config protocol <$> withTransaction chatStore (`getProtocolServers` user')
 
 updateNetworkConfig :: NetworkConfig -> SimpleNetCfg -> NetworkConfig
-updateNetworkConfig cfg SimpleNetCfg {socksProxy, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors} =
+updateNetworkConfig cfg SimpleNetCfg {socksProxy, socksMode, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors} =
   let cfg1 = maybe cfg (\smpProxyMode -> cfg {smpProxyMode}) smpProxyMode_
       cfg2 = maybe cfg1 (\smpProxyFallback -> cfg1 {smpProxyFallback}) smpProxyFallback_
       cfg3 = maybe cfg2 (\tcpTimeout -> cfg2 {tcpTimeout, tcpConnectTimeout = (tcpTimeout * 3) `div` 2}) tcpTimeout_
-   in cfg3 {socksProxy, logTLSErrors}
+   in cfg3 {socksProxy, socksMode, logTLSErrors}
 
 withChatLock :: String -> CM a -> CM a
 withChatLock name action = asks chatLock >>= \l -> withLock l name action
@@ -7770,12 +7770,13 @@ chatCommandP =
         <|> ("no" $> TMEDisableKeepTTL)
     netCfgP = do
       socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP)
+      socksMode <- " socks-mode" *> strP <|> pure SMAlways
       smpProxyMode_ <- optional $ " smp-proxy=" *> strP
       smpProxyFallback_ <- optional $ " smp-proxy-fallback=" *> strP
       t_ <- optional $ " timeout=" *> A.decimal
       logTLSErrors <- " log=" *> onOffP <|> pure False
       let tcpTimeout_ = (1000000 *) <$> t_
-      pure $ SimpleNetCfg {socksProxy, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors}
+      pure $ SimpleNetCfg {socksProxy, socksMode, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors}
     dbKeyP = nonEmptyKey <$?> strP
     nonEmptyKey k@(DBEncryptionKey s) = if BA.null s then Left "empty key" else Right k
     dbEncryptionConfig currentKey newKey = DBEncryptionConfig {currentKey, newKey, keepKey = Just False}
