@@ -285,7 +285,7 @@ fun ChatPreviewView(
         .weight(1F)
     ) {
       chatPreviewTitle()
-      Row(Modifier.heightIn(min = 46.sp.toDp()).padding(top = 3.sp.toDp()).background(Color.Blue)) {
+      Row(Modifier.heightIn(min = 46.sp.toDp()).padding(top = 3.sp.toDp())) {
         chatPreviewText()
       }
     }
