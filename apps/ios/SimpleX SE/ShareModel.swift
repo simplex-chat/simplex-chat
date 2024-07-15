@@ -36,7 +36,7 @@ class ShareModel: ObservableObject {
                     withAnimation { self.isLoaded = true }
                 }
             case let .failure(error):
-                await MainActor.run { self.error = .fetchChats(error) }
+                await MainActor.run { self.error = error }
             }
         }
 
@@ -78,12 +78,12 @@ class ShareModel: ObservableObject {
                 await MainActor.run { progress = .zero }
                 startEventLoop(for: aChatItem)
             case let .failure(error):
-                self.error = .sendMessage(error)
+                self.error = error
             }
         }
     }
 
-    private func sendMessage() async -> Result<AChatItem, ShareError.SendMessage> {
+    private func sendMessage() async -> Result<AChatItem, ShareError> {
         guard let chat = selected else { return .failure(.noChatWasSelected) }
         guard let attachment = item?.attachments?.first else { return .failure(.missingAttachment) }
         do {
@@ -92,55 +92,45 @@ class ShareModel: ObservableObject {
             }
             let url = try await attachment.inPlaceUrl(type: type)
             guard let cryptoFile = saveFileFromURL(url) else { return .failure(.encryptFile) }
-            let chatResponse = sendSimpleXCmd(
-                .apiSendMessage(
-                    type: chat.chatInfo.chatType,
-                    id: chat.chatInfo.apiId,
-                    file: cryptoFile,
-                    quotedItemId: nil,
-                    msg: .file(comment),
-                    live: false,
-                    ttl: nil
+            return .success(
+                try apiSendMessage(
+                    chatInfo: chat.chatInfo,
+                    cryptoFile: cryptoFile,
+                    msgContent: .file(comment)
                 )
             )
-            return switch chatResponse {
-            case let .newChatItem(_, chatItem): .success(chatItem)
-            default: .failure(.sendMessage)
-            }
         } catch {
-            return .failure(.loadFileRepresentation(error))
+            if let chatResponse = error as? ChatResponse {
+                return .failure(.apiError(APIError(response: chatResponse)))
+            } else {
+                return .failure(.loadFileRepresentation(error))
+            }
         }
     }
 
-    private func fetchChats() -> Result<Array<ChatData>, ShareError.FetchChats> {
+    private func fetchChats() -> Result<Array<ChatData>, ShareError> {
         registerGroupDefaults()
         haskell_init_se()
         let (_, result) = chatMigrateInit()
         guard (result == .ok) else {
             return .failure(.unexpectedMigrationResult(result))
         }
-        guard case let .activeUser(user: user) = sendSimpleXCmd(.showActiveUser) else {
-            return .failure(.noActiveUser)
-        }
-        guard case .cmdOk = sendSimpleXCmd(.apiSetNetworkConfig(networkConfig: getNetCfg())) else {
-            return .failure(.networkConfigurationFailure)
-        }
-        guard case .cmdOk = sendSimpleXCmd(
-            .apiSetAppFilePaths(
+        do {
+            guard let user = try apiGetActiveUser() else {
+                return .failure(.noActiveUser)
+            }
+            try apiSetNetworkConfig(getNetCfg())
+            try apiSetAppFilePaths(
                 filesFolder: getAppFilesDirectory().path,
                 tempFolder: getTempFilesDirectory().path,
                 assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path
             )
-        ) else {
-            return .failure(.unableToSetupFilePaths)
+            let isRunning = try apiStartChat()
+            logger.log(level: .debug, "Chat Started. Is running: \(isRunning)")
+            return .success(try apiGetChats(userId: user.id))
+        } catch {
+            return .failure(.apiError(APIError(response: error as! ChatResponse)))
         }
-        guard case .chatStarted = sendSimpleXCmd(.startChat(mainApp: false)) else {
-            return .failure(.unableToStartChat)
-        }
-        guard case let .apiChats(user: _, chats: chats) = sendSimpleXCmd(.apiGetChats(userId: user.userId)) else {
-            return .failure(.unableToFetchChats(user))
-        }
-        return .success(chats)
     }
 
     private func startEventLoop(for sent: AChatItem) {
