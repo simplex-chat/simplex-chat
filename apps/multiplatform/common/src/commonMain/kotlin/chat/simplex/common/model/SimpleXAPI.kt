@@ -3306,18 +3306,18 @@ data class ParsedServerAddress (
 data class NetCfg(
   val socksProxy: String?,
   val socksMode: SocksMode = SocksMode.Always,
-  val hostMode: HostMode,
-  val requiredHostMode: Boolean,
-  val sessionMode: TransportSessionMode,
-  val smpProxyMode: SMPProxyMode,
-  val smpProxyFallback: SMPProxyFallback,
+  val hostMode: HostMode = HostMode.OnionViaSocks,
+  val requiredHostMode: Boolean = false,
+  val sessionMode: TransportSessionMode = TransportSessionMode.User,
+  val smpProxyMode: SMPProxyMode = SMPProxyMode.Unknown,
+  val smpProxyFallback: SMPProxyFallback = SMPProxyFallback.AllowProtected,
   val tcpConnectTimeout: Long, // microseconds
   val tcpTimeout: Long, // microseconds
   val tcpTimeoutPerKb: Long, // microseconds
   val rcvConcurrency: Int, // pool size
-  val tcpKeepAlive: KeepAliveOpts?,
+  val tcpKeepAlive: KeepAliveOpts? = KeepAliveOpts.defaults,
   val smpPingInterval: Long, // microseconds
-  val smpPingCount: Int,
+  val smpPingCount: Int = 3,
   val logTLSErrors: Boolean = false,
 ) {
   val useSocksProxy: Boolean get() = socksProxy != null
@@ -3336,35 +3336,21 @@ data class NetCfg(
     val defaults: NetCfg =
       NetCfg(
         socksProxy = null,
-        hostMode = HostMode.OnionViaSocks,
-        requiredHostMode = false,
-        sessionMode = TransportSessionMode.User,
-        smpProxyMode = SMPProxyMode.Never,
-        smpProxyFallback = SMPProxyFallback.Allow,
         tcpConnectTimeout = 25_000_000,
         tcpTimeout = 15_000_000,
         tcpTimeoutPerKb = 10_000,
         rcvConcurrency = 12,
-        tcpKeepAlive = KeepAliveOpts.defaults,
-        smpPingInterval = 1200_000_000,
-        smpPingCount = 3
+        smpPingInterval = 1200_000_000
       )
 
     val proxyDefaults: NetCfg =
       NetCfg(
         socksProxy = ":9050",
-        hostMode = HostMode.OnionViaSocks,
-        requiredHostMode = false,
-        sessionMode = TransportSessionMode.User,
-        smpProxyMode = SMPProxyMode.Never,
-        smpProxyFallback = SMPProxyFallback.Allow,
         tcpConnectTimeout = 35_000_000,
         tcpTimeout = 20_000_000,
         tcpTimeoutPerKb = 15_000,
         rcvConcurrency = 8,
-        tcpKeepAlive = KeepAliveOpts.defaults,
-        smpPingInterval = 1200_000_000,
-        smpPingCount = 3
+        smpPingInterval = 1200_000_000
       )
   }
 
