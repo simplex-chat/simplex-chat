@@ -54,7 +54,16 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHand
                         ContactPreviewView(chat, disabled)
                     }
                 },
-                click = { contactRequestAlertDialog(chat.remoteHostId, chat.chatInfo, chatModel) },
+                click = {
+                    contactRequestAlertDialog(
+                        chat.remoteHostId,
+                        chat.chatInfo,
+                        chatModel,
+                        onSuccess = {
+                            ModalManager.start.closeModals()
+                        }
+                    )
+                },
                 dropdownMenuItems = {
                     tryOrShowError("${chat.id}ContactListNavLinkDropdown", error = {}) {
                         ContactRequestMenuItems(chat.remoteHostId, chat.chatInfo, chatModel, showMenu)

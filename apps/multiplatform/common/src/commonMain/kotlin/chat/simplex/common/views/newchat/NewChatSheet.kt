@@ -32,7 +32,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.RemoteHostInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.contacts.ContactTypeTabs
+import chat.simplex.common.views.contacts.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,12 +53,8 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?) {
         bottomPadding = bottomPadding
       )
     }
-    val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(
-      TextFieldValue("")
-    ) }
 
-    ContactTypeTabs(
-      searchText = searchText,
+    ContactsView(
       contactActions = {
         NewChatOptions(
           addContact = {
