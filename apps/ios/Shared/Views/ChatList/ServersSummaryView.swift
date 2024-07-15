@@ -11,12 +11,12 @@ import SimpleXChat
 
 struct ServersSummaryView: View {
     @EnvironmentObject var m: ChatModel
-    @State private var serversSummary: PresentedServersSummary? = nil
+    @EnvironmentObject var theme: AppTheme
+    @Binding var serversSummary: PresentedServersSummary?
     @State private var selectedUserCategory: PresentedUserCategory = .allUsers
     @State private var selectedServerType: PresentedServerType = .smp
     @State private var selectedSMPServer: String? = nil
     @State private var selectedXFTPServer: String? = nil
-    @State private var timer: Timer? = nil
     @State private var alert: SomeAlert?
 
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
@@ -47,24 +47,8 @@ struct ServersSummaryView: View {
             if m.users.filter({ u in u.user.activeUser || !u.user.hidden }).count == 1 {
                 selectedUserCategory = .currentUser
             }
-            getServersSummary()
-            startTimer()
-        }
-        .onDisappear {
-            stopTimer()
         }
         .alert(item: $alert) { $0.alert }
-    }
-
-    private func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            getServersSummary()
-        }
-    }
-
-    func stopTimer() {
-        timer?.invalidate()
-        timer = nil
     }
 
     private func shareButton() -> some View {
@@ -183,16 +167,18 @@ struct ServersSummaryView: View {
             }
         } else {
             Text("No info, try to reload")
+                .foregroundColor(theme.colors.secondary)
+                .background(theme.colors.background)
         }
     }
 
     private func smpSubsSection(_ totals: SMPTotals) -> some View {
         Section {
-            infoRow("Connections subscribed", numOrDash(totals.subs.ssActive))
+            infoRow("Active connections", numOrDash(totals.subs.ssActive))
             infoRow("Total", numOrDash(totals.subs.total))
         } header: {
             HStack {
-                Text("Message subscriptions")
+                Text("Message reception")
                 SubscriptionStatusIndicatorView(subs: totals.subs, sess: totals.sessions)
                 if showSubscriptionPercentage {
                     SubscriptionStatusPercentageView(subs: totals.subs, sess: totals.sessions)
@@ -369,7 +355,6 @@ struct ServersSummaryView: View {
                         Task {
                             do {
                                 try await resetAgentServersStats()
-                                getServersSummary()
                             } catch let error {
                                 alert = SomeAlert(
                                     alert: mkAlert(
@@ -387,14 +372,6 @@ struct ServersSummaryView: View {
             )
         } label: {
             Text("Reset all statistics")
-        }
-    }
-
-    private func getServersSummary() {
-        do {
-            serversSummary = try getAgentServersSummary()
-        } catch let error {
-            logger.error("getAgentServersSummary error: \(responseError(error))")
         }
     }
 }
@@ -497,13 +474,13 @@ struct SMPServerSummaryView: View {
 
     private func smpSubsSection(_ subs: SMPServerSubs) -> some View {
         Section {
-            infoRow("Connections subscribed", numOrDash(subs.ssActive))
+            infoRow("Active connections", numOrDash(subs.ssActive))
             infoRow("Pending", numOrDash(subs.ssPending))
             infoRow("Total", numOrDash(subs.total))
             reconnectButton()
         } header: {
             HStack {
-                Text("Message subscriptions")
+                Text("Message reception")
                 SubscriptionStatusIndicatorView(subs: subs, sess: summary.sessionsOrNew)
                 if showSubscriptionPercentage {
                     SubscriptionStatusPercentageView(subs: subs, sess: summary.sessionsOrNew)
@@ -734,5 +711,7 @@ struct DetailedXFTPStatsView: View {
 }
 
 #Preview {
-    ServersSummaryView()
+    ServersSummaryView(
+        serversSummary: Binding.constant(nil)
+    )
 }

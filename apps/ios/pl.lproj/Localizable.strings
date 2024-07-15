@@ -337,9 +337,6 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "powyżej, a następnie wybierz:";
 
-/* No comment provided by engineer. */
-"Accent color" = "Kolor akcentu";
-
 /* accept contact request via notification
    accept incoming call via notification */
 "Accept" = "Akceptuj";
@@ -369,7 +366,7 @@
 "Add profile" = "Dodaj profil";
 
 /* No comment provided by engineer. */
-"Add server…" = "Dodaj serwer…";
+"Add server" = "Dodaj serwer";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "Dodaj serwery, skanując kody QR.";
@@ -653,7 +650,7 @@
 /* rcv group event chat item */
 "blocked %@" = "zablokowany %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item */
 "blocked by admin" = "zablokowany przez admina";
 
 /* No comment provided by engineer. */
@@ -840,9 +837,6 @@
 /* No comment provided by engineer. */
 "colored" = "kolorowy";
 
-/* No comment provided by engineer. */
-"Colors" = "Kolory";
-
 /* server test step */
 "Compare file" = "Porównaj plik";
 
@@ -1023,7 +1017,7 @@
 /* No comment provided by engineer. */
 "Continue" = "Kontynuuj";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "Kopiuj";
 
 /* No comment provided by engineer. */
@@ -1166,6 +1160,9 @@
 
 /* time unit */
 "days" = "dni";
+
+/* No comment provided by engineer. */
+"Debug delivery" = "Dostarczenie debugowania";
 
 /* No comment provided by engineer. */
 "Decentralized" = "Zdecentralizowane";
@@ -1800,7 +1797,8 @@
 /* No comment provided by engineer. */
 "Error: " = "Błąd: ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "Błąd: %@";
 
 /* No comment provided by engineer. */
@@ -2495,6 +2493,9 @@
 
 /* No comment provided by engineer. */
 "Message draft" = "Wersja robocza wiadomości";
+
+/* No comment provided by engineer. */
+"Message queue info" = "Informacje kolejki wiadomości";
 
 /* chat feature */
 "Message reactions" = "Reakcje wiadomości";
@@ -3518,6 +3519,9 @@
 /* srv error text. */
 "Server address is incompatible with network settings." = "Adres serwera jest niekompatybilny z ustawieniami sieciowymi.";
 
+/* queue info */
+"server queue info: %@\n\nlast received msg: %@" = "Informacje kolejki serwera: %1$@\n\nostatnia otrzymana wiadomość: %2$@";
+
 /* server test error */
 "Server requires authorization to create queues, check password" = "Serwer wymaga autoryzacji do tworzenia kolejek, sprawdź hasło";
 
@@ -3871,9 +3875,6 @@
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Tekst, który wkleiłeś nie jest linkiem SimpleX.";
-
-/* No comment provided by engineer. */
-"Theme" = "Motyw";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Te ustawienia dotyczą Twojego bieżącego profilu **%@**.";

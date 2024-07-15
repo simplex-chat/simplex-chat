@@ -330,7 +330,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   }
 
   @Composable
-  fun MemberDeliveryStatusView(member: GroupMember, status: CIStatus, sentViaProxy: Boolean?) {
+  fun MemberDeliveryStatusView(member: GroupMember, status: GroupSndStatus, sentViaProxy: Boolean?) {
     SectionItemView(
       padding = PaddingValues(horizontal = 0.dp)
     ) {
@@ -355,7 +355,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
           )
         }
       }
-      val statusIcon = status.statusIcon(MaterialTheme.colors.primary, CurrentColors.value.colors.secondary)
+      val (icon, statusColor) = status.statusIcon(MaterialTheme.colors.primary, CurrentColors.value.colors.secondary)
       var modifier = Modifier.size(36.dp).clip(RoundedCornerShape(20.dp))
       val info = status.statusInto
       if (info != null) {
@@ -367,20 +367,11 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         }
       }
       Box(modifier, contentAlignment = Alignment.Center) {
-        if (statusIcon != null) {
-          val (icon, statusColor) = statusIcon
-          Icon(
-            painterResource(icon),
-            contentDescription = null,
-            tint = statusColor
-          )
-        } else {
-          Icon(
-            painterResource(MR.images.ic_more_horiz),
-            contentDescription = null,
-            tint = CurrentColors.value.colors.secondary
-          )
-        }
+        Icon(
+          painterResource(icon),
+          contentDescription = null,
+          tint = statusColor
+        )
       }
     }
   }
@@ -520,7 +511,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   }
 }
 
-private fun membersStatuses(chatModel: ChatModel, memberDeliveryStatuses: List<MemberDeliveryStatus>): List<Triple<GroupMember, CIStatus, Boolean?>> {
+private fun membersStatuses(chatModel: ChatModel, memberDeliveryStatuses: List<MemberDeliveryStatus>): List<Triple<GroupMember, GroupSndStatus, Boolean?>> {
   return memberDeliveryStatuses.mapNotNull { mds ->
     chatModel.getGroupMember(mds.groupMemberId)?.let { mem ->
       Triple(mem, mds.memberDeliveryStatus, mds.sentViaProxy)

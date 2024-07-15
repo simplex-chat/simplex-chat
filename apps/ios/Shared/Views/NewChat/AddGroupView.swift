@@ -194,6 +194,7 @@ struct AddGroupView: View {
                 let groupMembers = await apiListMembers(gInfo.groupId)
                 await MainActor.run {
                     m.groupMembers = groupMembers.map { GMember.init($0) }
+                    m.populateGroupMembersIndexes()
                 }
             }
             let c = Chat(chatInfo: .group(groupInfo: gInfo), chatItems: [])

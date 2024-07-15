@@ -10,12 +10,12 @@ import Data.Maybe (fromMaybe)
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Network.Socket
-import Simplex.Chat.Controller (ChatConfig, ChatController (..), ChatResponse (..), SimpleNetCfg (..), currentRemoteHost, versionNumber, versionString)
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatResponse (..), DefaultAgentServers (DefaultAgentServers, netCfg), SimpleNetCfg (..), currentRemoteHost, versionNumber, versionString)
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal
 import Simplex.Chat.View (serializeChatResponse, smpProxyModeStr)
-import Simplex.Messaging.Client (NetworkConfig (..), defaultNetworkConfig)
+import Simplex.Messaging.Client (NetworkConfig (..), SocksMode (..))
 import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
 import System.Terminal (withTerminal)
@@ -33,7 +33,7 @@ simplexChatCLI cfg server_ = do
     else simplexChatCore cfg opts $ runCommand opts
   where
     runCLI opts = do
-      welcome opts
+      welcome cfg opts
       t <- withTerminal pure
       simplexChatTerminal cfg opts t
     runCommand ChatOpts {chatCmd, chatCmdLog, chatCmdDelay} user cc = do
@@ -51,18 +51,18 @@ simplexChatCLI cfg server_ = do
           rh <- readTVarIO $ currentRemoteHost cc
           putStrLn $ serializeChatResponse (rh, Just user) ts tz rh r
 
-welcome :: ChatOpts -> IO ()
-welcome ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, simpleNetCfg = SimpleNetCfg {socksProxy, smpProxyMode_, smpProxyFallback_}}} =
+welcome :: ChatConfig -> ChatOpts -> IO ()
+welcome ChatConfig {defaultServers = DefaultAgentServers {netCfg}} ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, simpleNetCfg = SimpleNetCfg {socksProxy, socksMode, smpProxyMode_, smpProxyFallback_}}} =
   mapM_
     putStrLn
     [ versionString versionNumber,
       "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db",
       maybe
         "direct network connection - use `/network` command or `-x` CLI option to connect via SOCKS5 at :9050"
-        (("using SOCKS5 proxy " <>) . show)
+        ((\sp -> "using SOCKS5 proxy " <> sp <> if socksMode == SMOnion then " for onion servers ONLY." else " for ALL servers.") . show)
         socksProxy,
       smpProxyModeStr
-        (fromMaybe (smpProxyMode defaultNetworkConfig) smpProxyMode_)
-        (fromMaybe (smpProxyFallback defaultNetworkConfig) smpProxyFallback_),
+        (fromMaybe (smpProxyMode netCfg) smpProxyMode_)
+        (fromMaybe (smpProxyFallback netCfg) smpProxyFallback_),
       "type \"/help\" or \"/h\" for usage info"
     ]

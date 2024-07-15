@@ -331,9 +331,6 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "上で選んでください：";
 
-/* No comment provided by engineer. */
-"Accent color" = "アクセントカラー";
-
 /* accept contact request via notification
    accept incoming call via notification */
 "Accept" = "承諾";
@@ -360,7 +357,7 @@
 "Add profile" = "プロフィールを追加";
 
 /* No comment provided by engineer. */
-"Add server…" = "サーバを追加…";
+"Add server" = "サーバを追加";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "QRコードでサーバを追加する。";
@@ -735,9 +732,6 @@
 /* No comment provided by engineer. */
 "colored" = "色付き";
 
-/* No comment provided by engineer. */
-"Colors" = "色";
-
 /* server test step */
 "Compare file" = "ファイルを比較";
 
@@ -867,7 +861,7 @@
 /* No comment provided by engineer. */
 "Continue" = "続ける";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "コピー";
 
 /* No comment provided by engineer. */
@@ -1509,7 +1503,8 @@
 /* No comment provided by engineer. */
 "Error: " = "エラー : ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "エラー : %@";
 
 /* No comment provided by engineer. */
@@ -3112,9 +3107,6 @@
 
 /* No comment provided by engineer. */
 "The servers for new connections of your current chat profile **%@**." = "現在のチャットプロフィールの新しい接続のサーバ **%@**。";
-
-/* No comment provided by engineer. */
-"Theme" = "テーマ";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "これらの設定は現在のプロファイル **%@** 用です。";

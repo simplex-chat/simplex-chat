@@ -1611,17 +1611,22 @@ public struct Connection: Decodable, Hashable {
     public var pqSndEnabled: Bool?
     public var pqRcvEnabled: Bool?
     public var authErrCounter: Int
+    public var quotaErrCounter: Int
 
     public var connectionStats: ConnectionStats? = nil
 
     private enum CodingKeys: String, CodingKey {
-        case connId, agentConnId, peerChatVRange, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled, authErrCounter
+        case connId, agentConnId, peerChatVRange, connStatus, connLevel, viaGroupLink, customUserProfileId, connectionCode, pqSupport, pqEncryption, pqSndEnabled, pqRcvEnabled, authErrCounter, quotaErrCounter
     }
 
     public var id: ChatId { get { ":\(connId)" } }
 
     public var connDisabled: Bool {
         authErrCounter >= 10 // authErrDisableCount in core
+    }
+
+    public var connInactive: Bool {
+        quotaErrCounter >= 5 // quotaErrInactiveCount in core
     }
 
     public var connPQEnabled: Bool {
@@ -1637,7 +1642,8 @@ public struct Connection: Decodable, Hashable {
         viaGroupLink: false,
         pqSupport: false,
         pqEncryption: false,
-        authErrCounter: 0
+        authErrCounter: 0,
+        quotaErrCounter: 0
     )
 }
 
@@ -2846,6 +2852,62 @@ public enum SndCIStatusProgress: String, Decodable, Hashable {
     case complete
 }
 
+public enum GroupSndStatus: Decodable, Hashable {
+    case new
+    case forwarded
+    case inactive
+    case sent
+    case rcvd(msgRcptStatus: MsgReceiptStatus)
+    case error(agentError: SndError)
+    case warning(agentError: SndError)
+    case invalid(text: String)
+
+    public func statusIcon(_ metaColor: Color/* = .secondary*/, _ primaryColor: Color = .accentColor) -> (String, Color) {
+        switch self {
+        case .new: return ("ellipsis", metaColor)
+        case .forwarded: return ("chevron.forward.2", metaColor)
+        case .inactive: return ("person.badge.minus", metaColor)
+        case .sent: return ("checkmark", metaColor)
+        case let .rcvd(msgRcptStatus):
+            switch msgRcptStatus {
+            case .ok: return ("checkmark", metaColor)
+            case .badMsgHash: return ("checkmark", .red)
+            }
+        case .error: return ("multiply", .red)
+        case .warning: return ("exclamationmark.triangle.fill", .orange)
+        case .invalid: return ("questionmark", metaColor)
+        }
+    }
+
+    public var statusInfo: (String, String)? {
+        switch self {
+        case .new: return nil
+        case .forwarded: return (
+                NSLocalizedString("Message forwarded", comment: "item status text"),
+                NSLocalizedString("No direct connection yet, message is forwarded by admin.", comment: "item status description")
+            )
+        case .inactive: return (
+                NSLocalizedString("Member inactive", comment: "item status text"),
+                NSLocalizedString("Message may be delivered later if member becomes active.", comment: "item status description")
+            )
+        case .sent: return nil
+        case .rcvd: return nil
+        case let .error(agentError): return (
+                NSLocalizedString("Message delivery error", comment: "item status text"),
+                agentError.errorInfo
+            )
+        case let .warning(agentError): return (
+                NSLocalizedString("Message delivery warning", comment: "item status text"),
+                agentError.errorInfo
+            )
+        case let .invalid(text): return (
+                NSLocalizedString("Invalid status", comment: "item status text"),
+                text
+            )
+        }
+    }
+}
+
 public enum CIDeleted: Decodable, Hashable {
     case deleted(deletedTs: Date?)
     case blocked(deletedTs: Date?)
@@ -4012,6 +4074,6 @@ public struct ChatItemVersion: Decodable, Hashable {
 
 public struct MemberDeliveryStatus: Decodable, Hashable {
     public var groupMemberId: Int64
-    public var memberDeliveryStatus: CIStatus
+    public var memberDeliveryStatus: GroupSndStatus
     public var sentViaProxy: Bool?
 }

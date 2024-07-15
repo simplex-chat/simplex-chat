@@ -1122,20 +1122,20 @@ public struct ProtoServersConfig: Codable {
 public struct UserProtoServers: Decodable {
     public var serverProtocol: ServerProtocol
     public var protoServers: [ServerCfg]
-    public var presetServers: [String]
+    public var presetServers: [ServerCfg]
 }
 
-public struct ServerCfg: Identifiable, Equatable, Codable {
+public struct ServerCfg: Identifiable, Equatable, Codable, Hashable {
     public var server: String
     public var preset: Bool
     public var tested: Bool?
-    public var enabled: ServerEnabled
+    public var enabled: Bool
     var createdAt = Date()
 //    public var sendEnabled: Bool // can we potentially want to prevent sending on the servers we use to receive?
 // Even if we don't see the use case, it's probably better to allow it in the model
 // In any case, "trusted/known" servers are out of scope of this change
 
-    public init(server: String, preset: Bool, tested: Bool?, enabled: ServerEnabled) {
+    public init(server: String, preset: Bool, tested: Bool?, enabled: Bool) {
         self.server = server
         self.preset = preset
         self.tested = tested
@@ -1148,7 +1148,7 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
 
     public var id: String { "\(server) \(createdAt)" }
 
-    public static var empty = ServerCfg(server: "", preset: false, tested: nil, enabled: .enabled)
+    public static var empty = ServerCfg(server: "", preset: false, tested: nil, enabled: false)
 
     public var isEmpty: Bool {
         server.trimmingCharacters(in: .whitespaces) == ""
@@ -1165,19 +1165,19 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
             server: "smp://abcd@smp8.simplex.im",
             preset: true,
             tested: true,
-            enabled: .enabled
+            enabled: true
         ),
         custom: ServerCfg(
             server: "smp://abcd@smp9.simplex.im",
             preset: false,
             tested: false,
-            enabled: .disabled
+            enabled: false
         ),
         untested: ServerCfg(
             server: "smp://abcd@smp10.simplex.im",
             preset: false,
             tested: nil,
-            enabled: .enabled
+            enabled: true
         )
     )
 
@@ -1187,12 +1187,6 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
         case tested
         case enabled
     }
-}
-
-public enum ServerEnabled: String, Codable {
-    case disabled
-    case enabled
-    case known
 }
 
 public enum ProtocolTestStep: String, Decodable, Equatable {
@@ -1906,6 +1900,7 @@ public enum AgentErrorType: Decodable, Hashable {
     case SMP(smpErr: ProtocolErrorType)
     case NTF(ntfErr: ProtocolErrorType)
     case XFTP(xftpErr: XFTPErrorType)
+    case PROXY(proxyServer: String, relayServer: String, proxyErr: ProxyClientError)
     case RCP(rcpErr: RCErrorType)
     case BROKER(brokerAddress: String, brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
@@ -1943,11 +1938,21 @@ public enum ProtocolErrorType: Decodable, Hashable {
     case BLOCK
     case SESSION
     case CMD(cmdErr: ProtocolCommandError)
+    indirect case PROXY(proxyErr: ProxyError)
     case AUTH
+    case CRYPTO
     case QUOTA
     case NO_MSG
     case LARGE_MSG
+    case EXPIRED
     case INTERNAL
+}
+
+public enum ProxyError: Decodable, Hashable {
+    case PROTOCOL(protocolErr: ProtocolErrorType)
+    case BROKER(brokerErr: BrokerErrorType)
+    case BASIC_AUTH
+    case NO_SESSION
 }
 
 public enum XFTPErrorType: Decodable, Hashable {
@@ -1965,6 +1970,12 @@ public enum XFTPErrorType: Decodable, Hashable {
     case TIMEOUT
     case REDIRECT(redirectError: String)
     case INTERNAL
+}
+
+public enum ProxyClientError: Decodable, Hashable {
+    case protocolError(protocolErr: ProtocolErrorType)
+    case unexpectedResponse(responseStr: String)
+    case responseError(responseErr: ProtocolErrorType)
 }
 
 public enum RCErrorType: Decodable, Hashable {
@@ -1996,6 +2007,7 @@ public enum ProtocolCommandError: Decodable, Hashable {
 
 public enum ProtocolTransportError: Decodable, Hashable {
     case badBlock
+    case version
     case largeMsg
     case badSession
     case noServerAuth

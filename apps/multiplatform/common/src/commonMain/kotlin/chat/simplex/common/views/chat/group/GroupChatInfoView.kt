@@ -390,6 +390,16 @@ private fun MemberRow(member: GroupMember, user: Boolean = false, onClick: (() -
     }
   }
 
+  fun memberConnStatus(): String {
+    return if (member.activeConn?.connDisabled == true) {
+      generalGetString(MR.strings.member_info_member_disabled)
+    } else if (member.activeConn?.connDisabled == true) {
+      generalGetString(MR.strings.member_info_member_inactive)
+    } else {
+      member.memberStatus.shortText
+    }
+  }
+
   Row(
     Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.SpaceBetween,
@@ -412,8 +422,8 @@ private fun MemberRow(member: GroupMember, user: Boolean = false, onClick: (() -
             color = if (member.memberIncognito) Indigo else Color.Unspecified
           )
         }
-        val s = member.memberStatus.shortText
-        val statusDescr = if (user) String.format(generalGetString(MR.strings.group_info_member_you), s) else s
+        val statusDescr =
+          if (user) String.format(generalGetString(MR.strings.group_info_member_you), member.memberStatus.shortText) else memberConnStatus()
         Text(
           statusDescr,
           color = MaterialTheme.colors.secondary,

@@ -415,7 +415,7 @@ struct ChatItemInfoView: View {
     }
 
     @ViewBuilder private func memberDeliveryStatusesView(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        LazyVStack(alignment: .leading, spacing: 12) {
             let mss = membersStatuses(memberDeliveryStatuses)
             if !mss.isEmpty {
                 ForEach(mss, id: \.0.groupMemberId) { memberStatus in
@@ -428,7 +428,7 @@ struct ChatItemInfoView: View {
         }
     }
 
-    private func membersStatuses(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> [(GroupMember, CIStatus, Bool?)] {
+    private func membersStatuses(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> [(GroupMember, GroupSndStatus, Bool?)] {
         memberDeliveryStatuses.compactMap({ mds in
             if let mem = chatModel.getGroupMember(mds.groupMemberId) {
                 return (mem.wrapped, mds.memberDeliveryStatus, mds.sentViaProxy)
@@ -438,7 +438,7 @@ struct ChatItemInfoView: View {
         })
     }
 
-    private func memberDeliveryStatusView(_ member: GroupMember, _ status: CIStatus, _ sentViaProxy: Bool?) -> some View {
+    private func memberDeliveryStatusView(_ member: GroupMember, _ status: GroupSndStatus, _ sentViaProxy: Bool?) -> some View {
         HStack{
             ProfileImage(imageStr: member.image, size: 30)
                 .padding(.trailing, 2)
@@ -450,23 +450,19 @@ struct ChatItemInfoView: View {
                     .foregroundColor(theme.colors.secondary).opacity(0.67)
             }
             let v = Group {
-                if let (icon, statusColor) = status.statusIcon(theme.colors.secondary, theme.colors.primary) {
-                    switch status {
-                    case .sndRcvd:
-                        ZStack(alignment: .trailing) {
-                            Image(systemName: icon)
-                                .foregroundColor(statusColor.opacity(0.67))
-                                .padding(.trailing, 6)
-                            Image(systemName: icon)
-                                .foregroundColor(statusColor.opacity(0.67))
-                        }
-                    default:
+                let (icon, statusColor) = status.statusIcon(theme.colors.secondary, theme.colors.primary)
+                switch status {
+                case .rcvd:
+                    ZStack(alignment: .trailing) {
                         Image(systemName: icon)
-                            .foregroundColor(statusColor)
+                            .foregroundColor(statusColor.opacity(0.67))
+                            .padding(.trailing, 6)
+                        Image(systemName: icon)
+                            .foregroundColor(statusColor.opacity(0.67))
                     }
-                } else {
-                    Image(systemName: "ellipsis")
-                        .foregroundColor(Color.secondary)
+                default:
+                    Image(systemName: icon)
+                        .foregroundColor(statusColor)
                 }
             }
 

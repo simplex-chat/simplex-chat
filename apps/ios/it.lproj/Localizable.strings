@@ -337,9 +337,6 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "sopra, quindi scegli:";
 
-/* No comment provided by engineer. */
-"Accent color" = "Colore principale";
-
 /* accept contact request via notification
    accept incoming call via notification */
 "Accept" = "Accetta";
@@ -369,7 +366,7 @@
 "Add profile" = "Aggiungi profilo";
 
 /* No comment provided by engineer. */
-"Add server…" = "Aggiungi server…";
+"Add server" = "Aggiungi server";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "Aggiungi server scansionando codici QR.";
@@ -653,7 +650,7 @@
 /* rcv group event chat item */
 "blocked %@" = "ha bloccato %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item */
 "blocked by admin" = "bloccato dall'amministratore";
 
 /* No comment provided by engineer. */
@@ -840,9 +837,6 @@
 /* No comment provided by engineer. */
 "colored" = "colorato";
 
-/* No comment provided by engineer. */
-"Colors" = "Colori";
-
 /* server test step */
 "Compare file" = "Confronta file";
 
@@ -1023,7 +1017,7 @@
 /* No comment provided by engineer. */
 "Continue" = "Continua";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "Copia";
 
 /* No comment provided by engineer. */
@@ -1166,6 +1160,9 @@
 
 /* time unit */
 "days" = "giorni";
+
+/* No comment provided by engineer. */
+"Debug delivery" = "Debug della consegna";
 
 /* No comment provided by engineer. */
 "Decentralized" = "Decentralizzato";
@@ -1800,7 +1797,8 @@
 /* No comment provided by engineer. */
 "Error: " = "Errore: ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "Errore: %@";
 
 /* No comment provided by engineer. */
@@ -2496,6 +2494,9 @@
 /* No comment provided by engineer. */
 "Message draft" = "Bozza dei messaggi";
 
+/* No comment provided by engineer. */
+"Message queue info" = "Info coda messaggi";
+
 /* chat feature */
 "Message reactions" = "Reazioni ai messaggi";
 
@@ -2991,7 +2992,7 @@
 "Private filenames" = "Nomi di file privati";
 
 /* No comment provided by engineer. */
-"Private message routing" = "Instradamento privato messaggi";
+"Private message routing" = "Instradamento privato dei messaggi";
 
 /* No comment provided by engineer. */
 "Private message routing 🚀" = "Instradamento privato dei messaggi 🚀";
@@ -3518,6 +3519,9 @@
 /* srv error text. */
 "Server address is incompatible with network settings." = "L'indirizzo del server non è compatibile con le impostazioni di rete.";
 
+/* queue info */
+"server queue info: %@\n\nlast received msg: %@" = "info coda server: %1$@\n\nultimo msg ricevuto: %2$@";
+
 /* server test error */
 "Server requires authorization to create queues, check password" = "Il server richiede l'autorizzazione di creare code, controlla la password";
 
@@ -3871,9 +3875,6 @@
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "Il testo che hai incollato non è un link SimpleX.";
-
-/* No comment provided by engineer. */
-"Theme" = "Tema";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Queste impostazioni sono per il tuo profilo attuale **%@**.";

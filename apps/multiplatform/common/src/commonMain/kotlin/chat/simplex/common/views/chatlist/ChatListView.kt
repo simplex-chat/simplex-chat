@@ -1,6 +1,8 @@
 package chat.simplex.common.views.chatlist
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
@@ -10,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.font.FontStyle
@@ -30,6 +33,8 @@ import chat.simplex.common.views.onboarding.shouldShowWhatsNew
 import chat.simplex.common.views.usersettings.SettingsView
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
+import chat.simplex.common.views.chat.group.ProgressIndicator
+import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
@@ -91,7 +96,9 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
               if (newChatSheetState.value.isVisible()) hideNewChatSheet(true) else showNewChatSheet()
             }
           },
-          Modifier.padding(end = DEFAULT_PADDING - 16.dp + endPadding, bottom = DEFAULT_PADDING - 16.dp).size(AppBarHeight * fontSizeSqrtMultiplier),
+          Modifier
+            .padding(end = DEFAULT_PADDING - 16.dp + endPadding, bottom = DEFAULT_PADDING - 16.dp)
+            .size(AppBarHeight * fontSizeSqrtMultiplier),
           elevation = FloatingActionButtonDefaults.elevation(
             defaultElevation = 0.dp,
             pressedElevation = 0.dp,
@@ -187,8 +194,24 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean) {
   val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
-
-  if (stopped) {
+  val updatingProgress = remember { chatModel.updatingProgress }.value
+  if (updatingProgress != null) {
+    barButtons.add {
+      val interactionSource = remember { MutableInteractionSource() }
+      val hovered = interactionSource.collectIsHoveredAsState().value
+      IconButton(onClick = {
+        chatModel.updatingRequest?.close()
+      }, Modifier.hoverable(interactionSource)) {
+        if (hovered) {
+          Icon(painterResource(MR.images.ic_close), null, tint = WarningOrange)
+        } else if (updatingProgress == -1f) {
+          CIFileViewScope.progressIndicator()
+        } else {
+          CIFileViewScope.progressCircle((updatingProgress * 100).toLong(), 100)
+        }
+      }
+    }
+  } else if (stopped) {
     barButtons.add {
       IconButton(onClick = {
         AlertManager.shared.showAlertMsg(
@@ -266,41 +289,26 @@ private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableSt
 fun SubscriptionStatusIndicator(serversSummary: MutableState<PresentedServersSummary?>, click: (() -> Unit)) {
   var subs by remember { mutableStateOf(SMPServerSubs.newSMPServerSubs) }
   var sess by remember { mutableStateOf(ServerSessions.newServerSessions) }
-  var timer: Job? by remember { mutableStateOf(null) }
-
-  val fetchInterval: Duration = 1.seconds
-
   val scope = rememberCoroutineScope()
 
-  fun setServersSummary() {
-    withBGApi {
-      serversSummary.value = chatModel.controller.getAgentServersSummary(chatModel.remoteHostId())
+  suspend fun setServersSummary() {
+    serversSummary.value = chatModel.controller.getAgentServersSummary(chatModel.remoteHostId())
 
-      serversSummary.value?.let {
-        subs = it.allUsersSMP.smpTotals.subs
-        sess = it.allUsersSMP.smpTotals.sessions
-      }
+    serversSummary.value?.let {
+      subs = it.allUsersSMP.smpTotals.subs
+      sess = it.allUsersSMP.smpTotals.sessions
     }
   }
 
   LaunchedEffect(Unit) {
     setServersSummary()
-    timer = timer ?: scope.launch {
-      while (true) {
-        delay(fetchInterval.inWholeMilliseconds)
-        setServersSummary()
+    scope.launch {
+      while (isActive) {
+        delay(1.seconds)
+        if ((appPlatform.isDesktop || chatModel.chatId.value == null) && !ModalManager.start.hasModalsOpen() && !ModalManager.fullscreen.hasModalsOpen() && isAppVisibleAndFocused()) {
+          setServersSummary()
+        }
       }
-    }
-  }
-
-  fun stopTimer() {
-    timer?.cancel()
-    timer = null
-  }
-
-  DisposableEffect(Unit) {
-    onDispose {
-      stopTimer()
     }
   }
 

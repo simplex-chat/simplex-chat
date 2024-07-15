@@ -37,7 +37,6 @@ struct ChatView: View {
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
     // opening GroupMemberInfoView on member icon
-    @State private var membersLoaded = false
     @State private var selectedMember: GMember? = nil
     // opening GroupLinkView on link button (incognito)
     @State private var showGroupLinkSheet: Bool = false
@@ -46,9 +45,14 @@ struct ChatView: View {
 
     var body: some View {
         if #available(iOS 16.0, *) {
-            viewBody
+            let v = viewBody
             .scrollDismissesKeyboard(.immediately)
             .keyboardPadding()
+            if (searchMode) {
+                v.toolbarBackground(.thinMaterial, for: .navigationBar)
+            } else {
+                v.toolbarBackground(.visible, for: .navigationBar)
+            }
         } else {
             viewBody
         }
@@ -82,7 +86,6 @@ struct ChatView: View {
             )
             .disabled(!cInfo.sendMsgEnabled)
         }
-        .padding(.top, 1)
         .navigationTitle(cInfo.chatViewName)
         .background(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
@@ -121,7 +124,8 @@ struct ChatView: View {
                         chatModel.chatItemStatuses = [:]
                         chatModel.reversedChatItems = []
                         chatModel.groupMembers = []
-                        membersLoaded = false
+                        chatModel.groupMembersIndexes.removeAll()
+                        chatModel.membersLoaded = false
                     }
                 }
             }
@@ -163,7 +167,7 @@ struct ChatView: View {
                     }
                 } else if case let .group(groupInfo) = cInfo {
                     Button {
-                        Task { await loadGroupMembers(groupInfo) { showChatInfoSheet = true } }
+                        Task { await chatModel.loadGroupMembers(groupInfo) { showChatInfoSheet = true } }
                     } label: {
                         ChatInfoToolbar(chat: chat)
                             .tint(theme.colors.primary)
@@ -249,18 +253,7 @@ struct ChatView: View {
             }
         }
     }
-
-    private func loadGroupMembers(_ groupInfo: GroupInfo, updateView: @escaping () -> Void = {}) async {
-        let groupMembers = await apiListMembers(groupInfo.groupId)
-        await MainActor.run {
-            if chatModel.chatId == groupInfo.id {
-                chatModel.groupMembers = groupMembers.map { GMember.init($0) }
-                membersLoaded = true
-                updateView()
-            }
-        }
-    }
-
+    
     private func initChatView() {
         let cInfo = chat.chatInfo
         // This check prevents the call to apiContactInfo after the app is suspended, and the database is closed.
@@ -321,8 +314,9 @@ struct ChatView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
+        .background(.thinMaterial)
     }
-
+    
     private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
         ci.content.msgContent?.isVoice == true && ci.content.text.count == 0 && ci.quotedItem == nil && ci.meta.itemForwarded == nil
     }
@@ -475,9 +469,7 @@ struct ChatView: View {
                         .foregroundColor(theme.colors.primary)
                 }
                 .onTapGesture {
-                    if let latestUnreadItem = filtered(chatModel.reversedChatItems).last(where: { $0.isRcvNew }) {
-                        scrollModel.scrollToItem(id: latestUnreadItem.id)
-                    }
+                    scrollModel.scrollToBottom()
                 }
             } else if !counts.isNearBottom {
                 circleButton {
@@ -532,7 +524,7 @@ struct ChatView: View {
     private func addMembersButton() -> some View {
         Button {
             if case let .group(gInfo) = chat.chatInfo {
-                Task { await loadGroupMembers(gInfo) { showAddMembersSheet = true } }
+                Task { await chatModel.loadGroupMembers(gInfo) { showAddMembersSheet = true } }
             }
         } label: {
             Image(systemName: "person.crop.circle.badge.plus")
@@ -602,11 +594,9 @@ struct ChatView: View {
             chat: chat,
             chatItem: ci,
             maxWidth: maxWidth,
-            itemWidth: maxWidth,
             composeState: $composeState,
             selectedMember: $selectedMember,
-            revealedChatItem: $revealedChatItem,
-            chatView: self
+            revealedChatItem: $revealedChatItem
         )
     }
 
@@ -614,13 +604,11 @@ struct ChatView: View {
         @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
         @ObservedObject var chat: Chat
-        var chatItem: ChatItem
-        var maxWidth: CGFloat
-        @State var itemWidth: CGFloat
+        let chatItem: ChatItem
+        let maxWidth: CGFloat
         @Binding var composeState: ComposeState
         @Binding var selectedMember: GMember?
         @Binding var revealedChatItem: ChatItem?
-        var chatView: ChatView
 
         @State private var deletingItem: ChatItem? = nil
         @State private var showDeleteMessage = false
@@ -688,7 +676,12 @@ struct ChatView: View {
                 if prevItem == nil || showMemberImage(member, prevItem) || prevMember != nil {
                     VStack(alignment: .leading, spacing: 4) {
                         if ci.content.showMemberName {
-                            Text(memberNames(member, prevMember, memCount))
+                            let t = if memCount == 1 && member.memberRole > .member {
+                                Text(member.memberRole.text + " ").fontWeight(.semibold) + Text(member.displayName)
+                            } else {
+                                Text(memberNames(member, prevMember, memCount))
+                            }
+                            t
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(2)
@@ -698,11 +691,11 @@ struct ChatView: View {
                         HStack(alignment: .top, spacing: 8) {
                             ProfileImage(imageStr: member.memberProfile.image, size: memberImageSize, backgroundColor: theme.colors.background)
                                 .onTapGesture {
-                                    if chatView.membersLoaded {
+                                    if m.membersLoaded {
                                         selectedMember = m.getGroupMember(member.groupMemberId)
                                     } else {
                                         Task {
-                                            await chatView.loadGroupMembers(groupInfo) {
+                                            await m.loadGroupMembers(groupInfo) {
                                                 selectedMember = m.getGroupMember(member.groupMemberId)
                                             }
                                         }
@@ -714,19 +707,19 @@ struct ChatView: View {
                             chatItemWithMenu(ci, range, maxWidth)
                         }
                     }
-                    .padding(.top, 5)
+                    .padding(.bottom, 5)
                     .padding(.trailing)
                     .padding(.leading, 12)
                 } else {
                     chatItemWithMenu(ci, range, maxWidth)
-                        .padding(.top, 5)
+                        .padding(.bottom, 5)
                         .padding(.trailing)
                         .padding(.leading, memberImageSize + 8 + 12)
                 }
             } else {
                 chatItemWithMenu(ci, range, maxWidth)
                     .padding(.horizontal)
-                    .padding(.top, 5)
+                    .padding(.bottom, 5)
             }
         }
 
@@ -1097,7 +1090,7 @@ struct ChatView: View {
                             chatItemInfo = ciInfo
                         }
                         if case let .group(gInfo) = chat.chatInfo {
-                            await chatView.loadGroupMembers(gInfo)
+                            await m.loadGroupMembers(gInfo)
                         }
                     } catch let error {
                         logger.error("apiGetChatItemInfo error: \(responseError(error))")
