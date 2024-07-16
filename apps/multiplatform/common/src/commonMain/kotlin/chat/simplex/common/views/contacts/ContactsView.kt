@@ -75,7 +75,7 @@ import java.util.HashSet
 
 
 enum class ContactType {
-    CARD, REQUEST, RECENT, CONNECTED_VIA_GROUP, REMOVED, UNKNOWN
+    CARD, REQUEST, RECENT, REMOVED, UNKNOWN
 }
 
 private fun contactChats(c: List<Chat>, contactTypes: List<ContactType>): List<Chat> {
@@ -92,12 +92,6 @@ private fun getContactType(chat: Chat): ContactType {
                 contact.activeConn == null && contact.profile.contactLink != null -> ContactType.CARD
                 contact.contactStatus == ContactStatus.DeletedByUser || contact.contactStatus == ContactStatus.Deleted -> ContactType.REMOVED
                 else -> ContactType.RECENT
-            }
-        }
-        is ChatInfo.Group -> {
-            when {
-                cInfo.groupInfo.sendMsgEnabled -> ContactType.CONNECTED_VIA_GROUP
-                else -> ContactType.UNKNOWN
             }
         }
         else -> ContactType.UNKNOWN
