@@ -1971,4 +1971,22 @@
     <string name="xftp_servers_other">Altri server XFTP</string>
     <string name="servers_info_previously_connected_servers_section_header">Server precedentemente connessi</string>
     <string name="please_try_later">Riprova più tardi.</string>
+    <string name="app_check_for_updates_beta">Beta</string>
+    <string name="app_check_for_updates_notice_disable">Disattiva</string>
+    <string name="app_check_for_updates_disabled">Disattivato</string>
+    <string name="app_check_for_updates_download_started">Scaricamento dell\'aggiornamento, non chiudere l\'app</string>
+    <string name="app_check_for_updates_button_download">Scarica %s (%s)</string>
+    <string name="app_check_for_updates_installed_successfully_title">Installato correttamente</string>
+    <string name="app_check_for_updates_button_open">Apri percorso file</string>
+    <string name="app_check_for_updates_installed_successfully_desc">Riavvia l\'app.</string>
+    <string name="app_check_for_updates_button_remind_later">Ricordamelo più tardi</string>
+    <string name="app_check_for_updates_button_skip">Salta questa versione</string>
+    <string name="app_check_for_updates_stable">Stabile</string>
+    <string name="app_check_for_updates_notice_desc">Per essere avvisato sulle nuove versioni, attiva il controllo periodico di versioni stabili o beta.</string>
+    <string name="app_check_for_updates_update_available">Aggiornamento disponibile: %s</string>
+    <string name="app_check_for_updates_canceled">Scaricamento aggiornamento annullato</string>
+    <string name="app_check_for_updates">Cerca aggiornamenti</string>
+    <string name="app_check_for_updates_download_completed_title">Aggiornamento dell\'app scaricato</string>
+    <string name="app_check_for_updates_notice_title">Cerca aggiornamenti</string>
+    <string name="app_check_for_updates_button_install">Installa aggiornamento</string>
 </resources>

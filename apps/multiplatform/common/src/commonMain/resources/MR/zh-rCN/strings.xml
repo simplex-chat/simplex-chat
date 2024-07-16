@@ -1971,4 +1971,22 @@
     <string name="member_inactive_desc">如果成员变得活跃，可能会在之后传输消息。</string>
     <string name="servers_info_messages_sent">发送的消息</string>
     <string name="open_server_settings_button">打开服务器设置</string>
+    <string name="app_check_for_updates">检查更新</string>
+    <string name="app_check_for_updates_notice_title">检查更新</string>
+    <string name="app_check_for_updates_notice_disable">停用</string>
+    <string name="app_check_for_updates_disabled">已停用</string>
+    <string name="app_check_for_updates_download_started">正在下载应用更新，不要关闭应用</string>
+    <string name="app_check_for_updates_button_download">下载 %s（%s）</string>
+    <string name="app_check_for_updates_button_open">打开文件位置</string>
+    <string name="app_check_for_updates_installed_successfully_desc">请重启应用。</string>
+    <string name="app_check_for_updates_button_remind_later">稍后提醒</string>
+    <string name="app_check_for_updates_button_skip">跳过此版本</string>
+    <string name="app_check_for_updates_stable">稳定版</string>
+    <string name="app_check_for_updates_update_available">有更新可用：%s</string>
+    <string name="app_check_for_updates_canceled">取消了更新下载</string>
+    <string name="app_check_for_updates_notice_desc">要接收新版本通知，请打开“定期检查稳定或测试版本”。</string>
+    <string name="app_check_for_updates_download_completed_title">应用更新已下载</string>
+    <string name="app_check_for_updates_beta">测试版</string>
+    <string name="app_check_for_updates_installed_successfully_title">安装成功</string>
+    <string name="app_check_for_updates_button_install">安装更新</string>
 </resources>

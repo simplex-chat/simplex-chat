@@ -6148,7 +6148,7 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target state="translated">Errori di iscrizione</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Subscriptions ignored" xml:space="preserve">
+      <trans-unit id="Subscriptions ignored" xml:space="preserve" approved="no">
         <source>Subscriptions ignored</source>
         <target state="translated">Iscrizioni ignorate</target>
         <note>No comment provided by engineer.</note>
