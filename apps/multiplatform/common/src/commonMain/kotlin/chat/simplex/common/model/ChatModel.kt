@@ -2766,7 +2766,7 @@ data class CIFile(
   }
 
   val showStatusIconInSmallView: Boolean = when (fileStatus) {
-    is CIFileStatus.SndStored -> false
+    is CIFileStatus.SndStored -> fileProtocol != FileProtocol.LOCAL
     is CIFileStatus.SndTransfer -> true
     is CIFileStatus.SndComplete -> false
     is CIFileStatus.SndCancelled -> true
