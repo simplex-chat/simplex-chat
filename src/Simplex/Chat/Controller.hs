@@ -76,7 +76,7 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Messaging.Client (SMPProxyFallback (..), SMPProxyMode (..))
+import Simplex.Messaging.Client (SMPProxyFallback (..), SMPProxyMode (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -966,6 +966,7 @@ data AppFilePathsConfig = AppFilePathsConfig
 
 data SimpleNetCfg = SimpleNetCfg
   { socksProxy :: Maybe SocksProxy,
+    socksMode :: SocksMode,
     smpProxyMode_ :: Maybe SMPProxyMode,
     smpProxyFallback_ :: Maybe SMPProxyFallback,
     tcpTimeout_ :: Maybe Int,
@@ -974,7 +975,7 @@ data SimpleNetCfg = SimpleNetCfg
   deriving (Show)
 
 defaultSimpleNetCfg :: SimpleNetCfg
-defaultSimpleNetCfg = SimpleNetCfg Nothing Nothing Nothing Nothing False
+defaultSimpleNetCfg = SimpleNetCfg Nothing SMAlways Nothing Nothing Nothing False
 
 data ContactSubStatus = ContactSubStatus
   { contact :: Contact,
