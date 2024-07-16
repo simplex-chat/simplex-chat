@@ -51,6 +51,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.ChatType
 import chat.simplex.common.model.ContactStatus
 import chat.simplex.common.model.Format
+import chat.simplex.common.model.RemoteHostInfo
 import chat.simplex.common.model.SharedPreference
 import chat.simplex.common.platform.BackHandler
 import chat.simplex.common.platform.ColumnWithScrollBar
@@ -65,6 +66,10 @@ import chat.simplex.common.platform.hideKeyboard
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.DetailedSMPStatsView
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.newchat.AddGroupView
+import chat.simplex.common.views.newchat.NewChatOption
+import chat.simplex.common.views.newchat.NewChatOptions
+import chat.simplex.common.views.newchat.NewChatView
 import chat.simplex.common.views.newchat.strHasSingleSimplexLink
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -73,9 +78,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.util.HashSet
 
-
 enum class ContactType {
-    CARD, REQUEST, RECENT, REMOVED, UNKNOWN
+    CARD, REQUEST_RECEIVED, REQUEST_SENT, RECENT, REMOVED, UNKNOWN
 }
 
 private fun contactChats(c: List<Chat>, contactTypes: List<ContactType>): List<Chat> {
@@ -84,16 +88,19 @@ private fun contactChats(c: List<Chat>, contactTypes: List<ContactType>): List<C
 
 private fun getContactType(chat: Chat): ContactType {
     return when (val cInfo = chat.chatInfo) {
-        is ChatInfo.ContactRequest -> ContactType.REQUEST
+        is ChatInfo.ContactRequest -> ContactType.REQUEST_RECEIVED
         is ChatInfo.Direct -> {
             val contact = cInfo.contact;
 
             when {
                 contact.activeConn == null && contact.profile.contactLink != null -> ContactType.CARD
                 contact.contactStatus == ContactStatus.DeletedByUser || contact.contactStatus == ContactStatus.Deleted -> ContactType.REMOVED
+                contact.chatDeleted -> ContactType.REMOVED
                 else -> ContactType.RECENT
             }
         }
+        // TODO: Redo this.
+        is ChatInfo.ContactConnection -> ContactType.REQUEST_SENT
         else -> ContactType.UNKNOWN
     }
 }
@@ -111,7 +118,32 @@ val chatsByTypeComparator = Comparator<Chat> { chat1, chat2 ->
 }
 
 @Composable
-fun ContactActionsSection(contactActions: @Composable () -> Unit) {
+fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, close: () -> Unit) {
+    ModalView(
+        close = close
+    ) {
+        Column(
+            Modifier.fillMaxSize(),
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                val bottomPadding = DEFAULT_PADDING
+                AppBarTitle(
+                    stringResource(MR.strings.contact_type_deleted),
+                    hostDevice(rh?.remoteHostId),
+                    bottomPadding = bottomPadding
+                )
+            }
+
+            ContactsLayout(
+                contactActions = {},
+                contactTypes = listOf(ContactType.REMOVED),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ContactActionsSection(contactActions: @Composable () -> Unit, rh: RemoteHostInfo?) {
     contactActions()
     Spacer(Modifier.height(DEFAULT_PADDING))
 
@@ -121,7 +153,10 @@ fun ContactActionsSection(contactActions: @Composable () -> Unit) {
         SectionView {
             SectionItemView(
                 click = {
-                    //
+                    ModalManager.start.showCustomModal { close -> DeletedContactsView(
+                        rh = rh,
+                        close = close)
+                    }
                 }
             ) {
                 Icon(
@@ -137,7 +172,10 @@ fun ContactActionsSection(contactActions: @Composable () -> Unit) {
 }
 
 @Composable
-fun ContactsView(contactActions: @Composable () -> Unit) {
+private fun ContactsLayout(
+    contactActions: @Composable () -> Unit,
+    contactTypes: List<ContactType>,
+    contactListTitle: String? = null) {
     val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
     var searchFocused by remember { mutableStateOf(false) }
     val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(
@@ -158,20 +196,28 @@ fun ContactsView(contactActions: @Composable () -> Unit) {
     }
 
     if (!searchFocused) {
-        ContactActionsSection(contactActions)
+        contactActions()
     }
 
     Spacer(Modifier.height(DEFAULT_PADDING))
 
-    SectionView(title = stringResource(MR.strings.contact_list_header_title).uppercase(), padding = PaddingValues(DEFAULT_PADDING)) {
-        ContactsList(listState = listState, chatModel = chatModel, searchText = searchText, contactType = ContactType.RECENT)
-    }
-
-    if (searchFocused) {
-        ContactActionsSection(contactActions)
+    SectionView(title = contactListTitle, padding = PaddingValues(DEFAULT_PADDING)) {
+        ContactsList(listState = listState, chatModel = chatModel, searchText = searchText, contactTypes = contactTypes)
+        // TODO: Empty list states.
     }
 }
 
+@Composable
+fun ContactsView(
+    contactActions: @Composable () -> Unit,
+    rh: RemoteHostInfo?
+) {
+    ContactsLayout(
+        contactActions = { ContactActionsSection(contactActions, rh) },
+        contactTypes = listOf(ContactType.CARD, ContactType.RECENT, ContactType.REQUEST_RECEIVED, ContactType.REQUEST_SENT),
+        contactListTitle = stringResource(MR.strings.contact_list_header_title).uppercase()
+    )
+}
 
 @Composable
 fun ContactsSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, focused: Boolean, onFocusChanged: (hasFocus: Boolean) -> Unit) {
@@ -245,9 +291,8 @@ fun ToggleFilterButton() {
 
 private var lazyListState = 0 to 0
 
-
 @Composable
-fun ContactsList(listState: LazyListState, chatModel: ChatModel, searchText: MutableState<TextFieldValue>, contactType: ContactType) {
+fun ContactsList(listState: LazyListState, chatModel: ChatModel, searchText: MutableState<TextFieldValue>, contactTypes: List<ContactType>) {
     val oneHandUI = remember { chatModel.controller.appPrefs.oneHandUI }
     DisposableEffect(Unit) {
         onDispose {
@@ -257,7 +302,10 @@ fun ContactsList(listState: LazyListState, chatModel: ChatModel, searchText: Mut
     }
     val showUnreadAndFavorites =
         remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
-    val allChats = remember { contactChats(chatModel.chats, listOf(ContactType.CARD, ContactType.RECENT, ContactType.REQUEST)) }
+    val allChats = remember { contactChats(
+        chatModel.chats,
+        contactTypes)
+    }
 
     val filteredContactChats = filteredContactChats(
         showUnreadAndFavorites = showUnreadAndFavorites,
@@ -275,7 +323,7 @@ fun ContactsList(listState: LazyListState, chatModel: ChatModel, searchText: Mut
             }
         }
     } else {
-        LazyColumnWithScrollBar(
+        LazyColumn(
             Modifier.fillMaxWidth(),
             listState
         ) {
@@ -314,18 +362,12 @@ private fun filteredContactChats(
     searchText: String,
     contactChats: List<Chat>
 ): List<Chat> {
+    // TODO: Refresh list after delete.
     return contactChats
         .filter { chat -> filterChat(
             chat = chat,
             searchText = searchText,
             showUnreadAndFavorites = showUnreadAndFavorites) }
-        .distinctBy { chat ->
-            when (val cInfo = chat.chatInfo) {
-                is ChatInfo.ContactRequest -> cInfo.contactRequest.contactRequestId
-                is ChatInfo.Direct -> cInfo.contact.contactId
-                else -> cInfo.id
-            }
-        }
         .sortedWith(chatsByTypeComparator)
 }
 

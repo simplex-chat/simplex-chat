@@ -76,6 +76,27 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHand
                 oneHandUI
             )
         }
+        is ChatInfo.ContactConnection -> {
+            ChatListNavLinkLayout(
+                chatLinkPreview = {
+                    tryOrShowError("${chat.id}ContactListNavLink", error = { ErrorChatListItem() }) {
+                        ContactPreviewView(chat, disabled)
+                    }
+                },
+                click = {
+                    contactRequestAlertDialog(
+                        rhId = chat.remoteHostId,
+                        connection = chat.chatInfo.contactConnection
+                    )
+                },
+                dropdownMenuItems = {},
+                showMenu,
+                disabled,
+                selectedChat,
+                nextChatSelected,
+                oneHandUI
+            )
+        }
         else -> {}
     }
 }
@@ -110,5 +131,13 @@ fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState
             showMenu.value = false
         },
         color = Color.Red
+    )
+}
+
+fun contactRequestAlertDialog(rhId: Long?, connection: PendingContactConnection) {
+    AlertManager.shared.showAlertMsg(
+        title = "Connection not yet accepted",
+        text = "${connection.displayName} didn't accept your connection request yet.",
+        hostDevice = hostDevice(rhId),
     )
 }
