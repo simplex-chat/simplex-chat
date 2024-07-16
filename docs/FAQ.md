@@ -15,7 +15,9 @@ revision: 23.04.2024
 - [How to configure and delete groups?](#how-to-configure-and-delete-groups)
 - [Are there any reactions to messages? Can I answer specific messages directly?](#are-there-any-reactions-to-messages-can-i-answer-specific-messages-directly)
 - [What do checkmarks mean?](#what-do-checkmarks-mean)
+- [I want to see when my contacts read my messages](#i-want-to-see-when-my-contacts-read-my-messages)
 - [Can I use the same profile on desktop? Do messages sync cross-platform?](#can-i-use-the-same-profile-on-desktop-do-messages-sync-cross-platform)
+- [Why cannot I delete messages I sent from my contact's device?](#why-cannot-i-delete-messages-i-sent-from-my-contacts-device)
 
 [Troubleshooting](#troubleshooting)
 - [I do not receive messages or message notifications](#i-do-not-receive-messages-or-message-notifications)
@@ -79,11 +81,42 @@ It's quite simple:
 - two checkmarks - message is delivered to the recipient's device.
 "sent" means accepted by the relay for delivery, "delivered" - stored on the recipient device.
 
-Also see [ ](#i-do-not-see-the-second-tick-on-the-messages-i-sent)
+Also see: [I do not see the second tick on the messages I sent](#i-do-not-see-the-second-tick-on-the-messages-i-sent)
+
+### I want to see when my contacts read my messages
+
+To know when your contact read your messages, your contact's app has to send you a confirmation message. And vice versa, for your contact to know when you read the message, your app has to send a confirmation message.
+
+The important questions for this feature:
+- do you always want that your contacts can see when you read all their messages? Probably, even with your close friends, sometimes you would prefer to have time before you answer their message, and also have a plausible deniability that you have not seen the message. And this should be ok - in the end, this is your device, and it should be for you to decide whether this confirmation message is sent or not, and when it is sent.
+- what practical problems an automatic notification sent to your contacts when you read the message solves for you compared with you simply adding a reaction to a message or sending a quick reply?
+
+Overall, it seems that this feature is more damaging to your communications with your contacts than it is helpful. It keeps senders longer in the app, nervously waiting for read receipts, exploiting addicitve patterns - having you spend more time in the app is the reason why it is usually present in most messaging apps. It also creates a pressure on the recipients to reply sooner, and if read receipts are opt-in, it creates a pressure to enable it, that can be particularly damaging in any relationships with power imbalance.
+
+We think that delivery receipts are important and equally benefit both sides as the conversation, as they confirm that communication network functions properly. But we strongly believe that read receipts is an anti-feature that only benefits the app developers, and hurts the relations between the app users. So we are not planning to add it even as opt-in. In case you want your contact to know you've read the message put a reaction to it. And if you don't want them to know it - it is also ok, what your device sends should be under your control.
 
 ### Can I use the same profile on desktop? Do messages sync cross-platform?
 
 You can use your profile from mobile device on desktop. However, to do so you need to be on the same network, both on your mobile and desktop. More about it: [Release info](../blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md#link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol).
+
+### Why cannot I delete messages I sent from my contact's device?
+
+In SimpleX Chat, you and your contacts can delete the messages you send from recipients' devices if you both agree to that within 24 hours of sending it. To be able to do that you both have to enable "Delete for everyone" option in Contact preferences - tap on the contact's name above the conversation to get there.
+
+You can also revoke the files you send. If the recipients did not yet receive the file, they will not be able to receive it after the file is revoked.
+
+This is different from most other messengers that allow deleting messages from the recipients' devices without any agreement with the recipients.
+
+We believe that allowing deleting information from your device to your contacts is a very wrong design decision for several reasons:
+1) it violates your data sovereignty as the device owner - once your are in possession of any information, you have the rights to retain it, and any deletion should be agreed with you. And security and privacy is not impossible if users don't have sovereignty over their devices.
+2) it may be a business communication, and either your organisation policy or a compliance requirement is that every message you receive must be preserved for some time.
+3) the message can contain a legally binding promise, effectively a contract between you and your contact, in which case you both need to keep it.
+4) the messages may contain threat or abuse and you may want to keep them as a proof.
+5) you may have paid for the the message (e.g., it can be a consulting report), and you don't want it to suddenly disappear before you had a chance to store it outside of the conversation.
+
+It is also important to remember, that even if your contact enabled "Delete for everyone", you cannot really see it as a strong guarantee that the message will be deleted. Your contact's app can have a very simple modification (a one-line code change), that would prevent this deletion from happening when you request it. So you cannot see it as something that guarantees your security from your contacts.
+
+When "Delete for everyone" is not enabled, you can still mark the sent message as deleted within 24 hours of sending it. In this case the recipient will see it as "deleted message", and will be able to reveal the original message.
 
 ## Troubleshooting
 
