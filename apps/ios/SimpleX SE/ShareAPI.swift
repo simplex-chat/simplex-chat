@@ -101,7 +101,7 @@ enum ShareError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case let .apiError(error):
-            "API Error: \(error.localizedDescription)"
+            "API Error: \(String(describing: error))"
         case let .unexpectedMigrationResult(result):
             "Encountered Database Issue: \(result)"
         case .noActiveUser:
@@ -115,7 +115,7 @@ enum ShareError: LocalizedError {
         case .encryptFile:
             "File encryption has failed"
         case .loadFileRepresentation(let error):
-            "File could not be loaded: \(error.localizedDescription)"
+            "File could not be loaded: \(String(describing: error))"
         }
     }
 }
