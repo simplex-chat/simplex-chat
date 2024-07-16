@@ -1228,7 +1228,7 @@ public struct ProtocolTestFailure: Decodable, Error, Equatable {
     public var localizedDescription: String {
         let err = String.localizedStringWithFormat(NSLocalizedString("Test failed at step %@.", comment: "server test failure"), testStep.text)
         switch testError {
-        case .SMP(.AUTH):
+        case .SMP(_, .AUTH):
             return err + " " + NSLocalizedString("Server requires authorization to create queues, check password", comment: "server test error")
         case .XFTP(.AUTH):
             return err + " " + NSLocalizedString("Server requires authorization to upload, check password", comment: "server test error")
@@ -1287,42 +1287,32 @@ public struct NetCfg: Codable, Equatable, Hashable {
     var socksMode: SocksMode = .always
     public var hostMode: HostMode = .publicHost
     public var requiredHostMode = true
-    public var sessionMode: TransportSessionMode
-    public var smpProxyMode: SMPProxyMode = .never
-    public var smpProxyFallback: SMPProxyFallback = .allow
+    public var sessionMode = TransportSessionMode.user
+    public var smpProxyMode: SMPProxyMode = .unknown
+    public var smpProxyFallback: SMPProxyFallback = .allowProtected
     public var tcpConnectTimeout: Int // microseconds
     public var tcpTimeout: Int // microseconds
     public var tcpTimeoutPerKb: Int // microseconds
     public var rcvConcurrency: Int // pool size
-    public var tcpKeepAlive: KeepAliveOpts?
+    public var tcpKeepAlive: KeepAliveOpts? = KeepAliveOpts.defaults
     public var smpPingInterval: Int // microseconds
-    public var smpPingCount: Int // times
-    public var logTLSErrors: Bool
+    public var smpPingCount: Int = 3 // times
+    public var logTLSErrors: Bool = false
 
     public static let defaults: NetCfg = NetCfg(
-        socksProxy: nil,
-        sessionMode: TransportSessionMode.user,
         tcpConnectTimeout: 25_000_000,
         tcpTimeout: 15_000_000,
         tcpTimeoutPerKb: 10_000,
         rcvConcurrency: 12,
-        tcpKeepAlive: KeepAliveOpts.defaults,
-        smpPingInterval: 1200_000_000,
-        smpPingCount: 3,
-        logTLSErrors: false
+        smpPingInterval: 1200_000_000
     )
 
     public static let proxyDefaults: NetCfg = NetCfg(
-        socksProxy: nil,
-        sessionMode: TransportSessionMode.user,
         tcpConnectTimeout: 35_000_000,
         tcpTimeout: 20_000_000,
         tcpTimeoutPerKb: 15_000,
         rcvConcurrency: 8,
-        tcpKeepAlive: KeepAliveOpts.defaults,
-        smpPingInterval: 1200_000_000,
-        smpPingCount: 3,
-        logTLSErrors: false
+        smpPingInterval: 1200_000_000
     )
 
     public var enableKeepAlive: Bool { tcpKeepAlive != nil }
@@ -1897,7 +1887,7 @@ public enum SQLiteError: Decodable, Hashable {
 public enum AgentErrorType: Decodable, Hashable {
     case CMD(cmdErr: CommandErrorType)
     case CONN(connErr: ConnectionErrorType)
-    case SMP(smpErr: ProtocolErrorType)
+    case SMP(serverAddress: String, smpErr: ProtocolErrorType)
     case NTF(ntfErr: ProtocolErrorType)
     case XFTP(xftpErr: XFTPErrorType)
     case PROXY(proxyServer: String, relayServer: String, proxyErr: ProxyClientError)

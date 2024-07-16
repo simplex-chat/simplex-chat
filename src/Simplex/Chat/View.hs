@@ -55,7 +55,7 @@ import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestSte
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..), ServerCfg (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
-import Simplex.Messaging.Client (SMPProxyFallback, SMPProxyMode (..))
+import Simplex.Messaging.Client (SMPProxyFallback, SMPProxyMode (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
@@ -1217,11 +1217,11 @@ viewChatItemTTL = \case
     deletedAfter ttlStr = ["old messages are set to be deleted after: " <> ttlStr]
 
 viewNetworkConfig :: NetworkConfig -> [StyledString]
-viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout, smpProxyMode, smpProxyFallback} =
-  [ plain $ maybe "direct network connection" (("using SOCKS5 proxy " <>) . show) socksProxy,
+viewNetworkConfig NetworkConfig {socksProxy, socksMode, tcpTimeout, smpProxyMode, smpProxyFallback} =
+  [ plain $ maybe "direct network connection" ((\sp -> "using SOCKS5 proxy " <> sp <> if socksMode == SMOnion then " for onion servers ONLY." else " for ALL servers.") . show) socksProxy,
     "TCP timeout: " <> sShow tcpTimeout,
     plain $ smpProxyModeStr smpProxyMode smpProxyFallback,
-    "use " <> highlight' "/network socks=<on/off/[ipv4]:port>[ timeout=<seconds>][ smp-proxy=always/unknown/unprotected/never][ smp-proxy-fallback=no/protected/yes]" <> " to change settings"
+    "use " <> highlight' "/network socks=<on/off/[ipv4]:port>[ socks-mode=always/onion][ smp-proxy=always/unknown/unprotected/never][ smp-proxy-fallback=no/protected/yes][ timeout=<seconds>]" <> " to change settings"
   ]
 
 smpProxyModeStr :: SMPProxyMode -> SMPProxyFallback -> String

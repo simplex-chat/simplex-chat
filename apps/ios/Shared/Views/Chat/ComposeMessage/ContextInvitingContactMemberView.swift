@@ -18,10 +18,9 @@ struct ContextInvitingContactMemberView: View {
             Text("Send direct message to connect")
         }
         .padding(12)
-        .frame(minHeight: 50)
+        .frame(minHeight: 54)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(theme.appColors.sentMessage)
-        .padding(.top, 8)
+        .background(.thinMaterial)
     }
 }
 

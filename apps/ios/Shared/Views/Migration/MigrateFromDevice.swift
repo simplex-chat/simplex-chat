@@ -662,7 +662,7 @@ private struct PassphraseConfirmationView: View {
             if case .chatCmdError(_, .errorDatabase(.errorOpen(.errorNotADatabase))) = error as? ChatResponse {
                 showErrorOnMigrationIfNeeded(.errorNotADatabase(dbFile: ""), $alert)
             } else {
-                alert = .error(title: "Error", error: NSLocalizedString("Error verifying passphrase:", comment: "") + " " + String(String(describing: error)))
+                alert = .error(title: "Error", error: NSLocalizedString("Error verifying passphrase:", comment: "") + " " + String(responseError(error)))
             }
         }
     }
