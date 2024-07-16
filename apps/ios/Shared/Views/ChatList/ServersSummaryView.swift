@@ -75,8 +75,8 @@ struct ServersSummaryView: View {
                 Group {
                     if m.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
                         Picker("User selection", selection: $selectedUserCategory) {
-                            Text("All users").tag(PresentedUserCategory.allUsers)
-                            Text("Current user").tag(PresentedUserCategory.currentUser)
+                            Text("All profiles").tag(PresentedUserCategory.allUsers)
+                            Text("Current profile").tag(PresentedUserCategory.currentUser)
                         }
                         .pickerStyle(.segmented)
                     }
@@ -176,6 +176,7 @@ struct ServersSummaryView: View {
         Section {
             infoRow("Active connections", numOrDash(totals.subs.ssActive))
             infoRow("Total", numOrDash(totals.subs.total))
+            Toggle("Show percentage", isOn: $showSubscriptionPercentage)
         } header: {
             HStack {
                 Text("Message reception")
