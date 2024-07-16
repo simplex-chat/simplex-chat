@@ -12,10 +12,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -33,7 +32,6 @@ fun CIFileView(
   receiveFile: (Long) -> Unit
 ) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
-  val sizeMultiplier = if (smallView) 0.7f else 1f
   @Composable
   fun fileIcon(
     innerIcon: Painter? = null,
@@ -53,8 +51,8 @@ fun CIFileView(
           innerIcon,
           stringResource(MR.strings.icon_descr_file),
           Modifier
-            .size(32.dp)
-            .padding(top = 12.dp),
+            .size(32.sp.toDp())
+            .padding(top = 12.sp.toDp()),
           tint = Color.White
         )
       }
@@ -133,22 +131,22 @@ fun CIFileView(
   fun fileIndicator() {
     Box(
       Modifier
-        .size(42.dp)
-        .clip(RoundedCornerShape(4.dp)),
+        .size(42.sp.toDp())
+        .clip(RoundedCornerShape(4.sp.toDp())),
       contentAlignment = Alignment.Center
     ) {
       if (file != null) {
         when (file.fileStatus) {
           is CIFileStatus.SndStored ->
             when (file.fileProtocol) {
-              FileProtocol.XFTP -> CIFileViewScope.progressIndicator(sizeMultiplier)
+              FileProtocol.XFTP -> CIFileViewScope.progressIndicator()
               FileProtocol.SMP -> fileIcon()
               FileProtocol.LOCAL -> fileIcon()
             }
           is CIFileStatus.SndTransfer ->
             when (file.fileProtocol) {
-              FileProtocol.XFTP -> CIFileViewScope.progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal, sizeMultiplier)
-              FileProtocol.SMP -> CIFileViewScope.progressIndicator(sizeMultiplier)
+              FileProtocol.XFTP -> CIFileViewScope.progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
+              FileProtocol.SMP -> CIFileViewScope.progressIndicator()
               FileProtocol.LOCAL -> {}
             }
           is CIFileStatus.SndComplete -> fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
@@ -163,9 +161,9 @@ fun CIFileView(
           is CIFileStatus.RcvAccepted -> fileIcon(innerIcon = painterResource(MR.images.ic_more_horiz))
           is CIFileStatus.RcvTransfer ->
             if (file.fileProtocol == FileProtocol.XFTP && file.fileStatus.rcvProgress < file.fileStatus.rcvTotal) {
-              CIFileViewScope.progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal, sizeMultiplier)
+              CIFileViewScope.progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal)
             } else {
-              CIFileViewScope.progressIndicator(sizeMultiplier)
+              CIFileViewScope.progressIndicator()
             }
           is CIFileStatus.RcvAborted ->
             fileIcon(innerIcon = painterResource(MR.images.ic_sync_problem), color = MaterialTheme.colors.primary)
@@ -187,10 +185,10 @@ fun CIFileView(
         onClick = { fileAction() },
         onLongClick = { showMenu.value = true }
       )
-      .padding(if (smallView) PaddingValues() else PaddingValues(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp)),
+      .padding(if (smallView) PaddingValues() else PaddingValues(top = 4.sp.toDp(), bottom = 6.sp.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp())),
     //Modifier.clickable(enabled = file?.fileSource != null) { if (file?.fileSource != null && getLoadedFilePath(file) != null) openFile(file.fileSource) }.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
     verticalAlignment = Alignment.Bottom,
-    horizontalArrangement = Arrangement.spacedBy(2.dp)
+    horizontalArrangement = Arrangement.spacedBy(2.sp.toDp())
   ) {
     fileIndicator()
     if (!smallView) {
@@ -246,18 +244,18 @@ fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =
 
 object CIFileViewScope {
   @Composable
-  fun progressIndicator(sizeMultiplier: Float = 1f) {
+  fun progressIndicator() {
     CircularProgressIndicator(
-      Modifier.size(32.dp * sizeMultiplier),
+      Modifier.size(32.sp.toDp()),
       color = if (isInDarkTheme()) FileDark else FileLight,
-      strokeWidth = 3.dp * sizeMultiplier
+      strokeWidth = 3.sp.toDp()
     )
   }
 
   @Composable
-  fun progressCircle(progress: Long, total: Long, sizeMultiplier: Float = 1f) {
+  fun progressCircle(progress: Long, total: Long) {
     val angle = 360f * (progress.toDouble() / total.toDouble()).toFloat()
-    val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() } * sizeMultiplier
+    val strokeWidth = with(LocalDensity.current) { 3.sp.toPx() }
     val strokeColor = if (isInDarkTheme()) FileDark else FileLight
     Surface(
       Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
@@ -265,7 +263,7 @@ object CIFileViewScope {
       shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
       contentColor = LocalContentColor.current
     ) {
-      Box(Modifier.size(32.dp * sizeMultiplier))
+      Box(Modifier.size(32.sp.toDp()))
     }
   }
 }

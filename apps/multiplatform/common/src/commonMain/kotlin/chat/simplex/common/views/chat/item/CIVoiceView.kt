@@ -41,12 +41,12 @@ fun CIVoiceView(
   longClick: () -> Unit,
   receiveFile: (Long) -> Unit,
 ) {
+  val sizeMultiplier = if (smallView) 0.8f else 1f
   val padding = when {
     smallView -> PaddingValues()
-    hasText -> PaddingValues(top = 14.dp, bottom = 14.dp, start = 6.dp, end = 6.dp)
-    else -> PaddingValues(top = 4.dp, bottom = 6.dp, start = 0.dp, end = 0.dp)
+    hasText -> PaddingValues(top = 14.sp.toDp() * sizeMultiplier, bottom = 14.sp.toDp() * sizeMultiplier, start = 6.sp.toDp() * sizeMultiplier, end = 6.sp.toDp() * sizeMultiplier)
+    else -> PaddingValues(top = 4.sp.toDp() * sizeMultiplier, bottom = 6.sp.toDp() * sizeMultiplier, start = 0.dp, end = 0.dp)
   }
-  val sizeMultiplier = if (smallView) 0.8f else 1f
   Row(
     Modifier.padding(padding),
     verticalAlignment = Alignment.CenterVertically
@@ -149,7 +149,7 @@ private fun VoiceLayout(
           movedManuallyTo = it.toInt()
         },
         Modifier
-          .size(width, 48.dp * sizeMultiplier)
+          .size(width, 48.sp.toDp() * sizeMultiplier)
           .weight(1f)
           .padding(padding)
           .drawBehind {
@@ -173,18 +173,18 @@ private fun VoiceLayout(
       Row {
         VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, sizeMultiplier, play, pause, longClick, receiveFile)
         Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically) {
-          DurationText(text, PaddingValues(start = 12.dp))
-          Slider(MaterialTheme.colors.background, PaddingValues(start = DEFAULT_PADDING_HALF + 3.dp), sizeMultiplier = sizeMultiplier)
+          DurationText(text, PaddingValues(start = 12.sp.toDp()))
+          Slider(MaterialTheme.colors.background, PaddingValues(start = DEFAULT_PADDING_HALF + 3.sp.toDp()), sizeMultiplier = sizeMultiplier)
         }
       }
     }
     hasText -> {
       val sentColor = MaterialTheme.appColors.sentMessage
       val receivedColor = MaterialTheme.appColors.receivedMessage
-      Spacer(Modifier.width(6.dp))
+      Spacer(Modifier.width(6.sp.toDp() * sizeMultiplier))
       VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, 1f, play, pause, longClick, receiveFile)
       Row(verticalAlignment = Alignment.CenterVertically) {
-        DurationText(text, PaddingValues(start = 12.dp))
+        DurationText(text, PaddingValues(start = 12.sp.toDp() * sizeMultiplier))
         Slider(if (ci.chatDir.sent) sentColor else receivedColor)
       }
     }
@@ -192,13 +192,13 @@ private fun VoiceLayout(
       Column(horizontalAlignment = Alignment.End) {
         Row {
           Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.End) {
-            Spacer(Modifier.height(56.dp))
+            Spacer(Modifier.height(56.sp.toDp() * sizeMultiplier))
             Slider(MaterialTheme.colors.background, PaddingValues(end = DEFAULT_PADDING_HALF + 3.dp))
-            DurationText(text, PaddingValues(end = 12.dp))
+            DurationText(text, PaddingValues(end = 12.sp.toDp() * sizeMultiplier))
           }
           VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, 1f, play, pause, longClick, receiveFile)
         }
-        Box(Modifier.padding(top = 6.dp, end = 6.dp)) {
+        Box(Modifier.padding(top = 6.sp.toDp() * sizeMultiplier, end = 6.sp.toDp() * sizeMultiplier)) {
           CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy)
         }
       }
@@ -208,12 +208,12 @@ private fun VoiceLayout(
         Row {
           VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, 1f, play, pause, longClick, receiveFile)
           Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Start) {
-            DurationText(text, PaddingValues(start = 12.dp))
+            DurationText(text, PaddingValues(start = 12.sp.toDp() * sizeMultiplier))
             Slider(MaterialTheme.colors.background, PaddingValues(start = DEFAULT_PADDING_HALF + 3.dp))
-            Spacer(Modifier.height(56.dp))
+            Spacer(Modifier.height(56.sp.toDp() * sizeMultiplier))
           }
         }
-        Box(Modifier.padding(top = 6.dp)) {
+        Box(Modifier.padding(top = 6.sp.toDp() * sizeMultiplier)) {
           CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy)
         }
       }
@@ -262,7 +262,7 @@ private fun PlayPauseButton(
   ) {
     Box(
       Modifier
-        .defaultMinSize(minWidth = 56.dp * sizeMultiplier, minHeight = 56.dp * sizeMultiplier)
+        .defaultMinSize(minWidth = 56.sp.toDp() * sizeMultiplier, minHeight = 56.sp.toDp() * sizeMultiplier)
         .combinedClickable(
           onClick = { if (!audioPlaying) play() else pause() },
           onLongClick = longClick
@@ -273,7 +273,7 @@ private fun PlayPauseButton(
       Icon(
         if (audioPlaying) painterResource(MR.images.ic_pause_filled) else painterResource(icon),
         contentDescription = null,
-        Modifier.size(36.dp * sizeMultiplier),
+        Modifier.size(36.sp.toDp() * sizeMultiplier),
         tint = if (error) WarningOrange else if (!enabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
       )
     }
@@ -297,11 +297,18 @@ private fun PlayablePlayPauseButton(
 ) {
   val angle = 360f * (progress.value.toDouble() / duration.value).toFloat()
   if (hasText) {
-    IconButton({ if (!audioPlaying) play() else pause() }, Modifier.size(56.dp * sizeMultiplier).drawRingModifier(angle, strokeColor, strokeWidth)) {
+    Box(
+      Modifier
+        .defaultMinSize(minWidth = 56.sp.toDp() * sizeMultiplier, minHeight = 56.sp.toDp() * sizeMultiplier)
+        .clip(MaterialTheme.shapes.small.copy(CornerSize(percent = 50)))
+        .combinedClickable(onClick = { if (!audioPlaying) play() else pause() } )
+        .drawRingModifier(angle, strokeColor, strokeWidth),
+      contentAlignment = Alignment.Center
+    ) {
       Icon(
         if (audioPlaying) painterResource(MR.images.ic_pause_filled) else painterResource(MR.images.ic_play_arrow_filled),
         contentDescription = null,
-        Modifier.size(36.dp * sizeMultiplier),
+        Modifier.size(36.sp.toDp() * sizeMultiplier),
         tint = MaterialTheme.colors.primary
       )
     }
@@ -314,8 +321,8 @@ private fun PlayablePlayPauseButton(
 private fun VoiceMsgLoadingProgressIndicator(sizeMultiplier: Float) {
   Box(
     Modifier
-      .size(56.dp * sizeMultiplier)
-      .clip(RoundedCornerShape(4.dp * sizeMultiplier)),
+      .size(56.sp.toDp() * sizeMultiplier)
+      .clip(RoundedCornerShape(4.sp.toDp() * sizeMultiplier)),
     contentAlignment = Alignment.Center
   ) {
     ProgressIndicator(sizeMultiplier)
@@ -326,6 +333,7 @@ private fun VoiceMsgLoadingProgressIndicator(sizeMultiplier: Float) {
 private fun FileStatusIcon(
   sent: Boolean,
   icon: ImageResource,
+  sizeMultiplier: Float,
   longClick: () -> Unit,
   onClick: () -> Unit,
 ) {
@@ -338,7 +346,7 @@ private fun FileStatusIcon(
   ) {
     Box(
       Modifier
-        .defaultMinSize(minWidth = 56.dp, minHeight = 56.dp)
+        .defaultMinSize(minWidth = 56.sp.toDp() * sizeMultiplier, minHeight = 56.sp.toDp() * sizeMultiplier)
         .combinedClickable(
           onClick = onClick,
           onLongClick = longClick
@@ -349,7 +357,7 @@ private fun FileStatusIcon(
       Icon(
         painterResource(icon),
         contentDescription = null,
-        Modifier.size(36.dp),
+        Modifier.size(36.sp.toDp() * sizeMultiplier),
         tint = MaterialTheme.colors.secondary
       )
     }
@@ -371,7 +379,7 @@ private fun VoiceMsgIndicator(
   longClick: () -> Unit,
   receiveFile: (Long) -> Unit,
 ) {
-  val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() } * sizeMultiplier
+  val strokeWidth = with(LocalDensity.current) { 3.sp.toPx() } * sizeMultiplier
   val strokeColor = MaterialTheme.colors.primary
   when {
     file?.fileStatus is CIFileStatus.SndStored ->
@@ -386,6 +394,7 @@ private fun VoiceMsgIndicator(
       FileStatusIcon(
         sent,
         MR.images.ic_close,
+        sizeMultiplier,
         longClick,
         onClick = {
           AlertManager.shared.showAlertMsg(
@@ -398,6 +407,7 @@ private fun VoiceMsgIndicator(
       FileStatusIcon(
         sent,
         MR.images.ic_warning_filled,
+        sizeMultiplier,
         longClick,
         onClick = {
           AlertManager.shared.showAlertMsg(
@@ -416,6 +426,7 @@ private fun VoiceMsgIndicator(
       FileStatusIcon(
         sent,
         MR.images.ic_close,
+        sizeMultiplier,
         longClick,
         onClick = {
           AlertManager.shared.showAlertMsg(
@@ -428,6 +439,7 @@ private fun VoiceMsgIndicator(
       FileStatusIcon(
         sent,
         MR.images.ic_warning_filled,
+        sizeMultiplier,
         longClick,
         onClick = {
           AlertManager.shared.showAlertMsg(
@@ -468,8 +480,8 @@ fun Modifier.drawRingModifier(angle: Float, color: Color, strokeWidth: Float) = 
 @Composable
 private fun ProgressIndicator(sizeMultiplier: Float) {
   CircularProgressIndicator(
-    Modifier.size(32.dp * sizeMultiplier),
+    Modifier.size(32.sp.toDp() * sizeMultiplier),
     color = if (isInDarkTheme()) FileDark else FileLight,
-    strokeWidth = 4.dp * sizeMultiplier
+    strokeWidth = 4.sp.toDp() * sizeMultiplier
   )
 }
