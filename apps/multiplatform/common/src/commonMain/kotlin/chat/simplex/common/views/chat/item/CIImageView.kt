@@ -29,6 +29,7 @@ fun CIImageView(
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
+  smallView: Boolean,
   receiveFile: (Long) -> Unit
 ) {
   @Composable
@@ -255,7 +256,13 @@ fun CIImageView(
         }
       })
     }
-    loadingIndicator()
+    if (!smallView) {
+      loadingIndicator()
+    } else if (file?.showStatusIconInSmallView == true) {
+      Box(Modifier.align(Alignment.Center)) {
+        loadingIndicator()
+      }
+    }
   }
 }
 

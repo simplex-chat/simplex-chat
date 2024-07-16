@@ -33,7 +33,7 @@ fun CIFileView(
   receiveFile: (Long) -> Unit
 ) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
-
+  val sizeMultiplier = if (smallView) 0.7f else 1f
   @Composable
   fun fileIcon(
     innerIcon: Painter? = null,
@@ -141,14 +141,14 @@ fun CIFileView(
         when (file.fileStatus) {
           is CIFileStatus.SndStored ->
             when (file.fileProtocol) {
-              FileProtocol.XFTP -> CIFileViewScope.progressIndicator()
+              FileProtocol.XFTP -> CIFileViewScope.progressIndicator(sizeMultiplier)
               FileProtocol.SMP -> fileIcon()
               FileProtocol.LOCAL -> fileIcon()
             }
           is CIFileStatus.SndTransfer ->
             when (file.fileProtocol) {
-              FileProtocol.XFTP -> CIFileViewScope.progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
-              FileProtocol.SMP -> CIFileViewScope.progressIndicator()
+              FileProtocol.XFTP -> CIFileViewScope.progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal, sizeMultiplier)
+              FileProtocol.SMP -> CIFileViewScope.progressIndicator(sizeMultiplier)
               FileProtocol.LOCAL -> {}
             }
           is CIFileStatus.SndComplete -> fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
@@ -163,9 +163,9 @@ fun CIFileView(
           is CIFileStatus.RcvAccepted -> fileIcon(innerIcon = painterResource(MR.images.ic_more_horiz))
           is CIFileStatus.RcvTransfer ->
             if (file.fileProtocol == FileProtocol.XFTP && file.fileStatus.rcvProgress < file.fileStatus.rcvTotal) {
-              CIFileViewScope.progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal)
+              CIFileViewScope.progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal, sizeMultiplier)
             } else {
-              CIFileViewScope.progressIndicator()
+              CIFileViewScope.progressIndicator(sizeMultiplier)
             }
           is CIFileStatus.RcvAborted ->
             fileIcon(innerIcon = painterResource(MR.images.ic_sync_problem), color = MaterialTheme.colors.primary)
@@ -246,18 +246,18 @@ fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =
 
 object CIFileViewScope {
   @Composable
-  fun progressIndicator() {
+  fun progressIndicator(sizeMultiplier: Float = 1f) {
     CircularProgressIndicator(
-      Modifier.size(32.dp),
+      Modifier.size(32.dp * sizeMultiplier),
       color = if (isInDarkTheme()) FileDark else FileLight,
-      strokeWidth = 3.dp
+      strokeWidth = 3.dp * sizeMultiplier
     )
   }
 
   @Composable
-  fun progressCircle(progress: Long, total: Long) {
+  fun progressCircle(progress: Long, total: Long, sizeMultiplier: Float = 1f) {
     val angle = 360f * (progress.toDouble() / total.toDouble()).toFloat()
-    val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() }
+    val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() } * sizeMultiplier
     val strokeColor = if (isInDarkTheme()) FileDark else FileLight
     Surface(
       Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
@@ -265,7 +265,7 @@ object CIFileViewScope {
       shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
       contentColor = LocalContentColor.current
     ) {
-      Box(Modifier.size(32.dp))
+      Box(Modifier.size(32.dp * sizeMultiplier))
     }
   }
 }

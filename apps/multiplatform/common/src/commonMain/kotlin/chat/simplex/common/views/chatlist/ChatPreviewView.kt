@@ -14,13 +14,13 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -289,7 +289,7 @@ fun ChatPreviewView(
       Row(Modifier.heightIn(min = 46.sp.toDp()).padding(top = 3.sp.toDp())) {
         val ci = chat.chatItems.lastOrNull()
         val mc = ci?.content?.msgContent
-        val provider by remember(chat.id, ci?.id) {
+        val provider by remember(chat.id, ci?.id, ci?.file?.fileStatus) {
           mutableStateOf({ providerForGallery(0, chat.chatItems, ci?.id ?: 0) {} })
         }
         val uriHandler = LocalUriHandler.current
@@ -300,7 +300,7 @@ fun ChatPreviewView(
             }
           }
           is MsgContent.MCImage -> SmallContentPreview {
-            CIImageView(image = mc.image, file = ci.file, provider, remember { mutableStateOf(false) }) {
+            CIImageView(image = mc.image, file = ci.file, provider, remember { mutableStateOf(false) }, smallView = true) {
               val user = chatModel.currentUser.value ?: return@CIImageView
               withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
             }
@@ -311,21 +311,19 @@ fun ChatPreviewView(
               withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
             }
           }
-          /*is MsgContent.MCVoice -> SmallContentPreview {
-            CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = false, ci, cInfo.timedMessagesTTL, showViaProxy = false, longClick = {}) {
+          is MsgContent.MCVoice -> SmallContentPreviewUnlimitedWidth() {
+            CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = false, ci, cInfo.timedMessagesTTL, showViaProxy = false, smallView = true, longClick = {}) {
               val user = chatModel.currentUser.value ?: return@CIVoiceView
               withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
             }
-          }*/
-          is MsgContent.MCFile -> SmallContentPreview {
+          }
+          is MsgContent.MCFile -> SmallContentPreviewUnlimitedWidth {
             CIFileView(ci.file, false, remember { mutableStateOf(false) }, smallView = true) {
               val user = chatModel.currentUser.value ?: return@CIFileView
               withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
             }
           }
-          else -> {
-
-          }
+          else -> {}
         }
         chatPreviewText()
       }
@@ -345,10 +343,11 @@ fun ChatPreviewView(
             if (n > 0) unreadCountStr(n) else "",
             color = Color.White,
             fontSize = 10.sp,
+            style = TextStyle(textAlign = TextAlign.Center),
             modifier = Modifier
               .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
               .badgeLayout()
-              .padding(horizontal = 3.sp.toDp())
+              .padding(horizontal = 2.sp.toDp())
               .padding(vertical = 1.sp.toDp())
           )
         }
@@ -388,8 +387,15 @@ fun ChatPreviewView(
 }
 
 @Composable
-fun SmallContentPreview(content: @Composable () -> Unit) {
-  Box(Modifier.padding(top = 5.sp.toDp(), end = 8.sp.toDp()).size(36.sp.toDp()).clip(RoundedCornerShape(22))) {
+private fun SmallContentPreview(content: @Composable () -> Unit) {
+  Box(Modifier.padding(end = 8.sp.toDp()).size(46.sp.toDp()).border(1.dp, MaterialTheme.colors.secondary, RoundedCornerShape(22)).clip(RoundedCornerShape(22))) {
+    content()
+  }
+}
+
+@Composable
+private fun SmallContentPreviewUnlimitedWidth(content: @Composable () -> Unit) {
+  Box(Modifier.padding(end = 8.sp.toDp()).height(46.sp.toDp())) {
     content()
   }
 }
