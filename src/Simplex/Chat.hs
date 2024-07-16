@@ -384,8 +384,8 @@ cfgServers p DefaultAgentServers {smp, xftp} = case p of
   SPSMP -> smp
   SPXFTP -> xftp
 
-startChatController :: Bool -> CM' (Async ())
-startChatController mainApp = do
+startChatController :: Bool -> Bool -> CM' (Async ())
+startChatController mainApp enableFiles = do
   asks smpAgent >>= liftIO . resumeAgentClient
   unless mainApp $ chatWriteVar' subscriptionMode SMOnlyCreate
   users <- fromRight [] <$> runExceptT (withStore' getUsers)
@@ -400,8 +400,8 @@ startChatController mainApp = do
           then Just <$> async (subscribeUsers False users)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
+      when (mainApp || enableFiles) startXFTP
       when mainApp $ do
-        startXFTP
         void $ forkIO $ startFilesToReceive users
         startCleanupManager
         startExpireCIs users
@@ -617,10 +617,10 @@ processChatCommand' vr = \case
     checkDeleteChatUser user'
     withChatLock "deleteUser" . procCmd $ deleteChatUser user' delSMPQueues
   DeleteUser uName delSMPQueues viewPwd_ -> withUserName uName $ \userId -> APIDeleteUser userId delSMPQueues viewPwd_
-  StartChat mainApp -> withUser' $ \_ ->
+  StartChat {mainApp, enableFiles} -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged . lift $ startChatController mainApp $> CRChatStarted
+      _ -> checkStoreNotChanged . lift $ startChatController mainApp enableFiles $> CRChatStarted
   APIStopChat -> do
     ask >>= liftIO . stopChatController
     pure CRChatStopped
@@ -7355,8 +7355,11 @@ chatCommandP =
       "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP <*> optional (A.space *> jsonP)),
       "/delete user " *> (DeleteUser <$> displayName <*> pure True <*> optional (A.space *> pwdP)),
       ("/user" <|> "/u") $> ShowActiveUser,
-      "/_start main=" *> (StartChat <$> onOffP),
-      "/_start" $> StartChat True,
+      "/_start " *> do
+        mainApp <- "main=" *> onOffP
+        enableFiles <- " files=" *> onOffP <|> pure mainApp
+        pure StartChat {mainApp, enableFiles},
+      "/_start" $> StartChat True True,
       "/_stop" $> APIStopChat,
       "/_app activate restore=" *> (APIActivateChat <$> onOffP),
       "/_app activate" $> APIActivateChat True,
@@ -7685,6 +7688,11 @@ chatCommandP =
             if refChar c then A.takeTill p else fail "invalid first character in display name"
         quoted cs = A.choice [A.char c *> takeNameTill (== c) <* A.char c | c <- cs]
         refChar c = c > ' ' && c /= '#' && c /= '@'
+    startCmdP = do
+      mainApp <- "main=" *> onOffP
+      enableFiles <- " files=" *> onOffP <|> pure mainApp
+      pure StartChat {mainApp, enableFiles}
+
     sendMsgQuote msgDir = SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> msgTextP
     quotedMsg = safeDecodeUtf8 <$> (A.char '(' *> A.takeTill (== ')') <* A.char ')') <* optional A.space
     reactionP = MREmoji <$> (mrEmojiChar <$?> (toEmoji <$> A.anyChar))
