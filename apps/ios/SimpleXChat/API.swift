@@ -205,7 +205,7 @@ public func chatResponse(_ s: String) -> ChatResponse {
                         if let chatData = try? parseChatData(jChat) {
                             return chatData
                         }
-                        return ChatData.invalidJSON(prettyJSON(jChat) ?? "")
+                        return ChatData.invalidJSON(serializeJSON(jChat, options: .prettyPrinted) ?? "")
                     }
                     return .apiChats(user: user, chats: chats)
                 }
@@ -226,7 +226,7 @@ public func chatResponse(_ s: String) -> ChatResponse {
                 }
             }
         }
-        json = prettyJSON(j)
+        json = serializeJSON(j, options: .prettyPrinted)
     }
     return ChatResponse.response(type: type ?? "invalid", json: json ?? s)
 }
@@ -241,7 +241,7 @@ private func decodeUser_(_ jDict: NSDictionary) -> UserRef? {
 
 private func errorJson(_ jDict: NSDictionary) -> String? {
     if let chatError = jDict["chatError"] {
-        json(chatError)
+        serializeJSON(chatError)
     } else {
         nil
     }
@@ -259,7 +259,7 @@ func parseChatData(_ jChat: Any) throws -> ChatData {
         return ChatItem.invalidJSON(
             chatDir: decodeProperty(jCI, "chatDir"),
             meta: decodeProperty(jCI, "meta"),
-            json: prettyJSON(jCI) ?? ""
+            json: serializeJSON(jCI, options: .prettyPrinted) ?? ""
         )
     }
     return ChatData(chatInfo: chatInfo, chatItems: chatItems, chatStats: chatStats)
@@ -276,15 +276,8 @@ func decodeProperty<T: Decodable>(_ obj: Any, _ prop: NSString) -> T? {
     return nil
 }
 
-func json(_ obj: Any) -> String? {
-    if let d = try? JSONSerialization.data(withJSONObject: obj) {
-        return String(decoding: d, as: UTF8.self)
-    }
-    return nil
-}
-
-func prettyJSON(_ obj: Any) -> String? {
-    if let d = try? JSONSerialization.data(withJSONObject: obj, options: .prettyPrinted) {
+func serializeJSON(_ obj: Any, options: JSONSerialization.WritingOptions = []) -> String? {
+    if let d = try? JSONSerialization.data(withJSONObject: obj, options: options) {
         return String(decoding: d, as: UTF8.self)
     }
     return nil
