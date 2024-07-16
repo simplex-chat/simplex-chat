@@ -70,7 +70,8 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?) {
             ModalManager.center.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close) }
           }
         )
-      }
+      },
+      rh = rh
     )
   }
 }

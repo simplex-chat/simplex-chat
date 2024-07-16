@@ -2222,4 +2222,5 @@
   <string name="contact_type_recent">Recent</string>
   <string name="no_filtered_contacts">No filtered contacts</string>
   <string name="contact_list_header_title">Your contacts</string>
+  <string name="icon_descr_pending_contact_connection">Pending contact connection</string>
 </resources>

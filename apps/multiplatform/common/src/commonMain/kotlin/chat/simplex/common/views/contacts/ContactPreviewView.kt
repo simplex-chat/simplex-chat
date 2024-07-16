@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -27,12 +28,28 @@ fun ContactPreviewView(
     val cInfo = chat.chatInfo
 
     @Composable
-    fun inactiveIcon() {
+    fun OverlayIcon(painter: Painter, description: String) {
         Icon(
-            painterResource(MR.images.ic_cancel_filled),
-            stringResource(MR.strings.icon_descr_group_inactive),
+            painter,
+            description,
             Modifier.size(18.dp).background(MaterialTheme.colors.background, CircleShape),
             tint = MaterialTheme.colors.secondary
+        )
+    }
+
+    @Composable
+    fun pendingIcon() {
+        OverlayIcon(
+            painterResource(MR.images.ic_timer),
+            stringResource(MR.strings.icon_descr_pending_contact_connection)
+        )
+    }
+
+    @Composable
+    fun inactiveIcon() {
+        OverlayIcon(
+            painterResource(MR.images.ic_cancel_filled),
+            stringResource(MR.strings.icon_descr_group_inactive)
         )
     }
 
@@ -43,7 +60,7 @@ fun ContactPreviewView(
                 if (!cInfo.contact.active) {
                     inactiveIcon()
                 }
-
+            is ChatInfo.ContactConnection -> pendingIcon()
             else -> {}
         }
     }
@@ -78,6 +95,15 @@ fun ContactPreviewView(
                         color = Color.Unspecified
                     )
                 }
+            is ChatInfo.ContactConnection ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        cInfo.chatViewName,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = MaterialTheme.colors.secondary
+                    )
+                }
             else -> {}
         }
     }
@@ -100,7 +126,7 @@ fun ContactPreviewView(
 
         Spacer(Modifier.fillMaxWidth().weight(1f))
 
-        if (chat.chatInfo is ChatInfo.ContactRequest) {
+        if (chat.chatInfo is ChatInfo.ContactRequest || chat.chatInfo is ChatInfo.ContactConnection) {
             Text(
                 text = generalGetString(MR.strings.contact_type_new).uppercase(),
                 color = MaterialTheme.colors.onPrimary,
