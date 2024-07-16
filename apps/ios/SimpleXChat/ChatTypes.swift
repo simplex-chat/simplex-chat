@@ -1463,7 +1463,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
     )
 }
 
-public struct ChatData: Decodable, Identifiable, Hashable {
+public struct ChatData: Decodable, Identifiable, Hashable, ChatLike {
     public var chatInfo: ChatInfo
     public var chatItems: [ChatItem]
     public var chatStats: ChatStats
