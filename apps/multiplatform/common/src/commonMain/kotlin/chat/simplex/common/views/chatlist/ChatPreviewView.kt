@@ -227,8 +227,7 @@ fun ChatPreviewView(
   }
 
   @Composable
-  fun chatItemContentPreview(chat: Chat) {
-    val ci = chat.chatItems.lastOrNull()
+  fun chatItemContentPreview(chat: Chat, ci: ChatItem?) {
     val mc = ci?.content?.msgContent
     val provider by remember(chat.id, ci?.id, ci?.file?.fileStatus) {
       mutableStateOf({ providerForGallery(0, chat.chatItems, ci?.id ?: 0) {} })
@@ -252,13 +251,13 @@ fun ChatPreviewView(
           withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
         }
       }
-      is MsgContent.MCVoice -> SmallContentPreviewUnlimitedWidth() {
+      is MsgContent.MCVoice -> SmallContentPreviewVoice() {
         CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = false, ci, cInfo.timedMessagesTTL, showViaProxy = false, smallView = true, longClick = {}) {
           val user = chatModel.currentUser.value ?: return@CIVoiceView
           withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
         }
       }
-      is MsgContent.MCFile -> SmallContentPreviewUnlimitedWidth {
+      is MsgContent.MCFile -> SmallContentPreviewFile {
         CIFileView(ci.file, false, remember { mutableStateOf(false) }, smallView = true) {
           val user = chatModel.currentUser.value ?: return@CIFileView
           withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
@@ -329,8 +328,16 @@ fun ChatPreviewView(
     ) {
       chatPreviewTitle()
       Row(Modifier.heightIn(min = 46.sp.toDp()).padding(top = 3.sp.toDp())) {
-        chatItemContentPreview(chat)
-        chatPreviewText()
+        val ci = chat.chatItems.lastOrNull()
+        if (showChatPreviews && chatModelDraftChatId != chat.id) {
+          chatItemContentPreview(chat, ci)
+        }
+        val mc = ci?.content?.msgContent
+        if (mc !is MsgContent.MCVoice || mc.text.isNotEmpty()) {
+          Box(Modifier.offset(x = if (mc is MsgContent.MCFile) -20.sp.toDp() else 0.dp)) {
+            chatPreviewText()
+          }
+        }
       }
     }
 
@@ -393,14 +400,21 @@ fun ChatPreviewView(
 
 @Composable
 private fun SmallContentPreview(content: @Composable () -> Unit) {
-  Box(Modifier.padding(end = 8.sp.toDp()).size(46.sp.toDp()).border(1.dp, MaterialTheme.colors.secondary, RoundedCornerShape(22)).clip(RoundedCornerShape(22))) {
+  Box(Modifier.padding(top = 3.5.sp.toDp(), end = 8.sp.toDp()).size(32.sp.toDp()).border(1.dp, MaterialTheme.colors.secondary, RoundedCornerShape(22)).clip(RoundedCornerShape(22))) {
     content()
   }
 }
 
 @Composable
-private fun SmallContentPreviewUnlimitedWidth(content: @Composable () -> Unit) {
-  Box(Modifier.padding(end = 8.sp.toDp()).height(46.sp.toDp())) {
+private fun SmallContentPreviewVoice(content: @Composable () -> Unit) {
+  Box(Modifier.padding(top = 3.5.sp.toDp(), end = 8.sp.toDp()).height(32.sp.toDp())) {
+    content()
+  }
+}
+
+@Composable
+private fun SmallContentPreviewFile(content: @Composable () -> Unit) {
+  Box(Modifier.padding(top = 3.sp.toDp(), end = 8.sp.toDp()).offset(x = -10.sp.toDp(), y = -3.sp.toDp()).height(39.sp.toDp())) {
     content()
   }
 }

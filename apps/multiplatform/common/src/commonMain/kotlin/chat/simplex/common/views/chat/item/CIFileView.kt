@@ -33,6 +33,7 @@ fun CIFileView(
 ) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
   val sizeMultiplier = if (smallView) 1.1f else 1f
+  val progressSizeMultiplier = if (smallView) 0.7f else 1f
   @Composable
   fun fileIcon(
     innerIcon: Painter? = null,
@@ -140,17 +141,17 @@ fun CIFileView(
         when (file.fileStatus) {
           is CIFileStatus.SndStored ->
             when (file.fileProtocol) {
-              FileProtocol.XFTP -> CIFileViewScope.progressIndicator(sizeMultiplier)
+              FileProtocol.XFTP -> CIFileViewScope.progressIndicator(progressSizeMultiplier)
               FileProtocol.SMP -> fileIcon()
               FileProtocol.LOCAL -> fileIcon()
             }
           is CIFileStatus.SndTransfer ->
             when (file.fileProtocol) {
-              FileProtocol.XFTP -> CIFileViewScope.progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal, sizeMultiplier)
-              FileProtocol.SMP -> CIFileViewScope.progressIndicator(sizeMultiplier)
+              FileProtocol.XFTP -> CIFileViewScope.progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal, progressSizeMultiplier)
+              FileProtocol.SMP -> CIFileViewScope.progressIndicator(progressSizeMultiplier)
               FileProtocol.LOCAL -> {}
             }
-          is CIFileStatus.SndComplete -> fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
+          is CIFileStatus.SndComplete -> fileIcon(innerIcon = if (!smallView) painterResource(MR.images.ic_check_filled) else null)
           is CIFileStatus.SndCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.SndError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.SndWarning -> fileIcon(innerIcon = painterResource(MR.images.ic_warning_filled))
@@ -162,9 +163,9 @@ fun CIFileView(
           is CIFileStatus.RcvAccepted -> fileIcon(innerIcon = painterResource(MR.images.ic_more_horiz))
           is CIFileStatus.RcvTransfer ->
             if (file.fileProtocol == FileProtocol.XFTP && file.fileStatus.rcvProgress < file.fileStatus.rcvTotal) {
-              CIFileViewScope.progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal, sizeMultiplier)
+              CIFileViewScope.progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal, progressSizeMultiplier)
             } else {
-              CIFileViewScope.progressIndicator(sizeMultiplier)
+              CIFileViewScope.progressIndicator(progressSizeMultiplier)
             }
           is CIFileStatus.RcvAborted ->
             fileIcon(innerIcon = painterResource(MR.images.ic_sync_problem), color = MaterialTheme.colors.primary)

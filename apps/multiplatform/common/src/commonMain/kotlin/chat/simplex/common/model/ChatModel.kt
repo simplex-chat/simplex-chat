@@ -2773,7 +2773,7 @@ data class CIFile(
     is CIFileStatus.SndError -> true
     is CIFileStatus.SndWarning -> true
     is CIFileStatus.RcvInvitation -> false
-    is CIFileStatus.RcvAccepted -> false
+    is CIFileStatus.RcvAccepted -> true
     is CIFileStatus.RcvTransfer -> true
     is CIFileStatus.RcvAborted -> true
     is CIFileStatus.RcvCancelled -> true

@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chat.item
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
@@ -41,7 +42,7 @@ fun CIVoiceView(
   longClick: () -> Unit,
   receiveFile: (Long) -> Unit,
 ) {
-  val sizeMultiplier = if (smallView) 0.8f else 1f
+  val sizeMultiplier = if (smallView) 31.5f / 56f else 1f
   val padding = when {
     smallView -> PaddingValues()
     hasText -> PaddingValues(top = 14.sp.toDp() * sizeMultiplier, bottom = 14.sp.toDp() * sizeMultiplier, start = 6.sp.toDp() * sizeMultiplier, end = 6.sp.toDp() * sizeMultiplier)
@@ -76,11 +77,10 @@ fun CIVoiceView(
       val pause = {
         AudioPlayer.pause(audioPlaying, progress)
       }
-      val text = remember {
+      val text = remember(ci.file?.fileId, ci.file?.fileStatus) {
         derivedStateOf {
           val time = when {
             audioPlaying.value || progress.value != 0 -> progress.value
-            smallView -> return@derivedStateOf ""
             else -> duration.value
           }
           durationText(time / 1000)
@@ -170,7 +170,7 @@ private fun VoiceLayout(
   }
   when {
     sizeMultiplier != 1f -> {
-      Row {
+      Row(verticalAlignment = Alignment.CenterVertically) {
         VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, sizeMultiplier, play, pause, longClick, receiveFile)
         Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically) {
           DurationText(text, PaddingValues(start = 12.sp.toDp()))
@@ -223,18 +223,16 @@ private fun VoiceLayout(
 
 @Composable
 private fun DurationText(text: State<String>, padding: PaddingValues) {
-  if (text.value.isNotEmpty()) {
-    val minWidth = with(LocalDensity.current) { 45.sp.toDp() }
-    Text(
-      text.value,
-      Modifier
-        .padding(padding)
-        .widthIn(min = minWidth),
-      color = MaterialTheme.colors.secondary,
-      fontSize = 16.sp,
-      maxLines = 1
-    )
-  }
+  val minWidth = with(LocalDensity.current) { 45.sp.toDp() }
+  Text(
+    text.value,
+    Modifier
+      .padding(padding)
+      .widthIn(min = minWidth),
+    color = MaterialTheme.colors.secondary,
+    fontSize = 16.sp,
+    maxLines = 1
+  )
 }
 
 @Composable
