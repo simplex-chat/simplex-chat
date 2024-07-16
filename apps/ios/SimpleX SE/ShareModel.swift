@@ -8,13 +8,11 @@
 
 import UniformTypeIdentifiers
 import SwiftUI
-import Combine
 import SimpleXChat
 
 class ShareModel: ObservableObject {
     @Published var item: NSExtensionItem?
     @Published var chats = Array<ChatData>()
-    @Published var decodedImages = Dictionary<Int, UIImage>()
     @Published var search = String()
     @Published var comment = String()
     @Published var selected: ChatData?
@@ -23,52 +21,26 @@ class ShareModel: ObservableObject {
     @Published var error: ShareError?
 
     var completion: (() -> Void)?
-    private let chatsSubject = PassthroughSubject<Array<ChatData>, Never>()
-    private var bag = Set<AnyCancellable>()
+
+    var filteredChats: Array<ChatData> {
+        search.isEmpty
+        ? filterChatsToForwardTo(chats: chats)
+        : filterChatsToForwardTo(chats: chats)
+            .filter { foundChat($0, search) }
+    }
 
     init() {
-        // Attempt loading chats
         Task {
             switch fetchChats() {
             case let .success(chats):
                 await MainActor.run {
-                    self.chatsSubject.send(chats)
+                    self.chats = chats
                     withAnimation { self.isLoaded = true }
                 }
             case let .failure(error):
                 await MainActor.run { self.error = error }
             }
         }
-
-        // Binding: Filter chats based on debounced search query
-        $search
-            .removeDuplicates()
-            .throttle(for: .milliseconds(300), scheduler: RunLoop.current, latest: true)
-            .combineLatest(chatsSubject)
-            .map { (search, chats) in
-                search.isEmpty
-                ? chats
-                : chats.filter { foundChat($0, search) }
-            }
-            .map { filterChatsToForwardTo(chats: $0) }
-            .receive(on: DispatchQueue.main)
-            .assign(to: \.chats, on: self)
-            .store(in: &bag)
-        
-        // Binding: Decodes chat images
-        chatsSubject
-            .map { chats in
-                chats
-                    .compactMap { $0.chatInfo.image }
-                    .reduce(into: Dictionary<Int, UIImage>()) { decoded, image in
-                        if let uiImage = UIImage(base64Encoded: image) {
-                            decoded[image.hashValue] = uiImage
-                        }
-                    }
-            }
-            .receive(on: DispatchQueue.main)
-            .assign(to: \.decodedImages, on: self)
-            .store(in: &bag)
     }
 
     func send() {

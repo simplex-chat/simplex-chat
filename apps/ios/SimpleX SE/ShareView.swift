@@ -15,7 +15,7 @@ struct ShareView: View {
         NavigationStack {
             ZStack(alignment: .bottom) {
                 if model.isLoaded {
-                    List(model.chats, selection: $model.selected) { chat in
+                    List(model.filteredChats, selection: $model.selected) { chat in
                         HStack {
                             profileImage(
                                 base64Encoded: chat.chatInfo.image,
@@ -88,7 +88,7 @@ struct ShareView: View {
 
     private func profileImage(base64Encoded: String?, size: Double, isLocal: Bool) -> some View {
         Group {
-            if let uiImage = model.decodedImages[base64Encoded?.hashValue ?? .zero] {
+            if let uiImage = UIImage(base64Encoded: base64Encoded) {
                 Image(uiImage: uiImage).resizable()
             } else {
                 Image(
