@@ -1160,6 +1160,9 @@ processChatCommand' vr = \case
       let contactUsed = (\(_, groupId_, _) -> isNothing groupId_) ucl
       -- [incognito] generate profile to send, create connection with incognito profile
       incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
+      -- TODO fast conn APIAcceptContact
+      -- - agent to return whether snd queue was secured
+      -- - initial connection status to depend on that
       ct <- acceptContactRequest user cReq incognitoProfile contactUsed
       pure $ CRAcceptingContactRequest user ct
   APIRejectContact connReqId -> withUser $ \user -> do
@@ -1586,6 +1589,33 @@ processChatCommand' vr = \case
         let chatV = agentToChatVersion agentV
         dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
         connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
+        -- TODO fast conn APIConnect
+        -- - agent to return whether snd queue was secured
+        -- - initial connection status to depend on that
+        -- - to enable immediately sending messages create contact;
+        --   see saveConnInfo createDirectContact;
+        --   problem: we don't have profile yet
+        --   options:
+        --   - create contact without profile - `profile :: Maybe LocalProfile` in Contact
+        --   - create contact with temporary profile, that will be updated on INFO;
+        --     likely less of an impact on codebase than making "no profile" contacts;
+        --     options:
+        --     - parameterize APIConnect with Maybe LocalAlias, only create temporary profile and contact if it's passed,
+        --       otherwise just create connection
+        --     - add `temporary :: Bool` to LocalProfile so that UI can differentiate such contacts and
+        --       use localizable text for displaying them in list, chat view
+        --     - do both, on Nothing in alias still create temporary profile and contact
+        --     the last option seems the best, as it allows faster connection in all cases + supports setting name;
+        --     with alias set before receiving user doesn't see contact's name (other than in chat info),
+        --     though it's the same currently for pending connection aliases - it shouldn't be issue if
+        --     setting alias optional (last option);
+        --     problem: permissions are passed with profile, so we don't have them as well
+        --     options:
+        --     - use default permissions for temporary profile
+        --     - use the most restrictive permissions
+        --     using default permissions may seem more user friendly, but then user is probable user would send
+        --     messages that would be rejected as prohibited, and wouldn't know - perhaps we should use the most
+        --     restrictive permissions
         conn@PendingContactConnection {pccConnId} <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode chatV pqSup'
         joinPreparedAgentConnection user pccConnId connId cReq dm pqSup' subMode
         pure $ CRSentConfirmation user conn
@@ -1842,6 +1872,10 @@ processChatCommand' vr = \case
           dm <- encodeConnInfo $ XGrpAcpt membershipMemId
           agentConnId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connRequest PQSupportOff
           let chatV = vr `peerConnChatVersion` peerChatVRange
+          -- TODO fast conn APIJoinGroup
+          -- - agent to return whether snd queue was secured
+          -- - initial connection status to depend on that
+          -- ? probably unnecessary for groups
           cId <- withStore' $ \db -> do
             Connection {connId = cId} <- createMemberConnection db userId fromMember agentConnId chatV peerChatVRange subMode
             updateGroupMemberStatus db userId fromMember GSMemAccepted
@@ -4108,6 +4142,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         RCVD msgMeta msgRcpt ->
           withAckMessage' "contact rcvd" agentConnId msgMeta $
             directMsgReceived ct conn msgMeta msgRcpt
+        -- TODO fast conn CONF, INFO
+        -- - only joining side is affected (will have contact) -> receives INFO -> update profile
+        -- ? seems it should be working without changes - profile is already updated on INFO
         CONF confId pqSupport _ connInfo -> do
           conn' <- processCONFpqSupport conn pqSupport
           ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn' connInfo
