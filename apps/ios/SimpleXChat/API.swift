@@ -243,7 +243,7 @@ private func errorJson(_ jDict: NSDictionary) -> String? {
     if let chatError = jDict["chatError"] {
         serializeJSON(chatError)
     } else {
-        nil
+        serializeJSON(jDict)
     }
 }
 
