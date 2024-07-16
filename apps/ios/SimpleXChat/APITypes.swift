@@ -1228,7 +1228,7 @@ public struct ProtocolTestFailure: Decodable, Error, Equatable {
     public var localizedDescription: String {
         let err = String.localizedStringWithFormat(NSLocalizedString("Test failed at step %@.", comment: "server test failure"), testStep.text)
         switch testError {
-        case .SMP(.AUTH):
+        case .SMP(_, .AUTH):
             return err + " " + NSLocalizedString("Server requires authorization to create queues, check password", comment: "server test error")
         case .XFTP(.AUTH):
             return err + " " + NSLocalizedString("Server requires authorization to upload, check password", comment: "server test error")
@@ -1887,7 +1887,7 @@ public enum SQLiteError: Decodable, Hashable {
 public enum AgentErrorType: Decodable, Hashable {
     case CMD(cmdErr: CommandErrorType)
     case CONN(connErr: ConnectionErrorType)
-    case SMP(smpErr: ProtocolErrorType)
+    case SMP(serverAddress: String, smpErr: ProtocolErrorType)
     case NTF(ntfErr: ProtocolErrorType)
     case XFTP(xftpErr: XFTPErrorType)
     case PROXY(proxyServer: String, relayServer: String, proxyErr: ProxyClientError)

@@ -813,7 +813,7 @@ object ChatController {
     return when (r) {
       is CR.NewChatItem -> r.chatItem
       else -> {
-        if (!(networkErrorAlert(r))) {
+        if (!((r))) {
           apiErrorAlert("processSendMessageCmd", generalGetString(MR.strings.error_sending_message), r)
         }
         null

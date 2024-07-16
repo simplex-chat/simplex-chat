@@ -218,11 +218,11 @@ public func chatResponse(_ s: String) -> ChatResponse {
                 }
             } else if type == "chatCmdError" {
                 if let jError = jResp["chatCmdError"] as? NSDictionary {
-                    return .chatCmdError(user_: decodeUser_(jError), chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
+                    return .chatCmdError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
                 }
             } else if type == "chatError" {
                 if let jError = jResp["chatError"] as? NSDictionary {
-                    return .chatError(user_: decodeUser_(jError), chatError: .invalidJSON(json: prettyJSON(jError) ?? ""))
+                    return .chatError(user_: decodeUser_(jError), chatError: .invalidJSON(json: errorJson(jError) ?? ""))
                 }
             }
         }
@@ -234,6 +234,14 @@ public func chatResponse(_ s: String) -> ChatResponse {
 private func decodeUser_(_ jDict: NSDictionary) -> UserRef? {
     if let user_ = jDict["user_"] {
         try? decodeObject(user_ as Any)
+    } else {
+        nil
+    }
+}
+
+private func errorJson(_ jDict: NSDictionary) -> String? {
+    if let chatError = jDict["chatError"] {
+        json(chatError)
     } else {
         nil
     }
@@ -264,6 +272,13 @@ func decodeObject<T: Decodable>(_ obj: Any) throws -> T {
 func decodeProperty<T: Decodable>(_ obj: Any, _ prop: NSString) -> T? {
     if let jProp = (obj as? NSDictionary)?[prop] {
         return try? decodeObject(jProp)
+    }
+    return nil
+}
+
+func json(_ obj: Any) -> String? {
+    if let d = try? JSONSerialization.data(withJSONObject: obj) {
+        return String(decoding: d, as: UTF8.self)
     }
     return nil
 }
