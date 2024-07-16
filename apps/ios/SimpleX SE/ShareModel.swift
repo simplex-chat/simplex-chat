@@ -97,6 +97,7 @@ class ShareModel: ObservableObject {
                 tempFolder: getTempFilesDirectory().path,
                 assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path
             )
+            try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
             let isRunning = try apiStartChat()
             logger.log(level: .debug, "Chat Started. Is running: \(isRunning)")
             return .success(try apiGetChats(userId: user.id))
