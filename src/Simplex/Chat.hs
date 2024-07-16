@@ -385,7 +385,7 @@ cfgServers p DefaultAgentServers {smp, xftp} = case p of
   SPXFTP -> xftp
 
 startChatController :: Bool -> Bool -> CM' (Async ())
-startChatController mainApp enableFiles = do
+startChatController mainApp enableSndFiles = do
   asks smpAgent >>= liftIO . resumeAgentClient
   unless mainApp $ chatWriteVar' subscriptionMode SMOnlyCreate
   users <- fromRight [] <$> runExceptT (withStore' getUsers)
@@ -400,15 +400,17 @@ startChatController mainApp enableFiles = do
           then Just <$> async (subscribeUsers False users)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
-      when (mainApp || enableFiles) startXFTP
-      when mainApp $ do
-        void $ forkIO $ startFilesToReceive users
-        startCleanupManager
-        startExpireCIs users
+      if mainApp
+        then do
+          startXFTP xftpStartWorkers
+          void $ forkIO $ startFilesToReceive users
+          startCleanupManager
+          startExpireCIs users
+        else when enableSndFiles $ startXFTP xftpStartSndWorkers
       pure a1
-    startXFTP = do
+    startXFTP startWorkers = do
       tmp <- readTVarIO =<< asks tempDirectory
-      runExceptT (withAgent $ \a -> xftpStartWorkers a tmp) >>= \case
+      runExceptT (withAgent $ \a -> startWorkers a tmp) >>= \case
         Left e -> liftIO $ print $ "Error starting XFTP workers: " <> show e
         Right _ -> pure ()
     startCleanupManager = do
@@ -617,10 +619,10 @@ processChatCommand' vr = \case
     checkDeleteChatUser user'
     withChatLock "deleteUser" . procCmd $ deleteChatUser user' delSMPQueues
   DeleteUser uName delSMPQueues viewPwd_ -> withUserName uName $ \userId -> APIDeleteUser userId delSMPQueues viewPwd_
-  StartChat {mainApp, enableFiles} -> withUser' $ \_ ->
+  StartChat {mainApp, enableSndFiles} -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged . lift $ startChatController mainApp enableFiles $> CRChatStarted
+      _ -> checkStoreNotChanged . lift $ startChatController mainApp enableSndFiles $> CRChatStarted
   APIStopChat -> do
     ask >>= liftIO . stopChatController
     pure CRChatStopped
@@ -7357,8 +7359,8 @@ chatCommandP =
       ("/user" <|> "/u") $> ShowActiveUser,
       "/_start " *> do
         mainApp <- "main=" *> onOffP
-        enableFiles <- " files=" *> onOffP <|> pure mainApp
-        pure StartChat {mainApp, enableFiles},
+        enableSndFiles <- " snd_files=" *> onOffP <|> pure mainApp
+        pure StartChat {mainApp, enableSndFiles},
       "/_start" $> StartChat True True,
       "/_stop" $> APIStopChat,
       "/_app activate restore=" *> (APIActivateChat <$> onOffP),
@@ -7688,11 +7690,6 @@ chatCommandP =
             if refChar c then A.takeTill p else fail "invalid first character in display name"
         quoted cs = A.choice [A.char c *> takeNameTill (== c) <* A.char c | c <- cs]
         refChar c = c > ' ' && c /= '#' && c /= '@'
-    startCmdP = do
-      mainApp <- "main=" *> onOffP
-      enableFiles <- " files=" *> onOffP <|> pure mainApp
-      pure StartChat {mainApp, enableFiles}
-
     sendMsgQuote msgDir = SendMessageQuote <$> displayName <* A.space <*> pure msgDir <*> quotedMsg <*> msgTextP
     quotedMsg = safeDecodeUtf8 <$> (A.char '(' *> A.takeTill (== ')') <* A.char ')') <* optional A.space
     reactionP = MREmoji <$> (mrEmojiChar <$?> (toEmoji <$> A.anyChar))

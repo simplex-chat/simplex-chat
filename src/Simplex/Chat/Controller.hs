@@ -263,7 +263,7 @@ data ChatCommand
   | UnmuteUser
   | APIDeleteUser UserId Bool (Maybe UserPwd)
   | DeleteUser UserName Bool (Maybe UserPwd)
-  | StartChat {mainApp :: Bool, enableFiles :: Bool}
+  | StartChat {mainApp :: Bool, enableSndFiles :: Bool}
   | APIStopChat
   | APIActivateChat {restoreChat :: Bool}
   | APISuspendChat {suspendTimeout :: Int}
