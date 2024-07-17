@@ -46,11 +46,12 @@ class ShareModel: ObservableObject {
     func send() {
         Task {
             switch await self.sendMessage() {
-            case let .success(aChatItem):
-                await MainActor.run { progress = .zero }
-                startEventLoop(for: aChatItem)
+            case let .success(item):
+                await MainActor.run { self.progress = .zero }
+                // Listen to the event loop for progress events
+                EventLoop.shared.set(itemId: item.chatItem.id, model: self)
             case let .failure(error):
-                self.error = error
+                await MainActor.run { self.error = error }
             }
         }
     }
@@ -64,7 +65,7 @@ class ShareModel: ObservableObject {
             }
             let url = try await attachment.inPlaceUrl(type: type)
             guard let cryptoFile = saveFileFromURL(url) else { return .failure(.encryptFile) }
-            SEChatState.shared.set(.sendingMessage)
+//            SEChatState.shared.set(.sendingMessage)
             await waitForOtherProcessesToSuspend()
             return .success(
                 try apiSendMessage(
@@ -101,35 +102,10 @@ class ShareModel: ObservableObject {
             )
             try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
             let isRunning = try apiStartChat()
-            // TODO: Avoid duplicate event loop observer
-            // Here we should check, if the chat is already running and only start the polling `recvSimpleXMsg` if `isRunning == false`
             logger.log(level: .debug, "Chat Started. Is running: \(isRunning)")
             return .success(try apiGetChats(userId: user.id))
         } catch {
             return .failure(.apiError(APIError(response: error as! ChatResponse)))
-        }
-    }
-
-    private func startEventLoop(for sent: AChatItem) {
-        Task {
-            while true {
-                switch recvSimpleXMsg() {
-                case let .sndFileProgressXFTP(_, aChatItem, _, sentSize, totalSize):
-                    if let id = aChatItem?.chatItem.id, id == sent.chatItem.id {
-                        await MainActor.run {
-                            withAnimation { self.progress = Double(sentSize) / Double(totalSize) }
-                        }
-                    }
-                case let .sndFileCompleteXFTP(_, aChatItem, _):
-                    if aChatItem.chatItem.id == sent.chatItem.id {
-                        await MainActor.run {
-                            withAnimation { self.progress = 1 }
-                            self.completion!()
-                        }
-                    }
-                default: break
-                }
-            }
         }
     }
     
@@ -196,5 +172,40 @@ class SEChatState {
         seStateGroupDefault.set(state)
         sendSEState(state)
         value_ = state
+    }
+}
+
+private final class EventLoop {
+    static let shared = EventLoop()
+
+    private var itemId: ChatItem.ID?
+    private weak var model: ShareModel?
+
+    func set(itemId: ChatItem.ID, model: ShareModel) {
+        self.itemId = itemId
+        self.model = model
+    }
+
+    init() {
+        Task {
+            while true {
+                switch recvSimpleXMsg() {
+                case let .sndFileProgressXFTP(_, aChatItem, _, sentSize, totalSize):
+                    if let id = aChatItem?.chatItem.id, id == itemId {
+                        await MainActor.run {
+                            withAnimation { model?.progress = Double(sentSize) / Double(totalSize) }
+                        }
+                    }
+                case let .sndFileCompleteXFTP(_, aChatItem, _):
+                    if aChatItem.chatItem.id == itemId {
+                        await MainActor.run {
+                            withAnimation { model?.progress = 1 }
+                            model?.completion!()
+                        }
+                    }
+                default: break
+                }
+            }
+        }
     }
 }
