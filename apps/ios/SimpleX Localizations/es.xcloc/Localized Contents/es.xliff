@@ -709,8 +709,8 @@
         <target>¡Los mensajes nuevos de %@ estarán ocultos!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All users" xml:space="preserve">
-        <source>All users</source>
+      <trans-unit id="All profiles" xml:space="preserve">
+        <source>All profiles</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
@@ -1709,8 +1709,8 @@ This is your own one-time link!</source>
         <target>Contraseña actual…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Current user" xml:space="preserve">
-        <source>Current user</source>
+      <trans-unit id="Current profile" xml:space="preserve">
+        <source>Current profile</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
@@ -5668,6 +5668,10 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>La versión del servidor es incompatible con la configuración de red.</target>
         <note>srv error text</note>
       </trans-unit>
+      <trans-unit id="Server version is incompatible with network settings: %@." xml:space="preserve">
+        <source>Server version is incompatible with network settings: %@.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Server version is incompatible with your app: %@." xml:space="preserve">
         <source>Server version is incompatible with your app: %@.</source>
         <note>No comment provided by engineer.</note>
@@ -5807,6 +5811,10 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
       <trans-unit id="Show message status" xml:space="preserve">
         <source>Show message status</source>
         <target>Estado del mensaje</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Show percentage" xml:space="preserve">
+        <source>Show percentage</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -6031,10 +6039,6 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
       </trans-unit>
       <trans-unit id="Subscription errors" xml:space="preserve">
         <source>Subscription errors</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Subscription percentage" xml:space="preserve">
-        <source>Subscription percentage</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Subscriptions ignored" xml:space="preserve">
