@@ -287,7 +287,7 @@ private fun BoxScope.PlayButton(error: Boolean = false, sizeMultiplier: Float = 
       Icon(
         painterResource(MR.images.ic_play_arrow_filled),
         contentDescription = null,
-        Modifier.size(if (sizeMultiplier != 1f) 24.sp.toDp() * sizeMultiplier * 1.25f else 24.sp.toDp()),
+        Modifier.size(if (sizeMultiplier != 1f) 24.sp.toDp() * sizeMultiplier * 1.6f else 24.sp.toDp()),
         tint = if (error) WarningOrange else Color.White
       )
     }
