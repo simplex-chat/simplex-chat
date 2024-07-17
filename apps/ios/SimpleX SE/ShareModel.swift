@@ -73,6 +73,7 @@ class ShareModel: ObservableObject {
                 msgContent: .file(comment)
             )
             SEChatState.shared.set(.inactive)
+            if chatItem.chatInfo.chatType == .local { completion?() }
             return .success(chatItem)
         } catch {
             if let chatResponse = error as? ChatResponse {
