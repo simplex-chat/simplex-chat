@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -47,13 +46,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.Chat
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.ChatInfo
-import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.ContactStatus
 import chat.simplex.common.model.RemoteHostInfo
 import chat.simplex.common.platform.BackHandler
@@ -62,7 +59,6 @@ import chat.simplex.common.platform.chatModel
 import chat.simplex.common.platform.getKeyboardState
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
-import chat.simplex.common.views.chatlist.ScrollDirection
 import chat.simplex.common.views.helpers.AppBarTitle
 import chat.simplex.common.views.helpers.KeyChangeEffect
 import chat.simplex.common.views.helpers.KeyboardState
@@ -180,7 +176,6 @@ private fun ContactsLayout(
             contactActions = contactActions,
             contactListTitle = contactListTitle
         )
-        // TODO: Empty list states.
     }
 }
 
@@ -327,7 +322,7 @@ fun ContactsList(
 
             Spacer(Modifier.height(DEFAULT_PADDING))
 
-            if (contactListTitle != null) {
+            if (contactListTitle != null && filteredContactChats.isNotEmpty()) {
                 Text(
                     contactListTitle, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
                     modifier = Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), fontSize = 12.sp
