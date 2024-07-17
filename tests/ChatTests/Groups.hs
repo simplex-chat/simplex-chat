@@ -1907,7 +1907,7 @@ testGroupLink =
       cath ##> ("/c " <> cLink)
       alice <#? cath
       alice ##> "/ac cath"
-      alice <## "cath (Catherine): accepting contact request..."
+      alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
       concurrently_
         (cath <## "alice (Alice): contact is connected")
         (alice <## "cath (Catherine): contact is connected")

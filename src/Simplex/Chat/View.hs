@@ -176,7 +176,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
   CRContactDeletedByContact u c -> ttyUser u [ttyFullContact c <> " deleted contact with you"]
   CRChatCleared u chatInfo -> ttyUser u $ viewChatCleared chatInfo
-  CRAcceptingContactRequest u c -> ttyUser u [ttyFullContact c <> ": accepting contact request..."]
+  CRAcceptingContactRequest u c -> ttyUser u $ viewAcceptingContactRequest c
   CRContactAlreadyExists u c -> ttyUser u [ttyFullContact c <> ": contact already exists"]
   CRContactRequestAlreadyAccepted u c -> ttyUser u [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CRUserContactLinkCreated u cReq -> ttyUser u $ connReqContact_ "Your new chat address is created!" cReq
@@ -962,6 +962,11 @@ viewSentInvitation incognitoProfile testView =
       where
         message = ["connection request sent incognito!"]
     Nothing -> ["connection request sent!"]
+
+viewAcceptingContactRequest :: Contact -> [StyledString]
+viewAcceptingContactRequest ct
+  | contactReady ct = [ttyFullContact ct <> ": accepting contact request, you can send messages to contact"]
+  | otherwise = [ttyFullContact ct <> ": accepting contact request..."]
 
 viewReceivedContactRequest :: ContactName -> Profile -> [StyledString]
 viewReceivedContactRequest c Profile {fullName} =

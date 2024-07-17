@@ -4227,6 +4227,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         JOINED _ ->
           -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+          -- TODO CRContactConnected
         QCONT ->
           void $ continueSending connEntity conn
         MWARN msgId err -> do
