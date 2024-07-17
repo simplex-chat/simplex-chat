@@ -22,7 +22,7 @@ func apiGetActiveUser() throws -> User? {
 }
 
 func apiStartChat() throws -> Bool {
-    let r = sendSimpleXCmd(.startChat(mainApp: false))
+    let r = sendSimpleXCmd(.startChat(mainApp: false, enableSndFiles: true))
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
