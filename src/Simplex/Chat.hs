@@ -400,15 +400,18 @@ startChatController mainApp enableSndFiles = do
           then Just <$> async (subscribeUsers False users)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
-      when (mainApp || enableSndFiles) startXFTP
-      when mainApp $ do
-        void $ forkIO $ startFilesToReceive users
-        startCleanupManager
-        startExpireCIs users
+      if mainApp
+        then do
+          startXFTP xftpStartWorkers
+          void $ forkIO $ startFilesToReceive users
+          startCleanupManager
+          startExpireCIs users
+        else
+          when enableSndFiles $ startXFTP xftpStartSndWorkers
       pure a1
-    startXFTP = do
+    startXFTP startWorkers = do
       tmp <- readTVarIO =<< asks tempDirectory
-      runExceptT (withAgent $ \a -> xftpStartWorkers a tmp mainApp) >>= \case
+      runExceptT (withAgent $ \a -> startWorkers a tmp) >>= \case
         Left e -> liftIO $ print $ "Error starting XFTP workers: " <> show e
         Right _ -> pure ()
     startCleanupManager = do
