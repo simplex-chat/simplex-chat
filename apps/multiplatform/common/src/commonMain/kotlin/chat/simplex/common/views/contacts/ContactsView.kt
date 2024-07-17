@@ -285,11 +285,9 @@ private fun ContactsList(
     }
     val showUnreadAndFavorites =
         remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
-    val allChats = remember {
-        contactChats(
-            chatModel.chats,
-            contactTypes
-        )
+
+    val allChats by remember(chatModel.chats, contactTypes) {
+        derivedStateOf { contactChats(chatModel.chats, contactTypes) }
     }
 
     val filteredContactChats = filteredContactChats(
@@ -376,7 +374,6 @@ private fun filteredContactChats(
     searchText: String,
     contactChats: List<Chat>
 ): List<Chat> {
-    // TODO: Refresh list after delete.
     return contactChats
         .filter { chat -> filterChat(
             chat = chat,
