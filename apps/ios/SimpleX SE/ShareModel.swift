@@ -65,7 +65,7 @@ class ShareModel: ObservableObject {
             }
             let url = try await attachment.inPlaceUrl(type: type)
             guard let cryptoFile = saveFileFromURL(url) else { return .failure(.encryptFile) }
-//            SEChatState.shared.set(.sendingMessage)
+            SEChatState.shared.set(.sendingMessage)
             await waitForOtherProcessesToSuspend()
             return .success(
                 try apiSendMessage(
