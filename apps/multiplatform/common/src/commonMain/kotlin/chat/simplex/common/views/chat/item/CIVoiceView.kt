@@ -24,6 +24,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import kotlinx.coroutines.flow.*
+import kotlin.math.*
 
 // TODO refactor https://github.com/simplex-chat/simplex-chat/pull/1451#discussion_r1033429901
 
@@ -127,19 +128,20 @@ private fun VoiceLayout(
   onProgressChanged: (Int) -> Unit,
 ) {
   @Composable
-  fun RowScope.Slider(backgroundColor: Color, padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING_HALF), sizeMultiplier: Float = 1f) {
+  fun RowScope.Slider(backgroundColor: Color, padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
     var movedManuallyTo by rememberSaveable(file.fileId) { mutableStateOf(-1) }
     if (audioPlaying.value || progress.value > 0 || movedManuallyTo == progress.value) {
       val dp4 = with(LocalDensity.current) { 4.dp.toPx() }
-      val dp10 = with(LocalDensity.current) { 10.dp.toPx() }
       val primary = MaterialTheme.colors.primary
       val inactiveTrackColor =
         MaterialTheme.colors.primary.mixWith(
           backgroundColor.copy(1f).mixWith(MaterialTheme.colors.background, backgroundColor.alpha),
           0.24f)
       val width = LocalWindowWidth()
+      // Built-in slider has rounded corners but we need square corners, so drawing a track manually
       val colors = SliderDefaults.colors(
-        inactiveTrackColor = inactiveTrackColor
+        inactiveTrackColor = Color.Transparent,
+        activeTrackColor = Color.Transparent
       )
       Slider(
         progress.value.toFloat(),
@@ -152,8 +154,8 @@ private fun VoiceLayout(
           .weight(1f)
           .padding(padding)
           .drawBehind {
-            drawRect(primary, Offset(0f, (size.height - dp4) / 2), size = androidx.compose.ui.geometry.Size(dp10, dp4))
-            drawRect(inactiveTrackColor, Offset(size.width - dp10, (size.height - dp4) / 2), size = androidx.compose.ui.geometry.Size(dp10, dp4))
+            drawRect(inactiveTrackColor, Offset(0f, (size.height - dp4) / 2), size = Size(size.width, dp4))
+            drawRect(primary, Offset(0f, (size.height - dp4) / 2), size = Size(progress.value.toFloat() / max(0.00001f, duration.value.toFloat()) * size.width, dp4))
           },
         valueRange = 0f..duration.value.toFloat(),
         colors = colors
@@ -173,7 +175,7 @@ private fun VoiceLayout(
         VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, sizeMultiplier, play, pause, longClick, receiveFile)
         Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically) {
           DurationText(text, PaddingValues(start = 8.sp.toDp()), true)
-          Slider(MaterialTheme.colors.background, PaddingValues(start = 7.sp.toDp()), sizeMultiplier = sizeMultiplier)
+          Slider(MaterialTheme.colors.background, PaddingValues(start = 7.sp.toDp()))
         }
       }
     }
