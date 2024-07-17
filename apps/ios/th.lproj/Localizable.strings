@@ -109,9 +109,6 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ ได้รับการตรวจสอบแล้ว";
 
-/* No comment provided by engineer. */
-"%@ servers" = "%@ เซิร์ฟเวอร์";
-
 /* notification title */
 "%@ wants to connect!" = "%@ อยากเชื่อมต่อ!";
 
