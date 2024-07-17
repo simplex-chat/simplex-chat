@@ -99,6 +99,8 @@ class ShareModel: ObservableObject {
             )
             try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
             let isRunning = try apiStartChat()
+            // TODO: Avoid duplicate event loop observer
+            // Here we should check, if the chat is already running and only start the polling `recvSimpleXMsg` if `isRunning == false`
             logger.log(level: .debug, "Chat Started. Is running: \(isRunning)")
             return .success(try apiGetChats(userId: user.id))
         } catch {
