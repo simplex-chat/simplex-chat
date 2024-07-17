@@ -98,7 +98,7 @@ private fun getContactType(chat: Chat): ContactType {
     }
 }
 
-val chatsByTypeComparator = Comparator<Chat> { chat1, chat2 ->
+private val chatsByTypeComparator = Comparator<Chat> { chat1, chat2 ->
     val chat1Type = getContactType(chat1)
     val chat2Type = getContactType(chat2)
 
@@ -111,7 +111,7 @@ val chatsByTypeComparator = Comparator<Chat> { chat1, chat2 ->
 }
 
 @Composable
-fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, close: () -> Unit) {
+private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, close: () -> Unit) {
     ModalView(
         close = close
     ) {
@@ -192,7 +192,7 @@ fun ContactsView(
 }
 
 @Composable
-fun ContactsSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, focused: Boolean, onFocusChanged: (hasFocus: Boolean) -> Unit) {
+private fun ContactsSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, focused: Boolean, onFocusChanged: (hasFocus: Boolean) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         val focusRequester = remember { FocusRequester() }
         Icon(painterResource(MR.images.ic_search), null, Modifier.padding(horizontal = DEFAULT_PADDING_HALF), tint = MaterialTheme.colors.secondary)
@@ -243,7 +243,7 @@ fun ContactsSearchBar(listState: LazyListState, searchText: MutableState<TextFie
 }
 
 @Composable
-fun ToggleFilterButton() {
+private fun ToggleFilterButton() {
     val pref = remember { ChatController.appPrefs.showUnreadAndFavorites }
     IconButton(onClick = { pref.set(!pref.get()) }) {
         val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
@@ -264,7 +264,7 @@ fun ToggleFilterButton() {
 private var lazyListState = 0 to 0
 
 @Composable
-fun ContactsList(
+private fun ContactsList(
     contactActions: @Composable () -> Unit,
     contactTypes: List<ContactType>,
     contactListTitle: String ? = null
