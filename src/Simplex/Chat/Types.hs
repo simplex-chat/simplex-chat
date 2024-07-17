@@ -1588,9 +1588,9 @@ commandExpectedResponse = \case
   CFCreateConnGrpInv -> t INV_
   CFCreateConnFileInvDirect -> t INV_
   CFCreateConnFileInvGroup -> t INV_
-  CFJoinConn -> t OK_
+  CFJoinConn -> t JOINED_
   CFAllowConn -> t OK_
-  CFAcceptContact -> t OK_
+  CFAcceptContact -> t JOINED_
   CFAckMessage -> t OK_
   CFDeleteConn -> t OK_
   where

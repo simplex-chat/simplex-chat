@@ -3994,6 +3994,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     agentMsgConnStatus :: AEvent e -> Maybe ConnStatus
     agentMsgConnStatus = \case
+      JOINED True -> Just ConnSndReady
       CONF {} -> Just ConnRequested
       INFO {} -> Just ConnSndReady
       CON _ -> Just ConnReady
@@ -4041,6 +4042,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           sentMsgDeliveryEvent conn msgId
         OK ->
           -- [async agent commands] continuation on receiving OK
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        JOINED _ ->
+          -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         QCONT ->
           void $ continueSending connEntity conn
@@ -4219,6 +4223,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent $ RCERatchetSync rss) Nothing
         OK ->
           -- [async agent commands] continuation on receiving OK
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        JOINED _ ->
+          -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         QCONT ->
           void $ continueSending connEntity conn
@@ -4617,6 +4624,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       OK ->
         -- [async agent commands] continuation on receiving OK
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+      JOINED _ ->
+          -- [async agent commands] continuation on receiving JOINED
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       QCONT -> do
         continued <- continueSending connEntity conn
         when continued $ sendPendingGroupMessages user m conn
@@ -4709,6 +4719,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        JOINED _ ->
+          -- [async agent commands] continuation on receiving JOINED
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         ERR err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -4754,6 +4767,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           parseFileChunk msgBody >>= receiveFileChunk ft (Just conn) meta
         OK ->
           -- [async agent commands] continuation on receiving OK
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        JOINED _ ->
+          -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         MERR _ err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
