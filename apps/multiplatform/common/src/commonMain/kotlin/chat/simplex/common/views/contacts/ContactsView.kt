@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -46,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.Chat
@@ -60,6 +62,7 @@ import chat.simplex.common.platform.chatModel
 import chat.simplex.common.platform.getKeyboardState
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
+import chat.simplex.common.views.chatlist.ScrollDirection
 import chat.simplex.common.views.helpers.AppBarTitle
 import chat.simplex.common.views.helpers.KeyChangeEffect
 import chat.simplex.common.views.helpers.KeyboardState
@@ -170,33 +173,13 @@ private fun ContactsLayout(
     contactActions: @Composable () -> Unit,
     contactTypes: List<ContactType>,
     contactListTitle: String? = null) {
-    val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
-    var searchFocused by remember { mutableStateOf(false) }
-    val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(
-        TextFieldValue("")
-    ) }
 
     SectionView {
-        Divider()
-        ContactsSearchBar(
-            listState = listState,
-            searchText = searchText,
-            focused = searchFocused,
-            onFocusChanged = {
-                searchFocused = it
-            }
+        ContactsList(
+            contactTypes = contactTypes,
+            contactActions = contactActions,
+            contactListTitle = contactListTitle
         )
-        Divider()
-    }
-
-    if (!searchFocused) {
-        contactActions()
-    }
-
-    Spacer(Modifier.height(DEFAULT_PADDING))
-
-    SectionView(title = contactListTitle, padding = PaddingValues(DEFAULT_PADDING)) {
-        ContactsList(listState = listState, chatModel = chatModel, searchText = searchText, contactTypes = contactTypes)
         // TODO: Empty list states.
     }
 }
@@ -286,8 +269,19 @@ fun ToggleFilterButton() {
 private var lazyListState = 0 to 0
 
 @Composable
-fun ContactsList(listState: LazyListState, chatModel: ChatModel, searchText: MutableState<TextFieldValue>, contactTypes: List<ContactType>) {
+fun ContactsList(
+    contactActions: @Composable () -> Unit,
+    contactTypes: List<ContactType>,
+    contactListTitle: String ? = null
+) {
     val oneHandUI = remember { chatModel.controller.appPrefs.oneHandUI }
+    val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
+    val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(
+        TextFieldValue("")
+    ) }
+
+    var searchFocused by remember { mutableStateOf(false) }
+
     DisposableEffect(Unit) {
         onDispose {
             lazyListState =
@@ -296,9 +290,11 @@ fun ContactsList(listState: LazyListState, chatModel: ChatModel, searchText: Mut
     }
     val showUnreadAndFavorites =
         remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
-    val allChats = remember { contactChats(
-        chatModel.chats,
-        contactTypes)
+    val allChats = remember {
+        contactChats(
+            chatModel.chats,
+            contactTypes
+        )
     }
 
     val filteredContactChats = filteredContactChats(
@@ -307,27 +303,56 @@ fun ContactsList(listState: LazyListState, chatModel: ChatModel, searchText: Mut
         contactChats = allChats
     )
 
+    LazyColumn(
+        Modifier.fillMaxWidth(),
+        listState
+    ) {
+        item {
+            SectionView {
+                Divider()
+                ContactsSearchBar(
+                    listState = listState,
+                    searchText = searchText,
+                    focused = searchFocused,
+                    onFocusChanged = {
+                        searchFocused = it
+                    }
+                )
+                Divider()
+            }
+
+            if (!searchFocused) {
+                contactActions()
+            }
+
+            Spacer(Modifier.height(DEFAULT_PADDING))
+
+            if (contactListTitle != null) {
+                Text(
+                    contactListTitle, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
+                    modifier = Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), fontSize = 12.sp
+                )
+            }
+        }
+        itemsIndexed(filteredContactChats) { index, chat ->
+            val nextChatSelected = remember(chat.id, filteredContactChats) {
+                derivedStateOf {
+                    chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+                }
+            }
+            SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+                ContactListNavLinkView(chat, nextChatSelected, oneHandUI.state)
+            }
+        }
+    }
+
     if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
         Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING)) {
-            Box(Modifier.fillMaxWidth() ,contentAlignment = Alignment.Center) {
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Text(
                     generalGetString(MR.strings.no_filtered_contacts),
                     color = MaterialTheme.colors.secondary
                 )
-            }
-        }
-    } else {
-        LazyColumn(
-            Modifier.fillMaxWidth(),
-            listState
-        ) {
-            itemsIndexed(filteredContactChats) { index, chat ->
-                val nextChatSelected = remember(chat.id, filteredContactChats) {
-                    derivedStateOf {
-                        chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
-                    }
-                }
-                ContactListNavLinkView(chat, nextChatSelected, oneHandUI.state)
             }
         }
     }

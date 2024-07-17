@@ -89,9 +89,13 @@ fun NewChatButton(icon: Painter, text: String, click: () -> Unit, textColor: Col
 fun NewChatOptions(addContact: () -> Unit, scanPaste: () -> Unit, createGroup: () -> Unit) {
   val actions = remember { listOf(addContact, scanPaste, createGroup) }
 
-  LazyColumn {
-    items(actions.size) { index ->
-      NewChatButton(icon = painterResource(icons[index]), text = stringResource(titles[index]), click = actions[index], extraPadding = true)
+  Column {
+    actions.forEachIndexed { index, _ ->
+      NewChatButton(
+        icon = painterResource(icons[index]),
+        text = stringResource(titles[index]),
+        click = actions[index],
+        extraPadding = true)
     }
   }
 }
