@@ -67,13 +67,13 @@ class ShareModel: ObservableObject {
             guard let cryptoFile = saveFileFromURL(url) else { return .failure(.encryptFile) }
             SEChatState.shared.set(.sendingMessage)
             await waitForOtherProcessesToSuspend()
-            return .success(
-                try apiSendMessage(
-                    chatInfo: chat.chatInfo,
-                    cryptoFile: cryptoFile,
-                    msgContent: .file(comment)
-                )
+            let chatItem = try apiSendMessage(
+                chatInfo: chat.chatInfo,
+                cryptoFile: cryptoFile,
+                msgContent: .file(comment)
             )
+            SEChatState.shared.set(.inactive)
+            return .success(chatItem)
         } catch {
             if let chatResponse = error as? ChatResponse {
                 return .failure(.apiError(APIError(response: chatResponse)))
