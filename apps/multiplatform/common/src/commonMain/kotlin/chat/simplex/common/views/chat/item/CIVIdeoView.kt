@@ -271,9 +271,8 @@ expect fun PlayerView(player: VideoPlayer, width: Dp, onClick: () -> Unit, onLon
 
 @Composable
 private fun BoxScope.PlayButton(error: Boolean = false, sizeMultiplier: Float = 1f, onLongClick: () -> Unit, onClick: () -> Unit) {
-  val padding = if (sizeMultiplier != 1f) PaddingValues(top = 1.sp.toDp(), end = 1.sp.toDp()) else PaddingValues()
   Surface(
-    Modifier.align(if (sizeMultiplier != 1f) Alignment.TopStart else Alignment.Center).padding(padding),
+    Modifier.align(if (sizeMultiplier != 1f) Alignment.TopStart else Alignment.Center),
     color = Color.Black.copy(alpha = 0.25f),
     shape = RoundedCornerShape(percent = 50),
     contentColor = LocalContentColor.current
@@ -297,9 +296,8 @@ private fun BoxScope.PlayButton(error: Boolean = false, sizeMultiplier: Float = 
 
 @Composable
 fun BoxScope.VideoDecryptionProgress(sizeMultiplier: Float = 1f, onLongClick: () -> Unit) {
-  val padding = if (sizeMultiplier != 1f) PaddingValues(top = 1.sp.toDp(), end = 1.sp.toDp()) else PaddingValues()
   Surface(
-    Modifier.align(if (sizeMultiplier != 1f) Alignment.TopStart else Alignment.Center).padding(padding),
+    Modifier.align(if (sizeMultiplier != 1f) Alignment.TopStart else Alignment.Center),
     color = Color.Black.copy(alpha = 0.25f),
     shape = RoundedCornerShape(percent = 50),
     contentColor = LocalContentColor.current
