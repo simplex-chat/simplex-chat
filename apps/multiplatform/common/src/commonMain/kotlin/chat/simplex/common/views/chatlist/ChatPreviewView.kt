@@ -334,7 +334,7 @@ fun ChatPreviewView(
         }
         val mc = ci?.content?.msgContent
         if (mc !is MsgContent.MCVoice || mc.text.isNotEmpty()) {
-          Box(Modifier.offset(x = if (mc is MsgContent.MCFile) -20.sp.toDp() else 0.dp)) {
+          Box(Modifier.offset(x = if (mc is MsgContent.MCFile) -15.sp.toDp() else 0.dp)) {
             chatPreviewText()
           }
         }
@@ -400,21 +400,21 @@ fun ChatPreviewView(
 
 @Composable
 private fun SmallContentPreview(content: @Composable () -> Unit) {
-  Box(Modifier.padding(top = 3.5.sp.toDp(), end = 8.sp.toDp()).size(32.sp.toDp()).border(1.dp, MaterialTheme.colors.secondary, RoundedCornerShape(22)).clip(RoundedCornerShape(22))) {
+  Box(Modifier.padding(top = 2.sp.toDp(), end = 8.sp.toDp()).size(36.sp.toDp()).border(0.1.dp, MaterialTheme.colors.secondary, RoundedCornerShape(22)).clip(RoundedCornerShape(22))) {
     content()
   }
 }
 
 @Composable
 private fun SmallContentPreviewVoice(content: @Composable () -> Unit) {
-  Box(Modifier.padding(top = 3.5.sp.toDp(), end = 8.sp.toDp()).height(32.sp.toDp())) {
+  Box(Modifier.padding(top = 2.sp.toDp(), end = 8.sp.toDp()).height(36.sp.toDp())) {
     content()
   }
 }
 
 @Composable
 private fun SmallContentPreviewFile(content: @Composable () -> Unit) {
-  Box(Modifier.padding(top = 3.sp.toDp(), end = 8.sp.toDp()).offset(x = -10.sp.toDp(), y = -3.sp.toDp()).height(39.sp.toDp())) {
+  Box(Modifier.padding(top = 3.sp.toDp(), end = 8.sp.toDp()).offset(x = -8.sp.toDp(), y = -4.sp.toDp()).height(41.sp.toDp())) {
     content()
   }
 }

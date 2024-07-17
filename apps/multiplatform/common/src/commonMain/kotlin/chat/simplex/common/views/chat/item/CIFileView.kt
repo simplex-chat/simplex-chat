@@ -32,7 +32,7 @@ fun CIFileView(
   receiveFile: (Long) -> Unit
 ) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
-  val sizeMultiplier = if (smallView) 1.1f else 1f
+  val sizeMultiplier = 1f
   val progressSizeMultiplier = if (smallView) 0.7f else 1f
   @Composable
   fun fileIcon(
