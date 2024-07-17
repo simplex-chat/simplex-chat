@@ -56,7 +56,7 @@ fun CIImageView(
     if (file != null) {
       Box(
         Modifier
-          .padding(8.dp)
+          .padding(if (smallView) 0.dp else 8.dp)
           .size(20.dp),
         contentAlignment = Alignment.Center
       ) {
@@ -129,7 +129,7 @@ fun CIImageView(
             onClick = onClick
           )
           .onRightClick { showMenu.value = true },
-        contentScale = ContentScale.FillWidth,
+        contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
       )
     } else {
       Box(Modifier

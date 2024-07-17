@@ -407,7 +407,7 @@ private fun SmallContentPreview(content: @Composable () -> Unit) {
 
 @Composable
 private fun SmallContentPreviewVoice(content: @Composable () -> Unit) {
-  Box(Modifier.padding(top = 2.sp.toDp(), end = 8.sp.toDp()).height(36.sp.toDp())) {
+  Box(Modifier.padding(top = 2.sp.toDp(), end = 8.sp.toDp()).height(voiceMessageSizeBasedOnSquareSize(36f).sp.toDp())) {
     content()
   }
 }

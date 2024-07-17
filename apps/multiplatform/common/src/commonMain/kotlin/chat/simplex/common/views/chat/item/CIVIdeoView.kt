@@ -40,7 +40,7 @@ fun CIVideoView(
   ) {
     val preview = remember(image) { base64ToBitmap(image) }
     val filePath = remember(file, CIFile.cachedRemoteFileRequests.toList()) { mutableStateOf(getLoadedFilePath(file)) }
-    val sizeMultiplier = if (smallView) 0.7f else 1f
+    val sizeMultiplier = if (smallView) 0.3f else 1f
     if (chatModel.connectedToRemote()) {
       LaunchedEffect(file) {
         withLongRunningApi(slow = 600_000) {
@@ -102,6 +102,7 @@ fun CIVideoView(
             }
           }
         },
+          smallView = smallView,
           onLongClick = {
             showMenu.value = true
           })
@@ -114,10 +115,10 @@ fun CIVideoView(
       }
     }
     if (!smallView) {
-      fileStatusIcon(file)
+      fileStatusIcon(file, false)
     } else if (file?.showStatusIconInSmallView == true) {
       Box(Modifier.align(Alignment.Center)) {
-        fileStatusIcon(file)
+        fileStatusIcon(file, true)
       }
     }
   }
@@ -136,7 +137,7 @@ private fun VideoViewEncrypted(
   var decryptionInProgress by rememberSaveable(file.fileName) { mutableStateOf(false) }
   val onLongClick = { showMenu.value = true }
   Box {
-    VideoPreviewImageView(defaultPreview, if (decryptionInProgress) {{}} else openFullscreen, onLongClick)
+    VideoPreviewImageView(defaultPreview, smallView = false, if (decryptionInProgress) {{}} else openFullscreen, onLongClick)
     if (decryptionInProgress) {
       VideoDecryptionProgress(1f, onLongClick = onLongClick)
     } else {
@@ -169,7 +170,7 @@ private fun SmallVideoViewEncrypted(
   var decryptionInProgress by rememberSaveable(file.fileName) { mutableStateOf(false) }
   val onLongClick = { showMenu.value = true }
   Box {
-    VideoPreviewImageView(defaultPreview, if (decryptionInProgress) {{}} else openFullscreen, onLongClick)
+    VideoPreviewImageView(defaultPreview, smallView = true, if (decryptionInProgress) {{}} else openFullscreen, onLongClick)
     if (decryptionInProgress) {
       VideoDecryptionProgress(sizeMultiplier, onLongClick = onLongClick)
     } else if (!file.showStatusIconInSmallView) {
@@ -204,7 +205,7 @@ private fun SmallVideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, 
       onLongClick = {},
       {}
     )
-    VideoPreviewImageView(preview, openFullscreen, onLongClick = {})
+    VideoPreviewImageView(preview, smallView = true, openFullscreen, onLongClick = {})
     if (!file.showStatusIconInSmallView) {
       PlayButton(brokenVideo, sizeMultiplier, onLongClick = {}, onClick = openFullscreen)
     }
@@ -256,7 +257,7 @@ private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defau
       stop
     )
     if (showPreview.value) {
-      VideoPreviewImageView(preview, openFullscreen, onLongClick)
+      VideoPreviewImageView(preview, smallView = false, openFullscreen, onLongClick)
       if (!autoPlay.value) {
         PlayButton(brokenVideo, onLongClick = onLongClick, onClick = play)
       }
@@ -270,8 +271,9 @@ expect fun PlayerView(player: VideoPlayer, width: Dp, onClick: () -> Unit, onLon
 
 @Composable
 private fun BoxScope.PlayButton(error: Boolean = false, sizeMultiplier: Float = 1f, onLongClick: () -> Unit, onClick: () -> Unit) {
+  val padding = if (sizeMultiplier != 1f) PaddingValues(top = 1.sp.toDp(), end = 1.sp.toDp()) else PaddingValues()
   Surface(
-    Modifier.align(Alignment.Center),
+    Modifier.align(if (sizeMultiplier != 1f) Alignment.TopStart else Alignment.Center).padding(padding),
     color = Color.Black.copy(alpha = 0.25f),
     shape = RoundedCornerShape(percent = 50),
     contentColor = LocalContentColor.current
@@ -286,6 +288,7 @@ private fun BoxScope.PlayButton(error: Boolean = false, sizeMultiplier: Float = 
       Icon(
         painterResource(MR.images.ic_play_arrow_filled),
         contentDescription = null,
+        Modifier.size(24.dp * sizeMultiplier),
         tint = if (error) WarningOrange else Color.White
       )
     }
@@ -294,8 +297,9 @@ private fun BoxScope.PlayButton(error: Boolean = false, sizeMultiplier: Float = 
 
 @Composable
 fun BoxScope.VideoDecryptionProgress(sizeMultiplier: Float = 1f, onLongClick: () -> Unit) {
+  val padding = if (sizeMultiplier != 1f) PaddingValues(top = 1.sp.toDp(), end = 1.sp.toDp()) else PaddingValues()
   Surface(
-    Modifier.align(Alignment.Center),
+    Modifier.align(if (sizeMultiplier != 1f) Alignment.TopStart else Alignment.Center).padding(padding),
     color = Color.Black.copy(alpha = 0.25f),
     shape = RoundedCornerShape(percent = 50),
     contentColor = LocalContentColor.current
@@ -363,7 +367,7 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
 }
 
 @Composable
-fun VideoPreviewImageView(preview: ImageBitmap, onClick: () -> Unit, onLongClick: () -> Unit) {
+fun VideoPreviewImageView(preview: ImageBitmap, smallView: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
   val windowWidth = LocalWindowWidth()
   val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH }
   Image(
@@ -376,7 +380,7 @@ fun VideoPreviewImageView(preview: ImageBitmap, onClick: () -> Unit, onLongClick
         onClick = onClick
       )
       .onRightClick(onLongClick),
-    contentScale = ContentScale.FillWidth,
+    contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
   )
 }
 
@@ -436,11 +440,11 @@ private fun progressCircle(progress: Long, total: Long) {
 }
 
 @Composable
-private fun fileStatusIcon(file: CIFile?) {
+private fun fileStatusIcon(file: CIFile?, smallView: Boolean) {
   if (file != null) {
     Box(
       Modifier
-        .padding(8.dp)
+        .padding(if (smallView) 0.dp else 8.dp)
         .size(20.dp),
       contentAlignment = Alignment.Center
     ) {

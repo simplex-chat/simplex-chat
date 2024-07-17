@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chat.item
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
@@ -42,7 +41,7 @@ fun CIVoiceView(
   longClick: () -> Unit,
   receiveFile: (Long) -> Unit,
 ) {
-  val sizeMultiplier = if (smallView) 31.5f / 56f else 1f
+  val sizeMultiplier = if (smallView) voiceMessageSizeBasedOnSquareSize(36f) / 56f else 1f
   val padding = when {
     smallView -> PaddingValues()
     hasText -> PaddingValues(top = 14.sp.toDp() * sizeMultiplier, bottom = 14.sp.toDp() * sizeMultiplier, start = 6.sp.toDp() * sizeMultiplier, end = 6.sp.toDp() * sizeMultiplier)
@@ -473,6 +472,11 @@ fun Modifier.drawRingModifier(angle: Float, color: Color, strokeWidth: Float) = 
       style = Stroke(width = strokeWidth, cap = StrokeCap.Square)
     )
   }
+}
+
+fun voiceMessageSizeBasedOnSquareSize(squareSize: Float): Float {
+  val squareToCircleRatio = 0.935f
+  return squareSize + squareSize * (1 - squareToCircleRatio)
 }
 
 @Composable
