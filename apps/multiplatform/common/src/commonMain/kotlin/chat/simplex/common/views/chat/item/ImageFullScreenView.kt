@@ -16,7 +16,6 @@ import chat.simplex.common.model.CryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.ProviderMedia
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.net.URI
@@ -40,14 +39,17 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
   ) {
     provider.totalMediaSize.value
   }
+  val firstValidPageBeforeScrollingToStart = remember { mutableStateOf(0) }
   val goBack = { provider.onDismiss(pagerState.currentPage); close() }
   BackHandler(onBack = goBack)
   // Pager doesn't ask previous page at initialization step who knows why. By not doing this, prev page is not checked and can be blank,
   // which makes this blank page visible for a moment. Prevent it by doing the check ourselves
   LaunchedEffect(Unit) {
     if (provider.getMedia(provider.initialIndex - 1) == null) {
+      firstValidPageBeforeScrollingToStart.value = provider.initialIndex
       provider.scrollToStart()
       pagerState.scrollToPage(0)
+      firstValidPageBeforeScrollingToStart.value = 0
     }
   }
   val scope = rememberCoroutineScope()
@@ -58,6 +60,9 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
 
   @Composable
   fun Content(index: Int) {
+    // Index can be huge but in reality at that moment pager state scrolls to 0 and that page should have index 0 too if it's the first one.
+    // Or index 1 if it's the second page
+    val index = index - firstValidPageBeforeScrollingToStart.value
     Column(
       Modifier
         .fillMaxSize()
