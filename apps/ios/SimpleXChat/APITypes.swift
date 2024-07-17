@@ -26,7 +26,7 @@ public enum ChatCommand {
     case apiMuteUser(userId: Int64)
     case apiUnmuteUser(userId: Int64)
     case apiDeleteUser(userId: Int64, delSMPQueues: Bool, viewPwd: String?)
-    case startChat(mainApp: Bool)
+    case startChat(mainApp: Bool, enableSndFiles: Bool)
     case apiStopChat
     case apiActivateChat(restoreChat: Bool)
     case apiSuspendChat(timeoutMicroseconds: Int)
@@ -171,7 +171,7 @@ public enum ChatCommand {
             case let .apiMuteUser(userId): return "/_mute user \(userId)"
             case let .apiUnmuteUser(userId): return "/_unmute user \(userId)"
             case let .apiDeleteUser(userId, delSMPQueues, viewPwd): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))\(maybePwd(viewPwd))"
-            case let .startChat(mainApp): return "/_start main=\(onOff(mainApp))"
+            case let .startChat(mainApp, enableSndFiles): return "/_start main=\(onOff(mainApp)) snd_files=\(onOff(enableSndFiles))"
             case .apiStopChat: return "/_stop"
             case let .apiActivateChat(restore): return "/_app activate restore=\(onOff(restore))"
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
@@ -1228,7 +1228,7 @@ public struct ProtocolTestFailure: Decodable, Error, Equatable {
     public var localizedDescription: String {
         let err = String.localizedStringWithFormat(NSLocalizedString("Test failed at step %@.", comment: "server test failure"), testStep.text)
         switch testError {
-        case .SMP(.AUTH):
+        case .SMP(_, .AUTH):
             return err + " " + NSLocalizedString("Server requires authorization to create queues, check password", comment: "server test error")
         case .XFTP(.AUTH):
             return err + " " + NSLocalizedString("Server requires authorization to upload, check password", comment: "server test error")
@@ -1887,7 +1887,7 @@ public enum SQLiteError: Decodable, Hashable {
 public enum AgentErrorType: Decodable, Hashable {
     case CMD(cmdErr: CommandErrorType)
     case CONN(connErr: ConnectionErrorType)
-    case SMP(smpErr: ProtocolErrorType)
+    case SMP(serverAddress: String, smpErr: ProtocolErrorType)
     case NTF(ntfErr: ProtocolErrorType)
     case XFTP(xftpErr: XFTPErrorType)
     case PROXY(proxyServer: String, relayServer: String, proxyErr: ProxyClientError)
