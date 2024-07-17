@@ -3,15 +3,12 @@ package chat.simplex.common.views.contacts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
 import dev.icerock.moko.resources.compose.painterResource
-import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.views.helpers.*
@@ -26,44 +23,6 @@ fun ContactPreviewView(
     disabled: Boolean,
 ) {
     val cInfo = chat.chatInfo
-
-    @Composable
-    fun OverlayIcon(painter: Painter, description: String) {
-        Icon(
-            painter,
-            description,
-            Modifier.size(18.dp).background(MaterialTheme.colors.background, CircleShape),
-            tint = MaterialTheme.colors.secondary
-        )
-    }
-
-    @Composable
-    fun pendingIcon() {
-        OverlayIcon(
-            painterResource(MR.images.ic_timer),
-            stringResource(MR.strings.icon_descr_pending_contact_connection)
-        )
-    }
-
-    @Composable
-    fun inactiveIcon() {
-        OverlayIcon(
-            painterResource(MR.images.ic_cancel_filled),
-            stringResource(MR.strings.icon_descr_group_inactive)
-        )
-    }
-
-    @Composable
-    fun chatPreviewImageOverlayIcon() {
-        when (cInfo) {
-            is ChatInfo.Direct ->
-                if (!cInfo.contact.active) {
-                    inactiveIcon()
-                }
-            is ChatInfo.ContactConnection -> pendingIcon()
-            else -> {}
-        }
-    }
 
     @Composable
     fun VerifiedIcon() {
@@ -95,15 +54,6 @@ fun ContactPreviewView(
                         color = Color.Unspecified
                     )
                 }
-            is ChatInfo.ContactConnection ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        cInfo.chatViewName,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colors.secondary
-                    )
-                }
             else -> {}
         }
     }
@@ -113,9 +63,6 @@ fun ContactPreviewView(
     ) {
         Box(contentAlignment = Alignment.BottomEnd) {
             ChatInfoImage(cInfo, size = 42.dp)
-            Box(Modifier.padding(end = 2.dp, bottom = 2.dp)) {
-                chatPreviewImageOverlayIcon()
-            }
         }
 
         Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
@@ -126,7 +73,7 @@ fun ContactPreviewView(
 
         Spacer(Modifier.fillMaxWidth().weight(1f))
 
-        if (chat.chatInfo is ChatInfo.ContactRequest || chat.chatInfo is ChatInfo.ContactConnection) {
+        if (chat.chatInfo is ChatInfo.ContactRequest) {
             Text(
                 text = generalGetString(MR.strings.contact_type_new).uppercase(),
                 color = MaterialTheme.colors.onPrimary,
