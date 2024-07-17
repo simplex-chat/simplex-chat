@@ -33,21 +33,3 @@ class ShareViewController: UIHostingController<ShareView> {
     }
 }
 
-// TODO: Database access management
-/// Handle database access using existing (not-ideal) model, since
-///
-/// 1. Subscribe to lifecycle notifications:
-///     - `NSExtensionHostDidBecomeActive`
-///     - `NSExtensionHostWillResignActive`
-///     - `NSExtensionHostDidEnterBackground`
-///     - `NSExtensionHostWillEnterForeground`
-///
-/// 2. Add `SEState` using `SharedFileSubscriber`
-/// and suspend the chat in case there is a NSE Notification, while share sheet process is active.
-///
-/// 3. Handle the case, where share-sheet and app is open simultaneously by sending
-/// a notification over `CFNotificationCenterGetDarwinNotifyCenter` 
-/// so the main app can register database changes and update it's `ChatModel`
-///
-/// 4. Consider protecting all database connection creations with additional as described in
-/// https://swiftpackageindex.com/groue/grdb.swift/v6.28.0/documentation/grdb/databasesharing#Use-the-WAL-mode 

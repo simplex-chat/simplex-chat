@@ -64,6 +64,8 @@ class ShareModel: ObservableObject {
             }
             let url = try await attachment.inPlaceUrl(type: type)
             guard let cryptoFile = saveFileFromURL(url) else { return .failure(.encryptFile) }
+            SEChatState.shared.set(.sendingMessage)
+            await waitForOtherProcessesToSuspend()
             return .success(
                 try apiSendMessage(
                     chatInfo: chat.chatInfo,
@@ -130,6 +132,32 @@ class ShareModel: ObservableObject {
             }
         }
     }
+    
+    private func waitForOtherProcessesToSuspend() async {
+        await withCheckedContinuation { continuation in
+            var appSuspended = false
+            var nseSuspended = false
+            let _ = appMessageSubscriber {
+                switch $0 {
+                case let .state(appState):
+                    appSuspended = appState == .suspended
+                }
+                if appSuspended && nseSuspended { continuation.resume() }
+            }
+            let _ = nseMessageSubscriber {
+                switch $0 {
+                case let .state(nseState):
+                    nseSuspended = nseState == .suspended
+                }
+                if appSuspended && nseSuspended { continuation.resume() }
+            }
+            Task {
+                // If other processes has not suspended in 2 seconds - assume they are not running
+                try? await Task.sleep(for: .seconds(2))
+                continuation.resume()
+            }
+        }
+    }
 }
 
 extension NSItemProvider {
@@ -152,5 +180,21 @@ extension NSItemProvider {
             if hasItemConformingToTypeIdentifier(type.identifier) { return type }
         }
         return nil
+    }
+}
+
+// SEStateGroupDefault must not be used in the share extension directly, only via this singleton
+class SEChatState {
+    static let shared = SEChatState()
+    private var value_ = seStateGroupDefault.get()
+
+    var value: SEState {
+        value_
+    }
+
+    func set(_ state: SEState) {
+        seStateGroupDefault.set(state)
+        sendSEState(state)
+        value_ = state
     }
 }
