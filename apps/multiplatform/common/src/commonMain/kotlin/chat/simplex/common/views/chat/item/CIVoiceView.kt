@@ -148,7 +148,7 @@ private fun VoiceLayout(
           movedManuallyTo = it.toInt()
         },
         Modifier
-          .size(width, 48.sp.toDp() * sizeMultiplier)
+          .size(width, 48.sp.toDp())
           .weight(1f)
           .padding(padding)
           .drawBehind {
@@ -172,8 +172,8 @@ private fun VoiceLayout(
       Row(verticalAlignment = Alignment.CenterVertically) {
         VoiceMsgIndicator(file, audioPlaying.value, sent, hasText, progress, duration, brokenAudio, sizeMultiplier, play, pause, longClick, receiveFile)
         Row(Modifier.weight(1f, false), verticalAlignment = Alignment.CenterVertically) {
-          DurationText(text, PaddingValues(start = 12.sp.toDp()))
-          Slider(MaterialTheme.colors.background, PaddingValues(start = DEFAULT_PADDING_HALF + 3.sp.toDp()), sizeMultiplier = sizeMultiplier)
+          DurationText(text, PaddingValues(start = 8.sp.toDp()), true)
+          Slider(MaterialTheme.colors.background, PaddingValues(start = 7.sp.toDp()), sizeMultiplier = sizeMultiplier)
         }
       }
     }
@@ -221,7 +221,7 @@ private fun VoiceLayout(
 }
 
 @Composable
-private fun DurationText(text: State<String>, padding: PaddingValues) {
+private fun DurationText(text: State<String>, padding: PaddingValues, smallView: Boolean = false) {
   val minWidth = with(LocalDensity.current) { 45.sp.toDp() }
   Text(
     text.value,
@@ -229,7 +229,7 @@ private fun DurationText(text: State<String>, padding: PaddingValues) {
       .padding(padding)
       .widthIn(min = minWidth),
     color = MaterialTheme.colors.secondary,
-    fontSize = 16.sp,
+    fontSize = if (smallView) 15.sp else 16.sp,
     maxLines = 1
   )
 }

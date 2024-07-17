@@ -40,7 +40,7 @@ fun CIVideoView(
   ) {
     val preview = remember(image) { base64ToBitmap(image) }
     val filePath = remember(file, CIFile.cachedRemoteFileRequests.toList()) { mutableStateOf(getLoadedFilePath(file)) }
-    val sizeMultiplier = if (smallView) 0.3f else 1f
+    val sizeMultiplier = if (smallView) 0.38f else 1f
     if (chatModel.connectedToRemote()) {
       LaunchedEffect(file) {
         withLongRunningApi(slow = 600_000) {
@@ -279,7 +279,7 @@ private fun BoxScope.PlayButton(error: Boolean = false, sizeMultiplier: Float = 
   ) {
     Box(
       Modifier
-        .defaultMinSize(minWidth = 40.dp * sizeMultiplier, minHeight = 40.dp * sizeMultiplier)
+        .defaultMinSize(minWidth = if (sizeMultiplier != 1f) 40.sp.toDp() * sizeMultiplier else 40.sp.toDp(), minHeight = if (sizeMultiplier != 1f) 40.sp.toDp() * sizeMultiplier else 40.sp.toDp())
         .combinedClickable(onClick = onClick, onLongClick = onLongClick)
         .onRightClick { onLongClick.invoke() },
       contentAlignment = Alignment.Center
@@ -287,7 +287,7 @@ private fun BoxScope.PlayButton(error: Boolean = false, sizeMultiplier: Float = 
       Icon(
         painterResource(MR.images.ic_play_arrow_filled),
         contentDescription = null,
-        Modifier.size(24.dp * sizeMultiplier),
+        Modifier.size(if (sizeMultiplier != 1f) 24.sp.toDp() * sizeMultiplier * 1.25f else 24.sp.toDp()),
         tint = if (error) WarningOrange else Color.White
       )
     }
@@ -304,16 +304,16 @@ fun BoxScope.VideoDecryptionProgress(sizeMultiplier: Float = 1f, onLongClick: ()
   ) {
     Box(
       Modifier
-        .defaultMinSize(minWidth = 40.dp * sizeMultiplier, minHeight = 40.dp * sizeMultiplier)
+        .defaultMinSize(minWidth = if (sizeMultiplier != 1f) 40.sp.toDp() * sizeMultiplier else 40.sp.toDp(), minHeight = if (sizeMultiplier != 1f) 40.sp.toDp() * sizeMultiplier else 40.sp.toDp())
         .combinedClickable(onClick = {}, onLongClick = onLongClick)
         .onRightClick { onLongClick.invoke() },
       contentAlignment = Alignment.Center
     ) {
       CircularProgressIndicator(
         Modifier
-          .size(30.dp * sizeMultiplier),
+          .size(if (sizeMultiplier != 1f) 30.sp.toDp() * sizeMultiplier else 30.sp.toDp()),
         color = Color.White,
-        strokeWidth = 2.5.dp * sizeMultiplier
+        strokeWidth = 2.5.sp.toDp() * sizeMultiplier
       )
     }
   }

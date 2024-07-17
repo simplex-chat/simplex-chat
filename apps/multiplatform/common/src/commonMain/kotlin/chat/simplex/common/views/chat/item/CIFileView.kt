@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chat.item
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
@@ -37,7 +38,8 @@ fun CIFileView(
   @Composable
   fun fileIcon(
     innerIcon: Painter? = null,
-    color: Color = if (isInDarkTheme()) FileDark else FileLight
+    color: Color = if (isInDarkTheme()) FileDark else FileLight,
+    topPadding: Dp = 12.sp.toDp()
   ) {
     Box(
       contentAlignment = Alignment.Center
@@ -53,8 +55,9 @@ fun CIFileView(
           innerIcon,
           stringResource(MR.strings.icon_descr_file),
           Modifier
-            .size(32.sp.toDp() * sizeMultiplier)
-            .padding(top = 12.sp.toDp() * sizeMultiplier),
+            .padding(top = topPadding * sizeMultiplier)
+            .height(20.sp.toDp() * sizeMultiplier)
+            .width(32.sp.toDp() * sizeMultiplier),
           tint = Color.White
         )
       }
@@ -157,7 +160,7 @@ fun CIFileView(
           is CIFileStatus.SndWarning -> fileIcon(innerIcon = painterResource(MR.images.ic_warning_filled))
           is CIFileStatus.RcvInvitation ->
             if (fileSizeValid(file))
-              fileIcon(innerIcon = painterResource(MR.images.ic_arrow_downward), color = MaterialTheme.colors.primary)
+              fileIcon(innerIcon = painterResource(MR.images.ic_arrow_downward), color = MaterialTheme.colors.primary, topPadding = 10.sp.toDp())
             else
               fileIcon(innerIcon = painterResource(MR.images.ic_priority_high), color = WarningOrange)
           is CIFileStatus.RcvAccepted -> fileIcon(innerIcon = painterResource(MR.images.ic_more_horiz))

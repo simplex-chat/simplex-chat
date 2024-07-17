@@ -106,7 +106,7 @@ fun CIImageView(
           onClick = onClick
         )
         .onRightClick { showMenu.value = true },
-      contentScale = ContentScale.FillWidth,
+      contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
     )
   }
 
