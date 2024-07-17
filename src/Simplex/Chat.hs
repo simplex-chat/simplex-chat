@@ -384,6 +384,7 @@ cfgServers p DefaultAgentServers {smp, xftp} = case p of
   SPSMP -> smp
   SPXFTP -> xftp
 
+-- enableSndFiles has no effect when mainApp is True
 startChatController :: Bool -> Bool -> CM' (Async ())
 startChatController mainApp enableSndFiles = do
   asks smpAgent >>= liftIO . resumeAgentClient
