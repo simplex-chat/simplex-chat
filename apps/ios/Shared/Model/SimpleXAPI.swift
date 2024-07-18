@@ -1143,7 +1143,10 @@ func networkErrorAlert(_ r: ChatResponse) -> Alert? {
 func acceptContactRequest(incognito: Bool, contactRequest: UserContactRequest) async {
     if let contact = await apiAcceptContactRequest(incognito: incognito, contactReqId: contactRequest.apiId) {
         let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
-        DispatchQueue.main.async { ChatModel.shared.replaceChat(contactRequest.id, chat) }
+        DispatchQueue.main.async {
+            ChatModel.shared.replaceChat(contactRequest.id, chat)
+            ChatModel.shared.setContactNetworkStatus(contact, .connected)
+        }
     }
 }
 
