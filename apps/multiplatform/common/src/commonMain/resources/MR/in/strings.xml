@@ -49,4 +49,24 @@
     <string name="about_simplex_chat">Tentang SimpleX Chat</string>
     <string name="accept">Terima</string>
     <string name="accept_call_on_lock_screen">Terima</string>
+    <string name="cancel_verb">Batalkan</string>
+    <string name="use_camera_button">Kamera</string>
+    <string name="bold_text">tebal</string>
+    <string name="callstatus_calling">menelepon…</string>
+    <string name="audio_device_bluetooth">Bluetooth</string>
+    <string name="icon_descr_call_ended">Panggilan ditutup</string>
+    <string name="change_verb">Ubah</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><b>Peringatan</b>: arsip akan dihapus.</string>
+    <string name="create_group_button_to_create_new_group"><b>Buat grup</b>: untuk membuat grup baru.</string>
+    <string name="block_member_button">Blokir anggota</string>
+    <string name="block_member_confirmation">Blokir</string>
+    <string name="permissions_camera">Kamera</string>
+    <string name="theme_black">Hitam</string>
+    <string name="block_member_question">Blokir anggota?</string>
+    <string name="switch_receiving_address">Ubah alamat penerima</string>
+    <string name="app_check_for_updates_beta">Beta</string>
+    <string name="block_for_all">Blokir untuk semua</string>
+    <string name="block_for_all_question">Blokir anggota untuk semua?</string>
+    <string name="call_already_ended">Panggilan telah ditutup!</string>
+    <string name="network_type_cellular">Seluler</string>
 </resources>
