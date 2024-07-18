@@ -588,8 +588,9 @@
         <target>Nyugtázott hibák</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Active connections" xml:space="preserve">
+      <trans-unit id="Active connections" xml:space="preserve" approved="no">
         <source>Active connections</source>
+        <target state="translated">Aktív kapcsolatok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve">
@@ -1373,8 +1374,9 @@
         <target>ICE kiszolgálók beállítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Configured %@ servers" xml:space="preserve">
+      <trans-unit id="Configured %@ servers" xml:space="preserve" approved="no">
         <source>Configured %@ servers</source>
+        <target state="translated">Beállított %@ kiszolgálók</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
@@ -3996,8 +3998,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Az üzenetreakciók küldése le van tiltva ebben a csoportban.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reception" xml:space="preserve">
+      <trans-unit id="Message reception" xml:space="preserve" approved="no">
         <source>Message reception</source>
+        <target state="translated">Üzenetkézbesítés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message routing fallback" xml:space="preserve">
@@ -4549,8 +4552,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>További</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Other %@ servers" xml:space="preserve">
+      <trans-unit id="Other %@ servers" xml:space="preserve" approved="no">
         <source>Other %@ servers</source>
+        <target state="translated">További %@ kiszolgálók</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -4722,8 +4726,9 @@ Hiba: %@</target>
         <target>Tárolja el biztonságosan jelmondatát, mert ha elveszíti azt, NEM tudja megváltoztatni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please try later." xml:space="preserve">
+      <trans-unit id="Please try later." xml:space="preserve" approved="no">
         <source>Please try later.</source>
+        <target state="translated">Próbálja meg később.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Polish interface" xml:space="preserve">
@@ -4796,8 +4801,9 @@ Hiba: %@</target>
         <target>Privát útválasztás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private routing error" xml:space="preserve">
+      <trans-unit id="Private routing error" xml:space="preserve" approved="no">
         <source>Private routing error</source>
+        <target state="translated">Privát útválasztási hiba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
@@ -5737,8 +5743,9 @@ Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.<
         <target>A kiszolgáló címe nem kompatibilis a hálózati beállításokkal.</target>
         <note>srv error text.</note>
       </trans-unit>
-      <trans-unit id="Server address is incompatible with network settings: %@." xml:space="preserve">
+      <trans-unit id="Server address is incompatible with network settings: %@." xml:space="preserve" approved="no">
         <source>Server address is incompatible with network settings: %@.</source>
+        <target state="translated">A kiszolgáló címe nem kompatibilis a hálózati beállításokkal: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
@@ -5766,12 +5773,14 @@ Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.<
         <target>A kiszolgáló verziója nem kompatibilis a hálózati beállításokkal.</target>
         <note>srv error text</note>
       </trans-unit>
-      <trans-unit id="Server version is incompatible with network settings: %@." xml:space="preserve">
+      <trans-unit id="Server version is incompatible with network settings: %@." xml:space="preserve" approved="no">
         <source>Server version is incompatible with network settings: %@.</source>
+        <target state="translated">A kiszolgáló verziója nem kompatibilis a hálózati beállításokkal: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server version is incompatible with your app: %@." xml:space="preserve">
+      <trans-unit id="Server version is incompatible with your app: %@." xml:space="preserve" approved="no">
         <source>Server version is incompatible with your app: %@.</source>
+        <target state="translated">A kiszolgáló verziója nem kompatibilis az alkalmazással: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Servers" xml:space="preserve">
@@ -5914,8 +5923,9 @@ Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.<
         <target>Üzenet állapot megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show percentage" xml:space="preserve">
+      <trans-unit id="Show percentage" xml:space="preserve" approved="no">
         <source>Show percentage</source>
+        <target state="translated">Százalékos arány mutatása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
