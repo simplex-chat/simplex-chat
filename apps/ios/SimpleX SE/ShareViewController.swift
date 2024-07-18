@@ -10,6 +10,9 @@ import UIKit
 import SwiftUI
 import SimpleXChat
 
+/// Extension Entry point
+/// System will create this controller each time share sheet is invoked
+/// using `NSExtensionPrincipalClass` in the info.plist
 @objc(ShareViewController)
 class ShareViewController: UIHostingController<ShareView> {
     let model = ShareModel()

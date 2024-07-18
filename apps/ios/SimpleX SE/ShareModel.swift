@@ -73,7 +73,6 @@ class ShareModel: ObservableObject {
                 msgContent: .file(comment)
             )
             SEChatState.shared.set(.inactive)
-            if chatItem.chatInfo.chatType == .local { completion?() }
             return .success(chatItem)
         } catch {
             if let chatResponse = error as? ChatResponse {
@@ -109,32 +108,6 @@ class ShareModel: ObservableObject {
             return .failure(.apiError(APIError(response: error as! ChatResponse)))
         }
     }
-    
-    private func waitForOtherProcessesToSuspend() async {
-        await withCheckedContinuation { continuation in
-            var appSuspended = false
-            var nseSuspended = false
-            let _ = appMessageSubscriber {
-                switch $0 {
-                case let .state(appState):
-                    appSuspended = appState == .suspended
-                }
-                if appSuspended && nseSuspended { continuation.resume() }
-            }
-            let _ = nseMessageSubscriber {
-                switch $0 {
-                case let .state(nseState):
-                    nseSuspended = nseState == .suspended
-                }
-                if appSuspended && nseSuspended { continuation.resume() }
-            }
-            Task {
-                // If other processes has not suspended in 2 seconds - assume they are not running
-                try? await Task.sleep(for: .seconds(2))
-                continuation.resume()
-            }
-        }
-    }
 }
 
 extension NSItemProvider {
@@ -160,53 +133,3 @@ extension NSItemProvider {
     }
 }
 
-// SEStateGroupDefault must not be used in the share extension directly, only via this singleton
-class SEChatState {
-    static let shared = SEChatState()
-    private var value_ = seStateGroupDefault.get()
-
-    var value: SEState {
-        value_
-    }
-
-    func set(_ state: SEState) {
-        seStateGroupDefault.set(state)
-        sendSEState(state)
-        value_ = state
-    }
-}
-
-private final class EventLoop {
-    static let shared = EventLoop()
-
-    private var itemId: ChatItem.ID?
-    private weak var model: ShareModel?
-
-    func set(itemId: ChatItem.ID, model: ShareModel) {
-        self.itemId = itemId
-        self.model = model
-    }
-
-    init() {
-        Task {
-            while true {
-                switch recvSimpleXMsg() {
-                case let .sndFileProgressXFTP(_, aChatItem, _, sentSize, totalSize):
-                    if let id = aChatItem?.chatItem.id, id == itemId {
-                        await MainActor.run {
-                            withAnimation { model?.progress = Double(sentSize) / Double(totalSize) }
-                        }
-                    }
-                case let .sndFileCompleteXFTP(_, aChatItem, _):
-                    if aChatItem.chatItem.id == itemId {
-                        await MainActor.run {
-                            withAnimation { model?.progress = 1 }
-                            model?.completion!()
-                        }
-                    }
-                default: break
-                }
-            }
-        }
-    }
-}
