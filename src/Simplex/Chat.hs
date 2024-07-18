@@ -4169,12 +4169,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 withStore' $ \db -> resetContactConnInitiated db user conn'
               forM_ viaUserContactLink $ \userContactLinkId -> do
                 ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
-                let (UserContactLink {autoAccept}, groupId_, gLinkMemRole) = ucl
-                forM_ autoAccept $ \(AutoAccept {autoReply = mc_}) ->
-                  forM_ mc_ $ \mc -> do
-                    (msg, _) <- sendDirectContactMessage user ct' (XMsgNew $ MCSimple (extMsgContent mc Nothing))
-                    ci <- saveSndChatItem user (CDDirectSnd ct') msg (CISndMsgContent mc)
-                    toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct') ci)
+                let (_, groupId_, gLinkMemRole) = ucl
                 forM_ groupId_ $ \groupId -> do
                   groupInfo <- withStore $ \db -> getGroupInfo db vr user groupId
                   subMode <- chatReadVar subscriptionMode
@@ -4234,6 +4229,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             when (directOrUsed ct && sqSecured) $ do
               lift $ setContactNetworkStatus ct NSConnected
               toView $ CRContactSndReady user ct
+              forM_ viaUserContactLink $ \userContactLinkId -> do
+                ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
+                let (UserContactLink {autoAccept}, _, _) = ucl
+                forM_ autoAccept $ \(AutoAccept {autoReply = mc_}) ->
+                  forM_ mc_ $ \mc -> do
+                    (msg, _) <- sendDirectContactMessage user ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
+                    ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
+                    toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
         QCONT ->
           void $ continueSending connEntity conn
         MWARN msgId err -> do

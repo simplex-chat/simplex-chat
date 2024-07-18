@@ -569,13 +569,12 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
     bob <## "connection request sent!"
     alice <## "bob (Bob): accepting contact request..."
     alice <## "bob (Bob): you can send messages to contact"
+    alice <# "@bob hello!"
     concurrentlyN_
       [ do
-          bob <## "alice (Alice): contact is connected"
-          bob <# "alice> hello!",
-        do
-          alice <## "bob (Bob): contact is connected"
-          alice <# "@bob hello!"
+          bob <# "alice> hello!"
+          bob <## "alice (Alice): contact is connected",
+        alice <## "bob (Bob): contact is connected"
       ]
 
 testAutoReplyMessageInIncognito :: HasCallStack => FilePath -> IO ()
@@ -592,17 +591,15 @@ testAutoReplyMessageInIncognito = testChat2 aliceProfile bobProfile $
     bob <## "connection request sent!"
     alice <## "bob (Bob): accepting contact request..."
     alice <## "bob (Bob): you can send messages to contact"
+    alice <# "i @bob hello!"
     aliceIncognito <- getTermLine alice
     concurrentlyN_
       [ do
-          bob <## (aliceIncognito <> ": contact is connected")
-          bob <# (aliceIncognito <> "> hello!"),
+          bob <# (aliceIncognito <> "> hello!")
+          bob <## (aliceIncognito <> ": contact is connected"),
         do
           alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
-          alice
-            <### [ "use /i bob to print out this incognito profile again",
-                   WithTime "i @bob hello!"
-                 ]
+          alice <## "use /i bob to print out this incognito profile again"
       ]
 
 testPlanAddressOkKnown :: HasCallStack => FilePath -> IO ()
