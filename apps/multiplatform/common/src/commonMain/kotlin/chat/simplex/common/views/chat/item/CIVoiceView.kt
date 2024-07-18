@@ -62,7 +62,7 @@ fun CIVoiceView(
       val play: () -> Unit = {
         val playIfExists = {
           if (fileSource.value != null) {
-            AudioPlayer.play(fileSource.value!!, audioPlaying, progress, duration, true)
+            AudioPlayer.play(fileSource.value!!, audioPlaying, progress, duration, resetOnEnd = true, smallView = smallView)
             brokenAudio = !audioPlaying.value
           }
         }
@@ -90,7 +90,7 @@ fun CIVoiceView(
         AudioPlayer.seekTo(it, progress, fileSource.value?.filePath)
       }
       if (smallView) {
-        KeyChangeEffect(chatModel.chatId.value) {
+        KeyChangeEffect(chatModel.chatId.value, chatModel.currentUser.value?.userId, chatModel.currentRemoteHost.value) {
           AudioPlayer.stop()
         }
       }

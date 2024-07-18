@@ -328,14 +328,28 @@ fun ChatPreviewView(
     ) {
       chatPreviewTitle()
       Row(Modifier.heightIn(min = 46.sp.toDp()).padding(top = 3.sp.toDp())) {
-        val ci = chat.chatItems.lastOrNull()
-        if (showChatPreviews && chatModelDraftChatId != chat.id) {
+        val stuckVoicePreview: MutableState<(StuckVoicePreview)?> = remember(chat.id) { mutableStateOf(null) }
+        val chat = stuckVoicePreview.value?.chat ?: chat
+        val ci = stuckVoicePreview.value?.ci ?: chat.chatItems.lastOrNull()
+        val mc = ci?.content?.msgContent
+        if ((showChatPreviews && chatModelDraftChatId != chat.id) || stuckVoicePreview.value != null) {
           chatItemContentPreview(chat, ci)
         }
-        val mc = ci?.content?.msgContent
         if (mc !is MsgContent.MCVoice || mc.text.isNotEmpty()) {
           Box(Modifier.offset(x = if (mc is MsgContent.MCFile) -15.sp.toDp() else 0.dp)) {
             chatPreviewText()
+          }
+        }
+        LaunchedEffect(AudioPlayer.currentlyPlaying.value, stuckVoicePreview.value) {
+          val playing = AudioPlayer.currentlyPlaying.value
+          when {
+            playing == null -> stuckVoicePreview.value = null
+            stuckVoicePreview.value == null -> if (mc is MsgContent.MCVoice && playing.fileSource.filePath == ci.file?.fileSource?.filePath) {
+              stuckVoicePreview.value = StuckVoicePreview(chat, ci, mc)
+            }
+            else -> if (playing.fileSource.filePath != ci?.file?.fileSource?.filePath) {
+              stuckVoicePreview.value = null
+            }
           }
         }
       }
@@ -462,6 +476,12 @@ fun unreadCountStr(n: Int): String {
     )
   }
 }
+
+private data class StuckVoicePreview(
+  val chat: Chat,
+  val ci: ChatItem,
+  val mc: MsgContent.MCVoice
+)
 
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
