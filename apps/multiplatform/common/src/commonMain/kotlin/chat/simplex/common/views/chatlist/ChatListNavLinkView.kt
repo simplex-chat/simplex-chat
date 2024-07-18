@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chatlist
 
 import SectionItemView
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -32,7 +33,7 @@ import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 
 @Composable
-fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
+fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI: State<Boolean>) {
   val showMenu = remember { mutableStateOf(false) }
   val showMarkRead = remember(chat.chatStats.unreadCount, chat.chatStats.unreadChat) {
     chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
@@ -47,6 +48,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   val showChatPreviews = chatModel.showChatPreviews.value
   val inProgress = remember { mutableStateOf(false) }
   var progressByTimeout by rememberSaveable { mutableStateOf(false) }
+
   LaunchedEffect(inProgress.value) {
     progressByTimeout = if (inProgress.value) {
       delay(1000)
@@ -75,6 +77,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         disabled,
         selectedChat,
         nextChatSelected,
+        oneHandUI
       )
     }
     is ChatInfo.Group ->
@@ -94,6 +97,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         disabled,
         selectedChat,
         nextChatSelected,
+        oneHandUI
       )
     is ChatInfo.Local -> {
       ChatListNavLinkLayout(
@@ -112,6 +116,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         disabled,
         selectedChat,
         nextChatSelected,
+        oneHandUI
       )
     }
     is ChatInfo.ContactRequest ->
@@ -131,6 +136,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         disabled,
         selectedChat,
         nextChatSelected,
+        oneHandUI
       )
     is ChatInfo.ContactConnection ->
       ChatListNavLinkLayout(
@@ -151,6 +157,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         disabled,
         selectedChat,
         nextChatSelected,
+        oneHandUI
       )
     is ChatInfo.InvalidJSON ->
       ChatListNavLinkLayout(
@@ -167,6 +174,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         disabled,
         selectedChat,
         nextChatSelected,
+        oneHandUI
       )
   }
 }
@@ -905,6 +913,7 @@ expect fun ChatListNavLinkLayout(
   disabled: Boolean,
   selectedChat: State<Boolean>,
   nextChatSelected: State<Boolean>,
+  oneHandUI: State<Boolean>
 )
 
 @Preview/*(
@@ -947,7 +956,8 @@ fun PreviewChatListNavLinkDirect() {
       showMenu = remember { mutableStateOf(false) },
       disabled = false,
       selectedChat = remember { mutableStateOf(false) },
-      nextChatSelected = remember { mutableStateOf(false) }
+      nextChatSelected = remember { mutableStateOf(false) },
+      oneHandUI = remember { mutableStateOf(false) }
     )
   }
 }
@@ -992,7 +1002,8 @@ fun PreviewChatListNavLinkGroup() {
       showMenu = remember { mutableStateOf(false) },
       disabled = false,
       selectedChat = remember { mutableStateOf(false) },
-      nextChatSelected = remember { mutableStateOf(false) }
+      nextChatSelected = remember { mutableStateOf(false) },
+      oneHandUI = remember { mutableStateOf(false) }
     )
   }
 }
@@ -1014,7 +1025,8 @@ fun PreviewChatListNavLinkContactRequest() {
       showMenu = remember { mutableStateOf(false) },
       disabled = false,
       selectedChat = remember { mutableStateOf(false) },
-      nextChatSelected = remember { mutableStateOf(false) }
+      nextChatSelected = remember { mutableStateOf(false) },
+      oneHandUI = remember { mutableStateOf(false) }
     )
   }
 }
