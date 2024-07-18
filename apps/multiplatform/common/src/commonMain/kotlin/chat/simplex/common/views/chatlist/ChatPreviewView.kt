@@ -18,6 +18,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.*
@@ -235,7 +236,7 @@ fun ChatPreviewView(
     val uriHandler = LocalUriHandler.current
     when (mc) {
       is MsgContent.MCLink -> SmallContentPreview {
-        IconButton({ uriHandler.openUriCatching(mc.preview.uri) }) {
+        IconButton({ uriHandler.openUriCatching(mc.preview.uri) }, Modifier.desktopPointerHoverIconHand()) {
           Image(base64ToBitmap(mc.preview.image), null, contentScale = ContentScale.Crop)
         }
         Box(Modifier.align(Alignment.TopEnd).size(15.sp.toDp()).background(Color.Black.copy(0.25f), CircleShape), contentAlignment = Alignment.Center) {
