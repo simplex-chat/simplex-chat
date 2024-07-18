@@ -73,6 +73,9 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, drawerSt
     withAuth = ::doWithAuth,
     drawerState = drawerState,
   )
+  KeyChangeEffect(chatModel.updatingProgress.value != null) {
+    drawerState.close()
+  }
 }
 
 val simplexTeamUri =
@@ -416,13 +419,15 @@ fun SettingsPreferenceItem(
 @Composable
 fun PreferenceToggle(
   text: String,
+  disabled: Boolean = false,
   checked: Boolean,
   onChange: (Boolean) -> Unit = {},
 ) {
-  SettingsActionItemWithContent(null, text, extraPadding = true,) {
+  SettingsActionItemWithContent(null, text, disabled = disabled, extraPadding = true,) {
     DefaultSwitch(
       checked = checked,
       onCheckedChange = onChange,
+      enabled = !disabled
     )
   }
 }

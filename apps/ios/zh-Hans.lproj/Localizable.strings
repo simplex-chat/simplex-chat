@@ -301,9 +301,6 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "上面，然后选择：";
 
-/* No comment provided by engineer. */
-"Accent color" = "色调";
-
 /* accept contact request via notification
    accept incoming call via notification */
 "Accept" = "接受";
@@ -333,7 +330,7 @@
 "Add profile" = "添加个人资料";
 
 /* No comment provided by engineer. */
-"Add server…" = "添加服务器…";
+"Add server" = "添加服务器";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "扫描二维码来添加服务器。";
@@ -605,7 +602,7 @@
 /* rcv group event chat item */
 "blocked %@" = "已封禁 %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item */
 "blocked by admin" = "由管理员封禁";
 
 /* No comment provided by engineer. */
@@ -786,9 +783,6 @@
 /* No comment provided by engineer. */
 "colored" = "彩色";
 
-/* No comment provided by engineer. */
-"Colors" = "颜色";
-
 /* server test step */
 "Compare file" = "对比文件";
 
@@ -951,7 +945,7 @@
 /* No comment provided by engineer. */
 "Continue" = "继续";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "复制";
 
 /* No comment provided by engineer. */
@@ -1689,7 +1683,8 @@
 /* No comment provided by engineer. */
 "Error: " = "错误： ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "错误： ％@";
 
 /* No comment provided by engineer. */
@@ -3643,9 +3638,6 @@
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "您粘贴的文本不是 SimpleX 链接。";
-
-/* No comment provided by engineer. */
-"Theme" = "主题";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "这些设置适用于您当前的配置文件 **%@**。";

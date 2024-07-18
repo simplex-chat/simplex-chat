@@ -615,9 +615,9 @@
         <target>Karekod taratarak sunucuları ekleyin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add server…" xml:space="preserve">
-        <source>Add server…</source>
-        <target>Sunucu ekle…</target>
+      <trans-unit id="Add server" xml:space="preserve">
+        <source>Add server</source>
+        <target>Sunucu ekle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
@@ -1837,6 +1837,7 @@ Bu senin kendi tek kullanımlık bağlantın!</target>
       </trans-unit>
       <trans-unit id="Debug delivery" xml:space="preserve">
         <source>Debug delivery</source>
+        <target>Hata ayıklama teslimatı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Decentralized" xml:space="preserve">
@@ -3922,6 +3923,7 @@ Bu senin grup için bağlantın %@!</target>
       </trans-unit>
       <trans-unit id="Message queue info" xml:space="preserve">
         <source>Message queue info</source>
+        <target>Mesaj kuyruğu bilgisi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reactions" xml:space="preserve">
@@ -8103,6 +8105,9 @@ SimpleX sunucuları profilinizi göremez.</target>
         <source>server queue info: %1$@
 
 last received msg: %2$@</source>
+        <target>sunucu kuyruk bilgisi: %1$@
+
+son alınan msj: %2$@</target>
         <note>queue info</note>
       </trans-unit>
       <trans-unit id="set new contact address" xml:space="preserve">

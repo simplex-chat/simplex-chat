@@ -355,7 +355,7 @@
     <string name="smp_servers">SMP-Server</string>
     <string name="smp_servers_preset_address">Voreingestellte Serveradresse</string>
     <string name="smp_servers_preset_add">Füge voreingestellte Server hinzu</string>
-    <string name="smp_servers_add">Füge Server hinzu…</string>
+    <string name="smp_servers_add">Füge Server hinzu</string>
     <string name="smp_servers_test_server">Teste Server</string>
     <string name="smp_servers_test_servers">Teste alle Server</string>
     <string name="smp_servers_save">Alle Server speichern</string>
@@ -1807,7 +1807,7 @@
     <string name="forwarded_description">weitergeleitet</string>
     <string name="settings_section_title_network_connection">Netzwerkverbindung</string>
     <string name="network_type_no_network_connection">Keine Netzwerkverbindung</string>
-    <string name="network_type_cellular">Zellulär</string>
+    <string name="network_type_cellular">Mobilfunknetz</string>
     <string name="network_type_other">Andere</string>
     <string name="network_type_network_wifi">WiFi</string>
     <string name="network_type_ethernet">Kabelgebundenes Netzwerk</string>
@@ -1939,4 +1939,19 @@
     <string name="message_queue_info_server_info">Server-Warteschlangen-Information: %1$s
 \n
 \nZuletzt empfangene Nachricht: %2$s</string>
+    <string name="file_error_no_file">Datei nicht gefunden - höchstwahrscheinlich wurde die Datei gelöscht oder der Transfer abgebrochen.</string>
+    <string name="file_error_relay">Datei-Server-Fehler: %1$s</string>
+    <string name="file_error_auth">Falscher Schlüssel oder unbekannte Datei-Chunk-Adresse - höchstwahrscheinlich wurde die Datei gelöscht.</string>
+    <string name="file_error">Datei-Fehler</string>
+    <string name="info_row_message_status">Nachrichten-Status</string>
+    <string name="share_text_message_status">Nachrichten-Status: %s</string>
+    <string name="info_row_file_status">Datei-Status</string>
+    <string name="share_text_file_status">Datei-Status: %s</string>
+    <string name="temporary_file_error">Temporärer Datei-Fehler</string>
+    <string name="copy_error">Fehlermeldung kopieren</string>
+    <string name="remote_ctrl_connection_stopped_identity_desc">Dieser Link wurde schon mit einem anderen Mobiltelefon genutzt. Bitte erstellen sie einen neuen Link in der Desktop-App.</string>
+    <string name="remote_ctrl_connection_stopped_desc">Bitte überprüfen Sie, ob sich das Mobiltelefon und die Desktop-App im gleichen lokalen Netzwerk befinden, und die Desktop-Firewall die Verbindung erlaubt.
+\nBitte teilen Sie weitere mögliche Probleme den Entwicklern mit.</string>
+    <string name="cannot_share_message_alert_title">Nachricht wurde nicht gesendet</string>
+    <string name="cannot_share_message_alert_text">Diese Nachricht ist wegen der gewählten Chat-Einstellungen nicht erlaubt.</string>
 </resources>

@@ -160,6 +160,9 @@ class AppPreferences {
   val showHiddenProfilesNotice = mkBoolPreference(SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE, true)
   val showMuteProfileAlert = mkBoolPreference(SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT, true)
   val appLanguage = mkStrPreference(SHARED_PREFS_APP_LANGUAGE, null)
+  val appUpdateChannel = mkEnumPreference(SHARED_PREFS_APP_UPDATE_CHANNEL, AppUpdatesChannel.DISABLED) { AppUpdatesChannel.entries.firstOrNull { it.name == this } }
+  val appSkippedUpdate = mkStrPreference(SHARED_PREFS_APP_SKIPPED_UPDATE, "")
+  val appUpdateNoticeShown = mkBoolPreference(SHARED_PREFS_APP_UPDATE_NOTICE_SHOWN, false)
 
   val onboardingStage = mkEnumPreference(SHARED_PREFS_ONBOARDING_STAGE, OnboardingStage.OnboardingComplete) { OnboardingStage.values().firstOrNull { it.name == this } }
   val migrationToStage = mkStrPreference(SHARED_PREFS_MIGRATION_TO_STAGE, null)
@@ -334,6 +337,9 @@ class AppPreferences {
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
     private const val SHARED_PREFS_APP_LANGUAGE = "AppLanguage"
+    private const val SHARED_PREFS_APP_UPDATE_CHANNEL = "AppUpdateChannel"
+    private const val SHARED_PREFS_APP_SKIPPED_UPDATE = "AppSkippedUpdate"
+    private const val SHARED_PREFS_APP_UPDATE_NOTICE_SHOWN = "AppUpdateNoticeShown"
     private const val SHARED_PREFS_ONBOARDING_STAGE = "OnboardingStage"
     const val SHARED_PREFS_MIGRATION_TO_STAGE = "MigrationToStage"
     const val SHARED_PREFS_MIGRATION_FROM_STAGE = "MigrationFromStage"
@@ -1831,6 +1837,80 @@ object ChatController {
         )
         true
       }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.BROKER
+          && r.chatError.agentError.brokerErr is BrokerErrorType.HOST -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.connection_error),
+          String.format(generalGetString(MR.strings.network_error_broker_host_desc), serverHostname(r.chatError.agentError.brokerAddress))
+        )
+        true
+      }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.BROKER
+          && r.chatError.agentError.brokerErr is BrokerErrorType.TRANSPORT
+          && r.chatError.agentError.brokerErr.transportErr is SMPTransportError.Version -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.connection_error),
+          String.format(generalGetString(MR.strings.network_error_broker_version_desc), serverHostname(r.chatError.agentError.brokerAddress))
+        )
+        true
+      }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.SMP
+          && r.chatError.agentError.smpErr is SMPErrorType.PROXY ->
+        proxyErrorAlert(r.chatError.agentError.smpErr.proxyErr)
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.PROXY
+          && r.chatError.agentError.proxyErr is ProxyClientError.ProxyProtocolError
+          && r.chatError.agentError.proxyErr.protocolErr is SMPErrorType.PROXY ->
+        proxyErrorAlert(r.chatError.agentError.proxyErr.protocolErr.proxyErr)
+      else -> false
+    }
+  }
+
+  private fun proxyErrorAlert(pe: ProxyError): Boolean {
+    return when {
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.TIMEOUT -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          generalGetString(MR.strings.please_try_later)
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.NETWORK -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          generalGetString(MR.strings.please_try_later)
+        )
+        true
+      }
+      pe is ProxyError.NO_SESSION -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          generalGetString(MR.strings.please_try_later)
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.HOST -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          generalGetString(MR.strings.srv_error_host)
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.TRANSPORT
+          && pe.brokerErr.transportErr is SMPTransportError.Version -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          generalGetString(MR.strings.srv_error_version)
+        )
+        true
+      }
       else -> false
     }
   }
@@ -3086,7 +3166,7 @@ data class ProtoServersConfig(
 data class UserProtocolServers(
   val serverProtocol: ServerProtocol,
   val protoServers: List<ServerCfg>,
-  val presetServers: List<String>,
+  val presetServers: List<ServerCfg>,
 )
 
 @Serializable
@@ -3095,7 +3175,7 @@ data class ServerCfg(
   val server: String,
   val preset: Boolean,
   val tested: Boolean? = null,
-  val enabled: ServerEnabled
+  val enabled: Boolean
 ) {
   @Transient
   private val createdAt: Date = Date()
@@ -3109,7 +3189,7 @@ data class ServerCfg(
     get() = server.isBlank()
 
   companion object {
-    val empty = ServerCfg(remoteHostId = null, server = "", preset = false, tested = null, enabled = ServerEnabled.Enabled)
+    val empty = ServerCfg(remoteHostId = null, server = "", preset = false, tested = null, enabled = false)
 
     class SampleData(
       val preset: ServerCfg,
@@ -3123,31 +3203,24 @@ data class ServerCfg(
         server = "smp://abcd@smp8.simplex.im",
         preset = true,
         tested = true,
-        enabled = ServerEnabled.Enabled
+        enabled = true
       ),
       custom = ServerCfg(
         remoteHostId = null,
         server = "smp://abcd@smp9.simplex.im",
         preset = false,
         tested = false,
-        enabled = ServerEnabled.Disabled
+        enabled = false
       ),
       untested = ServerCfg(
         remoteHostId = null,
         server = "smp://abcd@smp10.simplex.im",
         preset = false,
         tested = null,
-        enabled = ServerEnabled.Enabled
+        enabled = true
       )
     )
   }
-}
-
-@Serializable
-enum class ServerEnabled {
-  @SerialName("disabled") Disabled,
-  @SerialName("enabled") Enabled,
-  @SerialName("known") Known;
 }
 
 @Serializable
@@ -5535,6 +5608,7 @@ sealed class AgentErrorType {
     is SMP -> "SMP ${smpErr.string}"
     // is NTF -> "NTF ${ntfErr.string}"
     is XFTP -> "XFTP ${xftpErr.string}"
+    is PROXY -> "PROXY $proxyServer $relayServer ${proxyErr.string}"
     is RCP -> "RCP ${rcpErr.string}"
     is BROKER -> "BROKER ${brokerErr.string}"
     is AGENT -> "AGENT ${agentErr.string}"
@@ -5547,6 +5621,7 @@ sealed class AgentErrorType {
   @Serializable @SerialName("SMP") class SMP(val smpErr: SMPErrorType): AgentErrorType()
   // @Serializable @SerialName("NTF") class NTF(val ntfErr: SMPErrorType): AgentErrorType()
   @Serializable @SerialName("XFTP") class XFTP(val xftpErr: XFTPErrorType): AgentErrorType()
+  @Serializable @SerialName("PROXY") class PROXY(val proxyServer: String, val relayServer: String, val proxyErr: ProxyClientError): AgentErrorType()
   @Serializable @SerialName("RCP") class RCP(val rcpErr: RCErrorType): AgentErrorType()
   @Serializable @SerialName("BROKER") class BROKER(val brokerAddress: String, val brokerErr: BrokerErrorType): AgentErrorType()
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
@@ -5611,20 +5686,40 @@ sealed class SMPErrorType {
     is BLOCK -> "BLOCK"
     is SESSION -> "SESSION"
     is CMD -> "CMD ${cmdErr.string}"
+    is PROXY -> "PROXY ${proxyErr.string}"
     is AUTH -> "AUTH"
+    is CRYPTO -> "CRYPTO"
     is QUOTA -> "QUOTA"
     is NO_MSG -> "NO_MSG"
     is LARGE_MSG -> "LARGE_MSG"
+    is EXPIRED -> "EXPIRED"
     is INTERNAL -> "INTERNAL"
   }
   @Serializable @SerialName("BLOCK") class BLOCK: SMPErrorType()
   @Serializable @SerialName("SESSION") class SESSION: SMPErrorType()
   @Serializable @SerialName("CMD") class CMD(val cmdErr: ProtocolCommandError): SMPErrorType()
+  @Serializable @SerialName("PROXY") class PROXY(val proxyErr: ProxyError): SMPErrorType()
   @Serializable @SerialName("AUTH") class AUTH: SMPErrorType()
+  @Serializable @SerialName("CRYPTO") class CRYPTO: SMPErrorType()
   @Serializable @SerialName("QUOTA") class QUOTA: SMPErrorType()
   @Serializable @SerialName("NO_MSG") class NO_MSG: SMPErrorType()
   @Serializable @SerialName("LARGE_MSG") class LARGE_MSG: SMPErrorType()
+  @Serializable @SerialName("EXPIRED") class EXPIRED: SMPErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL: SMPErrorType()
+}
+
+@Serializable
+sealed class ProxyError {
+  val string: String get() = when (this) {
+    is PROTOCOL -> "PROTOCOL ${protocolErr.string}"
+    is BROKER -> "BROKER ${brokerErr.string}"
+    is BASIC_AUTH -> "BASIC_AUTH"
+    is NO_SESSION -> "NO_SESSION"
+  }
+  @Serializable @SerialName("PROTOCOL") class PROTOCOL(val protocolErr: SMPErrorType): ProxyError()
+  @Serializable @SerialName("BROKER") class BROKER(val brokerErr: BrokerErrorType): ProxyError()
+  @Serializable @SerialName("BASIC_AUTH") class BASIC_AUTH: ProxyError()
+  @Serializable @SerialName("NO_SESSION") class NO_SESSION: ProxyError()
 }
 
 @Serializable
@@ -5649,12 +5744,14 @@ sealed class ProtocolCommandError {
 sealed class SMPTransportError {
   val string: String get() = when (this) {
     is BadBlock -> "badBlock"
+    is Version -> "version"
     is LargeMsg -> "largeMsg"
     is BadSession -> "badSession"
     is NoServerAuth -> "noServerAuth"
     is Handshake -> "handshake ${handshakeErr.string}"
   }
   @Serializable @SerialName("badBlock") class BadBlock: SMPTransportError()
+  @Serializable @SerialName("version") class Version: SMPTransportError()
   @Serializable @SerialName("largeMsg") class LargeMsg: SMPTransportError()
   @Serializable @SerialName("badSession") class BadSession: SMPTransportError()
   @Serializable @SerialName("noServerAuth") class NoServerAuth: SMPTransportError()
@@ -5725,6 +5822,18 @@ sealed class XFTPErrorType {
   @Serializable @SerialName("TIMEOUT") object TIMEOUT: XFTPErrorType()
   @Serializable @SerialName("REDIRECT") class REDIRECT(val redirectError: String): XFTPErrorType()
   @Serializable @SerialName("INTERNAL") object INTERNAL: XFTPErrorType()
+}
+
+@Serializable
+sealed class ProxyClientError {
+  val string: String get() = when (this) {
+    is ProxyProtocolError -> "ProxyProtocolError $protocolErr"
+    is ProxyUnexpectedResponse -> "ProxyUnexpectedResponse $responseStr"
+    is ProxyResponseError -> "ProxyResponseError $responseErr"
+  }
+  @Serializable @SerialName("protocolError") class ProxyProtocolError(val protocolErr: SMPErrorType): ProxyClientError()
+  @Serializable @SerialName("unexpectedResponse") class ProxyUnexpectedResponse(val responseStr: String): ProxyClientError()
+  @Serializable @SerialName("responseError") class ProxyResponseError(val responseErr: SMPErrorType): ProxyClientError()
 }
 
 @Serializable

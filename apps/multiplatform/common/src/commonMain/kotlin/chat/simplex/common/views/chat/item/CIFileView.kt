@@ -129,30 +129,6 @@ fun CIFileView(
   }
 
   @Composable
-  fun progressIndicator() {
-    CircularProgressIndicator(
-      Modifier.size(32.dp),
-      color = if (isInDarkTheme()) FileDark else FileLight,
-      strokeWidth = 3.dp
-    )
-  }
-
-  @Composable
-  fun progressCircle(progress: Long, total: Long) {
-    val angle = 360f * (progress.toDouble() / total.toDouble()).toFloat()
-    val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() }
-    val strokeColor = if (isInDarkTheme()) FileDark else FileLight
-    Surface(
-      Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
-      color = Color.Transparent,
-      shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
-      contentColor = LocalContentColor.current
-    ) {
-      Box(Modifier.size(32.dp))
-    }
-  }
-
-  @Composable
   fun fileIndicator() {
     Box(
       Modifier
@@ -164,14 +140,14 @@ fun CIFileView(
         when (file.fileStatus) {
           is CIFileStatus.SndStored ->
             when (file.fileProtocol) {
-              FileProtocol.XFTP -> progressIndicator()
+              FileProtocol.XFTP -> CIFileViewScope.progressIndicator()
               FileProtocol.SMP -> fileIcon()
               FileProtocol.LOCAL -> fileIcon()
             }
           is CIFileStatus.SndTransfer ->
             when (file.fileProtocol) {
-              FileProtocol.XFTP -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
-              FileProtocol.SMP -> progressIndicator()
+              FileProtocol.XFTP -> CIFileViewScope.progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
+              FileProtocol.SMP -> CIFileViewScope.progressIndicator()
               FileProtocol.LOCAL -> {}
             }
           is CIFileStatus.SndComplete -> fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
@@ -186,9 +162,9 @@ fun CIFileView(
           is CIFileStatus.RcvAccepted -> fileIcon(innerIcon = painterResource(MR.images.ic_more_horiz))
           is CIFileStatus.RcvTransfer ->
             if (file.fileProtocol == FileProtocol.XFTP && file.fileStatus.rcvProgress < file.fileStatus.rcvTotal) {
-              progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal)
+              CIFileViewScope.progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal)
             } else {
-              progressIndicator()
+              CIFileViewScope.progressIndicator()
             }
           is CIFileStatus.RcvAborted ->
             fileIcon(innerIcon = painterResource(MR.images.ic_sync_problem), color = MaterialTheme.colors.primary)
@@ -264,6 +240,32 @@ fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =
       }
     }
   }
+
+object CIFileViewScope {
+  @Composable
+  fun progressIndicator() {
+    CircularProgressIndicator(
+      Modifier.size(32.dp),
+      color = if (isInDarkTheme()) FileDark else FileLight,
+      strokeWidth = 3.dp
+    )
+  }
+
+  @Composable
+  fun progressCircle(progress: Long, total: Long) {
+    val angle = 360f * (progress.toDouble() / total.toDouble()).toFloat()
+    val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() }
+    val strokeColor = if (isInDarkTheme()) FileDark else FileLight
+    Surface(
+      Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
+      color = Color.Transparent,
+      shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
+      contentColor = LocalContentColor.current
+    ) {
+      Box(Modifier.size(32.dp))
+    }
+  }
+}
 
 /*
 class ChatItemProvider: PreviewParameterProvider<ChatItem> {
