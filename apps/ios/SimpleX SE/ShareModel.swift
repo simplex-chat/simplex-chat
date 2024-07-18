@@ -26,7 +26,7 @@ class ShareModel: ObservableObject {
         case loadingBar(progress: Double)
     }
 
-    var completion: (() -> Void)?
+    var completion: ((Error?) -> Void)!
 
     var filteredChats: Array<ChatData> {
         search.isEmpty

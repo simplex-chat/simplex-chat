@@ -26,9 +26,13 @@ class ShareViewController: UIHostingController<ShareView> {
 
     override func viewDidLoad() {
         if let item = extensionContext?.inputItems.first as? NSExtensionItem {
-            model.completion = {
-                self.extensionContext!.completeRequest(returningItems: [item]) { _ in
-                    let _ = sendSimpleXCmd(.apiStopChat)
+            model.completion = { error in
+                if let error {
+                    self.extensionContext!.cancelRequest(withError: error)
+                } else {
+                    self.extensionContext!.completeRequest(returningItems: [item]) { _ in
+                        let _ = sendSimpleXCmd(.apiStopChat)
+                    }
                 }
             }
             Task { await MainActor.run { model.item = item } }

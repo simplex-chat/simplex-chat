@@ -57,7 +57,7 @@ struct ShareView: View {
             Button("Dismiss") {
                 // TODO: Add error handling to the completion
                 // Properly dismiss the sheet by calling `.cancelRequest(withError: any Error)` on the extension context
-                model.completion?()
+                model.completion(nil)
             }
         }
     }

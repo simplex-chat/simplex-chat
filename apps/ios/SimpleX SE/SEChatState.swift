@@ -55,7 +55,7 @@ final class EventLoop {
                     if aChatItem.chatItem.id == itemId {
                         await MainActor.run {
                             model?.bottomBar = .loadingBar(progress: 1)
-                            model?.completion!()
+                            model?.completion!(nil)
                         }
                     }
                 default: break
