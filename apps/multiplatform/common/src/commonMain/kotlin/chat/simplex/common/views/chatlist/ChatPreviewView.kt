@@ -238,6 +238,9 @@ fun ChatPreviewView(
         IconButton({ uriHandler.openUriCatching(mc.preview.uri) }) {
           Image(base64ToBitmap(mc.preview.image), null, contentScale = ContentScale.Crop)
         }
+        Box(Modifier.align(Alignment.TopEnd).size(15.sp.toDp()).background(Color.Black.copy(0.25f), CircleShape), contentAlignment = Alignment.Center) {
+          Icon(painterResource(MR.images.ic_north_east), null, Modifier.size(13.sp.toDp()).offset(x = 1.sp.toDp()))
+        }
       }
       is MsgContent.MCImage -> SmallContentPreview {
         CIImageView(image = mc.image, file = ci.file, provider, remember { mutableStateOf(false) }, smallView = true) {
@@ -375,7 +378,7 @@ fun ChatPreviewView(
                 .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
                 .badgeLayout()
                 .padding(horizontal = 2.sp.toDp())
-                .padding(top = 0.5.sp.toDp(), bottom = 1.sp.toDp())
+                .padding(vertical = 1.sp.toDp())
             )
           } else if (showNtfsIcon) {
             Icon(
@@ -410,7 +413,7 @@ fun ChatPreviewView(
 }
 
 @Composable
-private fun SmallContentPreview(content: @Composable () -> Unit) {
+private fun SmallContentPreview(content: @Composable BoxScope.() -> Unit) {
   Box(Modifier.padding(top = 2.sp.toDp(), end = 8.sp.toDp()).size(36.sp.toDp()).border(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.12f), RoundedCornerShape(22)).clip(RoundedCornerShape(22))) {
     content()
   }
