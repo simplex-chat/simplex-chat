@@ -1878,17 +1878,17 @@
     <string name="xftp_servers_other">Overige XFTP servers</string>
     <string name="scan_paste_link">Link scannen/plakken</string>
     <string name="appearance_zoom">Zoom</string>
-    <string name="current_user">Huidige gebruiker</string>
+    <string name="current_user">Huidig profiel</string>
     <string name="servers_info_files_tab">Bestanden</string>
     <string name="servers_info">Server informatie</string>
     <string name="servers_info_target">Informatie weergeven voor</string>
     <string name="servers_info_sessions_errors">Fouten</string>
     <string name="servers_info_statistics_section_header">Statistieken</string>
     <string name="servers_info_transport_sessions_section_header">Transportsessies</string>
-    <string name="servers_info_subscriptions_connections_subscribed">Verbindingen geabonneerd</string>
+    <string name="servers_info_subscriptions_connections_subscribed">Actieve verbindingen</string>
     <string name="servers_info_details">Details</string>
     <string name="servers_info_messages_received">Berichten ontvangen</string>
-    <string name="servers_info_subscriptions_section_header">Berichten abonnementen</string>
+    <string name="servers_info_subscriptions_section_header">Bericht ontvangst</string>
     <string name="servers_info_private_data_disclaimer">Beginnend vanaf %s.
 \nAlle gegevens zijn privé op uw apparaat.</string>
     <string name="servers_info_connected_servers_section_header">Verbonden servers</string>
@@ -1939,7 +1939,7 @@
     <string name="download_errors">Downloadfouten</string>
     <string name="open_server_settings_button">Server instellingen openen</string>
     <string name="server_address">Server adres</string>
-    <string name="all_users">Alle gebruikers</string>
+    <string name="all_users">Alle profielen</string>
     <string name="attempts_label">pogingen</string>
     <string name="chunks_deleted">Stukken verwijderd</string>
     <string name="completed">voltooid</string>
@@ -1963,4 +1963,23 @@
     <string name="network_error_broker_host_desc">Het serveradres is niet compatibel met de netwerkinstellingen: %1$s.</string>
     <string name="servers_info_reset_stats_alert_message">Serverstatistieken worden gereset - dit kan niet ongedaan worden gemaakt!</string>
     <string name="servers_info_starting_from">Beginnend vanaf %s.</string>
+    <string name="smp_servers_configured">Geconfigureerde SMP-servers</string>
+    <string name="xftp_servers_configured">Geconfigureerde XFTP-servers</string>
+    <string name="subscription_percentage">Percentage weergeven</string>
+    <string name="app_check_for_updates_disabled">Uitgeschakeld</string>
+    <string name="app_check_for_updates_download_started">App update downloaden. Sluit de app niet</string>
+    <string name="app_check_for_updates_button_download">%s downloaden (%s)</string>
+    <string name="app_check_for_updates_installed_successfully_title">Succesvol geïnstalleerd</string>
+    <string name="app_check_for_updates_button_install">Installeer update</string>
+    <string name="app_check_for_updates_button_open">Open de bestandslocatie</string>
+    <string name="app_check_for_updates_installed_successfully_desc">Herstart de app.</string>
+    <string name="app_check_for_updates_button_remind_later">Herinner later</string>
+    <string name="app_check_for_updates_button_skip">Sla deze versie over</string>
+    <string name="member_info_member_disabled">uitgeschakeld</string>
+    <string name="app_check_for_updates_download_completed_title">App update is gedownload</string>
+    <string name="app_check_for_updates_beta">Beta</string>
+    <string name="app_check_for_updates">Controleer op updates</string>
+    <string name="app_check_for_updates_notice_title">Controleer op updates</string>
+    <string name="proxy_error_broker_version_desc">Serverversie is incompatibel met netwerkinstellingen: %1$s.</string>
+    <string name="app_check_for_updates_notice_disable">Uitschakelen</string>
 </resources>
