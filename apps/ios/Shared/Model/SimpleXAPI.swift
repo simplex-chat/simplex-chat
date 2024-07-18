@@ -1649,6 +1649,19 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 }
             }
         }
+    case let .contactSndReady(user, contact):
+        if active(user) && contact.directOrUsed {
+            await MainActor.run {
+                m.updateContact(contact)
+                if let conn = contact.activeConn {
+                    m.dismissConnReqView(conn.id)
+                    m.removeChat(conn.id)
+                }
+            }
+        }
+        await MainActor.run {
+            m.setContactNetworkStatus(contact, .connected)
+        }
     case let .receivedContactRequest(user, contactRequest):
         if active(user) {
             let cInfo = ChatInfo.contactRequest(contactRequest: contactRequest)

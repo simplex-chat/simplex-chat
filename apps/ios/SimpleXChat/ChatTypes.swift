@@ -1511,7 +1511,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
 
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
-    public var ready: Bool { get { activeConn?.connStatus == .ready } }
+    public var ready: Bool { get { activeConn?.connStatus == .ready || activeConn?.connStatus == .sndReady } }
     public var active: Bool { get { contactStatus == .active } }
     public var sendMsgEnabled: Bool { get {
         (
