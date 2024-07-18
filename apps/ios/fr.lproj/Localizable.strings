@@ -155,9 +155,6 @@
 "%@ is verified" = "%@ est vérifié·e";
 
 /* No comment provided by engineer. */
-"%@ servers" = "Serveurs %@";
-
-/* No comment provided by engineer. */
 "%@ uploaded" = "%@ envoyé";
 
 /* notification title */
