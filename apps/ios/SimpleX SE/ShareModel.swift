@@ -17,10 +17,16 @@ class ShareModel: ObservableObject {
     @Published var comment = String()
     @Published var selected: ChatData?
     @Published var isLoaded = false
-    @Published var progress: Double?
+    @Published var bottomBar: BottomBar = .sendButton
     @Published var error: ShareError?
 
-    var completion: (() -> Void)?
+    enum BottomBar {
+        case sendButton
+        case loadingSpinner
+        case loadingBar(progress: Double)
+    }
+
+    var completion: ((Error?) -> Void)!
 
     var filteredChats: Array<ChatData> {
         search.isEmpty
@@ -46,16 +52,18 @@ class ShareModel: ObservableObject {
     func send() {
         Task {
             switch await self.sendMessage() {
-            case let .success(aChatItem):
-                await MainActor.run { progress = .zero }
-                startEventLoop(for: aChatItem)
+            case let .success(item):
+                await MainActor.run { self.bottomBar = .loadingBar(progress: .zero) }
+                // Listen to the event loop for progress events
+                EventLoop.shared.set(itemId: item.chatItem.id, model: self)
             case let .failure(error):
-                self.error = error
+                await MainActor.run { self.error = error }
             }
         }
     }
 
     private func sendMessage() async -> Result<AChatItem, ShareError> {
+        await MainActor.run { self.bottomBar = .loadingSpinner }
         guard let chat = selected else { return .failure(.noChatWasSelected) }
         guard let attachment = item?.attachments?.first else { return .failure(.missingAttachment) }
         do {
@@ -64,13 +72,15 @@ class ShareModel: ObservableObject {
             }
             let url = try await attachment.inPlaceUrl(type: type)
             guard let cryptoFile = saveFileFromURL(url) else { return .failure(.encryptFile) }
-            return .success(
-                try apiSendMessage(
-                    chatInfo: chat.chatInfo,
-                    cryptoFile: cryptoFile,
-                    msgContent: .file(comment)
-                )
+            SEChatState.shared.set(.sendingMessage)
+            await waitForOtherProcessesToSuspend()
+            let chatItem = try apiSendMessage(
+                chatInfo: chat.chatInfo,
+                cryptoFile: cryptoFile,
+                msgContent: .file(comment)
             )
+            SEChatState.shared.set(.inactive)
+            return .success(chatItem)
         } catch {
             if let chatResponse = error as? ChatResponse {
                 return .failure(.apiError(APIError(response: chatResponse)))
@@ -105,29 +115,6 @@ class ShareModel: ObservableObject {
             return .failure(.apiError(APIError(response: error as! ChatResponse)))
         }
     }
-
-    private func startEventLoop(for sent: AChatItem) {
-        Task {
-            while true {
-                switch recvSimpleXMsg() {
-                case let .sndFileProgressXFTP(_, aChatItem, _, sentSize, totalSize):
-                    if let id = aChatItem?.chatItem.id, id == sent.chatItem.id {
-                        await MainActor.run {
-                            withAnimation { self.progress = Double(sentSize) / Double(totalSize) }
-                        }
-                    }
-                case let .sndFileCompleteXFTP(_, aChatItem, _):
-                    if aChatItem.chatItem.id == sent.chatItem.id {
-                        await MainActor.run {
-                            withAnimation { self.progress = 1 }
-                            self.completion!()
-                        }
-                    }
-                default: break
-                }
-            }
-        }
-    }
 }
 
 extension NSItemProvider {
@@ -152,3 +139,4 @@ extension NSItemProvider {
         return nil
     }
 }
+

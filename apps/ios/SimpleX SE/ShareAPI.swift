@@ -60,7 +60,13 @@ func apiSendMessage(
     msgContent: MsgContent
 ) throws -> AChatItem {
     let r = sendSimpleXCmd(
-        .apiSendMessage(
+        chatInfo.chatType == .local
+        ? .apiCreateChatItem(
+            noteFolderId: chatInfo.apiId,
+            file: cryptoFile,
+            msg: msgContent
+        )
+        : .apiSendMessage(
             type: chatInfo.chatType,
             id: chatInfo.apiId,
             file: cryptoFile,

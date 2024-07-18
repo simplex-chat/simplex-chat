@@ -35,10 +35,15 @@ struct ShareView: View {
             }
             .navigationTitle("Share With")
             .safeAreaInset(edge: .bottom) {
-                if let progress = model.progress {
-                    loadingBar(progress: progress)
-                } else if model.selected != nil {
-                    compose
+                if model.selected != nil {
+                    switch model.bottomBar {
+                    case .sendButton:
+                        compose(isLoading: false)
+                    case .loadingSpinner:
+                        compose(isLoading: true)
+                    case .loadingBar(let progress):
+                        loadingBar(progress: progress)
+                    }
                 }
             }
         }
@@ -49,23 +54,37 @@ struct ShareView: View {
         .alert(
             isPresented: .constant(model.error != nil),
             error: model.error
-        ) { Button("Dismiss") { model.completion?() } }
+        ) {
+            Button("Dismiss") {
+                // TODO: Add error handling to the completion
+                // Properly dismiss the sheet by calling `.cancelRequest(withError: any Error)` on the extension context
+                model.completion(nil)
+            }
+        }
     }
 
-    private var compose: some View {
+    private func compose(isLoading: Bool) -> some View {
         VStack(spacing: .zero) {
             Divider().overlay(Color.secondary.opacity(0.7))
             HStack {
                 TextField("Comment", text: $model.comment, axis: .vertical)
                     .contentShape(Rectangle())
+                    .disabled(isLoading)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 4)
-                Button(action: model.send) {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .resizable()
-                        .frame(width: 28, height: 28)
-                        .padding(6)
+                Group {
+                    if isLoading {
+                        ProgressView()
+                    } else {
+                        Button(action: model.send) {
+                            Image(systemName: "arrow.up.circle.fill")
+                                .resizable()
+                        }
+                    }
                 }
+                .frame(width: 28, height: 28)
+                .padding(6)
+
             }
             .background(Color(.systemBackground.withAlphaComponent(0.5)))
             .clipShape(RoundedRectangle(cornerRadius: 20))
