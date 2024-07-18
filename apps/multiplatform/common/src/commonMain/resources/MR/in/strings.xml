@@ -69,4 +69,15 @@
     <string name="block_for_all_question">Blokir anggota untuk semua?</string>
     <string name="call_already_ended">Panggilan telah ditutup!</string>
     <string name="network_type_cellular">Seluler</string>
+    <string name="connect_via_invitation_link">Hubungkan melalui tautan satu kali?</string>
+    <string name="connect_via_group_link">Gabung Grup?</string>
+    <string name="connect_use_current_profile">Gunakan profil saat ini</string>
+    <string name="connect_use_new_incognito_profile">Gunakan profil penyamaran baru</string>
+    <string name="profile_will_be_sent_to_contact_sending_link">Profil Anda akan dikirim ke kontak yang menerima tautan ini.</string>
+    <string name="you_will_join_group">Anda akan terhubung ke semua anggota grup.</string>
+    <string name="connect_via_link_verb">Hubungkan</string>
+    <string name="connect_via_link_incognito">Hubungkan penyamaran</string>
+    <string name="opening_database">Membuka basis data…</string>
+    <string name="thousand_abbreviation">k</string>
+    <string name="connect_via_contact_link">Hubungkan melalui alamat kontak?</string>
 </resources>
