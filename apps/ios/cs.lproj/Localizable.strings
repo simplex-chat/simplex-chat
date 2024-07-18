@@ -130,9 +130,6 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ je ověřený";
 
-/* No comment provided by engineer. */
-"%@ servers" = "%@ servery";
-
 /* notification title */
 "%@ wants to connect!" = "%@ se chce připojit!";
 

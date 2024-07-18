@@ -384,8 +384,9 @@ cfgServers p DefaultAgentServers {smp, xftp} = case p of
   SPSMP -> smp
   SPXFTP -> xftp
 
-startChatController :: Bool -> CM' (Async ())
-startChatController mainApp = do
+-- enableSndFiles has no effect when mainApp is True
+startChatController :: Bool -> Bool -> CM' (Async ())
+startChatController mainApp enableSndFiles = do
   asks smpAgent >>= liftIO . resumeAgentClient
   unless mainApp $ chatWriteVar' subscriptionMode SMOnlyCreate
   users <- fromRight [] <$> runExceptT (withStore' getUsers)
@@ -400,15 +401,18 @@ startChatController mainApp = do
           then Just <$> async (subscribeUsers False users)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
-      when mainApp $ do
-        startXFTP
-        void $ forkIO $ startFilesToReceive users
-        startCleanupManager
-        startExpireCIs users
+      if mainApp
+        then do
+          startXFTP xftpStartWorkers
+          void $ forkIO $ startFilesToReceive users
+          startCleanupManager
+          startExpireCIs users
+        else
+          when enableSndFiles $ startXFTP xftpStartSndWorkers
       pure a1
-    startXFTP = do
+    startXFTP startWorkers = do
       tmp <- readTVarIO =<< asks tempDirectory
-      runExceptT (withAgent $ \a -> xftpStartWorkers a tmp) >>= \case
+      runExceptT (withAgent $ \a -> startWorkers a tmp) >>= \case
         Left e -> liftIO $ print $ "Error starting XFTP workers: " <> show e
         Right _ -> pure ()
     startCleanupManager = do
@@ -617,10 +621,10 @@ processChatCommand' vr = \case
     checkDeleteChatUser user'
     withChatLock "deleteUser" . procCmd $ deleteChatUser user' delSMPQueues
   DeleteUser uName delSMPQueues viewPwd_ -> withUserName uName $ \userId -> APIDeleteUser userId delSMPQueues viewPwd_
-  StartChat mainApp -> withUser' $ \_ ->
+  StartChat {mainApp, enableSndFiles} -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged . lift $ startChatController mainApp $> CRChatStarted
+      _ -> checkStoreNotChanged . lift $ startChatController mainApp enableSndFiles $> CRChatStarted
   APIStopChat -> do
     ask >>= liftIO . stopChatController
     pure CRChatStopped
@@ -7377,8 +7381,11 @@ chatCommandP =
       "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP <*> optional (A.space *> jsonP)),
       "/delete user " *> (DeleteUser <$> displayName <*> pure True <*> optional (A.space *> pwdP)),
       ("/user" <|> "/u") $> ShowActiveUser,
-      "/_start main=" *> (StartChat <$> onOffP),
-      "/_start" $> StartChat True,
+      "/_start " *> do
+        mainApp <- "main=" *> onOffP
+        enableSndFiles <- " snd_files=" *> onOffP <|> pure mainApp
+        pure StartChat {mainApp, enableSndFiles},
+      "/_start" $> StartChat True True,
       "/_stop" $> APIStopChat,
       "/_app activate restore=" *> (APIActivateChat <$> onOffP),
       "/_app activate" $> APIActivateChat True,

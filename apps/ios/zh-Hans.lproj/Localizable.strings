@@ -133,9 +133,6 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ 已认证";
 
-/* No comment provided by engineer. */
-"%@ servers" = "%@ 服务器";
-
 /* notification title */
 "%@ wants to connect!" = "%@ 要连接！";
 

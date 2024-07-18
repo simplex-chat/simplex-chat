@@ -26,7 +26,7 @@ public enum ChatCommand {
     case apiMuteUser(userId: Int64)
     case apiUnmuteUser(userId: Int64)
     case apiDeleteUser(userId: Int64, delSMPQueues: Bool, viewPwd: String?)
-    case startChat(mainApp: Bool)
+    case startChat(mainApp: Bool, enableSndFiles: Bool)
     case apiStopChat
     case apiActivateChat(restoreChat: Bool)
     case apiSuspendChat(timeoutMicroseconds: Int)
@@ -171,7 +171,7 @@ public enum ChatCommand {
             case let .apiMuteUser(userId): return "/_mute user \(userId)"
             case let .apiUnmuteUser(userId): return "/_unmute user \(userId)"
             case let .apiDeleteUser(userId, delSMPQueues, viewPwd): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))\(maybePwd(viewPwd))"
-            case let .startChat(mainApp): return "/_start main=\(onOff(mainApp))"
+            case let .startChat(mainApp, enableSndFiles): return "/_start main=\(onOff(mainApp)) snd_files=\(onOff(enableSndFiles))"
             case .apiStopChat: return "/_stop"
             case let .apiActivateChat(restore): return "/_app activate restore=\(onOff(restore))"
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"

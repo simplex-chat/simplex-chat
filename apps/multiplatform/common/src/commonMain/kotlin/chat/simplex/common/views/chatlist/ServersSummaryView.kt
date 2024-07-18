@@ -50,10 +50,10 @@ import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.ProtocolServersView
+import chat.simplex.common.views.usersettings.SettingsPreferenceItem
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import numOrDash
@@ -345,6 +345,7 @@ private fun SMPSubscriptionsSection(totals: SMPTotals) {
         generalGetString(MR.strings.servers_info_subscriptions_total),
         numOrDash(totals.subs.total)
       )
+      SettingsPreferenceItem(null, stringResource(MR.strings.subscription_percentage), chatModel.controller.appPrefs.networkShowSubscriptionPercentage)
     }
   }
 }
@@ -768,7 +769,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
         ) { PresentedServerType.entries.size }
 
         KeyChangeEffect(serverTypePagerState.currentPage) {
-          selectedServerType.value = PresentedServerType.values()[serverTypePagerState.currentPage]
+          selectedServerType.value = PresentedServerType.entries[serverTypePagerState.currentPage]
         }
         TabRow(
           selectedTabIndex = serverTypePagerState.currentPage,

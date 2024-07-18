@@ -700,7 +700,7 @@
   <string name="xftp_servers">XFTP servers</string>
   <string name="xftp_servers_configured">Configured XFTP servers</string>
   <string name="xftp_servers_other">Other XFTP servers</string>
-  <string name="subscription_percentage">Subscription percentage</string>
+  <string name="subscription_percentage">Show percentage</string>
   <string name="install_simplex_chat_for_terminal">Install SimpleX Chat for terminal</string>
   <string name="star_on_github">Star on GitHub</string>
   <string name="contribute">Contribute</string>
@@ -2120,8 +2120,8 @@
   <string name="servers_info_files_tab">Files</string>
   <string name="servers_info_missing">No info, try to reload</string>
   <string name="servers_info_target">Showing info for</string>
-  <string name="all_users">All users</string>
-  <string name="current_user">Current user</string>
+  <string name="all_users">All profiles</string>
+  <string name="current_user">Current profile</string>
   <string name="servers_info_transport_sessions_section_header">Transport sessions</string>
   <string name="servers_info_sessions_connected">Connected</string>
   <string name="servers_info_sessions_connecting">Connecting</string>
