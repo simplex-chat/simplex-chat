@@ -2765,6 +2765,24 @@ data class CIFile(
     is CIFileStatus.Invalid -> null
   }
 
+  val showStatusIconInSmallView: Boolean = when (fileStatus) {
+    is CIFileStatus.SndStored -> fileProtocol != FileProtocol.LOCAL
+    is CIFileStatus.SndTransfer -> true
+    is CIFileStatus.SndComplete -> false
+    is CIFileStatus.SndCancelled -> true
+    is CIFileStatus.SndError -> true
+    is CIFileStatus.SndWarning -> true
+    is CIFileStatus.RcvInvitation -> false
+    is CIFileStatus.RcvAccepted -> true
+    is CIFileStatus.RcvTransfer -> true
+    is CIFileStatus.RcvAborted -> true
+    is CIFileStatus.RcvCancelled -> true
+    is CIFileStatus.RcvComplete -> false
+    is CIFileStatus.RcvError -> true
+    is CIFileStatus.RcvWarning -> true
+    is CIFileStatus.Invalid -> true
+  }
+
   /**
    * DO NOT CALL this function in compose scope, [LaunchedEffect], [DisposableEffect] and so on. Only with [withBGApi] or [runBlocking].
    * Otherwise, it will be canceled when moving to another screen/item/view, etc
