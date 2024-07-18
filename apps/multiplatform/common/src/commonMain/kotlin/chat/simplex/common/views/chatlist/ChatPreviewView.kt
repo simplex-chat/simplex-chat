@@ -335,7 +335,7 @@ fun ChatPreviewView(
         if ((showChatPreviews && chatModelDraftChatId != chat.id) || stuckVoicePreview.value != null) {
           chatItemContentPreview(chat, ci)
         }
-        if (mc !is MsgContent.MCVoice || mc.text.isNotEmpty()) {
+        if (mc !is MsgContent.MCVoice || mc.text.isNotEmpty() || chatModelDraftChatId == chat.id) {
           Box(Modifier.offset(x = if (mc is MsgContent.MCFile) -15.sp.toDp() else 0.dp)) {
             chatPreviewText()
           }
