@@ -1834,7 +1834,7 @@
     <string name="v5_8_private_routing_descr">Bescherm uw IP-adres tegen de berichtenrelais die door uw contacten zijn gekozen.
 \nSchakel dit in in *Netwerk en servers*-instellingen.</string>
     <string name="wallpaper_scale_repeat">Herhalen</string>
-    <string name="settings_section_title_chat_colors">Chatkleuren</string>
+    <string name="settings_section_title_chat_colors">Chat kleuren</string>
     <string name="settings_section_title_user_theme">Profiel thema</string>
     <string name="settings_section_title_chat_theme">Chat thema</string>
     <string name="color_primary_variant2">Extra accent 2</string>
@@ -1933,7 +1933,7 @@
     <string name="downloaded_files">Gedownloade bestanden</string>
     <string name="secured">Beveiligd</string>
     <string name="size">Maat</string>
-    <string name="subscribed">Geabonneerd</string>
+    <string name="subscribed">Ingeschreven</string>
     <string name="uploaded_files">Geüploade bestanden</string>
     <string name="upload_errors">Upload fouten</string>
     <string name="download_errors">Downloadfouten</string>
@@ -1982,4 +1982,10 @@
     <string name="app_check_for_updates_notice_title">Controleer op updates</string>
     <string name="proxy_error_broker_version_desc">Serverversie is incompatibel met netwerkinstellingen: %1$s.</string>
     <string name="app_check_for_updates_notice_disable">Uitschakelen</string>
+    <string name="subscription_errors">Inschrijving fouten</string>
+    <string name="subscription_results_ignored">Inschrijvingen genegeerd</string>
+    <string name="app_check_for_updates_stable">Stabiel</string>
+    <string name="app_check_for_updates_update_available">Update beschikbaar: %s</string>
+    <string name="app_check_for_updates_canceled">Downloaden van update geannuleerd</string>
+    <string name="app_check_for_updates_notice_desc">Als u op de hoogte wilt worden gehouden van de nieuwe releases, schakelt u periodieke controle op stabiele of bètaversies in.</string>
 </resources>
