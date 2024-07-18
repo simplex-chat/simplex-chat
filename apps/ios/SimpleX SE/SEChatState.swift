@@ -26,7 +26,8 @@ class SEChatState {
 }
 
 /// Global event loop
-/// The process might be
+/// The process might be reused between multiple share-sheet presentations,
+/// when they are triggered by the same host application
 final class EventLoop {
     static let shared = EventLoop()
 
@@ -45,13 +46,15 @@ final class EventLoop {
                 case let .sndFileProgressXFTP(_, aChatItem, _, sentSize, totalSize):
                     if let id = aChatItem?.chatItem.id, id == itemId {
                         await MainActor.run {
-                            withAnimation { model?.progress = Double(sentSize) / Double(totalSize) }
+                            withAnimation {
+                                model?.bottomBar = .loadingBar(progress: Double(sentSize) / Double(totalSize))
+                            }
                         }
                     }
                 case let .sndFileCompleteXFTP(_, aChatItem, _):
                     if aChatItem.chatItem.id == itemId {
                         await MainActor.run {
-                            withAnimation { model?.progress = 1 }
+                            model?.bottomBar = .loadingBar(progress: 1)
                             model?.completion!()
                         }
                     }

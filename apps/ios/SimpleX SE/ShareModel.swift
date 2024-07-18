@@ -17,8 +17,14 @@ class ShareModel: ObservableObject {
     @Published var comment = String()
     @Published var selected: ChatData?
     @Published var isLoaded = false
-    @Published var progress: Double?
+    @Published var bottomBar: BottomBar = .sendButton
     @Published var error: ShareError?
+
+    enum BottomBar {
+        case sendButton
+        case loadingSpinner
+        case loadingBar(progress: Double)
+    }
 
     var completion: (() -> Void)?
 
@@ -47,7 +53,7 @@ class ShareModel: ObservableObject {
         Task {
             switch await self.sendMessage() {
             case let .success(item):
-                await MainActor.run { self.progress = .zero }
+                await MainActor.run { self.bottomBar = .loadingBar(progress: .zero) }
                 // Listen to the event loop for progress events
                 EventLoop.shared.set(itemId: item.chatItem.id, model: self)
             case let .failure(error):
@@ -57,6 +63,7 @@ class ShareModel: ObservableObject {
     }
 
     private func sendMessage() async -> Result<AChatItem, ShareError> {
+        await MainActor.run { self.bottomBar = .loadingSpinner }
         guard let chat = selected else { return .failure(.noChatWasSelected) }
         guard let attachment = item?.attachments?.first else { return .failure(.missingAttachment) }
         do {
