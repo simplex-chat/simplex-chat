@@ -218,7 +218,7 @@
     <string name="notifications">Benachrichtigungen</string>
     <!-- Chat Info Actions - ChatInfoView.kt -->
     <string name="delete_contact_question">Kontakt löschen?</string>
-    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Der Kontakt und alle Nachrichten werden gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Es wird der Kontakt und alle Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="button_delete_contact">Kontakt löschen</string>
     <string name="text_field_set_contact_placeholder">Kontaktname festlegen…</string>
     <string name="icon_descr_server_status_connected">Verbunden</string>
@@ -278,7 +278,7 @@
     <string name="reject_contact_button">Ablehnen</string>
     <!-- Clear Chat - ChatListNavLinkView.kt -->
     <string name="clear_chat_question">Chatinhalte löschen?</string>
-    <string name="clear_chat_warning">Alle Nachrichten werden gelöscht. Dies kann nicht rückgängig gemacht werden! Die Nachrichten werden NUR bei Ihnen gelöscht.</string>
+    <string name="clear_chat_warning">Es werden alle Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden! Die Nachrichten werden NUR bei Ihnen gelöscht.</string>
     <string name="clear_verb">Löschen</string>
     <string name="clear_chat_button">Chatinhalte löschen</string>
     <string name="clear_chat_menu_action">Chatinhalte löschen</string>
@@ -593,20 +593,20 @@
     <string name="error_exporting_chat_database">Fehler beim Exportieren der Chat-Datenbank</string>
     <string name="import_database_question">Chat-Datenbank importieren?</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">Ihre aktuelle Chat-Datenbank wird GELÖSCHT und durch die importierte ERSETZT.
-\nDiese Aktion kann nicht rückgängig gemacht werden – Ihr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.</string>
+\nDiese Aktion kann nicht rückgängig gemacht werden! Ihr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.</string>
     <string name="import_database_confirmation">Importieren</string>
     <string name="error_deleting_database">Fehler beim Löschen der Chat-Datenbank</string>
     <string name="error_importing_database">Fehler beim Importieren der Chat-Datenbank</string>
     <string name="chat_database_imported">Chat-Datenbank importiert</string>
     <string name="restart_the_app_to_use_imported_chat_database">Starten Sie die App neu, um die importierte Chat-Datenbank zu verwenden.</string>
     <string name="delete_chat_profile_question">Chat-Profil löschen?</string>
-    <string name="delete_chat_profile_action_cannot_be_undone_warning">Diese Aktion kann nicht rückgängig gemacht werden – Ihr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.</string>
+    <string name="delete_chat_profile_action_cannot_be_undone_warning">Diese Aktion kann nicht rückgängig gemacht werden! Ihr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.</string>
     <string name="chat_database_deleted">Chat-Datenbank gelöscht</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Starten Sie die App neu, um ein neues Chat-Profil zu erstellen.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Sie dürfen die neueste Version Ihrer Chat-Datenbank NUR auf einem Gerät verwenden, andernfalls erhalten Sie möglicherweise keine Nachrichten mehr von einigen Ihrer Kontakte.</string>
     <string name="stop_chat_to_enable_database_actions">Chat beenden, um Datenbankaktionen zu erlauben.</string>
     <string name="delete_files_and_media_question">Dateien und Medien löschen?</string>
-    <string name="delete_files_and_media_desc">Diese Aktion kann nicht rückgängig gemacht werden – alle empfangenen und gesendeten Dateien und Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.</string>
+    <string name="delete_files_and_media_desc">Diese Aktion kann nicht rückgängig gemacht werden! Es werden alle empfangenen und gesendeten Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.</string>
     <string name="no_received_app_files">Keine empfangenen oder gesendeten Dateien</string>
     <string name="total_files_count_and_size">%d Datei(en) mit einem Gesamtspeicherverbrauch von %s</string>
     <string name="chat_item_ttl_none">nie</string>
@@ -616,7 +616,7 @@
     <string name="chat_item_ttl_seconds">%s Sekunde(n)</string>
     <string name="delete_messages_after">Löschen der Nachrichten</string>
     <string name="enable_automatic_deletion_question">Automatisches Löschen von Nachrichten aktivieren?</string>
-    <string name="enable_automatic_deletion_message">Diese Aktion kann nicht rückgängig gemacht werden – alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, werden gelöscht. Dieser Vorgang kann mehrere Minuten dauern.</string>
+    <string name="enable_automatic_deletion_message">Diese Aktion kann nicht rückgängig gemacht werden! Es werden alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, gelöscht. Dieser Vorgang kann mehrere Minuten dauern.</string>
     <string name="delete_messages">Nachrichten löschen</string>
     <string name="error_changing_message_deletion">Fehler beim Ändern der Einstellung</string>
     <!-- DatabaseEncryptionView.kt -->
@@ -667,7 +667,7 @@
     <string name="database_backup_can_be_restored">Der Versuch, das Passwort der Datenbank zu ändern, konnte nicht abgeschlossen werden.</string>
     <string name="restore_database">Datenbanksicherung wiederherstellen</string>
     <string name="restore_database_alert_title">Datenbanksicherung wiederherstellen?</string>
-    <string name="restore_database_alert_desc">Bitte geben Sie das vorherige Passwort ein, nachdem Sie die Datenbanksicherung wiederhergestellt haben. Diese Aktion kann nicht rückgängig gemacht werden.</string>
+    <string name="restore_database_alert_desc">Bitte geben Sie das vorherige Passwort ein, nachdem Sie die Datenbanksicherung wiederhergestellt haben. Diese Aktion kann nicht rückgängig gemacht werden!</string>
     <string name="restore_database_alert_confirm">Wiederherstellen</string>
     <string name="database_restore_error">Fehler bei der Wiederherstellung der Datenbank</string>
     <string name="restore_passphrase_not_found_desc">Das Passwort wurde nicht im Schlüsselbund gefunden. Bitte geben Sie es manuell ein. Das kann passieren, wenn Sie die App-Daten mit einem Backup-Programm wieder hergestellt haben. Bitte nehmen Sie Kontakt mit den Entwicklern auf, wenn das nicht der Fall ist.</string>
@@ -989,7 +989,7 @@
     <string name="app_version_name">App-Version: v%s</string>
     <string name="core_version">Core Version: v%s</string>
     <string name="users_add">Profil hinzufügen</string>
-    <string name="users_delete_all_chats_deleted">Alle Chats und Nachrichten werden gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="users_delete_all_chats_deleted">Es werden alle Chats und Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="users_delete_profile_for">Chat-Profil löschen für</string>
     <string name="network_option_ping_count">PING-Zähler</string>
     <string name="update_network_session_mode_question">Transport-Isolations-Modus aktualisieren\?</string>
@@ -1088,7 +1088,7 @@
     <string name="database_upgrade">Datenbank-Aktualisierung</string>
     <string name="mtr_error_different">Unterschiedlicher Migrationsstand in der App/Datenbank: %s / %s</string>
     <string name="downgrade_and_open_chat">Datenbank herabstufen und den Chat öffnen</string>
-    <string name="incompatible_database_version">Inkompatible Datenbank-Version</string>
+    <string name="incompatible_database_version">Datenbank-Version nicht kompatibel</string>
     <string name="database_downgrade_warning">Warnung: Sie könnten einige Daten verlieren!</string>
     <string name="database_downgrade">Datenbank auf alte Version herabstufen</string>
     <string name="developer_options">Datenbank-IDs und Transport-Isolationsoption.</string>
@@ -1555,14 +1555,14 @@
     <string name="bad_desktop_address">Falsche Desktop-Adresse</string>
     <string name="devices">Geräte</string>
     <string name="disconnect_desktop_question">Desktop-Verbindung trennen?</string>
-    <string name="desktop_app_version_is_incompatible">Desktop-App-Version %s ist mit dieser App nicht kompatibel.</string>
+    <string name="desktop_app_version_is_incompatible">Die Desktop-App-Version %s ist nicht mit dieser App kompatibel.</string>
     <string name="new_mobile_device">Neues Mobiltelefon-Gerät</string>
     <string name="only_one_device_can_work_at_the_same_time">Nur ein Gerät kann gleichzeitig genutzt werden</string>
     <string name="v5_4_link_mobile_desktop">Verknüpfe Mobiltelefon- und Desktop-Apps! 🔗</string>
     <string name="v5_4_link_mobile_desktop_descr">Über ein sicheres quantenbeständiges Protokoll</string>
     <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Öffnen Sie in den Einstellungen der Mobiltelefon-App <i>Vom Desktop aus nutzen</i> und scannen Sie den QR-Code.]]></string>
     <string name="v5_4_block_group_members_descr">Um unerwünschte Nachrichten zu verbergen.</string>
-    <string name="desktop_incompatible_version">Inkompatible Version</string>
+    <string name="desktop_incompatible_version">Version nicht kompatibel</string>
     <string name="new_desktop"><![CDATA[<i>(Neu)</i>]]></string>
     <string name="unlink_desktop_question">Desktop entkoppeln?</string>
     <string name="linked_desktop_options">Verknüpfte Desktop-Optionen</string>
@@ -1854,14 +1854,14 @@
     <string name="ci_status_other_error">Fehler: %1$s</string>
     <string name="message_delivery_warning_title">Warnung bei der Nachrichtenzustellung</string>
     <string name="snd_error_auth">Falscher Schlüssel oder unbekannte Verbindung - höchstwahrscheinlich ist diese Verbindung gelöscht.</string>
-    <string name="srv_error_version">Die Server-Version ist nicht mit den Netzwerk-Einstellungen kompatibel.</string>
+    <string name="srv_error_version">Die Server-Version ist nicht mit den Netzwerkeinstellungen kompatibel.</string>
     <string name="snd_error_quota">Kapazität überschritten - der Empfänger hat die zuvor gesendeten Nachrichten nicht empfangen.</string>
     <string name="snd_error_proxy_relay">Weiterleitungsserver: %1$s
 \nFehler auf dem Zielserver: %2$s</string>
     <string name="snd_error_proxy">Weiterleitungsserver: %1$s
 \nFehler: %2$s</string>
     <string name="snd_error_expired">Netzwerk-Fehler - die Nachricht ist nach vielen Sende-Versuchen abgelaufen.</string>
-    <string name="srv_error_host">Die Server-Adresse ist nicht mit den Netzwerk-Einstellungen kompatibel.</string>
+    <string name="srv_error_host">Die Server-Adresse ist nicht mit den Netzwerkeinstellungen kompatibel.</string>
     <string name="network_smp_proxy_mode_always">Immer</string>
     <string name="network_smp_proxy_mode_private_routing">Privates Routing</string>
     <string name="network_smp_proxy_mode_never">Nie</string>
@@ -1967,8 +1967,8 @@
     <string name="member_info_member_inactive">Inaktiv</string>
     <string name="servers_info_sessions_connected">Verbunden</string>
     <string name="servers_info_sessions_connecting">Verbinden</string>
-    <string name="servers_info_subscriptions_connections_subscribed">Abonnierte Verbindungen</string>
-    <string name="current_user">Aktueller Nutzer</string>
+    <string name="servers_info_subscriptions_connections_subscribed">Aktive Verbindungen</string>
+    <string name="current_user">Aktuelles Profil</string>
     <string name="servers_info_detailed_statistics">Detaillierte Statistiken</string>
     <string name="servers_info_details">Details</string>
     <string name="servers_info_downloaded">Heruntergeladen</string>
@@ -1977,7 +1977,7 @@
     <string name="servers_info_reset_stats_alert_error_title">Fehler beim Zurücksetzen der Statistiken</string>
     <string name="servers_info_sessions_errors">Fehler</string>
     <string name="servers_info_messages_received">Empfangene Nachrichten</string>
-    <string name="servers_info_subscriptions_section_header">Nachrichten-Abonnements</string>
+    <string name="servers_info_subscriptions_section_header">Nachrichtenempfang</string>
     <string name="servers_info_subscriptions_connections_pending">Ausstehend</string>
     <string name="servers_info_previously_connected_servers_section_header">Bisher verbundene Server</string>
     <string name="servers_info_proxied_servers_section_header">Proxy-Server</string>
@@ -2010,7 +2010,7 @@
     <string name="app_check_for_updates_button_install">Aktualisierung installieren</string>
     <string name="app_check_for_updates_installed_successfully_desc">Bitte starten Sie die App neu.</string>
     <string name="acknowledged">Bestätigt</string>
-    <string name="all_users">Alle Nutzer</string>
+    <string name="all_users">Alle Profile</string>
     <string name="app_check_for_updates_download_completed_title">App-Aktualisierung wurde heruntergeladen</string>
     <string name="app_check_for_updates">Nach Aktualisierungen suchen</string>
     <string name="chunks_downloaded">Daten-Pakete heruntergeladen</string>
@@ -2026,7 +2026,7 @@
     <string name="servers_info_missing">Keine Information - es wird versucht neu zu laden</string>
     <string name="app_check_for_updates_button_open">Dateispeicherort öffnen</string>
     <string name="other_label">andere</string>
-    <string name="network_error_broker_host_desc">Die Server-Adresse ist nicht mit den Netzwerk-Einstellungen kompatibel: %1$s.</string>
+    <string name="network_error_broker_host_desc">Die Server-Adresse ist nicht mit den Netzwerkeinstellungen kompatibel: %1$s.</string>
     <string name="scan_paste_link">Link scannen / einfügen</string>
     <string name="servers_info_reconnect_all_servers_button">Alle Server neu verbinden</string>
     <string name="servers_info_reconnect_server_title">Server neu verbinden?</string>
@@ -2045,13 +2045,13 @@
     <string name="server_address">Server-Adresse</string>
     <string name="app_check_for_updates_button_remind_later">Später erinnern</string>
     <string name="servers_info">Server-Informationen</string>
-    <string name="network_error_broker_version_desc">Ihre App ist nicht kompatibel mit der Server-Version: %1$s.</string>
-    <string name="subscription_percentage">Prozentualer Anteil der Abonnements</string>
+    <string name="network_error_broker_version_desc">Ihre App ist nicht mit der Server-Version kompatibel: %1$s.</string>
+    <string name="subscription_percentage">Prozentualen Anteil anzeigen</string>
     <string name="appearance_zoom">Zoom</string>
     <string name="smp_server">SMP-Server</string>
     <string name="servers_info_target">Informationen zeigen für</string>
     <string name="servers_info_private_data_disclaimer">Beginnend mit %s.
-\nAlle Daten sind auf Ihrem Gerät geschützt.</string>
+\nAlle Daten werden nur auf Ihrem Gerät gespeichert.</string>
     <string name="servers_info_statistics_section_header">Statistiken</string>
     <string name="servers_info_transport_sessions_section_header">Transport-Sitzungen</string>
     <string name="servers_info_uploaded">Hochgeladen</string>
@@ -2071,4 +2071,5 @@
     <string name="app_check_for_updates_update_available">Aktualisierung verfügbar: %s</string>
     <string name="app_check_for_updates_notice_desc">Aktivieren Sie die periodische Überprüfung auf stabile oder Beta-Versionen der App, um über neue Versionen benachrichtigt zu werden.</string>
     <string name="app_check_for_updates_canceled">Herunterladen der Aktualisierung abgebrochen</string>
+    <string name="proxy_error_broker_version_desc">Die Server-Version ist nicht mit den Netzwerkeinstellungen kompatibel: %1$s</string>
 </resources>
