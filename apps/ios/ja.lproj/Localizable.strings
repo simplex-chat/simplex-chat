@@ -149,9 +149,6 @@
 "%@ is verified" = "%@ は検証されています";
 
 /* No comment provided by engineer. */
-"%@ servers" = "%@ サーバー";
-
-/* No comment provided by engineer. */
 "%@ uploaded" = "%@ アップロード済";
 
 /* notification title */

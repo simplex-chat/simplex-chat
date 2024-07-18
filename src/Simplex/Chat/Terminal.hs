@@ -22,7 +22,7 @@ import Simplex.Chat.Terminal.Input
 import Simplex.Chat.Terminal.Output
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Agent.Env.SQLite (presetServerCfg)
-import Simplex.Messaging.Client (defaultNetworkConfig)
+import Simplex.Messaging.Client (NetworkConfig (..), SMPProxyFallback (..), SMPProxyMode (..), defaultNetworkConfig)
 import Simplex.Messaging.Util (raceAny_)
 import System.IO (hFlush, hSetEcho, stdin, stdout)
 
@@ -41,7 +41,11 @@ terminalChatConfig =
                   ],
             ntf = ["ntf://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im,ntg7jdjy2i3qbib3sykiho3enekwiaqg3icctliqhtqcg6jmoh6cxiad.onion"],
             xftp = L.map (presetServerCfg True) defaultXFTPServers,
-            netCfg = defaultNetworkConfig
+            netCfg =
+              defaultNetworkConfig
+                { smpProxyMode = SPMUnknown,
+                  smpProxyFallback = SPFAllowProtected
+                }
           },
       deviceNameForRemote = "SimpleX CLI"
     }

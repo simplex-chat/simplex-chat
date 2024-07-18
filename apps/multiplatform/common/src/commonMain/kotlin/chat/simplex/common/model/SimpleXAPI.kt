@@ -1859,17 +1859,17 @@ object ChatController {
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
           && r.chatError.agentError is AgentErrorType.SMP
           && r.chatError.agentError.smpErr is SMPErrorType.PROXY ->
-        proxyErrorAlert(r.chatError.agentError.smpErr.proxyErr)
+        proxyErrorAlert(r.chatError.agentError.smpErr.proxyErr, r.chatError.agentError.serverAddress)
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
           && r.chatError.agentError is AgentErrorType.PROXY
           && r.chatError.agentError.proxyErr is ProxyClientError.ProxyProtocolError
           && r.chatError.agentError.proxyErr.protocolErr is SMPErrorType.PROXY ->
-        proxyErrorAlert(r.chatError.agentError.proxyErr.protocolErr.proxyErr)
+        proxyErrorAlert(r.chatError.agentError.proxyErr.protocolErr.proxyErr, r.chatError.agentError.proxyServer)
       else -> false
     }
   }
 
-  private fun proxyErrorAlert(pe: ProxyError): Boolean {
+  private fun proxyErrorAlert(pe: ProxyError, srvAddr: String): Boolean {
     return when {
       pe is ProxyError.BROKER
           && pe.brokerErr is BrokerErrorType.TIMEOUT -> {
@@ -1898,7 +1898,7 @@ object ChatController {
           && pe.brokerErr is BrokerErrorType.HOST -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.private_routing_error),
-          generalGetString(MR.strings.srv_error_host)
+          String.format(generalGetString(MR.strings.network_error_broker_host_desc), serverHostname(srvAddr))
         )
         true
       }
@@ -1907,7 +1907,7 @@ object ChatController {
           && pe.brokerErr.transportErr is SMPTransportError.Version -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.private_routing_error),
-          generalGetString(MR.strings.srv_error_version)
+          String.format(generalGetString(MR.strings.proxy_error_broker_version_desc), serverHostname(srvAddr))
         )
         true
       }
@@ -3328,18 +3328,18 @@ data class ParsedServerAddress (
 data class NetCfg(
   val socksProxy: String?,
   val socksMode: SocksMode = SocksMode.Always,
-  val hostMode: HostMode,
-  val requiredHostMode: Boolean,
-  val sessionMode: TransportSessionMode,
-  val smpProxyMode: SMPProxyMode,
-  val smpProxyFallback: SMPProxyFallback,
+  val hostMode: HostMode = HostMode.OnionViaSocks,
+  val requiredHostMode: Boolean = false,
+  val sessionMode: TransportSessionMode = TransportSessionMode.User,
+  val smpProxyMode: SMPProxyMode = SMPProxyMode.Unknown,
+  val smpProxyFallback: SMPProxyFallback = SMPProxyFallback.AllowProtected,
   val tcpConnectTimeout: Long, // microseconds
   val tcpTimeout: Long, // microseconds
   val tcpTimeoutPerKb: Long, // microseconds
   val rcvConcurrency: Int, // pool size
-  val tcpKeepAlive: KeepAliveOpts?,
+  val tcpKeepAlive: KeepAliveOpts? = KeepAliveOpts.defaults,
   val smpPingInterval: Long, // microseconds
-  val smpPingCount: Int,
+  val smpPingCount: Int = 3,
   val logTLSErrors: Boolean = false,
 ) {
   val useSocksProxy: Boolean get() = socksProxy != null
@@ -3358,35 +3358,21 @@ data class NetCfg(
     val defaults: NetCfg =
       NetCfg(
         socksProxy = null,
-        hostMode = HostMode.OnionViaSocks,
-        requiredHostMode = false,
-        sessionMode = TransportSessionMode.User,
-        smpProxyMode = SMPProxyMode.Never,
-        smpProxyFallback = SMPProxyFallback.Allow,
         tcpConnectTimeout = 25_000_000,
         tcpTimeout = 15_000_000,
         tcpTimeoutPerKb = 10_000,
         rcvConcurrency = 12,
-        tcpKeepAlive = KeepAliveOpts.defaults,
-        smpPingInterval = 1200_000_000,
-        smpPingCount = 3
+        smpPingInterval = 1200_000_000
       )
 
     val proxyDefaults: NetCfg =
       NetCfg(
         socksProxy = ":9050",
-        hostMode = HostMode.OnionViaSocks,
-        requiredHostMode = false,
-        sessionMode = TransportSessionMode.User,
-        smpProxyMode = SMPProxyMode.Never,
-        smpProxyFallback = SMPProxyFallback.Allow,
         tcpConnectTimeout = 35_000_000,
         tcpTimeout = 20_000_000,
         tcpTimeoutPerKb = 15_000,
         rcvConcurrency = 8,
-        tcpKeepAlive = KeepAliveOpts.defaults,
-        smpPingInterval = 1200_000_000,
-        smpPingCount = 3
+        smpPingInterval = 1200_000_000
       )
   }
 
@@ -5618,7 +5604,7 @@ sealed class AgentErrorType {
   }
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
-  @Serializable @SerialName("SMP") class SMP(val smpErr: SMPErrorType): AgentErrorType()
+  @Serializable @SerialName("SMP") class SMP(val serverAddress: String, val smpErr: SMPErrorType): AgentErrorType()
   // @Serializable @SerialName("NTF") class NTF(val ntfErr: SMPErrorType): AgentErrorType()
   @Serializable @SerialName("XFTP") class XFTP(val xftpErr: XFTPErrorType): AgentErrorType()
   @Serializable @SerialName("PROXY") class PROXY(val proxyServer: String, val relayServer: String, val proxyErr: ProxyClientError): AgentErrorType()

@@ -103,7 +103,7 @@ import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), Migrati
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
-import Simplex.Messaging.Client (NetworkConfig (..), ProxyClientError (..), defaultNetworkConfig)
+import Simplex.Messaging.Client (NetworkConfig (..), ProxyClientError (..), SocksMode (SMAlways), defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -314,10 +314,10 @@ newChatController
     where
       configServers :: DefaultAgentServers
       configServers =
-        let DefaultAgentServers {smp = defSmp, xftp = defXftp} = defaultServers
+        let DefaultAgentServers {smp = defSmp, xftp = defXftp, netCfg} = defaultServers
             smp' = maybe defSmp (L.map enabledServerCfg) (nonEmpty smpServers)
             xftp' = maybe defXftp (L.map enabledServerCfg) (nonEmpty xftpServers)
-         in defaultServers {smp = smp', xftp = xftp', netCfg = updateNetworkConfig defaultNetworkConfig simpleNetCfg}
+         in defaultServers {smp = smp', xftp = xftp', netCfg = updateNetworkConfig netCfg simpleNetCfg}
       agentServers :: ChatConfig -> IO InitialAgentServers
       agentServers config@ChatConfig {defaultServers = defServers@DefaultAgentServers {ntf, netCfg}} = do
         users <- withTransaction chatStore getUsers
@@ -336,11 +336,11 @@ newChatController
               userServers user' = useServers config protocol <$> withTransaction chatStore (`getProtocolServers` user')
 
 updateNetworkConfig :: NetworkConfig -> SimpleNetCfg -> NetworkConfig
-updateNetworkConfig cfg SimpleNetCfg {socksProxy, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors} =
+updateNetworkConfig cfg SimpleNetCfg {socksProxy, socksMode, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors} =
   let cfg1 = maybe cfg (\smpProxyMode -> cfg {smpProxyMode}) smpProxyMode_
       cfg2 = maybe cfg1 (\smpProxyFallback -> cfg1 {smpProxyFallback}) smpProxyFallback_
       cfg3 = maybe cfg2 (\tcpTimeout -> cfg2 {tcpTimeout, tcpConnectTimeout = (tcpTimeout * 3) `div` 2}) tcpTimeout_
-   in cfg3 {socksProxy, logTLSErrors}
+   in cfg3 {socksProxy, socksMode, logTLSErrors}
 
 withChatLock :: String -> CM a -> CM a
 withChatLock name action = asks chatLock >>= \l -> withLock l name action
@@ -384,8 +384,9 @@ cfgServers p DefaultAgentServers {smp, xftp} = case p of
   SPSMP -> smp
   SPXFTP -> xftp
 
-startChatController :: Bool -> CM' (Async ())
-startChatController mainApp = do
+-- enableSndFiles has no effect when mainApp is True
+startChatController :: Bool -> Bool -> CM' (Async ())
+startChatController mainApp enableSndFiles = do
   asks smpAgent >>= liftIO . resumeAgentClient
   unless mainApp $ chatWriteVar' subscriptionMode SMOnlyCreate
   users <- fromRight [] <$> runExceptT (withStore' getUsers)
@@ -400,15 +401,18 @@ startChatController mainApp = do
           then Just <$> async (subscribeUsers False users)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
-      when mainApp $ do
-        startXFTP
-        void $ forkIO $ startFilesToReceive users
-        startCleanupManager
-        startExpireCIs users
+      if mainApp
+        then do
+          startXFTP xftpStartWorkers
+          void $ forkIO $ startFilesToReceive users
+          startCleanupManager
+          startExpireCIs users
+        else
+          when enableSndFiles $ startXFTP xftpStartSndWorkers
       pure a1
-    startXFTP = do
+    startXFTP startWorkers = do
       tmp <- readTVarIO =<< asks tempDirectory
-      runExceptT (withAgent $ \a -> xftpStartWorkers a tmp) >>= \case
+      runExceptT (withAgent $ \a -> startWorkers a tmp) >>= \case
         Left e -> liftIO $ print $ "Error starting XFTP workers: " <> show e
         Right _ -> pure ()
     startCleanupManager = do
@@ -617,10 +621,10 @@ processChatCommand' vr = \case
     checkDeleteChatUser user'
     withChatLock "deleteUser" . procCmd $ deleteChatUser user' delSMPQueues
   DeleteUser uName delSMPQueues viewPwd_ -> withUserName uName $ \userId -> APIDeleteUser userId delSMPQueues viewPwd_
-  StartChat mainApp -> withUser' $ \_ ->
+  StartChat {mainApp, enableSndFiles} -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged . lift $ startChatController mainApp $> CRChatStarted
+      _ -> checkStoreNotChanged . lift $ startChatController mainApp enableSndFiles $> CRChatStarted
   APIStopChat -> do
     ask >>= liftIO . stopChatController
     pure CRChatStopped
@@ -1360,9 +1364,9 @@ processChatCommand' vr = \case
   APISetNetworkConfig cfg -> withUser' $ \_ -> lift (withAgent' (`setNetworkConfig` cfg)) >> ok_
   APIGetNetworkConfig -> withUser' $ \_ ->
     CRNetworkConfig <$> lift getNetworkConfig
-  SetNetworkConfig netCfg -> do
-    cfg <- lift getNetworkConfig
-    void . processChatCommand $ APISetNetworkConfig $ updateNetworkConfig cfg netCfg
+  SetNetworkConfig simpleNetCfg -> do
+    cfg <- (`updateNetworkConfig` simpleNetCfg) <$> lift getNetworkConfig
+    void . processChatCommand $ APISetNetworkConfig cfg
     pure $ CRNetworkConfig cfg
   APISetNetworkInfo info -> lift (withAgent' (`setUserNetworkInfo` info)) >> ok_
   ReconnectAllServers -> withUser' $ \_ -> lift (withAgent' reconnectAllServers) >> ok_
@@ -7355,8 +7359,11 @@ chatCommandP =
       "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP <*> optional (A.space *> jsonP)),
       "/delete user " *> (DeleteUser <$> displayName <*> pure True <*> optional (A.space *> pwdP)),
       ("/user" <|> "/u") $> ShowActiveUser,
-      "/_start main=" *> (StartChat <$> onOffP),
-      "/_start" $> StartChat True,
+      "/_start " *> do
+        mainApp <- "main=" *> onOffP
+        enableSndFiles <- " snd_files=" *> onOffP <|> pure mainApp
+        pure StartChat {mainApp, enableSndFiles},
+      "/_start" $> StartChat True True,
       "/_stop" $> APIStopChat,
       "/_app activate restore=" *> (APIActivateChat <$> onOffP),
       "/_app activate" $> APIActivateChat True,
@@ -7770,12 +7777,13 @@ chatCommandP =
         <|> ("no" $> TMEDisableKeepTTL)
     netCfgP = do
       socksProxy <- "socks=" *> ("off" $> Nothing <|> "on" $> Just defaultSocksProxy <|> Just <$> strP)
+      socksMode <- " socks-mode=" *> strP <|> pure SMAlways
       smpProxyMode_ <- optional $ " smp-proxy=" *> strP
       smpProxyFallback_ <- optional $ " smp-proxy-fallback=" *> strP
       t_ <- optional $ " timeout=" *> A.decimal
       logTLSErrors <- " log=" *> onOffP <|> pure False
       let tcpTimeout_ = (1000000 *) <$> t_
-      pure $ SimpleNetCfg {socksProxy, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors}
+      pure $ SimpleNetCfg {socksProxy, socksMode, smpProxyMode_, smpProxyFallback_, tcpTimeout_, logTLSErrors}
     dbKeyP = nonEmptyKey <$?> strP
     nonEmptyKey k@(DBEncryptionKey s) = if BA.null s then Left "empty key" else Right k
     dbEncryptionConfig currentKey newKey = DBEncryptionConfig {currentKey, newKey, keepKey = Just False}

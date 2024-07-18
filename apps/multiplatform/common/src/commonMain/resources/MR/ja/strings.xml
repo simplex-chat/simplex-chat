@@ -1834,4 +1834,12 @@
     <string name="network_smp_proxy_fallback_prohibit">いいえ</string>
     <string name="network_smp_proxy_fallback_allow">はい</string>
     <string name="update_network_smp_proxy_mode_question">メッセージルーティングモード</string>
+    <string name="appearance_font_size">フォントサイズ</string>
+    <string name="app_check_for_updates_beta">ベータ</string>
+    <string name="app_check_for_updates_notice_title">アップデートを確認</string>
+    <string name="app_check_for_updates">アップデートを確認</string>
+    <string name="completed">完了</string>
+    <string name="smp_servers_configured">SMPサーバーの構成</string>
+    <string name="servers_info_sessions_connected">接続中</string>
+    <string name="xftp_servers_configured">XFTPサーバーの構成</string>
 </resources>
