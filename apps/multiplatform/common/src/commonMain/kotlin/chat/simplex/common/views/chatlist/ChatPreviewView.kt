@@ -321,92 +321,96 @@ fun ChatPreviewView(
         chatPreviewImageOverlayIcon()
       }
     }
-    Column(
-      modifier = Modifier
-        .padding(start = 8.dp, end = 8.sp.toDp())
-        .weight(1F)
-    ) {
-      chatPreviewTitle()
-      Row(Modifier.heightIn(min = 46.sp.toDp()).padding(top = 3.sp.toDp())) {
-        val stuckVoicePreview: MutableState<(StuckVoicePreview)?> = remember(chat.id) { mutableStateOf(null) }
-        val chat = stuckVoicePreview.value?.chat ?: chat
-        val ci = stuckVoicePreview.value?.ci ?: chat.chatItems.lastOrNull()
-        val mc = ci?.content?.msgContent
-        if ((showChatPreviews && chatModelDraftChatId != chat.id) || stuckVoicePreview.value != null) {
-          chatItemContentPreview(chat, ci)
+    Spacer(Modifier.width(8.dp))
+    Column(Modifier.weight(1f)) {
+      Row {
+        Box(Modifier.weight(1f)) {
+          chatPreviewTitle()
         }
-        if (mc !is MsgContent.MCVoice || mc.text.isNotEmpty() || chatModelDraftChatId == chat.id) {
-          Box(Modifier.offset(x = if (mc is MsgContent.MCFile) -15.sp.toDp() else 0.dp)) {
-            chatPreviewText()
-          }
-        }
-        LaunchedEffect(AudioPlayer.currentlyPlaying.value, stuckVoicePreview.value) {
-          val playing = AudioPlayer.currentlyPlaying.value
-          when {
-            playing == null -> stuckVoicePreview.value = null
-            stuckVoicePreview.value == null -> if (mc is MsgContent.MCVoice && playing.fileSource.filePath == ci.file?.fileSource?.filePath) {
-              stuckVoicePreview.value = StuckVoicePreview(chat, ci, mc)
-            }
-            else -> if (playing.fileSource.filePath != ci?.file?.fileSource?.filePath) {
-              stuckVoicePreview.value = null
-            }
-          }
-        }
+        Spacer(Modifier.width(8.sp.toDp()))
+        val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.chatTs)
+        ChatListTimestampView(ts)
       }
-    }
+      Row(Modifier.heightIn(min = 46.sp.toDp()).fillMaxWidth()) {
+        Row(Modifier.padding(top = 3.sp.toDp()).weight(1f)) {
+          val stuckVoicePreview: MutableState<(StuckVoicePreview)?> = remember(chat.id) { mutableStateOf(null) }
+          val chat = stuckVoicePreview.value?.chat ?: chat
+          val ci = stuckVoicePreview.value?.ci ?: chat.chatItems.lastOrNull()
+          val mc = ci?.content?.msgContent
+          if ((showChatPreviews && chatModelDraftChatId != chat.id) || stuckVoicePreview.value != null) {
+            chatItemContentPreview(chat, ci)
+          }
+          if (mc !is MsgContent.MCVoice || mc.text.isNotEmpty() || chatModelDraftChatId == chat.id) {
+            Box(Modifier.offset(x = if (mc is MsgContent.MCFile) -15.sp.toDp() else 0.dp)) {
+              chatPreviewText()
+            }
+          }
+          LaunchedEffect(AudioPlayer.currentlyPlaying.value, stuckVoicePreview.value) {
+            val playing = AudioPlayer.currentlyPlaying.value
+            when {
+              playing == null -> stuckVoicePreview.value = null
+              stuckVoicePreview.value == null -> if (mc is MsgContent.MCVoice && playing.fileSource.filePath == ci.file?.fileSource?.filePath) {
+                stuckVoicePreview.value = StuckVoicePreview(chat, ci, mc)
+              }
+              else -> if (playing.fileSource.filePath != ci?.file?.fileSource?.filePath) {
+                stuckVoicePreview.value = null
+              }
+            }
+          }
+        }
 
-    Box(
-      contentAlignment = Alignment.TopEnd
-    ) {
-      val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.chatTs)
-      ChatListTimestampView(ts)
-      val n = chat.chatStats.unreadCount
-      val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
-      if (n > 0 || chat.chatStats.unreadChat) {
+        Spacer(Modifier.width(8.sp.toDp()))
+
         Box(
-          Modifier.padding(top = 24.5.sp.toDp())) {
-          Text(
-            if (n > 0) unreadCountStr(n) else "",
-            color = Color.White,
-            fontSize = 10.sp,
-            style = TextStyle(textAlign = TextAlign.Center),
-            modifier = Modifier
-              .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
-              .badgeLayout()
-              .padding(horizontal = 2.sp.toDp())
-              .padding(vertical = 1.sp.toDp())
-          )
+          contentAlignment = Alignment.TopEnd
+        ) {
+          val n = chat.chatStats.unreadCount
+          val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
+          if (n > 0 || chat.chatStats.unreadChat) {
+            // MinWidth here is to prevent jumping when voice is playing and toggling between mute/unmute, star/unstar,
+            Box(Modifier.sizeIn(minWidth = 20.sp.toDp()), contentAlignment = Alignment.TopEnd) {
+              Text(
+                if (n > 0) unreadCountStr(n) else "",
+                color = Color.White,
+                fontSize = 10.sp,
+                style = TextStyle(textAlign = TextAlign.Center),
+                modifier = Modifier
+                  .offset(y = 3.sp.toDp())
+                  .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
+                  .badgeLayout()
+                  .padding(horizontal = 2.sp.toDp())
+                  .padding(vertical = 1.sp.toDp())
+              )
+            }
+          } else if (showNtfsIcon) {
+            Icon(
+              painterResource(MR.images.ic_notifications_off_filled),
+              contentDescription = generalGetString(MR.strings.notifications),
+              tint = MaterialTheme.colors.secondary,
+              modifier = Modifier
+                .padding(start = 2.sp.toDp())
+                .size(18.sp.toDp())
+                .offset(x = 2.5.sp.toDp(), y = 2.sp.toDp())
+            )
+          } else if (chat.chatInfo.chatSettings?.favorite == true) {
+            Icon(
+              painterResource(MR.images.ic_star_filled),
+              contentDescription = generalGetString(MR.strings.favorite_chat),
+              tint = MaterialTheme.colors.secondary,
+              modifier = Modifier
+                .size(20.sp.toDp())
+                .offset(x = 2.5.sp.toDp())
+            )
+          } else {
+            Spacer(Modifier.width(20.sp.toDp()))
+          }
+          Box(
+            Modifier.padding(top = 28.sp.toDp()),
+            contentAlignment = Alignment.Center
+          ) {
+            chatStatusImage()
+          }
         }
-      } else if (showNtfsIcon) {
-        Box(
-          Modifier.padding(top = 22.sp.toDp())) {
-          Icon(
-            painterResource(MR.images.ic_notifications_off_filled),
-            contentDescription = generalGetString(MR.strings.notifications),
-            tint = MaterialTheme.colors.secondary,
-            modifier = Modifier
-              .size(17.sp.toDp())
-              .offset(x = 2.5.sp.toDp())
-          )
-        }
-      } else if (chat.chatInfo.chatSettings?.favorite == true) {
-        Box(
-          Modifier.padding(top = 20.sp.toDp())) {
-          Icon(
-            painterResource(MR.images.ic_star_filled),
-            contentDescription = generalGetString(MR.strings.favorite_chat),
-            tint = MaterialTheme.colors.secondary,
-            modifier = Modifier
-              .size(20.sp.toDp())
-              .offset(x = 2.5.sp.toDp())
-          )
-        }
-      }
-      Box(
-        Modifier.padding(top = 46.sp.toDp()),
-        contentAlignment = Alignment.Center
-      ) {
-        chatStatusImage()
       }
     }
   }
