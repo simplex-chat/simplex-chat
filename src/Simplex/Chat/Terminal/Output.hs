@@ -186,8 +186,6 @@ responseNotification t@ChatTerminal {sendNotification} cc = \case
       text = msgText mc formattedText
   CRChatItemUpdated u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent _}) ->
     whenCurrUser cc u $ when (chatDirNtf u cInfo chatDir $ isMention ci) $ setActiveChat t cInfo
-  CRAcceptingContactRequest u ct ->
-    whenCurrUser cc u $ when (contactReady ct) $ setActiveContact t ct
   CRContactConnected u ct _ -> when (contactNtf u ct False) $ do
     whenCurrUser cc u $ setActiveContact t ct
     sendNtf (viewContactName ct <> "> ", "connected")
