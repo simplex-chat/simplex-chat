@@ -240,7 +240,7 @@ fun ChatPreviewView(
           Image(base64ToBitmap(mc.preview.image), null, contentScale = ContentScale.Crop)
         }
         Box(Modifier.align(Alignment.TopEnd).size(15.sp.toDp()).background(Color.Black.copy(0.25f), CircleShape), contentAlignment = Alignment.Center) {
-          Icon(painterResource(MR.images.ic_arrow_outward), null, Modifier.size(13.sp.toDp()))
+          Icon(painterResource(MR.images.ic_arrow_outward), null, Modifier.size(13.sp.toDp()), tint = Color.White)
         }
       }
       is MsgContent.MCImage -> SmallContentPreview {
