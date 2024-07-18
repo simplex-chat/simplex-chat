@@ -1098,7 +1098,7 @@
     <string name="your_calls">Hívások</string>
     <string name="icon_descr_sent_msg_status_send_failed">nem sikerült elküldeni</string>
     <string name="theme_colors_section_title">KEZELŐFELÜLET SZÍNEI</string>
-    <string name="network_options_revert">Visszaállít</string>
+    <string name="network_options_revert">Visszaállítás</string>
     <string name="restore_database_alert_desc">Előző jelszó megadása az adatbázis biztonsági mentésének visszaállítása után. Ez a művelet nem vonható vissza.</string>
     <string name="color_secondary">Másodlagos</string>
     <string name="settings_section_title_socks">SOCKS PROXY</string>
@@ -1884,7 +1884,7 @@
     <string name="servers_info_sessions_connecting">Kapcsolódás</string>
     <string name="servers_info_sessions_errors">Hibák</string>
     <string name="servers_info_subscriptions_connections_pending">Függőben</string>
-    <string name="servers_info_private_data_disclaimer">Kezdve ettől: %s.
+    <string name="servers_info_private_data_disclaimer">Ekkortól kezdve: %s.
 \nMinden adat biztonságban van a készülékén.</string>
     <string name="servers_info_messages_sent">Elküldött üzenetek</string>
     <string name="servers_info_proxied_servers_section_header">Proxyzott kiszolgálók</string>
@@ -1909,7 +1909,7 @@
     <string name="servers_info_detailed_statistics_sent_messages_total">Összes elküldött</string>
     <string name="sent_via_proxy">Proxyn keresztül küldve</string>
     <string name="smp_server">SMP-kiszolgáló</string>
-    <string name="servers_info_starting_from">Kezdve ettől: %s.</string>
+    <string name="servers_info_starting_from">Ekkortól kezdve: %s.</string>
     <string name="servers_info_uploaded">Feltöltve</string>
     <string name="xftp_server">XFTP-kiszolgáló</string>
     <string name="proxied">Proxyzott</string>
