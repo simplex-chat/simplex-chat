@@ -375,7 +375,7 @@ fun ChatPreviewView(
                 .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
                 .badgeLayout()
                 .padding(horizontal = 2.sp.toDp())
-                .padding(vertical = 1.sp.toDp())
+                .padding(top = 0.5.sp.toDp(), bottom = 1.sp.toDp())
             )
           } else if (showNtfsIcon) {
             Icon(
