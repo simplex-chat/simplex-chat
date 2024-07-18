@@ -4231,8 +4231,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         JOINED sqSecured ->
           -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData ->
-            -- -- [incognito] print incognito profile used for this contact
-            -- incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
             when (directOrUsed ct && sqSecured) $ do
               lift $ setContactNetworkStatus ct NSConnected
               toView $ CRContactSndReady user ct
