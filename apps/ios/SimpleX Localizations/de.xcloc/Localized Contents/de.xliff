@@ -588,8 +588,9 @@
         <target>Fehler bei der Bestätigung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Active connections" xml:space="preserve">
+      <trans-unit id="Active connections" xml:space="preserve" approved="no">
         <source>Active connections</source>
+        <target state="translated">Aktive Verbindungen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve">
@@ -682,9 +683,9 @@
         <target>Werden die App-Daten komplett gelöscht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="All chats and messages will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>All chats and messages will be deleted - this cannot be undone!</source>
-        <target>Alle Chats und Nachrichten werden gelöscht. Dies kann nicht rückgängig gemacht werden!</target>
+        <target state="translated">Es werden alle Chats und Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All data is erased when it is entered." xml:space="preserve">
@@ -692,9 +693,9 @@
         <target>Alle Daten werden gelöscht, sobald dieser eingegeben wird.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All data is private to your device." xml:space="preserve">
+      <trans-unit id="All data is private to your device." xml:space="preserve" approved="no">
         <source>All data is private to your device.</source>
-        <target>Alle Daten sind auf Ihrem Gerät geschützt.</target>
+        <target state="translated">Alle Daten werden nur auf Ihrem Gerät gespeichert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
@@ -707,9 +708,9 @@
         <target>Es werden alle Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
+      <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve" approved="no">
         <source>All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</source>
-        <target>Alle Nachrichten werden gelöscht . Dies kann nicht rückgängig gemacht werden! Die Nachrichten werden NUR bei Ihnen gelöscht.</target>
+        <target state="translated">Es werden alle Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden! Die Nachrichten werden NUR bei Ihnen gelöscht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All new messages from %@ will be hidden!" xml:space="preserve">
@@ -1373,8 +1374,9 @@
         <target>ICE-Server konfigurieren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Configured %@ servers" xml:space="preserve">
+      <trans-unit id="Configured %@ servers" xml:space="preserve" approved="no">
         <source>Configured %@ servers</source>
+        <target state="translated">Konfigurierte %@ Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
@@ -3521,14 +3523,14 @@ Fehler: %2$@</target>
         <target>Eingehender Videoanruf</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Incompatible database version" xml:space="preserve">
+      <trans-unit id="Incompatible database version" xml:space="preserve" approved="no">
         <source>Incompatible database version</source>
-        <target>Inkompatible Datenbank-Version</target>
+        <target state="translated">Datenbank-Version nicht kompatibel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incompatible version" xml:space="preserve">
+      <trans-unit id="Incompatible version" xml:space="preserve" approved="no">
         <source>Incompatible version</source>
-        <target>Inkompatible Version</target>
+        <target state="translated">Version nicht kompatibel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incorrect passcode" xml:space="preserve">
@@ -3996,8 +3998,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>In dieser Gruppe sind Reaktionen auf Nachrichten nicht erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reception" xml:space="preserve">
+      <trans-unit id="Message reception" xml:space="preserve" approved="no">
         <source>Message reception</source>
+        <target state="translated">Nachrichtenempfang</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message routing fallback" xml:space="preserve">
@@ -4549,8 +4552,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Andere</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Other %@ servers" xml:space="preserve">
+      <trans-unit id="Other %@ servers" xml:space="preserve" approved="no">
         <source>Other %@ servers</source>
+        <target state="translated">Andere %@ Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -4722,8 +4726,9 @@ Fehler: %@</target>
         <target>Bitte bewahren Sie das Passwort sicher auf, Sie können es NICHT mehr ändern, wenn Sie es vergessen haben oder verlieren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please try later." xml:space="preserve">
+      <trans-unit id="Please try later." xml:space="preserve" approved="no">
         <source>Please try later.</source>
+        <target state="translated">Bitte versuchen Sie es später erneut.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Polish interface" xml:space="preserve">
@@ -4796,8 +4801,9 @@ Fehler: %@</target>
         <target>Privates Routing</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private routing error" xml:space="preserve">
+      <trans-unit id="Private routing error" xml:space="preserve" approved="no">
         <source>Private routing error</source>
+        <target state="translated">Fehler beim privaten Routing</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
@@ -5732,13 +5738,14 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <target>Server-Adresse</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server address is incompatible with network settings." xml:space="preserve">
+      <trans-unit id="Server address is incompatible with network settings." xml:space="preserve" approved="no">
         <source>Server address is incompatible with network settings.</source>
-        <target>Die Server-Adresse ist nicht mit den Netzwerk-Einstellungen kompatibel.</target>
+        <target state="translated">Die Server-Adresse ist nicht mit den Netzwerkeinstellungen kompatibel.</target>
         <note>srv error text.</note>
       </trans-unit>
-      <trans-unit id="Server address is incompatible with network settings: %@." xml:space="preserve">
+      <trans-unit id="Server address is incompatible with network settings: %@." xml:space="preserve" approved="no">
         <source>Server address is incompatible with network settings: %@.</source>
+        <target state="translated">Die Server-Adresse ist nicht mit den Netzwerkeinstellungen kompatibel: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
@@ -5761,17 +5768,19 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <target>Server-Typ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server version is incompatible with network settings." xml:space="preserve">
+      <trans-unit id="Server version is incompatible with network settings." xml:space="preserve" approved="no">
         <source>Server version is incompatible with network settings.</source>
-        <target>Die Server-Version ist nicht mit den Netzwerk-Einstellungen kompatibel.</target>
+        <target state="translated">Die Server-Version ist nicht mit den Netzwerkeinstellungen kompatibel.</target>
         <note>srv error text</note>
       </trans-unit>
-      <trans-unit id="Server version is incompatible with network settings: %@." xml:space="preserve">
+      <trans-unit id="Server version is incompatible with network settings: %@." xml:space="preserve" approved="no">
         <source>Server version is incompatible with network settings: %@.</source>
+        <target state="translated">Die Server-Version ist nicht mit den Netzwerkeinstellungen kompatibel: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server version is incompatible with your app: %@." xml:space="preserve">
+      <trans-unit id="Server version is incompatible with your app: %@." xml:space="preserve" approved="no">
         <source>Server version is incompatible with your app: %@.</source>
+        <target state="translated">Die Server-Version ist nicht mit Ihrer App kompatibel: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Servers" xml:space="preserve">
@@ -5914,8 +5923,9 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <target>Nachrichtenstatus anzeigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show percentage" xml:space="preserve">
+      <trans-unit id="Show percentage" xml:space="preserve" approved="no">
         <source>Show percentage</source>
+        <target state="translated">Prozentualen Anteil anzeigen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -6390,14 +6400,14 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Sie können in den Kontakteinstellungen überschrieben werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve" approved="no">
         <source>This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</source>
-        <target>Diese Aktion kann nicht rückgängig gemacht werden! Alle empfangenen und gesendeten Dateien und Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.</target>
+        <target state="translated">Diese Aktion kann nicht rückgängig gemacht werden! Es werden alle empfangenen und gesendeten Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve" approved="no">
         <source>This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes.</source>
-        <target>Diese Aktion kann nicht rückgängig gemacht werden! Alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, werden gelöscht. Dieser Vorgang kann mehrere Minuten dauern.</target>
+        <target state="translated">Diese Aktion kann nicht rückgängig gemacht werden! Es werden alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, gelöscht. Dieser Vorgang kann mehrere Minuten dauern.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
