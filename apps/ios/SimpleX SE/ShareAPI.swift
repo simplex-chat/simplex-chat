@@ -102,6 +102,9 @@ enum ShareError: LocalizedError {
     case missingAttachment
     case unsupportedFormat
     case encryptFile
+    case imageDownsampling
+    case previewGeneration
+    case mediaLoading
     case loadFileRepresentation(Error)
 
     public var errorDescription: String? {
@@ -120,6 +123,12 @@ enum ShareError: LocalizedError {
             "This file format is not supported"
         case .encryptFile:
             "File encryption has failed"
+        case .imageDownsampling:
+            "Failed to downsample selected image"
+        case .previewGeneration:
+            "Failed to generate Preview"
+        case .mediaLoading:
+            "Unable to load media"
         case .loadFileRepresentation(let error):
             "File could not be loaded: \(String(describing: error))"
         }
