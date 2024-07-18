@@ -269,7 +269,6 @@ private fun ContactsList(
     contactTypes: List<ContactType>,
     contactListTitle: String ? = null
 ) {
-    val oneHandUI = remember { chatModel.controller.appPrefs.oneHandUI }
     val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
     val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(
         TextFieldValue("")
@@ -334,7 +333,7 @@ private fun ContactsList(
                 }
             }
             SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-                ContactListNavLinkView(chat, nextChatSelected, oneHandUI.state)
+                ContactListNavLinkView(chat, nextChatSelected)
             }
         }
     }

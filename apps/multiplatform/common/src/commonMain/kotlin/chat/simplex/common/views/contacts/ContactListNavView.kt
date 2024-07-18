@@ -14,7 +14,7 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
 @Composable
-fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI: State<Boolean>) {
+fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
     val showMenu = remember { mutableStateOf(false) }
     val disabled = chatModel.chatRunning.value == false || chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id)
     LaunchedEffect(chat.id) {
@@ -44,7 +44,6 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHand
                 disabled,
                 selectedChat,
                 nextChatSelected,
-                oneHandUI
             )
         }
         is ChatInfo.ContactRequest -> {
@@ -73,7 +72,6 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHand
                 disabled,
                 selectedChat,
                 nextChatSelected,
-                oneHandUI
             )
         }
         else -> {}
