@@ -183,7 +183,11 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   }
   if (appPlatform.isAndroid) {
     tryOrShowError("UserPicker", error = {}) {
-      UserPicker(chatModel, userPickerState) {
+      UserPicker(
+        chatModel = chatModel,
+        userPickerState = userPickerState,
+        contentAlignment = if (oneHandUI.state.value) Alignment.BottomStart else Alignment.TopStart
+      ) {
         scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
         userPickerState.value = AnimatedViewState.GONE
       }

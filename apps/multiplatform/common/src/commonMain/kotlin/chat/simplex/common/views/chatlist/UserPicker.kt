@@ -40,6 +40,7 @@ fun UserPicker(
   chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,
   showSettings: Boolean = true,
+  contentAlignment: Alignment = Alignment.TopStart,
   showCancel: Boolean = false,
   cancelClicked: () -> Unit = {},
   useFromDesktopClicked: () -> Unit = {},
@@ -149,12 +150,11 @@ fun UserPicker(
     .graphicsLayer {
       alpha = animatedFloat.value
       translationY = (animatedFloat.value - 1) * xOffset
-    }
+    },
+    contentAlignment = contentAlignment
   ) {
     Column(
       Modifier
-        .align(Alignment.BottomStart)
-        .padding(bottom = BottomAppBarHeight)
         .widthIn(min = 260.dp)
         .width(IntrinsicSize.Min)
         .height(IntrinsicSize.Min)
