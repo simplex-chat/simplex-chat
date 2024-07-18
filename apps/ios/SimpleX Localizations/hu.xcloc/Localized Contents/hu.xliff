@@ -590,7 +590,7 @@
       </trans-unit>
       <trans-unit id="Active connections" xml:space="preserve" approved="no">
         <source>Active connections</source>
-        <target state="translated">Aktív kapcsolatok</target>
+        <target state="translated">Aktív kapcsolatok száma</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve">
@@ -4000,7 +4000,7 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
       </trans-unit>
       <trans-unit id="Message reception" xml:space="preserve" approved="no">
         <source>Message reception</source>
-        <target state="translated">Üzenetkézbesítés</target>
+        <target state="translated">Üzenetjelentés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message routing fallback" xml:space="preserve">
@@ -5925,7 +5925,7 @@ Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.<
       </trans-unit>
       <trans-unit id="Show percentage" xml:space="preserve" approved="no">
         <source>Show percentage</source>
-        <target state="translated">Százalékos arány mutatása</target>
+        <target state="translated">Százalék megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
