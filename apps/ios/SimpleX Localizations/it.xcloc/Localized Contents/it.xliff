@@ -588,8 +588,9 @@
         <target>Errori di riconoscimento</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Active connections" xml:space="preserve">
+      <trans-unit id="Active connections" xml:space="preserve" approved="no">
         <source>Active connections</source>
+        <target state="translated">Connessioni attive</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve">
@@ -1373,8 +1374,9 @@
         <target>Configura server ICE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Configured %@ servers" xml:space="preserve">
+      <trans-unit id="Configured %@ servers" xml:space="preserve" approved="no">
         <source>Configured %@ servers</source>
+        <target state="translated">Configurati %@ server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
@@ -3996,8 +3998,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Le reazioni ai messaggi sono vietate in questo gruppo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reception" xml:space="preserve">
+      <trans-unit id="Message reception" xml:space="preserve" approved="no">
         <source>Message reception</source>
+        <target state="translated">Ricezione messaggi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message routing fallback" xml:space="preserve">
@@ -4549,8 +4552,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Altro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Other %@ servers" xml:space="preserve">
+      <trans-unit id="Other %@ servers" xml:space="preserve" approved="no">
         <source>Other %@ servers</source>
+        <target state="translated">Altri %@ server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -4722,8 +4726,9 @@ Errore: %@</target>
         <target>Conserva la password in modo sicuro, NON potrai cambiarla se la perdi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please try later." xml:space="preserve">
+      <trans-unit id="Please try later." xml:space="preserve" approved="no">
         <source>Please try later.</source>
+        <target state="translated">Riprova più tardi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Polish interface" xml:space="preserve">
@@ -4796,8 +4801,9 @@ Errore: %@</target>
         <target>Instradamento privato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private routing error" xml:space="preserve">
+      <trans-unit id="Private routing error" xml:space="preserve" approved="no">
         <source>Private routing error</source>
+        <target state="translated">Errore di instradamento privato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
@@ -5737,8 +5743,9 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>L'indirizzo del server non è compatibile con le impostazioni di rete.</target>
         <note>srv error text.</note>
       </trans-unit>
-      <trans-unit id="Server address is incompatible with network settings: %@." xml:space="preserve">
+      <trans-unit id="Server address is incompatible with network settings: %@." xml:space="preserve" approved="no">
         <source>Server address is incompatible with network settings: %@.</source>
+        <target state="translated">L'indirizzo del server è incompatibile con le impostazioni di rete: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
@@ -5766,12 +5773,14 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>La versione del server non è compatibile con le impostazioni di rete.</target>
         <note>srv error text</note>
       </trans-unit>
-      <trans-unit id="Server version is incompatible with network settings: %@." xml:space="preserve">
+      <trans-unit id="Server version is incompatible with network settings: %@." xml:space="preserve" approved="no">
         <source>Server version is incompatible with network settings: %@.</source>
+        <target state="translated">La versione del server è incompatibile con le impostazioni di rete: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server version is incompatible with your app: %@." xml:space="preserve">
+      <trans-unit id="Server version is incompatible with your app: %@." xml:space="preserve" approved="no">
         <source>Server version is incompatible with your app: %@.</source>
+        <target state="translated">La versione del server è incompatibile con la tua app: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Servers" xml:space="preserve">
@@ -5914,8 +5923,9 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Mostra stato del messaggio</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show percentage" xml:space="preserve">
+      <trans-unit id="Show percentage" xml:space="preserve" approved="no">
         <source>Show percentage</source>
+        <target state="translated">Mostra percentuale</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
