@@ -198,6 +198,7 @@ testMultiWordProfileNames =
              ]
       cath <## "#'Our Team' 'Alice Jones' is creating direct contact 'Alice Jones' with you"
       cath <# "'Alice Jones'> hello"
+      cath <## "'Alice Jones': you can send messages to contact"
       cath <## "'Alice Jones': contact is connected"
       alice <## "'Cath Johnson': contact is connected"
       cath ##> "/p 'Cath J'"
@@ -350,6 +351,7 @@ testUserContactLinkAutoAccept =
       cath ##> ("/c " <> cLink)
       cath <## "connection request sent!"
       alice <## "cath (Catherine): accepting contact request..."
+      alice <## "cath (Catherine): you can send messages to contact"
       concurrently_
         (cath <## "alice (Alice): contact is connected")
         (alice <## "cath (Catherine): contact is connected")
@@ -566,6 +568,7 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
     alice <## "bob (Bob): accepting contact request..."
+    alice <## "bob (Bob): you can send messages to contact"
     concurrentlyN_
       [ do
           bob <## "alice (Alice): contact is connected"
@@ -588,6 +591,7 @@ testAutoReplyMessageInIncognito = testChat2 aliceProfile bobProfile $
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
     alice <## "bob (Bob): accepting contact request..."
+    alice <## "bob (Bob): you can send messages to contact"
     aliceIncognito <- getTermLine alice
     concurrentlyN_
       [ do
@@ -2036,6 +2040,7 @@ testGroupPrefsDirectForRole = testChat4 aliceProfile bobProfile cathProfile danP
       <### [ "#team alice is creating direct contact alice with you",
              WithTime "alice> hello dan"
            ]
+    dan <## "alice (Alice): you can send messages to contact"
     concurrently_
       (alice <## "dan (Daniel): contact is connected")
       (dan <## "alice (Alice): contact is connected")
