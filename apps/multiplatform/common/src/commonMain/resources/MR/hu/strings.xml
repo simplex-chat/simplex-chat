@@ -1959,12 +1959,12 @@
     <string name="servers_info_target">Információk megjelenítése ehhez:</string>
     <string name="network_error_broker_version_desc">A kiszolgáló verziója nem kompatibilis az alkalmazással: %1$s.</string>
     <string name="servers_info_proxied_servers_section_footer">Ön nem kapcsolódik ezekhez a kiszolgálókhoz. A privát útválasztás az üzenetek kézbesítésére szolgál.</string>
-    <string name="servers_info_subscriptions_connections_subscribed">Aktív kapcsolatok</string>
-    <string name="servers_info_subscriptions_section_header">Üzenetkézbesítés</string>
+    <string name="servers_info_subscriptions_connections_subscribed">Aktív kapcsolatok száma</string>
+    <string name="servers_info_subscriptions_section_header">Üzenetjelentés</string>
     <string name="subscribed">Feliratkozva</string>
     <string name="subscription_errors">Feliratkozási hibák</string>
     <string name="subscription_results_ignored">Elutasított feliratkozások</string>
-    <string name="subscription_percentage">Százalékos arány mutatása</string>
+    <string name="subscription_percentage">Százalék megjelenítése</string>
     <string name="app_check_for_updates_download_completed_title">Alkalmazásfrissítés letöltve</string>
     <string name="app_check_for_updates">Frissítések keresése</string>
     <string name="app_check_for_updates_notice_title">Frissítések keresése</string>
