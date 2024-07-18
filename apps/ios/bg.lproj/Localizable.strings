@@ -155,9 +155,6 @@
 "%@ is verified" = "%@ е потвърдено";
 
 /* No comment provided by engineer. */
-"%@ servers" = "%@ сървъри";
-
-/* No comment provided by engineer. */
 "%@ uploaded" = "%@ качено";
 
 /* notification title */

@@ -74,7 +74,7 @@
     <string name="error_deleting_contact">Fehler beim Löschen des Kontakts</string>
     <string name="error_deleting_group">Fehler beim Löschen der Gruppe</string>
     <string name="error_deleting_contact_request">Fehler beim Löschen der Kontaktanfrage</string>
-    <string name="error_deleting_pending_contact_connection">Fehler beim Löschen der anstehenden Kontaktaufnahme</string>
+    <string name="error_deleting_pending_contact_connection">Fehler beim Löschen der ausstehenden Kontaktaufnahme</string>
     <string name="error_changing_address">Fehler beim Wechseln der Empfängeradresse</string>
     <string name="error_smp_test_failed_at_step">Der Test ist beim Schritt %s fehlgeschlagen.</string>
     <string name="error_smp_test_server_auth">Um Warteschlangen zu erzeugen, benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort.</string>
@@ -157,7 +157,7 @@
     <string name="hide_verb">Verbergen</string>
     <string name="allow_verb">Erlauben</string>
     <string name="delete_message__question">Die Nachricht löschen?</string>
-    <string name="delete_message_cannot_be_undone_warning">Nachricht wird gelöscht – dies kann nicht rückgängig gemacht werden!</string>
+    <string name="delete_message_cannot_be_undone_warning">Nachricht wird gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="delete_message_mark_deleted_warning">Die Nachricht wird zum Löschen markiert. Der/die Empfänger kann/können diese Nachricht aufdecken.</string>
     <string name="for_me_only">Für mich löschen</string>
     <string name="for_everybody">Für alle</string>
@@ -218,7 +218,7 @@
     <string name="notifications">Benachrichtigungen</string>
     <!-- Chat Info Actions - ChatInfoView.kt -->
     <string name="delete_contact_question">Kontakt löschen?</string>
-    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Der Kontakt und alle Nachrichten werden gelöscht – dies kann nicht rückgängig gemacht werden!</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Der Kontakt und alle Nachrichten werden gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="button_delete_contact">Kontakt löschen</string>
     <string name="text_field_set_contact_placeholder">Kontaktname festlegen…</string>
     <string name="icon_descr_server_status_connected">Verbunden</string>
@@ -278,7 +278,7 @@
     <string name="reject_contact_button">Ablehnen</string>
     <!-- Clear Chat - ChatListNavLinkView.kt -->
     <string name="clear_chat_question">Chatinhalte löschen?</string>
-    <string name="clear_chat_warning">Alle Nachrichten werden gelöscht - dies kann nicht rückgängig gemacht werden! Die Nachrichten werden NUR bei Ihnen gelöscht.</string>
+    <string name="clear_chat_warning">Alle Nachrichten werden gelöscht. Dies kann nicht rückgängig gemacht werden! Die Nachrichten werden NUR bei Ihnen gelöscht.</string>
     <string name="clear_verb">Löschen</string>
     <string name="clear_chat_button">Chatinhalte löschen</string>
     <string name="clear_chat_menu_action">Chatinhalte löschen</string>
@@ -298,7 +298,8 @@
     <string name="connection_you_accepted_will_be_cancelled">Die von Ihnen akzeptierte Verbindung wird abgebrochen!</string>
     <!-- Contact Pending Alert Dialogue - ChatListNavLinkView.kt -->
     <string name="alert_title_contact_connection_pending">Ihr Kontakt ist noch nicht verbunden!</string>
-    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Ihr Kontakt muss online sein, damit die Verbindung hergestellt werden kann.\nSie können diese Verbindung abbrechen und den Kontakt entfernen (und es später nochmals mit einem neuen Link versuchen).</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Ihr Kontakt muss online sein, damit die Verbindung hergestellt werden kann.
+\nSie können diese Verbindung abbrechen, den Kontakt entfernen und es später nochmals mit einem neuen Link versuchen.</string>
     <!-- Contact Request Information - ContactRequestView.kt -->
     <string name="contact_wants_to_connect_with_you">möchte sich mit Ihnen verbinden!</string>
     <!-- Image Placeholder - ChatInfoImage.kt -->
@@ -531,7 +532,7 @@
     <string name="icon_descr_speaker_on">Lautsprecher an</string>
     <string name="icon_descr_flip_camera">Kamera umdrehen</string>
     <!-- Call items -->
-    <string name="icon_descr_call_pending_sent">Anstehender Anruf</string>
+    <string name="icon_descr_call_pending_sent">Ausstehender Anruf</string>
     <string name="icon_descr_call_missed">Verpasster Anruf</string>
     <string name="icon_descr_call_rejected">Abgelehnter Anruf</string>
     <string name="icon_descr_call_connecting">Anruf wird verbunden</string>
@@ -766,8 +767,8 @@
     <string name="group_info_member_you">Sie: %1$s</string>
     <string name="button_delete_group">Gruppe löschen</string>
     <string name="delete_group_question">Gruppe löschen?</string>
-    <string name="delete_group_for_all_members_cannot_undo_warning">Die Gruppe wird für alle Mitglieder gelöscht – dies kann nicht rückgängig gemacht werden!</string>
-    <string name="delete_group_for_self_cannot_undo_warning">Die Gruppe wird für Sie gelöscht – dies kann nicht rückgängig gemacht werden!</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">Die Gruppe wird für alle Mitglieder gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="delete_group_for_self_cannot_undo_warning">Die Gruppe wird für Sie gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="button_leave_group">Gruppe verlassen</string>
     <string name="button_edit_group_profile">Gruppenprofil bearbeiten</string>
     <string name="group_link">Gruppen-Link</string>
@@ -786,7 +787,7 @@
     <!-- GroupMemberInfoView.kt -->
     <string name="button_remove_member">Mitglied entfernen</string>
     <string name="button_send_direct_message">Direktnachricht senden</string>
-    <string name="member_will_be_removed_from_group_cannot_be_undone">Das Mitglied wird aus der Gruppe entfernt – dies kann nicht rückgängig gemacht werden!</string>
+    <string name="member_will_be_removed_from_group_cannot_be_undone">Das Mitglied wird aus der Gruppe entfernt. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="remove_member_confirmation">Entfernen</string>
     <string name="member_info_section_title_member">MITGLIED</string>
     <string name="role_in_group">Rolle</string>
@@ -988,7 +989,7 @@
     <string name="app_version_name">App-Version: v%s</string>
     <string name="core_version">Core Version: v%s</string>
     <string name="users_add">Profil hinzufügen</string>
-    <string name="users_delete_all_chats_deleted">Alle Chats und Nachrichten werden gelöscht! Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="users_delete_all_chats_deleted">Alle Chats und Nachrichten werden gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="users_delete_profile_for">Chat-Profil löschen für</string>
     <string name="network_option_ping_count">PING-Zähler</string>
     <string name="update_network_session_mode_question">Transport-Isolations-Modus aktualisieren\?</string>
@@ -1675,7 +1676,7 @@
     <string name="group_member_status_unknown">unbekannter Gruppenmitglieds-Status</string>
     <string name="v5_5_private_notes_descr">Mit verschlüsselten Dateien und Medien.</string>
     <string name="v5_5_private_notes">Private Notizen</string>
-    <string name="clear_note_folder_warning">Es werden alle Nachrichten gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden!</string>
+    <string name="clear_note_folder_warning">Es werden alle Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="clear_note_folder_question">Private Notizen löschen?</string>
     <string name="rcv_group_event_member_blocked">%s wurde blockiert</string>
     <string name="rcv_group_event_member_unblocked">%s wurde freigegeben</string>
@@ -1940,8 +1941,8 @@
 \n
 \nZuletzt empfangene Nachricht: %2$s</string>
     <string name="file_error_no_file">Datei nicht gefunden - höchstwahrscheinlich wurde die Datei gelöscht oder der Transfer abgebrochen.</string>
-    <string name="file_error_relay">Datei-Server-Fehler: %1$s</string>
-    <string name="file_error_auth">Falscher Schlüssel oder unbekannte Datei-Chunk-Adresse - höchstwahrscheinlich wurde die Datei gelöscht.</string>
+    <string name="file_error_relay">Datei-Server Fehler: %1$s</string>
+    <string name="file_error_auth">Falscher Schlüssel oder unbekannte Daten-Paketadresse der Datei - höchstwahrscheinlich wurde die Datei gelöscht.</string>
     <string name="file_error">Datei-Fehler</string>
     <string name="info_row_message_status">Nachrichten-Status</string>
     <string name="share_text_message_status">Nachrichten-Status: %s</string>
@@ -1954,4 +1955,120 @@
 \nBitte teilen Sie weitere mögliche Probleme den Entwicklern mit.</string>
     <string name="cannot_share_message_alert_title">Nachricht wurde nicht gesendet</string>
     <string name="cannot_share_message_alert_text">Diese Nachricht ist wegen der gewählten Chat-Einstellungen nicht erlaubt.</string>
+    <string name="please_try_later">Bitte versuchen Sie es später erneut.</string>
+    <string name="private_routing_error">Fehler beim privaten Routing</string>
+    <string name="member_inactive_desc">Die Nachricht kann später zugestellt werden, wenn das Mitglied aktiv wird.</string>
+    <string name="message_forwarded_desc">Bisher keine direkte Verbindung. Nachricht wird von einem Admin weitergeleitet.</string>
+    <string name="smp_servers_configured">Konfigurierte SMP-Server</string>
+    <string name="xftp_servers_configured">Konfigurierte XFTP-Server</string>
+    <string name="smp_servers_other">Andere SMP-Server</string>
+    <string name="xftp_servers_other">Andere XFTP-Server</string>
+    <string name="completed">Abgeschlossen</string>
+    <string name="member_info_member_inactive">Inaktiv</string>
+    <string name="servers_info_sessions_connected">Verbunden</string>
+    <string name="servers_info_sessions_connecting">Verbinden</string>
+    <string name="servers_info_subscriptions_connections_subscribed">Abonnierte Verbindungen</string>
+    <string name="current_user">Aktueller Nutzer</string>
+    <string name="servers_info_detailed_statistics">Detaillierte Statistiken</string>
+    <string name="servers_info_details">Details</string>
+    <string name="servers_info_downloaded">Heruntergeladen</string>
+    <string name="servers_info_modal_error_title">Fehler</string>
+    <string name="servers_info_reconnect_servers_error">Fehler beim Wiederherstellen der Verbindungen zu den Servern</string>
+    <string name="servers_info_reset_stats_alert_error_title">Fehler beim Zurücksetzen der Statistiken</string>
+    <string name="servers_info_sessions_errors">Fehler</string>
+    <string name="servers_info_messages_received">Empfangene Nachrichten</string>
+    <string name="servers_info_subscriptions_section_header">Nachrichten-Abonnements</string>
+    <string name="servers_info_subscriptions_connections_pending">Ausstehend</string>
+    <string name="servers_info_previously_connected_servers_section_header">Bisher verbundene Server</string>
+    <string name="servers_info_proxied_servers_section_header">Proxy-Server</string>
+    <string name="servers_info_detailed_statistics_received_messages_header">Empfangene Nachrichten</string>
+    <string name="servers_info_detailed_statistics_received_total">Summe aller empfangenen Nachrichten</string>
+    <string name="acknowledgement_errors">Fehler bei der Bestätigung</string>
+    <string name="attempts_label">Versuche</string>
+    <string name="chunks_deleted">Daten-Pakete gelöscht</string>
+    <string name="chunks_uploaded">Daten-Pakete hochgeladen</string>
+    <string name="connections">Verbindungen</string>
+    <string name="created">Erstellt</string>
+    <string name="decryption_errors">Entschlüsselungs-Fehler</string>
+    <string name="deletion_errors">Fehler beim Löschen</string>
+    <string name="downloaded_files">Heruntergeladene Dateien</string>
+    <string name="download_errors">Fehler beim Herunterladen</string>
+    <string name="duplicates_label">Duplikate</string>
+    <string name="expired_label">abgelaufen</string>
+    <string name="open_server_settings_button">Server-Einstellungen öffnen</string>
+    <string name="other_errors">Andere Fehler</string>
+    <string name="proxied">Proxy</string>
+    <string name="servers_info_detailed_statistics_receive_errors">Fehler beim Empfang</string>
+    <string name="reconnect">Neu verbinden</string>
+    <string name="app_check_for_updates_disabled">Deaktiviert</string>
+    <string name="app_check_for_updates_beta">Beta</string>
+    <string name="app_check_for_updates_download_started">App-Aktualisierung wird heruntergeladen. App nicht schließen!</string>
+    <string name="app_check_for_updates_button_download">Heruntergeladen %s (%s)</string>
+    <string name="app_check_for_updates_notice_title">Nach Aktualisierungen suchen</string>
+    <string name="app_check_for_updates_notice_disable">Deaktivieren</string>
+    <string name="app_check_for_updates_installed_successfully_title">Erfolgreich installiert</string>
+    <string name="app_check_for_updates_button_install">Aktualisierung installieren</string>
+    <string name="app_check_for_updates_installed_successfully_desc">Bitte starten Sie die App neu.</string>
+    <string name="acknowledged">Bestätigt</string>
+    <string name="all_users">Alle Nutzer</string>
+    <string name="app_check_for_updates_download_completed_title">App-Aktualisierung wurde heruntergeladen</string>
+    <string name="app_check_for_updates">Nach Aktualisierungen suchen</string>
+    <string name="chunks_downloaded">Daten-Pakete heruntergeladen</string>
+    <string name="servers_info_connected_servers_section_header">Verbundene Server</string>
+    <string name="deleted">Gelöscht</string>
+    <string name="member_info_member_disabled">deaktiviert</string>
+    <string name="servers_info_reconnect_server_error">Fehler beim Wiederherstellen der Verbindung zum Server</string>
+    <string name="message_forwarded_title">Nachricht weitergeleitet</string>
+    <string name="servers_info_files_tab">Dateien</string>
+    <string name="appearance_font_size">Schriftgröße</string>
+    <string name="member_inactive_title">Mitglied inaktiv</string>
+    <string name="servers_info_messages_sent">Gesendete Nachrichten</string>
+    <string name="servers_info_missing">Keine Information - es wird versucht neu zu laden</string>
+    <string name="app_check_for_updates_button_open">Dateispeicherort öffnen</string>
+    <string name="other_label">andere</string>
+    <string name="network_error_broker_host_desc">Die Server-Adresse ist nicht mit den Netzwerk-Einstellungen kompatibel: %1$s.</string>
+    <string name="scan_paste_link">Link scannen / einfügen</string>
+    <string name="servers_info_reconnect_all_servers_button">Alle Server neu verbinden</string>
+    <string name="servers_info_reconnect_server_title">Server neu verbinden?</string>
+    <string name="servers_info_reconnect_servers_title">Alle Server neu verbinden?</string>
+    <string name="servers_info_reconnect_servers_message">Um die Auslieferung von Nachrichten zu erzwingen, werden alle Server neu verbunden. Dafür wird weiterer Datenverkehr benötigt.</string>
+    <string name="servers_info_reconnect_server_message">Um die Auslieferung von Nachrichten zu erzwingen, wird der Server neu verbunden. Dafür wird weiterer Datenverkehr benötigt.</string>
+    <string name="servers_info_reset_stats_alert_confirm">Zurücksetzen</string>
+    <string name="servers_info_reset_stats">Alle Statistiken zurücksetzen</string>
+    <string name="servers_info_reset_stats_alert_title">Alle Statistiken zurücksetzen?</string>
+    <string name="servers_info_detailed_statistics_sent_messages_header">Gesendete Nachrichten</string>
+    <string name="servers_info_detailed_statistics_sent_messages_total">Summe aller gesendeten Nachrichten</string>
+    <string name="secured">Abgesichert</string>
+    <string name="send_errors">Fehler beim Senden</string>
+    <string name="sent_directly">Direkt gesendet</string>
+    <string name="sent_via_proxy">Über einen Proxy gesendet</string>
+    <string name="server_address">Server-Adresse</string>
+    <string name="app_check_for_updates_button_remind_later">Später erinnern</string>
+    <string name="servers_info">Server-Informationen</string>
+    <string name="network_error_broker_version_desc">Ihre App ist nicht kompatibel mit der Server-Version: %1$s.</string>
+    <string name="subscription_percentage">Prozentualer Anteil der Abonnements</string>
+    <string name="appearance_zoom">Zoom</string>
+    <string name="smp_server">SMP-Server</string>
+    <string name="servers_info_target">Informationen zeigen für</string>
+    <string name="servers_info_private_data_disclaimer">Beginnend mit %s.
+\nAlle Daten sind auf Ihrem Gerät geschützt.</string>
+    <string name="servers_info_statistics_section_header">Statistiken</string>
+    <string name="servers_info_transport_sessions_section_header">Transport-Sitzungen</string>
+    <string name="servers_info_uploaded">Hochgeladen</string>
+    <string name="servers_info_proxied_servers_section_footer">Sie sind nicht mit diesen Servern verbunden. Zur Auslieferung von Nachrichten an diese Server wird privates Routing genutzt.</string>
+    <string name="servers_info_subscriptions_total">Summe aller Abonnements</string>
+    <string name="servers_info_reset_stats_alert_message">Die Serverstatistiken werden zurückgesetzt. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="size">Größe</string>
+    <string name="servers_info_starting_from">Beginnend mit %s.</string>
+    <string name="subscribed">Abonniert</string>
+    <string name="subscription_errors">Fehler beim Abonnieren</string>
+    <string name="subscription_results_ignored">Nicht beachtete Abonnements</string>
+    <string name="uploaded_files">Hochgeladene Dateien</string>
+    <string name="upload_errors">Fehler beim Hochladen</string>
+    <string name="xftp_server">XFTP-Server</string>
+    <string name="app_check_for_updates_stable">Stabil</string>
+    <string name="app_check_for_updates_button_skip">Diese Version überspringen</string>
+    <string name="app_check_for_updates_update_available">Aktualisierung verfügbar: %s</string>
+    <string name="app_check_for_updates_notice_desc">Aktivieren Sie die periodische Überprüfung auf stabile oder Beta-Versionen der App, um über neue Versionen benachrichtigt zu werden.</string>
+    <string name="app_check_for_updates_canceled">Herunterladen der Aktualisierung abgebrochen</string>
 </resources>

@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct ShareView: View {
     @ObservedObject var model: ShareModel
@@ -19,8 +20,8 @@ struct ShareView: View {
                         HStack {
                             profileImage(
                                 base64Encoded: chat.chatInfo.image,
-                                size: 36,
-                                isLocal: chat.chatInfo.chatType == .local
+                                systemFallback: chatIconName(chat.chatInfo),
+                                size: 30
                             )
                             Text(chat.chatInfo.displayName)
                             Spacer()
@@ -92,7 +93,7 @@ struct ShareView: View {
                     .strokeBorder(.secondary, lineWidth: 0.5).opacity(0.7)
             )
             .padding(8)
-            .background(Material.bar)
+            .background(.thinMaterial)
         }
     }
 
@@ -105,16 +106,12 @@ struct ShareView: View {
         .background(Material.ultraThin)
     }
 
-    private func profileImage(base64Encoded: String?, size: Double, isLocal: Bool) -> some View {
+    private func profileImage(base64Encoded: String?, systemFallback: String, size: Double) -> some View {
         Group {
             if let uiImage = UIImage(base64Encoded: base64Encoded) {
                 Image(uiImage: uiImage).resizable()
             } else {
-                Image(
-                    systemName: isLocal
-                    ? "folder.circle.fill"
-                    : "person.crop.circle.fill"
-                ).resizable()
+                Image(systemName: systemFallback).resizable()
             }
         }
         .foregroundStyle(Color(.tertiaryLabel))
