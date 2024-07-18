@@ -75,8 +75,8 @@ struct ServersSummaryView: View {
                 Group {
                     if m.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
                         Picker("User selection", selection: $selectedUserCategory) {
-                            Text("All users").tag(PresentedUserCategory.allUsers)
-                            Text("Current user").tag(PresentedUserCategory.currentUser)
+                            Text("All profiles").tag(PresentedUserCategory.allUsers)
+                            Text("Current profile").tag(PresentedUserCategory.currentUser)
                         }
                         .pickerStyle(.segmented)
                     }
@@ -174,11 +174,12 @@ struct ServersSummaryView: View {
 
     private func smpSubsSection(_ totals: SMPTotals) -> some View {
         Section {
-            infoRow("Connections subscribed", numOrDash(totals.subs.ssActive))
+            infoRow("Active connections", numOrDash(totals.subs.ssActive))
             infoRow("Total", numOrDash(totals.subs.total))
+            Toggle("Show percentage", isOn: $showSubscriptionPercentage)
         } header: {
             HStack {
-                Text("Message subscriptions")
+                Text("Message reception")
                 SubscriptionStatusIndicatorView(subs: totals.subs, sess: totals.sessions)
                 if showSubscriptionPercentage {
                     SubscriptionStatusPercentageView(subs: totals.subs, sess: totals.sessions)
@@ -474,13 +475,13 @@ struct SMPServerSummaryView: View {
 
     private func smpSubsSection(_ subs: SMPServerSubs) -> some View {
         Section {
-            infoRow("Connections subscribed", numOrDash(subs.ssActive))
+            infoRow("Active connections", numOrDash(subs.ssActive))
             infoRow("Pending", numOrDash(subs.ssPending))
             infoRow("Total", numOrDash(subs.total))
             reconnectButton()
         } header: {
             HStack {
-                Text("Message subscriptions")
+                Text("Message reception")
                 SubscriptionStatusIndicatorView(subs: subs, sess: summary.sessionsOrNew)
                 if showSubscriptionPercentage {
                     SubscriptionStatusPercentageView(subs: subs, sess: summary.sessionsOrNew)

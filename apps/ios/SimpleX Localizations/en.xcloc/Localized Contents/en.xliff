@@ -127,11 +127,6 @@
         <target>%@ is verified</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ servers" xml:space="preserve">
-        <source>%@ servers</source>
-        <target>%@ servers</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="%@ uploaded" xml:space="preserve">
         <source>%@ uploaded</source>
         <target>%@ uploaded</target>
@@ -593,6 +588,11 @@
         <target>Acknowledgement errors</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Active connections" xml:space="preserve">
+        <source>Active connections</source>
+        <target>Active connections</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve">
         <source>Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</source>
         <target>Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</target>
@@ -613,14 +613,14 @@
         <target>Add profile</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add servers by scanning QR codes." xml:space="preserve">
-        <source>Add servers by scanning QR codes.</source>
-        <target>Add servers by scanning QR codes.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Add server" xml:space="preserve">
         <source>Add server</source>
         <target>Add server</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add servers by scanning QR codes." xml:space="preserve">
+        <source>Add servers by scanning QR codes.</source>
+        <target>Add servers by scanning QR codes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
@@ -718,9 +718,9 @@
         <target>All new messages from %@ will be hidden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All users" xml:space="preserve">
-        <source>All users</source>
-        <target>All users</target>
+      <trans-unit id="All profiles" xml:space="preserve">
+        <source>All profiles</source>
+        <target>All profiles</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
@@ -1374,6 +1374,11 @@
         <target>Configure ICE servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Configured %@ servers" xml:space="preserve">
+        <source>Configured %@ servers</source>
+        <target>Configured %@ servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
         <source>Confirm</source>
         <target>Confirm</target>
@@ -1558,11 +1563,6 @@ This is your own one-time link!</target>
         <target>Connections</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connections subscribed" xml:space="preserve">
-        <source>Connections subscribed</source>
-        <target>Connections subscribed</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Contact allows" xml:space="preserve">
         <source>Contact allows</source>
         <target>Contact allows</target>
@@ -1738,9 +1738,9 @@ This is your own one-time link!</target>
         <target>Current passphrase…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Current user" xml:space="preserve">
-        <source>Current user</source>
-        <target>Current user</target>
+      <trans-unit id="Current profile" xml:space="preserve">
+        <source>Current profile</source>
+        <target>Current profile</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
@@ -3998,6 +3998,11 @@ This is your link for group %@!</target>
         <target>Message reactions are prohibited in this group.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Message reception" xml:space="preserve">
+        <source>Message reception</source>
+        <target>Message reception</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Message routing fallback" xml:space="preserve">
         <source>Message routing fallback</source>
         <target>Message routing fallback</target>
@@ -4022,11 +4027,6 @@ This is your link for group %@!</target>
         <source>Message status: %@</source>
         <target>Message status: %@</target>
         <note>copied message info</note>
-      </trans-unit>
-      <trans-unit id="Message subscriptions" xml:space="preserve">
-        <source>Message subscriptions</source>
-        <target>Message subscriptions</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message text" xml:space="preserve">
         <source>Message text</source>
@@ -4552,6 +4552,11 @@ This is your link for group %@!</target>
         <target>Other</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Other %@ servers" xml:space="preserve">
+        <source>Other %@ servers</source>
+        <target>Other %@ servers</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
         <source>PING count</source>
         <target>PING count</target>
@@ -4721,6 +4726,11 @@ Error: %@</target>
         <target>Please store passphrase securely, you will NOT be able to change it if you lose it.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Please try later." xml:space="preserve">
+        <source>Please try later.</source>
+        <target>Please try later.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Polish interface" xml:space="preserve">
         <source>Polish interface</source>
         <target>Polish interface</target>
@@ -4789,6 +4799,11 @@ Error: %@</target>
       <trans-unit id="Private routing" xml:space="preserve">
         <source>Private routing</source>
         <target>Private routing</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Private routing error" xml:space="preserve">
+        <source>Private routing error</source>
+        <target>Private routing error</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
@@ -5728,6 +5743,11 @@ Enable in *Network &amp; servers* settings.</target>
         <target>Server address is incompatible with network settings.</target>
         <note>srv error text.</note>
       </trans-unit>
+      <trans-unit id="Server address is incompatible with network settings: %@." xml:space="preserve">
+        <source>Server address is incompatible with network settings: %@.</source>
+        <target>Server address is incompatible with network settings: %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
         <source>Server requires authorization to create queues, check password</source>
         <target>Server requires authorization to create queues, check password</target>
@@ -5752,6 +5772,16 @@ Enable in *Network &amp; servers* settings.</target>
         <source>Server version is incompatible with network settings.</source>
         <target>Server version is incompatible with network settings.</target>
         <note>srv error text</note>
+      </trans-unit>
+      <trans-unit id="Server version is incompatible with network settings: %@." xml:space="preserve">
+        <source>Server version is incompatible with network settings: %@.</source>
+        <target>Server version is incompatible with network settings: %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Server version is incompatible with your app: %@." xml:space="preserve">
+        <source>Server version is incompatible with your app: %@.</source>
+        <target>Server version is incompatible with your app: %@.</target>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Servers" xml:space="preserve">
         <source>Servers</source>
@@ -5891,6 +5921,11 @@ Enable in *Network &amp; servers* settings.</target>
       <trans-unit id="Show message status" xml:space="preserve">
         <source>Show message status</source>
         <target>Show message status</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Show percentage" xml:space="preserve">
+        <source>Show percentage</source>
+        <target>Show percentage</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -6121,11 +6156,6 @@ Enable in *Network &amp; servers* settings.</target>
       <trans-unit id="Subscription errors" xml:space="preserve">
         <source>Subscription errors</source>
         <target>Subscription errors</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Subscription percentage" xml:space="preserve">
-        <source>Subscription percentage</source>
-        <target>Subscription percentage</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Subscriptions ignored" xml:space="preserve">

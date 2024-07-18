@@ -155,9 +155,6 @@
 "%@ is verified" = "%@ onaylandı";
 
 /* No comment provided by engineer. */
-"%@ servers" = "%@ sunucuları";
-
-/* No comment provided by engineer. */
 "%@ uploaded" = "%@ yüklendi";
 
 /* notification title */
