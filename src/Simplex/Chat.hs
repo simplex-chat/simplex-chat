@@ -3323,8 +3323,9 @@ acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId inv
       chatV = vr `peerConnChatVersion` cReqChatVRange
       pqSup' = pqSup `CR.pqSupportAnd` pqSupport
   dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-  acId <- withAgent $ \a -> acceptContact a True invId dm pqSup' subMode
-  withStore' $ \db -> createAcceptedContact db user acId chatV cReqChatVRange cName profileId cp userContactLinkId xContactId incognitoProfile subMode pqSup' contactUsed
+  (acId, sqSecured) <- withAgent $ \a -> acceptContact a True invId dm pqSup' subMode
+  let connStatus = if sqSecured then ConnSndReady else ConnNew
+  withStore' $ \db -> createAcceptedContact db user acId connStatus chatV cReqChatVRange cName profileId cp userContactLinkId xContactId incognitoProfile subMode pqSup' contactUsed
 
 acceptContactRequestAsync :: User -> UserContactRequest -> Maybe IncognitoProfile -> Bool -> PQSupport -> CM Contact
 acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile contactUsed pqSup = do
@@ -3334,7 +3335,7 @@ acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvI
   let chatV = vr `peerConnChatVersion` cReqChatVRange
   (cmdId, acId) <- agentAcceptContactAsync user True invId (XInfo profileToSend) subMode pqSup chatV
   withStore' $ \db -> do
-    ct@Contact {activeConn} <- createAcceptedContact db user acId chatV cReqChatVRange cName profileId p userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed
+    ct@Contact {activeConn} <- createAcceptedContact db user acId ConnNew chatV cReqChatVRange cName profileId p userContactLinkId xContactId incognitoProfile subMode pqSup contactUsed
     forM_ activeConn $ \Connection {connId} -> setCommandConnId db user cmdId connId
     pure ct
 
@@ -3997,6 +3998,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     agentMsgConnStatus :: AEvent e -> Maybe ConnStatus
     agentMsgConnStatus = \case
+      JOINED True -> Just ConnSndReady
       CONF {} -> Just ConnRequested
       INFO {} -> Just ConnSndReady
       CON _ -> Just ConnReady
@@ -4044,6 +4046,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           sentMsgDeliveryEvent conn msgId
         OK ->
           -- [async agent commands] continuation on receiving OK
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        JOINED _ ->
+          -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         QCONT ->
           void $ continueSending connEntity conn
@@ -4164,12 +4169,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 withStore' $ \db -> resetContactConnInitiated db user conn'
               forM_ viaUserContactLink $ \userContactLinkId -> do
                 ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
-                let (UserContactLink {autoAccept}, groupId_, gLinkMemRole) = ucl
-                forM_ autoAccept $ \(AutoAccept {autoReply = mc_}) ->
-                  forM_ mc_ $ \mc -> do
-                    (msg, _) <- sendDirectContactMessage user ct' (XMsgNew $ MCSimple (extMsgContent mc Nothing))
-                    ci <- saveSndChatItem user (CDDirectSnd ct') msg (CISndMsgContent mc)
-                    toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct') ci)
+                let (_, groupId_, gLinkMemRole) = ucl
                 forM_ groupId_ $ \groupId -> do
                   groupInfo <- withStore $ \db -> getGroupInfo db vr user groupId
                   subMode <- chatReadVar subscriptionMode
@@ -4223,6 +4223,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        JOINED sqSecured ->
+          -- [async agent commands] continuation on receiving JOINED
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData ->
+            when (directOrUsed ct && sqSecured) $ do
+              lift $ setContactNetworkStatus ct NSConnected
+              toView $ CRContactSndReady user ct
+              forM_ viaUserContactLink $ \userContactLinkId -> do
+                ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
+                let (UserContactLink {autoAccept}, _, _) = ucl
+                forM_ autoAccept $ \(AutoAccept {autoReply = mc_}) ->
+                  forM_ mc_ $ \mc -> do
+                    (msg, _) <- sendDirectContactMessage user ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
+                    ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
+                    toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
         QCONT ->
           void $ continueSending connEntity conn
         MWARN msgId err -> do
@@ -4620,6 +4634,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       OK ->
         -- [async agent commands] continuation on receiving OK
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+      JOINED _ ->
+          -- [async agent commands] continuation on receiving JOINED
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       QCONT -> do
         continued <- continueSending connEntity conn
         when continued $ sendPendingGroupMessages user m conn
@@ -4712,6 +4729,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        JOINED _ ->
+          -- [async agent commands] continuation on receiving JOINED
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         ERR err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
@@ -4757,6 +4777,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           parseFileChunk msgBody >>= receiveFileChunk ft (Just conn) meta
         OK ->
           -- [async agent commands] continuation on receiving OK
+          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        JOINED _ ->
+          -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         MERR _ err -> do
           toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
