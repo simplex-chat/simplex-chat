@@ -455,7 +455,7 @@ lookupChatRefByFileId db User {userId} fileId =
 createSndFileConnection_ :: DB.Connection -> VersionRangeChat -> UserId -> Int64 -> ConnId -> SubscriptionMode -> IO Connection
 createSndFileConnection_ db vr userId fileId agentConnId subMode = do
   currentTs <- getCurrentTime
-  createConnection_ db userId ConnSndFile (Just fileId) agentConnId (minVersion vr) chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
+  createConnection_ db userId ConnSndFile (Just fileId) agentConnId ConnNew (minVersion vr) chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
 updateSndFileStatus :: DB.Connection -> SndFileTransfer -> FileStatus -> IO ()
 updateSndFileStatus db SndFileTransfer {fileId, connId} status = do
