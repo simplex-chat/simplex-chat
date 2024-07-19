@@ -1106,16 +1106,18 @@ func getNetworkErrorAlert(_ r: ChatResponse) -> ErrorAlert? {
         return ErrorAlert(title: "Connection error", message: "Server address is incompatible with network settings: \(serverHostname(addr)).")
     case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TRANSPORT(.version)))):
         return ErrorAlert(title: "Connection error", message: "Server version is incompatible with your app: \(serverHostname(addr)).")
-    case let .chatCmdError(_, .errorAgent(.SMP(serverAddress, .PROXY(proxyErr)))):
-        return proxyErrorAlert(proxyErr, serverAddress)
-    case let .chatCmdError(_, .errorAgent(.PROXY(proxyServer, _, .protocolError(.PROXY(proxyErr))))):
-        return proxyErrorAlert(proxyErr, proxyServer)
+    case let .chatCmdError(_, .errorAgent(.SMP(proxyServer, .PROXY(proxyErr)))):
+        return proxyErrorAlert(proxyErr, [proxyServer])
+    case let .chatCmdError(_, .errorAgent(.PROXY(proxyServer, relayServer, .protocolError(.PROXY(proxyErr))))):
+        return proxyErrorAlert(proxyErr, [proxyServer, relayServer])
     default:
         return nil
     }
 }
 
-private func proxyErrorAlert(_ proxyErr: ProxyError, _ srvAddr: String) -> ErrorAlert? {
+private func proxyErrorAlert(_ proxyErr: ProxyError, _ srvAddrs: [String]) -> ErrorAlert? {
+    let srvList = srvAddrs.map { serverHostname($0) }.joined(separator: ", ")
+
     switch proxyErr {
     case .BROKER(brokerErr: .TIMEOUT):
         return ErrorAlert(title: "Private routing error", message: "Please try later.")
@@ -1124,9 +1126,9 @@ private func proxyErrorAlert(_ proxyErr: ProxyError, _ srvAddr: String) -> Error
     case .NO_SESSION:
         return ErrorAlert(title: "Private routing error", message: "Please try later.")
     case .BROKER(brokerErr: .HOST):
-        return ErrorAlert(title: "Private routing error", message: "Server address is incompatible with network settings: \(serverHostname(srvAddr)).")
+        return ErrorAlert(title: "Private routing error", message: "Server address is incompatible with network settings: \(srvList).")
     case .BROKER(brokerErr: .TRANSPORT(.version)):
-        return ErrorAlert(title: "Private routing error", message: "Server version is incompatible with network settings: \(serverHostname(srvAddr)).")
+        return ErrorAlert(title: "Private routing error", message: "Server version is incompatible with network settings: \(srvList).")
     default:
         return nil
     }
