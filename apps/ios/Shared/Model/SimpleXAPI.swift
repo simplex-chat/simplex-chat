@@ -1139,9 +1139,9 @@ private func proxyDestinationErrorAlert(_ proxyErr: ProxyError, _ proxyServer: S
     case .NO_SESSION:
         return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
     case .BROKER(brokerErr: .HOST):
-        return ErrorAlert(title: "Private routing error", message: "Destination server \(serverHostname(relayServer)) is incompatible with forwarding server \(serverHostname(proxyServer)) settings (address).")
+        return ErrorAlert(title: "Private routing error", message: "Destination server address of \(serverHostname(relayServer)) is incompatible with forwarding server \(serverHostname(proxyServer)) settings.")
     case .BROKER(brokerErr: .TRANSPORT(.version)):
-        return ErrorAlert(title: "Private routing error", message: "Destination server \(serverHostname(relayServer)) is incompatible with forwarding server \(serverHostname(proxyServer)) (version).")
+        return ErrorAlert(title: "Private routing error", message: "Destination server version of \(serverHostname(relayServer)) is incompatible with forwarding server \(serverHostname(proxyServer)).")
     default:
         return nil
     }
