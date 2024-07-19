@@ -50,7 +50,6 @@ final class EventLoop {
         Task {
             while true {
                 let message = recvSimpleXMsg()
-                logger.log(level: .info, "\(message.debugDescription)")
                 switch message {
                 // Drive the progress bar for direct chats
                 case let .sndFileProgressXFTP(_, aChatItem, _, sentSize, totalSize):
@@ -61,25 +60,22 @@ final class EventLoop {
                             model?.bottomBar = .loadingBar(progress: Double(sentSize) / Double(totalSize))
                         }
                     }
-                // For direct chats show that file upload is complete
-                // For group chats wait for 5 seconds after receiving `sndFileCompleteXFTP` to run completion
                 case let .sndFileCompleteXFTP(_, aChatItem, _):
                     logger.debug("Received sndFileCompleteXFTP message")
                     guard let eventHandling, aChatItem.chatItem.id == itemId else { continue }
                     switch eventHandling {
                     case .directMessage:
                         await MainActor.run { model?.bottomBar = .loadingBar(progress: 1) }
+                        // Dismiss the sheet only after completion has been received
+                        if aChatItem.chatItem.meta.itemStatus == .sndSent(sndProgress: .complete) {
+                            model?.completion?(nil)
+                        }
                     case .group:
+                        // For groups item status is not item status is likely to never be complete
+                        // Simply spin for 5 seconds
                         try? await Task.sleep(for: .seconds(5))
                         model?.completion?(nil)
                     }
-                // For direct chats run completion only after receiving `.complete` item state
-                case let .chatItemUpdated(_, aChatItem):
-                    logger.debug("Received chatItemStatusUpdated message")
-                    guard eventHandling == .directMessage,
-                          aChatItem.chatItem.id == itemId,
-                          aChatItem.chatItem.meta.itemStatus == .sndSent(sndProgress: .complete) else { continue }
-                    model?.completion?(nil)
                 default: logger.debug("UnhandledMessage \(message.debugDescription)" )
                 }
             }

@@ -8,6 +8,7 @@
 
 import UIKit
 import SwiftUI
+import UserNotifications
 import SimpleXChat
 
 /// Extension Entry point
@@ -50,12 +51,31 @@ class ShareViewController: UIHostingController<ShareView> {
         }
     }
 
+    /// System will call this function twice:
+    /// - first time with `expired = false` giving time to do background processing
+    /// - second time with `expired = true` shortly before terminating the process
     private func handleShutDown(expired: Bool) {
         if expired {
-            // TODO: Send Notification that the main app needs to be opened to finish upload
-        } else {
-            // TODO: Close database connection and shut down the chat
-            let _ = sendSimpleXCmd(.apiStopChat)
+            let content = UNMutableNotificationContent()
+            content.title = "File Upload Failed"
+            content.body = "Please open SimpleX app to complete file upload"
+            content.sound = UNNotificationSound.default
+            UNUserNotificationCenter.current()
+                .add(
+                    UNNotificationRequest(
+                        identifier: appNotificationId,
+                        content: content,
+                        trigger: UNTimeIntervalNotificationTrigger(
+                            timeInterval: .zero,
+                            repeats: false
+                        )
+                    )
+                ) { error in
+                    if let error {
+                        logger.error("addNotification error: \(error.localizedDescription)")
+                    }
+                }
         }
+        let _ = sendSimpleXCmd(.apiStopChat)
     }
 }
