@@ -1118,13 +1118,13 @@ func getNetworkErrorAlert(_ r: ChatResponse) -> ErrorAlert? {
 private func smpProxyErrorAlert(_ proxyErr: ProxyError, _ srvAddr: String) -> ErrorAlert? {
     switch proxyErr {
     case .BROKER(brokerErr: .TIMEOUT):
-        return ErrorAlert(title: "Private routing error", message: "Please try later.")
+        return ErrorAlert(title: "Private routing error", message: "Error connecting to forwarding server \(serverHostname(srvAddr)). Please try later.")
     case .BROKER(brokerErr: .NETWORK):
-        return ErrorAlert(title: "Private routing error", message: "Please try later.")
+        return ErrorAlert(title: "Private routing error", message: "Error connecting to forwarding server \(serverHostname(srvAddr)). Please try later.")
     case .BROKER(brokerErr: .HOST):
-        return ErrorAlert(title: "Private routing error", message: "Server address is incompatible with network settings: \(serverHostname(srvAddr)).")
+        return ErrorAlert(title: "Private routing error", message: "Forwarding server address is incompatible with network settings: \(serverHostname(srvAddr)).")
     case .BROKER(brokerErr: .TRANSPORT(.version)):
-        return ErrorAlert(title: "Private routing error", message: "Server version is incompatible with network settings: \(serverHostname(srvAddr)).")
+        return ErrorAlert(title: "Private routing error", message: "Forwarding server version is incompatible with network settings: \(serverHostname(srvAddr)).")
     default:
         return nil
     }
@@ -1133,15 +1133,15 @@ private func smpProxyErrorAlert(_ proxyErr: ProxyError, _ srvAddr: String) -> Er
 private func proxyDestinationErrorAlert(_ proxyErr: ProxyError, _ proxyServer: String, _ relayServer: String) -> ErrorAlert? {
     switch proxyErr {
     case .BROKER(brokerErr: .TIMEOUT):
-        return ErrorAlert(title: "Private routing error", message: "Please try later.")
+        return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
     case .BROKER(brokerErr: .NETWORK):
-        return ErrorAlert(title: "Private routing error", message: "Please try later.")
+        return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
     case .NO_SESSION:
-        return ErrorAlert(title: "Private routing error", message: "Please try later.")
+        return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
     case .BROKER(brokerErr: .HOST):
-        return ErrorAlert(title: "Private routing error", message: "Destination server address is incompatible with network settings. Proxy server: \(serverHostname(proxyServer)). Destination server: \(serverHostname(relayServer)).")
+        return ErrorAlert(title: "Private routing error", message: "Destination server address is incompatible with network settings.\nForwarding server: \(serverHostname(proxyServer)).\nDestination server: \(serverHostname(relayServer)).")
     case .BROKER(brokerErr: .TRANSPORT(.version)):
-        return ErrorAlert(title: "Private routing error", message: "Destination server version is incompatible with network settings. Proxy server: \(serverHostname(proxyServer)). Destination server: \(serverHostname(relayServer)).")
+        return ErrorAlert(title: "Private routing error", message: "Destination server version is incompatible with network settings.\nForwarding server: \(serverHostname(proxyServer)).\nDestination server: \(serverHostname(relayServer)).")
     default:
         return nil
     }
