@@ -81,7 +81,8 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
           ChatListToolbar(
             scaffoldState.drawerState,
             userPickerState,
-            stopped
+            stopped,
+            oneHandUI
           )
         }
       }
@@ -92,7 +93,8 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
           ChatListToolbar(
             scaffoldState.drawerState,
             userPickerState,
-            stopped
+            stopped,
+            oneHandUI
           )
         }
       }
@@ -108,14 +110,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
     drawerGesturesEnabled = appPlatform.isAndroid,
     floatingActionButton = {
-      if (searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
-        var bottom = DEFAULT_PADDING
-        if (oneHandUI.state.value) {
-          bottom = DEFAULT_BOTTOM_PADDING
-        } else {
-          bottom -= 16.dp
-        }
-
+      if (!oneHandUI.state.value && searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
         FloatingActionButton(
           onClick = {
             if (!stopped) {
@@ -227,10 +222,37 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean) {
+private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean, oneHandUI: SharedPreference<Boolean>) {
   val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val updatingProgress = remember { chatModel.updatingProgress }.value
+
+  if (oneHandUI.state.value) {
+    val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
+
+    barButtons.add {
+      IconButton(
+        onClick = {
+          if (!stopped) {
+            showNewChatSheet()
+          }
+        },
+      ) {
+        Box(
+          modifier = Modifier
+            .background(if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary, shape = CircleShape)
+            .padding(DEFAULT_PADDING_HALF)
+        ){
+          Icon(
+            painterResource(MR.images.ic_edit_filled),
+            stringResource(MR.strings.add_contact_or_create_group),
+            Modifier.size(sp16),
+            tint = if (!stopped) MaterialTheme.colors.onPrimary else MaterialTheme.colors.onSecondary)
+        }
+      }
+    }
+  }
+
   if (updatingProgress != null) {
     barButtons.add {
       val interactionSource = remember { MutableInteractionSource() }
