@@ -143,7 +143,7 @@ private fun ContactActionsSection(contactActions: @Composable () -> Unit, rh: Re
     val archived = remember { contactChats(chatModel.chats, listOf(ContactType.REMOVED)) }
 
     if (archived.isNotEmpty()) {
-        SectionView {
+        SectionView(padding = PaddingValues(bottom = DEFAULT_PADDING)) {
             SectionItemView(
                 click = {
                     ModalManager.start.showCustomModal { close -> DeletedContactsView(
@@ -300,7 +300,7 @@ private fun ContactsList(
         listState
     ) {
         item {
-            SectionView {
+            SectionView(padding = PaddingValues(bottom = DEFAULT_PADDING)) {
                 Divider()
                 ContactsSearchBar(
                     listState = listState,
@@ -316,8 +316,6 @@ private fun ContactsList(
             if (!searchFocused) {
                 contactActions()
             }
-
-            Spacer(Modifier.height(DEFAULT_PADDING))
 
             if (contactListTitle != null && filteredContactChats.isNotEmpty()) {
                 Text(
