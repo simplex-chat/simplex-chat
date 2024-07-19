@@ -30,6 +30,14 @@ class ShareModel: ObservableObject {
         case sendButton
         case loadingSpinner
         case loadingBar(progress: Double)
+
+        var isLoading: Bool {
+            switch self {
+            case .sendButton: false
+            case .loadingSpinner: true
+            case .loadingBar: true
+            }
+        }
     }
 
     var completion: ((Error?) -> Void)!
@@ -61,7 +69,11 @@ class ShareModel: ObservableObject {
             case let .success(item):
                 await MainActor.run { self.bottomBar = .loadingBar(progress: .zero) }
                 // Listen to the event loop for progress events
-                EventLoop.shared.set(itemId: item.chatItem.id, model: self)
+                EventLoop.shared.set(
+                    handling: item.chatInfo.chatType == .group ? .group : .directMessage,
+                    itemId: item.chatItem.id,
+                    model: self
+                )
             case let .failure(error):
                 await MainActor.run { self.error = error }
             }

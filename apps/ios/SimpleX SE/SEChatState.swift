@@ -31,10 +31,17 @@ class SEChatState {
 final class EventLoop {
     static let shared = EventLoop()
 
+    enum EventHandling {
+        case directMessage
+        case group
+    }
+
+    private var eventHandling: EventHandling?
     private var itemId: ChatItem.ID?
     private weak var model: ShareModel?
 
-    func set(itemId: ChatItem.ID, model: ShareModel) {
+    func set(handling: EventHandling, itemId: ChatItem.ID, model: ShareModel) {
+        self.eventHandling = handling
         self.itemId = itemId
         self.model = model
     }
@@ -42,23 +49,38 @@ final class EventLoop {
     init() {
         Task {
             while true {
-                switch recvSimpleXMsg() {
+                let message = recvSimpleXMsg()
+                logger.log(level: .info, "\(message.debugDescription)")
+                switch message {
+                // Drive the progress bar for direct chats
                 case let .sndFileProgressXFTP(_, aChatItem, _, sentSize, totalSize):
-                    if let id = aChatItem?.chatItem.id, id == itemId {
-                        await MainActor.run {
-                            withAnimation {
-                                model?.bottomBar = .loadingBar(progress: Double(sentSize) / Double(totalSize))
-                            }
+                    logger.debug("Received sndFileCompleteXFTP message, sentSize: \(sentSize), totalSize: \(totalSize)")
+                    guard eventHandling == .directMessage, let id = aChatItem?.chatItem.id, id == itemId else { continue }
+                    await MainActor.run {
+                        withAnimation {
+                            model?.bottomBar = .loadingBar(progress: Double(sentSize) / Double(totalSize))
                         }
                     }
+                // For direct chats show that file upload is complete
+                // For group chats wait for 5 seconds after receiving `sndFileCompleteXFTP` to run completion
                 case let .sndFileCompleteXFTP(_, aChatItem, _):
-                    if aChatItem.chatItem.id == itemId {
-                        await MainActor.run {
-                            model?.bottomBar = .loadingBar(progress: 1)
-                            model?.completion!(nil)
-                        }
+                    logger.debug("Received sndFileCompleteXFTP message")
+                    guard let eventHandling, aChatItem.chatItem.id == itemId else { continue }
+                    switch eventHandling {
+                    case .directMessage:
+                        await MainActor.run { model?.bottomBar = .loadingBar(progress: 1) }
+                    case .group:
+                        try? await Task.sleep(for: .seconds(5))
+                        model?.completion?(nil)
                     }
-                default: break
+                // For direct chats run completion only after receiving `.complete` item state
+                case let .chatItemUpdated(_, aChatItem):
+                    logger.debug("Received chatItemStatusUpdated message")
+                    guard eventHandling == .directMessage,
+                          aChatItem.chatItem.id == itemId,
+                          aChatItem.chatItem.meta.itemStatus == .sndSent(sndProgress: .complete) else { continue }
+                    model?.completion?(nil)
+                default: logger.debug("UnhandledMessage \(message.debugDescription)" )
                 }
             }
         }

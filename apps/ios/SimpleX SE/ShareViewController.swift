@@ -30,12 +30,32 @@ class ShareViewController: UIHostingController<ShareView> {
                 if let error {
                     self.extensionContext!.cancelRequest(withError: error)
                 } else {
-                    self.extensionContext!.completeRequest(returningItems: [item]) { _ in
-                        let _ = sendSimpleXCmd(.apiStopChat)
+                    self.extensionContext!.completeRequest(returningItems: [item]) { expired in
+                        self.handleShutDown(expired: expired)
                     }
                 }
             }
             Task { await MainActor.run { model.item = item } }
+        }
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        // In case user dismisses the sheet, while sending a file
+        if let item = extensionContext?.inputItems.first as? NSExtensionItem {
+            if model.bottomBar.isLoading {
+                self.extensionContext!.completeRequest(returningItems: [item]) { expired in
+                    self.handleShutDown(expired: expired)
+                }
+            }
+        }
+    }
+
+    private func handleShutDown(expired: Bool) {
+        if expired {
+            // TODO: Send Notification that the main app needs to be opened to finish upload
+        } else {
+            // TODO: Close database connection and shut down the chat
+            let _ = sendSimpleXCmd(.apiStopChat)
         }
     }
 }
