@@ -7226,8 +7226,8 @@ Ripetere la richiesta di ingresso?</target>
         <target>Puoi renderlo visibile ai tuoi contatti SimpleX nelle impostazioni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now send messages to %@" xml:space="preserve">
-        <source>You can now send messages to %@</source>
+      <trans-unit id="You can now chat with %@" xml:space="preserve">
+        <source>You can now chat with %@</source>
         <target>Ora puoi inviare messaggi a %@</target>
         <note>notification body</note>
       </trans-unit>
@@ -7635,7 +7635,7 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
       <trans-unit id="blocked by admin" xml:space="preserve">
         <source>blocked by admin</source>
         <target>bloccato dall'amministratore</target>
-        <note>blocked chat item</note>
+        <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>
