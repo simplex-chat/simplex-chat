@@ -332,9 +332,7 @@ private fun ContactsList(
                     chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
                 }
             }
-            SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-                ContactListNavLinkView(chat, nextChatSelected)
-            }
+            ContactListNavLinkView(chat, nextChatSelected)
         }
     }
 

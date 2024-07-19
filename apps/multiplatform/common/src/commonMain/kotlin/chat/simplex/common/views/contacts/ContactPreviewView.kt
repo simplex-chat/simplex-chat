@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.DEFAULT_SPACE_AFTER_ICON
 import chat.simplex.res.MR
 
@@ -59,7 +60,8 @@ fun ContactPreviewView(
     }
 
     Row(
-        verticalAlignment = Alignment.CenterVertically
+        modifier = Modifier.padding(PaddingValues(horizontal = DEFAULT_PADDING)),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(contentAlignment = Alignment.BottomEnd) {
             ChatInfoImage(cInfo, size = 42.dp)
