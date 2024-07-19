@@ -209,7 +209,7 @@ fun ChatPreviewView(
         is ChatInfo.Direct ->
           if (cInfo.contact.activeConn == null && cInfo.contact.profile.contactLink != null) {
             Text(stringResource(MR.strings.contact_tap_to_connect), color = MaterialTheme.colors.primary)
-          } else if (!cInfo.ready && cInfo.contact.activeConn != null) {
+          } else if (!cInfo.contact.sndReady && cInfo.contact.activeConn != null) {
             if (cInfo.contact.nextSendGrpInv) {
               Text(stringResource(MR.strings.member_contact_send_direct_message), color = MaterialTheme.colors.secondary)
             } else if (cInfo.contact.active) {

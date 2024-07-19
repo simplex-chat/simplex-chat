@@ -1085,9 +1085,10 @@ data class Contact(
   override val id get() = "@$contactId"
   override val apiId get() = contactId
   override val ready get() = activeConn?.connStatus == ConnStatus.Ready
+  val sndReady get() = ready || activeConn?.connStatus == ConnStatus.SndReady
   val active get() = contactStatus == ContactStatus.Active
   override val sendMsgEnabled get() = (
-      ready
+      sndReady
           && active
           && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?: false)
           && !(activeConn?.connDisabled ?: true)
@@ -1753,7 +1754,7 @@ enum class ConnStatus {
     Joined -> false
     Requested -> true
     Accepted -> true
-    SndReady -> false
+    SndReady -> null
     Ready -> null
     Deleted -> null
   }

@@ -132,7 +132,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               ) {
                 if (
                   chat.chatInfo is ChatInfo.Direct
-                  && !chat.chatInfo.contact.ready
+                  && !chat.chatInfo.contact.sndReady
                   && chat.chatInfo.contact.active
                   && !chat.chatInfo.contact.nextSendGrpInv
                 ) {

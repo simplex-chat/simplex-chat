@@ -206,7 +206,7 @@ fun deleteContactDialog(chat: Chat, chatModel: ChatModel, close: (() -> Unit)? =
     text = AnnotatedString(generalGetString(MR.strings.delete_contact_all_messages_deleted_cannot_undo_warning)),
     buttons = {
       Column {
-        if (chatInfo is ChatInfo.Direct && chatInfo.contact.ready && chatInfo.contact.active) {
+        if (chatInfo is ChatInfo.Direct && chatInfo.contact.sndReady && chatInfo.contact.active) {
           // Delete and notify contact
           SectionItemView({
             AlertManager.shared.hideAlert()
@@ -330,8 +330,8 @@ fun ChatInfoLayout(
       SectionDividerSpaced()
     }
 
-    if (contact.ready && contact.active) {
-      SectionView {
+    SectionView {
+      if (contact.ready && contact.active) {
         if (connectionCode != null) {
           VerifyCodeButton(contact.verified, verifyClicked)
         }
@@ -340,22 +340,22 @@ fun ChatInfoLayout(
         if (cStats != null && cStats.ratchetSyncAllowed) {
           SynchronizeConnectionButton(syncContactConnection)
         }
+        // } else if (developerTools) {
+        //   SynchronizeConnectionButtonForce(syncContactConnectionForce)
+        // }
+      }
 
-        WallpaperButton {
-          ModalManager.end.showModal {
-            val chat = remember { derivedStateOf { chatModel.chats.firstOrNull { it.id == chat.id } } }
-            val c = chat.value
-            if (c != null) {
-              ChatWallpaperEditorModal(c)
-            }
+      WallpaperButton {
+        ModalManager.end.showModal {
+          val chat = remember { derivedStateOf { chatModel.chats.firstOrNull { it.id == chat.id } } }
+          val c = chat.value
+          if (c != null) {
+            ChatWallpaperEditorModal(c)
           }
         }
-        //      } else if (developerTools) {
-        //        SynchronizeConnectionButtonForce(syncContactConnectionForce)
-        //      }
       }
-      SectionDividerSpaced()
     }
+    SectionDividerSpaced()
 
     val conn = contact.activeConn
     if (conn != null) {
