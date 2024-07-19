@@ -33,6 +33,15 @@ fun ContactPreviewView(
     @Composable
     fun chatPreviewTitle() {
         val deleting by remember(disabled, chat.id) { mutableStateOf(chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id)) }
+        val contactType = getContactType(chat)
+
+        val textColor = when {
+            deleting -> MaterialTheme.colors.secondary
+            contactType == ContactType.CARD -> MaterialTheme.colors.primary
+            contactType == ContactType.REQUEST -> MaterialTheme.colors.primary
+            else -> Color.Unspecified
+        }
+
         when (cInfo) {
             is ChatInfo.Direct ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -43,7 +52,7 @@ fun ContactPreviewView(
                         cInfo.chatViewName,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        color = if (deleting) MaterialTheme.colors.secondary else Color.Unspecified
+                        color = textColor
                     )
                 }
             is ChatInfo.ContactRequest ->
@@ -52,7 +61,7 @@ fun ContactPreviewView(
                         cInfo.chatViewName,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        color = Color.Unspecified
+                        color = textColor
                     )
                 }
             else -> {}
