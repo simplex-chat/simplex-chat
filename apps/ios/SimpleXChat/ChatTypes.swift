@@ -1512,10 +1512,11 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
+    public var sndReady: Bool { get { ready || activeConn?.connStatus == .sndReady } }
     public var active: Bool { get { contactStatus == .active } }
     public var sendMsgEnabled: Bool { get {
         (
-            ready
+            sndReady
             && active
             && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false)
             && !(activeConn?.connDisabled ?? true)
@@ -1824,7 +1825,7 @@ public enum ConnStatus: String, Decodable, Hashable {
             case .joined: return false
             case .requested: return true
             case .accepted: return true
-            case .sndReady: return false
+            case .sndReady: return nil
             case .ready: return nil
             case .deleted: return nil
             }

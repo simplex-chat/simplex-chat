@@ -7103,8 +7103,8 @@ Katılma isteği tekrarlansın mı?</target>
         <target>Ayarlardan SimpleX kişilerinize görünür yapabilirsiniz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now send messages to %@" xml:space="preserve">
-        <source>You can now send messages to %@</source>
+      <trans-unit id="You can now chat with %@" xml:space="preserve">
+        <source>You can now chat with %@</source>
         <target>Artık %@ adresine mesaj gönderebilirsin</target>
         <note>notification body</note>
       </trans-unit>
@@ -7511,7 +7511,7 @@ SimpleX sunucuları profilinizi göremez.</target>
       <trans-unit id="blocked by admin" xml:space="preserve">
         <source>blocked by admin</source>
         <target>yönetici tarafından engellendi</target>
-        <note>blocked chat item</note>
+        <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>

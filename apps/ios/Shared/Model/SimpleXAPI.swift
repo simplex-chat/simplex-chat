@@ -1143,7 +1143,10 @@ func networkErrorAlert(_ r: ChatResponse) -> Alert? {
 func acceptContactRequest(incognito: Bool, contactRequest: UserContactRequest) async {
     if let contact = await apiAcceptContactRequest(incognito: incognito, contactReqId: contactRequest.apiId) {
         let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
-        DispatchQueue.main.async { ChatModel.shared.replaceChat(contactRequest.id, chat) }
+        DispatchQueue.main.async {
+            ChatModel.shared.replaceChat(contactRequest.id, chat)
+            ChatModel.shared.setContactNetworkStatus(contact, .connected)
+        }
     }
 }
 
@@ -1648,6 +1651,19 @@ func processReceivedMsg(_ res: ChatResponse) async {
                     m.removeChat(conn.id)
                 }
             }
+        }
+    case let .contactSndReady(user, contact):
+        if active(user) && contact.directOrUsed {
+            await MainActor.run {
+                m.updateContact(contact)
+                if let conn = contact.activeConn {
+                    m.dismissConnReqView(conn.id)
+                    m.removeChat(conn.id)
+                }
+            }
+        }
+        await MainActor.run {
+            m.setContactNetworkStatus(contact, .connected)
         }
     case let .receivedContactRequest(user, contactRequest):
         if active(user) {

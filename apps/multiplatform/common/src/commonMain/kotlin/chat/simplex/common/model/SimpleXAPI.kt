@@ -1957,6 +1957,17 @@ object ChatController {
           }
         }
       }
+      is CR.ContactSndReady -> {
+        if (active(r.user) && r.contact.directOrUsed) {
+          chatModel.updateContact(rhId, r.contact)
+          val conn = r.contact.activeConn
+          if (conn != null) {
+            chatModel.replaceConnReqView(conn.id, "@${r.contact.contactId}")
+            chatModel.removeChat(rhId, conn.id)
+          }
+        }
+        chatModel.setContactNetworkStatus(r.contact, NetworkStatus.Connected())
+      }
       is CR.ReceivedContactRequest -> {
         val contactRequest = r.contactRequest
         val cInfo = ChatInfo.ContactRequest(contactRequest)
@@ -4594,6 +4605,7 @@ sealed class CR {
   @Serializable @SerialName("userContactLinkDeleted") class UserContactLinkDeleted(val user: User): CR()
   @Serializable @SerialName("contactConnected") class ContactConnected(val user: UserRef, val contact: Contact, val userCustomProfile: Profile? = null): CR()
   @Serializable @SerialName("contactConnecting") class ContactConnecting(val user: UserRef, val contact: Contact): CR()
+  @Serializable @SerialName("contactSndReady") class ContactSndReady(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("receivedContactRequest") class ReceivedContactRequest(val user: UserRef, val contactRequest: UserContactRequest): CR()
   @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected(val user: UserRef): CR()
@@ -4769,6 +4781,7 @@ sealed class CR {
     is UserContactLinkDeleted -> "userContactLinkDeleted"
     is ContactConnected -> "contactConnected"
     is ContactConnecting -> "contactConnecting"
+    is ContactSndReady -> "contactSndReady"
     is ReceivedContactRequest -> "receivedContactRequest"
     is AcceptingContactRequest -> "acceptingContactRequest"
     is ContactRequestRejected -> "contactRequestRejected"
@@ -4934,6 +4947,7 @@ sealed class CR {
     is UserContactLinkDeleted -> withUser(user, noDetails())
     is ContactConnected -> withUser(user, json.encodeToString(contact))
     is ContactConnecting -> withUser(user, json.encodeToString(contact))
+    is ContactSndReady -> withUser(user, json.encodeToString(contact))
     is ReceivedContactRequest -> withUser(user, json.encodeToString(contactRequest))
     is AcceptingContactRequest -> withUser(user, json.encodeToString(contact))
     is ContactRequestRejected -> withUser(user, noDetails())
