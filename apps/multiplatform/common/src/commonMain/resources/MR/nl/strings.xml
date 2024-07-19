@@ -1980,7 +1980,6 @@
     <string name="app_check_for_updates_beta">Beta</string>
     <string name="app_check_for_updates">Controleer op updates</string>
     <string name="app_check_for_updates_notice_title">Controleer op updates</string>
-    <string name="proxy_error_broker_version_desc">Serverversie is incompatibel met netwerkinstellingen: %1$s.</string>
     <string name="app_check_for_updates_notice_disable">Uitschakelen</string>
     <string name="subscription_errors">Inschrijving fouten</string>
     <string name="subscription_results_ignored">Inschrijvingen genegeerd</string>

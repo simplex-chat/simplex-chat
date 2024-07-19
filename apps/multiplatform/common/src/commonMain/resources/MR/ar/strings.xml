@@ -1987,5 +1987,4 @@
     <string name="app_check_for_updates_notice_desc">لكي يتم إعلامك بالإصدارات الجديدة، شغّل الفحص الدوري للإصدارات المستقرة أو التجريبية.</string>
     <string name="servers_info_proxied_servers_section_footer">أنت غير متصل بهذه الخوادم. يتم استخدام التوجيه الخاص لتسليم الرسائل إليهم.</string>
     <string name="appearance_zoom">قرّب</string>
-    <string name="proxy_error_broker_version_desc">إصدار الخادم غير متوافق مع إعدادات الشبكة: %1$s.</string>
 </resources>

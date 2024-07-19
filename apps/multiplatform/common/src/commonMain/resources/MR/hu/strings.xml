@@ -1983,5 +1983,4 @@
     <string name="app_check_for_updates_notice_disable">Letiltás</string>
     <string name="app_check_for_updates_disabled">Letiltva</string>
     <string name="app_check_for_updates_stable">Stabil</string>
-    <string name="proxy_error_broker_version_desc">A kiszolgáló verziója nem kompatibilis a hálózati beállításokkal: %1$s.</string>
 </resources>

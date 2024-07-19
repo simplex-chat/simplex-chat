@@ -2071,5 +2071,4 @@
     <string name="app_check_for_updates_update_available">Aktualisierung verfügbar: %s</string>
     <string name="app_check_for_updates_notice_desc">Aktivieren Sie die periodische Überprüfung auf stabile oder Beta-Versionen der App, um über neue Versionen benachrichtigt zu werden.</string>
     <string name="app_check_for_updates_canceled">Herunterladen der Aktualisierung abgebrochen</string>
-    <string name="proxy_error_broker_version_desc">Die Server-Version ist nicht mit den Netzwerkeinstellungen kompatibel: %1$s</string>
 </resources>

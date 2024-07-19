@@ -1989,5 +1989,4 @@
     <string name="app_check_for_updates_download_completed_title">Aggiornamento dell\'app scaricato</string>
     <string name="app_check_for_updates_notice_title">Cerca aggiornamenti</string>
     <string name="app_check_for_updates_button_install">Installa aggiornamento</string>
-    <string name="proxy_error_broker_version_desc">La versione del server è incompatibile con le impostazioni di rete: %1$s.</string>
 </resources>
