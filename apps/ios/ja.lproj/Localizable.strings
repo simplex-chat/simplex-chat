@@ -3448,7 +3448,7 @@
 "You can hide or mute a user profile - swipe it to the right." = "ユーザープロファイルを右にスワイプすると、非表示またはミュートにすることができます。";
 
 /* notification body */
-"You can now send messages to %@" = "%@ にメッセージを送信できるようになりました";
+"You can now chat with %@" = "%@ にメッセージを送信できるようになりました";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "設定からロック画面の通知プレビューを設定できます。";

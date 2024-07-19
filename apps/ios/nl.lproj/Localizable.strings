@@ -647,7 +647,7 @@
 /* rcv group event chat item */
 "blocked %@" = "geblokkeerd %@";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "geblokkeerd door beheerder";
 
 /* No comment provided by engineer. */
@@ -4414,7 +4414,7 @@
 "You can make it visible to your SimpleX contacts via Settings." = "Je kunt het via Instellingen zichtbaar maken voor je SimpleX contacten.";
 
 /* notification body */
-"You can now send messages to %@" = "Je kunt nu berichten sturen naar %@";
+"You can now chat with %@" = "Je kunt nu berichten sturen naar %@";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "U kunt een voorbeeld van een melding op het vergrendeld scherm instellen via instellingen.";
