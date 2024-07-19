@@ -1109,7 +1109,7 @@ func getNetworkErrorAlert(_ r: ChatResponse) -> ErrorAlert? {
     case let .chatCmdError(_, .errorAgent(.SMP(serverAddress, .PROXY(proxyErr)))):
         return smpProxyErrorAlert(proxyErr, serverAddress)
     case let .chatCmdError(_, .errorAgent(.PROXY(proxyServer, relayServer, .protocolError(.PROXY(proxyErr))))):
-        return proxyErrorAlert(proxyErr, proxyServer, relayServer)
+        return proxyDestinationErrorAlert(proxyErr, proxyServer, relayServer)
     default:
         return nil
     }
@@ -1130,7 +1130,7 @@ private func smpProxyErrorAlert(_ proxyErr: ProxyError, _ srvAddr: String) -> Er
     }
 }
 
-private func proxyErrorAlert(_ proxyErr: ProxyError, _ proxyServer: String, _ relayServer: String) -> ErrorAlert? {
+private func proxyDestinationErrorAlert(_ proxyErr: ProxyError, _ proxyServer: String, _ relayServer: String) -> ErrorAlert? {
     switch proxyErr {
     case .BROKER(brokerErr: .TIMEOUT):
         return ErrorAlert(title: "Private routing error", message: "Please try later.")
