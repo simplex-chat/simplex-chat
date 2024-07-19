@@ -300,10 +300,10 @@ struct ChatPreviewView: View {
                 CIVideoView(chatItem: ci, preview: UIImage(base64Encoded: image), duration: duration, maxWidth: 36, videoWidth: nil, smallView: true)
                     .environmentObject(ReverseListScrollModel<ChatItem>())
             )
-        case let .voice(_, duration):
-            smallContentPreviewVoice(
-                CIVoiceView(chat: chat, chatItem: ci, recordingFile: ci.file, duration: duration, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime, allowMenu: Binding.constant(true), smallView: true)
-                )
+//        case let .voice(_, duration):
+//            smallContentPreviewVoice(
+//                CIVoiceView(chat: chat, chatItem: ci, recordingFile: ci.file, duration: duration, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime, allowMenu: Binding.constant(true), smallView: true)
+//                )
         case .file:
             smallContentPreviewFile(
                 CIFileView(file: ci.file, edited: ci.meta.itemEdited, smallView: true)
