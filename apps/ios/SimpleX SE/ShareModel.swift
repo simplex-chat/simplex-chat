@@ -67,7 +67,11 @@ class ShareModel: ObservableObject {
         Task {
             switch await self.sendMessage() {
             case let .success(item):
-                await MainActor.run { self.bottomBar = .loadingBar(progress: .zero) }
+                if item.chatInfo.chatType != .group {
+                    await MainActor.run {
+                        self.bottomBar = .loadingBar(progress: .zero)
+                    }
+                }
                 // Listen to the event loop for progress events
                 EventLoop.shared.set(
                     handling: item.chatInfo.chatType == .group ? .group : .directMessage,
