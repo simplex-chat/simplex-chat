@@ -132,7 +132,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               ) {
                 if (
                   chat.chatInfo is ChatInfo.Direct
-                  && !chat.chatInfo.contact.ready
+                  && !chat.chatInfo.contact.sndReady
                   && chat.chatInfo.contact.active
                   && !chat.chatInfo.contact.nextSendGrpInv
                 ) {
@@ -1418,7 +1418,7 @@ sealed class ProviderMedia {
   data class Video(val uri: URI, val fileSource: CryptoFile?, val preview: String): ProviderMedia()
 }
 
-private fun providerForGallery(
+fun providerForGallery(
   listStateIndex: Int,
   chatItems: List<ChatItem>,
   cItemId: Long,

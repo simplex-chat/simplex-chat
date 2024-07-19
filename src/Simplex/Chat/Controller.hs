@@ -675,6 +675,7 @@ data ChatResponse
   | CRContactPrefsUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CRContactConnecting {user :: User, contact :: Contact}
   | CRContactConnected {user :: User, contact :: Contact, userCustomProfile :: Maybe Profile}
+  | CRContactSndReady {user :: User, contact :: Contact}
   | CRContactAnotherClient {user :: User, contact :: Contact}
   | CRSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
   | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}

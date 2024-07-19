@@ -595,7 +595,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
         Divider()
       }
     }
-    itemsIndexed(chats) { index, chat ->
+    itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->
       val nextChatSelected = remember(chat.id, chats) { derivedStateOf {
         chatModel.chatId.value != null && chats.getOrNull(index + 1)?.id == chatModel.chatId.value
       } }

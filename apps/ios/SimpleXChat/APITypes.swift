@@ -575,6 +575,7 @@ public enum ChatResponse: Decodable, Error {
     case userContactLinkDeleted(user: User)
     case contactConnected(user: UserRef, contact: Contact, userCustomProfile: Profile?)
     case contactConnecting(user: UserRef, contact: Contact)
+    case contactSndReady(user: UserRef, contact: Contact)
     case receivedContactRequest(user: UserRef, contactRequest: UserContactRequest)
     case acceptingContactRequest(user: UserRef, contact: Contact)
     case contactRequestRejected(user: UserRef)
@@ -742,6 +743,7 @@ public enum ChatResponse: Decodable, Error {
             case .userContactLinkDeleted: return "userContactLinkDeleted"
             case .contactConnected: return "contactConnected"
             case .contactConnecting: return "contactConnecting"
+            case .contactSndReady: return "contactSndReady"
             case .receivedContactRequest: return "receivedContactRequest"
             case .acceptingContactRequest: return "acceptingContactRequest"
             case .contactRequestRejected: return "contactRequestRejected"
@@ -907,6 +909,7 @@ public enum ChatResponse: Decodable, Error {
             case .userContactLinkDeleted: return noDetails
             case let .contactConnected(u, contact, _): return withUser(u, String(describing: contact))
             case let .contactConnecting(u, contact): return withUser(u, String(describing: contact))
+            case let .contactSndReady(u, contact): return withUser(u, String(describing: contact))
             case let .receivedContactRequest(u, contactRequest): return withUser(u, String(describing: contactRequest))
             case let .acceptingContactRequest(u, contact): return withUser(u, String(describing: contact))
             case .contactRequestRejected: return noDetails

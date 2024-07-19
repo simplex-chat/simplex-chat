@@ -260,16 +260,16 @@ fun notifyDeleteContactDialog(
 ) {
   val chatInfo = chat.chatInfo
   if (chatInfo is ChatInfo.Direct) {
-    val contactActive = chatInfo.contact.ready && chatInfo.contact.active
+    val canSendDel = chatInfo.contact.sndReady && chatInfo.contact.active
     AlertManager.shared.showAlertDialogButtonsColumn(
-      title = if (contactActive) generalGetString(MR.strings.notify_delete_contact_question) else generalGetString(MR.strings.confirm_delete_contact_question),
+      title = if (canSendDel) generalGetString(MR.strings.notify_delete_contact_question) else generalGetString(MR.strings.confirm_delete_contact_question),
       text = when (contactDeleteMode) {
         is ContactDeleteMode.Full -> generalGetString(MR.strings.delete_contact_all_messages_deleted_cannot_undo_warning)
         is ContactDeleteMode.Entity -> generalGetString(MR.strings.delete_contact_cannot_undo_warning)
       },
       buttons = {
         Column {
-          if (contactActive) {
+          if (canSendDel) {
             // Delete and notify contact
             SectionItemView({
               AlertManager.shared.hideAlert()
@@ -448,8 +448,8 @@ fun ChatInfoLayout(
       SectionDividerSpaced()
     }
 
-    if (contact.ready && contact.active) {
-      SectionView {
+    SectionView {
+      if (contact.ready && contact.active) {
         if (connectionCode != null) {
           VerifyCodeButton(contact.verified, verifyClicked)
         }
@@ -458,22 +458,22 @@ fun ChatInfoLayout(
         if (cStats != null && cStats.ratchetSyncAllowed) {
           SynchronizeConnectionButton(syncContactConnection)
         }
+        // } else if (developerTools) {
+        //   SynchronizeConnectionButtonForce(syncContactConnectionForce)
+        // }
+      }
 
-        WallpaperButton {
-          ModalManager.end.showModal {
-            val chat = remember { derivedStateOf { chatModel.chats.firstOrNull { it.id == chat.id } } }
-            val c = chat.value
-            if (c != null) {
-              ChatWallpaperEditorModal(c)
-            }
+      WallpaperButton {
+        ModalManager.end.showModal {
+          val chat = remember { derivedStateOf { chatModel.chats.firstOrNull { it.id == chat.id } } }
+          val c = chat.value
+          if (c != null) {
+            ChatWallpaperEditorModal(c)
           }
         }
-        //      } else if (developerTools) {
-        //        SynchronizeConnectionButtonForce(syncContactConnectionForce)
-        //      }
       }
-      SectionDividerSpaced()
     }
+    SectionDividerSpaced()
 
     val conn = contact.activeConn
     if (conn != null) {

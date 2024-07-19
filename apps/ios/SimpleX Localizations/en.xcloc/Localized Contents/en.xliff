@@ -7236,9 +7236,9 @@ Repeat join request?</target>
         <target>You can make it visible to your SimpleX contacts via Settings.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now send messages to %@" xml:space="preserve">
-        <source>You can now send messages to %@</source>
-        <target>You can now send messages to %@</target>
+      <trans-unit id="You can now chat with %@" xml:space="preserve">
+        <source>You can now chat with %@</source>
+        <target>You can now chat with %@</target>
         <note>notification body</note>
       </trans-unit>
       <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve">
@@ -7645,7 +7645,7 @@ SimpleX servers cannot see your profile.</target>
       <trans-unit id="blocked by admin" xml:space="preserve">
         <source>blocked by admin</source>
         <target>blocked by admin</target>
-        <note>blocked chat item</note>
+        <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>

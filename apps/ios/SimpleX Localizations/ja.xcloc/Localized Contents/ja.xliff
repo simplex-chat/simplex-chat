@@ -6800,8 +6800,8 @@ Repeat join request?</source>
         <source>You can make it visible to your SimpleX contacts via Settings.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now send messages to %@" xml:space="preserve">
-        <source>You can now send messages to %@</source>
+      <trans-unit id="You can now chat with %@" xml:space="preserve">
+        <source>You can now chat with %@</source>
         <target>%@ にメッセージを送信できるようになりました</target>
         <note>notification body</note>
       </trans-unit>
@@ -7194,7 +7194,7 @@ SimpleX サーバーはあなたのプロファイルを参照できません。
       </trans-unit>
       <trans-unit id="blocked by admin" xml:space="preserve">
         <source>blocked by admin</source>
-        <note>blocked chat item</note>
+        <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>
