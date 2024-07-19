@@ -81,7 +81,7 @@ private fun contactChats(c: List<Chat>, contactTypes: List<ContactType>): List<C
     return c.filter { chat -> contactTypes.contains(getContactType(chat)) }
 }
 
-private fun getContactType(chat: Chat): ContactType {
+fun getContactType(chat: Chat): ContactType {
     return when (val cInfo = chat.chatInfo) {
         is ChatInfo.ContactRequest -> ContactType.REQUEST
         is ChatInfo.Direct -> {
