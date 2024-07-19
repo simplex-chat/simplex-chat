@@ -1837,23 +1837,27 @@ object ChatController {
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
           && r.chatError.agentError is AgentErrorType.SMP
           && r.chatError.agentError.smpErr is SMPErrorType.PROXY ->
-        proxyErrorAlert(r.chatError.agentError.smpErr.proxyErr, r.chatError.agentError.serverAddress)
+        smpProxyErrorAlert(r.chatError.agentError.smpErr.proxyErr, r.chatError.agentError.serverAddress)
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
           && r.chatError.agentError is AgentErrorType.PROXY
           && r.chatError.agentError.proxyErr is ProxyClientError.ProxyProtocolError
           && r.chatError.agentError.proxyErr.protocolErr is SMPErrorType.PROXY ->
-        proxyErrorAlert(r.chatError.agentError.proxyErr.protocolErr.proxyErr, r.chatError.agentError.proxyServer)
+        proxyDestinationErrorAlert(
+          r.chatError.agentError.proxyErr.protocolErr.proxyErr,
+          r.chatError.agentError.proxyServer,
+          r.chatError.agentError.relayServer
+        )
       else -> false
     }
   }
 
-  private fun proxyErrorAlert(pe: ProxyError, srvAddr: String): Boolean {
+  private fun smpProxyErrorAlert(pe: ProxyError, srvAddr: String): Boolean {
     return when {
       pe is ProxyError.BROKER
           && pe.brokerErr is BrokerErrorType.TIMEOUT -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.private_routing_error),
-          generalGetString(MR.strings.please_try_later)
+          String.format(generalGetString(MR.strings.smp_proxy_error_connecting), serverHostname(srvAddr))
         )
         true
       }
@@ -1861,14 +1865,7 @@ object ChatController {
           && pe.brokerErr is BrokerErrorType.NETWORK -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.private_routing_error),
-          generalGetString(MR.strings.please_try_later)
-        )
-        true
-      }
-      pe is ProxyError.NO_SESSION -> {
-        AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.private_routing_error),
-          generalGetString(MR.strings.please_try_later)
+          String.format(generalGetString(MR.strings.smp_proxy_error_connecting), serverHostname(srvAddr))
         )
         true
       }
@@ -1876,7 +1873,7 @@ object ChatController {
           && pe.brokerErr is BrokerErrorType.HOST -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.private_routing_error),
-          String.format(generalGetString(MR.strings.network_error_broker_host_desc), serverHostname(srvAddr))
+          String.format(generalGetString(MR.strings.smp_proxy_error_broker_host), serverHostname(srvAddr))
         )
         true
       }
@@ -1885,7 +1882,53 @@ object ChatController {
           && pe.brokerErr.transportErr is SMPTransportError.Version -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.private_routing_error),
-          String.format(generalGetString(MR.strings.proxy_error_broker_version_desc), serverHostname(srvAddr))
+          String.format(generalGetString(MR.strings.smp_proxy_error_broker_version), serverHostname(srvAddr))
+        )
+        true
+      }
+      else -> false
+    }
+  }
+
+  private fun proxyDestinationErrorAlert(pe: ProxyError, proxyServer: String, relayServer: String): Boolean {
+    return when {
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.TIMEOUT -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_failed_to_connect), serverHostname(proxyServer), serverHostname(relayServer))
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.NETWORK -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_failed_to_connect), serverHostname(proxyServer), serverHostname(relayServer))
+        )
+        true
+      }
+      pe is ProxyError.NO_SESSION -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_failed_to_connect), serverHostname(proxyServer), serverHostname(relayServer))
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.HOST -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_broker_host), serverHostname(relayServer), serverHostname(proxyServer))
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.TRANSPORT
+          && pe.brokerErr.transportErr is SMPTransportError.Version -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_broker_version), serverHostname(relayServer), serverHostname(proxyServer))
         )
         true
       }
