@@ -19,11 +19,23 @@ struct CIVoiceView: View {
     @Binding var playbackState: VoiceMessagePlaybackState
     @Binding var playbackTime: TimeInterval?
     @Binding var allowMenu: Bool
+    var smallView: Bool = false
     @State private var seek: (TimeInterval) -> Void = { _ in }
 
     var body: some View {
         Group {
-            if chatItem.chatDir.sent {
+            if smallView {
+                VStack (alignment: .leading, spacing: 6) {
+                    HStack {
+                        player()
+                        playerTime()
+                        if .playing == playbackState || (playbackTime ?? 0) > 0 || !allowMenu {
+                            playbackSlider()
+                        }
+                    }
+                    .frame(alignment: .leading)
+                }
+            } else if chatItem.chatDir.sent {
                 VStack (alignment: .trailing, spacing: 6) {
                     HStack {
                         if .playing == playbackState || (playbackTime ?? 0) > 0 || !allowMenu {
@@ -315,6 +327,11 @@ struct VoiceMessagePlayer: View {
         audioPlayer?.start(fileSource: recordingSource, at: playbackTime)
         playbackState = .playing
     }
+}
+
+func voiceMessageSizeBasedOnSquareSize(_ squareSize: CGFloat) -> CGFloat {
+    let squareToCircleRatio = 0.935
+    return squareSize + squareSize * (1 - squareToCircleRatio)
 }
 
 struct CIVoiceView_Previews: PreviewProvider {

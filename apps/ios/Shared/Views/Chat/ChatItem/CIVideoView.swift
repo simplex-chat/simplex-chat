@@ -20,6 +20,7 @@ struct CIVideoView: View {
     @State private var videoPlaying: Bool = false
     private let maxWidth: CGFloat
     private var videoWidth: CGFloat?
+    private let smallView: Bool
     @State private var player: AVPlayer?
     @State private var fullPlayer: AVPlayer?
     @State private var url: URL?
@@ -29,13 +30,15 @@ struct CIVideoView: View {
     @State private var timeObserver: Any? = nil
     @State private var fullScreenTimeObserver: Any? = nil
     @State private var publisher: AnyCancellable? = nil
+    private var sizeMultiplier: CGFloat { smallView ? 0.38 : 1 }
 
-    init(chatItem: ChatItem, preview: UIImage?, duration: Int, maxWidth: CGFloat, videoWidth: CGFloat?) {
+    init(chatItem: ChatItem, preview: UIImage?, duration: Int, maxWidth: CGFloat, videoWidth: CGFloat?, smallView: Bool = false) {
         self.chatItem = chatItem
         self.preview = preview
         self._duration = State(initialValue: duration)
         self.maxWidth = maxWidth
         self.videoWidth = videoWidth
+        self.smallView = smallView
         if let url = getLoadedVideo(chatItem.file) {
             let decrypted = chatItem.file?.fileSource?.cryptoArgs == nil ? url : chatItem.file?.fileSource?.decryptedGet()
             self._urlDecrypted = State(initialValue: decrypted)
@@ -49,16 +52,19 @@ struct CIVideoView: View {
 
     var body: some View {
         let file = chatItem.file
-        ZStack {
+        ZStack(alignment: smallView ? .topLeading : .center) {
             ZStack(alignment: .topLeading) {
-                if let file = file, let preview = preview, let player = player, let decrypted = urlDecrypted {
+                if let file = file, let preview = preview, let decrypted = urlDecrypted, smallView {
+                    smallVideoView(decrypted, file, preview)
+                } else if let file = file, let preview = preview, let player = player, let decrypted = urlDecrypted {
                     videoView(player, decrypted, file, preview, duration)
+                } else if let file = file, let defaultPreview = preview, file.loaded && urlDecrypted == nil, smallView {
+                    smallVideoViewEncrypted(file, defaultPreview)
                 } else if let file = file, let defaultPreview = preview, file.loaded && urlDecrypted == nil {
                     videoViewEncrypted(file, defaultPreview, duration)
-                } else if let preview {
-                    imageView(preview)
-                    .onTapGesture {
-                        if let file = file {
+                } else if let preview, let file {
+                    Group { if smallView { smallViewImageView(preview, file) } else { imageView(preview) } }
+                        .onTapGesture {
                             switch file.fileStatus {
                             case .rcvInvitation, .rcvAborted:
                                 receiveFileIfValidSize(file: file, receiveFile: receiveFile)
@@ -82,16 +88,22 @@ struct CIVideoView: View {
                             default: ()
                             }
                         }
-                    }
                 }
-                durationProgress()
+                if !smallView {
+                    durationProgress()
+                }
             }
-            if let file = file, showDownloadButton(file.fileStatus) {
+            if !smallView, let file = file, showDownloadButton(file.fileStatus) {
                 Button {
                     receiveFileIfValidSize(file: file, receiveFile: receiveFile)
                 } label: {
                     playPauseIcon("play.fill")
                 }
+            } else if let file = file, showDownloadButton(file.fileStatus) && !file.showStatusIconInSmallView {
+                playPauseIcon("play.fill")
+                    .onTapGesture {
+                        receiveFileIfValidSize(file: file, receiveFile: receiveFile)
+                    }
             }
         }
     }
@@ -194,14 +206,63 @@ struct CIVideoView: View {
         }
     }
 
+    private func smallVideoViewEncrypted(_ file: CIFile, _ preview: UIImage) -> some View {
+        return ZStack(alignment: .center) {
+            ZStack(alignment: .topLeading) {
+                let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
+                smallViewImageView(preview, file)
+                    .onTapGesture {
+                        decrypt(file: file) {
+                            showFullScreenPlayer = urlDecrypted != nil
+                        }
+                    }
+                if file.showStatusIconInSmallView {
+                    // Show nothing
+                } else if !decryptionInProgress {
+                    playPauseIcon(canBePlayed ? "play.fill" : "play.slash")
+                } else {
+                    videoDecryptionProgress()
+                }
+            }
+            if file.showStatusIconInSmallView {
+                fileStatusIcon()
+            }
+        }
+    }
+
+    private func smallVideoView(_ url: URL, _ file: CIFile, _ preview: UIImage) -> some View {
+        return ZStack(alignment: .center) {
+            ZStack(alignment: .topLeading) {
+                smallViewImageView(preview, file)
+                    .fullScreenCover(isPresented: $showFullScreenPlayer) {
+                        fullScreenPlayer(url)
+                    }
+                    .onTapGesture {
+                        showFullScreenPlayer = true
+                    }
+                    .onChange(of: m.activeCallViewIsCollapsed) { _ in
+                        showFullScreenPlayer = false
+                    }
+
+                if !file.showStatusIconInSmallView {
+                    playPauseIcon("play.fill")
+                }
+            }
+            if file.showStatusIconInSmallView {
+                fileStatusIcon()
+            }
+        }
+    }
+
+
     private func playPauseIcon(_ image: String, _ color: Color = .white) -> some View {
         Image(systemName: image)
         .resizable()
         .aspectRatio(contentMode: .fit)
-        .frame(width: 12, height: 12)
+        .frame(width: smallView ? 12 * sizeMultiplier * 1.6 : 12, height: smallView ? 12 * sizeMultiplier * 1.6 : 12)
         .foregroundColor(color)
-        .padding(.leading, 4)
-        .frame(width: 40, height: 40)
+        .padding(.leading, smallView ? 0 : 4)
+        .frame(width: 40 * sizeMultiplier, height: 40 * sizeMultiplier)
         .background(Color.black.opacity(0.35))
         .clipShape(Circle())
     }
@@ -209,9 +270,9 @@ struct CIVideoView: View {
     private func videoDecryptionProgress(_ color: Color = .white) -> some View {
         ProgressView()
             .progressViewStyle(.circular)
-            .frame(width: 12, height: 12)
+            .frame(width: smallView ? 12 * sizeMultiplier : 12, height: smallView ? 12 * sizeMultiplier : 12)
             .tint(color)
-            .frame(width: 40, height: 40)
+            .frame(width: smallView ? 40 * sizeMultiplier * 0.9 : 40, height: smallView ? 40 * sizeMultiplier * 0.9 : 40)
             .background(Color.black.opacity(0.35))
             .clipShape(Circle())
     }
@@ -248,6 +309,15 @@ struct CIVideoView: View {
             .scaledToFit()
             .frame(width: w)
             fileStatusIcon()
+        }
+    }
+
+    private func smallViewImageView(_ img: UIImage, _ file: CIFile) -> some View {
+        ZStack(alignment: .topTrailing) {
+            Image(uiImage: img)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: maxWidth, height: maxWidth)
         }
     }
 
@@ -322,7 +392,7 @@ struct CIVideoView: View {
             .aspectRatio(contentMode: .fit)
             .frame(width: size, height: size)
             .foregroundColor(.white)
-            .padding(padding)
+            .padding(smallView ? 0 : padding)
     }
 
     private func progressView() -> some View {
@@ -330,7 +400,7 @@ struct CIVideoView: View {
         .progressViewStyle(.circular)
         .frame(width: 16, height: 16)
         .tint(.white)
-        .padding(11)
+        .padding(smallView ? 0 : 11)
     }
 
     private func progressCircle(_ progress: Int64, _ total: Int64) -> some View {
@@ -342,7 +412,7 @@ struct CIVideoView: View {
         )
         .rotationEffect(.degrees(-90))
         .frame(width: 16, height: 16)
-        .padding([.trailing, .top], 11)
+        .padding([.trailing, .top], smallView ? 0 : 11)
     }
 
     // TODO encrypt: where file size is checked?

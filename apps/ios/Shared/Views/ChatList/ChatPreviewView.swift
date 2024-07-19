@@ -16,6 +16,11 @@ struct ChatPreviewView: View {
     @Binding var progressByTimeout: Bool
     @State var deleting: Bool = false
     var darkGreen = Color(red: 0, green: 0.5, blue: 0)
+    @State private var activeVoicePreview: ActiveVoicePreview? = nil
+
+    @State var audioPlayer: AudioPlayer? = nil
+    @State var playbackState: VoiceMessagePlaybackState = .noPlayback
+    @State var playbackTime: TimeInterval? = nil
 
     @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
 
@@ -43,7 +48,28 @@ struct ChatPreviewView: View {
                 .padding(.horizontal, 8)
 
                 ZStack(alignment: .topTrailing) {
-                    chatMessagePreview(cItem)
+                    let chat = activeVoicePreview?.chat ?? chat
+                    let ci = activeVoicePreview?.ci ?? chat.chatItems.last
+                    let mc = ci?.content.msgContent
+                    HStack {
+                        if let ci, (showChatPreviews && chatModel.draftChatId != chat.id) || activeVoicePreview != nil {
+                            chatItemContentPreview(chat, ci)
+                        }
+                        let mcIsVoice = switch mc { case .voice: true; default: false }
+                        if !mcIsVoice || mc?.text != "" || chatModel.draftChatId == chat.id {
+                            let xOffset: CGFloat = if case .file = mc { -10 } else { 0 }
+                            ZStack{
+                                chatMessagePreview(cItem)
+                            }
+                            .offset(x: xOffset)
+                        }
+                    }
+                    .onChange(of: chatModel.stopPreviousRecPlay?.path) { _ in
+                        checkActiveVoice(chat, ci, mc)
+                    }
+                    .onChange(of: activeVoicePreview) { _ in
+                        checkActiveVoice(chat, ci, mc)
+                    }
                     chatStatusImage()
                         .padding(.top, 26)
                         .frame(maxWidth: .infinity, alignment: .trailing)
@@ -57,6 +83,21 @@ struct ChatPreviewView: View {
         .padding(.bottom, -8)
         .onChange(of: chatModel.deletedChats.contains(chat.chatInfo.id)) { contains in
             deleting = contains
+        }
+
+        func checkActiveVoice(_ chat: Chat, _ ci: ChatItem?, _ mc: MsgContent?) {
+            let playing = chatModel.stopPreviousRecPlay
+            if playing == nil {
+                activeVoicePreview = nil
+            } else if activeVoicePreview == nil {
+                if let ci, let mc, let fileSource = ci.file?.fileSource, case .voice = mc, playing?.path.hasSuffix(fileSource.filePath) == true {
+                    activeVoicePreview = ActiveVoicePreview(chat: chat, ci: ci, mc: mc)
+                }
+            } else {
+                if let playing, let fileSource = ci?.file?.fileSource, !playing.path.hasSuffix(fileSource.filePath) {
+                    activeVoicePreview = nil
+                }
+            }
         }
     }
 
@@ -172,7 +213,7 @@ struct ChatPreviewView: View {
     func chatItemPreview(_ cItem: ChatItem) -> Text {
         let itemText = cItem.meta.itemDeleted == nil ? cItem.text : markedDeletedText()
         let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
-        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: attachment(), preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
+        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: nil, preview: true, showSecrets: false, secondaryColor: theme.colors.secondary)
 
         // same texts are in markedDeletedText in MarkedDeletedItemView, but it returns LocalizedStringKey;
         // can be refactored into a single function if functions calling these are changed to return same type
@@ -224,6 +265,53 @@ struct ChatPreviewView: View {
             }
         }
     }
+
+    @ViewBuilder func chatItemContentPreview(_ chat: Chat, _ ci: ChatItem) -> some View {
+        let mc = ci.content.msgContent
+        switch mc {
+        case let .link(_, preview):
+            smallContentPreview(
+                ZStack(alignment: .topTrailing) {
+                    Image(uiImage: UIImage(base64Encoded: preview.image) ?? UIImage(systemName: "arrow.up.right")!)
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .frame(width: 36, height: 36)
+                    ZStack {
+                        Image(systemName: "arrow.up.right")
+                            .resizable()
+                            .colorMultiply(Color.white)
+                            .frame(width: 8, height: 8)
+                    }
+                    .frame(width: 16, height: 16)
+                    .background(Color.black.opacity(0.25))
+                    .cornerRadius(8)
+                }
+                .onTapGesture {
+                    UIApplication.shared.open(preview.uri)
+                }
+            )
+        case let .image(_, image):
+            smallContentPreview(
+                CIImageView(chatItem: ci, preview: UIImage(base64Encoded: image), maxWidth: 36, smallView: true)
+                    .environmentObject(ReverseListScrollModel<ChatItem>())
+            )
+        case let .video(_,image, duration):
+            smallContentPreview(
+                CIVideoView(chatItem: ci, preview: UIImage(base64Encoded: image), duration: duration, maxWidth: 36, videoWidth: nil, smallView: true)
+                    .environmentObject(ReverseListScrollModel<ChatItem>())
+            )
+        case let .voice(_, duration):
+            smallContentPreviewVoice(
+                CIVoiceView(chat: chat, chatItem: ci, recordingFile: ci.file, duration: duration, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime, allowMenu: Binding.constant(true), smallView: true)
+                )
+        case .file:
+            smallContentPreviewFile(
+                CIFileView(file: ci.file, edited: ci.meta.itemEdited, smallView: true)
+            )
+        default: EmptyView()
+        }
+    }
+
 
     @ViewBuilder private func groupInvitationPreviewText(_ groupInfo: GroupInfo) -> some View {
         groupInfo.membership.memberIncognito
@@ -294,8 +382,48 @@ struct ChatPreviewView: View {
     }
 }
 
+func smallContentPreview(_ view: some View) -> some View {
+    ZStack {
+        view
+        .frame(width: 36, height: 36)
+    }
+    .cornerRadius(8)
+    .overlay(RoundedRectangle(cornerSize: CGSize(width: 8, height: 8))
+        .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true))
+    .padding(.leading, 3)
+    .offset(x: 6)
+}
+
+func smallContentPreviewVoice(_ view: some View) -> some View {
+    ZStack {
+        view
+        .frame(height: voiceMessageSizeBasedOnSquareSize(36))
+    }
+    .padding(.leading, 3)
+    .offset(x: 6)
+}
+
+func smallContentPreviewFile(_ view: some View) -> some View {
+    ZStack {
+        view
+        .frame(width: 36, height: 36)
+    }
+    .padding(.leading, 5)
+    .offset(y: -1)
+}
+
 func unreadCountText(_ n: Int) -> Text {
     Text(n > 999 ? "\(n / 1000)k" : n > 0 ? "\(n)" : "")
+}
+
+private struct ActiveVoicePreview: Equatable {
+    var chat: Chat
+    var ci: ChatItem
+    var mc: MsgContent
+
+    static func == (lhs: ActiveVoicePreview, rhs: ActiveVoicePreview) -> Bool {
+        lhs.chat.id == rhs.chat.id && lhs.ci.id == rhs.ci.id && lhs.mc == rhs.mc
+    }
 }
 
 struct ChatPreviewView_Previews: PreviewProvider {
