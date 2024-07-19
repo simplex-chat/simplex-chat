@@ -7004,8 +7004,8 @@ Repeat join request?</source>
         <target>你可以通过设置让它对你的 SimpleX 联系人可见。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now send messages to %@" xml:space="preserve">
-        <source>You can now send messages to %@</source>
+      <trans-unit id="You can now chat with %@" xml:space="preserve">
+        <source>You can now chat with %@</source>
         <target>您现在可以给 %@ 发送消息</target>
         <note>notification body</note>
       </trans-unit>
@@ -7407,7 +7407,7 @@ SimpleX 服务器无法看到您的资料。</target>
       <trans-unit id="blocked by admin" xml:space="preserve">
         <source>blocked by admin</source>
         <target>由管理员封禁</target>
-        <note>blocked chat item</note>
+        <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>
