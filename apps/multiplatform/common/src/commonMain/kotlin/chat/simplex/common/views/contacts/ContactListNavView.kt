@@ -37,7 +37,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                 },
                 dropdownMenuItems = {
                     tryOrShowError("${chat.id}ContactListNavLinkDropdown", error = {}) {
-                        ContactMenuItems(chat, chat.chatInfo.contact, chatModel, showMenu)
+                        DeleteContactAction(chat, chatModel, showMenu)
                     }
                 },
                 showMenu,
@@ -76,26 +76,6 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         }
         else -> {}
     }
-}
-
-@Composable
-fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
-    if (contact.activeConn != null) {
-        ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
-    }
-    DeleteContactAction(chat, chatModel, showMenu)
-}
-
-@Composable
-fun ToggleFavoritesChatAction(chat: Chat, chatModel: ChatModel, favorite: Boolean, showMenu: MutableState<Boolean>) {
-    ItemAction(
-        if (favorite) stringResource(MR.strings.unfavorite_chat) else stringResource(MR.strings.favorite_chat),
-        if (favorite) painterResource(MR.images.ic_star_off) else painterResource(MR.images.ic_star),
-        onClick = {
-            toggleChatFavorite(chat, !favorite, chatModel)
-            showMenu.value = false
-        }
-    )
 }
 
 @Composable
