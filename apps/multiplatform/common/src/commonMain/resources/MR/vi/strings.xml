@@ -482,4 +482,19 @@
     <string name="desktop_device">Máy tính</string>
     <string name="desktop_address">Địa chỉ máy tính</string>
     <string name="remote_ctrl_error_bad_version">Máy tính có một phiên bản không được hỗ trợ. Vui lòng đảm bảo rằng bạn sử dụng cùng một phiên bản ở cả hai thiết bị.</string>
+    <string name="acknowledged">Đã xác nhận</string>
+    <string name="servers_info_subscriptions_connections_subscribed">Các kết nối đang hoạt động</string>
+    <string name="all_users">Tất cả hồ sơ</string>
+    <string name="app_check_for_updates_beta">Beta</string>
+    <string name="app_check_for_updates">Kiểm tra cập nhật</string>
+    <string name="servers_info_sessions_connecting">Đang kết nối</string>
+    <string name="smp_servers_configured">Các máy chủ SMP đã được cấu hình</string>
+    <string name="xftp_servers_configured">Các máy chủ XFTP đã được cấu hình</string>
+    <string name="app_check_for_updates_download_completed_title">Bản cập nhật ứng dụng đã được tải xuống</string>
+    <string name="app_check_for_updates_notice_title">Kiểm tra cập nhật</string>
+    <string name="servers_info_sessions_connected">Đã kết nối</string>
+    <string name="attempts_label">thử</string>
+    <string name="servers_info_connected_servers_section_header">Các máy chủ đã kết nối</string>
+    <string name="acknowledgement_errors">Lỗi xác nhận</string>
+    <string name="completed">Đã hoàn thành</string>
 </resources>
