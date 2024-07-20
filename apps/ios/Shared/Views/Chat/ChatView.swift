@@ -378,7 +378,7 @@ struct ChatView: View {
 
     @ViewBuilder private func connectingText() -> some View {
         if case let .direct(contact) = chat.chatInfo,
-           !contact.ready,
+           !contact.sndReady,
            contact.active,
            !contact.nextSendGrpInv {
             Text("connecting…")

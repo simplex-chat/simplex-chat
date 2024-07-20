@@ -7226,8 +7226,8 @@ Verbindungsanfrage wiederholen?</target>
         <target>Sie können sie über Einstellungen für Ihre SimpleX-Kontakte sichtbar machen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now send messages to %@" xml:space="preserve">
-        <source>You can now send messages to %@</source>
+      <trans-unit id="You can now chat with %@" xml:space="preserve">
+        <source>You can now chat with %@</source>
         <target>Sie können nun Nachrichten an %@ versenden</target>
         <note>notification body</note>
       </trans-unit>
@@ -7635,7 +7635,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       <trans-unit id="blocked by admin" xml:space="preserve">
         <source>blocked by admin</source>
         <target>wurde vom Administrator blockiert</target>
-        <note>blocked chat item</note>
+        <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>

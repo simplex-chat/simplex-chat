@@ -647,7 +647,7 @@
 /* rcv group event chat item */
 "blocked %@" = "ha bloqueado a %@";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "bloqueado por administrador";
 
 /* No comment provided by engineer. */
@@ -4414,7 +4414,7 @@
 "You can make it visible to your SimpleX contacts via Settings." = "Puedes hacerlo visible para tus contactos de SimpleX en Configuración.";
 
 /* notification body */
-"You can now send messages to %@" = "Ya puedes enviar mensajes a %@";
+"You can now chat with %@" = "Ya puedes enviar mensajes a %@";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "Puedes configurar las notificaciones de la pantalla de bloqueo desde Configuración.";

@@ -7103,8 +7103,8 @@ Repeat join request?</source>
         <target>Puedes hacerlo visible para tus contactos de SimpleX en Configuración.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now send messages to %@" xml:space="preserve">
-        <source>You can now send messages to %@</source>
+      <trans-unit id="You can now chat with %@" xml:space="preserve">
+        <source>You can now chat with %@</source>
         <target>Ya puedes enviar mensajes a %@</target>
         <note>notification body</note>
       </trans-unit>
@@ -7511,7 +7511,7 @@ Los servidores SimpleX no pueden ver tu perfil.</target>
       <trans-unit id="blocked by admin" xml:space="preserve">
         <source>blocked by admin</source>
         <target>bloqueado por administrador</target>
-        <note>blocked chat item</note>
+        <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>

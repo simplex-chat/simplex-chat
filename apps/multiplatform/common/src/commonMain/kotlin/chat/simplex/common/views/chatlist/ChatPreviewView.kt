@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chatlist
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.InlineTextContent
@@ -15,19 +14,22 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerHoverIcon
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chat.ComposePreview
-import chat.simplex.common.views.chat.ComposeState
-import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.GroupInfo
-import chat.simplex.common.platform.appPlatform
-import chat.simplex.common.platform.chatModel
-import chat.simplex.common.views.chat.item.markedDeletedText
+import chat.simplex.common.platform.*
+import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.chat.item.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 
@@ -207,7 +209,7 @@ fun ChatPreviewView(
         is ChatInfo.Direct ->
           if (cInfo.contact.activeConn == null && cInfo.contact.profile.contactLink != null) {
             Text(stringResource(MR.strings.contact_tap_to_connect), color = MaterialTheme.colors.primary)
-          } else if (!cInfo.ready && cInfo.contact.activeConn != null) {
+          } else if (!cInfo.contact.sndReady && cInfo.contact.activeConn != null) {
             if (cInfo.contact.nextSendGrpInv) {
               Text(stringResource(MR.strings.member_contact_send_direct_message), color = MaterialTheme.colors.secondary)
             } else if (cInfo.contact.active) {
@@ -222,6 +224,50 @@ fun ChatPreviewView(
           }
         else -> {}
       }
+    }
+  }
+
+  @Composable
+  fun chatItemContentPreview(chat: Chat, ci: ChatItem?) {
+    val mc = ci?.content?.msgContent
+    val provider by remember(chat.id, ci?.id, ci?.file?.fileStatus) {
+      mutableStateOf({ providerForGallery(0, chat.chatItems, ci?.id ?: 0) {} })
+    }
+    val uriHandler = LocalUriHandler.current
+    when (mc) {
+      is MsgContent.MCLink -> SmallContentPreview {
+        IconButton({ uriHandler.openUriCatching(mc.preview.uri) }, Modifier.desktopPointerHoverIconHand()) {
+          Image(base64ToBitmap(mc.preview.image), null, contentScale = ContentScale.Crop)
+        }
+        Box(Modifier.align(Alignment.TopEnd).size(15.sp.toDp()).background(Color.Black.copy(0.25f), CircleShape), contentAlignment = Alignment.Center) {
+          Icon(painterResource(MR.images.ic_arrow_outward), null, Modifier.size(13.sp.toDp()), tint = Color.White)
+        }
+      }
+      is MsgContent.MCImage -> SmallContentPreview {
+        CIImageView(image = mc.image, file = ci.file, provider, remember { mutableStateOf(false) }, smallView = true) {
+          val user = chatModel.currentUser.value ?: return@CIImageView
+          withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
+        }
+      }
+      is MsgContent.MCVideo -> SmallContentPreview {
+        CIVideoView(image = mc.image, mc.duration, file = ci.file, provider, remember { mutableStateOf(false) }, smallView = true) {
+          val user = chatModel.currentUser.value ?: return@CIVideoView
+          withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
+        }
+      }
+      is MsgContent.MCVoice -> SmallContentPreviewVoice() {
+        CIVoiceView(mc.duration, ci.file, ci.meta.itemEdited, ci.chatDir.sent, hasText = false, ci, cInfo.timedMessagesTTL, showViaProxy = false, smallView = true, longClick = {}) {
+          val user = chatModel.currentUser.value ?: return@CIVoiceView
+          withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
+        }
+      }
+      is MsgContent.MCFile -> SmallContentPreviewFile {
+        CIFileView(ci.file, false, remember { mutableStateOf(false) }, smallView = true) {
+          val user = chatModel.currentUser.value ?: return@CIFileView
+          withBGApi { chatModel.controller.receiveFile(chat.remoteHostId, user, it) }
+        }
+      }
+      else -> {}
     }
   }
 
@@ -279,70 +325,112 @@ fun ChatPreviewView(
         chatPreviewImageOverlayIcon()
       }
     }
-    Column(
-      modifier = Modifier
-        .padding(start = 8.dp, end = 8.sp.toDp())
-        .weight(1F)
-    ) {
-      chatPreviewTitle()
-      Row(Modifier.heightIn(min = 46.sp.toDp()).padding(top = 3.sp.toDp())) {
-        chatPreviewText()
+    Spacer(Modifier.width(8.dp))
+    Column(Modifier.weight(1f)) {
+      Row {
+        Box(Modifier.weight(1f)) {
+          chatPreviewTitle()
+        }
+        Spacer(Modifier.width(8.sp.toDp()))
+        val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.chatTs)
+        ChatListTimestampView(ts)
       }
-    }
+      Row(Modifier.heightIn(min = 46.sp.toDp()).fillMaxWidth()) {
+        Row(Modifier.padding(top = 3.sp.toDp()).weight(1f)) {
+          val activeVoicePreview: MutableState<(ActiveVoicePreview)?> = remember(chat.id) { mutableStateOf(null) }
+          val chat = activeVoicePreview.value?.chat ?: chat
+          val ci = activeVoicePreview.value?.ci ?: chat.chatItems.lastOrNull()
+          val mc = ci?.content?.msgContent
+          if ((showChatPreviews && chatModelDraftChatId != chat.id) || activeVoicePreview.value != null) {
+            chatItemContentPreview(chat, ci)
+          }
+          if (mc !is MsgContent.MCVoice || mc.text.isNotEmpty() || chatModelDraftChatId == chat.id) {
+            Box(Modifier.offset(x = if (mc is MsgContent.MCFile) -15.sp.toDp() else 0.dp)) {
+              chatPreviewText()
+            }
+          }
+          LaunchedEffect(AudioPlayer.currentlyPlaying.value, activeVoicePreview.value) {
+            val playing = AudioPlayer.currentlyPlaying.value
+            when {
+              playing == null -> activeVoicePreview.value = null
+              activeVoicePreview.value == null -> if (mc is MsgContent.MCVoice && playing.fileSource.filePath == ci.file?.fileSource?.filePath) {
+                activeVoicePreview.value = ActiveVoicePreview(chat, ci, mc)
+              }
+              else -> if (playing.fileSource.filePath != ci?.file?.fileSource?.filePath) {
+                activeVoicePreview.value = null
+              }
+            }
+          }
+        }
 
-    Box(
-      contentAlignment = Alignment.TopEnd
-    ) {
-      val ts = chat.chatItems.lastOrNull()?.timestampText ?: getTimestampText(chat.chatInfo.chatTs)
-      ChatListTimestampView(ts)
-      val n = chat.chatStats.unreadCount
-      val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
-      if (n > 0 || chat.chatStats.unreadChat) {
-        Box(
-          Modifier.padding(top = 24.5.sp.toDp())) {
-          Text(
-            if (n > 0) unreadCountStr(n) else "",
-            color = Color.White,
-            fontSize = 10.sp,
-            modifier = Modifier
-              .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
-              .badgeLayout()
-              .padding(horizontal = 3.sp.toDp())
-              .padding(vertical = 1.sp.toDp())
-          )
+        Spacer(Modifier.width(8.sp.toDp()))
+
+        Box(Modifier.widthIn(min = 34.sp.toDp()), contentAlignment = Alignment.TopEnd) {
+          val n = chat.chatStats.unreadCount
+          val showNtfsIcon = !chat.chatInfo.ntfsEnabled && (chat.chatInfo is ChatInfo.Direct || chat.chatInfo is ChatInfo.Group)
+          if (n > 0 || chat.chatStats.unreadChat) {
+            Text(
+              if (n > 0) unreadCountStr(n) else "",
+              color = Color.White,
+              fontSize = 10.sp,
+              style = TextStyle(textAlign = TextAlign.Center),
+              modifier = Modifier
+                .offset(y = 3.sp.toDp())
+                .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
+                .badgeLayout()
+                .padding(horizontal = 2.sp.toDp())
+                .padding(vertical = 1.sp.toDp())
+            )
+          } else if (showNtfsIcon) {
+            Icon(
+              painterResource(MR.images.ic_notifications_off_filled),
+              contentDescription = generalGetString(MR.strings.notifications),
+              tint = MaterialTheme.colors.secondary,
+              modifier = Modifier
+                .padding(start = 2.sp.toDp())
+                .size(18.sp.toDp())
+                .offset(x = 2.5.sp.toDp(), y = 2.sp.toDp())
+            )
+          } else if (chat.chatInfo.chatSettings?.favorite == true) {
+            Icon(
+              painterResource(MR.images.ic_star_filled),
+              contentDescription = generalGetString(MR.strings.favorite_chat),
+              tint = MaterialTheme.colors.secondary,
+              modifier = Modifier
+                .size(20.sp.toDp())
+                .offset(x = 2.5.sp.toDp())
+            )
+          }
+          Box(
+            Modifier.offset(y = 28.sp.toDp()),
+            contentAlignment = Alignment.Center
+          ) {
+            chatStatusImage()
+          }
         }
-      } else if (showNtfsIcon) {
-        Box(
-          Modifier.padding(top = 22.sp.toDp())) {
-          Icon(
-            painterResource(MR.images.ic_notifications_off_filled),
-            contentDescription = generalGetString(MR.strings.notifications),
-            tint = MaterialTheme.colors.secondary,
-            modifier = Modifier
-              .size(17.sp.toDp())
-              .offset(x = 2.5.sp.toDp())
-          )
-        }
-      } else if (chat.chatInfo.chatSettings?.favorite == true) {
-        Box(
-          Modifier.padding(top = 20.sp.toDp())) {
-          Icon(
-            painterResource(MR.images.ic_star_filled),
-            contentDescription = generalGetString(MR.strings.favorite_chat),
-            tint = MaterialTheme.colors.secondary,
-            modifier = Modifier
-              .size(20.sp.toDp())
-              .offset(x = 2.5.sp.toDp())
-          )
-        }
-      }
-      Box(
-        Modifier.padding(top = 46.sp.toDp()),
-        contentAlignment = Alignment.Center
-      ) {
-        chatStatusImage()
       }
     }
+  }
+}
+
+@Composable
+private fun SmallContentPreview(content: @Composable BoxScope.() -> Unit) {
+  Box(Modifier.padding(top = 2.sp.toDp(), end = 8.sp.toDp()).size(36.sp.toDp()).border(1.dp, MaterialTheme.colors.onSurface.copy(alpha = 0.12f), RoundedCornerShape(22)).clip(RoundedCornerShape(22))) {
+    content()
+  }
+}
+
+@Composable
+private fun SmallContentPreviewVoice(content: @Composable () -> Unit) {
+  Box(Modifier.padding(top = 2.sp.toDp(), end = 8.sp.toDp()).height(voiceMessageSizeBasedOnSquareSize(36f).sp.toDp())) {
+    content()
+  }
+}
+
+@Composable
+private fun SmallContentPreviewFile(content: @Composable () -> Unit) {
+  Box(Modifier.padding(top = 3.sp.toDp(), end = 8.sp.toDp()).offset(x = -8.sp.toDp(), y = -4.sp.toDp()).height(41.sp.toDp())) {
+    content()
   }
 }
 
@@ -389,6 +477,12 @@ fun unreadCountStr(n: Int): String {
     )
   }
 }
+
+private data class ActiveVoicePreview(
+  val chat: Chat,
+  val ci: ChatItem,
+  val mc: MsgContent.MCVoice
+)
 
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,

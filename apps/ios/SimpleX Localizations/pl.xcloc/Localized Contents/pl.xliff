@@ -7103,8 +7103,8 @@ Powtórzyć prośbę dołączenia?</target>
         <target>Możesz ustawić go jako widoczny dla swoich kontaktów SimpleX w Ustawieniach.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now send messages to %@" xml:space="preserve">
-        <source>You can now send messages to %@</source>
+      <trans-unit id="You can now chat with %@" xml:space="preserve">
+        <source>You can now chat with %@</source>
         <target>Możesz teraz wysyłać wiadomości do %@</target>
         <note>notification body</note>
       </trans-unit>
@@ -7511,7 +7511,7 @@ Serwery SimpleX nie mogą zobaczyć Twojego profilu.</target>
       <trans-unit id="blocked by admin" xml:space="preserve">
         <source>blocked by admin</source>
         <target>zablokowany przez admina</target>
-        <note>blocked chat item</note>
+        <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>

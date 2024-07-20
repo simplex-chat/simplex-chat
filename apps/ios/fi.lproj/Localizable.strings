@@ -3394,7 +3394,7 @@
 "You can hide or mute a user profile - swipe it to the right." = "Voit piilottaa tai mykistää käyttäjäprofiilin pyyhkäisemällä sitä oikealle.";
 
 /* notification body */
-"You can now send messages to %@" = "Voit nyt lähettää viestejä %@:lle";
+"You can now chat with %@" = "Voit nyt lähettää viestejä %@:lle";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "Voit määrittää lukitusnäytön ilmoituksen esikatselun asetuksista.";

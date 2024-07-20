@@ -686,7 +686,7 @@
 /* rcv group event chat item */
 "blocked %@" = "letiltotta őt: %@";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "letiltva az admin által";
 
 /* No comment provided by engineer. */
@@ -4801,7 +4801,7 @@
 "You can make it visible to your SimpleX contacts via Settings." = "Láthatóvá teheti SimpleX ismerősök számára a Beállításokban.";
 
 /* notification body */
-"You can now send messages to %@" = "Mostantól küldhet üzeneteket %@ számára";
+"You can now chat with %@" = "Mostantól küldhet üzeneteket %@ számára";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "A beállításokon keresztül beállíthatja a lezárási képernyő értesítési előnézetét.";
