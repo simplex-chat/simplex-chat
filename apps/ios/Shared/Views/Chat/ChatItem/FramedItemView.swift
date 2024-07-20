@@ -87,12 +87,17 @@ struct FramedItemView: View {
             .cornerRadius(18)
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
-        switch chatItem.meta.itemStatus {
-        case .sndErrorAuth:
-            v.onTapGesture { msgDeliveryError("Most likely this contact has deleted the connection with you.") }
-        case let .sndError(agentError):
-            v.onTapGesture { msgDeliveryError("Unexpected error: \(agentError)") }
-        default: v
+        if let (title, text) = chatItem.meta.itemStatus.statusInfo {
+            v.onTapGesture {
+                AlertManager.shared.showAlert(
+                    Alert(
+                        title: Text(title),
+                        message: Text(text)
+                    )
+                )
+            }
+        } else {
+            v
         }
     }
 
@@ -110,7 +115,7 @@ struct FramedItemView: View {
         } else {
             switch (chatItem.content.msgContent) {
             case let .image(text, image):
-                CIImageView(chatItem: chatItem, image: image, maxWidth: maxWidth, imgWidth: $imgWidth, scrollProxy: scrollProxy, metaColor: metaColor)
+                CIImageView(chatItem: chatItem, image: image, maxWidth: maxWidth, imgWidth: $imgWidth, scrollProxy: scrollProxy)
                     .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -156,13 +161,6 @@ struct FramedItemView: View {
                 ciMsgContentView(chatItem)
             }
         }
-    }
-    
-    private func msgDeliveryError(_ err: LocalizedStringKey) {
-        AlertManager.shared.showAlertMsg(
-            title: "Message delivery error",
-            message: err
-        )
     }
 
     @ViewBuilder func framedItemHeader(icon: String? = nil, caption: Text, pad: Bool = false) -> some View {

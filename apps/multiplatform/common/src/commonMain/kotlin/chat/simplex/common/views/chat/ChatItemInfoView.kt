@@ -31,6 +31,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
+import kotlinx.serialization.encodeToString
 
 sealed class CIInfoTab {
   class Delivery(val memberDeliveryStatuses: List<MemberDeliveryStatus>): CIInfoTab()
@@ -42,7 +43,7 @@ sealed class CIInfoTab {
 @Composable
 fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools: Boolean) {
   val sent = ci.chatDir.sent
-  val appColors = CurrentColors.collectAsState().value.appColors
+  val appColors = MaterialTheme.appColors
   val uriHandler = LocalUriHandler.current
   val selection = remember { mutableStateOf<CIInfoTab>(CIInfoTab.History) }
 
@@ -217,6 +218,27 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   }
 
   @Composable
+  fun ExpandableInfoRow(title: String, value: String) {
+    val expanded = remember { mutableStateOf(false) }
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .sizeIn(minHeight = 46.dp)
+        .padding(PaddingValues(horizontal = DEFAULT_PADDING))
+        .clickable { expanded.value = !expanded.value },
+      horizontalArrangement = Arrangement.spacedBy(12.dp),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Text(title, color = MaterialTheme.colors.onBackground)
+      if (expanded.value) {
+        Text(value, color = MaterialTheme.colors.secondary)
+      } else {
+        Text(value, color = MaterialTheme.colors.secondary, maxLines = 1)
+      }
+    }
+  }
+
+  @Composable
   fun Details() {
     AppBarTitle(stringResource(if (ci.localNote) MR.strings.saved_message_title else if (sent) MR.strings.sent_message else MR.strings.received_message))
     SectionView {
@@ -244,6 +266,10 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       if (devTools) {
         InfoRow(stringResource(MR.strings.info_row_database_id), ci.meta.itemId.toString())
         InfoRow(stringResource(MR.strings.info_row_updated_at), localTimestamp(ci.meta.updatedAt))
+        ExpandableInfoRow(stringResource(MR.strings.info_row_message_status), jsonShort.encodeToString(ci.meta.itemStatus))
+        if (ci.file != null) {
+          ExpandableInfoRow(stringResource(MR.strings.info_row_file_status), jsonShort.encodeToString(ci.file.fileStatus))
+        }
       }
     }
   }
@@ -304,7 +330,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   }
 
   @Composable
-  fun MemberDeliveryStatusView(member: GroupMember, status: CIStatus) {
+  fun MemberDeliveryStatusView(member: GroupMember, status: CIStatus, sentViaProxy: Boolean?) {
     SectionItemView(
       padding = PaddingValues(horizontal = 0.dp)
     ) {
@@ -317,6 +343,18 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
         overflow = TextOverflow.Ellipsis
       )
       Spacer(Modifier.fillMaxWidth().weight(1f))
+      if (sentViaProxy == true) {
+        Box(
+          Modifier.size(36.dp),
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            painterResource(MR.images.ic_arrow_forward),
+            contentDescription = null,
+            tint = CurrentColors.value.colors.secondary
+          )
+        }
+      }
       val statusIcon = status.statusIcon(MaterialTheme.colors.primary, CurrentColors.value.colors.secondary)
       var modifier = Modifier.size(36.dp).clip(RoundedCornerShape(20.dp))
       val info = status.statusInto
@@ -357,8 +395,8 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       if (mss.isNotEmpty()) {
         SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
           Text(stringResource(MR.strings.delivery), style = MaterialTheme.typography.h2, modifier = Modifier.padding(bottom = DEFAULT_PADDING))
-          mss.forEach { (member, status) ->
-            MemberDeliveryStatusView(member, status)
+          mss.forEach { (member, status, sentViaProxy) ->
+            MemberDeliveryStatusView(member, status, sentViaProxy)
           }
         }
       } else {
@@ -482,10 +520,10 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
   }
 }
 
-private fun membersStatuses(chatModel: ChatModel, memberDeliveryStatuses: List<MemberDeliveryStatus>): List<Pair<GroupMember, CIStatus>> {
+private fun membersStatuses(chatModel: ChatModel, memberDeliveryStatuses: List<MemberDeliveryStatus>): List<Triple<GroupMember, CIStatus, Boolean?>> {
   return memberDeliveryStatuses.mapNotNull { mds ->
     chatModel.getGroupMember(mds.groupMemberId)?.let { mem ->
-      mem to mds.memberDeliveryStatus
+      Triple(mem, mds.memberDeliveryStatus, mds.sentViaProxy)
     }
   }
 }
@@ -519,6 +557,10 @@ fun itemInfoShareText(chatModel: ChatModel, ci: ChatItem, chatItemInfo: ChatItem
   if (devTools) {
     shareText.add(String.format(generalGetString(MR.strings.share_text_database_id), meta.itemId))
     shareText.add(String.format(generalGetString(MR.strings.share_text_updated_at), meta.updatedAt))
+    shareText.add(String.format(generalGetString(MR.strings.share_text_message_status), jsonShort.encodeToString(ci.meta.itemStatus)))
+    if (ci.file != null) {
+      shareText.add(String.format(generalGetString(MR.strings.share_text_file_status), jsonShort.encodeToString(ci.file.fileStatus)))
+    }
   }
   val qi = ci.quotedItem
   if (qi != null) {

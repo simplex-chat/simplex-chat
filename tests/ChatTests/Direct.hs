@@ -37,6 +37,8 @@ chatDirectTests = do
     describe "add contact and send/receive messages" testAddContact
     it "clear chat with contact" testContactClear
     it "deleting contact deletes profile" testDeleteContactDeletesProfile
+    it "delete contact keeping conversation" testDeleteContactKeepConversation
+    it "delete conversation keeping contact" testDeleteConversationKeepContact
     it "unused contact is deleted silently" testDeleteUnusedContactSilent
     it "direct message quoted replies" testDirectMessageQuotedReply
     it "direct message update" testDirectMessageUpdate
@@ -185,9 +187,10 @@ testAddContact = versionTestMatrix2 runTestAddContact
           bob #$> ("/_read chat @2", id, "ok")
           alice #$> ("/read user", id, "ok")
           alice #$> ("/_read user 1", id, "ok")
-        features = if pqExpected
-          then chatFeatures
-          else (0, e2eeInfoNoPQStr) : tail chatFeatures
+        features =
+          if pqExpected
+            then chatFeatures
+            else (0, e2eeInfoNoPQStr) : tail chatFeatures
 
 testDuplicateContactsSeparate :: HasCallStack => FilePath -> IO ()
 testDuplicateContactsSeparate =
@@ -295,6 +298,7 @@ testPlanInvitationLinkOwn tmp =
 
     alice ##> ("/_connect plan 1 " <> inv)
     alice <## "invitation link: ok to connect" -- conn_req_inv is forgotten after connection
+    threadDelay 100000
     alice @@@ [("@alice_1", lastChatFeature), ("@alice_2", lastChatFeature)]
     alice `send` "@alice_2 hi"
     alice
@@ -343,7 +347,7 @@ testDeleteContactDeletesProfile =
       connectUsers alice bob
       alice <##> bob
       -- alice deletes contact, profile is deleted
-      alice ##> "/d bob"
+      alice ##> "/_delete @2 full notify=on"
       alice <## "bob: contact is deleted"
       bob <## "alice (Alice) deleted contact with you"
       alice ##> "/_contacts 1"
@@ -355,6 +359,43 @@ testDeleteContactDeletesProfile =
       bob ##> "/contacts"
       (bob </)
       bob `hasContactProfiles` ["bob"]
+
+testDeleteContactKeepConversation :: HasCallStack => FilePath -> IO ()
+testDeleteContactKeepConversation =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice <##> bob
+
+      alice ##> "/_delete @2 entity notify=on"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      alice @@@ [("@bob", "hey")]
+      alice ##> "@bob hi"
+      alice <## "bob: not ready"
+      bob @@@ [("@alice", "contact deleted")]
+      bob ##> "@alice hey"
+      bob <## "alice: not ready"
+
+testDeleteConversationKeepContact :: HasCallStack => FilePath -> IO ()
+testDeleteConversationKeepContact =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice <##> bob
+
+      alice @@@ [("@bob", "hey")]
+
+      alice ##> "/_delete @2 messages"
+      alice <## "bob: contact is deleted"
+
+      alice @@@ [("@bob", "")] -- UI would filter
+      bob @@@ [("@alice", "hey")]
+      bob #> "@alice hi"
+      alice <# "bob> hi"
+      alice @@@ [("@bob", "hi")]
+      alice <##> bob
 
 testDeleteUnusedContactSilent :: HasCallStack => FilePath -> IO ()
 testDeleteUnusedContactSilent =
@@ -767,7 +808,7 @@ testTestSMPServerConnection =
       alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
       alice <## "SMP server test passed"
       alice ##> "/smp test smp://LcJU@localhost:7001"
-      alice <## "SMP server test failed at Connect, error: BROKER smp://LcJU@localhost:7001 NETWORK"
+      alice <## "SMP server test failed at Connect, error: BROKER {brokerAddress = \"smp://LcJU@localhost:7001\", brokerErr = NETWORK}"
       alice <## "Possibly, certificate fingerprint in SMP server address is incorrect"
 
 testGetSetXFTPServers :: HasCallStack => FilePath -> IO ()
@@ -798,7 +839,7 @@ testTestXFTPServer =
       alice ##> "/xftp test xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"
       alice <## "XFTP server test passed"
       alice ##> "/xftp test xftp://LcJU@localhost:7002"
-      alice <## "XFTP server test failed at Connect, error: BROKER xftp://LcJU@localhost:7002 NETWORK"
+      alice <## "XFTP server test failed at Connect, error: BROKER {brokerAddress = \"xftp://LcJU@localhost:7002\", brokerErr = NETWORK}"
       alice <## "Possibly, certificate fingerprint in XFTP server address is incorrect"
 
 testAsyncInitiatingOffline :: HasCallStack => FilePath -> IO ()
@@ -1028,20 +1069,25 @@ testNegotiateCall =
     -- alice confirms call by sending WebRTC answer
     alice ##> ("/_call answer @2 " <> serialize testWebRTCSession)
     alice <## "ok"
+    threadDelay 100000
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: connecting...")])
     bob <## "alice continued the WebRTC call"
     repeatM_ 3 $ getTermLine bob
+    threadDelay 100000
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: connecting...")])
     -- participants can update calls as connected
     alice ##> "/_call status @2 connected"
     alice <## "ok"
+    threadDelay 100000
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: in progress (00:00)")])
     bob ##> "/_call status @2 connected"
     bob <## "ok"
+    threadDelay 100000
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: in progress (00:00)")])
     -- either party can end the call
     bob ##> "/_call end @2"
     bob <## "ok"
+    threadDelay 100000
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "incoming call: ended (00:00)")])
     alice <## "call with bob ended"
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "outgoing call: ended (00:00)")])
@@ -2250,6 +2296,7 @@ testSwitchContact =
       alice <## "bob: you started changing address"
       bob <## "alice changed address for you"
       alice <## "bob: you changed address"
+      threadDelay 100000
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "started changing address..."), (1, "you changed address")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "started changing address for you..."), (0, "changed address for you")])
       alice <##> bob
@@ -2263,12 +2310,12 @@ testAbortSwitchContact tmp = do
     alice <## "bob: you started changing address"
     -- repeat switch is prohibited
     alice ##> "/switch bob"
-    alice <## "error: command is prohibited"
+    alice <## "error: command is prohibited, switchConnectionAsync: already switching"
     -- stop switch
     alice #$> ("/abort switch bob", id, "switch aborted")
     -- repeat switch stop is prohibited
     alice ##> "/abort switch bob"
-    alice <## "error: command is prohibited"
+    alice <## "error: command is prohibited, abortConnectionSwitch: not allowed"
     withTestChatContactConnected tmp "bob" $ \bob -> do
       bob <## "alice started changing address for you"
       -- alice changes address again
@@ -2277,6 +2324,7 @@ testAbortSwitchContact tmp = do
       bob <## "alice started changing address for you"
       bob <## "alice changed address for you"
       alice <## "bob: you changed address"
+      threadDelay 100000
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "started changing address..."), (1, "started changing address..."), (1, "you changed address")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "started changing address for you..."), (0, "started changing address for you..."), (0, "changed address for you")])
       alice <##> bob
@@ -2291,6 +2339,7 @@ testSwitchGroupMember =
       alice <## "#team: you started changing address for bob"
       bob <## "#team: alice changed address for you"
       alice <## "#team: you changed address for bob"
+      threadDelay 100000
       alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "started changing address for bob..."), (1, "you changed address for bob")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
@@ -2307,12 +2356,12 @@ testAbortSwitchGroupMember tmp = do
     alice <## "#team: you started changing address for bob"
     -- repeat switch is prohibited
     alice ##> "/switch #team bob"
-    alice <## "error: command is prohibited"
+    alice <## "error: command is prohibited, switchConnectionAsync: already switching"
     -- stop switch
     alice #$> ("/abort switch #team bob", id, "switch aborted")
     -- repeat switch stop is prohibited
     alice ##> "/abort switch #team bob"
-    alice <## "error: command is prohibited"
+    alice <## "error: command is prohibited, abortConnectionSwitch: not allowed"
     withTestChatContactConnected tmp "bob" $ \bob -> do
       bob <## "#team: connected to server(s)"
       bob <## "#team: alice started changing address for you"
@@ -2322,6 +2371,7 @@ testAbortSwitchGroupMember tmp = do
       bob <## "#team: alice started changing address for you"
       bob <## "#team: alice changed address for you"
       alice <## "#team: you changed address for bob"
+      threadDelay 100000
       alice #$> ("/_get chat #1 count=100", chat, [(1, e2eeInfoNoPQStr), (0, "connected"), (1, "started changing address for bob..."), (1, "started changing address for bob..."), (1, "you changed address for bob")])
       bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "started changing address for you..."), (0, "started changing address for you..."), (0, "changed address for you")])
       alice #> "#team hey"
@@ -2435,7 +2485,7 @@ setupDesynchronizedRatchet tmp alice = do
   withTestChat tmp "bob_old" $ \bob -> do
     bob <## "1 contacts connected (use /cs for the list)"
     bob ##> "/sync alice"
-    bob <## "error: command is prohibited"
+    bob <## "error: command is prohibited, synchronizeRatchet: not allowed"
     alice #> "@bob 1"
     bob <## "alice: decryption error (connection out of sync), synchronization required"
     bob <## "use /sync alice to synchronize"
@@ -2445,7 +2495,7 @@ setupDesynchronizedRatchet tmp alice = do
     bob ##> "/tail @alice 1"
     bob <# "alice> decryption error, possibly due to the device change (header, 3 messages)"
     bob ##> "@alice 1"
-    bob <## "error: command is prohibited"
+    bob <## "error: command is prohibited, sendMessagesB: send prohibited"
     (alice </)
   where
     copyDb from to = do
@@ -2471,6 +2521,7 @@ testSyncRatchet tmp =
       alice <## "bob: connection synchronized"
       bob <## "alice: connection synchronized"
 
+      threadDelay 100000
       bob #$> ("/_get chat @2 count=3", chat, [(1, "connection synchronization started"), (0, "connection synchronization agreed"), (0, "connection synchronized")])
       alice #$> ("/_get chat @2 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 
@@ -2510,6 +2561,7 @@ testSyncRatchetCodeReset tmp =
       alice <## "bob: connection synchronized"
       bob <## "alice: connection synchronized"
 
+      threadDelay 100000
       bob #$> ("/_get chat @2 count=4", chat, [(1, "connection synchronization started"), (0, "connection synchronization agreed"), (0, "security code changed"), (0, "connection synchronized")])
       alice #$> ("/_get chat @2 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 

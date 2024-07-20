@@ -6,15 +6,16 @@ module Simplex.Chat.Terminal.Main where
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.STM
 import Control.Monad
+import Data.Maybe (fromMaybe)
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Network.Socket
-import Simplex.Chat.Controller (ChatConfig, ChatController (..), ChatResponse (..), currentRemoteHost, versionNumber, versionString)
+import Simplex.Chat.Controller (ChatConfig, ChatController (..), ChatResponse (..), SimpleNetCfg (..), currentRemoteHost, versionNumber, versionString)
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal
-import Simplex.Chat.View (serializeChatResponse)
-import Simplex.Messaging.Client (NetworkConfig (..))
+import Simplex.Chat.View (serializeChatResponse, smpProxyModeStr)
+import Simplex.Messaging.Client (NetworkConfig (..), defaultNetworkConfig)
 import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
 import System.Terminal (withTerminal)
@@ -51,7 +52,7 @@ simplexChatCLI cfg server_ = do
           putStrLn $ serializeChatResponse (rh, Just user) ts tz rh r
 
 welcome :: ChatOpts -> IO ()
-welcome ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, networkConfig}} =
+welcome ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, simpleNetCfg = SimpleNetCfg {socksProxy, smpProxyMode_, smpProxyFallback_}}} =
   mapM_
     putStrLn
     [ versionString versionNumber,
@@ -59,6 +60,9 @@ welcome ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, networkConfig}} =
       maybe
         "direct network connection - use `/network` command or `-x` CLI option to connect via SOCKS5 at :9050"
         (("using SOCKS5 proxy " <>) . show)
-        (socksProxy networkConfig),
+        socksProxy,
+      smpProxyModeStr
+        (fromMaybe (smpProxyMode defaultNetworkConfig) smpProxyMode_)
+        (fromMaybe (smpProxyFallback defaultNetworkConfig) smpProxyFallback_),
       "type \"/help\" or \"/h\" for usage info"
     ]

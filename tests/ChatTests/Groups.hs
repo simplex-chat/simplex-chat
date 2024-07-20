@@ -1,6 +1,9 @@
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PostfixOperators #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module ChatTests.Groups where
 
@@ -13,11 +16,16 @@ import qualified Data.ByteString.Char8 as B
 import Data.List (isInfixOf)
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (VersionRangeChat)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
+import Simplex.Messaging.Agent.Env.SQLite
+import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
+import Simplex.Messaging.Transport
 import System.Directory (copyFile)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
@@ -150,6 +158,8 @@ chatGroupTests = do
     it "another admin can unblock" testBlockForAllAnotherAdminUnblocks
     it "member was blocked before joining group" testBlockForAllBeforeJoining
     it "can't repeat block, unblock" testBlockForAllCantRepeat
+  describe "group member inactivity" $ do
+    it "mark member inactive on reaching quota" testGroupMemberInactive
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -2578,13 +2588,15 @@ testPlanGroupLinkOwn tmp =
 
 testPlanGroupLinkConnecting :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkConnecting tmp = do
-  gLink <- withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+  -- gLink <- withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+  gLink <- withNewTestChatCfg tmp cfg "alice" aliceProfile $ \a -> withTestOutput a $ \alice -> do
     alice ##> "/g team"
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"
     alice ##> "/create link #team"
     getGroupLink alice "team" GRMember True
-  withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
+  -- withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
+  withNewTestChatCfg tmp cfg "bob" bobProfile $ \b -> withTestOutput b $ \bob -> do
     threadDelay 100000
 
     bob ##> ("/c " <> gLink)
@@ -2598,13 +2610,15 @@ testPlanGroupLinkConnecting tmp = do
     bob <## "group link: connecting, allowed to reconnect"
 
     threadDelay 100000
-  withTestChatCfg tmp cfg "alice" $ \alice -> do
+  -- withTestChatCfg tmp cfg "alice" $ \alice -> do
+  withTestChatCfg tmp cfg "alice" $ \a -> withTestOutput a $ \alice -> do
     alice
       <### [ "1 group links active",
              "#team: group is empty",
              "bob (Bob): accepting request to join group #team..."
            ]
-  withTestChatCfg tmp cfg "bob" $ \bob -> do
+  -- withTestChatCfg tmp cfg "bob" $ \bob -> do
+  withTestChatCfg tmp cfg "bob" $ \b -> withTestOutput b $ \bob -> do
     threadDelay 500000
     bob ##> ("/_connect plan 1 " <> gLink)
     bob <## "group link: connecting"
@@ -2621,7 +2635,8 @@ testPlanGroupLinkConnecting tmp = do
 testPlanGroupLinkLeaveRejoin :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkLeaveRejoin =
   testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
-    \alice bob -> do
+    -- \alice bob -> do
+    \a b -> withTestOutput a $ \alice -> withTestOutput b $ \bob -> do
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -2641,6 +2656,8 @@ testPlanGroupLinkLeaveRejoin =
             bob <## "#team: you joined the group"
         ]
 
+      threadDelay 100000
+
       bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
@@ -2649,6 +2666,8 @@ testPlanGroupLinkLeaveRejoin =
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
 
+      threadDelay 100000
+
       bob ##> "/leave #team"
       concurrentlyN_
         [ do
@@ -2656,6 +2675,8 @@ testPlanGroupLinkLeaveRejoin =
             bob <## "use /d #team to delete the group",
           alice <## "#team: bob left the group"
         ]
+
+      threadDelay 100000
 
       bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: ok to connect"
@@ -3255,7 +3276,7 @@ setupDesynchronizedRatchet tmp alice = do
     bob <## "1 contacts connected (use /cs for the list)"
     bob <## "#team: connected to server(s)"
     bob ##> "/sync #team alice"
-    bob <## "error: command is prohibited"
+    bob <## "error: command is prohibited, synchronizeRatchet: not allowed"
     alice #> "#team 1"
     bob <## "#team alice: decryption error (connection out of sync), synchronization required"
     bob <## "use /sync #team alice to synchronize"
@@ -3283,7 +3304,7 @@ testGroupSyncRatchet tmp =
       bob <## "1 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       bob `send` "#team 1"
-      bob <## "error: command is prohibited" -- silence?
+      bob <## "error: command is prohibited, sendMessagesB: send prohibited" -- silence?
       bob <# "#team 1"
       (alice </)
       -- synchronize bob and alice
@@ -3294,6 +3315,7 @@ testGroupSyncRatchet tmp =
       alice <## "#team bob: connection synchronized"
       bob <## "#team alice: connection synchronized"
 
+      threadDelay 100000
       bob #$> ("/_get chat #1 count=3", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "connection synchronized")])
       alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 
@@ -3334,6 +3356,7 @@ testGroupSyncRatchetCodeReset tmp =
       alice <## "#team bob: connection synchronized"
       bob <## "#team alice: connection synchronized"
 
+      threadDelay 100000
       bob #$> ("/_get chat #1 count=4", chat, [(1, "connection synchronization started for alice"), (0, "connection synchronization agreed"), (0, "security code changed"), (0, "connection synchronized")])
       alice #$> ("/_get chat #1 count=2", chat, [(0, "connection synchronization agreed"), (0, "connection synchronized")])
 
@@ -6059,3 +6082,73 @@ testBlockForAllCantRepeat =
       [alice, cath] *<# "#team bob> 3"
 
       bob #$> ("/_get chat #1 count=3", chat, [(1, "1"), (1, "2"), (1, "3")])
+
+testGroupMemberInactive :: HasCallStack => FilePath -> IO ()
+testGroupMemberInactive tmp = do
+  withSmpServer' serverCfg' $ do
+    withNewTestChatCfgOpts tmp cfg' opts' "alice" aliceProfile $ \alice -> do
+      withNewTestChatCfgOpts tmp cfg' opts' "bob" bobProfile $ \bob -> do
+        createGroup2 "team" alice bob
+
+        alice #> "#team hi"
+        bob <# "#team alice> hi"
+        bob #> "#team hey"
+        alice <# "#team bob> hey"
+
+      -- bob is offline
+      alice #> "#team 1"
+      alice #> "#team 2"
+      alice #> "#team 3"
+      alice <## "[#team bob] connection is marked as inactive"
+      -- 4 and 5 will be sent to bob as pending messages
+      alice #> "#team 4"
+      alice #> "#team 5"
+
+      pgmCount <- withCCTransaction alice $ \db ->
+        DB.query_ db "SELECT count(1) FROM pending_group_messages" :: IO [[Int]]
+      pgmCount `shouldBe` [[2]]
+
+      threadDelay 1500000
+
+      withTestChatCfgOpts tmp cfg' opts' "bob" $ \bob -> do
+        bob <## "1 contacts connected (use /cs for the list)"
+        bob <## "#team: connected to server(s)"
+        bob <# "#team alice> 1"
+        bob <# "#team alice> 2"
+        bob <#. "#team alice> skipped message ID"
+        alice <## "[#team bob] inactive connection is marked as active"
+
+        bob <# "#team alice> 4"
+        bob <# "#team alice> 5"
+
+        pgmCount' <- withCCTransaction alice $ \db ->
+          DB.query_ db "SELECT count(1) FROM pending_group_messages" :: IO [[Int]]
+        pgmCount' `shouldBe` [[0]]
+
+        -- delivery works
+        alice #> "#team hi"
+        bob <# "#team alice> hi"
+        bob #> "#team hey"
+        alice <# "#team bob> hey"
+  where
+    serverCfg' =
+      smpServerCfg
+        { transports = [("7003", transport @TLS)],
+          msgQueueQuota = 2
+        }
+    fastRetryInterval = defaultReconnectInterval {initialInterval = 50_000} -- same as in agent tests
+    cfg' =
+      testCfg
+        { agentConfig =
+            testAgentCfg
+              { quotaExceededTimeout = 1,
+                messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
+              }
+        }
+    opts' =
+      testOpts
+        { coreOptions =
+            testCoreOpts
+              { smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7003"]
+              }
+        }

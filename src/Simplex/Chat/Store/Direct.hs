@@ -30,7 +30,8 @@ module Simplex.Chat.Store.Direct
     getConnReqContactXContactId,
     getContactByConnReqHash,
     createDirectContact,
-    deleteContactConnectionsAndFiles,
+    deleteContactConnections,
+    deleteContactFiles,
     deleteContact,
     deleteContactWithoutGroups,
     setContactDeleted,
@@ -50,8 +51,10 @@ module Simplex.Chat.Store.Direct
     updateContactStatus,
     updateGroupUnreadChat,
     setConnectionVerified,
-    incConnectionAuthErrCounter,
-    setConnectionAuthErrCounter,
+    incAuthErrCounter,
+    setAuthErrCounter,
+    incQuotaErrCounter,
+    setQuotaErrCounter,
     getUserContacts,
     createOrUpdateContactRequest,
     getContactRequest',
@@ -70,6 +73,7 @@ module Simplex.Chat.Store.Direct
     resetContactConnInitiated,
     setContactCustomData,
     setContactUIThemes,
+    setContactChatDeleted,
   )
 where
 
@@ -128,11 +132,11 @@ deletePendingContactConnection db userId connId =
     |]
     (userId, connId, ConnContact)
 
-createAddressContactConnection :: DB.Connection -> VersionRangeChat -> User -> Contact -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> ExceptT StoreError IO Contact
+createAddressContactConnection :: DB.Connection -> VersionRangeChat -> User -> Contact -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> SubscriptionMode -> VersionChat -> PQSupport -> ExceptT StoreError IO (Int64, Contact)
 createAddressContactConnection db vr user@User {userId} Contact {contactId} acId cReqHash xContactId incognitoProfile subMode chatV pqSup = do
   PendingContactConnection {pccConnId} <- liftIO $ createConnReqConnection db userId acId cReqHash xContactId incognitoProfile Nothing subMode chatV pqSup
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ? WHERE connection_id = ?" (contactId, pccConnId)
-  getContact db vr user contactId
+  (pccConnId,) <$> getContact db vr user contactId
 
 createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> SubscriptionMode -> VersionChat -> PQSupport -> IO PendingContactConnection
 createConnReqConnection db userId acId cReqHash xContactId incognitoProfile groupLinkId subMode chatV pqSup = do
@@ -178,10 +182,10 @@ getContactByConnReqHash db vr user@User {userId} cReqHash =
         SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.custom_data,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
           c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
@@ -241,12 +245,13 @@ createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p
         chatTs = Just currentTs,
         contactGroupMemberId = Nothing,
         contactGrpInvSent = False,
-        customData = Nothing,
-        uiThemes = Nothing
+        uiThemes = Nothing,
+        chatDeleted = False,
+        customData = Nothing
       }
 
-deleteContactConnectionsAndFiles :: DB.Connection -> UserId -> Contact -> IO ()
-deleteContactConnectionsAndFiles db userId Contact {contactId} = do
+deleteContactConnections :: DB.Connection -> User -> Contact -> IO ()
+deleteContactConnections db User {userId} Contact {contactId} = do
   DB.execute
     db
     [sql|
@@ -258,6 +263,9 @@ deleteContactConnectionsAndFiles db userId Contact {contactId} = do
       )
     |]
     (userId, contactId)
+
+deleteContactFiles :: DB.Connection -> User -> Contact -> IO ()
+deleteContactFiles db User {userId} Contact {contactId} = do
   DB.execute db "DELETE FROM files WHERE user_id = ? AND contact_id = ?" (userId, contactId)
 
 deleteContact :: DB.Connection -> User -> Contact -> ExceptT StoreError IO ()
@@ -467,18 +475,31 @@ setConnectionVerified db User {userId} connId code = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE connections SET security_code = ?, security_code_verified_at = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (code, code $> updatedAt, updatedAt, userId, connId)
 
-incConnectionAuthErrCounter :: DB.Connection -> User -> Connection -> IO Int
-incConnectionAuthErrCounter db User {userId} Connection {connId, authErrCounter} = do
+incAuthErrCounter :: DB.Connection -> User -> Connection -> IO Int
+incAuthErrCounter db User {userId} Connection {connId, authErrCounter} = do
   updatedAt <- getCurrentTime
   (counter_ :: Maybe Int) <- maybeFirstRow fromOnly $ DB.query db "SELECT auth_err_counter FROM connections WHERE user_id = ? AND connection_id = ?" (userId, connId)
   let counter' = fromMaybe authErrCounter counter_ + 1
   DB.execute db "UPDATE connections SET auth_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (counter', updatedAt, userId, connId)
   pure counter'
 
-setConnectionAuthErrCounter :: DB.Connection -> User -> Connection -> Int -> IO ()
-setConnectionAuthErrCounter db User {userId} Connection {connId} counter = do
+setAuthErrCounter :: DB.Connection -> User -> Connection -> Int -> IO ()
+setAuthErrCounter db User {userId} Connection {connId} counter = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE connections SET auth_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (counter, updatedAt, userId, connId)
+
+incQuotaErrCounter :: DB.Connection -> User -> Connection -> IO Int
+incQuotaErrCounter db User {userId} Connection {connId, quotaErrCounter} = do
+  updatedAt <- getCurrentTime
+  (counter_ :: Maybe Int) <- maybeFirstRow fromOnly $ DB.query db "SELECT quota_err_counter FROM connections WHERE user_id = ? AND connection_id = ?" (userId, connId)
+  let counter' = fromMaybe quotaErrCounter counter_ + 1
+  DB.execute db "UPDATE connections SET quota_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (counter', updatedAt, userId, connId)
+  pure counter'
+
+setQuotaErrCounter :: DB.Connection -> User -> Connection -> Int -> IO ()
+setQuotaErrCounter db User {userId} Connection {connId} counter = do
+  updatedAt <- getCurrentTime
+  DB.execute db "UPDATE connections SET quota_err_counter = ?, updated_at = ? WHERE user_id = ? AND connection_id = ?" (counter, updatedAt, userId, connId)
 
 updateContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> IO ()
 updateContactProfile_ db userId profileId profile = do
@@ -600,10 +621,10 @@ createOrUpdateContactRequest db vr user@User {userId} userContactLinkId invId (V
             SELECT
               -- Contact
               ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-              cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.custom_data,
+              cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data,
               -- Connection
               c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-              c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
+              c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
               c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
             FROM contacts ct
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
@@ -764,6 +785,7 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
         contactGroupMemberId = Nothing,
         contactGrpInvSent = False,
         uiThemes = Nothing,
+        chatDeleted = False,
         customData = Nothing
       }
 
@@ -784,10 +806,10 @@ getContact_ db vr user@User {userId} contactId deleted =
         SELECT
           -- Contact
           ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.custom_data,
+          cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
+          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
           c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
@@ -841,7 +863,7 @@ getContactConnections db vr userId Contact {contactId} =
         [sql|
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
             c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
-            c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter,
+            c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
             c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
           FROM connections c
           JOIN contacts ct ON ct.contact_id = c.contact_id
@@ -859,7 +881,7 @@ getConnectionById db vr User {userId} connId = ExceptT $ do
       [sql|
         SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
           conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id,
-          created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter,
+          created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
           conn_chat_version, peer_chat_min_version, peer_chat_max_version
         FROM connections
         WHERE user_id = ? AND connection_id = ?
@@ -934,3 +956,8 @@ setContactUIThemes :: DB.Connection -> User -> Contact -> Maybe UIThemeEntityOve
 setContactUIThemes db User {userId} Contact {contactId} uiThemes = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE contacts SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (uiThemes, updatedAt, userId, contactId)
+
+setContactChatDeleted :: DB.Connection -> User -> Contact -> Bool -> IO ()
+setContactChatDeleted db User {userId} Contact {contactId} chatDeleted = do
+  updatedAt <- getCurrentTime
+  DB.execute db "UPDATE contacts SET chat_deleted = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (chatDeleted, updatedAt, userId, contactId)

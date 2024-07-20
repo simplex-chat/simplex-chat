@@ -8,13 +8,16 @@ import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import com.sshtools.twoslices.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.awt.*
 import java.awt.TrayIcon.MessageType
 import java.io.File
 import javax.imageio.ImageIO
 
 object NtfManager {
-  private val prevNtfs = arrayListOf<Pair<ChatId, Slice>>()
+  private val prevNtfs = arrayListOf<Pair<Pair<Long, ChatId>, Slice>>()
+  private val prevNtfsMutex: Mutex = Mutex()
 
   fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean {
     if (simplexWindowState.windowFocused.value) return false
@@ -42,34 +45,52 @@ object NtfManager {
       generalGetString(MR.strings.accept) to { ntfManager.acceptCallAction(invitation.contact.id) },
       generalGetString(MR.strings.reject) to { ChatModel.callManager.endCall(invitation = invitation) }
     )
-    displayNotificationViaLib(contactId, title, text, prepareIconPath(largeIcon), actions) {
+    displayNotificationViaLib(invitation.user.userId, contactId, title, text, prepareIconPath(largeIcon), actions) {
       ntfManager.openChatAction(invitation.user.userId, contactId)
     }
     return true
   }
 
   fun showMessage(title: String, text: String) {
-    displayNotificationViaLib("MESSAGE", title, text, null, emptyList()) {}
+    displayNotificationViaLib(-1, "MESSAGE", title, text, null, emptyList()) {}
   }
 
   fun hasNotificationsForChat(chatId: ChatId) = false//prevNtfs.any { it.first == chatId }
 
   fun cancelNotificationsForChat(chatId: ChatId) {
-    val ntf = prevNtfs.firstOrNull { it.first == chatId }
-    if (ntf != null) {
-      prevNtfs.remove(ntf)
-      /*try {
-        ntf.second.close()
-      } catch (e: Exception) {
-        // Can be java.lang.UnsupportedOperationException, for example. May do nothing
-        println("Failed to close notification: ${e.stackTraceToString()}")
-      }*/
+    withBGApi {
+      prevNtfsMutex.withLock {
+        val ntf = prevNtfs.firstOrNull { (userChat) -> userChat.second == chatId }
+        if (ntf != null) {
+          prevNtfs.remove(ntf)
+          /*try {
+            ntf.second.close()
+          } catch (e: Exception) {
+            // Can be java.lang.UnsupportedOperationException, for example. May do nothing
+            println("Failed to close notification: ${e.stackTraceToString()}")
+          }*/
+        }
+      }
+    }
+  }
+
+  fun cancelNotificationsForUser(userId: Long) {
+    withBGApi {
+      prevNtfsMutex.withLock {
+        prevNtfs.filter { (userChat) -> userChat.first == userId }.forEach {
+          prevNtfs.remove(it)
+        }
+      }
     }
   }
 
   fun cancelAllNotifications() {
 //    prevNtfs.forEach { try { it.second.close() } catch (e: Exception) { println("Failed to close notification: ${e.stackTraceToString()}") } }
-    prevNtfs.clear()
+    withBGApi {
+      prevNtfsMutex.withLock {
+        prevNtfs.clear()
+      }
+    }
   }
 
   fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) {
@@ -84,12 +105,13 @@ object NtfManager {
       else -> base64ToBitmap(image)
     }
 
-    displayNotificationViaLib(chatId, title, content, prepareIconPath(largeIcon), actions.map { it.first.name to it.second }) {
+    displayNotificationViaLib(user.userId, chatId, title, content, prepareIconPath(largeIcon), actions.map { it.first.name to it.second }) {
       ntfManager.openChatAction(user.userId, chatId)
     }
   }
 
   private fun displayNotificationViaLib(
+    userId: Long,
     chatId: String,
     title: String,
     text: String,
@@ -110,7 +132,11 @@ object NtfManager {
       builder.action(it.first, it.second)
     }
     try {
-      prevNtfs.add(chatId to builder.toast())
+      withBGApi {
+        prevNtfsMutex.withLock {
+          prevNtfs.add(Pair(userId, chatId) to builder.toast())
+        }
+      }
     } catch (e: Throwable) {
       Log.e(TAG, e.stackTraceToString())
       if (e !is Exception) {

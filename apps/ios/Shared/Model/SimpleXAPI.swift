@@ -341,8 +341,8 @@ func apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64) async throws -
     throw r
 }
 
-func apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64) async -> ChatItem? {
-    let cmd: ChatCommand = .apiForwardChatItem(toChatType: toChatType, toChatId: toChatId, fromChatType: fromChatType, fromChatId: fromChatId, itemId: itemId)
+func apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64, ttl: Int?) async -> ChatItem? {
+    let cmd: ChatCommand = .apiForwardChatItem(toChatType: toChatType, toChatId: toChatId, fromChatType: fromChatType, fromChatId: fromChatId, itemId: itemId, ttl: ttl)
     return await processSendMessageCmd(toChatType: toChatType, cmd: cmd)
 }
 
@@ -558,6 +558,18 @@ func apiContactInfo(_ contactId: Int64) async throws -> (ConnectionStats?, Profi
 func apiGroupMemberInfo(_ groupId: Int64, _ groupMemberId: Int64) throws -> (GroupMember, ConnectionStats?) {
     let r = chatSendCmdSync(.apiGroupMemberInfo(groupId: groupId, groupMemberId: groupMemberId))
     if case let .groupMemberInfo(_, _, member, connStats_) = r { return (member, connStats_) }
+    throw r
+}
+
+func apiContactQueueInfo(_ contactId: Int64) async throws -> (RcvMsgInfo?, QueueInfo) {
+    let r = await chatSendCmd(.apiContactQueueInfo(contactId: contactId))
+    if case let .queueInfo(_, rcvMsgInfo, queueInfo) = r { return (rcvMsgInfo, queueInfo) }
+    throw r
+}
+
+func apiGroupMemberQueueInfo(_ groupId: Int64, _ groupMemberId: Int64) async throws -> (RcvMsgInfo?, QueueInfo) {
+    let r = await chatSendCmd(.apiGroupMemberQueueInfo(groupId: groupId, groupMemberId: groupMemberId))
+    if case let .queueInfo(_, rcvMsgInfo, queueInfo) = r { return (rcvMsgInfo, queueInfo) }
     throw r
 }
 
@@ -927,14 +939,19 @@ func standaloneFileInfo(url: String, ctrl: chat_ctrl? = nil) async -> MigrationF
     }
 }
 
-func receiveFile(user: any UserLike, fileId: Int64, auto: Bool = false) async {
-    if let chatItem = await apiReceiveFile(fileId: fileId, encrypted: privacyEncryptLocalFilesGroupDefault.get(), auto: auto) {
+func receiveFile(user: any UserLike, fileId: Int64, userApprovedRelays: Bool = false, auto: Bool = false) async {
+    if let chatItem = await apiReceiveFile(
+        fileId: fileId,
+        userApprovedRelays: userApprovedRelays || !privacyAskToApproveRelaysGroupDefault.get(),
+        encrypted: privacyEncryptLocalFilesGroupDefault.get(),
+        auto: auto
+    ) {
         await chatItemSimpleUpdate(user, chatItem)
     }
 }
 
-func apiReceiveFile(fileId: Int64, encrypted: Bool, inline: Bool? = nil, auto: Bool = false) async -> AChatItem? {
-    let r = await chatSendCmd(.receiveFile(fileId: fileId, encrypted: encrypted, inline: inline))
+func apiReceiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool, inline: Bool? = nil, auto: Bool = false) async -> AChatItem? {
+    let r = await chatSendCmd(.receiveFile(fileId: fileId, userApprovedRelays: userApprovedRelays, encrypted: encrypted, inline: inline))
     let am = AlertManager.shared
     if case let .rcvFileAccepted(_, chatItem) = r { return chatItem }
     if case .rcvFileAcceptedSndCancelled = r {
@@ -947,19 +964,50 @@ func apiReceiveFile(fileId: Int64, encrypted: Bool, inline: Bool? = nil, auto: B
         }
     } else if let networkErrorAlert = networkErrorAlert(r) {
         logger.error("apiReceiveFile network error: \(String(describing: r))")
-        am.showAlert(networkErrorAlert)
+        if !auto {
+            am.showAlert(networkErrorAlert)
+        }
     } else {
         switch chatError(r) {
         case .fileCancelled:
             logger.debug("apiReceiveFile ignoring fileCancelled error")
         case .fileAlreadyReceiving:
             logger.debug("apiReceiveFile ignoring fileAlreadyReceiving error")
+        case let .fileNotApproved(fileId, unknownServers):
+            logger.debug("apiReceiveFile fileNotApproved error")
+            if !auto {
+                let srvs = unknownServers.map { s in
+                    if let srv = parseServerAddress(s), !srv.hostnames.isEmpty {
+                        srv.hostnames[0]
+                    } else {
+                        serverHost(s)
+                    }
+                }
+                am.showAlert(Alert(
+                    title: Text("Unknown servers!"),
+                    message: Text("Without Tor or VPN, your IP address will be visible to these XFTP relays: \(srvs.sorted().joined(separator: ", "))."),
+                    primaryButton: .default(
+                        Text("Download"),
+                        action: {
+                            Task {
+                                logger.debug("apiReceiveFile fileNotApproved alert - in Task")
+                                if let user = ChatModel.shared.currentUser {
+                                    await receiveFile(user: user, fileId: fileId, userApprovedRelays: true)
+                                }
+                            }
+                        }
+                    ),
+                    secondaryButton: .cancel()
+                ))
+            }
         default:
             logger.error("apiReceiveFile error: \(String(describing: r))")
-            am.showAlertMsg(
-                title: "Error receiving file",
-                message: "Error: \(String(describing: r))"
-            )
+            if !auto {
+                am.showAlertMsg(
+                    title: "Error receiving file",
+                    message: "Error: \(String(describing: r))"
+                )
+            }
         }
     }
     return nil
@@ -1229,7 +1277,7 @@ func filterMembersToAdd(_ ms: [GMember]) -> [Contact] {
     let memberContactIds = ms.compactMap{ m in m.wrapped.memberCurrent ? m.wrapped.memberContactId : nil }
     return ChatModel.shared.chats
         .compactMap{ $0.chatInfo.contact }
-        .filter{ c in c.ready && c.active && !memberContactIds.contains(c.apiId) }
+        .filter{ c in c.sendMsgEnabled && !c.nextSendGrpInv && !memberContactIds.contains(c.apiId) }
         .sorted{ $0.displayName.lowercased() < $1.displayName.lowercased() }
 }
 
@@ -1778,10 +1826,14 @@ func processReceivedMsg(_ res: ChatResponse) async {
         if let aChatItem = aChatItem {
             await chatItemSimpleUpdate(user, aChatItem)
         }
-    case let .rcvFileError(user, aChatItem, _):
+    case let .rcvFileError(user, aChatItem, _, _):
         if let aChatItem = aChatItem {
             await chatItemSimpleUpdate(user, aChatItem)
             Task { cleanupFile(aChatItem) }
+        }
+    case let .rcvFileWarning(user, aChatItem, _, _):
+        if let aChatItem = aChatItem {
+            await chatItemSimpleUpdate(user, aChatItem)
         }
     case let .sndFileStart(user, aChatItem, _):
         await chatItemSimpleUpdate(user, aChatItem)
@@ -1799,10 +1851,14 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
     case let .sndFileCompleteXFTP(user, aChatItem, _):
         await chatItemSimpleUpdate(user, aChatItem)
-    case let .sndFileError(user, aChatItem, _):
+    case let .sndFileError(user, aChatItem, _, _):
         if let aChatItem = aChatItem {
             await chatItemSimpleUpdate(user, aChatItem)
             Task { cleanupFile(aChatItem) }
+        }
+    case let .sndFileWarning(user, aChatItem, _, _):
+        if let aChatItem = aChatItem {
+            await chatItemSimpleUpdate(user, aChatItem)
         }
     case let .callInvitation(invitation):
         await MainActor.run {
@@ -1849,21 +1905,35 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
     case .chatSuspended:
         chatSuspended()
-    case let .contactSwitch(_, contact, switchProgress):
-        await MainActor.run {
-            m.updateContactConnectionStats(contact, switchProgress.connectionStats)
+    case let .contactSwitch(user, contact, switchProgress):
+        if active(user) {
+            await MainActor.run {
+                m.updateContactConnectionStats(contact, switchProgress.connectionStats)
+            }
         }
-    case let .groupMemberSwitch(_, groupInfo, member, switchProgress):
-        await MainActor.run {
-            m.updateGroupMemberConnectionStats(groupInfo, member, switchProgress.connectionStats)
+    case let .groupMemberSwitch(user, groupInfo, member, switchProgress):
+        if active(user) {
+            await MainActor.run {
+                m.updateGroupMemberConnectionStats(groupInfo, member, switchProgress.connectionStats)
+            }
         }
-    case let .contactRatchetSync(_, contact, ratchetSyncProgress):
-        await MainActor.run {
-            m.updateContactConnectionStats(contact, ratchetSyncProgress.connectionStats)
+    case let .contactRatchetSync(user, contact, ratchetSyncProgress):
+        if active(user) {
+            await MainActor.run {
+                m.updateContactConnectionStats(contact, ratchetSyncProgress.connectionStats)
+            }
         }
-    case let .groupMemberRatchetSync(_, groupInfo, member, ratchetSyncProgress):
-        await MainActor.run {
-            m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
+    case let .groupMemberRatchetSync(user, groupInfo, member, ratchetSyncProgress):
+        if active(user) {
+            await MainActor.run {
+                m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
+            }
+        }
+    case let .contactDisabled(user, contact):
+        if active(user) {
+            await MainActor.run {
+                m.updateContact(contact)
+            }
         }
     case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible):
         await MainActor.run {
@@ -1887,12 +1957,28 @@ func processReceivedMsg(_ res: ChatResponse) async {
             let state = UIRemoteCtrlSessionState.connected(remoteCtrl: remoteCtrl, sessionCode: m.remoteCtrlSession?.sessionCode ?? "")
             m.remoteCtrlSession = m.remoteCtrlSession?.updateState(state)
         }
-    case .remoteCtrlStopped:
+    case let .remoteCtrlStopped(_, rcStopReason):
         // This delay is needed to cancel the session that fails on network failure,
         // e.g. when user did not grant permission to access local network yet.
         if let sess = m.remoteCtrlSession {
             await MainActor.run {
                 m.remoteCtrlSession = nil
+                dismissAllSheets() {
+                    switch rcStopReason {
+                    case .connectionFailed(.errorAgent(.RCP(.identity))):
+                        AlertManager.shared.showAlertMsg(
+                            title: "Connection with desktop stopped",
+                            message: "This link was used with another mobile device, please create a new link on the desktop."
+                        )
+                    default:
+                        AlertManager.shared.showAlert(Alert(
+                            title: Text("Connection with desktop stopped"),
+                            message: Text("Please check that mobile and desktop are connected to the same local network, and that desktop firewall allows the connection.\nPlease share any other issues with the developers."),
+                            primaryButton: .default(Text("Ok")),
+                            secondaryButton: .default(Text("Copy error")) { UIPasteboard.general.string = String(describing: rcStopReason) }
+                        ))
+                    }
+                }
             }
             if case .connected = sess.sessionState {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {

@@ -1434,7 +1434,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Virhe: ";
 
-/* No comment provided by engineer. */
+/* snd error text */
 "Error: %@" = "Virhe: %@";
 
 /* No comment provided by engineer. */
@@ -2057,9 +2057,6 @@
 
 /* item status description */
 "Most likely this connection is deleted." = "Todennäköisesti tämä yhteys on poistettu.";
-
-/* No comment provided by engineer. */
-"Most likely this contact has deleted the connection with you." = "Todennäköisesti tämä kontakti on poistanut yhteyden sinuun.";
 
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Useita keskusteluprofiileja";
@@ -3136,9 +3133,6 @@
 
 /* No comment provided by engineer. */
 "Unable to record voice message" = "Ääniviestiä ei voi tallentaa";
-
-/* item status description */
-"Unexpected error: %@" = "Odottamaton virhe: %@";
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Odottamaton siirtotila";

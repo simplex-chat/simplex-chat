@@ -9,6 +9,7 @@ import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON (..), (.:?))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
+import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Simplex.Chat.Types.UITheme
@@ -28,6 +29,7 @@ data AppSettings = AppSettings
   { appPlatform :: Maybe AppPlatform,
     networkConfig :: Maybe NetworkConfig,
     privacyEncryptLocalFiles :: Maybe Bool,
+    privacyAskToApproveRelays :: Maybe Bool,
     privacyAcceptImages :: Maybe Bool,
     privacyLinkPreviews :: Maybe Bool,
     privacyShowChatPreviews :: Maybe Bool,
@@ -48,7 +50,9 @@ data AppSettings = AppSettings
     uiProfileImageCornerRadius :: Maybe Double,
     uiColorScheme :: Maybe UIColorScheme,
     uiDarkColorScheme :: Maybe DarkColorScheme,
-    uiThemes :: Maybe UIThemes
+    uiCurrentThemeIds :: Maybe (Map ThemeColorScheme Text),
+    uiThemes :: Maybe [UITheme],
+    oneHandUI :: Maybe Bool
   }
   deriving (Show)
 
@@ -58,6 +62,7 @@ defaultAppSettings =
     { appPlatform = Nothing,
       networkConfig = Just defaultNetworkConfig,
       privacyEncryptLocalFiles = Just True,
+      privacyAskToApproveRelays = Just True,
       privacyAcceptImages = Just True,
       privacyLinkPreviews = Just True,
       privacyShowChatPreviews = Just True,
@@ -78,7 +83,9 @@ defaultAppSettings =
       uiProfileImageCornerRadius = Just 22.5,
       uiColorScheme = Just UCSSystem,
       uiDarkColorScheme = Just DCSSimplex,
-      uiThemes = Nothing
+      uiCurrentThemeIds = Nothing,
+      uiThemes = Nothing,
+      oneHandUI = Just True
     }
 
 defaultParseAppSettings :: AppSettings
@@ -87,6 +94,7 @@ defaultParseAppSettings =
     { appPlatform = Nothing,
       networkConfig = Nothing,
       privacyEncryptLocalFiles = Nothing,
+      privacyAskToApproveRelays = Nothing,
       privacyAcceptImages = Nothing,
       privacyLinkPreviews = Nothing,
       privacyShowChatPreviews = Nothing,
@@ -107,7 +115,9 @@ defaultParseAppSettings =
       uiProfileImageCornerRadius = Nothing,
       uiColorScheme = Nothing,
       uiDarkColorScheme = Nothing,
-      uiThemes = Nothing
+      uiCurrentThemeIds = Nothing,
+      uiThemes = Nothing,
+      oneHandUI = Nothing
     }
 
 combineAppSettings :: AppSettings -> AppSettings -> AppSettings
@@ -116,6 +126,7 @@ combineAppSettings platformDefaults storedSettings =
     { appPlatform = p appPlatform,
       networkConfig = p networkConfig,
       privacyEncryptLocalFiles = p privacyEncryptLocalFiles,
+      privacyAskToApproveRelays = p privacyAskToApproveRelays,
       privacyAcceptImages = p privacyAcceptImages,
       privacyLinkPreviews = p privacyLinkPreviews,
       privacyShowChatPreviews = p privacyShowChatPreviews,
@@ -136,7 +147,9 @@ combineAppSettings platformDefaults storedSettings =
       uiProfileImageCornerRadius = p uiProfileImageCornerRadius,
       uiColorScheme = p uiColorScheme,
       uiDarkColorScheme = p uiDarkColorScheme,
-      uiThemes = p uiThemes
+      uiCurrentThemeIds = p uiCurrentThemeIds,
+      uiThemes = p uiThemes,
+      oneHandUI = p oneHandUI
     }
   where
     p :: (AppSettings -> Maybe a) -> Maybe a
@@ -157,6 +170,7 @@ instance FromJSON AppSettings where
     appPlatform <- p "appPlatform"
     networkConfig <- p "networkConfig"
     privacyEncryptLocalFiles <- p "privacyEncryptLocalFiles"
+    privacyAskToApproveRelays <- p "privacyAskToApproveRelays"
     privacyAcceptImages <- p "privacyAcceptImages"
     privacyLinkPreviews <- p "privacyLinkPreviews"
     privacyShowChatPreviews <- p "privacyShowChatPreviews"
@@ -177,12 +191,15 @@ instance FromJSON AppSettings where
     uiProfileImageCornerRadius <- p "uiProfileImageCornerRadius"
     uiColorScheme <- p "uiColorScheme"
     uiDarkColorScheme <- p "uiDarkColorScheme"
+    uiCurrentThemeIds <- p "uiCurrentThemeIds"
     uiThemes <- p "uiThemes"
+    oneHandUI <- p "oneHandUI"
     pure
       AppSettings
         { appPlatform,
           networkConfig,
           privacyEncryptLocalFiles,
+          privacyAskToApproveRelays,
           privacyAcceptImages,
           privacyLinkPreviews,
           privacyShowChatPreviews,
@@ -203,7 +220,9 @@ instance FromJSON AppSettings where
           uiProfileImageCornerRadius,
           uiColorScheme,
           uiDarkColorScheme,
-          uiThemes
+          uiCurrentThemeIds,
+          uiThemes,
+          oneHandUI
         }
     where
       p key = v .:? key <|> pure Nothing

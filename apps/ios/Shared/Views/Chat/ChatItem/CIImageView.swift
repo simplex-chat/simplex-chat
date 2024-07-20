@@ -17,7 +17,6 @@ struct CIImageView: View {
     let maxWidth: CGFloat
     @Binding var imgWidth: CGFloat?
     @State var scrollProxy: ScrollViewProxy?
-    @State var metaColor: Color
     @State private var showFullScreenImage = false
 
     var body: some View {
@@ -38,7 +37,7 @@ struct CIImageView: View {
                     .onTapGesture {
                         if let file = file {
                             switch file.fileStatus {
-                            case .rcvInvitation:
+                            case .rcvInvitation, .rcvAborted:
                                 Task {
                                     if let user = m.currentUser {
                                         await receiveFile(user: user, fileId: file.fileId)
@@ -61,6 +60,26 @@ struct CIImageView: View {
                             case .rcvTransfer: () // ?
                             case .rcvComplete: () // ?
                             case .rcvCancelled: () // TODO
+                            case let .rcvError(rcvFileError):
+                                AlertManager.shared.showAlert(Alert(
+                                    title: Text("File error"),
+                                    message: Text(rcvFileError.errorInfo)
+                                ))
+                            case let .rcvWarning(rcvFileError):
+                                AlertManager.shared.showAlert(Alert(
+                                    title: Text("Temporary file error"),
+                                    message: Text(rcvFileError.errorInfo)
+                                ))
+                            case let .sndError(sndFileError):
+                                AlertManager.shared.showAlert(Alert(
+                                    title: Text("File error"),
+                                    message: Text(sndFileError.errorInfo)
+                                ))
+                            case let .sndWarning(sndFileError):
+                                AlertManager.shared.showAlert(Alert(
+                                    title: Text("Temporary file error"),
+                                    message: Text(sndFileError.errorInfo)
+                                ))
                             default: ()
                             }
                         }
@@ -100,13 +119,16 @@ struct CIImageView: View {
             case .sndComplete: fileIcon("checkmark", 10, 13)
             case .sndCancelled: fileIcon("xmark", 10, 13)
             case .sndError: fileIcon("xmark", 10, 13)
+            case .sndWarning: fileIcon("exclamationmark.triangle.fill", 10, 13)
             case .rcvInvitation: fileIcon("arrow.down", 10, 13)
             case .rcvAccepted: fileIcon("ellipsis", 14, 11)
             case .rcvTransfer: progressView()
+            case .rcvAborted: fileIcon("exclamationmark.arrow.circlepath", 14, 11)
+            case .rcvComplete: EmptyView()
             case .rcvCancelled: fileIcon("xmark", 10, 13)
             case .rcvError: fileIcon("xmark", 10, 13)
+            case .rcvWarning: fileIcon("exclamationmark.triangle.fill", 10, 13)
             case .invalid: fileIcon("questionmark", 10, 13)
-            default: EmptyView()
             }
         }
     }
@@ -116,7 +138,7 @@ struct CIImageView: View {
             .resizable()
             .aspectRatio(contentMode: .fit)
             .frame(width: size, height: size)
-            .foregroundColor(metaColor)
+            .foregroundColor(.white)
             .padding(padding)
     }
 

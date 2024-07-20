@@ -1,5 +1,5 @@
 name: simplex-chat
-version: 5.7.3.0
+version: 5.8.2.0
 #synopsis:
 #description:
 homepage: https://github.com/simplex-chat/simplex-chat#readme
@@ -152,12 +152,31 @@ tests:
 ghc-options:
   # - -haddock
   - -O2
-  - -Wall
+  - -Weverything
+  - -Wno-missing-exported-signatures
+  - -Wno-missing-import-lists
+  - -Wno-missed-specialisations
+  - -Wno-all-missed-specialisations
+  - -Wno-unsafe
+  - -Wno-safe
+  - -Wno-missing-local-signatures
+  - -Wno-missing-kind-signatures
+  - -Wno-missing-deriving-strategies
+  - -Wno-monomorphism-restriction
+  - -Wno-prepositive-qualified-module
+  - -Wno-unused-packages
+  - -Wno-implicit-prelude
+  - -Wno-missing-safe-haskell-mode
+  - -Wno-missing-export-lists
+  - -Wno-partial-fields
   - -Wcompat
+  - -Werror=incomplete-record-updates
   - -Werror=incomplete-patterns
+  - -Werror=missing-methods
+  - -Werror=incomplete-uni-patterns
+  - -Werror=tabs
   - -Wredundant-constraints
   - -Wincomplete-record-updates
-  - -Wincomplete-uni-patterns
   - -Wunused-type-patterns
 
 default-extensions:

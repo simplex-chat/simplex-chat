@@ -17,8 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatItem
 import chat.simplex.common.model.MsgErrorType
-import chat.simplex.common.ui.theme.CurrentColors
-import chat.simplex.common.ui.theme.SimpleXTheme
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.AlertManager
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
@@ -51,7 +50,7 @@ fun IntegrityErrorItemView(msgError: MsgErrorType, ci: ChatItem, timedMessagesTT
 
 @Composable
 fun CIMsgError(ci: ChatItem, timedMessagesTTL: Int?, onClick: () -> Unit) {
-  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+  val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
     Modifier.clickable(onClick = onClick),
     shape = RoundedCornerShape(18.dp),
@@ -69,7 +68,7 @@ fun CIMsgError(ci: ChatItem, timedMessagesTTL: Int?, onClick: () -> Unit) {
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
         modifier = Modifier.padding(end = 8.dp)
       )
-      CIMetaView(ci, timedMessagesTTL)
+      CIMetaView(ci, timedMessagesTTL, showViaProxy = false)
     }
   }
 }

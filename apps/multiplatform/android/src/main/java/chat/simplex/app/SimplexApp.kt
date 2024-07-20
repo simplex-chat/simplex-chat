@@ -6,7 +6,6 @@ import android.content.Context
 import chat.simplex.common.platform.Log
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.media.AudioManager
 import android.os.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -66,6 +65,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     context = this
     initHaskell()
     initMultiplatform()
+    runMigrations()
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
 
@@ -74,7 +74,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       // It's important, otherwise, user may be locked in undefined state
       appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
     } else if (DatabaseUtils.ksAppPassword.get() == null || DatabaseUtils.ksSelfDestructPassword.get() == null) {
-      initChatControllerAndRunMigrations()
+      initChatControllerOnStart()
     }
     ProcessLifecycleOwner.get().lifecycle.addObserver(this@SimplexApp)
   }
@@ -179,6 +179,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean = NtfManager.notifyCallInvitation(invitation)
       override fun hasNotificationsForChat(chatId: String): Boolean = NtfManager.hasNotificationsForChat(chatId)
       override fun cancelNotificationsForChat(chatId: String) = NtfManager.cancelNotificationsForChat(chatId)
+      override fun cancelNotificationsForUser(userId: Long) = NtfManager.cancelNotificationsForUser(userId)
       override fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) = NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions.map { it.first })
       override fun androidCreateNtfChannelsMaybeShowAlert() = NtfManager.createNtfChannelsMaybeShowAlert()
       override fun cancelCallNotification() = NtfManager.cancelCallNotification()
@@ -254,7 +255,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun androidSetNightModeIfSupported() {
         if (Build.VERSION.SDK_INT < 31) return
 
-        val light = if (CurrentColors.value.name == DefaultTheme.SYSTEM.name) {
+        val light = if (CurrentColors.value.name == DefaultTheme.SYSTEM_THEME_NAME) {
           null
         } else {
           CurrentColors.value.colors.isLight

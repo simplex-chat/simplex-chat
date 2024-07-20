@@ -19,14 +19,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmap
-import chat.simplex.common.R
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -34,7 +30,6 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.saveAppLocale
-import chat.simplex.common.views.usersettings.AppearanceScope.ColorEditor
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.painterResource
@@ -46,9 +41,8 @@ enum class AppIcon(val image: ImageResource) {
 }
 
 @Composable
-actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
+actual fun AppearanceView(m: ChatModel) {
   val appIcon = remember { mutableStateOf(findEnabledIcon()) }
-
   fun setAppIcon(newIcon: AppIcon) {
     if (appIcon.value == newIcon) return
     val newComponent = ComponentName(APPLICATION_ID, "chat.simplex.app.MainActivity_${newIcon.name.lowercase()}")
@@ -65,18 +59,11 @@ actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatMod
 
     appIcon.value = newIcon
   }
-
   AppearanceScope.AppearanceLayout(
     appIcon,
     m.controller.appPrefs.appLanguage,
     m.controller.appPrefs.systemDarkTheme,
     changeIcon = ::setAppIcon,
-    showSettingsModal = showSettingsModal,
-    editColor = { name, initialColor ->
-      ModalManager.start.showModalCloseable { close ->
-        ColorEditor(name, initialColor, close)
-      }
-    },
   )
 }
 
@@ -86,8 +73,6 @@ fun AppearanceScope.AppearanceLayout(
   languagePref: SharedPreference<String?>,
   systemDarkTheme: SharedPreference<String?>,
   changeIcon: (AppIcon) -> Unit,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  editColor: (ThemeColor, Color) -> Unit,
 ) {
   ColumnWithScrollBar(
     Modifier.fillMaxWidth(),
@@ -120,6 +105,13 @@ fun AppearanceScope.AppearanceLayout(
       }
       //      }
     }
+
+    SectionDividerSpaced(maxTopPadding = true)
+    ThemesSection(systemDarkTheme)
+
+    SectionDividerSpaced(maxTopPadding = true)
+    ProfileImageSection()
+
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_icon), padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
@@ -145,11 +137,6 @@ fun AppearanceScope.AppearanceLayout(
       }
     }
 
-    SectionDividerSpaced(maxTopPadding = true)
-    ProfileImageSection()
-
-    SectionDividerSpaced(maxTopPadding = true)
-    ThemesSection(systemDarkTheme, showSettingsModal, editColor)
     SectionBottomSpacer()
   }
 }
@@ -169,8 +156,6 @@ fun PreviewAppearanceSettings() {
       languagePref = SharedPreference({ null }, {}),
       systemDarkTheme = SharedPreference({ null }, {}),
       changeIcon = {},
-      showSettingsModal = { {} },
-      editColor = { _, _ -> },
     )
   }
 }

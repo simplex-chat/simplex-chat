@@ -23,9 +23,12 @@ public let GROUP_DEFAULT_NTF_ENABLE_PERIODIC = "ntfEnablePeriodic" // no longer 
 let GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 public let GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE = "privacyTransferImagesInline" // no longer used
 public let GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES = "privacyEncryptLocalFiles"
+public let GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS = "privacyAskToApproveRelays"
 let GROUP_DEFAULT_NTF_BADGE_COUNT = "ntgBadgeCount"
 let GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS = "networkUseOnionHosts"
 let GROUP_DEFAULT_NETWORK_SESSION_MODE = "networkSessionMode"
+let GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE = "networkSMPProxyMode"
+let GROUP_DEFAULT_NETWORK_SMP_PROXY_FALLBACK = "networkSMPProxyFallback"
 let GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT = "networkTCPConnectTimeout"
 let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT = "networkTCPTimeout"
 let GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB = "networkTCPTimeoutPerKb"
@@ -53,6 +56,8 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_NTF_ENABLE_PERIODIC: false,
         GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS: OnionHosts.no.rawValue,
         GROUP_DEFAULT_NETWORK_SESSION_MODE: TransportSessionMode.user.rawValue,
+        GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE: SMPProxyMode.never.rawValue,
+        GROUP_DEFAULT_NETWORK_SMP_PROXY_FALLBACK: SMPProxyFallback.allow.rawValue,
         GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT: NetCfg.defaults.tcpConnectTimeout,
         GROUP_DEFAULT_NETWORK_TCP_TIMEOUT: NetCfg.defaults.tcpTimeout,
         GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB: NetCfg.defaults.tcpTimeoutPerKb,
@@ -69,6 +74,7 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
         GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE: false,
         GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES: true,
+        GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS: true,
         GROUP_DEFAULT_CONFIRM_DB_UPGRADES: false,
         GROUP_DEFAULT_CALL_KIT_ENABLED: true,
         GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED: false,
@@ -177,6 +183,8 @@ public let privacyAcceptImagesGroupDefault = BoolDefault(defaults: groupDefaults
 
 public let privacyEncryptLocalFilesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES)
 
+public let privacyAskToApproveRelaysGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS)
+
 public let ntfBadgeCountGroupDefault = IntDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_BADGE_COUNT)
 
 public let networkUseOnionHostsGroupDefault = EnumDefault<OnionHosts>(
@@ -189,6 +197,18 @@ public let networkSessionModeGroupDefault = EnumDefault<TransportSessionMode>(
     defaults: groupDefaults,
     forKey: GROUP_DEFAULT_NETWORK_SESSION_MODE,
     withDefault: .user
+)
+
+public let networkSMPProxyModeGroupDefault = EnumDefault<SMPProxyMode>(
+    defaults: groupDefaults,
+    forKey: GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE,
+    withDefault: .never
+)
+
+public let networkSMPProxyFallbackGroupDefault = EnumDefault<SMPProxyFallback>(
+    defaults: groupDefaults,
+    forKey: GROUP_DEFAULT_NETWORK_SMP_PROXY_FALLBACK,
+    withDefault: .allow
 )
 
 public let storeDBPassphraseGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_STORE_DB_PASSPHRASE)
@@ -275,6 +295,8 @@ public func getNetCfg() -> NetCfg {
     let onionHosts = networkUseOnionHostsGroupDefault.get()
     let (hostMode, requiredHostMode) = onionHosts.hostMode
     let sessionMode = networkSessionModeGroupDefault.get()
+    let smpProxyMode = networkSMPProxyModeGroupDefault.get()
+    let smpProxyFallback = networkSMPProxyFallbackGroupDefault.get()
     let tcpConnectTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
     let tcpTimeout = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
     let tcpTimeoutPerKb = groupDefaults.integer(forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB)
@@ -295,6 +317,8 @@ public func getNetCfg() -> NetCfg {
         hostMode: hostMode,
         requiredHostMode: requiredHostMode,
         sessionMode: sessionMode,
+        smpProxyMode: smpProxyMode,
+        smpProxyFallback: smpProxyFallback,
         tcpConnectTimeout: tcpConnectTimeout,
         tcpTimeout: tcpTimeout,
         tcpTimeoutPerKb: tcpTimeoutPerKb,
@@ -309,6 +333,8 @@ public func getNetCfg() -> NetCfg {
 public func setNetCfg(_ cfg: NetCfg) {
     networkUseOnionHostsGroupDefault.set(OnionHosts(netCfg: cfg))
     networkSessionModeGroupDefault.set(cfg.sessionMode)
+    networkSMPProxyModeGroupDefault.set(cfg.smpProxyMode)
+    networkSMPProxyFallbackGroupDefault.set(cfg.smpProxyFallback)
     groupDefaults.set(cfg.tcpConnectTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT)
     groupDefaults.set(cfg.tcpTimeout, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT)
     groupDefaults.set(cfg.tcpTimeoutPerKb, forKey: GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB)

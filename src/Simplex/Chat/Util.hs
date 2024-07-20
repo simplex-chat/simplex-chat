@@ -1,10 +1,18 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Simplex.Chat.Util (week, encryptFile, chunkSize, liftIOEither, shuffle) where
 
+import Control.Exception (Exception)
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift (MonadUnliftIO (..))
+import Control.Monad.Reader
+import Data.Bifunctor (first)
 import qualified Data.ByteString.Lazy as LB
 import Data.List (sortBy)
 import Data.Ord (comparing)
@@ -13,6 +21,7 @@ import Data.Word (Word16)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import System.Random (randomRIO)
+import qualified UnliftIO.Exception as E
 import UnliftIO.IO (IOMode (..), withFile)
 
 week :: NominalDiffTime
@@ -46,3 +55,24 @@ shuffle xs = map snd . sortBy (comparing fst) <$> mapM (\x -> (,x) <$> random) x
 liftIOEither :: (MonadIO m, MonadError e m) => IO (Either e a) -> m a
 liftIOEither a = liftIO a >>= liftEither
 {-# INLINE liftIOEither #-}
+
+newtype InternalException e = InternalException {unInternalException :: e}
+  deriving (Eq, Show)
+
+instance Exception e => Exception (InternalException e)
+
+instance Exception e => MonadUnliftIO (ExceptT e IO) where
+  {-# INLINE withRunInIO #-}
+  withRunInIO :: ((forall a. ExceptT e IO a -> IO a) -> IO b) -> ExceptT e IO b
+  withRunInIO inner =
+    ExceptT . fmap (first unInternalException) . E.try $
+      withRunInIO $ \run ->
+        inner $ run . (either (E.throwIO . InternalException) pure <=< runExceptT)
+
+instance Exception e => MonadUnliftIO (ExceptT e (ReaderT r IO)) where
+  {-# INLINE withRunInIO #-}
+  withRunInIO :: ((forall a. ExceptT e (ReaderT r IO) a -> IO a) -> IO b) -> ExceptT e (ReaderT r IO) b
+  withRunInIO inner =
+    withExceptT unInternalException . ExceptT . E.try $
+      withRunInIO $ \run ->
+        inner $ run . (either (E.throwIO . InternalException) pure <=< runExceptT)

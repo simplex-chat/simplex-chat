@@ -16,10 +16,10 @@ import chat.simplex.common.model.ChatItem
 import chat.simplex.common.ui.theme.*
 
 @Composable
-fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?) {
+fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, showViaProxy: Boolean) {
   val sent = ci.chatDir.sent
-  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
-  val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
+  val sentColor = MaterialTheme.appColors.sentMessage
+  val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
     shape = RoundedCornerShape(18.dp),
     color = if (sent) sentColor else receivedColor,
@@ -36,7 +36,7 @@ fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?) {
         style = MaterialTheme.typography.body1.copy(lineHeight = 22.sp),
         modifier = Modifier.padding(end = 8.dp)
       )
-      CIMetaView(ci, timedMessagesTTL)
+      CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy)
     }
   }
 }
@@ -50,7 +50,8 @@ fun PreviewDeletedItemView() {
   SimpleXTheme {
     DeletedItemView(
       ChatItem.getDeletedContentSampleData(),
-      null
+      null,
+      showViaProxy = false
     )
   }
 }

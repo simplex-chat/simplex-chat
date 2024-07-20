@@ -159,7 +159,7 @@ struct ProtocolServersView: View {
     }
 
     private var allServersDisabled: Bool {
-        servers.allSatisfy { !$0.enabled }
+        servers.allSatisfy { $0.enabled != .enabled }
     }
 
     private func protocolServerView(_ server: Binding<ServerCfg>) -> some View {
@@ -168,7 +168,8 @@ struct ProtocolServersView: View {
             ProtocolServerView(
                 serverProtocol: serverProtocol,
                 server: server,
-                serverToEdit: srv
+                serverToEdit: srv,
+                serverEnabled: srv.enabled == .enabled
             )
             .navigationBarTitle(srv.preset ? "Preset server" : "Your server")
             .navigationBarTitleDisplayMode(.large)
@@ -181,7 +182,7 @@ struct ProtocolServersView: View {
                             invalidServer()
                         } else if !uniqueAddress(srv, address) {
                             Image(systemName: "exclamationmark.circle").foregroundColor(.red)
-                        } else if !srv.enabled {
+                        } else if srv.enabled != .enabled {
                             Image(systemName: "slash.circle").foregroundColor(.secondary)
                         } else {
                             showTestStatus(server: srv)
@@ -194,7 +195,7 @@ struct ProtocolServersView: View {
                 .padding(.trailing, 4)
 
                 let v = Text(address?.hostnames.first ?? srv.server).lineLimit(1)
-                if srv.enabled {
+                if srv.enabled == .enabled {
                     v
                 } else {
                     v.foregroundColor(.secondary)
@@ -235,7 +236,7 @@ struct ProtocolServersView: View {
     private func addAllPresets() {
         for srv in presetServers {
             if !hasPreset(srv) {
-                servers.append(ServerCfg(server: srv, preset: true, tested: nil, enabled: true))
+                servers.append(ServerCfg(server: srv, preset: true, tested: nil, enabled: .enabled))
             }
         }
     }
@@ -260,7 +261,7 @@ struct ProtocolServersView: View {
 
     private func resetTestStatus() {
         for i in 0..<servers.count {
-            if servers[i].enabled {
+            if servers[i].enabled == .enabled {
                 servers[i].tested = nil
             }
         }
@@ -269,7 +270,7 @@ struct ProtocolServersView: View {
     private func runServersTest() async -> [String: ProtocolTestFailure] {
         var fs: [String: ProtocolTestFailure] = [:]
         for i in 0..<servers.count {
-            if servers[i].enabled {
+            if servers[i].enabled == .enabled {
                 if let f = await testServerConnection(server: $servers[i]) {
                     fs[serverHostname(servers[i].server)] = f
                 }

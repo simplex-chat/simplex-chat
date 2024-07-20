@@ -1779,7 +1779,7 @@
 /* No comment provided by engineer. */
 "Error: " = "Грешка: ";
 
-/* No comment provided by engineer. */
+/* snd error text */
 "Error: %@" = "Грешка: %@";
 
 /* No comment provided by engineer. */
@@ -2569,9 +2569,6 @@
 "Most likely this connection is deleted." = "Най-вероятно тази връзка е изтрита.";
 
 /* No comment provided by engineer. */
-"Most likely this contact has deleted the connection with you." = "Най-вероятно този контакт е изтрил връзката с вас.";
-
-/* No comment provided by engineer. */
 "Multiple chat profiles" = "Множество профили за чат";
 
 /* No comment provided by engineer. */
@@ -3076,9 +3073,6 @@
 
 /* No comment provided by engineer. */
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Получаващият адрес ще бъде променен към друг сървър. Промяната на адреса ще завърши, след като подателят е онлайн.";
-
-/* No comment provided by engineer. */
-"Receiving concurrency" = "Паралелност на получаване";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "Получаващият се файл ще бъде спрян.";
@@ -3919,9 +3913,6 @@
 
 /* rcv group event chat item */
 "unblocked %@" = "отблокиран %@";
-
-/* item status description */
-"Unexpected error: %@" = "Неочаквана грешка: %@";
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Неочаквано състояние на миграция";

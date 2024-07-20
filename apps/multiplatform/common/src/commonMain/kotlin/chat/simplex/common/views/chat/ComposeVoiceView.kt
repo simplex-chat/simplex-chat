@@ -35,7 +35,7 @@ fun ComposeVoiceView(
 ) {
   val progress = rememberSaveable { mutableStateOf(0) }
   val duration = rememberSaveable(recordedDurationMs) { mutableStateOf(recordedDurationMs) }
-  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+  val sentColor = MaterialTheme.appColors.sentMessage
   Box {
     Box(
       Modifier

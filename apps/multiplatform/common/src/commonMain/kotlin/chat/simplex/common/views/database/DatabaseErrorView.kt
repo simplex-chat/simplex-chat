@@ -22,8 +22,11 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.AppVersionText
+import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 import java.io.File
@@ -106,7 +109,7 @@ fun DatabaseErrorView(
           }
         }
       is DBMigrationResult.ErrorMigration -> when (val err = status.migrationError) {
-        is MigrationError.Upgrade ->
+        is MigrationError.Upgrade -> {
           DatabaseErrorDetails(MR.strings.database_upgrade) {
             TextButton({ callRunChat(confirmMigrations = MigrationConfirmation.YesUp) }, Modifier.align(Alignment.CenterHorizontally), enabled = !progressIndicator.value) {
               Text(generalGetString(MR.strings.upgrade_and_open_chat))
@@ -116,7 +119,9 @@ fun DatabaseErrorView(
             MigrationsText(err.upMigrations.map { it.upName })
             AppVersionText()
           }
-        is MigrationError.Downgrade ->
+          OpenDatabaseDirectoryButton()
+        }
+        is MigrationError.Downgrade -> {
           DatabaseErrorDetails(MR.strings.database_downgrade) {
             TextButton({ callRunChat(confirmMigrations = MigrationConfirmation.YesUpDown) }, Modifier.align(Alignment.CenterHorizontally), enabled = !progressIndicator.value) {
               Text(generalGetString(MR.strings.downgrade_and_open_chat))
@@ -127,29 +132,41 @@ fun DatabaseErrorView(
             MigrationsText(err.downMigrations)
             AppVersionText()
           }
-        is MigrationError.Error ->
+          OpenDatabaseDirectoryButton()
+        }
+        is MigrationError.Error -> {
           DatabaseErrorDetails(MR.strings.incompatible_database_version) {
             FileNameText(status.dbFile)
             Text(String.format(generalGetString(MR.strings.error_with_info), mtrErrorDescription(err.mtrError)))
           }
+          OpenDatabaseDirectoryButton()
+        }
       }
-      is DBMigrationResult.ErrorSQL ->
+      is DBMigrationResult.ErrorSQL -> {
         DatabaseErrorDetails(MR.strings.database_error) {
           FileNameText(status.dbFile)
           Text(String.format(generalGetString(MR.strings.error_with_info), status.migrationSQLError))
         }
-      is DBMigrationResult.ErrorKeychain ->
+        OpenDatabaseDirectoryButton()
+      }
+      is DBMigrationResult.ErrorKeychain -> {
         DatabaseErrorDetails(MR.strings.keychain_error) {
           Text(generalGetString(MR.strings.cannot_access_keychain))
         }
-      is DBMigrationResult.InvalidConfirmation ->
+        OpenDatabaseDirectoryButton()
+      }
+      is DBMigrationResult.InvalidConfirmation -> {
         DatabaseErrorDetails(MR.strings.invalid_migration_confirmation) {
           // this can only happen if incorrect parameter is passed
         }
-      is DBMigrationResult.Unknown ->
+        OpenDatabaseDirectoryButton()
+      }
+      is DBMigrationResult.Unknown -> {
         DatabaseErrorDetails(MR.strings.database_error) {
           Text(String.format(generalGetString(MR.strings.unknown_database_error_with_info), status.json))
         }
+        OpenDatabaseDirectoryButton()
+      }
       is DBMigrationResult.OK -> {}
       null -> {}
     }
@@ -291,6 +308,18 @@ private fun DatabaseKeyField(text: MutableState<String>, enabled: Boolean, onCli
 private fun ColumnScope.SaveAndOpenButton(enabled: Boolean, onClick: () -> Unit) {
   TextButton(onClick, Modifier.align(Alignment.CenterHorizontally), enabled = enabled) {
     Text(generalGetString(MR.strings.save_passphrase_and_open_chat))
+  }
+}
+
+@Composable
+private fun OpenDatabaseDirectoryButton() {
+  if (appPlatform.isDesktop) {
+    Spacer(Modifier.padding(top = DEFAULT_PADDING))
+    SettingsActionItem(
+      painterResource(MR.images.ic_folder_open),
+      stringResource(MR.strings.open_database_folder),
+      ::desktopOpenDatabaseDir
+    )
   }
 }
 

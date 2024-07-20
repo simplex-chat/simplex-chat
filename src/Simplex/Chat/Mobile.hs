@@ -48,7 +48,6 @@ import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, closeSQLiteStore, reopenSQLiteStore)
-import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
@@ -192,14 +191,15 @@ mobileChatOpts dbFilePrefix =
             dbKey = "", -- for API database is already opened, and the key in options is not used
             smpServers = [],
             xftpServers = [],
-            networkConfig = defaultNetworkConfig,
+            simpleNetCfg = defaultSimpleNetCfg,
             logLevel = CLLImportant,
             logConnections = False,
             logServerHosts = True,
             logAgent = Nothing,
             logFile = Nothing,
             tbqSize = 1024,
-            highlyAvailable = False
+            highlyAvailable = False,
+            yesToUpMigrations = False
           },
       deviceName = Nothing,
       chatCmd = "",

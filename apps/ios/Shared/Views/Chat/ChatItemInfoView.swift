@@ -17,6 +17,8 @@ struct ChatItemInfoView: View {
     @Binding var chatItemInfo: ChatItemInfo?
     @State private var selection: CIInfoTab = .history
     @State private var alert: CIInfoViewAlert? = nil
+    @State private var messageStatusLimited: Bool = true
+    @State private var fileStatusLimited: Bool = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum CIInfoTab {
@@ -157,6 +159,35 @@ struct ChatItemInfoView: View {
             if developerTools {
                 infoRow("Database ID", "\(meta.itemId)")
                 infoRow("Record updated at", localTimestamp(meta.updatedAt))
+                let msv = infoRow("Message status", ci.meta.itemStatus.id)
+                Group {
+                    if messageStatusLimited {
+                        msv.lineLimit(1)
+                    } else {
+                        msv
+                    }
+                }
+                .onTapGesture {
+                    withAnimation {
+                        messageStatusLimited.toggle()
+                    }
+                }
+
+                if let file = ci.file {
+                    let fsv = infoRow("File status", file.fileStatus.id)
+                    Group {
+                        if fileStatusLimited {
+                            fsv.lineLimit(1)
+                        } else {
+                            fsv
+                        }
+                    }
+                    .onTapGesture {
+                        withAnimation {
+                            fileStatusLimited.toggle()
+                        }
+                    }
+                }
             }
         }
     }
@@ -383,7 +414,7 @@ struct ChatItemInfoView: View {
             let mss = membersStatuses(memberDeliveryStatuses)
             if !mss.isEmpty {
                 ForEach(mss, id: \.0.groupMemberId) { memberStatus in
-                    memberDeliveryStatusView(memberStatus.0, memberStatus.1)
+                    memberDeliveryStatusView(memberStatus.0, memberStatus.1, memberStatus.2)
                 }
             } else {
                 Text("No delivery information")
@@ -392,23 +423,27 @@ struct ChatItemInfoView: View {
         }
     }
 
-    private func membersStatuses(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> [(GroupMember, CIStatus)] {
+    private func membersStatuses(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> [(GroupMember, CIStatus, Bool?)] {
         memberDeliveryStatuses.compactMap({ mds in
             if let mem = chatModel.getGroupMember(mds.groupMemberId) {
-                return (mem.wrapped, mds.memberDeliveryStatus)
+                return (mem.wrapped, mds.memberDeliveryStatus, mds.sentViaProxy)
             } else {
                 return nil
             }
         })
     }
 
-    private func memberDeliveryStatusView(_ member: GroupMember, _ status: CIStatus) -> some View {
+    private func memberDeliveryStatusView(_ member: GroupMember, _ status: CIStatus, _ sentViaProxy: Bool?) -> some View {
         HStack{
             ProfileImage(imageStr: member.image, size: 30)
                 .padding(.trailing, 2)
             Text(member.chatViewName)
                 .lineLimit(1)
             Spacer()
+            if sentViaProxy == true {
+                Image(systemName: "arrow.forward")
+                    .foregroundColor(.secondary).opacity(0.67)
+            }
             let v = Group {
                 if let (icon, statusColor) = status.statusIcon(Color.secondary) {
                     switch status {
@@ -469,8 +504,12 @@ struct ChatItemInfoView: View {
         if developerTools {
             shareText += [
                 String.localizedStringWithFormat(NSLocalizedString("Database ID: %d", comment: "copied message info"), meta.itemId),
-                String.localizedStringWithFormat(NSLocalizedString("Record updated at: %@", comment: "copied message info"), localTimestamp(meta.updatedAt))
+                String.localizedStringWithFormat(NSLocalizedString("Record updated at: %@", comment: "copied message info"), localTimestamp(meta.updatedAt)),
+                String.localizedStringWithFormat(NSLocalizedString("Message status: %@", comment: "copied message info"), meta.itemStatus.id)
             ]
+            if let file = ci.file {
+                shareText += [String.localizedStringWithFormat(NSLocalizedString("File status: %@", comment: "copied message info"), file.fileStatus.id)]
+            }
         }
         if let qi = ci.quotedItem {
             shareText += ["", NSLocalizedString("## In reply to", comment: "copied message info")]

@@ -27,7 +27,6 @@ import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
-import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import Data.Int (Int64)
@@ -48,7 +47,8 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
-import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, RcvFileId, SAEntity (..), SndFileId, UserId)
+import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
@@ -178,6 +178,7 @@ data Contact = Contact
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
     uiThemes :: Maybe UIThemeEntityOverrides,
+    chatDeleted :: Bool,
     customData :: Maybe CustomData
   }
   deriving (Eq, Show)
@@ -227,7 +228,7 @@ contactActive :: Contact -> Bool
 contactActive Contact {contactStatus} = contactStatus == CSActive
 
 contactDeleted :: Contact -> Bool
-contactDeleted Contact {contactStatus} = contactStatus == CSDeleted
+contactDeleted Contact {contactStatus} = contactStatus == CSDeleted || contactStatus == CSDeletedByUser
 
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode =<< activeConn
@@ -237,7 +238,8 @@ contactPQEnabled Contact {activeConn} = maybe PQEncOff connPQEnabled activeConn
 
 data ContactStatus
   = CSActive
-  | CSDeleted -- contact deleted by contact
+  | CSDeleted
+  | CSDeletedByUser
   deriving (Eq, Show, Ord)
 
 instance FromField ContactStatus where fromField = fromTextField_ textDecode
@@ -255,10 +257,12 @@ instance TextEncoding ContactStatus where
   textDecode = \case
     "active" -> Just CSActive
     "deleted" -> Just CSDeleted
+    "deletedByUser" -> Just CSDeletedByUser
     _ -> Nothing
   textEncode = \case
     CSActive -> "active"
     CSDeleted -> "deleted"
+    CSDeletedByUser -> "deletedByUser"
 
 data ContactRef = ContactRef
   { contactId :: ContactId,
@@ -1069,7 +1073,8 @@ data RcvFileTransfer = RcvFileTransfer
 data XFTPRcvFile = XFTPRcvFile
   { rcvFileDescription :: RcvFileDescr,
     agentRcvFileId :: Maybe AgentRcvFileId,
-    agentRcvFileDeleted :: Bool
+    agentRcvFileDeleted :: Bool,
+    userApprovedRelays :: Bool
   }
   deriving (Eq, Show)
 
@@ -1299,6 +1304,7 @@ data Connection = Connection
     pqSndEnabled :: Maybe PQEncryption,
     pqRcvEnabled :: Maybe PQEncryption,
     authErrCounter :: Int,
+    quotaErrCounter :: Int, -- if exceeds limit messages to group members are created as pending; sending to contacts is unaffected by this
     createdAt :: UTCTime
   }
   deriving (Eq, Show)
@@ -1311,6 +1317,15 @@ authErrDisableCount = 10
 
 connDisabled :: Connection -> Bool
 connDisabled Connection {authErrCounter} = authErrCounter >= authErrDisableCount
+
+quotaErrInactiveCount :: Int
+quotaErrInactiveCount = 5
+
+quotaErrSetOnMERR :: Int
+quotaErrSetOnMERR = 999
+
+connInactive :: Connection -> Bool
+connInactive Connection {quotaErrCounter} = quotaErrCounter >= quotaErrInactiveCount
 
 data SecurityCode = SecurityCode {securityCode :: Text, verifiedAt :: UTCTime}
   deriving (Eq, Show)
@@ -1480,9 +1495,6 @@ serializeIntroStatus = \case
   GMIntroToConnected -> "to-con"
   GMIntroConnected -> "con"
 
-textParseJSON :: TextEncoding a => String -> J.Value -> JT.Parser a
-textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . textDecode
-
 data NetworkStatus
   = NSUnknown
   | NSConnected
@@ -1571,7 +1583,7 @@ instance TextEncoding CommandFunction where
     CFAckMessage -> "ack_message"
     CFDeleteConn -> "delete_conn"
 
-commandExpectedResponse :: CommandFunction -> APartyCmdTag 'Agent
+commandExpectedResponse :: CommandFunction -> AEvtTag
 commandExpectedResponse = \case
   CFCreateConnGrpMemInv -> t INV_
   CFCreateConnGrpInv -> t INV_
@@ -1583,7 +1595,7 @@ commandExpectedResponse = \case
   CFAckMessage -> t OK_
   CFDeleteConn -> t OK_
   where
-    t = APCT SAEConn
+    t = AEvtTag SAEConn
 
 data CommandData = CommandData
   { cmdId :: CommandId,
@@ -1620,9 +1632,41 @@ data ServerCfg p = ServerCfg
   { server :: ProtoServerWithAuth p,
     preset :: Bool,
     tested :: Maybe Bool,
-    enabled :: Bool
+    enabled :: ServerEnabled
   }
   deriving (Show)
+
+data ServerEnabled
+  = SEDisabled
+  | SEEnabled
+  | -- server is marked as known, but it's not in the list of configured servers;
+    -- e.g., it may be added via an unknown server dialogue and user didn't manually configure it,
+    -- meaning server wasn't tested (or at least such option wasn't presented in UI)
+    -- and it may be inoperable for user due to server password
+    SEKnown
+  deriving (Eq, Show)
+
+pattern DBSEDisabled :: Int
+pattern DBSEDisabled = 0
+
+pattern DBSEEnabled :: Int
+pattern DBSEEnabled = 1
+
+pattern DBSEKnown :: Int
+pattern DBSEKnown = 2
+
+toServerEnabled :: Int -> ServerEnabled
+toServerEnabled = \case
+  DBSEDisabled -> SEDisabled
+  DBSEEnabled -> SEEnabled
+  DBSEKnown -> SEKnown
+  _ -> SEDisabled
+
+fromServerEnabled :: ServerEnabled -> Int
+fromServerEnabled = \case
+  SEDisabled -> DBSEDisabled
+  SEEnabled -> DBSEEnabled
+  SEKnown -> DBSEKnown
 
 data ChatVersion
 
@@ -1751,6 +1795,8 @@ $(JQ.deriveJSON defaultJSON ''Contact)
 $(JQ.deriveJSON defaultJSON ''ContactRef)
 
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "SE") ''ServerEnabled)
 
 instance ProtocolTypeI p => ToJSON (ServerCfg p) where
   toEncoding = $(JQ.mkToEncoding defaultJSON ''ServerCfg)

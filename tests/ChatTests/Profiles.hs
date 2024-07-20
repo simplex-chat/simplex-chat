@@ -17,7 +17,7 @@ import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
-import Simplex.Chat.Types.Util (encodeJSON)
+import Simplex.Messaging.Util (encodeJSON)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
@@ -397,6 +397,7 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     bob ##> ("/c " <> cLink)
     bob <## "contact address: known contact alice"
     bob <## "use @alice <message> to send messages"
+    threadDelay 100000
     alice @@@ [("@bob", lastChatFeature)]
     bob @@@ [("@alice", lastChatFeature), (":2", ""), (":1", "")]
     bob ##> "/_delete :1"
@@ -470,6 +471,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     bob ##> ("/c " <> cLink)
     bob <## "contact address: known contact alice"
     bob <## "use @alice <message> to send messages"
+    threadDelay 100000
     alice @@@ [("@robert", lastChatFeature)]
     bob @@@ [("@alice", lastChatFeature), (":3", ""), (":2", ""), (":1", "")]
     bob ##> "/_delete :1"
@@ -488,6 +490,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     bob <## "use @alice <message> to send messages"
 
     alice <##> bob
+    threadDelay 100000
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (0, "hey"), (1, "hi"), (0, "hey")])
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hi"), (1, "hey"), (0, "hi"), (1, "hey")])
 
@@ -655,6 +658,7 @@ testPlanAddressOwn tmp =
              "alice_2 (Alice): contact is connected"
            ]
 
+    threadDelay 100000
     alice @@@ [("@alice_1", lastChatFeature), ("@alice_2", lastChatFeature)]
     alice `send` "@alice_2 hi"
     alice
@@ -1948,21 +1952,29 @@ testGroupPrefsDirectForRole = testChat4 aliceProfile bobProfile cathProfile danP
           bob <## "#team: cath added dan (Daniel) to the group (connecting...)"
           bob <## "#team: new member dan is connected"
       ]
-    -- dan cannot send direct messages to alice (owner)
+
+    -- dan cannot send direct messages to alice
     dan ##> "@alice hello alice"
     dan <## "bad chat command: direct messages not allowed"
     (alice </)
-    -- but alice can
+
+    -- alice (owner) can send direct messages to dan
     alice `send` "@dan hello dan"
-    alice <## "member #team dan does not have direct connection, creating"
-    alice <## "contact for member #team dan is created"
-    alice <## "sent invitation to connect directly to member #team dan"
-    alice <# "@dan hello dan"
-    alice <## "dan (Daniel): contact is connected"
-    dan <## "#team alice is creating direct contact alice with you"
-    dan <# "alice> hello dan"
-    dan <## "alice (Alice): contact is connected"
-    -- and now dan can too
+    alice
+      <### [ "member #team dan does not have direct connection, creating",
+             "contact for member #team dan is created",
+             "sent invitation to connect directly to member #team dan",
+             WithTime "@dan hello dan"
+           ]
+    dan
+      <### [ "#team alice is creating direct contact alice with you",
+             WithTime "alice> hello dan"
+           ]
+    concurrently_
+      (alice <## "dan (Daniel): contact is connected")
+      (dan <## "alice (Alice): contact is connected")
+
+    -- now dan can send messages to alice
     dan #> "@alice hi alice"
     alice <# "dan> hi alice"
   where
@@ -2020,10 +2032,19 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
     threadDelay 1000000
     bob ##> "/c"
     inv <- getInvitation bob
-    bob ##> ("#team " <> inv)
+    bob ##> ("#team \"" <> inv <> "\\ntest\"")
+    bob <## "bad chat command: feature not allowed SimpleX links"
+    bob ##> ("/_send #1 json {\"msgContent\": {\"type\": \"text\", \"text\": \"" <> inv <> "\\ntest\"}}")
     bob <## "bad chat command: feature not allowed SimpleX links"
     (alice </)
     (cath </)
+    bob `send` ("@alice \"" <> inv <> "\\ntest\"")
+    bob <# ("@alice " <> inv)
+    bob <## "test"
+    alice <# ("bob> " <> inv)
+    alice <## "test"
+    bob ##> "#team <- @alice https://simplex.chat"
+    bob <## "bad chat command: feature not allowed SimpleX links"
     alice #> ("#team " <> inv)
     bob <# ("#team alice> " <> inv)
     cath <# ("#team alice> " <> inv)

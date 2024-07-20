@@ -48,7 +48,7 @@ public enum ChatCommand {
     case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64)
     case apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, reaction: MsgReaction)
-    case apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64)
+    case apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64, ttl: Int?)
     case apiGetNtfToken
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
@@ -82,6 +82,8 @@ public enum ChatCommand {
     case apiSetMemberSettings(groupId: Int64, groupMemberId: Int64, memberSettings: GroupMemberSettings)
     case apiContactInfo(contactId: Int64)
     case apiGroupMemberInfo(groupId: Int64, groupMemberId: Int64)
+    case apiContactQueueInfo(contactId: Int64)
+    case apiGroupMemberQueueInfo(groupId: Int64, groupMemberId: Int64)
     case apiSwitchContact(contactId: Int64)
     case apiSwitchGroupMember(groupId: Int64, groupMemberId: Int64)
     case apiAbortSwitchContact(contactId: Int64)
@@ -123,8 +125,8 @@ public enum ChatCommand {
     case apiGetNetworkStatuses
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
-    case receiveFile(fileId: Int64, encrypted: Bool?, inline: Bool?)
-    case setFileToReceive(fileId: Int64, encrypted: Bool?)
+    case receiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool?, inline: Bool?)
+    case setFileToReceive(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool?)
     case cancelFile(fileId: Int64)
     // remote desktop commands
     case setLocalDeviceName(displayName: String)
@@ -192,7 +194,9 @@ public enum ChatCommand {
             case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, groupMemberId, itemId): return "/_delete member item #\(groupId) \(groupMemberId) \(itemId)"
             case let .apiChatItemReaction(type, id, itemId, add, reaction): return "/_reaction \(ref(type, id)) \(itemId) \(onOff(add)) \(encodeJSON(reaction))"
-            case let .apiForwardChatItem(toChatType, toChatId, fromChatType, fromChatId, itemId): return "/_forward \(ref(toChatType, toChatId)) \(ref(fromChatType, fromChatId)) \(itemId)"
+            case let .apiForwardChatItem(toChatType, toChatId, fromChatType, fromChatId, itemId, ttl):
+                let ttlStr = ttl != nil ? "\(ttl!)" : "default"
+                return "/_forward \(ref(toChatType, toChatId)) \(ref(fromChatType, fromChatId)) \(itemId) ttl=\(ttlStr)"
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
@@ -226,6 +230,8 @@ public enum ChatCommand {
             case let .apiSetMemberSettings(groupId, groupMemberId, memberSettings): return "/_member settings #\(groupId) \(groupMemberId) \(encodeJSON(memberSettings))"
             case let .apiContactInfo(contactId): return "/_info @\(contactId)"
             case let .apiGroupMemberInfo(groupId, groupMemberId): return "/_info #\(groupId) \(groupMemberId)"
+            case let .apiContactQueueInfo(contactId): return "/_queue info @\(contactId)"
+            case let .apiGroupMemberQueueInfo(groupId, groupMemberId): return "/_queue info #\(groupId) \(groupMemberId)"
             case let .apiSwitchContact(contactId): return "/_switch @\(contactId)"
             case let .apiSwitchGroupMember(groupId, groupMemberId): return "/_switch #\(groupId) \(groupMemberId)"
             case let .apiAbortSwitchContact(contactId): return "/_abort switch @\(contactId)"
@@ -280,8 +286,8 @@ public enum ChatCommand {
             case .apiGetNetworkStatuses: return "/_network_statuses"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
-            case let .receiveFile(fileId, encrypt, inline): return "/freceive \(fileId)\(onOffParam("encrypt", encrypt))\(onOffParam("inline", inline))"
-            case let .setFileToReceive(fileId, encrypt): return "/_set_file_to_receive \(fileId)\(onOffParam("encrypt", encrypt))"
+            case let .receiveFile(fileId, userApprovedRelays, encrypt, inline): return "/freceive \(fileId)\(onOffParam("approved_relays", userApprovedRelays))\(onOffParam("encrypt", encrypt))\(onOffParam("inline", inline))"
+            case let .setFileToReceive(fileId, userApprovedRelays, encrypt): return "/_set_file_to_receive \(fileId)\(onOffParam("approved_relays", userApprovedRelays))\(onOffParam("encrypt", encrypt))"
             case let .cancelFile(fileId): return "/fcancel \(fileId)"
             case let .setLocalDeviceName(displayName): return "/set device name \(displayName)"
             case let .connectRemoteCtrl(xrcpInv): return "/connect remote ctrl \(xrcpInv)"
@@ -373,6 +379,8 @@ public enum ChatCommand {
             case .apiSetMemberSettings: return "apiSetMemberSettings"
             case .apiContactInfo: return "apiContactInfo"
             case .apiGroupMemberInfo: return "apiGroupMemberInfo"
+            case .apiContactQueueInfo: return "apiContactQueueInfo"
+            case .apiGroupMemberQueueInfo: return "apiGroupMemberQueueInfo"
             case .apiSwitchContact: return "apiSwitchContact"
             case .apiSwitchGroupMember: return "apiSwitchGroupMember"
             case .apiAbortSwitchContact: return "apiAbortSwitchContact"
@@ -514,6 +522,7 @@ public enum ChatResponse: Decodable, Error {
     case networkConfig(networkConfig: NetCfg)
     case contactInfo(user: UserRef, contact: Contact, connectionStats_: ConnectionStats?, customUserProfile: Profile?)
     case groupMemberInfo(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionStats_: ConnectionStats?)
+    case queueInfo(user: UserRef, rcvMsgInfo: RcvMsgInfo?, queueInfo: QueueInfo)
     case contactSwitchStarted(user: UserRef, contact: Contact, connectionStats: ConnectionStats)
     case groupMemberSwitchStarted(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionStats: ConnectionStats)
     case contactSwitchAborted(user: UserRef, contact: Contact, connectionStats: ConnectionStats)
@@ -613,7 +622,8 @@ public enum ChatResponse: Decodable, Error {
     case rcvStandaloneFileComplete(user: UserRef, targetPath: String, rcvFileTransfer: RcvFileTransfer)
     case rcvFileCancelled(user: UserRef, chatItem_: AChatItem?, rcvFileTransfer: RcvFileTransfer)
     case rcvFileSndCancelled(user: UserRef, chatItem: AChatItem, rcvFileTransfer: RcvFileTransfer)
-    case rcvFileError(user: UserRef, chatItem_: AChatItem?, rcvFileTransfer: RcvFileTransfer)
+    case rcvFileError(user: UserRef, chatItem_: AChatItem?, agentError: AgentErrorType, rcvFileTransfer: RcvFileTransfer)
+    case rcvFileWarning(user: UserRef, chatItem_: AChatItem?, agentError: AgentErrorType, rcvFileTransfer: RcvFileTransfer)
     // sending file events
     case sndFileStart(user: UserRef, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
     case sndFileComplete(user: UserRef, chatItem: AChatItem, sndFileTransfer: SndFileTransfer)
@@ -626,7 +636,8 @@ public enum ChatResponse: Decodable, Error {
     case sndFileCompleteXFTP(user: UserRef, chatItem: AChatItem, fileTransferMeta: FileTransferMeta)
     case sndStandaloneFileComplete(user: UserRef, fileTransferMeta: FileTransferMeta, rcvURIs: [String])
     case sndFileCancelledXFTP(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta)
-    case sndFileError(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta)
+    case sndFileError(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, errorMessage: String)
+    case sndFileWarning(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, errorMessage: String)
     // call events
     case callInvitation(callInvitation: RcvCallInvitation)
     case callOffer(user: UserRef, contact: Contact, callType: CallType, offer: WebRTCSession, sharedKey: String?, askConfirmation: Bool)
@@ -639,6 +650,7 @@ public enum ChatResponse: Decodable, Error {
     case ntfMessages(user_: User?, connEntity_: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
     case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgInfo)
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
+    case contactDisabled(user: UserRef, contact: Contact)
     // remote desktop responses/events
     case remoteCtrlList(remoteCtrls: [RemoteCtrlInfo])
     case remoteCtrlFound(remoteCtrl: RemoteCtrlInfo, ctrlAppInfo_: CtrlAppInfo?, appVersion: String, compatible: Bool)
@@ -675,6 +687,7 @@ public enum ChatResponse: Decodable, Error {
             case .networkConfig: return "networkConfig"
             case .contactInfo: return "contactInfo"
             case .groupMemberInfo: return "groupMemberInfo"
+            case .queueInfo: return "queueInfo"
             case .contactSwitchStarted: return "contactSwitchStarted"
             case .groupMemberSwitchStarted: return "groupMemberSwitchStarted"
             case .contactSwitchAborted: return "contactSwitchAborted"
@@ -773,6 +786,7 @@ public enum ChatResponse: Decodable, Error {
             case .rcvFileCancelled: return "rcvFileCancelled"
             case .rcvFileSndCancelled: return "rcvFileSndCancelled"
             case .rcvFileError: return "rcvFileError"
+            case .rcvFileWarning: return "rcvFileWarning"
             case .sndFileStart: return "sndFileStart"
             case .sndFileComplete: return "sndFileComplete"
             case .sndFileCancelled: return "sndFileCancelled"
@@ -785,6 +799,7 @@ public enum ChatResponse: Decodable, Error {
             case .sndStandaloneFileComplete: return "sndStandaloneFileComplete"
             case .sndFileCancelledXFTP: return "sndFileCancelledXFTP"
             case .sndFileError: return "sndFileError"
+            case .sndFileWarning: return "sndFileWarning"
             case .callInvitation: return "callInvitation"
             case .callOffer: return "callOffer"
             case .callAnswer: return "callAnswer"
@@ -796,6 +811,7 @@ public enum ChatResponse: Decodable, Error {
             case .ntfMessages: return "ntfMessages"
             case .ntfMessage: return "ntfMessage"
             case .contactConnectionDeleted: return "contactConnectionDeleted"
+            case .contactDisabled: return "contactDisabled"
             case .remoteCtrlList: return "remoteCtrlList"
             case .remoteCtrlFound: return "remoteCtrlFound"
             case .remoteCtrlConnecting: return "remoteCtrlConnecting"
@@ -832,6 +848,9 @@ public enum ChatResponse: Decodable, Error {
             case let .networkConfig(networkConfig): return String(describing: networkConfig)
             case let .contactInfo(u, contact, connectionStats_, customUserProfile): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats_: \(String(describing: connectionStats_))\ncustomUserProfile: \(String(describing: customUserProfile))")
             case let .groupMemberInfo(u, groupInfo, member, connectionStats_): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats_: \(String(describing: connectionStats_))")
+            case let .queueInfo(u, rcvMsgInfo, queueInfo):
+                let msgInfo = if let info = rcvMsgInfo { encodeJSON(rcvMsgInfo) } else { "none" }
+                return withUser(u, "rcvMsgInfo: \(msgInfo)\nqueueInfo: \(encodeJSON(queueInfo))")
             case let .contactSwitchStarted(u, contact, connectionStats): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))")
             case let .groupMemberSwitchStarted(u, groupInfo, member, connectionStats): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionStats: \(String(describing: connectionStats))")
             case let .contactSwitchAborted(u, contact, connectionStats): return withUser(u, "contact: \(String(describing: contact))\nconnectionStats: \(String(describing: connectionStats))")
@@ -929,7 +948,8 @@ public enum ChatResponse: Decodable, Error {
             case let .rcvFileComplete(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .rcvFileCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .rcvFileSndCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
-            case let .rcvFileError(u, chatItem, _): return withUser(u, String(describing: chatItem))
+            case let .rcvFileError(u, chatItem, agentError, _): return withUser(u, "agentError: \(String(describing: agentError))\nchatItem: \(String(describing: chatItem))")
+            case let .rcvFileWarning(u, chatItem, agentError, _): return withUser(u, "agentError: \(String(describing: agentError))\nchatItem: \(String(describing: chatItem))")
             case let .sndFileStart(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileComplete(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndFileCancelled(u, chatItem, _, _): return withUser(u, String(describing: chatItem))
@@ -941,7 +961,8 @@ public enum ChatResponse: Decodable, Error {
             case let .sndFileCompleteXFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
             case let .sndStandaloneFileComplete(u, _, rcvURIs): return withUser(u, String(rcvURIs.count))
             case let .sndFileCancelledXFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
-            case let .sndFileError(u, chatItem, _): return withUser(u, String(describing: chatItem))
+            case let .sndFileError(u, chatItem, _, err): return withUser(u, "error: \(String(describing: err))\nchatItem: \(String(describing: chatItem))")
+            case let .sndFileWarning(u, chatItem, _, err): return withUser(u, "error: \(String(describing: err))\nchatItem: \(String(describing: chatItem))")
             case let .callInvitation(inv): return String(describing: inv)
             case let .callOffer(u, contact, callType, offer, sharedKey, askConfirmation): return withUser(u, "contact: \(contact.id)\ncallType: \(String(describing: callType))\nsharedKey: \(sharedKey ?? "")\naskConfirmation: \(askConfirmation)\noffer: \(String(describing: offer))")
             case let .callAnswer(u, contact, answer): return withUser(u, "contact: \(contact.id)\nanswer: \(String(describing: answer))")
@@ -953,12 +974,13 @@ public enum ChatResponse: Decodable, Error {
             case let .ntfMessages(u, connEntity, msgTs, ntfMessages): return withUser(u, "connEntity: \(String(describing: connEntity))\nmsgTs: \(String(describing: msgTs))\nntfMessages: \(String(describing: ntfMessages))")
             case let .ntfMessage(u, connEntity, ntfMessage): return withUser(u, "connEntity: \(String(describing: connEntity))\nntfMessage: \(String(describing: ntfMessage))")
             case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
+            case let .contactDisabled(u, contact): return withUser(u, String(describing: contact))
             case let .remoteCtrlList(remoteCtrls): return String(describing: remoteCtrls)
             case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible): return "remoteCtrl:\n\(String(describing: remoteCtrl))\nctrlAppInfo_:\n\(String(describing: ctrlAppInfo_))\nappVersion: \(appVersion)\ncompatible: \(compatible)"
             case let .remoteCtrlConnecting(remoteCtrl_, ctrlAppInfo, appVersion): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nctrlAppInfo:\n\(String(describing: ctrlAppInfo))\nappVersion: \(appVersion)"
             case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nsessionCode: \(sessionCode)"
             case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
-            case .remoteCtrlStopped: return noDetails
+            case let .remoteCtrlStopped(rcsState, rcStopReason): return "rcsState: \(String(describing: rcsState))\nrcStopReason: \(String(describing: rcStopReason))"
             case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
             case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
             case .cmdOk: return noDetails
@@ -1087,13 +1109,13 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
     public var server: String
     public var preset: Bool
     public var tested: Bool?
-    public var enabled: Bool
+    public var enabled: ServerEnabled
     var createdAt = Date()
 //    public var sendEnabled: Bool // can we potentially want to prevent sending on the servers we use to receive?
 // Even if we don't see the use case, it's probably better to allow it in the model
 // In any case, "trusted/known" servers are out of scope of this change
 
-    public init(server: String, preset: Bool, tested: Bool?, enabled: Bool) {
+    public init(server: String, preset: Bool, tested: Bool?, enabled: ServerEnabled) {
         self.server = server
         self.preset = preset
         self.tested = tested
@@ -1106,7 +1128,7 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
 
     public var id: String { "\(server) \(createdAt)" }
 
-    public static var empty = ServerCfg(server: "", preset: false, tested: nil, enabled: true)
+    public static var empty = ServerCfg(server: "", preset: false, tested: nil, enabled: .enabled)
 
     public var isEmpty: Bool {
         server.trimmingCharacters(in: .whitespaces) == ""
@@ -1123,19 +1145,19 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
             server: "smp://abcd@smp8.simplex.im",
             preset: true,
             tested: true,
-            enabled: true
+            enabled: .enabled
         ),
         custom: ServerCfg(
             server: "smp://abcd@smp9.simplex.im",
             preset: false,
             tested: false,
-            enabled: false
+            enabled: .disabled
         ),
         untested: ServerCfg(
             server: "smp://abcd@smp10.simplex.im",
             preset: false,
             tested: nil,
-            enabled: true
+            enabled: .enabled
         )
     )
 
@@ -1145,6 +1167,12 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
         case tested
         case enabled
     }
+}
+
+public enum ServerEnabled: String, Codable {
+    case disabled
+    case enabled
+    case known
 }
 
 public enum ProtocolTestStep: String, Decodable, Equatable {
@@ -1242,9 +1270,12 @@ public struct ServerAddress: Decodable {
 
 public struct NetCfg: Codable, Equatable {
     public var socksProxy: String? = nil
+    var socksMode: SocksMode = .always
     public var hostMode: HostMode = .publicHost
     public var requiredHostMode = true
     public var sessionMode: TransportSessionMode
+    public var smpProxyMode: SMPProxyMode = .never
+    public var smpProxyFallback: SMPProxyFallback = .allow
     public var tcpConnectTimeout: Int // microseconds
     public var tcpTimeout: Int // microseconds
     public var tcpTimeoutPerKb: Int // microseconds
@@ -1287,6 +1318,49 @@ public enum HostMode: String, Codable {
     case onionViaSocks
     case onionHost = "onion"
     case publicHost = "public"
+}
+
+public enum SocksMode: String, Codable {
+    case always = "always"
+    case onion = "onion"
+}
+
+public enum SMPProxyMode: String, Codable {
+    case always = "always"
+    case unknown = "unknown"
+    case unprotected = "unprotected"
+    case never = "never"
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .always: return "always"
+        case .unknown: return "unknown relays"
+        case .unprotected: return "unprotected"
+        case .never: return "never"
+        }
+    }
+
+    public var id: SMPProxyMode { self }
+
+    public static let values: [SMPProxyMode] = [.always, .unknown, .unprotected, .never]
+}
+
+public enum SMPProxyFallback: String, Codable {
+    case allow = "allow"
+    case allowProtected = "allowProtected"
+    case prohibit = "prohibit"
+
+    public var text: LocalizedStringKey {
+        switch self {
+        case .allow: return "yes"
+        case .allowProtected: return "when IP hidden"
+        case .prohibit: return "no"
+        }
+    }
+
+    public var id: SMPProxyFallback { self }
+
+    public static let values: [SMPProxyFallback] = [.allow, .allowProtected, .prohibit]
 }
 
 public enum OnionHosts: String, Identifiable {
@@ -1692,7 +1766,6 @@ public enum ChatErrorType: Decodable {
     case groupMemberNotActive
     case groupMemberUserRemoved
     case groupMemberNotFound
-    case groupMemberIntroNotFound(contactName: ContactName)
     case groupCantResendInvitation(groupInfo: GroupInfo, contactName: ContactName)
     case groupInternal(message: String)
     case fileNotFound(message: String)
@@ -1709,8 +1782,7 @@ public enum ChatErrorType: Decodable {
     case fileImageType(filePath: String)
     case fileImageSize(filePath: String)
     case fileNotReceived(fileId: Int64)
-    // case xFTPRcvFile
-    // case xFTPSndFile
+    case fileNotApproved(fileId: Int64, unknownServers: [String])
     case fallbackToSMPProhibited(fileId: Int64)
     case inlineFileProhibited(fileId: Int64)
     case invalidQuote
@@ -1987,6 +2059,7 @@ public struct MigrationFileLinkData: Codable {
 public struct AppSettings: Codable, Equatable {
     public var networkConfig: NetCfg? = nil
     public var privacyEncryptLocalFiles: Bool? = nil
+    public var privacyAskToApproveRelays: Bool? = nil
     public var privacyAcceptImages: Bool? = nil
     public var privacyLinkPreviews: Bool? = nil
     public var privacyShowChatPreviews: Bool? = nil
@@ -2010,6 +2083,7 @@ public struct AppSettings: Codable, Equatable {
         let def = AppSettings.defaults
         if networkConfig != def.networkConfig { empty.networkConfig = networkConfig }
         if privacyEncryptLocalFiles != def.privacyEncryptLocalFiles { empty.privacyEncryptLocalFiles = privacyEncryptLocalFiles }
+        if privacyAskToApproveRelays != def.privacyAskToApproveRelays { empty.privacyAskToApproveRelays = privacyAskToApproveRelays }
         if privacyAcceptImages != def.privacyAcceptImages { empty.privacyAcceptImages = privacyAcceptImages }
         if privacyLinkPreviews != def.privacyLinkPreviews { empty.privacyLinkPreviews = privacyLinkPreviews }
         if privacyShowChatPreviews != def.privacyShowChatPreviews { empty.privacyShowChatPreviews = privacyShowChatPreviews }
@@ -2034,6 +2108,7 @@ public struct AppSettings: Codable, Equatable {
         AppSettings (
             networkConfig: NetCfg.defaults,
             privacyEncryptLocalFiles: true,
+            privacyAskToApproveRelays: true,
             privacyAcceptImages: true,
             privacyLinkPreviews: true,
             privacyShowChatPreviews: true,
@@ -2115,4 +2190,43 @@ public enum UserNetworkType: String, Codable {
         case .other: "Other"
         }
     }
+}
+
+public struct RcvMsgInfo: Codable {
+    var msgId: Int64
+    var msgDeliveryId: Int64
+    var msgDeliveryStatus: String
+    var agentMsgId: Int64
+    var agentMsgMeta: String
+}
+
+public struct QueueInfo: Codable {
+    var qiSnd: Bool
+    var qiNtf: Bool
+    var qiSub: QSub?
+    var qiSize: Int
+    var qiMsg: MsgInfo?
+}
+
+public struct QSub: Codable {
+    var qSubThread: QSubThread
+    var qDelivered: String?
+}
+
+public enum QSubThread: String, Codable {
+    case noSub
+    case subPending
+    case subThread
+    case prohibitSub
+}
+
+public struct MsgInfo: Codable {
+    var msgId: String
+    var msgTs: Date
+    var msgType: MsgType
+}
+
+public enum MsgType: String, Codable {
+    case message
+    case quota
 }
