@@ -4923,9 +4923,9 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <target>Protokollzeitüberschreitung pro kB</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Proxied" xml:space="preserve">
+      <trans-unit id="Proxied" xml:space="preserve" approved="no">
         <source>Proxied</source>
-        <target>Proxy</target>
+        <target state="translated">Proxied</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Proxied servers" xml:space="preserve">
