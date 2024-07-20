@@ -552,8 +552,9 @@
         <target>Acerca de la dirección SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Accent" xml:space="preserve">
+      <trans-unit id="Accent" xml:space="preserve" approved="no">
         <source>Accent</source>
+        <target state="translated">Acento</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept" xml:space="preserve">
@@ -577,16 +578,18 @@
         <target>Aceptar incógnito</target>
         <note>accept contact request via notification</note>
       </trans-unit>
-      <trans-unit id="Acknowledged" xml:space="preserve">
+      <trans-unit id="Acknowledged" xml:space="preserve" approved="no">
         <source>Acknowledged</source>
+        <target state="translated">Recibido</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Acknowledgement errors" xml:space="preserve">
         <source>Acknowledgement errors</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Active connections" xml:space="preserve">
+      <trans-unit id="Active connections" xml:space="preserve" approved="no">
         <source>Active connections</source>
+        <target state="translated">Conexiones activas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve">
@@ -629,16 +632,19 @@
         <target>Añadir mensaje de bienvenida</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Additional accent" xml:space="preserve">
+      <trans-unit id="Additional accent" xml:space="preserve" approved="no">
         <source>Additional accent</source>
+        <target state="translated">Acento adicional</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Additional accent 2" xml:space="preserve">
+      <trans-unit id="Additional accent 2" xml:space="preserve" approved="no">
         <source>Additional accent 2</source>
+        <target state="translated">Acento adicional 2</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Additional secondary" xml:space="preserve">
+      <trans-unit id="Additional secondary" xml:space="preserve" approved="no">
         <source>Additional secondary</source>
+        <target state="translated">Secundario adicional</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Address" xml:space="preserve">
@@ -666,8 +672,9 @@
         <target>Configuración avanzada de red</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Advanced settings" xml:space="preserve">
+      <trans-unit id="Advanced settings" xml:space="preserve" approved="no">
         <source>Advanced settings</source>
+        <target state="translated">Ajustes avanzados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All app data is deleted." xml:space="preserve">
@@ -685,8 +692,9 @@
         <target>Al introducirlo todos los datos son eliminados.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All data is private to your device." xml:space="preserve">
+      <trans-unit id="All data is private to your device." xml:space="preserve" approved="no">
         <source>All data is private to your device.</source>
+        <target state="translated">Todos los datos son privados para tu dispositivo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
@@ -709,8 +717,9 @@
         <target>¡Los mensajes nuevos de %@ estarán ocultos!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All profiles" xml:space="preserve">
+      <trans-unit id="All profiles" xml:space="preserve" approved="no">
         <source>All profiles</source>
+        <target state="translated">Todos los perfiles</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
@@ -913,8 +922,9 @@
         <target>Aplicar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Apply to" xml:space="preserve">
+      <trans-unit id="Apply to" xml:space="preserve" approved="no">
         <source>Apply to</source>
+        <target state="translated">Aplicar a</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archive and upload" xml:space="preserve">
@@ -992,8 +1002,9 @@
         <target>Volver</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Background" xml:space="preserve">
+      <trans-unit id="Background" xml:space="preserve" approved="no">
         <source>Background</source>
+        <target state="translated">Fondo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Bad desktop address" xml:space="preserve">
@@ -1021,8 +1032,9 @@
         <target>Mensajes mejorados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Black" xml:space="preserve">
+      <trans-unit id="Black" xml:space="preserve" approved="no">
         <source>Black</source>
+        <target state="translated">Negro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block" xml:space="preserve">
@@ -1135,8 +1147,9 @@
         <target>Keychain inaccesible para guardar la contraseña de la base de datos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cannot forward message" xml:space="preserve">
+      <trans-unit id="Cannot forward message" xml:space="preserve" approved="no">
         <source>Cannot forward message</source>
+        <target state="translated">No se puede reenviar el mensaje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cannot receive file" xml:space="preserve">
@@ -1210,8 +1223,9 @@
         <target>Archivo del chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat colors" xml:space="preserve">
+      <trans-unit id="Chat colors" xml:space="preserve" approved="no">
         <source>Chat colors</source>
+        <target state="translated">Colores de chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat console" xml:space="preserve">
@@ -1259,8 +1273,9 @@
         <target>Preferencias de Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat theme" xml:space="preserve">
+      <trans-unit id="Chat theme" xml:space="preserve" approved="no">
         <source>Chat theme</source>
+        <target state="translated">Tema de chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -1293,16 +1308,19 @@
         <target>Elige de la biblioteca</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chunks deleted" xml:space="preserve">
+      <trans-unit id="Chunks deleted" xml:space="preserve" approved="no">
         <source>Chunks deleted</source>
+        <target state="translated">Bloques eliminados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chunks downloaded" xml:space="preserve">
+      <trans-unit id="Chunks downloaded" xml:space="preserve" approved="no">
         <source>Chunks downloaded</source>
+        <target state="translated">Bloques descargados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chunks uploaded" xml:space="preserve">
+      <trans-unit id="Chunks uploaded" xml:space="preserve" approved="no">
         <source>Chunks uploaded</source>
+        <target state="translated">Bloques subidos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Clear" xml:space="preserve">
@@ -1330,8 +1348,9 @@
         <target>Eliminar verificación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Color mode" xml:space="preserve">
+      <trans-unit id="Color mode" xml:space="preserve" approved="no">
         <source>Color mode</source>
+        <target state="translated">Modo de color</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Compare file" xml:space="preserve">
@@ -1344,8 +1363,9 @@
         <target>Compara los códigos de seguridad con tus contactos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Completed" xml:space="preserve">
+      <trans-unit id="Completed" xml:space="preserve" approved="no">
         <source>Completed</source>
+        <target state="translated">Completado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Configure ICE servers" xml:space="preserve">
@@ -1353,8 +1373,9 @@
         <target>Configure servidores ICE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Configured %@ servers" xml:space="preserve">
+      <trans-unit id="Configured %@ servers" xml:space="preserve" approved="no">
         <source>Configured %@ servers</source>
+        <target state="translated">%@ servidores configurados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
@@ -1461,8 +1482,9 @@ This is your own one-time link!</source>
         <target>Conectar con %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connected" xml:space="preserve">
+      <trans-unit id="Connected" xml:space="preserve" approved="no">
         <source>Connected</source>
+        <target state="translated">Conectado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connected desktop" xml:space="preserve">
@@ -1470,8 +1492,9 @@ This is your own one-time link!</source>
         <target>Ordenador conectado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connected servers" xml:space="preserve">
+      <trans-unit id="Connected servers" xml:space="preserve" approved="no">
         <source>Connected servers</source>
+        <target state="translated">Servidores conectados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connected to desktop" xml:space="preserve">
@@ -1479,8 +1502,9 @@ This is your own one-time link!</source>
         <target>Conectado con ordenador</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connecting" xml:space="preserve">
+      <trans-unit id="Connecting" xml:space="preserve" approved="no">
         <source>Connecting</source>
+        <target state="translated">Conectando</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
@@ -1528,12 +1552,14 @@ This is your own one-time link!</source>
         <target>Tiempo de conexión agotado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection with desktop stopped" xml:space="preserve">
+      <trans-unit id="Connection with desktop stopped" xml:space="preserve" approved="no">
         <source>Connection with desktop stopped</source>
+        <target state="translated">La conexión con el escritorio (desktop) se ha parado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connections" xml:space="preserve">
+      <trans-unit id="Connections" xml:space="preserve" approved="no">
         <source>Connections</source>
+        <target state="translated">Conexiones</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact allows" xml:space="preserve">
@@ -1591,8 +1617,9 @@ This is your own one-time link!</source>
         <target>Copiar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Copy error" xml:space="preserve">
+      <trans-unit id="Copy error" xml:space="preserve" approved="no">
         <source>Copy error</source>
+        <target state="translated">Error de copia</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Core version: v%@" xml:space="preserve">
@@ -1670,8 +1697,9 @@ This is your own one-time link!</source>
         <target>Crea tu perfil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Created" xml:space="preserve">
+      <trans-unit id="Created" xml:space="preserve" approved="no">
         <source>Created</source>
+        <target state="translated">Creado/a</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Created at" xml:space="preserve">
@@ -1709,8 +1737,9 @@ This is your own one-time link!</source>
         <target>Contraseña actual…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Current profile" xml:space="preserve">
+      <trans-unit id="Current profile" xml:space="preserve" approved="no">
         <source>Current profile</source>
+        <target state="translated">Perfil actual</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
@@ -1723,8 +1752,9 @@ This is your own one-time link!</source>
         <target>Tiempo personalizado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Customize theme" xml:space="preserve">
+      <trans-unit id="Customize theme" xml:space="preserve" approved="no">
         <source>Customize theme</source>
+        <target state="translated">Personalizar tema</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Dark" xml:space="preserve">
@@ -1732,8 +1762,9 @@ This is your own one-time link!</source>
         <target>Oscuro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Dark mode colors" xml:space="preserve">
+      <trans-unit id="Dark mode colors" xml:space="preserve" approved="no">
         <source>Dark mode colors</source>
+        <target state="translated">Colores del modo oscuro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database ID" xml:space="preserve">
@@ -2041,8 +2072,9 @@ This cannot be undone!</source>
         <target>¿Eliminar perfil de usuario?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Deleted" xml:space="preserve">
+      <trans-unit id="Deleted" xml:space="preserve" approved="no">
         <source>Deleted</source>
+        <target state="translated">Eliminado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Deleted at" xml:space="preserve">
@@ -2055,8 +2087,9 @@ This cannot be undone!</source>
         <target>Eliminado: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Deletion errors" xml:space="preserve">
+      <trans-unit id="Deletion errors" xml:space="preserve" approved="no">
         <source>Deletion errors</source>
+        <target state="translated">Errores de borrado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delivery" xml:space="preserve">
@@ -2099,12 +2132,14 @@ This cannot be undone!</source>
         <target>Error del servidor de destino: %@</target>
         <note>snd error text</note>
       </trans-unit>
-      <trans-unit id="Detailed statistics" xml:space="preserve">
+      <trans-unit id="Detailed statistics" xml:space="preserve" approved="no">
         <source>Detailed statistics</source>
+        <target state="translated">Estadísticas detalladas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Details" xml:space="preserve">
+      <trans-unit id="Details" xml:space="preserve" approved="no">
         <source>Details</source>
+        <target state="translated">Detalles</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Develop" xml:space="preserve">
@@ -2262,8 +2297,9 @@ This cannot be undone!</source>
         <target>Descargar</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Download errors" xml:space="preserve">
+      <trans-unit id="Download errors" xml:space="preserve" approved="no">
         <source>Download errors</source>
+        <target state="translated">Errores de descarga</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Download failed" xml:space="preserve">
@@ -2276,12 +2312,14 @@ This cannot be undone!</source>
         <target>Descargar archivo</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Downloaded" xml:space="preserve">
+      <trans-unit id="Downloaded" xml:space="preserve" approved="no">
         <source>Downloaded</source>
+        <target state="translated">Descargado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Downloaded files" xml:space="preserve">
+      <trans-unit id="Downloaded files" xml:space="preserve" approved="no">
         <source>Downloaded files</source>
+        <target state="translated">Archivos descargados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Downloading archive" xml:space="preserve">
@@ -2654,8 +2692,9 @@ This cannot be undone!</source>
         <target>Error al exportar base de datos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error exporting theme: %@" xml:space="preserve">
+      <trans-unit id="Error exporting theme: %@" xml:space="preserve" approved="no">
         <source>Error exporting theme: %@</source>
+        <target state="translated">Error al exportar tema: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error importing chat database" xml:space="preserve">
@@ -2683,12 +2722,14 @@ This cannot be undone!</source>
         <target>Error al recibir archivo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error reconnecting server" xml:space="preserve">
+      <trans-unit id="Error reconnecting server" xml:space="preserve" approved="no">
         <source>Error reconnecting server</source>
+        <target state="translated">Error al reconectar el servidor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error reconnecting servers" xml:space="preserve">
+      <trans-unit id="Error reconnecting servers" xml:space="preserve" approved="no">
         <source>Error reconnecting servers</source>
+        <target state="translated">Error al reconectar los servidores</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error removing member" xml:space="preserve">
