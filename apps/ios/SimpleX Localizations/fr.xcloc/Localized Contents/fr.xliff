@@ -2725,12 +2725,12 @@ Cette opération ne peut être annulée !</target>
       </trans-unit>
       <trans-unit id="Error reconnecting server" xml:space="preserve" approved="no">
         <source>Error reconnecting server</source>
-        <target state="translated">Erreur de reconnexion au serveur</target>
+        <target state="translated">Erreur de reconnexion du serveur</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error reconnecting servers" xml:space="preserve" approved="no">
         <source>Error reconnecting servers</source>
-        <target state="translated">Erreur de reconnexion aux serveurs</target>
+        <target state="translated">Erreur de reconnexion des serveurs</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error removing member" xml:space="preserve">
@@ -4925,7 +4925,7 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
       </trans-unit>
       <trans-unit id="Proxied" xml:space="preserve" approved="no">
         <source>Proxied</source>
-        <target state="needs-translation">Proxifié</target>
+        <target state="translated">Routé via un proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Proxied servers" xml:space="preserve" approved="no">
@@ -5000,7 +5000,7 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
       </trans-unit>
       <trans-unit id="Receive errors" xml:space="preserve" approved="no">
         <source>Receive errors</source>
-        <target state="translated">Erreurs de réception</target>
+        <target state="translated">Erreurs reçues</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Received at" xml:space="preserve">
