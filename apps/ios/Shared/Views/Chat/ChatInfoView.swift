@@ -155,23 +155,25 @@ struct ChatInfoView: View {
                 }
 
                 Section {
-                    if let code = connectionCode { verifyCodeButton(code) }
-                    contactPreferencesButton()
-                    sendReceiptsOption()
-                    if let connStats = connectionStats,
-                       connStats.ratchetSyncAllowed {
-                        synchronizeConnectionButton()
+                    Group {
+                        if let code = connectionCode { verifyCodeButton(code) }
+                        contactPreferencesButton()
+                        sendReceiptsOption()
+                        if let connStats = connectionStats,
+                           connStats.ratchetSyncAllowed {
+                            synchronizeConnectionButton()
+                        }
+                        // } else if developerTools {
+                        //     synchronizeConnectionButtonForce()
+                        // }
                     }
+                    .disabled(!contact.ready || !contact.active)
                     NavigationLink {
                         ChatWallpaperEditorSheet(chat: chat)
                     } label: {
                         Label("Chat theme", systemImage: "photo")
                     }
-//                    } else if developerTools {
-//                        synchronizeConnectionButtonForce()
-//                    }
                 }
-                .disabled(!contact.ready || !contact.active)
 
                 if let conn = contact.activeConn {
                     Section {
@@ -271,7 +273,7 @@ struct ChatInfoView: View {
             }
         }
         .actionSheet(isPresented: $showDeleteContactActionSheet) {
-            if contact.ready && contact.active {
+            if contact.sndReady && contact.active {
                 return ActionSheet(
                     title: Text("Delete contact?\nThis cannot be undone!"),
                     buttons: [

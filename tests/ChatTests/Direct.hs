@@ -1150,7 +1150,7 @@ testSubscribeAppNSE tmp =
         alice <## "to accept: /ac bob"
         alice <## "to reject: /rc bob (the sender will NOT be notified)"
         alice ##> "/ac bob"
-        alice <## "bob (Bob): accepting contact request..."
+        alice <## "bob (Bob): accepting contact request, you can send messages to contact"
         concurrently_
           (bob <## "alice (Alice): contact is connected")
           (alice <## "bob (Bob): contact is connected")
@@ -1376,7 +1376,7 @@ testMultipleUserAddresses =
       alice <#? bob
       alice @@@ [("<@bob", "")]
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -1394,7 +1394,7 @@ testMultipleUserAddresses =
       alice <#? bob
       alice #$> ("/_get chats 2 pcc=on", chats, [("<@bob", ""), ("*", "")])
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alisa: contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -1425,7 +1425,7 @@ testMultipleUserAddresses =
       showActiveUser alice "alisa"
 
       alice ##> "/ac cath"
-      alice <## "cath (Catherine): accepting contact request..."
+      alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
       concurrently_
         (cath <## "alisa: contact is connected")
         (alice <## "cath (Catherine): contact is connected")
@@ -2649,7 +2649,7 @@ testConnReqChatVRange ct1VRange ct2VRange tmp =
       bob ##> ("/c " <> cLink)
       alice <#? bob
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")

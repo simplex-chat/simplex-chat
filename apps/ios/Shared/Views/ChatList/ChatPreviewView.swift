@@ -207,7 +207,7 @@ struct ChatPreviewView: View {
                 if contact.activeConn == nil && contact.profile.contactLink != nil {
                     chatPreviewInfoText("Tap to Connect")
                         .foregroundColor(theme.colors.primary)
-                } else if !contact.ready && contact.activeConn != nil {
+                } else if !contact.sndReady && contact.activeConn != nil {
                     if contact.nextSendGrpInv {
                         chatPreviewInfoText("send direct message")
                     } else if contact.active {

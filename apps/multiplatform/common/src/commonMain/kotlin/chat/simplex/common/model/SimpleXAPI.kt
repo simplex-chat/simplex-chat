@@ -1837,23 +1837,27 @@ object ChatController {
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
           && r.chatError.agentError is AgentErrorType.SMP
           && r.chatError.agentError.smpErr is SMPErrorType.PROXY ->
-        proxyErrorAlert(r.chatError.agentError.smpErr.proxyErr, r.chatError.agentError.serverAddress)
+        smpProxyErrorAlert(r.chatError.agentError.smpErr.proxyErr, r.chatError.agentError.serverAddress)
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
           && r.chatError.agentError is AgentErrorType.PROXY
           && r.chatError.agentError.proxyErr is ProxyClientError.ProxyProtocolError
           && r.chatError.agentError.proxyErr.protocolErr is SMPErrorType.PROXY ->
-        proxyErrorAlert(r.chatError.agentError.proxyErr.protocolErr.proxyErr, r.chatError.agentError.proxyServer)
+        proxyDestinationErrorAlert(
+          r.chatError.agentError.proxyErr.protocolErr.proxyErr,
+          r.chatError.agentError.proxyServer,
+          r.chatError.agentError.relayServer
+        )
       else -> false
     }
   }
 
-  private fun proxyErrorAlert(pe: ProxyError, srvAddr: String): Boolean {
+  private fun smpProxyErrorAlert(pe: ProxyError, srvAddr: String): Boolean {
     return when {
       pe is ProxyError.BROKER
           && pe.brokerErr is BrokerErrorType.TIMEOUT -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.private_routing_error),
-          generalGetString(MR.strings.please_try_later)
+          String.format(generalGetString(MR.strings.smp_proxy_error_connecting), serverHostname(srvAddr))
         )
         true
       }
@@ -1861,14 +1865,7 @@ object ChatController {
           && pe.brokerErr is BrokerErrorType.NETWORK -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.private_routing_error),
-          generalGetString(MR.strings.please_try_later)
-        )
-        true
-      }
-      pe is ProxyError.NO_SESSION -> {
-        AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.private_routing_error),
-          generalGetString(MR.strings.please_try_later)
+          String.format(generalGetString(MR.strings.smp_proxy_error_connecting), serverHostname(srvAddr))
         )
         true
       }
@@ -1876,7 +1873,7 @@ object ChatController {
           && pe.brokerErr is BrokerErrorType.HOST -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.private_routing_error),
-          String.format(generalGetString(MR.strings.network_error_broker_host_desc), serverHostname(srvAddr))
+          String.format(generalGetString(MR.strings.smp_proxy_error_broker_host), serverHostname(srvAddr))
         )
         true
       }
@@ -1885,7 +1882,53 @@ object ChatController {
           && pe.brokerErr.transportErr is SMPTransportError.Version -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.private_routing_error),
-          String.format(generalGetString(MR.strings.proxy_error_broker_version_desc), serverHostname(srvAddr))
+          String.format(generalGetString(MR.strings.smp_proxy_error_broker_version), serverHostname(srvAddr))
+        )
+        true
+      }
+      else -> false
+    }
+  }
+
+  private fun proxyDestinationErrorAlert(pe: ProxyError, proxyServer: String, relayServer: String): Boolean {
+    return when {
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.TIMEOUT -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_failed_to_connect), serverHostname(proxyServer), serverHostname(relayServer))
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.NETWORK -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_failed_to_connect), serverHostname(proxyServer), serverHostname(relayServer))
+        )
+        true
+      }
+      pe is ProxyError.NO_SESSION -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_failed_to_connect), serverHostname(proxyServer), serverHostname(relayServer))
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.HOST -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_broker_host), serverHostname(relayServer), serverHostname(proxyServer))
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.TRANSPORT
+          && pe.brokerErr.transportErr is SMPTransportError.Version -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_broker_version), serverHostname(relayServer), serverHostname(proxyServer))
         )
         true
       }
@@ -1934,6 +1977,17 @@ object ChatController {
             chatModel.removeChat(rhId, conn.id)
           }
         }
+      }
+      is CR.ContactSndReady -> {
+        if (active(r.user) && r.contact.directOrUsed) {
+          chatModel.updateContact(rhId, r.contact)
+          val conn = r.contact.activeConn
+          if (conn != null) {
+            chatModel.replaceConnReqView(conn.id, "@${r.contact.contactId}")
+            chatModel.removeChat(rhId, conn.id)
+          }
+        }
+        chatModel.setContactNetworkStatus(r.contact, NetworkStatus.Connected())
       }
       is CR.ReceivedContactRequest -> {
         val contactRequest = r.contactRequest
@@ -4572,6 +4626,7 @@ sealed class CR {
   @Serializable @SerialName("userContactLinkDeleted") class UserContactLinkDeleted(val user: User): CR()
   @Serializable @SerialName("contactConnected") class ContactConnected(val user: UserRef, val contact: Contact, val userCustomProfile: Profile? = null): CR()
   @Serializable @SerialName("contactConnecting") class ContactConnecting(val user: UserRef, val contact: Contact): CR()
+  @Serializable @SerialName("contactSndReady") class ContactSndReady(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("receivedContactRequest") class ReceivedContactRequest(val user: UserRef, val contactRequest: UserContactRequest): CR()
   @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected(val user: UserRef): CR()
@@ -4747,6 +4802,7 @@ sealed class CR {
     is UserContactLinkDeleted -> "userContactLinkDeleted"
     is ContactConnected -> "contactConnected"
     is ContactConnecting -> "contactConnecting"
+    is ContactSndReady -> "contactSndReady"
     is ReceivedContactRequest -> "receivedContactRequest"
     is AcceptingContactRequest -> "acceptingContactRequest"
     is ContactRequestRejected -> "contactRequestRejected"
@@ -4912,6 +4968,7 @@ sealed class CR {
     is UserContactLinkDeleted -> withUser(user, noDetails())
     is ContactConnected -> withUser(user, json.encodeToString(contact))
     is ContactConnecting -> withUser(user, json.encodeToString(contact))
+    is ContactSndReady -> withUser(user, json.encodeToString(contact))
     is ReceivedContactRequest -> withUser(user, json.encodeToString(contactRequest))
     is AcceptingContactRequest -> withUser(user, json.encodeToString(contact))
     is ContactRequestRejected -> withUser(user, noDetails())
