@@ -158,6 +158,34 @@ public func imageHasAlpha(_ img: UIImage) -> Bool {
     return false
 }
 
+/// Reduces image size, while consuming less RAM
+///
+/// Used by ShareExtension to downsize large images
+/// before passing them to regular image processing pipeline
+/// to avoid exceeding 120MB memory
+///
+/// - Parameters:
+///   - url: Location of the image data
+///   - size: Maximum dimension (width or height)
+/// - Returns: Downsampled image or `nil`, if the image can't be located
+public func downsampleImage(at url: URL, to size: Int64) -> UIImage? {
+    autoreleasepool {
+        if let source = CGImageSourceCreateWithURL(url as CFURL, nil) {
+            CGImageSourceCreateThumbnailAtIndex(
+                    source,
+                    Int.zero,
+                    [
+                        kCGImageSourceCreateThumbnailFromImageAlways: true,
+                        kCGImageSourceShouldCacheImmediately: true,
+                        kCGImageSourceCreateThumbnailWithTransform: true,
+                        kCGImageSourceThumbnailMaxPixelSize: String(size) as CFString
+                    ] as CFDictionary
+                )
+            .map { UIImage(cgImage: $0) }
+        } else { nil }
+    }
+}
+
 public func saveFileFromURL(_ url: URL) -> CryptoFile? {
     let encrypted = privacyEncryptLocalFilesGroupDefault.get()
     let savedFile: CryptoFile?

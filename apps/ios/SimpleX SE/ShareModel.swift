@@ -10,6 +10,12 @@ import UniformTypeIdentifiers
 import SwiftUI
 import SimpleXChat
 
+/// Maximum size of hex encoded media previews
+private let MAX_DATA_SIZE: Int64 = 14000
+
+/// Maximum dimension (width or height) of an image, before passed for processing
+private let MAX_DOWNSAMPLE_SIZE: Int64 = 2000
+
 class ShareModel: ObservableObject {
     @Published var item: NSExtensionItem?
     @Published var chats = Array<ChatData>()
@@ -71,13 +77,58 @@ class ShareModel: ObservableObject {
                 return .failure(.unsupportedFormat)
             }
             let url = try await attachment.inPlaceUrl(type: type)
-            guard let cryptoFile = saveFileFromURL(url) else { return .failure(.encryptFile) }
+            var cryptoFile: CryptoFile
+            var msgContent: MsgContent
+            switch type {
+
+            // Prepare Image message
+            case .image:
+
+                // Animated
+                if attachment.hasItemConformingToTypeIdentifier(UTType.gif.identifier) {
+                    guard let data = try? Data(contentsOf: url), let image = UIImage(data: data) else {
+                        return .failure(.mediaLoading)
+                    }
+                    guard let file = saveAnimImage(image) else {
+                        return .failure(.encryptFile)
+                    }
+                    guard let imageString = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) else {
+                        return .failure(.previewGeneration)
+                    }
+                    cryptoFile = file
+                    msgContent = .image(text: comment, image: imageString)
+
+                // Static
+                } else {
+                    guard let image = downsampleImage(at: url, to: MAX_DOWNSAMPLE_SIZE) else {
+                        return .failure(.imageDownsampling)
+                    }
+                    guard let file = saveImage(image) else {
+                        return .failure(.encryptFile)
+                    }
+                    guard let imageString = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) else {
+                        return .failure(.previewGeneration)
+                    }
+                    cryptoFile = file
+                    msgContent = .image(text: comment, image: imageString)
+                }
+
+            // Prepare Data message
+            case .data:
+                msgContent = .file(comment)
+                guard let file = saveFileFromURL(url) else { return .failure(.encryptFile) }
+                cryptoFile = file
+            default:
+                return .failure(.unsupportedFormat)
+            }
+
+            // Send
             SEChatState.shared.set(.sendingMessage)
             await waitForOtherProcessesToSuspend()
             let chatItem = try apiSendMessage(
                 chatInfo: chat.chatInfo,
                 cryptoFile: cryptoFile,
-                msgContent: .file(comment)
+                msgContent: msgContent
             )
             SEChatState.shared.set(.inactive)
             return .success(chatItem)
