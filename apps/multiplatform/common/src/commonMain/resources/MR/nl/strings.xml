@@ -1870,7 +1870,7 @@
     <string name="share_text_file_status">Bestandsstatus: %s</string>
     <string name="info_row_message_status">Berichtstatus</string>
     <string name="cannot_share_message_alert_title">Kan bericht niet verzenden</string>
-    <string name="cannot_share_message_alert_text">Geselecteerde chatvoorkeuren verbieden dit bericht.</string>
+    <string name="cannot_share_message_alert_text">Geselecteerde chat voorkeuren verbieden dit bericht.</string>
     <string name="private_routing_error">Fout in privéroutering</string>
     <string name="network_error_broker_version_desc">Serverversie is niet compatibel met uw app: %1$s.</string>
     <string name="message_forwarded_title">Bericht doorgestuurd</string>
