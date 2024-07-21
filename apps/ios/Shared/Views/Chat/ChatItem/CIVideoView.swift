@@ -107,6 +107,11 @@ struct CIVideoView: View {
                     }
             }
         }
+        .fullScreenCover(isPresented: $showFullScreenPlayer) {
+            if let decrypted = urlDecrypted {
+                fullScreenPlayer(decrypted)
+            }
+        }
         .onDisappear {
             showFullScreenPlayer = false
         }
@@ -125,11 +130,6 @@ struct CIVideoView: View {
             ZStack(alignment: .center) {
                 let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
                 imageView(defaultPreview)
-                .fullScreenCover(isPresented: $showFullScreenPlayer) {
-                    if let decrypted = urlDecrypted {
-                        fullScreenPlayer(decrypted)
-                    }
-                }
                 .onTapGesture {
                     decrypt(file: file) {
                         showFullScreenPlayer = urlDecrypted != nil
@@ -169,9 +169,6 @@ struct CIVideoView: View {
                         player.pause()
                         videoPlaying = false
                     }
-                }
-                .fullScreenCover(isPresented: $showFullScreenPlayer) {
-                    fullScreenPlayer(url)
                 }
                 .onTapGesture {
                     switch player.timeControlStatus {
@@ -215,11 +212,6 @@ struct CIVideoView: View {
             ZStack(alignment: .topLeading) {
                 let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
                 smallViewImageView(preview, file)
-                    .fullScreenCover(isPresented: $showFullScreenPlayer) {
-                        if let decrypted = urlDecrypted {
-                            fullScreenPlayer(decrypted)
-                        }
-                    }
                     .onTapGesture {
                         decrypt(file: file) {
                             showFullScreenPlayer = urlDecrypted != nil
@@ -248,9 +240,6 @@ struct CIVideoView: View {
         return ZStack(alignment: .center) {
             ZStack(alignment: .topLeading) {
                 smallViewImageView(preview, file)
-                    .fullScreenCover(isPresented: $showFullScreenPlayer) {
-                        fullScreenPlayer(url)
-                    }
                     .onTapGesture {
                         showFullScreenPlayer = true
                     }
