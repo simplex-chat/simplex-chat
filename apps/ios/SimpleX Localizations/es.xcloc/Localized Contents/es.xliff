@@ -554,7 +554,7 @@
       </trans-unit>
       <trans-unit id="Accent" xml:space="preserve" approved="no">
         <source>Accent</source>
-        <target state="translated">Acento</target>
+        <target state="translated">Color</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept" xml:space="preserve">
@@ -639,7 +639,7 @@
       </trans-unit>
       <trans-unit id="Additional accent 2" xml:space="preserve" approved="no">
         <source>Additional accent 2</source>
-        <target state="translated">Acento adicional 2</target>
+        <target state="translated">Color adicional 2</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Additional secondary" xml:space="preserve" approved="no">
@@ -674,7 +674,7 @@
       </trans-unit>
       <trans-unit id="Advanced settings" xml:space="preserve" approved="no">
         <source>Advanced settings</source>
-        <target state="translated">Ajustes avanzados</target>
+        <target state="translated">Configuración avanzada</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All app data is deleted." xml:space="preserve">
@@ -1225,7 +1225,7 @@
       </trans-unit>
       <trans-unit id="Chat colors" xml:space="preserve" approved="no">
         <source>Chat colors</source>
-        <target state="translated">Colores de chat</target>
+        <target state="translated">Colores del chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat console" xml:space="preserve">
@@ -1619,7 +1619,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Copy error" xml:space="preserve" approved="no">
         <source>Copy error</source>
-        <target state="translated">Error de copia</target>
+        <target state="translated">Error al copiar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Core version: v%@" xml:space="preserve">
@@ -1699,7 +1699,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Created" xml:space="preserve" approved="no">
         <source>Created</source>
-        <target state="translated">Creado/a</target>
+        <target state="translated">Creado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Created at" xml:space="preserve">
@@ -1764,7 +1764,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Dark mode colors" xml:space="preserve" approved="no">
         <source>Dark mode colors</source>
-        <target state="translated">Colores del modo oscuro</target>
+        <target state="translated">Colores en modo oscuro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database ID" xml:space="preserve">
@@ -2299,7 +2299,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Download errors" xml:space="preserve" approved="no">
         <source>Download errors</source>
-        <target state="translated">Errores de descarga</target>
+        <target state="translated">Errores en la descarga</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Download failed" xml:space="preserve">
@@ -2724,12 +2724,12 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Error reconnecting server" xml:space="preserve" approved="no">
         <source>Error reconnecting server</source>
-        <target state="translated">Error al reconectar el servidor</target>
+        <target state="translated">Error al reconectar con el servidor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error reconnecting servers" xml:space="preserve" approved="no">
         <source>Error reconnecting servers</source>
-        <target state="translated">Error al reconectar los servidores</target>
+        <target state="translated">Error al reconectar con los servidores</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error removing member" xml:space="preserve">
