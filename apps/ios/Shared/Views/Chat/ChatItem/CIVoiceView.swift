@@ -25,15 +25,13 @@ struct CIVoiceView: View {
     var body: some View {
         Group {
             if smallView {
-                VStack (alignment: .leading, spacing: 6) {
-                    HStack {
-                        player()
-                        playerTime()
-                        if .playing == playbackState || (playbackTime ?? 0) > 0 || !allowMenu {
-                            playbackSlider()
-                        }
+                HStack(spacing: 10) {
+                    player()
+                    playerTime()
+                        .allowsHitTesting(false)
+                    if .playing == playbackState || (playbackTime ?? 0) > 0 || !allowMenu {
+                        playbackSlider()
                     }
-                    .frame(alignment: .leading)
                 }
             } else if chatItem.chatDir.sent {
                 VStack (alignment: .trailing, spacing: 6) {
@@ -75,7 +73,8 @@ struct CIVoiceView: View {
             audioPlayer: $audioPlayer,
             playbackState: $playbackState,
             playbackTime: $playbackTime,
-            allowMenu: $allowMenu
+            allowMenu: $allowMenu,
+            sizeMultiplier: smallView ? voiceMessageSizeBasedOnSquareSize(36) / 56 : 1
         )
     }
 
@@ -143,6 +142,7 @@ struct VoiceMessagePlayer: View {
     @Binding var playbackState: VoiceMessagePlaybackState
     @Binding var playbackTime: TimeInterval?
     @Binding var allowMenu: Bool
+    var sizeMultiplier: CGFloat
 
     var body: some View {
         ZStack {
@@ -212,39 +212,81 @@ struct VoiceMessagePlayer: View {
         .onChange(of: chatModel.stopPreviousRecPlay) { it in
             if let recordingFileName = getLoadedFileSource(recordingFile)?.filePath,
                chatModel.stopPreviousRecPlay != getAppFilePath(recordingFileName) {
-                audioPlayer?.stop()
-                playbackState = .noPlayback
-                playbackTime = TimeInterval(0)
+                stopPlayback()
             }
         }
         .onChange(of: playbackState) { state in
             allowMenu = state == .paused || state == .noPlayback
+            // Notify activeContentPreview in ChatPreviewView that playback is finished
+            if state == .noPlayback, let recordingFileName = getLoadedFileSource(recordingFile)?.filePath,
+               chatModel.stopPreviousRecPlay == getAppFilePath(recordingFileName) {
+                chatModel.stopPreviousRecPlay = nil
+            }
+        }
+//        .onChange(of: chatModel.chatId) { _ in
+//            if sizeMultiplier != 1 {
+//                stopPlayback()
+//            }
+//        }
+//        .onChange(of: chatModel.currentUser?.userId) { _ in
+//            if sizeMultiplier != 1 {
+//                stopPlayback()
+//            }
+//        }
+        .onDisappear {
+            if sizeMultiplier != 1 {
+                stopPlayback()
+            }
         }
     }
 
     @ViewBuilder private func playbackButton() -> some View {
-        switch playbackState {
-        case .noPlayback:
-            Button {
-                if let recordingSource = getLoadedFileSource(recordingFile) {
-                    startPlayback(recordingSource)
-                }
-            } label: {
+        if sizeMultiplier != 1 {
+            switch playbackState {
+            case .noPlayback:
                 playPauseIcon("play.fill", theme.colors.primary)
-            }
-        case .playing:
-            Button {
-                audioPlayer?.pause()
-                playbackState = .paused
-            } label: {
+                    .onTapGesture {
+                        if let recordingSource = getLoadedFileSource(recordingFile) {
+                            startPlayback(recordingSource)
+                        }
+                    }
+            case .playing:
                 playPauseIcon("pause.fill", theme.colors.primary)
-            }
-        case .paused:
-            Button {
-                audioPlayer?.play()
-                playbackState = .playing
-            } label: {
+                    .onTapGesture {
+                        audioPlayer?.pause()
+                        playbackState = .paused
+                    }
+            case .paused:
                 playPauseIcon("play.fill", theme.colors.primary)
+                    .onTapGesture {
+                        audioPlayer?.play()
+                        playbackState = .playing
+                    }
+            }
+        } else {
+            switch playbackState {
+            case .noPlayback:
+                Button {
+                    if let recordingSource = getLoadedFileSource(recordingFile) {
+                        startPlayback(recordingSource)
+                    }
+                } label: {
+                    playPauseIcon("play.fill", theme.colors.primary)
+                }
+            case .playing:
+                Button {
+                    audioPlayer?.pause()
+                    playbackState = .paused
+                } label: {
+                    playPauseIcon("pause.fill", theme.colors.primary)
+                }
+            case .paused:
+                Button {
+                    audioPlayer?.play()
+                    playbackState = .playing
+                } label: {
+                    playPauseIcon("play.fill", theme.colors.primary)
+                }
             }
         }
     }
@@ -254,28 +296,41 @@ struct VoiceMessagePlayer: View {
             Image(systemName: image)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 20, height: 20)
+                .frame(width: 20 * sizeMultiplier, height: 20 * sizeMultiplier)
                 .foregroundColor(color)
                 .padding(.leading, image == "play.fill" ? 4 : 0)
-                .frame(width: 56, height: 56)
+                .frame(width: 56 * sizeMultiplier, height: 56 * sizeMultiplier)
                 .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
                 .clipShape(Circle())
             if recordingTime > 0 {
                 ProgressCircle(length: recordingTime, progress: $playbackTime)
-                    .frame(width: 53, height: 53) // this + ProgressCircle lineWidth = background circle diameter
+                    .frame(width: 53 * sizeMultiplier, height: 53 * sizeMultiplier) // this + ProgressCircle lineWidth = background circle diameter
             }
         }
     }
 
     private func downloadButton(_ recordingFile: CIFile, _ icon: String) -> some View {
-        Button {
-            Task {
-                if let user = chatModel.currentUser {
-                    await receiveFile(user: user, fileId: recordingFile.fileId)
+        Group {
+            if sizeMultiplier != 1 {
+                playPauseIcon(icon, theme.colors.primary)
+                    .onTapGesture {
+                        Task {
+                            if let user = chatModel.currentUser {
+                                await receiveFile(user: user, fileId: recordingFile.fileId)
+                            }
+                        }
+                    }
+            } else {
+                Button {
+                    Task {
+                        if let user = chatModel.currentUser {
+                            await receiveFile(user: user, fileId: recordingFile.fileId)
+                        }
+                    }
+                } label: {
+                    playPauseIcon(icon, theme.colors.primary)
                 }
             }
-        } label: {
-            playPauseIcon(icon, theme.colors.primary)
         }
     }
 
@@ -300,17 +355,17 @@ struct VoiceMessagePlayer: View {
         Image(systemName: image)
             .resizable()
             .aspectRatio(contentMode: .fit)
-            .frame(width: size, height: size)
+            .frame(width: size * sizeMultiplier, height: size * sizeMultiplier)
             .foregroundColor(Color(uiColor: .tertiaryLabel))
-            .frame(width: 56, height: 56)
+            .frame(width: 56 * sizeMultiplier, height: 56 * sizeMultiplier)
             .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
             .clipShape(Circle())
     }
 
     private func loadingIcon() -> some View {
         ProgressView()
-            .frame(width: 30, height: 30)
-            .frame(width: 56, height: 56)
+            .frame(width: 30 * sizeMultiplier, height: 30 * sizeMultiplier)
+            .frame(width: 56 * sizeMultiplier, height: 56 * sizeMultiplier)
             .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
             .clipShape(Circle())
     }
@@ -326,6 +381,12 @@ struct VoiceMessagePlayer: View {
         )
         audioPlayer?.start(fileSource: recordingSource, at: playbackTime)
         playbackState = .playing
+    }
+
+    private func stopPlayback() {
+        audioPlayer?.stop()
+        playbackState = .noPlayback
+        playbackTime = TimeInterval(0)
     }
 }
 

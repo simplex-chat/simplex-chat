@@ -36,7 +36,8 @@ struct FramedCIVoiceView: View {
                 audioPlayer: $audioPlayer,
                 playbackState: $playbackState,
                 playbackTime: $playbackTime,
-                allowMenu: $allowMenu
+                allowMenu: $allowMenu,
+                sizeMultiplier: 1
             )
             VoiceMessagePlayerTime(
                 recordingTime: TimeInterval(duration),

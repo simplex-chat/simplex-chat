@@ -26,6 +26,7 @@ struct FramedItemView: View {
     @Binding var allowMenu: Bool
     @State private var showSecrets = false
     @State private var showQuoteSecrets = false
+    @State private var showFullscreenGallery: Bool = false
 
     @Binding var audioPlayer: AudioPlayer?
     @Binding var playbackState: VoiceMessagePlaybackState
@@ -106,7 +107,7 @@ struct FramedItemView: View {
         } else {
             switch (chatItem.content.msgContent) {
             case let .image(text, _):
-                CIImageView(chatItem: chatItem, preview: preview, maxWidth: maxWidth, imgWidth: imgWidth)
+                CIImageView(chatItem: chatItem, preview: preview, maxWidth: maxWidth, imgWidth: imgWidth, showFullScreenImage: $showFullscreenGallery)
                     .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
@@ -121,7 +122,7 @@ struct FramedItemView: View {
                     ciMsgContentView(chatItem)
                 }
             case let .video(text, _, duration):
-                CIVideoView(chatItem: chatItem, preview: preview, duration: duration, maxWidth: maxWidth, videoWidth: videoWidth)
+                CIVideoView(chatItem: chatItem, preview: preview, duration: duration, maxWidth: maxWidth, videoWidth: videoWidth, showFullscreenPlayer: $showFullscreenGallery)
                 .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear

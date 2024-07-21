@@ -26,19 +26,20 @@ struct CIVideoView: View {
     @State private var url: URL?
     @State private var urlDecrypted: URL?
     @State private var decryptionInProgress: Bool = false
-    @State private var showFullScreenPlayer = false
+    @Binding private var showFullScreenPlayer: Bool
     @State private var timeObserver: Any? = nil
     @State private var fullScreenTimeObserver: Any? = nil
     @State private var publisher: AnyCancellable? = nil
     private var sizeMultiplier: CGFloat { smallView ? 0.38 : 1 }
 
-    init(chatItem: ChatItem, preview: UIImage?, duration: Int, maxWidth: CGFloat, videoWidth: CGFloat?, smallView: Bool = false) {
+    init(chatItem: ChatItem, preview: UIImage?, duration: Int, maxWidth: CGFloat, videoWidth: CGFloat?, smallView: Bool = false, showFullscreenPlayer: Binding<Bool>) {
         self.chatItem = chatItem
         self.preview = preview
         self._duration = State(initialValue: duration)
         self.maxWidth = maxWidth
         self.videoWidth = videoWidth
         self.smallView = smallView
+        self._showFullScreenPlayer = showFullscreenPlayer
         if let url = getLoadedVideo(chatItem.file) {
             let decrypted = chatItem.file?.fileSource?.cryptoArgs == nil ? url : chatItem.file?.fileSource?.decryptedGet()
             self._urlDecrypted = State(initialValue: decrypted)
@@ -105,6 +106,9 @@ struct CIVideoView: View {
                         receiveFileIfValidSize(file: file, receiveFile: receiveFile)
                     }
             }
+        }
+        .onDisappear {
+            showFullScreenPlayer = false
         }
     }
 
@@ -226,6 +230,8 @@ struct CIVideoView: View {
             }
             if file.showStatusIconInSmallView {
                 fileStatusIcon()
+                // prevent stealing touches and opening chat view
+                .allowsHitTesting(false)
             }
         }
     }
@@ -250,6 +256,8 @@ struct CIVideoView: View {
             }
             if file.showStatusIconInSmallView {
                 fileStatusIcon()
+                // prevent stealing touches and opening chat view
+                .allowsHitTesting(false)
             }
         }
     }

@@ -16,7 +16,7 @@ struct CIImageView: View {
     let maxWidth: CGFloat
     var imgWidth: CGFloat?
     var smallView: Bool = false
-    @State private var showFullScreenImage = false
+    @Binding var showFullScreenImage: Bool
 
     var body: some View {
         let file = chatItem.file
@@ -83,6 +83,9 @@ struct CIImageView: View {
                         }
                     }
             }
+        }
+        .onDisappear {
+            showFullScreenImage = false
         }
     }
 
