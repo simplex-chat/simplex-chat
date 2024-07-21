@@ -1777,7 +1777,7 @@
     <string name="snd_error_proxy">Servidor de reenvío: %1$s
 \nError: %2$s</string>
     <string name="snd_error_expired">Problema en la red - el mensaje ha expirado tras muchos intentos de envío.</string>
-    <string name="srv_error_version">La versión del servidor es incompatible con la configuración de red.</string>
+    <string name="srv_error_version">La versión del servidor es incompatible con la configuración de la red.</string>
     <string name="network_smp_proxy_mode_private_routing">Enrutamiento privado</string>
     <string name="network_smp_proxy_mode_unknown">Con servidores desconocidos</string>
     <string name="network_smp_proxy_mode_never_description">NO usar enrutamiento privado.</string>
@@ -1841,7 +1841,7 @@
     <string name="message_queue_info_server_info">información cola del servidor: %1$s
 \n
 \núltimo mensaje recibido: %2$s</string>
-    <string name="chat_theme_reset_to_app_theme">Restablecer al tema de la app</string>
+    <string name="chat_theme_reset_to_app_theme">Restablecer al tema de la aplicación</string>
     <string name="v5_8_private_routing">Enrutamiento privado de mensajes 🚀</string>
     <string name="v5_8_safe_files">Recibe archivos de forma segura</string>
     <string name="v5_8_message_delivery">Mejora del envío de mensajes</string>
@@ -1859,16 +1859,16 @@
     <string name="error_initializing_web_view">Error al inicializar WebView. Actualiza tu sistema a la última versión. Por favor, ponte en contacto con los desarrolladores.
 \nError: %s</string>
     <string name="v5_8_persian_ui">Interfaz en persa</string>
-    <string name="file_error_auth">Clave incorrecta o dirección de bloque de datos del archivo desconocida - lo más probable es que el archivo se haya borrado.</string>
+    <string name="file_error_auth">Clave incorrecta o dirección del bloque del archivo desconocida. Es probable que el archivo se haya eliminado.</string>
     <string name="file_error_no_file">Archivo no encontrado, probablemente haya sido borrado o cancelado.</string>
     <string name="file_error_relay">Error del servidor de archivos: %1$s</string>
     <string name="file_error">Error de archivo</string>
-    <string name="temporary_file_error">Error de archivo temporal</string>
+    <string name="temporary_file_error">Error en archivo temporal</string>
     <string name="share_text_message_status">Estado del mensaje: %s</string>
     <string name="info_row_message_status">Estado del mensaje</string>
     <string name="share_text_file_status">Estado del archivo: %s</string>
     <string name="info_row_file_status">Estado del archivo</string>
-    <string name="remote_ctrl_connection_stopped_desc">Comprueba que el móvil y el ordenador están conectados a la misma red local y que el firewall del ordenador permite la conexión.
+    <string name="remote_ctrl_connection_stopped_desc">Comprueba que el móvil y el ordenador están conectados a la misma red local y que el cortafuegos del ordenador permite la conexión.
 \nPor favor, comparte cualquier otro problema con los desarrolladores.</string>
     <string name="copy_error">Error al copiar</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">Este enlace ha sido usado en otro dispositivo móvil, por favor crea un enlace nuevo en el ordenador.</string>
@@ -1898,7 +1898,7 @@
     <string name="servers_info_subscriptions_total">Total</string>
     <string name="servers_info_transport_sessions_section_header">Sesiones de transporte</string>
     <string name="xftp_server">Servidor XFTP</string>
-    <string name="servers_info_proxied_servers_section_footer">No estás conectado a estos servidores. Se usa el enrutamiento privado para enviarles mensajes.</string>
+    <string name="servers_info_proxied_servers_section_footer">No estás conectado a estos servidores. Para enviarles mensajes se usa el enrutamiento privado.</string>
     <string name="all_users">Todos los perfiles</string>
     <string name="servers_info_sessions_connected">Conectado</string>
     <string name="servers_info_detailed_statistics">Estadísticas detalladas</string>
@@ -1926,7 +1926,7 @@
     <string name="servers_info_reset_stats_alert_message">Las estadísticas de los servidores serán restablecidas. ¡No podrá deshacerse!</string>
     <string name="servers_info_downloaded">Descargado</string>
     <string name="smp_server">Servidor SMP</string>
-    <string name="message_forwarded_desc">No hay conexión directa todavía, el mensaje es reenviado por el administrador.</string>
+    <string name="message_forwarded_desc">Aún no hay conexión directa, el mensaje es reenviado por el administrador.</string>
     <string name="smp_servers_other">Otros servidores SMP</string>
     <string name="xftp_servers_other">Otros servidores XFTP</string>
     <string name="scan_paste_link">Escanear / Pegar enlace</string>
@@ -1970,7 +1970,7 @@
     <string name="download_errors">Errores en la descarga</string>
     <string name="duplicates_label">duplicados</string>
     <string name="expired_label">expirado</string>
-    <string name="open_server_settings_button">Abrir ajustes del servidor</string>
+    <string name="open_server_settings_button">Abrir configuración del servidor</string>
     <string name="other_label">otro</string>
     <string name="other_errors">otros errores</string>
     <string name="proxied">Con proxy</string>
