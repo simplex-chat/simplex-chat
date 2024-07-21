@@ -45,15 +45,23 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                     }
                 },
                 click = {
-                    if (contactType == ContactType.RECENT) {
-                        loadedChat.value?.let {
-                            openLoadedChat(it, chatModel)
-                        } ?: run {
-                            withApi {
-                                openChat(rhId, chat.chatInfo, chatModel)
+                    when (contactType) {
+                        ContactType.RECENT -> {
+                            loadedChat.value?.let {
+                                openLoadedChat(it, chatModel)
+                            } ?: run {
+                                withApi {
+                                    openChat(rhId, chat.chatInfo, chatModel)
+                                }
                             }
+
+                            ModalManager.start.closeModals()
                         }
-                        ModalManager.start.closeModals()
+                        ContactType.REMOVED -> {
+                            openLoadedChat(chat, chatModel)
+                            ModalManager.start.closeModals()
+                        }
+                        else -> {}
                     }
                 },
                 dropdownMenuItems = {
