@@ -215,10 +215,18 @@ struct CIVideoView: View {
             ZStack(alignment: .topLeading) {
                 let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
                 smallViewImageView(preview, file)
+                    .fullScreenCover(isPresented: $showFullScreenPlayer) {
+                        if let decrypted = urlDecrypted {
+                            fullScreenPlayer(decrypted)
+                        }
+                    }
                     .onTapGesture {
                         decrypt(file: file) {
                             showFullScreenPlayer = urlDecrypted != nil
                         }
+                    }
+                    .onChange(of: m.activeCallViewIsCollapsed) { _ in
+                        showFullScreenPlayer = false
                     }
                 if file.showStatusIconInSmallView {
                     // Show nothing
@@ -230,7 +238,7 @@ struct CIVideoView: View {
             }
             if file.showStatusIconInSmallView {
                 fileStatusIcon()
-                // prevent stealing touches and opening chat view
+                // prevent stealing touches and opening chat view from chat list
                 .allowsHitTesting(false)
             }
         }
@@ -256,7 +264,7 @@ struct CIVideoView: View {
             }
             if file.showStatusIconInSmallView {
                 fileStatusIcon()
-                // prevent stealing touches and opening chat view
+                // prevent stealing touches and opening chat view from chat list
                 .allowsHitTesting(false)
             }
         }
@@ -497,7 +505,9 @@ struct CIVideoView: View {
             urlDecrypted = await file.fileSource?.decryptedGetOrCreate(&ChatModel.shared.filesToDelete)
             await MainActor.run {
                 if let decrypted = urlDecrypted {
-                    player = VideoPlayerView.getOrCreatePlayer(decrypted, false)
+                    if !smallView {
+                        player = VideoPlayerView.getOrCreatePlayer(decrypted, false)
+                    }
                     fullPlayer = AVPlayer(url: decrypted)
                 }
                 decryptionInProgress = true
