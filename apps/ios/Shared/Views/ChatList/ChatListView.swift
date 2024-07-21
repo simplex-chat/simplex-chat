@@ -21,11 +21,6 @@ struct ChatListView: View {
     @State private var newChatMenuOption: NewChatMenuOption? = nil
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
-
-    @State var audioPlayer: AudioPlayer? = nil
-    @State var playbackState: VoiceMessagePlaybackState = .noPlayback
-    @State var playbackTime: TimeInterval? = nil
-
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
@@ -154,7 +149,7 @@ struct ChatListView: View {
                         .frame(maxWidth: .infinity)
                     }
                     ForEach(cs, id: \.viewId) { chat in
-                        ChatListNavLink(chat: chat, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
+                        ChatListNavLink(chat: chat)
                             .padding(.trailing, -16)
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
                             .listRowBackground(Color.clear)

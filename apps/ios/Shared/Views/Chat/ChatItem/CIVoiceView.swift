@@ -223,12 +223,17 @@ struct VoiceMessagePlayer: View {
                 chatModel.stopPreviousRecPlay = nil
             }
         }
-        .onChange(of: chatModel.chatId) { _ in
-            if sizeMultiplier != 1 {
-                stopPlayback()
-            }
-        }
-        .onChange(of: chatModel.currentUser?.userId) { _ in
+//        .onChange(of: chatModel.chatId) { _ in
+//            if sizeMultiplier != 1 {
+//                stopPlayback()
+//            }
+//        }
+//        .onChange(of: chatModel.currentUser?.userId) { _ in
+//            if sizeMultiplier != 1 {
+//                stopPlayback()
+//            }
+//        }
+        .onDisappear {
             if sizeMultiplier != 1 {
                 stopPlayback()
             }
