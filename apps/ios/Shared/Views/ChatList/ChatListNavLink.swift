@@ -38,6 +38,10 @@ struct ChatListNavLink: View {
     @State private var inProgress = false
     @State private var progressByTimeout = false
 
+    @Binding var audioPlayer: AudioPlayer?
+    @Binding var playbackState: VoiceMessagePlaybackState
+    @Binding var playbackTime: TimeInterval?
+
     var body: some View {
         Group {
             switch chat.chatInfo {
@@ -69,7 +73,7 @@ struct ChatListNavLink: View {
     @ViewBuilder private func contactNavLink(_ contact: Contact) -> some View {
         Group {
             if contact.activeConn == nil && contact.profile.contactLink != nil {
-                ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
+                ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false), audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
                     .frame(height: rowHeights[dynamicTypeSize])
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button {
@@ -88,7 +92,7 @@ struct ChatListNavLink: View {
                 NavLinkPlain(
                     tag: chat.chatInfo.id,
                     selection: $chatModel.chatId,
-                    label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) }
+                    label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false), audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime) }
                 )
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     markReadButton()
@@ -138,7 +142,7 @@ struct ChatListNavLink: View {
     @ViewBuilder private func groupNavLink(_ groupInfo: GroupInfo) -> some View {
         switch (groupInfo.membership.memberStatus) {
         case .memInvited:
-            ChatPreviewView(chat: chat, progressByTimeout: $progressByTimeout)
+            ChatPreviewView(chat: chat, progressByTimeout: $progressByTimeout, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
                 .frame(height: rowHeights[dynamicTypeSize])
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     joinGroupButton()
@@ -158,7 +162,7 @@ struct ChatListNavLink: View {
                 }
                 .disabled(inProgress)
         case .memAccepted:
-            ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
+            ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false), audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
                 .frame(height: rowHeights[dynamicTypeSize])
                 .onTapGesture {
                     AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
@@ -175,7 +179,7 @@ struct ChatListNavLink: View {
             NavLinkPlain(
                 tag: chat.chatInfo.id,
                 selection: $chatModel.chatId,
-                label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
+                label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false), audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime) },
                 disabled: !groupInfo.ready
             )
             .frame(height: rowHeights[dynamicTypeSize])
@@ -202,7 +206,7 @@ struct ChatListNavLink: View {
         NavLinkPlain(
             tag: chat.chatInfo.id,
             selection: $chatModel.chatId,
-            label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
+            label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false), audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime) },
             disabled: !noteFolder.ready
         )
         .frame(height: rowHeights[dynamicTypeSize])
@@ -576,19 +580,22 @@ func getErrorAlert(_ error: Error, _ title: LocalizedStringKey) -> ErrorAlert {
 struct ChatListNavLink_Previews: PreviewProvider {
     static var previews: some View {
         @State var chatId: String? = "@1"
+        @State var audioPlayer: AudioPlayer? = nil
+        @State var playbackState: VoiceMessagePlaybackState = .noPlayback
+        @State var playbackTime: TimeInterval? = nil
         return Group {
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ))
+            ), audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ))
+            ), audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.contactRequest,
                 chatItems: []
-            ))
+            ), audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime)
         }
         .previewLayout(.fixed(width: 360, height: 82))
     }
