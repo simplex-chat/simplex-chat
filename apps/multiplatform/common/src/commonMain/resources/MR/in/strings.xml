@@ -80,4 +80,8 @@
     <string name="opening_database">Membuka basis data…</string>
     <string name="thousand_abbreviation">k</string>
     <string name="connect_via_contact_link">Hubungkan melalui alamat kontak?</string>
+    <string name="clear_verb">Bersihkan</string>
+    <string name="clear_contacts_selection_button">Bersihkan</string>
+    <string name="clear_chat_menu_action">Bersihkan</string>
+    <string name="migrate_from_device_check_connection_and_try_again">Cek koneksi internetmu dan coba lagi</string>
 </resources>
