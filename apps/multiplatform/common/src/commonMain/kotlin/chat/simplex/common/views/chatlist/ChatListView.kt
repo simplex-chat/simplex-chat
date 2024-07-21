@@ -525,7 +525,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
   }
 }
 
-private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<String?>, cleanup: (() -> Unit)?) {
+fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<String?>, cleanup: (() -> Unit)?) {
   withBGApi {
     planAndConnect(
       chatModel.remoteHostId(),

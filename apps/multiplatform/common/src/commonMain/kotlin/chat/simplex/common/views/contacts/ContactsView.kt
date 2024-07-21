@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,6 +46,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -52,13 +54,17 @@ import chat.simplex.common.model.Chat
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.model.ContactStatus
+import chat.simplex.common.model.Format
 import chat.simplex.common.model.RemoteHostInfo
 import chat.simplex.common.platform.BackHandler
+import chat.simplex.common.platform.LocalMultiplatformView
 import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.platform.getKeyboardState
+import chat.simplex.common.platform.hideKeyboard
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
+import chat.simplex.common.views.chatlist.connect
 import chat.simplex.common.views.helpers.AppBarTitle
 import chat.simplex.common.views.helpers.KeyChangeEffect
 import chat.simplex.common.views.helpers.KeyboardState
@@ -68,6 +74,7 @@ import chat.simplex.common.views.helpers.ModalView
 import chat.simplex.common.views.helpers.SearchTextField
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.views.helpers.hostDevice
+import chat.simplex.common.views.newchat.strHasSingleSimplexLink
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -192,13 +199,20 @@ fun ContactsView(
 }
 
 @Composable
-private fun ContactsSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, focused: Boolean, onFocusChanged: (hasFocus: Boolean) -> Unit) {
+private fun ContactsSearchBar(
+    listState: LazyListState,
+    searchText: MutableState<TextFieldValue>,
+    searchShowingSimplexLink: MutableState<Boolean>,
+    searchChatFilteredBySimplexLink: MutableState<String?>,
+    focused: Boolean,
+    onFocusChanged: (hasFocus: Boolean) -> Unit
+) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         val focusRequester = remember { FocusRequester() }
         Icon(painterResource(MR.images.ic_search), null, Modifier.padding(horizontal = DEFAULT_PADDING_HALF), tint = MaterialTheme.colors.secondary)
         SearchTextField(
             Modifier.weight(1f).onFocusChanged { onFocusChanged(it.hasFocus) }.focusRequester(focusRequester),
-            placeholder = stringResource(MR.strings.search_verb),
+            placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
             alwaysVisible = true,
             searchText = searchText,
             trailingContent = null,
@@ -228,14 +242,35 @@ private fun ContactsSearchBar(listState: LazyListState, searchText: MutableState
                 focusManager.clearFocus()
             }
         }
+        val view = LocalMultiplatformView()
         LaunchedEffect(Unit) {
             snapshotFlow { searchText.value.text }
                 .distinctUntilChanged()
                 .collect {
-                    if (it.isNotEmpty()) {
-                        focusRequester.requestFocus()
-                    } else if (listState.layoutInfo.totalItemsCount > 0) {
-                        listState.scrollToItem(0)
+                    val link = strHasSingleSimplexLink(it.trim())
+                    if (link != null) {
+                        // if SimpleX link is pasted, show connection dialogue
+                        hideKeyboard(view)
+                        if (link.format is Format.SimplexLink) {
+                            val linkText =
+                                link.simplexLinkText(link.format.linkType, link.format.smpHosts)
+                            searchText.value =
+                                searchText.value.copy(linkText, selection = TextRange.Zero)
+                        }
+                        searchShowingSimplexLink.value = true
+                        searchChatFilteredBySimplexLink.value = null
+                        connect(link.text, searchChatFilteredBySimplexLink) {
+                            searchText.value = TextFieldValue()
+                        }
+                    } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
+                        if (it.isNotEmpty()) {
+                            // if some other text is pasted, enter search mode
+                            focusRequester.requestFocus()
+                        } else if (listState.layoutInfo.totalItemsCount > 0) {
+                            listState.scrollToItem(0)
+                        }
+                        searchShowingSimplexLink.value = false
+                        searchChatFilteredBySimplexLink.value = null
                     }
                 }
         }
@@ -273,7 +308,8 @@ private fun ContactsList(
     val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(
         TextFieldValue("")
     ) }
-
+    val searchShowingSimplexLink = remember { mutableStateOf(false) }
+    val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
     var searchFocused by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
@@ -291,6 +327,8 @@ private fun ContactsList(
 
     val filteredContactChats = filteredContactChats(
         showUnreadAndFavorites = showUnreadAndFavorites,
+        searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+        searchShowingSimplexLink = searchShowingSimplexLink,
         searchText = searchText.value.text,
         contactChats = allChats
     )
@@ -305,6 +343,8 @@ private fun ContactsList(
                 ContactsSearchBar(
                     listState = listState,
                     searchText = searchText,
+                    searchShowingSimplexLink = searchShowingSimplexLink,
+                    searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
                     focused = searchFocused,
                     onFocusChanged = {
                         searchFocused = it
@@ -366,14 +406,26 @@ private fun filterChat(chat: Chat, searchText: String, showUnreadAndFavorites: B
 
 private fun filteredContactChats(
     showUnreadAndFavorites: Boolean,
+    searchShowingSimplexLink: State<Boolean>,
+    searchChatFilteredBySimplexLink: State<String?>,
     searchText: String,
     contactChats: List<Chat>
 ): List<Chat> {
-    return contactChats
-        .filter { chat -> filterChat(
-            chat = chat,
-            searchText = searchText,
-            showUnreadAndFavorites = showUnreadAndFavorites) }
+    val linkChatId = searchChatFilteredBySimplexLink.value
+    val s = if (searchShowingSimplexLink.value) "" else searchText.trim().lowercase()
+
+    return if (linkChatId != null) {
+        contactChats.filter { it.id == linkChatId }
+    }
+    else {
+        contactChats.filter { chat ->
+            filterChat(
+                chat = chat,
+                searchText = s,
+                showUnreadAndFavorites = showUnreadAndFavorites
+            )
+        }
+    }
         .sortedWith(chatsByTypeComparator)
 }
 
