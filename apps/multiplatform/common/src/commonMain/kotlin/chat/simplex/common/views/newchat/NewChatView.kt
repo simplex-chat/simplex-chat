@@ -25,6 +25,8 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.model.ChatModel.getChat
+import chat.simplex.common.model.ChatModel.hasChat
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -62,7 +64,9 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
        * It will be dropped automatically when connection established or when user goes away from this screen.
        * It applies only to Android because on Desktop center space will not be overlapped by [AddContactLearnMore]
        **/
-      if (chatModel.showingInvitation.value != null && (!ModalManager.center.hasModalsOpen() || appPlatform.isDesktop)) {
+      if (chatModel.showingInvitation.value != null && chatModel.newChatConnectionStage.value == NewChatConnectionStage.STARTED) {
+        chatModel.newChatConnectionStage.value = NewChatConnectionStage.IDLE
+
         val conn = contactConnection.value
         if (chatModel.showingInvitation.value?.connChatUsed == false && conn != null) {
           AlertManager.shared.showAlertDialog(
@@ -347,6 +351,8 @@ private suspend fun verify(rhId: Long?, text: String?, close: () -> Unit): Boole
 }
 
 private suspend fun connect(rhId: Long?, link: String, close: () -> Unit, cleanup: (() -> Unit)? = null) {
+  chatModel.newChatConnectionStage.value = NewChatConnectionStage.STARTED
+
   planAndConnect(
     rhId,
     URI.create(link),
@@ -363,6 +369,8 @@ private fun createInvitation(
   contactConnection: MutableState<PendingContactConnection?>
 ) {
   if (connReqInvitation.isNotEmpty() || contactConnection.value != null || creatingConnReq.value) return
+  chatModel.newChatConnectionStage.value = NewChatConnectionStage.STARTED
+
   creatingConnReq.value = true
   withBGApi {
     val (r, alert) = controller.apiAddContact(rhId, incognito = controller.appPrefs.incognito.get())

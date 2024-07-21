@@ -17,6 +17,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.model.NewChatConnectionStage
 import chat.simplex.common.model.RemoteHostInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -48,7 +49,7 @@ fun NewChatOptions(addContact: () -> Unit, scanPaste: () -> Unit, createGroup: (
   }
 }
 @Composable
-fun ModalData.NewChatSheet(rh: RemoteHostInfo?) {
+fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
   Column(
     Modifier.fillMaxSize(),
   ) {
@@ -61,17 +62,23 @@ fun ModalData.NewChatSheet(rh: RemoteHostInfo?) {
       )
     }
 
+    LaunchedEffect(chatModel.newChatConnectionStage.value) {
+      if (
+        chatModel.newChatConnectionStage.value == NewChatConnectionStage.COMPLETED
+      ) {
+        chatModel.newChatConnectionStage.value = NewChatConnectionStage.IDLE
+        close()
+      }
+    }
+
     NewChatSheetLayout(
       addContact = {
-        ModalManager.center.closeModals()
         ModalManager.center.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close) }
       },
       scanPaste = {
-        ModalManager.center.closeModals()
         ModalManager.center.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = true, close = close) }
       },
       createGroup = {
-        ModalManager.center.closeModals()
         ModalManager.center.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close) }
       },
       rh = rh

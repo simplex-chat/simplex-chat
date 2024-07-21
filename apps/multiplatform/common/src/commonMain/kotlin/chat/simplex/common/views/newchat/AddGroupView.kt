@@ -37,6 +37,8 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit) {
   AddGroupLayout(
     createGroup = { incognito, groupProfile ->
       withBGApi {
+        chatModel.newChatConnectionStage.value = NewChatConnectionStage.STARTED
+
         val groupInfo = chatModel.controller.apiNewGroup(rhId, incognito, groupProfile)
         if (groupInfo != null) {
           chatModel.updateGroup(rhId = rhId, groupInfo)
@@ -45,6 +47,8 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit) {
           chatModel.chatId.value = groupInfo.id
           setGroupMembers(rhId, groupInfo, chatModel)
           close.invoke()
+          chatModel.newChatConnectionStage.value = NewChatConnectionStage.COMPLETED
+
           if (!groupInfo.incognito) {
             ModalManager.end.showModalCloseable(true) { close ->
               AddGroupMembersView(rhId, groupInfo, creatingGroup = true, chatModel, close)
@@ -54,6 +58,8 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit) {
               GroupLinkView(chatModel, rhId, groupInfo, connReqContact = null, memberRole = null, onGroupLinkUpdated = null, creatingGroup = true, close)
             }
           }
+        } else {
+          chatModel.newChatConnectionStage.value = NewChatConnectionStage.ERROR
         }
       }
     },

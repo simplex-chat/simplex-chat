@@ -44,9 +44,9 @@ import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
 private fun showNewChatSheet() {
-  ModalManager.start.closeModals()
-  ModalManager.start.showModalCloseable{
-    NewChatSheet(rh = chatModel.currentRemoteHost.value)
+  ModalManager.center.closeModals()
+  ModalManager.center.showModalCloseable { close ->
+    NewChatSheet(rh = chatModel.currentRemoteHost.value, close)
   }
 }
 

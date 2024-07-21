@@ -146,7 +146,7 @@ private fun ContactActionsSection(contactActions: @Composable () -> Unit, rh: Re
         SectionView(padding = PaddingValues(bottom = DEFAULT_PADDING)) {
             SectionItemView(
                 click = {
-                    ModalManager.start.showCustomModal { close -> DeletedContactsView(
+                    ModalManager.center.showCustomModal { close -> DeletedContactsView(
                         rh = rh,
                         close = close)
                     }

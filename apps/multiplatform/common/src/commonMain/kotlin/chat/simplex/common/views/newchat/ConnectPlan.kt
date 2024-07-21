@@ -332,6 +332,8 @@ suspend fun connectViaUri(
   val connLinkType = if (connectionPlan != null) planToConnectionLinkType(connectionPlan) else ConnectionLinkType.INVITATION
   if (pcc != null) {
     chatModel.updateContactConnection(rhId, pcc)
+    chatModel.newChatConnectionStage.value = NewChatConnectionStage.COMPLETED;
+
     close?.invoke()
     AlertManager.privacySensitive.showAlertMsg(
       title = generalGetString(MR.strings.connection_request_sent),
@@ -343,6 +345,8 @@ suspend fun connectViaUri(
       },
       hostDevice = hostDevice(rhId),
     )
+  } else {
+    chatModel.newChatConnectionStage.value = NewChatConnectionStage.ERROR;
   }
   cleanup?.invoke()
 }
