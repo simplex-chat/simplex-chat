@@ -115,8 +115,13 @@
   <string name="network_error_broker_host_desc">Server address is incompatible with network settings: %1$s.</string>
   <string name="network_error_broker_version_desc">Server version is incompatible with your app: %1$s.</string>
   <string name="private_routing_error">Private routing error</string>
+  <string name="smp_proxy_error_connecting">Error connecting to forwarding server %1$s. Please try later.</string>
+  <string name="smp_proxy_error_broker_host">Forwarding server address is incompatible with network settings: %1$s.</string>
+  <string name="smp_proxy_error_broker_version">Forwarding server version is incompatible with network settings: %1$s.</string>
+  <string name="proxy_destination_error_failed_to_connect">Forwarding server %1$s failed to connect to destination server %2$s. Please try later.</string>
+  <string name="proxy_destination_error_broker_host">Destination server address of %1$s is incompatible with forwarding server %2$s settings.</string>
+  <string name="proxy_destination_error_broker_version">Destination server version of %1$s is incompatible with forwarding server %2$s.</string>
   <string name="please_try_later">Please try later.</string>
-  <string name="proxy_error_broker_version_desc">Server version is incompatible with network settings: %1$s.</string>
   <string name="error_sending_message">Error sending message</string>
   <string name="error_creating_message">Error creating message</string>
   <string name="error_loading_details">Error loading details</string>
