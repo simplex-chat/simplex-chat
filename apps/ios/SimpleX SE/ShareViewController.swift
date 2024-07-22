@@ -28,54 +28,14 @@ class ShareViewController: UIHostingController<ShareView> {
     override func viewDidLoad() {
         if let item = extensionContext?.inputItems.first as? NSExtensionItem {
             model.completion = { error in
+                
                 if let error {
                     self.extensionContext!.cancelRequest(withError: error)
                 } else {
-                    self.extensionContext!.completeRequest(returningItems: [item]) { expired in
-                        self.handleShutDown(expired: expired)
-                    }
+                    self.extensionContext!.completeRequest(returningItems: [item])
                 }
             }
             Task { await MainActor.run { model.item = item } }
         }
-    }
-
-    override func viewDidDisappear(_ animated: Bool) {
-        // In case user dismisses the sheet, while sending a file
-        if let item = extensionContext?.inputItems.first as? NSExtensionItem {
-            if model.bottomBar.isLoading {
-                self.extensionContext!.completeRequest(returningItems: [item]) { expired in
-                    self.handleShutDown(expired: expired)
-                }
-            }
-        }
-    }
-
-    /// System will call this function twice:
-    /// - first time with `expired = false` giving time to do background processing
-    /// - second time with `expired = true` shortly before terminating the process
-    private func handleShutDown(expired: Bool) {
-        if expired {
-            let content = UNMutableNotificationContent()
-            content.title = "File Upload Failed"
-            content.body = "Please open SimpleX app to complete file upload"
-            content.sound = UNNotificationSound.default
-            UNUserNotificationCenter.current()
-                .add(
-                    UNNotificationRequest(
-                        identifier: appNotificationId,
-                        content: content,
-                        trigger: UNTimeIntervalNotificationTrigger(
-                            timeInterval: .zero,
-                            repeats: false
-                        )
-                    )
-                ) { error in
-                    if let error {
-                        logger.error("addNotification error: \(error.localizedDescription)")
-                    }
-                }
-        }
-        let _ = sendSimpleXCmd(.apiStopChat)
     }
 }
