@@ -457,7 +457,8 @@ struct CIVideoView: View {
             )
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now()) {
-                    m.stopPreviousRecPlay = url
+                    // Prevent feedback loop - setting `ChatModel`s property causes `onAppear` to be called on iOS17+
+                    if m.stopPreviousRecPlay != url { m.stopPreviousRecPlay = url }
                     if let player = fullPlayer {
                         player.play()
                         var played = false
