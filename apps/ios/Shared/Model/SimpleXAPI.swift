@@ -1404,6 +1404,14 @@ func apiGetVersion() throws -> CoreVersionInfo {
     throw r
 }
 
+func getAgentSubsTotal() throws -> (SMPServerSubs, Bool) {
+    let userId = try currentUserId("getAgentSubsTotal")
+    let r = chatSendCmdSync(.getAgentSubsTotal(userId: userId), log: false)
+    if case let .agentSubsTotal(_, subsTotal, hasSession) = r { return (subsTotal, hasSession) }
+    logger.error("getAgentSubsTotal error: \(String(describing: r))")
+    throw r
+}
+
 func getAgentServersSummary() throws -> PresentedServersSummary {
     let userId = try currentUserId("getAgentServersSummary")
     let r = chatSendCmdSync(.getAgentServersSummary(userId: userId), log: false)
