@@ -409,8 +409,11 @@ fun openKnownContact(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, co
   withBGApi {
     val c = chatModel.getContactChat(contact.contactId)
     if (c != null) {
+      chatModel.newChatConnectionStage.value = NewChatConnectionStage.COMPLETED
       close?.invoke()
       openDirectChat(rhId, contact.contactId, chatModel)
+    } else {
+      chatModel.newChatConnectionStage.value = NewChatConnectionStage.ERROR
     }
   }
 }
@@ -491,7 +494,10 @@ fun openKnownGroup(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, grou
     val g = chatModel.getGroupChat(groupInfo.groupId)
     if (g != null) {
       close?.invoke()
+      chatModel.newChatConnectionStage.value = NewChatConnectionStage.COMPLETED
       openGroupChat(rhId, groupInfo.groupId, chatModel)
+    } else {
+      chatModel.newChatConnectionStage.value = NewChatConnectionStage.ERROR
     }
   }
 }
