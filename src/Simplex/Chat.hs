@@ -2267,7 +2267,7 @@ processChatCommand' vr = \case
     cfg <- asks config
     (users, smpServers, xftpServers) <-
       withStore' $ \db -> (,,) <$> getUsers db <*> getServers db cfg user SPSMP <*> getServers db cfg user SPXFTP
-    let presentedServersSummary = toPresentedServersSummary agentServersSummary users user smpServers xftpServers
+    let presentedServersSummary = toPresentedServersSummary agentServersSummary users user smpServers xftpServers _defaultNtfServers
     pure $ CRAgentServersSummary user presentedServersSummary
     where
       getServers :: (ProtocolTypeI p, UserProtocol p) => DB.Connection -> ChatConfig -> User -> SProtocolType p -> IO (NonEmpty (ProtocolServer p))

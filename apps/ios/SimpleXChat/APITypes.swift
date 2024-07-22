@@ -2277,7 +2277,7 @@ public struct AppFilePaths: Encodable {
     public let appAssetsFolder: String
 }
 
-public struct PresentedServersSummary: Codable {
+public struct PresentedServersSummary: Decodable {
     public var statsStartedAt: Date
     public var allUsersSMP: SMPServersSummary
     public var allUsersXFTP: XFTPServersSummary
@@ -2285,20 +2285,20 @@ public struct PresentedServersSummary: Codable {
     public var currentUserXFTP: XFTPServersSummary
 }
 
-public struct SMPServersSummary: Codable {
+public struct SMPServersSummary: Decodable {
     public var smpTotals: SMPTotals
     public var currentlyUsedSMPServers: [SMPServerSummary]
     public var previouslyUsedSMPServers: [SMPServerSummary]
     public var onlyProxiedSMPServers: [SMPServerSummary]
 }
 
-public struct SMPTotals: Codable {
+public struct SMPTotals: Decodable {
     public var sessions: ServerSessions
     public var subs: SMPServerSubs
     public var stats: AgentSMPServerStatsData
 }
 
-public struct SMPServerSummary: Codable, Identifiable {
+public struct SMPServerSummary: Decodable, Identifiable {
     public var smpServer: String
     public var known: Bool?
     public var sessions: ServerSessions?
@@ -2314,7 +2314,7 @@ public struct SMPServerSummary: Codable, Identifiable {
     public var subsOrNew: SMPServerSubs { subs ?? SMPServerSubs.newSMPServerSubs }
 }
 
-public struct ServerSessions: Codable {
+public struct ServerSessions: Decodable {
     public var ssConnected: Int
     public var ssErrors: Int
     public var ssConnecting: Int
@@ -2326,7 +2326,7 @@ public struct ServerSessions: Codable {
     )
 }
 
-public struct SMPServerSubs: Codable {
+public struct SMPServerSubs: Decodable {
     public var ssActive: Int
     public var ssPending: Int
 
@@ -2348,7 +2348,7 @@ public struct SMPServerSubs: Codable {
     }
 }
 
-public struct AgentSMPServerStatsData: Codable {
+public struct AgentSMPServerStatsData: Decodable {
     public var _sentDirect: Int
     public var _sentViaProxy: Int
     public var _sentProxied: Int
@@ -2377,20 +2377,24 @@ public struct AgentSMPServerStatsData: Codable {
     public var _connSubAttempts: Int
     public var _connSubIgnored: Int
     public var _connSubErrs: Int
+    public var _ntfKey: Int
+    public var _ntfKeyAttempts: Int
+    public var _ntfKeyDeleted: Int
+    public var _ntfKeyDeleteAttempts: Int
 }
 
-public struct XFTPServersSummary: Codable {
+public struct XFTPServersSummary: Decodable {
     public var xftpTotals: XFTPTotals
     public var currentlyUsedXFTPServers: [XFTPServerSummary]
     public var previouslyUsedXFTPServers: [XFTPServerSummary]
 }
 
-public struct XFTPTotals: Codable {
+public struct XFTPTotals: Decodable {
     public var sessions: ServerSessions
     public var stats: AgentXFTPServerStatsData
 }
 
-public struct XFTPServerSummary: Codable, Identifiable {
+public struct XFTPServerSummary: Decodable, Identifiable {
     public var xftpServer: String
     public var known: Bool?
     public var sessions: ServerSessions?
@@ -2402,7 +2406,7 @@ public struct XFTPServerSummary: Codable, Identifiable {
     public var id: String { xftpServer }
 }
 
-public struct AgentXFTPServerStatsData: Codable {
+public struct AgentXFTPServerStatsData: Decodable {
     public var _uploads: Int
     public var _uploadsSize: Int64
     public var _uploadAttempts: Int
@@ -2415,4 +2419,13 @@ public struct AgentXFTPServerStatsData: Codable {
     public var _deletions: Int
     public var _deleteAttempts: Int
     public var _deleteErrs: Int
+}
+
+public struct AgentNtfServerStatsData: Decodable {
+    public var _ntfCreated: Int
+    public var _ntfCreateAttempts: Int
+    public var _ntfChecked: Int
+    public var _ntfCheckAttempts: Int
+    public var _ntfDeleted: Int
+    public var _ntfDelAttempts: Int
 }

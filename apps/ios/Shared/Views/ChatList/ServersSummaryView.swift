@@ -589,7 +589,7 @@ struct DetailedSMPStatsView: View {
                 infoRow(Text(verbatim: "NO_MSG errors"), numOrDash(stats._ackNoMsgErrs)).padding(.leading, 24)
                 infoRow("other errors", numOrDash(stats._ackOtherErrs)).padding(.leading, 24)
             }
-            Section {
+            Section("Connections") {
                 infoRow("Created", numOrDash(stats._connCreated))
                 infoRow("Secured", numOrDash(stats._connCreated))
                 infoRow("Completed", numOrDash(stats._connCompleted))
@@ -598,8 +598,12 @@ struct DetailedSMPStatsView: View {
                 infoRowTwoValues("Subscribed", "attempts", stats._connSubscribed, stats._connSubAttempts)
                 infoRow("Subscriptions ignored", numOrDash(stats._connSubIgnored))
                 infoRow("Subscription errors", numOrDash(stats._connSubErrs))
+            }
+            Section {
+                infoRowTwoValues("Enabled", "attempts", stats._ntfKey, stats._ntfKeyAttempts)
+                infoRowTwoValues("Disabled", "attempts", stats._ntfKeyDeleted, stats._ntfKeyDeleteAttempts)
             } header: {
-                Text("Connections")
+                Text("Connection notifications")
             } footer: {
                 Text("Starting from \(localTimestamp(statsStartedAt)).")
             }
