@@ -593,7 +593,6 @@ struct ChatView: View {
     }
 
     func stopAudioPlayer() {
-        logger.debug("LALAL STOPPING \(String(describing: voiceItemsState.values.first?.playbackState)) \(String(describing: voiceItemsState.values.first?.playbackTime))")
         voiceItemsState.values.forEach { $0.audioPlayer?.stop() }
         voiceItemsState = [:]
     }
@@ -764,7 +763,8 @@ struct ChatView: View {
                     allowMenu: $allowMenu,
                     audioPlayer: $audioPlayer,
                     playbackState: $playbackState,
-                    playbackTime: $playbackTime
+                    playbackTime: $playbackTime,
+                    voiceItemsState: $voiceItemsState
                 )
                 .modifier(ChatItemClipped(ci))
                 .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
