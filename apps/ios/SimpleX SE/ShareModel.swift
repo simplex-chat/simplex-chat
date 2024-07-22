@@ -70,10 +70,8 @@ class ShareModel: ObservableObject {
             switch await sendMessage() {
             case let .success(item):
                 let isGroupChat = item.chatInfo.chatType == .group
-                if !isGroupChat {
-                    await MainActor.run {
-                        self.bottomBar = .loadingBar(progress: .zero)
-                    }
+                await MainActor.run {
+                    self.bottomBar = .loadingBar(progress: .zero)
                 }
                 completion(
                     await handleEvents(isGroupChat: isGroupChat, chatItemId: item.chatItem.id)
@@ -183,21 +181,25 @@ class ShareModel: ObservableObject {
     /// Returns when message sending has completed optionally returning and error.
     private func handleEvents(isGroupChat: Bool, chatItemId: ChatItem.ID) async -> ErrorAlert? {
         await withCheckedContinuation { continuation in
+            var isRunning = false
+            var messageComplete = false
+            var fileComplete = false
+            var groupChatTimeout: Task<Void, Never>?
             func isMessage(for item: AChatItem?) -> Bool {
                 item.map { $0.chatItem.id == chatItemId } ?? false
             }
-            func resume(_ errorAlert: ErrorAlert? = nil) {
-                isRunning = false
-                groupChatTimeout?.cancel()
-                continuation.resume(returning: errorAlert)
+            @Sendable func resume(_ errorAlert: ErrorAlert? = nil) {
+                if (messageComplete || !isGroupChat) && fileComplete {
+                    isRunning = false
+                    groupChatTimeout?.cancel()
+                    continuation.resume(returning: errorAlert)
+                }
             }
-            var groupChatTimeout: Task<Void, Never>?
-            var isRunning = true
             while isRunning {
                 let msg = recvSimpleXMsg()
                 switch msg {
                 case let .sndFileProgressXFTP(_, aChatItem, _, sentSize, totalSize):
-                    guard isMessage(for: aChatItem) && !isGroupChat else { continue }
+                    guard isMessage(for: aChatItem) else { continue }
                     Task {
                         await MainActor.run {
                             withAnimation {
@@ -208,6 +210,9 @@ class ShareModel: ObservableObject {
                     }
                 case let .sndFileCompleteXFTP(_, aChatItem, _):
                     guard isMessage(for: aChatItem) else { continue }
+                    if isGroupChat {
+                        await MainActor.run { bottomBar = .loadingSpinner }
+                    }
                     resume()
                 case let .chatItemStatusUpdated(_, aChatItem):
                     guard isMessage(for: aChatItem) else { continue }
@@ -218,31 +223,35 @@ class ShareModel: ObservableObject {
                                 message: LocalizedStringKey(statusInfo.1)
                             )
                         )
-                    } else if isGroupChat, groupChatTimeout == nil {
-                        logger.info("group chat timeout: started")
-                        groupChatTimeout = Task {
-                            do {
-                                await MainActor.run { bottomBar = .loadingBar(progress: .zero) }
-                                try await Task.sleep(for: .seconds(0.2))
-                                await MainActor.run {
-                                    withAnimation(.linear(duration: 5)) { bottomBar = .loadingBar(progress: 1) }
+                    } else if isGroupChat, case let .sndSent(sndProgress) = aChatItem.chatItem.meta.itemStatus {
+                        switch sndProgress {
+                        case .complete:
+                            messageComplete = true
+                            resume()
+                        case .partial:
+                            if groupChatTimeout == nil && !messageComplete {
+                                logger.info("group chat timeout: started")
+                                groupChatTimeout = Task {
+                                    do {
+                                        try await Task.sleep(for: .seconds(5))
+                                        logger.info("group chat timeout: willResume")
+                                        messageComplete = true
+                                        resume()
+                                    } catch {
+                                        logger.info("group chat timeout: cancelled")
+                                    }
                                 }
-                                try await Task.sleep(for: .seconds(5))
-                                logger.info("group chat timeout: willResume")
-                                continuation.resume(returning: nil)
-                            } catch {
-                                logger.info("group chat timeout: cancelled")
                             }
                         }
                     }
                 case let .sndFileError(_, aChatItem, _, errorMessage):
                     guard isMessage(for: aChatItem) else { continue }
                     if let aChatItem { cleanupFile(aChatItem) }
-                    resume(ErrorAlert(title: "Send File Error", message: "\(errorMessage)"))
+                    resume(ErrorAlert(title: "File error", message: "\(errorMessage)"))
                 case let .sndFileWarning(_, aChatItem, _, errorMessage):
                     guard isMessage(for: aChatItem) else { continue }
                     if let aChatItem { cleanupFile(aChatItem) }
-                    resume(ErrorAlert(title: "Send File Error", message: "\(errorMessage)"))
+                    resume(ErrorAlert(title: "File error", message: "\(errorMessage)"))
                 case let .chatError(_, chatError):
                     resume(ErrorAlert(chatError))
                 case let .chatCmdError(_, chatError):
