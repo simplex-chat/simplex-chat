@@ -267,7 +267,7 @@ struct ChatListView: View {
 
 struct SubsStatusIndicator: View {
     @State private var subs: SMPServerSubs = SMPServerSubs.newSMPServerSubs
-    @State private var sess: ServerSessions = ServerSessions.newServerSessions
+    @State private var hasSess: Bool = false
     @State private var timer: Timer? = nil
     @State private var showServersSummary = false
 
@@ -278,9 +278,9 @@ struct SubsStatusIndicator: View {
             showServersSummary = true
         } label: {
             HStack(spacing: 4) {
-                SubscriptionStatusIndicatorView(subs: subs, sess: sess)
+                SubscriptionStatusIndicatorView(subs: subs, hasSess: hasSess)
                 if showSubscriptionPercentage {
-                    SubscriptionStatusPercentageView(subs: subs, sess: sess)
+                    SubscriptionStatusPercentageView(subs: subs, hasSess: hasSess)
                 }
             }
         }
@@ -310,7 +310,7 @@ struct SubsStatusIndicator: View {
 
     private func getSubsTotal() {
         do {
-            (subs, sess) = try getAgentSubsTotal()
+            (subs, hasSess) = try getAgentSubsTotal()
         } catch let error {
             logger.error("getSubsTotal error: \(responseError(error))")
         }

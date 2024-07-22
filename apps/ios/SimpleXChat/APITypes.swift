@@ -681,7 +681,7 @@ public enum ChatResponse: Decodable, Error {
     // misc
     case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
     case cmdOk(user: UserRef?)
-    case agentSubsTotal(user: UserRef, subsTotal: SMPServerSubs, sessTotal: ServerSessions)
+    case agentSubsTotal(user: UserRef, subsTotal: SMPServerSubs, hasSession: Bool)
     case agentServersSummary(user: UserRef, serversSummary: PresentedServersSummary)
     case agentSubsSummary(user: UserRef, subsSummary: SMPServerSubs)
     case chatCmdError(user_: UserRef?, chatError: ChatError)
@@ -1010,7 +1010,7 @@ public enum ChatResponse: Decodable, Error {
             case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
             case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
             case .cmdOk: return noDetails
-            case let .agentSubsTotal(u, subsTotal, sessTotal): return withUser(u, "subsTotal: \(String(describing: subsTotal))\nsessTotal: \(String(describing: sessTotal))")
+            case let .agentSubsTotal(u, subsTotal, hasSession): return withUser(u, "subsTotal: \(String(describing: subsTotal))\nhasSession: \(hasSession)")
             case let .agentServersSummary(u, serversSummary): return withUser(u, String(describing: serversSummary))
             case let .agentSubsSummary(u, subsSummary): return withUser(u, String(describing: subsSummary))
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
@@ -2330,6 +2330,8 @@ public struct ServerSessions: Codable {
         ssErrors: 0,
         ssConnecting: 0
     )
+
+    public var hasSess: Bool { ssConnected > 0 }
 }
 
 public struct SMPServerSubs: Codable {
