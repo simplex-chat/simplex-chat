@@ -497,4 +497,15 @@
     <string name="servers_info_connected_servers_section_header">Các máy chủ đã kết nối</string>
     <string name="acknowledgement_errors">Lỗi xác nhận</string>
     <string name="completed">Đã hoàn thành</string>
+    <string name="chunks_deleted">Các khúc đã bị xóa</string>
+    <string name="chunks_downloaded">Các khúc đã được tải xuống</string>
+    <string name="chunks_uploaded">Các khúc đã được tải lên</string>
+    <string name="current_user">Hồ sơ hiện tại</string>
+    <string name="decryption_errors">lỗi giải mã</string>
+    <string name="servers_info_detailed_statistics">Thống kê chi tiết</string>
+    <string name="servers_info_details">Chi tiết</string>
+    <string name="connections">Các kết nối</string>
+    <string name="created">Đã tạo</string>
+    <string name="deleted">Đã xóa</string>
+    <string name="deletion_errors">Lỗi xóa</string>
 </resources>
