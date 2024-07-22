@@ -287,14 +287,14 @@ private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableSt
 @Composable
 fun SubscriptionStatusIndicator(click: (() -> Unit)) {
   var subs by remember { mutableStateOf(SMPServerSubs.newSMPServerSubs) }
-  var sess by remember { mutableStateOf(ServerSessions.newServerSessions) }
+  var hasSess by remember { mutableStateOf(false) }
   val scope = rememberCoroutineScope()
 
   suspend fun setSubsTotal() {
     val r = chatModel.controller.getAgentSubsTotal(chatModel.remoteHostId())
     if (r != null) {
       subs = r.first
-      sess = r.second
+      hasSess = r.second
     }
   }
 
@@ -311,7 +311,7 @@ fun SubscriptionStatusIndicator(click: (() -> Unit)) {
   }
 
   SimpleButtonFrame(click = click) {
-    SubscriptionStatusIndicatorView(subs = subs, sess = sess)
+    SubscriptionStatusIndicatorView(subs = subs, hasSess = hasSess)
   }
 }
 

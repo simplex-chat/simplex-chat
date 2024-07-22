@@ -76,7 +76,7 @@ fun subscriptionStatusColorAndPercentage(
   online: Boolean,
   socksProxy: String?,
   subs: SMPServerSubs,
-  sess: ServerSessions
+  hasSess: Boolean
 ): SubscriptionStatus {
 
   fun roundedToQuarter(n: Float): Float = when {
@@ -91,16 +91,16 @@ fun subscriptionStatusColorAndPercentage(
 
   return if (online && subs.total > 0) {
     if (subs.ssActive == 0) {
-      if (sess.ssConnected == 0)
-        noConnColorAndPercent
-      else
+      if (hasSess)
         SubscriptionStatus(activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
+      else
+        noConnColorAndPercent
     } else { // ssActive > 0
-      if (sess.ssConnected == 0)
+      if (hasSess)
+        SubscriptionStatus(activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
+      else
         // This would mean implementation error
         SubscriptionStatus(SubscriptionColorType.ACTIVE_DISCONNECTED, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
-      else
-        SubscriptionStatus(activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
     }
   } else noConnColorAndPercent
 }
@@ -116,9 +116,9 @@ private fun SubscriptionStatusIndicatorPercentage(percentageText: String) {
 }
 
 @Composable
-fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, sess: ServerSessions, leadingPercentage: Boolean = false) {
+fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, hasSess: Boolean, leadingPercentage: Boolean = false) {
   val netCfg = rememberUpdatedState(chatModel.controller.getNetCfg())
-  val statusColorAndPercentage = subscriptionStatusColorAndPercentage(chatModel.networkInfo.value.online, netCfg.value.socksProxy, subs, sess)
+  val statusColorAndPercentage = subscriptionStatusColorAndPercentage(chatModel.networkInfo.value.online, netCfg.value.socksProxy, subs, hasSess)
   val pref = remember { chatModel.controller.appPrefs.networkShowSubscriptionPercentage }
   val percentageText = "${(floor(statusColorAndPercentage.statusPercent * 100)).toInt()}%"
 
@@ -193,7 +193,7 @@ private fun SMPServerView(srvSumm: SMPServerSummary, statsStartedAt: Instant, rh
     )
     if (srvSumm.subs != null) {
       Spacer(Modifier.fillMaxWidth().weight(1f))
-      SubscriptionStatusIndicatorView(subs = srvSumm.subs, sess = srvSumm.sessionsOrNew, leadingPercentage = true)
+      SubscriptionStatusIndicatorView(subs = srvSumm.subs, hasSess = srvSumm.sessionsOrNew.hasSess, leadingPercentage = true)
     } else if (srvSumm.sessions != null) {
       Spacer(Modifier.fillMaxWidth().weight(1f))
       Icon(painterResource(MR.images.ic_arrow_upward), contentDescription = null, tint = SessIconColor(srvSumm.sessions))
@@ -334,7 +334,7 @@ private fun SMPSubscriptionsSection(totals: SMPTotals) {
         style = MaterialTheme.typography.body2,
         fontSize = 12.sp
       )
-      SubscriptionStatusIndicatorView(totals.subs, totals.sessions)
+      SubscriptionStatusIndicatorView(totals.subs, totals.sessions.hasSess)
     }
     Column(Modifier.padding(PaddingValues()).fillMaxWidth()) {
       InfoRow(
@@ -364,7 +364,7 @@ private fun SMPSubscriptionsSection(subs: SMPServerSubs, summary: SMPServerSumma
         style = MaterialTheme.typography.body2,
         fontSize = 12.sp
       )
-      SubscriptionStatusIndicatorView(subs, summary.sessionsOrNew)
+      SubscriptionStatusIndicatorView(subs, summary.sessionsOrNew.hasSess)
     }
     Column(Modifier.padding(PaddingValues()).fillMaxWidth()) {
       InfoRow(
