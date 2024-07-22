@@ -8,7 +8,6 @@
 
 import UIKit
 import SwiftUI
-import UserNotifications
 import SimpleXChat
 
 /// Extension Entry point

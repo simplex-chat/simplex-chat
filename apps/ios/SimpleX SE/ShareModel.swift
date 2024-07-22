@@ -53,14 +53,14 @@ class ShareModel: ObservableObject {
 
     init() {
         Task {
-            switch self.fetchChats() {
+            switch fetchChats() {
             case let .success(chats):
                 await MainActor.run {
                     self.chats = chats
-                    withAnimation { self.isLoaded = true }
+                    withAnimation { isLoaded = true }
                 }
             case let .failure(error):
-                await MainActor.run { self.errorAlert = error }
+                await MainActor.run { errorAlert = error }
             }
         }
     }
@@ -222,14 +222,13 @@ class ShareModel: ObservableObject {
                         logger.info("group chat timeout: started")
                         groupChatTimeout = Task {
                             do {
+                                await MainActor.run { bottomBar = .loadingBar(progress: .zero) }
+                                try await Task.sleep(for: .seconds(0.2))
+                                await MainActor.run {
+                                    withAnimation(.linear(duration: 5)) { bottomBar = .loadingBar(progress: 1) }
+                                }
                                 try await Task.sleep(for: .seconds(5))
                                 logger.info("group chat timeout: willResume")
-                                await MainActor.run {
-                                    bottomBar = .loadingBar(progress: .zero)
-                                    withAnimation(.linear(duration: 5)) {
-                                        bottomBar = .loadingBar(progress: 1)
-                                    }
-                                }
                                 continuation.resume(returning: nil)
                             } catch {
                                 logger.info("group chat timeout: cancelled")
