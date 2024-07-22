@@ -205,29 +205,29 @@ class ShareModel: ObservableObject {
         let ch = CompletionHandler()
         while await ch.isRunning {
             switch recvSimpleXMsg(messageTimeout: 1_000_000) {
-            case let .sndFileProgressXFTP(_, aChatItem, _, sentSize, totalSize):
-                guard isMessage(for: aChatItem) else { continue }
+            case let .sndFileProgressXFTP(_, ci, _, sentSize, totalSize):
+                guard isMessage(for: ci) else { continue }
                 await MainActor.run {
                     withAnimation {
                         let progress = Double(sentSize) / Double(totalSize)
                         bottomBar = .loadingBar(progress: progress)
                     }
                 }
-            case let .sndFileCompleteXFTP(_, aChatItem, _):
-                guard isMessage(for: aChatItem) else { continue }
+            case let .sndFileCompleteXFTP(_, ci, _):
+                guard isMessage(for: ci) else { continue }
                     if isGroupChat {
                         await MainActor.run { bottomBar = .loadingSpinner }
                     }
                     await ch.completeFile()
                     if await !ch.isRunning { break }
-            case let .chatItemStatusUpdated(_, aChatItem):
-                guard isMessage(for: aChatItem) else { continue }
-                if let statusInfo = aChatItem.chatItem.meta.itemStatus.statusInfo {
+            case let .chatItemStatusUpdated(_, ci):
+                guard isMessage(for: ci) else { continue }
+                if let (title, message) = ci.chatItem.meta.itemStatus.statusInfo {
                     return ErrorAlert(
-                        title: LocalizedStringKey(statusInfo.0),
-                        message: LocalizedStringKey(statusInfo.1)
+                        title: "\(title)",
+                        message: "\(message)"
                     )
-                } else if case let .sndSent(sndProgress) = aChatItem.chatItem.meta.itemStatus {
+                } else if case let .sndSent(sndProgress) = ci.chatItem.meta.itemStatus {
                     switch sndProgress {
                     case .complete:
                         await ch.completeMessage()
@@ -240,14 +240,14 @@ class ShareModel: ObservableObject {
                         }
                     }
                 }
-            case let .sndFileError(_, aChatItem, _, errorMessage):
-                guard isMessage(for: aChatItem) else { continue }
-                if let aChatItem { cleanupFile(aChatItem) }
-                return ErrorAlert(title: "File error", message: "\(errorMessage)")
-            case let .sndFileWarning(_, aChatItem, _, errorMessage):
-                guard isMessage(for: aChatItem) else { continue }
-                if let aChatItem { cleanupFile(aChatItem) }
-                return ErrorAlert(title: "File error", message: "\(errorMessage)")
+            case let .sndFileError(_, ci, _, errorMessage):
+                guard isMessage(for: ci) else { continue }
+                if let ci { cleanupFile(ci) }
+                return ErrorAlert(title: "File error", message: "\(fileErrorInfo(ci) ?? errorMessage)")
+            case let .sndFileWarning(_, ci, _, errorMessage):
+                guard isMessage(for: ci) else { continue }
+                if let ci { cleanupFile(ci) }
+                return ErrorAlert(title: "File error", message: "\(fileErrorInfo(ci) ?? errorMessage)")
             case let .chatError(_, chatError):
                 return ErrorAlert(chatError)
             case let .chatCmdError(_, chatError):
@@ -256,6 +256,14 @@ class ShareModel: ObservableObject {
             }
         }
         return nil
+    }
+    
+    private func fileErrorInfo(_ ci: AChatItem?) -> String? {
+        switch ci?.chatItem.file?.fileStatus {
+        case let .sndError(e): e.errorInfo
+        case let .sndWarning(e): e.errorInfo
+        default: nil
+        }
     }
 }
 
