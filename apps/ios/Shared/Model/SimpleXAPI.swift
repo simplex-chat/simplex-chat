@@ -1107,26 +1107,41 @@ func getNetworkErrorAlert(_ r: ChatResponse) -> ErrorAlert? {
     case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TRANSPORT(.version)))):
         return ErrorAlert(title: "Connection error", message: "Server version is incompatible with your app: \(serverHostname(addr)).")
     case let .chatCmdError(_, .errorAgent(.SMP(serverAddress, .PROXY(proxyErr)))):
-        return proxyErrorAlert(proxyErr, serverAddress)
-    case let .chatCmdError(_, .errorAgent(.PROXY(proxyServer, _, .protocolError(.PROXY(proxyErr))))):
-        return proxyErrorAlert(proxyErr, proxyServer)
+        return smpProxyErrorAlert(proxyErr, serverAddress)
+    case let .chatCmdError(_, .errorAgent(.PROXY(proxyServer, relayServer, .protocolError(.PROXY(proxyErr))))):
+        return proxyDestinationErrorAlert(proxyErr, proxyServer, relayServer)
     default:
         return nil
     }
 }
 
-private func proxyErrorAlert(_ proxyErr: ProxyError, _ srvAddr: String) -> ErrorAlert? {
+private func smpProxyErrorAlert(_ proxyErr: ProxyError, _ srvAddr: String) -> ErrorAlert? {
     switch proxyErr {
     case .BROKER(brokerErr: .TIMEOUT):
-        return ErrorAlert(title: "Private routing error", message: "Please try later.")
+        return ErrorAlert(title: "Private routing error", message: "Error connecting to forwarding server \(serverHostname(srvAddr)). Please try later.")
     case .BROKER(brokerErr: .NETWORK):
-        return ErrorAlert(title: "Private routing error", message: "Please try later.")
-    case .NO_SESSION:
-        return ErrorAlert(title: "Private routing error", message: "Please try later.")
+        return ErrorAlert(title: "Private routing error", message: "Error connecting to forwarding server \(serverHostname(srvAddr)). Please try later.")
     case .BROKER(brokerErr: .HOST):
-        return ErrorAlert(title: "Private routing error", message: "Server address is incompatible with network settings: \(serverHostname(srvAddr)).")
+        return ErrorAlert(title: "Private routing error", message: "Forwarding server address is incompatible with network settings: \(serverHostname(srvAddr)).")
     case .BROKER(brokerErr: .TRANSPORT(.version)):
-        return ErrorAlert(title: "Private routing error", message: "Server version is incompatible with network settings: \(serverHostname(srvAddr)).")
+        return ErrorAlert(title: "Private routing error", message: "Forwarding server version is incompatible with network settings: \(serverHostname(srvAddr)).")
+    default:
+        return nil
+    }
+}
+
+private func proxyDestinationErrorAlert(_ proxyErr: ProxyError, _ proxyServer: String, _ relayServer: String) -> ErrorAlert? {
+    switch proxyErr {
+    case .BROKER(brokerErr: .TIMEOUT):
+        return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
+    case .BROKER(brokerErr: .NETWORK):
+        return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
+    case .NO_SESSION:
+        return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
+    case .BROKER(brokerErr: .HOST):
+        return ErrorAlert(title: "Private routing error", message: "Destination server address of \(serverHostname(relayServer)) is incompatible with forwarding server \(serverHostname(proxyServer)) settings.")
+    case .BROKER(brokerErr: .TRANSPORT(.version)):
+        return ErrorAlert(title: "Private routing error", message: "Destination server version of \(serverHostname(relayServer)) is incompatible with forwarding server \(serverHostname(proxyServer)).")
     default:
         return nil
     }
@@ -1386,6 +1401,14 @@ func apiSendMemberContactInvitation(_ contactId: Int64, _ msg: MsgContent) async
 func apiGetVersion() throws -> CoreVersionInfo {
     let r = chatSendCmdSync(.showVersion)
     if case let .versionInfo(info, _, _) = r { return info }
+    throw r
+}
+
+func getAgentSubsTotal() throws -> (SMPServerSubs, Bool) {
+    let userId = try currentUserId("getAgentSubsTotal")
+    let r = chatSendCmdSync(.getAgentSubsTotal(userId: userId), log: false)
+    if case let .agentSubsTotal(_, subsTotal, hasSession) = r { return (subsTotal, hasSession) }
+    logger.error("getAgentSubsTotal error: \(String(describing: r))")
     throw r
 }
 
