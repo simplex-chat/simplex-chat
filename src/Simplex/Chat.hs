@@ -2262,6 +2262,11 @@ processChatCommand' vr = \case
         CLUserContact ucId -> "UserContact " <> show ucId
         CLFile fId -> "File " <> show fId
   DebugEvent event -> toView event >> ok_
+  GetAgentSubsTotal userId -> withUserId userId $ \user -> do
+    users <- withStore' $ \db -> getUsers db
+    let userIds = map aUserId $ filter (\u -> isNothing (viewPwdHash u) || aUserId u == aUserId user) users
+    (subsTotal, hasSession) <- lift $ withAgent' $ \a -> getAgentSubsTotal a userIds
+    pure $ CRAgentSubsTotal user subsTotal hasSession
   GetAgentServersSummary userId -> withUserId userId $ \user -> do
     agentServersSummary <- lift $ withAgent' getAgentServersSummary
     cfg <- asks config
@@ -7672,6 +7677,7 @@ chatCommandP =
       ("/version" <|> "/v") $> ShowVersion,
       "/debug locks" $> DebugLocks,
       "/debug event " *> (DebugEvent <$> jsonP),
+      "/get subs total " *> (GetAgentSubsTotal <$> A.decimal),
       "/get servers summary " *> (GetAgentServersSummary <$> A.decimal),
       "/reset servers stats" $> ResetAgentServersStats,
       "/get subs" $> GetAgentSubs,
