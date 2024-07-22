@@ -64,7 +64,6 @@ import chat.simplex.common.platform.getKeyboardState
 import chat.simplex.common.platform.hideKeyboard
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
-import chat.simplex.common.views.chatlist.connect
 import chat.simplex.common.views.helpers.AppBarTitle
 import chat.simplex.common.views.helpers.KeyChangeEffect
 import chat.simplex.common.views.helpers.KeyboardState
@@ -74,11 +73,14 @@ import chat.simplex.common.views.helpers.ModalView
 import chat.simplex.common.views.helpers.SearchTextField
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.views.helpers.hostDevice
+import chat.simplex.common.views.helpers.withBGApi
+import chat.simplex.common.views.newchat.planAndConnect
 import chat.simplex.common.views.newchat.strHasSingleSimplexLink
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.distinctUntilChanged
+import java.net.URI
 
 enum class ContactType {
     CARD, REQUEST, RECENT, REMOVED, UNKNOWN
@@ -431,3 +433,16 @@ private fun filteredContactChats(
 
 private fun viewNameContains(cInfo: ChatInfo, s: String): Boolean =
     cInfo.chatViewName.lowercase().contains(s.lowercase())
+
+private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<String?>, cleanup: (() -> Unit)?) {
+    withBGApi {
+        planAndConnect(
+            chatModel.remoteHostId(),
+            URI.create(link),
+            incognito = null,
+            filterKnownContact = { searchChatFilteredBySimplexLink.value = it.id },
+            close = null,
+            cleanup = cleanup,
+        )
+    }
+}
