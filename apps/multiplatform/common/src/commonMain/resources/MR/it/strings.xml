@@ -1989,4 +1989,10 @@
     <string name="app_check_for_updates_download_completed_title">Aggiornamento dell\'app scaricato</string>
     <string name="app_check_for_updates_notice_title">Cerca aggiornamenti</string>
     <string name="app_check_for_updates_button_install">Installa aggiornamento</string>
+    <string name="proxy_destination_error_failed_to_connect">Il server di inoltro %1$s non è riuscito a connettersi al server di destinazione %2$s. Riprova più tardi.</string>
+    <string name="smp_proxy_error_broker_host">L\'indirizzo del server di inoltro è incompatibile con le impostazioni di rete: %1$s.</string>
+    <string name="proxy_destination_error_broker_host">L\'indirizzo del server di destinazione di %1$s è incompatibile con le impostazioni del server di inoltro %2$s.</string>
+    <string name="proxy_destination_error_broker_version">La versione del server di destinazione di %1$s è incompatibile con il server di inoltro %2$s.</string>
+    <string name="smp_proxy_error_connecting">Errore di connessione al server di inoltro %1$s. Riprova più tardi.</string>
+    <string name="smp_proxy_error_broker_version">La versione server di inoltro è incompatibile con le impostazioni di rete: %1$s.</string>
 </resources>
