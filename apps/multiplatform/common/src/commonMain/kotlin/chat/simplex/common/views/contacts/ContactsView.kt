@@ -128,7 +128,7 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, close: () -> Unit
             Box(contentAlignment = Alignment.Center) {
                 val bottomPadding = DEFAULT_PADDING
                 AppBarTitle(
-                    stringResource(MR.strings.chat_deleted),
+                    stringResource(MR.strings.deleted_chats),
                     hostDevice(rh?.remoteHostId),
                     bottomPadding = bottomPadding
                 )
@@ -161,11 +161,11 @@ private fun ContactActionsSection(contactActions: @Composable () -> Unit, rh: Re
             ) {
                 Icon(
                     painterResource(MR.images.ic_folder_open),
-                    contentDescription = stringResource(MR.strings.chat_deleted),
+                    contentDescription = stringResource(MR.strings.deleted_chats),
                     tint = MaterialTheme.colors.secondary,
                 )
                 TextIconSpaced(extraPadding = true)
-                Text(text = stringResource(MR.strings.chat_deleted), color = MaterialTheme.colors.onBackground)
+                Text(text = stringResource(MR.strings.deleted_chats), color = MaterialTheme.colors.onBackground)
             }
         }
     }

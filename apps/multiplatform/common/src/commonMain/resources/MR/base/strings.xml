@@ -2223,10 +2223,7 @@
 
   <!-- ContactsView.kt -->
   <string name="contact_type_new">New</string>
-  <string name="contact_type_deleted">Deleted contacts</string>
-  <string name="chat_deleted">Deleted chats</string>
-  <string name="contact_type_recent">Recent</string>
+  <string name="deleted_chats">Deleted chats</string>
   <string name="no_filtered_contacts">No filtered contacts</string>
   <string name="contact_list_header_title">Your contacts</string>
-  <string name="icon_descr_pending_contact_connection">Pending contact connection</string>
 </resources>
