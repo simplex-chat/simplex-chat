@@ -61,6 +61,13 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                             openLoadedChat(chat, chatModel)
                             ModalManager.start.closeModals()
                         }
+                        ContactType.CARD -> {
+                            directChatAction(
+                                chatModel = chatModel,
+                                rhId = rhId,
+                                contact = chat.chatInfo.contact
+                            )
+                        }
                         else -> {}
                     }
                 },
@@ -84,7 +91,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                 },
                 click = {
                     contactRequestAlertDialog(
-                        chat.remoteHostId,
+                        rhId,
                         chat.chatInfo,
                         chatModel,
                         onSuccess = {
