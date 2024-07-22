@@ -10,16 +10,16 @@ import SwiftUI
 
 public struct ErrorAlert: Error {
     public let title: LocalizedStringKey
-    public let message: LocalizedStringKey
+    public let message: LocalizedStringKey?
 
-    public init(title: LocalizedStringKey, message: LocalizedStringKey) {
+    public init(title: LocalizedStringKey, message: LocalizedStringKey?) {
         self.title = title
         self.message = message
     }
 
-    public init(_ message: LocalizedStringKey) {
-        self.title = "Error Occurred"
-        self.message = message
+    public init(_ title: LocalizedStringKey) {
+        self.title = title
+        self.message = nil
     }
 
     public init(_ error: any Error) {
@@ -52,12 +52,20 @@ extension View {
         @ViewBuilder actions: (ErrorAlert) -> A
     ) -> some View {
         if let alert = errorAlert {
+            if let message = alert.message {
                 self.alert(
                     alert.title,
                     isPresented: .constant(errorAlert != nil),
                     actions: { actions(alert) },
-                    message: { Text(alert.message) }
+                    message: { Text(message) }
                 )
+            } else {
+                self.alert(
+                    alert.title,
+                    isPresented: .constant(errorAlert != nil),
+                    actions: { actions(alert) }
+                )
+            }
         } else { self }
     }
 }

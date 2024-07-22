@@ -40,7 +40,7 @@ class ShareModel: ObservableObject {
         }
     }
 
-    var completion: (Error?) -> Void = { _ in
+    var completion: () -> Void = {
         fatalError("completion has not been set")
     }
 
@@ -73,9 +73,13 @@ class ShareModel: ObservableObject {
                 await MainActor.run {
                     self.bottomBar = .loadingBar(progress: .zero)
                 }
-                completion(
-                    await handleEvents(isGroupChat: isGroupChat, chatItemId: item.chatItem.id)
-                )
+                if let e = await handleEvents(isGroupChat: isGroupChat, chatItemId: item.chatItem.id) {
+                    await MainActor.run {
+                        errorAlert = e
+                    }
+                } else {
+                    completion()
+                }
             case let .failure(error):
                 await MainActor.run { self.errorAlert = error }
             }
