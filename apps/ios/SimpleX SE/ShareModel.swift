@@ -24,15 +24,25 @@ class ShareModel: ObservableObject {
     @Published var selected: ChatData?
     @Published var isLoaded = false
     @Published var bottomBar: BottomBar = .sendButton
-    @Published var error: ShareError?
+    @Published var errorAlert: ErrorAlert?
 
     enum BottomBar {
         case sendButton
         case loadingSpinner
         case loadingBar(progress: Double)
+
+        var isLoading: Bool {
+            switch self {
+            case .sendButton: false
+            case .loadingSpinner: true
+            case .loadingBar: true
+            }
+        }
     }
 
-    var completion: ((Error?) -> Void)!
+    var completion: () -> Void = {
+        fatalError("completion has not been set")
+    }
 
     var filteredChats: Array<ChatData> {
         search.isEmpty
@@ -47,34 +57,46 @@ class ShareModel: ObservableObject {
             case let .success(chats):
                 await MainActor.run {
                     self.chats = chats
-                    withAnimation { self.isLoaded = true }
+                    withAnimation { isLoaded = true }
                 }
             case let .failure(error):
-                await MainActor.run { self.error = error }
+                await MainActor.run { errorAlert = error }
             }
         }
     }
 
     func send() {
         Task {
-            switch await self.sendMessage() {
+            switch await sendMessage() {
             case let .success(item):
-                await MainActor.run { self.bottomBar = .loadingBar(progress: .zero) }
-                // Listen to the event loop for progress events
-                EventLoop.shared.set(itemId: item.chatItem.id, model: self)
+                let isGroupChat = item.chatInfo.chatType == .group
+                await MainActor.run {
+                    self.bottomBar = .loadingBar(progress: .zero)
+                }
+                if let e = await handleEvents(isGroupChat: isGroupChat, chatItemId: item.chatItem.id) {
+                    await MainActor.run {
+                        errorAlert = e
+                    }
+                } else {
+                    completion()
+                }
             case let .failure(error):
-                await MainActor.run { self.error = error }
+                await MainActor.run { self.errorAlert = error }
             }
         }
     }
 
-    private func sendMessage() async -> Result<AChatItem, ShareError> {
+    private func sendMessage() async -> Result<AChatItem, ErrorAlert> {
         await MainActor.run { self.bottomBar = .loadingSpinner }
-        guard let chat = selected else { return .failure(.noChatWasSelected) }
-        guard let attachment = item?.attachments?.first else { return .failure(.missingAttachment) }
+        guard let chat = selected else {
+            return .failure(ErrorAlert("Chat not selected"))
+        }
+        guard let attachment = item?.attachments?.first else {
+            return .failure(ErrorAlert("Missing attachment"))
+        }
         do {
             guard let type = attachment.firstMatching(of: [.image, .movie, .data]) else {
-                return .failure(.unsupportedFormat)
+                return .failure(ErrorAlert("Unsupported file format"))
             }
             let url = try await attachment.inPlaceUrl(type: type)
             var cryptoFile: CryptoFile
@@ -86,40 +108,33 @@ class ShareModel: ObservableObject {
 
                 // Animated
                 if attachment.hasItemConformingToTypeIdentifier(UTType.gif.identifier) {
-                    guard let data = try? Data(contentsOf: url), let image = UIImage(data: data) else {
-                        return .failure(.mediaLoading)
-                    }
-                    guard let file = saveAnimImage(image) else {
-                        return .failure(.encryptFile)
-                    }
-                    guard let imageString = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) else {
-                        return .failure(.previewGeneration)
-                    }
-                    cryptoFile = file
-                    msgContent = .image(text: comment, image: imageString)
+                    if let data = try? Data(contentsOf: url),
+                       let image = UIImage(data: data),
+                       let file = saveAnimImage(image),
+                       let imageString = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
+                        cryptoFile = file
+                        msgContent = .image(text: comment, image: imageString)
+                    } else { return .failure(ErrorAlert("Error preparing image")) }
 
                 // Static
                 } else {
-                    guard let image = downsampleImage(at: url, to: MAX_DOWNSAMPLE_SIZE) else {
-                        return .failure(.imageDownsampling)
-                    }
-                    guard let file = saveImage(image) else {
-                        return .failure(.encryptFile)
-                    }
-                    guard let imageString = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) else {
-                        return .failure(.previewGeneration)
-                    }
-                    cryptoFile = file
-                    msgContent = .image(text: comment, image: imageString)
+                    if let image = downsampleImage(at: url, to: MAX_DOWNSAMPLE_SIZE),
+                       let file = saveImage(image),
+                       let imageString = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
+                        cryptoFile = file
+                        msgContent = .image(text: comment, image: imageString)
+                    } else { return .failure(ErrorAlert("Error preparing image")) }
                 }
 
             // Prepare Data message
             case .data:
-                msgContent = .file(comment)
-                guard let file = saveFileFromURL(url) else { return .failure(.encryptFile) }
-                cryptoFile = file
+                if let file = saveFileFromURL(url) {
+                    msgContent = .file(comment)
+                    cryptoFile = file
+                } else { return .failure(ErrorAlert("Error preparing file")) }
+
             default:
-                return .failure(.unsupportedFormat)
+                return .failure(ErrorAlert("Unsupported file format"))
             }
 
             // Send
@@ -133,24 +148,23 @@ class ShareModel: ObservableObject {
             SEChatState.shared.set(.inactive)
             return .success(chatItem)
         } catch {
-            if let chatResponse = error as? ChatResponse {
-                return .failure(.apiError(APIError(response: chatResponse)))
-            } else {
-                return .failure(.loadFileRepresentation(error))
-            }
+            return .failure(ErrorAlert(error))
         }
     }
 
-    private func fetchChats() -> Result<Array<ChatData>, ShareError> {
+    private func fetchChats() -> Result<Array<ChatData>, ErrorAlert> {
         registerGroupDefaults()
         haskell_init_se()
         let (_, result) = chatMigrateInit()
-        guard (result == .ok) else {
-            return .failure(.unexpectedMigrationResult(result))
-        }
+        guard (result == .ok) else { return .failure(ErrorAlert("Database migration failed")) }
         do {
             guard let user = try apiGetActiveUser() else {
-                return .failure(.noActiveUser)
+                return .failure(
+                    ErrorAlert(
+                        title: "No active profile",
+                        message: "Please create a profile in the SimpleX app"
+                    )
+                )
             }
             try apiSetNetworkConfig(getNetCfg())
             try apiSetAppFilePaths(
@@ -160,10 +174,95 @@ class ShareModel: ObservableObject {
             )
             try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
             let isRunning = try apiStartChat()
-            logger.log(level: .debug, "Chat Started. Is running: \(isRunning)")
+            logger.log(level: .debug, "Chat started. Is running: \(isRunning)")
             return .success(try apiGetChats(userId: user.id))
         } catch {
-            return .failure(.apiError(APIError(response: error as! ChatResponse)))
+            return .failure(ErrorAlert(error))
+        }
+    }
+
+    actor CompletionHandler {
+        static var isEventLoopEnabled = false
+        private var fileCompleted = false
+        private var messageCompleted = false
+
+        func completeFile() { fileCompleted = true }
+
+        func completeMessage() { messageCompleted = true }
+
+        var isRunning: Bool {
+            Self.isEventLoopEnabled && !(fileCompleted && messageCompleted)
+        }
+    }
+
+    /// Polls and processes chat events
+    /// Returns when message sending has completed optionally returning and error.
+    private func handleEvents(isGroupChat: Bool, chatItemId: ChatItem.ID) async -> ErrorAlert? {
+        func isMessage(for item: AChatItem?) -> Bool {
+            item.map { $0.chatItem.id == chatItemId } ?? false
+        }
+        CompletionHandler.isEventLoopEnabled = true
+        let ch = CompletionHandler()
+        while await ch.isRunning {
+            switch recvSimpleXMsg(messageTimeout: 1_000_000) {
+            case let .sndFileProgressXFTP(_, ci, _, sentSize, totalSize):
+                guard isMessage(for: ci) else { continue }
+                await MainActor.run {
+                    withAnimation {
+                        let progress = Double(sentSize) / Double(totalSize)
+                        bottomBar = .loadingBar(progress: progress)
+                    }
+                }
+            case let .sndFileCompleteXFTP(_, ci, _):
+                guard isMessage(for: ci) else { continue }
+                    if isGroupChat {
+                        await MainActor.run { bottomBar = .loadingSpinner }
+                    }
+                    await ch.completeFile()
+                    if await !ch.isRunning { break }
+            case let .chatItemStatusUpdated(_, ci):
+                guard isMessage(for: ci) else { continue }
+                if let (title, message) = ci.chatItem.meta.itemStatus.statusInfo {
+                    return ErrorAlert(
+                        title: "\(title)",
+                        message: "\(message)"
+                    )
+                } else if case let .sndSent(sndProgress) = ci.chatItem.meta.itemStatus {
+                    switch sndProgress {
+                    case .complete:
+                        await ch.completeMessage()
+                    case .partial:
+                        if isGroupChat {
+                            Task {
+                                try? await Task.sleep(for: .seconds(5))
+                                await ch.completeMessage()
+                            }
+                        }
+                    }
+                }
+            case let .sndFileError(_, ci, _, errorMessage):
+                guard isMessage(for: ci) else { continue }
+                if let ci { cleanupFile(ci) }
+                return ErrorAlert(title: "File error", message: "\(fileErrorInfo(ci) ?? errorMessage)")
+            case let .sndFileWarning(_, ci, _, errorMessage):
+                guard isMessage(for: ci) else { continue }
+                if let ci { cleanupFile(ci) }
+                return ErrorAlert(title: "File error", message: "\(fileErrorInfo(ci) ?? errorMessage)")
+            case let .chatError(_, chatError):
+                return ErrorAlert(chatError)
+            case let .chatCmdError(_, chatError):
+                return ErrorAlert(chatError)
+            default: continue
+            }
+        }
+        return nil
+    }
+    
+    private func fileErrorInfo(_ ci: AChatItem?) -> String? {
+        switch ci?.chatItem.file?.fileStatus {
+        case let .sndError(e): e.errorInfo
+        case let .sndWarning(e): e.errorInfo
+        default: nil
         }
     }
 }
@@ -190,4 +289,3 @@ extension NSItemProvider {
         return nil
     }
 }
-

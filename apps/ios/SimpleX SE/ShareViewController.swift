@@ -25,17 +25,20 @@ class ShareViewController: UIHostingController<ShareView> {
     required init?(coder aDecoder: NSCoder) { fatalError() }
 
     override func viewDidLoad() {
-        if let item = extensionContext?.inputItems.first as? NSExtensionItem {
-            model.completion = { error in
-                if let error {
-                    self.extensionContext!.cancelRequest(withError: error)
-                } else {
-                    self.extensionContext!.completeRequest(returningItems: [item]) { _ in
-                        let _ = sendSimpleXCmd(.apiStopChat)
-                    }
-                }
+        ShareModel.CompletionHandler.isEventLoopEnabled = false
+        if let extensionContext,
+           let item = extensionContext.inputItems.first as? NSExtensionItem {
+            model.completion = {
+                ShareModel.CompletionHandler.isEventLoopEnabled = false
+                extensionContext.completeRequest(returningItems: [item])
             }
             Task { await MainActor.run { model.item = item } }
         }
+    }
+}
+
+extension ShareViewController: UIAdaptivePresentationControllerDelegate {
+    public func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+        ShareModel.CompletionHandler.isEventLoopEnabled = false
     }
 }

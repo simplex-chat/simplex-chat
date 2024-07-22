@@ -201,6 +201,7 @@
 		8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC956ED2BC0041000412A11 /* NetworkObserver.swift */; };
 		CE1EB0E42C459A660099D896 /* ShareAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1EB0E32C459A660099D896 /* ShareAPI.swift */; };
 		CE2AD9CE2C452A4D00E844E3 /* ChatUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE2AD9CD2C452A4D00E844E3 /* ChatUtils.swift */; };
+		CE3097FB2C4C0C9F00180898 /* ErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE3097FA2C4C0C9F00180898 /* ErrorAlert.swift */; };
 		CE38A29A2C3FCA54005ED185 /* ImageUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBD2859295711D700EC2CF4 /* ImageUtils.swift */; };
 		CE38A29C2C3FCD72005ED185 /* SwiftyGif in Frameworks */ = {isa = PBXBuildFile; productRef = CE38A29B2C3FCD72005ED185 /* SwiftyGif */; };
 		CE984D4B2C36C5D500E3AEFF /* ChatItemClipShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE984D4A2C36C5D500E3AEFF /* ChatItemClipShape.swift */; };
@@ -545,6 +546,7 @@
 		8CC956ED2BC0041000412A11 /* NetworkObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkObserver.swift; sourceTree = "<group>"; };
 		CE1EB0E32C459A660099D896 /* ShareAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareAPI.swift; sourceTree = "<group>"; };
 		CE2AD9CD2C452A4D00E844E3 /* ChatUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatUtils.swift; sourceTree = "<group>"; };
+		CE3097FA2C4C0C9F00180898 /* ErrorAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorAlert.swift; sourceTree = "<group>"; };
 		CE984D4A2C36C5D500E3AEFF /* ChatItemClipShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemClipShape.swift; sourceTree = "<group>"; };
 		CEDE70212C48FD9500233B1F /* SEChatState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SEChatState.swift; sourceTree = "<group>"; };
 		CEE723A72C3BD3D70009AE93 /* SimpleX SE.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "SimpleX SE.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -901,6 +903,7 @@
 				5CDCAD7228188CFF00503DA2 /* ChatTypes.swift */,
 				5CDCAD7428188D2900503DA2 /* APITypes.swift */,
 				5C5E5D3C282447AB00B0488A /* CallTypes.swift */,
+				CE3097FA2C4C0C9F00180898 /* ErrorAlert.swift */,
 				5C9FD96A27A56D4D0075386C /* JSON.swift */,
 				5CDCAD7D2818941F00503DA2 /* API.swift */,
 				5CDCAD80281A7E2700503DA2 /* Notifications.swift */,
@@ -1458,6 +1461,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5CF937202B24DE8C00E1D781 /* SharedFileSubscriber.swift in Sources */,
+				CE3097FB2C4C0C9F00180898 /* ErrorAlert.swift in Sources */,
 				5C00168128C4FE760094D739 /* KeyChain.swift in Sources */,
 				5CE2BA97284537A800EC33A6 /* dummy.m in Sources */,
 				5CE2BA922845340900EC33A6 /* FileUtils.swift in Sources */,
