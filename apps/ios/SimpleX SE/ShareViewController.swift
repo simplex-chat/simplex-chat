@@ -27,7 +27,7 @@ class ShareViewController: UIHostingController<ShareView> {
     override func viewDidLoad() {
         if let item = extensionContext?.inputItems.first as? NSExtensionItem {
             model.completion = { error in
-                
+                ShareModel.CompletionHandler.isEventLoopEnabled = false
                 if let error {
                     self.extensionContext!.cancelRequest(withError: error)
                 } else {
@@ -36,5 +36,11 @@ class ShareViewController: UIHostingController<ShareView> {
             }
             Task { await MainActor.run { model.item = item } }
         }
+    }
+}
+
+extension ShareViewController: UIAdaptivePresentationControllerDelegate {
+    public func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+        ShareModel.CompletionHandler.isEventLoopEnabled = false
     }
 }
