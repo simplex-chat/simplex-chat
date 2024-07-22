@@ -2265,8 +2265,8 @@ processChatCommand' vr = \case
   GetAgentSubsTotal userId -> withUserId userId $ \user -> do
     users <- withStore' $ \db -> getUsers db
     let userIds = map aUserId $ filter (\u -> isNothing (viewPwdHash u) || aUserId u == aUserId user) users
-    agentSubsTotal <- lift $ withAgent' $ \a -> getAgentSubsTotal a userIds
-    pure $ CRAgentSubsTotal user agentSubsTotal
+    (subsTotal, sessTotal) <- lift $ withAgent' $ \a -> getAgentSubsTotal a userIds
+    pure $ CRAgentSubsTotal user subsTotal sessTotal
   GetAgentServersSummary userId -> withUserId userId $ \user -> do
     agentServersSummary <- lift $ withAgent' getAgentServersSummary
     cfg <- asks config
