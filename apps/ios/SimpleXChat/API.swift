@@ -117,10 +117,10 @@ public func sendSimpleXCmd(_ cmd: ChatCommand, _ ctrl: chat_ctrl? = nil) -> Chat
 }
 
 // in microseconds
-let MESSAGE_TIMEOUT: Int32 = 15_000_000
+public let MESSAGE_TIMEOUT: Int32 = 15_000_000
 
-public func recvSimpleXMsg(_ ctrl: chat_ctrl? = nil, messageTimeout: Int32? = nil) -> ChatResponse? {
-    if let cjson = chat_recv_msg_wait(ctrl ?? getChatCtrl(), messageTimeout ?? MESSAGE_TIMEOUT) {
+public func recvSimpleXMsg(_ ctrl: chat_ctrl? = nil, messageTimeout: Int32 = MESSAGE_TIMEOUT) -> ChatResponse? {
+    if let cjson = chat_recv_msg_wait(ctrl ?? getChatCtrl(), messageTimeout) {
         let s = fromCString(cjson)
         return s == "" ? nil : chatResponse(s)
     }
