@@ -45,8 +45,7 @@ import chat.simplex.common.model.ServerProtocol
 import chat.simplex.common.model.ServerSessions
 import chat.simplex.common.model.XFTPServerSummary
 import chat.simplex.common.model.localTimestamp
-import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.ProtocolServersView
@@ -54,12 +53,13 @@ import chat.simplex.common.views.usersettings.SettingsPreferenceItem
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import kotlinx.datetime.Instant
 import numOrDash
 import java.text.DecimalFormat
 import kotlin.math.floor
 import kotlin.math.roundToInt
+import kotlin.time.Duration.Companion.seconds
 
 enum class SubscriptionColorType {
   ACTIVE, ACTIVE_SOCKS_PROXY, DISCONNECTED, ACTIVE_DISCONNECTED
@@ -718,12 +718,39 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
       remember { stateGetOrPut("serverTypeSelection") { PresentedServerType.SMP } }
     val scope = rememberCoroutineScope()
 
+    suspend fun setServersSummary() {
+      serversSummary.value = chatModel.controller.getAgentServersSummary(chatModel.remoteHostId())
+    }
+
     LaunchedEffect(Unit) {
       if (chatModel.users.count { u -> u.user.activeUser || !u.user.hidden } == 1
       ) {
         selectedUserCategory.value = PresentedUserCategory.CURRENT_USER
       } else {
         showUserSelection = true
+      }
+      setServersSummary()
+      scope.launch {
+        while (isActive) {
+          delay(1.seconds)
+          if ((appPlatform.isDesktop || chat.simplex.common.platform.chatModel.chatId.value == null) && !ModalManager.start.hasModalsOpen() && !ModalManager.fullscreen.hasModalsOpen() && isAppVisibleAndFocused()) {
+            setServersSummary()
+          }
+        }
+      }
+    }
+
+    fun resetStats() {
+      withBGApi {
+        val success = controller.resetAgentServersStats(rh?.remoteHostId)
+        if (success) {
+          setServersSummary()
+        } else {
+          AlertManager.shared.showAlertMsg(
+            title = generalGetString(MR.strings.servers_info_modal_error_title),
+            text = generalGetString(MR.strings.servers_info_reset_stats_alert_error_title)
+          )
+        }
       }
     }
 
@@ -908,7 +935,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
 
             SectionView {
               ReconnectAllServersButton(rh)
-              ResetStatisticsButton(rh)
+              ResetStatisticsButton(rh, resetStats = { resetStats() })
             }
 
             SectionBottomSpacer()
@@ -949,8 +976,8 @@ private fun reconnectAllServersAlert(rh: RemoteHostInfo?) {
 }
 
 @Composable
-private fun ResetStatisticsButton(rh: RemoteHostInfo?) {
-  SectionItemView(click = { resetStatisticsAlert(rh) }) {
+private fun ResetStatisticsButton(rh: RemoteHostInfo?, resetStats: () -> Unit) {
+  SectionItemView(click = { resetStatisticsAlert(rh, resetStats) }) {
     Text(
       stringResource(MR.strings.servers_info_reset_stats),
       color = MaterialTheme.colors.primary
@@ -958,23 +985,12 @@ private fun ResetStatisticsButton(rh: RemoteHostInfo?) {
   }
 }
 
-private fun resetStatisticsAlert(rh: RemoteHostInfo?) {
+private fun resetStatisticsAlert(rh: RemoteHostInfo?, resetStats: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.servers_info_reset_stats_alert_title),
     text = generalGetString(MR.strings.servers_info_reset_stats_alert_message),
     confirmText = generalGetString(MR.strings.servers_info_reset_stats_alert_confirm),
     destructive = true,
-    onConfirm = {
-      withBGApi {
-        val success = controller.resetAgentServersStats(rh?.remoteHostId)
-
-        if (!success) {
-          AlertManager.shared.showAlertMsg(
-            title = generalGetString(MR.strings.servers_info_modal_error_title),
-            text = generalGetString(MR.strings.servers_info_reset_stats_alert_error_title)
-          )
-        }
-      }
-    }
+    onConfirm = resetStats
   )
 }
