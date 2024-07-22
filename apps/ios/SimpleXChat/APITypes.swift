@@ -1010,7 +1010,7 @@ public enum ChatResponse: Decodable, Error {
             case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
             case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
             case .cmdOk: return noDetails
-            case let .agentSubsTotal(u, subsTotal, sessTotal): return withUser(u, "contact: \(String(describing: subsTotal))\npqEnabled: \(String(describing: sessTotal))")
+            case let .agentSubsTotal(u, subsTotal, sessTotal): return withUser(u, "subsTotal: \(String(describing: subsTotal))\nsessTotal: \(String(describing: sessTotal))")
             case let .agentServersSummary(u, serversSummary): return withUser(u, String(describing: serversSummary))
             case let .agentSubsSummary(u, subsSummary): return withUser(u, String(describing: subsSummary))
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
