@@ -1916,9 +1916,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Minden fájl törlése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete and notify contact" xml:space="preserve">
+      <trans-unit id="Delete and notify contact" xml:space="preserve" approved="no">
         <source>Delete and notify contact</source>
-        <target>Törlés és ismerős értesítése</target>
+        <target state="translated">Törlés, és az ismerős értesítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete archive" xml:space="preserve">
@@ -1988,9 +1988,9 @@ Ez a művelet nem vonható vissza!</target>
         <target>Törlés mindenkinél</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Delete for me" xml:space="preserve">
+      <trans-unit id="Delete for me" xml:space="preserve" approved="no">
         <source>Delete for me</source>
-        <target>Törlés nálam</target>
+        <target state="translated">Csak nálam</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete group" xml:space="preserve">
@@ -8219,9 +8219,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>törölt kapcsolattartási cím</target>
         <note>profile update event chat item</note>
       </trans-unit>
-      <trans-unit id="removed profile picture" xml:space="preserve">
+      <trans-unit id="removed profile picture" xml:space="preserve" approved="no">
         <source>removed profile picture</source>
-        <target>törölt profilkép</target>
+        <target state="translated">törölte a profilképét</target>
         <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="removed you" xml:space="preserve">
