@@ -59,6 +59,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                         }
                         ContactType.REMOVED -> {
                             openLoadedChat(chat, chatModel)
+                            chatModel.updateContact(rhId, chat.chatInfo.contact.copy(chatDeleted = false))
                             ModalManager.start.closeModals()
                         }
                         ContactType.CARD -> {
