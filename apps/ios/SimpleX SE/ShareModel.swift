@@ -89,14 +89,14 @@ class ShareModel: ObservableObject {
     private func sendMessage() async -> Result<AChatItem, ErrorAlert> {
         await MainActor.run { self.bottomBar = .loadingSpinner }
         guard let chat = selected else {
-            return .failure(ErrorAlert("Chat Not Selected"))
+            return .failure(ErrorAlert("Chat not selected"))
         }
         guard let attachment = item?.attachments?.first else {
-            return .failure(ErrorAlert("Missing Attachment"))
+            return .failure(ErrorAlert("Missing attachment"))
         }
         do {
             guard let type = attachment.firstMatching(of: [.image, .movie, .data]) else {
-                return .failure(ErrorAlert("Unsupported File Format"))
+                return .failure(ErrorAlert("Unsupported file format"))
             }
             let url = try await attachment.inPlaceUrl(type: type)
             var cryptoFile: CryptoFile
@@ -114,7 +114,7 @@ class ShareModel: ObservableObject {
                        let imageString = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
                         cryptoFile = file
                         msgContent = .image(text: comment, image: imageString)
-                    } else { return .failure(ErrorAlert("Failed Preparing Image")) }
+                    } else { return .failure(ErrorAlert("Error preparing image")) }
 
                 // Static
                 } else {
@@ -123,7 +123,7 @@ class ShareModel: ObservableObject {
                        let imageString = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
                         cryptoFile = file
                         msgContent = .image(text: comment, image: imageString)
-                    } else { return .failure(ErrorAlert("Failed Preparing Image")) }
+                    } else { return .failure(ErrorAlert("Error preparing image")) }
                 }
 
             // Prepare Data message
@@ -131,10 +131,10 @@ class ShareModel: ObservableObject {
                 if let file = saveFileFromURL(url) {
                     msgContent = .file(comment)
                     cryptoFile = file
-                } else { return .failure(ErrorAlert("Failed Preparing File")) }
+                } else { return .failure(ErrorAlert("Error preparing file")) }
 
             default:
-                return .failure(ErrorAlert("Unsupported File Format"))
+                return .failure(ErrorAlert("Unsupported file format"))
             }
 
             // Send
@@ -156,13 +156,13 @@ class ShareModel: ObservableObject {
         registerGroupDefaults()
         haskell_init_se()
         let (_, result) = chatMigrateInit()
-        guard (result == .ok) else { return .failure(ErrorAlert("Database Migration Failed")) }
+        guard (result == .ok) else { return .failure(ErrorAlert("Database migration failed")) }
         do {
             guard let user = try apiGetActiveUser() else {
                 return .failure(
                     ErrorAlert(
-                        title: "No Active User",
-                        message: "Please create a user in the SimpleX App"
+                        title: "No active profile",
+                        message: "Please create a profile in the SimpleX app"
                     )
                 )
             }
@@ -174,7 +174,7 @@ class ShareModel: ObservableObject {
             )
             try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
             let isRunning = try apiStartChat()
-            logger.log(level: .debug, "Chat Started. Is running: \(isRunning)")
+            logger.log(level: .debug, "Chat started. Is running: \(isRunning)")
             return .success(try apiGetChats(userId: user.id))
         } catch {
             return .failure(ErrorAlert(error))
