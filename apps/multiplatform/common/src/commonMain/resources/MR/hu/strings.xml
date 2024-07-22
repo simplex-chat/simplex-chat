@@ -293,7 +293,7 @@
     <string name="clear_verification">Hitelesítés törlése</string>
     <string name="group_member_status_creator">készítő</string>
     <string name="confirm_verb">Megerősítés</string>
-    <string name="for_me_only">Törlés nálam</string>
+    <string name="for_me_only">Csak nálam</string>
     <string name="delete_messages__question">%d üzenet törlése?</string>
     <string name="v5_1_custom_themes">Egyedi témák</string>
     <string name="group_member_status_accepted">kapcsolódás (elfogadva)</string>
@@ -424,7 +424,7 @@
     <string name="feature_enabled_for_you">engedélyezve az ön számára</string>
     <string name="timed_messages">Eltűnő üzenetek</string>
     <string name="delete_group_menu_action">Törlés</string>
-    <string name="delete_and_notify_contact">Törlés és ismerős értesítése</string>
+    <string name="delete_and_notify_contact">Törlés, és az ismerős értesítése</string>
     <string name="send_receipts_disabled">letiltva</string>
     <string name="la_seconds">%d másodperc</string>
     <string name="delete_files_and_media_all">Minden fájl törlése</string>
@@ -1589,7 +1589,7 @@
     <string name="group_member_status_unknown">ismeretlen státusz</string>
     <string name="profile_update_event_member_name_changed">%1$s megváltoztatta a nevét erre: %2$s</string>
     <string name="profile_update_event_removed_address">törölt kapcsolattartási cím</string>
-    <string name="profile_update_event_removed_picture">törölt profilkép</string>
+    <string name="profile_update_event_removed_picture">törölte a profilképét</string>
     <string name="profile_update_event_set_new_address">új kapcsolattartási cím beállítása</string>
     <string name="profile_update_event_set_new_picture">új profilképet állított be</string>
     <string name="profile_update_event_updated_profile">frissített profil</string>
