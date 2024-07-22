@@ -18,9 +18,8 @@ struct ChatPreviewView: View {
     var darkGreen = Color(red: 0, green: 0.5, blue: 0)
     @State private var activeContentPreview: ActiveContentPreview? = nil
 
-    @State var audioPlayer: AudioPlayer? = nil
-    @State var playbackState: VoiceMessagePlaybackState = .noPlayback
-    @State var playbackTime: TimeInterval? = nil
+    @Binding var voiceItemsState: [String: VoiceItemState]
+    //var onChangeVoiceState: (String, AudioPlayer?, VoiceMessagePlaybackState, TimeInterval?) -> Void = { _, _, _, _ in }
 
     @State private var showFullscreenGallery: Bool = false
 
@@ -321,9 +320,8 @@ struct ChatPreviewView: View {
                     .environmentObject(ReverseListScrollModel<ChatItem>())
             )
         case let .voice(_, duration):
-            smallContentPreviewVoice(
-                CIVoiceView(chat: chat, chatItem: ci, recordingFile: ci.file, duration: duration, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime, allowMenu: Binding.constant(true), smallView: true)
-                )
+            let _ = logger.debug("LALAL DRAW \(String(describing: voiceItemsState[VoiceItemState.id(chat, ci)]?.playbackState)) \(String(describing: voiceItemsState[VoiceItemState.id(chat, ci)]?.playbackTime))")
+            VoicePreview(chat: chat, ci: ci, duration: duration, audioPlayer: voiceItemsState[VoiceItemState.id(chat, ci)]?.audioPlayer, playbackState: voiceItemsState[VoiceItemState.id(chat, ci)]?.playbackState ?? .noPlayback, playbackTime: voiceItemsState[VoiceItemState.id(chat, ci)]?.playbackTime, voiceItemsState: $voiceItemsState/*, onChangeVoiceState: onChangeVoiceState*/)
         case .file:
             smallContentPreviewFile(
                 CIFileView(file: ci.file, edited: ci.meta.itemEdited, smallView: true)
@@ -390,6 +388,36 @@ struct ChatPreviewView: View {
     }
 }
 
+private struct VoicePreview: View {
+    var chat: Chat
+    var ci: ChatItem
+    var duration: Int
+
+    @State var audioPlayer: AudioPlayer?
+    @State var playbackState: VoiceMessagePlaybackState = .noPlayback
+    @State var playbackTime: TimeInterval?
+
+    @Binding var voiceItemsState: [String: VoiceItemState]
+    //var onChangeVoiceState: (String, AudioPlayer?, VoiceMessagePlaybackState, TimeInterval?) -> Void
+
+    var body: some View {
+        smallContentPreviewVoice(
+            CIVoiceView(
+                chat: chat,
+                chatItem: ci,
+                recordingFile: ci.file,
+                duration: duration,
+                audioPlayer: $audioPlayer,
+                playbackState: $playbackState,
+                playbackTime: $playbackTime,
+                voiceItemsState: $voiceItemsState,
+                //onChangeVoiceState: onChangeVoiceState,
+                allowMenu: Binding.constant(true),
+                smallView: true)
+        )
+    }
+}
+
 @ViewBuilder func incognitoIcon(_ incognito: Bool, _ secondaryColor: Color) -> some View {
     if incognito {
         Image(systemName: "theatermasks")
@@ -448,34 +476,35 @@ private struct ActiveContentPreview: Equatable {
 
 struct ChatPreviewView_Previews: PreviewProvider {
     static var previews: some View {
+        @State var voiceItemsState: [String: VoiceItemState] = [:]
         Group {
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: []
-            ), progressByTimeout: Binding.constant(false))
+            ), progressByTimeout: Binding.constant(false), voiceItemsState: $voiceItemsState)
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete))]
-            ), progressByTimeout: Binding.constant(false))
+            ), progressByTimeout: Binding.constant(false), voiceItemsState: $voiceItemsState)
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete))],
                 chatStats: ChatStats(unreadCount: 11, minUnreadItemId: 0)
-            ), progressByTimeout: Binding.constant(false))
+            ), progressByTimeout: Binding.constant(false), voiceItemsState: $voiceItemsState)
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now))]
-            ), progressByTimeout: Binding.constant(false))
+            ), progressByTimeout: Binding.constant(false), voiceItemsState: $voiceItemsState)
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete))],
                 chatStats: ChatStats(unreadCount: 3, minUnreadItemId: 0)
-            ), progressByTimeout: Binding.constant(false))
+            ), progressByTimeout: Binding.constant(false), voiceItemsState: $voiceItemsState)
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.group,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "Lorem ipsum dolor sit amet, d. consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")],
                 chatStats: ChatStats(unreadCount: 11, minUnreadItemId: 0)
-            ), progressByTimeout: Binding.constant(false))
+            ), progressByTimeout: Binding.constant(false), voiceItemsState: $voiceItemsState)
         }
         .previewLayout(.fixed(width: 360, height: 78))
     }

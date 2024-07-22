@@ -21,6 +21,9 @@ struct ChatListView: View {
     @State private var newChatMenuOption: NewChatMenuOption? = nil
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
+
+    @State private var voiceItemsState: [String: VoiceItemState] = [:]
+
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
@@ -149,7 +152,12 @@ struct ChatListView: View {
                         .frame(maxWidth: .infinity)
                     }
                     ForEach(cs, id: \.viewId) { chat in
-                        ChatListNavLink(chat: chat)
+                        ChatListNavLink(chat: chat, voiceItemsState: $voiceItemsState
+//                                        , onChangeVoiceState: { id, player, state, time in
+//                            logger.debug("LALAL CHANGING STATE \(String(describing: state)) \(String(describing: time))")
+//                            voiceItemsState[id] = VoiceItemState(audioPlayer: player, playbackState: state, playbackTime: time)
+//                        }
+                        )
                             .padding(.trailing, -16)
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
                             .listRowBackground(Color.clear)
@@ -162,6 +170,10 @@ struct ChatListView: View {
                     chatModel.chatToTop = nil
                     chatModel.popChat(chatId)
                 }
+                stopAudioPlayer()
+            }
+            .onChange(of: chatModel.currentUser?.userId) { _ in
+                stopAudioPlayer()
             }
             if cs.isEmpty && !chatModel.chats.isEmpty {
                 Text("No filtered chats").foregroundColor(theme.colors.secondary)
@@ -214,6 +226,15 @@ struct ChatListView: View {
     @ViewBuilder private func chatView() -> some View {
         if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
             ChatView(chat: chat)
+        }
+    }
+
+    func stopAudioPlayer() {
+        voiceItemsState.values.forEach {
+            $0.audioPlayer?.stop()
+            $0.audioPlayer = nil
+            $0.playbackState = .noPlayback
+            $0.playbackTime = nil
         }
     }
 

@@ -18,6 +18,11 @@ struct CIVoiceView: View {
     @Binding var audioPlayer: AudioPlayer?
     @Binding var playbackState: VoiceMessagePlaybackState
     @Binding var playbackTime: TimeInterval?
+
+    @Binding var voiceItemsState: [String: VoiceItemState]
+
+    //var onChangeVoiceState: (String, AudioPlayer?, VoiceMessagePlaybackState, TimeInterval?) -> Void
+
     @Binding var allowMenu: Bool
     var smallView: Bool = false
     @State private var seek: (TimeInterval) -> Void = { _ in }
@@ -65,6 +70,7 @@ struct CIVoiceView: View {
 
     private func player() -> some View {
         VoiceMessagePlayer(
+            chat: chat,
             chatItem: chatItem,
             recordingFile: recordingFile,
             recordingTime: TimeInterval(duration),
@@ -73,8 +79,10 @@ struct CIVoiceView: View {
             audioPlayer: $audioPlayer,
             playbackState: $playbackState,
             playbackTime: $playbackTime,
+            voiceItemsState: $voiceItemsState,
             allowMenu: $allowMenu,
             sizeMultiplier: smallView ? voiceMessageSizeBasedOnSquareSize(36) / 56 : 1
+            //onChangeVoiceState: onChangeVoiceState
         )
     }
 
@@ -130,6 +138,7 @@ struct VoiceMessagePlayerTime: View {
 }
 
 struct VoiceMessagePlayer: View {
+    @ObservedObject var chat: Chat
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     var chatItem: ChatItem
@@ -141,8 +150,11 @@ struct VoiceMessagePlayer: View {
     @Binding var audioPlayer: AudioPlayer?
     @Binding var playbackState: VoiceMessagePlaybackState
     @Binding var playbackTime: TimeInterval?
+    @Binding var voiceItemsState: [String: VoiceItemState]
+
     @Binding var allowMenu: Bool
     var sizeMultiplier: CGFloat
+    //var onChangeVoiceState: (String, AudioPlayer?, VoiceMessagePlaybackState, TimeInterval?) -> Void
 
     var body: some View {
         ZStack {
@@ -207,7 +219,9 @@ struct VoiceMessagePlayer: View {
             audioPlayer?.onFinishPlayback = {
                 playbackState = .noPlayback
                 playbackTime = TimeInterval(0)
+                notifyStateChange()
             }
+            logger.debug("LALAL APPEAR \(String(describing: playbackState)) \(String(describing: playbackTime))")
         }
         .onChange(of: chatModel.stopPreviousRecPlay) { it in
             if let recordingFileName = getLoadedFileSource(recordingFile)?.filePath,
@@ -223,18 +237,11 @@ struct VoiceMessagePlayer: View {
                 chatModel.stopPreviousRecPlay = nil
             }
         }
-//        .onChange(of: chatModel.chatId) { _ in
-//            if sizeMultiplier != 1 {
-//                stopPlayback()
-//            }
-//        }
-//        .onChange(of: chatModel.currentUser?.userId) { _ in
-//            if sizeMultiplier != 1 {
-//                stopPlayback()
-//            }
-//        }
+        .onChange(of: chatModel.chatId) { _ in
+            stopPlayback()
+        }
         .onDisappear {
-            if sizeMultiplier != 1 {
+            if sizeMultiplier == 1 && chatModel.chatId == nil {
                 stopPlayback()
             }
         }
@@ -255,12 +262,14 @@ struct VoiceMessagePlayer: View {
                     .onTapGesture {
                         audioPlayer?.pause()
                         playbackState = .paused
+                        notifyStateChange()
                     }
             case .paused:
                 playPauseIcon("play.fill", theme.colors.primary)
                     .onTapGesture {
                         audioPlayer?.play()
                         playbackState = .playing
+                        notifyStateChange()
                     }
             }
         } else {
@@ -277,6 +286,7 @@ struct VoiceMessagePlayer: View {
                 Button {
                     audioPlayer?.pause()
                     playbackState = .paused
+                    notifyStateChange()
                 } label: {
                     playPauseIcon("pause.fill", theme.colors.primary)
                 }
@@ -284,6 +294,7 @@ struct VoiceMessagePlayer: View {
                 Button {
                     audioPlayer?.play()
                     playbackState = .playing
+                    notifyStateChange()
                 } label: {
                     playPauseIcon("play.fill", theme.colors.primary)
                 }
@@ -334,6 +345,11 @@ struct VoiceMessagePlayer: View {
         }
     }
 
+    func notifyStateChange() {
+        voiceItemsState[VoiceItemState.id(chat, chatItem)] = VoiceItemState(audioPlayer: audioPlayer, playbackState: playbackState, playbackTime: playbackTime)
+        //onChangeVoiceState(VoiceItemState.id(chat, chatItem), audioPlayer, playbackState, playbackTime)
+    }
+
     private struct ProgressCircle: View {
         @EnvironmentObject var theme: AppTheme
         var length: TimeInterval
@@ -373,26 +389,48 @@ struct VoiceMessagePlayer: View {
     private func startPlayback(_ recordingSource: CryptoFile) {
         chatModel.stopPreviousRecPlay = getAppFilePath(recordingSource.filePath)
         audioPlayer = AudioPlayer(
-            onTimer: { playbackTime = $0 },
+            onTimer: {
+                playbackTime = $0
+                notifyStateChange()
+            },
             onFinishPlayback: {
                 playbackState = .noPlayback
                 playbackTime = TimeInterval(0)
+                notifyStateChange()
             }
         )
         audioPlayer?.start(fileSource: recordingSource, at: playbackTime)
         playbackState = .playing
+        notifyStateChange()
     }
 
     private func stopPlayback() {
         audioPlayer?.stop()
         playbackState = .noPlayback
         playbackTime = TimeInterval(0)
+        notifyStateChange()
     }
 }
 
 func voiceMessageSizeBasedOnSquareSize(_ squareSize: CGFloat) -> CGFloat {
     let squareToCircleRatio = 0.935
     return squareSize + squareSize * (1 - squareToCircleRatio)
+}
+
+class VoiceItemState {
+    var audioPlayer: AudioPlayer?
+    var playbackState: VoiceMessagePlaybackState
+    var playbackTime: TimeInterval?
+
+    init(audioPlayer: AudioPlayer? = nil, playbackState: VoiceMessagePlaybackState, playbackTime: TimeInterval? = nil) {
+        self.audioPlayer = audioPlayer
+        self.playbackState = playbackState
+        self.playbackTime = playbackTime
+    }
+
+    static func id(_ chat: Chat, _ chatItem: ChatItem) -> String {
+        "\(chat.id) \(chatItem.id)"
+    }
 }
 
 struct CIVoiceView_Previews: PreviewProvider {
@@ -420,6 +458,8 @@ struct CIVoiceView_Previews: PreviewProvider {
                 audioPlayer: .constant(nil),
                 playbackState: .constant(.playing),
                 playbackTime: .constant(TimeInterval(20)),
+                voiceItemsState: Binding.constant([:]),
+                //onChangeVoiceState: { _, _, _, _ in },
                 allowMenu: Binding.constant(true)
             )
             ChatItemView(chat: Chat.sampleData, chatItem: sentVoiceMessage, revealed: Binding.constant(false), allowMenu: .constant(true), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))

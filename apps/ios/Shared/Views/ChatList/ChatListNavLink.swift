@@ -38,6 +38,9 @@ struct ChatListNavLink: View {
     @State private var inProgress = false
     @State private var progressByTimeout = false
 
+    @Binding var voiceItemsState: [String: VoiceItemState]
+    //var onChangeVoiceState: (String, AudioPlayer?, VoiceMessagePlaybackState, TimeInterval?) -> Void
+
     var body: some View {
         Group {
             switch chat.chatInfo {
@@ -69,7 +72,7 @@ struct ChatListNavLink: View {
     @ViewBuilder private func contactNavLink(_ contact: Contact) -> some View {
         Group {
             if contact.activeConn == nil && contact.profile.contactLink != nil {
-                ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
+                ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false), voiceItemsState: $voiceItemsState/*, onChangeVoiceState: onChangeVoiceState*/)
                     .frame(height: rowHeights[dynamicTypeSize])
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button {
@@ -88,7 +91,7 @@ struct ChatListNavLink: View {
                 NavLinkPlain(
                     tag: chat.chatInfo.id,
                     selection: $chatModel.chatId,
-                    label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) }
+                    label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false), voiceItemsState: $voiceItemsState/*, onChangeVoiceState: onChangeVoiceState*/) }
                 )
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     markReadButton()
@@ -138,7 +141,7 @@ struct ChatListNavLink: View {
     @ViewBuilder private func groupNavLink(_ groupInfo: GroupInfo) -> some View {
         switch (groupInfo.membership.memberStatus) {
         case .memInvited:
-            ChatPreviewView(chat: chat, progressByTimeout: $progressByTimeout)
+            ChatPreviewView(chat: chat, progressByTimeout: $progressByTimeout, voiceItemsState: $voiceItemsState/*, onChangeVoiceState: onChangeVoiceState*/)
                 .frame(height: rowHeights[dynamicTypeSize])
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     joinGroupButton()
@@ -158,7 +161,7 @@ struct ChatListNavLink: View {
                 }
                 .disabled(inProgress)
         case .memAccepted:
-            ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
+            ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false), voiceItemsState: $voiceItemsState/*, onChangeVoiceState: onChangeVoiceState*/)
                 .frame(height: rowHeights[dynamicTypeSize])
                 .onTapGesture {
                     AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
@@ -175,7 +178,7 @@ struct ChatListNavLink: View {
             NavLinkPlain(
                 tag: chat.chatInfo.id,
                 selection: $chatModel.chatId,
-                label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
+                label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false), voiceItemsState: $voiceItemsState/*, onChangeVoiceState: onChangeVoiceState*/) },
                 disabled: !groupInfo.ready
             )
             .frame(height: rowHeights[dynamicTypeSize])
@@ -202,7 +205,7 @@ struct ChatListNavLink: View {
         NavLinkPlain(
             tag: chat.chatInfo.id,
             selection: $chatModel.chatId,
-            label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
+            label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false), voiceItemsState: $voiceItemsState/*, onChangeVoiceState: onChangeVoiceState*/) },
             disabled: !noteFolder.ready
         )
         .frame(height: rowHeights[dynamicTypeSize])
@@ -576,19 +579,20 @@ func getErrorAlert(_ error: Error, _ title: LocalizedStringKey) -> ErrorAlert {
 struct ChatListNavLink_Previews: PreviewProvider {
     static var previews: some View {
         @State var chatId: String? = "@1"
+        @State var voiceItemsState: [String: VoiceItemState] = [:]
         return Group {
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ))
+            ), voiceItemsState: $voiceItemsState/*, onChangeVoiceState: { _, _, _, _ in }*/)
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ))
+            ), voiceItemsState: $voiceItemsState/*, onChangeVoiceState: { _, _, _, _ in }*/)
             ChatListNavLink(chat: Chat(
                 chatInfo: ChatInfo.sampleData.contactRequest,
                 chatItems: []
-            ))
+            ), voiceItemsState: $voiceItemsState/*, onChangeVoiceState: { _, _, _, _ in }*/)
         }
         .previewLayout(.fixed(width: 360, height: 82))
     }

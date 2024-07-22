@@ -42,6 +42,7 @@ struct ChatView: View {
     @State private var showGroupLinkSheet: Bool = false
     @State private var groupLink: String?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
+    @State private var voiceItemsState: [String: VoiceItemState] = [:]
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -96,6 +97,7 @@ struct ChatView: View {
         }
         .onChange(of: chatModel.chatId) { cId in
             showChatInfoSheet = false
+            stopAudioPlayer()
             if let cId {
                 if let c = chatModel.getChat(cId) {
                     chat = c
@@ -117,6 +119,7 @@ struct ChatView: View {
         .environmentObject(scrollModel)
         .onDisappear {
             VideoPlayerView.players.removeAll()
+            stopAudioPlayer()
             if chatModel.chatId == cInfo.id && !presentationMode.wrappedValue.isPresented {
                 chatModel.chatId = nil
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
@@ -589,6 +592,12 @@ struct ChatView: View {
         }
     }
 
+    func stopAudioPlayer() {
+        logger.debug("LALAL STOPPING \(String(describing: voiceItemsState.values.first?.playbackState)) \(String(describing: voiceItemsState.values.first?.playbackTime))")
+        voiceItemsState.values.forEach { $0.audioPlayer?.stop() }
+        voiceItemsState = [:]
+    }
+
     @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
         ChatItemWithMenu(
             chat: chat,
@@ -596,7 +605,14 @@ struct ChatView: View {
             maxWidth: maxWidth,
             composeState: $composeState,
             selectedMember: $selectedMember,
-            revealedChatItem: $revealedChatItem
+            revealedChatItem: $revealedChatItem,
+            audioPlayer: voiceItemsState[VoiceItemState.id(chat, ci)]?.audioPlayer,
+            playbackState: voiceItemsState[VoiceItemState.id(chat, ci)]?.playbackState ?? .noPlayback,
+            playbackTime: voiceItemsState[VoiceItemState.id(chat, ci)]?.playbackTime,
+            voiceItemsState: $voiceItemsState
+//            onChangeVoiceState: { id, player, state, time in
+//                voiceItemsState[id] = VoiceItemState(audioPlayer: player, playbackState: state, playbackTime: time)
+//            }
         )
     }
 
@@ -620,9 +636,12 @@ struct ChatView: View {
 
         @State private var allowMenu: Bool = true
 
-        @State private var audioPlayer: AudioPlayer?
-        @State private var playbackState: VoiceMessagePlaybackState = .noPlayback
-        @State private var playbackTime: TimeInterval?
+        @State var audioPlayer: AudioPlayer?
+        @State var playbackState: VoiceMessagePlaybackState
+        @State var playbackTime: TimeInterval?
+
+        @Binding var voiceItemsState: [String: VoiceItemState]
+        //var onChangeVoiceState: (String, AudioPlayer?, VoiceMessagePlaybackState, TimeInterval?) -> Void
 
         var revealed: Bool { chatItem == revealedChatItem }
 
@@ -772,14 +791,15 @@ struct ChatView: View {
                 }
                 .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
-                .onDisappear {
-                    if ci.content.msgContent?.isVoice == true {
-                        allowMenu = true
-                        audioPlayer?.stop()
-                        playbackState = .noPlayback
-                        playbackTime = TimeInterval(0)
-                    }
-                }
+//                .onDisappear {
+//                    if ci.content.msgContent?.isVoice == true {
+//                        allowMenu = true
+//                        audioPlayer?.stop()
+//                        playbackState = .noPlayback
+//                        playbackTime = TimeInterval(0)
+//                        onChangeVoiceState(VoiceItemState.id(chat, ci), audioPlayer, playbackState, playbackTime)
+//                    }
+//                }
                 .sheet(isPresented: $showChatItemInfoSheet, onDismiss: {
                     chatItemInfo = nil
                 }) {

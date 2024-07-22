@@ -19,6 +19,10 @@ struct ChatItemView: View {
     @Binding var audioPlayer: AudioPlayer?
     @Binding var playbackState: VoiceMessagePlaybackState
     @Binding var playbackTime: TimeInterval?
+
+    @Binding var voiceItemsState: [String: VoiceItemState]
+    //var onChangeVoiceState: (String, AudioPlayer?, VoiceMessagePlaybackState, TimeInterval?) -> Void
+
     init(
         chat: Chat,
         chatItem: ChatItem,
@@ -28,7 +32,9 @@ struct ChatItemView: View {
         allowMenu: Binding<Bool> = .constant(false),
         audioPlayer: Binding<AudioPlayer?> = .constant(nil),
         playbackState: Binding<VoiceMessagePlaybackState> = .constant(.noPlayback),
-        playbackTime: Binding<TimeInterval?> = .constant(nil)
+        playbackTime: Binding<TimeInterval?> = .constant(nil),
+        voiceItemsState: Binding<[String: VoiceItemState]> = Binding.constant([:])
+        //onChangeVoiceState: @escaping (String, AudioPlayer?, VoiceMessagePlaybackState, TimeInterval?) -> Void = { _, _, _, _ in }
     ) {
         self.chat = chat
         self.chatItem = chatItem
@@ -38,6 +44,8 @@ struct ChatItemView: View {
         _audioPlayer = audioPlayer
         _playbackState = playbackState
         _playbackTime = playbackTime
+        _voiceItemsState = voiceItemsState
+        //self.onChangeVoiceState = onChangeVoiceState
     }
 
     var body: some View {
@@ -48,7 +56,7 @@ struct ChatItemView: View {
             if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
                 EmojiItemView(chat: chat, chatItem: ci)
             } else if ci.content.text.isEmpty, case let .voice(_, duration) = ci.content.msgContent {
-                CIVoiceView(chat: chat, chatItem: ci, recordingFile: ci.file, duration: duration, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime, allowMenu: $allowMenu)
+                CIVoiceView(chat: chat, chatItem: ci, recordingFile: ci.file, duration: duration, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime, voiceItemsState: $voiceItemsState/*, onChangeVoiceState: onChangeVoiceState*/, allowMenu: $allowMenu)
             } else if ci.content.msgContent == nil {
                 ChatItemContentView(chat: chat, chatItem: chatItem, revealed: $revealed, msgContentView: { Text(ci.text) }) // msgContent is unreachable branch in this case
             } else {
@@ -87,7 +95,9 @@ struct ChatItemView: View {
             allowMenu: $allowMenu,
             audioPlayer: $audioPlayer,
             playbackState: $playbackState,
-            playbackTime: $playbackTime
+            playbackTime: $playbackTime,
+            voiceItemsState: $voiceItemsState
+            //onChangeVoiceState: onChangeVoiceState
         )
     }
 }
