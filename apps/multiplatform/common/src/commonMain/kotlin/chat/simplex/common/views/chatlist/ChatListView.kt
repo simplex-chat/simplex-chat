@@ -303,7 +303,7 @@ fun SubscriptionStatusIndicator(click: (() -> Unit)) {
     scope.launch {
       while (isActive) {
         delay(1.seconds)
-        if ((appPlatform.isDesktop || chatModel.chatId.value == null) && !ModalManager.start.hasModalsOpen() && !ModalManager.fullscreen.hasModalsOpen() && isAppVisibleAndFocused()) {
+        if ((appPlatform.isDesktop || chatModel.chatId.value == null) && !ModalManager.fullscreen.hasModalsOpen() && isAppVisibleAndFocused()) {
           setSubsTotal()
         }
       }

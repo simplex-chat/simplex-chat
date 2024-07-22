@@ -733,7 +733,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
       scope.launch {
         while (isActive) {
           delay(1.seconds)
-          if ((appPlatform.isDesktop || chat.simplex.common.platform.chatModel.chatId.value == null) && !ModalManager.start.hasModalsOpen() && !ModalManager.fullscreen.hasModalsOpen() && isAppVisibleAndFocused()) {
+          if ((appPlatform.isDesktop || chat.simplex.common.platform.chatModel.chatId.value == null) && !ModalManager.fullscreen.hasModalsOpen() && isAppVisibleAndFocused()) {
             setServersSummary()
           }
         }
