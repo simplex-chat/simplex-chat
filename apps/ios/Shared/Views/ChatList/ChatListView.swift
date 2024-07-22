@@ -312,7 +312,7 @@ struct SubsStatusIndicator: View {
         do {
             (subs, sess) = try getAgentSubsTotal()
         } catch let error {
-            logger.error("getAgentServersSummary error: \(responseError(error))")
+            logger.error("getSubsTotal error: \(responseError(error))")
         }
     }
 }
