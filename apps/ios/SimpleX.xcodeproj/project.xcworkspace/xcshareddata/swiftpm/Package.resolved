@@ -1,5 +1,4 @@
 {
-  "originHash" : "e2611d1e91fd8071abc106776ba14ee2e395d2ad08a78e073381294abc10f115",
   "pins" : [
     {
       "identity" : "codescanner",
@@ -23,7 +22,6 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/kirualex/SwiftyGif",
       "state" : {
-        "branch" : "master",
         "revision" : "5e8619335d394901379c9add5c4c1c2f420b3800"
       }
     },
@@ -45,5 +43,5 @@
       }
     }
   ],
-  "version" : 3
+  "version" : 2
 }
