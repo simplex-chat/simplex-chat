@@ -12,11 +12,12 @@ import SimpleXChat
 struct ServersSummaryView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @Binding var serversSummary: PresentedServersSummary?
+    @State private var serversSummary: PresentedServersSummary? = nil
     @State private var selectedUserCategory: PresentedUserCategory = .allUsers
     @State private var selectedServerType: PresentedServerType = .smp
     @State private var selectedSMPServer: String? = nil
     @State private var selectedXFTPServer: String? = nil
+    @State private var timer: Timer? = nil
     @State private var alert: SomeAlert?
 
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
@@ -47,8 +48,34 @@ struct ServersSummaryView: View {
             if m.users.filter({ u in u.user.activeUser || !u.user.hidden }).count == 1 {
                 selectedUserCategory = .currentUser
             }
+            getServersSummary()
+            startTimer()
+        }
+        .onDisappear {
+            stopTimer()
         }
         .alert(item: $alert) { $0.alert }
+    }
+
+    private func startTimer() {
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if AppChatState.shared.value == .active {
+                getServersSummary()
+            } 
+        }
+    }
+
+    private func getServersSummary() {
+        do {
+            serversSummary = try getAgentServersSummary()
+        } catch let error {
+            logger.error("getAgentServersSummary error: \(responseError(error))")
+        }
+    }
+
+    private func stopTimer() {
+        timer?.invalidate()
+        timer = nil
     }
 
     private func shareButton() -> some View {
@@ -356,6 +383,7 @@ struct ServersSummaryView: View {
                         Task {
                             do {
                                 try await resetAgentServersStats()
+                                getServersSummary()
                             } catch let error {
                                 alert = SomeAlert(
                                     alert: mkAlert(
@@ -712,7 +740,5 @@ struct DetailedXFTPStatsView: View {
 }
 
 #Preview {
-    ServersSummaryView(
-        serversSummary: Binding.constant(nil)
-    )
+    ServersSummaryView()
 }

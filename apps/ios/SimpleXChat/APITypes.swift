@@ -146,6 +146,7 @@ public enum ChatCommand {
     case apiStandaloneFileInfo(url: String)
     // misc
     case showVersion
+    case getAgentSubsTotal(userId: Int64)
     case getAgentServersSummary(userId: Int64)
     case resetAgentServersStats
     case string(String)
@@ -309,6 +310,7 @@ public enum ChatCommand {
             case let .apiDownloadStandaloneFile(userId, link, file): return "/_download \(userId) \(link) \(file.filePath)"
             case let .apiStandaloneFileInfo(link): return "/_download info \(link)"
             case .showVersion: return "/version"
+            case let .getAgentSubsTotal(userId): return "/get subs total \(userId)"
             case let .getAgentServersSummary(userId): return "/get servers summary \(userId)"
             case .resetAgentServersStats: return "/reset servers stats"
             case let .string(str): return str
@@ -447,6 +449,7 @@ public enum ChatCommand {
             case .apiDownloadStandaloneFile: return "apiDownloadStandaloneFile"
             case .apiStandaloneFileInfo: return "apiStandaloneFileInfo"
             case .showVersion: return "showVersion"
+            case .getAgentSubsTotal: return "getAgentSubsTotal"
             case .getAgentServersSummary: return "getAgentServersSummary"
             case .resetAgentServersStats: return "resetAgentServersStats"
             case .string: return "console command"
@@ -678,6 +681,7 @@ public enum ChatResponse: Decodable, Error {
     // misc
     case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
     case cmdOk(user: UserRef?)
+    case agentSubsTotal(user: UserRef, subsTotal: SMPServerSubs, sessTotal: ServerSessions)
     case agentServersSummary(user: UserRef, serversSummary: PresentedServersSummary)
     case agentSubsSummary(user: UserRef, subsSummary: SMPServerSubs)
     case chatCmdError(user_: UserRef?, chatError: ChatError)
@@ -839,6 +843,7 @@ public enum ChatResponse: Decodable, Error {
             case .contactPQEnabled: return "contactPQEnabled"
             case .versionInfo: return "versionInfo"
             case .cmdOk: return "cmdOk"
+            case .agentSubsTotal: return "agentSubsTotal"
             case .agentServersSummary: return "agentServersSummary"
             case .agentSubsSummary: return "agentSubsSummary"
             case .chatCmdError: return "chatCmdError"
@@ -1005,6 +1010,7 @@ public enum ChatResponse: Decodable, Error {
             case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
             case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
             case .cmdOk: return noDetails
+            case let .agentSubsTotal(u, subsTotal, sessTotal): return withUser(u, "contact: \(String(describing: subsTotal))\npqEnabled: \(String(describing: sessTotal))")
             case let .agentServersSummary(u, serversSummary): return withUser(u, String(describing: serversSummary))
             case let .agentSubsSummary(u, subsSummary): return withUser(u, String(describing: subsSummary))
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
