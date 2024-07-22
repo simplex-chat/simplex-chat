@@ -662,7 +662,7 @@ public enum ChatResponse: Decodable, Error {
     case callInvitations(callInvitations: [RcvCallInvitation])
     case ntfTokenStatus(status: NtfTknStatus)
     case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode, ntfServer: String)
-    case ntfMessages(user_: User?, connEntity_: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
+    case ntfMessages(user_: User?, connEntity_: ConnectionEntity?, msgTs: Date?, ntfMessage_: NtfMsgInfo?)
     case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgInfo)
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
     case contactDisabled(user: UserRef, contact: Contact)
@@ -2377,6 +2377,10 @@ public struct AgentSMPServerStatsData: Codable {
     public var _connSubAttempts: Int
     public var _connSubIgnored: Int
     public var _connSubErrs: Int
+    public var _ntfKey: Int
+    public var _ntfKeyAttempts: Int
+    public var _ntfKeyDeleted: Int
+    public var _ntfKeyDeleteAttempts: Int
 }
 
 public struct XFTPServersSummary: Codable {
@@ -2415,4 +2419,13 @@ public struct AgentXFTPServerStatsData: Codable {
     public var _deletions: Int
     public var _deleteAttempts: Int
     public var _deleteErrs: Int
+}
+
+public struct AgentNtfServerStatsData: Codable {
+    public var _ntfCreated: Int
+    public var _ntfCreateAttempts: Int
+    public var _ntfChecked: Int
+    public var _ntfCheckAttempts: Int
+    public var _ntfDeleted: Int
+    public var _ntfDelAttempts: Int
 }
