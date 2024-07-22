@@ -423,6 +423,16 @@ object ChatController {
 
   fun hasChatCtrl() = ctrl != -1L && ctrl != null
 
+  suspend fun getAgentSubsTotal(rh: Long?): Pair<SMPServerSubs, Boolean>? {
+    val userId = currentUserId("getAgentSubsTotal")
+
+    val r = sendCmd(rh, CC.GetAgentSubsTotal(userId), log = false)
+
+    if (r is CR.AgentSubsTotal) return r.subsTotal to r.hasSession
+    Log.e(TAG, "getAgentSubsTotal bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun getAgentServersSummary(rh: Long?): PresentedServersSummary? {
     val userId = currentUserId("getAgentServersSummary")
 
@@ -1837,23 +1847,27 @@ object ChatController {
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
           && r.chatError.agentError is AgentErrorType.SMP
           && r.chatError.agentError.smpErr is SMPErrorType.PROXY ->
-        proxyErrorAlert(r.chatError.agentError.smpErr.proxyErr, r.chatError.agentError.serverAddress)
+        smpProxyErrorAlert(r.chatError.agentError.smpErr.proxyErr, r.chatError.agentError.serverAddress)
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
           && r.chatError.agentError is AgentErrorType.PROXY
           && r.chatError.agentError.proxyErr is ProxyClientError.ProxyProtocolError
           && r.chatError.agentError.proxyErr.protocolErr is SMPErrorType.PROXY ->
-        proxyErrorAlert(r.chatError.agentError.proxyErr.protocolErr.proxyErr, r.chatError.agentError.proxyServer)
+        proxyDestinationErrorAlert(
+          r.chatError.agentError.proxyErr.protocolErr.proxyErr,
+          r.chatError.agentError.proxyServer,
+          r.chatError.agentError.relayServer
+        )
       else -> false
     }
   }
 
-  private fun proxyErrorAlert(pe: ProxyError, srvAddr: String): Boolean {
+  private fun smpProxyErrorAlert(pe: ProxyError, srvAddr: String): Boolean {
     return when {
       pe is ProxyError.BROKER
           && pe.brokerErr is BrokerErrorType.TIMEOUT -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.private_routing_error),
-          generalGetString(MR.strings.please_try_later)
+          String.format(generalGetString(MR.strings.smp_proxy_error_connecting), serverHostname(srvAddr))
         )
         true
       }
@@ -1861,14 +1875,7 @@ object ChatController {
           && pe.brokerErr is BrokerErrorType.NETWORK -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.private_routing_error),
-          generalGetString(MR.strings.please_try_later)
-        )
-        true
-      }
-      pe is ProxyError.NO_SESSION -> {
-        AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.private_routing_error),
-          generalGetString(MR.strings.please_try_later)
+          String.format(generalGetString(MR.strings.smp_proxy_error_connecting), serverHostname(srvAddr))
         )
         true
       }
@@ -1876,7 +1883,7 @@ object ChatController {
           && pe.brokerErr is BrokerErrorType.HOST -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.private_routing_error),
-          String.format(generalGetString(MR.strings.network_error_broker_host_desc), serverHostname(srvAddr))
+          String.format(generalGetString(MR.strings.smp_proxy_error_broker_host), serverHostname(srvAddr))
         )
         true
       }
@@ -1885,7 +1892,53 @@ object ChatController {
           && pe.brokerErr.transportErr is SMPTransportError.Version -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.private_routing_error),
-          String.format(generalGetString(MR.strings.proxy_error_broker_version_desc), serverHostname(srvAddr))
+          String.format(generalGetString(MR.strings.smp_proxy_error_broker_version), serverHostname(srvAddr))
+        )
+        true
+      }
+      else -> false
+    }
+  }
+
+  private fun proxyDestinationErrorAlert(pe: ProxyError, proxyServer: String, relayServer: String): Boolean {
+    return when {
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.TIMEOUT -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_failed_to_connect), serverHostname(proxyServer), serverHostname(relayServer))
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.NETWORK -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_failed_to_connect), serverHostname(proxyServer), serverHostname(relayServer))
+        )
+        true
+      }
+      pe is ProxyError.NO_SESSION -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_failed_to_connect), serverHostname(proxyServer), serverHostname(relayServer))
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.HOST -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_broker_host), serverHostname(relayServer), serverHostname(proxyServer))
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.TRANSPORT
+          && pe.brokerErr.transportErr is SMPTransportError.Version -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_broker_version), serverHostname(relayServer), serverHostname(proxyServer))
         )
         true
       }
@@ -2772,6 +2825,7 @@ sealed class CC {
   // misc
   class ShowVersion(): CC()
   class ResetAgentServersStats(): CC()
+  class GetAgentSubsTotal(val userId: Long): CC()
   class GetAgentServersSummary(val userId: Long): CC()
 
   val cmdString: String get() = when (this) {
@@ -2932,6 +2986,7 @@ sealed class CC {
     is ApiStandaloneFileInfo -> "/_download info $url"
     is ShowVersion -> "/version"
     is ResetAgentServersStats -> "/reset servers stats"
+    is GetAgentSubsTotal -> "/get subs total $userId"
     is GetAgentServersSummary -> "/get servers summary $userId"
   }
 
@@ -3065,6 +3120,7 @@ sealed class CC {
     is ApiStandaloneFileInfo -> "apiStandaloneFileInfo"
     is ShowVersion -> "showVersion"
     is ResetAgentServersStats -> "resetAgentServersStats"
+    is GetAgentSubsTotal -> "getAgentSubsTotal"
     is GetAgentServersSummary -> "getAgentServersSummary"
   }
 
@@ -3595,6 +3651,9 @@ data class ServerSessions(
       ssConnecting = 0
     )
   }
+
+  val hasSess: Boolean
+    get() = ssConnected > 0
 }
 
 @Serializable
@@ -4700,6 +4759,7 @@ sealed class CR {
   @Serializable @SerialName("chatError") class ChatRespError(val user_: UserRef?, val chatError: ChatError): CR()
   @Serializable @SerialName("archiveImported") class ArchiveImported(val archiveErrors: List<ArchiveError>): CR()
   @Serializable @SerialName("appSettings") class AppSettingsR(val appSettings: AppSettings): CR()
+  @Serializable @SerialName("agentSubsTotal") class AgentSubsTotal(val user: UserRef, val subsTotal: SMPServerSubs, val hasSession: Boolean): CR()
   @Serializable @SerialName("agentServersSummary") class AgentServersSummary(val user: UserRef, val serversSummary: PresentedServersSummary): CR()
   // general
   @Serializable class Response(val type: String, val json: String): CR()
@@ -4861,6 +4921,7 @@ sealed class CR {
     is ContactPQAllowed -> "contactPQAllowed"
     is ContactPQEnabled -> "contactPQEnabled"
     is VersionInfo -> "versionInfo"
+    is AgentSubsTotal -> "agentSubsTotal"
     is AgentServersSummary -> "agentServersSummary"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
@@ -5041,6 +5102,7 @@ sealed class CR {
     is RemoteCtrlStopped -> "rcsState: $rcsState\nrcsStopReason: $rcStopReason"
     is ContactPQAllowed -> withUser(user, "contact: ${contact.id}\npqEncryption: $pqEncryption")
     is ContactPQEnabled -> withUser(user, "contact: ${contact.id}\npqEnabled: $pqEnabled")
+    is AgentSubsTotal -> withUser(user, "subsTotal: ${subsTotal}\nhasSession: $hasSession")
     is AgentServersSummary -> withUser(user, json.encodeToString(serversSummary))
     is VersionInfo -> "version ${json.encodeToString(versionInfo)}\n\n" +
         "chat migrations: ${json.encodeToString(chatMigrations.map { it.upName })}\n\n" +

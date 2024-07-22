@@ -255,7 +255,6 @@ private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableSt
           fontWeight = FontWeight.SemiBold,
         )
         SubscriptionStatusIndicator(
-          serversSummary = serversSummary,
           click = {
             ModalManager.start.closeModals()
             ModalManager.start.showModalCloseable(
@@ -286,34 +285,33 @@ private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableSt
 }
 
 @Composable
-fun SubscriptionStatusIndicator(serversSummary: MutableState<PresentedServersSummary?>, click: (() -> Unit)) {
+fun SubscriptionStatusIndicator(click: (() -> Unit)) {
   var subs by remember { mutableStateOf(SMPServerSubs.newSMPServerSubs) }
-  var sess by remember { mutableStateOf(ServerSessions.newServerSessions) }
+  var hasSess by remember { mutableStateOf(false) }
   val scope = rememberCoroutineScope()
 
-  suspend fun setServersSummary() {
-    serversSummary.value = chatModel.controller.getAgentServersSummary(chatModel.remoteHostId())
-
-    serversSummary.value?.let {
-      subs = it.allUsersSMP.smpTotals.subs
-      sess = it.allUsersSMP.smpTotals.sessions
+  suspend fun setSubsTotal() {
+    val r = chatModel.controller.getAgentSubsTotal(chatModel.remoteHostId())
+    if (r != null) {
+      subs = r.first
+      hasSess = r.second
     }
   }
 
   LaunchedEffect(Unit) {
-    setServersSummary()
+    setSubsTotal()
     scope.launch {
       while (isActive) {
         delay(1.seconds)
         if ((appPlatform.isDesktop || chatModel.chatId.value == null) && !ModalManager.start.hasModalsOpen() && !ModalManager.fullscreen.hasModalsOpen() && isAppVisibleAndFocused()) {
-          setServersSummary()
+          setSubsTotal()
         }
       }
     }
   }
 
   SimpleButtonFrame(click = click) {
-    SubscriptionStatusIndicatorView(subs = subs, sess = sess)
+    SubscriptionStatusIndicatorView(subs = subs, hasSess = hasSess)
   }
 }
 
