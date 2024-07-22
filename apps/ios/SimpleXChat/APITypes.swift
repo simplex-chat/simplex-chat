@@ -662,7 +662,7 @@ public enum ChatResponse: Decodable, Error {
     case callInvitations(callInvitations: [RcvCallInvitation])
     case ntfTokenStatus(status: NtfTknStatus)
     case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode, ntfServer: String)
-    case ntfMessages(user_: User?, connEntity_: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
+    case ntfMessages(user_: User?, connEntity_: ConnectionEntity?, msgTs: Date?, ntfMessage_: NtfMsgInfo?)
     case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgInfo)
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
     case contactDisabled(user: UserRef, contact: Contact)
