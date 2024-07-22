@@ -67,6 +67,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                                 rhId = rhId,
                                 contact = chat.chatInfo.contact
                             )
+                            ModalManager.start.closeModals()
                         }
                         else -> {}
                     }
