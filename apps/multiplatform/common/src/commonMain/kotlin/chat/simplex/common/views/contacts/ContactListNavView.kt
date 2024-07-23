@@ -63,12 +63,13 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                             ModalManager.start.closeModals()
                         }
                         ContactType.CARD -> {
-                            directChatAction(
-                                chatModel = chatModel,
-                                rhId = rhId,
-                                contact = chat.chatInfo.contact
+                            askCurrentOrIncognitoProfileConnectContactViaAddress(
+                                chatModel,
+                                rhId,
+                                chat.chatInfo.contact,
+                                close = { ModalManager.start.closeModals() },
+                                openChat = true
                             )
-                            ModalManager.start.closeModals()
                         }
                         else -> {}
                     }
