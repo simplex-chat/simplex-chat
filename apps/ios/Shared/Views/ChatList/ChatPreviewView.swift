@@ -207,6 +207,8 @@ struct ChatPreviewView: View {
                 .frame(width: 18, height: 18)
                 .padding(.trailing, 1)
                 .foregroundColor(.secondary.opacity(0.65))
+        } else {
+            Color.clear.frame(width: 0)
         }
     }
 
