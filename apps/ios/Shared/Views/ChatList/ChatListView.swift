@@ -22,8 +22,6 @@ struct ChatListView: View {
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
 
-    @State private var voiceItemsState: [String: VoiceItemState] = [:]
-
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
@@ -152,12 +150,7 @@ struct ChatListView: View {
                         .frame(maxWidth: .infinity)
                     }
                     ForEach(cs, id: \.viewId) { chat in
-                        ChatListNavLink(chat: chat, voiceItemsState: $voiceItemsState
-//                                        , onChangeVoiceState: { id, player, state, time in
-//                            logger.debug("LALAL CHANGING STATE \(String(describing: state)) \(String(describing: time))")
-//                            voiceItemsState[id] = VoiceItemState(audioPlayer: player, playbackState: state, playbackTime: time)
-//                        }
-                        )
+                        ChatListNavLink(chat: chat)
                             .padding(.trailing, -16)
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
                             .listRowBackground(Color.clear)
@@ -230,12 +223,8 @@ struct ChatListView: View {
     }
 
     func stopAudioPlayer() {
-        voiceItemsState.values.forEach {
-            $0.audioPlayer?.stop()
-            $0.audioPlayer = nil
-            $0.playbackState = .noPlayback
-            $0.playbackTime = nil
-        }
+        VoiceItemState.smallView.values.forEach { $0.audioPlayer?.stop() }
+        VoiceItemState.smallView = [:]
     }
 
     private func filteredChats() -> [Chat] {

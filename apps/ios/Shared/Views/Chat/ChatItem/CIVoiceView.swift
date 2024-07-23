@@ -15,13 +15,9 @@ struct CIVoiceView: View {
     var chatItem: ChatItem
     let recordingFile: CIFile?
     let duration: Int
-    @Binding var audioPlayer: AudioPlayer?
-    @Binding var playbackState: VoiceMessagePlaybackState
-    @Binding var playbackTime: TimeInterval?
-
-    @Binding var voiceItemsState: [String: VoiceItemState]
-
-    //var onChangeVoiceState: (String, AudioPlayer?, VoiceMessagePlaybackState, TimeInterval?) -> Void
+    @State var audioPlayer: AudioPlayer? = nil
+    @State var playbackState: VoiceMessagePlaybackState = .noPlayback
+    @State var playbackTime: TimeInterval? = nil
 
     @Binding var allowMenu: Bool
     var smallView: Bool = false
@@ -79,10 +75,8 @@ struct CIVoiceView: View {
             audioPlayer: $audioPlayer,
             playbackState: $playbackState,
             playbackTime: $playbackTime,
-            voiceItemsState: $voiceItemsState,
             allowMenu: $allowMenu,
             sizeMultiplier: smallView ? voiceMessageSizeBasedOnSquareSize(36) / 56 : 1
-            //onChangeVoiceState: onChangeVoiceState
         )
     }
 
@@ -150,11 +144,9 @@ struct VoiceMessagePlayer: View {
     @Binding var audioPlayer: AudioPlayer?
     @Binding var playbackState: VoiceMessagePlaybackState
     @Binding var playbackTime: TimeInterval?
-    @Binding var voiceItemsState: [String: VoiceItemState]
 
     @Binding var allowMenu: Bool
     var sizeMultiplier: CGFloat
-    //var onChangeVoiceState: (String, AudioPlayer?, VoiceMessagePlaybackState, TimeInterval?) -> Void
 
     var body: some View {
         ZStack {
@@ -214,14 +206,37 @@ struct VoiceMessagePlayer: View {
             }
         }
         .onAppear {
+            if audioPlayer == nil {
+                let small = sizeMultiplier != 1
+                audioPlayer = small ? VoiceItemState.smallView[VoiceItemState.id(chat, chatItem)]?.audioPlayer : VoiceItemState.nonSmallView[VoiceItemState.id(chat, chatItem)]?.audioPlayer
+                playbackState = (small ? VoiceItemState.smallView[VoiceItemState.id(chat, chatItem)]?.playbackState : VoiceItemState.nonSmallView[VoiceItemState.id(chat, chatItem)]?.playbackState) ?? .noPlayback
+                playbackTime = small ? VoiceItemState.smallView[VoiceItemState.id(chat, chatItem)]?.playbackTime : VoiceItemState.nonSmallView[VoiceItemState.id(chat, chatItem)]?.playbackTime
+            }
             seek = { to in audioPlayer?.seek(to) }
-            audioPlayer?.onTimer = { playbackTime = $0 }
+            let audioPath: URL? = if let recordingSource = getLoadedFileSource(recordingFile) {
+                getAppFilePath(recordingSource.filePath)
+            } else {
+                nil
+            }
+            let chatId = chatModel.chatId
+            let userId = chatModel.currentUser?.userId
+            audioPlayer?.onTimer = {
+                playbackTime = $0
+                notifyStateChange()
+                // Manual check here is needed because when this view is not visible, SwiftUI don't react on stopPreviousRecPlay, chatId and current user changes and audio keeps playing when it should stop
+                if (audioPath != nil && chatModel.stopPreviousRecPlay != audioPath) || chatModel.chatId != chatId || chatModel.currentUser?.userId != userId {
+                    stopPlayback()
+                }
+            }
             audioPlayer?.onFinishPlayback = {
                 playbackState = .noPlayback
                 playbackTime = TimeInterval(0)
                 notifyStateChange()
             }
-            logger.debug("LALAL APPEAR \(String(describing: playbackState)) \(String(describing: playbackTime))")
+            // One voice message was paused, then scrolled far from it, started to play another one, drop to stopped state
+            if let audioPath, chatModel.stopPreviousRecPlay != audioPath {
+                stopPlayback()
+            }
         }
         .onChange(of: chatModel.stopPreviousRecPlay) { it in
             if let recordingFileName = getLoadedFileSource(recordingFile)?.filePath,
@@ -346,8 +361,11 @@ struct VoiceMessagePlayer: View {
     }
 
     func notifyStateChange() {
-        voiceItemsState[VoiceItemState.id(chat, chatItem)] = VoiceItemState(audioPlayer: audioPlayer, playbackState: playbackState, playbackTime: playbackTime)
-        //onChangeVoiceState(VoiceItemState.id(chat, chatItem), audioPlayer, playbackState, playbackTime)
+        if sizeMultiplier != 1 {
+            VoiceItemState.smallView[VoiceItemState.id(chat, chatItem)] = VoiceItemState(audioPlayer: audioPlayer, playbackState: playbackState, playbackTime: playbackTime)
+        } else {
+            VoiceItemState.nonSmallView[VoiceItemState.id(chat, chatItem)] = VoiceItemState(audioPlayer: audioPlayer, playbackState: playbackState, playbackTime: playbackTime)
+        }
     }
 
     private struct ProgressCircle: View {
@@ -387,11 +405,18 @@ struct VoiceMessagePlayer: View {
     }
 
     private func startPlayback(_ recordingSource: CryptoFile) {
-        chatModel.stopPreviousRecPlay = getAppFilePath(recordingSource.filePath)
+        let audioPath = getAppFilePath(recordingSource.filePath)
+        let chatId = chatModel.chatId
+        let userId = chatModel.currentUser?.userId
+        chatModel.stopPreviousRecPlay = audioPath
         audioPlayer = AudioPlayer(
             onTimer: {
                 playbackTime = $0
                 notifyStateChange()
+                // Manual check here is needed because when this view is not visible, SwiftUI don't react on stopPreviousRecPlay, chatId and current user changes and audio keeps playing when it should stop
+                if chatModel.stopPreviousRecPlay != audioPath || chatModel.chatId != chatId || chatModel.currentUser?.userId != userId {
+                    stopPlayback()
+                }
             },
             onFinishPlayback: {
                 playbackState = .noPlayback
@@ -431,6 +456,9 @@ class VoiceItemState {
     static func id(_ chat: Chat, _ chatItem: ChatItem) -> String {
         "\(chat.id) \(chatItem.id)"
     }
+
+    static var nonSmallView: [String: VoiceItemState] = [:]
+    static var smallView: [String: VoiceItemState] = [:]
 }
 
 struct CIVoiceView_Previews: PreviewProvider {
@@ -455,17 +483,12 @@ struct CIVoiceView_Previews: PreviewProvider {
                 chatItem: ChatItem.getVoiceMsgContentSample(),
                 recordingFile: CIFile.getSample(fileName: "voice.m4a", fileSize: 65536, fileStatus: .rcvComplete),
                 duration: 30,
-                audioPlayer: .constant(nil),
-                playbackState: .constant(.playing),
-                playbackTime: .constant(TimeInterval(20)),
-                voiceItemsState: Binding.constant([:]),
-                //onChangeVoiceState: { _, _, _, _ in },
                 allowMenu: Binding.constant(true)
             )
-            ChatItemView(chat: Chat.sampleData, chatItem: sentVoiceMessage, revealed: Binding.constant(false), allowMenu: .constant(true), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(), revealed: Binding.constant(false), allowMenu: .constant(true), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), revealed: Binding.constant(false), allowMenu: .constant(true), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
-            ChatItemView(chat: Chat.sampleData, chatItem: voiceMessageWtFile, revealed: Binding.constant(false), allowMenu: .constant(true), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
+            ChatItemView(chat: Chat.sampleData, chatItem: sentVoiceMessage, revealed: Binding.constant(false), allowMenu: .constant(true))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(), revealed: Binding.constant(false), allowMenu: .constant(true))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), revealed: Binding.constant(false), allowMenu: .constant(true))
+            ChatItemView(chat: Chat.sampleData, chatItem: voiceMessageWtFile, revealed: Binding.constant(false), allowMenu: .constant(true))
         }
         .previewLayout(.fixed(width: 360, height: 360))
     }

@@ -17,15 +17,12 @@ struct FramedCIVoiceView: View {
     var chatItem: ChatItem
     let recordingFile: CIFile?
     let duration: Int
-    
-    @Binding var allowMenu: Bool
-    
-    @Binding var audioPlayer: AudioPlayer?
-    @Binding var playbackState: VoiceMessagePlaybackState
-    @Binding var playbackTime: TimeInterval?
 
-    @Binding var voiceItemsState: [String: VoiceItemState]
-    //var onChangeVoiceState: (String, AudioPlayer?, VoiceMessagePlaybackState, TimeInterval?) -> Void
+    @State var audioPlayer: AudioPlayer? = nil
+    @State var playbackState: VoiceMessagePlaybackState = .noPlayback
+    @State var playbackTime: TimeInterval? = nil
+
+    @Binding var allowMenu: Bool
 
     @State private var seek: (TimeInterval) -> Void = { _ in }
     
@@ -41,10 +38,8 @@ struct FramedCIVoiceView: View {
                 audioPlayer: $audioPlayer,
                 playbackState: $playbackState,
                 playbackTime: $playbackTime,
-                voiceItemsState: $voiceItemsState,
                 allowMenu: $allowMenu,
                 sizeMultiplier: 1
-                //onChangeVoiceState: onChangeVoiceState
             )
             VoiceMessagePlayerTime(
                 recordingTime: TimeInterval(duration),
