@@ -49,11 +49,13 @@ struct ChatPreviewView: View {
                     let ci = activeContentPreview?.ci ?? chat.chatItems.last
                     let mc = ci?.content.msgContent
                     HStack(alignment: .top) {
-                        if let ci, (showChatPreviews && chatModel.draftChatId != chat.id) || activeContentPreview != nil {
+                        let deleted = ci?.isDeletedContent == true || ci?.meta.itemDeleted != nil
+                        let showContentPreview = (showChatPreviews && chatModel.draftChatId != chat.id && !deleted) || activeContentPreview != nil
+                        if let ci, showContentPreview {
                             chatItemContentPreview(chat, ci)
                         }
                         let mcIsVoice = switch mc { case .voice: true; default: false }
-                        if !mcIsVoice || mc?.text != "" || chatModel.draftChatId == chat.id {
+                        if !mcIsVoice || !showContentPreview || mc?.text != "" || chatModel.draftChatId == chat.id {
                             let hasFilePreview = if case .file = mc { true } else { false }
                             chatMessagePreview(cItem, hasFilePreview)
                         } else {
@@ -84,6 +86,10 @@ struct ChatPreviewView: View {
         .padding(.bottom, -8)
         .onChange(of: chatModel.deletedChats.contains(chat.chatInfo.id)) { contains in
             deleting = contains
+            // Stop voice when deleting the chat
+            if contains, let ci = activeContentPreview?.ci {
+                VoiceItemState.stopVoiceInSmallView(chat.chatInfo, ci)
+            }
         }
 
         func checkActiveContentPreview(_ chat: Chat, _ ci: ChatItem?, _ mc: MsgContent?) {

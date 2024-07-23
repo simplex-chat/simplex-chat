@@ -208,9 +208,9 @@ struct VoiceMessagePlayer: View {
         .onAppear {
             if audioPlayer == nil {
                 let small = sizeMultiplier != 1
-                audioPlayer = small ? VoiceItemState.smallView[VoiceItemState.id(chat, chatItem)]?.audioPlayer : VoiceItemState.nonSmallView[VoiceItemState.id(chat, chatItem)]?.audioPlayer
-                playbackState = (small ? VoiceItemState.smallView[VoiceItemState.id(chat, chatItem)]?.playbackState : VoiceItemState.nonSmallView[VoiceItemState.id(chat, chatItem)]?.playbackState) ?? .noPlayback
-                playbackTime = small ? VoiceItemState.smallView[VoiceItemState.id(chat, chatItem)]?.playbackTime : VoiceItemState.nonSmallView[VoiceItemState.id(chat, chatItem)]?.playbackTime
+                audioPlayer = small ? VoiceItemState.smallView[VoiceItemState.id(chat, chatItem)]?.audioPlayer : VoiceItemState.chatView[VoiceItemState.id(chat, chatItem)]?.audioPlayer
+                playbackState = (small ? VoiceItemState.smallView[VoiceItemState.id(chat, chatItem)]?.playbackState : VoiceItemState.chatView[VoiceItemState.id(chat, chatItem)]?.playbackState) ?? .noPlayback
+                playbackTime = small ? VoiceItemState.smallView[VoiceItemState.id(chat, chatItem)]?.playbackTime : VoiceItemState.chatView[VoiceItemState.id(chat, chatItem)]?.playbackTime
             }
             seek = { to in audioPlayer?.seek(to) }
             let audioPath: URL? = if let recordingSource = getLoadedFileSource(recordingFile) {
@@ -364,7 +364,7 @@ struct VoiceMessagePlayer: View {
         if sizeMultiplier != 1 {
             VoiceItemState.smallView[VoiceItemState.id(chat, chatItem)] = VoiceItemState(audioPlayer: audioPlayer, playbackState: playbackState, playbackTime: playbackTime)
         } else {
-            VoiceItemState.nonSmallView[VoiceItemState.id(chat, chatItem)] = VoiceItemState(audioPlayer: audioPlayer, playbackState: playbackState, playbackTime: playbackTime)
+            VoiceItemState.chatView[VoiceItemState.id(chat, chatItem)] = VoiceItemState(audioPlayer: audioPlayer, playbackState: playbackState, playbackTime: playbackTime)
         }
     }
 
@@ -457,8 +457,28 @@ class VoiceItemState {
         "\(chat.id) \(chatItem.id)"
     }
 
-    static var nonSmallView: [String: VoiceItemState] = [:]
+    static func id(_ chatInfo: ChatInfo, _ chatItem: ChatItem) -> String {
+        "\(chatInfo.id) \(chatItem.id)"
+    }
+
+    static func stopVoiceInSmallView(_ chatInfo: ChatInfo, _ chatItem: ChatItem) {
+        let id = id(chatInfo, chatItem)
+        if let item = smallView[id] {
+            item.audioPlayer?.stop()
+            ChatModel.shared.stopPreviousRecPlay = nil
+        }
+    }
+
+    static func stopVoiceInChatView(_ chatInfo: ChatInfo, _ chatItem: ChatItem) {
+        let id = id(chatInfo, chatItem)
+        if let item = chatView[id] {
+            item.audioPlayer?.stop()
+            ChatModel.shared.stopPreviousRecPlay = nil
+        }
+    }
+
     static var smallView: [String: VoiceItemState] = [:]
+    static var chatView: [String: VoiceItemState] = [:]
 }
 
 struct CIVoiceView_Previews: PreviewProvider {

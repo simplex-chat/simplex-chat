@@ -592,8 +592,8 @@ struct ChatView: View {
     }
 
     func stopAudioPlayer() {
-        VoiceItemState.nonSmallView.values.forEach { $0.audioPlayer?.stop() }
-        VoiceItemState.nonSmallView = [:]
+        VoiceItemState.chatView.values.forEach { $0.audioPlayer?.stop() }
+        VoiceItemState.chatView = [:]
     }
 
     @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
