@@ -347,9 +347,9 @@
         <target>**Legprivátabb**: ne használja a SimpleX Chat értesítési kiszolgálót, rendszeresen ellenőrizze az üzeneteket a háttérben (attól függően, hogy milyen gyakran használja az alkalmazást).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." xml:space="preserve">
+      <trans-unit id="**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." xml:space="preserve" approved="no">
         <source>**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection.</source>
-        <target>**Megjegyzés**: ha két eszközön is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja a kapcsolataiból érkező üzenetek visszafejtését.</target>
+        <target state="translated">**Megjegyzés**: ha két eszközön is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja az ismerőseitől érkező üzenetek visszafejtését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve">
@@ -993,9 +993,9 @@
         <target>Kapcsolódási kérelmek automatikus elfogadása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Auto-accept images" xml:space="preserve">
+      <trans-unit id="Auto-accept images" xml:space="preserve" approved="no">
         <source>Auto-accept images</source>
-        <target>Fotók automatikus elfogadása</target>
+        <target state="translated">Képek automatikus elfogadása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Back" xml:space="preserve">
@@ -2160,12 +2160,12 @@ Ez a művelet nem vonható vissza!</target>
       </trans-unit>
       <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve" approved="no">
         <source>Device authentication is disabled. Turning off SimpleX Lock.</source>
-        <target state="translated">Az eszközhitelesítés ki van kapcsolva. A SimpleX zár kikapcsolva.</target>
+        <target state="translated">A készüléken nincs beállítva a képernyőzár. A SimpleX zár ki van kapcsolva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve">
+      <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve" approved="no">
         <source>Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication.</source>
-        <target>Eszközhitelesítés nem engedélyezett.A SimpleX zárolás bekapcsolható a Beállításokon keresztül, miután az eszköz hitelesítés engedélyezésre került.</target>
+        <target state="translated">A készüléken nincs beállítva a képernyőzár. A SimpleX zár az „Adatvédelem és biztonság” menüben kapcsolható be, miután beállította a képernyőzárat az eszközén.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Different names, avatars and transport isolation." xml:space="preserve">
@@ -2190,7 +2190,7 @@ Ez a művelet nem vonható vissza!</target>
       </trans-unit>
       <trans-unit id="Disable SimpleX Lock" xml:space="preserve" approved="no">
         <source>Disable SimpleX Lock</source>
-        <target state="translated">SimpleX zár letiltása</target>
+        <target state="translated">SimpleX zár kikapcsolása</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Disable for all" xml:space="preserve">
@@ -2363,9 +2363,9 @@ Ez a művelet nem vonható vissza!</target>
         <target>Engedélyezés (felülírások megtartásával)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable SimpleX Lock" xml:space="preserve">
+      <trans-unit id="Enable SimpleX Lock" xml:space="preserve" approved="no">
         <source>Enable SimpleX Lock</source>
-        <target>SimpleX zárolás engedélyezése</target>
+        <target state="translated">SimpleX zár bekapcsolása</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Enable TCP keep-alive" xml:space="preserve">
@@ -3665,9 +3665,9 @@ Hiba: %2$@</target>
         <target>Lehetővé teszi, hogy egyetlen csevegőprofilon belül több anonim kapcsolat legyen, anélkül, hogy megosztott adatok lennének közöttük.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve">
+      <trans-unit id="It can happen when you or your connection used the old database backup." xml:space="preserve" approved="no">
         <source>It can happen when you or your connection used the old database backup.</source>
-        <target>Ez akkor fordulhat elő, ha ön vagy a kapcsolata régi adatbázis biztonsági mentést használt.</target>
+        <target state="translated">Ez akkor fordulhat elő, ha ön vagy az ismerőse régi adatbázis biztonsági mentést használt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It can happen when:&#10;1. The messages expired in the sending client after 2 days or on the server after 30 days.&#10;2. Message decryption failed, because you or your contact used old database backup.&#10;3. The connection was compromised." xml:space="preserve">
@@ -4367,9 +4367,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Rendben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Off" xml:space="preserve">
+      <trans-unit id="Off" xml:space="preserve" approved="no">
         <source>Off</source>
-        <target>Ki</target>
+        <target state="translated">Kikapcsolva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ok" xml:space="preserve">
@@ -5958,24 +5958,24 @@ Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.<
         <target>A SimpleX Chat biztonsága a Trail of Bits által lett auditálva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock" xml:space="preserve">
+      <trans-unit id="SimpleX Lock" xml:space="preserve" approved="no">
         <source>SimpleX Lock</source>
-        <target>SimpleX zárolás</target>
+        <target state="translated">SimpleX zár</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock mode" xml:space="preserve">
+      <trans-unit id="SimpleX Lock mode" xml:space="preserve" approved="no">
         <source>SimpleX Lock mode</source>
-        <target>SimpleX zárolási mód</target>
+        <target state="translated">Zárolási mód</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock not enabled!" xml:space="preserve">
+      <trans-unit id="SimpleX Lock not enabled!" xml:space="preserve" approved="no">
         <source>SimpleX Lock not enabled!</source>
-        <target>SimpleX zárolás nincs engedélyezve!</target>
+        <target state="translated">A SimpleX zár nincs bekapcsolva!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX Lock turned on" xml:space="preserve">
+      <trans-unit id="SimpleX Lock turned on" xml:space="preserve" approved="no">
         <source>SimpleX Lock turned on</source>
-        <target>SimpleX zárolás bekapcsolva</target>
+        <target state="translated">SimpleX zár bekapcsolva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX address" xml:space="preserve">
@@ -6198,9 +6198,9 @@ Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.<
         <target>TCP_KEEPINTVL</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Take picture" xml:space="preserve">
+      <trans-unit id="Take picture" xml:space="preserve" approved="no">
         <source>Take picture</source>
-        <target>Fotó készítése</target>
+        <target state="translated">Kép készítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
@@ -6400,9 +6400,9 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>Ezek felülbírálhatóak az ismerős- és csoportbeállításokban.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve" approved="no">
         <source>This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</source>
-        <target>Ez a művelet nem vonható vissza - az összes fogadott és küldött fájl a médiatartalommal együtt törlésre kerülnek. Az alacsony felbontású fotók viszont megmaradnak.</target>
+        <target state="translated">Ez a művelet nem vonható vissza - az összes fogadott és küldött fájl a médiatartalommal együtt törlésre kerülnek. Az alacsony felbontású képek viszont megmaradnak.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve">
@@ -6505,11 +6505,11 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>Az IP-cím védelmének érdekében a privát útválasztás az SMP kiszolgálókat használja az üzenetek kézbesítéséhez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
+      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve" approved="no">
         <source>To protect your information, turn on SimpleX Lock.
 You will be prompted to complete authentication before this feature is enabled.</source>
-        <target>Az adatavédelem érdekében kapcsolja be a SimpleX zárolás funkciót.
-A funkció engedélyezése előtt a rendszer felszólítja a hitelesítés befejezésére.</target>
+        <target state="translated">A biztonsága érdekében kapcsolja be a SimpleX zár funkciót.
+A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beállítására az eszközén.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To record voice message please grant permission to use Microphone." xml:space="preserve">
@@ -7266,9 +7266,9 @@ Csatlakozási kérés megismétlése?</target>
         <target>A csevegést az alkalmazás Beállítások / Adatbázis menü segítségével vagy az alkalmazás újraindításával indíthatja el</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve">
+      <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve" approved="no">
         <source>You can turn on SimpleX Lock via Settings.</source>
-        <target>A SimpleX zárolás a Beállításokon keresztül kapcsolható be.</target>
+        <target state="translated">A SimpleX zár az „Adatvédelem és biztonság” menüben kapcsolható be.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
@@ -8154,9 +8154,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>ajánlotta %1$@: %2$@-kor</target>
         <note>feature offered item</note>
       </trans-unit>
-      <trans-unit id="on" xml:space="preserve">
+      <trans-unit id="on" xml:space="preserve" approved="no">
         <source>on</source>
-        <target>be</target>
+        <target state="translated">bekapcsolva</target>
         <note>group pref value</note>
       </trans-unit>
       <trans-unit id="other" xml:space="preserve">
