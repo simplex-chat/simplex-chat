@@ -16,7 +16,6 @@ import kotlinx.coroutines.delay
 @Composable
 fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
     val showMenu = remember { mutableStateOf(false) }
-    val loadedChat = remember { mutableStateOf<Chat?>(null) }
     val rhId = chat.remoteHostId
     val disabled = chatModel.chatRunning.value == false || chatModel.deletedChats.value.contains(rhId to chat.chatInfo.id)
     val contactType = getContactType(chat)
@@ -24,14 +23,6 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
     LaunchedEffect(chat.id) {
         showMenu.value = false
         delay(500L)
-    }
-
-    LaunchedEffect(contactType) {
-        if (contactType == ContactType.RECENT) {
-            withBGApi {
-                loadedChat.value = chatModel.controller.apiGetChat(rhId, chat.chatInfo.chatType, chat.chatInfo.apiId)
-            }
-        }
     }
 
     val selectedChat = remember(chat.id) { derivedStateOf { chat.id == chatModel.chatId.value } }
@@ -47,15 +38,10 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                 click = {
                     when (contactType) {
                         ContactType.RECENT -> {
-                            loadedChat.value?.let {
-                                openLoadedChat(it, chatModel)
-                            } ?: run {
-                                withApi {
-                                    openChat(rhId, chat.chatInfo, chatModel)
-                                }
+                            withApi {
+                                openChat(rhId, chat.chatInfo, chatModel)
+                                ModalManager.start.closeModals()
                             }
-
-                            ModalManager.start.closeModals()
                         }
                         ContactType.REMOVED -> {
                             openLoadedChat(chat, chatModel)
