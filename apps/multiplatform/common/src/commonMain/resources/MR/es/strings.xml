@@ -1870,7 +1870,7 @@
     <string name="info_row_file_status">Estado del archivo</string>
     <string name="remote_ctrl_connection_stopped_desc">Comprueba que el móvil y el ordenador están conectados a la misma red local y que el cortafuegos del ordenador permite la conexión.
 \nPor favor, comparte cualquier otro problema con los desarrolladores.</string>
-    <string name="copy_error">Error al copiar</string>
+    <string name="copy_error">Copiar error</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">Este enlace ha sido usado en otro dispositivo móvil, por favor crea un enlace nuevo en el ordenador.</string>
     <string name="cannot_share_message_alert_title">No se puede enviar el mensaje</string>
     <string name="cannot_share_message_alert_text">Las preferencias seleccionadas no permiten este mensaje.</string>
@@ -1981,4 +1981,13 @@
     <string name="sent_via_proxy">Enviado mediante proxy</string>
     <string name="server_address">Dirección del servidor</string>
     <string name="size">Tamaño</string>
+    <string name="servers_info_subscriptions_connections_subscribed">Conexiones activas</string>
+    <string name="servers_info_starting_from">Iniciado desde</string>
+    <string name="servers_info_private_data_disclaimer">Iniciado desde %s
+\nTodos los datos son privados a tu dispositivo</string>
+    <string name="chunks_deleted">Bloques eliminados</string>
+    <string name="chunks_downloaded">Bloques descargados</string>
+    <string name="chunks_uploaded">Bloques subidos</string>
+    <string name="acknowledged">Reconocido</string>
+    <string name="acknowledgement_errors">Errores de reconocimiento</string>
 </resources>
