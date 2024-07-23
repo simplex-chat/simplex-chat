@@ -583,8 +583,9 @@
         <target state="translated">Recibido</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Acknowledgement errors" xml:space="preserve">
+      <trans-unit id="Acknowledgement errors" xml:space="preserve" approved="no">
         <source>Acknowledgement errors</source>
+        <target state="translated">Errores de reconocimiento</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Active connections" xml:space="preserve" approved="no">
@@ -1619,7 +1620,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Copy error" xml:space="preserve" approved="no">
         <source>Copy error</source>
-        <target state="translated">Error al copiar</target>
+        <target state="translated">Copiar error</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Core version: v%@" xml:space="preserve">
@@ -6072,8 +6073,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Iniciar migración</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Starting from %@." xml:space="preserve">
+      <trans-unit id="Starting from %@." xml:space="preserve" approved="no">
         <source>Starting from %@.</source>
+        <target state="translated">Iniciado desde %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Statistics" xml:space="preserve" approved="no">
