@@ -2,10 +2,13 @@ package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
@@ -17,6 +20,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_MAX_IMAGE_WIDTH
 import chat.simplex.res.MR
@@ -112,6 +116,12 @@ fun CIImageView(
 
   @Composable
   fun ImageView(painter: Painter, image: String, fileSource: CryptoFile?, onClick: () -> Unit) {
+    var withBlur by remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
+    val blurModifier = Modifier.blur(
+      radiusX = remember { appPrefs.privacyMediaBlurRadius.state }.value.dp,
+      radiusY = remember { appPrefs.privacyMediaBlurRadius.state }.value.dp,
+      edgeTreatment = BlurredEdgeTreatment(RoundedCornerShape(0.dp))
+    )
     // On my Android device Compose fails to display 6000x6000 px WebP image with exception:
     // IllegalStateException: Recording currently in progress - missing #endRecording() call?
     // but can display 5000px image. Using even lower value here just to feel safer.
@@ -126,9 +136,13 @@ fun CIImageView(
           .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
           .combinedClickable(
             onLongClick = { showMenu.value = true },
-            onClick = onClick
+            onClick = {
+              onClick()
+              withBlur = false
+            }
           )
-          .onRightClick { showMenu.value = true },
+          .onRightClick { showMenu.value = true }
+          .then(if (withBlur) blurModifier else Modifier),
         contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
       )
     } else {
@@ -136,9 +150,12 @@ fun CIImageView(
         .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
-          onClick = {}
+          onClick = {
+            withBlur = false
+          }
         )
-        .onRightClick { showMenu.value = true },
+        .onRightClick { showMenu.value = true }
+        .then(if (withBlur) blurModifier else Modifier),
         contentAlignment = Alignment.Center
       ) {
         imageView(base64ToBitmap(image), onClick = {

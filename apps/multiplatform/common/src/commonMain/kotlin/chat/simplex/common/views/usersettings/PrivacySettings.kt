@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.res.MR
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.ProfileNameField
 import chat.simplex.common.views.helpers.*
@@ -32,6 +33,8 @@ import chat.simplex.common.views.localauth.SetAppPasscodeView
 import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 enum class LAMode {
   SYSTEM,
@@ -87,6 +90,21 @@ fun PrivacySettingsView(
         simplexLinkMode.set(it)
         chatModel.simplexLinkMode.value = it
       })
+    }
+    SectionDividerSpaced()
+
+    SectionView(stringResource(MR.strings.privacy_media_blur_radius).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
+      Row(Modifier.padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
+        val state = remember { appPrefs.privacyMediaBlurRadius.state }
+        Text("${state.value}", Modifier.width(50.dp))
+        Slider(
+          value = state.value.toFloat(),
+          valueRange = 0f..100f,
+          onValueChange = { value ->
+            appPrefs.privacyMediaBlurRadius.set(value.roundToInt())
+          }
+        )
+      }
     }
     SectionDividerSpaced()
 

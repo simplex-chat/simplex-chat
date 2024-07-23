@@ -1102,6 +1102,7 @@
   <string name="receipts_groups_disable_keep_overrides">Disable (keep group overrides)</string>
   <string name="receipts_groups_enable_for_all">Enable for all groups</string>
   <string name="receipts_groups_disable_for_all">Disable for all groups</string>
+  <string name="privacy_media_blur_radius">Blur radius for media in chat</string>
 
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>
