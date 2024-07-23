@@ -361,7 +361,7 @@
     <string name="database_encryption_will_be_updated">Az adatbázis titkosítás jelmondata megváltoztatásra és mentésre kerül a Keystore-ban.</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Az adatbázis titkosításra kerül és a jelmondat eltárolásra a beállításokban.</string>
     <string name="smp_servers_delete_server">Kiszolgáló törlése</string>
-    <string name="auth_device_authentication_is_disabled_turning_off">Eszközhitelesítés kikapcsolva. SimpleX zárolás kikapcsolása.</string>
+    <string name="auth_device_authentication_is_disabled_turning_off">Az eszközhitelesítés ki van kapcsolva. A SimpleX zár kikapcsolva.</string>
     <string name="no_call_on_lock_screen">Letiltás</string>
     <string name="receipts_groups_disable_for_all">Letiltás minden csoport számára</string>
     <string name="receipts_groups_enable_for_all">Engedélyezés minden csoport számára</string>
@@ -463,7 +463,7 @@
     <string name="database_passphrase_is_required">Adatbázis jelmondat szükséges a csevegés megnyitásához.</string>
     <string name="ttl_d">%dnap</string>
     <string name="receipts_contacts_enable_for_all">Engedélyezés mindenki számára</string>
-    <string name="delivery_receipts_are_disabled">Kézbesítési jelentések kikapcsolva!</string>
+    <string name="delivery_receipts_are_disabled">A kézbesítési jelentések le vannak tiltva!</string>
     <string name="expand_verb">Kibontás</string>
     <string name="error_sending_message">Hiba az üzenet küldésekor</string>
     <string name="la_enter_app_passcode">Jelkód megadása</string>
@@ -663,7 +663,7 @@
     <string name="icon_descr_instant_notifications">Azonnali értesítések</string>
     <string name="settings_section_title_incognito">Inkognitó mód</string>
     <string name="import_database_question">Csevegési adatbázis importálása?</string>
-    <string name="service_notifications_disabled">Azonnali értesítések kikapcsolva!</string>
+    <string name="service_notifications_disabled">Az azonnali értesítések le vannak tiltva!</string>
     <string name="service_notifications">Azonnali értesítések!</string>
     <string name="image_descr">Kép</string>
     <string name="files_are_prohibited_in_group">A fájlok- és a médiatartalom küldése le van tiltva ebben a csoportban.</string>
