@@ -83,7 +83,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import java.net.URI
 
 enum class ContactType {
-    CARD, REQUEST, RECENT, REMOVED, UNKNOWN
+    CARD, REQUEST, RECENT, REMOVED, UNLISTED
 }
 
 private fun contactChats(c: List<Chat>, contactTypes: List<ContactType>): List<Chat> {
@@ -99,11 +99,11 @@ fun getContactType(chat: Chat): ContactType {
             when {
                 contact.activeConn == null && contact.profile.contactLink != null -> ContactType.CARD
                 contact.chatDeleted -> ContactType.REMOVED
-                contact.contactStatus != ContactStatus.DeletedByUser && contact.contactStatus != ContactStatus.Deleted -> ContactType.RECENT
-                else -> ContactType.UNKNOWN
+                contact.contactStatus == ContactStatus.Active -> ContactType.RECENT
+                else -> ContactType.UNLISTED
             }
         }
-        else -> ContactType.UNKNOWN
+        else -> ContactType.UNLISTED
     }
 }
 
