@@ -805,7 +805,6 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
 suspend fun connectContactViaAddress(chatModel: ChatModel, rhId: Long?, contactId: Long, incognito: Boolean): Boolean {
   val contact = chatModel.controller.apiConnectContactViaAddress(rhId, incognito, contactId)
   if (contact != null) {
-    chatModel.newChatConnectionStage.value = NewChatConnectionStage.COMPLETED
     chatModel.updateContact(rhId, contact)
     AlertManager.privacySensitive.showAlertMsg(
       title = generalGetString(MR.strings.connection_request_sent),
@@ -813,8 +812,6 @@ suspend fun connectContactViaAddress(chatModel: ChatModel, rhId: Long?, contactI
       hostDevice = hostDevice(rhId),
     )
     return true
-  } else {
-    chatModel.newChatConnectionStage.value = NewChatConnectionStage.ERROR
   }
   return false
 }

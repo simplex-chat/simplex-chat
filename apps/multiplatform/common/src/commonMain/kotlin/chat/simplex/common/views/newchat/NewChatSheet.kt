@@ -17,7 +17,6 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.model.NewChatConnectionStage
 import chat.simplex.common.model.RemoteHostInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -62,26 +61,20 @@ fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
       )
     }
 
-    LaunchedEffect(chatModel.newChatConnectionStage.value) {
-      if (
-        chatModel.newChatConnectionStage.value == NewChatConnectionStage.COMPLETED
-      ) {
-        chatModel.newChatConnectionStage.value = NewChatConnectionStage.IDLE
-        close()
-      }
-    }
+    val closeAll = { ModalManager.closeAllModalsEverywhere() }
 
     NewChatSheetLayout(
       addContact = {
-        ModalManager.center.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close) }
+        ModalManager.center.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll ) }
       },
       scanPaste = {
-        ModalManager.center.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = true, close = close) }
+        ModalManager.center.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = true, close = closeAll) }
       },
       createGroup = {
-        ModalManager.center.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close) }
+        ModalManager.center.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
       },
-      rh = rh
+      rh = rh,
+      close = close
     )
   }
 }
@@ -98,7 +91,8 @@ fun NewChatSheetLayout(
   rh: RemoteHostInfo?,
   addContact: () -> Unit,
   scanPaste: () -> Unit,
-  createGroup: () -> Unit
+  createGroup: () -> Unit,
+  close: () -> Unit,
 ) {
   ContactsView(
     contactActions = {
@@ -108,7 +102,8 @@ fun NewChatSheetLayout(
         createGroup = createGroup
       )
     },
-    rh = rh
+    rh = rh,
+    close = close
   )
 }
 
@@ -205,6 +200,6 @@ fun ActionButton(
 @Composable
 private fun PreviewNewChatSheet() {
   SimpleXTheme {
-    NewChatSheetLayout(rh = null, scanPaste = {}, addContact = {}, createGroup = {})
+    NewChatSheetLayout(rh = null, scanPaste = {}, addContact = {}, createGroup = {}, close = {})
   }
 }

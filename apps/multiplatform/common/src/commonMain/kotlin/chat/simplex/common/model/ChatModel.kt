@@ -109,9 +109,6 @@ object ChatModel {
   // currently showing invitation
   val showingInvitation = mutableStateOf(null as ShowingInvitation?)
 
-  // current stage for new chat connections
-  val newChatConnectionStage = mutableStateOf(NewChatConnectionStage.IDLE)
-
   val migrationState: MutableState<MigrationToState?> by lazy { mutableStateOf(MigrationToDeviceState.makeMigrationState()) }
 
   var draft = mutableStateOf(null as ComposeState?)
@@ -699,10 +696,6 @@ data class ShowingInvitation(
   val connReq: String,
   val connChatUsed: Boolean
 )
-
-enum class NewChatConnectionStage {
-  IDLE, STARTED, ERROR, COMPLETED
-}
 
 enum class ChatType(val type: String) {
   Direct("@"),

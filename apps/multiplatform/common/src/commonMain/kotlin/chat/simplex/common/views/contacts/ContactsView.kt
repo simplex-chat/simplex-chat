@@ -139,6 +139,7 @@ private fun ModalData.DeletedContactsView(rh: RemoteHostInfo?, close: () -> Unit
             ContactsLayout(
                 contactActions = {},
                 contactTypes = listOf(ContactType.REMOVED),
+                close = close
             )
         }
     }
@@ -177,13 +178,15 @@ private fun ContactActionsSection(contactActions: @Composable () -> Unit, rh: Re
 private fun ContactsLayout(
     contactActions: @Composable () -> Unit,
     contactTypes: List<ContactType>,
-    contactListTitle: String? = null) {
+    contactListTitle: String? = null,
+    close: () -> Unit) {
 
     SectionView {
         ContactsList(
             contactTypes = contactTypes,
             contactActions = contactActions,
-            contactListTitle = contactListTitle
+            contactListTitle = contactListTitle,
+            close = close
         )
     }
 }
@@ -191,12 +194,14 @@ private fun ContactsLayout(
 @Composable
 fun ContactsView(
     contactActions: @Composable () -> Unit,
+    close: () -> Unit,
     rh: RemoteHostInfo?
 ) {
     ContactsLayout(
         contactActions = { ContactActionsSection(contactActions, rh) },
         contactTypes = listOf(ContactType.CARD, ContactType.RECENT, ContactType.REQUEST),
-        contactListTitle = stringResource(MR.strings.contact_list_header_title).uppercase()
+        contactListTitle = stringResource(MR.strings.contact_list_header_title).uppercase(),
+        close = close
     )
 }
 
@@ -207,7 +212,8 @@ private fun ContactsSearchBar(
     searchShowingSimplexLink: MutableState<Boolean>,
     searchChatFilteredBySimplexLink: MutableState<String?>,
     focused: Boolean,
-    onFocusChanged: (hasFocus: Boolean) -> Unit
+    onFocusChanged: (hasFocus: Boolean) -> Unit,
+    close: () -> Unit
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         val focusRequester = remember { FocusRequester() }
@@ -261,7 +267,7 @@ private fun ContactsSearchBar(
                         }
                         searchShowingSimplexLink.value = true
                         searchChatFilteredBySimplexLink.value = null
-                        connect(link.text, searchChatFilteredBySimplexLink) {
+                        connect(link.text, searchChatFilteredBySimplexLink, close) {
                             searchText.value = TextFieldValue()
                         }
                     } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
@@ -304,7 +310,8 @@ private var lazyListState = 0 to 0
 private fun ContactsList(
     contactActions: @Composable () -> Unit,
     contactTypes: List<ContactType>,
-    contactListTitle: String ? = null
+    contactListTitle: String ? = null,
+    close: () -> Unit
 ) {
     val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
     val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(
@@ -350,7 +357,8 @@ private fun ContactsList(
                     focused = searchFocused,
                     onFocusChanged = {
                         searchFocused = it
-                    }
+                    },
+                    close = close
                 )
                 Divider()
             }
@@ -434,14 +442,14 @@ private fun filteredContactChats(
 private fun viewNameContains(cInfo: ChatInfo, s: String): Boolean =
     cInfo.chatViewName.lowercase().contains(s.lowercase())
 
-private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<String?>, cleanup: (() -> Unit)?) {
+private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<String?>, cleanup: (() -> Unit)?, close: () -> Unit) {
     withBGApi {
         planAndConnect(
             chatModel.remoteHostId(),
             URI.create(link),
             incognito = null,
             filterKnownContact = { searchChatFilteredBySimplexLink.value = it.id },
-            close = null,
+            close = close,
             cleanup = cleanup,
         )
     }
