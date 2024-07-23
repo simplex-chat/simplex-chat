@@ -40,15 +40,6 @@ struct CIVideoView: View {
         self.videoWidth = videoWidth
         self.smallView = smallView
         self._showFullScreenPlayer = showFullscreenPlayer
-        if let url = getLoadedVideo(chatItem.file) {
-            let decrypted = chatItem.file?.fileSource?.cryptoArgs == nil ? url : chatItem.file?.fileSource?.decryptedGet()
-            self._urlDecrypted = State(initialValue: decrypted)
-            if let decrypted = decrypted {
-                self._player = State(initialValue: VideoPlayerView.getOrCreatePlayer(decrypted, false))
-                self._fullPlayer = State(initialValue: AVPlayer(url: decrypted))
-            }
-            self._url = State(initialValue: url)
-        }
     }
 
     var body: some View {
@@ -112,8 +103,35 @@ struct CIVideoView: View {
                 fullScreenPlayer(decrypted)
             }
         }
+        .onAppear {
+            setupPlayer(chatItem.file)
+        }
+        .onChange(of: chatItem.file) { file in
+            // ChatItem can be changed in small view on chat list screen
+            setupPlayer(file)
+        }
         .onDisappear {
             showFullScreenPlayer = false
+        }
+    }
+
+    private func setupPlayer(_ file: CIFile?) {
+        let newUrl = getLoadedVideo(file)
+        if newUrl == url {
+            return
+        }
+        url = nil
+        urlDecrypted = nil
+        player = nil
+        fullPlayer = nil
+        if let newUrl {
+            let decrypted = file?.fileSource?.cryptoArgs == nil ? newUrl : file?.fileSource?.decryptedGet()
+            urlDecrypted = decrypted
+            if let decrypted = decrypted {
+                player = VideoPlayerView.getOrCreatePlayer(decrypted, false)
+                fullPlayer = AVPlayer(url: decrypted)
+            }
+            url = newUrl
         }
     }
 
@@ -500,7 +518,7 @@ struct CIVideoView: View {
                     }
                     fullPlayer = AVPlayer(url: decrypted)
                 }
-                decryptionInProgress = true
+                decryptionInProgress = false
                 completed?()
             }
         }
