@@ -327,9 +327,9 @@
         <target>**Ismerős hozzáadása**: új meghívó hivatkozás létrehozásához, vagy egy kapott hivatkozáson keresztül történő kapcsolódáshoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve">
+      <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve" approved="no">
         <source>**Add new contact**: to create your one-time QR Code or link for your contact.</source>
-        <target>**Új ismerős hozzáadása**: egyszer használatos QR-kód vagy hivatkozás létrehozása a kapcsolattartóhoz.</target>
+        <target state="translated">**Új ismerős hozzáadása**: egyszer használatos QR-kód vagy hivatkozás létrehozása az ismerőse számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Create group**: to create a new group." xml:space="preserve">
@@ -2098,9 +2098,9 @@ Ez a művelet nem vonható vissza!</target>
         <target>Kézbesítés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts are disabled!" xml:space="preserve">
+      <trans-unit id="Delivery receipts are disabled!" xml:space="preserve" approved="no">
         <source>Delivery receipts are disabled!</source>
-        <target>Kézbesítési igazolások kikapcsolva!</target>
+        <target state="translated">A kézbesítési jelentések ki vannak kapcsolva!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delivery receipts!" xml:space="preserve">
@@ -2158,9 +2158,9 @@ Ez a művelet nem vonható vissza!</target>
         <target>Eszköz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve">
+      <trans-unit id="Device authentication is disabled. Turning off SimpleX Lock." xml:space="preserve" approved="no">
         <source>Device authentication is disabled. Turning off SimpleX Lock.</source>
-        <target>Eszközhitelesítés kikapcsolva. SimpleX zárolás kikapcsolása.</target>
+        <target state="translated">Az eszközhitelesítés ki van kapcsolva. A SimpleX zár kikapcsolva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Device authentication is not enabled. You can turn on SimpleX Lock via Settings, once you enable device authentication." xml:space="preserve">
@@ -2188,9 +2188,9 @@ Ez a művelet nem vonható vissza!</target>
         <target>Letiltás (felülírások megtartásával)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disable SimpleX Lock" xml:space="preserve">
+      <trans-unit id="Disable SimpleX Lock" xml:space="preserve" approved="no">
         <source>Disable SimpleX Lock</source>
-        <target>SimpleX zárolás kikapcsolása</target>
+        <target state="translated">SimpleX zár letiltása</target>
         <note>authentication reason</note>
       </trans-unit>
       <trans-unit id="Disable for all" xml:space="preserve">
