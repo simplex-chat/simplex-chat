@@ -155,9 +155,6 @@
 "%@ is verified" = "%@ onaylandı";
 
 /* No comment provided by engineer. */
-"%@ servers" = "%@ sunucuları";
-
-/* No comment provided by engineer. */
 "%@ uploaded" = "%@ yüklendi";
 
 /* notification title */
@@ -650,7 +647,7 @@
 /* rcv group event chat item */
 "blocked %@" = "engellendi %@";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "yönetici tarafından engellendi";
 
 /* No comment provided by engineer. */
@@ -4417,7 +4414,7 @@
 "You can make it visible to your SimpleX contacts via Settings." = "Ayarlardan SimpleX kişilerinize görünür yapabilirsiniz.";
 
 /* notification body */
-"You can now send messages to %@" = "Artık %@ adresine mesaj gönderebilirsin";
+"You can now chat with %@" = "Artık %@ adresine mesaj gönderebilirsin";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "Kilit ekranı bildirim önizlemesini ayarlar üzerinden ayarlayabilirsiniz.";

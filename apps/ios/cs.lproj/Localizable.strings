@@ -130,9 +130,6 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ je ověřený";
 
-/* No comment provided by engineer. */
-"%@ servers" = "%@ servery";
-
 /* notification title */
 "%@ wants to connect!" = "%@ se chce připojit!";
 
@@ -3439,7 +3436,7 @@
 "You can hide or mute a user profile - swipe it to the right." = "Profil uživatele můžete skrýt nebo ztlumit - přejeďte prstem doprava.";
 
 /* notification body */
-"You can now send messages to %@" = "Nyní můžete posílat zprávy %@";
+"You can now chat with %@" = "Nyní můžete posílat zprávy %@";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "Náhled oznámení na zamykací obrazovce můžete změnit v nastavení.";

@@ -217,7 +217,7 @@ func apiDeleteUser(_ userId: Int64, _ delSMPQueues: Bool, viewPwd: String?) asyn
 }
 
 func apiStartChat(ctrl: chat_ctrl? = nil) throws -> Bool {
-    let r = chatSendCmdSync(.startChat(mainApp: true), ctrl)
+    let r = chatSendCmdSync(.startChat(mainApp: true, enableSndFiles: true), ctrl)
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -397,7 +397,7 @@ private func sendMessageErrorAlert(_ r: ChatResponse) {
     logger.error("send message error: \(String(describing: r))")
     AlertManager.shared.showAlertMsg(
         title: "Error sending message",
-        message: "Error: \(String(describing: r))"
+        message: "Error: \(responseError(r))"
     )
 }
 
@@ -405,7 +405,7 @@ private func createChatItemErrorAlert(_ r: ChatResponse) {
     logger.error("apiCreateChatItem error: \(String(describing: r))")
     AlertManager.shared.showAlertMsg(
         title: "Error creating message",
-        message: "Error: \(String(describing: r))"
+        message: "Error: \(responseError(r))"
     )
 }
 
@@ -699,7 +699,7 @@ func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, Pendi
             message: "Please check that you used the correct link or ask your contact to send you another one."
         )
         return (nil, alert)
-    case .chatCmdError(_, .errorAgent(.SMP(.AUTH))):
+    case .chatCmdError(_, .errorAgent(.SMP(_, .AUTH))):
         let alert = mkAlert(
             title: "Connection error (AUTH)",
             message: "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection."
@@ -732,7 +732,7 @@ private func connectionErrorAlert(_ r: ChatResponse) -> Alert {
     } else {
         return mkAlert(
             title: "Connection error",
-            message: "Error: \(String(describing: r))"
+            message: "Error: \(responseError(r))"
         )
     }
 }
@@ -898,7 +898,7 @@ func apiAcceptContactRequest(incognito: Bool, contactReqId: Int64) async -> Cont
     let am = AlertManager.shared
 
     if case let .acceptingContactRequest(_, contact) = r { return contact }
-    if case .chatCmdError(_, .errorAgent(.SMP(.AUTH))) = r {
+    if case .chatCmdError(_, .errorAgent(.SMP(_, .AUTH))) = r {
         am.showAlertMsg(
             title: "Connection error (AUTH)",
             message: "Sender may have deleted the connection request."
@@ -909,7 +909,7 @@ func apiAcceptContactRequest(incognito: Bool, contactReqId: Int64) async -> Cont
         logger.error("apiAcceptContactRequest error: \(String(describing: r))")
         am.showAlertMsg(
             title: "Error accepting contact request",
-            message: "Error: \(String(describing: r))"
+            message: "Error: \(responseError(r))"
         )
     }
     return nil
@@ -935,7 +935,7 @@ func uploadStandaloneFile(user: any UserLike, file: CryptoFile, ctrl: chat_ctrl?
         return (fileTransferMeta, nil)
     } else {
         logger.error("uploadStandaloneFile error: \(String(describing: r))")
-        return (nil, String(describing: r))
+        return (nil, responseError(r))
     }
 }
 
@@ -945,7 +945,7 @@ func downloadStandaloneFile(user: any UserLike, url: String, file: CryptoFile, c
         return (rcvFileTransfer, nil)
     } else {
         logger.error("downloadStandaloneFile error: \(String(describing: r))")
-        return (nil, String(describing: r))
+        return (nil, responseError(r))
     }
 }
 
@@ -1025,7 +1025,7 @@ func apiReceiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool, in
             if !auto {
                 am.showAlertMsg(
                     title: "Error receiving file",
-                    message: "Error: \(String(describing: r))"
+                    message: "Error: \(responseError(r))"
                 )
             }
         }
@@ -1106,27 +1106,42 @@ func getNetworkErrorAlert(_ r: ChatResponse) -> ErrorAlert? {
         return ErrorAlert(title: "Connection error", message: "Server address is incompatible with network settings: \(serverHostname(addr)).")
     case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TRANSPORT(.version)))):
         return ErrorAlert(title: "Connection error", message: "Server version is incompatible with your app: \(serverHostname(addr)).")
-    case let .chatCmdError(_, .errorAgent(.SMP(.PROXY(proxyErr)))):
-        return proxyErrorAlert(proxyErr)
-    case let .chatCmdError(_, .errorAgent(.PROXY(_, _, .protocolError(.PROXY(proxyErr))))):
-        return proxyErrorAlert(proxyErr)
+    case let .chatCmdError(_, .errorAgent(.SMP(serverAddress, .PROXY(proxyErr)))):
+        return smpProxyErrorAlert(proxyErr, serverAddress)
+    case let .chatCmdError(_, .errorAgent(.PROXY(proxyServer, relayServer, .protocolError(.PROXY(proxyErr))))):
+        return proxyDestinationErrorAlert(proxyErr, proxyServer, relayServer)
     default:
         return nil
     }
 }
 
-private func proxyErrorAlert(_ proxyErr: ProxyError) -> ErrorAlert? {
+private func smpProxyErrorAlert(_ proxyErr: ProxyError, _ srvAddr: String) -> ErrorAlert? {
     switch proxyErr {
     case .BROKER(brokerErr: .TIMEOUT):
-        return ErrorAlert(title: "Private routing error", message: "Please try later.")
+        return ErrorAlert(title: "Private routing error", message: "Error connecting to forwarding server \(serverHostname(srvAddr)). Please try later.")
     case .BROKER(brokerErr: .NETWORK):
-        return ErrorAlert(title: "Private routing error", message: "Please try later.")
-    case .NO_SESSION:
-        return ErrorAlert(title: "Private routing error", message: "Please try later.")
+        return ErrorAlert(title: "Private routing error", message: "Error connecting to forwarding server \(serverHostname(srvAddr)). Please try later.")
     case .BROKER(brokerErr: .HOST):
-        return ErrorAlert(title: "Private routing error", message: "Server address is incompatible with network settings.")
+        return ErrorAlert(title: "Private routing error", message: "Forwarding server address is incompatible with network settings: \(serverHostname(srvAddr)).")
     case .BROKER(brokerErr: .TRANSPORT(.version)):
-        return ErrorAlert(title: "Private routing error", message: "Server version is incompatible with network settings.")
+        return ErrorAlert(title: "Private routing error", message: "Forwarding server version is incompatible with network settings: \(serverHostname(srvAddr)).")
+    default:
+        return nil
+    }
+}
+
+private func proxyDestinationErrorAlert(_ proxyErr: ProxyError, _ proxyServer: String, _ relayServer: String) -> ErrorAlert? {
+    switch proxyErr {
+    case .BROKER(brokerErr: .TIMEOUT):
+        return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
+    case .BROKER(brokerErr: .NETWORK):
+        return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
+    case .NO_SESSION:
+        return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
+    case .BROKER(brokerErr: .HOST):
+        return ErrorAlert(title: "Private routing error", message: "Destination server address of \(serverHostname(relayServer)) is incompatible with forwarding server \(serverHostname(proxyServer)) settings.")
+    case .BROKER(brokerErr: .TRANSPORT(.version)):
+        return ErrorAlert(title: "Private routing error", message: "Destination server version of \(serverHostname(relayServer)) is incompatible with forwarding server \(serverHostname(proxyServer)).")
     default:
         return nil
     }
@@ -1143,7 +1158,10 @@ func networkErrorAlert(_ r: ChatResponse) -> Alert? {
 func acceptContactRequest(incognito: Bool, contactRequest: UserContactRequest) async {
     if let contact = await apiAcceptContactRequest(incognito: incognito, contactReqId: contactRequest.apiId) {
         let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
-        DispatchQueue.main.async { ChatModel.shared.replaceChat(contactRequest.id, chat) }
+        DispatchQueue.main.async {
+            ChatModel.shared.replaceChat(contactRequest.id, chat)
+            ChatModel.shared.setContactNetworkStatus(contact, .connected)
+        }
     }
 }
 
@@ -1280,7 +1298,7 @@ func apiJoinGroup(_ groupId: Int64) async throws -> JoinGroupResult {
     let r = await chatSendCmd(.apiJoinGroup(groupId: groupId))
     switch r {
     case let .userAcceptedGroupSent(_, groupInfo, _): return .joined(groupInfo: groupInfo)
-    case .chatCmdError(_, .errorAgent(.SMP(.AUTH))): return .invitationRemoved
+    case .chatCmdError(_, .errorAgent(.SMP(_, .AUTH))): return .invitationRemoved
     case .chatCmdError(_, .errorStore(.groupNotFound)): return .groupNotFound
     default: throw r
     }
@@ -1383,6 +1401,14 @@ func apiSendMemberContactInvitation(_ contactId: Int64, _ msg: MsgContent) async
 func apiGetVersion() throws -> CoreVersionInfo {
     let r = chatSendCmdSync(.showVersion)
     if case let .versionInfo(info, _, _) = r { return info }
+    throw r
+}
+
+func getAgentSubsTotal() throws -> (SMPServerSubs, Bool) {
+    let userId = try currentUserId("getAgentSubsTotal")
+    let r = chatSendCmdSync(.getAgentSubsTotal(userId: userId), log: false)
+    if case let .agentSubsTotal(_, subsTotal, hasSession) = r { return (subsTotal, hasSession) }
+    logger.error("getAgentSubsTotal error: \(String(describing: r))")
     throw r
 }
 
@@ -1648,6 +1674,19 @@ func processReceivedMsg(_ res: ChatResponse) async {
                     m.removeChat(conn.id)
                 }
             }
+        }
+    case let .contactSndReady(user, contact):
+        if active(user) && contact.directOrUsed {
+            await MainActor.run {
+                m.updateContact(contact)
+                if let conn = contact.activeConn {
+                    m.dismissConnReqView(conn.id)
+                    m.removeChat(conn.id)
+                }
+            }
+        }
+        await MainActor.run {
+            m.setContactNetworkStatus(contact, .connected)
         }
     case let .receivedContactRequest(user, contactRequest):
         if active(user) {

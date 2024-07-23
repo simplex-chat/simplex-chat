@@ -12,11 +12,12 @@ import SimpleXChat
 struct ServersSummaryView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @Binding var serversSummary: PresentedServersSummary?
+    @State private var serversSummary: PresentedServersSummary? = nil
     @State private var selectedUserCategory: PresentedUserCategory = .allUsers
     @State private var selectedServerType: PresentedServerType = .smp
     @State private var selectedSMPServer: String? = nil
     @State private var selectedXFTPServer: String? = nil
+    @State private var timer: Timer? = nil
     @State private var alert: SomeAlert?
 
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
@@ -47,8 +48,34 @@ struct ServersSummaryView: View {
             if m.users.filter({ u in u.user.activeUser || !u.user.hidden }).count == 1 {
                 selectedUserCategory = .currentUser
             }
+            getServersSummary()
+            startTimer()
+        }
+        .onDisappear {
+            stopTimer()
         }
         .alert(item: $alert) { $0.alert }
+    }
+
+    private func startTimer() {
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if AppChatState.shared.value == .active {
+                getServersSummary()
+            } 
+        }
+    }
+
+    private func getServersSummary() {
+        do {
+            serversSummary = try getAgentServersSummary()
+        } catch let error {
+            logger.error("getAgentServersSummary error: \(responseError(error))")
+        }
+    }
+
+    private func stopTimer() {
+        timer?.invalidate()
+        timer = nil
     }
 
     private func shareButton() -> some View {
@@ -75,8 +102,8 @@ struct ServersSummaryView: View {
                 Group {
                     if m.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
                         Picker("User selection", selection: $selectedUserCategory) {
-                            Text("All users").tag(PresentedUserCategory.allUsers)
-                            Text("Current user").tag(PresentedUserCategory.currentUser)
+                            Text("All profiles").tag(PresentedUserCategory.allUsers)
+                            Text("Current profile").tag(PresentedUserCategory.currentUser)
                         }
                         .pickerStyle(.segmented)
                     }
@@ -174,14 +201,15 @@ struct ServersSummaryView: View {
 
     private func smpSubsSection(_ totals: SMPTotals) -> some View {
         Section {
-            infoRow("Connections subscribed", numOrDash(totals.subs.ssActive))
+            infoRow("Active connections", numOrDash(totals.subs.ssActive))
             infoRow("Total", numOrDash(totals.subs.total))
+            Toggle("Show percentage", isOn: $showSubscriptionPercentage)
         } header: {
             HStack {
-                Text("Message subscriptions")
-                SubscriptionStatusIndicatorView(subs: totals.subs, sess: totals.sessions)
+                Text("Message reception")
+                SubscriptionStatusIndicatorView(subs: totals.subs, hasSess: totals.sessions.hasSess)
                 if showSubscriptionPercentage {
-                    SubscriptionStatusPercentageView(subs: totals.subs, sess: totals.sessions)
+                    SubscriptionStatusPercentageView(subs: totals.subs, hasSess: totals.sessions.hasSess)
                 }
             }
         }
@@ -259,9 +287,9 @@ struct ServersSummaryView: View {
                 if let subs = srvSumm.subs {
                     Spacer()
                     if showSubscriptionPercentage {
-                        SubscriptionStatusPercentageView(subs: subs, sess: srvSumm.sessionsOrNew)
+                        SubscriptionStatusPercentageView(subs: subs, hasSess: srvSumm.sessionsOrNew.hasSess)
                     }
-                    SubscriptionStatusIndicatorView(subs: subs, sess: srvSumm.sessionsOrNew)
+                    SubscriptionStatusIndicatorView(subs: subs, hasSess: srvSumm.sessionsOrNew.hasSess)
                 } else if let sess = srvSumm.sessions {
                     Spacer()
                     Image(systemName: "arrow.up.circle")
@@ -355,6 +383,7 @@ struct ServersSummaryView: View {
                         Task {
                             do {
                                 try await resetAgentServersStats()
+                                getServersSummary()
                             } catch let error {
                                 alert = SomeAlert(
                                     alert: mkAlert(
@@ -379,11 +408,11 @@ struct ServersSummaryView: View {
 struct SubscriptionStatusIndicatorView: View {
     @EnvironmentObject var m: ChatModel
     var subs: SMPServerSubs
-    var sess: ServerSessions
+    var hasSess: Bool
 
     var body: some View {
         let onionHosts = networkUseOnionHostsGroupDefault.get()
-        let (color, variableValue, opacity, _) = subscriptionStatusColorAndPercentage(m.networkInfo.online, onionHosts, subs, sess)
+        let (color, variableValue, opacity, _) = subscriptionStatusColorAndPercentage(m.networkInfo.online, onionHosts, subs, hasSess)
         if #available(iOS 16.0, *) {
             Image(systemName: "dot.radiowaves.up.forward", variableValue: variableValue)
                 .foregroundColor(color)
@@ -397,18 +426,18 @@ struct SubscriptionStatusIndicatorView: View {
 struct SubscriptionStatusPercentageView: View {
     @EnvironmentObject var m: ChatModel
     var subs: SMPServerSubs
-    var sess: ServerSessions
+    var hasSess: Bool
 
     var body: some View {
         let onionHosts = networkUseOnionHostsGroupDefault.get()
-        let (_, _, _, statusPercent) = subscriptionStatusColorAndPercentage(m.networkInfo.online, onionHosts, subs, sess)
+        let (_, _, _, statusPercent) = subscriptionStatusColorAndPercentage(m.networkInfo.online, onionHosts, subs, hasSess)
         Text(verbatim: "\(Int(floor(statusPercent * 100)))%")
             .foregroundColor(.secondary)
             .font(.caption)
     }
 }
 
-func subscriptionStatusColorAndPercentage(_ online: Bool, _ onionHosts: OnionHosts, _ subs: SMPServerSubs, _ sess: ServerSessions) -> (Color, Double, Double, Double) {
+func subscriptionStatusColorAndPercentage(_ online: Bool, _ onionHosts: OnionHosts, _ subs: SMPServerSubs, _ hasSess: Bool) -> (Color, Double, Double, Double) {
     func roundedToQuarter(_ n: Double) -> Double {
         n >= 1 ? 1
         : n <= 0 ? 0
@@ -423,12 +452,12 @@ func subscriptionStatusColorAndPercentage(_ online: Bool, _ onionHosts: OnionHos
     ? (
         subs.ssActive == 0
         ? (
-            sess.ssConnected == 0 ? noConnColorAndPercent : (activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
+            hasSess ? (activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive) : noConnColorAndPercent
         )
         : ( // ssActive > 0
-            sess.ssConnected == 0
-            ? (.orange, activeSubsRounded, subs.shareOfActive, subs.shareOfActive) // This would mean implementation error
-            : (activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
+            hasSess
+            ? (activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
+            : (.orange, activeSubsRounded, subs.shareOfActive, subs.shareOfActive) // This would mean implementation error
           )
     )
     : noConnColorAndPercent
@@ -474,16 +503,16 @@ struct SMPServerSummaryView: View {
 
     private func smpSubsSection(_ subs: SMPServerSubs) -> some View {
         Section {
-            infoRow("Connections subscribed", numOrDash(subs.ssActive))
+            infoRow("Active connections", numOrDash(subs.ssActive))
             infoRow("Pending", numOrDash(subs.ssPending))
             infoRow("Total", numOrDash(subs.total))
             reconnectButton()
         } header: {
             HStack {
-                Text("Message subscriptions")
-                SubscriptionStatusIndicatorView(subs: subs, sess: summary.sessionsOrNew)
+                Text("Message reception")
+                SubscriptionStatusIndicatorView(subs: subs, hasSess: summary.sessionsOrNew.hasSess)
                 if showSubscriptionPercentage {
-                    SubscriptionStatusPercentageView(subs: subs, sess: summary.sessionsOrNew)
+                    SubscriptionStatusPercentageView(subs: subs, hasSess: summary.sessionsOrNew.hasSess)
                 }
             }
         }
@@ -588,7 +617,7 @@ struct DetailedSMPStatsView: View {
                 infoRow(Text(verbatim: "NO_MSG errors"), numOrDash(stats._ackNoMsgErrs)).padding(.leading, 24)
                 infoRow("other errors", numOrDash(stats._ackOtherErrs)).padding(.leading, 24)
             }
-            Section {
+            Section("Connections") {
                 infoRow("Created", numOrDash(stats._connCreated))
                 infoRow("Secured", numOrDash(stats._connCreated))
                 infoRow("Completed", numOrDash(stats._connCompleted))
@@ -597,8 +626,12 @@ struct DetailedSMPStatsView: View {
                 infoRowTwoValues("Subscribed", "attempts", stats._connSubscribed, stats._connSubAttempts)
                 infoRow("Subscriptions ignored", numOrDash(stats._connSubIgnored))
                 infoRow("Subscription errors", numOrDash(stats._connSubErrs))
+            }
+            Section {
+                infoRowTwoValues("Enabled", "attempts", stats._ntfKey, stats._ntfKeyAttempts)
+                infoRowTwoValues("Disabled", "attempts", stats._ntfKeyDeleted, stats._ntfKeyDeleteAttempts)
             } header: {
-                Text("Connections")
+                Text("Connection notifications")
             } footer: {
                 Text("Starting from \(localTimestamp(statsStartedAt)).")
             }
@@ -711,7 +744,5 @@ struct DetailedXFTPStatsView: View {
 }
 
 #Preview {
-    ServersSummaryView(
-        serversSummary: Binding.constant(nil)
-    )
+    ServersSummaryView()
 }

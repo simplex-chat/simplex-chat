@@ -132,7 +132,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               ) {
                 if (
                   chat.chatInfo is ChatInfo.Direct
-                  && !chat.chatInfo.contact.ready
+                  && !chat.chatInfo.contact.sndReady
                   && chat.chatInfo.contact.active
                   && !chat.chatInfo.contact.nextSendGrpInv
                 ) {
@@ -1025,10 +1025,21 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   horizontalAlignment = Alignment.Start
                 ) {
                   if (cItem.content.showMemberName) {
+                    val memberNameStyle = SpanStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
+                    val memberNameString = if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
+                      buildAnnotatedString {
+                        withStyle(memberNameStyle.copy(fontWeight = FontWeight.Medium)) { append(member.memberRole.text) }
+                        append(" ")
+                        withStyle(memberNameStyle) { append(memberNames(member, prevMember, memCount)) }
+                      }
+                    } else {
+                      buildAnnotatedString {
+                        withStyle(memberNameStyle) { append(memberNames(member, prevMember, memCount)) }
+                      }
+                    }
                     Text(
-                      memberNames(member, prevMember, memCount),
+                      memberNameString,
                       Modifier.padding(start = MEMBER_IMAGE_SIZE + 10.dp),
-                      style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary),
                       maxLines = 2
                     )
                   }
@@ -1405,7 +1416,7 @@ sealed class ProviderMedia {
   data class Video(val uri: URI, val fileSource: CryptoFile?, val preview: String): ProviderMedia()
 }
 
-private fun providerForGallery(
+fun providerForGallery(
   listStateIndex: Int,
   chatItems: List<ChatItem>,
   cItemId: Long,

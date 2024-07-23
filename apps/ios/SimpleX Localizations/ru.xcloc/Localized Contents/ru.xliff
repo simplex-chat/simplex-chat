@@ -127,11 +127,6 @@
         <target>%@ подтверждён</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ servers" xml:space="preserve">
-        <source>%@ servers</source>
-        <target>%@ серверы</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="%@ uploaded" xml:space="preserve">
         <source>%@ uploaded</source>
         <target>%@ загружено</target>
@@ -590,6 +585,10 @@
         <source>Acknowledgement errors</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Active connections" xml:space="preserve">
+        <source>Active connections</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve">
         <source>Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</source>
         <target>Добавьте адрес в свой профиль, чтобы Ваши контакты могли поделиться им. Профиль будет отправлен Вашим контактам.</target>
@@ -610,14 +609,14 @@
         <target>Добавить профиль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add servers by scanning QR codes." xml:space="preserve">
-        <source>Add servers by scanning QR codes.</source>
-        <target>Добавить серверы через QR код.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Add server" xml:space="preserve">
         <source>Add server</source>
         <target>Добавить сервер</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add servers by scanning QR codes." xml:space="preserve">
+        <source>Add servers by scanning QR codes.</source>
+        <target>Добавить серверы через QR код.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
@@ -710,8 +709,8 @@
         <target>Все новые сообщения от %@ будут скрыты!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All users" xml:space="preserve">
-        <source>All users</source>
+      <trans-unit id="All profiles" xml:space="preserve">
+        <source>All profiles</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
@@ -1354,6 +1353,10 @@
         <target>Настройка ICE серверов</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Configured %@ servers" xml:space="preserve">
+        <source>Configured %@ servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
         <source>Confirm</source>
         <target>Подтвердить</target>
@@ -1533,10 +1536,6 @@ This is your own one-time link!</source>
         <source>Connections</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connections subscribed" xml:space="preserve">
-        <source>Connections subscribed</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Contact allows" xml:space="preserve">
         <source>Contact allows</source>
         <target>Контакт разрешает</target>
@@ -1710,8 +1709,8 @@ This is your own one-time link!</source>
         <target>Текущий пароль…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Current user" xml:space="preserve">
-        <source>Current user</source>
+      <trans-unit id="Current profile" xml:space="preserve">
+        <source>Current profile</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
@@ -3939,6 +3938,10 @@ This is your link for group %@!</source>
         <target>Реакции на сообщения запрещены в этой группе.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Message reception" xml:space="preserve">
+        <source>Message reception</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Message routing fallback" xml:space="preserve">
         <source>Message routing fallback</source>
         <target>Прямая доставка сообщений</target>
@@ -3961,10 +3964,6 @@ This is your link for group %@!</source>
       <trans-unit id="Message status: %@" xml:space="preserve">
         <source>Message status: %@</source>
         <note>copied message info</note>
-      </trans-unit>
-      <trans-unit id="Message subscriptions" xml:space="preserve">
-        <source>Message subscriptions</source>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message text" xml:space="preserve">
         <source>Message text</source>
@@ -4485,6 +4484,10 @@ This is your link for group %@!</source>
         <target>Другaя сеть</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Other %@ servers" xml:space="preserve">
+        <source>Other %@ servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
         <source>PING count</source>
         <target>Количество PING</target>
@@ -4651,6 +4654,10 @@ Error: %@</source>
         <target>Пожалуйста, надежно сохраните пароль, Вы НЕ сможете его поменять, если потеряете.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Please try later." xml:space="preserve">
+        <source>Please try later.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Polish interface" xml:space="preserve">
         <source>Polish interface</source>
         <target>Польский интерфейс</target>
@@ -4718,6 +4725,10 @@ Error: %@</source>
       <trans-unit id="Private routing" xml:space="preserve">
         <source>Private routing</source>
         <target>Конфиденциальная доставка</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Private routing error" xml:space="preserve">
+        <source>Private routing error</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
@@ -5627,6 +5638,10 @@ Enable in *Network &amp; servers* settings.</source>
         <target>Адрес сервера несовместим с настройками сети.</target>
         <note>srv error text.</note>
       </trans-unit>
+      <trans-unit id="Server address is incompatible with network settings: %@." xml:space="preserve">
+        <source>Server address is incompatible with network settings: %@.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
         <source>Server requires authorization to create queues, check password</source>
         <target>Сервер требует авторизации для создания очередей, проверьте пароль</target>
@@ -5650,6 +5665,14 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Server version is incompatible with network settings.</source>
         <target>Версия сервера несовместима с настройками сети.</target>
         <note>srv error text</note>
+      </trans-unit>
+      <trans-unit id="Server version is incompatible with network settings: %@." xml:space="preserve">
+        <source>Server version is incompatible with network settings: %@.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Server version is incompatible with your app: %@." xml:space="preserve">
+        <source>Server version is incompatible with your app: %@.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Servers" xml:space="preserve">
         <source>Servers</source>
@@ -5786,6 +5809,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Show message status" xml:space="preserve">
         <source>Show message status</source>
         <target>Показать статус сообщения</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Show percentage" xml:space="preserve">
+        <source>Show percentage</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -6010,10 +6037,6 @@ Enable in *Network &amp; servers* settings.</source>
       </trans-unit>
       <trans-unit id="Subscription errors" xml:space="preserve">
         <source>Subscription errors</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Subscription percentage" xml:space="preserve">
-        <source>Subscription percentage</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Subscriptions ignored" xml:space="preserve">
@@ -7078,9 +7101,9 @@ Repeat join request?</source>
         <target>Вы можете сделать его видимым для ваших контактов в SimpleX через Настройки.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now send messages to %@" xml:space="preserve">
-        <source>You can now send messages to %@</source>
-        <target>Вы теперь можете отправлять сообщения %@</target>
+      <trans-unit id="You can now chat with %@" xml:space="preserve">
+        <source>You can now chat with %@</source>
+        <target>Вы теперь можете общаться с %@</target>
         <note>notification body</note>
       </trans-unit>
       <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve">
@@ -7486,7 +7509,7 @@ SimpleX серверы не могут получить доступ к Ваше
       <trans-unit id="blocked by admin" xml:space="preserve">
         <source>blocked by admin</source>
         <target>заблокировано администратором</target>
-        <note>blocked chat item</note>
+        <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>

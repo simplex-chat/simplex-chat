@@ -109,9 +109,6 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ ได้รับการตรวจสอบแล้ว";
 
-/* No comment provided by engineer. */
-"%@ servers" = "%@ เซิร์ฟเวอร์";
-
 /* notification title */
 "%@ wants to connect!" = "%@ อยากเชื่อมต่อ!";
 
@@ -3304,7 +3301,7 @@
 "You can hide or mute a user profile - swipe it to the right." = "คุณสามารถซ่อนหรือปิดเสียงโปรไฟล์ผู้ใช้ - ปัดไปทางขวา";
 
 /* notification body */
-"You can now send messages to %@" = "ตอนนี้คุณสามารถส่งข้อความถึง %@";
+"You can now chat with %@" = "ตอนนี้คุณสามารถส่งข้อความถึง %@";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "คุณสามารถตั้งค่าแสดงตัวอย่างการแจ้งเตือนบนหน้าจอล็อคผ่านการตั้งค่า";

@@ -155,9 +155,6 @@
 "%@ is verified" = "%@ jest zweryfikowany";
 
 /* No comment provided by engineer. */
-"%@ servers" = "%@ serwery";
-
-/* No comment provided by engineer. */
 "%@ uploaded" = "%@ wgrane";
 
 /* notification title */
@@ -650,7 +647,7 @@
 /* rcv group event chat item */
 "blocked %@" = "zablokowany %@";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "zablokowany przez admina";
 
 /* No comment provided by engineer. */
@@ -4417,7 +4414,7 @@
 "You can make it visible to your SimpleX contacts via Settings." = "Możesz ustawić go jako widoczny dla swoich kontaktów SimpleX w Ustawieniach.";
 
 /* notification body */
-"You can now send messages to %@" = "Możesz teraz wysyłać wiadomości do %@";
+"You can now chat with %@" = "Możesz teraz wysyłać wiadomości do %@";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "Podgląd powiadomień na ekranie blokady można ustawić w ustawieniach.";

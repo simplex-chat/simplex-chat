@@ -55,7 +55,7 @@ import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestSte
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..), ServerCfg (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
-import Simplex.Messaging.Client (SMPProxyFallback, SMPProxyMode (..))
+import Simplex.Messaging.Client (SMPProxyFallback, SMPProxyMode (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
@@ -176,7 +176,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
   CRContactDeletedByContact u c -> ttyUser u [ttyFullContact c <> " deleted contact with you"]
   CRChatCleared u chatInfo -> ttyUser u $ viewChatCleared chatInfo
-  CRAcceptingContactRequest u c -> ttyUser u [ttyFullContact c <> ": accepting contact request..."]
+  CRAcceptingContactRequest u c -> ttyUser u $ viewAcceptingContactRequest c
   CRContactAlreadyExists u c -> ttyUser u [ttyFullContact c <> ": contact already exists"]
   CRContactRequestAlreadyAccepted u c -> ttyUser u [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CRUserContactLinkCreated u cReq -> ttyUser u $ connReqContact_ "Your new chat address is created!" cReq
@@ -231,6 +231,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRStandaloneFileInfo info_ -> maybe ["no file information in URI"] (\j -> [viewJSON j]) info_
   CRContactConnecting u _ -> ttyUser u []
   CRContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
+  CRContactSndReady u ct -> ttyUser u [ttyFullContact ct <> ": you can send messages to contact"]
   CRContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
   CRSubscriptionEnd u acEntity ->
     let Connection {connId} = entityConnection acEntity
@@ -365,6 +366,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       "chat entity locks: " <> viewJSON chatEntityLocks,
       "agent locks: " <> viewJSON agentLocks
     ]
+  CRAgentSubsTotal u subsTotal _ -> ttyUser u ["total subscriptions: " <> sShow subsTotal]
   CRAgentServersSummary u serversSummary -> ttyUser u ["agent servers summary: " <> viewJSON serversSummary]
   CRAgentSubs {activeSubs, pendingSubs, removedSubs} ->
     [plain $ "Subscriptions: active = " <> show (sum activeSubs) <> ", pending = " <> show (sum pendingSubs) <> ", removed = " <> show (sum $ M.map length removedSubs)]
@@ -963,6 +965,11 @@ viewSentInvitation incognitoProfile testView =
         message = ["connection request sent incognito!"]
     Nothing -> ["connection request sent!"]
 
+viewAcceptingContactRequest :: Contact -> [StyledString]
+viewAcceptingContactRequest ct
+  | contactReady ct = [ttyFullContact ct <> ": accepting contact request, you can send messages to contact"]
+  | otherwise = [ttyFullContact ct <> ": accepting contact request..."]
+
 viewReceivedContactRequest :: ContactName -> Profile -> [StyledString]
 viewReceivedContactRequest c Profile {fullName} =
   [ ttyFullName c fullName <> " wants to connect to you!",
@@ -1217,11 +1224,11 @@ viewChatItemTTL = \case
     deletedAfter ttlStr = ["old messages are set to be deleted after: " <> ttlStr]
 
 viewNetworkConfig :: NetworkConfig -> [StyledString]
-viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout, smpProxyMode, smpProxyFallback} =
-  [ plain $ maybe "direct network connection" (("using SOCKS5 proxy " <>) . show) socksProxy,
+viewNetworkConfig NetworkConfig {socksProxy, socksMode, tcpTimeout, smpProxyMode, smpProxyFallback} =
+  [ plain $ maybe "direct network connection" ((\sp -> "using SOCKS5 proxy " <> sp <> if socksMode == SMOnion then " for onion servers ONLY." else " for ALL servers.") . show) socksProxy,
     "TCP timeout: " <> sShow tcpTimeout,
     plain $ smpProxyModeStr smpProxyMode smpProxyFallback,
-    "use " <> highlight' "/network socks=<on/off/[ipv4]:port>[ timeout=<seconds>][ smp-proxy=always/unknown/unprotected/never][ smp-proxy-fallback=no/protected/yes]" <> " to change settings"
+    "use " <> highlight' "/network socks=<on/off/[ipv4]:port>[ socks-mode=always/onion][ smp-proxy=always/unknown/unprotected/never][ smp-proxy-fallback=no/protected/yes][ timeout=<seconds>]" <> " to change settings"
   ]
 
 smpProxyModeStr :: SMPProxyMode -> SMPProxyFallback -> String

@@ -115,6 +115,12 @@
   <string name="network_error_broker_host_desc">Server address is incompatible with network settings: %1$s.</string>
   <string name="network_error_broker_version_desc">Server version is incompatible with your app: %1$s.</string>
   <string name="private_routing_error">Private routing error</string>
+  <string name="smp_proxy_error_connecting">Error connecting to forwarding server %1$s. Please try later.</string>
+  <string name="smp_proxy_error_broker_host">Forwarding server address is incompatible with network settings: %1$s.</string>
+  <string name="smp_proxy_error_broker_version">Forwarding server version is incompatible with network settings: %1$s.</string>
+  <string name="proxy_destination_error_failed_to_connect">Forwarding server %1$s failed to connect to destination server %2$s. Please try later.</string>
+  <string name="proxy_destination_error_broker_host">Destination server address of %1$s is incompatible with forwarding server %2$s settings.</string>
+  <string name="proxy_destination_error_broker_version">Destination server version of %1$s is incompatible with forwarding server %2$s.</string>
   <string name="please_try_later">Please try later.</string>
   <string name="error_sending_message">Error sending message</string>
   <string name="error_creating_message">Error creating message</string>
@@ -699,7 +705,7 @@
   <string name="xftp_servers">XFTP servers</string>
   <string name="xftp_servers_configured">Configured XFTP servers</string>
   <string name="xftp_servers_other">Other XFTP servers</string>
-  <string name="subscription_percentage">Subscription percentage</string>
+  <string name="subscription_percentage">Show percentage</string>
   <string name="install_simplex_chat_for_terminal">Install SimpleX Chat for terminal</string>
   <string name="star_on_github">Star on GitHub</string>
   <string name="contribute">Contribute</string>
@@ -2119,8 +2125,8 @@
   <string name="servers_info_files_tab">Files</string>
   <string name="servers_info_missing">No info, try to reload</string>
   <string name="servers_info_target">Showing info for</string>
-  <string name="all_users">All users</string>
-  <string name="current_user">Current user</string>
+  <string name="all_users">All profiles</string>
+  <string name="current_user">Current profile</string>
   <string name="servers_info_transport_sessions_section_header">Transport sessions</string>
   <string name="servers_info_sessions_connected">Connected</string>
   <string name="servers_info_sessions_connecting">Connecting</string>
@@ -2130,8 +2136,8 @@
   <string name="servers_info_messages_received">Messages received</string>
   <string name="servers_info_details">Details</string>
   <string name="servers_info_private_data_disclaimer">Starting from %s.\nAll data is private to your device.</string>
-  <string name="servers_info_subscriptions_section_header">Messages subscriptions</string>
-  <string name="servers_info_subscriptions_connections_subscribed">Connections subscribed</string>
+  <string name="servers_info_subscriptions_section_header">Message reception</string>
+  <string name="servers_info_subscriptions_connections_subscribed">Active connections</string>
   <string name="servers_info_subscriptions_connections_pending">Pending</string>
   <string name="servers_info_subscriptions_total">Total</string>
   <string name="servers_info_connected_servers_section_header">Connected servers</string>
