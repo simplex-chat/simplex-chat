@@ -64,9 +64,7 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
        * It will be dropped automatically when connection established or when user goes away from this screen.
        * It applies only to Android because on Desktop center space will not be overlapped by [AddContactLearnMore]
        **/
-
-      // TODO: FIX
-      if (chatModel.showingInvitation.value != null) {
+      if (chatModel.showingInvitation.value != null && ModalManager.start.openModalCount() == 1) {
         val conn = contactConnection.value
         if (chatModel.showingInvitation.value?.connChatUsed == false && conn != null) {
           AlertManager.shared.showAlertDialog(
