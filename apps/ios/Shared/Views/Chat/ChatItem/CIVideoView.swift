@@ -226,53 +226,39 @@ struct CIVideoView: View {
     }
 
     private func smallVideoViewEncrypted(_ file: CIFile, _ preview: UIImage) -> some View {
-        return ZStack(alignment: .center) {
-            ZStack(alignment: .topLeading) {
-                let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
-                smallViewImageView(preview, file)
-                    .onTapGesture {
-                        decrypt(file: file) {
-                            showFullScreenPlayer = urlDecrypted != nil
-                        }
+        return ZStack(alignment: .topLeading) {
+            let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
+            smallViewImageView(preview, file)
+                .onTapGesture {
+                    decrypt(file: file) {
+                        showFullScreenPlayer = urlDecrypted != nil
                     }
-                    .onChange(of: m.activeCallViewIsCollapsed) { _ in
-                        showFullScreenPlayer = false
-                    }
-                if file.showStatusIconInSmallView {
-                    // Show nothing
-                } else if !decryptionInProgress {
-                    playPauseIcon(canBePlayed ? "play.fill" : "play.slash")
-                } else {
-                    videoDecryptionProgress()
                 }
-            }
+                .onChange(of: m.activeCallViewIsCollapsed) { _ in
+                    showFullScreenPlayer = false
+                }
             if file.showStatusIconInSmallView {
-                fileStatusIcon()
-                // prevent stealing touches and opening chat view from chat list
-                .allowsHitTesting(false)
+                // Show nothing
+            } else if !decryptionInProgress {
+                playPauseIcon(canBePlayed ? "play.fill" : "play.slash")
+            } else {
+                videoDecryptionProgress()
             }
         }
     }
 
     private func smallVideoView(_ url: URL, _ file: CIFile, _ preview: UIImage) -> some View {
-        return ZStack(alignment: .center) {
-            ZStack(alignment: .topLeading) {
-                smallViewImageView(preview, file)
-                    .onTapGesture {
-                        showFullScreenPlayer = true
-                    }
-                    .onChange(of: m.activeCallViewIsCollapsed) { _ in
-                        showFullScreenPlayer = false
-                    }
-
-                if !file.showStatusIconInSmallView {
-                    playPauseIcon("play.fill")
+        return ZStack(alignment: .topLeading) {
+            smallViewImageView(preview, file)
+                .onTapGesture {
+                    showFullScreenPlayer = true
                 }
-            }
-            if file.showStatusIconInSmallView {
-                fileStatusIcon()
-                // prevent stealing touches and opening chat view from chat list
-                .allowsHitTesting(false)
+                .onChange(of: m.activeCallViewIsCollapsed) { _ in
+                    showFullScreenPlayer = false
+                }
+
+            if !file.showStatusIconInSmallView {
+                playPauseIcon("play.fill")
             }
         }
     }
@@ -336,11 +322,15 @@ struct CIVideoView: View {
     }
 
     private func smallViewImageView(_ img: UIImage, _ file: CIFile) -> some View {
-        ZStack(alignment: .topTrailing) {
+        ZStack(alignment: .center) {
             Image(uiImage: img)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
                 .frame(width: maxWidth, height: maxWidth)
+            if file.showStatusIconInSmallView {
+                fileStatusIcon()
+                    .allowsHitTesting(false)
+            }
         }
     }
 
