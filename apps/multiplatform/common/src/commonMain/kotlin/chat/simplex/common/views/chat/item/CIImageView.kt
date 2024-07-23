@@ -137,8 +137,11 @@ fun CIImageView(
           .combinedClickable(
             onLongClick = { showMenu.value = true },
             onClick = {
-              onClick()
-              withBlur = false
+              if (withBlur) {
+                withBlur = false
+              } else {
+                onClick()
+              }
             }
           )
           .onRightClick { showMenu.value = true }
@@ -151,7 +154,11 @@ fun CIImageView(
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = {
-            withBlur = false
+            if (withBlur) {
+              withBlur = false
+            } else {
+              onClick()
+            }
           }
         )
         .onRightClick { showMenu.value = true }
