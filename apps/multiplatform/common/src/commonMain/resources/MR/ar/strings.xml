@@ -1987,4 +1987,10 @@
     <string name="app_check_for_updates_notice_desc">لكي يتم إعلامك بالإصدارات الجديدة، شغّل الفحص الدوري للإصدارات المستقرة أو التجريبية.</string>
     <string name="servers_info_proxied_servers_section_footer">أنت غير متصل بهذه الخوادم. يتم استخدام التوجيه الخاص لتسليم الرسائل إليهم.</string>
     <string name="appearance_zoom">قرّب</string>
+    <string name="smp_proxy_error_connecting">حدث خطأ أثناء الاتصال بخادم التحويل %1$s. يُرجى المحاولة لاحقا.</string>
+    <string name="smp_proxy_error_broker_host">عنوان خادم التحويل غير متوافق مع إعدادات الشبكة: %1$s.</string>
+    <string name="proxy_destination_error_broker_host">عنوان خادم الوجهة %1$s غير متوافق مع إعدادات خادم التحويل %2$s.</string>
+    <string name="proxy_destination_error_broker_version">إصدار الخادم الوجهة %1$s غير متوافق مع خادم التحويل %2$s.</string>
+    <string name="proxy_destination_error_failed_to_connect">فشل خادم التحويل %1$s في الاتصال بالخادم الوجهة %2$s. يُرجى المحاولة لاحقا.</string>
+    <string name="smp_proxy_error_broker_version">إصدار خادم التحويل غير متوافق مع إعدادات الشبكة: %1$s.</string>
 </resources>
