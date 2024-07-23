@@ -508,4 +508,16 @@
     <string name="created">Đã tạo</string>
     <string name="deleted">Đã xóa</string>
     <string name="deletion_errors">Lỗi xóa</string>
+    <string name="rcv_group_events_count">%d sự kiện nhóm</string>
+    <string name="direct_messages_are_prohibited_in_chat">Tin nhắn trực tiếp giữa các thành viên bị cấm trong nhóm này.</string>
+    <string name="total_files_count_and_size">%d tệp với tổng kích thước là %s</string>
+    <string name="mtr_error_different">phần di dời khác nhau trong ứng dụng/cơ sở dữ liệu: %s / %s</string>
+    <string name="direct_messages">Tin nhắn trực tiếp</string>
+    <string name="ttl_h">%dh</string>
+    <string name="ttl_hour">%d giờ</string>
+    <string name="ttl_hours">%d giờ</string>
+    <string name="v4_5_multiple_chat_profiles_descr">Tên, hình đại diện và cách ly truyền tải khác nhau.</string>
+    <string name="devices">Thiết bị</string>
+    <string name="conn_level_desc_direct">trực tiếp</string>
+    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Xác thực thiết bị không được bật. Bạn có thể bật SimpleX Lock thông qua phần Cài đặt, sau khi bạn bật xác thực thiết bị.</string>
 </resources>
