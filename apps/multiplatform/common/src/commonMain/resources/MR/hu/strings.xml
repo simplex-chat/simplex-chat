@@ -149,7 +149,7 @@
     <string name="use_camera_button">Kamera</string>
     <string name="cannot_access_keychain">A Keystore-hoz nem sikerül hozzáférni az adatbázis jelszó mentése végett</string>
     <string name="callstatus_in_progress">hívás folyamatban</string>
-    <string name="auto_accept_images">Fotók automatikus elfogadása</string>
+    <string name="auto_accept_images">Képek automatikus elfogadása</string>
     <string name="allow_your_contacts_to_call">A hívások kezdeményezése engedélyezve van az ismerősei számára.</string>
     <string name="settings_section_title_icon">ALKALMAZÁS IKON</string>
     <string name="v4_3_improved_server_configuration_desc">Kiszolgáló hozzáadása QR-kód beolvasásával.</string>
@@ -361,7 +361,7 @@
     <string name="database_encryption_will_be_updated">Az adatbázis titkosítás jelmondata megváltoztatásra és mentésre kerül a Keystore-ban.</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Az adatbázis titkosításra kerül és a jelmondat eltárolásra a beállításokban.</string>
     <string name="smp_servers_delete_server">Kiszolgáló törlése</string>
-    <string name="auth_device_authentication_is_disabled_turning_off">Az eszközhitelesítés ki van kapcsolva. A SimpleX zár kikapcsolva.</string>
+    <string name="auth_device_authentication_is_disabled_turning_off">A készüléken nincs beállítva a képernyőzár. A SimpleX zár ki van kapcsolva.</string>
     <string name="no_call_on_lock_screen">Letiltás</string>
     <string name="receipts_groups_disable_for_all">Letiltás minden csoport számára</string>
     <string name="receipts_groups_enable_for_all">Engedélyezés minden csoport számára</string>
@@ -372,7 +372,7 @@
     <string name="desktop_address">Számítógép címe</string>
     <string name="ttl_s">%dmp</string>
     <string name="delivery_receipts_title">Kézbesítési jelentések!</string>
-    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Eszközhitelesítés nem engedélyezett.A SimpleX zárolás bekapcsolható a Beállításokon keresztül, miután az eszköz hitelesítés engedélyezésre került.</string>
+    <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">A készüléken nincs beállítva a képernyőzár. A SimpleX zár az „Adatvédelem és biztonság” menüben kapcsolható be, miután beállította a képernyőzárat az eszközén.</string>
     <string name="decryption_error">Titkosítás visszafejtési hiba</string>
     <string name="share_text_disappears_at">Eltűnik ekkor: %s</string>
     <string name="icon_descr_edited">szerkesztve</string>
@@ -398,7 +398,7 @@
     <string name="disappearing_message">Eltűnő üzenet</string>
     <string name="dont_create_address">Ne hozzon létre címet</string>
     <string name="dont_show_again">Ne mutasd újra</string>
-    <string name="auth_disable_simplex_lock">SimpleX zárolás kikapcsolása</string>
+    <string name="auth_disable_simplex_lock">SimpleX zár kikapcsolása</string>
     <string name="status_e2e_encrypted">e2e titkosított</string>
     <string name="settings_section_title_device">ESZKÖZ</string>
     <string name="encrypted_video_call">e2e titkosított videóhívás</string>
@@ -613,7 +613,7 @@
     <string name="group_preferences">Csoport beállítások</string>
     <string name="error_with_info">Hiba: %s</string>
     <string name="v4_4_disappearing_messages">Eltűnő üzenetek</string>
-    <string name="auth_enable_simplex_lock">SimpleX zárolás engedélyezése</string>
+    <string name="auth_enable_simplex_lock">SimpleX zár bekapcsolása</string>
     <string name="error_synchronizing_connection">Hiba a kapcsolat szinkronizálása során</string>
     <string name="error_creating_address">Hiba a cím létrehozásakor</string>
     <string name="feature_enabled">engedélyezve</string>
@@ -726,7 +726,7 @@
     <string name="v4_6_reduced_battery_usage_descr">Hamarosan további fejlesztések érkeznek!</string>
     <string name="message_reactions_prohibited_in_this_chat">Az üzenetreakciók küldése le van tiltva ebben a csevegésben.</string>
     <string name="incorrect_code">Helytelen biztonsági kód!</string>
-    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Ez akkor fordulhat elő, ha ön, vagy az ismerőse régi adatbázis biztonsági mentést használt.</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">Ez akkor fordulhat elő, ha ön vagy az ismerőse régi adatbázis biztonsági mentést használt.</string>
     <string name="v5_3_new_desktop_app">Új asztali alkalmazás!</string>
     <string name="v4_6_group_moderation_descr">Most már az adminok is:
 \n- törölhetik a tagok üzeneteit.
@@ -853,7 +853,7 @@
     <string name="leave_group_question">Csoport elhagyása?</string>
     <string name="chat_preferences_no">nem</string>
     <string name="v4_5_reduced_battery_usage_descr">Hamarosan további fejlesztések érkeznek!</string>
-    <string name="feature_off">ki</string>
+    <string name="feature_off">kikapcsolva</string>
     <string name="install_simplex_chat_for_terminal">SimpleX Chat telepítése a terminálhoz</string>
     <string name="self_destruct_new_display_name">Új megjelenített név:</string>
     <string name="new_passphrase">Új jelmondat…</string>
@@ -1217,7 +1217,7 @@
     <string name="remove_passphrase">Eltávolítás</string>
     <string name="network_use_onion_hosts">Tor .onion kiszolgálók használata</string>
     <string name="reveal_verb">Felfedés</string>
-    <string name="la_lock_mode">SimpleX zárolási mód</string>
+    <string name="la_lock_mode">Zárolási mód</string>
     <string name="revoke_file__action">Fájl visszavonása</string>
     <string name="xftp_servers">XFTP kiszolgálók</string>
     <string name="prohibit_sending_files">A fájlok- és a médiatartalom küldése le van tiltva.</string>
@@ -1256,21 +1256,21 @@
     <string name="v5_0_polish_interface">Lengyel kezelőfelület</string>
     <string name="smp_servers_use_server">Kiszolgáló használata</string>
     <string name="share_text_received_at">Fogadva ekkor: %s</string>
-    <string name="la_notice_title_simplex_lock">SimpleX zárolás</string>
+    <string name="la_notice_title_simplex_lock">SimpleX zár</string>
     <string name="save_and_notify_group_members">Mentés és csoporttagok értesítése</string>
     <string name="reset_verb">Alaphelyzetbe állítás</string>
     <string name="only_your_contact_can_add_message_reactions">Csak az ismerőse tud üzenetreakciókat küldeni.</string>
     <string name="voice_messages">Hangüzenetek</string>
     <string name="snd_group_event_user_left">elhagyta a csoportot</string>
     <string name="icon_descr_record_voice_message">Hangüzenet rögzítése</string>
-    <string name="auth_simplex_lock_turned_on">SimpleX zárolás bekapcsolva</string>
+    <string name="auth_simplex_lock_turned_on">SimpleX zár bekapcsolva</string>
     <string name="member_contact_send_direct_message">közvetlen üzenet küldése</string>
     <string name="scan_from_mobile">Beolvasás mobilról</string>
     <string name="verify_connections">Kapcsolatok ellenőrzése</string>
     <string name="share_message">Üzenet megosztása…</string>
     <string name="custom_time_unit_seconds">másodperc</string>
-    <string name="lock_not_enabled">SimpleX zárolás nincs engedélyezve!</string>
-    <string name="chat_lock">SimpleX zárolás</string>
+    <string name="lock_not_enabled">A SimpleX zár nincs bekapcsolva!</string>
+    <string name="chat_lock">SimpleX zár</string>
     <string name="your_settings">Beállítások</string>
     <string name="your_chat_database">Csevegési adatbázis</string>
     <string name="rcv_group_event_member_deleted">%1$s eltávolítva</string>
@@ -1338,11 +1338,11 @@
     <string name="error_smp_test_server_auth">A kiszolgálónak engedélyre van szüksége a várólisták létrehozásához, ellenőrizze jelszavát</string>
     <string name="you_will_join_group">Kapcsolódni fog a csoport összes tagjához.</string>
     <string name="error_smp_test_certificate">Lehetséges, hogy a kiszolgáló címében szereplő tanúsítvány-ujjlenyomat helytelen</string>
-    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Az adatavédelem érdekében kapcsolja be a SimpleX zárolás funkciót.
-\nA funkció engedélyezése előtt a rendszer felszólítja a hitelesítés befejezésére.</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">A biztonsága érdekében kapcsolja be a SimpleX zár funkciót.
+\nA funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beállítására az eszközén.</string>
     <string name="video_will_be_received_when_contact_is_online">A videó akkor érkezik meg, amikor a küldője elérhető lesz, várjon, vagy ellenőrizze később!</string>
     <string name="network_error_desc">Hálózati kapcsolat ellenőrzése a következővel: %1$s, és próbálja újra.</string>
-    <string name="you_can_turn_on_lock">A SimpleX zárolás a Beállításokon keresztül kapcsolható be.</string>
+    <string name="you_can_turn_on_lock">A SimpleX zár az „Adatvédelem és biztonság” menüben kapcsolható be.</string>
     <string name="app_was_crashed">Az alkalmazás összeomlott</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Ellenőrizze, hogy a megfelelő hivatkozást használta-e, vagy kérje meg ismerősét, hogy küldjön egy másikat.</string>
     <string name="image_decoding_exception_desc">A kép nem dekódolható. Próbálja meg egy másik képpel, vagy lépjen kapcsolatba a fejlesztőkkel.</string>
@@ -1454,7 +1454,7 @@
     <string name="profile_is_only_shared_with_your_contacts">Profilja csak az ismerőseivel kerül megosztásra.</string>
     <string name="smp_servers_test_some_failed">Néhány kiszolgáló megbukott a teszten:</string>
     <string name="group_invitation_tap_to_join">Koppintson a csatlakozáshoz</string>
-    <string name="delete_files_and_media_desc">Ez a művelet nem vonható vissza - az összes fogadott és küldött fájl a médiatartalommal együtt törlésre kerülnek. Az alacsony felbontású fotók viszont megmaradnak.</string>
+    <string name="delete_files_and_media_desc">Ez a művelet nem vonható vissza - az összes fogadott és küldött fájl a médiatartalommal együtt törlésre kerülnek. Az alacsony felbontású képek viszont megmaradnak.</string>
     <string name="receipts_contacts_override_enabled">Kézbesítési jelentések engedélyezve vannak %d ismerősnél</string>
     <string name="sending_via">Küldés ezen keresztül:</string>
     <string name="v5_0_polish_interface_descr">Köszönet a felhasználóknak - hozzájárulás a Weblaten!</string>
@@ -1700,7 +1700,7 @@
     <string name="migrate_from_device_migration_complete">Átköltöztetés befejezve</string>
     <string name="v5_6_app_data_migration_descr">Átköltöztetés egy másik eszközre QR-kód használatával.</string>
     <string name="migrate_to_device_migrating">Átköltöztetés</string>
-    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Megjegyzés</b>: ha két eszközön is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja a kapcsolataiból érkező üzenetek visszafejtését.]]></string>
+    <string name="migrate_from_device_using_on_two_device_breaks_encryption"><b>Megjegyzés</b>: ha két eszközön is ugyanazt az adatbázist használja, akkor biztonsági védelemként megszakítja az ismerőseitől érkező üzenetek visszafejtését.</string>
     <string name="migrate_to_device_try_again">Megpróbálhatja még egyszer.</string>
     <string name="invalid_file_link">Hibás hivatkozás</string>
     <string name="conn_event_enabled_pq">végpontok közötti kvantumrezisztens titkosítás</string>
