@@ -7,8 +7,8 @@
 //
 
 import UniformTypeIdentifiers
-import SwiftUI
 import AVFoundation
+import SwiftUI
 import SimpleXChat
 
 /// Maximum size of hex encoded media previews
@@ -18,11 +18,11 @@ private let MAX_DATA_SIZE: Int64 = 14000
 private let MAX_DOWNSAMPLE_SIZE: Int64 = 2000
 
 class ShareModel: ObservableObject {
+    @Published var sharedContent: SharedContent?
     @Published var chats = Array<ChatData>()
     @Published var search = String()
     @Published var comment = String()
     @Published var selected: ChatData?
-    @Published var sharedContent: SharedContent?
     @Published var isLoaded = false
     @Published var bottomBar: BottomBar = .sendButton
     @Published var errorAlert: ErrorAlert?
@@ -41,7 +41,10 @@ class ShareModel: ObservableObject {
         }
     }
 
-    var completion: () -> Void = { fatalError("completion has not been set") }
+    var completion: () -> Void = {
+        fatalError("completion has not been set")
+    }
+    
     private var itemProvider: NSItemProvider?
 
     var isSendDisbled: Bool { sharedContent == nil || selected == nil }
@@ -86,7 +89,6 @@ class ShareModel: ObservableObject {
                             await MainActor.run { errorAlert = error }
                         }
                     }
-
                     // Process Attachment
                     Task {
                         switch await self.itemProvider!.sharedContent() {
