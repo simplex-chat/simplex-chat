@@ -57,6 +57,7 @@ struct CIVideoView: View {
                     videoViewEncrypted(file, defaultPreview, duration)
                 } else if let preview, let file {
                     Group { if smallView { smallViewImageView(preview, file) } else { imageView(preview) } }
+                        .modifier(PrivacyBlur(enabled: !smallView, blurred: $blurred))
                         .onTapGesture {
                             switch file.fileStatus {
                             case .rcvInvitation, .rcvAborted:
