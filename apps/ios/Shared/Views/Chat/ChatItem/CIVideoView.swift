@@ -57,7 +57,6 @@ struct CIVideoView: View {
                     videoViewEncrypted(file, defaultPreview, duration)
                 } else if let preview, let file {
                     Group { if smallView { smallViewImageView(preview, file) } else { imageView(preview) } }
-                        .modifier(PrivacyBlur(enabled: !smallView, blurred: $blurred))
                         .onTapGesture {
                             switch file.fileStatus {
                             case .rcvInvitation, .rcvAborted:
@@ -150,7 +149,6 @@ struct CIVideoView: View {
             ZStack(alignment: .center) {
                 let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
                 imageView(defaultPreview)
-                .modifier(PrivacyBlur(enabled: !videoPlaying, blurred: $blurred))
                 .onTapGesture {
                     decrypt(file: file) {
                         showFullScreenPlayer = urlDecrypted != nil
@@ -321,6 +319,7 @@ struct CIVideoView: View {
             .resizable()
             .scaledToFit()
             .frame(width: w)
+            .modifier(PrivacyBlur(enabled: true, blurred: $blurred))
             fileStatusIcon()
         }
     }
