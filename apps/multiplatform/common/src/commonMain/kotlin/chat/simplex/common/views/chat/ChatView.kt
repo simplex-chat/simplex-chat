@@ -1113,6 +1113,12 @@ fun BoxWithConstraintsScope.ChatItemsList(
     }
   }
   FloatingButtons(chatModel.chatItems, unreadCount, chat.chatStats.minUnreadItemId, searchValue, markRead, setFloatingButton, listState)
+  LaunchedEffect(Unit) {
+    snapshotFlow { listState.isScrollInProgress }
+      .collect {
+        chatViewScrollState.value = it
+      }
+  }
 }
 
 @Composable
@@ -1325,6 +1331,8 @@ private fun TopEndFloatingButton(
   else -> {
   }
 }
+
+val chatViewScrollState = MutableStateFlow(false)
 
 private fun bottomEndFloatingButton(
   unreadCount: Int,

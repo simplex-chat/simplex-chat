@@ -19,7 +19,9 @@ import chat.simplex.res.MR
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.chat.chatViewScrollState
 import dev.icerock.moko.resources.StringResource
 import java.io.File
 import java.net.URI
@@ -41,6 +43,7 @@ fun CIVideoView(
     val preview = remember(image) { base64ToBitmap(image) }
     val filePath = remember(file, CIFile.cachedRemoteFileRequests.toList()) { mutableStateOf(getLoadedFilePath(file)) }
     val sizeMultiplier = if (smallView) 0.38f else 1f
+    val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
     if (chatModel.connectedToRemote()) {
       LaunchedEffect(file) {
         withLongRunningApi(slow = 600_000) {
@@ -68,15 +71,15 @@ fun CIVideoView(
       if (decrypted != null && smallView) {
         SmallVideoView(decrypted, file, preview, duration * 1000L, autoPlay, sizeMultiplier, openFullscreen = openFullscreen)
       } else if (decrypted != null) {
-        VideoView(decrypted, file, preview, duration * 1000L, autoPlay, showMenu, openFullscreen = openFullscreen)
+        VideoView(decrypted, file, preview, duration * 1000L, autoPlay, showMenu, blurred, openFullscreen = openFullscreen)
       } else if (smallView) {
         SmallVideoViewEncrypted(uriDecrypted, file, preview, autoPlay, showMenu, sizeMultiplier, openFullscreen = openFullscreen)
       } else {
-        VideoViewEncrypted(uriDecrypted, file, preview, duration * 1000L, autoPlay, showMenu, openFullscreen = openFullscreen)
+        VideoViewEncrypted(uriDecrypted, file, preview, duration * 1000L, autoPlay, showMenu, blurred, openFullscreen = openFullscreen)
       }
     } else {
       Box {
-        VideoPreviewImageView(preview, onClick = {
+        VideoPreviewImageView(preview, blurred = blurred, onClick = {
           if (file != null) {
             when (file.fileStatus) {
               CIFileStatus.RcvInvitation, CIFileStatus.RcvAborted ->
@@ -109,7 +112,7 @@ fun CIVideoView(
         if (file != null && !smallView) {
           DurationProgress(file, remember { mutableStateOf(false) }, remember { mutableStateOf(duration * 1000L) }, remember { mutableStateOf(0L) }/*, soundEnabled*/)
         }
-        if (file?.fileStatus is CIFileStatus.RcvInvitation || file?.fileStatus is CIFileStatus.RcvAborted) {
+        if ((file?.fileStatus is CIFileStatus.RcvInvitation || file?.fileStatus is CIFileStatus.RcvAborted) && !blurred.value) {
           PlayButton(error = false, sizeMultiplier, { showMenu.value = true }) { receiveFileIfValidSize(file, receiveFile) }
         }
       }
@@ -132,15 +135,16 @@ private fun VideoViewEncrypted(
   defaultDuration: Long,
   autoPlay: MutableState<Boolean>,
   showMenu: MutableState<Boolean>,
+  blurred: MutableState<Boolean>,
   openFullscreen: () -> Unit,
 ) {
   var decryptionInProgress by rememberSaveable(file.fileName) { mutableStateOf(false) }
   val onLongClick = { showMenu.value = true }
   Box {
-    VideoPreviewImageView(defaultPreview, smallView = false, if (decryptionInProgress) {{}} else openFullscreen, onLongClick)
+    VideoPreviewImageView(defaultPreview, smallView = false, blurred = blurred, if (decryptionInProgress) {{}} else openFullscreen, onLongClick)
     if (decryptionInProgress) {
       VideoDecryptionProgress(1f, onLongClick = onLongClick)
-    } else {
+    } else if (!blurred.value) {
       PlayButton(false, 1f, onLongClick = onLongClick) {
         decryptionInProgress = true
         withBGApi {
@@ -170,7 +174,7 @@ private fun SmallVideoViewEncrypted(
   var decryptionInProgress by rememberSaveable(file.fileName) { mutableStateOf(false) }
   val onLongClick = { showMenu.value = true }
   Box {
-    VideoPreviewImageView(defaultPreview, smallView = true, if (decryptionInProgress) {{}} else openFullscreen, onLongClick)
+    VideoPreviewImageView(defaultPreview, smallView = true, blurred = remember { mutableStateOf(false) }, if (decryptionInProgress) {{}} else openFullscreen, onLongClick)
     if (decryptionInProgress) {
       VideoDecryptionProgress(sizeMultiplier, onLongClick = onLongClick)
     } else if (!file.showStatusIconInSmallView) {
@@ -190,7 +194,15 @@ private fun SmallVideoViewEncrypted(
 }
 
 @Composable
-private fun SmallVideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defaultDuration: Long, autoPlay: MutableState<Boolean>, sizeMultiplier: Float, openFullscreen: () -> Unit) {
+private fun SmallVideoView(
+  uri: URI,
+  file: CIFile,
+  defaultPreview: ImageBitmap,
+  defaultDuration: Long,
+  autoPlay: MutableState<Boolean>,
+  sizeMultiplier: Float,
+  openFullscreen: () -> Unit
+) {
   val player = remember(uri) { VideoPlayerHolder.getOrCreate(uri, true, defaultPreview, defaultDuration, true) }
   val preview by remember { player.preview }
   //  val soundEnabled by rememberSaveable(uri.path) { player.soundEnabled }
@@ -205,7 +217,7 @@ private fun SmallVideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, 
       onLongClick = {},
       {}
     )
-    VideoPreviewImageView(preview, smallView = true, openFullscreen, onLongClick = {})
+    VideoPreviewImageView(preview, smallView = true, blurred = remember { mutableStateOf(false) }, openFullscreen, onLongClick = {})
     if (!file.showStatusIconInSmallView) {
       PlayButton(brokenVideo, sizeMultiplier, onLongClick = {}, onClick = openFullscreen)
     }
@@ -216,7 +228,7 @@ private fun SmallVideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, 
 }
 
 @Composable
-private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defaultDuration: Long, autoPlay: MutableState<Boolean>, showMenu: MutableState<Boolean>, openFullscreen: () -> Unit) {
+private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defaultDuration: Long, autoPlay: MutableState<Boolean>, showMenu: MutableState<Boolean>, blurred: MutableState<Boolean>, openFullscreen: () -> Unit) {
   val player = remember(uri) { VideoPlayerHolder.getOrCreate(uri, false, defaultPreview, defaultDuration, true) }
   val videoPlaying = remember(uri.path) { player.videoPlaying }
   val progress = remember(uri.path) { player.progress }
@@ -257,8 +269,8 @@ private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defau
       stop
     )
     if (showPreview.value) {
-      VideoPreviewImageView(preview, smallView = false, openFullscreen, onLongClick)
-      if (!autoPlay.value) {
+      VideoPreviewImageView(preview, smallView = false, blurred = blurred, openFullscreen, onLongClick)
+      if (!autoPlay.value && !blurred.value) {
         PlayButton(brokenVideo, onLongClick = onLongClick, onClick = play)
       }
     }
@@ -365,7 +377,7 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
 }
 
 @Composable
-fun VideoPreviewImageView(preview: ImageBitmap, smallView: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
+fun VideoPreviewImageView(preview: ImageBitmap, smallView: Boolean, blurred: MutableState<Boolean>, onClick: () -> Unit, onLongClick: () -> Unit) {
   val windowWidth = LocalWindowWidth()
   val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH }
   Image(
@@ -377,7 +389,8 @@ fun VideoPreviewImageView(preview: ImageBitmap, smallView: Boolean, onClick: () 
         onLongClick = onLongClick,
         onClick = onClick
       )
-      .onRightClick(onLongClick),
+      .onRightClick(onLongClick)
+      .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState()),
     contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
   )
 }

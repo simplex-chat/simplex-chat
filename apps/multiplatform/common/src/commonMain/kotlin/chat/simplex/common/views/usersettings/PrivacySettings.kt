@@ -93,26 +93,14 @@ fun PrivacySettingsView(
     }
     SectionDividerSpaced()
 
-    SectionView(stringResource(MR.strings.privacy_media_blur_radius).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
-      Row(Modifier.padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
-        val state = remember { appPrefs.privacyMediaBlurRadius.state }
-        Text("${state.value}", Modifier.width(50.dp))
-        Slider(
-          value = state.value.toFloat(),
-          valueRange = 0f..100f,
-          onValueChange = { value ->
-            appPrefs.privacyMediaBlurRadius.set(value.roundToInt())
-          }
-        )
-      }
-    }
-    SectionDividerSpaced()
-
     SectionView(stringResource(MR.strings.settings_section_title_files)) {
       SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.encrypt_local_files), chatModel.controller.appPrefs.privacyEncryptLocalFiles, onChange = { enable ->
         withBGApi { chatModel.controller.apiSetEncryptLocalFiles(enable) }
       })
       SettingsPreferenceItem(painterResource(MR.images.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
+      BlurRadiusOptions(remember { appPrefs.privacyMediaBlurRadius.state }) {
+        appPrefs.privacyMediaBlurRadius.set(it)
+      }
       SettingsPreferenceItem(painterResource(MR.images.ic_security), stringResource(MR.strings.protect_ip_address), chatModel.controller.appPrefs.privacyAskToApproveRelays)
     }
     SectionCustomFooter {
@@ -231,6 +219,30 @@ private fun SimpleXLinkOptions(simplexLinkModeState: State<SimplexLinkMode>, onS
     simplexLinkModeState,
     icon = null,
     enabled = remember { mutableStateOf(true) },
+    onSelected = onSelected
+  )
+}
+
+@Composable
+private fun BlurRadiusOptions(state: State<Int>, onSelected: (Int) -> Unit) {
+  val choices = listOf(0, 12, 24, 48)
+  val pickerValues = choices + if (choices.contains(state.value)) emptyList() else listOf(state.value)
+  val values = remember {
+    pickerValues.map {
+      when (it) {
+        0 -> it to generalGetString(MR.strings.privacy_media_blur_radius_off)
+        12 -> it to generalGetString(MR.strings.privacy_media_blur_radius_soft)
+        24 -> it to generalGetString(MR.strings.privacy_media_blur_radius_medium)
+        48 -> it to generalGetString(MR.strings.privacy_media_blur_radius_strong)
+        else -> it to "$it"
+      }
+    }
+  }
+  ExposedDropDownSettingRow(
+    generalGetString(MR.strings.privacy_media_blur_radius),
+    values,
+    state,
+    icon = painterResource(MR.images.ic_blur_on),
     onSelected = onSelected
   )
 }
