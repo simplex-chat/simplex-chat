@@ -1,6 +1,7 @@
 package chat.simplex.common.platform
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -40,7 +41,8 @@ expect fun Modifier.desktopPointerHoverIconHand(): Modifier
 fun Modifier.privacyBlur(
   enabled: Boolean,
   blurred: MutableState<Boolean> = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) },
-  scrollState: State<Boolean>
+  scrollState: State<Boolean>,
+  onLongClick: () -> Unit = {}
 ): Modifier {
   val blurRadius = remember { appPrefs.privacyMediaBlurRadius.state }
   KeyChangeEffect(blurRadius.value) {
@@ -52,19 +54,22 @@ fun Modifier.privacyBlur(
       radiusY = remember { appPrefs.privacyMediaBlurRadius.state }.value.dp,
       edgeTreatment = BlurredEdgeTreatment(RoundedCornerShape(0.dp))
     )
-      .clickable {
-        // Wait until scrolling is finished and only after that hide blur effect. Scroll can happen automatically when user press
-        // on the item because in this case Compose will focus the item and scroll to it. If there is no waiting of the end of scrolling,
-        // the blur will be shown again in the process of scrolling
-        withBGApi {
-          snapshotFlow { scrollState.value }
-            .filter { !it }
-            .collect {
-              blurred.value = false
-              cancel()
-            }
+      .combinedClickable(
+        onLongClick = onLongClick,
+        onClick = {
+          // Wait until scrolling is finished and only after that hide blur effect. Scroll can happen automatically when user press
+          // on the item because in this case Compose will focus the item and scroll to it. If there is no waiting of the end of scrolling,
+          // the blur will be shown again in the process of scrolling
+          withBGApi {
+            snapshotFlow { scrollState.value }
+              .filter { !it }
+              .collect {
+                blurred.value = false
+                cancel()
+              }
+          }
         }
-      }
+      )
   } else if (enabled && blurRadius.value > 0) {
     LaunchedEffect(Unit) {
       snapshotFlow { scrollState.value }

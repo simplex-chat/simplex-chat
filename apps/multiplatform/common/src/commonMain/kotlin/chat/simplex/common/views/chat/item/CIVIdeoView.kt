@@ -390,7 +390,7 @@ fun VideoPreviewImageView(preview: ImageBitmap, smallView: Boolean, blurred: Mut
         onClick = onClick
       )
       .onRightClick(onLongClick)
-      .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState()),
+      .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = onLongClick),
     contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
   )
 }

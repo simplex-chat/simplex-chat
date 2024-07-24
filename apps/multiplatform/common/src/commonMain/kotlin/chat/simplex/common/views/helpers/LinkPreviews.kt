@@ -122,13 +122,13 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancel
 }
 
 @Composable
-fun ChatItemLinkView(linkPreview: LinkPreview) {
+fun ChatItemLinkView(linkPreview: LinkPreview, onLongClick: () -> Unit) {
   Column(Modifier.widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
     val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
     Image(
       base64ToBitmap(linkPreview.image),
       stringResource(MR.strings.image_descr_link_preview),
-      modifier = Modifier.fillMaxWidth().privacyBlur(true, blurred, chatViewScrollState.collectAsState()),
+      modifier = Modifier.fillMaxWidth().privacyBlur(true, blurred, chatViewScrollState.collectAsState(), onLongClick = onLongClick),
       contentScale = ContentScale.FillWidth,
     )
     Column(Modifier.padding(top = 6.dp).padding(horizontal = 12.dp)) {
@@ -181,7 +181,7 @@ private fun normalizeImageUri(u: URL, imageUri: String) = when {
 @Composable
 fun PreviewChatItemLinkView() {
   SimpleXTheme {
-    ChatItemLinkView(LinkPreview.sampleData)
+    ChatItemLinkView(LinkPreview.sampleData) {}
   }
 }
 

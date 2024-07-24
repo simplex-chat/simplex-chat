@@ -109,7 +109,7 @@ fun CIImageView(
           onClick = onClick
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState()),
+        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
       contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
     )
   }
@@ -133,7 +133,7 @@ fun CIImageView(
             onClick = onClick
           )
           .onRightClick { showMenu.value = true }
-          .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState()),
+          .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
         contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
       )
     } else {
@@ -144,7 +144,7 @@ fun CIImageView(
           onClick = {}
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState()),
+        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
         contentAlignment = Alignment.Center
       ) {
         imageView(base64ToBitmap(image), onClick = {
