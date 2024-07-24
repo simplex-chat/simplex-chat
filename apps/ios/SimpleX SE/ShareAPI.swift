@@ -56,7 +56,7 @@ func apiGetChats(userId: User.ID) throws -> Array<ChatData> {
 
 func apiSendMessage(
     chatInfo: ChatInfo,
-    cryptoFile: CryptoFile,
+    cryptoFile: CryptoFile?,
     msgContent: MsgContent
 ) throws -> AChatItem {
     let r = sendSimpleXCmd(

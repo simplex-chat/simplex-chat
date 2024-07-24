@@ -10,6 +10,7 @@ import Foundation
 import SwiftUI
 import AVKit
 import SwiftyGif
+import LinkPresentation
 
 public func getLoadedFileSource(_ file: CIFile?) -> CryptoFile? {
     if let file = file, file.loaded {
@@ -309,13 +310,47 @@ private func dropPrefix(_ s: String, _ prefix: String) -> String {
     s.hasPrefix(prefix) ? String(s.dropFirst(prefix.count)) : s
 }
 
+/// Transcodes Video and stores it in temporary directory with named `video.mp4`
+/// If called multiple times - will override the previous temporary video.
+/// Will cleanup the temporary file in case of failure
+///
+/// - Parameters:
+///   - url: source url
+///   - presetName: `AVAssetExportSession`s preset name
+/// - Returns: output url of successfully exported asset
+public func transcodeVideo(from url: URL, presetName: String = AVAssetExportPreset640x480) async -> URL? {
+    let asset: AVURLAsset = AVURLAsset(url: url, options: nil)
+    let outputURL = URL(
+        fileURLWithPath: generateNewFileName(
+            getTempFilesDirectory().path + "/" + "video", "mp4",
+            fullPath: true)
+    )
+    if let s = AVAssetExportSession(asset: asset, presetName: presetName) {
+        s.outputURL = outputURL
+        s.outputFileType = .mp4
+        s.metadataItemFilter = AVMetadataItemFilter.forSharing()
+        await s.export()
+        switch s.status {
+        case .completed: return outputURL
+        default:
+            try? FileManager.default.removeItem(at: outputURL)
+            if let err = s.error { logger.error("Failed to export video with error: \(err)") }
+        }
+    }
+    return nil
+}
+
 extension AVAsset {
     public func generatePreview() -> (UIImage, Int)? {
         let generator = AVAssetImageGenerator(asset: self)
         generator.appliesPreferredTrackTransform = true
-        var actualTime = CMTimeMake(value: 0, timescale: 0)
-        if let image = try? generator.copyCGImage(at: CMTimeMakeWithSeconds(0.0, preferredTimescale: 1), actualTime: &actualTime) {
-            return (UIImage(cgImage: image), Int(duration.seconds))
+        do {
+            return (
+                UIImage(cgImage: try generator.copyCGImage(at: .zero, actualTime: nil)),
+                Int(duration.seconds)
+            )
+        } catch {
+            logger.error("Failed generate video preview \(error)")
         }
         return nil
     }
@@ -374,5 +409,41 @@ extension UIImage {
         } else {
             return nil
         }
+    }
+}
+
+public func getLinkPreview(url: URL, cb: @escaping (LinkPreview?) -> Void) {
+    logger.debug("getLinkMetadata: fetching URL preview")
+    LPMetadataProvider().startFetchingMetadata(for: url){ metadata, error in
+        if let e = error {
+            logger.error("Error retrieving link metadata: \(e.localizedDescription)")
+        }
+        if let metadata = metadata,
+           let imageProvider = metadata.imageProvider,
+           imageProvider.canLoadObject(ofClass: UIImage.self) {
+            imageProvider.loadObject(ofClass: UIImage.self){ object, error in
+                var linkPreview: LinkPreview? = nil
+                if let error = error {
+                    logger.error("Couldn't load image preview from link metadata with error: \(error.localizedDescription)")
+                } else {
+                    if let image = object as? UIImage,
+                       let resized = resizeImageToStrSize(image, maxDataSize: 14000),
+                       let title = metadata.title,
+                       let uri = metadata.originalURL {
+                        linkPreview = LinkPreview(uri: uri, title: title, image: resized)
+                    }
+                }
+                cb(linkPreview)
+            }
+        } else {
+            logger.error("Could not load link preview image")
+            cb(nil)
+        }
+    }
+}
+
+public func getLinkPreview(for url: URL) async -> LinkPreview? {
+    await withCheckedContinuation { cont in
+        getLinkPreview(url: url) { cont.resume(returning: $0) }
     }
 }

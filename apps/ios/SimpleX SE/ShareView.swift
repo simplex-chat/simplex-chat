@@ -73,13 +73,14 @@ struct ShareView: View {
                             Image(systemName: "arrow.up.circle.fill")
                                 .resizable()
                         }
+                        .disabled(model.isSendDisbled)
                     }
                 }
                 .frame(width: 28, height: 28)
                 .padding(6)
 
             }
-            .background(Color(.systemBackground.withAlphaComponent(0.5)))
+            .background(Color(.systemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 20))
             .overlay(
                 RoundedRectangle(cornerRadius: 20)

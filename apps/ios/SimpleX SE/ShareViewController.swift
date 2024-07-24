@@ -26,14 +26,7 @@ class ShareViewController: UIHostingController<ShareView> {
 
     override func viewDidLoad() {
         ShareModel.CompletionHandler.isEventLoopEnabled = false
-        if let extensionContext,
-           let item = extensionContext.inputItems.first as? NSExtensionItem {
-            model.completion = {
-                ShareModel.CompletionHandler.isEventLoopEnabled = false
-                extensionContext.completeRequest(returningItems: [item])
-            }
-            Task { await MainActor.run { model.item = item } }
-        }
+        model.setup(context: extensionContext!)
     }
 }
 
