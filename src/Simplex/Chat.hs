@@ -835,17 +835,6 @@ processChatCommand' vr = \case
       where
         getDirectCI :: DB.Connection -> ChatItemId -> IO (Either ChatError (CChatItem 'CTDirect))
         getDirectCI db itemId = runExceptT . withExceptT ChatErrorStore $ getDirectChatItem db user chatId itemId
-        assertDeletable :: [CChatItem 'CTDirect] -> CM ()
-        assertDeletable items =
-          unless (all itemDeletable items) $ throwChatError CEInvalidChatItemDelete
-          where
-            itemDeletable :: CChatItem 'CTDirect -> Bool
-            itemDeletable (CChatItem msgDir ChatItem {meta = CIMeta {itemSharedMsgId, deletable}}) =
-              case msgDir of
-                SMDSnd -> isJust itemSharedMsgId && deletable
-                SMDRcv -> False
-        itemsMsgIds :: [CChatItem 'CTDirect] -> [SharedMsgId]
-        itemsMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
     CTGroup -> withGroupLock "deleteChatItem" chatId $ do
       Group gInfo ms <- withStore $ \db -> getGroup db vr user chatId
       (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getGroupCI db) (L.toList itemIds))
@@ -864,17 +853,6 @@ processChatCommand' vr = \case
       where
         getGroupCI :: DB.Connection -> ChatItemId -> IO (Either ChatError (CChatItem 'CTGroup))
         getGroupCI db itemId = runExceptT . withExceptT ChatErrorStore $ getGroupChatItem db user chatId itemId
-        assertDeletable :: [CChatItem 'CTGroup] -> CM ()
-        assertDeletable items =
-          unless (all itemDeletable items) $ throwChatError CEInvalidChatItemDelete
-          where
-            itemDeletable :: CChatItem 'CTGroup -> Bool
-            itemDeletable (CChatItem msgDir ChatItem {meta = CIMeta {itemSharedMsgId, deletable}}) =
-              case msgDir of
-                SMDSnd -> isJust itemSharedMsgId && deletable
-                SMDRcv -> False
-        itemsMsgIds :: [CChatItem 'CTGroup] -> [SharedMsgId]
-        itemsMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
     CTLocal -> do
       nf <- withStore $ \db -> getNoteFolder db user chatId
       (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getLocalCI db) (L.toList itemIds))
@@ -885,6 +863,18 @@ processChatCommand' vr = \case
         getLocalCI db itemId = runExceptT . withExceptT ChatErrorStore $ getLocalChatItem db user chatId itemId
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+    where
+      assertDeletable :: [CChatItem c] -> CM ()
+      assertDeletable items =
+        unless (all itemDeletable items) $ throwChatError CEInvalidChatItemDelete
+        where
+          itemDeletable :: CChatItem c -> Bool
+          itemDeletable (CChatItem msgDir ChatItem {meta = CIMeta {itemSharedMsgId, deletable}}) =
+            case msgDir of
+              SMDSnd -> isJust itemSharedMsgId && deletable
+              SMDRcv -> False
+      itemsMsgIds :: [CChatItem c] -> [SharedMsgId]
+      itemsMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
   APIDeleteMemberChatItem gId itemIds -> withUser $ \user -> withGroupLock "deleteChatItem" gId $ do
     Group gInfo@GroupInfo {membership} ms <- withStore $ \db -> getGroup db vr user gId
     (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getGroupCI db user) (L.toList itemIds))
