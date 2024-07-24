@@ -58,6 +58,7 @@ chatGroupTests = do
     it "unused contacts are deleted after all their groups are deleted" testGroupDeleteUnusedContacts
     it "group description is shown as the first message to new members" testGroupDescription
     it "moderate message of another group member" testGroupModerate
+    it "moderate own message (should process as deletion)" testGroupModerateOwn
     it "moderate message of another group member (full delete)" testGroupModerateFullDelete
     it "moderate message that arrives after the event of moderation" testGroupDelayedModeration
     it "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
@@ -1552,6 +1553,20 @@ testGroupModerate =
       alice #$> ("/_get chat #1 count=1", chat, [(0, "hi [marked deleted by bob]")])
       bob #$> ("/_get chat #1 count=1", chat, [(0, "hi [marked deleted by you]")])
       cath #$> ("/_get chat #1 count=1", chat, [(1, "hi [marked deleted by bob]")])
+
+testGroupModerateOwn :: HasCallStack => FilePath -> IO ()
+testGroupModerateOwn =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      threadDelay 1000000
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      alice ##> "\\\\ #team @alice hello"
+      alice <## "message marked deleted by you"
+      bob <# "#team alice> [marked deleted] hello"
+      alice #$> ("/_get chat #1 count=1", chat, [(1, "hello [marked deleted by you]")])
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "hello [marked deleted]")])
 
 testGroupModerateFullDelete :: HasCallStack => FilePath -> IO ()
 testGroupModerateFullDelete =

@@ -1733,11 +1733,10 @@ deleteChatItemVersions_ :: DB.Connection -> ChatItemId -> IO ()
 deleteChatItemVersions_ db itemId =
   DB.execute db "DELETE FROM chat_item_versions WHERE chat_item_id = ?" (Only itemId)
 
-markDirectChatItemDeleted :: DB.Connection -> User -> Contact -> ChatItem 'CTDirect d -> MessageId -> UTCTime -> IO (ChatItem 'CTDirect d)
-markDirectChatItemDeleted db User {userId} Contact {contactId} ci@ChatItem {meta} msgId deletedTs = do
+markDirectChatItemDeleted :: DB.Connection -> User -> Contact -> ChatItem 'CTDirect d -> UTCTime -> IO (ChatItem 'CTDirect d)
+markDirectChatItemDeleted db User {userId} Contact {contactId} ci@ChatItem {meta} deletedTs = do
   currentTs <- liftIO getCurrentTime
   let itemId = chatItemId' ci
-  insertChatItemMessage_ db itemId msgId currentTs
   DB.execute
     db
     [sql|
@@ -1931,14 +1930,13 @@ pattern DBCIBlocked = 2
 pattern DBCIBlockedByAdmin :: Int
 pattern DBCIBlockedByAdmin = 3
 
-markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> MessageId -> Maybe GroupMember -> UTCTime -> IO (ChatItem 'CTGroup d)
-markGroupChatItemDeleted db User {userId} GroupInfo {groupId} ci@ChatItem {meta} msgId byGroupMember_ deletedTs = do
+markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> Maybe GroupMember -> UTCTime -> IO (ChatItem 'CTGroup d)
+markGroupChatItemDeleted db User {userId} GroupInfo {groupId} ci@ChatItem {meta} byGroupMember_ deletedTs = do
   currentTs <- liftIO getCurrentTime
   let itemId = chatItemId' ci
       (deletedByGroupMemberId, itemDeleted) = case byGroupMember_ of
         Just m@GroupMember {groupMemberId} -> (Just groupMemberId, Just $ CIModerated (Just deletedTs) m)
         _ -> (Nothing, Just $ CIDeleted @'CTGroup (Just deletedTs))
-  insertChatItemMessage_ db itemId msgId currentTs
   DB.execute
     db
     [sql|
