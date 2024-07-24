@@ -2593,7 +2593,7 @@ processChatCommand' vr = \case
     delGroupChatItems user gInfo items byGroupMember = do
       deletedTs <- liftIO getCurrentTime
       if groupFeatureAllowed SGFFullDelete gInfo
-        then deleteGroupCIs user gInfo items True False Nothing deletedTs
+        then deleteGroupCIs user gInfo items True False byGroupMember deletedTs
         else markGroupCIsDeleted user gInfo items True byGroupMember deletedTs
     updateGroupProfileByName :: GroupName -> (GroupProfile -> GroupProfile) -> CM ChatResponse
     updateGroupProfileByName gName update = withUser $ \user -> do
