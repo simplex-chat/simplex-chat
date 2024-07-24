@@ -407,8 +407,7 @@ startChatController mainApp enableSndFiles = do
           void $ forkIO $ startFilesToReceive users
           startCleanupManager
           startExpireCIs users
-        else
-          when enableSndFiles $ startXFTP xftpStartSndWorkers
+        else when enableSndFiles $ startXFTP xftpStartSndWorkers
       pure a1
     startXFTP startWorkers = do
       tmp <- readTVarIO =<< asks tempDirectory
@@ -813,55 +812,40 @@ processChatCommand' vr = \case
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIDeleteChatItem (ChatRef cType chatId) itemIds@(itemId :| _) mode -> withUser $ \user -> case cType of
-    -- TODO batch delete
-    -- CTDirect -> withContactLock "deleteChatItem" chatId $ do
-    --   ct <- withStore $ \db -> getContact db vr user chatId
-    --   (errs1, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getDirectCI db ct) (L.toList itemIds))
-    --   case mode of
-    --     CIDMInternal -> do
-    --       -- deleteDirectCIs
-    --       ok_
-    --     CIDMBroadcast -> do
-    --       assertDeletable items
-    --       assertDirectAllowed user MDSnd ct XMsgDel_
-    --       let msgIds = itemMsgIds items
-    --           evts = map (\msgId -> XMsgDel msgId Nothing) msgIds
-    --       -- sendDirectContactMessages:
-    --       --   - see sendGroupMemberMessages (modified for PQ)
-    --       --   - processDirectMessage, MSG - support batched messages
-    --       --   - bump chat version, send batched or in loop based on version?
-    --       if featureAllowed SCFFullDelete forUser ct
-    --         then do
-    --           -- deleteDirectCIs
-    --           ok_
-    --         else do
-    --           -- markDirectCIsDeleted
-    --           ok_
-    --   where
-    --     getDirectCI :: DB.Connection -> Contact -> ChatItemId -> IO (Either ChatError (CChatItem 'CTDirect))
-    --     getDirectCI db Contact {contactId} ciId = runExceptT . withExceptT ChatErrorStore $ getDirectChatItem db user contactId ciId
-    --     assertDeletable :: [CChatItem 'CTDirect] -> CM ()
-    --     assertDeletable items =
-    --       unless (all itemDeletable items) $ throwChatError CEInvalidChatItemDelete
-    --       where
-    --         itemDeletable :: CChatItem 'CTDirect -> Bool
-    --         itemDeletable (CChatItem msgDir ChatItem {meta = CIMeta {itemSharedMsgId, deletable}}) =
-    --           case msgDir of
-    --             SMDSnd -> isJust itemSharedMsgId && deletable
-    --             SMDRcv -> False
-    --     itemMsgIds :: [CChatItem 'CTDirect] -> [SharedMsgId]
-    --     itemMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
     CTDirect -> withContactLock "deleteChatItem" chatId $ do
-      (ct, CChatItem msgDir ci@ChatItem {meta = CIMeta {itemSharedMsgId, deletable}}) <- withStore $ \db -> (,) <$> getContact db vr user chatId <*> getDirectChatItem db user chatId itemId
-      case (mode, msgDir, itemSharedMsgId, deletable) of
-        (CIDMInternal, _, _, _) -> deleteDirectCI user ct ci True False
-        (CIDMBroadcast, SMDSnd, Just itemSharedMId, True) -> do
+      ct <- withStore $ \db -> getContact db vr user chatId
+      (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getDirectCI db ct) (L.toList itemIds))
+      unless (null errs) $ toView $ CRChatErrors (Just user) errs
+      case mode of
+        CIDMInternal -> deleteDirectCIs user ct items True False
+        CIDMBroadcast -> do
+          assertDeletable items
           assertDirectAllowed user MDSnd ct XMsgDel_
-          void $ sendDirectContactMessage user ct (XMsgDel itemSharedMId Nothing)
+          let msgIds = itemMsgIds items
+              evts = map (\msgId -> XMsgDel msgId Nothing) msgIds
+          -- TODO batch delete
+          -- sendDirectContactMessages:
+          --   - see sendGroupMemberMessages (modified for PQ)
+          --   - processDirectMessage, MSG - support batched messages
+          --   - bump chat version, send batched or in loop based on version?
+          forM_ evts $ \evt -> void $ sendDirectContactMessage user ct evt
           if featureAllowed SCFFullDelete forUser ct
-            then deleteDirectCI user ct ci True False
-            else markDirectCIDeleted user ct ci True =<< liftIO getCurrentTime
-        (CIDMBroadcast, _, _, _) -> throwChatError CEInvalidChatItemDelete
+            then deleteDirectCIs user ct items True False
+            else markDirectCIsDeleted user ct items True =<< liftIO getCurrentTime
+      where
+        getDirectCI :: DB.Connection -> Contact -> ChatItemId -> IO (Either ChatError (CChatItem 'CTDirect))
+        getDirectCI db Contact {contactId} ciId = runExceptT . withExceptT ChatErrorStore $ getDirectChatItem db user contactId ciId
+        assertDeletable :: [CChatItem 'CTDirect] -> CM ()
+        assertDeletable items =
+          unless (all itemDeletable items) $ throwChatError CEInvalidChatItemDelete
+          where
+            itemDeletable :: CChatItem 'CTDirect -> Bool
+            itemDeletable (CChatItem msgDir ChatItem {meta = CIMeta {itemSharedMsgId, deletable}}) =
+              case msgDir of
+                SMDSnd -> isJust itemSharedMsgId && deletable
+                SMDRcv -> False
+        itemMsgIds :: [CChatItem 'CTDirect] -> [SharedMsgId]
+        itemMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
     -- TODO batch delete
     CTGroup -> withGroupLock "deleteChatItem" chatId $ do
       Group gInfo ms <- withStore $ \db -> getGroup db vr user chatId
@@ -873,6 +857,7 @@ processChatCommand' vr = \case
           void $ sendGroupMessage user gInfo ms $ XMsgDel itemSharedMId Nothing
           delGroupChatItem user gInfo ci Nothing
         (CIDMBroadcast, _, _, _) -> throwChatError CEInvalidChatItemDelete
+    -- TODO batch delete
     CTLocal -> do
       (nf, CChatItem _ ci) <- withStore $ \db -> (,) <$> getNoteFolder db user chatId <*> getLocalChatItem db user chatId itemId
       deleteLocalCI user nf ci True False
@@ -3705,8 +3690,8 @@ deleteTimedItem user (ChatRef cType chatId, itemId) deleteAt = do
   vr <- chatVersionRange
   case cType of
     CTDirect -> do
-      (ct, CChatItem _ ci) <- withStore $ \db -> (,) <$> getContact db vr user chatId <*> getDirectChatItem db user chatId itemId
-      deleteDirectCI user ct ci True True >>= toView
+      (ct, cci) <- withStore $ \db -> (,) <$> getContact db vr user chatId <*> getDirectChatItem db user chatId itemId
+      deleteDirectCIs user ct [cci] True True >>= toView
     CTGroup -> do
       (gInfo, CChatItem _ ci) <- withStore $ \db -> (,) <$> getGroupInfo db vr user chatId <*> getGroupChatItem db user chatId itemId
       deletedTs <- liftIO getCurrentTime
@@ -4684,8 +4669,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- [async agent commands] continuation on receiving OK
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       JOINED _ ->
-          -- [async agent commands] continuation on receiving JOINED
-          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
+        -- [async agent commands] continuation on receiving JOINED
+        when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       QCONT -> do
         continued <- continueSending connEntity conn
         when continued $ sendPendingGroupMessages user m conn
@@ -5240,12 +5225,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       where
         brokerTs = metaBrokerTs msgMeta
         deleteRcvChatItem = do
-          CChatItem msgDir ci <- withStore $ \db -> getDirectChatItemBySharedMsgId db user contactId sharedMsgId
+          cci@(CChatItem msgDir _) <- withStore $ \db -> getDirectChatItemBySharedMsgId db user contactId sharedMsgId
           case msgDir of
             SMDRcv ->
               if featureAllowed SCFFullDelete forContact ct
-                then deleteDirectCI user ct ci False False >>= toView
-                else markDirectCIDeleted user ct ci False brokerTs >>= toView
+                then deleteDirectCIs user ct [cci] False False >>= toView
+                else markDirectCIsDeleted user ct [cci] False brokerTs >>= toView
             SMDSnd -> messageError "x.msg.del: contact attempted invalid message delete"
 
     directMsgReaction :: Contact -> SharedMsgId -> MsgReaction -> Bool -> RcvMessage -> MsgMeta -> CM ()
@@ -7073,15 +7058,20 @@ mkChatItem cd ciId content file quotedItem sharedMsgId itemForwarded itemTimed l
       meta = mkCIMeta ciId content itemText itemStatus Nothing sharedMsgId itemForwarded Nothing False itemTimed (justTrue live) currentTs itemTs forwardedByMember currentTs currentTs
    in ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, reactions = [], file}
 
-deleteDirectCI :: MsgDirectionI d => User -> Contact -> ChatItem 'CTDirect d -> Bool -> Bool -> CM ChatResponse
-deleteDirectCI user ct ci@ChatItem {file} byUser timed = do
-  deleteCIFile user file
-  withStore' $ \db -> deleteDirectChatItem db user ct ci
-  pure $ CRChatItemDeleted user (AChatItem SCTDirect msgDirection (DirectChat ct) ci) Nothing byUser timed
+deleteDirectCIs :: User -> Contact -> [CChatItem 'CTDirect] -> Bool -> Bool -> CM ChatResponse
+deleteDirectCIs user ct items byUser timed = do
+  let ciFilesInfo = mapMaybe (\(CChatItem _ ChatItem {file}) -> mkCIFileInfo <$> file) items
+  deleteCIFiles user ciFilesInfo
+  (errs, items') <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (deleteDirectChatItem db user ct) items)
+  unless (null errs) $ toView $ CRChatErrors (Just user) errs
+  let deletions = map (\cci -> ChatItemDeletion (ctItem cci) Nothing) items'
+  pure $ CRChatItemsDeleted user deletions byUser timed
+  where
+    ctItem (CChatItem _ ci) = AChatItem SCTDirect msgDirection (DirectChat ct) ci
 
 deleteGroupCI :: MsgDirectionI d => User -> GroupInfo -> ChatItem 'CTGroup d -> Bool -> Bool -> Maybe GroupMember -> UTCTime -> CM ChatResponse
 deleteGroupCI user gInfo ci@ChatItem {file} byUser timed byGroupMember_ deletedTs = do
-  deleteCIFile user file
+  forM_ file $ \f -> deleteCIFiles user [mkCIFileInfo f]
   toCi <- withStore' $ \db ->
     case byGroupMember_ of
       Nothing -> deleteGroupChatItem db user gInfo ci $> Nothing
@@ -7098,20 +7088,21 @@ deleteLocalCI user nf ci@ChatItem {file = file_} byUser timed = do
   withStore' $ \db -> deleteLocalChatItem db user nf ci
   pure $ CRChatItemDeleted user (AChatItem SCTLocal msgDirection (LocalChat nf) ci) Nothing byUser timed
 
-deleteCIFile :: MsgDirectionI d => User -> Maybe (CIFile d) -> CM ()
-deleteCIFile user file_ =
-  forM_ file_ $ \file -> do
-    let filesInfo = [mkCIFileInfo file]
-    cancelFilesInProgress user filesInfo
-    deleteFilesLocally filesInfo
+deleteCIFiles :: User -> [CIFileInfo] -> CM ()
+deleteCIFiles user filesInfo = do
+  cancelFilesInProgress user filesInfo
+  deleteFilesLocally filesInfo
 
-markDirectCIDeleted :: MsgDirectionI d => User -> Contact -> ChatItem 'CTDirect d -> Bool -> UTCTime -> CM ChatResponse
-markDirectCIDeleted user ct ci@ChatItem {file} byUser deletedTs = do
-  cancelCIFile user file
-  ci' <- withStore' $ \db -> markDirectChatItemDeleted db user ct ci deletedTs
-  pure $ CRChatItemDeleted user (ctItem ci) (Just $ ctItem ci') byUser False
+markDirectCIsDeleted :: User -> Contact -> [CChatItem 'CTDirect] -> Bool -> UTCTime -> CM ChatResponse
+markDirectCIsDeleted user ct items byUser deletedTs = do
+  let ciFilesInfo = mapMaybe (\(CChatItem _ ChatItem {file}) -> mkCIFileInfo <$> file) items
+  cancelFilesInProgress user ciFilesInfo
+  (errs, fromToItems) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (markDirectChatItemDeleted db user ct deletedTs) items)
+  unless (null errs) $ toView $ CRChatErrors (Just user) errs
+  let deletions = map (\(fromCCI, toCCI) -> ChatItemDeletion (ctItem fromCCI) (Just $ ctItem toCCI)) fromToItems
+  pure $ CRChatItemsDeleted user deletions byUser False
   where
-    ctItem = AChatItem SCTDirect msgDirection (DirectChat ct)
+    ctItem (CChatItem _ ci) = AChatItem SCTDirect msgDirection (DirectChat ct) ci
 
 markGroupCIDeleted :: MsgDirectionI d => User -> GroupInfo -> ChatItem 'CTGroup d -> Bool -> Maybe GroupMember -> UTCTime -> CM ChatResponse
 markGroupCIDeleted user gInfo ci@ChatItem {file} byUser byGroupMember_ deletedTs = do

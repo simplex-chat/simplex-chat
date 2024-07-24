@@ -1701,9 +1701,9 @@ createChatItemVersion db itemId itemVersionTs msgContent =
     |]
     (itemId, toMCText msgContent, itemVersionTs)
 
-deleteDirectChatItem :: DB.Connection -> User -> Contact -> ChatItem 'CTDirect d -> IO ()
-deleteDirectChatItem db User {userId} Contact {contactId} ci = do
-  let itemId = chatItemId' ci
+deleteDirectChatItem :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> IO (CChatItem 'CTDirect)
+deleteDirectChatItem db User {userId} Contact {contactId} item@(CChatItem _ ci) = do
+  let itemId = cchatItemId item
   deleteChatItemMessages_ db itemId
   deleteChatItemVersions_ db itemId
   deleteDirectCIReactions_ db contactId ci
@@ -1714,6 +1714,7 @@ deleteDirectChatItem db User {userId} Contact {contactId} ci = do
       WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
     |]
     (userId, contactId, itemId)
+  pure item
 
 deleteChatItemMessages_ :: DB.Connection -> ChatItemId -> IO ()
 deleteChatItemMessages_ db itemId =
@@ -1733,10 +1734,10 @@ deleteChatItemVersions_ :: DB.Connection -> ChatItemId -> IO ()
 deleteChatItemVersions_ db itemId =
   DB.execute db "DELETE FROM chat_item_versions WHERE chat_item_id = ?" (Only itemId)
 
-markDirectChatItemDeleted :: DB.Connection -> User -> Contact -> ChatItem 'CTDirect d -> UTCTime -> IO (ChatItem 'CTDirect d)
-markDirectChatItemDeleted db User {userId} Contact {contactId} ci@ChatItem {meta} deletedTs = do
+markDirectChatItemDeleted :: DB.Connection -> User -> Contact -> UTCTime -> CChatItem 'CTDirect -> IO (CChatItem 'CTDirect, CChatItem 'CTDirect)
+markDirectChatItemDeleted db User {userId} Contact {contactId} deletedTs item@(CChatItem msgDir ci@ChatItem {meta}) = do
   currentTs <- liftIO getCurrentTime
-  let itemId = chatItemId' ci
+  let itemId = cchatItemId item
   DB.execute
     db
     [sql|
@@ -1745,7 +1746,7 @@ markDirectChatItemDeleted db User {userId} Contact {contactId} ci@ChatItem {meta
       WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
     |]
     (DBCIDeleted, deletedTs, currentTs, userId, contactId, itemId)
-  pure ci {meta = meta {itemDeleted = Just $ CIDeleted $ Just deletedTs}}
+  pure (item, CChatItem msgDir ci {meta = meta {itemDeleted = Just $ CIDeleted $ Just deletedTs}})
 
 getDirectChatItemBySharedMsgId :: DB.Connection -> User -> ContactId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTDirect)
 getDirectChatItemBySharedMsgId db user@User {userId} contactId sharedMsgId = do
