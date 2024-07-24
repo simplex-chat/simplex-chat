@@ -19,7 +19,7 @@ module Simplex.Chat.Store.Messages
     -- * Message and chat item functions
     deleteContactCIs,
     getGroupFileInfo,
-    deleteGroupCIs,
+    deleteGroupChatItemsMessages,
     createNewSndMessage,
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
@@ -170,8 +170,8 @@ getGroupFileInfo db User {userId} GroupInfo {groupId} =
   map toFileInfo
     <$> DB.query db (fileInfoQuery <> " WHERE i.user_id = ? AND i.group_id = ?") (userId, groupId)
 
-deleteGroupCIs :: DB.Connection -> User -> GroupInfo -> IO ()
-deleteGroupCIs db User {userId} GroupInfo {groupId} = do
+deleteGroupChatItemsMessages :: DB.Connection -> User -> GroupInfo -> IO ()
+deleteGroupChatItemsMessages db User {userId} GroupInfo {groupId} = do
   DB.execute db "DELETE FROM messages WHERE group_id = ?" (Only groupId)
   DB.execute db "DELETE FROM chat_item_reactions WHERE group_id = ?" (Only groupId)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
@@ -1869,9 +1869,9 @@ updateGroupChatItem_ db User {userId} groupId ChatItem {content, meta} msgId_ = 
     ((content, itemText, itemStatus, itemDeleted', itemDeletedTs', itemEdited, itemLive, updatedAt) :. ciTimedRow itemTimed :. (userId, groupId, itemId))
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId updatedAt
 
-deleteGroupChatItem :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> IO ()
-deleteGroupChatItem db User {userId} g@GroupInfo {groupId} ci = do
-  let itemId = chatItemId' ci
+deleteGroupChatItem :: DB.Connection -> User -> GroupInfo -> CChatItem 'CTGroup -> IO (CChatItem 'CTGroup)
+deleteGroupChatItem db User {userId} g@GroupInfo {groupId} item@(CChatItem _ ci) = do
+  let itemId = cchatItemId item
   deleteChatItemMessages_ db itemId
   deleteChatItemVersions_ db itemId
   deleteGroupCIReactions_ db g ci
@@ -1882,11 +1882,12 @@ deleteGroupChatItem db User {userId} g@GroupInfo {groupId} ci = do
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
     (userId, groupId, itemId)
+  pure item
 
-updateGroupChatItemModerated :: forall d. MsgDirectionI d => DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> GroupMember -> UTCTime -> IO (ChatItem 'CTGroup d)
-updateGroupChatItemModerated db User {userId} GroupInfo {groupId} ci m@GroupMember {groupMemberId} deletedTs = do
+updateGroupChatItemModerated :: DB.Connection -> User -> GroupInfo -> GroupMember -> UTCTime -> CChatItem 'CTGroup -> IO (CChatItem 'CTGroup, CChatItem 'CTGroup)
+updateGroupChatItemModerated db User {userId} GroupInfo {groupId} m@GroupMember {groupMemberId} deletedTs item@(CChatItem msgDir ci) = do
   currentTs <- getCurrentTime
-  let toContent = msgDirToModeratedContent_ $ msgDirection @d
+  let toContent = msgDirToModeratedContent_ msgDir
       toText = ciModeratedText
       itemId = chatItemId' ci
   deleteChatItemMessages_ db itemId
@@ -1900,7 +1901,7 @@ updateGroupChatItemModerated db User {userId} GroupInfo {groupId} ci m@GroupMemb
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
       (deletedTs, groupMemberId, toContent, toText, currentTs, userId, groupId, itemId)
-  pure $ ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just deletedTs) m), editable = False, deletable = False}, formattedText = Nothing}
+  pure (item, CChatItem msgDir ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just deletedTs) m), editable = False, deletable = False}, formattedText = Nothing})
 
 updateGroupCIBlockedByAdmin :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> UTCTime -> IO (ChatItem 'CTGroup d)
 updateGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci deletedTs = do
@@ -1931,10 +1932,10 @@ pattern DBCIBlocked = 2
 pattern DBCIBlockedByAdmin :: Int
 pattern DBCIBlockedByAdmin = 3
 
-markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> Maybe GroupMember -> UTCTime -> IO (ChatItem 'CTGroup d)
-markGroupChatItemDeleted db User {userId} GroupInfo {groupId} ci@ChatItem {meta} byGroupMember_ deletedTs = do
+markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> Maybe GroupMember -> UTCTime -> CChatItem 'CTGroup -> IO (CChatItem 'CTGroup, CChatItem 'CTGroup)
+markGroupChatItemDeleted db User {userId} GroupInfo {groupId} byGroupMember_ deletedTs item@(CChatItem msgDir ci@ChatItem {meta}) = do
   currentTs <- liftIO getCurrentTime
-  let itemId = chatItemId' ci
+  let itemId = cchatItemId item
       (deletedByGroupMemberId, itemDeleted) = case byGroupMember_ of
         Just m@GroupMember {groupMemberId} -> (Just groupMemberId, Just $ CIModerated (Just deletedTs) m)
         _ -> (Nothing, Just $ CIDeleted @'CTGroup (Just deletedTs))
@@ -1946,7 +1947,7 @@ markGroupChatItemDeleted db User {userId} GroupInfo {groupId} ci@ChatItem {meta}
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
     (DBCIDeleted, deletedTs, deletedByGroupMemberId, currentTs, userId, groupId, itemId)
-  pure ci {meta = meta {itemDeleted}}
+  pure (item, CChatItem msgDir ci {meta = meta {itemDeleted}})
 
 markGroupChatItemBlocked :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup 'MDRcv -> IO (ChatItem 'CTGroup 'MDRcv)
 markGroupChatItemBlocked db User {userId} GroupInfo {groupId} ci@ChatItem {meta} = do
