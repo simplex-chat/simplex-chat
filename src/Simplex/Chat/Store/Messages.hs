@@ -2192,9 +2192,9 @@ updateLocalChatItem_ db userId noteFolderId ChatItem {meta, content} = do
     |]
     ((content, itemText, itemStatus, itemDeleted', itemDeletedTs', itemEdited, updatedAt) :. (userId, noteFolderId, itemId))
 
-deleteLocalChatItem :: DB.Connection -> User -> NoteFolder -> ChatItem 'CTLocal d -> IO ()
-deleteLocalChatItem db User {userId} NoteFolder {noteFolderId} ci = do
-  let itemId = chatItemId' ci
+deleteLocalChatItem :: DB.Connection -> User -> NoteFolder -> CChatItem 'CTLocal -> IO (CChatItem 'CTLocal)
+deleteLocalChatItem db User {userId} NoteFolder {noteFolderId} item = do
+  let itemId = cchatItemId item
   deleteChatItemVersions_ db itemId
   DB.execute
     db
@@ -2203,6 +2203,7 @@ deleteLocalChatItem db User {userId} NoteFolder {noteFolderId} ci = do
       WHERE user_id = ? AND note_folder_id = ? AND chat_item_id = ?
     |]
     (userId, noteFolderId, itemId)
+  pure item
 
 getChatItemByFileId :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO AChatItem
 getChatItemByFileId db vr user@User {userId} fileId = do

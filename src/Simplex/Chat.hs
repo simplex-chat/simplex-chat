@@ -811,10 +811,10 @@ processChatCommand' vr = \case
         _ -> throwChatError CEInvalidChatItemUpdate
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
-  APIDeleteChatItem (ChatRef cType chatId) itemIds@(itemId :| _) mode -> withUser $ \user -> case cType of
+  APIDeleteChatItem (ChatRef cType chatId) itemIds@(itemId' :| _) mode -> withUser $ \user -> case cType of
     CTDirect -> withContactLock "deleteChatItem" chatId $ do
       ct <- withStore $ \db -> getContact db vr user chatId
-      (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getDirectCI db ct) (L.toList itemIds))
+      (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getDirectCI db) (L.toList itemIds))
       unless (null errs) $ toView $ CRChatErrors (Just user) errs
       case mode of
         CIDMInternal -> deleteDirectCIs user ct items True False
@@ -833,8 +833,8 @@ processChatCommand' vr = \case
             then deleteDirectCIs user ct items True False
             else markDirectCIsDeleted user ct items True =<< liftIO getCurrentTime
       where
-        getDirectCI :: DB.Connection -> Contact -> ChatItemId -> IO (Either ChatError (CChatItem 'CTDirect))
-        getDirectCI db Contact {contactId} ciId = runExceptT . withExceptT ChatErrorStore $ getDirectChatItem db user contactId ciId
+        getDirectCI :: DB.Connection -> ChatItemId -> IO (Either ChatError (CChatItem 'CTDirect))
+        getDirectCI db itemId = runExceptT . withExceptT ChatErrorStore $ getDirectChatItem db user chatId itemId
         assertDeletable :: [CChatItem 'CTDirect] -> CM ()
         assertDeletable items =
           unless (all itemDeletable items) $ throwChatError CEInvalidChatItemDelete
@@ -849,7 +849,7 @@ processChatCommand' vr = \case
     -- TODO batch delete
     CTGroup -> withGroupLock "deleteChatItem" chatId $ do
       Group gInfo ms <- withStore $ \db -> getGroup db vr user chatId
-      CChatItem msgDir ci@ChatItem {meta = CIMeta {itemSharedMsgId, deletable}} <- withStore $ \db -> getGroupChatItem db user chatId itemId
+      CChatItem msgDir ci@ChatItem {meta = CIMeta {itemSharedMsgId, deletable}} <- withStore $ \db -> getGroupChatItem db user chatId itemId'
       case (mode, msgDir, itemSharedMsgId, deletable) of
         (CIDMInternal, _, _, _) -> deleteGroupCI user gInfo ci True False Nothing =<< liftIO getCurrentTime
         (CIDMBroadcast, SMDSnd, Just itemSharedMId, True) -> do
@@ -857,10 +857,14 @@ processChatCommand' vr = \case
           void $ sendGroupMessage user gInfo ms $ XMsgDel itemSharedMId Nothing
           delGroupChatItem user gInfo ci Nothing
         (CIDMBroadcast, _, _, _) -> throwChatError CEInvalidChatItemDelete
-    -- TODO batch delete
     CTLocal -> do
-      (nf, CChatItem _ ci) <- withStore $ \db -> (,) <$> getNoteFolder db user chatId <*> getLocalChatItem db user chatId itemId
-      deleteLocalCI user nf ci True False
+      nf <- withStore $ \db -> getNoteFolder db user chatId
+      (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getLocalCI db) (L.toList itemIds))
+      unless (null errs) $ toView $ CRChatErrors (Just user) errs
+      deleteLocalCIs user nf items True False
+      where
+        getLocalCI :: DB.Connection -> ChatItemId -> IO (Either ChatError (CChatItem 'CTLocal))
+        getLocalCI db itemId = runExceptT . withExceptT ChatErrorStore $ getLocalChatItem db user chatId itemId
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIDeleteMemberChatItem gId _memItemIds@((mId, itemId) :| _) -> withUser $ \user -> withGroupLock "deleteChatItem" gId $ do
@@ -7080,13 +7084,16 @@ deleteGroupCI user gInfo ci@ChatItem {file} byUser timed byGroupMember_ deletedT
   where
     gItem = AChatItem SCTGroup msgDirection (GroupChat gInfo)
 
-deleteLocalCI :: MsgDirectionI d => User -> NoteFolder -> ChatItem 'CTLocal d -> Bool -> Bool -> CM ChatResponse
-deleteLocalCI user nf ci@ChatItem {file = file_} byUser timed = do
-  forM_ file_ $ \file -> do
-    let filesInfo = [mkCIFileInfo file]
-    deleteFilesLocally filesInfo
-  withStore' $ \db -> deleteLocalChatItem db user nf ci
-  pure $ CRChatItemDeleted user (AChatItem SCTLocal msgDirection (LocalChat nf) ci) Nothing byUser timed
+deleteLocalCIs :: User -> NoteFolder -> [CChatItem 'CTLocal] -> Bool -> Bool -> CM ChatResponse
+deleteLocalCIs user nf items byUser timed = do
+  let ciFilesInfo = mapMaybe (\(CChatItem _ ChatItem {file}) -> mkCIFileInfo <$> file) items
+  deleteFilesLocally ciFilesInfo
+  (errs, items') <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (deleteLocalChatItem db user nf) items)
+  unless (null errs) $ toView $ CRChatErrors (Just user) errs
+  let deletions = map (\cci -> ChatItemDeletion (nfItem cci) Nothing) items'
+  pure $ CRChatItemsDeleted user deletions byUser timed
+  where
+    nfItem (CChatItem _ ci) = AChatItem SCTLocal msgDirection (LocalChat nf) ci
 
 deleteCIFiles :: User -> [CIFileInfo] -> CM ()
 deleteCIFiles user filesInfo = do
