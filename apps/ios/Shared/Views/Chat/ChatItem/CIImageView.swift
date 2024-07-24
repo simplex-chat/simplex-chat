@@ -17,6 +17,7 @@ struct CIImageView: View {
     var imgWidth: CGFloat?
     var smallView: Bool = false
     @Binding var showFullScreenImage: Bool
+    @State private var blurred: Bool = true
 
     var body: some View {
         let file = chatItem.file
@@ -26,12 +27,14 @@ struct CIImageView: View {
                 .fullScreenCover(isPresented: $showFullScreenImage) {
                     FullScreenMediaView(chatItem: chatItem, image: uiImage, showView: $showFullScreenImage)
                 }
+                .modifier(PrivacyBlur(enabled: !smallView, blurred: $blurred))
                 .onTapGesture { showFullScreenImage = true }
                 .onChange(of: m.activeCallViewIsCollapsed) { _ in
                     showFullScreenImage = false
                 }
             } else if let preview {
                 Group { if smallView { smallViewImageView(preview) } else { imageView(preview) } }
+                    .modifier(PrivacyBlur(enabled: !smallView, blurred: $blurred))
                     .onTapGesture {
                         if let file = file {
                             switch file.fileStatus {

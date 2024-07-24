@@ -108,7 +108,10 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
         @available(*, unavailable)
         required init?(coder: NSCoder) { fatalError() }
 
-        deinit { NotificationCenter.default.removeObserver(self) }
+        deinit {
+            NotificationCenter.default.removeObserver(self)
+            chatViewScrollState.scrolling = false
+        }
 
         @objc private func updateLayout() {
             if #available(iOS 16.0, *) {
@@ -129,8 +132,16 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                     from: nil,
                     for: nil
                 )
+            DispatchQueue.main.async {
+                chatViewScrollState.scrolling = true
+            }
         }
-        
+
+        override func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            DispatchQueue.main.async {
+                chatViewScrollState.scrolling = false
+            }
+        }
         /// Scrolls up
         func scrollToNextPage() {
             tableView.setContentOffset(

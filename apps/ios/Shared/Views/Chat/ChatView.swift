@@ -1331,6 +1331,16 @@ private func buildTheme() -> AppTheme {
     }
 }
 
+class ChatViewScrollState: ObservableObject, Equatable {
+    @Published var scrolling: Bool = false
+
+    static func == (lhs: ChatViewScrollState, rhs: ChatViewScrollState) -> Bool {
+        lhs.scrolling == rhs.scrolling
+    }
+}
+
+let chatViewScrollState = ChatViewScrollState()
+
 struct ToggleNtfsButton: View {
     @ObservedObject var chat: Chat
 

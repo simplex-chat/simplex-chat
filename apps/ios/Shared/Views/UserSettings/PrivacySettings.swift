@@ -22,6 +22,7 @@ struct PrivacySettings: View {
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var currentLAMode = privacyLocalAuthModeDefault.get()
+    @AppStorage(DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS) private var privacyMediaBlurRadius: Int = 0
     @State private var contactReceipts = false
     @State private var contactReceiptsReset = false
     @State private var contactReceiptsOverrides = 0
@@ -113,6 +114,22 @@ struct PrivacySettings: View {
                                 privacyAcceptImagesGroupDefault.set($0)
                             }
                     }
+                    settingsRow("circle.rectangle.filled.pattern.diagonalline", color: theme.colors.secondary) {
+                        Picker("Blur media in chat", selection: $privacyMediaBlurRadius) {
+                            let values = [0, 12, 24, 48] + ([0, 12, 24, 48].contains(privacyMediaBlurRadius) ? [] : [privacyMediaBlurRadius])
+                            ForEach(values, id: \.self) { radius in
+                                let text: String = switch radius {
+                                case 0: NSLocalizedString("Off", comment: "blur media")
+                                case 12: NSLocalizedString("Soft", comment: "blur media")
+                                case 24: NSLocalizedString("Medium", comment: "blur media")
+                                case 48: NSLocalizedString("Strong", comment: "blur media")
+                                default: "\(radius)"
+                                }
+                                Text(text)
+                            }
+                        }
+                    }
+                    .frame(height: 36)
                     settingsRow("network.badge.shield.half.filled", color: theme.colors.secondary) {
                         Toggle("Protect IP address", isOn: $askToApproveRelays)
                     }
