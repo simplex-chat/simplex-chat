@@ -142,6 +142,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                 chatViewScrollState.scrolling = false
             }
         }
+
         /// Scrolls up
         func scrollToNextPage() {
             tableView.setContentOffset(
