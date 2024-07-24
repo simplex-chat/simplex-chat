@@ -821,7 +821,7 @@ processChatCommand' vr = \case
         CIDMBroadcast -> do
           assertDeletable items
           assertDirectAllowed user MDSnd ct XMsgDel_
-          let msgIds = itemMsgIds items
+          let msgIds = itemsMsgIds items
               evts = map (\msgId -> XMsgDel msgId Nothing) msgIds
           -- TODO batch delete
           -- sendDirectContactMessages:
@@ -844,8 +844,8 @@ processChatCommand' vr = \case
               case msgDir of
                 SMDSnd -> isJust itemSharedMsgId && deletable
                 SMDRcv -> False
-        itemMsgIds :: [CChatItem 'CTDirect] -> [SharedMsgId]
-        itemMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
+        itemsMsgIds :: [CChatItem 'CTDirect] -> [SharedMsgId]
+        itemsMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
     CTGroup -> withGroupLock "deleteChatItem" chatId $ do
       Group gInfo ms <- withStore $ \db -> getGroup db vr user chatId
       (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getGroupCI db) (L.toList itemIds))
@@ -855,7 +855,7 @@ processChatCommand' vr = \case
         CIDMBroadcast -> do
           assertDeletable items
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
-          let msgIds = itemMsgIds items
+          let msgIds = itemsMsgIds items
               evts = map (\msgId -> XMsgDel msgId Nothing) msgIds
           -- TODO batch delete
           -- sendGroupMessages
@@ -873,8 +873,8 @@ processChatCommand' vr = \case
               case msgDir of
                 SMDSnd -> isJust itemSharedMsgId && deletable
                 SMDRcv -> False
-        itemMsgIds :: [CChatItem 'CTGroup] -> [SharedMsgId]
-        itemMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
+        itemsMsgIds :: [CChatItem 'CTGroup] -> [SharedMsgId]
+        itemsMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
     CTLocal -> do
       nf <- withStore $ \db -> getNoteFolder db user chatId
       (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getLocalCI db) (L.toList itemIds))
@@ -885,21 +885,38 @@ processChatCommand' vr = \case
         getLocalCI db itemId = runExceptT . withExceptT ChatErrorStore $ getLocalChatItem db user chatId itemId
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
-  APIDeleteMemberChatItem gId _memItemIds@((mId, itemId) :| _) -> withUser $ \user -> withGroupLock "deleteChatItem" gId $ do
-    -- TODO batch delete
+  APIDeleteMemberChatItem gId itemIds -> withUser $ \user -> withGroupLock "deleteChatItem" gId $ do
     Group gInfo@GroupInfo {membership} ms <- withStore $ \db -> getGroup db vr user gId
-    cci@(CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) <- withStore $ \db -> getGroupChatItem db user gId itemId
-    case (chatDir, itemSharedMsgId) of
-      (CIGroupRcv GroupMember {groupMemberId, memberRole, memberId}, Just itemSharedMId) -> do
-        when (groupMemberId /= mId) $ throwChatError CEInvalidChatItemDelete
-        assertUserGroupRole gInfo $ max GRAdmin memberRole
-        void $ sendGroupMessage user gInfo ms $ XMsgDel itemSharedMId $ Just memberId
-        delGroupChatItems user gInfo [cci] (Just membership)
-      (CIGroupSnd, Just itemSharedMId) -> do
-        let GroupMember {memberId} = membership
-        void $ sendGroupMessage user gInfo ms $ XMsgDel itemSharedMId $ Just memberId
-        delGroupChatItems user gInfo [cci] (Just membership)
-      (_, Nothing) -> throwChatError CEInvalidChatItemDelete
+    (errs, items) <- lift $ partitionEithers <$> withStoreBatch (\db -> map (getGroupCI db user) (L.toList itemIds))
+    unless (null errs) $ toView $ CRChatErrors (Just user) errs
+    assertDeletable gInfo items
+    assertUserGroupRole gInfo GRAdmin
+    let msgMemIds = itemsMsgMemIds gInfo items
+        evts = map (\(msgId, memId) -> XMsgDel msgId (Just memId)) msgMemIds
+    -- TODO batch delete
+    -- sendGroupMessages
+    forM_ evts $ \evt -> void $ sendGroupMessage user gInfo ms evt
+    delGroupChatItems user gInfo items (Just membership)
+    where
+      getGroupCI :: DB.Connection -> User -> ChatItemId -> IO (Either ChatError (CChatItem 'CTGroup))
+      getGroupCI db user itemId = runExceptT . withExceptT ChatErrorStore $ getGroupChatItem db user gId itemId
+      assertDeletable :: GroupInfo -> [CChatItem 'CTGroup] -> CM ()
+      assertDeletable GroupInfo {membership = GroupMember {memberRole = membershipMemRole}} items =
+        unless (all itemDeletable items) $ throwChatError CEInvalidChatItemDelete
+        where
+          itemDeletable :: CChatItem 'CTGroup -> Bool
+          itemDeletable (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) =
+            case chatDir of
+              CIGroupRcv GroupMember {memberRole} -> membershipMemRole >= memberRole && isJust itemSharedMsgId
+              CIGroupSnd -> isJust itemSharedMsgId
+      itemsMsgMemIds :: GroupInfo -> [CChatItem 'CTGroup] -> [(SharedMsgId, MemberId)]
+      itemsMsgMemIds GroupInfo {membership = GroupMember {memberId = membershipMemId}} = mapMaybe itemMsgMemIds
+        where
+          itemMsgMemIds :: CChatItem 'CTGroup -> Maybe (SharedMsgId, MemberId)
+          itemMsgMemIds (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) =
+            join <$> forM itemSharedMsgId $ \msgId -> Just $ case chatDir of
+              CIGroupRcv GroupMember {memberId} -> (msgId, memberId)
+              CIGroupSnd -> (msgId, membershipMemId)
   APIChatItemReaction (ChatRef cType chatId) itemId add reaction -> withUser $ \user -> case cType of
     CTDirect ->
       withContactLock "chatItemReaction" chatId $
@@ -1828,9 +1845,9 @@ processChatCommand' vr = \case
     deletedItemId <- getSentChatItemIdByText user chatRef deletedMsg
     processChatCommand $ APIDeleteChatItem chatRef (deletedItemId :| []) CIDMBroadcast
   DeleteMemberMessage gName mName deletedMsg -> withUser $ \user -> do
-    (gId, mId) <- getGroupAndMemberId user gName mName
+    gId <- withStore $ \db -> getGroupIdByName db user gName
     deletedItemId <- withStore $ \db -> getGroupChatItemIdByText db user gId (Just mName) deletedMsg
-    processChatCommand $ APIDeleteMemberChatItem gId ((mId, deletedItemId) :| [])
+    processChatCommand $ APIDeleteMemberChatItem gId (deletedItemId :| [])
   EditMessage chatName editedMsg msg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     editedItemId <- getSentChatItemIdByText user chatRef editedMsg
@@ -4134,6 +4151,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   sendXGrpMemInv hostConnId (Just directConnReq) xGrpMemIntroCont
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody -> do
+          -- TODO batch delete
+          -- process batched messages
           tags <- newTVarIO []
           withAckMessage "contact msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
             let MsgMeta {pqEncryption} = msgMeta
