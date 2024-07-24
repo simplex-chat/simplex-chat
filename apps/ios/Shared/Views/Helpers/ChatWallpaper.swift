@@ -23,6 +23,8 @@ struct ChatViewBackground: ViewModifier {
                 var image = context.resolve(image)
                 let rect = CGRectMake(0, 0, size.width, size.height)
                 func repeatDraw(_ imageScale: CGFloat) {
+                    // Prevent range bounds crash and dividing by zero
+                    if [size.height, size.width, image.size.height, image.size.width].contains(.zero) { return }
                     image.shading = .color(tint)
                     let scale = imageScale * 1.57 // for some reason a wallpaper on iOS looks smaller than on Android
                     for h in 0 ... Int(size.height / image.size.height / scale) {
