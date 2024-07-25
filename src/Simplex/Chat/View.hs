@@ -131,7 +131,6 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     [ChatItemDeletion (AChatItem _ _ chat deletedItem) toItem] ->
       ttyUser u $ unmuted u chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
     deletions' -> ttyUser u [sShow (length deletions') <> " messages deleted"]
-  CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> ttyUser u $ unmuted u chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
   CRChatItemReaction u added (ACIReaction _ _ chat reaction) -> ttyUser u $ unmutedReaction u chat reaction $ viewItemReaction showReactions chat reaction added ts tz
   CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent u mc s f t -> ttyUser u $ viewSentBroadcast mc s f ts tz t

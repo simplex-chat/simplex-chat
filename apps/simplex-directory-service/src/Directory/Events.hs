@@ -72,7 +72,7 @@ crDirectoryEvent = \case
   CRDeletedMemberUser {groupInfo} -> Just $ DEServiceRemovedFromGroup groupInfo
   CRGroupDeleted {groupInfo} -> Just $ DEGroupDeleted groupInfo
   CRChatItemUpdated {chatItem = AChatItem _ SMDRcv (DirectChat ct) _} -> Just $ DEItemEditIgnored ct
-  CRChatItemDeleted {deletedChatItem = AChatItem _ SMDRcv (DirectChat ct) _, byUser = False} -> Just $ DEItemDeleteIgnored ct
+  CRChatItemsDeleted {chatItemDeletions = ((ChatItemDeletion (AChatItem _ SMDRcv (DirectChat ct) _) _) : _), byUser = False} -> Just $ DEItemDeleteIgnored ct
   CRNewChatItem {chatItem = AChatItem _ SMDRcv (DirectChat ct) ci@ChatItem {content = CIRcvMsgContent mc, meta = CIMeta {itemLive}}} ->
     Just $ case (mc, itemLive) of
       (MCText t, Nothing) -> DEContactCommand ct ciId $ fromRight err $ A.parseOnly (directoryCmdP <* A.endOfInput) $ T.dropWhileEnd isSpace t
