@@ -25,8 +25,6 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.ChatModel.getChat
-import chat.simplex.common.model.ChatModel.hasChat
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -64,7 +62,7 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
        * It will be dropped automatically when connection established or when user goes away from this screen.
        * It applies only to Android because on Desktop center space will not be overlapped by [AddContactLearnMore]
        **/
-      if (chatModel.showingInvitation.value != null && ModalManager.start.openModalCount() == 1) {
+      if (chatModel.showingInvitation.value != null && (ModalManager.start.openModalCount() == 1 || appPlatform.isDesktop)) {
         val conn = contactConnection.value
         if (chatModel.showingInvitation.value?.connChatUsed == false && conn != null) {
           AlertManager.shared.showAlertDialog(
