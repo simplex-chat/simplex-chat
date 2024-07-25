@@ -38,7 +38,6 @@ expect fun Modifier.desktopOnHovered(action: (Boolean) -> Unit): Modifier
 
 @Composable
 fun Modifier.desktopModifyBlurredState(enabled: Boolean, blurred: MutableState<Boolean>): Modifier {
-  return this
   val blurRadius = remember { appPrefs.privacyMediaBlurRadius.state }
   if (appPlatform.isDesktop) {
     KeyChangeEffect(blurRadius.value) {
@@ -59,7 +58,6 @@ fun Modifier.privacyBlur(
   scrollState: State<Boolean>,
   onLongClick: () -> Unit = {}
 ): Modifier {
-  return this
   val blurRadius = remember { appPrefs.privacyMediaBlurRadius.state }
   return if (enabled && blurred.value) {
     this then Modifier.blur(
