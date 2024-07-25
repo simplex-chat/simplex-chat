@@ -340,17 +340,28 @@ public func transcodeVideo(from url: URL, presetName: String = AVAssetExportPres
     return nil
 }
 
+public func makeVideoQualityLower(_ input: URL, outputUrl: URL) async -> Bool {
+    let asset: AVURLAsset = AVURLAsset(url: input, options: nil)
+    if let s = AVAssetExportSession(asset: asset, presetName: AVAssetExportPreset640x480) {
+        s.outputURL = outputUrl
+        s.outputFileType = .mp4
+        s.metadataItemFilter = AVMetadataItemFilter.forSharing()
+        await s.export()
+        if let err = s.error {
+            logger.error("Failed to export video with error: \(err)")
+        }
+        return s.status == .completed
+    }
+    return false
+}
+
 extension AVAsset {
     public func generatePreview() -> (UIImage, Int)? {
         let generator = AVAssetImageGenerator(asset: self)
         generator.appliesPreferredTrackTransform = true
-        do {
-            return (
-                UIImage(cgImage: try generator.copyCGImage(at: .zero, actualTime: nil)),
-                Int(duration.seconds)
-            )
-        } catch {
-            logger.error("Failed generate video preview \(error)")
+        var actualTime = CMTimeMake(value: 0, timescale: 0)
+        if let image = try? generator.copyCGImage(at: CMTimeMakeWithSeconds(0.0, preferredTimescale: 1), actualTime: &actualTime) {
+            return (UIImage(cgImage: image), Int(duration.seconds))
         }
         return nil
     }

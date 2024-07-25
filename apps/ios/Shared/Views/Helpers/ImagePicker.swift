@@ -107,6 +107,7 @@ struct LibraryMediaListPicker: UIViewControllerRepresentable {
                 loadFileURL(p, type: UTType.movie) { url in
                     if let url = url  {
                         let tempUrl = URL(fileURLWithPath: generateNewFileName(getTempFilesDirectory().path + "/" + "rawvideo", url.pathExtension, fullPath: true))
+                        let convertedVideoUrl = URL(fileURLWithPath: generateNewFileName(getTempFilesDirectory().path + "/" + "video", "mp4", fullPath: true))
                         do {
 //                          logger.debug("LibraryMediaListPicker copyItem \(url) to \(tempUrl)")
                             try FileManager.default.copyItem(at: url, to: tempUrl)
@@ -115,12 +116,14 @@ struct LibraryMediaListPicker: UIViewControllerRepresentable {
                             return cont.resume(returning: nil)
                         }
                         Task {
-                            let convertedVideoUrl = await transcodeVideo(from: tempUrl)
-                            if let convertedVideoUrl {
+                            let success = await makeVideoQualityLower(tempUrl, outputUrl: convertedVideoUrl)
+                            try? FileManager.default.removeItem(at: tempUrl)
+                            if success {
                                 _ = ChatModel.shared.filesToDelete.insert(convertedVideoUrl)
                                 let video = UploadContent.loadVideoFromURL(url: convertedVideoUrl)
                                 return cont.resume(returning: video)
                             }
+                            try? FileManager.default.removeItem(at: convertedVideoUrl)
                             cont.resume(returning: nil)
                         }
                     }

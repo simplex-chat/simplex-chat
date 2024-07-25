@@ -218,8 +218,8 @@ class ShareModel: ObservableObject {
                 if let (title, message) = ci.chatItem.meta.itemStatus.statusInfo {
                     // `title` and `message` already localized and interpolated
                     return ErrorAlert(
-                        title: LocalizedStringKey(title),
-                        message: LocalizedStringKey(message)
+                        title: LocalizedStringKey("\(title)"),
+                        message: LocalizedStringKey("\(message)")
                     )
                 } else if case let .sndSent(sndProgress) = ci.chatItem.meta.itemStatus {
                     switch sndProgress {
@@ -324,7 +324,10 @@ extension NSItemProvider {
                    let (image, duration) = AVAsset(url: trancodedUrl).generatePreview(),
                    let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE),
                    let cryptoFile = moveTempFileFromURL(trancodedUrl) {
-                    .success(.movie(preview: preview, duration: duration, cryptoFile: cryptoFile))
+                    {
+                        try? FileManager.default.removeItem(at: trancodedUrl)
+                        return .success(.movie(preview: preview, duration: duration, cryptoFile: cryptoFile))
+                    }()
                 } else { .failure(ErrorAlert("Error preparing message")) }
 
             // Prepare Data message
@@ -373,4 +376,16 @@ extension NSItemProvider {
         }
         return nil
     }
+}
+
+
+fileprivate func transcodeVideo(from input: URL) async -> URL? {
+    let outputUrl = URL(
+        fileURLWithPath: generateNewFileName(
+            getTempFilesDirectory().path + "/" + "video", "mp4",
+            fullPath: true
+        )
+    )
+    let success = await makeVideoQualityLower(input, outputUrl: outputUrl)
+    return success ? outputUrl : nil
 }
