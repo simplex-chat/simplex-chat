@@ -44,6 +44,7 @@ chatDirectTests = do
     it "direct message update" testDirectMessageUpdate
     it "direct message edit history" testDirectMessageEditHistory
     it "direct message delete" testDirectMessageDelete
+    it "direct message delete multiple" testDirectMessageDeleteMultiple
     it "direct live message" testDirectLiveMessage
     it "direct timed message" testDirectTimedMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
@@ -684,6 +685,28 @@ testDirectMessageDelete =
       bob #$> ("/_delete item @2 " <> itemId 2 <> " internal", id, "message deleted")
       bob #$> ("/_delete item @2 " <> itemId 4 <> " internal", id, "message deleted")
       bob #$> ("/_get chat @2 count=100", chat', chatFeatures' <> [((0, "hello 🙂"), Nothing), ((1, "do you receive my messages?"), Just (0, "hello 🙂"))])
+
+testDirectMessageDeleteMultiple :: HasCallStack => FilePath -> IO ()
+testDirectMessageDeleteMultiple =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice #> "@bob hello"
+      bob <# "alice> hello"
+      msgId1 <- lastItemId alice
+
+      alice #> "@bob hey"
+      bob <# "alice> hey"
+      msgId2 <- lastItemId alice
+
+      alice ##> ("/_delete item @2 " <> msgId1 <> "," <> msgId2 <> " broadcast")
+      alice <## "2 messages deleted"
+      bob <# "alice> [marked deleted] hello"
+      bob <# "alice> [marked deleted] hey"
+
+      alice #$> ("/_get chat @2 count=2", chat, [(1, "hello [marked deleted]"), (1, "hey [marked deleted]")])
+      bob #$> ("/_get chat @2 count=2", chat, [(0, "hello [marked deleted]"), (0, "hey [marked deleted]")])
 
 testDirectLiveMessage :: HasCallStack => FilePath -> IO ()
 testDirectLiveMessage =

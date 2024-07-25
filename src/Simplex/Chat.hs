@@ -4134,8 +4134,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   sendXGrpMemInv hostConnId (Just directConnReq) xGrpMemIntroCont
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody -> do
-          -- TODO batch delete
-          -- process batched messages
           tags <- newTVarIO []
           withAckMessage "contact msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
             let MsgMeta {pqEncryption} = msgMeta
