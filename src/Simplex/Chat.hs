@@ -1809,10 +1809,10 @@ processChatCommand' vr = \case
       ctSndEvent :: (Contact, Connection) -> (ConnOrGroupId, ChatMsgEvent 'Json)
       ctSndEvent (_, Connection {connId}) = (ConnectionId connId, XMsgNew $ MCSimple (extMsgContent mc Nothing))
       ctMsgReq :: (Contact, Connection) -> SndMessage -> MsgReq
-      ctMsgReq (_, conn) SndMessage {msgId, msgBody} = (conn, MsgFlags {notification = hasNotification XMsgNew_}, msgBody, msgId)
+      ctMsgReq (_, conn) SndMessage {msgId, msgBody} = (conn, L.singleton (MsgFlags {notification = hasNotification XMsgNew_}, msgBody, msgId))
       zipWith3' :: (a -> b -> c -> d) -> NonEmpty a -> NonEmpty b -> NonEmpty c -> NonEmpty d
       zipWith3' f ~(x :| xs) ~(y :| ys) ~(z :| zs) = f x y z :| zipWith3 f xs ys zs
-      combineResults :: (Contact, Connection) -> Either ChatError SndMessage -> Either ChatError (Int64, PQEncryption) -> Either ChatError (Contact, SndMessage)
+      combineResults :: (Contact, Connection) -> Either ChatError SndMessage -> Either ChatError (NonEmpty Int64, PQEncryption) -> Either ChatError (Contact, SndMessage)
       combineResults (ct, _) (Right msg') (Right _) = Right (ct, msg')
       combineResults _ (Left e) _ = Left e
       combineResults _ _ (Left e) = Left e
@@ -2543,7 +2543,7 @@ processChatCommand' vr = \case
         ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError MsgReq
         ctMsgReq ChangedProfileContact {conn} =
           fmap $ \SndMessage {msgId, msgBody} ->
-            (conn, MsgFlags {notification = hasNotification XInfo_}, msgBody, msgId)
+            (conn, L.singleton (MsgFlags {notification = hasNotification XInfo_}, msgBody, msgId))
     updateContactPrefs :: User -> Contact -> Preferences -> CM ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Just Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -6849,16 +6849,19 @@ deliverMessage conn cmEventTag msgBody msgId = do
 
 deliverMessage' :: Connection -> MsgFlags -> MsgBody -> MessageId -> CM (Int64, PQEncryption)
 deliverMessage' conn msgFlags msgBody msgId =
-  deliverMessages ((conn, msgFlags, msgBody, msgId) :| []) >>= \case
-    r :| [] -> liftEither r
+  deliverMessages ((conn, L.singleton (msgFlags, msgBody, msgId)) :| []) >>= \case
+    r :| [] -> case r of
+      Right (deliveryId :| [], pqEnc) -> pure (deliveryId, pqEnc)
+      Right (deliveryIds, _) -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 delivery id, got " <> show (length deliveryIds)
+      Left e -> throwError e
     rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
 
-type MsgReq = (Connection, MsgFlags, MsgBody, MessageId)
+type MsgReq = (Connection, NonEmpty (MsgFlags, MsgBody, MessageId))
 
-deliverMessages :: NonEmpty MsgReq -> CM (NonEmpty (Either ChatError (Int64, PQEncryption)))
+deliverMessages :: NonEmpty MsgReq -> CM (NonEmpty (Either ChatError (NonEmpty Int64, PQEncryption)))
 deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 
-deliverMessagesB :: NonEmpty (Either ChatError MsgReq) -> CM (NonEmpty (Either ChatError (Int64, PQEncryption)))
+deliverMessagesB :: NonEmpty (Either ChatError MsgReq) -> CM (NonEmpty (Either ChatError (NonEmpty Int64, PQEncryption)))
 deliverMessagesB msgReqs = do
   msgReqs' <- liftIO compressBodies
   sent <- L.zipWith prepareBatch msgReqs' <$> withAgent (`sendMessagesB` L.map toAgent msgReqs')
@@ -6866,28 +6869,35 @@ deliverMessagesB msgReqs = do
   lift . withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
     compressBodies =
-      forME msgReqs $ \mr@(conn@Connection {pqSupport, connChatVersion = v}, msgFlags, msgBody, msgId) ->
-        runExceptT $ case pqSupport of
-          -- we only compress messages when:
-          -- 1) PQ support is enabled
-          -- 2) version is compatible with compression
-          -- 3) message is longer than max compressed size (as this function is not used for batched messages anyway)
-          PQSupportOn | v >= pqEncryptionCompressionVersion && B.length msgBody > maxCompressedMsgLength -> do
-            let msgBody' = compressedBatchMsgBody_ msgBody
-            when (B.length msgBody' > maxCompressedMsgLength) $ throwError $ ChatError $ CEException "large compressed message"
-            pure (conn, msgFlags, msgBody', msgId)
-          _ -> pure mr
+      forME msgReqs $ \(conn@Connection {pqSupport, connChatVersion = v}, reqs) -> runExceptT $ do
+        reqs' <- forM reqs $ \req@(msgFlags, msgBody, msgId) ->
+          case pqSupport of
+            -- we only compress messages when:
+            -- 1) PQ support is enabled
+            -- 2) version is compatible with compression
+            -- 3) message is longer than max compressed size (as this function is not used for batched messages anyway)
+            PQSupportOn | v >= pqEncryptionCompressionVersion && B.length msgBody > maxCompressedMsgLength -> do
+              let msgBody' = compressedBatchMsgBody_ msgBody
+              when (B.length msgBody' > maxCompressedMsgLength) $ throwError $ ChatError $ CEException "large compressed message"
+              pure (msgFlags, msgBody', msgId)
+            _ -> pure req
+        pure (conn, reqs')
     toAgent = \case
-      Right (conn@Connection {pqEncryption}, msgFlags, msgBody, _msgId) -> Right (aConnId conn, pqEncryption, msgFlags, msgBody)
+      -- Right (conn@Connection {pqEncryption}, msgFlags, msgBody, _msgId) -> Right (aConnId conn, pqEncryption, msgFlags, msgBody)
+      Right (conn@Connection {pqEncryption}, reqs) -> do
+        let aReqs = L.map (\(msgFlags, msgBody, _msgId) -> (msgFlags, msgBody)) reqs
+        Right (aConnId conn, pqEncryption, aReqs)
       Left _ce -> Left (AP.INTERNAL "ChatError, skip") -- as long as it is Left, the agent batchers should just step over it
     prepareBatch (Right req) (Right ar) = Right (req, ar)
     prepareBatch (Left ce) _ = Left ce -- restore original ChatError
     prepareBatch _ (Left ae) = Left $ ChatErrorAgent ae Nothing
-    createDelivery :: DB.Connection -> (MsgReq, (AgentMsgId, PQEncryption)) -> IO (Either ChatError (Int64, PQEncryption))
-    createDelivery db ((Connection {connId}, _, _, msgId), (agentMsgId, pqEnc')) =
-      Right . (,pqEnc') <$> createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId}) msgId
-    updatePQSndEnabled :: DB.Connection -> (MsgReq, (AgentMsgId, PQEncryption)) -> IO ()
-    updatePQSndEnabled db ((Connection {connId, pqSndEnabled}, _, _, _), (_, pqSndEnabled')) =
+    createDelivery :: DB.Connection -> (MsgReq, (NonEmpty AgentMsgId, PQEncryption)) -> IO (Either ChatError (NonEmpty Int64, PQEncryption))
+    createDelivery db ((Connection {connId}, reqs), (agentMsgIds, pqEnc')) = do
+      let msgIds = L.zipWith (\agentMsgId (_, _, msgId) -> (agentMsgId, msgId)) agentMsgIds reqs
+      deliveriesIds <- forM msgIds $ \(agentMsgId, msgId) -> createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId}) msgId
+      pure $ Right (deliveriesIds, pqEnc')
+    updatePQSndEnabled :: DB.Connection -> (MsgReq, (NonEmpty AgentMsgId, PQEncryption)) -> IO ()
+    updatePQSndEnabled db ((Connection {connId, pqSndEnabled}, _), (_, pqSndEnabled')) =
       case (pqSndEnabled, pqSndEnabled') of
         (Just b, b') | b' /= b -> updatePQ
         (Nothing, PQEncOn) -> updatePQ
@@ -6937,7 +6947,7 @@ sendGroupMessage' user gInfo@GroupInfo {groupId} members chatMsgEvent = do
   let msgFlags = MsgFlags {notification = hasNotification $ toCMEventTag chatMsgEvent}
       (toSend, pending, forwarded, _, dups) = foldr addMember ([], [], [], S.empty, 0 :: Int) recipientMembers
       -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
-      msgReqs = map (\(_, conn) -> (conn, msgFlags, msgBody, msgId)) toSend
+      msgReqs = map (\(_, conn) -> (conn, L.singleton (msgFlags, msgBody, msgId))) toSend
   when (dups /= 0) $ logError $ "sendGroupMessage: " <> tshow dups <> " duplicate members"
   delivered <- maybe (pure []) (fmap L.toList . deliverMessages) $ L.nonEmpty msgReqs
   let errors = lefts delivered
