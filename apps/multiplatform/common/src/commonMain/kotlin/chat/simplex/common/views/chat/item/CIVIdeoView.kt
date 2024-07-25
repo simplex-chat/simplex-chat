@@ -113,13 +113,13 @@ fun CIVideoView(
         if (file != null && !smallView) {
           DurationProgress(file, remember { mutableStateOf(false) }, remember { mutableStateOf(duration * 1000L) }, remember { mutableStateOf(0L) }/*, soundEnabled*/)
         }
-        if ((file?.fileStatus is CIFileStatus.RcvInvitation || file?.fileStatus is CIFileStatus.RcvAborted) && !blurred.value) {
+        if (showDownloadButton(file?.fileStatus) && !blurred.value && file != null) {
           PlayButton(error = false, sizeMultiplier, { showMenu.value = true }) { receiveFileIfValidSize(file, receiveFile) }
         }
       }
     }
     // Do not show download icon when the view is blurred
-    if (!smallView && (file?.fileStatus != CIFileStatus.RcvInvitation || !blurred.value)) {
+    if (!smallView && (!showDownloadButton(file?.fileStatus) || !blurred.value)) {
       fileStatusIcon(file, false)
     } else if (smallView && file?.showStatusIconInSmallView == true) {
       Box(Modifier.align(Alignment.Center)) {
@@ -551,6 +551,9 @@ private fun fileStatusIcon(file: CIFile?, smallView: Boolean) {
     }
   }
 }
+
+private fun showDownloadButton(status: CIFileStatus?): Boolean =
+  status is CIFileStatus.RcvInvitation || status is CIFileStatus.RcvAborted
 
 private fun fileSizeValid(file: CIFile?): Boolean {
   if (file != null) {

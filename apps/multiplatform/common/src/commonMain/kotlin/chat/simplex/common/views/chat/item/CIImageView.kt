@@ -266,7 +266,7 @@ fun CIImageView(
       })
     }
     // Do not show download icon when the view is blurred
-    if (!smallView && (file?.fileStatus != CIFileStatus.RcvInvitation || !blurred.value)) {
+    if (!smallView && (!showDownloadButton(file?.fileStatus) || !blurred.value)) {
       loadingIndicator()
     } else if (smallView && file?.showStatusIconInSmallView == true) {
       Box(Modifier.align(Alignment.Center)) {
@@ -275,6 +275,9 @@ fun CIImageView(
     }
   }
 }
+
+private fun showDownloadButton(status: CIFileStatus?): Boolean =
+  status is CIFileStatus.RcvInvitation || status is CIFileStatus.RcvAborted
 
 @Composable
 expect fun SimpleAndAnimatedImageView(
