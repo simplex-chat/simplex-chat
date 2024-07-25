@@ -12,7 +12,7 @@ import SimpleXChat
 struct CILinkView: View {
     @EnvironmentObject var theme: AppTheme
     let linkPreview: LinkPreview
-    @State private var blurred: Bool = true
+    @State private var blurred: Bool = UserDefaults.standard.integer(forKey: DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS) > 0
 
     var body: some View {
         VStack(alignment: .center, spacing: 6) {

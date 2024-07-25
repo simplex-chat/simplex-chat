@@ -31,7 +31,7 @@ struct CIVideoView: View {
     @State private var fullScreenTimeObserver: Any? = nil
     @State private var publisher: AnyCancellable? = nil
     private var sizeMultiplier: CGFloat { smallView ? 0.38 : 1 }
-    @State private var blurred: Bool = true
+    @State private var blurred: Bool = UserDefaults.standard.integer(forKey: DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS) > 0
 
     init(chatItem: ChatItem, preview: UIImage?, duration: Int, maxWidth: CGFloat, videoWidth: CGFloat?, smallView: Bool = false, showFullscreenPlayer: Binding<Bool>) {
         self.chatItem = chatItem
