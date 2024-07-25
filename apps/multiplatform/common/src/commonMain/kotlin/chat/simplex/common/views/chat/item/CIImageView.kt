@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.HoverInteraction
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -36,7 +37,6 @@ fun CIImageView(
   receiveFile: (Long) -> Unit
 ) {
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
-  val hoverInteractionSource = remember { MutableInteractionSource() }
   @Composable
   fun progressIndicator() {
     CircularProgressIndicator(
@@ -111,7 +111,7 @@ fun CIImageView(
           onClick = onClick
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), hoverInteractionSource, onLongClick = { showMenu.value = true }),
+        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
       contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
     )
   }
@@ -135,7 +135,7 @@ fun CIImageView(
             onClick = onClick
           )
           .onRightClick { showMenu.value = true }
-          .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), hoverInteractionSource, onLongClick = { showMenu.value = true }),
+          .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
         contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
       )
     } else {
@@ -146,7 +146,7 @@ fun CIImageView(
           onClick = {}
         )
         .onRightClick { showMenu.value = true }
-        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), hoverInteractionSource, onLongClick = { showMenu.value = true }),
+        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
         contentAlignment = Alignment.Center
       ) {
         imageView(base64ToBitmap(image), onClick = {
@@ -182,7 +182,8 @@ fun CIImageView(
   }
 
   Box(
-    Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).hoverable(hoverInteractionSource),
+    Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
+      .desktopModifyBlurredState(!smallView, blurred),
     contentAlignment = Alignment.TopEnd
   ) {
     val res: MutableState<Triple<ImageBitmap, ByteArray, String>?> = remember {
