@@ -1539,7 +1539,7 @@ testGroupModerate =
         (bob <# "#team alice> hello")
         (cath <# "#team alice> hello")
       bob ##> "\\\\ #team @alice hello"
-      bob <## "#team: you have insufficient permissions for this action, the required role is owner"
+      bob <## "cannot delete this item"
       threadDelay 1000000
       cath #> "#team hi"
       concurrently_
