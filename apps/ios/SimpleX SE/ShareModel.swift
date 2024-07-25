@@ -119,15 +119,20 @@ class ShareModel: ObservableObject {
                         msgContent: sharedContent.msgContent(comment: self.comment)
                     )
                     SEChatState.shared.set(.inactive)
-                    if isFileSent {
+                    if selected.chatInfo.chatType == .local {
+                        completion()
+                    } else {
                         await MainActor.run { self.bottomBar = .loadingBar(progress: .zero) }
                         if let e = await handleEvents(
                             isGroupChat: ci.chatInfo.chatType == .group,
+                            waitForFile: sharedContent.cryptoFile != nil,
                             chatItemId: ci.chatItem.id
                         ) {
                             await MainActor.run { errorAlert = e }
-                        } else { completion() }
-                    } else { completion() }
+                        } else {
+                            completion()
+                        }
+                    }
                 } catch {
                     if let e = error as? ErrorAlert {
                         await MainActor.run { errorAlert = e }
@@ -174,8 +179,10 @@ class ShareModel: ObservableObject {
 
     actor CompletionHandler {
         static var isEventLoopEnabled = false
-        private var fileCompleted = false
+        private var fileCompleted: Bool
         private var messageCompleted = false
+
+        init(waitForFile: Bool) { self.fileCompleted = !waitForFile }
 
         func completeFile() { fileCompleted = true }
 
@@ -188,12 +195,12 @@ class ShareModel: ObservableObject {
 
     /// Polls and processes chat events
     /// Returns when message sending has completed optionally returning and error.
-    private func handleEvents(isGroupChat: Bool, chatItemId: ChatItem.ID) async -> ErrorAlert? {
+    private func handleEvents(isGroupChat: Bool, waitForFile: Bool, chatItemId: ChatItem.ID) async -> ErrorAlert? {
         func isMessage(for item: AChatItem?) -> Bool {
             item.map { $0.chatItem.id == chatItemId } ?? false
         }
         CompletionHandler.isEventLoopEnabled = true
-        let ch = CompletionHandler()
+        let ch = CompletionHandler(waitForFile: waitForFile)
         while await ch.isRunning {
             switch recvSimpleXMsg(messageTimeout: 1_000_000) {
             case let .sndFileProgressXFTP(_, ci, _, sentSize, totalSize):
