@@ -19,7 +19,9 @@ private let MAX_DOWNSAMPLE_SIZE: Int64 = 2000
 
 class ShareModel: ObservableObject {
     @Published var sharedContent: SharedContent?
+    @Published var preview: UIImage?
     @Published var chats = Array<ChatData>()
+    @Published var profileImages = Dictionary<ChatInfo.ID, UIImage>()
     @Published var search = String()
     @Published var comment = String()
     @Published var selected: ChatData?
@@ -73,8 +75,16 @@ class ShareModel: ObservableObject {
                     Task {
                         switch fetchChats() {
                         case let .success(chats):
+                            // Decode base64 images on background thread
+                            let profileImages = chats.reduce(into: Dictionary<ChatInfo.ID, UIImage>()) { dict, chatData in
+                                if let profileImage = chatData.chatInfo.image,
+                                   let uiImage = UIImage(base64Encoded: profileImage) {
+                                    dict[chatData.id] = uiImage
+                                }
+                            }
                             await MainActor.run {
                                 self.chats = chats
+                                self.profileImages = profileImages
                                 withAnimation { isLoaded = true }
                             }
                         case let .failure(error):
@@ -87,6 +97,7 @@ class ShareModel: ObservableObject {
                         case let .success(chatItemContent):
                             await MainActor.run {
                                 self.sharedContent = chatItemContent
+                                self.preview = sharedContent?.preview
                                 if case let .text(string) = chatItemContent { comment = string }
                             }
                         case let .failure(errorAlert):
@@ -264,6 +275,15 @@ enum SharedContent {
     case url(preview: LinkPreview)
     case text(string: String)
     case data(cryptoFile: CryptoFile)
+
+    var preview: UIImage? {
+        switch self {
+        case let .image(preview, _): UIImage(base64Encoded: preview)
+        case let .movie(preview, _, _): UIImage(base64Encoded: preview)
+        case let .url(linkPreview): UIImage(base64Encoded: linkPreview.image)
+        case .text, .data: nil
+        }
+    }
 
     var cryptoFile: CryptoFile? {
         switch self {

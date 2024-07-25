@@ -19,7 +19,7 @@ struct ShareView: View {
                     List(model.filteredChats) { chat in
                         HStack {
                             profileImage(
-                                base64Encoded: chat.chatInfo.image,
+                                chatInfoId: chat.chatInfo.id,
                                 systemFallback: chatIconName(chat.chatInfo),
                                 size: 30
                             )
@@ -35,17 +35,15 @@ struct ShareView: View {
                     ProgressView().frame(maxHeight: .infinity)
                 }
             }
-            .navigationTitle("Share With")
+            .navigationTitle("Share")
             .safeAreaInset(edge: .bottom) {
-                if model.selected != nil {
-                    switch model.bottomBar {
-                    case .sendButton:
-                        compose(isLoading: false)
-                    case .loadingSpinner:
-                        compose(isLoading: true)
-                    case .loadingBar(let progress):
-                        loadingBar(progress: progress)
-                    }
+                switch model.bottomBar {
+                case .sendButton:
+                    compose(isLoading: false)
+                case .loadingSpinner:
+                    compose(isLoading: true)
+                case .loadingBar(let progress):
+                    loadingBar(progress: progress)
                 }
             }
         }
@@ -60,7 +58,20 @@ struct ShareView: View {
 
     private func compose(isLoading: Bool) -> some View {
         VStack(spacing: .zero) {
-            Divider().overlay(Color.secondary.opacity(0.7))
+            Divider()
+            if let preview = model.preview {
+                HStack(alignment: .center, spacing: 8) {
+                    Image(uiImage: preview)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(minHeight: 40, maxHeight: 60)
+                    Spacer()
+                }
+                .padding(.vertical, 1)
+                .background(.quaternary)
+                .frame(minHeight: 54)
+            }
+            Divider()
             HStack {
                 Group {
                     if #available(iOSApplicationExtension 16.0, *) {
@@ -95,8 +106,8 @@ struct ShareView: View {
                     .strokeBorder(.secondary, lineWidth: 0.5).opacity(0.7)
             )
             .padding(8)
-            .background(.thinMaterial)
         }
+        .background(.thinMaterial)
     }
 
     private func loadingBar(progress: Double) -> some View {
@@ -108,9 +119,9 @@ struct ShareView: View {
         .background(Material.ultraThin)
     }
 
-    private func profileImage(base64Encoded: String?, systemFallback: String, size: Double) -> some View {
+    private func profileImage(chatInfoId: ChatInfo.ID, systemFallback: String, size: Double) -> some View {
         Group {
-            if let uiImage = UIImage(base64Encoded: base64Encoded) {
+            if let uiImage = model.profileImages[chatInfoId] {
                 Image(uiImage: uiImage).resizable()
             } else {
                 Image(systemName: systemFallback).resizable()
