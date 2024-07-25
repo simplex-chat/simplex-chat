@@ -2167,8 +2167,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/twostraws/CodeScanner";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.0.0;
+				kind = exactVersion;
+				version = 2.1.1;
 			};
 		};
 		8C73C1162C21E17B00892670 /* XCRemoteSwiftPackageReference "Yams" */ = {
@@ -2191,8 +2191,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/kirualex/SwiftyGif";
 			requirement = {
-				branch = master;
-				kind = branch;
+				kind = revision;
+				revision = 5e8619335d394901379c9add5c4c1c2f420b3800;
 			};
 		};
 		D7F0E33729964E7D0068AF69 /* XCRemoteSwiftPackageReference "lzstring-swift" */ = {

@@ -3294,6 +3294,28 @@ public struct CIFile: Decodable, Hashable {
             }
         }
     }
+
+    public var showStatusIconInSmallView: Bool {
+        get {
+            switch fileStatus {
+            case .sndStored: fileProtocol != .local
+            case .sndTransfer: true
+            case .sndComplete: false
+            case .sndCancelled: true
+            case .sndError: true
+            case .sndWarning: true
+            case .rcvInvitation: false
+            case .rcvAccepted: true
+            case .rcvTransfer: true
+            case .rcvAborted: true
+            case .rcvCancelled: true
+            case .rcvComplete: false
+            case .rcvError: true
+            case .rcvWarning: true
+            case .invalid: true
+            }
+        }
+    }
 }
 
 public struct CryptoFile: Codable, Hashable {
