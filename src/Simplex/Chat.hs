@@ -6731,14 +6731,12 @@ sendDirectContactMessages user ct events = do
 
 sendDirectContactMessages' :: MsgEncodingI e => User -> Contact -> NonEmpty (ChatMsgEvent e) -> CM ()
 sendDirectContactMessages' user ct events = do
-  conn@Connection {connId} <- liftEither $ contactSendConn_ ct
+  conn@Connection {connId, pqSupport} <- liftEither $ contactSendConn_ ct
   let idsEvts = L.map (ConnectionId connId,) events
   (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CRChatErrors (Just user) errs
-  -- TODO batch delete
-  -- pq
   forM_ (L.nonEmpty msgs) $ \msgs' ->
-    batchSendGroupMemberMessages user conn msgs'
+    batchSendConnMessages user conn pqSupport msgs'
 
 sendDirectContactMessage :: MsgEncodingI e => User -> Contact -> ChatMsgEvent e -> CM (SndMessage, Int64)
 sendDirectContactMessage user ct chatMsgEvent = do
@@ -6796,38 +6794,35 @@ sendGroupMemberMessages user conn events groupId = do
   (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CRChatErrors (Just user) errs
   forM_ (L.nonEmpty msgs) $ \msgs' ->
-    batchSendGroupMemberMessages user conn msgs'
+    batchSendConnMessages user conn PQSupportOff msgs'
 
-batchSendGroupMemberMessages :: User -> Connection -> NonEmpty SndMessage -> CM ()
-batchSendGroupMemberMessages user conn msgs = do
-  -- TODO v5.7 based on version (?)
-  -- let shouldCompress = False
-  -- let batched = if shouldCompress then batchSndMessagesBinary msgs' else batchSndMessagesJSON msgs'
-  let batched = batchSndMessagesJSON msgs
+-- TODO v5.7 update batching for groups
+-- We could use pqSupport from Connection, but we pass PQSupportOff overrides for member connections
+-- to not rely on the connection state (currently we don't enable PQ encryption for groups)
+batchSendConnMessages :: User -> Connection -> PQSupport -> NonEmpty SndMessage -> CM ()
+batchSendConnMessages user conn@Connection {connId, connChatVersion = v} pqSupport msgs = do
+  let batched = batchSndMessagesJSON
   let (errs', msgBatches) = partitionEithers batched
   -- shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
   unless (null errs') $ toView $ CRChatErrors (Just user) errs'
   forM_ msgBatches $ \batch ->
-    processSndMessageBatch conn batch `catchChatError` (toView . CRChatError (Just user))
-
-processSndMessageBatch :: Connection -> MsgBatch -> CM ()
-processSndMessageBatch conn@Connection {connId} (MsgBatch batchBody sndMsgs) = do
-  (agentMsgId, _pqEnc) <- withAgent $ \a -> sendMessage a (aConnId conn) PQEncOff MsgFlags {notification = True} batchBody
-  let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
-  lift . void . withStoreBatch' $ \db -> map (\SndMessage {msgId} -> createSndMsgDelivery db sndMsgDelivery msgId) sndMsgs
-
--- TODO v5.7 update batching for groups
-batchSndMessagesJSON :: NonEmpty SndMessage -> [Either ChatError MsgBatch]
-batchSndMessagesJSON = batchMessages maxEncodedMsgLength . L.toList
-
--- batchSndMessagesBinary :: NonEmpty SndMessage -> [Either ChatError MsgBatch]
--- batchSndMessagesBinary msgs = map toMsgBatch . SMP.batchTransmissions_ (maxEncodedMsgLength) $ L.zip (map compress1 msgs) msgs
---   where
---     toMsgBatch :: SMP.TransportBatch SndMessage -> Either ChatError MsgBatch
---     toMsgBatch = \case
---       SMP.TBTransmissions combined _n sms -> Right $ MsgBatch (markCompressedBatch combined) sms
---       SMP.TBError tbe SndMessage {msgId} -> Left . ChatError $ CEInternalError (show tbe <> " " <> show msgId)
---       SMP.TBTransmission {} -> Left . ChatError $ CEInternalError "batchTransmissions_ didn't produce a batch"
+    processSndMessageBatch batch `catchChatError` (toView . CRChatError (Just user))
+  where
+    batchSndMessagesJSON :: [Either ChatError MsgBatch]
+    batchSndMessagesJSON = batchMessages maxEncodedMsgLength $ L.toList msgs
+    processSndMessageBatch :: MsgBatch -> CM ()
+    processSndMessageBatch (MsgBatch batchBody sndMsgs) = do
+      batchBody' <- compressBatchBody batchBody
+      (agentMsgId, _pqEnc) <- withAgent $ \a -> sendMessage a (aConnId conn) PQEncOff MsgFlags {notification = True} batchBody'
+      let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
+      lift . void . withStoreBatch' $ \db -> map (\SndMessage {msgId} -> createSndMsgDelivery db sndMsgDelivery msgId) sndMsgs
+    compressBatchBody :: ByteString -> CM ByteString
+    compressBatchBody batchBody = case pqSupport of
+      PQSupportOn | v >= pqEncryptionCompressionVersion && B.length batchBody > maxCompressedMsgLength -> do
+        let batchBody' = compressedBatchMsgBody_ batchBody
+        when (B.length batchBody' > maxCompressedMsgLength) $ throwError $ ChatError $ CEException "large compressed message"
+        pure batchBody'
+      _ -> pure batchBody
 
 encodeConnInfo :: MsgEncodingI e => ChatMsgEvent e -> CM ByteString
 encodeConnInfo chatMsgEvent = do
@@ -7029,7 +7024,7 @@ sendPendingGroupMessages user GroupMember {groupMemberId} conn = do
   pgms <- withStore' $ \db -> getPendingGroupMessages db groupMemberId
   forM_ (L.nonEmpty pgms) $ \pgms' -> do
     let msgs = L.map (\(sndMsg, _, _) -> sndMsg) pgms'
-    batchSendGroupMemberMessages user conn msgs
+    batchSendConnMessages user conn PQSupportOff msgs
     lift . void . withStoreBatch' $ \db -> L.map (\SndMessage {msgId} -> deletePendingGroupMessage db groupMemberId msgId) msgs
     lift . void . withStoreBatch' $ \db -> L.map (\(_, tag, introId_) -> updateIntro_ db tag introId_) pgms'
   where
