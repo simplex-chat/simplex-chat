@@ -178,6 +178,7 @@ struct ChatPreviewView: View {
                 .padding(.leading, hasFilePreview ? 0 : 8)
                 .padding(.trailing, hasFilePreview ? 38 : 36)
                 .offset(x: hasFilePreview ? -2 : 0)
+                .fixedSize(horizontal: false, vertical: true)
             if !showChatPreviews && !draft {
                 t.privacySensitive(true).redacted(reason: .privacy)
             } else {
