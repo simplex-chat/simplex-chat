@@ -628,9 +628,9 @@
         <target>Toevoegen aan een ander apparaat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add welcome message" xml:space="preserve">
+      <trans-unit id="Add welcome message" xml:space="preserve" approved="no">
         <source>Add welcome message</source>
-        <target>Welkomst bericht toevoegen</target>
+        <target state="translated">Welkom bericht toevoegen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Additional accent" xml:space="preserve" approved="no">
@@ -763,14 +763,14 @@
         <target>Sta het onomkeerbaar verwijderen van berichten alleen toe als uw contact dit toestaat. (24 uur)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve">
+      <trans-unit id="Allow message reactions only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow message reactions only if your contact allows them.</source>
-        <target>Sta berichtreacties alleen toe als uw contact dit toestaat.</target>
+        <target state="translated">Sta bericht reacties alleen toe als uw contact dit toestaat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow message reactions." xml:space="preserve">
+      <trans-unit id="Allow message reactions." xml:space="preserve" approved="no">
         <source>Allow message reactions.</source>
-        <target>Sta berichtreacties toe.</target>
+        <target state="translated">Sta bericht reacties toe.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow sending direct messages to members." xml:space="preserve">
@@ -813,9 +813,9 @@
         <target>Spraak berichten toestaan?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts adding message reactions." xml:space="preserve">
+      <trans-unit id="Allow your contacts adding message reactions." xml:space="preserve" approved="no">
         <source>Allow your contacts adding message reactions.</source>
-        <target>Sta uw contactpersonen toe om berichtreacties toe te voegen.</target>
+        <target state="translated">Sta uw contactpersonen toe om bericht reacties toe te voegen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to call you." xml:space="preserve">
@@ -1073,9 +1073,9 @@
         <target>Geblokkeerd door beheerder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
+      <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve" approved="no">
         <source>Both you and your contact can add message reactions.</source>
-        <target>Zowel u als uw contact kunnen berichtreacties toevoegen.</target>
+        <target state="translated">Zowel u als uw contact kunnen bericht reacties toevoegen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
@@ -2538,14 +2538,14 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Voer deze apparaatnaam in…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter welcome message…" xml:space="preserve">
+      <trans-unit id="Enter welcome message…" xml:space="preserve" approved="no">
         <source>Enter welcome message…</source>
-        <target>Welkomst bericht invoeren…</target>
+        <target state="translated">Welkom bericht invoeren…</target>
         <note>placeholder</note>
       </trans-unit>
-      <trans-unit id="Enter welcome message… (optional)" xml:space="preserve">
+      <trans-unit id="Enter welcome message… (optional)" xml:space="preserve" approved="no">
         <source>Enter welcome message… (optional)</source>
-        <target>Voer welkomst bericht in... (optioneel)</target>
+        <target state="translated">Voer welkom bericht in... (optioneel)</target>
         <note>placeholder</note>
       </trans-unit>
       <trans-unit id="Enter your name…" xml:space="preserve">
@@ -3223,9 +3223,9 @@ Fout: %2$@</target>
         <target>Groep links</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group members can add message reactions." xml:space="preserve">
+      <trans-unit id="Group members can add message reactions." xml:space="preserve" approved="no">
         <source>Group members can add message reactions.</source>
-        <target>Groepsleden kunnen berichtreacties toevoegen.</target>
+        <target state="translated">Groepsleden kunnen bericht reacties toevoegen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can irreversibly delete sent messages. (24 hours)" xml:space="preserve">
@@ -3283,9 +3283,9 @@ Fout: %2$@</target>
         <target>Groep profiel wordt opgeslagen op de apparaten van de leden, niet op de servers.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group welcome message" xml:space="preserve">
+      <trans-unit id="Group welcome message" xml:space="preserve" approved="no">
         <source>Group welcome message</source>
-        <target>Groep welkomst bericht</target>
+        <target state="translated">Groep welkom bericht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve">
@@ -4427,9 +4427,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Alleen groep eigenaren kunnen spraak berichten inschakelen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can add message reactions." xml:space="preserve">
+      <trans-unit id="Only you can add message reactions." xml:space="preserve" approved="no">
         <source>Only you can add message reactions.</source>
-        <target>Alleen jij kunt berichtreacties toevoegen.</target>
+        <target state="translated">Alleen jij kunt bericht reacties toevoegen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" xml:space="preserve">
@@ -4452,9 +4452,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Alleen jij kunt spraak berichten verzenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can add message reactions." xml:space="preserve">
+      <trans-unit id="Only your contact can add message reactions." xml:space="preserve" approved="no">
         <source>Only your contact can add message reactions.</source>
-        <target>Alleen uw contact kan berichtreacties toevoegen.</target>
+        <target state="translated">Alleen uw contact kan bericht reacties toevoegen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" xml:space="preserve">
@@ -4856,9 +4856,9 @@ Fout: %@</target>
         <target>Verbied het onomkeerbaar verwijderen van berichten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit message reactions." xml:space="preserve">
+      <trans-unit id="Prohibit message reactions." xml:space="preserve" approved="no">
         <source>Prohibit message reactions.</source>
-        <target>Berichtreacties verbieden.</target>
+        <target state="translated">Bericht reacties verbieden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit messages reactions." xml:space="preserve">
@@ -5418,9 +5418,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Instellingen opslaan?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save welcome message?" xml:space="preserve">
+      <trans-unit id="Save welcome message?" xml:space="preserve" approved="no">
         <source>Save welcome message?</source>
-        <target>Welkomst bericht opslaan?</target>
+        <target state="translated">Welkom bericht opslaan?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Saved" xml:space="preserve">
@@ -7014,14 +7014,14 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Welkom %@!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Welcome message" xml:space="preserve">
+      <trans-unit id="Welcome message" xml:space="preserve" approved="no">
         <source>Welcome message</source>
-        <target>Welkomst bericht</target>
+        <target state="translated">Welkom bericht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Welcome message is too long" xml:space="preserve">
+      <trans-unit id="Welcome message is too long" xml:space="preserve" approved="no">
         <source>Welcome message is too long</source>
-        <target>Welkomstbericht is te lang</target>
+        <target state="translated">Welkom bericht is te lang</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve">
@@ -7069,9 +7069,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>‐Met versleutelde bestanden en media.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="With optional welcome message." xml:space="preserve">
+      <trans-unit id="With optional welcome message." xml:space="preserve" approved="no">
         <source>With optional welcome message.</source>
-        <target>Met optioneel welkomst bericht.</target>
+        <target state="translated">Met optioneel welkom bericht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="With reduced battery usage." xml:space="preserve">
