@@ -7033,19 +7033,6 @@ sendPendingGroupMessages user GroupMember {groupMemberId} conn = do
       (ACMEventTag _ XGrpMemFwd_, Just introId) -> updateIntroStatus db introId GMIntroInvForwarded
       _ -> pure ()
 
--- saveDirectRcvMSG :: Connection -> MsgMeta -> MsgBody -> CM (Connection, RcvMessage)
--- saveDirectRcvMSG conn@Connection {connId} agentMsgMeta msgBody =
---   case parseChatMessages msgBody of
---     [Right (ACMsg _ ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent})] -> do
---       conn' <- updatePeerChatVRange conn chatVRange
---       let agentMsgId = fst $ recipient agentMsgMeta
---           newMsg = NewRcvMessage {chatMsgEvent, msgBody}
---           rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta}
---       msg <- withStore $ \db -> createNewMessageAndRcvMsgDelivery db (ConnectionId connId) newMsg sharedMsgId_ rcvMsgDelivery Nothing
---       pure (conn', msg)
---     [Left e] -> error $ "saveDirectRcvMSG: error parsing chat message: " <> e
---     _ -> error "saveDirectRcvMSG: batching not supported"
-
 saveDirectRcvMSG :: MsgEncodingI e => Connection -> MsgMeta -> MsgBody -> ChatMessage e -> CM (Connection, RcvMessage)
 saveDirectRcvMSG conn@Connection {connId} agentMsgMeta msgBody ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} = do
   conn' <- updatePeerChatVRange conn chatVRange
