@@ -49,14 +49,6 @@ class ShareModel: ObservableObject {
 
     var isSendDisbled: Bool { sharedContent == nil || selected == nil }
 
-    private var isFileSent: Bool {
-        if let selected, let sharedContent {
-            selected.chatInfo.chatType != .local && sharedContent.cryptoFile != nil
-        } else {
-            false
-        }
-    }
-
     var filteredChats: Array<ChatData> {
         search.isEmpty
         ? filterChatsToForwardTo(chats: chats)
