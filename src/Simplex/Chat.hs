@@ -842,9 +842,8 @@ processChatCommand' vr = \case
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
           let msgIds = itemsMsgIds items
               events = map (\msgId -> XMsgDel msgId Nothing) msgIds
-          -- TODO batch delete
-          -- sendGroupMessages
-          forM_ events $ \evt -> void $ sendGroupMessage user gInfo ms evt
+          forM_ (L.nonEmpty events) $ \events' ->
+            sendGroupMessages user gInfo ms events'
           delGroupChatItems user gInfo items Nothing
       where
         getGroupCI :: DB.Connection -> ChatItemId -> IO (Either ChatError (CChatItem 'CTGroup))
@@ -879,9 +878,8 @@ processChatCommand' vr = \case
     assertUserGroupRole gInfo GRAdmin
     let msgMemIds = itemsMsgMemIds gInfo items
         events = map (\(msgId, memId) -> XMsgDel msgId (Just memId)) msgMemIds
-    -- TODO batch delete
-    -- sendGroupMessages
-    forM_ events $ \evt -> void $ sendGroupMessage user gInfo ms evt
+    forM_ (L.nonEmpty events) $ \events' ->
+      sendGroupMessages user gInfo ms events'
     delGroupChatItems user gInfo items (Just membership)
     where
       getGroupCI :: DB.Connection -> User -> ChatItemId -> IO (Either ChatError (CChatItem 'CTGroup))
@@ -6901,6 +6899,11 @@ deliverMessagesB msgReqs = do
         _ -> pure ()
       where
         updatePQ = updateConnPQSndEnabled db connId pqSndEnabled'
+
+-- TODO batch delete
+sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM ()
+sendGroupMessages user gInfo members events =
+  forM_ events $ \evt -> void $ sendGroupMessage' user gInfo members evt
 
 -- TODO combine profile update and message into one batch
 -- Take into account that it may not fit, and that we currently don't support sending multiple messages to the same connection in one call.
