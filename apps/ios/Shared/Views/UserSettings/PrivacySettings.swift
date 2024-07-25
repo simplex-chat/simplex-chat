@@ -115,7 +115,7 @@ struct PrivacySettings: View {
                             }
                     }
                     settingsRow("circle.rectangle.filled.pattern.diagonalline", color: theme.colors.secondary) {
-                        Picker("Blur media in chat", selection: $privacyMediaBlurRadius) {
+                        Picker("Blur media", selection: $privacyMediaBlurRadius) {
                             let values = [0, 12, 24, 48] + ([0, 12, 24, 48].contains(privacyMediaBlurRadius) ? [] : [privacyMediaBlurRadius])
                             ForEach(values, id: \.self) { radius in
                                 let text: String = switch radius {
