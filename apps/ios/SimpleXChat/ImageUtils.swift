@@ -310,36 +310,6 @@ private func dropPrefix(_ s: String, _ prefix: String) -> String {
     s.hasPrefix(prefix) ? String(s.dropFirst(prefix.count)) : s
 }
 
-/// Transcodes Video and stores it in temporary directory with named `video.mp4`
-/// If called multiple times - will override the previous temporary video.
-/// Will cleanup the temporary file in case of failure
-///
-/// - Parameters:
-///   - url: source url
-///   - presetName: `AVAssetExportSession`s preset name
-/// - Returns: output url of successfully exported asset
-public func transcodeVideo(from url: URL, presetName: String = AVAssetExportPreset640x480) async -> URL? {
-    let asset: AVURLAsset = AVURLAsset(url: url, options: nil)
-    let outputURL = URL(
-        fileURLWithPath: generateNewFileName(
-            getTempFilesDirectory().path + "/" + "video", "mp4",
-            fullPath: true)
-    )
-    if let s = AVAssetExportSession(asset: asset, presetName: presetName) {
-        s.outputURL = outputURL
-        s.outputFileType = .mp4
-        s.metadataItemFilter = AVMetadataItemFilter.forSharing()
-        await s.export()
-        switch s.status {
-        case .completed: return outputURL
-        default:
-            try? FileManager.default.removeItem(at: outputURL)
-            if let err = s.error { logger.error("Failed to export video with error: \(err)") }
-        }
-    }
-    return nil
-}
-
 public func makeVideoQualityLower(_ input: URL, outputUrl: URL) async -> Bool {
     let asset: AVURLAsset = AVURLAsset(url: input, options: nil)
     if let s = AVAssetExportSession(asset: asset, presetName: AVAssetExportPreset640x480) {

@@ -218,8 +218,8 @@ class ShareModel: ObservableObject {
                 if let (title, message) = ci.chatItem.meta.itemStatus.statusInfo {
                     // `title` and `message` already localized and interpolated
                     return ErrorAlert(
-                        title: LocalizedStringKey("\(title)"),
-                        message: LocalizedStringKey("\(message)")
+                        title: "\(title)",
+                        message: "\(message)"
                     )
                 } else if case let .sndSent(sndProgress) = ci.chatItem.meta.itemStatus {
                     switch sndProgress {
