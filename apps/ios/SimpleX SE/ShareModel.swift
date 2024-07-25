@@ -103,8 +103,6 @@ class ShareModel: ObservableObject {
                     }
                 }
             }
-
-
         }
     }
 
@@ -228,7 +226,7 @@ class ShareModel: ObservableObject {
                     case .partial:
                         if isGroupChat {
                             Task {
-                                try? await Task.sleep(for: .seconds(5))
+                                try? await Task.sleep(nanoseconds: 5 * NSEC_PER_SEC)
                                 await ch.completeMessage()
                             }
                         }
@@ -358,7 +356,7 @@ extension NSItemProvider {
 
     private func inPlaceUrl(type: UTType) async throws -> URL {
         try await withCheckedThrowingContinuation { cont in
-            let _ = loadFileRepresentation(for: type, openInPlace: true) { url, bool, error in
+            let _ = loadInPlaceFileRepresentation(forTypeIdentifier: type.identifier) { url, bool, error in
                 if let url = url {
                     cont.resume(returning: url)
                 } else if let error = error {

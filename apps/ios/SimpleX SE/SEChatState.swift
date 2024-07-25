@@ -30,7 +30,7 @@ class SEChatState {
 func waitForOtherProcessesToSuspend() async {
     let startTime = CFAbsoluteTimeGetCurrent()
     while CFAbsoluteTimeGetCurrent() - startTime < 2 {
-        try? await Task.sleep(for: .milliseconds(100))
+        try? await Task.sleep(nanoseconds: 100 * NSEC_PER_MSEC)
         if appStateGroupDefault.get() == .suspended &&
            nseStateGroupDefault.get() == .suspended {
             break
