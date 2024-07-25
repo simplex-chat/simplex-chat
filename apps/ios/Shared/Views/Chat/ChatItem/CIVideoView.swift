@@ -189,7 +189,9 @@ struct CIVideoView: View {
                         videoPlaying = false
                     }
                 }
-                .modifier(PrivacyBlur(enabled: !videoPlaying, blurred: $blurred))
+                .if(!videoPlaying) { view in
+                    view.modifier(PrivacyBlur(blurred: $blurred))
+                }
                 .onTapGesture {
                     switch player.timeControlStatus {
                     case .playing:
@@ -319,7 +321,7 @@ struct CIVideoView: View {
             .resizable()
             .scaledToFit()
             .frame(width: w)
-            .modifier(PrivacyBlur(enabled: true, blurred: $blurred))
+            .modifier(PrivacyBlur(blurred: $blurred))
             if !blurred || !showDownloadButton(chatItem.file?.fileStatus) {
                 fileStatusIcon()
             }

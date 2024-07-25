@@ -20,7 +20,7 @@ struct CILinkView: View {
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFit()
-                    .modifier(PrivacyBlur(enabled: true, blurred: $blurred))
+                    .modifier(PrivacyBlur(blurred: $blurred))
             }
             VStack(alignment: .leading, spacing: 6) {
                 Text(linkPreview.title)

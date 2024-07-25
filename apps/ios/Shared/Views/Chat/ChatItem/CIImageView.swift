@@ -27,14 +27,18 @@ struct CIImageView: View {
                 .fullScreenCover(isPresented: $showFullScreenImage) {
                     FullScreenMediaView(chatItem: chatItem, image: uiImage, showView: $showFullScreenImage)
                 }
-                .modifier(PrivacyBlur(enabled: !smallView, blurred: $blurred))
+                .if(!smallView) { view in
+                    view.modifier(PrivacyBlur(blurred: $blurred))
+                }
                 .onTapGesture { showFullScreenImage = true }
                 .onChange(of: m.activeCallViewIsCollapsed) { _ in
                     showFullScreenImage = false
                 }
             } else if let preview {
                 Group { if smallView { smallViewImageView(preview) } else { imageView(preview) } }
-                    .modifier(PrivacyBlur(enabled: !smallView, blurred: $blurred))
+                    .if(!smallView) { view in
+                        view.modifier(PrivacyBlur(blurred: $blurred))
+                    }
                     .onTapGesture {
                         if let file = file {
                             switch file.fileStatus {

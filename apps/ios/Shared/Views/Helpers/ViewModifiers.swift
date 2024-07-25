@@ -23,21 +23,21 @@ extension Notification.Name {
 }
 
 struct PrivacyBlur: ViewModifier {
-    var enabled: Bool
     @Binding var blurred: Bool
     @AppStorage(DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS) private var blurRadius: Int = 0
 
     func body(content: Content) -> some View {
         if blurRadius > 0 {
             content
-                .blur(radius: CGFloat(blurred && enabled ? blurRadius : 0))
-                .overlay {
-                    if blurred && enabled {
-                        Color.clear.contentShape(Rectangle())
-                            .onTapGesture {
-                                blurred = false
-                            }
-                    }
+                .if(blurred) { view in
+                    view
+                        .blur(radius: CGFloat(blurRadius) * 0.5)
+                        .overlay {
+                            Color.clear.contentShape(Rectangle())
+                                .onTapGesture {
+                                    blurred = false
+                                }
+                        }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .chatViewWillBeginScrolling)) { _ in
                     if !blurred {
