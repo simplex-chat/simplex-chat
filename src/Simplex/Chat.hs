@@ -822,13 +822,9 @@ processChatCommand' vr = \case
           assertDeletable items
           assertDirectAllowed user MDSnd ct XMsgDel_
           let msgIds = itemsMsgIds items
-              evts = map (\msgId -> XMsgDel msgId Nothing) msgIds
-          -- TODO batch delete
-          -- sendDirectContactMessages:
-          --   - see sendGroupMemberMessages (modified for PQ)
-          --   - processDirectMessage, MSG - support batched messages
-          --   - bump chat version, send batched or in loop based on version?
-          forM_ evts $ \evt -> void $ sendDirectContactMessage user ct evt
+              events = map (\msgId -> XMsgDel msgId Nothing) msgIds
+          forM_ (L.nonEmpty events) $ \events' ->
+            sendDirectContactMessages user ct events'
           if featureAllowed SCFFullDelete forUser ct
             then deleteDirectCIs user ct items True False
             else markDirectCIsDeleted user ct items True =<< liftIO getCurrentTime
@@ -845,10 +841,10 @@ processChatCommand' vr = \case
           assertDeletable items
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
           let msgIds = itemsMsgIds items
-              evts = map (\msgId -> XMsgDel msgId Nothing) msgIds
+              events = map (\msgId -> XMsgDel msgId Nothing) msgIds
           -- TODO batch delete
           -- sendGroupMessages
-          forM_ evts $ \evt -> void $ sendGroupMessage user gInfo ms evt
+          forM_ events $ \evt -> void $ sendGroupMessage user gInfo ms evt
           delGroupChatItems user gInfo items Nothing
       where
         getGroupCI :: DB.Connection -> ChatItemId -> IO (Either ChatError (CChatItem 'CTGroup))
@@ -882,10 +878,10 @@ processChatCommand' vr = \case
     assertDeletable gInfo items
     assertUserGroupRole gInfo GRAdmin
     let msgMemIds = itemsMsgMemIds gInfo items
-        evts = map (\(msgId, memId) -> XMsgDel msgId (Just memId)) msgMemIds
+        events = map (\(msgId, memId) -> XMsgDel msgId (Just memId)) msgMemIds
     -- TODO batch delete
     -- sendGroupMessages
-    forM_ evts $ \evt -> void $ sendGroupMessage user gInfo ms evt
+    forM_ events $ \evt -> void $ sendGroupMessage user gInfo ms evt
     delGroupChatItems user gInfo items (Just membership)
     where
       getGroupCI :: DB.Connection -> User -> ChatItemId -> IO (Either ChatError (CChatItem 'CTGroup))
@@ -4097,13 +4093,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           processINFOpqSupport conn pqSupport
           _conn' <- saveConnInfo conn connInfo
           pure ()
-        MSG meta _msgFlags msgBody ->
-          -- TODO only acknowledge without saving message?
-          -- probably this branch is never executed, so there should be no reason
-          -- to save message if contact hasn't been created yet - chat item isn't created anyway
-          withAckMessage' "new contact msg" agentConnId meta $
-            void $
-              saveDirectRcvMSG conn meta msgBody
+        MSG meta _msgFlags _msgBody ->
+          -- We are not saving message (saveDirectRcvMSG) as contact hasn't been created yet,
+          -- chat item is also not created here
+          withAckMessage' "new contact msg" agentConnId meta $ pure ()
         SENT msgId _proxy -> do
           void $ continueSending connEntity conn
           sentMsgDeliveryEvent conn msgId
@@ -4148,37 +4141,53 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             let MsgMeta {pqEncryption} = msgMeta
             (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
             checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchChatError` \_ -> pure ()
-            (conn'', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveDirectRcvMSG conn' msgMeta msgBody
-            let tag = toCMEventTag event
-            atomically $ writeTVar tags [tshow tag]
-            logInfo $ "contact msg=" <> tshow tag <> " " <> eInfo
-            let ct'' = ct' {activeConn = Just conn''} :: Contact
-            assertDirectAllowed user MDRcv ct'' tag
-            case event of
-              XMsgNew mc -> newContentMessage ct'' mc msg msgMeta
-              XMsgFileDescr sharedMsgId fileDescr -> messageFileDescription ct'' sharedMsgId fileDescr
-              XMsgUpdate sharedMsgId mContent ttl live -> messageUpdate ct'' sharedMsgId mContent msg msgMeta ttl live
-              XMsgDel sharedMsgId _ -> messageDelete ct'' sharedMsgId msg msgMeta
-              XMsgReact sharedMsgId _ reaction add -> directMsgReaction ct'' sharedMsgId reaction add msg msgMeta
-              -- TODO discontinue XFile
-              XFile fInv -> processFileInvitation' ct'' fInv msg msgMeta
-              XFileCancel sharedMsgId -> xFileCancel ct'' sharedMsgId
-              XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInv ct'' sharedMsgId fileConnReq_ fName
-              XInfo p -> xInfo ct'' p
-              XDirectDel -> xDirectDel ct'' msg msgMeta
-              XGrpInv gInv -> processGroupInvitation ct'' gInv msg msgMeta
-              XInfoProbe probe -> xInfoProbe (COMContact ct'') probe
-              XInfoProbeCheck probeHash -> xInfoProbeCheck (COMContact ct'') probeHash
-              XInfoProbeOk probe -> xInfoProbeOk (COMContact ct'') probe
-              XCallInv callId invitation -> xCallInv ct'' callId invitation msg msgMeta
-              XCallOffer callId offer -> xCallOffer ct'' callId offer msg
-              XCallAnswer callId answer -> xCallAnswer ct'' callId answer msg
-              XCallExtra callId extraInfo -> xCallExtra ct'' callId extraInfo msg
-              XCallEnd callId -> xCallEnd ct'' callId msg
-              BFileChunk sharedMsgId chunk -> bFileChunk ct'' sharedMsgId chunk msgMeta
-              _ -> messageError $ "unsupported message: " <> T.pack (show event)
-            let Contact {chatSettings = ChatSettings {sendRcpts}} = ct''
-            pure $ fromMaybe (sendRcptsContacts user) sendRcpts && hasDeliveryReceipt tag
+            forM_ aChatMsgs $ \case
+              Right (ACMsg _ chatMsg) ->
+                processEvent ct' conn' tags eInfo chatMsg `catchChatError` \e -> toView $ CRChatError (Just user) e
+              Left e -> do
+                atomically $ modifyTVar' tags ("error" :)
+                logInfo $ "contact msg=error " <> eInfo <> " " <> tshow e
+                toView $ CRChatError (Just user) (ChatError . CEException $ "error parsing chat message: " <> e)
+            checkSendRcpt ct' $ rights aChatMsgs -- not crucial to use ct'' from processEvent
+          where
+            aChatMsgs = parseChatMessages msgBody
+            processEvent :: Contact -> Connection -> TVar [Text] -> Text -> MsgEncodingI e => ChatMessage e -> CM ()
+            processEvent ct' conn' tags eInfo chatMsg@ChatMessage {chatMsgEvent} = do
+              let tag = toCMEventTag chatMsgEvent
+              atomically $ modifyTVar' tags (tshow tag :)
+              logInfo $ "contact msg=" <> tshow tag <> " " <> eInfo
+              (conn'', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveDirectRcvMSG conn' msgMeta msgBody chatMsg
+              let ct'' = ct' {activeConn = Just conn''} :: Contact
+              case event of
+                XMsgNew mc -> newContentMessage ct'' mc msg msgMeta
+                XMsgFileDescr sharedMsgId fileDescr -> messageFileDescription ct'' sharedMsgId fileDescr
+                XMsgUpdate sharedMsgId mContent ttl live -> messageUpdate ct'' sharedMsgId mContent msg msgMeta ttl live
+                XMsgDel sharedMsgId _ -> messageDelete ct'' sharedMsgId msg msgMeta
+                XMsgReact sharedMsgId _ reaction add -> directMsgReaction ct'' sharedMsgId reaction add msg msgMeta
+                -- TODO discontinue XFile
+                XFile fInv -> processFileInvitation' ct'' fInv msg msgMeta
+                XFileCancel sharedMsgId -> xFileCancel ct'' sharedMsgId
+                XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInv ct'' sharedMsgId fileConnReq_ fName
+                XInfo p -> xInfo ct'' p
+                XDirectDel -> xDirectDel ct'' msg msgMeta
+                XGrpInv gInv -> processGroupInvitation ct'' gInv msg msgMeta
+                XInfoProbe probe -> xInfoProbe (COMContact ct'') probe
+                XInfoProbeCheck probeHash -> xInfoProbeCheck (COMContact ct'') probeHash
+                XInfoProbeOk probe -> xInfoProbeOk (COMContact ct'') probe
+                XCallInv callId invitation -> xCallInv ct'' callId invitation msg msgMeta
+                XCallOffer callId offer -> xCallOffer ct'' callId offer msg
+                XCallAnswer callId answer -> xCallAnswer ct'' callId answer msg
+                XCallExtra callId extraInfo -> xCallExtra ct'' callId extraInfo msg
+                XCallEnd callId -> xCallEnd ct'' callId msg
+                BFileChunk sharedMsgId chunk -> bFileChunk ct'' sharedMsgId chunk msgMeta
+                _ -> messageError $ "unsupported message: " <> T.pack (show event)
+            checkSendRcpt :: Contact -> [AChatMessage] -> CM Bool
+            checkSendRcpt ct' aMsgs = do
+              let Contact {chatSettings = ChatSettings {sendRcpts}} = ct'
+              pure $ fromMaybe (sendRcptsContacts user) sendRcpts && any aChatMsgHasReceipt aMsgs
+              where
+                aChatMsgHasReceipt (ACMsg _ ChatMessage {chatMsgEvent}) =
+                  hasDeliveryReceipt (toCMEventTag chatMsgEvent)
         RCVD msgMeta msgRcpt ->
           withAckMessage' "contact rcvd" agentConnId msgMeta $
             directMsgReceived ct conn msgMeta msgRcpt
@@ -6717,6 +6726,24 @@ deleteOrUpdateMemberRecord user@User {userId} member =
       Just _ -> updateGroupMemberStatus db userId member GSMemRemoved
       Nothing -> deleteGroupMember db user member
 
+sendDirectContactMessages :: MsgEncodingI e => User -> Contact -> NonEmpty (ChatMsgEvent e) -> CM ()
+sendDirectContactMessages user ct events = do
+  Connection {connChatVersion = v} <- liftEither $ contactSendConn_ ct
+  if v >= batchSendDirectVersion
+    then sendDirectContactMessages' user ct events
+    else forM_ events $ \evt -> void $ sendDirectContactMessage user ct evt
+
+sendDirectContactMessages' :: MsgEncodingI e => User -> Contact -> NonEmpty (ChatMsgEvent e) -> CM ()
+sendDirectContactMessages' user ct events = do
+  conn@Connection {connId} <- liftEither $ contactSendConn_ ct
+  let idsEvts = L.map (ConnectionId connId,) events
+  (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages idsEvts
+  unless (null errs) $ toView $ CRChatErrors (Just user) errs
+  -- TODO batch delete
+  -- pq
+  forM_ (L.nonEmpty msgs) $ \msgs' ->
+    batchSendGroupMemberMessages user conn msgs'
+
 sendDirectContactMessage :: MsgEncodingI e => User -> Contact -> ChatMsgEvent e -> CM (SndMessage, Int64)
 sendDirectContactMessage user ct chatMsgEvent = do
   conn@Connection {connId} <- liftEither $ contactSendConn_ ct
@@ -7010,19 +7037,27 @@ sendPendingGroupMessages user GroupMember {groupMemberId} conn = do
       (ACMEventTag _ XGrpMemFwd_, Just introId) -> updateIntroStatus db introId GMIntroInvForwarded
       _ -> pure ()
 
--- TODO [batch send] refactor direct message processing same as groups (e.g. checkIntegrity before processing)
-saveDirectRcvMSG :: Connection -> MsgMeta -> MsgBody -> CM (Connection, RcvMessage)
-saveDirectRcvMSG conn@Connection {connId} agentMsgMeta msgBody =
-  case parseChatMessages msgBody of
-    [Right (ACMsg _ ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent})] -> do
-      conn' <- updatePeerChatVRange conn chatVRange
-      let agentMsgId = fst $ recipient agentMsgMeta
-          newMsg = NewRcvMessage {chatMsgEvent, msgBody}
-          rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta}
-      msg <- withStore $ \db -> createNewMessageAndRcvMsgDelivery db (ConnectionId connId) newMsg sharedMsgId_ rcvMsgDelivery Nothing
-      pure (conn', msg)
-    [Left e] -> error $ "saveDirectRcvMSG: error parsing chat message: " <> e
-    _ -> error "saveDirectRcvMSG: batching not supported"
+-- saveDirectRcvMSG :: Connection -> MsgMeta -> MsgBody -> CM (Connection, RcvMessage)
+-- saveDirectRcvMSG conn@Connection {connId} agentMsgMeta msgBody =
+--   case parseChatMessages msgBody of
+--     [Right (ACMsg _ ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent})] -> do
+--       conn' <- updatePeerChatVRange conn chatVRange
+--       let agentMsgId = fst $ recipient agentMsgMeta
+--           newMsg = NewRcvMessage {chatMsgEvent, msgBody}
+--           rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta}
+--       msg <- withStore $ \db -> createNewMessageAndRcvMsgDelivery db (ConnectionId connId) newMsg sharedMsgId_ rcvMsgDelivery Nothing
+--       pure (conn', msg)
+--     [Left e] -> error $ "saveDirectRcvMSG: error parsing chat message: " <> e
+--     _ -> error "saveDirectRcvMSG: batching not supported"
+
+saveDirectRcvMSG :: MsgEncodingI e => Connection -> MsgMeta -> MsgBody -> ChatMessage e -> CM (Connection, RcvMessage)
+saveDirectRcvMSG conn@Connection {connId} agentMsgMeta msgBody ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} = do
+  conn' <- updatePeerChatVRange conn chatVRange
+  let agentMsgId = fst $ recipient agentMsgMeta
+      newMsg = NewRcvMessage {chatMsgEvent, msgBody}
+      rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta}
+  msg <- withStore $ \db -> createNewMessageAndRcvMsgDelivery db (ConnectionId connId) newMsg sharedMsgId_ rcvMsgDelivery Nothing
+  pure (conn', msg)
 
 saveGroupRcvMsg :: MsgEncodingI e => User -> GroupId -> GroupMember -> Connection -> MsgMeta -> MsgBody -> ChatMessage e -> CM (GroupMember, Connection, RcvMessage)
 saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta msgBody ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} = do

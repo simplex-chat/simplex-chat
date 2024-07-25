@@ -63,12 +63,14 @@ import Simplex.Messaging.Version hiding (version)
 -- 5 - batch sending messages (12/23/2023)
 -- 6 - send group welcome message after history (12/29/2023)
 -- 7 - update member profiles (1/15/2024)
+-- 8 - compress messages and PQ e2e encryption (2024-03-08)
+-- 9 - batch sending in direct connections (2024-07-24)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 8
+currentChatVersion = VersionChat 9
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -102,6 +104,10 @@ memberProfileUpdateVersion = VersionChat 7
 -- version range that supports compressing messages and PQ e2e encryption
 pqEncryptionCompressionVersion :: VersionChat
 pqEncryptionCompressionVersion = VersionChat 8
+
+-- version range that supports batch sending in direct connections
+batchSendDirectVersion :: VersionChat
+batchSendDirectVersion = VersionChat 9
 
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v
