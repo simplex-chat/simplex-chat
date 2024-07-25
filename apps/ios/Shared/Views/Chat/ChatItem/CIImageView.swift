@@ -35,10 +35,13 @@ struct CIImageView: View {
                     showFullScreenImage = false
                 }
             } else if let preview {
-                Group { if smallView { smallViewImageView(preview) } else { imageView(preview) } }
-                    .if(!smallView) { view in
-                        view.modifier(PrivacyBlur(blurred: $blurred))
+                Group {
+                    if smallView {
+                        smallViewImageView(preview)
+                    } else {
+                        imageView(preview).modifier(PrivacyBlur(blurred: $blurred))
                     }
+                }
                     .onTapGesture {
                         if let file = file {
                             switch file.fileStatus {

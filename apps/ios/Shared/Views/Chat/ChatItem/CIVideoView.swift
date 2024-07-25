@@ -86,17 +86,19 @@ struct CIVideoView: View {
                     durationProgress()
                 }
             }
-            if !smallView && !blurred, let file = file, showDownloadButton(file.fileStatus) {
-                Button {
-                    receiveFileIfValidSize(file: file, receiveFile: receiveFile)
-                } label: {
-                    playPauseIcon("play.fill")
-                }
-            } else if let file = file, showDownloadButton(file.fileStatus) && !file.showStatusIconInSmallView && !blurred {
-                playPauseIcon("play.fill")
-                    .onTapGesture {
+            if !blurred, let file, showDownloadButton(file.fileStatus) {
+                if !smallView {
+                    Button {
                         receiveFileIfValidSize(file: file, receiveFile: receiveFile)
+                    } label: {
+                        playPauseIcon("play.fill")
                     }
+                } else if !file.showStatusIconInSmallView {
+                    playPauseIcon("play.fill")
+                        .onTapGesture {
+                            receiveFileIfValidSize(file: file, receiveFile: receiveFile)
+                        }
+                }
             }
         }
         .fullScreenCover(isPresented: $showFullScreenPlayer) {
@@ -157,20 +159,22 @@ struct CIVideoView: View {
                 .onChange(of: m.activeCallViewIsCollapsed) { _ in
                     showFullScreenPlayer = false
                 }
-                if !decryptionInProgress && !blurred {
-                    Button {
-                        decrypt(file: file) {
-                            if urlDecrypted != nil {
-                                videoPlaying = true
-                                player?.play()
+                if !blurred {
+                    if !decryptionInProgress {
+                        Button {
+                            decrypt(file: file) {
+                                if urlDecrypted != nil {
+                                    videoPlaying = true
+                                    player?.play()
+                                }
                             }
+                        } label: {
+                            playPauseIcon(canBePlayed ? "play.fill" : "play.slash")
                         }
-                    } label: {
-                        playPauseIcon(canBePlayed ? "play.fill" : "play.slash")
+                        .disabled(!canBePlayed)
+                    } else {
+                        videoDecryptionProgress()
                     }
-                    .disabled(!canBePlayed)
-                } else if !blurred {
-                    videoDecryptionProgress()
                 }
             }
         }
