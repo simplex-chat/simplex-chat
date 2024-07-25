@@ -105,7 +105,9 @@ struct CIImageView: View {
                         .frame(width: w, height: w * img.size.height / img.size.width)
                         .scaledToFit()
             }
-            loadingIndicator()
+            if !blurred || !showDownloadButton(chatItem.file?.fileStatus) {
+                loadingIndicator()
+            }
         }
     }
 
@@ -168,5 +170,13 @@ struct CIImageView: View {
             .frame(width: 20, height: 20)
             .tint(.white)
             .padding(8)
+    }
+
+    private func showDownloadButton(_ fileStatus: CIFileStatus?) -> Bool {
+        switch fileStatus {
+        case .rcvInvitation: true
+        case .rcvAborted: true
+        default: false
+        }
     }
 }

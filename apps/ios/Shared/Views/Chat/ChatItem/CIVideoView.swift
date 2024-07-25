@@ -136,7 +136,7 @@ struct CIVideoView: View {
         }
     }
 
-    private func showDownloadButton(_ fileStatus: CIFileStatus) -> Bool {
+    private func showDownloadButton(_ fileStatus: CIFileStatus?) -> Bool {
         switch fileStatus {
         case .rcvInvitation: true
         case .rcvAborted: true
@@ -320,7 +320,9 @@ struct CIVideoView: View {
             .scaledToFit()
             .frame(width: w)
             .modifier(PrivacyBlur(enabled: true, blurred: $blurred))
-            fileStatusIcon()
+            if !blurred || !showDownloadButton(chatItem.file?.fileStatus) {
+                fileStatusIcon()
+            }
         }
     }
 
