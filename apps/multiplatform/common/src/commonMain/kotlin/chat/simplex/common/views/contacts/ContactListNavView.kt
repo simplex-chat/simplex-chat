@@ -13,6 +13,20 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
+private fun onRequestAccepted(chat: Chat) {
+    when (val chatInfo = chat.chatInfo) {
+        is ChatInfo.Direct -> {
+            if (chatInfo.contact.sndReady) {
+                openLoadedChat(chat, chatModel)
+            } else {
+                ModalManager.center.closeModals()
+            }
+        }
+
+        else -> ModalManager.center.closeModals()
+    }
+}
+
 @Composable
 fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
     val showMenu = remember { mutableStateOf(false) }
@@ -83,14 +97,18 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                         rhId,
                         chat.chatInfo,
                         chatModel,
-                        onSuccess = {
-                            ModalManager.center.closeModals()
-                        }
+                        onSucess = { onRequestAccepted(it) }
                     )
                 },
                 dropdownMenuItems = {
                     tryOrShowError("${chat.id}ContactListNavLinkDropdown", error = {}) {
-                        ContactRequestMenuItems(chat.remoteHostId, chat.chatInfo, chatModel, showMenu)
+                        ContactRequestMenuItems(
+                            rhId = chat.remoteHostId,
+                            chatInfo = chat.chatInfo,
+                            chatModel = chatModel,
+                            showMenu = showMenu,
+                            onSuccess = { onRequestAccepted(it) }
+                        )
                     }
                 },
                 showMenu,
