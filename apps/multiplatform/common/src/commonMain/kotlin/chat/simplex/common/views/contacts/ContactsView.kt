@@ -73,12 +73,14 @@ import chat.simplex.common.views.helpers.ModalView
 import chat.simplex.common.views.helpers.SearchTextField
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.views.helpers.hostDevice
+import chat.simplex.common.views.helpers.withApi
 import chat.simplex.common.views.helpers.withBGApi
 import chat.simplex.common.views.newchat.planAndConnect
 import chat.simplex.common.views.newchat.strHasSingleSimplexLink
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import java.net.URI
 
@@ -211,15 +213,20 @@ private fun ContactsSearchBar(
     searchText: MutableState<TextFieldValue>,
     searchShowingSimplexLink: MutableState<Boolean>,
     searchChatFilteredBySimplexLink: MutableState<String?>,
-    focused: Boolean,
     onFocusChanged: (hasFocus: Boolean) -> Unit,
     close: () -> Unit
 ) {
+    var focused by remember { mutableStateOf(false) }
+
+    LaunchedEffect(focused) {
+        onFocusChanged(focused)
+    }
+
     Row(verticalAlignment = Alignment.CenterVertically) {
         val focusRequester = remember { FocusRequester() }
         Icon(painterResource(MR.images.ic_search), null, Modifier.padding(horizontal = DEFAULT_PADDING_HALF), tint = MaterialTheme.colors.secondary)
         SearchTextField(
-            Modifier.weight(1f).onFocusChanged { onFocusChanged(it.hasFocus) }.focusRequester(focusRequester),
+            Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
             placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
             alwaysVisible = true,
             searchText = searchText,
@@ -354,9 +361,12 @@ private fun ContactsList(
                     searchText = searchText,
                     searchShowingSimplexLink = searchShowingSimplexLink,
                     searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
-                    focused = searchFocused,
                     onFocusChanged = {
-                        searchFocused = it
+                        withApi {
+                            // Adding a small delay to avoid focus based re-render cancelling click events on contacts.
+                            delay(300)
+                            searchFocused = it
+                        }
                     },
                     close = close
                 )
