@@ -20,45 +20,43 @@ struct CIVideoView: View {
     @State private var videoPlaying: Bool = false
     private let maxWidth: CGFloat
     private var videoWidth: CGFloat?
+    private let smallView: Bool
     @State private var player: AVPlayer?
     @State private var fullPlayer: AVPlayer?
     @State private var url: URL?
     @State private var urlDecrypted: URL?
     @State private var decryptionInProgress: Bool = false
-    @State private var showFullScreenPlayer = false
+    @Binding private var showFullScreenPlayer: Bool
     @State private var timeObserver: Any? = nil
     @State private var fullScreenTimeObserver: Any? = nil
     @State private var publisher: AnyCancellable? = nil
+    private var sizeMultiplier: CGFloat { smallView ? 0.38 : 1 }
 
-    init(chatItem: ChatItem, preview: UIImage?, duration: Int, maxWidth: CGFloat, videoWidth: CGFloat?) {
+    init(chatItem: ChatItem, preview: UIImage?, duration: Int, maxWidth: CGFloat, videoWidth: CGFloat?, smallView: Bool = false, showFullscreenPlayer: Binding<Bool>) {
         self.chatItem = chatItem
         self.preview = preview
         self._duration = State(initialValue: duration)
         self.maxWidth = maxWidth
         self.videoWidth = videoWidth
-        if let url = getLoadedVideo(chatItem.file) {
-            let decrypted = chatItem.file?.fileSource?.cryptoArgs == nil ? url : chatItem.file?.fileSource?.decryptedGet()
-            self._urlDecrypted = State(initialValue: decrypted)
-            if let decrypted = decrypted {
-                self._player = State(initialValue: VideoPlayerView.getOrCreatePlayer(decrypted, false))
-                self._fullPlayer = State(initialValue: AVPlayer(url: decrypted))
-            }
-            self._url = State(initialValue: url)
-        }
+        self.smallView = smallView
+        self._showFullScreenPlayer = showFullscreenPlayer
     }
 
     var body: some View {
         let file = chatItem.file
-        ZStack {
+        ZStack(alignment: smallView ? .topLeading : .center) {
             ZStack(alignment: .topLeading) {
-                if let file = file, let preview = preview, let player = player, let decrypted = urlDecrypted {
+                if let file = file, let preview = preview, let decrypted = urlDecrypted, smallView {
+                    smallVideoView(decrypted, file, preview)
+                } else if let file = file, let preview = preview, let player = player, let decrypted = urlDecrypted {
                     videoView(player, decrypted, file, preview, duration)
+                } else if let file = file, let defaultPreview = preview, file.loaded && urlDecrypted == nil, smallView {
+                    smallVideoViewEncrypted(file, defaultPreview)
                 } else if let file = file, let defaultPreview = preview, file.loaded && urlDecrypted == nil {
                     videoViewEncrypted(file, defaultPreview, duration)
-                } else if let preview {
-                    imageView(preview)
-                    .onTapGesture {
-                        if let file = file {
+                } else if let preview, let file {
+                    Group { if smallView { smallViewImageView(preview, file) } else { imageView(preview) } }
+                        .onTapGesture {
                             switch file.fileStatus {
                             case .rcvInvitation, .rcvAborted:
                                 receiveFileIfValidSize(file: file, receiveFile: receiveFile)
@@ -82,17 +80,58 @@ struct CIVideoView: View {
                             default: ()
                             }
                         }
-                    }
                 }
-                durationProgress()
+                if !smallView {
+                    durationProgress()
+                }
             }
-            if let file = file, showDownloadButton(file.fileStatus) {
+            if !smallView, let file = file, showDownloadButton(file.fileStatus) {
                 Button {
                     receiveFileIfValidSize(file: file, receiveFile: receiveFile)
                 } label: {
                     playPauseIcon("play.fill")
                 }
+            } else if let file = file, showDownloadButton(file.fileStatus) && !file.showStatusIconInSmallView {
+                playPauseIcon("play.fill")
+                    .onTapGesture {
+                        receiveFileIfValidSize(file: file, receiveFile: receiveFile)
+                    }
             }
+        }
+        .fullScreenCover(isPresented: $showFullScreenPlayer) {
+            if let decrypted = urlDecrypted {
+                fullScreenPlayer(decrypted)
+            }
+        }
+        .onAppear {
+            setupPlayer(chatItem.file)
+        }
+        .onChange(of: chatItem.file) { file in
+            // ChatItem can be changed in small view on chat list screen
+            setupPlayer(file)
+        }
+        .onDisappear {
+            showFullScreenPlayer = false
+        }
+    }
+
+    private func setupPlayer(_ file: CIFile?) {
+        let newUrl = getLoadedVideo(file)
+        if newUrl == url {
+            return
+        }
+        url = nil
+        urlDecrypted = nil
+        player = nil
+        fullPlayer = nil
+        if let newUrl {
+            let decrypted = file?.fileSource?.cryptoArgs == nil ? newUrl : file?.fileSource?.decryptedGet()
+            urlDecrypted = decrypted
+            if let decrypted = decrypted {
+                player = VideoPlayerView.getOrCreatePlayer(decrypted, false)
+                fullPlayer = AVPlayer(url: decrypted)
+            }
+            url = newUrl
         }
     }
 
@@ -109,11 +148,6 @@ struct CIVideoView: View {
             ZStack(alignment: .center) {
                 let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
                 imageView(defaultPreview)
-                .fullScreenCover(isPresented: $showFullScreenPlayer) {
-                    if let decrypted = urlDecrypted {
-                        fullScreenPlayer(decrypted)
-                    }
-                }
                 .onTapGesture {
                     decrypt(file: file) {
                         showFullScreenPlayer = urlDecrypted != nil
@@ -154,9 +188,6 @@ struct CIVideoView: View {
                         videoPlaying = false
                     }
                 }
-                .fullScreenCover(isPresented: $showFullScreenPlayer) {
-                    fullScreenPlayer(url)
-                }
                 .onTapGesture {
                     switch player.timeControlStatus {
                     case .playing:
@@ -194,14 +225,53 @@ struct CIVideoView: View {
         }
     }
 
+    private func smallVideoViewEncrypted(_ file: CIFile, _ preview: UIImage) -> some View {
+        return ZStack(alignment: .topLeading) {
+            let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
+            smallViewImageView(preview, file)
+                .onTapGesture {
+                    decrypt(file: file) {
+                        showFullScreenPlayer = urlDecrypted != nil
+                    }
+                }
+                .onChange(of: m.activeCallViewIsCollapsed) { _ in
+                    showFullScreenPlayer = false
+                }
+            if file.showStatusIconInSmallView {
+                // Show nothing
+            } else if !decryptionInProgress {
+                playPauseIcon(canBePlayed ? "play.fill" : "play.slash")
+            } else {
+                videoDecryptionProgress()
+            }
+        }
+    }
+
+    private func smallVideoView(_ url: URL, _ file: CIFile, _ preview: UIImage) -> some View {
+        return ZStack(alignment: .topLeading) {
+            smallViewImageView(preview, file)
+                .onTapGesture {
+                    showFullScreenPlayer = true
+                }
+                .onChange(of: m.activeCallViewIsCollapsed) { _ in
+                    showFullScreenPlayer = false
+                }
+
+            if !file.showStatusIconInSmallView {
+                playPauseIcon("play.fill")
+            }
+        }
+    }
+
+
     private func playPauseIcon(_ image: String, _ color: Color = .white) -> some View {
         Image(systemName: image)
         .resizable()
         .aspectRatio(contentMode: .fit)
-        .frame(width: 12, height: 12)
+        .frame(width: smallView ? 12 * sizeMultiplier * 1.6 : 12, height: smallView ? 12 * sizeMultiplier * 1.6 : 12)
         .foregroundColor(color)
-        .padding(.leading, 4)
-        .frame(width: 40, height: 40)
+        .padding(.leading, smallView ? 0 : 4)
+        .frame(width: 40 * sizeMultiplier, height: 40 * sizeMultiplier)
         .background(Color.black.opacity(0.35))
         .clipShape(Circle())
     }
@@ -209,9 +279,9 @@ struct CIVideoView: View {
     private func videoDecryptionProgress(_ color: Color = .white) -> some View {
         ProgressView()
             .progressViewStyle(.circular)
-            .frame(width: 12, height: 12)
+            .frame(width: smallView ? 12 * sizeMultiplier : 12, height: smallView ? 12 * sizeMultiplier : 12)
             .tint(color)
-            .frame(width: 40, height: 40)
+            .frame(width: smallView ? 40 * sizeMultiplier * 0.9 : 40, height: smallView ? 40 * sizeMultiplier * 0.9 : 40)
             .background(Color.black.opacity(0.35))
             .clipShape(Circle())
     }
@@ -248,6 +318,19 @@ struct CIVideoView: View {
             .scaledToFit()
             .frame(width: w)
             fileStatusIcon()
+        }
+    }
+
+    private func smallViewImageView(_ img: UIImage, _ file: CIFile) -> some View {
+        ZStack(alignment: .center) {
+            Image(uiImage: img)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: maxWidth, height: maxWidth)
+            if file.showStatusIconInSmallView {
+                fileStatusIcon()
+                    .allowsHitTesting(false)
+            }
         }
     }
 
@@ -322,7 +405,7 @@ struct CIVideoView: View {
             .aspectRatio(contentMode: .fit)
             .frame(width: size, height: size)
             .foregroundColor(.white)
-            .padding(padding)
+            .padding(smallView ? 0 : padding)
     }
 
     private func progressView() -> some View {
@@ -330,7 +413,7 @@ struct CIVideoView: View {
         .progressViewStyle(.circular)
         .frame(width: 16, height: 16)
         .tint(.white)
-        .padding(11)
+        .padding(smallView ? 0 : 11)
     }
 
     private func progressCircle(_ progress: Int64, _ total: Int64) -> some View {
@@ -342,7 +425,7 @@ struct CIVideoView: View {
         )
         .rotationEffect(.degrees(-90))
         .frame(width: 16, height: 16)
-        .padding([.trailing, .top], 11)
+        .padding([.trailing, .top], smallView ? 0 : 11)
     }
 
     // TODO encrypt: where file size is checked?
@@ -382,7 +465,8 @@ struct CIVideoView: View {
             )
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now()) {
-                    m.stopPreviousRecPlay = url
+                    // Prevent feedback loop - setting `ChatModel`s property causes `onAppear` to be called on iOS17+
+                    if m.stopPreviousRecPlay != url { m.stopPreviousRecPlay = url }
                     if let player = fullPlayer {
                         player.play()
                         var played = false
@@ -419,10 +503,12 @@ struct CIVideoView: View {
             urlDecrypted = await file.fileSource?.decryptedGetOrCreate(&ChatModel.shared.filesToDelete)
             await MainActor.run {
                 if let decrypted = urlDecrypted {
-                    player = VideoPlayerView.getOrCreatePlayer(decrypted, false)
+                    if !smallView {
+                        player = VideoPlayerView.getOrCreatePlayer(decrypted, false)
+                    }
                     fullPlayer = AVPlayer(url: decrypted)
                 }
-                decryptionInProgress = true
+                decryptionInProgress = false
                 completed?()
             }
         }

@@ -96,6 +96,7 @@ struct ChatView: View {
         }
         .onChange(of: chatModel.chatId) { cId in
             showChatInfoSheet = false
+            stopAudioPlayer()
             if let cId {
                 if let c = chatModel.getChat(cId) {
                     chat = c
@@ -117,6 +118,7 @@ struct ChatView: View {
         .environmentObject(scrollModel)
         .onDisappear {
             VideoPlayerView.players.removeAll()
+            stopAudioPlayer()
             if chatModel.chatId == cInfo.id && !presentationMode.wrappedValue.isPresented {
                 chatModel.chatId = nil
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
@@ -589,6 +591,11 @@ struct ChatView: View {
         }
     }
 
+    func stopAudioPlayer() {
+        VoiceItemState.chatView.values.forEach { $0.audioPlayer?.stop() }
+        VoiceItemState.chatView = [:]
+    }
+
     @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
         ChatItemWithMenu(
             chat: chat,
@@ -619,10 +626,6 @@ struct ChatView: View {
         @State private var showForwardingSheet: Bool = false
 
         @State private var allowMenu: Bool = true
-
-        @State private var audioPlayer: AudioPlayer?
-        @State private var playbackState: VoiceMessagePlaybackState = .noPlayback
-        @State private var playbackTime: TimeInterval?
 
         var revealed: Bool { chatItem == revealedChatItem }
 
@@ -742,10 +745,7 @@ struct ChatView: View {
                     chatItem: ci,
                     maxWidth: maxWidth,
                     revealed: .constant(revealed),
-                    allowMenu: $allowMenu,
-                    audioPlayer: $audioPlayer,
-                    playbackState: $playbackState,
-                    playbackTime: $playbackTime
+                    allowMenu: $allowMenu
                 )
                 .modifier(ChatItemClipped(ci))
                 .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
@@ -772,14 +772,6 @@ struct ChatView: View {
                 }
                 .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: alignment)
-                .onDisappear {
-                    if ci.content.msgContent?.isVoice == true {
-                        allowMenu = true
-                        audioPlayer?.stop()
-                        playbackState = .noPlayback
-                        playbackTime = TimeInterval(0)
-                    }
-                }
                 .sheet(isPresented: $showChatItemInfoSheet, onDismiss: {
                     chatItemInfo = nil
                 }) {

@@ -15,13 +15,14 @@ struct CIImageView: View {
     var preview: UIImage?
     let maxWidth: CGFloat
     var imgWidth: CGFloat?
-    @State private var showFullScreenImage = false
+    var smallView: Bool = false
+    @Binding var showFullScreenImage: Bool
 
     var body: some View {
         let file = chatItem.file
         VStack(alignment: .center, spacing: 6) {
             if let uiImage = getLoadedImage(file) {
-                imageView(uiImage)
+                Group { if smallView { smallViewImageView(uiImage) } else { imageView(uiImage) } }
                 .fullScreenCover(isPresented: $showFullScreenImage) {
                     FullScreenMediaView(chatItem: chatItem, image: uiImage, showView: $showFullScreenImage)
                 }
@@ -30,7 +31,7 @@ struct CIImageView: View {
                     showFullScreenImage = false
                 }
             } else if let preview {
-                imageView(preview)
+                Group { if smallView { smallViewImageView(preview) } else { imageView(preview) } }
                     .onTapGesture {
                         if let file = file {
                             switch file.fileStatus {
@@ -83,6 +84,9 @@ struct CIImageView: View {
                     }
             }
         }
+        .onDisappear {
+            showFullScreenImage = false
+        }
     }
 
     private func imageView(_ img: UIImage) -> some View {
@@ -99,6 +103,23 @@ struct CIImageView: View {
                         .scaledToFit()
             }
             loadingIndicator()
+        }
+    }
+
+    private func smallViewImageView(_ img: UIImage) -> some View {
+        ZStack(alignment: .topTrailing) {
+            if img.imageData == nil {
+                Image(uiImage: img)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: maxWidth, height: maxWidth)
+            } else {
+                SwiftyGif(image: img, contentMode: .scaleAspectFill)
+                    .frame(width: maxWidth, height: maxWidth)
+            }
+            if chatItem.file?.showStatusIconInSmallView == true {
+                loadingIndicator()
+            }
         }
     }
 

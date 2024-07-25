@@ -354,6 +354,9 @@ final class ChatModel: ObservableObject {
             addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
             res = true
         }
+        if cItem.isDeletedContent || cItem.meta.itemDeleted != nil {
+            VoiceItemState.stopVoiceInChatView(cInfo, cItem)
+        }
         // update current chat
         return chatId == cInfo.id ? _upsertChatItem(cInfo, cItem) : res
     }
@@ -420,6 +423,7 @@ final class ChatModel: ObservableObject {
                 }
             }
         }
+        VoiceItemState.stopVoiceInChatView(cInfo, cItem)
     }
 
     func nextChatItemData<T>(_ chatItemId: Int64, previous: Bool, map: @escaping (ChatItem) -> T?) -> T? {
