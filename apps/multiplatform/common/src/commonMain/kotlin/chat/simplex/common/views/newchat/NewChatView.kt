@@ -234,7 +234,8 @@ private fun AddContactLearnMoreButton() {
       ModalManager.end.showModalCloseable { close ->
         AddContactLearnMore(close)
       }
-    }
+    },
+    Modifier.size(18.dp * fontSizeSqrtMultiplier)
   ) {
     Icon(
       painterResource(MR.images.ic_info),
