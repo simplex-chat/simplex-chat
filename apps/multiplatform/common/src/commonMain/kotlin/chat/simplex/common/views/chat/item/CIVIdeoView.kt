@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,8 +37,9 @@ fun CIVideoView(
   smallView: Boolean = false,
   receiveFile: (Long) -> Unit
 ) {
+  val hoverInteractionSource = remember { MutableInteractionSource() }
   Box(
-    Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID),
+    Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID).hoverable(hoverInteractionSource),
     contentAlignment = Alignment.TopEnd
   ) {
     val preview = remember(image) { base64ToBitmap(image) }
@@ -71,11 +73,11 @@ fun CIVideoView(
       if (decrypted != null && smallView) {
         SmallVideoView(decrypted, file, preview, duration * 1000L, autoPlay, sizeMultiplier, openFullscreen = openFullscreen)
       } else if (decrypted != null) {
-        VideoView(decrypted, file, preview, duration * 1000L, autoPlay, showMenu, blurred, openFullscreen = openFullscreen)
+        VideoView(decrypted, file, preview, duration * 1000L, autoPlay, showMenu, blurred, hoverInteractionSource, openFullscreen = openFullscreen)
       } else if (smallView) {
         SmallVideoViewEncrypted(uriDecrypted, file, preview, autoPlay, showMenu, sizeMultiplier, openFullscreen = openFullscreen)
       } else {
-        VideoViewEncrypted(uriDecrypted, file, preview, duration * 1000L, autoPlay, showMenu, blurred, openFullscreen = openFullscreen)
+        VideoViewEncrypted(uriDecrypted, file, preview, duration * 1000L, autoPlay, showMenu, blurred, hoverInteractionSource, openFullscreen = openFullscreen)
       }
     } else {
       Box {
@@ -106,6 +108,7 @@ fun CIVideoView(
           }
         },
           smallView = smallView,
+          hoverInteractionSource = hoverInteractionSource,
           onLongClick = {
             showMenu.value = true
           })
@@ -117,9 +120,10 @@ fun CIVideoView(
         }
       }
     }
-    if (!smallView) {
+    // Do not show download icon when the view is blurred
+    if (!smallView && (file?.fileStatus != CIFileStatus.RcvInvitation || !blurred.value)) {
       fileStatusIcon(file, false)
-    } else if (file?.showStatusIconInSmallView == true) {
+    } else if (smallView && file?.showStatusIconInSmallView == true) {
       Box(Modifier.align(Alignment.Center)) {
         fileStatusIcon(file, true)
       }
@@ -136,12 +140,13 @@ private fun VideoViewEncrypted(
   autoPlay: MutableState<Boolean>,
   showMenu: MutableState<Boolean>,
   blurred: MutableState<Boolean>,
+  hoverInteractionSource: MutableInteractionSource,
   openFullscreen: () -> Unit,
 ) {
   var decryptionInProgress by rememberSaveable(file.fileName) { mutableStateOf(false) }
   val onLongClick = { showMenu.value = true }
   Box {
-    VideoPreviewImageView(defaultPreview, smallView = false, blurred = blurred, if (decryptionInProgress) {{}} else openFullscreen, onLongClick)
+    VideoPreviewImageView(defaultPreview, smallView = false, blurred = blurred, hoverInteractionSource = hoverInteractionSource, if (decryptionInProgress) {{}} else openFullscreen, onLongClick)
     if (decryptionInProgress) {
       VideoDecryptionProgress(1f, onLongClick = onLongClick)
     } else if (!blurred.value) {
@@ -174,7 +179,7 @@ private fun SmallVideoViewEncrypted(
   var decryptionInProgress by rememberSaveable(file.fileName) { mutableStateOf(false) }
   val onLongClick = { showMenu.value = true }
   Box {
-    VideoPreviewImageView(defaultPreview, smallView = true, blurred = remember { mutableStateOf(false) }, if (decryptionInProgress) {{}} else openFullscreen, onLongClick)
+    VideoPreviewImageView(defaultPreview, smallView = true, blurred = remember { mutableStateOf(false) }, onClick = if (decryptionInProgress) {{}} else openFullscreen, onLongClick = onLongClick)
     if (decryptionInProgress) {
       VideoDecryptionProgress(sizeMultiplier, onLongClick = onLongClick)
     } else if (!file.showStatusIconInSmallView) {
@@ -217,7 +222,7 @@ private fun SmallVideoView(
       onLongClick = {},
       {}
     )
-    VideoPreviewImageView(preview, smallView = true, blurred = remember { mutableStateOf(false) }, openFullscreen, onLongClick = {})
+    VideoPreviewImageView(preview, smallView = true, blurred = remember { mutableStateOf(false) }, onClick = openFullscreen, onLongClick = {})
     if (!file.showStatusIconInSmallView) {
       PlayButton(brokenVideo, sizeMultiplier, onLongClick = {}, onClick = openFullscreen)
     }
@@ -228,7 +233,17 @@ private fun SmallVideoView(
 }
 
 @Composable
-private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defaultDuration: Long, autoPlay: MutableState<Boolean>, showMenu: MutableState<Boolean>, blurred: MutableState<Boolean>, openFullscreen: () -> Unit) {
+private fun VideoView(
+  uri: URI,
+  file: CIFile,
+  defaultPreview: ImageBitmap,
+  defaultDuration: Long,
+  autoPlay: MutableState<Boolean>,
+  showMenu: MutableState<Boolean>,
+  blurred: MutableState<Boolean>,
+  hoverInteractionSource: MutableInteractionSource,
+  openFullscreen: () -> Unit
+) {
   val player = remember(uri) { VideoPlayerHolder.getOrCreate(uri, false, defaultPreview, defaultDuration, true) }
   val videoPlaying = remember(uri.path) { player.videoPlaying }
   val progress = remember(uri.path) { player.progress }
@@ -269,7 +284,7 @@ private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defau
       stop
     )
     if (showPreview.value) {
-      VideoPreviewImageView(preview, smallView = false, blurred = blurred, openFullscreen, onLongClick)
+      VideoPreviewImageView(preview, smallView = false, blurred = blurred, hoverInteractionSource = hoverInteractionSource, openFullscreen, onLongClick)
       if (!autoPlay.value && !blurred.value) {
         PlayButton(brokenVideo, onLongClick = onLongClick, onClick = play)
       }
@@ -377,7 +392,14 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
 }
 
 @Composable
-fun VideoPreviewImageView(preview: ImageBitmap, smallView: Boolean, blurred: MutableState<Boolean>, onClick: () -> Unit, onLongClick: () -> Unit) {
+fun VideoPreviewImageView(
+  preview: ImageBitmap,
+  smallView: Boolean,
+  blurred: MutableState<Boolean>,
+  hoverInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+  onClick: () -> Unit,
+  onLongClick: () -> Unit
+) {
   val windowWidth = LocalWindowWidth()
   val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH }
   Image(
@@ -390,7 +412,7 @@ fun VideoPreviewImageView(preview: ImageBitmap, smallView: Boolean, blurred: Mut
         onClick = onClick
       )
       .onRightClick(onLongClick)
-      .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = onLongClick),
+      .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), hoverInteractionSource = hoverInteractionSource, onLongClick = onLongClick),
     contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
   )
 }

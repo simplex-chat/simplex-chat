@@ -1,8 +1,8 @@
 package chat.simplex.common.views.helpers
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -125,10 +125,14 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancel
 fun ChatItemLinkView(linkPreview: LinkPreview, onLongClick: () -> Unit) {
   Column(Modifier.widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
     val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
+    val hoverInteractionSource = remember { MutableInteractionSource() }
     Image(
       base64ToBitmap(linkPreview.image),
       stringResource(MR.strings.image_descr_link_preview),
-      modifier = Modifier.fillMaxWidth().privacyBlur(true, blurred, chatViewScrollState.collectAsState(), onLongClick = onLongClick),
+      modifier = Modifier
+        .fillMaxWidth()
+        .hoverable(hoverInteractionSource)
+        .privacyBlur(true, blurred, chatViewScrollState.collectAsState(), hoverInteractionSource, onLongClick = onLongClick),
       contentScale = ContentScale.FillWidth,
     )
     Column(Modifier.padding(top = 6.dp).padding(horizontal = 12.dp)) {

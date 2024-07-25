@@ -1,7 +1,7 @@
 package chat.simplex.common.platform
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -11,8 +11,6 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.views.helpers.KeyChangeEffect
-import chat.simplex.common.views.helpers.withBGApi
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.filter
 import java.io.File
 
@@ -42,11 +40,28 @@ fun Modifier.privacyBlur(
   enabled: Boolean,
   blurred: MutableState<Boolean> = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) },
   scrollState: State<Boolean>,
+  hoverInteractionSource: MutableInteractionSource,
   onLongClick: () -> Unit = {}
 ): Modifier {
   val blurRadius = remember { appPrefs.privacyMediaBlurRadius.state }
-  KeyChangeEffect(blurRadius.value) {
-    blurred.value = blurRadius.value > 0
+  if (appPlatform.isDesktop) {
+    KeyChangeEffect(blurRadius.value) {
+      blurred.value = blurRadius.value > 0
+    }
+    if (blurRadius.value > 0) {
+      LaunchedEffect(Unit) {
+        // Compose's implementation of hover state catch doesn't work correctly with video - it is blinking
+        val hoverInteractions = mutableListOf<HoverInteraction.Enter>()
+        hoverInteractionSource.interactions.collect { interaction ->
+          when (interaction) {
+            is HoverInteraction.Enter -> hoverInteractions.add(interaction)
+            is HoverInteraction.Exit -> hoverInteractions.remove(interaction.enter)
+            else -> {}
+          }
+          blurred.value = hoverInteractions.isEmpty()
+        }
+      }
+    }
   }
   return if (enabled && blurred.value) {
     this then Modifier.blur(
@@ -57,28 +72,18 @@ fun Modifier.privacyBlur(
       .combinedClickable(
         onLongClick = onLongClick,
         onClick = {
-          // Wait until scrolling is finished and only after that hide blur effect. Scroll can happen automatically when user press
-          // on the item because in this case Compose will focus the item and scroll to it. If there is no waiting of the end of scrolling,
-          // the blur will be shown again in the process of scrolling
-          withBGApi {
-            snapshotFlow { scrollState.value }
-              .filter { !it }
-              .collect {
-                blurred.value = false
-                cancel()
-              }
-          }
+          blurred.value = false
         }
       )
-  } else if (enabled && blurRadius.value > 0) {
-    LaunchedEffect(Unit) {
-      snapshotFlow { scrollState.value }
-        .filter { it }
-        .filter { !blurred.value }
-        .collect { blurred.value = true }
+  } else if (enabled && blurRadius.value > 0 && appPlatform.isAndroid) {
+      LaunchedEffect(Unit) {
+        snapshotFlow { scrollState.value }
+          .filter { it }
+          .filter { !blurred.value }
+          .collect { blurred.value = true }
+      }
+      this
+    } else {
+      this
     }
-    this
-  } else {
-    this
-  }
 }
