@@ -40,20 +40,20 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                         ContactType.RECENT -> {
                             withApi {
                                 openChat(rhId, chat.chatInfo, chatModel)
-                                ModalManager.start.closeModals()
+                                ModalManager.center.closeModals()
                             }
                         }
                         ContactType.REMOVED -> {
                             openLoadedChat(chat, chatModel)
                             chatModel.updateContact(rhId, chat.chatInfo.contact.copy(chatDeleted = false))
-                            ModalManager.start.closeModals()
+                            ModalManager.center.closeModals()
                         }
                         ContactType.CARD -> {
                             askCurrentOrIncognitoProfileConnectContactViaAddress(
                                 chatModel,
                                 rhId,
                                 chat.chatInfo.contact,
-                                close = { ModalManager.start.closeModals() },
+                                close = { ModalManager.center.closeModals() },
                                 openChat = true
                             )
                         }
@@ -84,7 +84,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                         chat.chatInfo,
                         chatModel,
                         onSuccess = {
-                            ModalManager.start.closeModals()
+                            ModalManager.center.closeModals()
                         }
                     )
                 },
