@@ -12,7 +12,7 @@ import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -774,31 +774,35 @@ fun VideoButton(chat: Chat, contact: Contact) {
 
 @Composable
 fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, onClick: () -> Unit) {
-  Surface(
-    Modifier
-      .width(96.dp)
-      .height(66.dp),
-    shape = RoundedCornerShape(20.dp),
-    color = MaterialTheme.colors.secondaryVariant,
+  Column(
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.Center
   ) {
-    val modifier = if (disabled) Modifier else Modifier.clickable { onClick () }
-    Column(
-      modifier,
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.Center
+    IconButton(
+      onClick = onClick,
+      enabled = !disabled
     ) {
-      Icon(
-        icon,
-        contentDescription = null,
-        Modifier.size(26.dp),
-        tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-      )
-      Text(
-        title,
-        style = MaterialTheme.typography.subtitle2.copy(fontWeight = FontWeight.Normal),
-        color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-      )
+      Box(
+        modifier = Modifier
+          .background(
+            if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
+            shape = CircleShape
+          )
+          .padding(DEFAULT_PADDING)
+      ) {
+        Icon(
+          icon,
+          contentDescription = null,
+          Modifier.size(24.dp * fontSizeSqrtMultiplier),
+          tint = if (disabled) MaterialTheme.colors.onSecondary else MaterialTheme.colors.onPrimary
+        )
+      }
     }
+    Text(
+      title,
+      style = MaterialTheme.typography.subtitle2.copy(fontWeight = FontWeight.Normal),
+      color = MaterialTheme.colors.secondary
+    )
   }
 }
 
