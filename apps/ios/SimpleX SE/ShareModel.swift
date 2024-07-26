@@ -55,7 +55,7 @@ class ShareModel: ObservableObject {
         search.isEmpty
         ? filterChatsToForwardTo(chats: chats)
         : filterChatsToForwardTo(chats: chats)
-            .filter { foundChat($0, search) }
+            .filter { foundChat($0, search.localizedLowercase) }
     }
 
     func setup(context: NSExtensionContext) {
