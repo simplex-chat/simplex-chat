@@ -843,7 +843,7 @@ processChatCommand' vr = \case
           let msgIds = itemsMsgIds items
               events = map (\msgId -> XMsgDel msgId Nothing) msgIds
           forM_ (L.nonEmpty events) $ \events' ->
-            sendGroupMessages user gInfo ms events'
+            void $ sendGroupMessages user gInfo ms events'
           delGroupChatItems user gInfo items Nothing
       where
         getGroupCI :: DB.Connection -> ChatItemId -> IO (Either ChatError (CChatItem 'CTGroup))
@@ -879,7 +879,7 @@ processChatCommand' vr = \case
     let msgMemIds = itemsMsgMemIds gInfo items
         events = map (\(msgId, memId) -> XMsgDel msgId (Just memId)) msgMemIds
     forM_ (L.nonEmpty events) $ \events' ->
-      sendGroupMessages user gInfo ms events'
+      void $ sendGroupMessages user gInfo ms events'
     delGroupChatItems user gInfo items (Just membership)
     where
       getGroupCI :: DB.Connection -> User -> ChatItemId -> IO (Either ChatError (CChatItem 'CTGroup))
@@ -4657,7 +4657,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     ms = forwardedToGroupMembers (introducedMembers <> invitedMembers) forwardedMsgs'
                     events = L.map (\cm -> XGrpMsgForward memberId cm brokerTs) forwardedMsgs'
                 unless (null ms) $
-                  sendGroupMessages user gInfo ms events
+                  void $ sendGroupMessages user gInfo ms events
       RCVD msgMeta msgRcpt ->
         withAckMessage' "group rcvd" agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
@@ -6925,21 +6925,17 @@ data GroupSndResult = GroupSndResult
 
 sendGroupMessage' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM (SndMessage, GroupSndResult)
 sendGroupMessage' user gInfo members chatMsgEvent =
-  sendGroupMessages' user gInfo members (chatMsgEvent :| []) >>= \case
+  sendGroupMessages user gInfo members (chatMsgEvent :| []) >>= \case
     (msg :| [], gsr) -> pure (msg, gsr)
     _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
 
-sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM ()
-sendGroupMessages user gInfo members events =
-  void $ sendGroupMessages' user gInfo members events
-
-sendGroupMessages' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty SndMessage, GroupSndResult)
-sendGroupMessages' user gInfo@GroupInfo {groupId} members events = do
+sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty SndMessage, GroupSndResult)
+sendGroupMessages user gInfo@GroupInfo {groupId} members events = do
   let idsEvts = L.map (GroupId groupId,) events
   (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CRChatErrors (Just user) errs
   case L.nonEmpty msgs of
-    Nothing -> throwChatError $ CEInternalError "sendGroupMessages': no messages created"
+    Nothing -> throwChatError $ CEInternalError "sendGroupMessages: no messages created"
     Just msgs' -> do
       recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
       let msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
