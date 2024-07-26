@@ -51,7 +51,7 @@ struct ShareView: View {
             text: $model.search,
             placement: .navigationBarDrawer(displayMode: .always)
         )
-        .alert(model.errorAlert) { _ in
+        .alert($model.errorAlert) { _ in
             Button("Ok") { model.completion() }
         }
     }

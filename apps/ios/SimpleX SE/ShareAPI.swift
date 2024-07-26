@@ -76,6 +76,10 @@ func apiSendMessage(
             ttl: nil
         )
     )
-    if case let .newChatItem(_, chatItem) = r { return chatItem }
-    throw r
+    if case let .newChatItem(_, chatItem) = r {
+        return chatItem
+    } else {
+        if let filePath = cryptoFile?.filePath { removeFile(filePath) }
+        throw r
+    }
 }

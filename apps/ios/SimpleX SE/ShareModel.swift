@@ -26,7 +26,7 @@ class ShareModel: ObservableObject {
     @Published var comment = String()
     @Published var selected: ChatData?
     @Published var isLoaded = false
-    @Published var bottomBar: BottomBar = .sendButton
+    @Published var bottomBar: BottomBar = .loadingSpinner
     @Published var errorAlert: ErrorAlert?
 
     enum BottomBar {
@@ -97,6 +97,7 @@ class ShareModel: ObservableObject {
                         case let .success(chatItemContent):
                             await MainActor.run {
                                 self.sharedContent = chatItemContent
+                                self.bottomBar = .sendButton
                                 self.preview = sharedContent?.preview
                                 if case let .text(string) = chatItemContent { comment = string }
                             }
@@ -200,13 +201,28 @@ class ShareModel: ObservableObject {
         func isMessage(for item: AChatItem?) -> Bool {
             item.map { $0.chatItem.id == chatItemId } ?? false
         }
+
         CompletionHandler.isEventLoopEnabled = true
         let ch = CompletionHandler()
         if isWithoutFile { await ch.completeFile() }
+        var networkTimeout = CFAbsoluteTimeGetCurrent()
         while await ch.isRunning {
+            if CFAbsoluteTimeGetCurrent() - networkTimeout > 30 {
+                networkTimeout = CFAbsoluteTimeGetCurrent()
+                await MainActor.run {
+                    self.errorAlert = ErrorAlert(
+                        title: "No network connection",
+                        actionsOverride: [
+                            ErrorAlert.Action(titleKey: "Keep Trying", role: .cancel),
+                            ErrorAlert.Action(titleKey: "Dismiss Sheet", role: .destructive) { self.completion() }
+                        ]
+                    )
+                }
+            }
             switch recvSimpleXMsg(messageTimeout: 1_000_000) {
             case let .sndFileProgressXFTP(_, ci, _, sentSize, totalSize):
                 guard isMessage(for: ci) else { continue }
+                networkTimeout = CFAbsoluteTimeGetCurrent()
                 await MainActor.run {
                     withAnimation {
                         let progress = Double(sentSize) / Double(totalSize)
@@ -348,10 +364,26 @@ extension NSItemProvider {
 
             // Prepare Data message
             case .fileURL:
-                if let url = try? await inPlaceUrl(type: .data),
-                   let file = saveFileFromURL(url) {
-                    .success(.data(cryptoFile: file))
-                } else { .failure(ErrorAlert("Error preparing file")) }
+                await {
+                    if let url = try? await inPlaceUrl(type: .data) {
+                        if isFileTooLarge(for: url) {
+                            let sizeString = ByteCountFormatter.string(
+                                fromByteCount: Int64(getMaxFileSize(.xftp)),
+                                countStyle: .binary
+                            )
+                            return .failure(
+                                ErrorAlert(
+                                    title: "Large file!",
+                                    message: "Currently maximum supported file size is \(sizeString)."
+                                )
+                            )
+                        }
+                        if let file = saveFileFromURL(url) {
+                            return .success(.data(cryptoFile: file))
+                        }
+                    }
+                    return .failure(ErrorAlert("Error preparing file"))
+                }()
 
             // Prepare Link message
             case .url:
@@ -409,3 +441,10 @@ fileprivate func transcodeVideo(from input: URL) async -> URL? {
         return nil
     }
 }
+
+fileprivate func isFileTooLarge(for url: URL) -> Bool {
+    fileSize(url)
+        .map { $0 > getMaxFileSize(.xftp) }
+        ?? false
+}
+
