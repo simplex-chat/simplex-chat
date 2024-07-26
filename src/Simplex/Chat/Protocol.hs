@@ -105,9 +105,9 @@ memberProfileUpdateVersion = VersionChat 7
 pqEncryptionCompressionVersion :: VersionChat
 pqEncryptionCompressionVersion = VersionChat 8
 
--- version range that supports batch sending in direct connections
-batchSendDirectVersion :: VersionChat
-batchSendDirectVersion = VersionChat 9
+-- version range that supports batch sending in direct connections, and forwarding batched messages in groups
+batchSend2Version :: VersionChat
+batchSend2Version = VersionChat 9
 
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v

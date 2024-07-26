@@ -1809,10 +1809,10 @@ processChatCommand' vr = \case
       ctSndEvent :: (Contact, Connection) -> (ConnOrGroupId, ChatMsgEvent 'Json)
       ctSndEvent (_, Connection {connId}) = (ConnectionId connId, XMsgNew $ MCSimple (extMsgContent mc Nothing))
       ctMsgReq :: (Contact, Connection) -> SndMessage -> MsgReq
-      ctMsgReq (_, conn) SndMessage {msgId, msgBody} = (conn, L.singleton (MsgFlags {notification = hasNotification XMsgNew_}, msgBody, msgId))
+      ctMsgReq (_, conn) SndMessage {msgId, msgBody} = (conn, L.singleton (MsgFlags {notification = hasNotification XMsgNew_}, msgBody, [msgId]))
       zipWith3' :: (a -> b -> c -> d) -> NonEmpty a -> NonEmpty b -> NonEmpty c -> NonEmpty d
       zipWith3' f ~(x :| xs) ~(y :| ys) ~(z :| zs) = f x y z :| zipWith3 f xs ys zs
-      combineResults :: (Contact, Connection) -> Either ChatError SndMessage -> Either ChatError (NonEmpty Int64, PQEncryption) -> Either ChatError (Contact, SndMessage)
+      combineResults :: (Contact, Connection) -> Either ChatError SndMessage -> Either ChatError (Connection, NonEmpty [Int64], PQEncryption) -> Either ChatError (Contact, SndMessage)
       combineResults (ct, _) (Right msg') (Right _) = Right (ct, msg')
       combineResults _ (Left e) _ = Left e
       combineResults _ _ (Left e) = Left e
@@ -2543,7 +2543,7 @@ processChatCommand' vr = \case
         ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError MsgReq
         ctMsgReq ChangedProfileContact {conn} =
           fmap $ \SndMessage {msgId, msgBody} ->
-            (conn, L.singleton (MsgFlags {notification = hasNotification XInfo_}, msgBody, msgId))
+            (conn, L.singleton (MsgFlags {notification = hasNotification XInfo_}, msgBody, [msgId]))
     updateContactPrefs :: User -> Contact -> Preferences -> CM ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Just Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -6725,7 +6725,7 @@ deleteOrUpdateMemberRecord user@User {userId} member =
 sendDirectContactMessages :: MsgEncodingI e => User -> Contact -> NonEmpty (ChatMsgEvent e) -> CM ()
 sendDirectContactMessages user ct events = do
   Connection {connChatVersion = v} <- liftEither $ contactSendConn_ ct
-  if v >= batchSendDirectVersion
+  if v >= batchSend2Version
     then sendDirectContactMessages' user ct events
     else forM_ events $ \evt -> void $ sendDirectContactMessage user ct evt
 
@@ -6849,19 +6849,19 @@ deliverMessage conn cmEventTag msgBody msgId = do
 
 deliverMessage' :: Connection -> MsgFlags -> MsgBody -> MessageId -> CM (Int64, PQEncryption)
 deliverMessage' conn msgFlags msgBody msgId =
-  deliverMessages ((conn, L.singleton (msgFlags, msgBody, msgId)) :| []) >>= \case
+  deliverMessages ((conn, L.singleton (msgFlags, msgBody, [msgId])) :| []) >>= \case
     r :| [] -> case r of
-      Right (deliveryId :| [], pqEnc) -> pure (deliveryId, pqEnc)
-      Right (deliveryIds, _) -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 delivery id, got " <> show (length deliveryIds)
+      Right (_conn, [deliveryId] :| [], pqEnc) -> pure (deliveryId, pqEnc)
+      Right (_conn, deliveryIds, _) -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 delivery id, got " <> show (length deliveryIds)
       Left e -> throwError e
     rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
 
-type MsgReq = (Connection, NonEmpty (MsgFlags, MsgBody, MessageId))
+type MsgReq = (Connection, NonEmpty (MsgFlags, MsgBody, [MessageId]))
 
-deliverMessages :: NonEmpty MsgReq -> CM (NonEmpty (Either ChatError (NonEmpty Int64, PQEncryption)))
+deliverMessages :: NonEmpty MsgReq -> CM (NonEmpty (Either ChatError (Connection, NonEmpty [Int64], PQEncryption)))
 deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 
-deliverMessagesB :: NonEmpty (Either ChatError MsgReq) -> CM (NonEmpty (Either ChatError (NonEmpty Int64, PQEncryption)))
+deliverMessagesB :: NonEmpty (Either ChatError MsgReq) -> CM (NonEmpty (Either ChatError (Connection, NonEmpty [Int64], PQEncryption)))
 deliverMessagesB msgReqs = do
   msgReqs' <- liftIO compressBodies
   sent <- L.zipWith prepareBatch msgReqs' <$> withAgent (`sendMessagesB` L.map toAgent msgReqs')
@@ -6891,11 +6891,12 @@ deliverMessagesB msgReqs = do
     prepareBatch (Right req) (Right ar) = Right (req, ar)
     prepareBatch (Left ce) _ = Left ce -- restore original ChatError
     prepareBatch _ (Left ae) = Left $ ChatErrorAgent ae Nothing
-    createDelivery :: DB.Connection -> (MsgReq, (NonEmpty AgentMsgId, PQEncryption)) -> IO (Either ChatError (NonEmpty Int64, PQEncryption))
-    createDelivery db ((Connection {connId}, reqs), (agentMsgIds, pqEnc')) = do
-      let msgIds = L.zipWith (\agentMsgId (_, _, msgId) -> (agentMsgId, msgId)) agentMsgIds reqs
-      deliveriesIds <- forM msgIds $ \(agentMsgId, msgId) -> createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId}) msgId
-      pure $ Right (deliveriesIds, pqEnc')
+    createDelivery :: DB.Connection -> (MsgReq, (NonEmpty AgentMsgId, PQEncryption)) -> IO (Either ChatError (Connection, NonEmpty [Int64], PQEncryption))
+    createDelivery db ((conn@Connection {connId}, reqs), (agentMsgIds, pqEnc')) = do
+      let zippedMsgIds = L.zipWith (\agentMsgId (_, _, msgIds) -> (agentMsgId, msgIds)) agentMsgIds reqs
+      deliveriesIds <- forM zippedMsgIds $ \(agentMsgId, msgIds) ->
+        mapM (createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId})) msgIds
+      pure $ Right (conn, deliveriesIds, pqEnc')
     updatePQSndEnabled :: DB.Connection -> (MsgReq, (NonEmpty AgentMsgId, PQEncryption)) -> IO ()
     updatePQSndEnabled db ((Connection {connId, pqSndEnabled}, _), (_, pqSndEnabled')) =
       case (pqSndEnabled, pqSndEnabled') of
@@ -6904,11 +6905,6 @@ deliverMessagesB msgReqs = do
         _ -> pure ()
       where
         updatePQ = updateConnPQSndEnabled db connId pqSndEnabled'
-
--- TODO batch delete
-sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM ()
-sendGroupMessages user gInfo members events =
-  forM_ events $ \evt -> void $ sendGroupMessage' user gInfo members evt
 
 -- TODO combine profile update and message into one batch
 -- Take into account that it may not fit, and that we currently don't support sending multiple messages to the same connection in one call.
@@ -6941,25 +6937,42 @@ data GroupSndResult = GroupSndResult
   }
 
 sendGroupMessage' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM (SndMessage, GroupSndResult)
-sendGroupMessage' user gInfo@GroupInfo {groupId} members chatMsgEvent = do
-  msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent (GroupId groupId)
-  recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
-  let msgFlags = MsgFlags {notification = hasNotification $ toCMEventTag chatMsgEvent}
-      (toSend, pending, forwarded, _, dups) = foldr addMember ([], [], [], S.empty, 0 :: Int) recipientMembers
+sendGroupMessage' user gInfo members chatMsgEvent =
+  sendGroupMessages' user gInfo members (chatMsgEvent :| []) >>= \case
+    (msg :| [], gsr) -> pure (msg, gsr)
+    _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
+
+sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM ()
+sendGroupMessages user gInfo members events =
+  -- forM_ events $ \evt -> void $ sendGroupMessage' user gInfo members evt
+  void $ sendGroupMessages' user gInfo members events
+
+sendGroupMessages' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty SndMessage, GroupSndResult)
+sendGroupMessages' user gInfo@GroupInfo {groupId} members events = do
+  let idsEvts = L.map (GroupId groupId,) events
+  (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages idsEvts
+  unless (null errs) $ toView $ CRChatErrors (Just user) errs
+  case L.nonEmpty msgs of
+    Nothing -> throwChatError $ CEInternalError "sendGroupMessages': no messages created"
+    Just msgs' -> do
+      recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
+      let msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
+          (toSendLooped, toSendBatched, pending, forwarded, _, dups) =
+            foldr addMember ([], [], [], [], S.empty, 0 :: Int) recipientMembers
+      when (dups /= 0) $ logError $ "sendGroupMessage: " <> tshow dups <> " duplicate members"
       -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
-      msgReqs = map (\(_, conn) -> (conn, L.singleton (msgFlags, msgBody, msgId))) toSend
-  when (dups /= 0) $ logError $ "sendGroupMessage: " <> tshow dups <> " duplicate members"
-  delivered <- maybe (pure []) (fmap L.toList . deliverMessages) $ L.nonEmpty msgReqs
-  let errors = lefts delivered
-  unless (null errors) $ toView $ CRChatErrors (Just user) errors
-  stored <- lift . withStoreBatch' $ \db -> map (\m -> createPendingGroupMessage db (groupMemberId' m) msgId Nothing) pending
-  let gsr =
-        GroupSndResult
-          { sentTo = filterSent delivered toSend fst,
-            pending = filterSent stored pending id,
-            forwarded
-          }
-  pure (msg, gsr)
+      let msgReqs = prepareMsgReqs msgFlags msgs' toSendLooped toSendBatched
+      delivered <- maybe (pure []) (fmap L.toList . deliverMessages) $ L.nonEmpty msgReqs
+      let errors = lefts delivered
+      unless (null errors) $ toView $ CRChatErrors (Just user) errors
+      stored <- lift . withStoreBatch' $ \db -> map (\m -> createPendingMsgs db m msgs') pending
+      let gsr =
+            GroupSndResult
+              { sentTo = filterSent delivered (toSendLooped <> toSendBatched),
+                pending = filterPending stored pending,
+                forwarded
+              }
+      pure (msgs', gsr)
   where
     shuffleMembers :: [GroupMember] -> IO [GroupMember]
     shuffleMembers ms = do
@@ -6967,31 +6980,60 @@ sendGroupMessage' user gInfo@GroupInfo {groupId} members chatMsgEvent = do
       liftM2 (<>) (shuffle adminMs) (shuffle otherMs)
       where
         isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
-    addMember m acc@(toSend, pending, forwarded, !mIds, !dups) = case memberSendAction gInfo chatMsgEvent members m of
-      Just a
-        | mId `S.member` mIds -> (toSend, pending, forwarded, mIds, dups + 1)
-        | otherwise -> case a of
-            MSASend conn -> ((m, conn) : toSend, pending, forwarded, mIds', dups)
-            MSAPending -> (toSend, m : pending, forwarded, mIds', dups)
-            MSAForwarded -> (toSend, pending, m : forwarded, mIds', dups)
-      Nothing -> acc
+    addMember m acc@(toSendLooped, toSendBatched, pending, forwarded, !mIds, !dups) =
+      case memberSendAction gInfo events members m of
+        Just a
+          | mId `S.member` mIds -> (toSendLooped, toSendBatched, pending, forwarded, mIds, dups + 1)
+          | otherwise -> case a of
+              MSASend conn -> ((m, conn) : toSendLooped, toSendBatched, pending, forwarded, mIds', dups)
+              MSASendBatched conn -> (toSendLooped, (m, conn) : toSendBatched, pending, forwarded, mIds', dups)
+              MSAPending -> (toSendLooped, toSendBatched, m : pending, forwarded, mIds', dups)
+              MSAForwarded -> (toSendLooped, toSendBatched, pending, m : forwarded, mIds', dups)
+        Nothing -> acc
       where
         mId = groupMemberId' m
         mIds' = S.insert mId mIds
-    filterSent :: [Either ChatError a] -> [mem] -> (mem -> GroupMember) -> [GroupMember]
-    filterSent rs ms mem = [mem m | (Right _, m) <- zip rs ms]
+    prepareMsgReqs :: MsgFlags -> NonEmpty SndMessage -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> [MsgReq]
+    prepareMsgReqs msgFlags msgs toSendLooped toSendBatched = do
+      let msgReqsLooped = map (\(_, conn) -> (conn, L.map sndMessageReq msgs)) toSendLooped
+          batched = batchSndMessagesJSON
+          -- _errs shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
+          (_errs, msgBatches) = partitionEithers batched
+      case L.nonEmpty msgBatches of
+        Just msgBatches' -> do
+          let msgReqsBatched = map (\(_, conn) -> (conn, L.map msgBatchReq msgBatches')) toSendBatched
+          msgReqsLooped <> msgReqsBatched
+        Nothing -> msgReqsLooped
+      where
+        batchSndMessagesJSON :: [Either ChatError MsgBatch]
+        batchSndMessagesJSON = batchMessages maxEncodedMsgLength $ L.toList msgs
+        sndMessageReq :: SndMessage -> (MsgFlags, MsgBody, [MessageId])
+        sndMessageReq SndMessage {msgId, msgBody} = (msgFlags, msgBody, [msgId])
+        msgBatchReq :: MsgBatch -> (MsgFlags, MsgBody, [MessageId])
+        msgBatchReq (MsgBatch batchBody sndMsgs) = (msgFlags, batchBody, map (\SndMessage {msgId} -> msgId) sndMsgs)
+    createPendingMsgs :: DB.Connection -> GroupMember -> NonEmpty SndMessage -> IO ()
+    createPendingMsgs db m = mapM_ (\SndMessage {msgId} -> createPendingGroupMessage db (groupMemberId' m) msgId Nothing)
+    filterSent :: [Either ChatError (Connection, NonEmpty [Int64], PQEncryption)] -> [(GroupMember, Connection)] -> [GroupMember]
+    filterSent rs ms = do
+      let deliveredConnIds = map (\(Connection {connId}, _, _) -> connId) $ rights rs
+      [m | (m, Connection {connId}) <- ms, connId `elem` deliveredConnIds]
+    filterPending :: [Either ChatError ()] -> [GroupMember] -> [GroupMember]
+    filterPending rs ms = [m | (Right _, m) <- zip rs ms]
 
-data MemberSendAction = MSASend Connection | MSAPending | MSAForwarded
+data MemberSendAction = MSASend Connection | MSASendBatched Connection | MSAPending | MSAForwarded
 
-memberSendAction :: GroupInfo -> ChatMsgEvent e -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
-memberSendAction gInfo chatMsgEvent members m = case memberConn m of
+memberSendAction :: GroupInfo -> NonEmpty (ChatMsgEvent e) -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
+memberSendAction gInfo events members m@GroupMember {memberRole} = case memberConn m of
   Nothing -> pendingOrForwarded
   Just conn@Connection {connStatus}
     | connDisabled conn || connStatus == ConnDeleted -> Nothing
     | connInactive conn -> Just MSAPending
-    | connStatus == ConnSndReady || connStatus == ConnReady -> Just (MSASend conn)
+    | connStatus == ConnSndReady || connStatus == ConnReady -> sendBatchedOrLooped conn
     | otherwise -> pendingOrForwarded
   where
+    sendBatchedOrLooped conn
+      | memberRole >= GRAdmin && not (m `supportsVersion` batchSend2Version) = Just (MSASend conn)
+      | otherwise = Just (MSASendBatched conn)
     pendingOrForwarded = case memberCategory m of
       GCUserMember -> Nothing -- shouldn't happen
       GCInviteeMember -> Just MSAPending
@@ -7000,8 +7042,8 @@ memberSendAction gInfo chatMsgEvent members m = case memberConn m of
       GCPostMember -> forwardSupportedOrPending (invitedByGroupMemberId m)
       where
         forwardSupportedOrPending invitingMemberId_
-          | membersSupport && isForwardedGroupMsg chatMsgEvent = Just MSAForwarded
-          | isXGrpMsgForward = Nothing
+          | membersSupport && all isForwardedGroupMsg events = Just MSAForwarded
+          | any isXGrpMsgForward events = Nothing
           | otherwise = Just MSAPending
           where
             membersSupport =
@@ -7013,7 +7055,7 @@ memberSendAction gInfo chatMsgEvent members m = case memberConn m of
                   Just invitingMember -> invitingMember `supportsVersion` groupForwardVersion
                   Nothing -> False
               Nothing -> False
-            isXGrpMsgForward = case chatMsgEvent of
+            isXGrpMsgForward event = case event of
               XGrpMsgForward {} -> True
               _ -> False
 
@@ -7023,8 +7065,9 @@ sendGroupMemberMessage user gInfo@GroupInfo {groupId} m@GroupMember {groupMember
   messageMember msg `catchChatError` (toView . CRChatError (Just user))
   where
     messageMember :: SndMessage -> CM ()
-    messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction gInfo chatMsgEvent [m] m) $ \case
+    messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction gInfo (L.singleton chatMsgEvent) [m] m) $ \case
       MSASend conn -> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId >> postDeliver
+      MSASendBatched conn -> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId >> postDeliver
       MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
       MSAForwarded -> pure ()
 
