@@ -6797,18 +6797,19 @@ sendGroupMemberMessages user conn events groupId = do
 
 batchSendConnMessages :: User -> Connection -> MsgFlags -> NonEmpty SndMessage -> CM ()
 batchSendConnMessages user conn msgFlags msgs = do
-  let batched = batchSndMessagesJSON
+  let batched = batchSndMessagesJSON msgs
   let (errs', msgBatches) = partitionEithers batched
   -- shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
   unless (null errs') $ toView $ CRChatErrors (Just user) errs'
   forM_ (L.nonEmpty msgBatches) $ \msgBatches' -> do
-    let msgReq = (conn, L.map msgBatchReq msgBatches')
+    let msgReq = (conn, L.map (msgBatchReq msgFlags) msgBatches')
     void $ deliverMessages $ L.singleton msgReq
-  where
-    batchSndMessagesJSON :: [Either ChatError MsgBatch]
-    batchSndMessagesJSON = batchMessages maxEncodedMsgLength $ L.toList msgs
-    msgBatchReq :: MsgBatch -> (MsgFlags, MsgBody, [MessageId])
-    msgBatchReq (MsgBatch batchBody sndMsgs) = (msgFlags, batchBody, map (\SndMessage {msgId} -> msgId) sndMsgs)
+
+batchSndMessagesJSON :: NonEmpty SndMessage -> [Either ChatError MsgBatch]
+batchSndMessagesJSON = batchMessages maxEncodedMsgLength . L.toList
+
+msgBatchReq :: MsgFlags -> MsgBatch -> (MsgFlags, MsgBody, [MessageId])
+msgBatchReq msgFlags (MsgBatch batchBody sndMsgs) = (msgFlags, batchBody, map (\SndMessage {msgId} -> msgId) sndMsgs)
 
 encodeConnInfo :: MsgEncodingI e => ChatMsgEvent e -> CM ByteString
 encodeConnInfo chatMsgEvent = do
@@ -6978,21 +6979,17 @@ sendGroupMessages user gInfo@GroupInfo {groupId} members events = do
     prepareMsgReqs :: MsgFlags -> NonEmpty SndMessage -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> [ChatMsgReq]
     prepareMsgReqs msgFlags msgs toSendLooped toSendBatched = do
       let msgReqsLooped = map (\(_, conn) -> (conn, L.map sndMessageReq msgs)) toSendLooped
-          batched = batchSndMessagesJSON
+          batched = batchSndMessagesJSON msgs
           -- _errs shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
           (_errs, msgBatches) = partitionEithers batched
       case L.nonEmpty msgBatches of
         Just msgBatches' -> do
-          let msgReqsBatched = map (\(_, conn) -> (conn, L.map msgBatchReq msgBatches')) toSendBatched
+          let msgReqsBatched = map (\(_, conn) -> (conn, L.map (msgBatchReq msgFlags) msgBatches')) toSendBatched
           msgReqsLooped <> msgReqsBatched
         Nothing -> msgReqsLooped
       where
-        batchSndMessagesJSON :: [Either ChatError MsgBatch]
-        batchSndMessagesJSON = batchMessages maxEncodedMsgLength $ L.toList msgs
         sndMessageReq :: SndMessage -> (MsgFlags, MsgBody, [MessageId])
         sndMessageReq SndMessage {msgId, msgBody} = (msgFlags, msgBody, [msgId])
-        msgBatchReq :: MsgBatch -> (MsgFlags, MsgBody, [MessageId])
-        msgBatchReq (MsgBatch batchBody sndMsgs) = (msgFlags, batchBody, map (\SndMessage {msgId} -> msgId) sndMsgs)
     createPendingMsgs :: DB.Connection -> GroupMember -> NonEmpty SndMessage -> IO ()
     createPendingMsgs db m = mapM_ (\SndMessage {msgId} -> createPendingGroupMessage db (groupMemberId' m) msgId Nothing)
     filterSent :: [Either ChatError (Connection, NonEmpty [Int64], PQEncryption)] -> [(GroupMember, Connection)] -> [GroupMember]
