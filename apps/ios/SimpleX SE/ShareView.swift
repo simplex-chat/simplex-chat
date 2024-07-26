@@ -13,10 +13,10 @@ struct ShareView: View {
     @ObservedObject var model: ShareModel
 
     var body: some View {
-        NavigationStack {
+        NavigationView {
             ZStack(alignment: .bottom) {
                 if model.isLoaded {
-                    List(model.filteredChats, selection: $model.selected) { chat in
+                    List(model.filteredChats) { chat in
                         HStack {
                             profileImage(
                                 base64Encoded: chat.chatInfo.image,
@@ -27,6 +27,8 @@ struct ShareView: View {
                             Spacer()
                             radioButton(selected: chat == model.selected)
                         }
+                        .contentShape(Rectangle())
+                        .onTapGesture { model.selected = chat }
                         .tag(chat)
                     }
                 } else {
@@ -60,11 +62,17 @@ struct ShareView: View {
         VStack(spacing: .zero) {
             Divider().overlay(Color.secondary.opacity(0.7))
             HStack {
-                TextField("Comment", text: $model.comment, axis: .vertical)
-                    .contentShape(Rectangle())
-                    .disabled(isLoading)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 4)
+                Group {
+                    if #available(iOSApplicationExtension 16.0, *) {
+                        TextField("Comment", text: $model.comment, axis: .vertical)
+                    } else {
+                        TextField("Comment", text: $model.comment)
+                    }
+                }
+                .contentShape(Rectangle())
+                .disabled(isLoading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 4)
                 Group {
                     if isLoading {
                         ProgressView()
@@ -73,13 +81,14 @@ struct ShareView: View {
                             Image(systemName: "arrow.up.circle.fill")
                                 .resizable()
                         }
+                        .disabled(model.isSendDisbled)
                     }
                 }
                 .frame(width: 28, height: 28)
                 .padding(6)
 
             }
-            .background(Color(.systemBackground.withAlphaComponent(0.5)))
+            .background(Color(.systemBackground))
             .clipShape(RoundedRectangle(cornerRadius: 20))
             .overlay(
                 RoundedRectangle(cornerRadius: 20)
