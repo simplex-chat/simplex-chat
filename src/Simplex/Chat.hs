@@ -6869,7 +6869,6 @@ deliverMessagesB msgReqs = do
             _ -> pure req
         pure (conn, reqs')
     toAgent = \case
-      -- Right (conn@Connection {pqEncryption}, msgFlags, msgBody, _msgId) -> Right (aConnId conn, pqEncryption, msgFlags, msgBody)
       Right (conn@Connection {pqEncryption}, reqs) -> do
         let aReqs = L.map (\(msgFlags, msgBody, _msgId) -> (msgFlags, msgBody)) reqs
         Right (aConnId conn, pqEncryption, aReqs)
