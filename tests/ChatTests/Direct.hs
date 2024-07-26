@@ -15,6 +15,7 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.List (intercalate)
 import qualified Data.Text as T
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
@@ -45,6 +46,7 @@ chatDirectTests = do
     it "direct message edit history" testDirectMessageEditHistory
     it "direct message delete" testDirectMessageDelete
     it "direct message delete multiple" testDirectMessageDeleteMultiple
+    it "direct message delete multiple (many chat batches)" testDirectMessageDeleteMultipleManyBatches
     it "direct live message" testDirectLiveMessage
     it "direct timed message" testDirectTimedMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
@@ -707,6 +709,30 @@ testDirectMessageDeleteMultiple =
 
       alice #$> ("/_get chat @2 count=2", chat, [(1, "hello [marked deleted]"), (1, "hey [marked deleted]")])
       bob #$> ("/_get chat @2 count=2", chat, [(0, "hello [marked deleted]"), (0, "hey [marked deleted]")])
+
+testDirectMessageDeleteMultipleManyBatches :: HasCallStack => FilePath -> IO ()
+testDirectMessageDeleteMultipleManyBatches =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice #> "@bob message 0"
+      bob <# "alice> message 0"
+      msgIdFirst <- lastItemId alice
+
+      forM_ [(1 :: Int) .. 300] $ \i -> do
+        alice #> ("@bob message " <> show i)
+        bob <# ("alice> message " <> show i)
+      msgIdLast <- lastItemId alice
+
+      let mIdFirst = read msgIdFirst :: Int
+          mIdLast = read msgIdLast :: Int
+          deleteIds = intercalate "," (map show [mIdFirst .. mIdLast])
+      alice `send` ("/_delete item @2 " <> deleteIds <> " broadcast")
+      _ <- getTermLine alice
+      alice <## "301 messages deleted"
+      forM_ [(0 :: Int) .. 300] $ \i -> do
+        bob <# ("alice> [marked deleted] message " <> show i)
 
 testDirectLiveMessage :: HasCallStack => FilePath -> IO ()
 testDirectLiveMessage =
