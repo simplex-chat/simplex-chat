@@ -64,7 +64,9 @@ class ShareModel: ObservableObject {
             self.itemProvider = itemProvider
             self.completion = {
                 ShareModel.CompletionHandler.isEventLoopEnabled = false
-                context.completeRequest(returningItems: [item])
+                context.completeRequest(returningItems: [item]) {
+                    apiSuspendChat(expired: $0)
+                }
             }
             // Init Chat
             Task {
@@ -147,20 +149,24 @@ class ShareModel: ObservableObject {
     }
 
     private func initChat() -> ErrorAlert? {
-        registerGroupDefaults()
-        haskell_init_se()
-        let (_, result) = chatMigrateInit()
-        if result != .ok { return ErrorAlert("Database migration failed") }
+        if !hasChatCtrl() {
+            registerGroupDefaults()
+            haskell_init_se()
+            let (_, result) = chatMigrateInit()
+            if result != .ok { return ErrorAlert("Database migration failed") }
+            do {
+                try apiSetAppFilePaths(
+                    filesFolder: getAppFilesDirectory().path,
+                    tempFolder: getTempFilesDirectory().path,
+                    assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path
+                )
+                let isRunning = try apiStartChat()
+                logger.log(level: .debug, "Chat started. Is running: \(isRunning)")
+            } catch { return ErrorAlert(error) }
+        }
         do {
             try apiSetNetworkConfig(getNetCfg())
-            try apiSetAppFilePaths(
-                filesFolder: getAppFilesDirectory().path,
-                tempFolder: getTempFilesDirectory().path,
-                assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path
-            )
             try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
-            let isRunning = try apiStartChat()
-            logger.log(level: .debug, "Chat started. Is running: \(isRunning)")
         } catch { return ErrorAlert(error) }
         return nil
     }

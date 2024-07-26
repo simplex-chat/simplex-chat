@@ -83,3 +83,24 @@ func apiSendMessage(
         throw r
     }
 }
+
+func apiSuspendChat(expired: Bool) {
+    let r = sendSimpleXCmd(
+        .apiSuspendChat(
+            timeoutMicroseconds: expired
+            ? .zero
+            : 3_000_000
+        )
+    )
+    // Block until `chatSuspended` received or 3 seconds has passed
+    let startTime = CFAbsoluteTimeGetCurrent()
+    if case .cmdOk = r, !expired {
+        while CFAbsoluteTimeGetCurrent() - startTime < 3 {
+            switch recvSimpleXMsg() {
+            case .chatSuspended: break
+            default: continue
+            }
+        }
+    }
+    chatCloseStore()
+}
