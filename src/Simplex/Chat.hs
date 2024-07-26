@@ -6843,7 +6843,7 @@ deliverMessage' conn msgFlags msgBody msgId =
       Left e -> throwError e
     rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
 
--- NonEmpty (MsgFlags, MsgBody, [MessageId]) - list of requests as passed to agent
+-- NonEmpty (MsgFlags, MsgBody, [MessageId]) - list of requests to be passed to agent
 -- [MessageId] - SndMessage ids inside MsgBatch, or single message id
 type ChatMsgReq = (Connection, NonEmpty (MsgFlags, MsgBody, [MessageId]))
 
