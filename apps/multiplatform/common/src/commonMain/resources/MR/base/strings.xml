@@ -447,6 +447,7 @@
   <string name="info_view_open_button">open</string>
   <string name="info_view_message_button">message</string>
   <string name="info_view_call_button">call</string>
+  <string name="info_view_search_button">search</string>
   <string name="info_view_video_button">video</string>
   <string name="delete_contact_question">Delete contact?</string>
   <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>

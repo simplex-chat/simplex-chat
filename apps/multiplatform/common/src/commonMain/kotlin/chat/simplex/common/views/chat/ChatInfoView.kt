@@ -28,6 +28,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -425,15 +426,18 @@ fun ChatInfoLayout(
     ) {
       if (contact.activeConn == null && contact.profile.contactLink != null && contact.active) {
         ConnectButton(openedFromChatView, chat, contact, close)
+        Spacer(Modifier.width(10.dp))
       } else if (!contact.active && !contact.chatDeleted) {
         OpenButton(openedFromChatView, chat, contact, close)
-      } else {
-        MessageButton(openedFromChatView, chat, contact, close)
+        Spacer(Modifier.width(10.dp))
       }
+      SearchButton(chat, contact, close)
       Spacer(Modifier.width(10.dp))
       CallButton(chat, contact)
       Spacer(Modifier.width(10.dp))
       VideoButton(chat, contact)
+      Spacer(Modifier.width(10.dp))
+      MuteButton(chat, contact)
     }
 
     SectionSpacer()
@@ -749,6 +753,36 @@ private fun MessageButton(openedFromChatView: Boolean, chat: Chat, contact: Cont
 }
 
 @Composable
+fun SearchButton(chat: Chat, contact: Contact, close: () -> Unit) {
+  InfoViewActionButton(
+    icon = painterResource(MR.images.ic_search),
+    title = generalGetString(MR.strings.info_view_search_button),
+    disabled = !contact.ready || chat.chatItems.isEmpty(),
+    onClick = {
+      chatModel.chatViewMode.value = ChatViewMode.Search
+      close.invoke()
+      withBGApi {
+        openDirectChat(chat.remoteHostId, contact.contactId, chatModel)
+      }
+    }
+  )
+}
+
+@Composable
+fun MuteButton(chat: Chat, contact: Contact) {
+  val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
+
+  InfoViewActionButton(
+    icon =  if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
+    title = if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
+    disabled = !contact.ready || !contact.active,
+    onClick = {
+      toggleNotifications(chat, !ntfsEnabled.value, chatModel, ntfsEnabled)
+    }
+  )
+}
+
+@Composable
 fun CallButton(chat: Chat, contact: Contact) {
   InfoViewActionButton(
     icon = painterResource(MR.images.ic_call_filled),
@@ -799,7 +833,7 @@ fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, onClic
       }
     }
     Text(
-      title,
+      title.capitalize(Locale.current),
       style = MaterialTheme.typography.subtitle2.copy(fontWeight = FontWeight.Normal),
       color = MaterialTheme.colors.secondary
     )

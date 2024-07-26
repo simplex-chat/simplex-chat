@@ -569,6 +569,10 @@ fun ChatLayout(
 ) {
   val scope = rememberCoroutineScope()
   val attachmentDisabled = remember { derivedStateOf { composeState.value.attachmentDisabled } }
+  DisposableEffect(Unit) {
+    onDispose { chatModel.chatViewMode.value = ChatViewMode.Message }
+  }
+
   Box(
     Modifier
       .fillMaxWidth()
@@ -657,13 +661,12 @@ fun ChatInfoToolbar(
 ) {
   val scope = rememberCoroutineScope()
   val showMenu = rememberSaveable { mutableStateOf(false) }
-  var showSearch by rememberSaveable { mutableStateOf(false) }
   val onBackClicked = {
-    if (!showSearch) {
+    if (chatModel.chatViewMode.value == ChatViewMode.Message) {
       back()
     } else {
       onSearchValueChanged("")
-      showSearch = false
+      chatModel.chatViewMode.value = ChatViewMode.Message
     }
   }
   if (appPlatform.isAndroid) {
@@ -676,7 +679,7 @@ fun ChatInfoToolbar(
     barButtons.add {
       IconButton({
         showMenu.value = false
-        showSearch = true
+        chatModel.chatViewMode.value = ChatViewMode.Search
         }, enabled = chat.chatInfo.noteFolder.ready
       ) {
         Icon(
@@ -690,7 +693,7 @@ fun ChatInfoToolbar(
     menuItems.add {
       ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
         showMenu.value = false
-        showSearch = true
+        chatModel.chatViewMode.value = ChatViewMode.Search
       })
     }
   }
@@ -816,10 +819,10 @@ fun ChatInfoToolbar(
   }
 
   DefaultTopAppBar(
-    navigationButton = { if (appPlatform.isAndroid || showSearch) { NavigationButtonBack(onBackClicked) }  },
+    navigationButton = { if (appPlatform.isAndroid ||  chatModel.chatViewMode.value == ChatViewMode.Search) { NavigationButtonBack(onBackClicked) }  },
     title = { ChatInfoToolbarTitle(chat.chatInfo) },
     onTitleClick = if (chat.chatInfo is ChatInfo.Local) null else info,
-    showSearch = showSearch,
+    showSearch = chatModel.chatViewMode.value == ChatViewMode.Search,
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
