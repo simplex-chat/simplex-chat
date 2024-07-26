@@ -165,6 +165,7 @@ class ShareModel: ObservableObject {
             } catch { return ErrorAlert(error) }
         }
         do {
+            try apiActivateChat()
             try apiSetNetworkConfig(getNetCfg())
             try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
         } catch { return ErrorAlert(error) }

@@ -84,6 +84,13 @@ func apiSendMessage(
     }
 }
 
+func apiActivateChat() throws {
+    chatReopenStore()
+    let r = sendSimpleXCmd(.apiActivateChat(restoreChat: false))
+    if case .cmdOk = r { return }
+    throw r
+}
+
 func apiSuspendChat(expired: Bool) {
     let r = sendSimpleXCmd(
         .apiSuspendChat(
@@ -102,5 +109,6 @@ func apiSuspendChat(expired: Bool) {
             }
         }
     }
+    logger.info("Close Store")
     chatCloseStore()
 }
