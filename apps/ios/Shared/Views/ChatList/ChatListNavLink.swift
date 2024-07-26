@@ -9,25 +9,9 @@
 import SwiftUI
 import SimpleXChat
 
-private let rowHeights: [DynamicTypeSize: CGFloat] = [
-    .xSmall: 68,
-    .small: 72,
-    .medium: 76,
-    .large: 80,
-    .xLarge: 88,
-    .xxLarge: 94,
-    .xxxLarge: 104,
-    .accessibility1: 90,
-    .accessibility2: 100,
-    .accessibility3: 120,
-    .accessibility4: 130,
-    .accessibility5: 140
-]
-
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ObservedObject var chat: Chat
     @State private var showContactRequestDialog = false
     @State private var showJoinGroupDialog = false
@@ -70,7 +54,6 @@ struct ChatListNavLink: View {
         Group {
             if contact.activeConn == nil && contact.profile.contactLink != nil {
                 ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
-                    .frame(height: rowHeights[dynamicTypeSize])
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button {
                             showDeleteContactActionSheet = true
@@ -110,7 +93,6 @@ struct ChatListNavLink: View {
                     }
                     .tint(.red)
                 }
-                .frame(height: rowHeights[dynamicTypeSize])
             }
         }
         .actionSheet(isPresented: $showDeleteContactActionSheet) {
@@ -139,7 +121,6 @@ struct ChatListNavLink: View {
         switch (groupInfo.membership.memberStatus) {
         case .memInvited:
             ChatPreviewView(chat: chat, progressByTimeout: $progressByTimeout)
-                .frame(height: rowHeights[dynamicTypeSize])
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     joinGroupButton()
                     if groupInfo.canDelete {
@@ -159,7 +140,6 @@ struct ChatListNavLink: View {
                 .disabled(inProgress)
         case .memAccepted:
             ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
-                .frame(height: rowHeights[dynamicTypeSize])
                 .onTapGesture {
                     AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
                 }
@@ -178,7 +158,6 @@ struct ChatListNavLink: View {
                 label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
                 disabled: !groupInfo.ready
             )
-            .frame(height: rowHeights[dynamicTypeSize])
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
                 markReadButton()
                 toggleFavoriteButton()
@@ -205,7 +184,6 @@ struct ChatListNavLink: View {
             label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
             disabled: !noteFolder.ready
         )
-        .frame(height: rowHeights[dynamicTypeSize])
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             markReadButton()
         }
@@ -321,7 +299,6 @@ struct ChatListNavLink: View {
             }
             .tint(.red)
         }
-        .frame(height: rowHeights[dynamicTypeSize])
         .onTapGesture { showContactRequestDialog = true }
         .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
             Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) } }
@@ -349,7 +326,6 @@ struct ChatListNavLink: View {
             }
             .tint(theme.colors.primary)
         }
-        .frame(height: rowHeights[dynamicTypeSize])
         .appSheet(isPresented: $showContactConnectionInfo) {
             Group {
                 if case let .contactConnection(contactConnection) = chat.chatInfo {
@@ -469,7 +445,6 @@ struct ChatListNavLink: View {
         Text("invalid chat data")
             .foregroundColor(.red)
             .padding(4)
-            .frame(height: rowHeights[dynamicTypeSize])
             .onTapGesture { showInvalidJSON = true }
             .appSheet(isPresented: $showInvalidJSON) {
                 invalidJSONView(json)

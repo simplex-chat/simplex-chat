@@ -12,6 +12,7 @@ import SimpleXChat
 struct CIFileView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.fontSizeMultiplier) var fontSizeMultiplier: CGFloat
     let file: CIFile?
     let edited: Bool
     var smallView: Bool = false
@@ -25,10 +26,10 @@ struct CIFileView: View {
             ? "                           "
             : "                       "
             Button(action: fileAction) {
-                HStack(alignment: .bottom, spacing: 6) {
+                HStack(alignment: .bottom, spacing: 6 * fontSizeMultiplier) {
                     fileIndicator()
-                        .padding(.top, 5)
-                        .padding(.bottom, 3)
+                        .padding(.top, 5 * fontSizeMultiplier)
+                        .padding(.bottom, 3 * fontSizeMultiplier)
                     if let file = file {
                         let prettyFileSize = ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
                         VStack(alignment: .leading, spacing: 2) {
@@ -46,10 +47,10 @@ struct CIFileView: View {
                         Text(metaReserve)
                     }
                 }
-                .padding(.top, 4)
-                .padding(.bottom, 6)
-                .padding(.leading, 10)
-                .padding(.trailing, 12)
+                .padding(.top, 4 * fontSizeMultiplier)
+                .padding(.bottom, 6 * fontSizeMultiplier)
+                .padding(.leading, 10 * fontSizeMultiplier)
+                .padding(.trailing, 12 * fontSizeMultiplier)
             }
             .disabled(!itemInteractive)
         }
@@ -205,23 +206,23 @@ struct CIFileView: View {
             Image(systemName: icon)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: smallView ? 36 : 30, height: smallView ? 36 : 30)
+                .frame(width: smallView ? 36 * fontSizeMultiplier : 30 * fontSizeMultiplier, height: smallView ? 36 * fontSizeMultiplier : 30 * fontSizeMultiplier)
                 .foregroundColor(color)
             if let innerIcon = innerIcon,
                let innerIconSize = innerIconSize, (!smallView || file?.showStatusIconInSmallView == true) {
                 Image(systemName: innerIcon)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(maxHeight: 16)
+                    .frame(maxHeight: 16 * fontSizeMultiplier)
                     .frame(width: innerIconSize, height: innerIconSize)
                     .foregroundColor(.white)
-                    .padding(.top, smallView ? 15 : 12)
+                    .padding(.top, smallView ? 15 * fontSizeMultiplier : 12 * fontSizeMultiplier)
             }
         }
     }
 
     private func progressView() -> some View {
-        ProgressView().frame(width: 30, height: 30)
+        ProgressView().frame(width: 30 * fontSizeMultiplier, height: 30 * fontSizeMultiplier)
     }
 
     private func progressCircle(_ progress: Int64, _ total: Int64) -> some View {
@@ -232,7 +233,7 @@ struct CIFileView: View {
                 style: StrokeStyle(lineWidth: 3)
             )
             .rotationEffect(.degrees(-90))
-            .frame(width: 30, height: 30)
+            .frame(width: 30 * fontSizeMultiplier, height: 30 * fontSizeMultiplier)
     }
 }
 

@@ -35,6 +35,7 @@ struct ContentView: View {
     @State private var showSetPasscode = false
     @State private var waitingForOrPassedAuth = true
     @State private var chatListActionSheet: ChatListActionSheet? = nil
+    @ScaledMetric private var scaledFontMetrics: CGFloat = 1000
 
     private let callTopPadding: CGFloat = 50
 
@@ -108,6 +109,8 @@ struct ContentView: View {
                 initializationView()
             }
         }
+        .environment(\.fontSizeMultiplier, scaledFontMetrics / 1000)
+        .environment(\.fontSizeSqrtMultiplier, sqrt(scaledFontMetrics / 1000))
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
         .sheet(isPresented: $showSettings) {
             SettingsView(showSettings: $showSettings)

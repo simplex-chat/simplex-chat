@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct CIImageView: View {
     @EnvironmentObject var m: ChatModel
+    @Environment(\.fontSizeMultiplier) var fontSizeMultiplier: CGFloat
     let chatItem: ChatItem
     var preview: UIImage?
     let maxWidth: CGFloat
@@ -119,7 +120,7 @@ struct CIImageView: View {
     }
 
     private func smallViewImageView(_ img: UIImage) -> some View {
-        ZStack(alignment: .topTrailing) {
+        ZStack(alignment: .center) {
             if img.imageData == nil {
                 Image(uiImage: img)
                     .resizable()
@@ -166,17 +167,17 @@ struct CIImageView: View {
         Image(systemName: icon)
             .resizable()
             .aspectRatio(contentMode: .fit)
-            .frame(width: size, height: size)
+            .frame(width: smallView ? size * fontSizeMultiplier : size, height: smallView ? size * fontSizeMultiplier : size)
             .foregroundColor(.white)
-            .padding(padding)
+            .padding(smallView ? padding * fontSizeMultiplier : padding)
     }
 
     private func progressView() -> some View {
         ProgressView()
             .progressViewStyle(.circular)
-            .frame(width: 20, height: 20)
+            .frame(width: smallView ? 20 * fontSizeMultiplier : 20, height: smallView ? 20 * fontSizeMultiplier : 20)
             .tint(.white)
-            .padding(8)
+            .padding(smallView ? 8 * fontSizeMultiplier : 8)
     }
 
     private func showDownloadButton(_ fileStatus: CIFileStatus?) -> Bool {

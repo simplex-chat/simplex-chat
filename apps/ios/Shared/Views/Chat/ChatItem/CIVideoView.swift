@@ -13,6 +13,7 @@ import Combine
 
 struct CIVideoView: View {
     @EnvironmentObject var m: ChatModel
+    @Environment(\.fontSizeMultiplier) var fontSizeMultiplier: CGFloat
     private let chatItem: ChatItem
     private let preview: UIImage?
     @State private var duration: Int
@@ -274,10 +275,10 @@ struct CIVideoView: View {
         Image(systemName: image)
         .resizable()
         .aspectRatio(contentMode: .fit)
-        .frame(width: smallView ? 12 * sizeMultiplier * 1.6 : 12, height: smallView ? 12 * sizeMultiplier * 1.6 : 12)
+        .frame(width: smallView ? 12 * sizeMultiplier * 1.6 * fontSizeMultiplier : 12, height: smallView ? 12 * sizeMultiplier * 1.6 * fontSizeMultiplier : 12)
         .foregroundColor(color)
         .padding(.leading, smallView ? 0 : 4)
-        .frame(width: 40 * sizeMultiplier, height: 40 * sizeMultiplier)
+        .frame(width: smallView ? 40 * sizeMultiplier * fontSizeMultiplier : 40 * sizeMultiplier, height: smallView ? 40 * sizeMultiplier * fontSizeMultiplier : 40 * sizeMultiplier)
         .background(Color.black.opacity(0.35))
         .clipShape(Circle())
     }
@@ -285,9 +286,9 @@ struct CIVideoView: View {
     private func videoDecryptionProgress(_ color: Color = .white) -> some View {
         ProgressView()
             .progressViewStyle(.circular)
-            .frame(width: smallView ? 12 * sizeMultiplier : 12, height: smallView ? 12 * sizeMultiplier : 12)
+            .frame(width: smallView ? 12 * sizeMultiplier * fontSizeMultiplier : 12, height: smallView ? 12 * sizeMultiplier * fontSizeMultiplier : 12)
             .tint(color)
-            .frame(width: smallView ? 40 * sizeMultiplier * 0.9 : 40, height: smallView ? 40 * sizeMultiplier * 0.9 : 40)
+            .frame(width: smallView ? 40 * sizeMultiplier * 0.9 * fontSizeMultiplier : 40, height: smallView ? 40 * sizeMultiplier * 0.9 * fontSizeMultiplier : 40)
             .background(Color.black.opacity(0.35))
             .clipShape(Circle())
     }
@@ -412,7 +413,7 @@ struct CIVideoView: View {
         Image(systemName: icon)
             .resizable()
             .aspectRatio(contentMode: .fit)
-            .frame(width: size, height: size)
+            .frame(width: smallView ? size * fontSizeMultiplier : size, height: smallView ? size * fontSizeMultiplier : size)
             .foregroundColor(.white)
             .padding(smallView ? 0 : padding)
     }
@@ -420,7 +421,7 @@ struct CIVideoView: View {
     private func progressView() -> some View {
         ProgressView()
         .progressViewStyle(.circular)
-        .frame(width: 16, height: 16)
+        .frame(width: smallView ? 16 * fontSizeMultiplier : 16, height: smallView ? 16 * fontSizeMultiplier : 16)
         .tint(.white)
         .padding(smallView ? 0 : 11)
     }
@@ -433,7 +434,7 @@ struct CIVideoView: View {
             style: StrokeStyle(lineWidth: 2)
         )
         .rotationEffect(.degrees(-90))
-        .frame(width: 16, height: 16)
+        .frame(width: smallView ? 16 * fontSizeMultiplier : 16, height: smallView ? 16 * fontSizeMultiplier : 16)
         .padding([.trailing, .top], smallView ? 0 : 11)
     }
 

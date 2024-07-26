@@ -13,6 +13,9 @@ struct ChatPreviewView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
+    @Environment(\.fontSizeMultiplier) var fontSizeMultiplier: CGFloat
+    @Environment(\.fontSizeSqrtMultiplier) var fontSizeSqrtMultiplier: CGFloat
+    var messagePreviewLineHeight: CGFloat = UIFont.systemFont(ofSize: 17).lineHeight
     @Binding var progressByTimeout: Bool
     @State var deleting: Bool = false
     var darkGreen = Color(red: 0, green: 0.5, blue: 0)
@@ -25,7 +28,7 @@ struct ChatPreviewView: View {
         let cItem = chat.chatItems.last
         return HStack(spacing: 8) {
             ZStack(alignment: .bottomTrailing) {
-                ChatInfoImage(chat: chat, size: 63)
+                ChatInfoImage(chat: chat, size: 63 * fontSizeSqrtMultiplier)
                 chatPreviewImageOverlayIcon()
                     .padding([.bottom, .trailing], 1)
             }
@@ -60,9 +63,10 @@ struct ChatPreviewView: View {
                             chatMessagePreview(cItem, hasFilePreview)
                         } else {
                             Spacer()
-                            chatInfoIcon(chat).frame(minWidth: 37, alignment: .trailing)
+                            chatInfoIcon(chat).frame(minWidth: 37 * fontSizeMultiplier, alignment: .trailing)
                         }
                     }
+                    .frame(height: messagePreviewLineHeight * fontSizeMultiplier * 2)
                     .onChange(of: chatModel.stopPreviousRecPlay?.path) { _ in
                         checkActiveContentPreview(chat, ci, mc)
                     }
@@ -176,7 +180,7 @@ struct ChatPreviewView: View {
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
                 .padding(.leading, hasFilePreview ? 0 : 8)
-                .padding(.trailing, hasFilePreview ? 38 : 36)
+                .padding(.trailing, hasFilePreview ? 38 : 36 * fontSizeMultiplier)
                 .offset(x: hasFilePreview ? -2 : 0)
                 .fixedSize(horizontal: false, vertical: true)
             if !showChatPreviews && !draft {
@@ -184,7 +188,7 @@ struct ChatPreviewView: View {
             } else {
                 t
             }
-            chatInfoIcon(chat).frame(minWidth: 37, alignment: .trailing)
+            chatInfoIcon(chat).frame(minWidth: 37 * fontSizeMultiplier, alignment: .trailing)
         }
     }
 
@@ -194,10 +198,10 @@ struct ChatPreviewView: View {
             unreadCountText(s.unreadCount)
                 .font(.caption)
                 .foregroundColor(.white)
-                .padding(.horizontal, 4)
-                .frame(minWidth: 18, minHeight: 18)
+                .padding(.horizontal, 4 * fontSizeMultiplier)
+                .frame(minWidth: 18 * fontSizeMultiplier, minHeight: 18 * fontSizeMultiplier)
                 .background(chat.chatInfo.ntfsEnabled || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
-                .cornerRadius(10)
+                .cornerRadius(10 * fontSizeMultiplier)
         } else if !chat.chatInfo.ntfsEnabled && chat.chatInfo.chatType != .local {
             Image(systemName: "speaker.slash.fill")
                 .foregroundColor(theme.colors.secondary)
@@ -205,8 +209,8 @@ struct ChatPreviewView: View {
             Image(systemName: "star.fill")
                 .resizable()
                 .scaledToFill()
-                .frame(width: 18, height: 18)
-                .padding(.trailing, 1)
+                .frame(width: 18 * fontSizeMultiplier, height: 18 * fontSizeMultiplier)
+                .padding(.trailing, 1 * fontSizeMultiplier)
                 .foregroundColor(.secondary.opacity(0.65))
         } else {
             Color.clear.frame(width: 0)
@@ -293,43 +297,43 @@ struct ChatPreviewView: View {
         let mc = ci.content.msgContent
         switch mc {
         case let .link(_, preview):
-            smallContentPreview(
+            smallContentPreview(fontSizeMultiplier,
                 ZStack(alignment: .topTrailing) {
                     Image(uiImage: UIImage(base64Encoded: preview.image) ?? UIImage(systemName: "arrow.up.right")!)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: 36, height: 36)
+                        .frame(width: 36 * fontSizeMultiplier, height: 36 * fontSizeMultiplier)
                     ZStack {
                         Image(systemName: "arrow.up.right")
                             .resizable()
                             .foregroundColor(Color.white)
                             .font(.system(size: 15, weight: .black))
-                            .frame(width: 8, height: 8)
+                            .frame(width: 8 * fontSizeMultiplier, height: 8 * fontSizeMultiplier)
                     }
-                    .frame(width: 16, height: 16)
+                    .frame(width: 16 * fontSizeMultiplier, height: 16 * fontSizeMultiplier)
                     .background(Color.black.opacity(0.25))
-                    .cornerRadius(8)
+                    .cornerRadius(8 * fontSizeMultiplier)
                 }
                 .onTapGesture {
                     UIApplication.shared.open(preview.uri)
                 }
             )
         case let .image(_, image):
-            smallContentPreview(
-                CIImageView(chatItem: ci, preview: UIImage(base64Encoded: image), maxWidth: 36, smallView: true, showFullScreenImage: $showFullscreenGallery)
+            smallContentPreview(fontSizeMultiplier,
+                CIImageView(chatItem: ci, preview: UIImage(base64Encoded: image), maxWidth: 36 * fontSizeMultiplier, smallView: true, showFullScreenImage: $showFullscreenGallery)
                     .environmentObject(ReverseListScrollModel<ChatItem>())
             )
         case let .video(_,image, duration):
-            smallContentPreview(
-                CIVideoView(chatItem: ci, preview: UIImage(base64Encoded: image), duration: duration, maxWidth: 36, videoWidth: nil, smallView: true, showFullscreenPlayer: $showFullscreenGallery)
+            smallContentPreview(fontSizeMultiplier,
+                CIVideoView(chatItem: ci, preview: UIImage(base64Encoded: image), duration: duration, maxWidth: 36 * fontSizeMultiplier, videoWidth: nil, smallView: true, showFullscreenPlayer: $showFullscreenGallery)
                     .environmentObject(ReverseListScrollModel<ChatItem>())
             )
         case let .voice(_, duration):
-            smallContentPreviewVoice(
+            smallContentPreviewVoice(fontSizeMultiplier,
                 CIVoiceView(chat: chat, chatItem: ci, recordingFile: ci.file, duration: duration, allowMenu: Binding.constant(true), smallView: true)
             )
         case .file:
-            smallContentPreviewFile(
+            smallContentPreviewFile(fontSizeMultiplier,
                 CIFileView(file: ci.file, edited: ci.meta.itemEdited, smallView: true)
             )
         default: EmptyView()
@@ -345,9 +349,8 @@ struct ChatPreviewView: View {
 
     @ViewBuilder private func chatPreviewInfoText(_ text: LocalizedStringKey) -> some View {
         Text(text)
-            .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding([.leading, .trailing], 8)
-            .padding(.bottom, 4)
     }
 
     private func itemStatusMark(_ cItem: ChatItem) -> Text {
@@ -369,47 +372,47 @@ struct ChatPreviewView: View {
         case let .direct(contact):
             if contact.active && contact.activeConn != nil {
                 switch (chatModel.contactNetworkStatus(contact)) {
-                case .connected: incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary)
+                case .connected: incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, fontSizeMultiplier)
                 case .error:
                     Image(systemName: "exclamationmark.circle")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 17, height: 17)
+                        .frame(width: 17 * fontSizeMultiplier, height: 17 * fontSizeMultiplier)
                         .foregroundColor(theme.colors.secondary)
                 default:
                     ProgressView()
                 }
             } else {
-                incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary)
+                incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, fontSizeMultiplier)
             }
         case .group:
             if progressByTimeout {
                 ProgressView()
             } else {
-                incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary)
+                incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, fontSizeMultiplier)
             }
         default:
-            incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary)
+            incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, fontSizeMultiplier)
         }
     }
 }
 
-@ViewBuilder func incognitoIcon(_ incognito: Bool, _ secondaryColor: Color) -> some View {
+@ViewBuilder func incognitoIcon(_ incognito: Bool, _ secondaryColor: Color, _ fontSizeMultiplier: CGFloat = 1) -> some View {
     if incognito {
         Image(systemName: "theatermasks")
             .resizable()
             .scaledToFit()
-            .frame(width: 22, height: 22)
+            .frame(width: 22 * fontSizeMultiplier, height: 22 * fontSizeMultiplier)
             .foregroundColor(secondaryColor)
     } else {
         EmptyView()
     }
 }
 
-func smallContentPreview(_ view: some View) -> some View {
+func smallContentPreview(_ fontSizeMultiplier: CGFloat, _ view: some View) -> some View {
     ZStack {
         view
-        .frame(width: 36, height: 36)
+        .frame(width: 36 * fontSizeMultiplier, height: 36 * fontSizeMultiplier)
     }
     .cornerRadius(8)
     .overlay(RoundedRectangle(cornerSize: CGSize(width: 8, height: 8))
@@ -418,19 +421,19 @@ func smallContentPreview(_ view: some View) -> some View {
     .offset(x: 6)
 }
 
-func smallContentPreviewVoice(_ view: some View) -> some View {
+func smallContentPreviewVoice(_ fontSizeMultiplier: CGFloat, _ view: some View) -> some View {
     ZStack {
         view
-        .frame(height: voiceMessageSizeBasedOnSquareSize(36))
+        .frame(height: voiceMessageSizeBasedOnSquareSize(36 * fontSizeMultiplier))
     }
     .padding(.leading, 8)
     .padding(.top, 6)
 }
 
-func smallContentPreviewFile(_ view: some View) -> some View {
+func smallContentPreviewFile(_ fontSizeMultiplier: CGFloat, _ view: some View) -> some View {
     ZStack {
         view
-        .frame(width: 36, height: 36)
+        .frame(width: 36 * fontSizeMultiplier, height: 36 * fontSizeMultiplier)
     }
     .padding(.top, 2)
     .padding(.leading, 5)
