@@ -149,23 +149,22 @@ class ShareModel: ObservableObject {
     }
 
     private func initChat() -> ErrorAlert? {
-        if !hasChatCtrl() {
-            registerGroupDefaults()
-            haskell_init_se()
-            let (_, result) = chatMigrateInit()
-            if result != .ok { return ErrorAlert("Database migration failed") }
-            do {
+        do {
+            if hasChatCtrl() {
+                try apiActivateChat()
+            } else {
+                registerGroupDefaults()
+                haskell_init_se()
+                let (_, result) = chatMigrateInit()
+                if result != .ok { return ErrorAlert("Database migration failed") }
                 try apiSetAppFilePaths(
                     filesFolder: getAppFilesDirectory().path,
                     tempFolder: getTempFilesDirectory().path,
                     assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path
                 )
                 let isRunning = try apiStartChat()
-                logger.log(level: .debug, "Chat started. Is running: \(isRunning)")
-            } catch { return ErrorAlert(error) }
-        }
-        do {
-            try apiActivateChat()
+                logger.log(level: .debug, "chat started, running: \(isRunning)")
+            }
             try apiSetNetworkConfig(getNetCfg())
             try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
         } catch { return ErrorAlert(error) }

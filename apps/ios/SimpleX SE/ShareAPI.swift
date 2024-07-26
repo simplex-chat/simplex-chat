@@ -92,23 +92,23 @@ func apiActivateChat() throws {
 }
 
 func apiSuspendChat(expired: Bool) {
-    let r = sendSimpleXCmd(
-        .apiSuspendChat(
-            timeoutMicroseconds: expired
-            ? .zero
-            : 3_000_000
-        )
-    )
+    let r = sendSimpleXCmd(.apiSuspendChat(timeoutMicroseconds: expired ? 0 : 3_000000))
     // Block until `chatSuspended` received or 3 seconds has passed
-    let startTime = CFAbsoluteTimeGetCurrent()
     if case .cmdOk = r, !expired {
+        let startTime = CFAbsoluteTimeGetCurrent()
+        var suspended = false
         while CFAbsoluteTimeGetCurrent() - startTime < 3 {
-            switch recvSimpleXMsg() {
-            case .chatSuspended: break
+            switch recvSimpleXMsg(messageTimeout: 3_500000) {
+            case .chatSuspended:
+                suspended = false
+                break
             default: continue
             }
         }
+        if !suspended {
+            _ = sendSimpleXCmd(.apiSuspendChat(timeoutMicroseconds: 0))
+        }
     }
-    logger.info("Close Store")
+    logger.debug("close store")
     chatCloseStore()
 }

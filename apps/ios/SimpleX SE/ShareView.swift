@@ -129,7 +129,7 @@ struct ShareView: View {
         }
         .foregroundStyle(Color(.tertiaryLabel))
         .frame(width: size, height: size)
-        .clipShape(Circle())
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.225, style: .continuous))
     }
 
     private func radioButton(selected: Bool) -> some View {
