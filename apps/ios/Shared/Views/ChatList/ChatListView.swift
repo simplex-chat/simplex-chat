@@ -21,6 +21,7 @@ struct ChatListView: View {
     @State private var newChatMenuOption: NewChatMenuOption? = nil
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
+
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
@@ -162,6 +163,10 @@ struct ChatListView: View {
                     chatModel.chatToTop = nil
                     chatModel.popChat(chatId)
                 }
+                stopAudioPlayer()
+            }
+            .onChange(of: chatModel.currentUser?.userId) { _ in
+                stopAudioPlayer()
             }
             if cs.isEmpty && !chatModel.chats.isEmpty {
                 Text("No filtered chats").foregroundColor(theme.colors.secondary)
@@ -215,6 +220,11 @@ struct ChatListView: View {
         if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
             ChatView(chat: chat)
         }
+    }
+
+    func stopAudioPlayer() {
+        VoiceItemState.smallView.values.forEach { $0.audioPlayer?.stop() }
+        VoiceItemState.smallView = [:]
     }
 
     private func filteredChats() -> [Chat] {

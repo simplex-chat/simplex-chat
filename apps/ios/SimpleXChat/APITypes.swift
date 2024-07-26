@@ -2096,6 +2096,7 @@ public struct AppSettings: Codable, Equatable, Hashable {
     public var privacyShowChatPreviews: Bool? = nil
     public var privacySaveLastDraft: Bool? = nil
     public var privacyProtectScreen: Bool? = nil
+    public var privacyMediaBlurRadius: Int? = nil
     public var notificationMode: AppSettingsNotificationMode? = nil
     public var notificationPreviewMode: NotificationPreviewMode? = nil
     public var webrtcPolicyRelay: Bool? = nil
@@ -2125,6 +2126,7 @@ public struct AppSettings: Codable, Equatable, Hashable {
         if privacyShowChatPreviews != def.privacyShowChatPreviews { empty.privacyShowChatPreviews = privacyShowChatPreviews }
         if privacySaveLastDraft != def.privacySaveLastDraft { empty.privacySaveLastDraft = privacySaveLastDraft }
         if privacyProtectScreen != def.privacyProtectScreen { empty.privacyProtectScreen = privacyProtectScreen }
+        if privacyMediaBlurRadius != def.privacyMediaBlurRadius { empty.privacyMediaBlurRadius = privacyMediaBlurRadius }
         if notificationMode != def.notificationMode { empty.notificationMode = notificationMode }
         if notificationPreviewMode != def.notificationPreviewMode { empty.notificationPreviewMode = notificationPreviewMode }
         if webrtcPolicyRelay != def.webrtcPolicyRelay { empty.webrtcPolicyRelay = webrtcPolicyRelay }
@@ -2155,6 +2157,7 @@ public struct AppSettings: Codable, Equatable, Hashable {
             privacyShowChatPreviews: true,
             privacySaveLastDraft: true,
             privacyProtectScreen: false,
+            privacyMediaBlurRadius: 0,
             notificationMode: AppSettingsNotificationMode.instant,
             notificationPreviewMode: NotificationPreviewMode.message,
             webrtcPolicyRelay: true,
