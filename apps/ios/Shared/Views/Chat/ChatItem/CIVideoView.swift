@@ -193,9 +193,7 @@ struct CIVideoView: View {
                         videoPlaying = false
                     }
                 }
-                .if(!videoPlaying) { view in
-                    view.modifier(PrivacyBlur(blurred: $blurred))
-                }
+                .modifier(PrivacyBlur(enabled: !videoPlaying, blurred: $blurred))
                 .onTapGesture {
                     switch player.timeControlStatus {
                     case .playing:

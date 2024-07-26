@@ -23,21 +23,23 @@ extension Notification.Name {
 }
 
 struct PrivacyBlur: ViewModifier {
+    var enabled: Bool = true
     @Binding var blurred: Bool
     @AppStorage(DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS) private var blurRadius: Int = 0
 
     func body(content: Content) -> some View {
         if blurRadius > 0 {
+            // parallel ifs are necessary here because otherwise some views flicker,
+            // e.g. when playing video
             content
-                .if(blurred) { view in
-                    view
-                        .blur(radius: CGFloat(blurRadius) * 0.5)
-                        .overlay {
-                            Color.clear.contentShape(Rectangle())
-                                .onTapGesture {
-                                    blurred = false
-                                }
-                        }
+                .blur(radius: blurred && enabled ? CGFloat(blurRadius) * 0.5 : 0)
+                .overlay {
+                    if (blurred && enabled) {
+                        Color.clear.contentShape(Rectangle())
+                            .onTapGesture {
+                                blurred = false
+                            }
+                    }
                 }
                 .onReceive(NotificationCenter.default.publisher(for: .chatViewWillBeginScrolling)) { _ in
                     if !blurred {
