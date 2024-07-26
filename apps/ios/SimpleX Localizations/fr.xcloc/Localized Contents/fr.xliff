@@ -554,7 +554,7 @@
       </trans-unit>
       <trans-unit id="Accent" xml:space="preserve" approved="no">
         <source>Accent</source>
-        <target state="needs-translation">Accent</target>
+        <target state="translated">Principale</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept" xml:space="preserve">
@@ -580,7 +580,7 @@
       </trans-unit>
       <trans-unit id="Acknowledged" xml:space="preserve" approved="no">
         <source>Acknowledged</source>
-        <target state="needs-translation">Reçu avec avis de réception</target>
+        <target state="translated">Reçu avec accusé de réception</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Acknowledgement errors" xml:space="preserve" approved="no">
@@ -695,7 +695,7 @@
       </trans-unit>
       <trans-unit id="All data is private to your device." xml:space="preserve" approved="no">
         <source>All data is private to your device.</source>
-        <target state="needs-translation">Toutes les données sont confidentielles sur votre appareil.</target>
+        <target state="translated">Toutes les données restent confinées dans votre appareil.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
@@ -4554,7 +4554,7 @@ Voici votre lien pour le groupe %@ !</target>
       </trans-unit>
       <trans-unit id="Other %@ servers" xml:space="preserve" approved="no">
         <source>Other %@ servers</source>
-        <target state="needs-translation">Autres serveurs %@</target>
+        <target state="translated">Autres serveurs %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -4930,7 +4930,7 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
       </trans-unit>
       <trans-unit id="Proxied servers" xml:space="preserve" approved="no">
         <source>Proxied servers</source>
-        <target state="needs-translation">Serveurs proxifiés</target>
+        <target state="translated">Serveurs routés via des proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Push notifications" xml:space="preserve">
@@ -5943,8 +5943,9 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
         <target>Afficher :</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX" xml:space="preserve">
+      <trans-unit id="SimpleX" xml:space="preserve" approved="no">
         <source>SimpleX</source>
+        <target state="new">SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX Address" xml:space="preserve">
@@ -6244,7 +6245,7 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
       </trans-unit>
       <trans-unit id="Temporary file error" xml:space="preserve" approved="no">
         <source>Temporary file error</source>
-        <target state="needs-translation">Erreur de fichier temporaire</target>
+        <target state="translated">Erreur de fichier temporaire</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Test failed at step %@." xml:space="preserve">
