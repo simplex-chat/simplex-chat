@@ -31,6 +31,7 @@ struct CIVideoView: View {
     @State private var fullScreenTimeObserver: Any? = nil
     @State private var publisher: AnyCancellable? = nil
     private var sizeMultiplier: CGFloat { smallView ? 0.38 : 1 }
+    @State private var blurred: Bool = UserDefaults.standard.integer(forKey: DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS) > 0
 
     init(chatItem: ChatItem, preview: UIImage?, duration: Int, maxWidth: CGFloat, videoWidth: CGFloat?, smallView: Bool = false, showFullscreenPlayer: Binding<Bool>) {
         self.chatItem = chatItem
@@ -85,17 +86,19 @@ struct CIVideoView: View {
                     durationProgress()
                 }
             }
-            if !smallView, let file = file, showDownloadButton(file.fileStatus) {
-                Button {
-                    receiveFileIfValidSize(file: file, receiveFile: receiveFile)
-                } label: {
-                    playPauseIcon("play.fill")
-                }
-            } else if let file = file, showDownloadButton(file.fileStatus) && !file.showStatusIconInSmallView {
-                playPauseIcon("play.fill")
-                    .onTapGesture {
+            if !blurred, let file, showDownloadButton(file.fileStatus) {
+                if !smallView {
+                    Button {
                         receiveFileIfValidSize(file: file, receiveFile: receiveFile)
+                    } label: {
+                        playPauseIcon("play.fill")
                     }
+                } else if !file.showStatusIconInSmallView {
+                    playPauseIcon("play.fill")
+                        .onTapGesture {
+                            receiveFileIfValidSize(file: file, receiveFile: receiveFile)
+                        }
+                }
             }
         }
         .fullScreenCover(isPresented: $showFullScreenPlayer) {
@@ -135,7 +138,7 @@ struct CIVideoView: View {
         }
     }
 
-    private func showDownloadButton(_ fileStatus: CIFileStatus) -> Bool {
+    private func showDownloadButton(_ fileStatus: CIFileStatus?) -> Bool {
         switch fileStatus {
         case .rcvInvitation: true
         case .rcvAborted: true
@@ -156,20 +159,22 @@ struct CIVideoView: View {
                 .onChange(of: m.activeCallViewIsCollapsed) { _ in
                     showFullScreenPlayer = false
                 }
-                if !decryptionInProgress {
-                    Button {
-                        decrypt(file: file) {
-                            if urlDecrypted != nil {
-                                videoPlaying = true
-                                player?.play()
+                if !blurred {
+                    if !decryptionInProgress {
+                        Button {
+                            decrypt(file: file) {
+                                if urlDecrypted != nil {
+                                    videoPlaying = true
+                                    player?.play()
+                                }
                             }
+                        } label: {
+                            playPauseIcon(canBePlayed ? "play.fill" : "play.slash")
                         }
-                    } label: {
-                        playPauseIcon(canBePlayed ? "play.fill" : "play.slash")
+                        .disabled(!canBePlayed)
+                    } else {
+                        videoDecryptionProgress()
                     }
-                    .disabled(!canBePlayed)
-                } else {
-                    videoDecryptionProgress()
                 }
             }
         }
@@ -188,6 +193,7 @@ struct CIVideoView: View {
                         videoPlaying = false
                     }
                 }
+                .modifier(PrivacyBlur(enabled: !videoPlaying, blurred: $blurred))
                 .onTapGesture {
                     switch player.timeControlStatus {
                     case .playing:
@@ -203,7 +209,7 @@ struct CIVideoView: View {
                 .onChange(of: m.activeCallViewIsCollapsed) { _ in
                     showFullScreenPlayer = false
                 }
-                if !videoPlaying {
+                if !videoPlaying && !blurred {
                     Button {
                         m.stopPreviousRecPlay = url
                         player.play()
@@ -317,7 +323,10 @@ struct CIVideoView: View {
             .resizable()
             .scaledToFit()
             .frame(width: w)
-            fileStatusIcon()
+            .modifier(PrivacyBlur(blurred: $blurred))
+            if !blurred || !showDownloadButton(chatItem.file?.fileStatus) {
+                fileStatusIcon()
+            }
         }
     }
 
