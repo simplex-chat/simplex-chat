@@ -1135,7 +1135,7 @@
     <string name="share_address">Partager l\'adresse</string>
     <string name="you_can_share_this_address_with_your_contacts">Vous pouvez partager cette adresse avec vos contacts pour leur permettre de se connecter avec %s.</string>
     <string name="group_welcome_preview">Aperçu</string>
-    <string name="color_background">Fond d\'écran</string>
+    <string name="color_background">Fond</string>
     <string name="dark_theme">Thème sombre</string>
     <string name="export_theme">Exporter le thème</string>
     <string name="import_theme">Importer un thème</string>
@@ -1900,7 +1900,7 @@
     <string name="message_forwarded_desc">Pas de connexion directe pour l\'instant, le message est transmis par l\'administrateur.</string>
     <string name="servers_info_connected_servers_section_header">Serveurs connectés</string>
     <string name="servers_info_previously_connected_servers_section_header">Serveurs précédemment connectés</string>
-    <string name="servers_info_proxied_servers_section_header">Serveurs proxifiés</string>
+    <string name="servers_info_proxied_servers_section_header">Serveurs routés via des proxy</string>
     <string name="servers_info_proxied_servers_section_footer">Vous n\'êtes pas connecté à ces serveurs. Le routage privé est utilisé pour leur délivrer des messages.</string>
     <string name="servers_info_reconnect_server_title">Reconnecter le serveur ?</string>
     <string name="servers_info_reconnect_servers_title">Reconnecter les serveurs ?</string>
@@ -1953,7 +1953,7 @@
     <string name="servers_info_messages_sent">Messages envoyés</string>
     <string name="servers_info_missing">Pas d\'information, essayez de recharger</string>
     <string name="servers_info_subscriptions_connections_pending">En attente</string>
-    <string name="proxied">Proxifié</string>
+    <string name="proxied">Routé via un proxy</string>
     <string name="servers_info_detailed_statistics_received_messages_header">Messages reçus</string>
     <string name="servers_info_detailed_statistics_received_total">Total reçu</string>
     <string name="servers_info_detailed_statistics_receive_errors">Erreurs de réception</string>
@@ -1968,7 +1968,7 @@
     <string name="servers_info_target">Afficher les informations pour</string>
     <string name="servers_info_starting_from">À partir de %s.</string>
     <string name="servers_info_private_data_disclaimer">À partir de %s.
-\nToutes les données sont confidentielles sur votre appareil.</string>
+\nToutes les données restent confinées dans votre appareil.</string>
     <string name="servers_info_statistics_section_header">Statistiques</string>
     <string name="servers_info_subscriptions_total">Total</string>
     <string name="xftp_server">Serveur XFTP</string>
