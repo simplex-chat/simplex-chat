@@ -21,6 +21,7 @@ struct ChatListView: View {
     @State private var newChatMenuOption: NewChatMenuOption? = nil
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
+
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
@@ -162,6 +163,10 @@ struct ChatListView: View {
                     chatModel.chatToTop = nil
                     chatModel.popChat(chatId)
                 }
+                stopAudioPlayer()
+            }
+            .onChange(of: chatModel.currentUser?.userId) { _ in
+                stopAudioPlayer()
             }
             if cs.isEmpty && !chatModel.chats.isEmpty {
                 Text("No filtered chats").foregroundColor(theme.colors.secondary)
@@ -217,6 +222,11 @@ struct ChatListView: View {
         }
     }
 
+    func stopAudioPlayer() {
+        VoiceItemState.smallView.values.forEach { $0.audioPlayer?.stop() }
+        VoiceItemState.smallView = [:]
+    }
+
     private func filteredChats() -> [Chat] {
         if let linkChatId = searchChatFilteredBySimplexLink {
             return chatModel.chats.filter { $0.id == linkChatId }
@@ -267,31 +277,25 @@ struct ChatListView: View {
 
 struct SubsStatusIndicator: View {
     @State private var subs: SMPServerSubs = SMPServerSubs.newSMPServerSubs
-    @State private var sess: ServerSessions = ServerSessions.newServerSessions
+    @State private var hasSess: Bool = false
     @State private var timer: Timer? = nil
-    @State private var timerCounter = 0
     @State private var showServersSummary = false
 
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
-
-    // Constants for the intervals
-    let initialInterval: TimeInterval = 1.0
-    let regularInterval: TimeInterval = 3.0
-    let initialPhaseDuration: TimeInterval = 10.0 // Duration for initial phase in seconds
 
     var body: some View {
         Button {
             showServersSummary = true
         } label: {
             HStack(spacing: 4) {
-                SubscriptionStatusIndicatorView(subs: subs, sess: sess)
+                SubscriptionStatusIndicatorView(subs: subs, hasSess: hasSess)
                 if showSubscriptionPercentage {
-                    SubscriptionStatusPercentageView(subs: subs, sess: sess)
+                    SubscriptionStatusPercentageView(subs: subs, hasSess: hasSess)
                 }
             }
         }
         .onAppear {
-            startInitialTimer()
+            startTimer()
         }
         .onDisappear {
             stopTimer()
@@ -301,21 +305,11 @@ struct SubsStatusIndicator: View {
         }
     }
 
-    private func startInitialTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: initialInterval, repeats: true) { _ in
-            getServersSummary()
-            timerCounter += 1
-            // Switch to the regular timer after the initial phase
-            if timerCounter * Int(initialInterval) >= Int(initialPhaseDuration) {
-                switchToRegularTimer()
+    private func startTimer() {
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            if AppChatState.shared.value == .active {
+                getSubsTotal()
             }
-        }
-    }
-
-    func switchToRegularTimer() {
-        timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: regularInterval, repeats: true) { _ in
-            getServersSummary()
         }
     }
 
@@ -324,12 +318,11 @@ struct SubsStatusIndicator: View {
         timer = nil
     }
 
-    private func getServersSummary() {
+    private func getSubsTotal() {
         do {
-            let summ = try getAgentServersSummary()
-            (subs, sess) = (summ.allUsersSMP.smpTotals.subs, summ.allUsersSMP.smpTotals.sessions)
+            (subs, hasSess) = try getAgentSubsTotal()
         } catch let error {
-            logger.error("getAgentServersSummary error: \(responseError(error))")
+            logger.error("getSubsTotal error: \(responseError(error))")
         }
     }
 }

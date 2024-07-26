@@ -18,8 +18,9 @@ struct ProtocolServersView: View {
     @Environment(\.editMode) private var editMode
     let serverProtocol: ServerProtocol
     @State private var currServers: [ServerCfg] = []
-    @State private var presetServers: [String] = []
-    @State private var servers: [ServerCfg] = []
+    @State private var presetServers: [ServerCfg] = []
+    @State private var configuredServers: [ServerCfg] = []
+    @State private var otherServers: [ServerCfg] = []
     @State private var selectedServer: String? = nil
     @State private var showAddServer = false
     @State private var showScanProtoServer = false
@@ -53,31 +54,53 @@ struct ProtocolServersView: View {
 
     private func protocolServersView() -> some View {
         List {
-            Section {
-                ForEach($servers) { srv in
-                    protocolServerView(srv)
+            if !configuredServers.isEmpty {
+                Section {
+                    ForEach($configuredServers) { srv in
+                        protocolServerView(srv)
+                    }
+                    .onMove { indexSet, offset in
+                        configuredServers.move(fromOffsets: indexSet, toOffset: offset)
+                    }
+                    .onDelete { indexSet in
+                        configuredServers.remove(atOffsets: indexSet)
+                    }
+                } header: {
+                    Text("Configured \(proto) servers")
+                        .foregroundColor(theme.colors.secondary)
+                } footer: {
+                    Text("The servers for new connections of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
+                        .foregroundColor(theme.colors.secondary)
+                        .lineLimit(10)
                 }
-                .onMove { indexSet, offset in
-                    servers.move(fromOffsets: indexSet, toOffset: offset)
+            }
+
+            if !otherServers.isEmpty {
+                Section {
+                    ForEach($otherServers) { srv in
+                        protocolServerView(srv)
+                    }
+                    .onMove { indexSet, offset in
+                        otherServers.move(fromOffsets: indexSet, toOffset: offset)
+                    }
+                    .onDelete { indexSet in
+                        otherServers.remove(atOffsets: indexSet)
+                    }
+                } header: {
+                    Text("Other \(proto) servers")
+                        .foregroundColor(theme.colors.secondary)
                 }
-                .onDelete { indexSet in
-                    servers.remove(atOffsets: indexSet)
-                }
-                Button("Add server…") {
-                    showAddServer = true
-                }
-            } header: {
-                Text("\(proto) servers")
-                    .foregroundColor(theme.colors.secondary)
-            } footer: {
-                Text("The servers for new connections of your current chat profile **\(m.currentUser?.displayName ?? "")**.")
-                    .foregroundColor(theme.colors.secondary)
-                    .lineLimit(10)
             }
 
             Section {
-                Button("Reset") { servers = currServers }
-                    .disabled(servers == currServers || testing)
+                Button("Add server") {
+                    showAddServer = true
+                }
+            }
+
+            Section {
+                Button("Reset") { partitionServers(currServers) }
+                    .disabled(Set(allServers) == Set(currServers) || testing)
                 Button("Test servers", action: testServers)
                     .disabled(testing || allServersDisabled)
                 Button("Save servers", action: saveServers)
@@ -86,17 +109,17 @@ struct ProtocolServersView: View {
             }
         }
         .toolbar { EditButton() }
-        .confirmationDialog("Add server…", isPresented: $showAddServer, titleVisibility: .hidden) {
+        .confirmationDialog("Add server", isPresented: $showAddServer, titleVisibility: .hidden) {
             Button("Enter server manually") {
-                servers.append(ServerCfg.empty)
-                selectedServer = servers.last?.id
+                otherServers.append(ServerCfg.empty)
+                selectedServer = allServers.last?.id
             }
             Button("Scan server QR code") { showScanProtoServer = true }
             Button("Add preset servers", action: addAllPresets)
                 .disabled(hasAllPresets())
         }
         .sheet(isPresented: $showScanProtoServer) {
-            ScanProtocolServer(servers: $servers)
+            ScanProtocolServer(servers: $otherServers)
             .modifier(ThemedBackground(grouped: true))
         }
         .modifier(BackButton(disabled: Binding.constant(false)) {
@@ -133,27 +156,39 @@ struct ProtocolServersView: View {
         }
         .onAppear {
             // this condition is needed to prevent re-setting the servers when exiting single server view
-            if !justOpened { return }
-            do {
-                let r = try getUserProtoServers(serverProtocol)
-                currServers = r.protoServers
-                presetServers = r.presetServers
-                servers = currServers
-            } catch let error {
-                alert = .error(
-                    title: "Error loading \(proto) servers",
-                    error: "Error: \(responseError(error))"
-                )
+            if justOpened {
+                do {
+                    let r = try getUserProtoServers(serverProtocol)
+                    currServers = r.protoServers
+                    presetServers = r.presetServers
+                    partitionServers(currServers)
+                } catch let error {
+                    alert = .error(
+                        title: "Error loading \(proto) servers",
+                        error: "Error: \(responseError(error))"
+                    )
+                }
+                justOpened = false
+            } else {
+                partitionServers(allServers)
             }
-            justOpened = false
         }
     }
 
+    private func partitionServers(_ servers: [ServerCfg]) {
+        configuredServers = servers.filter { $0.preset || $0.enabled }
+        otherServers = servers.filter { !($0.preset || $0.enabled) }
+    }
+
+    private var allServers: [ServerCfg] {
+        configuredServers + otherServers
+    }
+
     private var saveDisabled: Bool {
-        servers.isEmpty ||
-        servers == currServers ||
+        allServers.isEmpty ||
+        Set(allServers) == Set(currServers) ||
         testing ||
-        !servers.allSatisfy { srv in
+        !allServers.allSatisfy { srv in
             if let address = parseServerAddress(srv.server) {
                 return uniqueAddress(srv, address)
             }
@@ -163,7 +198,7 @@ struct ProtocolServersView: View {
     }
 
     private var allServersDisabled: Bool {
-        servers.allSatisfy { $0.enabled != .enabled }
+        allServers.allSatisfy { !$0.enabled }
     }
 
     private func protocolServerView(_ server: Binding<ServerCfg>) -> some View {
@@ -172,8 +207,7 @@ struct ProtocolServersView: View {
             ProtocolServerView(
                 serverProtocol: serverProtocol,
                 server: server,
-                serverToEdit: srv,
-                serverEnabled: srv.enabled == .enabled
+                serverToEdit: srv
             )
             .navigationBarTitle(srv.preset ? "Preset server" : "Your server")
             .modifier(ThemedBackground(grouped: true))
@@ -187,7 +221,7 @@ struct ProtocolServersView: View {
                             invalidServer()
                         } else if !uniqueAddress(srv, address) {
                             Image(systemName: "exclamationmark.circle").foregroundColor(.red)
-                        } else if srv.enabled != .enabled {
+                        } else if !srv.enabled {
                             Image(systemName: "slash.circle").foregroundColor(theme.colors.secondary)
                         } else {
                             showTestStatus(server: srv)
@@ -200,7 +234,7 @@ struct ProtocolServersView: View {
                 .padding(.trailing, 4)
 
                 let v = Text(address?.hostnames.first ?? srv.server).lineLimit(1)
-                if srv.enabled == .enabled {
+                if srv.enabled {
                     v
                 } else {
                     v.foregroundColor(theme.colors.secondary)
@@ -227,7 +261,7 @@ struct ProtocolServersView: View {
     }
 
     private func uniqueAddress(_ s: ServerCfg, _ address: ServerAddress) -> Bool {
-        servers.allSatisfy { srv in
+        allServers.allSatisfy { srv in
             address.hostnames.allSatisfy { host in
                 srv.id == s.id || !srv.server.contains(host)
             }
@@ -241,13 +275,13 @@ struct ProtocolServersView: View {
     private func addAllPresets() {
         for srv in presetServers {
             if !hasPreset(srv) {
-                servers.append(ServerCfg(server: srv, preset: true, tested: nil, enabled: .enabled))
+                configuredServers.append(srv)
             }
         }
     }
 
-    private func hasPreset(_ srv: String) -> Bool {
-        servers.contains(where: { $0.server == srv })
+    private func hasPreset(_ srv: ServerCfg) -> Bool {
+        allServers.contains(where: { $0.server == srv.server })
     }
 
     private func testServers() {
@@ -265,19 +299,31 @@ struct ProtocolServersView: View {
     }
 
     private func resetTestStatus() {
-        for i in 0..<servers.count {
-            if servers[i].enabled == .enabled {
-                servers[i].tested = nil
+        for i in 0..<configuredServers.count {
+            if configuredServers[i].enabled {
+                configuredServers[i].tested = nil
+            }
+        }
+        for i in 0..<otherServers.count {
+            if otherServers[i].enabled {
+                otherServers[i].tested = nil
             }
         }
     }
 
     private func runServersTest() async -> [String: ProtocolTestFailure] {
         var fs: [String: ProtocolTestFailure] = [:]
-        for i in 0..<servers.count {
-            if servers[i].enabled == .enabled {
-                if let f = await testServerConnection(server: $servers[i]) {
-                    fs[serverHostname(servers[i].server)] = f
+        for i in 0..<configuredServers.count {
+            if configuredServers[i].enabled {
+                if let f = await testServerConnection(server: $configuredServers[i]) {
+                    fs[serverHostname(configuredServers[i].server)] = f
+                }
+            }
+        }
+        for i in 0..<otherServers.count {
+            if otherServers[i].enabled {
+                if let f = await testServerConnection(server: $otherServers[i]) {
+                    fs[serverHostname(otherServers[i].server)] = f
                 }
             }
         }
@@ -287,9 +333,9 @@ struct ProtocolServersView: View {
     func saveServers() {
         Task {
             do {
-                try await setUserProtoServers(serverProtocol, servers: servers)
+                try await setUserProtoServers(serverProtocol, servers: allServers)
                 await MainActor.run {
-                    currServers = servers
+                    currServers = allServers
                     editMode?.wrappedValue = .inactive
                 }
             } catch let error {

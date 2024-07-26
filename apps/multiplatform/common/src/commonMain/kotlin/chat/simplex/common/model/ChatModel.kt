@@ -28,6 +28,7 @@ import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
+import java.io.Closeable
 import java.io.File
 import java.net.URI
 import java.time.format.DateTimeFormatter
@@ -65,6 +66,7 @@ object ChatModel {
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
   val groupMembers = mutableStateListOf<GroupMember>()
+  val groupMembersIndexes = mutableStateMapOf<Long, Int>()
 
   val terminalItems = mutableStateOf<List<TerminalItem>>(listOf())
   val userAddress = mutableStateOf<UserContactLinkRec?>(null)
@@ -121,6 +123,9 @@ object ChatModel {
   val clipboardHasText = mutableStateOf(false)
   val networkInfo = mutableStateOf(UserNetworkInfo(networkType = UserNetworkType.OTHER, online = true))
 
+  val updatingProgress = mutableStateOf(null as Float?)
+  var updatingRequest: Closeable? = null
+
   val updatingChatsMutex: Mutex = Mutex()
   val changingActiveUserMutex: Mutex = Mutex()
 
@@ -170,7 +175,23 @@ object ChatModel {
   fun getChat(id: String): Chat? = chats.toList().firstOrNull { it.id == id }
   fun getContactChat(contactId: Long): Chat? = chats.toList().firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
   fun getGroupChat(groupId: Long): Chat? = chats.toList().firstOrNull { it.chatInfo is ChatInfo.Group && it.chatInfo.apiId == groupId }
-  fun getGroupMember(groupMemberId: Long): GroupMember? = groupMembers.firstOrNull { it.groupMemberId == groupMemberId }
+
+  fun populateGroupMembersIndexes() {
+    groupMembersIndexes.clear()
+    groupMembers.forEachIndexed { i, member ->
+      groupMembersIndexes[member.groupMemberId] = i
+    }
+  }
+
+  fun getGroupMember(groupMemberId: Long): GroupMember? {
+    val memberIndex = groupMembersIndexes[groupMemberId]
+    return if (memberIndex != null) {
+      groupMembers[memberIndex]
+    } else {
+      null
+    }
+  }
+
   private fun getChatIndex(rhId: Long?, id: String): Int = chats.toList().indexOfFirst { it.id == id && it.remoteHostId == rhId }
   fun addChat(chat: Chat) = chats.add(index = 0, chat)
 
@@ -620,12 +641,13 @@ object ChatModel {
     }
     // update current chat
     return if (chatId.value == groupInfo.id) {
-      val memberIndex = groupMembers.indexOfFirst { it.groupMemberId == member.groupMemberId }
-      if (memberIndex >= 0) {
+      val memberIndex = groupMembersIndexes[member.groupMemberId]
+      if (memberIndex != null) {
         groupMembers[memberIndex] = member
         false
       } else {
         groupMembers.add(member)
+        groupMembersIndexes[member.groupMemberId] = groupMembers.size - 1
         true
       }
     } else {
@@ -1063,9 +1085,10 @@ data class Contact(
   override val id get() = "@$contactId"
   override val apiId get() = contactId
   override val ready get() = activeConn?.connStatus == ConnStatus.Ready
+  val sndReady get() = ready || activeConn?.connStatus == ConnStatus.SndReady
   val active get() = contactStatus == ContactStatus.Active
   override val sendMsgEnabled get() = (
-      ready
+      sndReady
           && active
           && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?: false)
           && !(activeConn?.connDisabled ?: true)
@@ -1172,18 +1195,22 @@ data class Connection(
   val pqSndEnabled: Boolean? = null,
   val pqRcvEnabled: Boolean? = null,
   val connectionStats: ConnectionStats? = null,
-  val authErrCounter: Int
+  val authErrCounter: Int,
+  val quotaErrCounter: Int
 ) {
   val id: ChatId get() = ":$connId"
 
   val connDisabled: Boolean
     get() = authErrCounter >= 10 // authErrDisableCount in core
 
+  val connInactive: Boolean
+    get() = quotaErrCounter >= 5 // quotaErrInactiveCount in core
+
   val connPQEnabled: Boolean
     get() = pqSndEnabled == true && pqRcvEnabled == true
 
   companion object {
-    val sampleData = Connection(connId = 1, agentConnId = "abc", connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, peerChatVRange = VersionRange(1, 1), customUserProfileId = null, pqSupport = false, pqEncryption = false, authErrCounter = 0)
+    val sampleData = Connection(connId = 1, agentConnId = "abc", connStatus = ConnStatus.Ready, connLevel = 0, viaGroupLink = false, peerChatVRange = VersionRange(1, 1), customUserProfileId = null, pqSupport = false, pqEncryption = false, authErrCounter = 0, quotaErrCounter = 0)
   }
 }
 
@@ -1727,7 +1754,7 @@ enum class ConnStatus {
     Joined -> false
     Requested -> true
     Accepted -> true
-    SndReady -> false
+    SndReady -> null
     Ready -> null
     Deleted -> null
   }
@@ -2353,6 +2380,48 @@ enum class SndCIStatusProgress {
 }
 
 @Serializable
+sealed class GroupSndStatus {
+  @Serializable @SerialName("new") class New: GroupSndStatus()
+  @Serializable @SerialName("forwarded") class Forwarded: GroupSndStatus()
+  @Serializable @SerialName("inactive") class Inactive: GroupSndStatus()
+  @Serializable @SerialName("sent") class Sent: GroupSndStatus()
+  @Serializable @SerialName("rcvd") class Rcvd(val msgRcptStatus: MsgReceiptStatus): GroupSndStatus()
+  @Serializable @SerialName("error") class Error(val agentError: SndError): GroupSndStatus()
+  @Serializable @SerialName("warning") class Warning(val agentError: SndError): GroupSndStatus()
+  @Serializable @SerialName("invalid") class Invalid(val text: String): GroupSndStatus()
+
+  fun statusIcon(
+    primaryColor: Color,
+    metaColor: Color = CurrentColors.value.colors.secondary,
+    paleMetaColor: Color = CurrentColors.value.colors.secondary
+  ): Pair<ImageResource, Color> =
+    when (this) {
+      is New -> MR.images.ic_more_horiz to metaColor
+      is Forwarded -> MR.images.ic_chevron_right_2 to metaColor
+      is Inactive -> MR.images.ic_person_off to metaColor
+      is Sent -> MR.images.ic_check_filled to metaColor
+      is Rcvd -> when(this.msgRcptStatus) {
+        MsgReceiptStatus.Ok -> MR.images.ic_double_check to metaColor
+        MsgReceiptStatus.BadMsgHash -> MR.images.ic_double_check to Color.Red
+      }
+      is Error -> MR.images.ic_close to Color.Red
+      is Warning -> MR.images.ic_warning_filled to WarningOrange
+      is Invalid -> MR.images.ic_question_mark to metaColor
+    }
+
+  val statusInto: Pair<String, String>? get() = when (this) {
+    is New -> null
+    is Forwarded -> generalGetString(MR.strings.message_forwarded_title) to generalGetString(MR.strings.message_forwarded_desc)
+    is Inactive -> generalGetString(MR.strings.member_inactive_title) to generalGetString(MR.strings.member_inactive_desc)
+    is Sent -> null
+    is Rcvd -> null
+    is Error -> generalGetString(MR.strings.message_delivery_error_title) to agentError.errorInfo
+    is Warning -> generalGetString(MR.strings.message_delivery_warning_title) to agentError.errorInfo
+    is Invalid -> "Invalid status" to this.text
+  }
+}
+
+@Serializable
 sealed class CIDeleted {
   @Serializable @SerialName("deleted") class Deleted(val deletedTs: Instant?): CIDeleted()
   @Serializable @SerialName("blocked") class Blocked(val deletedTs: Instant?): CIDeleted()
@@ -2695,6 +2764,24 @@ data class CIFile(
     is CIFileStatus.RcvError -> null
     is CIFileStatus.RcvWarning -> rcvCancelAction
     is CIFileStatus.Invalid -> null
+  }
+
+  val showStatusIconInSmallView: Boolean = when (fileStatus) {
+    is CIFileStatus.SndStored -> fileProtocol != FileProtocol.LOCAL
+    is CIFileStatus.SndTransfer -> true
+    is CIFileStatus.SndComplete -> false
+    is CIFileStatus.SndCancelled -> true
+    is CIFileStatus.SndError -> true
+    is CIFileStatus.SndWarning -> true
+    is CIFileStatus.RcvInvitation -> false
+    is CIFileStatus.RcvAccepted -> true
+    is CIFileStatus.RcvTransfer -> true
+    is CIFileStatus.RcvAborted -> true
+    is CIFileStatus.RcvCancelled -> true
+    is CIFileStatus.RcvComplete -> false
+    is CIFileStatus.RcvError -> true
+    is CIFileStatus.RcvWarning -> true
+    is CIFileStatus.Invalid -> true
   }
 
   /**
@@ -3466,7 +3553,7 @@ data class ChatItemVersion(
 @Serializable
 data class MemberDeliveryStatus(
   val groupMemberId: Long,
-  val memberDeliveryStatus: CIStatus,
+  val memberDeliveryStatus: GroupSndStatus,
   val sentViaProxy: Boolean?
 )
 

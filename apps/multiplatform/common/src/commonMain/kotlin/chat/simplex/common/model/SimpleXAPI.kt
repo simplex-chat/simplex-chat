@@ -116,6 +116,7 @@ class AppPreferences {
   val privacyDeliveryReceiptsSet = mkBoolPreference(SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET, false)
   val privacyEncryptLocalFiles = mkBoolPreference(SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES, true)
   val privacyAskToApproveRelays = mkBoolPreference(SHARED_PREFS_PRIVACY_ASK_TO_APPROVE_RELAYS, true)
+  val privacyMediaBlurRadius = mkIntPreference(SHARED_PREFS_PRIVACY_MEDIA_BLUR_RADIUS, 0)
   val experimentalCalls = mkBoolPreference(SHARED_PREFS_EXPERIMENTAL_CALLS, false)
   val showUnreadAndFavorites = mkBoolPreference(SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES, false)
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
@@ -127,6 +128,7 @@ class AppPreferences {
   val showSlowApiCalls = mkBoolPreference(SHARED_PREFS_SHOW_SLOW_API_CALLS, false)
   val terminalAlwaysVisible = mkBoolPreference(SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
+  val networkShowSubscriptionPercentage = mkBoolPreference(SHARED_PREFS_NETWORK_SHOW_SUBSCRIPTION_PERCENTAGE, false)
   val networkProxyHostPort = mkStrPreference(SHARED_PREFS_NETWORK_PROXY_HOST_PORT, "localhost:9050")
   private val _networkSessionMode = mkStrPreference(SHARED_PREFS_NETWORK_SESSION_MODE, TransportSessionMode.default.name)
   val networkSessionMode: SharedPreference<TransportSessionMode> = SharedPreference(
@@ -159,6 +161,9 @@ class AppPreferences {
   val showHiddenProfilesNotice = mkBoolPreference(SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE, true)
   val showMuteProfileAlert = mkBoolPreference(SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT, true)
   val appLanguage = mkStrPreference(SHARED_PREFS_APP_LANGUAGE, null)
+  val appUpdateChannel = mkEnumPreference(SHARED_PREFS_APP_UPDATE_CHANNEL, AppUpdatesChannel.DISABLED) { AppUpdatesChannel.entries.firstOrNull { it.name == this } }
+  val appSkippedUpdate = mkStrPreference(SHARED_PREFS_APP_SKIPPED_UPDATE, "")
+  val appUpdateNoticeShown = mkBoolPreference(SHARED_PREFS_APP_UPDATE_NOTICE_SHOWN, false)
 
   val onboardingStage = mkEnumPreference(SHARED_PREFS_ONBOARDING_STAGE, OnboardingStage.OnboardingComplete) { OnboardingStage.values().firstOrNull { it.name == this } }
   val migrationToStage = mkStrPreference(SHARED_PREFS_MIGRATION_TO_STAGE, null)
@@ -197,6 +202,8 @@ class AppPreferences {
   }, settingsThemes)
   val themeOverrides = mkThemeOverridesPreference()
   val profileImageCornerRadius = mkFloatPreference(SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS, 22.5f)
+  val fontScale = mkFloatPreference(SHARED_PREFS_FONT_SCALE, 1f)
+  val densityScale = mkFloatPreference(SHARED_PREFS_DENSITY_SCALE, 1f)
 
   val whatsNewVersion = mkStrPreference(SHARED_PREFS_WHATS_NEW_VERSION, null)
   val lastMigratedVersionCode = mkIntPreference(SHARED_PREFS_LAST_MIGRATED_VERSION_CODE, 0)
@@ -322,12 +329,16 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_DELIVERY_RECEIPTS_SET = "PrivacyDeliveryReceiptsSet"
     private const val SHARED_PREFS_PRIVACY_ENCRYPT_LOCAL_FILES = "PrivacyEncryptLocalFiles"
     private const val SHARED_PREFS_PRIVACY_ASK_TO_APPROVE_RELAYS = "PrivacyAskToApproveRelays"
+    private const val SHARED_PREFS_PRIVACY_MEDIA_BLUR_RADIUS = "PrivacyMediaBlurRadius"
     const val SHARED_PREFS_PRIVACY_FULL_BACKUP = "FullBackup"
     private const val SHARED_PREFS_EXPERIMENTAL_CALLS = "ExperimentalCalls"
     private const val SHARED_PREFS_SHOW_UNREAD_AND_FAVORITES = "ShowUnreadAndFavorites"
     private const val SHARED_PREFS_CHAT_ARCHIVE_NAME = "ChatArchiveName"
     private const val SHARED_PREFS_CHAT_ARCHIVE_TIME = "ChatArchiveTime"
     private const val SHARED_PREFS_APP_LANGUAGE = "AppLanguage"
+    private const val SHARED_PREFS_APP_UPDATE_CHANNEL = "AppUpdateChannel"
+    private const val SHARED_PREFS_APP_SKIPPED_UPDATE = "AppSkippedUpdate"
+    private const val SHARED_PREFS_APP_UPDATE_NOTICE_SHOWN = "AppUpdateNoticeShown"
     private const val SHARED_PREFS_ONBOARDING_STAGE = "OnboardingStage"
     const val SHARED_PREFS_MIGRATION_TO_STAGE = "MigrationToStage"
     const val SHARED_PREFS_MIGRATION_FROM_STAGE = "MigrationFromStage"
@@ -338,6 +349,7 @@ class AppPreferences {
     private const val SHARED_PREFS_SHOW_SLOW_API_CALLS = "ShowSlowApiCalls"
     private const val SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE = "TerminalAlwaysVisible"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
+    private const val SHARED_PREFS_NETWORK_SHOW_SUBSCRIPTION_PERCENTAGE = "ShowSubscriptionPercentage"
     private const val SHARED_PREFS_NETWORK_PROXY_HOST_PORT = "NetworkProxyHostPort"
     private const val SHARED_PREFS_NETWORK_SESSION_MODE = "NetworkSessionMode"
     private const val SHARED_PREFS_NETWORK_SMP_PROXY_MODE = "NetworkSMPProxyMode"
@@ -378,6 +390,8 @@ class AppPreferences {
     private const val SHARED_PREFS_THEMES_OLD = "Themes"
     private const val SHARED_PREFS_THEME_OVERRIDES = "ThemeOverrides"
     private const val SHARED_PREFS_PROFILE_IMAGE_CORNER_RADIUS = "ProfileImageCornerRadius"
+    private const val SHARED_PREFS_FONT_SCALE = "FontScale"
+    private const val SHARED_PREFS_DENSITY_SCALE = "DensityScale"
     private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
     private const val SHARED_PREFS_LAST_MIGRATED_VERSION_CODE = "LastMigratedVersionCode"
     private const val SHARED_PREFS_CUSTOM_DISAPPEARING_MESSAGE_TIME = "CustomDisappearingMessageTime"
@@ -410,6 +424,28 @@ object ChatController {
     private set
 
   fun hasChatCtrl() = ctrl != -1L && ctrl != null
+
+  suspend fun getAgentSubsTotal(rh: Long?): Pair<SMPServerSubs, Boolean>? {
+    val userId = currentUserId("getAgentSubsTotal")
+
+    val r = sendCmd(rh, CC.GetAgentSubsTotal(userId), log = false)
+
+    if (r is CR.AgentSubsTotal) return r.subsTotal to r.hasSession
+    Log.e(TAG, "getAgentSubsTotal bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun getAgentServersSummary(rh: Long?): PresentedServersSummary? {
+    val userId = currentUserId("getAgentServersSummary")
+
+    val r = sendCmd(rh, CC.GetAgentServersSummary(userId), log = false)
+
+    if (r is CR.AgentServersSummary) return r.serversSummary
+    Log.e(TAG, "getAgentServersSummary bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
+  suspend fun resetAgentServersStats(rh: Long?): Boolean = sendCommandOkResp(rh, CC.ResetAgentServersStats())
 
   private suspend fun currentUserId(funcName: String): Long = changingActiveUserMutex.withLock {
     val userId = chatModel.currentUser.value?.userId
@@ -569,20 +605,24 @@ object ChatController {
     }
   }
 
-  suspend fun sendCmd(rhId: Long?, cmd: CC, otherCtrl: ChatCtrl? = null): CR {
+  suspend fun sendCmd(rhId: Long?, cmd: CC, otherCtrl: ChatCtrl? = null, log: Boolean = true): CR {
     val ctrl = otherCtrl ?: ctrl ?: throw Exception("Controller is not initialized")
 
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
-      chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))
-      Log.d(TAG, "sendCmd: ${cmd.cmdType}")
+      if (log) {
+        chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))
+        Log.d(TAG, "sendCmd: ${cmd.cmdType}")
+      }
       val json = if (rhId == null) chatSendCmd(ctrl, c) else chatSendRemoteCmd(ctrl, rhId.toInt(), c)
       val r = APIResponse.decodeStr(json)
-      Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
-      if (r.resp is CR.Response || r.resp is CR.Invalid) {
-        Log.d(TAG, "sendCmd response json $json")
+      if (log) {
+        Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
+        if (r.resp is CR.Response || r.resp is CR.Invalid) {
+          Log.d(TAG, "sendCmd response json $json")
+        }
+        chatModel.addTerminalItem(TerminalItem.resp(rhId, r.resp))
       }
-      chatModel.addTerminalItem(TerminalItem.resp(rhId, r.resp))
       r.resp
     }
   }
@@ -919,6 +959,14 @@ object ChatController {
       }
     }
   }
+
+  suspend fun reconnectServer(rh: Long?, server: String): Boolean {
+    val userId = currentUserId("reconnectServer")
+
+    return sendCommandOkResp(rh, CC.ReconnectServer(userId, server))
+  }
+
+  suspend fun reconnectAllServers(rh: Long?): Boolean = sendCommandOkResp(rh, CC.ReconnectAllServers())
 
   suspend fun apiSetSettings(rh: Long?, type: ChatType, id: Long, settings: ChatSettings): Boolean {
     val r = sendCmd(rh, CC.APISetChatSettings(type, id, settings))
@@ -1779,6 +1827,123 @@ object ChatController {
         )
         true
       }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.BROKER
+          && r.chatError.agentError.brokerErr is BrokerErrorType.HOST -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.connection_error),
+          String.format(generalGetString(MR.strings.network_error_broker_host_desc), serverHostname(r.chatError.agentError.brokerAddress))
+        )
+        true
+      }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.BROKER
+          && r.chatError.agentError.brokerErr is BrokerErrorType.TRANSPORT
+          && r.chatError.agentError.brokerErr.transportErr is SMPTransportError.Version -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.connection_error),
+          String.format(generalGetString(MR.strings.network_error_broker_version_desc), serverHostname(r.chatError.agentError.brokerAddress))
+        )
+        true
+      }
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.SMP
+          && r.chatError.agentError.smpErr is SMPErrorType.PROXY ->
+        smpProxyErrorAlert(r.chatError.agentError.smpErr.proxyErr, r.chatError.agentError.serverAddress)
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
+          && r.chatError.agentError is AgentErrorType.PROXY
+          && r.chatError.agentError.proxyErr is ProxyClientError.ProxyProtocolError
+          && r.chatError.agentError.proxyErr.protocolErr is SMPErrorType.PROXY ->
+        proxyDestinationErrorAlert(
+          r.chatError.agentError.proxyErr.protocolErr.proxyErr,
+          r.chatError.agentError.proxyServer,
+          r.chatError.agentError.relayServer
+        )
+      else -> false
+    }
+  }
+
+  private fun smpProxyErrorAlert(pe: ProxyError, srvAddr: String): Boolean {
+    return when {
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.TIMEOUT -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.smp_proxy_error_connecting), serverHostname(srvAddr))
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.NETWORK -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.smp_proxy_error_connecting), serverHostname(srvAddr))
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.HOST -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.smp_proxy_error_broker_host), serverHostname(srvAddr))
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.TRANSPORT
+          && pe.brokerErr.transportErr is SMPTransportError.Version -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.smp_proxy_error_broker_version), serverHostname(srvAddr))
+        )
+        true
+      }
+      else -> false
+    }
+  }
+
+  private fun proxyDestinationErrorAlert(pe: ProxyError, proxyServer: String, relayServer: String): Boolean {
+    return when {
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.TIMEOUT -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_failed_to_connect), serverHostname(proxyServer), serverHostname(relayServer))
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.NETWORK -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_failed_to_connect), serverHostname(proxyServer), serverHostname(relayServer))
+        )
+        true
+      }
+      pe is ProxyError.NO_SESSION -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_failed_to_connect), serverHostname(proxyServer), serverHostname(relayServer))
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.HOST -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_broker_host), serverHostname(relayServer), serverHostname(proxyServer))
+        )
+        true
+      }
+      pe is ProxyError.BROKER
+          && pe.brokerErr is BrokerErrorType.TRANSPORT
+          && pe.brokerErr.transportErr is SMPTransportError.Version -> {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.private_routing_error),
+          String.format(generalGetString(MR.strings.proxy_destination_error_broker_version), serverHostname(relayServer), serverHostname(proxyServer))
+        )
+        true
+      }
       else -> false
     }
   }
@@ -1824,6 +1989,17 @@ object ChatController {
             chatModel.removeChat(rhId, conn.id)
           }
         }
+      }
+      is CR.ContactSndReady -> {
+        if (active(r.user) && r.contact.directOrUsed) {
+          chatModel.updateContact(rhId, r.contact)
+          val conn = r.contact.activeConn
+          if (conn != null) {
+            chatModel.replaceConnReqView(conn.id, "@${r.contact.contactId}")
+            chatModel.removeChat(rhId, conn.id)
+          }
+        }
+        chatModel.setContactNetworkStatus(r.contact, NetworkStatus.Connected())
       }
       is CR.ReceivedContactRequest -> {
         val contactRequest = r.contactRequest
@@ -2577,6 +2753,8 @@ sealed class CC {
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
   class APIGetNetworkConfig: CC()
   class APISetNetworkInfo(val networkInfo: UserNetworkInfo): CC()
+  class ReconnectServer(val userId: Long, val server: String): CC()
+  class ReconnectAllServers: CC()
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
   class ApiSetMemberSettings(val groupId: Long, val groupMemberId: Long, val memberSettings: GroupMemberSettings): CC()
   class APIContactInfo(val contactId: Long): CC()
@@ -2648,6 +2826,9 @@ sealed class CC {
   class ApiStandaloneFileInfo(val url: String): CC()
   // misc
   class ShowVersion(): CC()
+  class ResetAgentServersStats(): CC()
+  class GetAgentSubsTotal(val userId: Long): CC()
+  class GetAgentServersSummary(val userId: Long): CC()
 
   val cmdString: String get() = when (this) {
     is Console -> cmd
@@ -2724,6 +2905,8 @@ sealed class CC {
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
     is APIGetNetworkConfig -> "/network"
     is APISetNetworkInfo -> "/_network info ${json.encodeToString(networkInfo)}"
+    is ReconnectServer -> "/reconnect $userId $server"
+    is ReconnectAllServers -> "/reconnect"
     is APISetChatSettings -> "/_settings ${chatRef(type, id)} ${json.encodeToString(chatSettings)}"
     is ApiSetMemberSettings -> "/_member settings #$groupId $groupMemberId ${json.encodeToString(memberSettings)}"
     is APIContactInfo -> "/_info @$contactId"
@@ -2804,6 +2987,9 @@ sealed class CC {
     is ApiDownloadStandaloneFile -> "/_download $userId $url ${file.filePath}"
     is ApiStandaloneFileInfo -> "/_download info $url"
     is ShowVersion -> "/version"
+    is ResetAgentServersStats -> "/reset servers stats"
+    is GetAgentSubsTotal -> "/get subs total $userId"
+    is GetAgentServersSummary -> "/get servers summary $userId"
   }
 
   val cmdType: String get() = when (this) {
@@ -2864,6 +3050,8 @@ sealed class CC {
     is APISetNetworkConfig -> "apiSetNetworkConfig"
     is APIGetNetworkConfig -> "apiGetNetworkConfig"
     is APISetNetworkInfo -> "apiSetNetworkInfo"
+    is ReconnectServer -> "reconnectServer"
+    is ReconnectAllServers -> "reconnectAllServers"
     is APISetChatSettings -> "apiSetChatSettings"
     is ApiSetMemberSettings -> "apiSetMemberSettings"
     is APIContactInfo -> "apiContactInfo"
@@ -2933,6 +3121,9 @@ sealed class CC {
     is ApiDownloadStandaloneFile -> "apiDownloadStandaloneFile"
     is ApiStandaloneFileInfo -> "apiStandaloneFileInfo"
     is ShowVersion -> "showVersion"
+    is ResetAgentServersStats -> "resetAgentServersStats"
+    is GetAgentSubsTotal -> "getAgentSubsTotal"
+    is GetAgentServersSummary -> "getAgentServersSummary"
   }
 
   class ItemRange(val from: Long, val to: Long)
@@ -3022,7 +3213,7 @@ data class ProtoServersConfig(
 data class UserProtocolServers(
   val serverProtocol: ServerProtocol,
   val protoServers: List<ServerCfg>,
-  val presetServers: List<String>,
+  val presetServers: List<ServerCfg>,
 )
 
 @Serializable
@@ -3031,7 +3222,7 @@ data class ServerCfg(
   val server: String,
   val preset: Boolean,
   val tested: Boolean? = null,
-  val enabled: ServerEnabled
+  val enabled: Boolean
 ) {
   @Transient
   private val createdAt: Date = Date()
@@ -3045,7 +3236,7 @@ data class ServerCfg(
     get() = server.isBlank()
 
   companion object {
-    val empty = ServerCfg(remoteHostId = null, server = "", preset = false, tested = null, enabled = ServerEnabled.Enabled)
+    val empty = ServerCfg(remoteHostId = null, server = "", preset = false, tested = null, enabled = false)
 
     class SampleData(
       val preset: ServerCfg,
@@ -3059,31 +3250,24 @@ data class ServerCfg(
         server = "smp://abcd@smp8.simplex.im",
         preset = true,
         tested = true,
-        enabled = ServerEnabled.Enabled
+        enabled = true
       ),
       custom = ServerCfg(
         remoteHostId = null,
         server = "smp://abcd@smp9.simplex.im",
         preset = false,
         tested = false,
-        enabled = ServerEnabled.Disabled
+        enabled = false
       ),
       untested = ServerCfg(
         remoteHostId = null,
         server = "smp://abcd@smp10.simplex.im",
         preset = false,
         tested = null,
-        enabled = ServerEnabled.Enabled
+        enabled = true
       )
     )
   }
-}
-
-@Serializable
-enum class ServerEnabled {
-  @SerialName("disabled") Disabled,
-  @SerialName("enabled") Enabled,
-  @SerialName("known") Known;
 }
 
 @Serializable
@@ -3191,19 +3375,19 @@ data class ParsedServerAddress (
 data class NetCfg(
   val socksProxy: String?,
   val socksMode: SocksMode = SocksMode.Always,
-  val hostMode: HostMode,
-  val requiredHostMode: Boolean,
-  val sessionMode: TransportSessionMode,
-  val smpProxyMode: SMPProxyMode,
-  val smpProxyFallback: SMPProxyFallback,
+  val hostMode: HostMode = HostMode.OnionViaSocks,
+  val requiredHostMode: Boolean = false,
+  val sessionMode: TransportSessionMode = TransportSessionMode.User,
+  val smpProxyMode: SMPProxyMode = SMPProxyMode.Unknown,
+  val smpProxyFallback: SMPProxyFallback = SMPProxyFallback.AllowProtected,
   val tcpConnectTimeout: Long, // microseconds
   val tcpTimeout: Long, // microseconds
   val tcpTimeoutPerKb: Long, // microseconds
   val rcvConcurrency: Int, // pool size
-  val tcpKeepAlive: KeepAliveOpts?,
+  val tcpKeepAlive: KeepAliveOpts? = KeepAliveOpts.defaults,
   val smpPingInterval: Long, // microseconds
-  val smpPingCount: Int,
-  val logTLSErrors: Boolean = false
+  val smpPingCount: Int = 3,
+  val logTLSErrors: Boolean = false,
 ) {
   val useSocksProxy: Boolean get() = socksProxy != null
   val enableKeepAlive: Boolean get() = tcpKeepAlive != null
@@ -3221,35 +3405,21 @@ data class NetCfg(
     val defaults: NetCfg =
       NetCfg(
         socksProxy = null,
-        hostMode = HostMode.OnionViaSocks,
-        requiredHostMode = false,
-        sessionMode = TransportSessionMode.User,
-        smpProxyMode = SMPProxyMode.Never,
-        smpProxyFallback = SMPProxyFallback.Allow,
         tcpConnectTimeout = 25_000_000,
         tcpTimeout = 15_000_000,
         tcpTimeoutPerKb = 10_000,
         rcvConcurrency = 12,
-        tcpKeepAlive = KeepAliveOpts.defaults,
-        smpPingInterval = 1200_000_000,
-        smpPingCount = 3
+        smpPingInterval = 1200_000_000
       )
 
     val proxyDefaults: NetCfg =
       NetCfg(
         socksProxy = ":9050",
-        hostMode = HostMode.OnionViaSocks,
-        requiredHostMode = false,
-        sessionMode = TransportSessionMode.User,
-        smpProxyMode = SMPProxyMode.Never,
-        smpProxyFallback = SMPProxyFallback.Allow,
         tcpConnectTimeout = 35_000_000,
         tcpTimeout = 20_000_000,
         tcpTimeoutPerKb = 15_000,
         rcvConcurrency = 8,
-        tcpKeepAlive = KeepAliveOpts.defaults,
-        smpPingInterval = 1200_000_000,
-        smpPingCount = 3
+        smpPingInterval = 1200_000_000
       )
   }
 
@@ -3427,6 +3597,157 @@ data class TimedMessagesPreference(
       get() = listOf(600, 3600, 86400, 7 * 86400, 30 * 86400, 3 * 30 * 86400, null)
   }
 }
+
+@Serializable
+data class PresentedServersSummary(
+  val statsStartedAt: Instant,
+  val allUsersSMP: SMPServersSummary,
+  val allUsersXFTP: XFTPServersSummary,
+  val currentUserSMP: SMPServersSummary,
+  val currentUserXFTP: XFTPServersSummary
+)
+
+@Serializable
+data class SMPServersSummary(
+  val smpTotals: SMPTotals,
+  val currentlyUsedSMPServers: List<SMPServerSummary>,
+  val previouslyUsedSMPServers: List<SMPServerSummary>,
+  val onlyProxiedSMPServers: List<SMPServerSummary>
+)
+
+@Serializable
+data class SMPTotals(
+  val sessions: ServerSessions,
+  val subs: SMPServerSubs,
+  val stats: AgentSMPServerStatsData
+)
+
+@Serializable
+data class SMPServerSummary(
+  val smpServer: String,
+  val known: Boolean? = null,
+  val sessions: ServerSessions? = null,
+  val subs: SMPServerSubs? = null,
+  val stats: AgentSMPServerStatsData? = null
+) {
+  val hasSubs: Boolean
+    get() = subs != null
+
+  val sessionsOrNew: ServerSessions
+    get() = sessions ?: ServerSessions.newServerSessions
+
+  val subsOrNew: SMPServerSubs
+    get() = subs ?: SMPServerSubs.newSMPServerSubs
+}
+
+@Serializable
+data class ServerSessions(
+  val ssConnected: Int,
+  val ssErrors: Int,
+  val ssConnecting: Int
+) {
+  companion object {
+    val newServerSessions = ServerSessions(
+      ssConnected = 0,
+      ssErrors = 0,
+      ssConnecting = 0
+    )
+  }
+
+  val hasSess: Boolean
+    get() = ssConnected > 0
+}
+
+@Serializable
+data class SMPServerSubs(
+  val ssActive: Int,
+  val ssPending: Int
+) {
+  companion object {
+    val newSMPServerSubs = SMPServerSubs(
+      ssActive = 0,
+      ssPending = 0
+    )
+  }
+
+  val total: Int
+    get() = ssActive + ssPending
+
+  val shareOfActive: Float
+    get() = if (total != 0) ssActive.toFloat() / total else 0f
+}
+
+@Serializable
+data class AgentSMPServerStatsData(
+  val _sentDirect: Int,
+  val _sentViaProxy: Int,
+  val _sentProxied: Int,
+  val _sentDirectAttempts: Int,
+  val _sentViaProxyAttempts: Int,
+  val _sentProxiedAttempts: Int,
+  val _sentAuthErrs: Int,
+  val _sentQuotaErrs: Int,
+  val _sentExpiredErrs: Int,
+  val _sentOtherErrs: Int,
+  val _recvMsgs: Int,
+  val _recvDuplicates: Int,
+  val _recvCryptoErrs: Int,
+  val _recvErrs: Int,
+  val _ackMsgs: Int,
+  val _ackAttempts: Int,
+  val _ackNoMsgErrs: Int,
+  val _ackOtherErrs: Int,
+  val _connCreated: Int,
+  val _connSecured: Int,
+  val _connCompleted: Int,
+  val _connDeleted: Int,
+  val _connDelAttempts: Int,
+  val _connDelErrs: Int,
+  val _connSubscribed: Int,
+  val _connSubAttempts: Int,
+  val _connSubIgnored: Int,
+  val _connSubErrs: Int
+)
+
+@Serializable
+data class XFTPServersSummary(
+  val xftpTotals: XFTPTotals,
+  val currentlyUsedXFTPServers: List<XFTPServerSummary>,
+  val previouslyUsedXFTPServers: List<XFTPServerSummary>
+)
+
+@Serializable
+data class XFTPTotals(
+  val sessions: ServerSessions,
+  val stats: AgentXFTPServerStatsData
+)
+
+@Serializable
+data class XFTPServerSummary(
+  val xftpServer: String,
+  val known: Boolean? = null,
+  val sessions: ServerSessions? = null,
+  val stats: AgentXFTPServerStatsData? = null,
+  val rcvInProgress: Boolean,
+  val sndInProgress: Boolean,
+  val delInProgress: Boolean
+) {}
+
+@Serializable
+data class AgentXFTPServerStatsData(
+  val _uploads: Int,
+  val _uploadsSize: Long,
+  val _uploadAttempts: Int,
+  val _uploadErrs: Int,
+  val _downloads: Int,
+  val _downloadsSize: Long,
+  val _downloadAttempts: Int,
+  val _downloadAuthErrs: Int,
+  val _downloadErrs: Int,
+  val _deletions: Int,
+  val _deleteAttempts: Int,
+  val _deleteErrs: Int
+)
 
 sealed class CustomTimeUnit {
   object Second: CustomTimeUnit()
@@ -4323,6 +4644,7 @@ sealed class CR {
   @Serializable @SerialName("userContactLinkDeleted") class UserContactLinkDeleted(val user: User): CR()
   @Serializable @SerialName("contactConnected") class ContactConnected(val user: UserRef, val contact: Contact, val userCustomProfile: Profile? = null): CR()
   @Serializable @SerialName("contactConnecting") class ContactConnecting(val user: UserRef, val contact: Contact): CR()
+  @Serializable @SerialName("contactSndReady") class ContactSndReady(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("receivedContactRequest") class ReceivedContactRequest(val user: UserRef, val contactRequest: UserContactRequest): CR()
   @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected(val user: UserRef): CR()
@@ -4439,6 +4761,8 @@ sealed class CR {
   @Serializable @SerialName("chatError") class ChatRespError(val user_: UserRef?, val chatError: ChatError): CR()
   @Serializable @SerialName("archiveImported") class ArchiveImported(val archiveErrors: List<ArchiveError>): CR()
   @Serializable @SerialName("appSettings") class AppSettingsR(val appSettings: AppSettings): CR()
+  @Serializable @SerialName("agentSubsTotal") class AgentSubsTotal(val user: UserRef, val subsTotal: SMPServerSubs, val hasSession: Boolean): CR()
+  @Serializable @SerialName("agentServersSummary") class AgentServersSummary(val user: UserRef, val serversSummary: PresentedServersSummary): CR()
   // general
   @Serializable class Response(val type: String, val json: String): CR()
   @Serializable class Invalid(val str: String): CR()
@@ -4497,6 +4821,7 @@ sealed class CR {
     is UserContactLinkDeleted -> "userContactLinkDeleted"
     is ContactConnected -> "contactConnected"
     is ContactConnecting -> "contactConnecting"
+    is ContactSndReady -> "contactSndReady"
     is ReceivedContactRequest -> "receivedContactRequest"
     is AcceptingContactRequest -> "acceptingContactRequest"
     is ContactRequestRejected -> "contactRequestRejected"
@@ -4598,6 +4923,8 @@ sealed class CR {
     is ContactPQAllowed -> "contactPQAllowed"
     is ContactPQEnabled -> "contactPQEnabled"
     is VersionInfo -> "versionInfo"
+    is AgentSubsTotal -> "agentSubsTotal"
+    is AgentServersSummary -> "agentServersSummary"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
     is ChatRespError -> "chatError"
@@ -4661,6 +4988,7 @@ sealed class CR {
     is UserContactLinkDeleted -> withUser(user, noDetails())
     is ContactConnected -> withUser(user, json.encodeToString(contact))
     is ContactConnecting -> withUser(user, json.encodeToString(contact))
+    is ContactSndReady -> withUser(user, json.encodeToString(contact))
     is ReceivedContactRequest -> withUser(user, json.encodeToString(contactRequest))
     is AcceptingContactRequest -> withUser(user, json.encodeToString(contact))
     is ContactRequestRejected -> withUser(user, noDetails())
@@ -4776,6 +5104,8 @@ sealed class CR {
     is RemoteCtrlStopped -> "rcsState: $rcsState\nrcsStopReason: $rcStopReason"
     is ContactPQAllowed -> withUser(user, "contact: ${contact.id}\npqEncryption: $pqEncryption")
     is ContactPQEnabled -> withUser(user, "contact: ${contact.id}\npqEnabled: $pqEnabled")
+    is AgentSubsTotal -> withUser(user, "subsTotal: ${subsTotal}\nhasSession: $hasSession")
+    is AgentServersSummary -> withUser(user, json.encodeToString(serversSummary))
     is VersionInfo -> "version ${json.encodeToString(versionInfo)}\n\n" +
         "chat migrations: ${json.encodeToString(chatMigrations.map { it.upName })}\n\n" +
         "agent migrations: ${json.encodeToString(agentMigrations.map { it.upName })}"
@@ -5307,6 +5637,7 @@ sealed class AgentErrorType {
     is SMP -> "SMP ${smpErr.string}"
     // is NTF -> "NTF ${ntfErr.string}"
     is XFTP -> "XFTP ${xftpErr.string}"
+    is PROXY -> "PROXY $proxyServer $relayServer ${proxyErr.string}"
     is RCP -> "RCP ${rcpErr.string}"
     is BROKER -> "BROKER ${brokerErr.string}"
     is AGENT -> "AGENT ${agentErr.string}"
@@ -5316,9 +5647,10 @@ sealed class AgentErrorType {
   }
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
-  @Serializable @SerialName("SMP") class SMP(val smpErr: SMPErrorType): AgentErrorType()
+  @Serializable @SerialName("SMP") class SMP(val serverAddress: String, val smpErr: SMPErrorType): AgentErrorType()
   // @Serializable @SerialName("NTF") class NTF(val ntfErr: SMPErrorType): AgentErrorType()
   @Serializable @SerialName("XFTP") class XFTP(val xftpErr: XFTPErrorType): AgentErrorType()
+  @Serializable @SerialName("PROXY") class PROXY(val proxyServer: String, val relayServer: String, val proxyErr: ProxyClientError): AgentErrorType()
   @Serializable @SerialName("RCP") class RCP(val rcpErr: RCErrorType): AgentErrorType()
   @Serializable @SerialName("BROKER") class BROKER(val brokerAddress: String, val brokerErr: BrokerErrorType): AgentErrorType()
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
@@ -5383,20 +5715,40 @@ sealed class SMPErrorType {
     is BLOCK -> "BLOCK"
     is SESSION -> "SESSION"
     is CMD -> "CMD ${cmdErr.string}"
+    is PROXY -> "PROXY ${proxyErr.string}"
     is AUTH -> "AUTH"
+    is CRYPTO -> "CRYPTO"
     is QUOTA -> "QUOTA"
     is NO_MSG -> "NO_MSG"
     is LARGE_MSG -> "LARGE_MSG"
+    is EXPIRED -> "EXPIRED"
     is INTERNAL -> "INTERNAL"
   }
   @Serializable @SerialName("BLOCK") class BLOCK: SMPErrorType()
   @Serializable @SerialName("SESSION") class SESSION: SMPErrorType()
   @Serializable @SerialName("CMD") class CMD(val cmdErr: ProtocolCommandError): SMPErrorType()
+  @Serializable @SerialName("PROXY") class PROXY(val proxyErr: ProxyError): SMPErrorType()
   @Serializable @SerialName("AUTH") class AUTH: SMPErrorType()
+  @Serializable @SerialName("CRYPTO") class CRYPTO: SMPErrorType()
   @Serializable @SerialName("QUOTA") class QUOTA: SMPErrorType()
   @Serializable @SerialName("NO_MSG") class NO_MSG: SMPErrorType()
   @Serializable @SerialName("LARGE_MSG") class LARGE_MSG: SMPErrorType()
+  @Serializable @SerialName("EXPIRED") class EXPIRED: SMPErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL: SMPErrorType()
+}
+
+@Serializable
+sealed class ProxyError {
+  val string: String get() = when (this) {
+    is PROTOCOL -> "PROTOCOL ${protocolErr.string}"
+    is BROKER -> "BROKER ${brokerErr.string}"
+    is BASIC_AUTH -> "BASIC_AUTH"
+    is NO_SESSION -> "NO_SESSION"
+  }
+  @Serializable @SerialName("PROTOCOL") class PROTOCOL(val protocolErr: SMPErrorType): ProxyError()
+  @Serializable @SerialName("BROKER") class BROKER(val brokerErr: BrokerErrorType): ProxyError()
+  @Serializable @SerialName("BASIC_AUTH") class BASIC_AUTH: ProxyError()
+  @Serializable @SerialName("NO_SESSION") class NO_SESSION: ProxyError()
 }
 
 @Serializable
@@ -5421,12 +5773,14 @@ sealed class ProtocolCommandError {
 sealed class SMPTransportError {
   val string: String get() = when (this) {
     is BadBlock -> "badBlock"
+    is Version -> "version"
     is LargeMsg -> "largeMsg"
     is BadSession -> "badSession"
     is NoServerAuth -> "noServerAuth"
     is Handshake -> "handshake ${handshakeErr.string}"
   }
   @Serializable @SerialName("badBlock") class BadBlock: SMPTransportError()
+  @Serializable @SerialName("version") class Version: SMPTransportError()
   @Serializable @SerialName("largeMsg") class LargeMsg: SMPTransportError()
   @Serializable @SerialName("badSession") class BadSession: SMPTransportError()
   @Serializable @SerialName("noServerAuth") class NoServerAuth: SMPTransportError()
@@ -5497,6 +5851,18 @@ sealed class XFTPErrorType {
   @Serializable @SerialName("TIMEOUT") object TIMEOUT: XFTPErrorType()
   @Serializable @SerialName("REDIRECT") class REDIRECT(val redirectError: String): XFTPErrorType()
   @Serializable @SerialName("INTERNAL") object INTERNAL: XFTPErrorType()
+}
+
+@Serializable
+sealed class ProxyClientError {
+  val string: String get() = when (this) {
+    is ProxyProtocolError -> "ProxyProtocolError $protocolErr"
+    is ProxyUnexpectedResponse -> "ProxyUnexpectedResponse $responseStr"
+    is ProxyResponseError -> "ProxyResponseError $responseErr"
+  }
+  @Serializable @SerialName("protocolError") class ProxyProtocolError(val protocolErr: SMPErrorType): ProxyClientError()
+  @Serializable @SerialName("unexpectedResponse") class ProxyUnexpectedResponse(val responseStr: String): ProxyClientError()
+  @Serializable @SerialName("responseError") class ProxyResponseError(val responseErr: SMPErrorType): ProxyClientError()
 }
 
 @Serializable
@@ -5634,6 +6000,7 @@ data class AppSettings(
   var privacyShowChatPreviews: Boolean? = null,
   var privacySaveLastDraft: Boolean? = null,
   var privacyProtectScreen: Boolean? = null,
+  var privacyMediaBlurRadius: Int? = null,
   var notificationMode: AppSettingsNotificationMode? = null,
   var notificationPreviewMode: AppSettingsNotificationPreviewMode? = null,
   var webrtcPolicyRelay: Boolean? = null,
@@ -5663,6 +6030,7 @@ data class AppSettings(
     if (privacyShowChatPreviews != def.privacyShowChatPreviews) { empty.privacyShowChatPreviews = privacyShowChatPreviews }
     if (privacySaveLastDraft != def.privacySaveLastDraft) { empty.privacySaveLastDraft = privacySaveLastDraft }
     if (privacyProtectScreen != def.privacyProtectScreen) { empty.privacyProtectScreen = privacyProtectScreen }
+    if (privacyMediaBlurRadius != def.privacyMediaBlurRadius) { empty.privacyMediaBlurRadius = privacyMediaBlurRadius }
     if (notificationMode != def.notificationMode) { empty.notificationMode = notificationMode }
     if (notificationPreviewMode != def.notificationPreviewMode) { empty.notificationPreviewMode = notificationPreviewMode }
     if (webrtcPolicyRelay != def.webrtcPolicyRelay) { empty.webrtcPolicyRelay = webrtcPolicyRelay }
@@ -5700,6 +6068,7 @@ data class AppSettings(
     privacyShowChatPreviews?.let { def.privacyShowChatPreviews.set(it) }
     privacySaveLastDraft?.let { def.privacySaveLastDraft.set(it) }
     privacyProtectScreen?.let { def.privacyProtectScreen.set(it) }
+    privacyMediaBlurRadius?.let { def.privacyMediaBlurRadius.set(it) }
     notificationMode?.let { def.notificationsMode.set(it.toNotificationsMode()) }
     notificationPreviewMode?.let { def.notificationPreviewMode.set(it.toNotificationPreviewMode().name) }
     webrtcPolicyRelay?.let { def.webrtcPolicyRelay.set(it) }
@@ -5730,6 +6099,7 @@ data class AppSettings(
         privacyShowChatPreviews = true,
         privacySaveLastDraft = true,
         privacyProtectScreen = false,
+        privacyMediaBlurRadius = 0,
         notificationMode = AppSettingsNotificationMode.INSTANT,
         notificationPreviewMode = AppSettingsNotificationPreviewMode.MESSAGE,
         webrtcPolicyRelay = true,
@@ -5761,6 +6131,7 @@ data class AppSettings(
           privacyShowChatPreviews = def.privacyShowChatPreviews.get(),
           privacySaveLastDraft = def.privacySaveLastDraft.get(),
           privacyProtectScreen = def.privacyProtectScreen.get(),
+          privacyMediaBlurRadius = def.privacyMediaBlurRadius.get(),
           notificationMode = AppSettingsNotificationMode.from(def.notificationsMode.get()),
           notificationPreviewMode = AppSettingsNotificationPreviewMode.from(NotificationPreviewMode.valueOf(def.notificationPreviewMode.get()!!)),
           webrtcPolicyRelay = def.webrtcPolicyRelay.get(),

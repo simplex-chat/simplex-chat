@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chat.item
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
@@ -12,10 +13,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -29,14 +29,17 @@ fun CIFileView(
   file: CIFile?,
   edited: Boolean,
   showMenu: MutableState<Boolean>,
+  smallView: Boolean = false,
   receiveFile: (Long) -> Unit
 ) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
-
+  val sizeMultiplier = 1f
+  val progressSizeMultiplier = if (smallView) 0.7f else 1f
   @Composable
   fun fileIcon(
     innerIcon: Painter? = null,
-    color: Color = if (isInDarkTheme()) FileDark else FileLight
+    color: Color = if (isInDarkTheme()) FileDark else FileLight,
+    topPadding: Dp = 12.sp.toDp()
   ) {
     Box(
       contentAlignment = Alignment.Center
@@ -52,8 +55,9 @@ fun CIFileView(
           innerIcon,
           stringResource(MR.strings.icon_descr_file),
           Modifier
-            .size(32.dp)
-            .padding(top = 12.dp),
+            .padding(top = topPadding * sizeMultiplier)
+            .height(20.sp.toDp() * sizeMultiplier)
+            .width(32.sp.toDp() * sizeMultiplier),
           tint = Color.White
         )
       }
@@ -129,66 +133,42 @@ fun CIFileView(
   }
 
   @Composable
-  fun progressIndicator() {
-    CircularProgressIndicator(
-      Modifier.size(32.dp),
-      color = if (isInDarkTheme()) FileDark else FileLight,
-      strokeWidth = 3.dp
-    )
-  }
-
-  @Composable
-  fun progressCircle(progress: Long, total: Long) {
-    val angle = 360f * (progress.toDouble() / total.toDouble()).toFloat()
-    val strokeWidth = with(LocalDensity.current) { 3.dp.toPx() }
-    val strokeColor = if (isInDarkTheme()) FileDark else FileLight
-    Surface(
-      Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
-      color = Color.Transparent,
-      shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
-      contentColor = LocalContentColor.current
-    ) {
-      Box(Modifier.size(32.dp))
-    }
-  }
-
-  @Composable
   fun fileIndicator() {
     Box(
       Modifier
-        .size(42.dp)
-        .clip(RoundedCornerShape(4.dp)),
+        .size(42.sp.toDp() * sizeMultiplier)
+        .clip(RoundedCornerShape(4.sp.toDp() * sizeMultiplier)),
       contentAlignment = Alignment.Center
     ) {
       if (file != null) {
         when (file.fileStatus) {
           is CIFileStatus.SndStored ->
             when (file.fileProtocol) {
-              FileProtocol.XFTP -> progressIndicator()
+              FileProtocol.XFTP -> CIFileViewScope.progressIndicator(progressSizeMultiplier)
               FileProtocol.SMP -> fileIcon()
               FileProtocol.LOCAL -> fileIcon()
             }
           is CIFileStatus.SndTransfer ->
             when (file.fileProtocol) {
-              FileProtocol.XFTP -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
-              FileProtocol.SMP -> progressIndicator()
+              FileProtocol.XFTP -> CIFileViewScope.progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal, progressSizeMultiplier)
+              FileProtocol.SMP -> CIFileViewScope.progressIndicator(progressSizeMultiplier)
               FileProtocol.LOCAL -> {}
             }
-          is CIFileStatus.SndComplete -> fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
+          is CIFileStatus.SndComplete -> fileIcon(innerIcon = if (!smallView) painterResource(MR.images.ic_check_filled) else null)
           is CIFileStatus.SndCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.SndError -> fileIcon(innerIcon = painterResource(MR.images.ic_close))
           is CIFileStatus.SndWarning -> fileIcon(innerIcon = painterResource(MR.images.ic_warning_filled))
           is CIFileStatus.RcvInvitation ->
             if (fileSizeValid(file))
-              fileIcon(innerIcon = painterResource(MR.images.ic_arrow_downward), color = MaterialTheme.colors.primary)
+              fileIcon(innerIcon = painterResource(MR.images.ic_arrow_downward), color = MaterialTheme.colors.primary, topPadding = 10.sp.toDp())
             else
               fileIcon(innerIcon = painterResource(MR.images.ic_priority_high), color = WarningOrange)
           is CIFileStatus.RcvAccepted -> fileIcon(innerIcon = painterResource(MR.images.ic_more_horiz))
           is CIFileStatus.RcvTransfer ->
             if (file.fileProtocol == FileProtocol.XFTP && file.fileStatus.rcvProgress < file.fileStatus.rcvTotal) {
-              progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal)
+              CIFileViewScope.progressCircle(file.fileStatus.rcvProgress, file.fileStatus.rcvTotal, progressSizeMultiplier)
             } else {
-              progressIndicator()
+              CIFileViewScope.progressIndicator(progressSizeMultiplier)
             }
           is CIFileStatus.RcvAborted ->
             fileIcon(innerIcon = painterResource(MR.images.ic_sync_problem), color = MaterialTheme.colors.primary)
@@ -210,31 +190,33 @@ fun CIFileView(
         onClick = { fileAction() },
         onLongClick = { showMenu.value = true }
       )
-      .padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
+      .padding(if (smallView) PaddingValues() else PaddingValues(top = 4.sp.toDp(), bottom = 6.sp.toDp(), start = 6.sp.toDp(), end = 12.sp.toDp())),
     //Modifier.clickable(enabled = file?.fileSource != null) { if (file?.fileSource != null && getLoadedFilePath(file) != null) openFile(file.fileSource) }.padding(top = 4.dp, bottom = 6.dp, start = 6.dp, end = 12.dp),
     verticalAlignment = Alignment.Bottom,
-    horizontalArrangement = Arrangement.spacedBy(2.dp)
+    horizontalArrangement = Arrangement.spacedBy(2.sp.toDp())
   ) {
     fileIndicator()
-    val metaReserve = if (edited)
-      "                       "
-    else
-      "                   "
-    if (file != null) {
-      Column {
-        Text(
-          file.fileName,
-          maxLines = 1
-        )
-        Text(
-          formatBytes(file.fileSize) + metaReserve,
-          color = MaterialTheme.colors.secondary,
-          fontSize = 14.sp,
-          maxLines = 1
-        )
+    if (!smallView) {
+      val metaReserve = if (edited)
+        "                       "
+      else
+        "                   "
+      if (file != null) {
+        Column {
+          Text(
+            file.fileName,
+            maxLines = 1
+          )
+          Text(
+            formatBytes(file.fileSize) + metaReserve,
+            color = MaterialTheme.colors.secondary,
+            fontSize = 14.sp,
+            maxLines = 1
+          )
+        }
+      } else {
+        Text(metaReserve)
       }
-    } else {
-      Text(metaReserve)
     }
   }
 }
@@ -264,6 +246,32 @@ fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =
       }
     }
   }
+
+object CIFileViewScope {
+  @Composable
+  fun progressIndicator(sizeMultiplier: Float = 1f) {
+    CircularProgressIndicator(
+      Modifier.size(32.sp.toDp() * sizeMultiplier),
+      color = if (isInDarkTheme()) FileDark else FileLight,
+      strokeWidth = 3.sp.toDp() * sizeMultiplier
+    )
+  }
+
+  @Composable
+  fun progressCircle(progress: Long, total: Long, sizeMultiplier: Float = 1f) {
+    val angle = 360f * (progress.toDouble() / total.toDouble()).toFloat()
+    val strokeWidth = with(LocalDensity.current) { 3.sp.toPx() }
+    val strokeColor = if (isInDarkTheme()) FileDark else FileLight
+    Surface(
+      Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
+      color = Color.Transparent,
+      shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
+      contentColor = LocalContentColor.current
+    ) {
+      Box(Modifier.size(32.sp.toDp() * sizeMultiplier))
+    }
+  }
+}
 
 /*
 class ChatItemProvider: PreviewParameterProvider<ChatItem> {

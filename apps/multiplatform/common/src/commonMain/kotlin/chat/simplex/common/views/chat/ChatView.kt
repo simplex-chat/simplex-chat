@@ -132,7 +132,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               ) {
                 if (
                   chat.chatInfo is ChatInfo.Direct
-                  && !chat.chatInfo.contact.ready
+                  && !chat.chatInfo.contact.sndReady
                   && chat.chatInfo.contact.active
                   && !chat.chatInfo.contact.nextSendGrpInv
                 ) {
@@ -159,6 +159,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               AudioPlayer.stop()
               chatModel.chatId.value = null
               chatModel.groupMembers.clear()
+              chatModel.groupMembersIndexes.clear()
             },
             info = {
               if (ModalManager.end.hasModalsOpen()) {
@@ -821,9 +822,9 @@ fun ChatInfoToolbar(
     buttons = barButtons
   )
 
-  Divider(Modifier.padding(top = AppBarHeight))
+  Divider(Modifier.padding(top = AppBarHeight * fontSizeSqrtMultiplier))
 
-  Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd).offset(y = AppBarHeight)) {
+  Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd).offset(y = AppBarHeight * fontSizeSqrtMultiplier)) {
     DefaultDropdownMenu(showMenu) {
       menuItems.forEach { it() }
     }
@@ -837,9 +838,9 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
     verticalAlignment = Alignment.CenterVertically
   ) {
     if (cInfo.incognito) {
-      IncognitoImage(size = 36.dp, Indigo)
+      IncognitoImage(size = 36.dp * fontSizeSqrtMultiplier, Indigo)
     }
-    ChatInfoImage(cInfo, size = imageSize, iconColor)
+    ChatInfoImage(cInfo, size = imageSize * fontSizeSqrtMultiplier, iconColor)
     Column(
       Modifier.padding(start = 8.dp),
       horizontalAlignment = Alignment.CenterHorizontally
@@ -865,7 +866,7 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
 
 @Composable
 private fun ContactVerifiedShield() {
-  Icon(painterResource(MR.images.ic_verified_user), null, Modifier.size(18.dp).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
+  Icon(painterResource(MR.images.ic_verified_user), null, Modifier.size(18.dp * fontSizeSqrtMultiplier).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
 }
 
 data class CIListState(val scrolled: Boolean, val itemCount: Int, val keyboardState: KeyboardState)
@@ -1024,10 +1025,21 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   horizontalAlignment = Alignment.Start
                 ) {
                   if (cItem.content.showMemberName) {
+                    val memberNameStyle = SpanStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
+                    val memberNameString = if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
+                      buildAnnotatedString {
+                        withStyle(memberNameStyle.copy(fontWeight = FontWeight.Medium)) { append(member.memberRole.text) }
+                        append(" ")
+                        withStyle(memberNameStyle) { append(memberNames(member, prevMember, memCount)) }
+                      }
+                    } else {
+                      buildAnnotatedString {
+                        withStyle(memberNameStyle) { append(memberNames(member, prevMember, memCount)) }
+                      }
+                    }
                     Text(
-                      memberNames(member, prevMember, memCount),
+                      memberNameString,
                       Modifier.padding(start = MEMBER_IMAGE_SIZE + 10.dp),
-                      style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary),
                       maxLines = 2
                     )
                   }
@@ -1101,6 +1113,12 @@ fun BoxWithConstraintsScope.ChatItemsList(
     }
   }
   FloatingButtons(chatModel.chatItems, unreadCount, chat.chatStats.minUnreadItemId, searchValue, markRead, setFloatingButton, listState)
+  LaunchedEffect(Unit) {
+    snapshotFlow { listState.isScrollInProgress }
+      .collect {
+        chatViewScrollState.value = it
+      }
+  }
 }
 
 @Composable
@@ -1283,7 +1301,7 @@ val MEMBER_IMAGE_SIZE: Dp = 38.dp
 
 @Composable
 fun MemberImage(member: GroupMember) {
-  ProfileImage(MEMBER_IMAGE_SIZE, member.memberProfile.image, backgroundColor = MaterialTheme.colors.background)
+  ProfileImage(MEMBER_IMAGE_SIZE * fontSizeSqrtMultiplier, member.memberProfile.image, backgroundColor = MaterialTheme.colors.background)
 }
 
 @Composable
@@ -1313,6 +1331,8 @@ private fun TopEndFloatingButton(
   else -> {
   }
 }
+
+val chatViewScrollState = MutableStateFlow(false)
 
 private fun bottomEndFloatingButton(
   unreadCount: Int,
@@ -1404,7 +1424,7 @@ sealed class ProviderMedia {
   data class Video(val uri: URI, val fileSource: CryptoFile?, val preview: String): ProviderMedia()
 }
 
-private fun providerForGallery(
+fun providerForGallery(
   listStateIndex: Int,
   chatItems: List<ChatItem>,
   cItemId: Long,

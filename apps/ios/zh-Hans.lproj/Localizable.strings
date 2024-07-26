@@ -133,9 +133,6 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ 已认证";
 
-/* No comment provided by engineer. */
-"%@ servers" = "%@ 服务器";
-
 /* notification title */
 "%@ wants to connect!" = "%@ 要连接！";
 
@@ -301,9 +298,6 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "上面，然后选择：";
 
-/* No comment provided by engineer. */
-"Accent color" = "色调";
-
 /* accept contact request via notification
    accept incoming call via notification */
 "Accept" = "接受";
@@ -333,7 +327,7 @@
 "Add profile" = "添加个人资料";
 
 /* No comment provided by engineer. */
-"Add server…" = "添加服务器…";
+"Add server" = "添加服务器";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "扫描二维码来添加服务器。";
@@ -786,9 +780,6 @@
 /* No comment provided by engineer. */
 "colored" = "彩色";
 
-/* No comment provided by engineer. */
-"Colors" = "颜色";
-
 /* server test step */
 "Compare file" = "对比文件";
 
@@ -951,7 +942,7 @@
 /* No comment provided by engineer. */
 "Continue" = "继续";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "复制";
 
 /* No comment provided by engineer. */
@@ -1689,7 +1680,8 @@
 /* No comment provided by engineer. */
 "Error: " = "错误： ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "错误： ％@";
 
 /* No comment provided by engineer. */
@@ -3645,9 +3637,6 @@
 "The text you pasted is not a SimpleX link." = "您粘贴的文本不是 SimpleX 链接。";
 
 /* No comment provided by engineer. */
-"Theme" = "主题";
-
-/* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "这些设置适用于您当前的配置文件 **%@**。";
 
 /* No comment provided by engineer. */
@@ -4122,7 +4111,7 @@
 "You can make it visible to your SimpleX contacts via Settings." = "你可以通过设置让它对你的 SimpleX 联系人可见。";
 
 /* notification body */
-"You can now send messages to %@" = "您现在可以给 %@ 发送消息";
+"You can now chat with %@" = "您现在可以给 %@ 发送消息";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "您可以通过设置来设置锁屏通知预览。";

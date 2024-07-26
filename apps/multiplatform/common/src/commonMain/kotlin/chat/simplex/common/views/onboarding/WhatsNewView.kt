@@ -118,13 +118,8 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
         featureDescription(painterResource(feature.icon), feature.titleId, feature.descrId, feature.link)
       }
 
-      val uriHandler = LocalUriHandler.current
       if (v.post != null) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = DEFAULT_PADDING.div(4))) {
-          Text(stringResource(MR.strings.whats_new_read_more), color = MaterialTheme.colors.primary,
-            modifier = Modifier.clickable { uriHandler.openUriCatching(v.post) })
-          Icon(painterResource(MR.images.ic_open_in_new), stringResource(MR.strings.whats_new_read_more), tint = MaterialTheme.colors.primary)
-        }
+        ReadMoreButton(v.post)
       }
 
       if (!viaSettings) {
@@ -146,6 +141,16 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
 
       pagination()
     }
+  }
+}
+
+@Composable
+fun ReadMoreButton(url: String) {
+  val uriHandler = LocalUriHandler.current
+  Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = DEFAULT_PADDING.div(4))) {
+    Text(stringResource(MR.strings.whats_new_read_more), color = MaterialTheme.colors.primary,
+      modifier = Modifier.clickable { uriHandler.openUriCatching(url) })
+    Icon(painterResource(MR.images.ic_open_in_new), stringResource(MR.strings.whats_new_read_more), tint = MaterialTheme.colors.primary)
   }
 }
 

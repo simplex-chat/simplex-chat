@@ -253,7 +253,9 @@ suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
     }
   }
   chatModel.groupMembers.clear()
+  chatModel.groupMembersIndexes.clear()
   chatModel.groupMembers.addAll(newMembers)
+  chatModel.populateGroupMembersIndexes()
 }
 
 @Composable
@@ -628,6 +630,7 @@ fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRe
     if (contact != null && isCurrentUser && contactRequest != null) {
       val chat = Chat(remoteHostId = rhId, ChatInfo.Direct(contact), listOf())
       chatModel.replaceChat(rhId, contactRequest.id, chat)
+      chatModel.setContactNetworkStatus(contact, NetworkStatus.Connected())
     }
   }
 }

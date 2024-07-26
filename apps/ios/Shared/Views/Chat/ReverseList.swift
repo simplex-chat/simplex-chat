@@ -129,8 +129,9 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                     from: nil,
                     for: nil
                 )
+            NotificationCenter.default.post(name: .chatViewWillBeginScrolling, object: nil)
         }
-        
+
         /// Scrolls up
         func scrollToNextPage() {
             tableView.setContentOffset(

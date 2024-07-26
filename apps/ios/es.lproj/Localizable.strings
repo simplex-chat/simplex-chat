@@ -155,9 +155,6 @@
 "%@ is verified" = "%@ está verificado";
 
 /* No comment provided by engineer. */
-"%@ servers" = "Servidores %@";
-
-/* No comment provided by engineer. */
 "%@ uploaded" = "%@ subido";
 
 /* notification title */
@@ -337,9 +334,6 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "y después elige:";
 
-/* No comment provided by engineer. */
-"Accent color" = "Color";
-
 /* accept contact request via notification
    accept incoming call via notification */
 "Accept" = "Aceptar";
@@ -369,7 +363,7 @@
 "Add profile" = "Añadir perfil";
 
 /* No comment provided by engineer. */
-"Add server…" = "Añadir servidor…";
+"Add server" = "Añadir servidor";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "Añadir servidores mediante el escaneo de códigos QR.";
@@ -840,9 +834,6 @@
 /* No comment provided by engineer. */
 "colored" = "coloreado";
 
-/* No comment provided by engineer. */
-"Colors" = "Colores";
-
 /* server test step */
 "Compare file" = "Comparar archivo";
 
@@ -967,7 +958,7 @@
 "Connection error" = "Error conexión";
 
 /* No comment provided by engineer. */
-"Connection error (AUTH)" = "Error conexión (Autenticación)";
+"Connection error (AUTH)" = "Error de conexión (Autenticación)";
 
 /* chat list item title (it should not be shown */
 "connection established" = "conexión establecida";
@@ -979,7 +970,7 @@
 "Connection terminated" = "Conexión finalizada";
 
 /* No comment provided by engineer. */
-"Connection timeout" = "Tiempo de conexión expirado";
+"Connection timeout" = "Tiempo de conexión agotado";
 
 /* connection information */
 "connection:%@" = "conexión: % @";
@@ -1023,7 +1014,7 @@
 /* No comment provided by engineer. */
 "Continue" = "Continuar";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "Copiar";
 
 /* No comment provided by engineer. */
@@ -1166,6 +1157,9 @@
 
 /* time unit */
 "days" = "días";
+
+/* No comment provided by engineer. */
+"Debug delivery" = "Informe debug";
 
 /* No comment provided by engineer. */
 "Decentralized" = "Descentralizada";
@@ -1800,7 +1794,8 @@
 /* No comment provided by engineer. */
 "Error: " = "Error: ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "Error: %@";
 
 /* No comment provided by engineer. */
@@ -2101,7 +2096,7 @@
 "ICE servers (one per line)" = "Servidores ICE (uno por línea)";
 
 /* No comment provided by engineer. */
-"If you can't meet in person, show QR code in a video call, or share the link." = "Si no puedes reunirte en persona, muestra el código QR por videollamada, o comparte el enlace.";
+"If you can't meet in person, show QR code in a video call, or share the link." = "Si no puedes reunirte en persona, muestra el código QR por videollamada o comparte el enlace.";
 
 /* No comment provided by engineer. */
 "If you enter this passcode when opening the app, all app data will be irreversibly removed!" = "¡Si introduces este código al abrir la aplicación, todos los datos de la misma se eliminarán de forma irreversible!";
@@ -2496,6 +2491,9 @@
 /* No comment provided by engineer. */
 "Message draft" = "Borrador de mensaje";
 
+/* No comment provided by engineer. */
+"Message queue info" = "Información cola de mensajes";
+
 /* chat feature */
 "Message reactions" = "Reacciones a mensajes";
 
@@ -2766,7 +2764,7 @@
 "on" = "Activado";
 
 /* No comment provided by engineer. */
-"One-time invitation link" = "Enlace único de invitación de un uso";
+"One-time invitation link" = "Enlace de invitación de un solo uso";
 
 /* No comment provided by engineer. */
 "Onion hosts will be required for connection. Requires enabling VPN." = "Se requieren hosts .onion para la conexión. Requiere activación de la VPN.";
@@ -2850,13 +2848,13 @@
 "Or paste archive link" = "O pegar enlace del archivo";
 
 /* No comment provided by engineer. */
-"Or scan QR code" = "O escanear código QR";
+"Or scan QR code" = "O escanea el código QR";
 
 /* No comment provided by engineer. */
 "Or securely share this file link" = "O comparte de forma segura este enlace al archivo";
 
 /* No comment provided by engineer. */
-"Or show this code" = "O mostrar este código";
+"Or show this code" = "O muestra este código QR";
 
 /* No comment provided by engineer. */
 "Other" = "Otro";
@@ -2898,7 +2896,7 @@
 "Paste link to connect!" = "Pegar enlace para conectar!";
 
 /* No comment provided by engineer. */
-"Paste the link you received" = "Pegar el enlace recibido";
+"Paste the link you received" = "Pega el enlace recibido";
 
 /* No comment provided by engineer. */
 "peer-to-peer" = "p2p";
@@ -2907,7 +2905,7 @@
 "People can connect to you only via the links you share." = "Las personas pueden conectarse contigo solo mediante los enlaces que compartes.";
 
 /* No comment provided by engineer. */
-"Periodically" = "Periódico";
+"Periodically" = "Periódicamente";
 
 /* message decrypt error item */
 "Permanent decryption error" = "Error permanente descifrado";
@@ -3063,10 +3061,10 @@
 "Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Protege tu dirección IP de los servidores de retransmisión elegidos por tus contactos.\nActívalo en ajustes de *Servidores y Redes*.";
 
 /* No comment provided by engineer. */
-"Protocol timeout" = "Tiempo de espera del protocolo";
+"Protocol timeout" = "Timeout protocolo";
 
 /* No comment provided by engineer. */
-"Protocol timeout per KB" = "Límite de espera del protocolo por KB";
+"Protocol timeout per KB" = "Timeout protocolo por KB";
 
 /* No comment provided by engineer. */
 "Push notifications" = "Notificaciones automáticas";
@@ -3090,22 +3088,22 @@
 "Read" = "Leer";
 
 /* No comment provided by engineer. */
-"Read more" = "Saber más";
+"Read more" = "Conoce más";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "Saber más en el [Manual del Usuario](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).";
+"Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." = "Conoce más en el [Manual del Usuario](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Saber más en [Guía de Usuario](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
+"Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." = "Conoce más en la [Guía del Usuario](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).";
 
 /* No comment provided by engineer. */
-"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Saber más en el [Manual del Usuario](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
+"Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." = "Conoce más en el [Manual del Usuario](https://simplex.chat/docs/guide/readme.html#connect-to-friends).";
 
 /* No comment provided by engineer. */
-"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Saber más en nuestro [repositorio GitHub](https://github.com/simplex-chat/simplex-chat#readme).";
+"Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." = "Conoce más en nuestro [repositorio GitHub](https://github.com/simplex-chat/simplex-chat#readme).";
 
 /* No comment provided by engineer. */
-"Read more in our GitHub repository." = "Saber más en nuestro repositorio GitHub.";
+"Read more in our GitHub repository." = "Conoce más en nuestro repositorio GitHub.";
 
 /* No comment provided by engineer. */
 "Receipts are disabled" = "Las confirmaciones están desactivadas";
@@ -3518,6 +3516,9 @@
 /* srv error text. */
 "Server address is incompatible with network settings." = "La dirección del servidor es incompatible con la configuración de la red.";
 
+/* queue info */
+"server queue info: %@\n\nlast received msg: %@" = "información cola del servidor: %1$@\n\núltimo mensaje recibido: %2$@";
+
 /* server test error */
 "Server requires authorization to create queues, check password" = "El servidor requiere autorización para crear colas, comprueba la contraseña";
 
@@ -3591,7 +3592,7 @@
 "Share link" = "Compartir enlace";
 
 /* No comment provided by engineer. */
-"Share this 1-time invite link" = "Compartir este enlace de un uso";
+"Share this 1-time invite link" = "Comparte este enlace de un solo uso";
 
 /* No comment provided by engineer. */
 "Share with contacts" = "Compartir con contactos";
@@ -3771,7 +3772,7 @@
 "Tap to join incognito" = "Pulsa para unirte en modo incógnito";
 
 /* No comment provided by engineer. */
-"Tap to paste link" = "Pulsa para pegar enlace";
+"Tap to paste link" = "Pulsa para pegar el enlacePulsa para pegar enlace";
 
 /* No comment provided by engineer. */
 "Tap to scan" = "Pulsa para escanear";
@@ -3780,7 +3781,7 @@
 "Tap to start a new chat" = "Pulsa para iniciar chat nuevo";
 
 /* No comment provided by engineer. */
-"TCP connection timeout" = "Tiempo de espera de la conexión TCP agotado";
+"TCP connection timeout" = "Timeout de la conexión TCP";
 
 /* No comment provided by engineer. */
 "TCP_KEEPCNT" = "TCP_KEEPCNT";
@@ -3873,9 +3874,6 @@
 "The text you pasted is not a SimpleX link." = "El texto pegado no es un enlace SimpleX.";
 
 /* No comment provided by engineer. */
-"Theme" = "Tema";
-
-/* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Esta configuración afecta a tu perfil actual **%@**.";
 
 /* No comment provided by engineer. */
@@ -3942,7 +3940,7 @@
 "To protect your information, turn on SimpleX Lock.\nYou will be prompted to complete authentication before this feature is enabled." = "Para proteger tu información, activa el Bloqueo SimpleX.\nSe te pedirá que completes la autenticación antes de activar esta función.";
 
 /* No comment provided by engineer. */
-"To protect your IP address, private routing uses your SMP servers to deliver messages." = "Para proteger tu dirección IP, el enrutamiento privado usa tus servidores SMP para enviar mensajes.";
+"To protect your IP address, private routing uses your SMP servers to deliver messages." = "Para proteger tu dirección IP, el enrutamiento privado usa tu lista de servidores SMP para enviar mensajes.";
 
 /* No comment provided by engineer. */
 "To record voice message please grant permission to use Microphone." = "Para grabar el mensaje de voz concede permiso para usar el micrófono.";
@@ -4029,7 +4027,7 @@
 "Unknown error" = "Error desconocido";
 
 /* No comment provided by engineer. */
-"unknown relays" = "servidor de retransmisión desconocido";
+"unknown relays" = "con servidores desconocidos";
 
 /* No comment provided by engineer. */
 "Unknown servers!" = "¡Servidores desconocidos!";
@@ -4041,7 +4039,7 @@
 "Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "A menos que utilices la interfaz de llamadas de iOS, activa el modo No molestar para evitar interrupciones.";
 
 /* No comment provided by engineer. */
-"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "A menos que tu contacto haya eliminado la conexión o\nque este enlace ya se haya usado, podría ser un error. Por favor, notifícalo.\nPara conectarte, pide a tu contacto que cree otro enlace de conexión y comprueba que tienes buena conexión de red.";
+"Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "A menos que tu contacto haya eliminado la conexión o el enlace haya sido usado, podría ser un error. Por favor, notifícalo.\nPara conectarte pide a tu contacto que cree otro enlace y comprueba la conexión de red.";
 
 /* No comment provided by engineer. */
 "Unlink" = "Desenlazar";
@@ -4059,7 +4057,7 @@
 "Unmute" = "Activar audio";
 
 /* No comment provided by engineer. */
-"unprotected" = "desprotegido";
+"unprotected" = "con IP desprotegida";
 
 /* No comment provided by engineer. */
 "Unread" = "No leído";
@@ -4131,10 +4129,10 @@
 "Use only local notifications?" = "¿Usar sólo notificaciones locales?";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers when IP address is not protected." = "Usar enrutamiento privado con servidores desconocidos cuando la dirección IP no está protegida.";
+"Use private routing with unknown servers when IP address is not protected." = "Usar enrutamiento privado con servidores desconocidos cuando tu dirección IP no está protegida.";
 
 /* No comment provided by engineer. */
-"Use private routing with unknown servers." = "Usar enrutamiento privado con servidores desconocidos.";
+"Use private routing with unknown servers." = "Usar enrutamiento privado con servidores de retransmisión desconocidos.";
 
 /* No comment provided by engineer. */
 "Use server" = "Usar servidor";
@@ -4416,7 +4414,7 @@
 "You can make it visible to your SimpleX contacts via Settings." = "Puedes hacerlo visible para tus contactos de SimpleX en Configuración.";
 
 /* notification body */
-"You can now send messages to %@" = "Ya puedes enviar mensajes a %@";
+"You can now chat with %@" = "Ya puedes enviar mensajes a %@";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "Puedes configurar las notificaciones de la pantalla de bloqueo desde Configuración.";
@@ -4524,7 +4522,7 @@
 "You will be connected when your contact's device is online, please wait or check later!" = "Te conectarás cuando el dispositivo del contacto esté en línea, por favor espera o compruébalo más tarde.";
 
 /* No comment provided by engineer. */
-"You will be required to authenticate when you start or resume the app after 30 seconds in background." = "Se te pedirá identificarte cuándo inicies o continues usando la aplicación tras 30 segundos en segundo plano.";
+"You will be required to authenticate when you start or resume the app after 30 seconds in background." = "Se te pedirá autenticarte cuando inicies la aplicación o sigas usándola tras 30 segundos en segundo plano.";
 
 /* No comment provided by engineer. */
 "You will connect to all group members." = "Te conectarás con todos los miembros del grupo.";
@@ -4596,7 +4594,7 @@
 "Your profile **%@** will be shared." = "Tu perfil **%@** será compartido.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Tu perfil se almacena en tu dispositivo y sólo se comparte con tus contactos.\nLos servidores de SimpleX no pueden ver tu perfil.";
+"Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Tu perfil es almacenado en tu dispositivo y solamente se comparte con tus contactos.\nLos servidores SimpleX no pueden ver tu perfil.";
 
 /* No comment provided by engineer. */
 "Your profile, contacts and delivered messages are stored on your device." = "Tu perfil, contactos y mensajes se almacenan en tu dispositivo.";

@@ -73,6 +73,8 @@ final class ChatModel: ObservableObject {
     var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
     @Published var chatToTop: String?
     @Published var groupMembers: [GMember] = []
+    @Published var groupMembersIndexes: Dictionary<Int64, Int> = [:] // groupMemberId to index in groupMembers list
+    @Published var membersLoaded = false
     // items in the terminal view
     @Published var showingTerminal = false
     @Published var terminalItems: [TerminalItem] = []
@@ -180,8 +182,30 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func populateGroupMembersIndexes() {
+        groupMembersIndexes.removeAll()
+        for (i, member) in groupMembers.enumerated() {
+            groupMembersIndexes[member.groupMemberId] = i
+        }
+    }
+
     func getGroupMember(_ groupMemberId: Int64) -> GMember? {
-        groupMembers.first { $0.groupMemberId == groupMemberId }
+        if let i = groupMembersIndexes[groupMemberId] {
+            return groupMembers[i]
+        }
+        return nil
+    }
+
+    func loadGroupMembers(_ groupInfo: GroupInfo, updateView: @escaping () -> Void = {}) async {
+        let groupMembers = await apiListMembers(groupInfo.groupId)
+        await MainActor.run {
+            if chatId == groupInfo.id {
+                self.groupMembers = groupMembers.map { GMember.init($0) }
+                self.populateGroupMembersIndexes()
+                self.membersLoaded = true
+                updateView()
+            }
+        }
     }
 
     private func getChatIndex(_ id: String) -> Int? {
@@ -330,6 +354,9 @@ final class ChatModel: ObservableObject {
             addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
             res = true
         }
+        if cItem.isDeletedContent || cItem.meta.itemDeleted != nil {
+            VoiceItemState.stopVoiceInChatView(cInfo, cItem)
+        }
         // update current chat
         return chatId == cInfo.id ? _upsertChatItem(cInfo, cItem) : res
     }
@@ -379,8 +406,8 @@ final class ChatModel: ObservableObject {
     }
 
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
-        if cItem.isRcvNew {
-            decreaseUnreadCounter(cInfo)
+        if cItem.isRcvNew, let chatIndex = getChatIndex(cInfo.id) {
+            decreaseUnreadCounter(chatIndex)
         }
         // update previews
         if let chat = getChat(cInfo.id) {
@@ -396,6 +423,7 @@ final class ChatModel: ObservableObject {
                 }
             }
         }
+        VoiceItemState.stopVoiceInChatView(cInfo, cItem)
     }
 
     func nextChatItemData<T>(_ chatItemId: Int64, previous: Bool, map: @escaping (ChatItem) -> T?) -> T? {
@@ -525,13 +553,18 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
-        if chatId == cInfo.id, let i = getChatItemIndex(cItem) {
-            if reversedChatItems[i].isRcvNew {
-                // update current chat
-                markChatItemRead_(i)
-                // update preview
-                decreaseUnreadCounter(cInfo)
+    func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
+        if chatId == cInfo.id,
+           let itemIndex = getChatItemIndex(cItem),
+           let chatIndex = getChatIndex(cInfo.id),
+           reversedChatItems[itemIndex].isRcvNew {
+            await MainActor.run {
+                withTransaction(Transaction()) {
+                    // update current chat
+                    markChatItemRead_(itemIndex)
+                    // update preview
+                    decreaseUnreadCounter(chatIndex)
+                }
             }
         }
     }
@@ -547,11 +580,9 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func decreaseUnreadCounter(_ cInfo: ChatInfo) {
-        if let i = getChatIndex(cInfo.id) {
-            chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount - 1
-            decreaseUnreadCounter(user: currentUser!)
-        }
+    func decreaseUnreadCounter(_ chatIndex: Int) {
+        chats[chatIndex].chatStats.unreadCount = chats[chatIndex].chatStats.unreadCount - 1
+        decreaseUnreadCounter(user: currentUser!)
     }
 
     func increaseUnreadCounter(user: any UserLike) {
@@ -667,14 +698,17 @@ final class ChatModel: ObservableObject {
         }
         // update current chat
         if chatId == groupInfo.id {
-            if let i = groupMembers.firstIndex(where: { $0.groupMemberId == member.groupMemberId }) {
+            if let i = groupMembersIndexes[member.groupMemberId] {
                 withAnimation(.default) {
                     self.groupMembers[i].wrapped = member
                     self.groupMembers[i].created = Date.now
                 }
                 return false
             } else {
-                withAnimation { groupMembers.append(GMember(member)) }
+                withAnimation {
+                    groupMembers.append(GMember(member))
+                    groupMembersIndexes[member.groupMemberId] = groupMembers.count - 1
+                }
                 return true
             }
         } else {

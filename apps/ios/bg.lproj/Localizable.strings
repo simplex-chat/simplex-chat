@@ -155,9 +155,6 @@
 "%@ is verified" = "%@ е потвърдено";
 
 /* No comment provided by engineer. */
-"%@ servers" = "%@ сървъри";
-
-/* No comment provided by engineer. */
 "%@ uploaded" = "%@ качено";
 
 /* notification title */
@@ -337,9 +334,6 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "по-горе, след това избери:";
 
-/* No comment provided by engineer. */
-"Accent color" = "Основен цвят";
-
 /* accept contact request via notification
    accept incoming call via notification */
 "Accept" = "Приеми";
@@ -369,7 +363,7 @@
 "Add profile" = "Добави профил";
 
 /* No comment provided by engineer. */
-"Add server…" = "Добави сървър…";
+"Add server" = "Добави сървър";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "Добави сървъри чрез сканиране на QR кодове.";
@@ -831,9 +825,6 @@
 /* No comment provided by engineer. */
 "colored" = "цветен";
 
-/* No comment provided by engineer. */
-"Colors" = "Цветове";
-
 /* server test step */
 "Compare file" = "Сравни файл";
 
@@ -1011,7 +1002,7 @@
 /* No comment provided by engineer. */
 "Continue" = "Продължи";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "Копирай";
 
 /* No comment provided by engineer. */
@@ -1779,7 +1770,8 @@
 /* No comment provided by engineer. */
 "Error: " = "Грешка: ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "Грешка: %@";
 
 /* No comment provided by engineer. */
@@ -3792,9 +3784,6 @@
 "The text you pasted is not a SimpleX link." = "Текстът, който поставихте, не е SimpleX линк за връзка.";
 
 /* No comment provided by engineer. */
-"Theme" = "Тема";
-
-/* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Тези настройки са за текущия ви профил **%@**.";
 
 /* No comment provided by engineer. */
@@ -4305,7 +4294,7 @@
 "You can make it visible to your SimpleX contacts via Settings." = "Можете да го направите видим за вашите контакти в SimpleX чрез Настройки.";
 
 /* notification body */
-"You can now send messages to %@" = "Вече можете да изпращате съобщения до %@";
+"You can now chat with %@" = "Вече можете да изпращате съобщения до %@";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "Можете да зададете визуализация на известията на заключен екран през настройките.";

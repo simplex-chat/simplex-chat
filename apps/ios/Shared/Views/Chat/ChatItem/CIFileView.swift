@@ -14,39 +14,45 @@ struct CIFileView: View {
     @EnvironmentObject var theme: AppTheme
     let file: CIFile?
     let edited: Bool
+    var smallView: Bool = false
 
     var body: some View {
-        let metaReserve = edited
-        ? "                           "
-        : "                       "
-        Button(action: fileAction) {
-            HStack(alignment: .bottom, spacing: 6) {
-                fileIndicator()
-                    .padding(.top, 5)
-                    .padding(.bottom, 3)
-                if let file = file {
-                    let prettyFileSize = ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(file.fileName)
-                            .lineLimit(1)
-                            .multilineTextAlignment(.leading)
-                            .foregroundColor(theme.colors.onBackground)
-                        Text(prettyFileSize + metaReserve)
-                            .font(.caption)
-                            .lineLimit(1)
-                            .multilineTextAlignment(.leading)
-                            .foregroundColor(theme.colors.secondary)
+        if smallView {
+            fileIndicator()
+            .onTapGesture(perform: fileAction)
+        } else {
+            let metaReserve = edited
+            ? "                           "
+            : "                       "
+            Button(action: fileAction) {
+                HStack(alignment: .bottom, spacing: 6) {
+                    fileIndicator()
+                        .padding(.top, 5)
+                        .padding(.bottom, 3)
+                    if let file = file {
+                        let prettyFileSize = ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(file.fileName)
+                                .lineLimit(1)
+                                .multilineTextAlignment(.leading)
+                                .foregroundColor(theme.colors.onBackground)
+                            Text(prettyFileSize + metaReserve)
+                                .font(.caption)
+                                .lineLimit(1)
+                                .multilineTextAlignment(.leading)
+                                .foregroundColor(theme.colors.secondary)
+                        }
+                    } else {
+                        Text(metaReserve)
                     }
-                } else {
-                    Text(metaReserve)
                 }
+                .padding(.top, 4)
+                .padding(.bottom, 6)
+                .padding(.leading, 10)
+                .padding(.trailing, 12)
             }
-            .padding(.top, 4)
-            .padding(.bottom, 6)
-            .padding(.leading, 10)
-            .padding(.trailing, 12)
+            .disabled(!itemInteractive)
         }
-        .disabled(!itemInteractive)
     }
 
     private var itemInteractive: Bool {
@@ -199,17 +205,17 @@ struct CIFileView: View {
             Image(systemName: icon)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 30, height: 30)
+                .frame(width: smallView ? 36 : 30, height: smallView ? 36 : 30)
                 .foregroundColor(color)
             if let innerIcon = innerIcon,
-               let innerIconSize = innerIconSize {
+               let innerIconSize = innerIconSize, (!smallView || file?.showStatusIconInSmallView == true) {
                 Image(systemName: innerIcon)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxHeight: 16)
                     .frame(width: innerIconSize, height: innerIconSize)
                     .foregroundColor(.white)
-                    .padding(.top, 12)
+                    .padding(.top, smallView ? 15 : 12)
             }
         }
     }
