@@ -84,4 +84,17 @@
     <string name="clear_contacts_selection_button">Bersihkan</string>
     <string name="clear_chat_menu_action">Bersihkan</string>
     <string name="migrate_from_device_check_connection_and_try_again">Cek koneksi internetmu dan coba lagi</string>
+    <string name="connect_button">Hubungkan</string>
+    <string name="server_connected">terhubung</string>
+    <string name="smp_server_test_connect">Hubungkan</string>
+    <string name="notification_contact_connected">Terhubung</string>
+    <string name="icon_descr_server_status_connected">Terhubung</string>
+    <string name="rcv_group_event_member_connected">terhubung</string>
+    <string name="connect_via_member_address_alert_title">Hubungkan langsung?</string>
+    <string name="callstate_connected">tersambung</string>
+    <string name="group_member_status_complete">selesai</string>
+    <string name="group_member_status_connected">terhubung</string>
+    <string name="connected_desktop">Terhubung</string>
+    <string name="servers_info_sessions_connected">Terhubung</string>
+    <string name="completed">Selesai</string>
 </resources>
