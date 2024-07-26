@@ -6940,18 +6940,18 @@ sendGroupMessages user gInfo@GroupInfo {groupId} members events = do
     Just msgs' -> do
       recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
       let msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
-          (toSendLooped, toSendBatched, pending, forwarded, _, dups) =
+          (toSendSeparate, toSendBatched, pending, forwarded, _, dups) =
             foldr addMember ([], [], [], [], S.empty, 0 :: Int) recipientMembers
       when (dups /= 0) $ logError $ "sendGroupMessage: " <> tshow dups <> " duplicate members"
       -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
-      let msgReqs = prepareMsgReqs msgFlags msgs' toSendLooped toSendBatched
+      let msgReqs = prepareMsgReqs msgFlags msgs' toSendSeparate toSendBatched
       delivered <- maybe (pure []) (fmap L.toList . deliverMessages) $ L.nonEmpty msgReqs
       let errors = lefts delivered
       unless (null errors) $ toView $ CRChatErrors (Just user) errors
       stored <- lift . withStoreBatch' $ \db -> map (\m -> createPendingMsgs db m msgs') pending
       let gsr =
             GroupSndResult
-              { sentTo = filterSent delivered (toSendLooped <> toSendBatched),
+              { sentTo = filterSent delivered (toSendSeparate <> toSendBatched),
                 pending = filterPending stored pending,
                 forwarded
               }
@@ -6963,30 +6963,30 @@ sendGroupMessages user gInfo@GroupInfo {groupId} members events = do
       liftM2 (<>) (shuffle adminMs) (shuffle otherMs)
       where
         isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
-    addMember m acc@(toSendLooped, toSendBatched, pending, forwarded, !mIds, !dups) =
+    addMember m acc@(toSendSeparate, toSendBatched, pending, forwarded, !mIds, !dups) =
       case memberSendAction gInfo events members m of
         Just a
-          | mId `S.member` mIds -> (toSendLooped, toSendBatched, pending, forwarded, mIds, dups + 1)
+          | mId `S.member` mIds -> (toSendSeparate, toSendBatched, pending, forwarded, mIds, dups + 1)
           | otherwise -> case a of
-              MSASend conn -> ((m, conn) : toSendLooped, toSendBatched, pending, forwarded, mIds', dups)
-              MSASendBatched conn -> (toSendLooped, (m, conn) : toSendBatched, pending, forwarded, mIds', dups)
-              MSAPending -> (toSendLooped, toSendBatched, m : pending, forwarded, mIds', dups)
-              MSAForwarded -> (toSendLooped, toSendBatched, pending, m : forwarded, mIds', dups)
+              MSASend conn -> ((m, conn) : toSendSeparate, toSendBatched, pending, forwarded, mIds', dups)
+              MSASendBatched conn -> (toSendSeparate, (m, conn) : toSendBatched, pending, forwarded, mIds', dups)
+              MSAPending -> (toSendSeparate, toSendBatched, m : pending, forwarded, mIds', dups)
+              MSAForwarded -> (toSendSeparate, toSendBatched, pending, m : forwarded, mIds', dups)
         Nothing -> acc
       where
         mId = groupMemberId' m
         mIds' = S.insert mId mIds
     prepareMsgReqs :: MsgFlags -> NonEmpty SndMessage -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> [ChatMsgReq]
-    prepareMsgReqs msgFlags msgs toSendLooped toSendBatched = do
-      let msgReqsLooped = map (\(_, conn) -> (conn, L.map sndMessageReq msgs)) toSendLooped
+    prepareMsgReqs msgFlags msgs toSendSeparate toSendBatched = do
+      let msgReqsSeparate = map (\(_, conn) -> (conn, L.map sndMessageReq msgs)) toSendSeparate
           batched = batchSndMessagesJSON msgs
           -- _errs shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
           (_errs, msgBatches) = partitionEithers batched
       case L.nonEmpty msgBatches of
         Just msgBatches' -> do
           let msgReqsBatched = map (\(_, conn) -> (conn, L.map (msgBatchReq msgFlags) msgBatches')) toSendBatched
-          msgReqsLooped <> msgReqsBatched
-        Nothing -> msgReqsLooped
+          msgReqsSeparate <> msgReqsBatched
+        Nothing -> msgReqsSeparate
       where
         sndMessageReq :: SndMessage -> (MsgFlags, MsgBody, [MessageId])
         sndMessageReq SndMessage {msgId, msgBody} = (msgFlags, msgBody, [msgId])
@@ -7007,10 +7007,10 @@ memberSendAction gInfo events members m@GroupMember {memberRole} = case memberCo
   Just conn@Connection {connStatus}
     | connDisabled conn || connStatus == ConnDeleted -> Nothing
     | connInactive conn -> Just MSAPending
-    | connStatus == ConnSndReady || connStatus == ConnReady -> sendBatchedOrLooped conn
+    | connStatus == ConnSndReady || connStatus == ConnReady -> sendBatchedOrSeparate conn
     | otherwise -> pendingOrForwarded
   where
-    sendBatchedOrLooped conn
+    sendBatchedOrSeparate conn
       | memberRole >= GRAdmin && not (m `supportsVersion` batchSend2Version) = Just (MSASend conn)
       | otherwise = Just (MSASendBatched conn)
     pendingOrForwarded = case memberCategory m of
