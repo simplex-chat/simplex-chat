@@ -58,9 +58,9 @@ fun Modifier.desktopModifyBlurredState(enabled: Boolean, blurred: MutableState<B
         blurred.value = true
       }
     }
-    this then Modifier.desktopOnHovered {
+    this then Modifier.desktopOnHovered { hovered ->
       job.cancel()
-      blurred.value = !it && !showMenu.value
+      blurred.value = !hovered && !showMenu.value
     }
   } else {
     this
