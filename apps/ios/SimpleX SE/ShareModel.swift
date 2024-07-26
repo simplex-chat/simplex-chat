@@ -117,7 +117,7 @@ class ShareModel: ObservableObject {
                         await MainActor.run { self.bottomBar = .loadingBar(progress: .zero) }
                         if let e = await handleEvents(
                             isGroupChat: ci.chatInfo.chatType == .group,
-                            waitForFile: sharedContent.cryptoFile != nil,
+                            isWithoutFile: sharedContent.cryptoFile == nil,
                             chatItemId: ci.chatItem.id
                         ) {
                             await MainActor.run { errorAlert = e }
@@ -171,10 +171,8 @@ class ShareModel: ObservableObject {
 
     actor CompletionHandler {
         static var isEventLoopEnabled = false
-        private var fileCompleted: Bool
+        private var fileCompleted = false
         private var messageCompleted = false
-
-        init(waitForFile: Bool) { self.fileCompleted = !waitForFile }
 
         func completeFile() { fileCompleted = true }
 
@@ -187,12 +185,13 @@ class ShareModel: ObservableObject {
 
     /// Polls and processes chat events
     /// Returns when message sending has completed optionally returning and error.
-    private func handleEvents(isGroupChat: Bool, waitForFile: Bool, chatItemId: ChatItem.ID) async -> ErrorAlert? {
+    private func handleEvents(isGroupChat: Bool, isWithoutFile: Bool, chatItemId: ChatItem.ID) async -> ErrorAlert? {
         func isMessage(for item: AChatItem?) -> Bool {
             item.map { $0.chatItem.id == chatItemId } ?? false
         }
         CompletionHandler.isEventLoopEnabled = true
-        let ch = CompletionHandler(waitForFile: waitForFile)
+        let ch = CompletionHandler()
+        if isWithoutFile { await ch.completeFile() }
         while await ch.isRunning {
             switch recvSimpleXMsg(messageTimeout: 1_000_000) {
             case let .sndFileProgressXFTP(_, ci, _, sentSize, totalSize):
