@@ -31,8 +31,9 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -329,13 +330,20 @@ forwardedGroupMsg msg@ChatMessage {chatMsgEvent} = case encoding @e of
   SJson | isForwardedGroupMsg chatMsgEvent -> Just msg
   _ -> Nothing
 
--- applied after checking forwardedGroupMsg and building list of group members to forward to, see Chat
-forwardedToGroupMembers :: forall e. MsgEncodingI e => [GroupMember] -> ChatMessage e -> [GroupMember]
-forwardedToGroupMembers ms ChatMessage {chatMsgEvent} = case encoding @e of
-  SJson -> case chatMsgEvent of
-    XGrpMemRestrict mId _ -> filter (\GroupMember {memberId} -> memberId /= mId) ms
-    _ -> ms
-  _ -> []
+-- applied after checking forwardedGroupMsg and building list of group members to forward to, see Chat;
+-- this filters out members if any of forwarded events in batch is an XGrpMemRestrict event referring to them,
+-- but practically XGrpMemRestrict is not batched with other events so it wouldn't prevent forwarding of other events
+-- to these members
+forwardedToGroupMembers :: forall e. MsgEncodingI e => [GroupMember] -> NonEmpty (ChatMessage e) -> [GroupMember]
+forwardedToGroupMembers ms forwardedMsgs =
+  filter (\GroupMember {memberId} -> memberId `notElem` restrictMemberIds) ms
+  where
+    restrictMemberIds = mapMaybe restrictMemberId $ L.toList forwardedMsgs
+    restrictMemberId ChatMessage {chatMsgEvent} = case encoding @e of
+      SJson -> case chatMsgEvent of
+        XGrpMemRestrict mId _ -> Just mId
+        _ -> Nothing
+      _ -> Nothing
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show)

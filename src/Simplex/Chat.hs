@@ -4587,7 +4587,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               atomically $ modifyTVar' tags ("error" :)
               logInfo $ "group msg=error " <> eInfo <> " " <> tshow e
               toView $ CRChatError (Just user) (ChatError . CEException $ "error parsing chat message: " <> e)
-          forwardMsg_ `catchChatError` (toView . CRChatError (Just user))
+          forwardMsgs (rights aChatMsgs) `catchChatError` (toView . CRChatError (Just user))
           checkSendRcpt $ rights aChatMsgs
         where
           aChatMsgs = parseChatMessages msgBody
@@ -4639,27 +4639,25 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             where
               aChatMsgHasReceipt (ACMsg _ ChatMessage {chatMsgEvent}) =
                 hasDeliveryReceipt (toCMEventTag chatMsgEvent)
-          forwardMsg_ :: CM ()
-          forwardMsg_ = do
+          forwardMsgs :: [AChatMessage] -> CM ()
+          forwardMsgs aMsgs = do
             let GroupMember {memberRole = membershipMemRole} = membership
-            when (membershipMemRole >= GRAdmin && not (blockedByAdmin m)) $ case aChatMsgs of
-              -- currently only a single message is forwarded
-              [Right (ACMsg _ chatMsg)] ->
-                forM_ (forwardedGroupMsg chatMsg) $ \chatMsg' -> do
-                  ChatConfig {highlyAvailable} <- asks config
-                  -- members introduced to this invited member
-                  introducedMembers <-
-                    if memberCategory m == GCInviteeMember
-                      then withStore' $ \db -> getForwardIntroducedMembers db vr user m highlyAvailable
-                      else pure []
-                  -- invited members to which this member was introduced
-                  invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user m highlyAvailable
-                  let GroupMember {memberId} = m
-                      ms = forwardedToGroupMembers (introducedMembers <> invitedMembers) chatMsg'
-                      msg = XGrpMsgForward memberId chatMsg' brokerTs
-                  unless (null ms) . void $
-                    sendGroupMessage' user gInfo ms msg
-              _ -> pure ()
+            when (membershipMemRole >= GRAdmin && not (blockedByAdmin m)) $ do
+              let forwardedMsgs = mapMaybe (\(ACMsg _ chatMsg) -> forwardedGroupMsg chatMsg) aMsgs
+              forM_ (L.nonEmpty forwardedMsgs) $ \forwardedMsgs' -> do
+                ChatConfig {highlyAvailable} <- asks config
+                -- members introduced to this invited member
+                introducedMembers <-
+                  if memberCategory m == GCInviteeMember
+                    then withStore' $ \db -> getForwardIntroducedMembers db vr user m highlyAvailable
+                    else pure []
+                -- invited members to which this member was introduced
+                invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user m highlyAvailable
+                let GroupMember {memberId} = m
+                    ms = forwardedToGroupMembers (introducedMembers <> invitedMembers) forwardedMsgs'
+                    events = L.map (\cm -> XGrpMsgForward memberId cm brokerTs) forwardedMsgs'
+                unless (null ms) $
+                  sendGroupMessages user gInfo ms events
       RCVD msgMeta msgRcpt ->
         withAckMessage' "group rcvd" agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
