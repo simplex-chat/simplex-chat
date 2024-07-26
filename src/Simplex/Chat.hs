@@ -4657,7 +4657,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     ms = forwardedToGroupMembers (introducedMembers <> invitedMembers) forwardedMsgs'
                     events = L.map (\cm -> XGrpMsgForward memberId cm brokerTs) forwardedMsgs'
                 unless (null ms) $
-                  void $ sendGroupMessages user gInfo ms events
+                  void $
+                    sendGroupMessages user gInfo ms events
       RCVD msgMeta msgRcpt ->
         withAckMessage' "group rcvd" agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
@@ -7011,7 +7012,9 @@ memberSendAction gInfo events members m@GroupMember {memberRole} = case memberCo
     | otherwise -> pendingOrForwarded
   where
     sendBatchedOrSeparate conn
+      -- admin doesn't support batch forwarding - send messages separately so that admin can forward one by one
       | memberRole >= GRAdmin && not (m `supportsVersion` batchSend2Version) = Just (MSASend conn)
+      -- either member is not admin, or admin supports batched forwarding
       | otherwise = Just (MSASendBatched conn)
     pendingOrForwarded = case memberCategory m of
       GCUserMember -> Nothing -- shouldn't happen
