@@ -39,7 +39,7 @@ fun CIVideoView(
   val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
   Box(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
-      .desktopModifyBlurredState(!smallView, blurred),
+      .desktopModifyBlurredState(!smallView, blurred, showMenu),
     contentAlignment = Alignment.TopEnd
   ) {
     val preview = remember(image) { base64ToBitmap(image) }

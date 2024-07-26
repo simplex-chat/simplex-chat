@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.views.helpers.KeyChangeEffect
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filter
 import java.io.File
 
@@ -37,15 +38,30 @@ expect fun Modifier.desktopPointerHoverIconHand(): Modifier
 expect fun Modifier.desktopOnHovered(action: (Boolean) -> Unit): Modifier
 
 @Composable
-fun Modifier.desktopModifyBlurredState(enabled: Boolean, blurred: MutableState<Boolean>): Modifier {
+fun Modifier.desktopModifyBlurredState(enabled: Boolean, blurred: MutableState<Boolean>, showMenu: State<Boolean>,): Modifier {
   val blurRadius = remember { appPrefs.privacyMediaBlurRadius.state }
   if (appPlatform.isDesktop) {
     KeyChangeEffect(blurRadius.value) {
       blurred.value = enabled && blurRadius.value > 0
     }
   }
-  return if (appPlatform.isDesktop && enabled && blurRadius.value > 0) {
-    this then Modifier.desktopOnHovered { blurred.value = !it }
+  return if (appPlatform.isDesktop && enabled && blurRadius.value > 0 && !showMenu.value) {
+    var job: Job = remember { Job() }
+    LaunchedEffect(Unit) {
+      // The approach here is to allow menu to show up and to not blur the view. When menu is shown and mouse is hovering,
+      // unhovered action is still received, but we don't need to handle it until menu closes. When it closes, it takes one frame to catch a
+      // hover action again and if:
+      // 1. mouse is still on the view, the hover action will cancel this coroutine and the view will stay unblurred
+      // 2. mouse is not on the view, the view will become blurred after 100 ms
+      job = launch {
+        delay(100)
+        blurred.value = true
+      }
+    }
+    this then Modifier.desktopOnHovered {
+      job.cancel()
+      blurred.value = !it && !showMenu.value
+    }
   } else {
     this
   }

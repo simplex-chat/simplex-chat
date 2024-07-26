@@ -183,7 +183,7 @@ fun CIImageView(
 
   Box(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
-      .desktopModifyBlurredState(!smallView, blurred),
+      .desktopModifyBlurredState(!smallView, blurred, showMenu),
     contentAlignment = Alignment.TopEnd
   ) {
     val res: MutableState<Triple<ImageBitmap, ByteArray, String>?> = remember {
