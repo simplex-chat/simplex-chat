@@ -32,6 +32,7 @@ extension AppSettings {
         if let val = privacyShowChatPreviews { def.setValue(val, forKey: DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) }
         if let val = privacySaveLastDraft { def.setValue(val, forKey: DEFAULT_PRIVACY_SAVE_LAST_DRAFT) }
         if let val = privacyProtectScreen { def.setValue(val, forKey: DEFAULT_PRIVACY_PROTECT_SCREEN) }
+        if let val = privacyMediaBlurRadius { def.setValue(val, forKey: DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS) }
         if let val = notificationMode { ChatModel.shared.notificationMode = val.toNotificationsMode() }
         if let val = notificationPreviewMode { ntfPreviewModeGroupDefault.set(val) }
         if let val = webrtcPolicyRelay { def.setValue(val, forKey: DEFAULT_WEBRTC_POLICY_RELAY) }
@@ -62,6 +63,7 @@ extension AppSettings {
         c.privacyShowChatPreviews = def.bool(forKey: DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS)
         c.privacySaveLastDraft = def.bool(forKey: DEFAULT_PRIVACY_SAVE_LAST_DRAFT)
         c.privacyProtectScreen = def.bool(forKey: DEFAULT_PRIVACY_PROTECT_SCREEN)
+        c.privacyMediaBlurRadius = def.integer(forKey: DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS)
         c.notificationMode = AppSettingsNotificationMode.from(ChatModel.shared.notificationMode)
         c.notificationPreviewMode = ntfPreviewModeGroupDefault.get()
         c.webrtcPolicyRelay = def.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
