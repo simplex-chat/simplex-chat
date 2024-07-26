@@ -1794,7 +1794,7 @@ processChatCommand' vr = \case
         Just (ctConns :: NonEmpty (Contact, Connection)) -> do
           let idsEvts = L.map ctSndEvent ctConns
           sndMsgs <- lift $ createSndMessages idsEvts
-          let msgReqs_ :: NonEmpty (Either ChatError MsgReq) = L.zipWith (fmap . ctMsgReq) ctConns sndMsgs
+          let msgReqs_ :: NonEmpty (Either ChatError ChatMsgReq) = L.zipWith (fmap . ctMsgReq) ctConns sndMsgs
           (errs, ctSndMsgs :: [(Contact, SndMessage)]) <-
             partitionEithers . L.toList . zipWith3' combineResults ctConns sndMsgs <$> deliverMessagesB msgReqs_
           timestamp <- liftIO getCurrentTime
@@ -1808,7 +1808,7 @@ processChatCommand' vr = \case
         _ -> ctConns
       ctSndEvent :: (Contact, Connection) -> (ConnOrGroupId, ChatMsgEvent 'Json)
       ctSndEvent (_, Connection {connId}) = (ConnectionId connId, XMsgNew $ MCSimple (extMsgContent mc Nothing))
-      ctMsgReq :: (Contact, Connection) -> SndMessage -> MsgReq
+      ctMsgReq :: (Contact, Connection) -> SndMessage -> ChatMsgReq
       ctMsgReq (_, conn) SndMessage {msgId, msgBody} = (conn, L.singleton (MsgFlags {notification = hasNotification XMsgNew_}, msgBody, [msgId]))
       zipWith3' :: (a -> b -> c -> d) -> NonEmpty a -> NonEmpty b -> NonEmpty c -> NonEmpty d
       zipWith3' f ~(x :| xs) ~(y :| ys) ~(z :| zs) = f x y z :| zipWith3 f xs ys zs
@@ -2540,7 +2540,7 @@ processChatCommand' vr = \case
             mergedProfile' = userProfileToSend user' Nothing (Just ct') False
         ctSndEvent :: ChangedProfileContact -> (ConnOrGroupId, ChatMsgEvent 'Json)
         ctSndEvent ChangedProfileContact {mergedProfile', conn = Connection {connId}} = (ConnectionId connId, XInfo mergedProfile')
-        ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError MsgReq
+        ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError ChatMsgReq
         ctMsgReq ChangedProfileContact {conn} =
           fmap $ \SndMessage {msgId, msgBody} ->
             (conn, L.singleton (MsgFlags {notification = hasNotification XInfo_}, msgBody, [msgId]))
@@ -6842,12 +6842,14 @@ deliverMessage' conn msgFlags msgBody msgId =
       Left e -> throwError e
     rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
 
-type MsgReq = (Connection, NonEmpty (MsgFlags, MsgBody, [MessageId]))
+-- NonEmpty (MsgFlags, MsgBody, [MessageId]) - list of requests as passed to agent
+-- [MessageId] - SndMessage ids inside MsgBatch, or single message id
+type ChatMsgReq = (Connection, NonEmpty (MsgFlags, MsgBody, [MessageId]))
 
-deliverMessages :: NonEmpty MsgReq -> CM (NonEmpty (Either ChatError (Connection, NonEmpty [Int64], PQEncryption)))
+deliverMessages :: NonEmpty ChatMsgReq -> CM (NonEmpty (Either ChatError (Connection, NonEmpty [Int64], PQEncryption)))
 deliverMessages msgs = deliverMessagesB $ L.map Right msgs
 
-deliverMessagesB :: NonEmpty (Either ChatError MsgReq) -> CM (NonEmpty (Either ChatError (Connection, NonEmpty [Int64], PQEncryption)))
+deliverMessagesB :: NonEmpty (Either ChatError ChatMsgReq) -> CM (NonEmpty (Either ChatError (Connection, NonEmpty [Int64], PQEncryption)))
 deliverMessagesB msgReqs = do
   msgReqs' <- liftIO compressBodies
   sent <- L.zipWith prepareBatch msgReqs' <$> withAgent (`sendMessagesB` L.map toAgent msgReqs')
@@ -6876,13 +6878,13 @@ deliverMessagesB msgReqs = do
     prepareBatch (Right req) (Right ar) = Right (req, ar)
     prepareBatch (Left ce) _ = Left ce -- restore original ChatError
     prepareBatch _ (Left ae) = Left $ ChatErrorAgent ae Nothing
-    createDelivery :: DB.Connection -> (MsgReq, (NonEmpty AgentMsgId, PQEncryption)) -> IO (Either ChatError (Connection, NonEmpty [Int64], PQEncryption))
+    createDelivery :: DB.Connection -> (ChatMsgReq, (NonEmpty AgentMsgId, PQEncryption)) -> IO (Either ChatError (Connection, NonEmpty [Int64], PQEncryption))
     createDelivery db ((conn@Connection {connId}, reqs), (agentMsgIds, pqEnc')) = do
       let zippedMsgIds = L.zipWith (\agentMsgId (_, _, msgIds) -> (agentMsgId, msgIds)) agentMsgIds reqs
       deliveriesIds <- forM zippedMsgIds $ \(agentMsgId, msgIds) ->
         mapM (createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId})) msgIds
       pure $ Right (conn, deliveriesIds, pqEnc')
-    updatePQSndEnabled :: DB.Connection -> (MsgReq, (NonEmpty AgentMsgId, PQEncryption)) -> IO ()
+    updatePQSndEnabled :: DB.Connection -> (ChatMsgReq, (NonEmpty AgentMsgId, PQEncryption)) -> IO ()
     updatePQSndEnabled db ((Connection {connId, pqSndEnabled}, _), (_, pqSndEnabled')) =
       case (pqSndEnabled, pqSndEnabled') of
         (Just b, b') | b' /= b -> updatePQ
@@ -6977,7 +6979,7 @@ sendGroupMessages' user gInfo@GroupInfo {groupId} members events = do
       where
         mId = groupMemberId' m
         mIds' = S.insert mId mIds
-    prepareMsgReqs :: MsgFlags -> NonEmpty SndMessage -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> [MsgReq]
+    prepareMsgReqs :: MsgFlags -> NonEmpty SndMessage -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> [ChatMsgReq]
     prepareMsgReqs msgFlags msgs toSendLooped toSendBatched = do
       let msgReqsLooped = map (\(_, conn) -> (conn, L.map sndMessageReq msgs)) toSendLooped
           batched = batchSndMessagesJSON
