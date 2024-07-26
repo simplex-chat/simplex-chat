@@ -383,6 +383,10 @@ fileprivate func transcodeVideo(from input: URL) async -> URL? {
             fullPath: true
         )
     )
-    let success = await makeVideoQualityLower(input, outputUrl: outputUrl)
-    return success ? outputUrl : nil
+    if await makeVideoQualityLower(input, outputUrl: outputUrl) {
+        return outputUrl
+    } else {
+        try? FileManager.default.removeItem(at: outputUrl)
+        return nil
+    }
 }
