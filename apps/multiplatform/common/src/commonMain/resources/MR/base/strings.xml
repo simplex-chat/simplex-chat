@@ -1472,6 +1472,7 @@
   <string name="send_receipts_disabled">disabled</string>
   <string name="send_receipts_disabled_alert_title">Receipts are disabled</string>
   <string name="send_receipts_disabled_alert_msg">This group has over %1$d members, delivery receipts are not sent.</string>
+  <string name="action_button_add_members">Invite</string>
 
   <!-- Chat / Chat item info -->
   <string name="section_title_for_console">FOR CONSOLE</string>
