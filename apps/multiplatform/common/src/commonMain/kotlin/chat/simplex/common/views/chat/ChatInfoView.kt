@@ -426,17 +426,17 @@ fun ChatInfoLayout(
     ) {
       if (contact.activeConn == null && contact.profile.contactLink != null && contact.active) {
         ConnectButton(openedFromChatView, chat, contact, close)
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(DEFAULT_PADDING))
       } else if (!contact.active && !contact.chatDeleted) {
         OpenButton(openedFromChatView, chat, contact, close)
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(DEFAULT_PADDING))
       }
       SearchButton(chat, contact, close)
-      Spacer(Modifier.width(10.dp))
+      Spacer(Modifier.width(DEFAULT_PADDING))
       CallButton(chat, contact)
-      Spacer(Modifier.width(10.dp))
+      Spacer(Modifier.width(DEFAULT_PADDING))
       VideoButton(chat, contact)
-      Spacer(Modifier.width(10.dp))
+      Spacer(Modifier.width(DEFAULT_PADDING))
       MuteButton(chat, contact)
     }
 
@@ -785,7 +785,7 @@ fun MuteButton(chat: Chat, contact: Contact) {
 @Composable
 fun CallButton(chat: Chat, contact: Contact) {
   InfoViewActionButton(
-    icon = painterResource(MR.images.ic_call_filled),
+    icon = painterResource(MR.images.ic_call),
     title = generalGetString(MR.strings.info_view_call_button),
     disabled = !contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall.value != null,
     onClick = {
@@ -797,7 +797,7 @@ fun CallButton(chat: Chat, contact: Contact) {
 @Composable
 fun VideoButton(chat: Chat, contact: Contact) {
   InfoViewActionButton(
-    icon = painterResource(MR.images.ic_videocam_filled),
+    icon = painterResource(MR.images.ic_videocam),
     title = generalGetString(MR.strings.info_view_video_button),
     disabled = !contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall.value != null,
     onClick = {
@@ -822,7 +822,7 @@ fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, onClic
             if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
             shape = CircleShape
           )
-          .padding(DEFAULT_PADDING)
+          .padding(16.dp)
       ) {
         Icon(
           icon,
@@ -835,7 +835,8 @@ fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, onClic
     Text(
       title.capitalize(Locale.current),
       style = MaterialTheme.typography.subtitle2.copy(fontWeight = FontWeight.Normal),
-      color = MaterialTheme.colors.secondary
+      color = MaterialTheme.colors.secondary,
+      modifier = Modifier.padding(top = DEFAULT_SPACE_AFTER_ICON)
     )
   }
 }

@@ -211,7 +211,7 @@ fun MuteButton(chat: Chat, groupInfo: GroupInfo) {
 fun AddGroupMembersButton(chat: Chat, groupInfo: GroupInfo) {
   InfoViewActionButton(
     icon =  if (groupInfo.incognito) painterResource(MR.images.ic_add_link) else painterResource(MR.images.ic_person_add_500),
-    title = if (groupInfo.incognito) stringResource(MR.strings.group_link) else stringResource(MR.strings.action_button_add_members),
+    title = stringResource(MR.strings.action_button_add_members),
     disabled = !groupInfo.ready,
     onClick = {
       if (groupInfo.incognito) {
@@ -275,10 +275,10 @@ fun GroupChatInfoLayout(
         verticalAlignment = Alignment.CenterVertically
       ) {
         SearchButton(chat, groupInfo, close)
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(DEFAULT_PADDING))
         MuteButton(chat, groupInfo)
         if (groupInfo.canAddMembers) {
-          Spacer(Modifier.width(10.dp))
+          Spacer(Modifier.width(DEFAULT_PADDING))
           AddGroupMembersButton(chat, groupInfo)
         }
       }
