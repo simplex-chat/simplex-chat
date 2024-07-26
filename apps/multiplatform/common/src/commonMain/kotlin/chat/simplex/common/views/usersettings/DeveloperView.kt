@@ -43,10 +43,6 @@ fun DeveloperView(
       SectionSpacer()
       SectionView(stringResource(MR.strings.developer_options_section).uppercase()) {
         SettingsPreferenceItem(painterResource(MR.images.ic_drive_folder_upload), stringResource(MR.strings.confirm_database_upgrades), m.controller.appPrefs.confirmDBUpgrades)
-        if (appPlatform.isAndroid) {
-          SettingsPreferenceItem(painterResource(MR.images.ic_back_hand), stringResource(MR.strings.one_hand_ui), m.controller.appPrefs.oneHandUI)
-        }
-
         if (appPlatform.isDesktop) {
           TerminalAlwaysVisibleItem(m.controller.appPrefs.terminalAlwaysVisible) { checked ->
             if (checked) {

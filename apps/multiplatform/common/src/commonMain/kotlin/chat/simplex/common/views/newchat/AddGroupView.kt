@@ -32,7 +32,7 @@ import kotlinx.coroutines.launch
 import java.net.URI
 
 @Composable
-fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit) {
+fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, closeAll: () -> Unit) {
   val rhId = rh?.remoteHostId
   AddGroupLayout(
     createGroup = { incognito, groupProfile ->
@@ -44,7 +44,8 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit) {
           chatModel.chatItemStatuses.clear()
           chatModel.chatId.value = groupInfo.id
           setGroupMembers(rhId, groupInfo, chatModel)
-          close.invoke()
+          closeAll.invoke()
+
           if (!groupInfo.incognito) {
             ModalManager.end.showModalCloseable(true) { close ->
               AddGroupMembersView(rhId, groupInfo, creatingGroup = true, chatModel, close)

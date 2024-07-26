@@ -1137,6 +1137,7 @@
   <string name="settings_developer_tools">Developer tools</string>
   <string name="settings_experimental_features">Experimental features</string>
   <string name="settings_section_title_socks">SOCKS PROXY</string>
+  <string name="settings_section_title_interface" translatable="false">INTERFACE</string>
   <string name="settings_section_title_language" translatable="false">LANGUAGE</string>
   <string name="settings_section_title_icon">APP ICON</string>
   <string name="settings_section_title_themes">THEMES</string>
@@ -2220,4 +2221,10 @@
   <string name="download_errors">Download errors</string>
   <string name="server_address">Server address</string>
   <string name="open_server_settings_button">Open server settings</string>
+
+  <!-- ContactsView.kt -->
+  <string name="contact_type_new">New</string>
+  <string name="deleted_chats">Deleted chats</string>
+  <string name="no_filtered_contacts">No filtered contacts</string>
+  <string name="contact_list_header_title">Your contacts</string>
 </resources>

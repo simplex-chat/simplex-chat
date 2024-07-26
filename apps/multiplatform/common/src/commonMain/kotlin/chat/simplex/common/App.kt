@@ -278,7 +278,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
       }
     }
     if (call != null && showCallArea) {
-      ActiveCallInteractiveArea(call, remember { MutableStateFlow(AnimatedViewState.GONE) })
+      ActiveCallInteractiveArea(call)
     }
   }
 }

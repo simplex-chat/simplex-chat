@@ -12,11 +12,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.TextRange
@@ -35,8 +33,9 @@ import chat.simplex.common.views.onboarding.shouldShowWhatsNew
 import chat.simplex.common.views.usersettings.SettingsView
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
-import chat.simplex.common.views.chat.group.ProgressIndicator
 import chat.simplex.common.views.chat.item.CIFileViewScope
+import chat.simplex.common.views.contacts.ContactType
+import chat.simplex.common.views.contacts.getContactType
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
@@ -44,19 +43,17 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.serialization.json.Json
 import java.net.URI
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+
+private fun showNewChatSheet() {
+  ModalManager.center.closeModals()
+  ModalManager.center.showModalCloseable { close ->
+    NewChatSheet(rh = chatModel.currentRemoteHost.value, close)
+  }
+}
 
 @Composable
 fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
-  val newChatSheetState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(AnimatedViewState.GONE)) }
-  val showNewChatSheet = {
-    newChatSheetState.value = AnimatedViewState.VISIBLE
-  }
-  val hideNewChatSheet: (animated: Boolean) -> Unit = { animated ->
-    if (animated) newChatSheetState.value = AnimatedViewState.HIDING
-    else newChatSheetState.value = AnimatedViewState.GONE
-  }
   val oneHandUI = remember { chatModel.controller.appPrefs.oneHandUI }
 
   LaunchedEffect(Unit) {
@@ -65,9 +62,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       ModalManager.center.showCustomModal { close -> WhatsNewView(close = close) }
     }
   }
-  LaunchedEffect(chatModel.clearOverlays.value) {
-    if (chatModel.clearOverlays.value && newChatSheetState.value.isVisible()) hideNewChatSheet(false)
-  }
+
   if (appPlatform.isDesktop) {
     KeyChangeEffect(chatModel.chatId.value) {
       if (chatModel.chatId.value != null) {
@@ -88,7 +83,8 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
           ChatListToolbar(
             scaffoldState.drawerState,
             userPickerState,
-            stopped
+            stopped,
+            oneHandUI
           )
         }
       }
@@ -99,7 +95,8 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
           ChatListToolbar(
             scaffoldState.drawerState,
             userPickerState,
-            stopped
+            stopped,
+            oneHandUI
           )
         }
       }
@@ -115,18 +112,11 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
     drawerGesturesEnabled = appPlatform.isAndroid,
     floatingActionButton = {
-      if (searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
-        var bottom = DEFAULT_PADDING
-        if (oneHandUI.state.value) {
-          bottom = DEFAULT_BOTTOM_PADDING
-        } else {
-          bottom -= 16.dp
-        }
-
+      if (!oneHandUI.state.value && searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
         FloatingActionButton(
           onClick = {
             if (!stopped) {
-              if (newChatSheetState.value.isVisible()) hideNewChatSheet(true) else showNewChatSheet()
+              showNewChatSheet()
             }
           },
           Modifier
@@ -141,7 +131,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
           backgroundColor = if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           contentColor = Color.White
         ) {
-          Icon(if (!newChatSheetState.collectAsState().value.isVisible()) painterResource(MR.images.ic_edit_filled) else painterResource(MR.images.ic_close), stringResource(MR.strings.add_contact_or_create_group), Modifier.size(24.dp * fontSizeSqrtMultiplier))
+          Icon(painterResource(MR.images.ic_edit_filled), stringResource(MR.strings.add_contact_or_create_group), Modifier.size(24.dp * fontSizeSqrtMultiplier))
         }
       }
     }
@@ -162,8 +152,8 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
         if (chatModel.chats.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
           Text(stringResource(
             if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
-          if (!stopped && !newChatSheetState.collectAsState().value.isVisible() && chatModel.chatRunning.value == true && searchText.value.text.isEmpty()) {
-            OnboardingButtons(showNewChatSheet)
+          if (!stopped && chatModel.chatRunning.value == true && searchText.value.text.isEmpty()) {
+            OnboardingButtons()
           }
         }
       }
@@ -173,12 +163,8 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     if (appPlatform.isDesktop) {
       val call = remember { chatModel.activeCall }.value
       if (call != null) {
-        ActiveCallInteractiveArea(call, newChatSheetState)
+        ActiveCallInteractiveArea(call)
       }
-    }
-    // TODO disable this button and sheet for the duration of the switch
-    tryOrShowError("NewChatSheet", error = {}) {
-      NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
     }
   }
   if (appPlatform.isAndroid) {
@@ -196,9 +182,14 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
 }
 
 @Composable
-private fun OnboardingButtons(openNewChatSheet: () -> Unit) {
+private fun OnboardingButtons() {
   Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
-    ConnectButton(generalGetString(MR.strings.tap_to_start_new_chat), openNewChatSheet)
+    ConnectButton(
+      generalGetString(MR.strings.tap_to_start_new_chat)
+    ) {
+      showNewChatSheet()
+    }
+
     val color = MaterialTheme.colors.primaryVariant
     Canvas(modifier = Modifier.width(40.dp).height(10.dp), onDraw = {
       val trianglePath = Path().apply {
@@ -233,10 +224,37 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean) {
+private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean, oneHandUI: SharedPreference<Boolean>) {
   val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val updatingProgress = remember { chatModel.updatingProgress }.value
+
+  if (oneHandUI.state.value) {
+    val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
+
+    barButtons.add {
+      IconButton(
+        onClick = {
+          if (!stopped) {
+            showNewChatSheet()
+          }
+        },
+      ) {
+        Box(
+          modifier = Modifier
+            .background(if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary, shape = CircleShape)
+            .padding(DEFAULT_PADDING_HALF)
+        ){
+          Icon(
+            painterResource(MR.images.ic_edit_filled),
+            stringResource(MR.strings.add_contact_or_create_group),
+            Modifier.size(sp16),
+            tint = if (!stopped) MaterialTheme.colors.onPrimary else MaterialTheme.colors.onSecondary)
+        }
+      }
+    }
+  }
+
   if (updatingProgress != null) {
     barButtons.add {
       val interactionSource = remember { MutableInteractionSource() }
@@ -420,7 +438,7 @@ private fun ToggleFilterEnabledButton() {
 }
 
 @Composable
-expect fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableStateFlow<AnimatedViewState>)
+expect fun ActiveCallInteractiveArea(call: Call)
 
 fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
@@ -626,11 +644,11 @@ private fun filteredChats(
   } else {
     val s = if (searchShowingSimplexLink.value) "" else searchText.trim().lowercase()
     if (s.isEmpty() && !showUnreadAndFavorites)
-      chats.filter { chat -> !chat.chatInfo.chatDeleted }
+      chats.filter { chat -> !chat.chatInfo.chatDeleted && getContactType(chat) != ContactType.CARD }
     else {
       chats.filter { chat ->
         when (val cInfo = chat.chatInfo) {
-          is ChatInfo.Direct -> !chat.chatInfo.chatDeleted && (
+          is ChatInfo.Direct -> getContactType(chat) != ContactType.CARD && !chat.chatInfo.chatDeleted && (
             if (s.isEmpty()) {
               chat.id == chatModel.chatId.value || filtered(chat)
             } else {
