@@ -94,9 +94,9 @@ func apiActivateChat() throws {
 func apiSuspendChat(expired: Bool) {
     let r = sendSimpleXCmd(.apiSuspendChat(timeoutMicroseconds: expired ? 0 : 3_000000))
     // Block until `chatSuspended` received or 3 seconds has passed
+    var suspended = false
     if case .cmdOk = r, !expired {
         let startTime = CFAbsoluteTimeGetCurrent()
-        var suspended = false
         while CFAbsoluteTimeGetCurrent() - startTime < 3 {
             switch recvSimpleXMsg(messageTimeout: 3_500000) {
             case .chatSuspended:
@@ -105,9 +105,9 @@ func apiSuspendChat(expired: Bool) {
             default: continue
             }
         }
-        if !suspended, !ShareViewController.isVisible {
-            _ = sendSimpleXCmd(.apiSuspendChat(timeoutMicroseconds: 0))
-        }
+    }
+    if !suspended {
+        _ = sendSimpleXCmd(.apiSuspendChat(timeoutMicroseconds: 0))
     }
     logger.debug("close store")
     if !ShareViewController.isVisible { chatCloseStore() }
