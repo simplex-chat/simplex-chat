@@ -1,7 +1,7 @@
 {
   description = "nix flake for simplex-chat";
-  inputs.haskellNix.url = "github:input-output-hk/haskell.nix/armv7a";
-  inputs.nixpkgs.follows = "haskellNix/nixpkgs-2305";
+  inputs.haskellNix.url = "github:input-output-hk/haskell.nix";
+  inputs.nixpkgs.follows = "haskellNix/nixpkgs-2405";
   inputs.mac2ios.url = "github:zw3rk/mobile-core-tools";
   inputs.hackage = {
     url = "github:input-output-hk/hackage.nix";
@@ -30,7 +30,7 @@
       # `appendOverlays` with a singleton is identical to `extend`.
       let pkgs = haskellNix.legacyPackages.${system}.appendOverlays [android26]; in
       let drv' = { extra-modules, pkgs', ... }: pkgs'.haskell-nix.project {
-        compiler-nix-name = "ghc963";
+        compiler-nix-name = "ghc966";
         index-state = "2024-06-01T00:00:00Z";
         # We need this, to specify we want the cabal project.
         # If the stack.yaml was dropped, this would not be necessary.
