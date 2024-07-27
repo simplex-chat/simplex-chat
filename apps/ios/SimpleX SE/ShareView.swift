@@ -53,11 +53,7 @@ struct ShareView: View {
             placement: .navigationBarDrawer(displayMode: .always)
         )
         .alert($model.errorAlert) { alert in
-            if alert.title == "Network" {
-                
-            } else {
-                Button("Ok") { model.completion() }
-            }
+            Button("Ok") { model.completion() }
         }
     }
 
