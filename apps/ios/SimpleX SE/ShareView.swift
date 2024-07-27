@@ -116,7 +116,7 @@ struct ShareView: View {
                     .padding(.leading, 4)
                 Text(cryptoFile.filePath)
             }
-        case .text: EmptyView() // unreachable
+        case .text: EmptyView()
         }
     }
 
