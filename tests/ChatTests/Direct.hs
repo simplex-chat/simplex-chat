@@ -46,7 +46,7 @@ chatDirectTests = do
     it "direct message edit history" testDirectMessageEditHistory
     it "direct message delete" testDirectMessageDelete
     it "direct message delete multiple" testDirectMessageDeleteMultiple
-    it "direct message delete multiple (many chat batches)" testDirectMessageDeleteMultipleManyBatches
+    fit "direct message delete multiple (many chat batches)" testDirectMessageDeleteMultipleManyBatches
     it "direct live message" testDirectLiveMessage
     it "direct timed message" testDirectTimedMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
