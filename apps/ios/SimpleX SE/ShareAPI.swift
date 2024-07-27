@@ -76,6 +76,39 @@ func apiSendMessage(
             ttl: nil
         )
     )
-    if case let .newChatItem(_, chatItem) = r { return chatItem }
+    if case let .newChatItem(_, chatItem) = r {
+        return chatItem
+    } else {
+        if let filePath = cryptoFile?.filePath { removeFile(filePath) }
+        throw r
+    }
+}
+
+func apiActivateChat() throws {
+    chatReopenStore()
+    let r = sendSimpleXCmd(.apiActivateChat(restoreChat: false))
+    if case .cmdOk = r { return }
     throw r
+}
+
+func apiSuspendChat(expired: Bool) {
+    let r = sendSimpleXCmd(.apiSuspendChat(timeoutMicroseconds: expired ? 0 : 3_000000))
+    // Block until `chatSuspended` received or 3 seconds has passed
+    var suspended = false
+    if case .cmdOk = r, !expired {
+        let startTime = CFAbsoluteTimeGetCurrent()
+        while CFAbsoluteTimeGetCurrent() - startTime < 3 {
+            switch recvSimpleXMsg(messageTimeout: 3_500000) {
+            case .chatSuspended:
+                suspended = false
+                break
+            default: continue
+            }
+        }
+    }
+    if !suspended {
+        _ = sendSimpleXCmd(.apiSuspendChat(timeoutMicroseconds: 0))
+    }
+    logger.debug("close store")
+    if !ShareViewController.isVisible { chatCloseStore() }
 }

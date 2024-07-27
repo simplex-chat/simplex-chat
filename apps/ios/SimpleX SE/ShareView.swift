@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct ShareView: View {
     @ObservedObject var model: ShareModel
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         NavigationView {
@@ -19,7 +20,7 @@ struct ShareView: View {
                     List(model.filteredChats) { chat in
                         HStack {
                             profileImage(
-                                base64Encoded: chat.chatInfo.image,
+                                chatInfoId: chat.chatInfo.id,
                                 systemFallback: chatIconName(chat.chatInfo),
                                 size: 30
                             )
@@ -28,24 +29,22 @@ struct ShareView: View {
                             radioButton(selected: chat == model.selected)
                         }
                         .contentShape(Rectangle())
-                        .onTapGesture { model.selected = chat }
+                        .onTapGesture { model.selected = model.selected == chat ? nil : chat }
                         .tag(chat)
                     }
                 } else {
                     ProgressView().frame(maxHeight: .infinity)
                 }
             }
-            .navigationTitle("Share With")
+            .navigationTitle("Share")
             .safeAreaInset(edge: .bottom) {
-                if model.selected != nil {
-                    switch model.bottomBar {
-                    case .sendButton:
-                        compose(isLoading: false)
-                    case .loadingSpinner:
-                        compose(isLoading: true)
-                    case .loadingBar(let progress):
-                        loadingBar(progress: progress)
-                    }
+                switch model.bottomBar {
+                case .sendButton:
+                    compose(isLoading: false)
+                case .loadingSpinner:
+                    compose(isLoading: true)
+                case .loadingBar(let progress):
+                    loadingBar(progress: progress)
                 }
             }
         }
@@ -53,14 +52,17 @@ struct ShareView: View {
             text: $model.search,
             placement: .navigationBarDrawer(displayMode: .always)
         )
-        .alert(model.errorAlert) { _ in
+        .alert($model.errorAlert) { alert in
             Button("Ok") { model.completion() }
         }
     }
 
     private func compose(isLoading: Bool) -> some View {
         VStack(spacing: .zero) {
-            Divider().overlay(Color.secondary.opacity(0.7))
+            Divider()
+            if let content = model.sharedContent  {
+               itemPreview(content)
+            }
             HStack {
                 Group {
                     if #available(iOSApplicationExtension 16.0, *) {
@@ -95,8 +97,57 @@ struct ShareView: View {
                     .strokeBorder(.secondary, lineWidth: 0.5).opacity(0.7)
             )
             .padding(8)
-            .background(.thinMaterial)
         }
+        .background(.thinMaterial)
+    }
+
+    @ViewBuilder private func itemPreview(_ content: SharedContent) -> some View {
+        switch content {
+        case let .image(preview, _): imagePreview(preview)
+        case let .movie(preview, _, _): imagePreview(preview)
+        case let .url(linkPreview): imagePreview(linkPreview.image)
+        case let .data(cryptoFile):
+            previewArea {
+                Image(systemName: "doc.fill")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 30, height: 30)
+                    .foregroundColor(Color(uiColor: .tertiaryLabel))
+                    .padding(.leading, 4)
+                Text(cryptoFile.filePath)
+            }
+        case .text: EmptyView()
+        }
+    }
+
+    @ViewBuilder private func imagePreview(_ img: String) -> some View {
+        if let img = UIImage(base64Encoded: img) {
+            previewArea {
+                Image(uiImage: img)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(minHeight: 40, maxHeight: 60)
+            }
+        } else {
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder private func previewArea<V: View>(@ViewBuilder content: @escaping () -> V) -> some View {
+        HStack(alignment: .center, spacing: 8) {
+            content()
+            Spacer()
+        }
+        .padding(.vertical, 1)
+        .frame(minHeight: 54)
+        .background {
+            switch colorScheme {
+            case .light: LightColorPaletteApp.sentMessage
+            case .dark: DarkColorPaletteApp.sentMessage
+            @unknown default: Color(.tertiarySystemBackground)
+            }
+        }
+        Divider()
     }
 
     private func loadingBar(progress: Double) -> some View {
@@ -108,9 +159,9 @@ struct ShareView: View {
         .background(Material.ultraThin)
     }
 
-    private func profileImage(base64Encoded: String?, systemFallback: String, size: Double) -> some View {
+    private func profileImage(chatInfoId: ChatInfo.ID, systemFallback: String, size: Double) -> some View {
         Group {
-            if let uiImage = UIImage(base64Encoded: base64Encoded) {
+            if let uiImage = model.profileImages[chatInfoId] {
                 Image(uiImage: uiImage).resizable()
             } else {
                 Image(systemName: systemFallback).resizable()
@@ -118,7 +169,7 @@ struct ShareView: View {
         }
         .foregroundStyle(Color(.tertiaryLabel))
         .frame(width: size, height: size)
-        .clipShape(Circle())
+        .clipShape(RoundedRectangle(cornerRadius: size * 0.225, style: .continuous))
     }
 
     private func radioButton(selected: Bool) -> some View {

@@ -11,15 +11,29 @@ import SwiftUI
 public struct ErrorAlert: Error {
     public let title: LocalizedStringKey
     public let message: LocalizedStringKey?
+    public let actions: Optional<() -> AnyView>
 
-    public init(title: LocalizedStringKey, message: LocalizedStringKey?) {
+    public init(
+        title: LocalizedStringKey,
+        message: LocalizedStringKey? = nil
+    ) {
         self.title = title
         self.message = message
+        self.actions = nil
+    }
+
+    public init<A: View>(
+        title: LocalizedStringKey,
+        message: LocalizedStringKey? = nil,
+        @ViewBuilder actions: @escaping () -> A
+    ) {
+        self.title = title
+        self.message = message
+        self.actions = { AnyView(actions()) }
     }
 
     public init(_ title: LocalizedStringKey) {
-        self.title = title
-        self.message = nil
+        self = ErrorAlert(title: title)
     }
 
     public init(_ error: any Error) {
@@ -47,25 +61,35 @@ extension LocalizedStringKey: @unchecked Sendable { }
 
 extension View {
     /// Bridges ``ErrorAlert`` to the generic alert API.
+    /// - Parameters:
+    ///   - errorAlert: Binding to the Error, which is rendered in the alert
+    ///   - actions: View Builder containing action buttons.
+    ///   System defaults to `Ok` dismiss error action, when no actions are provided.
+    ///   System implicitly adds `Cancel` action, if a destructive action is present
+    ///
+    /// - Returns: View, which displays ErrorAlert?, when set.
     @ViewBuilder public func alert<A: View>(
-        _ errorAlert: ErrorAlert?,
-        @ViewBuilder actions: (ErrorAlert) -> A
+        _ errorAlert: Binding<ErrorAlert?>,
+        @ViewBuilder actions: (ErrorAlert) -> A = { _ in EmptyView() }
     ) -> some View {
-        if let alert = errorAlert {
-            if let message = alert.message {
-                self.alert(
-                    alert.title,
-                    isPresented: .constant(errorAlert != nil),
-                    actions: { actions(alert) },
-                    message: { Text(message) }
-                )
-            } else {
-                self.alert(
-                    alert.title,
-                    isPresented: .constant(errorAlert != nil),
-                    actions: { actions(alert) }
-                )
-            }
+        if let alert = errorAlert.wrappedValue {
+            self.alert(
+                alert.title,
+                isPresented: Binding<Bool>(
+                    get: { errorAlert.wrappedValue != nil },
+                    set: { if !$0 { errorAlert.wrappedValue = nil } }
+                ),
+                actions: {
+                    if let actions_ = alert.actions {
+                        actions_()
+                    } else {
+                        actions(alert)
+                    }
+                },
+                message: {
+                    if let message = alert.message { Text(message) }
+                }
+            )
         } else { self }
     }
 }

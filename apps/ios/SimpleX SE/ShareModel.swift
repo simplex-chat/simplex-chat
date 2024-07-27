@@ -20,11 +20,12 @@ private let MAX_DOWNSAMPLE_SIZE: Int64 = 2000
 class ShareModel: ObservableObject {
     @Published var sharedContent: SharedContent?
     @Published var chats = Array<ChatData>()
+    @Published var profileImages = Dictionary<ChatInfo.ID, UIImage>()
     @Published var search = String()
     @Published var comment = String()
     @Published var selected: ChatData?
     @Published var isLoaded = false
-    @Published var bottomBar: BottomBar = .sendButton
+    @Published var bottomBar: BottomBar = .loadingSpinner
     @Published var errorAlert: ErrorAlert?
 
     enum BottomBar {
@@ -53,7 +54,7 @@ class ShareModel: ObservableObject {
         search.isEmpty
         ? filterChatsToForwardTo(chats: chats)
         : filterChatsToForwardTo(chats: chats)
-            .filter { foundChat($0, search) }
+            .filter { foundChat($0, search.localizedLowercase) }
     }
 
     func setup(context: NSExtensionContext) {
@@ -62,7 +63,9 @@ class ShareModel: ObservableObject {
             self.itemProvider = itemProvider
             self.completion = {
                 ShareModel.CompletionHandler.isEventLoopEnabled = false
-                context.completeRequest(returningItems: [item])
+                context.completeRequest(returningItems: [item]) {
+                    apiSuspendChat(expired: $0)
+                }
             }
             // Init Chat
             Task {
@@ -73,8 +76,16 @@ class ShareModel: ObservableObject {
                     Task {
                         switch fetchChats() {
                         case let .success(chats):
+                            // Decode base64 images on background thread
+                            let profileImages = chats.reduce(into: Dictionary<ChatInfo.ID, UIImage>()) { dict, chatData in
+                                if let profileImage = chatData.chatInfo.image,
+                                   let uiImage = UIImage(base64Encoded: profileImage) {
+                                    dict[chatData.id] = uiImage
+                                }
+                            }
                             await MainActor.run {
                                 self.chats = chats
+                                self.profileImages = profileImages
                                 withAnimation { isLoaded = true }
                             }
                         case let .failure(error):
@@ -87,6 +98,7 @@ class ShareModel: ObservableObject {
                         case let .success(chatItemContent):
                             await MainActor.run {
                                 self.sharedContent = chatItemContent
+                                self.bottomBar = .sendButton
                                 if case let .text(string) = chatItemContent { comment = string }
                             }
                         case let .failure(errorAlert):
@@ -135,20 +147,24 @@ class ShareModel: ObservableObject {
     }
 
     private func initChat() -> ErrorAlert? {
-        registerGroupDefaults()
-        haskell_init_se()
-        let (_, result) = chatMigrateInit()
-        if result != .ok { return ErrorAlert("Database migration failed") }
         do {
+            if hasChatCtrl() {
+                try apiActivateChat()
+            } else {
+                registerGroupDefaults()
+                haskell_init_se()
+                let (_, result) = chatMigrateInit()
+                if result != .ok { return ErrorAlert("Database migration failed") }
+                try apiSetAppFilePaths(
+                    filesFolder: getAppFilesDirectory().path,
+                    tempFolder: getTempFilesDirectory().path,
+                    assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path
+                )
+                let isRunning = try apiStartChat()
+                logger.log(level: .debug, "chat started, running: \(isRunning)")
+            }
             try apiSetNetworkConfig(getNetCfg())
-            try apiSetAppFilePaths(
-                filesFolder: getAppFilesDirectory().path,
-                tempFolder: getTempFilesDirectory().path,
-                assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path
-            )
             try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
-            let isRunning = try apiStartChat()
-            logger.log(level: .debug, "Chat started. Is running: \(isRunning)")
         } catch { return ErrorAlert(error) }
         return nil
     }
@@ -189,13 +205,25 @@ class ShareModel: ObservableObject {
         func isMessage(for item: AChatItem?) -> Bool {
             item.map { $0.chatItem.id == chatItemId } ?? false
         }
+
         CompletionHandler.isEventLoopEnabled = true
         let ch = CompletionHandler()
         if isWithoutFile { await ch.completeFile() }
+        var networkTimeout = CFAbsoluteTimeGetCurrent()
         while await ch.isRunning {
+            if CFAbsoluteTimeGetCurrent() - networkTimeout > 30 {
+                networkTimeout = CFAbsoluteTimeGetCurrent()
+                await MainActor.run {
+                    self.errorAlert = ErrorAlert(title: "No network connection") {
+                        Button("Keep Trying", role: .cancel) {  }
+                        Button("Dismiss Sheet", role: .destructive) { self.completion() }
+                    }
+                }
+            }
             switch recvSimpleXMsg(messageTimeout: 1_000_000) {
             case let .sndFileProgressXFTP(_, ci, _, sentSize, totalSize):
                 guard isMessage(for: ci) else { continue }
+                networkTimeout = CFAbsoluteTimeGetCurrent()
                 await MainActor.run {
                     withAnimation {
                         let progress = Double(sentSize) / Double(totalSize)
@@ -294,7 +322,7 @@ extension NSItemProvider {
             case .image:
 
                 // Animated
-                if hasItemConformingToTypeIdentifier(UTType.gif.identifier) {
+                return if hasItemConformingToTypeIdentifier(UTType.gif.identifier) {
                     if let url = try? await inPlaceUrl(type: type),
                        let data = try? Data(contentsOf: url),
                        let image = UIImage(data: data),
@@ -320,35 +348,53 @@ extension NSItemProvider {
                    let (image, duration) = AVAsset(url: trancodedUrl).generatePreview(),
                    let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE),
                    let cryptoFile = moveTempFileFromURL(trancodedUrl) {
-                    {
-                        try? FileManager.default.removeItem(at: trancodedUrl)
-                        return .success(.movie(preview: preview, duration: duration, cryptoFile: cryptoFile))
-                    }()
-                } else { .failure(ErrorAlert("Error preparing message")) }
+                    try? FileManager.default.removeItem(at: trancodedUrl)
+                    return .success(.movie(preview: preview, duration: duration, cryptoFile: cryptoFile))
+                } else { return .failure(ErrorAlert("Error preparing message")) }
 
             // Prepare Data message
             case .fileURL:
-                if let url = try? await inPlaceUrl(type: .data),
-                   let file = saveFileFromURL(url) {
-                    .success(.data(cryptoFile: file))
-                } else { .failure(ErrorAlert("Error preparing file")) }
+                if let url = try? await inPlaceUrl(type: .data) {
+                    if isFileTooLarge(for: url) {
+                        let sizeString = ByteCountFormatter.string(
+                            fromByteCount: Int64(getMaxFileSize(.xftp)),
+                            countStyle: .binary
+                        )
+                        return .failure(
+                            ErrorAlert(
+                                title: "Large file!",
+                                message: "Currently maximum supported file size is \(sizeString)."
+                            )
+                        )
+                    }
+                    if let file = saveFileFromURL(url) {
+                        return .success(.data(cryptoFile: file))
+                    }
+                }
+                return .failure(ErrorAlert("Error preparing file"))
 
             // Prepare Link message
             case .url:
-                if let url = try? await loadItem(forTypeIdentifier: type.identifier) as? URL,
-                   let linkPreview = await getLinkPreview(for: url) {
-                    .success(.url(preview: linkPreview))
-                } else { .failure(ErrorAlert("Error preparing message")) }
+                if let url = try? await loadItem(forTypeIdentifier: type.identifier) as? URL {
+                    let content: SharedContent =
+//                        Option to disable previews needs to be taken into account
+//                        if let linkPreview = await getLinkPreview(for: url) {
+//                            .url(preview: linkPreview)
+//                        } else {
+                            .text(string: url.absoluteString)
+//                        }
+                    return .success(content)
+                } else { return .failure(ErrorAlert("Error preparing message")) }
 
             // Prepare Text message
             case .text:
-                if let text = try? await loadItem(forTypeIdentifier: type.identifier) as? String {
+                return if let text = try? await loadItem(forTypeIdentifier: type.identifier) as? String {
                     .success(.text(string: text))
                 } else { .failure(ErrorAlert("Error preparing message")) }
-            default: .failure(ErrorAlert("Unsupported file format"))
+            default: return .failure(ErrorAlert("Unsupported format"))
             }
         } else {
-            .failure(ErrorAlert("Unsupported file format"))
+            return .failure(ErrorAlert("Unsupported format"))
         }
     }
 
@@ -389,3 +435,10 @@ fileprivate func transcodeVideo(from input: URL) async -> URL? {
         return nil
     }
 }
+
+fileprivate func isFileTooLarge(for url: URL) -> Bool {
+    fileSize(url)
+        .map { $0 > getMaxFileSize(.xftp) }
+        ?? false
+}
+
