@@ -120,12 +120,16 @@ struct ShareView: View {
         }
     }
 
-    private func imagePreview(_ img: String) -> some View {
-        previewArea {
-            Image(uiImage: UIImage(base64Encoded: img)!)
-                .resizable()
-                .scaledToFit()
-                .frame(minHeight: 40, maxHeight: 60)
+    @ViewBuilder private func imagePreview(_ img: String) -> some View {
+        if let img = UIImage(base64Encoded: img) {
+            previewArea {
+                Image(uiImage: img)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(minHeight: 40, maxHeight: 60)
+            }
+        } else {
+            EmptyView()
         }
     }
 
