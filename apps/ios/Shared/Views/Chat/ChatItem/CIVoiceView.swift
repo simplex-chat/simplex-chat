@@ -12,7 +12,7 @@ import SimpleXChat
 struct CIVoiceView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
-    @Environment(\.fontSizeMultiplier) var fontSizeMultiplier: CGFloat
+    @Environment(\.fontSizeMultAccess) var fontSizeMultAccess: CGFloat
     var chatItem: ChatItem
     let recordingFile: CIFile?
     let duration: Int
@@ -27,7 +27,7 @@ struct CIVoiceView: View {
     var body: some View {
         Group {
             if smallView {
-                HStack(spacing: 10 * fontSizeMultiplier) {
+                HStack(spacing: 10 * fontSizeMultAccess) {
                     player()
                     playerTime()
                         .allowsHitTesting(false)
@@ -45,10 +45,10 @@ struct CIVoiceView: View {
                         player()
                     }
                     .frame(alignment: .trailing)
-                    metaView().padding(.trailing, 10 * fontSizeMultiplier)
+                    metaView().padding(.trailing, 10 * fontSizeMultAccess)
                 }
             } else {
-                VStack (alignment: .leading, spacing: 6 * fontSizeMultiplier) {
+                VStack (alignment: .leading, spacing: 6 * fontSizeMultAccess) {
                     HStack {
                         player()
                         playerTime()
@@ -57,12 +57,12 @@ struct CIVoiceView: View {
                         }
                     }
                     .frame(alignment: .leading)
-                    metaView().padding(.leading, -6 * fontSizeMultiplier)
+                    metaView().padding(.leading, -6 * fontSizeMultAccess)
                 }
             }
         }
-        .padding(.top, 4 * fontSizeMultiplier)
-        .padding(.bottom, 8 * fontSizeMultiplier)
+        .padding(.top, 4 * fontSizeMultAccess)
+        .padding(.bottom, 8 * fontSizeMultAccess)
     }
 
     private func player() -> some View {
@@ -77,7 +77,7 @@ struct CIVoiceView: View {
             playbackState: $playbackState,
             playbackTime: $playbackTime,
             allowMenu: $allowMenu,
-            sizeMultiplier: smallView ? voiceMessageSizeBasedOnSquareSize(36) / 56 : 1
+            sizeMultiplier: smallView ? voiceMessageSizeBasedOnSquareSize(ChatPreviewView.contentPreviewSize) / 56 : 1
         )
     }
 
@@ -136,7 +136,7 @@ struct VoiceMessagePlayer: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @Environment(\.fontSizeMultiplier) var fontSizeMultiplier: CGFloat
+    @Environment(\.fontSizeMultAccess) var fontSizeMultAccess: CGFloat
     var chatItem: ChatItem
     var recordingFile: CIFile?
     var recordingTime: TimeInterval
@@ -324,15 +324,15 @@ struct VoiceMessagePlayer: View {
             Image(systemName: image)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 20 * sizeMultiplier * fontSizeMultiplier, height: 20 * sizeMultiplier * fontSizeMultiplier)
+                .frame(width: 20 * sizeMultiplier * fontSizeMultAccess, height: 20 * sizeMultiplier * fontSizeMultAccess)
                 .foregroundColor(color)
                 .padding(.leading, image == "play.fill" ? 4 : 0)
-                .frame(width: 56 * sizeMultiplier * fontSizeMultiplier, height: 56 * sizeMultiplier * fontSizeMultiplier)
+                .frame(width: 56 * sizeMultiplier * fontSizeMultAccess, height: 56 * sizeMultiplier * fontSizeMultAccess)
                 .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
                 .clipShape(Circle())
             if recordingTime > 0 {
                 ProgressCircle(length: recordingTime, progress: $playbackTime)
-                    .frame(width: 53 * sizeMultiplier * fontSizeMultiplier, height: 53 * sizeMultiplier * fontSizeMultiplier) // this + ProgressCircle lineWidth = background circle diameter
+                    .frame(width: 53 * sizeMultiplier * fontSizeMultAccess, height: 53 * sizeMultiplier * fontSizeMultAccess) // this + ProgressCircle lineWidth = background circle diameter
             }
         }
     }
@@ -391,17 +391,17 @@ struct VoiceMessagePlayer: View {
         Image(systemName: image)
             .resizable()
             .aspectRatio(contentMode: .fit)
-            .frame(width: size * sizeMultiplier * fontSizeMultiplier, height: size * sizeMultiplier * fontSizeMultiplier)
+            .frame(width: size * sizeMultiplier * fontSizeMultAccess, height: size * sizeMultiplier * fontSizeMultAccess)
             .foregroundColor(Color(uiColor: .tertiaryLabel))
-            .frame(width: 56 * sizeMultiplier * fontSizeMultiplier, height: 56 * sizeMultiplier * fontSizeMultiplier)
+            .frame(width: 56 * sizeMultiplier * fontSizeMultAccess, height: 56 * sizeMultiplier * fontSizeMultAccess)
             .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
             .clipShape(Circle())
     }
 
     private func loadingIcon() -> some View {
         ProgressView()
-            .frame(width: 30 * sizeMultiplier * fontSizeMultiplier, height: 30 * sizeMultiplier * fontSizeMultiplier)
-            .frame(width: 56 * sizeMultiplier * fontSizeMultiplier, height: 56 * sizeMultiplier * fontSizeMultiplier)
+            .frame(width: 30 * sizeMultiplier * fontSizeMultAccess, height: 30 * sizeMultiplier * fontSizeMultAccess)
+            .frame(width: 56 * sizeMultiplier * fontSizeMultAccess, height: 56 * sizeMultiplier * fontSizeMultAccess)
             .background(showBackground ? chatItemFrameColor(chatItem, theme) : .clear)
             .clipShape(Circle())
     }

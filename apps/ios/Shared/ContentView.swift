@@ -35,7 +35,11 @@ struct ContentView: View {
     @State private var showSetPasscode = false
     @State private var waitingForOrPassedAuth = true
     @State private var chatListActionSheet: ChatListActionSheet? = nil
+    
     @ScaledMetric private var scaledFontMetrics: CGFloat = 1000
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    var staticXxxLargeFontSizeMultiplier: CGFloat = 1.318
+    var staticXxxLargeFontSizeSqrtMultiplier: CGFloat = 1.148042
 
     private let callTopPadding: CGFloat = 50
 
@@ -111,6 +115,8 @@ struct ContentView: View {
         }
         .environment(\.fontSizeMultiplier, scaledFontMetrics / 1000)
         .environment(\.fontSizeSqrtMultiplier, sqrt(scaledFontMetrics / 1000))
+        .environment(\.fontSizeMultAccess, dynamicTypeSize > .xxxLarge ? staticXxxLargeFontSizeMultiplier :  scaledFontMetrics / 1000)
+        .environment(\.fontSizeSqrtMultAccess, dynamicTypeSize > .xxxLarge ? staticXxxLargeFontSizeSqrtMultiplier : sqrt(scaledFontMetrics / 1000))
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
         .sheet(isPresented: $showSettings) {
             SettingsView(showSettings: $showSettings)

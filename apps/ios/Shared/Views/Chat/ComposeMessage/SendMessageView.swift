@@ -258,6 +258,7 @@ struct SendMessageView: View {
         var body: some View {
             Button(action: {}) {
                 Image(systemName: "mic.fill")
+                    .font(.system(size: 17))
                     .foregroundColor(theme.colors.primary)
             }
             .disabled(disabled)

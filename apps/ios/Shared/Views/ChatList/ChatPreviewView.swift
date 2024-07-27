@@ -13,14 +13,20 @@ struct ChatPreviewView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
+    
     @Environment(\.fontSizeMultiplier) var fontSizeMultiplier: CGFloat
     @Environment(\.fontSizeSqrtMultiplier) var fontSizeSqrtMultiplier: CGFloat
-    var messagePreviewLineHeight: CGFloat = UIFont.systemFont(ofSize: 17).lineHeight
+    @Environment(\.fontSizeMultAccess) var fontSizeMultAccess: CGFloat
+    @Environment(\.fontSizeSqrtMultAccess) var fontSizeSqrtMultAccess: CGFloat
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(wrappedValue: 16, relativeTo: .body) var messageFontSize: CGFloat
+    var messagePreviewLineHeight: CGFloat = UIFont.systemFont(ofSize: 16).lineHeight
     @Binding var progressByTimeout: Bool
     @State var deleting: Bool = false
     var darkGreen = Color(red: 0, green: 0.5, blue: 0)
     @State private var activeContentPreview: ActiveContentPreview? = nil
     @State private var showFullscreenGallery: Bool = false
+    static let contentPreviewSize: CGFloat = 34
 
     @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
 
@@ -28,11 +34,11 @@ struct ChatPreviewView: View {
         let cItem = chat.chatItems.last
         return HStack(spacing: 8) {
             ZStack(alignment: .bottomTrailing) {
-                ChatInfoImage(chat: chat, size: 63 * fontSizeSqrtMultiplier)
+                ChatInfoImage(chat: chat, size: 63 * fontSizeSqrtMultAccess)
                 chatPreviewImageOverlayIcon()
-                    .padding([.bottom, .trailing], 1)
+                    .padding([.bottom, .trailing], 1 * fontSizeMultAccess)
             }
-            .padding(.leading, 4)
+            .padding(.leading, 4 * fontSizeMultAccess)
 
             VStack(spacing: 0) {
                 HStack(alignment: .top) {
@@ -42,10 +48,10 @@ struct ChatPreviewView: View {
                         .font(.subheadline)
                         .frame(minWidth: 60, alignment: .trailing)
                         .foregroundColor(theme.colors.secondary)
-                        .padding(.top, 4)
+                        .padding(.top, 4 * fontSizeMultiplier)
                 }
-                .padding(.bottom, 4)
-                .padding(.horizontal, 8)
+                .padding(.bottom, 4 * fontSizeMultiplier)
+                .padding(.horizontal, 8 * fontSizeMultiplier)
 
                 ZStack(alignment: .topTrailing) {
                     let chat = activeContentPreview?.chat ?? chat
@@ -64,8 +70,10 @@ struct ChatPreviewView: View {
                         } else {
                             Spacer()
                             chatInfoIcon(chat).frame(minWidth: 37 * fontSizeMultiplier, alignment: .trailing)
+                                .font(.body)
                         }
                     }
+                    .font(.system(size: messageFontSize))
                     .frame(height: messagePreviewLineHeight * fontSizeMultiplier * 2)
                     .onChange(of: chatModel.stopPreviousRecPlay?.path) { _ in
                         checkActiveContentPreview(chat, ci, mc)
@@ -77,17 +85,18 @@ struct ChatPreviewView: View {
                         checkActiveContentPreview(chat, ci, mc)
                     }
                     chatStatusImage()
-                        .padding(.top, 26)
+                        .padding(.top, 26 * fontSizeMultiplier)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.trailing, 8)
-                
+                .padding(.trailing, 8 * fontSizeMultiplier)
+
                 Spacer()
             }
             .frame(maxHeight: .infinity)
         }
-        .padding(.bottom, -8)
+        .padding(.bottom, -8 * fontSizeMultiplier)
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         .onChange(of: chatModel.deletedChats.contains(chat.chatInfo.id)) { contains in
             deleting = contains
             // Stop voice when deleting the chat
@@ -176,12 +185,12 @@ struct ChatPreviewView: View {
     private func chatPreviewLayout(_ text: Text?, draft: Bool = false, _ hasFilePreview: Bool = false) -> some View {
         ZStack(alignment: .topTrailing) {
             let t = text
-                .lineLimit(2)
+                .lineLimit(dynamicTypeSize > .xxxLarge ? 1 : 2)
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
-                .padding(.leading, hasFilePreview ? 0 : 8)
-                .padding(.trailing, hasFilePreview ? 38 : 36 * fontSizeMultiplier)
-                .offset(x: hasFilePreview ? -2 : 0)
+                .padding(.leading, hasFilePreview ? 0 : 8 * fontSizeMultiplier)
+                .padding(.trailing, hasFilePreview ? 38 * fontSizeMultiplier : 36 * fontSizeMultiplier)
+                .offset(x: hasFilePreview ? -2 * fontSizeMultiplier : 0)
                 .fixedSize(horizontal: false, vertical: true)
             if !showChatPreviews && !draft {
                 t.privacySensitive(true).redacted(reason: .privacy)
@@ -189,6 +198,7 @@ struct ChatPreviewView: View {
                 t
             }
             chatInfoIcon(chat).frame(minWidth: 37 * fontSizeMultiplier, alignment: .trailing)
+                .font(.body)
         }
     }
 
@@ -297,43 +307,43 @@ struct ChatPreviewView: View {
         let mc = ci.content.msgContent
         switch mc {
         case let .link(_, preview):
-            smallContentPreview(fontSizeMultiplier,
+            smallContentPreview(fontSizeMultAccess,
                 ZStack(alignment: .topTrailing) {
                     Image(uiImage: UIImage(base64Encoded: preview.image) ?? UIImage(systemName: "arrow.up.right")!)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                        .frame(width: 36 * fontSizeMultiplier, height: 36 * fontSizeMultiplier)
+                        .frame(width: ChatPreviewView.contentPreviewSize * fontSizeMultAccess, height: ChatPreviewView.contentPreviewSize * fontSizeMultAccess)
                     ZStack {
                         Image(systemName: "arrow.up.right")
                             .resizable()
                             .foregroundColor(Color.white)
-                            .font(.system(size: 15, weight: .black))
-                            .frame(width: 8 * fontSizeMultiplier, height: 8 * fontSizeMultiplier)
+                            .font(.system(size: 15 * fontSizeMultAccess, weight: .black))
+                            .frame(width: 8 * fontSizeMultAccess, height: 8 * fontSizeMultAccess)
                     }
-                    .frame(width: 16 * fontSizeMultiplier, height: 16 * fontSizeMultiplier)
+                    .frame(width: 16 * fontSizeMultAccess, height: 16 * fontSizeMultAccess)
                     .background(Color.black.opacity(0.25))
-                    .cornerRadius(8 * fontSizeMultiplier)
+                    .cornerRadius(8 * fontSizeMultAccess)
                 }
                 .onTapGesture {
                     UIApplication.shared.open(preview.uri)
                 }
             )
         case let .image(_, image):
-            smallContentPreview(fontSizeMultiplier,
-                CIImageView(chatItem: ci, preview: UIImage(base64Encoded: image), maxWidth: 36 * fontSizeMultiplier, smallView: true, showFullScreenImage: $showFullscreenGallery)
+            smallContentPreview(fontSizeMultAccess,
+                CIImageView(chatItem: ci, preview: UIImage(base64Encoded: image), maxWidth: ChatPreviewView.contentPreviewSize * fontSizeMultAccess, smallView: true, showFullScreenImage: $showFullscreenGallery)
                     .environmentObject(ReverseListScrollModel<ChatItem>())
             )
         case let .video(_,image, duration):
-            smallContentPreview(fontSizeMultiplier,
-                CIVideoView(chatItem: ci, preview: UIImage(base64Encoded: image), duration: duration, maxWidth: 36 * fontSizeMultiplier, videoWidth: nil, smallView: true, showFullscreenPlayer: $showFullscreenGallery)
+            smallContentPreview(fontSizeMultAccess,
+                CIVideoView(chatItem: ci, preview: UIImage(base64Encoded: image), duration: duration, maxWidth: ChatPreviewView.contentPreviewSize * fontSizeMultAccess, videoWidth: nil, smallView: true, showFullscreenPlayer: $showFullscreenGallery)
                     .environmentObject(ReverseListScrollModel<ChatItem>())
             )
         case let .voice(_, duration):
-            smallContentPreviewVoice(fontSizeMultiplier,
+            smallContentPreviewVoice(fontSizeMultAccess,
                 CIVoiceView(chat: chat, chatItem: ci, recordingFile: ci.file, duration: duration, allowMenu: Binding.constant(true), smallView: true)
             )
         case .file:
-            smallContentPreviewFile(fontSizeMultiplier,
+            smallContentPreviewFile(fontSizeMultAccess,
                 CIFileView(file: ci.file, edited: ci.meta.itemEdited, smallView: true)
             )
         default: EmptyView()
@@ -350,7 +360,7 @@ struct ChatPreviewView: View {
     @ViewBuilder private func chatPreviewInfoText(_ text: LocalizedStringKey) -> some View {
         Text(text)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .padding([.leading, .trailing], 8)
+            .padding([.leading, .trailing], 8 * fontSizeMultiplier)
     }
 
     private func itemStatusMark(_ cItem: ChatItem) -> Text {
@@ -409,34 +419,34 @@ struct ChatPreviewView: View {
     }
 }
 
-func smallContentPreview(_ fontSizeMultiplier: CGFloat, _ view: some View) -> some View {
+func smallContentPreview(_ fontSizeMultAccess: CGFloat, _ view: some View) -> some View {
     ZStack {
         view
-        .frame(width: 36 * fontSizeMultiplier, height: 36 * fontSizeMultiplier)
+        .frame(width: ChatPreviewView.contentPreviewSize * fontSizeMultAccess, height: ChatPreviewView.contentPreviewSize * fontSizeMultAccess)
     }
-    .cornerRadius(8)
+    .cornerRadius(8 * fontSizeMultAccess)
     .overlay(RoundedRectangle(cornerSize: CGSize(width: 8, height: 8))
         .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true))
-    .padding([.top, .leading], 3)
-    .offset(x: 6)
+    .padding([.top, .leading], 3 * fontSizeMultAccess)
+    .offset(x: 6 * fontSizeMultAccess)
 }
 
-func smallContentPreviewVoice(_ fontSizeMultiplier: CGFloat, _ view: some View) -> some View {
+func smallContentPreviewVoice(_ fontSizeMultAccess: CGFloat, _ view: some View) -> some View {
     ZStack {
         view
-        .frame(height: voiceMessageSizeBasedOnSquareSize(36 * fontSizeMultiplier))
+        .frame(height: voiceMessageSizeBasedOnSquareSize(ChatPreviewView.contentPreviewSize * fontSizeMultAccess))
     }
-    .padding(.leading, 8)
-    .padding(.top, 6)
+    .padding(.leading, 8 * fontSizeMultAccess)
+    .padding(.top, 6 * fontSizeMultAccess)
 }
 
-func smallContentPreviewFile(_ fontSizeMultiplier: CGFloat, _ view: some View) -> some View {
+func smallContentPreviewFile(_ fontSizeMultAccess: CGFloat, _ view: some View) -> some View {
     ZStack {
         view
-        .frame(width: 36 * fontSizeMultiplier, height: 36 * fontSizeMultiplier)
+        .frame(width: ChatPreviewView.contentPreviewSize * fontSizeMultAccess, height: ChatPreviewView.contentPreviewSize * fontSizeMultAccess)
     }
-    .padding(.top, 2)
-    .padding(.leading, 5)
+    .padding(.top, 2 * fontSizeMultAccess)
+    .padding(.leading, 5 * fontSizeMultAccess)
 }
 
 func unreadCountText(_ n: Int) -> Text {
