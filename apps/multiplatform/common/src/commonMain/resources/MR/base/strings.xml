@@ -1102,6 +1102,11 @@
   <string name="receipts_groups_disable_keep_overrides">Disable (keep group overrides)</string>
   <string name="receipts_groups_enable_for_all">Enable for all groups</string>
   <string name="receipts_groups_disable_for_all">Disable for all groups</string>
+  <string name="privacy_media_blur_radius">Blur media</string>
+  <string name="privacy_media_blur_radius_off">Off</string>
+  <string name="privacy_media_blur_radius_soft">Soft</string>
+  <string name="privacy_media_blur_radius_medium">Medium</string>
+  <string name="privacy_media_blur_radius_strong">Strong</string>
 
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>
