@@ -1,0 +1,49 @@
+{
+  "originHash" : "e2611d1e91fd8071abc106776ba14ee2e395d2ad08a78e073381294abc10f115",
+  "pins" : [
+    {
+      "identity" : "codescanner",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/twostraws/CodeScanner",
+      "state" : {
+        "revision" : "c27a66149b7483fe42e2ec6aad61d5c3fffe522d",
+        "version" : "2.1.1"
+      }
+    },
+    {
+      "identity" : "lzstring-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Ibrahimhass/lzstring-swift",
+      "state" : {
+        "revision" : "7f62f21de5b18582a950e1753b775cc614722407"
+      }
+    },
+    {
+      "identity" : "swiftygif",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kirualex/SwiftyGif",
+      "state" : {
+        "branch" : "master",
+        "revision" : "5e8619335d394901379c9add5c4c1c2f420b3800"
+      }
+    },
+    {
+      "identity" : "webrtc",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/simplex-chat/WebRTC.git",
+      "state" : {
+        "revision" : "34bedc50f9c58dccf4967ea59c7e6a47d620803b"
+      }
+    },
+    {
+      "identity" : "yams",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/jpsim/Yams",
+      "state" : {
+        "revision" : "9234124cff5e22e178988c18d8b95a8ae8007f76",
+        "version" : "5.1.2"
+      }
+    }
+  ],
+  "version" : 3
+}
