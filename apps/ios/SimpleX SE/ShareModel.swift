@@ -19,7 +19,7 @@ private let MAX_DOWNSAMPLE_SIZE: Int64 = 2000
 
 class ShareModel: ObservableObject {
     @Published var sharedContent: SharedContent?
-    @Published var preview: UIImage?
+    @Published var preview: SharedContent.Preview?
     @Published var chats = Array<ChatData>()
     @Published var profileImages = Dictionary<ChatInfo.ID, UIImage>()
     @Published var search = String()
@@ -74,6 +74,14 @@ class ShareModel: ObservableObject {
                     await MainActor.run { errorAlert = e }
                 } else {
                     // Load Chats
+
+                    await MainActor.run {
+                        self.errorAlert = ErrorAlert(title: "No network connection") {
+                            Button("Keep Trying", role: .cancel) {  }
+                            Button("Dismiss Sheet", role: .destructive) { self.completion() }
+                        }
+                    }
+
                     Task {
                         switch fetchChats() {
                         case let .success(chats):
@@ -216,13 +224,10 @@ class ShareModel: ObservableObject {
             if CFAbsoluteTimeGetCurrent() - networkTimeout > 30 {
                 networkTimeout = CFAbsoluteTimeGetCurrent()
                 await MainActor.run {
-                    self.errorAlert = ErrorAlert(
-                        title: "No network connection",
-                        actionsOverride: [
-                            ErrorAlert.Action(titleKey: "Keep Trying", role: .cancel),
-                            ErrorAlert.Action(titleKey: "Dismiss Sheet", role: .destructive) { self.completion() }
-                        ]
-                    )
+                    self.errorAlert = ErrorAlert(title: "No network connection") {
+                        Button("Keep Trying", role: .cancel) {  }
+                        Button("Dismiss Sheet", role: .destructive) { self.completion() }
+                    }
                 }
             }
             switch recvSimpleXMsg(messageTimeout: 1_000_000) {
@@ -298,12 +303,18 @@ enum SharedContent {
     case text(string: String)
     case data(cryptoFile: CryptoFile)
 
-    var preview: UIImage? {
+    enum Preview {
+        case image(UIImage)
+        case fileName(String)
+    }
+
+    var preview: Preview? {
         switch self {
-        case let .image(preview, _): UIImage(base64Encoded: preview)
-        case let .movie(preview, _, _): UIImage(base64Encoded: preview)
-        case let .url(linkPreview): UIImage(base64Encoded: linkPreview.image)
-        case .text, .data: nil
+        case let .image(preview, _): UIImage(base64Encoded: preview).map { .image($0) }
+        case let .movie(preview, _, _): UIImage(base64Encoded: preview).map { .image($0) }
+        case let .url(linkPreview): UIImage(base64Encoded: linkPreview.image).map { .image($0) }
+        case .text: nil
+        case let .data(cryptoFile): .fileName(cryptoFile.filePath)
         }
     }
 

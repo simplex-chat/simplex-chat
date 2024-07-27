@@ -11,34 +11,25 @@ import SwiftUI
 public struct ErrorAlert: Error {
     public let title: LocalizedStringKey
     public let message: LocalizedStringKey?
-    public let actionsOverride: Array<Action>?
-
-    public struct Action: Identifiable {
-        public let titleKey: LocalizedStringKey
-        public let role: ButtonRole?
-        public let action: (() -> Void)?
-
-        public var id: Int { titleKey.hashValue }
-
-        public init(
-            titleKey: LocalizedStringKey,
-            role: ButtonRole? = nil,
-            action: (() -> Void)? = { }
-        ) {
-            self.titleKey = titleKey
-            self.role = role
-            self.action = action
-        }
-    }
+    public let actions: Optional<() -> AnyView>
 
     public init(
         title: LocalizedStringKey,
-        message: LocalizedStringKey? = nil,
-        actionsOverride: Array<Action>? = nil
+        message: LocalizedStringKey? = nil
     ) {
         self.title = title
         self.message = message
-        self.actionsOverride = actionsOverride
+        self.actions = nil
+    }
+
+    public init<A: View>(
+        title: LocalizedStringKey,
+        message: LocalizedStringKey? = nil,
+        @ViewBuilder actions: @escaping () -> A
+    ) {
+        self.title = title
+        self.message = message
+        self.actions = { AnyView(actions()) }
     }
 
     public init(_ title: LocalizedStringKey) {
@@ -73,8 +64,8 @@ extension View {
     /// - Parameters:
     ///   - errorAlert: Binding to the Error, which is rendered in the alert
     ///   - actions: View Builder containing action buttons.
-    ///   Will default to `Ok` dismiss error action, when not provided.
-    ///   Will implicitly add `Cancel` action, if a destructive action is present
+    ///   System defaults to `Ok` dismiss error action, when no actions are provided.
+    ///   System implicitly adds `Cancel` action, if a destructive action is present
     ///
     /// - Returns: View, which displays ErrorAlert?, when set.
     @ViewBuilder public func alert<A: View>(
@@ -89,18 +80,14 @@ extension View {
                     set: { if !$0 { errorAlert.wrappedValue = nil } }
                 ),
                 actions: {
-                    if let actions = alert.actionsOverride {
-                        ForEach(actions) {
-                            Button($0.titleKey, role: $0.role, action: $0.action ?? { })
-                        }
-                    } else { actions(alert) }
+                    if let actions = alert.actions {
+                        actions()
+                    } else {
+                        actions(alert)
+                    }
                 },
                 message: {
-                    if let message = alert.message {
-                        Text(message)
-                    } else {
-                        EmptyView()
-                    }
+                    if let message = alert.message { Text(message) }
                 }
             )
         } else { self }
@@ -161,39 +148,3 @@ private func proxyDestinationErrorAlert(_ proxyErr: ProxyError, _ proxyServer: S
 public func serverHostname(_ srv: String) -> String {
     parseServerAddress(srv)?.hostnames.first ?? srv
 }
-
-private struct ErrorAlertDemo: View {
-    @State var errorAlert: ErrorAlert?
-    @State var bodyActionsAlert: ErrorAlert?
-
-    var body: some View {
-        VStack {
-            Button("Show Alert") { 
-                errorAlert = ErrorAlert(title: "Title")
-            }
-            Button("Show Alert With Message") { 
-                errorAlert = ErrorAlert(title: "Title", message: "Message")
-            }
-            Button("Show alert with implicit cancel action") {
-                errorAlert = ErrorAlert(
-                    title: "Hey",
-                    actionsOverride: [
-                        ErrorAlert.Action(
-                            titleKey: "Custom Destructive Action",
-                            role: .destructive
-                        ) { print("!") }
-                    ]
-                )
-            }
-            Button("Show Alert with actions set from the body") {
-                bodyActionsAlert = ErrorAlert("Title")
-            }
-        }
-        .alert($errorAlert)
-        .alert($bodyActionsAlert) { alert in
-            Button("Added in Body") { print(alert.title) }
-        }
-    }
-}
-
-#Preview { ErrorAlertDemo() }

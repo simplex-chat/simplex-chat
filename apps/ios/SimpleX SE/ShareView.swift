@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct ShareView: View {
     @ObservedObject var model: ShareModel
+    @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
         NavigationView {
@@ -28,7 +29,7 @@ struct ShareView: View {
                             radioButton(selected: chat == model.selected)
                         }
                         .contentShape(Rectangle())
-                        .onTapGesture { model.selected = chat }
+                        .onTapGesture { model.selected = model.selected == chat ? nil : chat }
                         .tag(chat)
                     }
                 } else {
@@ -51,8 +52,12 @@ struct ShareView: View {
             text: $model.search,
             placement: .navigationBarDrawer(displayMode: .always)
         )
-        .alert($model.errorAlert) { _ in
-            Button("Ok") { model.completion() }
+        .alert($model.errorAlert) { alert in
+            if alert.title == "Network" {
+                
+            } else {
+                Button("Ok") { model.completion() }
+            }
         }
     }
 
@@ -60,18 +65,9 @@ struct ShareView: View {
         VStack(spacing: .zero) {
             Divider()
             if let preview = model.preview {
-                HStack(alignment: .center, spacing: 8) {
-                    Image(uiImage: preview)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(minHeight: 40, maxHeight: 60)
-                    Spacer()
-                }
-                .padding(.vertical, 1)
-                .background(.quaternary)
-                .frame(minHeight: 54)
+                itemPreview(preview)
+                Divider()
             }
-            Divider()
             HStack {
                 Group {
                     if #available(iOSApplicationExtension 16.0, *) {
@@ -108,6 +104,36 @@ struct ShareView: View {
             .padding(8)
         }
         .background(.thinMaterial)
+    }
+
+    private func itemPreview(_ preview: SharedContent.Preview) -> some View {
+        HStack(alignment: .center, spacing: 8) {
+            switch preview {
+            case let .image(uiImage):
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(minHeight: 40, maxHeight: 60)
+            case let .fileName(string):
+                Image(systemName: "doc.fill")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 30, height: 30)
+                    .foregroundColor(Color(uiColor: .tertiaryLabel))
+                    .padding(.leading, 4)
+                Text(string)
+            }
+            Spacer()
+        }
+        .padding(.vertical, 1)
+        .frame(minHeight: 54)
+        .background {
+            switch colorScheme {
+            case .light: LightColorPaletteApp.sentMessage
+            case .dark: DarkColorPaletteApp.sentMessage
+            @unknown default: Color(.tertiarySystemBackground)
+            }
+        }
     }
 
     private func loadingBar(progress: Double) -> some View {
