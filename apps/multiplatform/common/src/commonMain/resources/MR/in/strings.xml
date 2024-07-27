@@ -94,7 +94,7 @@
     <string name="callstate_connected">tersambung</string>
     <string name="group_member_status_complete">selesai</string>
     <string name="group_member_status_connected">terhubung</string>
-    <string name="connected_desktop">Terhubung</string>
+    <string name="connected_desktop">Komputer yang terhubung</string>
     <string name="servers_info_sessions_connected">Terhubung</string>
     <string name="completed">Selesai</string>
 </resources>
