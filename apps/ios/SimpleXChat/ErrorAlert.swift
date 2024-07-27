@@ -80,8 +80,8 @@ extension View {
                     set: { if !$0 { errorAlert.wrappedValue = nil } }
                 ),
                 actions: {
-                    if let actions = alert.actions {
-                        actions()
+                    if let actions_ = alert.actions {
+                        actions_()
                     } else {
                         actions(alert)
                     }

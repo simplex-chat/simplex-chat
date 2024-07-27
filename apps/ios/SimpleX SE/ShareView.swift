@@ -60,9 +60,8 @@ struct ShareView: View {
     private func compose(isLoading: Bool) -> some View {
         VStack(spacing: .zero) {
             Divider()
-            if let preview = model.preview {
-                itemPreview(preview)
-                Divider()
+            if let content = model.sharedContent  {
+               itemPreview(content)
             }
             HStack {
                 Group {
@@ -102,23 +101,37 @@ struct ShareView: View {
         .background(.thinMaterial)
     }
 
-    private func itemPreview(_ preview: SharedContent.Preview) -> some View {
-        HStack(alignment: .center, spacing: 8) {
-            switch preview {
-            case let .image(uiImage):
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(minHeight: 40, maxHeight: 60)
-            case let .fileName(string):
+    @ViewBuilder private func itemPreview(_ content: SharedContent) -> some View {
+        switch content {
+        case let .image(preview, _): imagePreview(preview)
+        case let .movie(preview, _, _): imagePreview(preview)
+        case let .url(linkPreview): EmptyView() // imagePreview(linkPreview.image)
+        case let .data(cryptoFile):
+            previewArea {
                 Image(systemName: "doc.fill")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 30, height: 30)
                     .foregroundColor(Color(uiColor: .tertiaryLabel))
                     .padding(.leading, 4)
-                Text(string)
+                Text(cryptoFile.filePath)
             }
+        case .text: EmptyView() // unreachable
+        }
+    }
+
+    private func imagePreview(_ img: String) -> some View {
+        previewArea {
+            Image(uiImage: UIImage(base64Encoded: img)!)
+                .resizable()
+                .scaledToFit()
+                .frame(minHeight: 40, maxHeight: 60)
+        }
+    }
+
+    @ViewBuilder private func previewArea<V: View>(@ViewBuilder content: @escaping () -> V) -> some View {
+        HStack(alignment: .center, spacing: 8) {
+            content()
             Spacer()
         }
         .padding(.vertical, 1)
@@ -130,6 +143,7 @@ struct ShareView: View {
             @unknown default: Color(.tertiarySystemBackground)
             }
         }
+        Divider()
     }
 
     private func loadingBar(progress: Double) -> some View {
