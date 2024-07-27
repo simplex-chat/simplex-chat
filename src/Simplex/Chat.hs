@@ -6862,7 +6862,10 @@ deliverMessagesB msgReqs = do
           _ -> pure mr
     toAgent prev = \case
       Right (conn@Connection {connId, pqEncryption}, msgFlags, msgBody, _msgIds) ->
-        (Just connId, Right (aConnId conn, prev == Just connId, pqEncryption, msgFlags, msgBody))
+        let cId = case prev of
+              Just prevId | prevId == connId -> ""
+              _ -> aConnId conn
+         in (Just connId, Right (cId, pqEncryption, msgFlags, msgBody))
       Left _ce -> (prev, Left (AP.INTERNAL "ChatError, skip")) -- as long as it is Left, the agent batchers should just step over it
     prepareBatch (Right req) (Right ar) = Right (req, ar)
     prepareBatch (Left ce) _ = Left ce -- restore original ChatError
