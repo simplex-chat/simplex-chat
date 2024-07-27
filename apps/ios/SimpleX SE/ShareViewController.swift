@@ -15,7 +15,9 @@ import SimpleXChat
 /// using `NSExtensionPrincipalClass` in the info.plist
 @objc(ShareViewController)
 class ShareViewController: UIHostingController<ShareView> {
-    let model = ShareModel()
+    private let model = ShareModel()
+    // Assuming iOS continues to only allow single share sheet to be presented at once
+    static var isVisible: Bool = false
 
     @objc init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         super.init(rootView: ShareView(model: model))
@@ -28,10 +30,17 @@ class ShareViewController: UIHostingController<ShareView> {
         ShareModel.CompletionHandler.isEventLoopEnabled = false
         model.setup(context: extensionContext!)
     }
-}
 
-extension ShareViewController: UIAdaptivePresentationControllerDelegate {
-    public func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+    override func viewWillAppear(_ animated: Bool) {
+        logger.debug("ShareSheet will appear")
+        super.viewWillAppear(animated)
+        Self.isVisible = true
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        logger.debug("ShareSheet will dissappear")
+        super.viewWillDisappear(animated)
         ShareModel.CompletionHandler.isEventLoopEnabled = false
+        Self.isVisible = false
     }
 }
