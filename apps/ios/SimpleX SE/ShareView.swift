@@ -105,7 +105,7 @@ struct ShareView: View {
         switch content {
         case let .image(preview, _): imagePreview(preview)
         case let .movie(preview, _, _): imagePreview(preview)
-        case let .url(linkPreview): EmptyView() // imagePreview(linkPreview.image)
+        case let .url(linkPreview): imagePreview(linkPreview.image)
         case let .data(cryptoFile):
             previewArea {
                 Image(systemName: "doc.fill")
