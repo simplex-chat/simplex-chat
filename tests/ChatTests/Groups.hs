@@ -149,11 +149,11 @@ chatGroupTests = do
     it "welcome message (group description) is sent after history" testGroupHistoryWelcomeMessage
     it "unknown member messages are processed" testGroupHistoryUnknownMember
   describe "membership profile updates" $ do
-    fit "send profile update on next message to group" testMembershipProfileUpdateNextGroupMessage
-    fit "multiple groups with same member, update is applied only once" testMembershipProfileUpdateSameMember
+    it "send profile update on next message to group" testMembershipProfileUpdateNextGroupMessage
+    it "multiple groups with same member, update is applied only once" testMembershipProfileUpdateSameMember
     it "member contact is active" testMembershipProfileUpdateContactActive
-    fit "member contact is deleted" testMembershipProfileUpdateContactDeleted
-    fit "member contact is deleted silently, then considered disabled" testMembershipProfileUpdateContactDisabled
+    it "member contact is deleted" testMembershipProfileUpdateContactDeleted
+    it "member contact is deleted silently, then considered disabled" testMembershipProfileUpdateContactDisabled
     it "profile update without change is ignored" testMembershipProfileUpdateNoChangeIgnored
     it "change of profile contact link is ignored" testMembershipProfileUpdateContactLinkIgnored
   describe "block member for all" $ do
