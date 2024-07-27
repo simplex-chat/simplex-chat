@@ -74,14 +74,6 @@ class ShareModel: ObservableObject {
                     await MainActor.run { errorAlert = e }
                 } else {
                     // Load Chats
-
-                    await MainActor.run {
-                        self.errorAlert = ErrorAlert(title: "No network connection") {
-                            Button("Keep Trying", role: .cancel) {  }
-                            Button("Dismiss Sheet", role: .destructive) { self.completion() }
-                        }
-                    }
-
                     Task {
                         switch fetchChats() {
                         case let .success(chats):
