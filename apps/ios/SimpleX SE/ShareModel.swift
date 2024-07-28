@@ -122,7 +122,6 @@ class ShareModel: ObservableObject {
                         cryptoFile: sharedContent.cryptoFile,
                         msgContent: sharedContent.msgContent(comment: self.comment)
                     )
-                    SEChatState.shared.set(.inactive)
                     if selected.chatInfo.chatType == .local {
                         completion()
                     } else {

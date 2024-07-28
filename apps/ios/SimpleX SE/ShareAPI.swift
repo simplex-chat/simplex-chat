@@ -110,5 +110,6 @@ func apiSuspendChat(expired: Bool) {
         _ = sendSimpleXCmd(.apiSuspendChat(timeoutMicroseconds: 0))
     }
     logger.debug("close store")
-    if !ShareViewController.isVisible { chatCloseStore() }
+    chatCloseStore()
+    SEChatState.shared.set(.inactive)
 }
