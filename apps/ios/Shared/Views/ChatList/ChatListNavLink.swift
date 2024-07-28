@@ -9,25 +9,34 @@
 import SwiftUI
 import SimpleXChat
 
-private let rowHeights: [DynamicTypeSize: CGFloat] = [
-    .xSmall: 68,
-    .small: 72,
-    .medium: 76,
-    .large: 80,
-    .xLarge: 88,
-    .xxLarge: 94,
-    .xxxLarge: 104,
-    .accessibility1: 90,
-    .accessibility2: 100,
-    .accessibility3: 120,
-    .accessibility4: 130,
-    .accessibility5: 140
+let dynamicSizes: [
+    DynamicTypeSize: (
+        rowHeight: CGFloat,
+        profileImageSize: CGFloat,
+        mediaSize: CGFloat,
+        chatInfoSize: CGFloat,
+        unreadCorner: CGFloat,
+        unreadPadding: CGFloat
+    )
+] = [
+    .xSmall: (68, 55, 33, 18, 9, 3),
+    .small: (72, 57, 34, 18, 9, 3),
+    .medium: (76, 60, 36, 18, 10, 4),
+    .large: (80, 63, 38, 20, 10, 4),
+    .xLarge: (88, 67, 41, 20, 10, 4),
+    .xxLarge: (94, 71, 44, 22, 11, 4),
+    .xxxLarge: (104, 75, 48, 24, 12, 5),
+    .accessibility1: (104, 75, 48, 24, 12, 5),
+    .accessibility2: (114, 75, 48, 24, 12, 5),
+    .accessibility3: (124, 75, 48, 24, 12, 5),
+    .accessibility4: (134, 75, 48, 24, 12, 5),
+    .accessibility5: (144, 75, 48, 24, 12, 5)
 ]
 
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
     @ObservedObject var chat: Chat
     @State private var showContactRequestDialog = false
     @State private var showJoinGroupDialog = false
@@ -37,6 +46,8 @@ struct ChatListNavLink: View {
     @State private var showConnectContactViaAddressDialog = false
     @State private var inProgress = false
     @State private var progressByTimeout = false
+
+    var dynamicRowHeight: CGFloat { dynamicSizes[userFont]?.rowHeight ?? 80 }
 
     var body: some View {
         Group {
@@ -70,7 +81,7 @@ struct ChatListNavLink: View {
         Group {
             if contact.activeConn == nil && contact.profile.contactLink != nil {
                 ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
-                    .frame(height: rowHeights[dynamicTypeSize])
+                    .frame(height: dynamicRowHeight)
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button {
                             showDeleteContactActionSheet = true
@@ -110,7 +121,7 @@ struct ChatListNavLink: View {
                     }
                     .tint(.red)
                 }
-                .frame(height: rowHeights[dynamicTypeSize])
+                .frame(height: dynamicRowHeight)
             }
         }
         .actionSheet(isPresented: $showDeleteContactActionSheet) {
@@ -139,7 +150,7 @@ struct ChatListNavLink: View {
         switch (groupInfo.membership.memberStatus) {
         case .memInvited:
             ChatPreviewView(chat: chat, progressByTimeout: $progressByTimeout)
-                .frame(height: rowHeights[dynamicTypeSize])
+                .frame(height: dynamicRowHeight)
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     joinGroupButton()
                     if groupInfo.canDelete {
@@ -159,7 +170,7 @@ struct ChatListNavLink: View {
                 .disabled(inProgress)
         case .memAccepted:
             ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
-                .frame(height: rowHeights[dynamicTypeSize])
+                .frame(height: dynamicRowHeight)
                 .onTapGesture {
                     AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
                 }
@@ -178,7 +189,7 @@ struct ChatListNavLink: View {
                 label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
                 disabled: !groupInfo.ready
             )
-            .frame(height: rowHeights[dynamicTypeSize])
+            .frame(height: dynamicRowHeight)
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
                 markReadButton()
                 toggleFavoriteButton()
@@ -205,7 +216,7 @@ struct ChatListNavLink: View {
             label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
             disabled: !noteFolder.ready
         )
-        .frame(height: rowHeights[dynamicTypeSize])
+        .frame(height: dynamicRowHeight)
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             markReadButton()
         }
@@ -321,7 +332,7 @@ struct ChatListNavLink: View {
             }
             .tint(.red)
         }
-        .frame(height: rowHeights[dynamicTypeSize])
+        .frame(height: dynamicRowHeight)
         .onTapGesture { showContactRequestDialog = true }
         .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
             Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) } }
@@ -349,7 +360,7 @@ struct ChatListNavLink: View {
             }
             .tint(theme.colors.primary)
         }
-        .frame(height: rowHeights[dynamicTypeSize])
+        .frame(height: dynamicRowHeight)
         .appSheet(isPresented: $showContactConnectionInfo) {
             Group {
                 if case let .contactConnection(contactConnection) = chat.chatInfo {
@@ -469,7 +480,7 @@ struct ChatListNavLink: View {
         Text("invalid chat data")
             .foregroundColor(.red)
             .padding(4)
-            .frame(height: rowHeights[dynamicTypeSize])
+            .frame(height: dynamicRowHeight)
             .onTapGesture { showInvalidJSON = true }
             .appSheet(isPresented: $showInvalidJSON) {
                 invalidJSONView(json)
