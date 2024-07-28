@@ -2077,4 +2077,9 @@
     <string name="smp_proxy_error_broker_version">Die Weiterleitungsserver-Version ist nicht kompatibel mit den Netzwerkeinstellungen: %1$s.</string>
     <string name="proxy_destination_error_broker_host">Die Zielserver-Adresse von %1$s ist nicht mit den Einstellungen des Weiterleitungsservers %2$s kompatibel.</string>
     <string name="smp_proxy_error_connecting">Fehler beim Verbinden zum Weiterleitungsserver %1$s. Bitte versuchen Sie es später erneut.</string>
+    <string name="privacy_media_blur_radius">Medium unscharf machen</string>
+    <string name="privacy_media_blur_radius_soft">Weich</string>
+    <string name="privacy_media_blur_radius_strong">Hart</string>
+    <string name="privacy_media_blur_radius_medium">Medium</string>
+    <string name="privacy_media_blur_radius_off">Aus</string>
 </resources>
