@@ -97,4 +97,5 @@
     <string name="connected_desktop">Komputer yang terhubung</string>
     <string name="servers_info_sessions_connected">Terhubung</string>
     <string name="completed">Selesai</string>
+    <string name="connected_mobile">Ponsel yang terhubung</string>
 </resources>
