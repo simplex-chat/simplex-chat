@@ -1404,9 +1404,9 @@
     <string name="database_is_not_encrypted">A csevegési adatbázis nem titkosított - állítson be egy jelmondatot annak védelméhez.</string>
     <string name="network_disable_socks">Közvetlen internet kapcsolat használata?</string>
     <string name="you_will_still_receive_calls_and_ntfs">Továbbra is kap hívásokat és értesítéseket a némított profiloktól, ha azok aktívak.</string>
-    <string name="group_main_profile_sent">A fő csevegési profilja megküldésre kerül a csoporttagok számára</string>
+    <string name="group_main_profile_sent">A fő csevegési profilja elküldésre kerül a csoporttagok számára</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Később engedélyezheti őket az alkalmazás Adatvédelem és biztonság menüpontban.</string>
-    <string name="to_reveal_profile_enter_password">Rejtett profiljának felfedéséhez írja be a teljes jelszót a Csevegési profilok oldal keresőmezőjébe.</string>
+    <string name="to_reveal_profile_enter_password">Rejtett profilja megjelenítéséhez írja be a teljes jelszavát a keresőmezőbe a Csevegési profilok menüben.</string>
     <string name="upgrade_and_open_chat">A csevegés frissítése és megnyitása</string>
     <string name="you_need_to_allow_to_send_voice">Hangüzeneteket küldéséhez engedélyeznie kell azok küldését az ismerősei számára.</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Beállíthatja, hogy mely kiszolgáló(ko)n keresztül <b>fogadja</b> az üzeneteket, ismerősöket – a kiszolgálók, amelyeket az üzenetküldéshez használ.]]></string>
@@ -1430,7 +1430,7 @@
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Kapcsolatba léphet <font color="#0088ff">a SimpleX Chat fejlesztőivel, ahol bármiről kérdezhet és értesülhet az újdonságokról</font>.]]></string>
     <string name="v4_2_auto_accept_contact_requests_desc">Opcionális üdvözlő üzenettel.</string>
     <string name="unknown_database_error_with_info">Ismeretlen adatbázis hiba: %s</string>
-    <string name="you_can_hide_or_mute_user_profile">Elrejthet vagy némíthat egy felhasználói profilt - tartsa lenyomva a menühöz.</string>
+    <string name="you_can_hide_or_mute_user_profile">Elrejtheti vagy lenémíthatja a felhasználó profiljait - koppintson (vagy asztali alkalmazásban kattintson) hosszan a profilra a felugró menühöz.</string>
     <string name="v5_3_simpler_incognito_mode_descr">Inkognító mód kapcsolódáskor.</string>
     <string name="update_onion_hosts_settings_question">Tor .onion kiszolgálók beállításainak frissítése?</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Megoszthat egy hivatkozást vagy QR-kódot - így bárki csatlakozhat a csoporthoz. Ha a csoport később törlésre kerül, akkor nem fogja elveszíteni annak tagjait.</string>
