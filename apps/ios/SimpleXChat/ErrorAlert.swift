@@ -148,3 +148,12 @@ private func proxyDestinationErrorAlert(_ proxyErr: ProxyError, _ proxyServer: S
 public func serverHostname(_ srv: String) -> String {
     parseServerAddress(srv)?.hostnames.first ?? srv
 }
+
+public func mtrErrorDescription(_ err: MTRError) -> LocalizedStringKey {
+    switch err {
+    case let .noDown(dbMigrations):
+        "database version is newer than the app, but no down migration for: \(dbMigrations.joined(separator: ", "))"
+    case let .different(appMigration, dbMigration):
+        "different migration in the app/database: \(appMigration) / \(dbMigration)"
+    }
+}

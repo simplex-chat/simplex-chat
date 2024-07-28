@@ -153,8 +153,8 @@ class ShareModel: ObservableObject {
             } else {
                 registerGroupDefaults()
                 haskell_init_se()
-                let (_, result) = chatMigrateInit()
-                if result != .ok { return ErrorAlert("Database migration failed") }
+                let (_, result) = chatMigrateInit(confirmMigrations: defaultMigrationConfirmation())
+                if let e = migrationError(result) { return e }
                 try apiSetAppFilePaths(
                     filesFolder: getAppFilesDirectory().path,
                     tempFolder: getTempFilesDirectory().path,
@@ -169,6 +169,63 @@ class ShareModel: ObservableObject {
         return nil
     }
 
+    private func migrationError(_ r: DBMigrationResult) -> ErrorAlert? {
+        let useKeychain = storeDBPassphraseGroupDefault.get()
+        let storedDBKey = kcDatabasePassword.get()
+        // This switch duplicates DatabaseErrorView.
+        // TODO allow entering passphrase and make messages the same as in DatabaseErrorView.
+        return switch r {
+        case .errorNotADatabase:
+            if useKeychain && storedDBKey != nil && storedDBKey != "" {
+                ErrorAlert(
+                    title: "Wrong database passphrase",
+                    message: "Database passphrase is different from saved in the keychain."
+                )
+            } else {
+                ErrorAlert(
+                    title: "Encrypted database",
+                    message: "Sharing is not supported when passphrase is not stored in KeyChain."
+                )
+            }
+        case let .errorMigration(_, migrationError):
+            switch migrationError {
+            case .upgrade:
+                ErrorAlert(
+                    title: "Database upgrade required",
+                    message: "Open the app to upgrade the database."
+                )
+            case .downgrade:
+                ErrorAlert(
+                    title: "Database downgrade required",
+                    message: "Open the app to downgrade the database."
+                )
+            case let .migrationError(mtrError):
+                ErrorAlert(
+                    title: "Incompatible database version",
+                    message: mtrErrorDescription(mtrError)
+                )
+            }
+        case let .errorSQL(_, migrationSQLError):
+            ErrorAlert(
+                title: "Database error",
+                message: "Error: \(migrationSQLError)"
+            )
+        case .errorKeychain:
+            ErrorAlert(
+                title: "Keychain error",
+                message: "Cannot access keychain to save database password"
+            )
+        case .invalidConfirmation:
+            ErrorAlert("Invalid migration confirmation")
+        case let .unknown(json):
+            ErrorAlert(
+                title: "Database error",
+                message: "Unknown database error: \(json)"
+            )
+        case .ok: nil
+        }
+    }
+    
     private func fetchChats() -> Result<Array<ChatData>, ErrorAlert> {
         do {
             guard let user = try apiGetActiveUser() else {
