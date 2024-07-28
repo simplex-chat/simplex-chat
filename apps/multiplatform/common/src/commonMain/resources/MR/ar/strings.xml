@@ -1993,4 +1993,9 @@
     <string name="proxy_destination_error_broker_version">إصدار الخادم الوجهة %1$s غير متوافق مع خادم التحويل %2$s.</string>
     <string name="proxy_destination_error_failed_to_connect">فشل خادم التحويل %1$s في الاتصال بالخادم الوجهة %2$s. يُرجى المحاولة لاحقا.</string>
     <string name="smp_proxy_error_broker_version">إصدار خادم التحويل غير متوافق مع إعدادات الشبكة: %1$s.</string>
+    <string name="privacy_media_blur_radius_off">مطفي</string>
+    <string name="privacy_media_blur_radius_strong">قوي</string>
+    <string name="privacy_media_blur_radius">تمويه الوسائط</string>
+    <string name="privacy_media_blur_radius_medium">متوسط</string>
+    <string name="privacy_media_blur_radius_soft">ناعم</string>
 </resources>
