@@ -73,6 +73,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           if (activeChat.value?.id != chatId) {
             // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
             // Also for situation when chatId changes after clicking in notification, etc
+            chatModel.chatViewMode.value = ChatViewMode.Message
             activeChat.value = chatModel.getChat(chatId)
           }
           markUnreadChatAsRead(activeChat, chatModel)
@@ -550,9 +551,6 @@ fun ChatLayout(
 ) {
   val scope = rememberCoroutineScope()
   val attachmentDisabled = remember { derivedStateOf { composeState.value.attachmentDisabled } }
-  DisposableEffect(Unit) {
-    onDispose { chatModel.chatViewMode.value = ChatViewMode.Message }
-  }
 
   Box(
     Modifier

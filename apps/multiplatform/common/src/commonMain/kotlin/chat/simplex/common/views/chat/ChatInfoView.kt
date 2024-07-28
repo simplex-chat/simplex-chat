@@ -759,10 +759,10 @@ fun SearchButton(chat: Chat, contact: Contact, close: () -> Unit) {
     title = generalGetString(MR.strings.info_view_search_button),
     disabled = !contact.ready || chat.chatItems.isEmpty(),
     onClick = {
-      chatModel.chatViewMode.value = ChatViewMode.Search
       close.invoke()
       withBGApi {
         openDirectChat(chat.remoteHostId, contact.contactId, chatModel)
+        chatModel.chatViewMode.value = ChatViewMode.Search
       }
     }
   )
