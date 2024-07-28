@@ -435,8 +435,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
                 }
               }
             },
-            addMembers = { groupInfo -> addGroupMembers(view = view, groupInfo = groupInfo, rhId = chatRh) },
-            openGroupLink = { groupInfo -> openGroupLink(view = view, groupInfo = groupInfo, rhId = chatRh) },
+            addMembers = { groupInfo -> addGroupMembers(view = view, groupInfo = groupInfo, rhId = chatRh, close = { ModalManager.end.closeModals() }) },
+            openGroupLink = { groupInfo -> openGroupLink(view = view, groupInfo = groupInfo, rhId = chatRh, close = { ModalManager.end.closeModals() }) },
             markRead = { range, unreadCountAfter ->
               chatModel.markChatItemsRead(chat, range, unreadCountAfter)
               ntfManager.cancelNotificationsForChat(chat.id)
@@ -1266,22 +1266,22 @@ private fun TopEndFloatingButton(
 
 val chatViewScrollState = MutableStateFlow(false)
 
-fun addGroupMembers(groupInfo: GroupInfo, rhId: Long?, view: Any? = null) {
+fun addGroupMembers(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (() -> Unit)? = null) {
   hideKeyboard(view)
   withBGApi {
     setGroupMembers(rhId, groupInfo, chatModel)
-    ModalManager.end.closeModals()
+    close?.invoke()
     ModalManager.end.showModalCloseable(true) { close ->
       AddGroupMembersView(rhId, groupInfo, false, chatModel, close)
     }
   }
 }
 
-fun openGroupLink(groupInfo: GroupInfo, rhId: Long?, view: Any? = null) {
+fun openGroupLink(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (() -> Unit)? = null) {
   hideKeyboard(view)
   withBGApi {
     val link = chatModel.controller.apiGetGroupLink(rhId, groupInfo.groupId)
-    ModalManager.end.closeModals()
+    close?.invoke()
     ModalManager.end.showModalCloseable(true) {
       GroupLinkView(chatModel, rhId, groupInfo, link?.first, link?.second, onGroupLinkUpdated = null)
     }
