@@ -307,28 +307,6 @@ testGroupShared alice bob cath checkMessages directConnections = do
   alice ##> "/d bob"
   alice <## "bob: contact is deleted"
   bob <## "alice (Alice) deleted contact with you"
-  alice `send` "@bob hey"
-  if directConnections
-    then
-      alice
-        <### [ "@bob hey",
-               "member #team bob does not have direct connection, creating",
-               "peer chat protocol version range incompatible"
-             ]
-    else do
-      alice
-        <### [ WithTime "@bob hey",
-               "member #team bob does not have direct connection, creating",
-               "contact for member #team bob is created",
-               "sent invitation to connect directly to member #team bob",
-               "bob (Bob): contact is connected"
-             ]
-      bob
-        <### [ "#team alice is creating direct contact alice with you",
-               WithTime "alice> hey",
-               "alice: security code changed",
-               "alice (Alice): contact is connected"
-             ]
   when checkMessages $ threadDelay 1000000
   alice #> "#team checking connection"
   bob <# "#team alice> checking connection"
@@ -818,6 +796,7 @@ testGroupDeleteInvitedContact =
                WithTime "alice> hey",
                "alice: security code changed"
              ]
+      bob <## "alice (Alice): you can send messages to contact"
       concurrently_
         (alice <## "bob (Bob): contact is connected")
         (bob <## "alice (Alice): contact is connected")
@@ -1907,7 +1886,7 @@ testGroupLink =
       cath ##> ("/c " <> cLink)
       alice <#? cath
       alice ##> "/ac cath"
-      alice <## "cath (Catherine): accepting contact request..."
+      alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
       concurrently_
         (cath <## "alice (Alice): contact is connected")
         (alice <## "cath (Catherine): contact is connected")
@@ -3965,6 +3944,7 @@ testMemberContactMessage =
         <### [ "#team alice is creating direct contact alice with you",
                WithTime "alice> hi"
              ]
+      bob <## "alice (Alice): you can send messages to contact"
       concurrently_
         (alice <## "bob (Bob): contact is connected")
         (bob <## "alice (Alice): contact is connected")
@@ -3998,6 +3978,7 @@ testMemberContactMessage =
         <### [ "#team bob is creating direct contact bob with you",
                WithTime "bob> hi"
              ]
+      cath <## "bob (Bob): you can send messages to contact"
       concurrently_
         (bob <## "cath (Catherine): contact is connected")
         (cath <## "bob (Bob): contact is connected")
@@ -4018,6 +3999,7 @@ testMemberContactNoMessage =
       bob ##> "/_invite member contact @3"
       bob <## "sent invitation to connect directly to member #team cath"
       cath <## "#team bob is creating direct contact bob with you"
+      cath <## "bob (Bob): you can send messages to contact"
       concurrently_
         (bob <## "cath (Catherine): contact is connected")
         (cath <## "bob (Bob): contact is connected")
@@ -4058,6 +4040,7 @@ testMemberContactProhibitedRepeatInv =
         <### [ "#team bob is creating direct contact bob with you",
                WithTime "bob> hi"
              ]
+      cath <## "bob (Bob): you can send messages to contact"
       concurrently_
         (bob <## "cath (Catherine): contact is connected")
         (cath <## "bob (Bob): contact is connected")
@@ -4087,6 +4070,7 @@ testMemberContactInvitedConnectionReplaced tmp = do
                  WithTime "alice> hi",
                  "alice: security code changed"
                ]
+        bob <## "alice (Alice): you can send messages to contact"
         concurrently_
           (alice <## "bob (Bob): contact is connected")
           (bob <## "alice (Alice): contact is connected")
@@ -4196,6 +4180,7 @@ testMemberContactIncognito =
         <### [ ConsoleString ("#team " <> bobIncognito <> " is creating direct contact " <> bobIncognito <> " with you"),
                WithTime ("i " <> bobIncognito <> "> hi")
              ]
+      cath <## (bobIncognito <> ": you can send messages to contact")
       _ <- getTermLine bob
       _ <- getTermLine cath
       concurrentlyN_
@@ -4267,6 +4252,7 @@ testMemberContactProfileUpdate =
         <### [ "#team bob is creating direct contact bob with you",
                WithTime "bob> hi"
              ]
+      cath <## "bob (Bob): you can send messages to contact"
       concurrentlyN_
         [ do
             bob <## "contact cath changed to kate (Kate)"

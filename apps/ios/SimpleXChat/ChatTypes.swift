@@ -1463,7 +1463,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
     )
 }
 
-public struct ChatData: Decodable, Identifiable, Hashable {
+public struct ChatData: Decodable, Identifiable, Hashable, ChatLike {
     public var chatInfo: ChatInfo
     public var chatItems: [ChatItem]
     public var chatStats: ChatStats
@@ -1512,10 +1512,11 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
+    public var sndReady: Bool { get { ready || activeConn?.connStatus == .sndReady } }
     public var active: Bool { get { contactStatus == .active } }
     public var sendMsgEnabled: Bool { get {
         (
-            ready
+            sndReady
             && active
             && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false)
             && !(activeConn?.connDisabled ?? true)
@@ -1824,7 +1825,7 @@ public enum ConnStatus: String, Decodable, Hashable {
             case .joined: return false
             case .requested: return true
             case .accepted: return true
-            case .sndReady: return false
+            case .sndReady: return nil
             case .ready: return nil
             case .deleted: return nil
             }
@@ -3290,6 +3291,28 @@ public struct CIFile: Decodable, Hashable {
             case .rcvWarning: return rcvCancelAction
             case .rcvError: return nil
             case .invalid: return nil
+            }
+        }
+    }
+
+    public var showStatusIconInSmallView: Bool {
+        get {
+            switch fileStatus {
+            case .sndStored: fileProtocol != .local
+            case .sndTransfer: true
+            case .sndComplete: false
+            case .sndCancelled: true
+            case .sndError: true
+            case .sndWarning: true
+            case .rcvInvitation: false
+            case .rcvAccepted: true
+            case .rcvTransfer: true
+            case .rcvAborted: true
+            case .rcvCancelled: true
+            case .rcvComplete: false
+            case .rcvError: true
+            case .rcvWarning: true
+            case .invalid: true
             }
         }
     }

@@ -133,9 +133,6 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ 已认证";
 
-/* No comment provided by engineer. */
-"%@ servers" = "%@ 服务器";
-
 /* notification title */
 "%@ wants to connect!" = "%@ 要连接！";
 
@@ -602,7 +599,7 @@
 /* rcv group event chat item */
 "blocked %@" = "已封禁 %@";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "由管理员封禁";
 
 /* No comment provided by engineer. */
@@ -4114,7 +4111,7 @@
 "You can make it visible to your SimpleX contacts via Settings." = "你可以通过设置让它对你的 SimpleX 联系人可见。";
 
 /* notification body */
-"You can now send messages to %@" = "您现在可以给 %@ 发送消息";
+"You can now chat with %@" = "您现在可以给 %@ 发送消息";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "您可以通过设置来设置锁屏通知预览。";

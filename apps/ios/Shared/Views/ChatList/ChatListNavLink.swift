@@ -100,7 +100,7 @@ struct ChatListNavLink: View {
                         clearChatButton()
                     }
                     Button {
-                        if contact.ready || !contact.active {
+                        if contact.sndReady || !contact.active {
                             showDeleteContactActionSheet = true
                         } else {
                             AlertManager.shared.showAlert(deletePendingContactAlert(chat, contact))
@@ -114,7 +114,7 @@ struct ChatListNavLink: View {
             }
         }
         .actionSheet(isPresented: $showDeleteContactActionSheet) {
-            if contact.ready && contact.active {
+            if contact.sndReady && contact.active {
                 return ActionSheet(
                     title: Text("Delete contact?\nThis cannot be undone!"),
                     buttons: [

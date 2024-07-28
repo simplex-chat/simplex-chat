@@ -309,7 +309,7 @@
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
-                    (pkgs.openssl.override { static = true; })
+                    ((pkgs.openssl.override { static = true; }).overrideDerivation (old: { CFLAGS = "-mcpu=apple-a7 -march=armv8-a+norcpc" ;}))
                   ];
                 }];
               }).simplex-chat.components.library.override (

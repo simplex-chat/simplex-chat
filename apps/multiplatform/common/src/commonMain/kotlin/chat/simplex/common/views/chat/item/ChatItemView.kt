@@ -341,7 +341,7 @@ fun ChatItemView(
               if (mc is MsgContent.MCText && isShortEmoji(cItem.content.text)) {
                 EmojiItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy)
               } else if (mc is MsgContent.MCVoice && cItem.content.text.isEmpty()) {
-                CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, longClick = { onLinkLongClick("") }, receiveFile)
+                CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
               } else {
                 framedItemView()
               }

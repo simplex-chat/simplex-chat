@@ -16,13 +16,25 @@ interface RecorderInterface {
 
 expect class RecorderNative(): RecorderInterface
 
+enum class TrackState {
+  PLAYING, PAUSED, REPLACED
+}
+
+data class CurrentlyPlayingState(
+  val fileSource: CryptoFile,
+  val onProgressUpdate: (position: Int?, state: TrackState) -> Unit,
+  val smallView: Boolean,
+)
+
 interface AudioPlayerInterface {
+  val currentlyPlaying: MutableState<CurrentlyPlayingState?>
   fun play(
     fileSource: CryptoFile,
     audioPlaying: MutableState<Boolean>,
     progress: MutableState<Int>,
     duration: MutableState<Int>,
     resetOnEnd: Boolean,
+    smallView: Boolean,
   )
   fun stop()
   fun stop(item: ChatItem)

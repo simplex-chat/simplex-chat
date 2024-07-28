@@ -1377,7 +1377,7 @@ data ConnStatus
     ConnRequested
   | -- | initiating party accepted connection with agent LET command (to be renamed to ACPT) (allowConnection)
     ConnAccepted
-  | -- | connection can be sent messages to (after joining party received INFO notification)
+  | -- | connection can be sent messages to (after joining party received INFO notification, or after securing snd queue on join)
     ConnSndReady
   | -- | connection is ready for both parties to send and receive messages
     ConnReady
@@ -1588,9 +1588,9 @@ commandExpectedResponse = \case
   CFCreateConnGrpInv -> t INV_
   CFCreateConnFileInvDirect -> t INV_
   CFCreateConnFileInvGroup -> t INV_
-  CFJoinConn -> t OK_
+  CFJoinConn -> t JOINED_
   CFAllowConn -> t OK_
-  CFAcceptContact -> t OK_
+  CFAcceptContact -> t JOINED_
   CFAckMessage -> t OK_
   CFDeleteConn -> t OK_
   where

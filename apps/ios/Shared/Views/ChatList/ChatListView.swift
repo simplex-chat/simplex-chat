@@ -21,6 +21,7 @@ struct ChatListView: View {
     @State private var newChatMenuOption: NewChatMenuOption? = nil
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
+
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
@@ -162,6 +163,10 @@ struct ChatListView: View {
                     chatModel.chatToTop = nil
                     chatModel.popChat(chatId)
                 }
+                stopAudioPlayer()
+            }
+            .onChange(of: chatModel.currentUser?.userId) { _ in
+                stopAudioPlayer()
             }
             if cs.isEmpty && !chatModel.chats.isEmpty {
                 Text("No filtered chats").foregroundColor(theme.colors.secondary)
@@ -217,6 +222,11 @@ struct ChatListView: View {
         }
     }
 
+    func stopAudioPlayer() {
+        VoiceItemState.smallView.values.forEach { $0.audioPlayer?.stop() }
+        VoiceItemState.smallView = [:]
+    }
+
     private func filteredChats() -> [Chat] {
         if let linkChatId = searchChatFilteredBySimplexLink {
             return chatModel.chats.filter { $0.id == linkChatId }
@@ -266,9 +276,9 @@ struct ChatListView: View {
 }
 
 struct SubsStatusIndicator: View {
-    @State private var serversSummary: PresentedServersSummary?
+    @State private var subs: SMPServerSubs = SMPServerSubs.newSMPServerSubs
+    @State private var hasSess: Bool = false
     @State private var timer: Timer? = nil
-    @State private var timerCounter = 0
     @State private var showServersSummary = false
 
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
@@ -277,12 +287,10 @@ struct SubsStatusIndicator: View {
         Button {
             showServersSummary = true
         } label: {
-            let subs = serversSummary?.allUsersSMP.smpTotals.subs ?? SMPServerSubs.newSMPServerSubs
-            let sess = serversSummary?.allUsersSMP.smpTotals.sessions ?? ServerSessions.newServerSessions
             HStack(spacing: 4) {
-                SubscriptionStatusIndicatorView(subs: subs, sess: sess)
+                SubscriptionStatusIndicatorView(subs: subs, hasSess: hasSess)
                 if showSubscriptionPercentage {
-                    SubscriptionStatusPercentageView(subs: subs, sess: sess)
+                    SubscriptionStatusPercentageView(subs: subs, hasSess: hasSess)
                 }
             }
         }
@@ -293,14 +301,14 @@ struct SubsStatusIndicator: View {
             stopTimer()
         }
         .sheet(isPresented: $showServersSummary) {
-            ServersSummaryView(serversSummary: $serversSummary)
+            ServersSummaryView()
         }
     }
 
     private func startTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             if AppChatState.shared.value == .active {
-                getServersSummary()
+                getSubsTotal()
             }
         }
     }
@@ -310,11 +318,11 @@ struct SubsStatusIndicator: View {
         timer = nil
     }
 
-    private func getServersSummary() {
+    private func getSubsTotal() {
         do {
-            serversSummary = try getAgentServersSummary()
+            (subs, hasSess) = try getAgentSubsTotal()
         } catch let error {
-            logger.error("getAgentServersSummary error: \(responseError(error))")
+            logger.error("getSubsTotal error: \(responseError(error))")
         }
     }
 }

@@ -132,7 +132,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               ) {
                 if (
                   chat.chatInfo is ChatInfo.Direct
-                  && !chat.chatInfo.contact.ready
+                  && !chat.chatInfo.contact.sndReady
                   && chat.chatInfo.contact.active
                   && !chat.chatInfo.contact.nextSendGrpInv
                 ) {
@@ -1113,6 +1113,12 @@ fun BoxWithConstraintsScope.ChatItemsList(
     }
   }
   FloatingButtons(chatModel.chatItems, unreadCount, chat.chatStats.minUnreadItemId, searchValue, markRead, setFloatingButton, listState)
+  LaunchedEffect(Unit) {
+    snapshotFlow { listState.isScrollInProgress }
+      .collect {
+        chatViewScrollState.value = it
+      }
+  }
 }
 
 @Composable
@@ -1326,6 +1332,8 @@ private fun TopEndFloatingButton(
   }
 }
 
+val chatViewScrollState = MutableStateFlow(false)
+
 private fun bottomEndFloatingButton(
   unreadCount: Int,
   showButtonWithCounter: Boolean,
@@ -1416,7 +1424,7 @@ sealed class ProviderMedia {
   data class Video(val uri: URI, val fileSource: CryptoFile?, val preview: String): ProviderMedia()
 }
 
-private fun providerForGallery(
+fun providerForGallery(
   listStateIndex: Int,
   chatItems: List<ChatItem>,
   cItemId: Long,
