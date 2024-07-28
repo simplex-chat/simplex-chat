@@ -1091,62 +1091,6 @@ func deleteRemoteCtrl(_ rcId: Int64) async throws {
     try await sendCommandOkResp(.deleteRemoteCtrl(remoteCtrlId: rcId))
 }
 
-struct ErrorAlert {
-    var title: LocalizedStringKey
-    var message: LocalizedStringKey
-}
-
-func getNetworkErrorAlert(_ r: ChatResponse) -> ErrorAlert? {
-    switch r {
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TIMEOUT))):
-        return ErrorAlert(title: "Connection timeout", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .NETWORK))):
-        return ErrorAlert(title: "Connection error", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .HOST))):
-        return ErrorAlert(title: "Connection error", message: "Server address is incompatible with network settings: \(serverHostname(addr)).")
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TRANSPORT(.version)))):
-        return ErrorAlert(title: "Connection error", message: "Server version is incompatible with your app: \(serverHostname(addr)).")
-    case let .chatCmdError(_, .errorAgent(.SMP(serverAddress, .PROXY(proxyErr)))):
-        return smpProxyErrorAlert(proxyErr, serverAddress)
-    case let .chatCmdError(_, .errorAgent(.PROXY(proxyServer, relayServer, .protocolError(.PROXY(proxyErr))))):
-        return proxyDestinationErrorAlert(proxyErr, proxyServer, relayServer)
-    default:
-        return nil
-    }
-}
-
-private func smpProxyErrorAlert(_ proxyErr: ProxyError, _ srvAddr: String) -> ErrorAlert? {
-    switch proxyErr {
-    case .BROKER(brokerErr: .TIMEOUT):
-        return ErrorAlert(title: "Private routing error", message: "Error connecting to forwarding server \(serverHostname(srvAddr)). Please try later.")
-    case .BROKER(brokerErr: .NETWORK):
-        return ErrorAlert(title: "Private routing error", message: "Error connecting to forwarding server \(serverHostname(srvAddr)). Please try later.")
-    case .BROKER(brokerErr: .HOST):
-        return ErrorAlert(title: "Private routing error", message: "Forwarding server address is incompatible with network settings: \(serverHostname(srvAddr)).")
-    case .BROKER(brokerErr: .TRANSPORT(.version)):
-        return ErrorAlert(title: "Private routing error", message: "Forwarding server version is incompatible with network settings: \(serverHostname(srvAddr)).")
-    default:
-        return nil
-    }
-}
-
-private func proxyDestinationErrorAlert(_ proxyErr: ProxyError, _ proxyServer: String, _ relayServer: String) -> ErrorAlert? {
-    switch proxyErr {
-    case .BROKER(brokerErr: .TIMEOUT):
-        return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
-    case .BROKER(brokerErr: .NETWORK):
-        return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
-    case .NO_SESSION:
-        return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
-    case .BROKER(brokerErr: .HOST):
-        return ErrorAlert(title: "Private routing error", message: "Destination server address of \(serverHostname(relayServer)) is incompatible with forwarding server \(serverHostname(proxyServer)) settings.")
-    case .BROKER(brokerErr: .TRANSPORT(.version)):
-        return ErrorAlert(title: "Private routing error", message: "Destination server version of \(serverHostname(relayServer)) is incompatible with forwarding server \(serverHostname(proxyServer)).")
-    default:
-        return nil
-    }
-}
-
 func networkErrorAlert(_ r: ChatResponse) -> Alert? {
     if let alert = getNetworkErrorAlert(r) {
         return mkAlert(title: alert.title, message: alert.message)

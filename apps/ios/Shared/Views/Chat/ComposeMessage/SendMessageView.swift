@@ -67,7 +67,6 @@ struct SendMessageView: View {
                         .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-
                 if progressByTimeout {
                     ProgressView()
                         .scaleEffect(1.4)
@@ -87,7 +86,7 @@ struct SendMessageView: View {
             .padding(.vertical, 1)
             .background(theme.colors.background)
             .clipShape(composeShape)
-            .overlay(composeShape.strokeBorder(.secondary, lineWidth: 0.3, antialiased: true))
+            .overlay(composeShape.strokeBorder(.secondary, lineWidth: 0.5).opacity(0.7))
         }
         .onChange(of: composeState.message, perform: { text in updateFont(text) })
         .onChange(of: composeState.inProgress) { inProgress in

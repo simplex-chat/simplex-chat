@@ -23,20 +23,24 @@ import System.Terminal (withTerminal)
 simplexChatCLI :: ChatConfig -> Maybe (ServiceName -> ChatConfig -> ChatOpts -> IO ()) -> IO ()
 simplexChatCLI cfg server_ = do
   appDir <- getAppUserDataDirectory "simplex"
-  opts@ChatOpts {chatCmd, chatServerPort} <- getChatOpts appDir "simplex_v1"
+  opts <- getChatOpts appDir "simplex_v1"
+  simplexChatCLI' cfg opts server_
+
+simplexChatCLI' :: ChatConfig -> ChatOpts -> Maybe (ServiceName -> ChatConfig -> ChatOpts -> IO ()) -> IO ()
+simplexChatCLI' cfg opts@ChatOpts {chatCmd, chatCmdLog, chatCmdDelay, chatServerPort} server_ = do
   if null chatCmd
     then case chatServerPort of
       Just chatPort -> case server_ of
         Just server -> server chatPort cfg opts
         Nothing -> putStrLn "Not allowed to run as a WebSockets server" >> exitFailure
-      _ -> runCLI opts
-    else simplexChatCore cfg opts $ runCommand opts
+      _ -> runCLI
+    else simplexChatCore cfg opts runCommand
   where
-    runCLI opts = do
+    runCLI = do
       welcome cfg opts
       t <- withTerminal pure
       simplexChatTerminal cfg opts t
-    runCommand ChatOpts {chatCmd, chatCmdLog, chatCmdDelay} user cc = do
+    runCommand user cc = do
       when (chatCmdLog /= CCLNone) . void . forkIO . forever $ do
         (_, _, r') <- atomically . readTBQueue $ outputQ cc
         case r' of
