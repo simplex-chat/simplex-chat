@@ -202,7 +202,6 @@
 		CEDE70222C48FD9500233B1F /* SEChatState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDE70212C48FD9500233B1F /* SEChatState.swift */; };
 		CEE723AA2C3BD3D70009AE93 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE723A92C3BD3D70009AE93 /* ShareViewController.swift */; };
 		CEE723B12C3BD3D70009AE93 /* SimpleX SE.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = CEE723A72C3BD3D70009AE93 /* SimpleX SE.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		CEE723D02C3C21C90009AE93 /* SimpleXChat.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		CEE723F02C3D25C70009AE93 /* ShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE723EF2C3D25C70009AE93 /* ShareView.swift */; };
 		CEE723F22C3D25ED0009AE93 /* ShareModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE723F12C3D25ED0009AE93 /* ShareModel.swift */; };
 		CEEA861D2C2ABCB50084E1EA /* ReverseList.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEA861C2C2ABCB50084E1EA /* ReverseList.swift */; };
@@ -218,6 +217,7 @@
 		E5DCF8D72C56F7EF007928CC /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E5DCF8D22C56F7EF007928CC /* libffi.a */; };
 		E5DCF8D82C56F7EF007928CC /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E5DCF8D32C56F7EF007928CC /* libgmp.a */; };
 		E5DCF8D92C56F7EF007928CC /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E5DCF8D42C56F7EF007928CC /* libgmpxx.a */; };
+		E5DCF8DB2C56FAC1007928CC /* SimpleXChat.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -287,17 +287,6 @@
 				5CE2BA9D284555F500EC33A6 /* SimpleX NSE.appex in Embed App Extensions */,
 			);
 			name = "Embed App Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		CEE723D32C3C21C90009AE93 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				CEE723D02C3C21C90009AE93 /* SimpleXChat.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -605,6 +594,14 @@
 				E5DCF8D92C56F7EF007928CC /* libgmpxx.a in Frameworks */,
 				E5DCF8D52C56F7EF007928CC /* libHSsimplex-chat-6.0.0.2-B4oiZFZeYN0AY2321yyqdp-ghc9.6.3.a in Frameworks */,
 				CE38A29C2C3FCD72005ED185 /* SwiftyGif in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E5DCF8DA2C56FABA007928CC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E5DCF8DB2C56FAC1007928CC /* SimpleXChat.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1143,7 +1140,7 @@
 			buildPhases = (
 				CEE723A32C3BD3D70009AE93 /* Sources */,
 				CEE723A52C3BD3D70009AE93 /* Resources */,
-				CEE723D32C3C21C90009AE93 /* Embed Frameworks */,
+				E5DCF8DA2C56FABA007928CC /* Frameworks */,
 			);
 			buildRules = (
 			);
