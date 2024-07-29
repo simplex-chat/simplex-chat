@@ -46,6 +46,7 @@ import kotlin.math.sign
 fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: String) -> Unit) {
   val activeChat = remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatId }) }
   val searchText = rememberSaveable { mutableStateOf("") }
+  val showSearch = rememberSaveable { mutableStateOf(false) }
   val user = chatModel.currentUser.value
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
   val composeState = rememberSaveable(saver = ComposeState.saver()) {
@@ -73,7 +74,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           if (activeChat.value?.id != chatId) {
             // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
             // Also for situation when chatId changes after clicking in notification, etc
-            chatModel.chatViewMode.value = ChatViewMode.Message
+            showSearch.value = false
             activeChat.value = chatModel.getChat(chatId)
           }
           markUnreadChatAsRead(activeChat, chatModel)
@@ -190,7 +191,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
                       code = chatModel.controller.apiGetContactCode(chatRh, chat.chatInfo.apiId)?.second
                       preloadedCode = code
                     }
-                    ChatInfoView(chatModel, openedFromChatView = true, (chat.chatInfo as ChatInfo.Direct).contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
+                    ChatInfoView(chatModel, openedFromChatView = true, (chat.chatInfo as ChatInfo.Direct).contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close) {
+                      showSearch.value = true
+                    }
                   } else if (chat?.chatInfo is ChatInfo.Group) {
                     var link: Pair<String, GroupMemberRole>? by remember(chat.id) { mutableStateOf(preloadedLink) }
                     KeyChangeEffect(chat.id) {
@@ -201,7 +204,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
                     GroupChatInfoView(chatModel, chatRh, chat.id, link?.first, link?.second, {
                       link = it
                       preloadedLink = it
-                    }, close)
+                    }, close, { showSearch.value = true })
                   } else {
                     LaunchedEffect(Unit) {
                       close()
@@ -463,6 +466,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             onComposed,
             developerTools = chatModel.controller.appPrefs.developerTools.get(),
             showViaProxy = chatModel.controller.appPrefs.showSentViaProxy.get(),
+            showSearch = showSearch
           )
         }
       }
@@ -547,7 +551,8 @@ fun ChatLayout(
   onSearchValueChanged: (String) -> Unit,
   onComposed: suspend (chatId: String) -> Unit,
   developerTools: Boolean,
-  showViaProxy: Boolean
+  showViaProxy: Boolean,
+  showSearch: MutableState<Boolean>
 ) {
   val scope = rememberCoroutineScope()
   val attachmentDisabled = remember { derivedStateOf { composeState.value.attachmentDisabled } }
@@ -591,7 +596,7 @@ fun ChatLayout(
         }
 
         Scaffold(
-          topBar = { ChatInfoToolbar(chat, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged) },
+          topBar = { ChatInfoToolbar(chat, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged, showSearch) },
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding(),
           floatingActionButton = { floatingButton.value() },
@@ -637,15 +642,16 @@ fun ChatInfoToolbar(
   openGroupLink: (GroupInfo) -> Unit,
   changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
+  showSearch: MutableState<Boolean>
 ) {
-  val scope = rememberCoroutineScope()
   val showMenu = rememberSaveable { mutableStateOf(false) }
+
   val onBackClicked = {
-    if (chatModel.chatViewMode.value == ChatViewMode.Message) {
+    if (!showSearch.value) {
       back()
     } else {
       onSearchValueChanged("")
-      chatModel.chatViewMode.value = ChatViewMode.Message
+      showSearch.value = false
     }
   }
   if (appPlatform.isAndroid) {
@@ -657,7 +663,7 @@ fun ChatInfoToolbar(
     barButtons.add {
       IconButton({
         showMenu.value = false
-        chatModel.chatViewMode.value = ChatViewMode.Search
+        showSearch.value = true
         }, enabled = chat.chatInfo.noteFolder.ready
       ) {
         Icon(
@@ -750,10 +756,10 @@ fun ChatInfoToolbar(
   }
 
   DefaultTopAppBar(
-    navigationButton = { if (appPlatform.isAndroid ||  chatModel.chatViewMode.value == ChatViewMode.Search) { NavigationButtonBack(onBackClicked) }  },
+    navigationButton = { if (appPlatform.isAndroid || showSearch.value) { NavigationButtonBack(onBackClicked) }  },
     title = { ChatInfoToolbarTitle(chat.chatInfo) },
     onTitleClick = if (chat.chatInfo is ChatInfo.Local) null else info,
-    showSearch = chatModel.chatViewMode.value == ChatViewMode.Search,
+    showSearch = showSearch.value,
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
@@ -1541,6 +1547,7 @@ fun PreviewChatLayout() {
       onComposed = {},
       developerTools = false,
       showViaProxy = false,
+      showSearch =  remember { mutableStateOf(false) }
     )
   }
 }
@@ -1615,6 +1622,7 @@ fun PreviewGroupChatLayout() {
       onComposed = {},
       developerTools = false,
       showViaProxy = false,
+      showSearch =  remember { mutableStateOf(false) }
     )
   }
 }

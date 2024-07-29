@@ -62,7 +62,6 @@ object ChatModel {
   // current chat
   val chatId = mutableStateOf<String?>(null)
   val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
-  val chatViewMode = mutableStateOf(ChatViewMode.Message)
   // rhId, chatId
   val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
@@ -1752,11 +1751,6 @@ class PendingContactConnection(
         updatedAt = Clock.System.now()
       )
   }
-}
-
-enum class ChatViewMode {
-  Message,
-  Search,
 }
 
 @Serializable

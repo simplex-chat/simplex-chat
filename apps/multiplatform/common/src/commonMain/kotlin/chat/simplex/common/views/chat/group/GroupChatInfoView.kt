@@ -40,7 +40,7 @@ import kotlinx.coroutines.launch
 const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
 @Composable
-fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit) {
+fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit, onSearchClicked: () -> Unit) {
   BackHandler(onBack = close)
   // TODO derivedStateOf?
   val chat = chatModel.chats.firstOrNull { ch -> ch.id == chatId && ch.remoteHostId == rhId }
@@ -113,7 +113,8 @@ fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLi
       leaveGroup = { leaveGroupDialog(rhId, groupInfo, chatModel, close) },
       manageGroupLink = {
           ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, groupLinkMemberRole, onGroupLinkUpdated) }
-      }
+      },
+      onSearchClicked = onSearchClicked
     )
   }
 }
@@ -178,17 +179,14 @@ private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMembe
 }
 
 @Composable
-fun SearchButton(chat: Chat, group: GroupInfo, close: () -> Unit) {
+fun SearchButton(chat: Chat, group: GroupInfo, close: () -> Unit, onSearchClicked: () -> Unit) {
   InfoViewActionButton(
     icon = painterResource(MR.images.ic_search),
     title = generalGetString(MR.strings.info_view_search_button),
     disabled = !group.ready || chat.chatItems.isEmpty(),
     onClick = {
-      chatModel.chatViewMode.value = ChatViewMode.Search
+      onSearchClicked()
       close.invoke()
-      withBGApi {
-        openGroupChat(chat.remoteHostId, group.groupId, chatModel)
-      }
     }
   )
 }
@@ -243,7 +241,8 @@ fun GroupChatInfoLayout(
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
   manageGroupLink: () -> Unit,
-  close: () -> Unit = { ModalManager.closeAllModalsEverywhere()}
+  close: () -> Unit = { ModalManager.closeAllModalsEverywhere()},
+  onSearchClicked: () -> Unit
 ) {
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
@@ -274,7 +273,7 @@ fun GroupChatInfoLayout(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
       ) {
-        SearchButton(chat, groupInfo, close)
+        SearchButton(chat, groupInfo, close, onSearchClicked)
         Spacer(Modifier.width(DEFAULT_PADDING))
         MuteButton(chat, groupInfo)
         if (groupInfo.canAddMembers) {
@@ -650,7 +649,7 @@ fun PreviewGroupChatInfoLayout() {
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
       groupLink = null,
-      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {},
+      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {}, onSearchClicked = {},
     )
   }
 }

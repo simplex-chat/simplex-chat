@@ -71,6 +71,7 @@ fun ChatInfoView(
   localAlias: String,
   connectionCode: String?,
   close: () -> Unit,
+  onSearchClicked: () -> Unit
 ) {
   BackHandler(onBack = close)
   val contact = rememberUpdatedState(contact).value
@@ -185,7 +186,8 @@ fun ChatInfoView(
           }
         }
       },
-      close = close
+      close = close,
+      onSearchClicked = onSearchClicked
     )
   }
 }
@@ -395,6 +397,7 @@ fun ChatInfoLayout(
   syncContactConnectionForce: () -> Unit,
   verifyClicked: () -> Unit,
   close: () -> Unit,
+  onSearchClicked: () -> Unit
 ) {
   val cStats = connStats.value
   val scrollState = rememberScrollState()
@@ -431,7 +434,7 @@ fun ChatInfoLayout(
         OpenButton(openedFromChatView, chat, contact, close)
         Spacer(Modifier.width(DEFAULT_PADDING))
       }
-      SearchButton(chat, contact, close)
+      SearchButton(chat, contact, close, onSearchClicked)
       Spacer(Modifier.width(DEFAULT_PADDING))
       CallButton(chat, contact)
       Spacer(Modifier.width(DEFAULT_PADDING))
@@ -753,17 +756,14 @@ private fun MessageButton(openedFromChatView: Boolean, chat: Chat, contact: Cont
 }
 
 @Composable
-fun SearchButton(chat: Chat, contact: Contact, close: () -> Unit) {
+fun SearchButton(chat: Chat, contact: Contact, close: () -> Unit, onSearchClicked: () -> Unit) {
   InfoViewActionButton(
     icon = painterResource(MR.images.ic_search),
     title = generalGetString(MR.strings.info_view_search_button),
     disabled = !contact.ready || chat.chatItems.isEmpty(),
     onClick = {
       close.invoke()
-      withBGApi {
-        openDirectChat(chat.remoteHostId, contact.contactId, chatModel)
-        chatModel.chatViewMode.value = ChatViewMode.Search
-      }
+      onSearchClicked()
     }
   )
 }
@@ -1155,6 +1155,7 @@ fun PreviewChatInfoLayout() {
       syncContactConnectionForce = {},
       verifyClicked = {},
       close = {},
+      onSearchClicked = {}
     )
   }
 }
