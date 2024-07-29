@@ -11,7 +11,7 @@ import ChatClient
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad (void, when)
+import Control.Monad (forM_, void, when)
 import qualified Data.ByteString.Char8 as B
 import Data.List (isInfixOf)
 import qualified Data.Text as T
@@ -19,6 +19,7 @@ import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
+import Data.List (intercalate)
 import Simplex.Chat.Types (VersionRangeChat)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Env.SQLite
@@ -53,6 +54,7 @@ chatGroupTests = do
     it "group message edit history" testGroupMessageEditHistory
     it "group message delete" testGroupMessageDelete
     it "group message delete multiple" testGroupMessageDeleteMultiple
+    it "group message delete multiple (many chat batches)" testGroupMessageDeleteMultipleManyBatches
     it "group live message" testGroupLiveMessage
     it "update group profile" testUpdateGroupProfile
     it "update member role" testUpdateMemberRole
@@ -1291,6 +1293,36 @@ testGroupMessageDeleteMultiple =
       alice #$> ("/_get chat #1 count=2", chat, [(1, "hello [marked deleted]"), (1, "hey [marked deleted]")])
       bob #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted]"), (0, "hey [marked deleted]")])
       cath #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted]"), (0, "hey [marked deleted]")])
+
+testGroupMessageDeleteMultipleManyBatches :: HasCallStack => FilePath -> IO ()
+testGroupMessageDeleteMultipleManyBatches =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      alice #> "#team message 0"
+      concurrently_
+        (bob <# "#team alice> message 0")
+        (cath <# "#team alice> message 0")
+      msgIdFirst <- lastItemId alice
+
+      forM_ [(1 :: Int) .. 300] $ \i -> do
+        alice #> ("#team message " <> show i)
+        concurrently_
+          (bob <# ("#team alice> message " <> show i))
+          (cath <# ("#team alice> message " <> show i))
+      msgIdLast <- lastItemId alice
+
+      let mIdFirst = read msgIdFirst :: Int
+          mIdLast = read msgIdLast :: Int
+          deleteIds = intercalate "," (map show [mIdFirst .. mIdLast])
+      alice `send` ("/_delete item #1 " <> deleteIds <> " broadcast")
+      _ <- getTermLine alice
+      alice <## "301 messages deleted"
+      forM_ [(0 :: Int) .. 300] $ \i ->
+        concurrently_
+          (bob <# ("#team alice> [marked deleted] message " <> show i))
+          (cath <# ("#team alice> [marked deleted] message " <> show i))
 
 testGroupLiveMessage :: HasCallStack => FilePath -> IO ()
 testGroupLiveMessage =
