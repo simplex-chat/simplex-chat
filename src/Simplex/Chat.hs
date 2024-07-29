@@ -625,6 +625,7 @@ processChatCommand' vr = \case
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
       _ -> checkStoreNotChanged . lift $ startChatController mainApp enableSndFiles $> CRChatStarted
+  CheckChatRunning -> maybe CRChatStopped (const CRChatRunning) <$> chatReadVar agentAsync
   APIStopChat -> do
     ask >>= liftIO . stopChatController
     pure CRChatStopped
@@ -7393,6 +7394,7 @@ chatCommandP =
         enableSndFiles <- " snd_files=" *> onOffP <|> pure mainApp
         pure StartChat {mainApp, enableSndFiles},
       "/_start" $> StartChat True True,
+      "/_check running" $> CheckChatRunning,
       "/_stop" $> APIStopChat,
       "/_app activate restore=" *> (APIActivateChat <$> onOffP),
       "/_app activate" $> APIActivateChat True,
