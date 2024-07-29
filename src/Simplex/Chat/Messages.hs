@@ -354,7 +354,8 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemEdited :: Bool,
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
-    deletable :: Bool,
+    deletable :: Bool, -- based on time interval cutoff (see allowedInterval in mkCIMeta), used in UI
+    nearDeletable :: Bool, -- adds a margin to deletable to account for deletion on the cutoff border, used in core
     editable :: Bool,
     forwardedByMember :: Maybe GroupMemberId,
     createdAt :: UTCTime,
@@ -364,14 +365,17 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
 
 mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
 mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
-  let deletable = case itemContent of
-        CISndMsgContent _ ->
-          case chatTypeI @c of
-            SCTLocal -> isNothing itemDeleted
-            _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
-        _ -> False
+  let deletable = deletable' nominalDay
+      nearDeletable = deletable' (nominalDay + 21600) -- 6 hours margin
       editable = deletable && isNothing itemForwarded
-   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, deletable, editable, forwardedByMember, createdAt, updatedAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, deletable, nearDeletable, editable, forwardedByMember, createdAt, updatedAt}
+  where
+    deletable' allowedInterval = case itemContent of
+      CISndMsgContent _ ->
+        case chatTypeI @c of
+          SCTLocal -> isNothing itemDeleted
+          _ -> diffUTCTime currentTs itemTs < allowedInterval && isNothing itemDeleted
+      _ -> False
 
 dummyMeta :: ChatItemId -> UTCTime -> Text -> CIMeta c 'MDSnd
 dummyMeta itemId ts itemText =
@@ -388,6 +392,7 @@ dummyMeta itemId ts itemText =
       itemTimed = Nothing,
       itemLive = Nothing,
       deletable = False,
+      nearDeletable = False,
       editable = False,
       forwardedByMember = Nothing,
       createdAt = ts,

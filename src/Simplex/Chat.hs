@@ -863,9 +863,9 @@ processChatCommand' vr = \case
         unless (all itemDeletable items) $ throwChatError CEInvalidChatItemDelete
         where
           itemDeletable :: CChatItem c -> Bool
-          itemDeletable (CChatItem msgDir ChatItem {meta = CIMeta {itemSharedMsgId, deletable}}) =
+          itemDeletable (CChatItem msgDir ChatItem {meta = CIMeta {itemSharedMsgId, nearDeletable}}) =
             case msgDir of
-              SMDSnd -> isJust itemSharedMsgId && deletable
+              SMDSnd -> isJust itemSharedMsgId && nearDeletable
               SMDRcv -> False
       itemsMsgIds :: [CChatItem c] -> [SharedMsgId]
       itemsMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
