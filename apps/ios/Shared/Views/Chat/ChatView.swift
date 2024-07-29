@@ -634,7 +634,7 @@ struct ChatView: View {
             let ciCategory = chatItem.mergeCategory
             let (prevHidden, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
             let range = itemsRange(currIndex, prevHidden)
-            let v = Group {
+            Group {
                 if revealed, let range = range {
                     let items = Array(zip(Array(range), m.reversedChatItems[range]))
                     ForEach(items, id: \.1.viewId) { (i, ci) in
@@ -645,26 +645,20 @@ struct ChatView: View {
                     chatItemView(chatItem, range, prevItem)
                 }
             }
-            if let range {
-                if let items = unreadItems(range) {
-                    v.onAppear {
+            .onAppear {
+                if let range {
+                    if let items = unreadItems(range) {
                         waitToMarkRead {
                             for ci in items {
                                 await apiMarkChatItemRead(chat.chatInfo, ci)
                             }
                         }
                     }
-                } else {
-                    v
-                }
-            } else if chatItem.isRcvNew  {
-                v.onAppear {
+                } else if chatItem.isRcvNew  {
                     waitToMarkRead {
                         await apiMarkChatItemRead(chat.chatInfo, chatItem)
                     }
                 }
-            } else {
-                v
             }
         }
         
