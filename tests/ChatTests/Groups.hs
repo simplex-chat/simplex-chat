@@ -1300,6 +1300,11 @@ testGroupMessageDeleteMultipleManyBatches =
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
 
+      bob ##> "/set receipts all off"
+      bob <## "ok"
+      cath ##> "/set receipts all off"
+      cath <## "ok"
+
       alice #> "#team message 0"
       concurrently_
         (bob <# "#team alice> message 0")
