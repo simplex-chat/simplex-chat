@@ -43,6 +43,11 @@ private func addTermItem(_ items: inout [TerminalItem], _ item: TerminalItem) {
     items.append(item)
 }
 
+class ItemsModel: ObservableObject {
+    static let shared = ItemsModel()
+    @Published var reversedChatItems: [ChatItem] = []
+}
+
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
@@ -69,7 +74,10 @@ final class ChatModel: ObservableObject {
     @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
     // current chat
     @Published var chatId: String?
-    @Published var reversedChatItems: [ChatItem] = []
+    private var reversedChatItems: Array<ChatItem> {
+        get { ItemsModel.shared.reversedChatItems }
+        set { ItemsModel.shared.reversedChatItems = newValue }
+    }
     var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
     @Published var chatToTop: String?
     @Published var groupMembers: [GMember] = []
@@ -563,9 +571,35 @@ final class ChatModel: ObservableObject {
                     // update current chat
                     markChatItemRead_(itemIndex)
                     // update preview
-                    decreaseUnreadCounter(chatIndex)
+                    unreadCollector.decreaseUnreadCounter(chatIndex)
                 }
             }
+        }
+    }
+
+    private let unreadCollector = UnreadCollector()
+
+    class UnreadCollector {
+        private let subject = PassthroughSubject<Int, Never>()
+        private var bag = Set<AnyCancellable>()
+        private var dictionary = Dictionary<Int, Int>()
+
+        init() {
+            subject
+                .debounce(for: 1, scheduler: DispatchQueue.main)
+                .sink { _ in
+                    self.dictionary.forEach { key, value in
+                        ChatModel.shared.decreaseUnreadCounter(key, by: value)
+                    }
+                    self.dictionary = Dictionary<Int, Int>()
+                }
+                .store(in: &bag)
+        }
+        
+        // Only call from main thread
+        func decreaseUnreadCounter(_ chatIndex: Int) {
+            dictionary[chatIndex] = (dictionary[chatIndex] ?? .zero) + 1
+            subject.send(chatIndex)
         }
     }
 
@@ -580,9 +614,9 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func decreaseUnreadCounter(_ chatIndex: Int) {
-        chats[chatIndex].chatStats.unreadCount = chats[chatIndex].chatStats.unreadCount - 1
-        decreaseUnreadCounter(user: currentUser!)
+    func decreaseUnreadCounter(_ chatIndex: Int, by count: Int = 1) {
+        chats[chatIndex].chatStats.unreadCount = chats[chatIndex].chatStats.unreadCount - count
+        decreaseUnreadCounter(user: currentUser!, by: count)
     }
 
     func increaseUnreadCounter(user: any UserLike) {
