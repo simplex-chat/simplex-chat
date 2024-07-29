@@ -739,7 +739,7 @@ object ChatController {
     }
   }
 
-  suspend fun apiCheckChatRunning(): Boolean {
+  private suspend fun apiCheckChatRunning(): Boolean {
     val r = sendCmd(null, CC.CheckChatRunning())
     when (r) {
       is CR.ChatRunning -> return true
