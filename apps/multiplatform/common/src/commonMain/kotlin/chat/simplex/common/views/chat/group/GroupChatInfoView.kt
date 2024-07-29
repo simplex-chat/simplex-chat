@@ -274,12 +274,12 @@ fun GroupChatInfoLayout(
         verticalAlignment = Alignment.CenterVertically
       ) {
         SearchButton(chat, groupInfo, close, onSearchClicked)
-        Spacer(Modifier.width(DEFAULT_PADDING))
-        MuteButton(chat, groupInfo)
         if (groupInfo.canAddMembers) {
           Spacer(Modifier.width(DEFAULT_PADDING))
           AddGroupMembersButton(chat, groupInfo)
         }
+        Spacer(Modifier.width(DEFAULT_PADDING))
+        MuteButton(chat, groupInfo)
       }
 
       SectionSpacer()
