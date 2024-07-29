@@ -1995,4 +1995,9 @@
     <string name="proxy_destination_error_broker_version">La versione del server di destinazione di %1$s è incompatibile con il server di inoltro %2$s.</string>
     <string name="smp_proxy_error_connecting">Errore di connessione al server di inoltro %1$s. Riprova più tardi.</string>
     <string name="smp_proxy_error_broker_version">La versione server di inoltro è incompatibile con le impostazioni di rete: %1$s.</string>
+    <string name="privacy_media_blur_radius_off">Off</string>
+    <string name="privacy_media_blur_radius">Sfocatura file multimediali</string>
+    <string name="privacy_media_blur_radius_soft">Leggera</string>
+    <string name="privacy_media_blur_radius_medium">Media</string>
+    <string name="privacy_media_blur_radius_strong">Forte</string>
 </resources>
