@@ -13,6 +13,7 @@ struct ContactConnectionView: View {
     @EnvironmentObject var m: ChatModel
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
     @State private var localAlias = ""
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var showContactConnectionInfo = false
@@ -62,7 +63,7 @@ struct ContactConnectionView: View {
                 ZStack(alignment: .topTrailing) {
                     Text(contactConnection.description)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    incognitoIcon(contactConnection.incognito, theme.colors.secondary)
+                    incognitoIcon(contactConnection.incognito, theme.colors.secondary, size: dynamicSize(userFont).incognitoSize)
                         .padding(.top, 26)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }

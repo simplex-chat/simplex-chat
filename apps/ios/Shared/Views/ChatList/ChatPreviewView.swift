@@ -22,14 +22,14 @@ struct ChatPreviewView: View {
 
     @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
 
-    var dynamicMediaSize: CGFloat { dynamicSizes[userFont]?.mediaSize ?? 36 }
-    var dynamicChatInfoSize: CGFloat { dynamicSizes[userFont]?.chatInfoSize ?? 18 }
+    var dynamicMediaSize: CGFloat { dynamicSize(userFont).mediaSize }
+    var dynamicChatInfoSize: CGFloat { dynamicSize(userFont).chatInfoSize }
     
     var body: some View {
         let cItem = chat.chatItems.last
         return HStack(spacing: 8) {
             ZStack(alignment: .bottomTrailing) {
-                ChatInfoImage(chat: chat, size: dynamicSizes[userFont]?.profileImageSize ?? 63)
+                ChatInfoImage(chat: chat, size: dynamicSize(userFont).profileImageSize)
                 chatPreviewImageOverlayIcon()
                     .padding([.bottom, .trailing], 1)
             }
@@ -77,7 +77,7 @@ struct ChatPreviewView: View {
                         checkActiveContentPreview(chat, ci, mc)
                     }
                     chatStatusImage()
-                        .padding(.top, 26)
+                        .padding(.top, dynamicChatInfoSize * 1.44)
                         .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -198,10 +198,10 @@ struct ChatPreviewView: View {
             unreadCountText(s.unreadCount)
                 .font(userFont <= .xxxLarge ? .caption  : .caption2)
                 .foregroundColor(.white)
-                .padding(.horizontal, dynamicSizes[userFont]?.unreadPadding ?? 4)
+                .padding(.horizontal, dynamicSize(userFont).unreadPadding)
                 .frame(minWidth: dynamicChatInfoSize, minHeight: dynamicChatInfoSize)
                 .background(chat.chatInfo.ntfsEnabled || chat.chatInfo.chatType == .local ? theme.colors.primary : theme.colors.secondary)
-                .cornerRadius(dynamicSizes[userFont]?.unreadCorner ?? 10)
+                .cornerRadius(dynamicSize(userFont).unreadCorner)
         } else if !chat.chatInfo.ntfsEnabled && chat.chatInfo.chatType != .local {
             Image(systemName: "speaker.slash.fill")
                 .resizable()
@@ -372,41 +372,42 @@ struct ChatPreviewView: View {
     }
 
     @ViewBuilder private func chatStatusImage() -> some View {
+        let size = dynamicSize(userFont).incognitoSize
         switch chat.chatInfo {
         case let .direct(contact):
             if contact.active && contact.activeConn != nil {
                 switch (chatModel.contactNetworkStatus(contact)) {
-                case .connected: incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary)
+                case .connected: incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
                 case .error:
                     Image(systemName: "exclamationmark.circle")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 17, height: 17)
+                        .frame(width: dynamicChatInfoSize, height: dynamicChatInfoSize)
                         .foregroundColor(theme.colors.secondary)
                 default:
                     ProgressView()
                 }
             } else {
-                incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary)
+                incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
             }
         case .group:
             if progressByTimeout {
                 ProgressView()
             } else {
-                incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary)
+                incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
             }
         default:
-            incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary)
+            incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
         }
     }
 }
 
-@ViewBuilder func incognitoIcon(_ incognito: Bool, _ secondaryColor: Color) -> some View {
+@ViewBuilder func incognitoIcon(_ incognito: Bool, _ secondaryColor: Color, size: CGFloat) -> some View {
     if incognito {
         Image(systemName: "theatermasks")
             .resizable()
             .scaledToFit()
-            .frame(width: 22, height: 22)
+            .frame(width: size, height: size)
             .foregroundColor(secondaryColor)
     } else {
         EmptyView()
