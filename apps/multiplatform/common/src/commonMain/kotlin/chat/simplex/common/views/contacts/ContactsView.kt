@@ -267,9 +267,12 @@ private fun ContactsSearchBar(
                         }
                         searchShowingSimplexLink.value = true
                         searchChatFilteredBySimplexLink.value = null
-                        connect(link.text, searchChatFilteredBySimplexLink, close) {
-                            searchText.value = TextFieldValue()
-                        }
+                        connect(
+                            link = link.text,
+                            searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+                            cleanup = { searchText.value = TextFieldValue() },
+                            close = close
+                        )
                     } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
                         if (it.isNotEmpty()) {
                             // if some other text is pasted, enter search mode
