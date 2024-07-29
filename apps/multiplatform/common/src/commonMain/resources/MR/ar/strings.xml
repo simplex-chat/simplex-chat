@@ -354,7 +354,7 @@
     <string name="delete_group_question">حذف المجموعة؟</string>
     <string name="delete_link">حذف الرابط</string>
     <string name="share_text_deleted_at">حُذِفت في: %s</string>
-    <string name="rcv_group_event_group_deleted">المجموعة المحذوفة</string>
+    <string name="rcv_group_event_group_deleted">المجموعة حُذِفت</string>
     <string name="delete_image">حذف الصورة</string>
     <string name="v5_1_custom_themes">تخصيص السمات</string>
     <string name="delete_database">حذف قاعدة البيانات</string>
@@ -1403,7 +1403,7 @@
     <string name="block_member_desc">سيتم إخفاء كافة الرسائل الجديدة من %s!</string>
     <string name="blocked_item_description">محظور</string>
     <string name="v5_4_block_group_members">حظر أعضاء المجموعة</string>
-    <string name="rcv_direct_event_contact_deleted">جهة الاتصال المحذوفة</string>
+    <string name="rcv_direct_event_contact_deleted">جهة الاتصال حُذِفت</string>
     <string name="v5_4_incognito_groups_descr">أنشِئ مجموعة باستخدام ملف تعريف عشوائي.</string>
     <string name="create_group_button">أنشِئ مجموعة</string>
     <string name="create_another_profile_button">أنشِئ ملف تعريف</string>
