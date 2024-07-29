@@ -315,6 +315,7 @@
   <string name="delete_message__question">Delete message?</string>
   <string name="delete_messages__question">Delete %d messages?</string>
   <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
+  <string name="delete_contact_or_messages_cannot_undo_warning">Message and contact deletion are permanent operations - this cannot be undone!</string>
   <string name="delete_message_mark_deleted_warning">Message will be marked for deletion. The recipient(s) will be able to reveal this message.</string>
   <string name="delete_member_message__question">Delete member message?</string>
   <string name="moderate_message_will_be_deleted_warning">The message will be deleted for all members.</string>
@@ -453,6 +454,7 @@
   <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>
   <string name="delete_contact_cannot_undo_warning">Contact will be deleted - this cannot be undone!</string>
   <string name="delete_conversation_question">Delete conversation?</string>
+  <string name="keep_conversation">Keep conversation</string>
   <string name="delete_conversation_all_messages_deleted_cannot_undo_warning">Conversation and all messages will be deleted - this cannot be undone!</string>
   <string name="delete_conversation">Delete conversation</string>
   <string name="only_delete_conversation">Only delete conversation</string>
@@ -463,7 +465,7 @@
   <string name="delete_without_notification">Delete without notification</string>
   <string name="button_delete_contact">Delete contact</string>
   <string name="conversation_deleted">Conversation deleted!</string>
-  <string name="you_can_still_send_messages_to_contact">You can still send messages to %1$s from the Contacts tab.</string>
+  <string name="you_can_still_send_messages_to_contact">You can still send messages to %1$s from the new chat screen "delete chats" section.</string>
   <string name="contact_deleted">Contact deleted!</string>
   <string name="you_can_still_view_conversation_with_contact">You can still view conversation with %1$s in the Chats tab.</string>
   <string name="text_field_set_contact_placeholder">Set contact name…</string>
