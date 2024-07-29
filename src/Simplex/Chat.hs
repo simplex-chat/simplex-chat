@@ -1254,7 +1254,7 @@ processChatCommand' vr = \case
       (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XCallEnd callId)
       updateCallItemStatus user ct call WCSDisconnected $ Just msgId
       pure Nothing
-  APIGetCallInvitations -> withUser $ \_ -> lift $ do
+  APIGetCallInvitations -> withUser' $ \_ -> lift $ do
     calls <- asks currentCalls >>= readTVarIO
     let invs = mapMaybe callInvitation $ M.elems calls
     rcvCallInvitations <- rights <$> mapM rcvCallInvitation invs
@@ -1306,7 +1306,7 @@ processChatCommand' vr = \case
       ok user
     _ -> pure $ chatCmdError (Just user) "not supported"
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
-  APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
+  APIGetNtfToken -> withUser' $ \_ -> crNtfToken <$> withAgent getNtfToken
   APIRegisterToken token mode -> withUser $ \_ ->
     CRNtfTokenStatus <$> withAgent (\a -> registerNtfToken a token mode)
   APIVerifyToken token nonce code -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token nonce code) >> ok_
