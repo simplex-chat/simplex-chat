@@ -608,7 +608,7 @@ final class ChatModel: ObservableObject {
         
         // Only call from main thread
         func decreaseUnreadCounter(_ chatIndex: Int) {
-            dictionary[chatIndex] = (dictionary[chatIndex] ?? .zero) + 1
+            dictionary[chatIndex] = (dictionary[chatIndex] ?? 0) + 1
             subject.send(chatIndex)
         }
     }

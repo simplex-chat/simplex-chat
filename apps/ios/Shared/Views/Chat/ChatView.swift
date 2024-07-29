@@ -682,6 +682,7 @@ struct ChatView: View {
         }
         
         private func unreadItems(_ range: ClosedRange<Int>) -> [ChatItem]? {
+            let im = ItemsModel.shared
             let items = range.compactMap { i in
                 if i >= 0 && i < im.reversedChatItems.count {
                     let ci = im.reversedChatItems[i]
