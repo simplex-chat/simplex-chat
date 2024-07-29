@@ -648,6 +648,7 @@ testGroupSameName :: HasCallStack => FilePath -> IO ()
 testGroupSameName =
   testChat2 aliceProfile bobProfile $
     \alice _ -> do
+      threadDelay 100000
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -1844,6 +1845,7 @@ testGroupLink :: HasCallStack => FilePath -> IO ()
 testGroupLink =
   testChatCfg3 testCfgGroupLinkViaContact aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
+      threadDelay 100000
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -1947,6 +1949,7 @@ testGroupLinkDeleteGroupRejoin :: HasCallStack => FilePath -> IO ()
 testGroupLinkDeleteGroupRejoin =
   testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
     \alice bob -> do
+      threadDelay 100000
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -2003,6 +2006,7 @@ testGroupLinkContactUsed :: HasCallStack => FilePath -> IO ()
 testGroupLinkContactUsed =
   testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
     \alice bob -> do
+      threadDelay 100000
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -2151,6 +2155,7 @@ testGroupLinkUnusedHostContactDeleted =
   testChatCfg2 cfg aliceProfile bobProfile $
     \alice bob -> do
       -- create group 1
+      threadDelay 100000
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -2285,6 +2290,7 @@ testGroupLinkMemberRole :: HasCallStack => FilePath -> IO ()
 testGroupLinkMemberRole =
   testChatCfg3 testCfgGroupLinkViaContact aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
+      threadDelay 100000
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -2420,6 +2426,7 @@ testPlanGroupLinkOkKnown :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkOkKnown =
   testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
     \alice bob -> do
+      threadDelay 100000
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -2463,6 +2470,7 @@ testPlanHostContactDeletedGroupLinkKnown :: HasCallStack => FilePath -> IO ()
 testPlanHostContactDeletedGroupLinkKnown =
   testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
     \alice bob -> do
+      threadDelay 100000
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -2569,14 +2577,15 @@ testPlanGroupLinkOwn tmp =
 testPlanGroupLinkConnecting :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkConnecting tmp = do
   -- gLink <- withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
-  gLink <- withNewTestChatCfg tmp cfg "alice" aliceProfile $ \a -> withTestOutput a $ \alice -> do
+  gLink <- withNewTestChatCfg tmp cfg "alice" aliceProfile $ \alice -> do
+    threadDelay 100000
     alice ##> "/g team"
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"
     alice ##> "/create link #team"
     getGroupLink alice "team" GRMember True
   -- withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
-  withNewTestChatCfg tmp cfg "bob" bobProfile $ \b -> withTestOutput b $ \bob -> do
+  withNewTestChatCfg tmp cfg "bob" bobProfile $ \bob -> do
     threadDelay 100000
 
     bob ##> ("/c " <> gLink)
@@ -2591,14 +2600,14 @@ testPlanGroupLinkConnecting tmp = do
 
     threadDelay 100000
   -- withTestChatCfg tmp cfg "alice" $ \alice -> do
-  withTestChatCfg tmp cfg "alice" $ \a -> withTestOutput a $ \alice -> do
+  withTestChatCfg tmp cfg "alice" $ \alice -> do
     alice
       <### [ "1 group links active",
              "#team: group is empty",
              "bob (Bob): accepting request to join group #team..."
            ]
   -- withTestChatCfg tmp cfg "bob" $ \bob -> do
-  withTestChatCfg tmp cfg "bob" $ \b -> withTestOutput b $ \bob -> do
+  withTestChatCfg tmp cfg "bob" $ \bob -> do
     threadDelay 500000
     bob ##> ("/_connect plan 1 " <> gLink)
     bob <## "group link: connecting"
@@ -2615,8 +2624,8 @@ testPlanGroupLinkConnecting tmp = do
 testPlanGroupLinkLeaveRejoin :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkLeaveRejoin =
   testChatCfg2 testCfgGroupLinkViaContact aliceProfile bobProfile $
-    -- \alice bob -> do
-    \a b -> withTestOutput a $ \alice -> withTestOutput b $ \bob -> do
+    \alice bob -> do
+      threadDelay 100000
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -2705,6 +2714,7 @@ testGroupLinkNoContact :: HasCallStack => FilePath -> IO ()
 testGroupLinkNoContact =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
+      threadDelay 100000
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -2928,6 +2938,7 @@ testGroupLinkNoContactMemberRole :: HasCallStack => FilePath -> IO ()
 testGroupLinkNoContactMemberRole =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
+      threadDelay 100000
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -3041,6 +3052,7 @@ testGroupLinkNoContactInviteeIncognito :: HasCallStack => FilePath -> IO ()
 testGroupLinkNoContactInviteeIncognito =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
+      threadDelay 100000
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -3145,6 +3157,7 @@ testPlanGroupLinkNoContactKnown :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkNoContactKnown =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
+      threadDelay 100000
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -3180,6 +3193,7 @@ testPlanGroupLinkNoContactKnown =
 testPlanGroupLinkNoContactConnecting :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkNoContactConnecting tmp = do
   gLink <- withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    threadDelay 100000
     alice ##> "/g team"
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"
@@ -3226,6 +3240,7 @@ testPlanGroupLinkNoContactConnecting tmp = do
 testPlanGroupLinkNoContactConnectingSlow :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkNoContactConnectingSlow tmp = do
   gLink <- withNewTestChatCfg tmp testCfgSlow "alice" aliceProfile $ \alice -> do
+    threadDelay 100000
     alice ##> "/g team"
     alice <## "group #team is created"
     alice <## "to add members use /a team <name> or /create link #team"
@@ -4123,6 +4138,7 @@ testMemberContactIncognito =
   testChatCfg3 testCfgGroupLinkViaContact aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       -- create group, bob joins incognito
+      threadDelay 100000
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -5371,6 +5387,7 @@ testMembershipProfileUpdateNextGroupMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       -- create group 1
+      threadDelay 100000
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
