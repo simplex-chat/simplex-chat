@@ -1995,4 +1995,9 @@
     <string name="smp_proxy_error_broker_version">转发服务器版本不兼容网络设置：%1$s。</string>
     <string name="proxy_destination_error_broker_host">%1$s 的目的地服务器地址不兼容转发服务器 %2$s 的设置</string>
     <string name="smp_proxy_error_connecting">连接转发服务器 %1$s 出错。请稍后尝试。</string>
+    <string name="privacy_media_blur_radius">模糊媒体文件</string>
+    <string name="privacy_media_blur_radius_medium">中度</string>
+    <string name="privacy_media_blur_radius_off">关闭</string>
+    <string name="privacy_media_blur_radius_soft">轻柔</string>
+    <string name="privacy_media_blur_radius_strong">强烈</string>
 </resources>
