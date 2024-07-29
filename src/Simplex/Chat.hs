@@ -858,14 +858,16 @@ processChatCommand' vr = \case
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
-      assertDeletable :: [CChatItem c] -> CM ()
-      assertDeletable items =
-        unless (all itemDeletable items) $ throwChatError CEInvalidChatItemDelete
+      assertDeletable :: forall c. ChatTypeI c => [CChatItem c] -> CM ()
+      assertDeletable items = do
+        currentTs <- liftIO getCurrentTime
+        unless (all (itemDeletable currentTs) items) $ throwChatError CEInvalidChatItemDelete
         where
-          itemDeletable :: CChatItem c -> Bool
-          itemDeletable (CChatItem msgDir ChatItem {meta = CIMeta {itemSharedMsgId, nearDeletable}}) =
+          itemDeletable :: UTCTime -> CChatItem c -> Bool
+          itemDeletable currentTs (CChatItem msgDir ChatItem {meta = CIMeta {itemSharedMsgId, itemTs, itemDeleted}, content}) =
             case msgDir of
-              SMDSnd -> isJust itemSharedMsgId && nearDeletable
+              -- We check with a 6 hour margin compared to CIMeta deletable to account for deletion on the border
+              SMDSnd -> isJust itemSharedMsgId && deletable' content itemDeleted itemTs (nominalDay + 6 * 3600) currentTs
               SMDRcv -> False
       itemsMsgIds :: [CChatItem c] -> [SharedMsgId]
       itemsMsgIds = mapMaybe (\(CChatItem _ ChatItem {meta = CIMeta {itemSharedMsgId}}) -> itemSharedMsgId)
