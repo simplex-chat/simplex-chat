@@ -461,15 +461,15 @@ object ChatController {
     Log.d(TAG, "user: $user")
     try {
       apiSetNetworkConfig(getNetCfg())
-      val justStarted = apiStartChat()
-      appPrefs.chatStopped.set(false)
       val users = listUsers(null)
       chatModel.users.clear()
       chatModel.users.addAll(users)
+      chatModel.currentUser.value = user
+      chatModel.localUserCreated.value = true
+      getUserChatData(null)
+      val justStarted = apiStartChat()
+      appPrefs.chatStopped.set(false)
       if (justStarted) {
-        chatModel.currentUser.value = user
-        chatModel.localUserCreated.value = true
-        getUserChatData(null)
         appPrefs.chatLastStart.set(Clock.System.now())
         chatModel.chatRunning.value = true
         startReceiver()
@@ -479,10 +479,6 @@ object ChatController {
         }
         Log.d(TAG, "startChat: started")
       } else {
-        updatingChatsMutex.withLock {
-          val chats = apiGetChats(null)
-          chatModel.updateChats(chats)
-        }
         Log.d(TAG, "startChat: running")
       }
     } catch (e: Throwable) {
