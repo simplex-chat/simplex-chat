@@ -52,12 +52,15 @@ chatGroupTests = do
     it "group message update" testGroupMessageUpdate
     it "group message edit history" testGroupMessageEditHistory
     it "group message delete" testGroupMessageDelete
+    it "group message delete multiple" testGroupMessageDeleteMultiple
     it "group live message" testGroupLiveMessage
     it "update group profile" testUpdateGroupProfile
     it "update member role" testUpdateMemberRole
     it "unused contacts are deleted after all their groups are deleted" testGroupDeleteUnusedContacts
     it "group description is shown as the first message to new members" testGroupDescription
     it "moderate message of another group member" testGroupModerate
+    it "moderate own message (should process as deletion)" testGroupModerateOwn
+    it "moderate multiple messages" testGroupModerateMultiple
     it "moderate message of another group member (full delete)" testGroupModerateFullDelete
     it "moderate message that arrives after the event of moderation" testGroupDelayedModeration
     it "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
@@ -1253,6 +1256,42 @@ testGroupMessageDelete =
       bob #$> ("/_get chat #1 count=3", chat', [((0, "hello!"), Nothing), ((1, "hi alice"), Just (0, "hello!")), ((0, "how are you? [marked deleted]"), Nothing)])
       cath #$> ("/_get chat #1 count=3", chat', [((0, "hello!"), Nothing), ((0, "hi alice"), Just (0, "hello!")), ((1, "how are you? [marked deleted]"), Nothing)])
 
+testGroupMessageDeleteMultiple :: HasCallStack => FilePath -> IO ()
+testGroupMessageDeleteMultiple =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000
+      alice #> "#team hello"
+      concurrently_
+        (bob <# "#team alice> hello")
+        (cath <# "#team alice> hello")
+      msgId1 <- lastItemId alice
+
+      threadDelay 1000000
+      alice #> "#team hey"
+      concurrently_
+        (bob <# "#team alice> hey")
+        (cath <# "#team alice> hey")
+      msgId2 <- lastItemId alice
+
+      threadDelay 1000000
+      alice ##> ("/_delete item #1 " <> msgId1 <> "," <> msgId2 <> " broadcast")
+      alice <## "2 messages deleted"
+      concurrentlyN_
+        [ do
+            bob <# "#team alice> [marked deleted] hello"
+            bob <# "#team alice> [marked deleted] hey",
+          do
+            cath <# "#team alice> [marked deleted] hello"
+            cath <# "#team alice> [marked deleted] hey"
+        ]
+
+      alice #$> ("/_get chat #1 count=2", chat, [(1, "hello [marked deleted]"), (1, "hey [marked deleted]")])
+      bob #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted]"), (0, "hey [marked deleted]")])
+      cath #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted]"), (0, "hey [marked deleted]")])
+
 testGroupLiveMessage :: HasCallStack => FilePath -> IO ()
 testGroupLiveMessage =
   testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
@@ -1538,7 +1577,7 @@ testGroupModerate =
         (bob <# "#team alice> hello")
         (cath <# "#team alice> hello")
       bob ##> "\\\\ #team @alice hello"
-      bob <## "#team: you have insufficient permissions for this action, the required role is owner"
+      bob <## "cannot delete this item"
       threadDelay 1000000
       cath #> "#team hi"
       concurrently_
@@ -1552,6 +1591,55 @@ testGroupModerate =
       alice #$> ("/_get chat #1 count=1", chat, [(0, "hi [marked deleted by bob]")])
       bob #$> ("/_get chat #1 count=1", chat, [(0, "hi [marked deleted by you]")])
       cath #$> ("/_get chat #1 count=1", chat, [(1, "hi [marked deleted by bob]")])
+
+testGroupModerateOwn :: HasCallStack => FilePath -> IO ()
+testGroupModerateOwn =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      threadDelay 1000000
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      alice ##> "\\\\ #team @alice hello"
+      alice <## "message marked deleted by you"
+      bob <# "#team alice> [marked deleted] hello"
+      alice #$> ("/_get chat #1 count=1", chat, [(1, "hello [marked deleted by you]")])
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "hello [marked deleted]")])
+
+testGroupModerateMultiple :: HasCallStack => FilePath -> IO ()
+testGroupModerateMultiple =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000
+      alice #> "#team hello"
+      concurrently_
+        (bob <# "#team alice> hello")
+        (cath <# "#team alice> hello")
+      msgId1 <- lastItemId alice
+
+      threadDelay 1000000
+      bob #> "#team hey"
+      concurrently_
+        (alice <# "#team bob> hey")
+        (cath <# "#team bob> hey")
+      msgId2 <- lastItemId alice
+
+      alice ##> ("/_delete member item #1 " <> msgId1 <> "," <> msgId2)
+      alice <## "2 messages deleted"
+      concurrentlyN_
+        [ do
+            bob <# "#team alice> [marked deleted] hello"
+            bob <# "#team bob> [marked deleted by alice] hey",
+          do
+            cath <# "#team alice> [marked deleted] hello"
+            cath <# "#team bob> [marked deleted by alice] hey"
+        ]
+
+      alice #$> ("/_get chat #1 count=2", chat, [(1, "hello [marked deleted by you]"), (0, "hey [marked deleted by you]")])
+      bob #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted]"), (1, "hey [marked deleted by alice]")])
+      cath #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted]"), (0, "hey [marked deleted by alice]")])
 
 testGroupModerateFullDelete :: HasCallStack => FilePath -> IO ()
 testGroupModerateFullDelete =

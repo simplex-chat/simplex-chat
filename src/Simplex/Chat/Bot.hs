@@ -76,7 +76,7 @@ deleteMessage :: ChatController -> Contact -> ChatItemId -> IO ()
 deleteMessage cc ct chatItemId = do
   let cmd = APIDeleteChatItem (contactRef ct) [chatItemId] CIDMInternal
   sendChatCmd cc cmd >>= \case
-    CRChatItemDeleted {} -> printLog cc CLLInfo $ "deleted message from " <> contactInfo ct
+    CRChatItemsDeleted {} -> printLog cc CLLInfo $ "deleted message(s) from " <> contactInfo ct
     r -> putStrLn $ "unexpected delete message response: " <> show r
 
 contactRef :: Contact -> ChatRef

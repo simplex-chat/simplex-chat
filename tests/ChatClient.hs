@@ -224,10 +224,11 @@ testCfgCreateGroupDirect =
   mkCfgCreateGroupDirect testCfg
 
 mkCfgCreateGroupDirect :: ChatConfig -> ChatConfig
-mkCfgCreateGroupDirect cfg = cfg {
-  chatVRange = groupCreateDirectVRange,
-  agentConfig = testAgentCfgSlow
-}
+mkCfgCreateGroupDirect cfg =
+  cfg
+    { chatVRange = groupCreateDirectVRange,
+      agentConfig = testAgentCfgSlow
+    }
 
 groupCreateDirectVRange :: VersionRangeChat
 groupCreateDirectVRange = mkVersionRange (VersionChat 1) (VersionChat 1)
