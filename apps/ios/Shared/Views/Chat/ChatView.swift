@@ -1243,28 +1243,24 @@ struct ChatView: View {
         }
 
         private func deleteMessages() {
-            let itemIds = deletingItems
-            if itemIds.count > 0 {
+            let itemsId = deletingItems
+            if itemsId.count > 0 {
                 let chatInfo = chat.chatInfo
                 Task {
-                    var deletedItems: [ChatItem] = []
-                    for itemId in itemIds {
-                        do {
-                            let (di, _) = try await apiDeleteChatItem(
-                                type: chatInfo.chatType,
-                                id: chatInfo.apiId,
-                                itemId: itemId,
-                                mode: .cidmInternal
-                            )
-                            deletedItems.append(di)
-                        } catch {
-                            logger.error("ChatView.deleteMessage error: \(error.localizedDescription)")
+                    do {
+                        let deletedItems = try await apiDeleteChatItems(
+                            type: chatInfo.chatType,
+                            id: chatInfo.apiId,
+                            itemsId: itemsId,
+                            mode: .cidmInternal
+                        )
+                        await MainActor.run {
+                            for di in deletedItems {
+                                m.removeChatItem(chatInfo, di.deletedChatItem.chatItem)
+                            }
                         }
-                    }
-                    await MainActor.run {
-                        for di in deletedItems {
-                            m.removeChatItem(chatInfo, di)
-                        }
+                    } catch {
+                        logger.error("ChatView.deleteMessage error: \(error.localizedDescription)")
                     }
                 }
             }
@@ -1276,29 +1272,28 @@ struct ChatView: View {
                 logger.debug("ChatView deleteMessage: in Task")
                 do {
                     if let di = deletingItem {
-                        var deletedItem: ChatItem
-                        var toItem: ChatItem?
-                        if case .cidmBroadcast = mode,
+                        let itemDeletion: ChatItemDeletion? = if case .cidmBroadcast = mode,
                            let (groupInfo, groupMember) = di.memberToModerate(chat.chatInfo) {
-                            (deletedItem, toItem) = try await apiDeleteMemberChatItem(
+                            try await apiDeleteMemberChatItems(
                                 groupId: groupInfo.apiId,
-                                groupMemberId: groupMember.groupMemberId,
-                                itemId: di.id
-                            )
+                                itemsId: [di.id]
+                            ).first
                         } else {
-                            (deletedItem, toItem) = try await apiDeleteChatItem(
+                            try await apiDeleteChatItems(
                                 type: chat.chatInfo.chatType,
                                 id: chat.chatInfo.apiId,
-                                itemId: di.id,
+                                itemsId: [di.id],
                                 mode: mode
-                            )
+                            ).first
                         }
-                        DispatchQueue.main.async {
-                            deletingItem = nil
-                            if let toItem = toItem {
-                                _ = m.upsertChatItem(chat.chatInfo, toItem)
-                            } else {
-                                m.removeChatItem(chat.chatInfo, deletedItem)
+                        if let itemDeletion {
+                            DispatchQueue.main.async {
+                                deletingItem = nil
+                                if let toItem = itemDeletion.toChatItem {
+                                    _ = m.upsertChatItem(chat.chatInfo, toItem.chatItem)
+                                } else {
+                                    m.removeChatItem(chat.chatInfo, itemDeletion.deletedChatItem.chatItem)
+                                }
                             }
                         }
                     }

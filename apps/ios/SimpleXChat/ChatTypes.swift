@@ -2234,6 +2234,11 @@ public struct NtfMsgInfo: Decodable, Hashable {
     public var msgTs: Date
 }
 
+public struct ChatItemDeletion: Decodable, Hashable {
+    public var deletedChatItem: AChatItem
+    public var toChatItem: AChatItem? = nil
+}
+
 public struct AChatItem: Decodable, Hashable {
     public var chatInfo: ChatInfo
     public var chatItem: ChatItem
