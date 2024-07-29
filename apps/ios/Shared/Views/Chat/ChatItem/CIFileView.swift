@@ -14,10 +14,10 @@ struct CIFileView: View {
     @EnvironmentObject var theme: AppTheme
     let file: CIFile?
     let edited: Bool
-    var smallView: Bool = false
+    var smallViewSize: CGFloat?
 
     var body: some View {
-        if smallView {
+        if smallViewSize != nil {
             fileIndicator()
             .onTapGesture(perform: fileAction)
         } else {
@@ -201,21 +201,22 @@ struct CIFileView: View {
     }
 
     private func fileIcon(_ icon: String, color: Color = Color(uiColor: .tertiaryLabel), innerIcon: String? = nil, innerIconSize: CGFloat? = nil) -> some View {
-        ZStack(alignment: .center) {
+        let size = smallViewSize ?? 30
+        return ZStack(alignment: .center) {
             Image(systemName: icon)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: smallView ? 36 : 30, height: smallView ? 36 : 30)
+                .frame(width: size, height: size)
                 .foregroundColor(color)
             if let innerIcon = innerIcon,
-               let innerIconSize = innerIconSize, (!smallView || file?.showStatusIconInSmallView == true) {
+               let innerIconSize = innerIconSize, (smallViewSize == nil || file?.showStatusIconInSmallView == true) {
                 Image(systemName: innerIcon)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxHeight: 16)
                     .frame(width: innerIconSize, height: innerIconSize)
                     .foregroundColor(.white)
-                    .padding(.top, smallView ? 15 : 12)
+                    .padding(.top, size / 2.5)
             }
         }
     }

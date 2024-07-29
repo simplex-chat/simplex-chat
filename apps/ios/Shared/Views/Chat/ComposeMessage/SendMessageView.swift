@@ -257,6 +257,9 @@ struct SendMessageView: View {
         var body: some View {
             Button(action: {}) {
                 Image(systemName: "mic.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 20, height: 20)
                     .foregroundColor(theme.colors.primary)
             }
             .disabled(disabled)
@@ -310,6 +313,9 @@ struct SendMessageView: View {
             }
         } label: {
             Image(systemName: "mic")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 20, height: 20)
                 .foregroundColor(theme.colors.secondary)
         }
         .disabled(composeState.inProgress)

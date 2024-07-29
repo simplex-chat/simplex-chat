@@ -15,6 +15,7 @@ private let memberImageSize: CGFloat = 34
 
 struct ChatView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @ObservedObject var im = ItemsModel.shared
     @State var theme: AppTheme = buildTheme()
     @Environment(\.dismiss) var dismiss
     @Environment(\.colorScheme) var colorScheme
@@ -110,7 +111,7 @@ struct ChatView: View {
         .onChange(of: revealedChatItem) { _ in
             NotificationCenter.postReverseListNeedsLayout()
         }
-        .onChange(of: chatModel.reversedChatItems) { reversedChatItems in
+        .onChange(of: im.reversedChatItems) { reversedChatItems in
             if reversedChatItems.count <= loadItemsPerPage && filtered(reversedChatItems).count < 10 {
                 loadChatItems(chat.chatInfo)
             }
@@ -124,7 +125,7 @@ struct ChatView: View {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     if chatModel.chatId == nil {
                         chatModel.chatItemStatuses = [:]
-                        chatModel.reversedChatItems = []
+                        ItemsModel.shared.reversedChatItems = []
                         chatModel.groupMembers = []
                         chatModel.groupMembersIndexes.removeAll()
                         chatModel.membersLoaded = false
@@ -339,7 +340,7 @@ struct ChatView: View {
 
     private func chatItemsList() -> some View {
         let cInfo = chat.chatInfo
-        let mergedItems = filtered(chatModel.reversedChatItems)
+        let mergedItems = filtered(im.reversedChatItems)
         return GeometryReader { g in
             ReverseList(items: mergedItems, scrollState: $scrollModel.state) { ci in
                 let voiceNoFrame = voiceWithoutFrame(ci)
@@ -372,7 +373,7 @@ struct ChatView: View {
                         loadChat(chat: c)
                     }
                 }
-                .onChange(of: chatModel.reversedChatItems) { _ in
+                .onChange(of: im.reversedChatItems) { _ in
                     floatingButtonModel.chatItemsChanged()
                 }
         }
@@ -562,7 +563,7 @@ struct ChatView: View {
                 // Load additional items until the page is +50 large after merging
                 while chatItemsAvailable && filtered(reversedPage).count < loadItemsPerPage {
                     let pagination: ChatPagination =
-                        if let lastItem = reversedPage.last ?? chatModel.reversedChatItems.last {
+                        if let lastItem = reversedPage.last ?? im.reversedChatItems.last {
                             .before(chatItemId: lastItem.id, count: loadItemsPerPage)
                         } else {
                             .last(count: loadItemsPerPage)
@@ -580,7 +581,7 @@ struct ChatView: View {
                     if reversedPage.count == 0 {
                         firstPage = true
                     } else {
-                        chatModel.reversedChatItems.append(contentsOf: reversedPage)
+                        im.reversedChatItems.append(contentsOf: reversedPage)
                     }
                     loadingItems = false
                 }
@@ -634,11 +635,12 @@ struct ChatView: View {
             let ciCategory = chatItem.mergeCategory
             let (prevHidden, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
             let range = itemsRange(currIndex, prevHidden)
+            let im = ItemsModel.shared
             Group {
                 if revealed, let range = range {
-                    let items = Array(zip(Array(range), m.reversedChatItems[range]))
+                    let items = Array(zip(Array(range), im.reversedChatItems[range]))
                     ForEach(items, id: \.1.viewId) { (i, ci) in
-                        let prev = i == prevHidden ? prevItem : m.reversedChatItems[i + 1]
+                        let prev = i == prevHidden ? prevItem : im.reversedChatItems[i + 1]
                         chatItemView(ci, nil, prev)
                     }
                 } else {
@@ -646,23 +648,39 @@ struct ChatView: View {
                 }
             }
             .onAppear {
-                markRead(
-                    chatItems: range.flatMap { m.reversedChatItems[$0] }
-                    ?? [chatItem]
-                )
-            }
-        }
-
-        private func markRead(chatItems: Array<ChatItem>.SubSequence) {
-            let unreadItems = chatItems.filter { $0.isRcvNew }
-            if unreadItems.isEmpty { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                if m.chatId == chat.chatInfo.id {
-                    Task {
-                        for unreadItem in unreadItems {
-                            await apiMarkChatItemRead(chat.chatInfo, unreadItem)
+                if let range {
+                    if let items = unreadItems(range) {
+                        waitToMarkRead {
+                            for ci in items {
+                                await apiMarkChatItemRead(chat.chatInfo, ci)
+                            }
                         }
                     }
+                } else if chatItem.isRcvNew  {
+                    waitToMarkRead {
+                        await apiMarkChatItemRead(chat.chatInfo, chatItem)
+                    }
+                }
+            }
+        }
+        
+        private func unreadItems(_ range: ClosedRange<Int>) -> [ChatItem]? {
+            let im = ItemsModel.shared
+            let items = range.compactMap { i in
+                if i >= 0 && i < im.reversedChatItems.count {
+                    let ci = im.reversedChatItems[i]
+                    return if ci.isRcvNew { ci } else { nil }
+                } else {
+                    return nil
+                }
+            }
+            return if items.isEmpty { nil } else { items }
+        }
+        
+        private func waitToMarkRead(_ op: @Sendable @escaping () async -> Void) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                if m.chatId == chat.chatInfo.id {
+                    Task(operation: op)
                 }
             }
         }
@@ -1141,7 +1159,7 @@ struct ChatView: View {
                     if let range = itemsRange(currIndex, prevHidden) {
                         var itemIds: [Int64] = []
                         for i in range {
-                            itemIds.append(m.reversedChatItems[i].id)
+                            itemIds.append(ItemsModel.shared.reversedChatItems[i].id)
                         }
                         showDeleteMessages = true
                         deletingItems = itemIds
@@ -1384,7 +1402,7 @@ struct ChatView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
         chatModel.chatId = "@1"
-        chatModel.reversedChatItems = [
+        ItemsModel.shared.reversedChatItems = [
             ChatItem.getSample(1, .directSnd, .now, "hello"),
             ChatItem.getSample(2, .directRcv, .now, "hi"),
             ChatItem.getSample(3, .directRcv, .now, "hi there"),

@@ -20,12 +20,12 @@ struct CIVoiceView: View {
     @State var playbackTime: TimeInterval? = nil
 
     @Binding var allowMenu: Bool
-    var smallView: Bool = false
+    var smallViewSize: CGFloat?
     @State private var seek: (TimeInterval) -> Void = { _ in }
 
     var body: some View {
         Group {
-            if smallView {
+            if smallViewSize != nil {
                 HStack(spacing: 10) {
                     player()
                     playerTime()
@@ -65,7 +65,12 @@ struct CIVoiceView: View {
     }
 
     private func player() -> some View {
-        VoiceMessagePlayer(
+        let sizeMultiplier: CGFloat = if let sz = smallViewSize {
+            voiceMessageSizeBasedOnSquareSize(sz) / 56
+        } else {
+            1
+        }
+        return VoiceMessagePlayer(
             chat: chat,
             chatItem: chatItem,
             recordingFile: recordingFile,
@@ -76,7 +81,7 @@ struct CIVoiceView: View {
             playbackState: $playbackState,
             playbackTime: $playbackTime,
             allowMenu: $allowMenu,
-            sizeMultiplier: smallView ? voiceMessageSizeBasedOnSquareSize(36) / 56 : 1
+            sizeMultiplier: sizeMultiplier
         )
     }
 
