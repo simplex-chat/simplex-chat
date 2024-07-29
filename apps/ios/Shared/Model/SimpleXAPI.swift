@@ -325,11 +325,12 @@ func loadChat(chat: Chat, search: String = "") {
     do {
         let cInfo = chat.chatInfo
         let m = ChatModel.shared
+        let im = ItemsModel.shared
         m.chatItemStatuses = [:]
-        m.reversedChatItems = []
+        im.reversedChatItems = []
         let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
         m.updateChatInfo(chat.chatInfo)
-        m.reversedChatItems = chat.chatItems.reversed()
+        im.reversedChatItems = chat.chatItems.reversed()
     } catch let error {
         logger.error("loadChat error: \(responseError(error))")
     }

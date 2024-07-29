@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct CIChatFeatureView: View {
     @EnvironmentObject var m: ChatModel
+    @ObservedObject var im = ItemsModel.shared
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
     var chatItem: ChatItem
@@ -53,8 +54,8 @@ struct CIChatFeatureView: View {
         var fs: [FeatureInfo] = []
         var icons: Set<String> = []
         if var i = m.getChatItemIndex(chatItem) {
-            while i < m.reversedChatItems.count,
-                  let f = featureInfo(m.reversedChatItems[i]) {
+            while i < im.reversedChatItems.count,
+                  let f = featureInfo(im.reversedChatItems[i]) {
                 if !icons.contains(f.icon) {
                     fs.insert(f, at: 0)
                     icons.insert(f.icon)
