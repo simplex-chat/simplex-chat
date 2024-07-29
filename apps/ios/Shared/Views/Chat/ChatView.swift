@@ -580,7 +580,7 @@ struct ChatView: View {
                 // Load additional items until the page is +50 large after merging
                 while chatItemsAvailable && filtered(reversedPage).count < loadItemsPerPage {
                     let pagination: ChatPagination =
-                    if let lastItem = reversedPage.last ?? im.reversedChatItems.last {
+                        if let lastItem = reversedPage.last ?? im.reversedChatItems.last {
                             .before(chatItemId: lastItem.id, count: loadItemsPerPage)
                         } else {
                             .last(count: loadItemsPerPage)

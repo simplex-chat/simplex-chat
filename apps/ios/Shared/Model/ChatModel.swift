@@ -45,7 +45,17 @@ private func addTermItem(_ items: inout [TerminalItem], _ item: TerminalItem) {
 
 class ItemsModel: ObservableObject {
     static let shared = ItemsModel()
-    @Published var reversedChatItems: [ChatItem] = []
+    private let publisher = ObservableObjectPublisher()
+    private var bag = Set<AnyCancellable>()
+    var reversedChatItems: [ChatItem] = [] {
+        willSet { publisher.send() }
+    }
+    init() {
+        publisher
+            .throttle(for: 0.25, scheduler: DispatchQueue.main, latest: true)
+            .sink { self.objectWillChange.send() }
+            .store(in: &bag)
+    }
 }
 
 final class ChatModel: ObservableObject {
