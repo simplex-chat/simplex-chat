@@ -1602,9 +1602,9 @@ testGroupModerateOwn =
       bob <# "#team alice> hello"
       alice ##> "\\\\ #team @alice hello"
       alice <## "message marked deleted by you"
-      bob <# "#team alice> [marked deleted] hello"
+      bob <# "#team alice> [marked deleted by alice] hello"
       alice #$> ("/_get chat #1 count=1", chat, [(1, "hello [marked deleted by you]")])
-      bob #$> ("/_get chat #1 count=1", chat, [(0, "hello [marked deleted]")])
+      bob #$> ("/_get chat #1 count=1", chat, [(0, "hello [marked deleted by alice]")])
 
 testGroupModerateMultiple :: HasCallStack => FilePath -> IO ()
 testGroupModerateMultiple =
@@ -1630,16 +1630,16 @@ testGroupModerateMultiple =
       alice <## "2 messages deleted"
       concurrentlyN_
         [ do
-            bob <# "#team alice> [marked deleted] hello"
+            bob <# "#team alice> [marked deleted by alice] hello"
             bob <# "#team bob> [marked deleted by alice] hey",
           do
-            cath <# "#team alice> [marked deleted] hello"
+            cath <# "#team alice> [marked deleted by alice] hello"
             cath <# "#team bob> [marked deleted by alice] hey"
         ]
 
       alice #$> ("/_get chat #1 count=2", chat, [(1, "hello [marked deleted by you]"), (0, "hey [marked deleted by you]")])
-      bob #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted]"), (1, "hey [marked deleted by alice]")])
-      cath #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted]"), (0, "hey [marked deleted by alice]")])
+      bob #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted by alice]"), (1, "hey [marked deleted by alice]")])
+      cath #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted by alice]"), (0, "hey [marked deleted by alice]")])
 
 testGroupModerateFullDelete :: HasCallStack => FilePath -> IO ()
 testGroupModerateFullDelete =

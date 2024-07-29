@@ -5256,13 +5256,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       where
         brokerTs = metaBrokerTs msgMeta
         deleteRcvChatItem = do
-          ci@(CChatItem msgDir _) <- withStore $ \db -> getDirectChatItemBySharedMsgId db user contactId sharedMsgId
+          cci@(CChatItem msgDir ci) <- withStore $ \db -> getDirectChatItemBySharedMsgId db user contactId sharedMsgId
           case msgDir of
-            SMDRcv ->
-              if featureAllowed SCFFullDelete forContact ct
-                then deleteDirectCIs user ct [ci] False False >>= toView
-                else markDirectCIsDeleted user ct [ci] False brokerTs >>= toView
+            SMDRcv
+              | rcvItemDeletable ci brokerTs ->
+                  if featureAllowed SCFFullDelete forContact ct
+                    then deleteDirectCIs user ct [cci] False False >>= toView
+                    else markDirectCIsDeleted user ct [cci] False brokerTs >>= toView
+              | otherwise -> messageError "x.msg.del: contact attempted invalid message delete"
             SMDSnd -> messageError "x.msg.del: contact attempted invalid message delete"
+
+    rcvItemDeletable :: ChatItem c d -> UTCTime -> Bool
+    rcvItemDeletable ChatItem {meta = CIMeta {itemTs, itemDeleted}} brokerTs =
+      -- 78 hours margin to account for possible sending delay
+      diffUTCTime brokerTs itemTs < (78 * 3600) && isNothing itemDeleted
 
     directMsgReaction :: Contact -> SharedMsgId -> MsgReaction -> Bool -> RcvMessage -> MsgMeta -> CM ()
     directMsgReaction ct sharedMsgId reaction add RcvMessage {msgId} MsgMeta {broker = (_, brokerTs)} = do
@@ -5410,20 +5417,30 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     groupMessageDelete gInfo@GroupInfo {groupId, membership} m@GroupMember {memberId, memberRole = senderRole} sharedMsgId sndMemberId_ RcvMessage {msgId} brokerTs = do
       let msgMemberId = fromMaybe memberId sndMemberId_
       withStore' (\db -> runExceptT $ getGroupMemberCIBySharedMsgId db user groupId msgMemberId sharedMsgId) >>= \case
-        Right ci@(CChatItem _ ChatItem {chatDir}) -> case chatDir of
-          CIGroupRcv mem
-            | sameMemberId memberId mem && msgMemberId == memberId -> delete ci Nothing >>= toView
-            | otherwise -> deleteMsg mem ci
-          CIGroupSnd -> deleteMsg membership ci
+        Right cci@(CChatItem _ ci@ChatItem {chatDir}) -> case chatDir of
+          CIGroupRcv mem -> case sndMemberId_ of
+            -- regular deletion
+            Nothing
+              | sameMemberId memberId mem && msgMemberId == memberId && rcvItemDeletable ci brokerTs ->
+                  delete cci Nothing >>= toView
+              | otherwise ->
+                  messageError "x.msg.del: member attempted invalid message delete"
+            -- moderation (not limited by time)
+            Just _
+              | sameMemberId memberId mem && msgMemberId == memberId ->
+                  delete cci (Just m) >>= toView
+              | otherwise ->
+                  moderate mem cci
+          CIGroupSnd -> moderate membership cci
         Left e
           | msgMemberId == memberId -> messageError $ "x.msg.del: message not found, " <> tshow e
           | senderRole < GRAdmin -> messageError $ "x.msg.del: message not found, message of another member with insufficient member permissions, " <> tshow e
           | otherwise -> withStore' $ \db -> createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
       where
-        deleteMsg :: GroupMember -> CChatItem 'CTGroup -> CM ()
-        deleteMsg mem ci = case sndMemberId_ of
+        moderate :: GroupMember -> CChatItem 'CTGroup -> CM ()
+        moderate mem cci = case sndMemberId_ of
           Just sndMemberId
-            | sameMemberId sndMemberId mem -> checkRole mem $ delete ci (Just m) >>= toView
+            | sameMemberId sndMemberId mem -> checkRole mem $ delete cci (Just m) >>= toView
             | otherwise -> messageError "x.msg.del: message of another member with incorrect memberId"
           _ -> messageError "x.msg.del: message of another member without memberId"
         checkRole GroupMember {memberRole} a
@@ -5431,9 +5448,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               messageError "x.msg.del: message of another member with insufficient member permissions"
           | otherwise = a
         delete :: CChatItem 'CTGroup -> Maybe GroupMember -> CM ChatResponse
-        delete ci byGroupMember
-          | groupFeatureAllowed SGFFullDelete gInfo = deleteGroupCIs user gInfo [ci] False False byGroupMember brokerTs
-          | otherwise = markGroupCIsDeleted user gInfo [ci] False byGroupMember brokerTs
+        delete cci byGroupMember
+          | groupFeatureAllowed SGFFullDelete gInfo = deleteGroupCIs user gInfo [cci] False False byGroupMember brokerTs
+          | otherwise = markGroupCIsDeleted user gInfo [cci] False byGroupMember brokerTs
 
     -- TODO remove once XFile is discontinued
     processFileInvitation' :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> CM ()

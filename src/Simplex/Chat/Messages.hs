@@ -366,7 +366,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
 mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
 mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
   let deletable = deletable' nominalDay
-      nearDeletable = deletable' (nominalDay + 21600) -- 6 hours margin
+      nearDeletable = deletable' (nominalDay + 6 * 3600) -- 6 hours margin
       editable = deletable && isNothing itemForwarded
    in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, deletable, nearDeletable, editable, forwardedByMember, createdAt, updatedAt}
   where
