@@ -12,7 +12,7 @@ import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -28,6 +28,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -70,6 +71,7 @@ fun ChatInfoView(
   localAlias: String,
   connectionCode: String?,
   close: () -> Unit,
+  onSearchClicked: () -> Unit
 ) {
   BackHandler(onBack = close)
   val contact = rememberUpdatedState(contact).value
@@ -184,7 +186,8 @@ fun ChatInfoView(
           }
         }
       },
-      close = close
+      close = close,
+      onSearchClicked = onSearchClicked
     )
   }
 }
@@ -394,6 +397,7 @@ fun ChatInfoLayout(
   syncContactConnectionForce: () -> Unit,
   verifyClicked: () -> Unit,
   close: () -> Unit,
+  onSearchClicked: () -> Unit
 ) {
   val cStats = connStats.value
   val scrollState = rememberScrollState()
@@ -425,15 +429,18 @@ fun ChatInfoLayout(
     ) {
       if (contact.activeConn == null && contact.profile.contactLink != null && contact.active) {
         ConnectButton(openedFromChatView, chat, contact, close)
+        Spacer(Modifier.width(DEFAULT_PADDING))
       } else if (!contact.active && !contact.chatDeleted) {
         OpenButton(openedFromChatView, chat, contact, close)
-      } else {
-        MessageButton(openedFromChatView, chat, contact, close)
+        Spacer(Modifier.width(DEFAULT_PADDING))
       }
-      Spacer(Modifier.width(10.dp))
+      SearchButton(chat, contact, close, onSearchClicked)
+      Spacer(Modifier.width(DEFAULT_PADDING))
       CallButton(chat, contact)
-      Spacer(Modifier.width(10.dp))
+      Spacer(Modifier.width(DEFAULT_PADDING))
       VideoButton(chat, contact)
+      Spacer(Modifier.width(DEFAULT_PADDING))
+      MuteButton(chat, contact)
     }
 
     SectionSpacer()
@@ -657,7 +664,7 @@ fun LocalAliasEditor(
 @Composable
 private fun ConnectButton(openedFromChatView: Boolean, chat: Chat, contact: Contact, close: () -> Unit) {
   InfoViewActionButton(
-    icon = painterResource(MR.images.ic_chat_bubble_filled),
+    icon = painterResource(MR.images.ic_chat_bubble),
     title = generalGetString(MR.strings.info_view_connect_button),
     disabled = false,
     onClick = {
@@ -710,7 +717,7 @@ private fun infoConnectContactViaAddress(openedFromChatView: Boolean, chat: Chat
 @Composable
 private fun OpenButton(openedFromChatView: Boolean, chat: Chat, contact: Contact, close: () -> Unit) {
   InfoViewActionButton(
-    icon = painterResource(MR.images.ic_chat_bubble_filled),
+    icon = painterResource(MR.images.ic_chat_bubble),
     title = generalGetString(MR.strings.info_view_open_button),
     disabled = false,
     onClick = {
@@ -727,23 +734,28 @@ private fun OpenButton(openedFromChatView: Boolean, chat: Chat, contact: Contact
 }
 
 @Composable
-private fun MessageButton(openedFromChatView: Boolean, chat: Chat, contact: Contact, close: () -> Unit) {
+fun SearchButton(chat: Chat, contact: Contact, close: () -> Unit, onSearchClicked: () -> Unit) {
   InfoViewActionButton(
-    icon = painterResource(MR.images.ic_chat_bubble_filled),
-    title = generalGetString(MR.strings.info_view_message_button),
-    disabled = !contact.sendMsgEnabled,
+    icon = painterResource(MR.images.ic_search),
+    title = generalGetString(MR.strings.info_view_search_button),
+    disabled = !contact.ready || chat.chatItems.isEmpty(),
     onClick = {
-      if (openedFromChatView) {
-        close.invoke()
-      } else {
-        if (contact.chatDeleted) {
-          chatModel.updateContact(chat.remoteHostId, contact.copy(chatDeleted = false))
-        }
-        close.invoke()
-        withBGApi {
-          openDirectChat(chat.remoteHostId, contact.contactId, chatModel)
-        }
-      }
+      close.invoke()
+      onSearchClicked()
+    }
+  )
+}
+
+@Composable
+fun MuteButton(chat: Chat, contact: Contact) {
+  val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
+
+  InfoViewActionButton(
+    icon =  if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
+    title = if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
+    disabled = !contact.ready || !contact.active,
+    onClick = {
+      toggleNotifications(chat, !ntfsEnabled.value, chatModel, ntfsEnabled)
     }
   )
 }
@@ -751,7 +763,7 @@ private fun MessageButton(openedFromChatView: Boolean, chat: Chat, contact: Cont
 @Composable
 fun CallButton(chat: Chat, contact: Contact) {
   InfoViewActionButton(
-    icon = painterResource(MR.images.ic_call_filled),
+    icon = painterResource(MR.images.ic_call),
     title = generalGetString(MR.strings.info_view_call_button),
     disabled = !contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall.value != null,
     onClick = {
@@ -763,7 +775,7 @@ fun CallButton(chat: Chat, contact: Contact) {
 @Composable
 fun VideoButton(chat: Chat, contact: Contact) {
   InfoViewActionButton(
-    icon = painterResource(MR.images.ic_videocam_filled),
+    icon = painterResource(MR.images.ic_videocam),
     title = generalGetString(MR.strings.info_view_video_button),
     disabled = !contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall.value != null,
     onClick = {
@@ -774,31 +786,36 @@ fun VideoButton(chat: Chat, contact: Contact) {
 
 @Composable
 fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, onClick: () -> Unit) {
-  Surface(
-    Modifier
-      .width(96.dp)
-      .height(66.dp),
-    shape = RoundedCornerShape(20.dp),
-    color = MaterialTheme.colors.secondaryVariant,
+  Column(
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.Center
   ) {
-    val modifier = if (disabled) Modifier else Modifier.clickable { onClick () }
-    Column(
-      modifier,
-      horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.Center
+    IconButton(
+      onClick = onClick,
+      enabled = !disabled
     ) {
-      Icon(
-        icon,
-        contentDescription = null,
-        Modifier.size(26.dp),
-        tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-      )
-      Text(
-        title,
-        style = MaterialTheme.typography.subtitle2.copy(fontWeight = FontWeight.Normal),
-        color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-      )
+      Box(
+        modifier = Modifier
+          .background(
+            if (disabled) MaterialTheme.colors.secondaryVariant else MaterialTheme.colors.primary,
+            shape = CircleShape
+          )
+          .padding(16.dp)
+      ) {
+        Icon(
+          icon,
+          contentDescription = null,
+          Modifier.size(24.dp * fontSizeSqrtMultiplier),
+          tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.onPrimary
+        )
+      }
     }
+    Text(
+      title.capitalize(Locale.current),
+      style = MaterialTheme.typography.subtitle2.copy(fontWeight = FontWeight.Normal),
+      color = MaterialTheme.colors.secondary,
+      modifier = Modifier.padding(top = DEFAULT_SPACE_AFTER_ICON)
+    )
   }
 }
 
@@ -1116,6 +1133,7 @@ fun PreviewChatInfoLayout() {
       syncContactConnectionForce = {},
       verifyClicked = {},
       close = {},
+      onSearchClicked = {}
     )
   }
 }

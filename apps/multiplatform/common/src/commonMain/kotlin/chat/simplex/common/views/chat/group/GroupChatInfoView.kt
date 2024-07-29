@@ -40,7 +40,7 @@ import kotlinx.coroutines.launch
 const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
 @Composable
-fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit) {
+fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit, onSearchClicked: () -> Unit) {
   BackHandler(onBack = close)
   // TODO derivedStateOf?
   val chat = chatModel.chats.firstOrNull { ch -> ch.id == chatId && ch.remoteHostId == rhId }
@@ -113,7 +113,8 @@ fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLi
       leaveGroup = { leaveGroupDialog(rhId, groupInfo, chatModel, close) },
       manageGroupLink = {
           ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, groupLinkMemberRole, onGroupLinkUpdated) }
-      }
+      },
+      onSearchClicked = onSearchClicked
     )
   }
 }
@@ -178,6 +179,50 @@ private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMembe
 }
 
 @Composable
+fun SearchButton(chat: Chat, group: GroupInfo, close: () -> Unit, onSearchClicked: () -> Unit) {
+  InfoViewActionButton(
+    icon = painterResource(MR.images.ic_search),
+    title = generalGetString(MR.strings.info_view_search_button),
+    disabled = !group.ready || chat.chatItems.isEmpty(),
+    onClick = {
+      onSearchClicked()
+      close.invoke()
+    }
+  )
+}
+
+@Composable
+fun MuteButton(chat: Chat, groupInfo: GroupInfo) {
+  val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
+
+  InfoViewActionButton(
+    icon =  if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
+    title = if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
+    disabled = !groupInfo.ready,
+    onClick = {
+      toggleNotifications(chat, !ntfsEnabled.value, chatModel, ntfsEnabled)
+    }
+  )
+}
+
+@Composable
+fun AddGroupMembersButton(chat: Chat, groupInfo: GroupInfo) {
+  InfoViewActionButton(
+    icon =  if (groupInfo.incognito) painterResource(MR.images.ic_add_link) else painterResource(MR.images.ic_person_add_500),
+    title = stringResource(MR.strings.action_button_add_members),
+    disabled = !groupInfo.ready,
+    onClick = {
+      if (groupInfo.incognito) {
+        openGroupLink(groupInfo = groupInfo, rhId = chat.remoteHostId)
+      } else {
+        addGroupMembers(groupInfo = groupInfo, rhId = chat.remoteHostId)
+      }
+    }
+  )
+}
+
+
+@Composable
 fun GroupChatInfoLayout(
   chat: Chat,
   groupInfo: GroupInfo,
@@ -196,6 +241,8 @@ fun GroupChatInfoLayout(
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
   manageGroupLink: () -> Unit,
+  close: () -> Unit = { ModalManager.closeAllModalsEverywhere()},
+  onSearchClicked: () -> Unit
 ) {
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
@@ -217,6 +264,24 @@ fun GroupChatInfoLayout(
       ) {
         GroupChatInfoHeader(chat.chatInfo)
       }
+      SectionSpacer()
+
+      Row(
+        Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 10.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        SearchButton(chat, groupInfo, close, onSearchClicked)
+        if (groupInfo.canAddMembers) {
+          Spacer(Modifier.width(DEFAULT_PADDING))
+          AddGroupMembersButton(chat, groupInfo)
+        }
+        Spacer(Modifier.width(DEFAULT_PADDING))
+        MuteButton(chat, groupInfo)
+      }
+
       SectionSpacer()
 
       SectionView {
@@ -584,7 +649,7 @@ fun PreviewGroupChatInfoLayout() {
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
       groupLink = null,
-      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {},
+      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {}, onSearchClicked = {},
     )
   }
 }

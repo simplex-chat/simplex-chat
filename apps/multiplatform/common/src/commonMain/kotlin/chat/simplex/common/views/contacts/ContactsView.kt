@@ -267,9 +267,12 @@ private fun ContactsSearchBar(
                         }
                         searchShowingSimplexLink.value = true
                         searchChatFilteredBySimplexLink.value = null
-                        connect(link.text, searchChatFilteredBySimplexLink, close) {
-                            searchText.value = TextFieldValue()
-                        }
+                        connect(
+                            link = link.text,
+                            searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+                            close = close,
+                            cleanup = { searchText.value = TextFieldValue() }
+                        )
                     } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
                         if (it.isNotEmpty()) {
                             // if some other text is pasted, enter search mode
@@ -437,7 +440,7 @@ private fun filteredContactChats(
 private fun viewNameContains(cInfo: ChatInfo, s: String): Boolean =
     cInfo.chatViewName.lowercase().contains(s.lowercase())
 
-private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<String?>, cleanup: (() -> Unit)?, close: () -> Unit) {
+private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<String?>, close: () -> Unit, cleanup: (() -> Unit)?) {
     withBGApi {
         planAndConnect(
             chatModel.remoteHostId(),

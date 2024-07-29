@@ -320,9 +320,9 @@ fun GroupMemberInfoLayout(
       if (knownChat != null) {
         val (chat, contact) = knownChat
         OpenChatButton(onClick = { openDirectChat(contact.contactId) })
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(DEFAULT_PADDING))
         CallButton(chat, contact)
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(DEFAULT_PADDING))
         VideoButton(chat, contact)
       } else if (groupInfo.fullGroupPreferences.directMessages.on(groupInfo.membership)) {
         if (contactId != null) {
@@ -330,10 +330,10 @@ fun GroupMemberInfoLayout(
         } else {
           OpenChatButton(onClick = { createMemberContact() })
         }
-        Spacer(Modifier.width(10.dp))
-        InfoViewActionButton(painterResource(MR.images.ic_call_filled), generalGetString(MR.strings.info_view_call_button), disabled = true, onClick = {})
-        Spacer(Modifier.width(10.dp))
-        InfoViewActionButton(painterResource(MR.images.ic_videocam_filled), generalGetString(MR.strings.info_view_video_button), disabled = true, onClick = {})
+        Spacer(Modifier.width(DEFAULT_PADDING))
+        InfoViewActionButton(painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = true, onClick = {})
+        Spacer(Modifier.width(DEFAULT_PADDING))
+        InfoViewActionButton(painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = true, onClick = {})
       }
     }
     SectionSpacer()
@@ -534,7 +534,7 @@ fun RemoveMemberButton(onClick: () -> Unit) {
 @Composable
 fun OpenChatButton(onClick: () -> Unit) {
   InfoViewActionButton(
-    icon = painterResource(MR.images.ic_chat_bubble_filled),
+    icon = painterResource(MR.images.ic_chat_bubble),
     title = generalGetString(MR.strings.info_view_message_button),
     disabled = false,
     onClick = onClick

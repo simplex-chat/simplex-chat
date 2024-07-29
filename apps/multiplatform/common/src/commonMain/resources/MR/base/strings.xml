@@ -447,6 +447,7 @@
   <string name="info_view_open_button">open</string>
   <string name="info_view_message_button">message</string>
   <string name="info_view_call_button">call</string>
+  <string name="info_view_search_button">search</string>
   <string name="info_view_video_button">video</string>
   <string name="delete_contact_question">Delete contact?</string>
   <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>
@@ -1471,6 +1472,7 @@
   <string name="send_receipts_disabled">disabled</string>
   <string name="send_receipts_disabled_alert_title">Receipts are disabled</string>
   <string name="send_receipts_disabled_alert_msg">This group has over %1$d members, delivery receipts are not sent.</string>
+  <string name="action_button_add_members">Invite</string>
 
   <!-- Chat / Chat item info -->
   <string name="section_title_for_console">FOR CONSOLE</string>
