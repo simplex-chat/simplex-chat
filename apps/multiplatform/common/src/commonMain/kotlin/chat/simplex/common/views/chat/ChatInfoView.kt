@@ -664,7 +664,7 @@ fun LocalAliasEditor(
 @Composable
 private fun ConnectButton(openedFromChatView: Boolean, chat: Chat, contact: Contact, close: () -> Unit) {
   InfoViewActionButton(
-    icon = painterResource(MR.images.ic_chat_bubble_filled),
+    icon = painterResource(MR.images.ic_chat_bubble),
     title = generalGetString(MR.strings.info_view_connect_button),
     disabled = false,
     onClick = {
@@ -717,35 +717,13 @@ private fun infoConnectContactViaAddress(openedFromChatView: Boolean, chat: Chat
 @Composable
 private fun OpenButton(openedFromChatView: Boolean, chat: Chat, contact: Contact, close: () -> Unit) {
   InfoViewActionButton(
-    icon = painterResource(MR.images.ic_chat_bubble_filled),
+    icon = painterResource(MR.images.ic_chat_bubble),
     title = generalGetString(MR.strings.info_view_open_button),
     disabled = false,
     onClick = {
       if (openedFromChatView) {
         close.invoke()
       } else {
-        close.invoke()
-        withBGApi {
-          openDirectChat(chat.remoteHostId, contact.contactId, chatModel)
-        }
-      }
-    }
-  )
-}
-
-@Composable
-private fun MessageButton(openedFromChatView: Boolean, chat: Chat, contact: Contact, close: () -> Unit) {
-  InfoViewActionButton(
-    icon = painterResource(MR.images.ic_chat_bubble_filled),
-    title = generalGetString(MR.strings.info_view_message_button),
-    disabled = !contact.sendMsgEnabled,
-    onClick = {
-      if (openedFromChatView) {
-        close.invoke()
-      } else {
-        if (contact.chatDeleted) {
-          chatModel.updateContact(chat.remoteHostId, contact.copy(chatDeleted = false))
-        }
         close.invoke()
         withBGApi {
           openDirectChat(chat.remoteHostId, contact.contactId, chatModel)

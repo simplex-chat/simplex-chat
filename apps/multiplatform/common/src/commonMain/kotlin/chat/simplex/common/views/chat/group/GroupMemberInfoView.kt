@@ -331,9 +331,9 @@ fun GroupMemberInfoLayout(
           OpenChatButton(onClick = { createMemberContact() })
         }
         Spacer(Modifier.width(DEFAULT_PADDING))
-        InfoViewActionButton(painterResource(MR.images.ic_call_filled), generalGetString(MR.strings.info_view_call_button), disabled = true, onClick = {})
+        InfoViewActionButton(painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = true, onClick = {})
         Spacer(Modifier.width(DEFAULT_PADDING))
-        InfoViewActionButton(painterResource(MR.images.ic_videocam_filled), generalGetString(MR.strings.info_view_video_button), disabled = true, onClick = {})
+        InfoViewActionButton(painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = true, onClick = {})
       }
     }
     SectionSpacer()
@@ -534,7 +534,7 @@ fun RemoveMemberButton(onClick: () -> Unit) {
 @Composable
 fun OpenChatButton(onClick: () -> Unit) {
   InfoViewActionButton(
-    icon = painterResource(MR.images.ic_chat_bubble_filled),
+    icon = painterResource(MR.images.ic_chat_bubble),
     title = generalGetString(MR.strings.info_view_message_button),
     disabled = false,
     onClick = onClick
