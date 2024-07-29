@@ -389,24 +389,23 @@ startChatController :: Bool -> Bool -> CM' (Async ())
 startChatController mainApp enableSndFiles = do
   asks smpAgent >>= liftIO . resumeAgentClient
   unless mainApp $ chatWriteVar' subscriptionMode SMOnlyCreate
-  users <- fromRight [] <$> runExceptT (withStore' getUsers)
-  restoreCalls
+  void $ forkIO restoreCalls
   s <- asks agentAsync
-  readTVarIO s >>= maybe (start s users) (pure . fst)
+  readTVarIO s >>= maybe (start s) (pure . fst)
   where
-    start s users = do
+    start s = do
       a1 <- async agentSubscriber
       a2 <-
         if mainApp
-          then Just <$> async (subscribeUsers False users)
+          then Just <$> async (subscribeUsers False)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
       if mainApp
         then do
           startXFTP xftpStartWorkers
-          void $ forkIO $ startFilesToReceive users
+          void $ forkIO startFilesToReceive
           startCleanupManager
-          startExpireCIs users
+          void $ forkIO startExpireCIs
         else
           when enableSndFiles $ startXFTP xftpStartSndWorkers
       pure a1
@@ -422,15 +421,17 @@ startChatController mainApp enableSndFiles = do
           a <- Just <$> async (void $ runExceptT cleanupManager)
           atomically $ writeTVar cleanupAsync a
         _ -> pure ()
-    startExpireCIs users =
+    startExpireCIs = do
+      users <- fromRight [] <$> runExceptT (withStore' getUsers)
       forM_ users $ \user -> do
         ttl <- fromRight Nothing <$> runExceptT (withStore' (`getChatItemTTL` user))
         forM_ ttl $ \_ -> do
           startExpireCIThread user
           setExpireCIFlag user True
 
-subscribeUsers :: Bool -> [User] -> CM' ()
-subscribeUsers onlyNeeded users = do
+subscribeUsers :: Bool -> CM' ()
+subscribeUsers onlyNeeded = do
+  users <- fromRight [] <$> runExceptT (withStore' getUsers)
   let (us, us') = partition activeUser users
   vr <- chatVersionRange'
   subscribe vr us
@@ -439,8 +440,9 @@ subscribeUsers onlyNeeded users = do
     subscribe :: VersionRangeChat -> [User] -> CM' ()
     subscribe vr = mapM_ $ runExceptT . subscribeUserConnections vr onlyNeeded Agent.subscribeConnections
 
-startFilesToReceive :: [User] -> CM' ()
-startFilesToReceive users = do
+startFilesToReceive :: CM' ()
+startFilesToReceive = do
+  users <- fromRight [] <$> runExceptT (withStore' getUsers)
   let (us, us') = partition activeUser users
   startReceive us
   startReceive us'
@@ -632,12 +634,10 @@ processChatCommand' vr = \case
     lift $ when restoreChat restoreCalls
     lift $ withAgent' foregroundAgent
     chatWriteVar chatActivated True
-    when restoreChat $ do
-      users <- withStore' getUsers
-      lift $ do
-        void . forkIO $ subscribeUsers True users
-        void . forkIO $ startFilesToReceive users
-        setAllExpireCIFlags True
+    when restoreChat $ lift $ do
+      void . forkIO $ subscribeUsers True
+      void . forkIO $ startFilesToReceive
+      setAllExpireCIFlags True
     ok_
   APISuspendChat t -> do
     chatWriteVar chatActivated False
@@ -645,7 +645,7 @@ processChatCommand' vr = \case
     stopRemoteCtrl
     lift $ withAgent' (`suspendAgent` t)
     ok_
-  ResubscribeAllConnections -> withStore' getUsers >>= lift . subscribeUsers False >> ok_
+  ResubscribeAllConnections -> lift (subscribeUsers False) >> ok_
   -- has to be called before StartChat
   SetTempFolder tf -> do
     createDirectoryIfMissing True tf
