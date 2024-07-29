@@ -819,7 +819,7 @@ fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, onClic
       Box(
         modifier = Modifier
           .background(
-            if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
+            if (disabled) MaterialTheme.colors.secondaryVariant else MaterialTheme.colors.primary,
             shape = CircleShape
           )
           .padding(16.dp)
@@ -828,7 +828,7 @@ fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, onClic
           icon,
           contentDescription = null,
           Modifier.size(24.dp * fontSizeSqrtMultiplier),
-          tint = if (disabled) MaterialTheme.colors.onSecondary else MaterialTheme.colors.onPrimary
+          tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.onPrimary
         )
       }
     }
