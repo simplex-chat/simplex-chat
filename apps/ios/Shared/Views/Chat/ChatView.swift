@@ -78,23 +78,6 @@ struct ChatView: View {
                         )
                 }
                 floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
-                VStack(alignment: .trailing) {
-                    Button("Mark Items Unread") {
-                        for i in 0..<im.reversedChatItems.count {
-                            im.reversedChatItems[i].meta.itemStatus = .rcvNew
-                        }
-                    }
-                    Button("Simulate ChatModel change") {
-                        chatModel.objectWillChange.send()
-                    }
-                    Button("Simulate Chat change") {
-                        chat.objectWillChange.send()
-                    }
-                    Button("Simulate Items change") {
-                        im.objectWillChange.send()
-                    }
-                    Spacer()
-                }.buttonStyle(BorderedProminentButtonStyle()).padding()
             }
             connectingText()
             ComposeView(
