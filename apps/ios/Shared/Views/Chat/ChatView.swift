@@ -43,6 +43,7 @@ struct ChatView: View {
     @State private var showGroupLinkSheet: Bool = false
     @State private var groupLink: String?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
+    @State private var selectedChatItems: [Int64]? = nil
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -79,13 +80,17 @@ struct ChatView: View {
                 }
                 floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
             }
-            connectingText()
-            ComposeView(
-                chat: chat,
-                composeState: $composeState,
-                keyboardVisible: $keyboardVisible
-            )
-            .disabled(!cInfo.sendMsgEnabled)
+            if selectedChatItems == nil {
+                connectingText()
+                ComposeView(
+                    chat: chat,
+                    composeState: $composeState,
+                    keyboardVisible: $keyboardVisible
+                )
+                .disabled(!cInfo.sendMsgEnabled)
+            } else {
+                SelectedItemsBottomToolbar(chatItems: chatModel.reversedChatItems, selectedChatItems: $selectedChatItems, chatInfo: chat.chatInfo)
+            }
         }
         .navigationTitle(cInfo.chatViewName)
         .background(theme.colors.background)
@@ -138,7 +143,9 @@ struct ChatView: View {
         }
         .toolbar {
             ToolbarItem(placement: .principal) {
-                if case let .direct(contact) = cInfo {
+                if selectedChatItems != nil {
+                    SelectedItemsTopToolbar(selectedChatItems: $selectedChatItems)
+                } else if case let .direct(contact) = cInfo {
                     Button {
                         Task {
                             do {
@@ -192,66 +199,76 @@ struct ChatView: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                switch cInfo {
-                case let .direct(contact):
-                    HStack {
-                        let callsPrefEnabled = contact.mergedPreferences.calls.enabled.forUser
-                        if callsPrefEnabled {
-                            if chatModel.activeCall == nil {
-                                callButton(contact, .audio, imageName: "phone")
-                                    .disabled(!contact.ready || !contact.active)
-                            } else if let call = chatModel.activeCall, call.contact.id == cInfo.id {
-                                endCallButton(call)
-                            }
+                if selectedChatItems != nil {
+                    Button {
+                        withAnimation {
+                            selectedChatItems = nil
                         }
-                        Menu {
-                            if callsPrefEnabled && chatModel.activeCall == nil {
-                                Button {
-                                    CallController.shared.startCall(contact, .video)
-                                } label: {
-                                    Label("Video call", systemImage: "video")
+                    } label: {
+                        Text("Cancel")
+                    }
+                } else {
+                    switch cInfo {
+                    case let .direct(contact):
+                        HStack {
+                            let callsPrefEnabled = contact.mergedPreferences.calls.enabled.forUser
+                            if callsPrefEnabled {
+                                if chatModel.activeCall == nil {
+                                    callButton(contact, .audio, imageName: "phone")
+                                        .disabled(!contact.ready || !contact.active)
+                                } else if let call = chatModel.activeCall, call.contact.id == cInfo.id {
+                                    endCallButton(call)
                                 }
-                                .disabled(!contact.ready || !contact.active)
                             }
-                            searchButton()
-                            ToggleNtfsButton(chat: chat)
-                                .disabled(!contact.ready || !contact.active)
-                        } label: {
-                            Image(systemName: "ellipsis")
-                        }
-                    }
-                case let .group(groupInfo):
-                    HStack {
-                        if groupInfo.canAddMembers {
-                            if (chat.chatInfo.incognito) {
-                                groupLinkButton()
-                                    .appSheet(isPresented: $showGroupLinkSheet) {
-                                        GroupLinkView(
-                                            groupId: groupInfo.groupId,
-                                            groupLink: $groupLink,
-                                            groupLinkMemberRole: $groupLinkMemberRole,
-                                            showTitle: true,
-                                            creatingGroup: false
-                                        )
+                            Menu {
+                                if callsPrefEnabled && chatModel.activeCall == nil {
+                                    Button {
+                                        CallController.shared.startCall(contact, .video)
+                                    } label: {
+                                        Label("Video call", systemImage: "video")
                                     }
-                            } else {
-                                addMembersButton()
-                                    .appSheet(isPresented: $showAddMembersSheet) {
-                                        AddGroupMembersView(chat: chat, groupInfo: groupInfo)
-                                    }
+                                    .disabled(!contact.ready || !contact.active)
+                                }
+                                searchButton()
+                                ToggleNtfsButton(chat: chat)
+                                    .disabled(!contact.ready || !contact.active)
+                            } label: {
+                                Image(systemName: "ellipsis")
                             }
                         }
-                        Menu {
-                            searchButton()
-                            ToggleNtfsButton(chat: chat)
-                        } label: {
-                            Image(systemName: "ellipsis")
+                    case let .group(groupInfo):
+                        HStack {
+                            if groupInfo.canAddMembers {
+                                if (chat.chatInfo.incognito) {
+                                    groupLinkButton()
+                                        .appSheet(isPresented: $showGroupLinkSheet) {
+                                            GroupLinkView(
+                                                groupId: groupInfo.groupId,
+                                                groupLink: $groupLink,
+                                                groupLinkMemberRole: $groupLinkMemberRole,
+                                                showTitle: true,
+                                                creatingGroup: false
+                                            )
+                                        }
+                                } else {
+                                    addMembersButton()
+                                        .appSheet(isPresented: $showAddMembersSheet) {
+                                            AddGroupMembersView(chat: chat, groupInfo: groupInfo)
+                                        }
+                                }
+                            }
+                            Menu {
+                                searchButton()
+                                ToggleNtfsButton(chat: chat)
+                            } label: {
+                                Image(systemName: "ellipsis")
+                            }
                         }
+                    case .local:
+                        searchButton()
+                    default:
+                        EmptyView()
                     }
-                case .local:
-                    searchButton()
-                default:
-                    EmptyView()
                 }
             }
         }
@@ -604,7 +621,8 @@ struct ChatView: View {
             maxWidth: maxWidth,
             composeState: $composeState,
             selectedMember: $selectedMember,
-            revealedChatItem: $revealedChatItem
+            revealedChatItem: $revealedChatItem,
+            selectedChatItems: $selectedChatItems
         )
     }
 
@@ -626,11 +644,34 @@ struct ChatView: View {
         @State private var chatItemInfo: ChatItemInfo?
         @State private var showForwardingSheet: Bool = false
 
+        @Binding var selectedChatItems: [Int64]?
+
         @State private var allowMenu: Bool = true
 
         var revealed: Bool { chatItem == revealedChatItem }
 
         var body: some View {
+            HStack(alignment: .center) {
+                if selectedChatItems != nil {
+                    SelectedChatItem(ciId: chatItem.id, selectedChatItems: $selectedChatItems)
+                }
+                item()
+            }
+            .overlay {
+                if selectedChatItems != nil {
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            var items = selectedChatItems?.map { $0 } ?? []
+                            let checked = items.contains(chatItem.id)
+                            !checked ? items.append(chatItem.id) : items.removeAll { $0 == chatItem.id }
+                            selectedChatItems = items
+                        }
+                }
+            }
+        }
+
+        @ViewBuilder func item() -> some View {
             let (currIndex, _) = m.getNextChatItem(chatItem)
             let ciCategory = chatItem.mergeCategory
             let (prevHidden, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
@@ -880,6 +921,9 @@ struct ChatView: View {
                     && !ci.isLiveDummy && !live {
                     forwardButton
                 }
+                if selectedChatItems == nil {
+                    selectButton(ci)
+                }
                 if !ci.isLiveDummy {
                     viewInfoButton(ci)
                 }
@@ -1090,6 +1134,21 @@ struct ChatView: View {
             }
         }
 
+        private func selectButton(_ ci: ChatItem) -> Button<some View> {
+            Button {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    withAnimation {
+                        selectedChatItems = [ci.id]
+                    }
+                }
+            } label: {
+                Label(
+                    NSLocalizedString("Select", comment: "chat item action"),
+                    systemImage: "checkmark.circle"
+                )
+            }
+        }
+
         private func viewInfoButton(_ ci: ChatItem) -> Button<some View> {
             Button {
                 Task {
@@ -1291,7 +1350,7 @@ struct ChatView: View {
                 do {
                     if let di = deletingItem {
                         let r = if case .cidmBroadcast = mode,
-                           let (groupInfo, groupMember) = di.memberToModerate(chat.chatInfo) {
+                           let (groupInfo, _) = di.memberToModerate(chat.chatInfo) {
                             try await apiDeleteMemberChatItems(
                                 groupId: groupInfo.apiId,
                                 itemIds: [di.id]
@@ -1318,6 +1377,27 @@ struct ChatView: View {
                 } catch {
                     logger.error("ChatView.deleteMessage error: \(error.localizedDescription)")
                 }
+            }
+        }
+
+        private struct SelectedChatItem: View {
+            @EnvironmentObject var theme: AppTheme
+            var ciId: Int64
+            @Binding var selectedChatItems: [Int64]?
+            @State var checked: Bool = false
+            var body: some View {
+                Image(systemName: checked ? "checkmark.circle.fill" : "circle")
+                    .resizable()
+                    .foregroundColor(checked ? theme.colors.primary : .white)
+                    .frame(width: 24, height: 24)
+                    .onAppear {
+                        checked = selectedChatItems?.contains(ciId) == true
+                    }
+                    .onChange(of: selectedChatItems) { selected in
+                        checked = selected?.contains(ciId) == true
+                    }
+                    .padding(.leading, 20)
+                    .offset(x: -5)
             }
         }
     }

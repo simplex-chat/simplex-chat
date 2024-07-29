@@ -2454,13 +2454,16 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         }
     }
 
-    public func memberToModerate(_ chatInfo: ChatInfo) -> (GroupInfo, GroupMember)? {
+    public func memberToModerate(_ chatInfo: ChatInfo) -> (GroupInfo, GroupMember?)? {
         switch (chatInfo, chatDir) {
         case let (.group(groupInfo), .groupRcv(groupMember)):
             let m = groupInfo.membership
             return m.memberRole >= .admin && m.memberRole >= groupMember.memberRole && meta.itemDeleted == nil
                     ? (groupInfo, groupMember)
                     : nil
+        case let (.group(groupInfo), .groupSnd):
+            let m = groupInfo.membership
+            return m.memberRole >= .observer ? (groupInfo, nil) : nil
         default: return nil
         }
     }
