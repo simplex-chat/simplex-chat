@@ -40,7 +40,7 @@ struct GroupChatInfoView: View {
         case blockForAllAlert(mem: GroupMember)
         case unblockForAllAlert(mem: GroupMember)
         case removeMemberAlert(mem: GroupMember)
-        case error(title: LocalizedStringKey, error: LocalizedStringKey)
+        case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
             switch self {
@@ -158,7 +158,7 @@ struct GroupChatInfoView: View {
             case let .blockForAllAlert(mem): return blockForAllAlert(groupInfo, mem)
             case let .unblockForAllAlert(mem): return unblockForAllAlert(groupInfo, mem)
             case let .removeMemberAlert(mem): return removeMemberAlert(mem)
-            case let .error(title, error): return Alert(title: Text(title), message: Text(error))
+            case let .error(title, error): return mkAlert(title: title, message: error)
             }
         }
         .onAppear {

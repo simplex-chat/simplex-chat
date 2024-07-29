@@ -35,7 +35,7 @@ struct AddGroupMembersViewCommon: View {
 
     private enum AddGroupMembersAlert: Identifiable {
         case prohibitedToInviteIncognito
-        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
+        case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
             switch self {
@@ -122,7 +122,7 @@ struct AddGroupMembersViewCommon: View {
                     message: Text("You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile")
                 )
             case let .error(title, error):
-                return Alert(title: Text(title), message: Text(error))
+                return mkAlert(title: title, message: error)
             }
         }
         .onChange(of: selectedContacts) { _ in

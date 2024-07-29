@@ -13,6 +13,7 @@ public let appSuspendTimeout: Int = 15 // seconds
 
 let GROUP_DEFAULT_APP_STATE = "appState"
 let GROUP_DEFAULT_NSE_STATE = "nseState"
+let GROUP_DEFAULT_SE_STATE = "seState"
 let GROUP_DEFAULT_DB_CONTAINER = "dbContainer"
 public let GROUP_DEFAULT_CHAT_LAST_START = "chatLastStart"
 public let GROUP_DEFAULT_CHAT_LAST_BACKGROUND_RUN = "chatLastBackgroundRun"
@@ -136,6 +137,11 @@ public enum NSEState: String, Codable {
     }
 }
 
+public enum SEState: String, Codable {
+    case inactive
+    case sendingMessage
+}
+
 public enum DBContainer: String {
     case documents
     case group
@@ -153,6 +159,12 @@ public let nseStateGroupDefault = EnumDefault<NSEState>(
     defaults: groupDefaults,
     forKey: GROUP_DEFAULT_NSE_STATE,
     withDefault: .suspended // so that NSE that was never launched does not delay the app from resuming
+)
+
+public let seStateGroupDefault = EnumDefault<SEState>(
+    defaults: groupDefaults,
+    forKey: GROUP_DEFAULT_SE_STATE,
+    withDefault: .inactive
 )
 
 // inactive app states do not include "stopped" state
