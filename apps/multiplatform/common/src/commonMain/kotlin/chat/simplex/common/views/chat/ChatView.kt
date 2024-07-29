@@ -250,24 +250,23 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
                 val deletedChatItem: ChatItem?
                 val toChatItem: ChatItem?
                 if (mode == CIDeleteMode.cidmBroadcast && groupInfo != null && groupMember != null) {
-                  val r = chatModel.controller.apiDeleteMemberChatItem(
+                  val r = chatModel.controller.apiDeleteMemberChatItems(
                     chatRh,
                     groupId = groupInfo.groupId,
-                    groupMemberId = groupMember.groupMemberId,
-                    itemId = itemId
+                    itemsId = listOf(itemId)
                   )
-                  deletedChatItem = r?.first
-                  toChatItem = r?.second
+                  deletedChatItem = r?.firstOrNull()?.deletedChatItem?.chatItem
+                  toChatItem = r?.firstOrNull()?.toChatItem?.chatItem
                 } else {
-                  val r = chatModel.controller.apiDeleteChatItem(
+                  val r = chatModel.controller.apiDeleteChatItems(
                     chatRh,
                     type = cInfo.chatType,
                     id = cInfo.apiId,
-                    itemId = itemId,
+                    itemsId = listOf(itemId),
                     mode = mode
                   )
-                  deletedChatItem = r?.deletedChatItem?.chatItem
-                  toChatItem = r?.toChatItem?.chatItem
+                  deletedChatItem = r?.chatItemDeletions?.firstOrNull()?.deletedChatItem?.chatItem
+                  toChatItem = r?.chatItemDeletions?.firstOrNull()?.toChatItem?.chatItem
                 }
                 if (toChatItem == null && deletedChatItem != null) {
                   chatModel.removeChatItem(chatRh, cInfo, deletedChatItem)
@@ -280,17 +279,11 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               if (itemIds.isNotEmpty()) {
                 val chatInfo = chat.chatInfo
                 withBGApi {
-                  val deletedItems: ArrayList<ChatItem> = arrayListOf()
-                  for (itemId in itemIds) {
-                    val di = chatModel.controller.apiDeleteChatItem(
-                      chatRh, chatInfo.chatType, chatInfo.apiId, itemId, CIDeleteMode.cidmInternal
-                    )?.deletedChatItem?.chatItem
-                    if (di != null) {
-                      deletedItems.add(di)
-                    }
-                  }
-                  for (di in deletedItems) {
-                    chatModel.removeChatItem(chatRh, chatInfo, di)
+                  val deleted = chatModel.controller.apiDeleteChatItems(
+                    chatRh, chatInfo.chatType, chatInfo.apiId, itemIds, CIDeleteMode.cidmInternal
+                  )
+                  for (di in (deleted?.chatItemDeletions ?: emptyList())) {
+                    chatModel.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
                   }
                 }
               }
