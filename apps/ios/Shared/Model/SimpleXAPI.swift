@@ -225,6 +225,15 @@ func apiStartChat(ctrl: chat_ctrl? = nil) throws -> Bool {
     }
 }
 
+func apiCheckChatRunning() throws -> Bool {
+    let r = chatSendCmdSync(.checkChatRunning)
+    switch r {
+    case .chatRunning: return true
+    case .chatStopped: return false
+    default: throw r
+    }
+}
+
 func apiStopChat() async throws {
     let r = await chatSendCmd(.apiStopChat)
     switch r {
@@ -1440,15 +1449,16 @@ func startChat(refreshInvitations: Bool = true) throws {
     logger.debug("startChat")
     let m = ChatModel.shared
     try setNetworkConfig(getNetCfg())
-    let justStarted = try apiStartChat()
+    let chatRunning = try apiCheckChatRunning()
     m.users = try listUsers()
-    if justStarted {
+    if !chatRunning {
         try getUserChatData()
         NtfManager.shared.setNtfBadgeCount(m.totalUnreadCountForAllUsers())
         if (refreshInvitations) {
             try refreshCallInvitations()
         }
         (m.savedToken, m.tokenStatus, m.notificationMode, m.notificationServer) = apiGetNtfToken()
+        _ = try apiStartChat()
         // deviceToken is set when AppDelegate.application(didRegisterForRemoteNotificationsWithDeviceToken:) is called,
         // when it is called before startChat
         if let token = m.deviceToken {
