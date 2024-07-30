@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import External
 
 enum WriteFileResult: Decodable {
     case result(cryptoArgs: CryptoFileArgs)

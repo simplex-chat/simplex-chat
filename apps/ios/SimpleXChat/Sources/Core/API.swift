@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import External
 
 private var chatController: chat_ctrl?
 
