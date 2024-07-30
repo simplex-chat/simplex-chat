@@ -647,7 +647,7 @@
 /* rcv group event chat item */
 "blocked %@" = "%@ заблокирован";
 
-/* marked deleted chat item preview text */
+/* blocked chat item */
 "blocked by admin" = "заблокировано администратором";
 
 /* No comment provided by engineer. */
@@ -2733,7 +2733,7 @@
    time to disappear */
 "off" = "нет";
 
-/* No comment provided by engineer. */
+/* blur media */
 "Off" = "Выключено";
 
 /* feature offered item */
