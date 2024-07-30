@@ -1982,7 +1982,7 @@
     <string name="server_address">Dirección del servidor</string>
     <string name="size">Tamaño</string>
     <string name="servers_info_subscriptions_connections_subscribed">Conexiones activas</string>
-    <string name="servers_info_starting_from">Iniciado desde</string>
+    <string name="servers_info_starting_from">Iniciado desde %s.</string>
     <string name="servers_info_private_data_disclaimer">Iniciado desde %s
 \nTodos los datos son privados a tu dispositivo</string>
     <string name="chunks_deleted">Bloques eliminados</string>

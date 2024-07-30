@@ -56,8 +56,8 @@
     <string name="audio_device_bluetooth">Bluetooth</string>
     <string name="icon_descr_call_ended">Panggilan ditutup</string>
     <string name="change_verb">Ubah</string>
-    <string name="migrate_from_device_archive_will_be_deleted"><b>Peringatan</b>: arsip akan dihapus.</string>
-    <string name="create_group_button_to_create_new_group"><b>Buat grup</b>: untuk membuat grup baru.</string>
+    <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Peringatan</b>: arsip akan dihapus.]]></string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>Buat grup</b>: untuk membuat grup baru.]]></string>
     <string name="block_member_button">Blokir anggota</string>
     <string name="block_member_confirmation">Blokir</string>
     <string name="permissions_camera">Kamera</string>
