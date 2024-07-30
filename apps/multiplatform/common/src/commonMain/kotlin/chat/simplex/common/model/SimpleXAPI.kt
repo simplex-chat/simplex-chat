@@ -467,12 +467,11 @@ object ChatController {
     Log.d(TAG, "user: $user")
     try {
       apiSetNetworkConfig(getNetCfg())
-      val justStarted = apiStartChat()
-      appPrefs.chatStopped.set(false)
+      val chatRunning = apiCheckChatRunning()
       val users = listUsers(null)
       chatModel.users.clear()
       chatModel.users.addAll(users)
-      if (justStarted) {
+      if (!chatRunning) {
         chatModel.currentUser.value = user
         chatModel.localUserCreated.value = true
         getUserChatData(null)
@@ -491,6 +490,8 @@ object ChatController {
         }
         Log.d(TAG, "startChat: running")
       }
+      apiStartChat()
+      appPrefs.chatStopped.set(false)
     } catch (e: Throwable) {
       Log.e(TAG, "failed starting chat $e")
       throw e
@@ -741,6 +742,15 @@ object ChatController {
       is CR.ChatStarted -> return true
       is CR.ChatRunning -> return false
       else -> throw Exception("failed starting chat: ${r.responseType} ${r.details}")
+    }
+  }
+
+  private suspend fun apiCheckChatRunning(): Boolean {
+    val r = sendCmd(null, CC.CheckChatRunning())
+    when (r) {
+      is CR.ChatRunning -> return true
+      is CR.ChatStopped -> return false
+      else -> throw Exception("failed check chat running: ${r.responseType} ${r.details}")
     }
   }
 
@@ -2735,6 +2745,7 @@ sealed class CC {
   class ApiUnmuteUser(val userId: Long): CC()
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
   class StartChat(val mainApp: Boolean): CC()
+  class CheckChatRunning: CC()
   class ApiStopChat: CC()
   @Serializable
   class ApiSetAppFilePaths(val appFilesFolder: String, val appTempFolder: String, val appAssetsFolder: String, val appRemoteHostsFolder: String): CC()
@@ -2880,6 +2891,7 @@ sealed class CC {
     is ApiUnmuteUser -> "/_unmute user $userId"
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
     is StartChat -> "/_start main=${onOff(mainApp)}"
+    is CheckChatRunning -> "/_check running"
     is ApiStopChat -> "/_stop"
     is ApiSetAppFilePaths -> "/set file paths ${json.encodeToString(this)}"
     is ApiSetEncryptLocalFiles -> "/_files_encrypt ${onOff(enable)}"
@@ -3029,6 +3041,7 @@ sealed class CC {
     is ApiUnmuteUser -> "apiUnmuteUser"
     is ApiDeleteUser -> "apiDeleteUser"
     is StartChat -> "startChat"
+    is CheckChatRunning -> "checkChatRunning"
     is ApiStopChat -> "apiStopChat"
     is ApiSetAppFilePaths -> "apiSetAppFilePaths"
     is ApiSetEncryptLocalFiles -> "apiSetEncryptLocalFiles"
