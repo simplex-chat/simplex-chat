@@ -647,7 +647,7 @@
 /* rcv group event chat item */
 "blocked %@" = "%@ заблокирован";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "заблокировано администратором";
 
 /* No comment provided by engineer. */
