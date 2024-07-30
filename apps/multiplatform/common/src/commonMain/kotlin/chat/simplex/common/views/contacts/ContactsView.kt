@@ -326,12 +326,6 @@ private fun ContactsList(
     val searchShowingSimplexLink = remember { mutableStateOf(false) }
     val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            lazyListState =
-                listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
-        }
-    }
     val showUnreadAndFavorites =
         remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
 
