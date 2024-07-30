@@ -186,7 +186,7 @@ private fun ContactsLayout(
 
     SectionView {
         ContactsList(
-            contactTypes = contactTypes,
+            baseContactTypes = contactTypes,
             contactActions = contactActions,
             contactListTitle = contactListTitle,
             close = close
@@ -312,10 +312,18 @@ private fun ToggleFilterButton() {
 
 private var lazyListState = 0 to 0
 
+private fun getContactTypes(baseContactTypes: List<ContactType>, searchLength: Int): List<ContactType> {
+    return if (baseContactTypes.contains(ContactType.REMOVED) || searchLength == 0) {
+        baseContactTypes
+    } else {
+        baseContactTypes + ContactType.REMOVED
+    }
+}
+
 @Composable
 private fun ContactsList(
     contactActions: @Composable () -> Unit,
-    contactTypes: List<ContactType>,
+    baseContactTypes: List<ContactType>,
     contactListTitle: String ? = null,
     close: () -> Unit
 ) {
@@ -328,6 +336,10 @@ private fun ContactsList(
 
     val showUnreadAndFavorites =
         remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
+
+    val contactTypes by remember(baseContactTypes, searchText.value.text.length) {
+        derivedStateOf { getContactTypes(baseContactTypes,  searchText.value.text.length) }
+    }
 
     val allChats by remember(chatModel.chats, contactTypes) {
         derivedStateOf { contactChats(chatModel.chats, contactTypes) }
