@@ -150,7 +150,10 @@ private fun ContactActionsSection(contactActions: @Composable () -> Unit, rh: Re
     contactActions()
     Spacer(Modifier.height(DEFAULT_PADDING))
 
-    val archived = remember { contactChats(chatModel.chats, listOf(ContactType.REMOVED)) }
+    val contactTypes = listOf(ContactType.REMOVED)
+    val archived by remember(chatModel.chats, contactTypes) {
+        derivedStateOf { contactChats(chatModel.chats, contactTypes) }
+    }
 
     if (archived.isNotEmpty()) {
         SectionView(padding = PaddingValues(bottom = DEFAULT_PADDING)) {
