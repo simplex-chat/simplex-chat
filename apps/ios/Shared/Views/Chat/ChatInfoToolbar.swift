@@ -71,25 +71,29 @@ struct SelectedItemsBottomToolbar: View {
     var chatItems: [ChatItem]
     @Binding var selectedChatItems: [Int64]?
     var chatInfo: ChatInfo
-    var deleteItems: () -> Void = {}
-    var moderateItems: () -> Void = {}
+    // Bool - delete for everyone is possible
+    var deleteItems: (Bool) -> Void
+    var moderateItems: () -> Void
     //var shareItems: () -> Void
-    @State var possibleToDelete: Bool = false
     @State var deleteButtonEnabled: Bool = false
+    @State var possibleToDeleteForEveryone: Bool = false
+
     @State var possibleToModerate: Bool = false
     @State var moderateButtonEnabled: Bool = false
+
+    @State var allButtonsDisabled = false
 
     var body: some View {
         HStack(alignment: .center) {
             Button {
-                deleteItems()
+                deleteItems(possibleToDeleteForEveryone)
             } label: {
                 Image(systemName: "trash")
                     .resizable()
                     .frame(width: 20, height: 20, alignment: .center)
-                    .foregroundColor(deleteButtonEnabled ? .red : theme.colors.secondary)
+                    .foregroundColor(!deleteButtonEnabled && allButtonsDisabled ? theme.colors.secondary: .red)
             }
-            .disabled(!deleteButtonEnabled)
+            .disabled(!deleteButtonEnabled || allButtonsDisabled)
 
             Spacer()
             Button {
@@ -100,9 +104,9 @@ struct SelectedItemsBottomToolbar: View {
                     .frame(width: 20, height: 20, alignment: .center)
                     .foregroundColor(moderateButtonEnabled ? .red : theme.colors.secondary)
             }
-            .disabled(!moderateButtonEnabled)
+            .disabled(!moderateButtonEnabled || allButtonsDisabled)
             .opacity(possibleToModerate ? 1 : 0)
-            .allowsHitTesting(possibleToModerate ? true : false)
+            .allowsHitTesting(possibleToModerate)
 
 
             Spacer()
@@ -114,43 +118,79 @@ struct SelectedItemsBottomToolbar: View {
                     .frame(width: 20, height: 20, alignment: .center)
                     .foregroundColor(theme.colors.primary)
             }
+            .disabled(allButtonsDisabled)
             .opacity(0)
             .allowsHitTesting(false)
         }
         .onAppear {
+            cleanUpNonExistent(chatItems, selectedChatItems)
+
+            allButtonsDisabled = !(1...20).contains(selectedChatItems?.count ?? 0)
+            deleteButtonEnabled = deleteButtonEnabled(chatItems, selectedChatItems)
             possibleToModerate = possibleToModerate(chatInfo)
             moderateButtonEnabled = moderateButtonEnabled(chatInfo, chatItems, selectedChatItems)
+            logger.debug("LALAL1 \(selectedChatItems?.count ?? -1) \(allButtonsDisabled) \(deleteButtonEnabled) \(possibleToModerate) \(moderateButtonEnabled)")
         }
         .onChange(of: chatItems) { items in
+            cleanUpNonExistent(items, selectedChatItems)
+
+            deleteButtonEnabled = deleteButtonEnabled(items, selectedChatItems)
             possibleToModerate = possibleToModerate(chatInfo)
-            moderateButtonEnabled = moderateButtonEnabled(chatInfo, items, selectedChatItems)
+            moderateButtonEnabled = possibleToModerate && !allButtonsDisabled ? moderateButtonEnabled(chatInfo, items, selectedChatItems) : false
+            logger.debug("LALAL2 \(selectedChatItems?.count ?? -1) \(allButtonsDisabled) \(deleteButtonEnabled) \(possibleToModerate) \(moderateButtonEnabled)")
         }
         .onChange(of: selectedChatItems) { selected in
-            moderateButtonEnabled = moderateButtonEnabled(chatInfo, chatItems, selected)
+            cleanUpNonExistent(chatItems, selected)
+
+            allButtonsDisabled = !(1...20).contains(selectedChatItems?.count ?? 0)
+            deleteButtonEnabled = deleteButtonEnabled(chatItems, selected)
+            moderateButtonEnabled = possibleToModerate && !allButtonsDisabled ? moderateButtonEnabled(chatInfo, chatItems, selected) : false
+            logger.debug("LALAL3 \(selectedChatItems?.count ?? -1) \(allButtonsDisabled) \(deleteButtonEnabled) \(possibleToModerate) \(moderateButtonEnabled)")
         }
         .padding([.leading, .trailing], 10)
         .frame(height: 54)
     }
 
+    func cleanUpNonExistent(_ chatItems: [ChatItem], _ selectedItems: [Int64]?) {
+        var selected = selectedItems ?? []
+        selected.removeAll(where: { selectedId in !chatItems.contains(where: { $0.id == selectedId }) })
+        if selectedChatItems != nil && selectedChatItems != selected {
+            selectedChatItems = selected
+        }
+    }
+
+    func deleteButtonEnabled(_ chatItems: [ChatItem], _ selectedItems: [Int64]?) -> Bool {
+        guard let selected = selectedItems, selected.count > 0 else {
+            return false
+        }
+        return chatItems.filter { item in selected.contains(item.id) }.allSatisfy({ ci in
+            if !ci.meta.deletable || ci.localNote {
+                possibleToDeleteForEveryone = false
+            }
+            return (ci.content.msgContent != nil && !ci.meta.isLive) || ci.meta.itemDeleted != nil || ci.isDeletedContent || ci.mergeCategory != nil || ci.showLocalDelete
+        })
+    }
+
     private func possibleToModerate(_ chatInfo: ChatInfo) -> Bool {
         return switch chatInfo {
         case let .group(groupInfo):
-            groupInfo.membership.memberRole >= .observer
+            groupInfo.membership.memberRole >= .admin
         default: false
         }
     }
 
     private func moderateButtonEnabled(_ chatInfo: ChatInfo, _ chatItems: [ChatItem], _ selectedItems: [Int64]?) -> Bool {
-        if possibleToModerate {
-            var selected = selectedItems ?? []
-            selected.removeAll(where: { selectedId in !chatItems.contains(where: { $0.id == selectedId }) })
-            if selectedChatItems != nil && selectedChatItems != selected {
-                selectedChatItems = selected
-            }
-            return selected.count > 0 && chatItems.filter { item in selected.contains(item.id) }.allSatisfy({ ci in ci.memberToModerate(chatInfo) != nil })
-        } else {
+        guard let selected = selectedItems, selected.count > 0 else {
             return false
         }
+        var onlyOwnItems = true
+        let canModerate = chatItems.filter { item in selected.contains(item.id) }.allSatisfy({ ci in
+            if ci.chatDir != .groupSnd {
+                onlyOwnItems = false
+            }
+            return ci.content.msgContent != nil && ci.memberToModerate(chatInfo) != nil
+        })
+        return canModerate && !onlyOwnItems
     }
 }
 

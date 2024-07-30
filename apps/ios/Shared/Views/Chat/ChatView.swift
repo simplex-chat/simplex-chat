@@ -44,6 +44,8 @@ struct ChatView: View {
     @State private var groupLink: String?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
     @State private var selectedChatItems: [Int64]? = nil
+    @State private var showDeleteSelectedMessages: Bool = false
+    @State private var allowToDeleteSelectedMessagesForAll: Bool = false
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -89,13 +91,41 @@ struct ChatView: View {
                 )
                 .disabled(!cInfo.sendMsgEnabled)
             } else {
-                SelectedItemsBottomToolbar(chatItems: chatModel.reversedChatItems, selectedChatItems: $selectedChatItems, chatInfo: chat.chatInfo)
+                SelectedItemsBottomToolbar(
+                    chatItems: chatModel.reversedChatItems,
+                    selectedChatItems: $selectedChatItems, 
+                    chatInfo: chat.chatInfo,
+                    deleteItems: { forAll in
+                        allowToDeleteSelectedMessagesForAll = forAll
+                        showDeleteSelectedMessages = true
+                    },
+                    moderateItems: {
+                        if case let .group(groupInfo) = chat.chatInfo {
+                            showModerateSelectedMessagesAlert(groupInfo)
+                        }
+                    }
+                )
             }
         }
         .navigationTitle(cInfo.chatViewName)
         .background(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
         .environmentObject(theme)
+        .confirmationDialog((selectedChatItems?.count ?? 0) == 1 ? "Delete message?" : "Delete messages", isPresented: $showDeleteSelectedMessages, titleVisibility: .visible) {
+            Button("Delete for me", role: .destructive) {
+                if let selected = selectedChatItems {
+                    deleteMessages(chat, selected, .cidmInternal)
+                }
+            }
+            if allowToDeleteSelectedMessagesForAll {
+                Button(broadcastDeleteButtonText(chat), role: .destructive) {
+                    if let selected = selectedChatItems {
+                        allowToDeleteSelectedMessagesForAll = false
+                        deleteMessages(chat, selected, .cidmBroadcast)
+                    }
+                }
+            }
+        }
         .onAppear {
             loadChat(chat: chat)
             initChatView()
@@ -570,6 +600,25 @@ struct ChatView: View {
         }
     }
 
+    private func showModerateSelectedMessagesAlert(_ groupInfo: GroupInfo) {
+        guard let count = selectedChatItems?.count, count > 0 else { return }
+
+        AlertManager.shared.showAlert(Alert(
+            title: Text(count == 1 ? "Delete member message?" : "Delete members messages?"),
+            message: Text(
+                groupInfo.fullGroupPreferences.fullDelete.on
+                ? (count == 1 ? "The message will be deleted for all members." : "The messages will be deleted for all members.")
+                : (count == 1 ? "The message will be marked as moderated for all members." : "The messages will be marked as moderated for all members.")
+            ),
+            primaryButton: .destructive(Text("Delete")) {
+                if let selected = selectedChatItems {
+                    deleteMessages(chat, selected, .cidmBroadcast)
+                }
+            },
+            secondaryButton: .cancel()
+        ))
+    }
+
     private func loadChatItems(_ cInfo: ChatInfo) {
         Task {
             if loadingItems || firstPage { return }
@@ -662,10 +711,9 @@ struct ChatView: View {
                     Color.clear
                         .contentShape(Rectangle())
                         .onTapGesture {
-                            var items = selectedChatItems?.map { $0 } ?? []
+                            let items = selectedChatItems?.map { $0 } ?? []
                             let checked = items.contains(chatItem.id)
-                            !checked ? items.append(chatItem.id) : items.removeAll { $0 == chatItem.id }
-                            selectedChatItems = items
+                            selectUnselectChatItem(select: !checked, chatItem)
                         }
                 }
             }
@@ -819,14 +867,14 @@ struct ChatView: View {
                         deleteMessage(.cidmInternal)
                     }
                     if let di = deletingItem, di.meta.deletable && !di.localNote {
-                        Button(broadcastDeleteButtonText, role: .destructive) {
+                        Button(broadcastDeleteButtonText(chat), role: .destructive) {
                             deleteMessage(.cidmBroadcast)
                         }
                     }
                 }
                 .confirmationDialog(deleteMessagesTitle, isPresented: $showDeleteMessages, titleVisibility: .visible) {
                     Button("Delete for me", role: .destructive) {
-                        deleteMessages()
+                        deleteMessages(chat, deletingItems)
                     }
                 }
                 .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
@@ -1138,7 +1186,7 @@ struct ChatView: View {
             Button {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     withAnimation {
-                        selectedChatItems = [ci.id]
+                        selectUnselectChatItem(select: true, ci)
                     }
                 }
             } label: {
@@ -1310,35 +1358,33 @@ struct ChatView: View {
             }
         }
 
-        private var broadcastDeleteButtonText: LocalizedStringKey {
-            chat.chatInfo.featureEnabled(.fullDelete) ? "Delete for everyone" : "Mark deleted for everyone"
-        }
-
         var deleteMessagesTitle: LocalizedStringKey {
             let n = deletingItems.count
             return n == 1 ? "Delete message?" : "Delete \(n) messages?"
         }
 
-        private func deleteMessages() {
-            let itemIds = deletingItems
-            if itemIds.count > 0 {
-                let chatInfo = chat.chatInfo
-                Task {
-                    do {
-                        let deletedItems = try await apiDeleteChatItems(
-                            type: chatInfo.chatType,
-                            id: chatInfo.apiId,
-                            itemIds: itemIds,
-                            mode: .cidmInternal
-                        )
-                        await MainActor.run {
-                            for di in deletedItems {
-                                m.removeChatItem(chatInfo, di.deletedChatItem.chatItem)
-                            }
-                        }
-                    } catch {
-                        logger.error("ChatView.deleteMessage error: \(error.localizedDescription)")
+        private func selectUnselectChatItem(select: Bool, _ ci: ChatItem) {
+            selectedChatItems = selectedChatItems ?? []
+            var itemsId: [Int64] = []
+            if !revealed,
+               let currIndex = m.getChatItemIndex(ci),
+               let ciCategory = ci.mergeCategory {
+                let (prevHidden, _) = m.getPrevShownChatItem(currIndex, ciCategory)
+                if let range = itemsRange(currIndex, prevHidden) {
+                    for i in range {
+                        itemsId.append(m.reversedChatItems[i].id)
                     }
+                } else {
+                    itemsId.append(ci.id)
+                }
+            } else {
+                itemsId.append(ci.id)
+            }
+            if select {
+                selectedChatItems?.append(contentsOf: itemsId)
+            } else {
+                itemsId.forEach { id in
+                    selectedChatItems?.removeAll(where: { $0 == id })
                 }
             }
         }
@@ -1398,6 +1444,43 @@ struct ChatView: View {
                     }
                     .padding(.leading, 20)
                     .offset(x: -5)
+            }
+        }
+    }
+}
+
+private func broadcastDeleteButtonText(_ chat: Chat) -> LocalizedStringKey {
+    chat.chatInfo.featureEnabled(.fullDelete) ? "Delete for everyone" : "Mark deleted for everyone"
+}
+
+private func deleteMessages(_ chat: Chat, _ deletingItems: [Int64], _ mode: CIDeleteMode = .cidmInternal) {
+    let itemsId = deletingItems
+    if itemsId.count > 0 {
+        let chatInfo = chat.chatInfo
+        Task {
+            do {
+                let deletedItems = if case .cidmBroadcast = mode,
+                    case .group = chat.chatInfo {
+                    try await apiDeleteMemberChatItems(
+                        groupId: chatInfo.apiId,
+                        itemsId: itemsId
+                    )
+                } else {
+                    try await apiDeleteChatItems(
+                        type: chatInfo.chatType,
+                        id: chatInfo.apiId,
+                        itemsId: itemsId,
+                        mode: mode
+                    )
+                }
+
+                await MainActor.run {
+                    for di in deletedItems {
+                        ChatModel.shared.removeChatItem(chatInfo, di.deletedChatItem.chatItem)
+                    }
+                }
+            } catch {
+                logger.error("ChatView.deleteMessage error: \(error.localizedDescription)")
             }
         }
     }
