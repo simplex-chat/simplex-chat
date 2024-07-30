@@ -288,24 +288,26 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: C
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.delete_contact_question),
     text = generalGetString(MR.strings.delete_contact_cannot_undo_warning),
-    belowTextContent = {
-      Row(
-        Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING, end = DEFAULT_PADDING),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-      ) {
-        Text(stringResource(MR.strings.keep_conversation))
-        DefaultSwitch(
-          checked = contactDeleteMode.value is ContactDeleteMode.Entity,
-          onCheckedChange = {
-            contactDeleteMode.value =
-              if (it) ContactDeleteMode.Entity() else ContactDeleteMode.Full()
-          },
-        )
-      }
-    },
     buttons = {
       Column {
+        // Keep conversation toggle
+        SectionItemView {
+          Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+          ) {
+            Text(stringResource(MR.strings.keep_conversation))
+            Spacer(Modifier.width(DEFAULT_PADDING))
+            DefaultSwitch(
+              checked = contactDeleteMode.value is ContactDeleteMode.Entity,
+              onCheckedChange = {
+                contactDeleteMode.value =
+                  if (it) ContactDeleteMode.Entity() else ContactDeleteMode.Full()
+              },
+            )
+          }
+        }
         // Delete without notification
         SectionItemView({
           AlertManager.shared.hideAlert()
