@@ -56,6 +56,7 @@ object ChatModel {
   val incompleteInitializedDbRemoved = mutableStateOf(false)
   private val _chats = mutableStateOf(SnapshotStateList<Chat>())
   val chats: State<List<Chat>> = _chats
+  private val chatsContext = ChatsContext()
   // map of connections network statuses, key is agent connection id
   val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
   val switchingUsersAndHosts = mutableStateOf(false)
@@ -194,10 +195,10 @@ object ChatModel {
   }
 
   suspend fun <T> withChats(action: suspend ChatsContext.() -> T): T = updatingChatsMutex.withLock {
-    ChatsContext.action()
+    chatsContext.action()
   }
 
-  object ChatsContext {
+  class ChatsContext {
     val chats = _chats
 
     fun addChat(chat: Chat) = chats.add(index = 0, chat)
