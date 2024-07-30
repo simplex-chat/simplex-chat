@@ -9,29 +9,36 @@
 import SwiftUI
 import SimpleXChat
 
-let dynamicSizes: [
-    DynamicTypeSize: (
-        rowHeight: CGFloat,
-        profileImageSize: CGFloat,
-        mediaSize: CGFloat,
-        chatInfoSize: CGFloat,
-        unreadCorner: CGFloat,
-        unreadPadding: CGFloat
-    )
-] = [
-    .xSmall: (68, 55, 33, 18, 9, 3),
-    .small: (72, 57, 34, 18, 9, 3),
-    .medium: (76, 60, 36, 18, 10, 4),
-    .large: (80, 63, 38, 20, 10, 4),
-    .xLarge: (88, 67, 41, 20, 10, 4),
-    .xxLarge: (94, 71, 44, 22, 11, 4),
-    .xxxLarge: (104, 75, 48, 24, 12, 5),
-    .accessibility1: (104, 75, 48, 24, 12, 5),
-    .accessibility2: (114, 75, 48, 24, 12, 5),
-    .accessibility3: (124, 75, 48, 24, 12, 5),
-    .accessibility4: (134, 75, 48, 24, 12, 5),
-    .accessibility5: (144, 75, 48, 24, 12, 5)
+typealias DynamicSizes = (
+    rowHeight: CGFloat,
+    profileImageSize: CGFloat,
+    mediaSize: CGFloat,
+    incognitoSize: CGFloat,
+    chatInfoSize: CGFloat,
+    unreadCorner: CGFloat,
+    unreadPadding: CGFloat
+)
+
+private let dynamicSizes: [DynamicTypeSize: DynamicSizes] = [
+    .xSmall: (68, 55, 33, 22, 18, 9, 3),
+    .small: (72, 57, 34, 22, 18, 9, 3),
+    .medium: (76, 60, 36, 22, 18, 10, 4),
+    .large: (80, 63, 38, 24, 20, 10, 4),
+    .xLarge: (88, 67, 41, 24, 20, 10, 4),
+    .xxLarge: (100, 71, 44, 27, 22, 11, 4),
+    .xxxLarge: (110, 75, 48, 30, 24, 12, 5),
+    .accessibility1: (110, 75, 48, 30, 24, 12, 5),
+    .accessibility2: (114, 75, 48, 30, 24, 12, 5),
+    .accessibility3: (124, 75, 48, 30, 24, 12, 5),
+    .accessibility4: (134, 75, 48, 30, 24, 12, 5),
+    .accessibility5: (144, 75, 48, 30, 24, 12, 5)
 ]
+
+private let defaultDynamicSizes: DynamicSizes = dynamicSizes[.large]!
+
+func dynamicSize(_ font: DynamicTypeSize) -> DynamicSizes {
+    dynamicSizes[font] ?? defaultDynamicSizes
+}
 
 struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel

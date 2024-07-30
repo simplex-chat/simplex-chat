@@ -29,7 +29,7 @@ import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 
 @Composable
@@ -58,6 +58,8 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI:
     }
   }
 
+  val scope = rememberCoroutineScope()
+
   when (chat.chatInfo) {
     is ChatInfo.Direct -> {
       val contactNetworkStatus = chatModel.contactNetworkStatus(chat.chatInfo.contact)
@@ -67,7 +69,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI:
             ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, disabled, linkMode, inProgress = false, progressByTimeout = false)
           }
         },
-        click = { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) },
+        click = { scope.launch { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
             ContactMenuItems(chat, chat.chatInfo.contact, chatModel, showMenu, showMarkRead)
@@ -87,7 +89,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI:
             ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress.value, progressByTimeout)
           }
         },
-        click = { if (!inProgress.value) groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel, inProgress) },
+        click = { if (!inProgress.value) scope.launch { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel, inProgress) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
             GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, inProgress, showMarkRead)
@@ -106,7 +108,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI:
             ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress = false, progressByTimeout = false)
           }
         },
-        click = { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) },
+        click = { scope.launch { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
             NoteFolderMenuItems(chat, showMenu, showMarkRead)
@@ -186,42 +188,42 @@ fun ErrorChatListItem() {
   }
 }
 
-fun directChatAction(rhId: Long?, contact: Contact, chatModel: ChatModel) {
+suspend fun directChatAction(rhId: Long?, contact: Contact, chatModel: ChatModel) {
   when {
     contact.activeConn == null && contact.profile.contactLink != null -> askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, rhId, contact, close = null, openChat = true)
-    else -> withBGApi { openChat(rhId, ChatInfo.Direct(contact), chatModel) }
+    else -> openChat(rhId, ChatInfo.Direct(contact), chatModel)
   }
 }
 
-fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, inProgress: MutableState<Boolean>? = null) {
+suspend fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, inProgress: MutableState<Boolean>? = null) {
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(rhId, groupInfo, chatModel, inProgress)
     GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert(rhId)
-    else -> withBGApi { openChat(rhId, ChatInfo.Group(groupInfo), chatModel) }
+    else -> openChat(rhId, ChatInfo.Group(groupInfo), chatModel)
   }
 }
 
-fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) {
-  withBGApi { openChat(rhId, ChatInfo.Local(noteFolder), chatModel) }
+suspend fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) {
+  openChat(rhId, ChatInfo.Local(noteFolder), chatModel)
 }
 
-suspend fun openDirectChat(rhId: Long?, contactId: Long, chatModel: ChatModel) {
+suspend fun openDirectChat(rhId: Long?, contactId: Long, chatModel: ChatModel) = coroutineScope {
   val chat = chatModel.controller.apiGetChat(rhId, ChatType.Direct, contactId)
-  if (chat != null) {
+  if (chat != null && isActive) {
     openLoadedChat(chat, chatModel)
   }
 }
 
-suspend fun openGroupChat(rhId: Long?, groupId: Long, chatModel: ChatModel) {
+suspend fun openGroupChat(rhId: Long?, groupId: Long, chatModel: ChatModel) = coroutineScope {
   val chat = chatModel.controller.apiGetChat(rhId, ChatType.Group, groupId)
-  if (chat != null) {
+  if (chat != null && isActive) {
     openLoadedChat(chat, chatModel)
   }
 }
 
-suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatModel) {
+suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatModel) = coroutineScope {
   val chat = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId)
-  if (chat != null) {
+  if (chat != null && isActive) {
     openLoadedChat(chat, chatModel)
   }
 }

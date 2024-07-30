@@ -35,8 +35,8 @@ struct MarkedDeletedItemView: View {
             var blockedByAdmin = 0
             var deleted = 0
             var moderatedBy: Set<String> = []
-            while i < m.reversedChatItems.count,
-                  let ci = .some(m.reversedChatItems[i]),
+            while i < ItemsModel.shared.reversedChatItems.count,
+                  let ci = .some(ItemsModel.shared.reversedChatItems[i]),
                   ci.mergeCategory == ciCategory,
                   let itemDeleted = ci.meta.itemDeleted {
                 switch itemDeleted {
