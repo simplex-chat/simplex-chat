@@ -389,7 +389,7 @@ startChatController :: Bool -> Bool -> CM' (Async ())
 startChatController mainApp enableSndFiles = do
   asks smpAgent >>= liftIO . resumeAgentClient
   unless mainApp $ chatWriteVar' subscriptionMode SMOnlyCreate
-  users <- fromRight [] <$> runExceptT (withStore' getUsers)
+  users <- fromRight [] <$> runExceptT (withFastStore' getUsers)
   restoreCalls
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)
@@ -406,7 +406,7 @@ startChatController mainApp enableSndFiles = do
           startXFTP xftpStartWorkers
           void $ forkIO $ startFilesToReceive users
           startCleanupManager
-          startExpireCIs users
+          void $ forkIO $ startExpireCIs users
         else when enableSndFiles $ startXFTP xftpStartSndWorkers
       pure a1
     startXFTP startWorkers = do
@@ -456,7 +456,7 @@ startReceiveUserFiles user = do
 
 restoreCalls :: CM' ()
 restoreCalls = do
-  savedCalls <- fromRight [] <$> runExceptT (withStore' getCalls)
+  savedCalls <- fromRight [] <$> runExceptT (withFastStore' getCalls)
   let callsMap = M.fromList $ map (\call@Call {contactId} -> (contactId, call)) savedCalls
   calls <- asks currentCalls
   atomically $ writeTVar calls callsMap
@@ -528,61 +528,66 @@ processChatCommand' vr = \case
     u <- asks currentUser
     (smp, smpServers) <- chooseServers SPSMP
     (xftp, xftpServers) <- chooseServers SPXFTP
-    users <- withStore' getUsers
+    users <- withFastStore' getUsers
     forM_ users $ \User {localDisplayName = n, activeUser, viewPwdHash} ->
       when (n == displayName) . throwChatError $
         if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
     auId <- withAgent (\a -> createUser a smp xftp)
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
-    user <- withStore $ \db -> createUserRecordAt db (AgentUserId auId) p True ts
-    when (null users) $ withStore (\db -> createContact db user simplexContactProfile) `catchChatError` \_ -> pure ()
-    withStore $ \db -> createNoteFolder db user
+    user <- withFastStore $ \db -> createUserRecordAt db (AgentUserId auId) p True ts
+    createPresetContactCards user `catchChatError` \_ -> pure ()
+    withFastStore $ \db -> createNoteFolder db user
     storeServers user smpServers
     storeServers user xftpServers
     atomically . writeTVar u $ Just user
     pure $ CRActiveUser user
     where
+      createPresetContactCards :: User -> CM ()
+      createPresetContactCards user =
+        withFastStore $ \db -> do
+          createContact db user simplexTeamContactProfile
+          createContact db user simplexStatusContactProfile
       chooseServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> CM (NonEmpty (ServerCfg p), [ServerCfg p])
       chooseServers protocol
         | sameServers =
             asks currentUser >>= readTVarIO >>= \case
               Nothing -> throwChatError CENoActiveUser
-              Just user -> chosenServers =<< withStore' (`getProtocolServers` user)
+              Just user -> chosenServers =<< withFastStore' (`getProtocolServers` user)
         | otherwise = chosenServers []
         where
           chosenServers servers = do
             cfg <- asks config
             pure (useServers cfg protocol servers, servers)
       storeServers user servers =
-        unless (null servers) . withStore $
+        unless (null servers) . withFastStore $
           \db -> overwriteProtocolServers db user servers
       coupleDaysAgo t = (`addUTCTime` t) . fromInteger . negate . (+ (2 * day)) <$> randomRIO (0, day)
       day = 86400
-  ListUsers -> CRUsersList <$> withStore' getUsersInfo
+  ListUsers -> CRUsersList <$> withFastStore' getUsersInfo
   APISetActiveUser userId' viewPwd_ -> do
     unlessM (lift chatStarted) $ throwChatError CEChatNotStarted
     user_ <- chatReadVar currentUser
     user' <- privateGetUser userId'
     validateUserPassword_ user_ user' viewPwd_
-    withStore' (`setActiveUser` userId')
+    withFastStore' (`setActiveUser` userId')
     let user'' = user' {activeUser = True}
     chatWriteVar currentUser $ Just user''
     pure $ CRActiveUser user''
   SetActiveUser uName viewPwd_ -> do
-    tryChatError (withStore (`getUserIdByName` uName)) >>= \case
+    tryChatError (withFastStore (`getUserIdByName` uName)) >>= \case
       Left _ -> throwChatError CEUserUnknown
       Right userId -> processChatCommand $ APISetActiveUser userId viewPwd_
-  SetAllContactReceipts onOff -> withUser $ \_ -> withStore' (`updateAllContactReceipts` onOff) >> ok_
+  SetAllContactReceipts onOff -> withUser $ \_ -> withFastStore' (`updateAllContactReceipts` onOff) >> ok_
   APISetUserContactReceipts userId' settings -> withUser $ \user -> do
     user' <- privateGetUser userId'
     validateUserPassword user user' Nothing
-    withStore' $ \db -> updateUserContactReceipts db user' settings
+    withFastStore' $ \db -> updateUserContactReceipts db user' settings
     ok user
   SetUserContactReceipts settings -> withUser $ \User {userId} -> processChatCommand $ APISetUserContactReceipts userId settings
   APISetUserGroupReceipts userId' settings -> withUser $ \user -> do
     user' <- privateGetUser userId'
     validateUserPassword user user' Nothing
-    withStore' $ \db -> updateUserGroupReceipts db user' settings
+    withFastStore' $ \db -> updateUserGroupReceipts db user' settings
     ok user
   SetUserGroupReceipts settings -> withUser $ \User {userId} -> processChatCommand $ APISetUserGroupReceipts userId settings
   APIHideUser userId' (UserPwd viewPwd) -> withUser $ \user -> do
@@ -591,7 +596,7 @@ processChatCommand' vr = \case
       Just _ -> throwChatError $ CEUserAlreadyHidden userId'
       _ -> do
         when (T.null viewPwd) $ throwChatError $ CEEmptyUserPassword userId'
-        users <- withStore' getUsers
+        users <- withFastStore' getUsers
         unless (length (filter (isNothing . viewPwdHash) users) > 1) $ throwChatError $ CECantHideLastUser userId'
         viewPwdHash' <- hashPassword
         setUserPrivacy user user' {viewPwdHash = viewPwdHash', showNtfs = False}
@@ -624,6 +629,7 @@ processChatCommand' vr = \case
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
       _ -> checkStoreNotChanged . lift $ startChatController mainApp enableSndFiles $> CRChatStarted
+  CheckChatRunning -> maybe CRChatStopped (const CRChatRunning) <$> chatReadVar agentAsync
   APIStopChat -> do
     ask >>= liftIO . stopChatController
     pure CRChatStopped
@@ -632,7 +638,7 @@ processChatCommand' vr = \case
     lift $ withAgent' foregroundAgent
     chatWriteVar chatActivated True
     when restoreChat $ do
-      users <- withStore' getUsers
+      users <- withFastStore' getUsers
       lift $ do
         void . forkIO $ subscribeUsers True users
         void . forkIO $ startFilesToReceive users
@@ -680,8 +686,8 @@ processChatCommand' vr = \case
     fileErrs <- lift $ importArchive cfg
     setStoreChanged
     pure $ CRArchiveImported fileErrs
-  APISaveAppSettings as -> withStore' (`saveAppSettings` as) >> ok_
-  APIGetAppSettings platformDefaults -> CRAppSettings <$> withStore' (`getAppSettings` platformDefaults)
+  APISaveAppSettings as -> withFastStore' (`saveAppSettings` as) >> ok_
+  APIGetAppSettings platformDefaults -> CRAppSettings <$> withFastStore' (`getAppSettings` platformDefaults)
   APIDeleteStorage -> withStoreChanged deleteStorage
   APIStorageEncryption cfg -> withStoreChanged $ sqlCipherExport cfg
   TestStorageEncryption key -> sqlCipherTestKey key >> ok_
@@ -700,31 +706,31 @@ processChatCommand' vr = \case
             . M.assocs
             <$> withConnection st (readTVarIO . DB.slow)
   APIGetChats {userId, pendingConnections, pagination, query} -> withUserId' userId $ \user -> do
-    (errs, previews) <- partitionEithers <$> withStore' (\db -> getChatPreviews db vr user pendingConnections pagination query)
+    (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db vr user pendingConnections pagination query)
     unless (null errs) $ toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
     pure $ CRApiChats user previews
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
     CTDirect -> do
-      directChat <- withStore (\db -> getDirectChat db vr user cId pagination search)
+      directChat <- withFastStore (\db -> getDirectChat db vr user cId pagination search)
       pure $ CRApiChat user (AChat SCTDirect directChat)
     CTGroup -> do
-      groupChat <- withStore (\db -> getGroupChat db vr user cId pagination search)
+      groupChat <- withFastStore (\db -> getGroupChat db vr user cId pagination search)
       pure $ CRApiChat user (AChat SCTGroup groupChat)
     CTLocal -> do
-      localChat <- withStore (\db -> getLocalChat db user cId pagination search)
+      localChat <- withFastStore (\db -> getLocalChat db user cId pagination search)
       pure $ CRApiChat user (AChat SCTLocal localChat)
     CTContactRequest -> pure $ chatCmdError (Just user) "not implemented"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIGetChatItems pagination search -> withUser $ \user -> do
-    chatItems <- withStore $ \db -> getAllChatItems db vr user pagination search
+    chatItems <- withFastStore $ \db -> getAllChatItems db vr user pagination search
     pure $ CRChatItems user Nothing chatItems
   APIGetChatItemInfo chatRef itemId -> withUser $ \user -> do
-    (aci@(AChatItem cType dir _ ci), versions) <- withStore $ \db ->
+    (aci@(AChatItem cType dir _ ci), versions) <- withFastStore $ \db ->
       (,) <$> getAChatItem db vr user chatRef itemId <*> liftIO (getChatItemVersions db itemId)
     let itemVersions = if null versions then maybeToList $ mkItemVersion ci else versions
     memberDeliveryStatuses <- case (cType, dir) of
-      (SCTGroup, SMDSnd) -> L.nonEmpty <$> withStore' (`getGroupSndStatuses` itemId)
+      (SCTGroup, SMDSnd) -> L.nonEmpty <$> withFastStore' (`getGroupSndStatuses` itemId)
       _ -> pure Nothing
     forwardedFromChatItem <- getForwardedFromItem user ci
     pure $ CRChatItemInfo user aci ChatItemInfo {itemVersions, memberDeliveryStatuses, forwardedFromChatItem}
@@ -732,9 +738,9 @@ processChatCommand' vr = \case
       getForwardedFromItem :: User -> ChatItem c d -> CM (Maybe AChatItem)
       getForwardedFromItem user ChatItem {meta = CIMeta {itemForwarded}} = case itemForwarded of
         Just (CIFFContact _ _ (Just ctId) (Just fwdItemId)) ->
-          Just <$> withStore (\db -> getAChatItem db vr user (ChatRef CTDirect ctId) fwdItemId)
+          Just <$> withFastStore (\db -> getAChatItem db vr user (ChatRef CTDirect ctId) fwdItemId)
         Just (CIFFGroup _ _ (Just gId) (Just fwdItemId)) ->
-          Just <$> withStore (\db -> getAChatItem db vr user (ChatRef CTGroup gId) fwdItemId)
+          Just <$> withFastStore (\db -> getAChatItem db vr user (ChatRef CTGroup gId) fwdItemId)
         _ -> pure Nothing
   APISendMessage (ChatRef cType chatId) live itemTTL cm -> withUser $ \user -> case cType of
     CTDirect ->
@@ -750,9 +756,9 @@ processChatCommand' vr = \case
     createNoteFolderContentItem user folderId cm Nothing
   APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> case cType of
     CTDirect -> withContactLock "updateChatItem" chatId $ do
-      ct@Contact {contactId} <- withStore $ \db -> getContact db vr user chatId
+      ct@Contact {contactId} <- withFastStore $ \db -> getContact db vr user chatId
       assertDirectAllowed user MDSnd ct XMsgUpdate_
-      cci <- withStore $ \db -> getDirectCIWithReactions db user ct itemId
+      cci <- withFastStore $ \db -> getDirectCIWithReactions db user ct itemId
       case cci of
         CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId, editable) of
@@ -761,7 +767,7 @@ processChatCommand' vr = \case
               if changed || fromMaybe False itemLive
                 then do
                   (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
-                  ci' <- withStore' $ \db -> do
+                  ci' <- withFastStore' $ \db -> do
                     currentTs <- liftIO getCurrentTime
                     when changed $
                       addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
@@ -773,12 +779,12 @@ processChatCommand' vr = \case
             _ -> throwChatError CEInvalidChatItemUpdate
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTGroup -> withGroupLock "updateChatItem" chatId $ do
-      Group gInfo@GroupInfo {groupId, membership} ms <- withStore $ \db -> getGroup db vr user chatId
+      Group gInfo@GroupInfo {groupId, membership} ms <- withFastStore $ \db -> getGroup db vr user chatId
       assertUserGroupRole gInfo GRAuthor
       if prohibitedSimplexLinks gInfo membership mc
         then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText GFSimplexLinks))
         else do
-          cci <- withStore $ \db -> getGroupCIWithReactions db user gInfo itemId
+          cci <- withFastStore $ \db -> getGroupCIWithReactions db user gInfo itemId
           case cci of
             CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
               case (ciContent, itemSharedMsgId, editable) of
@@ -787,7 +793,7 @@ processChatCommand' vr = \case
                   if changed || fromMaybe False itemLive
                     then do
                       (SndMessage {msgId}, _) <- sendGroupMessage user gInfo ms (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
-                      ci' <- withStore' $ \db -> do
+                      ci' <- withFastStore' $ \db -> do
                         currentTs <- liftIO getCurrentTime
                         when changed $
                           addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
@@ -799,11 +805,11 @@ processChatCommand' vr = \case
                 _ -> throwChatError CEInvalidChatItemUpdate
             CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
     CTLocal -> do
-      (nf@NoteFolder {noteFolderId}, cci) <- withStore $ \db -> (,) <$> getNoteFolder db user chatId <*> getLocalChatItem db user chatId itemId
+      (nf@NoteFolder {noteFolderId}, cci) <- withFastStore $ \db -> (,) <$> getNoteFolder db user chatId <*> getLocalChatItem db user chatId itemId
       case cci of
         CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent oldMC}
           | mc == oldMC -> pure $ CRChatItemNotChanged user (AChatItem SCTLocal SMDSnd (LocalChat nf) ci)
-          | otherwise -> withStore' $ \db -> do
+          | otherwise -> withFastStore' $ \db -> do
               currentTs <- getCurrentTime
               addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
               ci' <- updateLocalChatItem' db user noteFolderId ci (CISndMsgContent mc) True
@@ -904,17 +910,17 @@ processChatCommand' vr = \case
   APIChatItemReaction (ChatRef cType chatId) itemId add reaction -> withUser $ \user -> case cType of
     CTDirect ->
       withContactLock "chatItemReaction" chatId $
-        withStore (\db -> (,) <$> getContact db vr user chatId <*> getDirectChatItem db user chatId itemId) >>= \case
+        withFastStore (\db -> (,) <$> getContact db vr user chatId <*> getDirectChatItem db user chatId itemId) >>= \case
           (ct, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
             unless (featureAllowed SCFReactions forUser ct) $
               throwChatError (CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions))
             unless (ciReactionAllowed ci) $
               throwChatError (CECommandError "reaction not allowed - chat item has no content")
-            rs <- withStore' $ \db -> getDirectReactions db ct itemSharedMId True
+            rs <- withFastStore' $ \db -> getDirectReactions db ct itemSharedMId True
             checkReactionAllowed rs
             (SndMessage {msgId}, _) <- sendDirectContactMessage user ct $ XMsgReact itemSharedMId Nothing reaction add
             createdAt <- liftIO getCurrentTime
-            reactions <- withStore' $ \db -> do
+            reactions <- withFastStore' $ \db -> do
               setDirectReaction db ct itemSharedMId True reaction add msgId createdAt
               liftIO $ getDirectCIReactions db ct itemSharedMId
             let ci' = CChatItem md ci {reactions}
@@ -923,18 +929,18 @@ processChatCommand' vr = \case
           _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
     CTGroup ->
       withGroupLock "chatItemReaction" chatId $
-        withStore (\db -> (,) <$> getGroup db vr user chatId <*> getGroupChatItem db user chatId itemId) >>= \case
+        withFastStore (\db -> (,) <$> getGroup db vr user chatId <*> getGroupChatItem db user chatId itemId) >>= \case
           (Group g@GroupInfo {membership} ms, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
             unless (groupFeatureAllowed SGFReactions g) $
               throwChatError (CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions))
             unless (ciReactionAllowed ci) $
               throwChatError (CECommandError "reaction not allowed - chat item has no content")
             let GroupMember {memberId = itemMemberId} = chatItemMember g ci
-            rs <- withStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
+            rs <- withFastStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
             checkReactionAllowed rs
             (SndMessage {msgId}, _) <- sendGroupMessage user g ms (XMsgReact itemSharedMId (Just itemMemberId) reaction add)
             createdAt <- liftIO getCurrentTime
-            reactions <- withStore' $ \db -> do
+            reactions <- withFastStore' $ \db -> do
               setGroupReaction db g membership itemMemberId itemSharedMId True reaction add msgId createdAt
               liftIO $ getGroupCIReactions db g itemMemberId itemSharedMId
             let ci' = CChatItem md ci {reactions}
@@ -968,7 +974,7 @@ processChatCommand' vr = \case
       prepareForward :: User -> CM (ComposedMessage, Maybe CIForwardedFrom)
       prepareForward user = case fromCType of
         CTDirect -> withContactLock "forwardChatItem, from contact" fromChatId $ do
-          (ct, CChatItem _ ci) <- withStore $ \db -> do
+          (ct, CChatItem _ ci) <- withFastStore $ \db -> do
             ct <- getContact db vr user fromChatId
             cci <- getDirectChatItem db user fromChatId itemId
             pure (ct, cci)
@@ -982,7 +988,7 @@ processChatCommand' vr = \case
               | localAlias /= "" = localAlias
               | otherwise = displayName
         CTGroup -> withGroupLock "forwardChatItem, from group" fromChatId $ do
-          (gInfo, CChatItem _ ci) <- withStore $ \db -> do
+          (gInfo, CChatItem _ ci) <- withFastStore $ \db -> do
             gInfo <- getGroupInfo db vr user fromChatId
             cci <- getGroupChatItem db user fromChatId itemId
             pure (gInfo, cci)
@@ -994,7 +1000,7 @@ processChatCommand' vr = \case
             forwardName :: GroupInfo -> ContactName
             forwardName GroupInfo {groupProfile = GroupProfile {displayName}} = displayName
         CTLocal -> do
-          (CChatItem _ ci) <- withStore $ \db -> getLocalChatItem db user fromChatId itemId
+          (CChatItem _ ci) <- withFastStore $ \db -> getLocalChatItem db user fromChatId itemId
           (mc, _) <- forwardMC ci
           file <- forwardCryptoFile ci
           let ciff = forwardCIFF ci Nothing
@@ -1055,56 +1061,56 @@ processChatCommand' vr = \case
                 when (B.length ch /= chSize') $ throwError $ CF.FTCEFileIOError "encrypting file: unexpected EOF"
                 liftIO . CF.hPut w $ LB.fromStrict ch
                 when (size' > 0) $ copyChunks r w size'
-  APIUserRead userId -> withUserId userId $ \user -> withStore' (`setUserChatsRead` user) >> ok user
+  APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand $ APIUserRead userId
   APIChatRead (ChatRef cType chatId) fromToIds -> withUser $ \_ -> case cType of
     CTDirect -> do
-      user <- withStore $ \db -> getUserByContactId db chatId
-      timedItems <- withStore' $ \db -> getDirectUnreadTimedItems db user chatId fromToIds
+      user <- withFastStore $ \db -> getUserByContactId db chatId
+      timedItems <- withFastStore' $ \db -> getDirectUnreadTimedItems db user chatId fromToIds
       ts <- liftIO getCurrentTime
       forM_ timedItems $ \(itemId, ttl) -> do
         let deleteAt = addUTCTime (realToFrac ttl) ts
-        withStore' $ \db -> setDirectChatItemDeleteAt db user chatId itemId deleteAt
+        withFastStore' $ \db -> setDirectChatItemDeleteAt db user chatId itemId deleteAt
         startProximateTimedItemThread user (ChatRef CTDirect chatId, itemId) deleteAt
-      withStore' $ \db -> updateDirectChatItemsRead db user chatId fromToIds
+      withFastStore' $ \db -> updateDirectChatItemsRead db user chatId fromToIds
       ok user
     CTGroup -> do
-      user@User {userId} <- withStore $ \db -> getUserByGroupId db chatId
-      timedItems <- withStore' $ \db -> getGroupUnreadTimedItems db user chatId fromToIds
+      user@User {userId} <- withFastStore $ \db -> getUserByGroupId db chatId
+      timedItems <- withFastStore' $ \db -> getGroupUnreadTimedItems db user chatId fromToIds
       ts <- liftIO getCurrentTime
       forM_ timedItems $ \(itemId, ttl) -> do
         let deleteAt = addUTCTime (realToFrac ttl) ts
-        withStore' $ \db -> setGroupChatItemDeleteAt db user chatId itemId deleteAt
+        withFastStore' $ \db -> setGroupChatItemDeleteAt db user chatId itemId deleteAt
         startProximateTimedItemThread user (ChatRef CTGroup chatId, itemId) deleteAt
-      withStore' $ \db -> updateGroupChatItemsRead db userId chatId fromToIds
+      withFastStore' $ \db -> updateGroupChatItemsRead db userId chatId fromToIds
       ok user
     CTLocal -> do
-      user <- withStore $ \db -> getUserByNoteFolderId db chatId
-      withStore' $ \db -> updateLocalChatItemsRead db user chatId fromToIds
+      user <- withFastStore $ \db -> getUserByNoteFolderId db chatId
+      withFastStore' $ \db -> updateLocalChatItemsRead db user chatId fromToIds
       ok user
     CTContactRequest -> pure $ chatCmdError Nothing "not supported"
     CTContactConnection -> pure $ chatCmdError Nothing "not supported"
   APIChatUnread (ChatRef cType chatId) unreadChat -> withUser $ \user -> case cType of
     CTDirect -> do
-      withStore $ \db -> do
+      withFastStore $ \db -> do
         ct <- getContact db vr user chatId
         liftIO $ updateContactUnreadChat db user ct unreadChat
       ok user
     CTGroup -> do
-      withStore $ \db -> do
+      withFastStore $ \db -> do
         Group {groupInfo} <- getGroup db vr user chatId
         liftIO $ updateGroupUnreadChat db user groupInfo unreadChat
       ok user
     CTLocal -> do
-      withStore $ \db -> do
+      withFastStore $ \db -> do
         nf <- getNoteFolder db user chatId
         liftIO $ updateNoteFolderUnreadChat db user nf unreadChat
       ok user
     _ -> pure $ chatCmdError (Just user) "not supported"
   APIDeleteChat cRef@(ChatRef cType chatId) cdm -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
-      ct <- withStore $ \db -> getContact db vr user chatId
-      filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
+      ct <- withFastStore $ \db -> getContact db vr user chatId
+      filesInfo <- withFastStore' $ \db -> getContactFileInfo db user ct
       withContactLock "deleteChat direct" chatId . procCmd $
         case cdm of
           CDMFull notify -> do
@@ -1113,33 +1119,33 @@ processChatCommand' vr = \case
             sendDelDeleteConns ct notify
             -- functions below are called in separate transactions to prevent crashes on android
             -- (possibly, race condition on integrity check?)
-            withStore' $ \db -> do
+            withFastStore' $ \db -> do
               deleteContactConnections db user ct
               deleteContactFiles db user ct
-            withStore $ \db -> deleteContact db user ct
+            withFastStore $ \db -> deleteContact db user ct
             pure $ CRContactDeleted user ct
           CDMEntity notify -> do
             cancelFilesInProgress user filesInfo
             sendDelDeleteConns ct notify
-            ct' <- withStore $ \db -> do
+            ct' <- withFastStore $ \db -> do
               liftIO $ deleteContactConnections db user ct
               liftIO $ void $ updateContactStatus db user ct CSDeletedByUser
               getContact db vr user chatId
             pure $ CRContactDeleted user ct'
           CDMMessages -> do
             void $ processChatCommand $ APIClearChat cRef
-            withStore' $ \db -> setContactChatDeleted db user ct True
+            withFastStore' $ \db -> setContactChatDeleted db user ct True
             pure $ CRContactDeleted user ct {chatDeleted = True}
       where
         sendDelDeleteConns ct notify = do
           let doSendDel = contactReady ct && contactActive ct && notify
           when doSendDel $ void (sendDirectContactMessage user ct XDirectDel) `catchChatError` const (pure ())
-          contactConnIds <- map aConnId <$> withStore' (\db -> getContactConnections db vr userId ct)
+          contactConnIds <- map aConnId <$> withFastStore' (\db -> getContactConnections db vr userId ct)
           deleteAgentConnectionsAsync' user contactConnIds doSendDel
     CTContactConnection -> withConnectionLock "deleteChat contactConnection" chatId . procCmd $ do
-      conn@PendingContactConnection {pccAgentConnId = AgentConnId acId} <- withStore $ \db -> getPendingContactConnection db userId chatId
+      conn@PendingContactConnection {pccAgentConnId = AgentConnId acId} <- withFastStore $ \db -> getPendingContactConnection db userId chatId
       deleteAgentConnectionAsync user acId
-      withStore' $ \db -> deletePendingContactConnection db userId chatId
+      withFastStore' $ \db -> deletePendingContactConnection db userId chatId
       pure $ CRContactConnectionDeleted user conn
     CTGroup -> do
       Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db vr user chatId
@@ -1185,34 +1191,34 @@ processChatCommand' vr = \case
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
-      ct <- withStore $ \db -> getContact db vr user chatId
-      filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
+      ct <- withFastStore $ \db -> getContact db vr user chatId
+      filesInfo <- withFastStore' $ \db -> getContactFileInfo db user ct
       cancelFilesInProgress user filesInfo
       deleteFilesLocally filesInfo
-      withStore' $ \db -> deleteContactCIs db user ct
+      withFastStore' $ \db -> deleteContactCIs db user ct
       pure $ CRChatCleared user (AChatInfo SCTDirect $ DirectChat ct)
     CTGroup -> do
-      gInfo <- withStore $ \db -> getGroupInfo db vr user chatId
-      filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
+      gInfo <- withFastStore $ \db -> getGroupInfo db vr user chatId
+      filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
       cancelFilesInProgress user filesInfo
       deleteFilesLocally filesInfo
-      withStore' $ \db -> deleteGroupChatItemsMessages db user gInfo
-      membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db vr user gInfo
-      forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
+      withFastStore' $ \db -> deleteGroupChatItemsMessages db user gInfo
+      membersToDelete <- withFastStore' $ \db -> getGroupMembersForExpiration db vr user gInfo
+      forM_ membersToDelete $ \m -> withFastStore' $ \db -> deleteGroupMember db user m
       pure $ CRChatCleared user (AChatInfo SCTGroup $ GroupChat gInfo)
     CTLocal -> do
-      nf <- withStore $ \db -> getNoteFolder db user chatId
-      filesInfo <- withStore' $ \db -> getNoteFolderFileInfo db user nf
+      nf <- withFastStore $ \db -> getNoteFolder db user chatId
+      filesInfo <- withFastStore' $ \db -> getNoteFolderFileInfo db user nf
       deleteFilesLocally filesInfo
-      withStore' $ \db -> deleteNoteFolderFiles db userId nf
-      withStore' $ \db -> deleteNoteFolderCIs db user nf
+      withFastStore' $ \db -> deleteNoteFolderFiles db userId nf
+      withFastStore' $ \db -> deleteNoteFolderCIs db user nf
       pure $ CRChatCleared user (AChatInfo SCTLocal $ LocalChat nf)
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIAcceptContact incognito connReqId -> withUser $ \_ -> do
-    (user@User {userId}, cReq@UserContactRequest {userContactLinkId}) <- withStore $ \db -> getContactRequest' db connReqId
+    (user@User {userId}, cReq@UserContactRequest {userContactLinkId}) <- withFastStore $ \db -> getContactRequest' db connReqId
     withUserContactLock "acceptContact" userContactLinkId $ do
-      ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
+      ucl <- withFastStore $ \db -> getUserContactLinkById db userId userContactLinkId
       let contactUsed = (\(_, groupId_, _) -> isNothing groupId_) ucl
       -- [incognito] generate profile to send, create connection with incognito profile
       incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
@@ -1220,7 +1226,7 @@ processChatCommand' vr = \case
       pure $ CRAcceptingContactRequest user ct
   APIRejectContact connReqId -> withUser $ \user -> do
     cReq@UserContactRequest {userContactLinkId, agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
-      withStore $ \db ->
+      withFastStore $ \db ->
         getContactRequest db user connReqId
           `storeFinally` liftIO (deleteContactRequest db user connReqId)
     withUserContactLock "rejectContact" userContactLinkId $ do
@@ -1228,7 +1234,7 @@ processChatCommand' vr = \case
       pure $ CRContactRequestRejected user cReq
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
-    ct <- withStore $ \db -> getContact db vr user contactId
+    ct <- withFastStore $ \db -> getContact db vr user contactId
     assertDirectAllowed user MDSnd ct XCallInv_
     if featureAllowed SCFCalls forUser ct
       then do
@@ -1248,14 +1254,14 @@ processChatCommand' vr = \case
           ok user
       else pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (chatFeatureNameText CFCalls))
   SendCallInvitation cName callType -> withUser $ \user -> do
-    contactId <- withStore $ \db -> getContactIdByName db user cName
+    contactId <- withFastStore $ \db -> getContactIdByName db user cName
     processChatCommand $ APISendCallInvitation contactId callType
   APIRejectCall contactId ->
     -- party accepting call
     withCurrentCall contactId $ \user ct Call {chatItemId, callState} -> case callState of
       CallInvitationReceived {} -> do
         let aciContent = ACIContent SMDRcv $ CIRcvCall CISCallRejected 0
-        withStore' $ \db -> updateDirectChatItemsRead db user contactId $ Just (chatItemId, chatItemId)
+        withFastStore' $ \db -> updateDirectChatItemsRead db user contactId $ Just (chatItemId, chatItemId)
         timed_ <- contactCITimed ct
         updateDirectChatItemView user ct chatItemId aciContent False False timed_ Nothing
         forM_ (timed_ >>= timedDeleteAt') $
@@ -1271,7 +1277,7 @@ processChatCommand' vr = \case
             callState' = CallOfferSent {localCallType = callType, peerCallType, localCallSession = rtcSession, sharedKey}
             aciContent = ACIContent SMDRcv $ CIRcvCall CISCallAccepted 0
         (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XCallOffer callId offer)
-        withStore' $ \db -> updateDirectChatItemsRead db user contactId $ Just (chatItemId, chatItemId)
+        withFastStore' $ \db -> updateDirectChatItemsRead db user contactId $ Just (chatItemId, chatItemId)
         updateDirectChatItemView user ct chatItemId aciContent False False Nothing $ Just msgId
         pure $ Just call {callState = callState'}
       _ -> throwChatError . CECallState $ callStateTag callState
@@ -1305,7 +1311,7 @@ processChatCommand' vr = \case
       (SndMessage {msgId}, _) <- sendDirectContactMessage user ct (XCallEnd callId)
       updateCallItemStatus user ct call WCSDisconnected $ Just msgId
       pure Nothing
-  APIGetCallInvitations -> withUser $ \_ -> lift $ do
+  APIGetCallInvitations -> withUser' $ \_ -> lift $ do
     calls <- asks currentCalls >>= readTVarIO
     let invs = mapMaybe callInvitation $ M.elems calls
     rcvCallInvitations <- rights <$> mapM rcvCallInvitation invs
@@ -1314,7 +1320,7 @@ processChatCommand' vr = \case
       callInvitation Call {contactId, callState, callTs} = case callState of
         CallInvitationReceived {peerCallType, sharedKey} -> Just (contactId, callTs, peerCallType, sharedKey)
         _ -> Nothing
-      rcvCallInvitation (contactId, callTs, peerCallType, sharedKey) = runExceptT . withStore $ \db -> do
+      rcvCallInvitation (contactId, callTs, peerCallType, sharedKey) = runExceptT . withFastStore $ \db -> do
         user <- getUserByContactId db contactId
         contact <- getContact db vr user contactId
         pure RcvCallInvitation {user, contact, callType = peerCallType, sharedKey, callTs}
@@ -1325,20 +1331,20 @@ processChatCommand' vr = \case
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
   APIUpdateProfile userId profile -> withUserId userId (`updateProfile` profile)
   APISetContactPrefs contactId prefs' -> withUser $ \user -> do
-    ct <- withStore $ \db -> getContact db vr user contactId
+    ct <- withFastStore $ \db -> getContact db vr user contactId
     updateContactPrefs user ct prefs'
   APISetContactAlias contactId localAlias -> withUser $ \user@User {userId} -> do
-    ct' <- withStore $ \db -> do
+    ct' <- withFastStore $ \db -> do
       ct <- getContact db vr user contactId
       liftIO $ updateContactAlias db userId ct localAlias
     pure $ CRContactAliasUpdated user ct'
   APISetConnectionAlias connId localAlias -> withUser $ \user@User {userId} -> do
-    conn' <- withStore $ \db -> do
+    conn' <- withFastStore $ \db -> do
       conn <- getPendingContactConnection db userId connId
       liftIO $ updateContactConnectionAlias db userId conn localAlias
     pure $ CRConnectionAliasUpdated user conn'
   APISetUserUIThemes uId uiThemes -> withUser $ \user@User {userId} -> do
-    user'@User {userId = uId'} <- withStore $ \db -> do
+    user'@User {userId = uId'} <- withFastStore $ \db -> do
       user' <- getUser db uId
       liftIO $ setUserUIThemes db user uiThemes
       pure user'
@@ -1346,18 +1352,18 @@ processChatCommand' vr = \case
     ok user'
   APISetChatUIThemes (ChatRef cType chatId) uiThemes -> withUser $ \user -> case cType of
     CTDirect -> do
-      withStore $ \db -> do
+      withFastStore $ \db -> do
         ct <- getContact db vr user chatId
         liftIO $ setContactUIThemes db user ct uiThemes
       ok user
     CTGroup -> do
-      withStore $ \db -> do
+      withFastStore $ \db -> do
         g <- getGroupInfo db vr user chatId
         liftIO $ setGroupUIThemes db user g uiThemes
       ok user
     _ -> pure $ chatCmdError (Just user) "not supported"
   APIParseMarkdown text -> pure . CRApiParsedMarkdown $ parseMaybeMarkdownList text
-  APIGetNtfToken -> withUser $ \_ -> crNtfToken <$> withAgent getNtfToken
+  APIGetNtfToken -> withUser' $ \_ -> crNtfToken <$> withAgent getNtfToken
   APIRegisterToken token mode -> withUser $ \_ ->
     CRNtfTokenStatus <$> withAgent (\a -> registerNtfToken a token mode)
   APIVerifyToken token nonce code -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a token nonce code) >> ok_
@@ -1373,13 +1379,13 @@ processChatCommand' vr = \case
     pure CRNtfMessages {user_, connEntity_, msgTs = msgTs', ntfMessage_ = ntfMsgInfo <$> msg}
   APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
     cfg@ChatConfig {defaultServers} <- asks config
-    servers <- withStore' (`getProtocolServers` user)
+    servers <- withFastStore' (`getProtocolServers` user)
     pure $ CRUserProtoServers user $ AUPS $ UserProtoServers p (useServers cfg p servers) (cfgServers p defaultServers)
   GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
     processChatCommand $ APIGetUserProtoServers userId aProtocol
   APISetUserProtoServers userId (APSC p (ProtoServersConfig servers))
     | null servers || any (\ServerCfg {enabled} -> enabled) servers -> withUserId userId $ \user -> withServerProtocol p $ do
-        withStore $ \db -> overwriteProtocolServers db user servers
+        withFastStore $ \db -> overwriteProtocolServers db user servers
         cfg <- asks config
         lift $ withAgent' $ \a -> setProtocolServers a (aUserId user) $ useServers cfg p servers
         ok user
@@ -1395,21 +1401,21 @@ processChatCommand' vr = \case
       withChatLock "setChatItemTTL" $ do
         case newTTL_ of
           Nothing -> do
-            withStore' $ \db -> setChatItemTTL db user newTTL_
+            withFastStore' $ \db -> setChatItemTTL db user newTTL_
             lift $ setExpireCIFlag user False
           Just newTTL -> do
-            oldTTL <- withStore' (`getChatItemTTL` user)
+            oldTTL <- withFastStore' (`getChatItemTTL` user)
             when (maybe True (newTTL <) oldTTL) $ do
               lift $ setExpireCIFlag user False
               expireChatItems user newTTL True
-            withStore' $ \db -> setChatItemTTL db user newTTL_
+            withFastStore' $ \db -> setChatItemTTL db user newTTL_
             lift $ startExpireCIThread user
             lift . whenM chatStarted $ setExpireCIFlag user True
         ok user
   SetChatItemTTL newTTL_ -> withUser' $ \User {userId} -> do
     processChatCommand $ APISetChatItemTTL userId newTTL_
   APIGetChatItemTTL userId -> withUserId' userId $ \user -> do
-    ttl <- withStore' (`getChatItemTTL` user)
+    ttl <- withFastStore' (`getChatItemTTL` user)
     pure $ CRChatItemTTL user ttl
   GetChatItemTTL -> withUser' $ \User {userId} -> do
     processChatCommand $ APIGetChatItemTTL userId
@@ -1427,7 +1433,7 @@ processChatCommand' vr = \case
     ok_
   APISetChatSettings (ChatRef cType chatId) chatSettings -> withUser $ \user -> case cType of
     CTDirect -> do
-      ct <- withStore $ \db -> do
+      ct <- withFastStore $ \db -> do
         ct <- getContact db vr user chatId
         liftIO $ updateContactSettings db user chatId chatSettings
         pure ct
@@ -1435,7 +1441,7 @@ processChatCommand' vr = \case
         withAgent $ \a -> toggleConnectionNtfs a connId (chatHasNtfs chatSettings)
       ok user
     CTGroup -> do
-      ms <- withStore $ \db -> do
+      ms <- withFastStore $ \db -> do
         Group _ ms <- getGroup db vr user chatId
         liftIO $ updateGroupSettings db user chatId chatSettings
         pure ms
@@ -1444,7 +1450,7 @@ processChatCommand' vr = \case
       ok user
     _ -> pure $ chatCmdError (Just user) "not supported"
   APISetMemberSettings gId gMemberId settings -> withUser $ \user -> do
-    m <- withStore $ \db -> do
+    m <- withFastStore $ \db -> do
       liftIO $ updateGroupMemberSettings db user gId gMemberId settings
       getGroupMember db vr user gId gMemberId
     let ntfOn = showMessages $ memberSettings m
@@ -1452,60 +1458,60 @@ processChatCommand' vr = \case
     ok user
   APIContactInfo contactId -> withUser $ \user@User {userId} -> do
     -- [incognito] print user's incognito profile for this contact
-    ct@Contact {activeConn} <- withStore $ \db -> getContact db vr user contactId
+    ct@Contact {activeConn} <- withFastStore $ \db -> getContact db vr user contactId
     incognitoProfile <- case activeConn of
       Nothing -> pure Nothing
       Just Connection {customUserProfileId} ->
-        forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
+        forM customUserProfileId $ \profileId -> withFastStore (\db -> getProfileById db userId profileId)
     connectionStats <- mapM (withAgent . flip getConnectionServers) (contactConnId ct)
     pure $ CRContactInfo user ct connectionStats (fmap fromLocalProfile incognitoProfile)
   APIContactQueueInfo contactId -> withUser $ \user -> do
-    ct@Contact {activeConn} <- withStore $ \db -> getContact db vr user contactId
+    ct@Contact {activeConn} <- withFastStore $ \db -> getContact db vr user contactId
     case activeConn of
       Just conn -> getConnQueueInfo user conn
       Nothing -> throwChatError $ CEContactNotActive ct
   APIGroupInfo gId -> withUser $ \user -> do
-    (g, s) <- withStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> liftIO (getGroupSummary db user gId)
+    (g, s) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> liftIO (getGroupSummary db user gId)
     pure $ CRGroupInfo user g s
   APIGroupMemberInfo gId gMemberId -> withUser $ \user -> do
-    (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
+    (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
     connectionStats <- mapM (withAgent . flip getConnectionServers) (memberConnId m)
     pure $ CRGroupMemberInfo user g m connectionStats
   APIGroupMemberQueueInfo gId gMemberId -> withUser $ \user -> do
-    GroupMember {activeConn} <- withStore $ \db -> getGroupMember db vr user gId gMemberId
+    GroupMember {activeConn} <- withFastStore $ \db -> getGroupMember db vr user gId gMemberId
     case activeConn of
       Just conn -> getConnQueueInfo user conn
       Nothing -> throwChatError CEGroupMemberNotActive
   APISwitchContact contactId -> withUser $ \user -> do
-    ct <- withStore $ \db -> getContact db vr user contactId
+    ct <- withFastStore $ \db -> getContact db vr user contactId
     case contactConnId ct of
       Just connId -> do
         connectionStats <- withAgent $ \a -> switchConnectionAsync a "" connId
         pure $ CRContactSwitchStarted user ct connectionStats
       Nothing -> throwChatError $ CEContactNotActive ct
   APISwitchGroupMember gId gMemberId -> withUser $ \user -> do
-    (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
+    (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
     case memberConnId m of
       Just connId -> do
         connectionStats <- withAgent (\a -> switchConnectionAsync a "" connId)
         pure $ CRGroupMemberSwitchStarted user g m connectionStats
       _ -> throwChatError CEGroupMemberNotActive
   APIAbortSwitchContact contactId -> withUser $ \user -> do
-    ct <- withStore $ \db -> getContact db vr user contactId
+    ct <- withFastStore $ \db -> getContact db vr user contactId
     case contactConnId ct of
       Just connId -> do
         connectionStats <- withAgent $ \a -> abortConnectionSwitch a connId
         pure $ CRContactSwitchAborted user ct connectionStats
       Nothing -> throwChatError $ CEContactNotActive ct
   APIAbortSwitchGroupMember gId gMemberId -> withUser $ \user -> do
-    (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
+    (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
     case memberConnId m of
       Just connId -> do
         connectionStats <- withAgent $ \a -> abortConnectionSwitch a connId
         pure $ CRGroupMemberSwitchAborted user g m connectionStats
       _ -> throwChatError CEGroupMemberNotActive
   APISyncContactRatchet contactId force -> withUser $ \user -> withContactLock "syncContactRatchet" contactId $ do
-    ct <- withStore $ \db -> getContact db vr user contactId
+    ct <- withFastStore $ \db -> getContact db vr user contactId
     case contactConn ct of
       Just conn@Connection {pqSupport} -> do
         cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a (aConnId conn) pqSupport force
@@ -1513,7 +1519,7 @@ processChatCommand' vr = \case
         pure $ CRContactRatchetSyncStarted user ct cStats
       Nothing -> throwChatError $ CEContactNotActive ct
   APISyncGroupMemberRatchet gId gMemberId force -> withUser $ \user -> withGroupLock "syncGroupMemberRatchet" gId $ do
-    (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
+    (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
     case memberConnId m of
       Just connId -> do
         cStats@ConnectionStats {ratchetSyncState = rss} <- withAgent $ \a -> synchronizeRatchet a connId PQSupportOff force
@@ -1521,7 +1527,7 @@ processChatCommand' vr = \case
         pure $ CRGroupMemberRatchetSyncStarted user g m cStats
       _ -> throwChatError CEGroupMemberNotActive
   APIGetContactCode contactId -> withUser $ \user -> do
-    ct@Contact {activeConn} <- withStore $ \db -> getContact db vr user contactId
+    ct@Contact {activeConn} <- withFastStore $ \db -> getContact db vr user contactId
     case activeConn of
       Just conn@Connection {connId} -> do
         code <- getConnectionCode $ aConnId conn
@@ -1529,13 +1535,13 @@ processChatCommand' vr = \case
           Just SecurityCode {securityCode}
             | sameVerificationCode code securityCode -> pure ct
             | otherwise -> do
-                withStore' $ \db -> setConnectionVerified db user connId Nothing
+                withFastStore' $ \db -> setConnectionVerified db user connId Nothing
                 pure (ct :: Contact) {activeConn = Just $ (conn :: Connection) {connectionCode = Nothing}}
           _ -> pure ct
         pure $ CRContactCode user ct' code
       Nothing -> throwChatError $ CEContactNotActive ct
   APIGetGroupMemberCode gId gMemberId -> withUser $ \user -> do
-    (g, m@GroupMember {activeConn}) <- withStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
+    (g, m@GroupMember {activeConn}) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
     case activeConn of
       Just conn@Connection {connId} -> do
         code <- getConnectionCode $ aConnId conn
@@ -1543,48 +1549,48 @@ processChatCommand' vr = \case
           Just SecurityCode {securityCode}
             | sameVerificationCode code securityCode -> pure m
             | otherwise -> do
-                withStore' $ \db -> setConnectionVerified db user connId Nothing
+                withFastStore' $ \db -> setConnectionVerified db user connId Nothing
                 pure (m :: GroupMember) {activeConn = Just $ (conn :: Connection) {connectionCode = Nothing}}
           _ -> pure m
         pure $ CRGroupMemberCode user g m' code
       _ -> throwChatError CEGroupMemberNotActive
   APIVerifyContact contactId code -> withUser $ \user -> do
-    ct@Contact {activeConn} <- withStore $ \db -> getContact db vr user contactId
+    ct@Contact {activeConn} <- withFastStore $ \db -> getContact db vr user contactId
     case activeConn of
       Just conn -> verifyConnectionCode user conn code
       Nothing -> throwChatError $ CEContactNotActive ct
   APIVerifyGroupMember gId gMemberId code -> withUser $ \user -> do
-    GroupMember {activeConn} <- withStore $ \db -> getGroupMember db vr user gId gMemberId
+    GroupMember {activeConn} <- withFastStore $ \db -> getGroupMember db vr user gId gMemberId
     case activeConn of
       Just conn -> verifyConnectionCode user conn code
       _ -> throwChatError CEGroupMemberNotActive
   APIEnableContact contactId -> withUser $ \user -> do
-    ct@Contact {activeConn} <- withStore $ \db -> getContact db vr user contactId
+    ct@Contact {activeConn} <- withFastStore $ \db -> getContact db vr user contactId
     case activeConn of
       Just conn -> do
-        withStore' $ \db -> setAuthErrCounter db user conn 0
+        withFastStore' $ \db -> setAuthErrCounter db user conn 0
         ok user
       Nothing -> throwChatError $ CEContactNotActive ct
   APIEnableGroupMember gId gMemberId -> withUser $ \user -> do
-    GroupMember {activeConn} <- withStore $ \db -> getGroupMember db vr user gId gMemberId
+    GroupMember {activeConn} <- withFastStore $ \db -> getGroupMember db vr user gId gMemberId
     case activeConn of
       Just conn -> do
-        withStore' $ \db -> setAuthErrCounter db user conn 0
+        withFastStore' $ \db -> setAuthErrCounter db user conn 0
         ok user
       _ -> throwChatError CEGroupMemberNotActive
   SetShowMessages cName ntfOn -> updateChatSettings cName (\cs -> cs {enableNtfs = ntfOn})
   SetSendReceipts cName rcptsOn_ -> updateChatSettings cName (\cs -> cs {sendRcpts = rcptsOn_})
   SetShowMemberMessages gName mName showMessages -> withUser $ \user -> do
     (gId, mId) <- getGroupAndMemberId user gName mName
-    gInfo <- withStore $ \db -> getGroupInfo db vr user gId
-    m <- withStore $ \db -> getGroupMember db vr user gId mId
+    gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
+    m <- withFastStore $ \db -> getGroupMember db vr user gId mId
     let GroupInfo {membership = GroupMember {memberRole = membershipRole}} = gInfo
     when (membershipRole >= GRAdmin) $ throwChatError $ CECantBlockMemberForSelf gInfo m showMessages
     let settings = (memberSettings m) {showMessages}
     processChatCommand $ APISetMemberSettings gId mId settings
   ContactInfo cName -> withContactName cName APIContactInfo
   ShowGroupInfo gName -> withUser $ \user -> do
-    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIGroupInfo groupId
   GroupMemberInfo gName mName -> withMemberName gName mName APIGroupMemberInfo
   ContactQueueInfo cName -> withContactName cName APIContactQueueInfo
@@ -1609,12 +1615,12 @@ processChatCommand' vr = \case
     subMode <- chatReadVar subscriptionMode
     (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing IKPQOn subMode
     -- TODO PQ pass minVersion from the current range
-    conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnNew incognitoProfile subMode initialChatVersion PQSupportOn
+    conn <- withFastStore' $ \db -> createDirectConnection db user connId cReq ConnNew incognitoProfile subMode initialChatVersion PQSupportOn
     pure $ CRInvitation user cReq conn
   AddContact incognito -> withUser $ \User {userId} ->
     processChatCommand $ APIAddContact userId incognito
   APISetConnectionIncognito connId incognito -> withUser $ \user@User {userId} -> do
-    conn'_ <- withStore $ \db -> do
+    conn'_ <- withFastStore $ \db -> do
       conn@PendingContactConnection {pccConnStatus, customUserProfileId} <- getPendingContactConnection db userId connId
       case (pccConnStatus, customUserProfileId, incognito) of
         (ConnNew, Nothing, True) -> liftIO $ do
@@ -1642,7 +1648,7 @@ processChatCommand' vr = \case
         let chatV = agentToChatVersion agentV
         dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
         connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq pqSup'
-        conn@PendingContactConnection {pccConnId} <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode chatV pqSup'
+        conn@PendingContactConnection {pccConnId} <- withFastStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode chatV pqSup'
         joinPreparedAgentConnection user pccConnId connId cReq dm pqSup' subMode
         pure $ CRSentConfirmation user conn
   APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> connectViaContact user incognito cReq
@@ -1656,7 +1662,7 @@ processChatCommand' vr = \case
       _ -> processChatCommand $ APIConnect userId incognito aCReqUri
   Connect _ Nothing -> throwChatError CEInvalidConnReq
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
-    ct@Contact {activeConn, profile = LocalProfile {contactLink}} <- withStore $ \db -> getContact db vr user contactId
+    ct@Contact {activeConn, profile = LocalProfile {contactLink}} <- withFastStore $ \db -> getContact db vr user contactId
     when (isJust activeConn) $ throwChatError (CECommandError "contact already has connection")
     case contactLink of
       Just cReq -> connectContactViaAddress user incognito ct cReq
@@ -1672,23 +1678,23 @@ processChatCommand' vr = \case
   DeleteContact cName cdm -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId) cdm
   ClearContact cName -> withContactName cName $ APIClearChat . ChatRef CTDirect
   APIListContacts userId -> withUserId userId $ \user ->
-    CRContactsList user <$> withStore' (\db -> getUserContacts db vr user)
+    CRContactsList user <$> withFastStore' (\db -> getUserContacts db vr user)
   ListContacts -> withUser $ \User {userId} ->
     processChatCommand $ APIListContacts userId
   APICreateMyAddress userId -> withUserId userId $ \user -> procCmd $ do
     subMode <- chatReadVar subscriptionMode
     (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact Nothing IKPQOn subMode
-    withStore $ \db -> createUserContactLink db user connId cReq subMode
+    withFastStore $ \db -> createUserContactLink db user connId cReq subMode
     pure $ CRUserContactLinkCreated user cReq
   CreateMyAddress -> withUser $ \User {userId} ->
     processChatCommand $ APICreateMyAddress userId
   APIDeleteMyAddress userId -> withUserId userId $ \user@User {profile = p} -> do
-    conns <- withStore $ \db -> getUserAddressConnections db vr user
+    conns <- withFastStore $ \db -> getUserAddressConnections db vr user
     withChatLock "deleteMyAddress" $ do
       deleteAgentConnectionsAsync user $ map aConnId conns
-      withStore' (`deleteUserAddress` user)
+      withFastStore' (`deleteUserAddress` user)
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
-    r <- updateProfile_ user p' $ withStore' $ \db -> setUserProfileContactLink db user Nothing
+    r <- updateProfile_ user p' $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing
     let user' = case r of
           CRUserProfileUpdated u' _ _ _ -> u'
           _ -> user
@@ -1696,54 +1702,54 @@ processChatCommand' vr = \case
   DeleteMyAddress -> withUser $ \User {userId} ->
     processChatCommand $ APIDeleteMyAddress userId
   APIShowMyAddress userId -> withUserId' userId $ \user ->
-    CRUserContactLink user <$> withStore (`getUserAddress` user)
+    CRUserContactLink user <$> withFastStore (`getUserAddress` user)
   ShowMyAddress -> withUser' $ \User {userId} ->
     processChatCommand $ APIShowMyAddress userId
   APISetProfileAddress userId False -> withUserId userId $ \user@User {profile = p} -> do
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
-    updateProfile_ user p' $ withStore' $ \db -> setUserProfileContactLink db user Nothing
+    updateProfile_ user p' $ withFastStore' $ \db -> setUserProfileContactLink db user Nothing
   APISetProfileAddress userId True -> withUserId userId $ \user@User {profile = p} -> do
-    ucl@UserContactLink {connReqContact} <- withStore (`getUserAddress` user)
+    ucl@UserContactLink {connReqContact} <- withFastStore (`getUserAddress` user)
     let p' = (fromLocalProfile p :: Profile) {contactLink = Just connReqContact}
-    updateProfile_ user p' $ withStore' $ \db -> setUserProfileContactLink db user $ Just ucl
+    updateProfile_ user p' $ withFastStore' $ \db -> setUserProfileContactLink db user $ Just ucl
   SetProfileAddress onOff -> withUser $ \User {userId} ->
     processChatCommand $ APISetProfileAddress userId onOff
   APIAddressAutoAccept userId autoAccept_ -> withUserId userId $ \user -> do
-    contactLink <- withStore (\db -> updateUserAddressAutoAccept db user autoAccept_)
+    contactLink <- withFastStore (\db -> updateUserAddressAutoAccept db user autoAccept_)
     pure $ CRUserContactLinkUpdated user contactLink
   AddressAutoAccept autoAccept_ -> withUser $ \User {userId} ->
     processChatCommand $ APIAddressAutoAccept userId autoAccept_
   AcceptContact incognito cName -> withUser $ \User {userId} -> do
-    connReqId <- withStore $ \db -> getContactRequestIdByName db userId cName
+    connReqId <- withFastStore $ \db -> getContactRequestIdByName db userId cName
     processChatCommand $ APIAcceptContact incognito connReqId
   RejectContact cName -> withUser $ \User {userId} -> do
-    connReqId <- withStore $ \db -> getContactRequestIdByName db userId cName
+    connReqId <- withFastStore $ \db -> getContactRequestIdByName db userId cName
     processChatCommand $ APIRejectContact connReqId
   ForwardMessage toChatName fromContactName forwardedMsg -> withUser $ \user -> do
-    contactId <- withStore $ \db -> getContactIdByName db user fromContactName
-    forwardedItemId <- withStore $ \db -> getDirectChatItemIdByText' db user contactId forwardedMsg
+    contactId <- withFastStore $ \db -> getContactIdByName db user fromContactName
+    forwardedItemId <- withFastStore $ \db -> getDirectChatItemIdByText' db user contactId forwardedMsg
     toChatRef <- getChatRef user toChatName
     processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTDirect contactId) forwardedItemId Nothing
   ForwardGroupMessage toChatName fromGroupName fromMemberName_ forwardedMsg -> withUser $ \user -> do
-    groupId <- withStore $ \db -> getGroupIdByName db user fromGroupName
-    forwardedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId fromMemberName_ forwardedMsg
+    groupId <- withFastStore $ \db -> getGroupIdByName db user fromGroupName
+    forwardedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user groupId fromMemberName_ forwardedMsg
     toChatRef <- getChatRef user toChatName
     processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTGroup groupId) forwardedItemId Nothing
   ForwardLocalMessage toChatName forwardedMsg -> withUser $ \user -> do
-    folderId <- withStore (`getUserNoteFolderId` user)
-    forwardedItemId <- withStore $ \db -> getLocalChatItemIdByText' db user folderId forwardedMsg
+    folderId <- withFastStore (`getUserNoteFolderId` user)
+    forwardedItemId <- withFastStore $ \db -> getLocalChatItemIdByText' db user folderId forwardedMsg
     toChatRef <- getChatRef user toChatName
     processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTLocal folderId) forwardedItemId Nothing
   SendMessage (ChatName cType name) msg -> withUser $ \user -> do
     let mc = MCText msg
     case cType of
       CTDirect ->
-        withStore' (\db -> runExceptT $ getContactIdByName db user name) >>= \case
+        withFastStore' (\db -> runExceptT $ getContactIdByName db user name) >>= \case
           Right ctId -> do
             let chatRef = ChatRef CTDirect ctId
             processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage Nothing Nothing mc
           Left _ ->
-            withStore' (\db -> runExceptT $ getActiveMembersByName db vr user name) >>= \case
+            withFastStore' (\db -> runExceptT $ getActiveMembersByName db vr user name) >>= \case
               Right [(gInfo, member)] -> do
                 let GroupInfo {localDisplayName = gName} = gInfo
                     GroupMember {localDisplayName = mName} = member
@@ -1753,22 +1759,22 @@ processChatCommand' vr = \case
               _ ->
                 throwChatError $ CEContactNotFound name Nothing
       CTGroup -> do
-        gId <- withStore $ \db -> getGroupIdByName db user name
+        gId <- withFastStore $ \db -> getGroupIdByName db user name
         let chatRef = ChatRef CTGroup gId
         processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage Nothing Nothing mc
       CTLocal
         | name == "" -> do
-            folderId <- withStore (`getUserNoteFolderId` user)
+            folderId <- withFastStore (`getUserNoteFolderId` user)
             processChatCommand . APICreateChatItem folderId $ ComposedMessage Nothing Nothing mc
         | otherwise -> throwChatError $ CECommandError "not supported"
       _ -> throwChatError $ CECommandError "not supported"
   SendMemberContactMessage gName mName msg -> withUser $ \user -> do
     (gId, mId) <- getGroupAndMemberId user gName mName
-    m <- withStore $ \db -> getGroupMember db vr user gId mId
+    m <- withFastStore $ \db -> getGroupMember db vr user gId mId
     let mc = MCText msg
     case memberContactId m of
       Nothing -> do
-        g <- withStore $ \db -> getGroupInfo db vr user gId
+        g <- withFastStore $ \db -> getGroupInfo db vr user gId
         unless (groupFeatureMemberAllowed SGFDirectMessages (membership g) g) $ throwChatError $ CECommandError "direct messages not allowed"
         toView $ CRNoMemberContactCreating user g m
         processChatCommand (APICreateMemberContact gId mId) >>= \case
@@ -1784,7 +1790,7 @@ processChatCommand' vr = \case
     let mc = MCText msg
     processChatCommand . APISendMessage chatRef True Nothing $ ComposedMessage Nothing Nothing mc
   SendMessageBroadcast msg -> withUser $ \user -> do
-    contacts <- withStore' $ \db -> getUserContacts db vr user
+    contacts <- withFastStore' $ \db -> getUserContacts db vr user
     withChatLock "sendMessageBroadcast" . procCmd $ do
       let ctConns_ = L.nonEmpty $ foldr addContactConn [] contacts
       case ctConns_ of
@@ -1820,8 +1826,8 @@ processChatCommand' vr = \case
       createCI db user createdAt (ct, sndMsg) =
         void $ createNewSndChatItem db user (CDDirectSnd ct) sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False createdAt
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
-    contactId <- withStore $ \db -> getContactIdByName db user cName
-    quotedItemId <- withStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
+    contactId <- withFastStore $ \db -> getContactIdByName db user cName
+    quotedItemId <- withFastStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
     let mc = MCText msg
     processChatCommand . APISendMessage (ChatRef CTDirect contactId) False Nothing $ ComposedMessage Nothing (Just quotedItemId) mc
   DeleteMessage chatName deletedMsg -> withUser $ \user -> do
@@ -1829,8 +1835,8 @@ processChatCommand' vr = \case
     deletedItemId <- getSentChatItemIdByText user chatRef deletedMsg
     processChatCommand $ APIDeleteChatItem chatRef (deletedItemId :| []) CIDMBroadcast
   DeleteMemberMessage gName mName deletedMsg -> withUser $ \user -> do
-    gId <- withStore $ \db -> getGroupIdByName db user gName
-    deletedItemId <- withStore $ \db -> getGroupChatItemIdByText db user gId (Just mName) deletedMsg
+    gId <- withFastStore $ \db -> getGroupIdByName db user gName
+    deletedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user gId (Just mName) deletedMsg
     processChatCommand $ APIDeleteMemberChatItem gId (deletedItemId :| [])
   EditMessage chatName editedMsg msg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
@@ -1850,14 +1856,14 @@ processChatCommand' vr = \case
     gVar <- asks random
     -- [incognito] generate incognito profile for group membership
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-    groupInfo <- withStore $ \db -> createNewGroup db vr gVar user gProfile incognitoProfile
+    groupInfo <- withFastStore $ \db -> createNewGroup db vr gVar user gProfile incognitoProfile
     createInternalChatItem user (CDGroupSnd groupInfo) (CISndGroupE2EEInfo $ E2EInfo {pqEnabled = PQEncOff}) Nothing
     pure $ CRGroupCreated user groupInfo
   NewGroup incognito gProfile -> withUser $ \User {userId} ->
     processChatCommand $ APINewGroup userId incognito gProfile
   APIAddMember groupId contactId memRole -> withUser $ \user -> withGroupLock "addMember" groupId $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
-    (group, contact) <- withStore $ \db -> (,) <$> getGroup db vr user groupId <*> getContact db vr user contactId
+    (group, contact) <- withFastStore $ \db -> (,) <$> getGroup db vr user groupId <*> getContact db vr user contactId
     assertDirectAllowed user MDSnd contact XGrpInv_
     let Group gInfo members = group
         Contact {localDisplayName = cName} = contact
@@ -1872,13 +1878,13 @@ processChatCommand' vr = \case
         gVar <- asks random
         subMode <- chatReadVar subscriptionMode
         (agentConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing IKPQOff subMode
-        member <- withStore $ \db -> createNewContactMember db gVar user gInfo contact memRole agentConnId cReq subMode
+        member <- withFastStore $ \db -> createNewContactMember db gVar user gInfo contact memRole agentConnId cReq subMode
         sendInvitation member cReq
         pure $ CRSentGroupInvitation user gInfo contact member
       Just member@GroupMember {groupMemberId, memberStatus, memberRole = mRole}
         | memberStatus == GSMemInvited -> do
-            unless (mRole == memRole) $ withStore' $ \db -> updateGroupMemberRole db user member memRole
-            withStore' (\db -> getMemberInvitation db user groupMemberId) >>= \case
+            unless (mRole == memRole) $ withFastStore' $ \db -> updateGroupMemberRole db user member memRole
+            withFastStore' (\db -> getMemberInvitation db user groupMemberId) >>= \case
               Just cReq -> do
                 sendInvitation member {memberRole = memRole} cReq
                 pure $ CRSentGroupInvitation user gInfo contact member {memberRole = memRole}
@@ -1886,7 +1892,7 @@ processChatCommand' vr = \case
         | otherwise -> throwChatError $ CEGroupDuplicateMember cName
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
     withGroupLock "joinGroup" groupId . procCmd $ do
-      (invitation, ct) <- withStore $ \db -> do
+      (invitation, ct) <- withFastStore $ \db -> do
         inv@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db vr user groupId
         (inv,) <$> getContactViaMember db vr user fromMember
       let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} = invitation
@@ -1898,14 +1904,14 @@ processChatCommand' vr = \case
           dm <- encodeConnInfo $ XGrpAcpt membershipMemId
           agentConnId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connRequest PQSupportOff
           let chatV = vr `peerConnChatVersion` peerChatVRange
-          cId <- withStore' $ \db -> do
+          cId <- withFastStore' $ \db -> do
             Connection {connId = cId} <- createMemberConnection db userId fromMember agentConnId chatV peerChatVRange subMode
             updateGroupMemberStatus db userId fromMember GSMemAccepted
             updateGroupMemberStatus db userId membership GSMemAccepted
             pure cId
           void (withAgent $ \a -> joinConnection a (aUserId user) (Just agentConnId) True connRequest dm PQSupportOff subMode)
             `catchChatError` \e -> do
-              withStore' $ \db -> do
+              withFastStore' $ \db -> do
                 deleteConnectionRecord db user cId
                 updateGroupMemberStatus db userId fromMember GSMemInvited
                 updateGroupMemberStatus db userId membership GSMemInvited
@@ -1915,7 +1921,7 @@ processChatCommand' vr = \case
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
         Nothing -> throwChatError $ CEContactNotActive ct
   APIMemberRole groupId memberId memRole -> withUser $ \user -> do
-    Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db vr user groupId
+    Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user groupId
     if memberId == groupMemberId' membership
       then changeMemberRole user gInfo members membership $ SGEUserRole memRole
       else case find ((== memberId) . groupMemberId') members of
@@ -1927,10 +1933,10 @@ processChatCommand' vr = \case
         assertUserGroupRole gInfo $ maximum [GRAdmin, mRole, memRole]
         withGroupLock "memberRole" groupId . procCmd $ do
           unless (mRole == memRole) $ do
-            withStore' $ \db -> updateGroupMemberRole db user m memRole
+            withFastStore' $ \db -> updateGroupMemberRole db user m memRole
             case mStatus of
               GSMemInvited -> do
-                withStore (\db -> (,) <$> mapM (getContact db vr user) memberContactId <*> liftIO (getMemberInvitation db user $ groupMemberId' m)) >>= \case
+                withFastStore (\db -> (,) <$> mapM (getContact db vr user) memberContactId <*> liftIO (getMemberInvitation db user $ groupMemberId' m)) >>= \case
                   (Just ct, Just cReq) -> sendGrpInvitation user ct gInfo (m :: GroupMember) {memberRole = memRole} cReq
                   _ -> throwChatError $ CEGroupCantResendInvitation gInfo cName
               _ -> do
@@ -1939,7 +1945,7 @@ processChatCommand' vr = \case
                 toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
           pure CRMemberRoleUser {user, groupInfo = gInfo, member = m {memberRole = memRole}, fromRole = mRole, toRole = memRole}
   APIBlockMemberForAll groupId memberId blocked -> withUser $ \user -> do
-    Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db vr user groupId
+    Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user groupId
     when (memberId == groupMemberId' membership) $ throwChatError $ CECommandError "can't block/unblock self"
     case splitMember memberId members of
       Nothing -> throwChatError $ CEException "expected to find a single blocked member"
@@ -1954,7 +1960,7 @@ processChatCommand' vr = \case
           let ciContent = CISndGroupEvent $ SGEMemberBlocked memberId (fromLocalProfile bmp) blocked
           ci <- saveSndChatItem user (CDGroupSnd gInfo) msg ciContent
           toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
-          bm' <- withStore $ \db -> do
+          bm' <- withFastStore $ \db -> do
             liftIO $ updateGroupMemberBlocked db user groupId memberId mrs
             getGroupMember db vr user groupId memberId
           toggleNtf user bm' (not blocked)
@@ -1964,7 +1970,7 @@ processChatCommand' vr = \case
         (_, []) -> Nothing
         (ms1, bm : ms2) -> Just (bm, ms1 <> ms2)
   APIRemoveMember groupId memberId -> withUser $ \user -> do
-    Group gInfo members <- withStore $ \db -> getGroup db vr user groupId
+    Group gInfo members <- withFastStore $ \db -> getGroup db vr user groupId
     case find ((== memberId) . groupMemberId') members of
       Nothing -> throwChatError CEGroupMemberNotFound
       Just m@GroupMember {memberId = mId, memberRole = mRole, memberStatus = mStatus, memberProfile} -> do
@@ -1973,7 +1979,7 @@ processChatCommand' vr = \case
           case mStatus of
             GSMemInvited -> do
               deleteMemberConnection user m
-              withStore' $ \db -> deleteGroupMember db user m
+              withFastStore' $ \db -> deleteGroupMember db user m
             _ -> do
               (msg, _) <- sendGroupMessage user gInfo members $ XGrpMemDel mId
               ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId (fromLocalProfile memberProfile))
@@ -1983,8 +1989,8 @@ processChatCommand' vr = \case
               deleteOrUpdateMemberRecord user m
           pure $ CRUserDeletedMember user gInfo m {memberStatus = GSMemRemoved}
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
-    Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db vr user groupId
-    filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
+    Group gInfo@GroupInfo {membership} members <- withFastStore $ \db -> getGroup db vr user groupId
+    filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
     withGroupLock "leaveGroup" groupId . procCmd $ do
       cancelFilesInProgress user filesInfo
       msg <- sendGroupMessage' user gInfo members XGrpLeave
@@ -1994,74 +2000,74 @@ processChatCommand' vr = \case
       deleteGroupLinkIfExists user gInfo
       -- member records are not deleted to keep history
       deleteMembersConnections' user members True
-      withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
+      withFastStore' $ \db -> updateGroupMemberStatus db userId membership GSMemLeft
       pure $ CRLeftMemberUser user gInfo {membership = membership {memberStatus = GSMemLeft}}
   APIListMembers groupId -> withUser $ \user ->
-    CRGroupMembers user <$> withStore (\db -> getGroup db vr user groupId)
+    CRGroupMembers user <$> withFastStore (\db -> getGroup db vr user groupId)
   AddMember gName cName memRole -> withUser $ \user -> do
-    (groupId, contactId) <- withStore $ \db -> (,) <$> getGroupIdByName db user gName <*> getContactIdByName db user cName
+    (groupId, contactId) <- withFastStore $ \db -> (,) <$> getGroupIdByName db user gName <*> getContactIdByName db user cName
     processChatCommand $ APIAddMember groupId contactId memRole
   JoinGroup gName -> withUser $ \user -> do
-    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIJoinGroup groupId
   MemberRole gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIMemberRole gId gMemberId memRole
   BlockForAll gName gMemberName blocked -> withMemberName gName gMemberName $ \gId gMemberId -> APIBlockMemberForAll gId gMemberId blocked
   RemoveMember gName gMemberName -> withMemberName gName gMemberName APIRemoveMember
   LeaveGroup gName -> withUser $ \user -> do
-    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APILeaveGroup groupId
   DeleteGroup gName -> withUser $ \user -> do
-    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIDeleteChat (ChatRef CTGroup groupId) (CDMFull True)
   ClearGroup gName -> withUser $ \user -> do
-    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIClearChat (ChatRef CTGroup groupId)
   ListMembers gName -> withUser $ \user -> do
-    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIListMembers groupId
   APIListGroups userId contactId_ search_ -> withUserId userId $ \user ->
-    CRGroupsList user <$> withStore' (\db -> getUserGroupsWithSummary db vr user contactId_ search_)
+    CRGroupsList user <$> withFastStore' (\db -> getUserGroupsWithSummary db vr user contactId_ search_)
   ListGroups cName_ search_ -> withUser $ \user@User {userId} -> do
-    ct_ <- forM cName_ $ \cName -> withStore $ \db -> getContactByName db vr user cName
+    ct_ <- forM cName_ $ \cName -> withFastStore $ \db -> getContactByName db vr user cName
     processChatCommand $ APIListGroups userId (contactId' <$> ct_) search_
   APIUpdateGroupProfile groupId p' -> withUser $ \user -> do
-    g <- withStore $ \db -> getGroup db vr user groupId
+    g <- withFastStore $ \db -> getGroup db vr user groupId
     runUpdateGroupProfile user g p'
   UpdateGroupNames gName GroupProfile {displayName, fullName} ->
     updateGroupProfileByName gName $ \p -> p {displayName, fullName}
   ShowGroupProfile gName -> withUser $ \user ->
-    CRGroupProfile user <$> withStore (\db -> getGroupInfoByName db vr user gName)
+    CRGroupProfile user <$> withFastStore (\db -> getGroupInfoByName db vr user gName)
   UpdateGroupDescription gName description ->
     updateGroupProfileByName gName $ \p -> p {description}
   ShowGroupDescription gName -> withUser $ \user ->
-    CRGroupDescription user <$> withStore (\db -> getGroupInfoByName db vr user gName)
+    CRGroupDescription user <$> withFastStore (\db -> getGroupInfoByName db vr user gName)
   APICreateGroupLink groupId mRole -> withUser $ \user -> withGroupLock "createGroupLink" groupId $ do
-    gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
+    gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     assertUserGroupRole gInfo GRAdmin
     when (mRole > GRMember) $ throwChatError $ CEGroupMemberInitialRole gInfo mRole
     groupLinkId <- GroupLinkId <$> drgRandomBytes 16
     subMode <- chatReadVar subscriptionMode
     let crClientData = encodeJSON $ CRDataGroup groupLinkId
     (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMContact (Just crClientData) IKPQOff subMode
-    withStore $ \db -> createGroupLink db user gInfo connId cReq groupLinkId mRole subMode
+    withFastStore $ \db -> createGroupLink db user gInfo connId cReq groupLinkId mRole subMode
     pure $ CRGroupLinkCreated user gInfo cReq mRole
   APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withGroupLock "groupLinkMemberRole" groupId $ do
-    gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
-    (groupLinkId, groupLink, mRole) <- withStore $ \db -> getGroupLink db user gInfo
+    gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    (groupLinkId, groupLink, mRole) <- withFastStore $ \db -> getGroupLink db user gInfo
     assertUserGroupRole gInfo GRAdmin
     when (mRole' > GRMember) $ throwChatError $ CEGroupMemberInitialRole gInfo mRole'
-    when (mRole' /= mRole) $ withStore' $ \db -> setGroupLinkMemberRole db user groupLinkId mRole'
+    when (mRole' /= mRole) $ withFastStore' $ \db -> setGroupLinkMemberRole db user groupLinkId mRole'
     pure $ CRGroupLink user gInfo groupLink mRole'
   APIDeleteGroupLink groupId -> withUser $ \user -> withGroupLock "deleteGroupLink" groupId $ do
-    gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
+    gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     deleteGroupLink' user gInfo
     pure $ CRGroupLinkDeleted user gInfo
   APIGetGroupLink groupId -> withUser $ \user -> do
-    gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
-    (_, groupLink, mRole) <- withStore $ \db -> getGroupLink db user gInfo
+    gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    (_, groupLink, mRole) <- withFastStore $ \db -> getGroupLink db user gInfo
     pure $ CRGroupLink user gInfo groupLink mRole
   APICreateMemberContact gId gMemberId -> withUser $ \user -> do
-    (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
+    (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
     assertUserGroupRole g GRAuthor
     unless (groupFeatureMemberAllowed SGFDirectMessages (membership g) g) $ throwChatError $ CECommandError "direct messages not allowed"
     case memberConn m of
@@ -2072,19 +2078,19 @@ processChatCommand' vr = \case
         -- TODO PQ should negotitate contact connection with PQSupportOn?
         (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing IKPQOff subMode
         -- [incognito] reuse membership incognito profile
-        ct <- withStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
+        ct <- withFastStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
         -- TODO not sure it is correct to set connections status here?
         lift $ setContactNetworkStatus ct NSConnected
         pure $ CRNewMemberContact user ct g m
       _ -> throwChatError CEGroupMemberNotActive
   APISendMemberContactInvitation contactId msgContent_ -> withUser $ \user -> do
-    (g@GroupInfo {groupId}, m, ct, cReq) <- withStore $ \db -> getMemberContact db vr user contactId
+    (g@GroupInfo {groupId}, m, ct, cReq) <- withFastStore $ \db -> getMemberContact db vr user contactId
     when (contactGrpInvSent ct) $ throwChatError $ CECommandError "x.grp.direct.inv already sent"
     case memberConn m of
       Just mConn -> do
         let msg = XGrpDirectInv cReq msgContent_
         (sndMsg, _, _) <- sendDirectMemberMessage mConn msg groupId
-        withStore' $ \db -> setContactGrpInvSent db ct True
+        withFastStore' $ \db -> setContactGrpInvSent db ct True
         let ct' = ct {contactGrpInvSent = True}
         forM_ msgContent_ $ \mc -> do
           ci <- saveSndChatItem user (CDDirectSnd ct') sndMsg (CISndMsgContent mc)
@@ -2092,28 +2098,28 @@ processChatCommand' vr = \case
         pure $ CRNewMemberContactSentInv user ct' g m
       _ -> throwChatError CEGroupMemberNotActive
   CreateGroupLink gName mRole -> withUser $ \user -> do
-    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APICreateGroupLink groupId mRole
   GroupLinkMemberRole gName mRole -> withUser $ \user -> do
-    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIGroupLinkMemberRole groupId mRole
   DeleteGroupLink gName -> withUser $ \user -> do
-    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIDeleteGroupLink groupId
   ShowGroupLink gName -> withUser $ \user -> do
-    groupId <- withStore $ \db -> getGroupIdByName db user gName
+    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIGetGroupLink groupId
   SendGroupMessageQuote gName cName quotedMsg msg -> withUser $ \user -> do
-    groupId <- withStore $ \db -> getGroupIdByName db user gName
-    quotedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName quotedMsg
+    groupId <- withFastStore $ \db -> getGroupIdByName db user gName
+    quotedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user groupId cName quotedMsg
     let mc = MCText msg
     processChatCommand . APISendMessage (ChatRef CTGroup groupId) False Nothing $ ComposedMessage Nothing (Just quotedItemId) mc
   ClearNoteFolder -> withUser $ \user -> do
-    folderId <- withStore (`getUserNoteFolderId` user)
+    folderId <- withFastStore (`getUserNoteFolderId` user)
     processChatCommand $ APIClearChat (ChatRef CTLocal folderId)
   LastChats count_ -> withUser' $ \user -> do
     let count = fromMaybe 5000 count_
-    (errs, previews) <- partitionEithers <$> withStore' (\db -> getChatPreviews db vr user False (PTLast count) clqNoFilters)
+    (errs, previews) <- partitionEithers <$> withFastStore' (\db -> getChatPreviews db vr user False (PTLast count) clqNoFilters)
     unless (null errs) $ toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
     pure $ CRChats previews
   LastMessages (Just chatName) count search -> withUser $ \user -> do
@@ -2121,22 +2127,22 @@ processChatCommand' vr = \case
     chatResp <- processChatCommand $ APIGetChat chatRef (CPLast count) search
     pure $ CRChatItems user (Just chatName) (aChatItems . chat $ chatResp)
   LastMessages Nothing count search -> withUser $ \user -> do
-    chatItems <- withStore $ \db -> getAllChatItems db vr user (CPLast count) search
+    chatItems <- withFastStore $ \db -> getAllChatItems db vr user (CPLast count) search
     pure $ CRChatItems user Nothing chatItems
   LastChatItemId (Just chatName) index -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     chatResp <- processChatCommand (APIGetChat chatRef (CPLast $ index + 1) Nothing)
     pure $ CRChatItemId user (fmap aChatItemId . listToMaybe . aChatItems . chat $ chatResp)
   LastChatItemId Nothing index -> withUser $ \user -> do
-    chatItems <- withStore $ \db -> getAllChatItems db vr user (CPLast $ index + 1) Nothing
+    chatItems <- withFastStore $ \db -> getAllChatItems db vr user (CPLast $ index + 1) Nothing
     pure $ CRChatItemId user (fmap aChatItemId . listToMaybe $ chatItems)
   ShowChatItem (Just itemId) -> withUser $ \user -> do
-    chatItem <- withStore $ \db -> do
+    chatItem <- withFastStore $ \db -> do
       chatRef <- getChatRefViaItemId db user itemId
       getAChatItem db vr user chatRef itemId
     pure $ CRChatItems user Nothing ((: []) chatItem)
   ShowChatItem Nothing -> withUser $ \user -> do
-    chatItems <- withStore $ \db -> getAllChatItems db vr user (CPLast 1) Nothing
+    chatItems <- withFastStore $ \db -> getAllChatItems db vr user (CPLast 1) Nothing
     pure $ CRChatItems user Nothing chatItems
   ShowChatItemInfo chatName msg -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
@@ -2160,6 +2166,7 @@ processChatCommand' vr = \case
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
   SendFileDescription _chatName _f -> pure $ chatCmdError Nothing "TODO"
+  -- TODO to use priority transactions we need a parameter that differentiates manual and automatic acceptance
   ReceiveFile fileId userApprovedRelays encrypted_ rcvInline_ filePath_ -> withUser $ \_ ->
     withFileLock "receiveFile" fileId . procCmd $ do
       (user, ft@RcvFileTransfer {fileStatus}) <- withStore (`getRcvFileTransferById` fileId)
@@ -2174,7 +2181,7 @@ processChatCommand' vr = \case
       ok_
   CancelFile fileId -> withUser $ \user@User {userId} ->
     withFileLock "cancelFile" fileId . procCmd $
-      withStore (\db -> getFileTransfer db user fileId) >>= \case
+      withFastStore (\db -> getFileTransfer db user fileId) >>= \case
         FTSnd ftm@FileTransferMeta {xftpSndFile, cancelled} fts
           | cancelled -> throwChatError $ CEFileCancel fileId "file already cancelled"
           | not (null fts) && all fileCancelledOrCompleteSMP fts ->
@@ -2182,16 +2189,16 @@ processChatCommand' vr = \case
           | otherwise -> do
               fileAgentConnIds <- cancelSndFile user ftm fts True
               deleteAgentConnectionsAsync user fileAgentConnIds
-              withStore (\db -> liftIO $ lookupChatRefByFileId db user fileId) >>= \case
+              withFastStore (\db -> liftIO $ lookupChatRefByFileId db user fileId) >>= \case
                 Nothing -> pure ()
                 Just (ChatRef CTDirect contactId) -> do
-                  (contact, sharedMsgId) <- withStore $ \db -> (,) <$> getContact db vr user contactId <*> getSharedMsgIdByFileId db userId fileId
+                  (contact, sharedMsgId) <- withFastStore $ \db -> (,) <$> getContact db vr user contactId <*> getSharedMsgIdByFileId db userId fileId
                   void . sendDirectContactMessage user contact $ XFileCancel sharedMsgId
                 Just (ChatRef CTGroup groupId) -> do
-                  (Group gInfo ms, sharedMsgId) <- withStore $ \db -> (,) <$> getGroup db vr user groupId <*> getSharedMsgIdByFileId db userId fileId
+                  (Group gInfo ms, sharedMsgId) <- withFastStore $ \db -> (,) <$> getGroup db vr user groupId <*> getSharedMsgIdByFileId db userId fileId
                   void . sendGroupMessage user gInfo ms $ XFileCancel sharedMsgId
                 Just _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
-              ci <- withStore $ \db -> lookupChatItemByFileId db vr user fileId
+              ci <- withFastStore $ \db -> lookupChatItemByFileId db vr user fileId
               pure $ CRSndFileCancelled user ci ftm fts
           where
             fileCancelledOrCompleteSMP SndFileTransfer {fileStatus = s} =
@@ -2202,7 +2209,7 @@ processChatCommand' vr = \case
           | otherwise -> case xftpRcvFile of
               Nothing -> do
                 cancelRcvFileTransfer user ftr >>= mapM_ (deleteAgentConnectionAsync user)
-                ci <- withStore $ \db -> lookupChatItemByFileId db vr user fileId
+                ci <- withFastStore $ \db -> lookupChatItemByFileId db vr user fileId
                 pure $ CRRcvFileCancelled user ci ftr
               Just XFTPRcvFile {agentRcvFileId} -> do
                 forM_ (liveRcvFileTransferPath ftr) $ \filePath -> do
@@ -2213,9 +2220,9 @@ processChatCommand' vr = \case
                 aci_ <- resetRcvCIFileStatus user fileId CIFSRcvInvitation
                 pure $ CRRcvFileCancelled user aci_ ftr
   FileStatus fileId -> withUser $ \user -> do
-    withStore (\db -> lookupChatItemByFileId db vr user fileId) >>= \case
+    withFastStore (\db -> lookupChatItemByFileId db vr user fileId) >>= \case
       Nothing -> do
-        fileStatus <- withStore $ \db -> getFileTransferProgress db user fileId
+        fileStatus <- withFastStore $ \db -> getFileTransferProgress db user fileId
         pure $ CRFileTransferStatus user fileStatus
       Just ci@(AChatItem _ _ _ ChatItem {file}) -> case file of
         Just CIFile {fileProtocol = FPLocal} ->
@@ -2223,7 +2230,7 @@ processChatCommand' vr = \case
         Just CIFile {fileProtocol = FPXFTP} ->
           pure $ CRFileTransferStatusXFTP user ci
         _ -> do
-          fileStatus <- withStore $ \db -> getFileTransferProgress db user fileId
+          fileStatus <- withFastStore $ \db -> getFileTransferProgress db user fileId
           pure $ CRFileTransferStatus user fileStatus
   ShowProfile -> withUser $ \user@User {profile} -> pure $ CRUserProfile user (fromLocalProfile profile)
   UpdateProfile displayName fullName -> withUser $ \user@User {profile} -> do
@@ -2237,7 +2244,7 @@ processChatCommand' vr = \case
     let p = (fromLocalProfile profile :: Profile) {preferences = Just . setPreference f (Just allowed) $ preferences' user}
     updateProfile user p
   SetContactFeature (ACF f) cName allowed_ -> withUser $ \user -> do
-    ct@Contact {userPreferences} <- withStore $ \db -> getContactByName db vr user cName
+    ct@Contact {userPreferences} <- withFastStore $ \db -> getContactByName db vr user cName
     let prefs' = setPreference f allowed_ $ Just userPreferences
     updateContactPrefs user ct prefs'
   SetGroupFeature (AGFNR f) gName enabled ->
@@ -2252,7 +2259,7 @@ processChatCommand' vr = \case
         p = (fromLocalProfile profile :: Profile) {preferences = Just . setPreference' SCFTimedMessages (Just pref) $ preferences' user}
     updateProfile user p
   SetContactTimedMessages cName timedMessagesEnabled_ -> withUser $ \user -> do
-    ct@Contact {userPreferences = userPreferences@Preferences {timedMessages}} <- withStore $ \db -> getContactByName db vr user cName
+    ct@Contact {userPreferences = userPreferences@Preferences {timedMessages}} <- withFastStore $ \db -> getContactByName db vr user cName
     let currentTTL = timedMessages >>= \TimedMessagesPreference {ttl} -> ttl
         pref_ = tmeToPref currentTTL <$> timedMessagesEnabled_
         prefs' = setPreference' SCFTimedMessages pref_ $ Just userPreferences
@@ -2296,7 +2303,7 @@ processChatCommand' vr = \case
   ShowVersion -> do
     -- simplexmqCommitQ makes iOS builds crash m(
     let versionInfo = coreVersionInfo ""
-    chatMigrations <- map upMigration <$> withStore' (Migrations.getCurrent . DB.conn)
+    chatMigrations <- map upMigration <$> withFastStore' (Migrations.getCurrent . DB.conn)
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
   DebugLocks -> lift $ do
@@ -2369,10 +2376,10 @@ processChatCommand' vr = \case
     getChatRef :: User -> ChatName -> CM ChatRef
     getChatRef user (ChatName cType name) =
       ChatRef cType <$> case cType of
-        CTDirect -> withStore $ \db -> getContactIdByName db user name
-        CTGroup -> withStore $ \db -> getGroupIdByName db user name
+        CTDirect -> withFastStore $ \db -> getContactIdByName db user name
+        CTGroup -> withFastStore $ \db -> getGroupIdByName db user name
         CTLocal
-          | name == "" -> withStore (`getUserNoteFolderId` user)
+          | name == "" -> withFastStore (`getUserNoteFolderId` user)
           | otherwise -> throwChatError $ CECommandError "not supported"
         _ -> throwChatError $ CECommandError "not supported"
     checkChatStopped :: CM ChatResponse -> CM ChatResponse
@@ -2384,10 +2391,10 @@ processChatCommand' vr = \case
     checkStoreNotChanged :: CM ChatResponse -> CM ChatResponse
     checkStoreNotChanged = ifM (asks chatStoreChanged >>= readTVarIO) (throwChatError CEChatStoreChanged)
     withUserName :: UserName -> (UserId -> ChatCommand) -> CM ChatResponse
-    withUserName uName cmd = withStore (`getUserIdByName` uName) >>= processChatCommand . cmd
+    withUserName uName cmd = withFastStore (`getUserIdByName` uName) >>= processChatCommand . cmd
     withContactName :: ContactName -> (ContactId -> ChatCommand) -> CM ChatResponse
     withContactName cName cmd = withUser $ \user ->
-      withStore (\db -> getContactIdByName db user cName) >>= processChatCommand . cmd
+      withFastStore (\db -> getContactIdByName db user cName) >>= processChatCommand . cmd
     withMemberName :: GroupName -> ContactName -> (GroupId -> GroupMemberId -> ChatCommand) -> CM ChatResponse
     withMemberName gName mName cmd = withUser $ \user ->
       getGroupAndMemberId user gName mName >>= processChatCommand . uncurry cmd
@@ -2397,23 +2404,23 @@ processChatCommand' vr = \case
     verifyConnectionCode user conn@Connection {connId} (Just code) = do
       code' <- getConnectionCode $ aConnId conn
       let verified = sameVerificationCode code code'
-      when verified . withStore' $ \db -> setConnectionVerified db user connId $ Just code'
+      when verified . withFastStore' $ \db -> setConnectionVerified db user connId $ Just code'
       pure $ CRConnectionVerified user verified code'
     verifyConnectionCode user conn@Connection {connId} _ = do
       code' <- getConnectionCode $ aConnId conn
-      withStore' $ \db -> setConnectionVerified db user connId Nothing
+      withFastStore' $ \db -> setConnectionVerified db user connId Nothing
       pure $ CRConnectionVerified user False code'
     getSentChatItemIdByText :: User -> ChatRef -> Text -> CM Int64
     getSentChatItemIdByText user@User {userId, localDisplayName} (ChatRef cType cId) msg = case cType of
-      CTDirect -> withStore $ \db -> getDirectChatItemIdByText db userId cId SMDSnd msg
-      CTGroup -> withStore $ \db -> getGroupChatItemIdByText db user cId (Just localDisplayName) msg
-      CTLocal -> withStore $ \db -> getLocalChatItemIdByText db user cId SMDSnd msg
+      CTDirect -> withFastStore $ \db -> getDirectChatItemIdByText db userId cId SMDSnd msg
+      CTGroup -> withFastStore $ \db -> getGroupChatItemIdByText db user cId (Just localDisplayName) msg
+      CTLocal -> withFastStore $ \db -> getLocalChatItemIdByText db user cId SMDSnd msg
       _ -> throwChatError $ CECommandError "not supported"
     getChatItemIdByText :: User -> ChatRef -> Text -> CM Int64
     getChatItemIdByText user (ChatRef cType cId) msg = case cType of
-      CTDirect -> withStore $ \db -> getDirectChatItemIdByText' db user cId msg
-      CTGroup -> withStore $ \db -> getGroupChatItemIdByText' db user cId msg
-      CTLocal -> withStore $ \db -> getLocalChatItemIdByText' db user cId msg
+      CTDirect -> withFastStore $ \db -> getDirectChatItemIdByText' db user cId msg
+      CTGroup -> withFastStore $ \db -> getGroupChatItemIdByText' db user cId msg
+      CTLocal -> withFastStore $ \db -> getLocalChatItemIdByText' db user cId msg
       _ -> throwChatError $ CECommandError "not supported"
     connectViaContact :: User -> IncognitoEnabled -> ConnectionRequestUri 'CMContact -> CM ChatResponse
     connectViaContact user@User {userId} incognito cReq@(CRContactUri ConnReqUriData {crClientData}) = withInvitationLock "connectViaContact" (strEncode cReq) $ do
@@ -2422,7 +2429,7 @@ processChatCommand' vr = \case
       case groupLinkId of
         -- contact address
         Nothing ->
-          withStore' (\db -> getConnReqContactXContactId db vr user cReqHash) >>= \case
+          withFastStore' (\db -> getConnReqContactXContactId db vr user cReqHash) >>= \case
             (Just contact, _) -> pure $ CRContactAlreadyExists user contact
             (_, xContactId_) -> procCmd $ do
               let randomXContactId = XContactId <$> drgRandomBytes 16
@@ -2430,7 +2437,7 @@ processChatCommand' vr = \case
               connect' Nothing cReqHash xContactId False
         -- group link
         Just gLinkId ->
-          withStore' (\db -> getConnReqContactXContactId db vr user cReqHash) >>= \case
+          withFastStore' (\db -> getConnReqContactXContactId db vr user cReqHash) >>= \case
             (Just _contact, _) -> procCmd $ do
               -- allow repeat contact request
               newXContactId <- XContactId <$> drgRandomBytes 16
@@ -2446,7 +2453,7 @@ processChatCommand' vr = \case
           -- [incognito] generate profile to send
           incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
           subMode <- chatReadVar subscriptionMode
-          conn@PendingContactConnection {pccConnId} <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId subMode chatV pqSup
+          conn@PendingContactConnection {pccConnId} <- withFastStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId subMode chatV pqSup
           joinContact user pccConnId connId cReq incognitoProfile xContactId inGroup pqSup chatV
           pure $ CRSentInvitation user conn incognitoProfile
     connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> ConnectionRequestUri 'CMContact -> CM ChatResponse
@@ -2459,7 +2466,7 @@ processChatCommand' vr = \case
         -- [incognito] generate profile to send
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
         subMode <- chatReadVar subscriptionMode
-        (pccConnId, ct') <- withStore $ \db -> createAddressContactConnection db vr user ct connId cReqHash newXContactId incognitoProfile subMode chatV pqSup
+        (pccConnId, ct') <- withFastStore $ \db -> createAddressContactConnection db vr user ct connId cReqHash newXContactId incognitoProfile subMode chatV pqSup
         joinContact user pccConnId connId cReq incognitoProfile newXContactId False pqSup chatV
         pure $ CRSentInvitationToContact user ct' incognitoProfile
     prepareContact :: User -> ConnectionRequestUri 'CMContact -> PQSupport -> CM (ConnId, VersionChat)
@@ -2483,7 +2490,7 @@ processChatCommand' vr = \case
     joinPreparedAgentConnection user pccConnId connId cReq connInfo pqSup subMode = do
       void (withAgent $ \a -> joinConnection a (aUserId user) (Just connId) True cReq connInfo pqSup subMode)
         `catchChatError` \e -> do
-          withStore' $ \db -> deleteConnectionRecord db user pccConnId
+          withFastStore' $ \db -> deleteConnectionRecord db user pccConnId
           withAgent $ \a -> deleteConnectionAsync a False connId
           throwError e
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
@@ -2498,14 +2505,14 @@ processChatCommand' vr = \case
       when (fromInteger fileSize > maxFileSize) $ throwChatError $ CEFileSize f
       pure fileSize
     updateProfile :: User -> Profile -> CM ChatResponse
-    updateProfile user p' = updateProfile_ user p' $ withStore $ \db -> updateUserProfile db user p'
+    updateProfile user p' = updateProfile_ user p' $ withFastStore $ \db -> updateUserProfile db user p'
     updateProfile_ :: User -> Profile -> CM User -> CM ChatResponse
     updateProfile_ user@User {profile = p@LocalProfile {displayName = n}} p'@Profile {displayName = n'} updateUser
       | p' == fromLocalProfile p = pure $ CRUserProfileNoChange user
       | otherwise = do
           when (n /= n') $ checkValidName n'
           -- read contacts before user update to correctly merge preferences
-          contacts <- withStore' $ \db -> getUserContacts db vr user
+          contacts <- withFastStore' $ \db -> getUserContacts db vr user
           user' <- updateUser
           asks currentUser >>= atomically . (`writeTVar` Just user')
           withChatLock "updateProfile" . procCmd $ do
@@ -2683,34 +2690,34 @@ processChatCommand' vr = \case
     setUserPrivacy user@User {userId} user'@User {userId = userId'}
       | userId == userId' = do
           asks currentUser >>= atomically . (`writeTVar` Just user')
-          withStore' (`updateUserPrivacy` user')
+          withFastStore' (`updateUserPrivacy` user')
           pure $ CRUserPrivacy {user = user', updatedUser = user'}
       | otherwise = do
-          withStore' (`updateUserPrivacy` user')
+          withFastStore' (`updateUserPrivacy` user')
           pure $ CRUserPrivacy {user, updatedUser = user'}
     checkDeleteChatUser :: User -> CM ()
     checkDeleteChatUser user@User {userId} = do
-      users <- withStore' getUsers
+      users <- withFastStore' getUsers
       let otherVisible = filter (\User {userId = userId', viewPwdHash} -> userId /= userId' && isNothing viewPwdHash) users
       when (activeUser user && length otherVisible > 0) $ throwChatError (CECantDeleteActiveUser userId)
     deleteChatUser :: User -> Bool -> CM ChatResponse
     deleteChatUser user delSMPQueues = do
-      filesInfo <- withStore' (`getUserFileInfo` user)
+      filesInfo <- withFastStore' (`getUserFileInfo` user)
       cancelFilesInProgress user filesInfo
       deleteFilesLocally filesInfo
       withAgent $ \a -> deleteUser a (aUserId user) delSMPQueues
-      withStore' (`deleteUserRecord` user)
+      withFastStore' (`deleteUserRecord` user)
       when (activeUser user) $ chatWriteVar currentUser Nothing
       ok_
     updateChatSettings :: ChatName -> (ChatSettings -> ChatSettings) -> CM ChatResponse
     updateChatSettings (ChatName cType name) updateSettings = withUser $ \user -> do
       (chatId, chatSettings) <- case cType of
-        CTDirect -> withStore $ \db -> do
+        CTDirect -> withFastStore $ \db -> do
           ctId <- getContactIdByName db user name
           Contact {chatSettings} <- getContact db vr user ctId
           pure (ctId, chatSettings)
         CTGroup ->
-          withStore $ \db -> do
+          withFastStore $ \db -> do
             gId <- getGroupIdByName db user name
             GroupInfo {chatSettings} <- getGroupInfo db vr user gId
             pure (gId, chatSettings)
@@ -2718,7 +2725,7 @@ processChatCommand' vr = \case
       processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ updateSettings chatSettings
     connectPlan :: User -> AConnectionRequestUri -> CM ConnectionPlan
     connectPlan user (ACR SCMInvitation (CRInvitationUri crData e2e)) = do
-      withStore' (\db -> getConnectionEntityByConnReq db vr user cReqSchemas) >>= \case
+      withFastStore' (\db -> getConnectionEntityByConnReq db vr user cReqSchemas) >>= \case
         Nothing -> pure $ CPInvitationLink ILPOk
         Just (RcvDirectMsgConnection conn ct_) -> do
           let Connection {connStatus, contactConnInitiated} = conn
@@ -2743,12 +2750,12 @@ processChatCommand' vr = \case
       case groupLinkId of
         -- contact address
         Nothing ->
-          withStore' (\db -> getUserContactLinkByConnReq db user cReqSchemas) >>= \case
+          withFastStore' (\db -> getUserContactLinkByConnReq db user cReqSchemas) >>= \case
             Just _ -> pure $ CPContactAddress CAPOwnLink
             Nothing ->
-              withStore' (\db -> getContactConnEntityByConnReqHash db vr user cReqHashes) >>= \case
+              withFastStore' (\db -> getContactConnEntityByConnReqHash db vr user cReqHashes) >>= \case
                 Nothing ->
-                  withStore' (\db -> getContactWithoutConnViaAddress db vr user cReqSchemas) >>= \case
+                  withFastStore' (\db -> getContactWithoutConnViaAddress db vr user cReqSchemas) >>= \case
                     Nothing -> pure $ CPContactAddress CAPOk
                     Just ct -> pure $ CPContactAddress (CAPContactViaAddress ct)
                 Just (RcvDirectMsgConnection _conn Nothing) -> pure $ CPContactAddress CAPConnectingConfirmReconnect
@@ -2759,11 +2766,11 @@ processChatCommand' vr = \case
                 Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
         -- group link
         Just _ ->
-          withStore' (\db -> getGroupInfoByUserContactLinkConnReq db vr user cReqSchemas) >>= \case
+          withFastStore' (\db -> getGroupInfoByUserContactLinkConnReq db vr user cReqSchemas) >>= \case
             Just g -> pure $ CPGroupLink (GLPOwnLink g)
             Nothing -> do
-              connEnt_ <- withStore' $ \db -> getContactConnEntityByConnReqHash db vr user cReqHashes
-              gInfo_ <- withStore' $ \db -> getGroupInfoByGroupLinkHash db vr user cReqHashes
+              connEnt_ <- withFastStore' $ \db -> getContactConnEntityByConnReqHash db vr user cReqHashes
+              gInfo_ <- withFastStore' $ \db -> getGroupInfoByGroupLinkHash db vr user cReqHashes
               case (gInfo_, connEnt_) of
                 (Nothing, Nothing) -> pure $ CPGroupLink GLPOk
                 (Nothing, Just (RcvDirectMsgConnection _conn Nothing)) -> pure $ CPGroupLink GLPConnectingConfirmReconnect
@@ -2786,7 +2793,7 @@ processChatCommand' vr = \case
         cReqHashes = bimap hash hash cReqSchemas
         hash = ConnReqUriHash . C.sha256Hash . strEncode
     updateCIGroupInvitationStatus user GroupInfo {groupId} newStatus = do
-      AChatItem _ _ cInfo ChatItem {content, meta = CIMeta {itemId}} <- withStore $ \db -> getChatItemByGroupId db vr user groupId
+      AChatItem _ _ cInfo ChatItem {content, meta = CIMeta {itemId}} <- withFastStore $ \db -> getChatItemByGroupId db vr user groupId
       case (cInfo, content) of
         (DirectChat ct@Contact {contactId}, CIRcvGroupInvitation ciGroupInv@CIGroupInvitation {status} memRole)
           | status == CIGISPending -> do
@@ -2798,9 +2805,9 @@ processChatCommand' vr = \case
         _ -> pure () -- prohibited
     sendContactContentMessage :: User -> ContactId -> Bool -> Maybe Int -> ComposedMessage -> Maybe CIForwardedFrom -> CM ChatResponse
     sendContactContentMessage user contactId live itemTTL (ComposedMessage file_ quotedItemId_ mc) itemForwarded = do
-      ct@Contact {contactUsed} <- withStore $ \db -> getContact db vr user contactId
+      ct@Contact {contactUsed} <- withFastStore $ \db -> getContact db vr user contactId
       assertDirectAllowed user MDSnd ct XMsgNew_
-      unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
+      unless contactUsed $ withFastStore' $ \db -> updateContactUsed db user ct
       if isVoice mc && not (featureAllowed SCFVoice forUser ct)
         then pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (chatFeatureNameText CFVoice))
         else do
@@ -2823,7 +2830,7 @@ processChatCommand' vr = \case
           (Nothing, Just _) -> pure (MCForward (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
           (Just quotedItemId, Nothing) -> do
             CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
-              withStore $ \db -> getDirectChatItem db user contactId quotedItemId
+              withFastStore $ \db -> getDirectChatItem db user contactId quotedItemId
             (origQmc, qd, sent) <- quoteData qci
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
                 qmc = quoteContent mc origQmc file
@@ -2838,7 +2845,7 @@ processChatCommand' vr = \case
             quoteData _ = throwChatError CEInvalidQuote
     sendGroupContentMessage :: User -> GroupId -> Bool -> Maybe Int -> ComposedMessage -> Maybe CIForwardedFrom -> CM ChatResponse
     sendGroupContentMessage user groupId live itemTTL (ComposedMessage file_ quotedItemId_ mc) itemForwarded = do
-      g@(Group gInfo _) <- withStore $ \db -> getGroup db vr user groupId
+      g@(Group gInfo _) <- withFastStore $ \db -> getGroup db vr user groupId
       assertUserGroupRole gInfo GRAuthor
       send g
       where
@@ -2851,7 +2858,7 @@ processChatCommand' vr = \case
               (msgContainer, quotedItem_) <- prepareGroupMsg user gInfo mc quotedItemId_ itemForwarded fInv_ timed_ live
               (msg, r) <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
               ci <- saveSndChatItem' user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ itemForwarded timed_ live
-              withStore' $ \db -> do
+              withFastStore' $ \db -> do
                 let GroupSndResult {sentTo, pending, forwarded} = mkGroupSndResult r
                 createMemberSndStatuses db ci sentTo GSSNew
                 createMemberSndStatuses db ci forwarded GSSForwarded
@@ -2872,20 +2879,20 @@ processChatCommand' vr = \case
       (fInv, ciFile, ft) <- xftpSndFileTransfer_ user file fileSize n $ Just contactOrGroup
       case contactOrGroup of
         CGContact Contact {activeConn} -> forM_ activeConn $ \conn ->
-          withStore' $ \db -> createSndFTDescrXFTP db user Nothing conn ft dummyFileDescr
+          withFastStore' $ \db -> createSndFTDescrXFTP db user Nothing conn ft dummyFileDescr
         CGGroup (Group _ ms) -> forM_ ms $ \m -> saveMemberFD m `catchChatError` (toView . CRChatError (Just user))
           where
             -- we are not sending files to pending members, same as with inline files
             saveMemberFD m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
               when ((connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn)) $
-                withStore' $
+                withFastStore' $
                   \db -> createSndFTDescrXFTP db user (Just m) conn ft dummyFileDescr
             saveMemberFD _ = pure ()
       pure (fInv, ciFile)
     createNoteFolderContentItem :: User -> NoteFolderId -> ComposedMessage -> Maybe CIForwardedFrom -> CM ChatResponse
     createNoteFolderContentItem user folderId (ComposedMessage file_ quotedItemId_ mc) itemForwarded = do
       forM_ quotedItemId_ $ \_ -> throwError $ ChatError $ CECommandError "not supported"
-      nf <- withStore $ \db -> getNoteFolder db user folderId
+      nf <- withFastStore $ \db -> getNoteFolder db user folderId
       createdAt <- liftIO getCurrentTime
       let content = CISndMsgContent mc
       let cd = CDLocalSnd nf
@@ -2894,13 +2901,13 @@ processChatCommand' vr = \case
         fsFilePath <- lift $ toFSFilePath filePath
         fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cryptoArgs
         chunkSize <- asks $ fileChunkSize . config
-        withStore' $ \db -> do
+        withFastStore' $ \db -> do
           fileId <- createLocalFile CIFSSndStored db user nf ciId createdAt cf fileSize chunkSize
           pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndStored, fileProtocol = FPLocal}
       let ci = mkChatItem cd ciId content ciFile_ Nothing Nothing itemForwarded Nothing False createdAt Nothing createdAt
       pure . CRNewChatItem user $ AChatItem SCTLocal SMDSnd (LocalChat nf) ci
     getConnQueueInfo user Connection {connId, agentConnId = AgentConnId acId} = do
-      msgInfo <- withStore' (`getLastRcvMsgInfo` connId)
+      msgInfo <- withFastStore' (`getLastRcvMsgInfo` connId)
       CRQueueInfo user msgInfo <$> withAgent (`getConnectionQueueInfo` acId)
 
 contactCITimed :: Contact -> CM (Maybe CITimed)
@@ -7550,6 +7557,7 @@ chatCommandP =
         enableSndFiles <- " snd_files=" *> onOffP <|> pure mainApp
         pure StartChat {mainApp, enableSndFiles},
       "/_start" $> StartChat True True,
+      "/_check running" $> CheckChatRunning,
       "/_stop" $> APIStopChat,
       "/_app activate restore=" *> (APIActivateChat <$> onOffP),
       "/_app activate" $> APIActivateChat True,
@@ -7988,13 +7996,23 @@ adminContactReq :: ConnReqContact
 adminContactReq =
   either error id $ strDecode "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
 
-simplexContactProfile :: Profile
-simplexContactProfile =
+simplexTeamContactProfile :: Profile
+simplexTeamContactProfile =
   Profile
     { displayName = "SimpleX Chat team",
       fullName = "",
       image = Just (ImageData "data:image/jpg;base64,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"),
       contactLink = Just adminContactReq,
+      preferences = Nothing
+    }
+
+simplexStatusContactProfile :: Profile
+simplexStatusContactProfile =
+  Profile
+    { displayName = "SimpleX-Status",
+      fullName = "",
+      image = Just (ImageData "data:image/jpg;base64,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"),
+      contactLink = Just (either error id $ strDecode "simplex:/contact/#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FShQuD-rPokbDvkyotKx5NwM8P3oUXHxA%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA6fSx1k9zrOmF0BJpCaTarZvnZpMTAVQhd3RkDQ35KT0%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"),
       preferences = Nothing
     }
 

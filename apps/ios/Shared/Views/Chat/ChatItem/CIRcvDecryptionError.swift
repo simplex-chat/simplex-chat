@@ -27,7 +27,7 @@ struct CIRcvDecryptionError: View {
         case syncNotSupportedContactAlert
         case syncNotSupportedMemberAlert
         case decryptionErrorAlert
-        case error(title: LocalizedStringKey, error: LocalizedStringKey)
+        case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
             switch self {
@@ -62,7 +62,7 @@ struct CIRcvDecryptionError: View {
                 case .syncNotSupportedContactAlert: return Alert(title: Text("Fix not supported by contact"), message: message())
                 case .syncNotSupportedMemberAlert: return Alert(title: Text("Fix not supported by group member"), message: message())
                 case .decryptionErrorAlert: return Alert(title: Text("Decryption error"), message: message())
-                case let .error(title, error): return Alert(title: Text(title), message: Text(error))
+                case let .error(title, error): return mkAlert(title: title, message: error)
                 }
             }
     }

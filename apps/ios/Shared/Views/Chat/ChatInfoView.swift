@@ -112,7 +112,7 @@ struct ChatInfoView: View {
         case abortSwitchAddressAlert
         case syncConnectionForceAlert
         case queueInfo(info: String)
-        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
+        case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
             switch self {

@@ -73,7 +73,7 @@ import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWo
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction, withTransactionPriority)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Client (SMPProxyFallback (..), SMPProxyMode (..), SocksMode (..))
@@ -264,6 +264,7 @@ data ChatCommand
   | APIDeleteUser UserId Bool (Maybe UserPwd)
   | DeleteUser UserName Bool (Maybe UserPwd)
   | StartChat {mainApp :: Bool, enableSndFiles :: Bool} -- enableSndFiles has no effect when mainApp is True
+  | CheckChatRunning
   | APIStopChat
   | APIActivateChat {restoreChat :: Bool}
   | APISuspendChat {suspendTimeout :: Int}
@@ -1399,11 +1400,24 @@ toView' ev = do
 
 withStore' :: (DB.Connection -> IO a) -> CM a
 withStore' action = withStore $ liftIO . action
+{-# INLINE withStore' #-}
+
+withFastStore' :: (DB.Connection -> IO a) -> CM a
+withFastStore' action = withFastStore $ liftIO . action
+{-# INLINE withFastStore' #-}
 
 withStore :: (DB.Connection -> ExceptT StoreError IO a) -> CM a
-withStore action = do
+withStore = withStorePriority False
+{-# INLINE withStore #-}
+
+withFastStore :: (DB.Connection -> ExceptT StoreError IO a) -> CM a
+withFastStore = withStorePriority True
+{-# INLINE withFastStore #-}
+
+withStorePriority :: Bool -> (DB.Connection -> ExceptT StoreError IO a) -> CM a
+withStorePriority priority action = do
   ChatController {chatStore} <- ask
-  liftIOEither $ withTransaction chatStore (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
+  liftIOEither $ withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
 
 withStoreBatch :: Traversable t => (DB.Connection -> t (IO (Either ChatError a))) -> CM' (t (Either ChatError a))
 withStoreBatch actions = do

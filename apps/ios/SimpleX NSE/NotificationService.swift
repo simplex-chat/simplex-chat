@@ -390,6 +390,16 @@ func appStateSubscriber(onState: @escaping (AppState) -> Void) -> AppSubscriber 
     }
 }
 
+let seSubscriber = seMessageSubscriber {
+    switch $0 {
+    case let .state(state):
+        if state == .sendingMessage && NSEChatState.shared.value.canSuspend {
+            logger.debug("NotificationService: seSubscriber app state \(state.rawValue), suspending")
+            suspendChat(fastNSESuspendSchedule.timeout)
+        }
+    }
+}
+
 var receiverStarted = false
 let startLock = DispatchSemaphore(value: 1)
 let suspendLock = DispatchSemaphore(value: 1)

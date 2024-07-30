@@ -30,7 +30,7 @@ struct UserProfilesView: View {
         case hiddenProfilesNotice
         case muteProfileAlert
         case activateUserError(error: String)
-        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
+        case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
             switch self {
@@ -172,7 +172,7 @@ struct UserProfilesView: View {
                     message: Text(err)
                 )
             case let .error(title, error):
-                return Alert(title: Text(title), message: Text(error))
+                return mkAlert(title: title, message: error)
             }
         }
     }
