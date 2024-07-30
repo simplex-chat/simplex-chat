@@ -488,13 +488,13 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
   }
   val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
-  val allChats = remember { chatModel.chats.value }
+  val allChats = remember { chatModel.chats }
   // In some not always reproducible situations this code produce IndexOutOfBoundsException on Compose's side
   // which is related to [derivedStateOf]. Using safe alternative instead
   // val chats by remember(search, showUnreadAndFavorites) { derivedStateOf { filteredChats(showUnreadAndFavorites, search, allChats.toList()) } }
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
-  val chats = filteredChats(showUnreadAndFavorites, searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.toList())
+  val chats = filteredChats(showUnreadAndFavorites, searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList())
   LazyColumnWithScrollBar(
     Modifier.fillMaxWidth(),
     listState
