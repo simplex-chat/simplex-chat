@@ -7069,7 +7069,7 @@ sendGroupMemberMessage user gInfo@GroupInfo {groupId} m@GroupMember {groupMember
   messageMember msg `catchChatError` (toView . CRChatError (Just user))
   where
     messageMember :: SndMessage -> CM ()
-    messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction gInfo (L.singleton chatMsgEvent) [m] m) $ \case
+    messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction gInfo (chatMsgEvent :| []) [m] m) $ \case
       MSASend conn -> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId >> postDeliver
       MSASendBatched conn -> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId >> postDeliver
       MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
