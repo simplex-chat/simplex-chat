@@ -855,7 +855,9 @@ fun SearchButton(chat: Chat, contact: Contact, close: () -> Unit, onSearchClicke
     title = generalGetString(MR.strings.info_view_search_button),
     disabled = !contact.ready || chat.chatItems.isEmpty(),
     onClick = {
-      close.invoke()
+      if (appPlatform.isAndroid) {
+        close.invoke()
+      }
       onSearchClicked()
     }
   )

@@ -185,8 +185,10 @@ fun SearchButton(chat: Chat, group: GroupInfo, close: () -> Unit, onSearchClicke
     title = generalGetString(MR.strings.info_view_search_button),
     disabled = !group.ready || chat.chatItems.isEmpty(),
     onClick = {
+      if (appPlatform.isAndroid) {
+        close.invoke()
+      }
       onSearchClicked()
-      close.invoke()
     }
   )
 }
