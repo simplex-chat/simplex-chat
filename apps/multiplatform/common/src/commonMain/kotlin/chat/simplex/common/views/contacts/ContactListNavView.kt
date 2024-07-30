@@ -36,6 +36,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
     }
 
     val selectedChat = remember(chat.id) { derivedStateOf { chat.id == chatModel.chatId.value } }
+    val view = LocalMultiplatformView()
 
     when (chat.chatInfo) {
         is ChatInfo.Direct -> {
@@ -46,6 +47,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                     }
                 },
                 click = {
+                    hideKeyboard(view)
                     when (contactType) {
                         ContactType.RECENT -> {
                             withApi {
@@ -89,6 +91,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                     }
                 },
                 click = {
+                    hideKeyboard(view)
                     contactRequestAlertDialog(
                         rhId,
                         chat.chatInfo,
