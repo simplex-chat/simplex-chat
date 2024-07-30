@@ -220,25 +220,54 @@ sealed class SendReceipts {
   }
 }
 
+fun deleteContactDialog(chat: Chat, chatModel: ChatModel, close: (() -> Unit)? = null) {
+  val chatInfo = chat.chatInfo
+  if (chatInfo is ChatInfo.Direct) {
+    val contact = chatInfo.contact
+    when {
+      contact.sndReady && contact.active && !chatInfo.chatDeleted ->
+        deleteContactOrConversationDialog(chat, contact, chatModel, close)
 
-enum class ContactDeletionKind {
-  ENABLED_FROM_ACTIVE, ENABLED_FROM_NOT_READY, ENABLED_FROM_DELETED_CONVERSATION, DISABLED
+      contact.sndReady && contact.active && chatInfo.chatDeleted ->
+        deleteContactWithoutConversation(chat, chatModel, close)
+
+      else -> // !(contact.sndReady && contact.active)
+        deleteNotReadyContact(chat, chatModel, close)
+    }
+  }
 }
 
-private fun getContactDeletionKind(chat: Chat): ContactDeletionKind {
-  return when (val chatInfo = chat.chatInfo) {
-    is ChatInfo.Direct -> {
-      val contact = chatInfo.contact
-
-      when {
-        contact.sndReady && contact.active && !chatInfo.chatDeleted -> ContactDeletionKind.ENABLED_FROM_ACTIVE
-        contact.active && chatInfo.chatDeleted -> ContactDeletionKind.ENABLED_FROM_DELETED_CONVERSATION
-        !(contact.sndReady && contact.active) -> ContactDeletionKind.ENABLED_FROM_NOT_READY
-        else -> ContactDeletionKind.DISABLED
+private fun deleteContactOrConversationDialog(chat: Chat, contact: Contact, chatModel: ChatModel, close: (() -> Unit)?) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.delete_contact_question),
+    buttons = {
+      Column {
+        // Only delete conversation
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          deleteContact(chat, chatModel, close, chatDeleteMode = ChatDeleteMode.Messages())
+          if (chatModel.controller.appPrefs.showDeleteConversationNotice.get()) {
+            showDeleteConversationNotice(contact)
+          }
+        }) {
+          Text(generalGetString(MR.strings.only_delete_conversation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+        }
+        // Delete contact
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          deleteActiveContactDialog(chat, contact, chatModel, close)
+        }) {
+          Text(generalGetString(MR.strings.button_delete_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+        }
+        // Cancel
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
       }
     }
-    else -> ContactDeletionKind.DISABLED
-  }
+  )
 }
 
 private fun showDeleteConversationNotice(contact: Contact) {
@@ -308,41 +337,7 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: C
   )
 }
 
-private fun deleteActiveContactOrConversationDialog(chat: Chat, contact: Contact, chatModel: ChatModel, close: (() -> Unit)?) {
-  AlertManager.shared.showAlertDialogButtonsColumn(
-    title = generalGetString(MR.strings.delete_contact_question),
-    text = generalGetString(MR.strings.delete_contact_or_messages_cannot_undo_warning),
-    buttons = {
-      Column {
-        // Only delete conversation
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          deleteContact(chat, chatModel, close, chatDeleteMode = ChatDeleteMode.Messages())
-          if (chatModel.controller.appPrefs.showDeleteConversationNotice.get()) {
-            showDeleteConversationNotice(contact)
-          }
-        }) {
-          Text(generalGetString(MR.strings.only_delete_conversation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
-        }
-        // Delete contact
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          deleteActiveContactDialog(chat, contact, chatModel, close)
-        }) {
-          Text(generalGetString(MR.strings.button_delete_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
-        }
-        // Cancel
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-        }) {
-          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
-      }
-    }
-  )
-}
-
-private fun deleteActiveContactWithDeletedConversation(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?) {
+private fun deleteContactWithoutConversation(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.confirm_delete_contact_question),
     text = generalGetString(MR.strings.delete_contact_all_messages_deleted_cannot_undo_warning),
@@ -433,18 +428,6 @@ private fun deleteNotReadyContact(chat: Chat, chatModel: ChatModel, close: (() -
       }
     }
   )
-}
-
-fun deleteContactDialog(chat: Chat, chatModel: ChatModel, close: (() -> Unit)? = null) {
-  when (val cInfo = chat.chatInfo) {
-    is ChatInfo.Direct -> when (getContactDeletionKind(chat)) {
-      ContactDeletionKind.ENABLED_FROM_ACTIVE -> deleteActiveContactOrConversationDialog(chat, cInfo.contact, chatModel, close)
-      ContactDeletionKind.ENABLED_FROM_DELETED_CONVERSATION -> deleteActiveContactWithDeletedConversation(chat, chatModel, close)
-      ContactDeletionKind.ENABLED_FROM_NOT_READY -> deleteNotReadyContact(chat, chatModel, close)
-      ContactDeletionKind.DISABLED -> {}
-    }
-    else -> {}
-  }
 }
 
 private fun showDeleteContactNotice(contact: Contact) {
