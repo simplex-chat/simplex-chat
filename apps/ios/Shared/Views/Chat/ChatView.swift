@@ -700,26 +700,6 @@ struct ChatView: View {
         var revealed: Bool { chatItem == revealedChatItem }
 
         var body: some View {
-            HStack(alignment: .center) {
-                if selectedChatItems != nil {
-                    SelectedChatItem(ciId: chatItem.id, selectedChatItems: $selectedChatItems)
-                }
-                item()
-            }
-            .overlay {
-                if selectedChatItems != nil {
-                    Color.clear
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            let items = selectedChatItems?.map { $0 } ?? []
-                            let checked = items.contains(chatItem.id)
-                            selectUnselectChatItem(select: !checked, chatItem)
-                        }
-                }
-            }
-        }
-
-        @ViewBuilder func item() -> some View {
             let (currIndex, _) = m.getNextChatItem(chatItem)
             let ciCategory = chatItem.mergeCategory
             let (prevHidden, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
@@ -730,10 +710,42 @@ struct ChatView: View {
                     let items = Array(zip(Array(range), im.reversedChatItems[range]))
                     ForEach(items, id: \.1.viewId) { (i, ci) in
                         let prev = i == prevHidden ? prevItem : im.reversedChatItems[i + 1]
-                        chatItemView(ci, nil, prev)
+                        HStack(alignment: .center) {
+                            if selectedChatItems != nil {
+                                SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
+                            }
+                            chatItemView(ci, nil, prev)
+                        }
+                        .overlay {
+                            if selectedChatItems != nil {
+                                Color.clear
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
+                                        let items = selectedChatItems?.map { $0 } ?? []
+                                        let checked = items.contains(ci.id)
+                                        selectUnselectChatItem(select: !checked, ci)
+                                    }
+                            }
+                        }
                     }
                 } else {
-                    chatItemView(chatItem, range, prevItem)
+                    HStack(alignment: .center) {
+                        if selectedChatItems != nil {
+                            SelectedChatItem(ciId: chatItem.id, selectedChatItems: $selectedChatItems)
+                        }
+                        chatItemView(chatItem, range, prevItem)
+                    }
+                    .overlay {
+                        if selectedChatItems != nil {
+                            Color.clear
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    let items = selectedChatItems?.map { $0 } ?? []
+                                    let checked = items.contains(chatItem.id)
+                                    selectUnselectChatItem(select: !checked, chatItem)
+                                }
+                        }
+                    }
                 }
             }
             .onAppear {
@@ -997,15 +1009,27 @@ struct ChatView: View {
                 } else if range != nil {
                     expandButton()
                 }
+                if selectedChatItems == nil {
+                    selectButton(ci)
+                }
                 viewInfoButton(ci)
                 deleteButton(ci)
             } else if ci.isDeletedContent {
+                if selectedChatItems == nil {
+                    selectButton(ci)
+                }
                 viewInfoButton(ci)
                 deleteButton(ci)
             } else if ci.mergeCategory != nil && ((range?.count ?? 0) > 1 || revealed) {
                 if revealed { shrinkButton() } else { expandButton() }
+                if selectedChatItems == nil {
+                    selectButton(ci)
+                }
                 deleteButton(ci)
             } else if ci.showLocalDelete {
+                if selectedChatItems == nil {
+                    selectButton(ci)
+                }
                 deleteButton(ci)
             } else {
                 EmptyView()
