@@ -50,17 +50,6 @@ import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import java.io.File
 
-sealed class ContactDeleteMode {
-  class Full: ContactDeleteMode()
-  class Entity: ContactDeleteMode()
-
-  fun toChatDeleteMode(notify: Boolean): ChatDeleteMode =
-    when (this) {
-      is Full -> ChatDeleteMode.Full(notify)
-      is Entity -> ChatDeleteMode.Entity(notify)
-    }
-}
-
 @Composable
 fun ChatInfoView(
   chatModel: ChatModel,
@@ -282,6 +271,17 @@ private fun showDeleteConversationNotice(contact: Contact) {
   )
 }
 
+sealed class ContactDeleteMode {
+  class Full: ContactDeleteMode()
+  class Entity: ContactDeleteMode()
+
+  fun toChatDeleteMode(notify: Boolean): ChatDeleteMode =
+    when (this) {
+      is Full -> ChatDeleteMode.Full(notify)
+      is Entity -> ChatDeleteMode.Entity(notify)
+    }
+}
+
 private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: ChatModel, close: (() -> Unit)? = null) {
   val contactDeleteMode = mutableStateOf<ContactDeleteMode>(ContactDeleteMode.Full())
 
@@ -342,7 +342,7 @@ private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: C
 private fun deleteContactWithoutConversation(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.confirm_delete_contact_question),
-    text = generalGetString(MR.strings.delete_contact_all_messages_deleted_cannot_undo_warning),
+    text = generalGetString(MR.strings.delete_contact_cannot_undo_warning),
     buttons = {
       Column {
         // Delete and notify contact
@@ -400,7 +400,7 @@ private fun deleteNotReadyContact(chat: Chat, chatModel: ChatModel, close: (() -
     title = generalGetString(MR.strings.confirm_delete_contact_question),
     text = generalGetString(MR.strings.delete_contact_cannot_undo_warning),
     buttons = {
-      // Delete without notification
+      // Confirm
       SectionItemView({
         AlertManager.shared.hideAlert()
         deleteContact(
