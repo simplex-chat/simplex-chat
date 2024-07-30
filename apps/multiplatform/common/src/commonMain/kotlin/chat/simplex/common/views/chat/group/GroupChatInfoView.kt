@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -131,13 +132,15 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
       withBGApi {
         val r = chatModel.controller.apiDeleteChat(chat.remoteHostId, chatInfo.chatType, chatInfo.apiId)
         if (r) {
-          chatModel.removeChat(chat.remoteHostId, chatInfo.id)
-          if (chatModel.chatId.value == chatInfo.id) {
-            chatModel.chatId.value = null
-            ModalManager.end.closeModals()
+          withChats {
+            removeChat(chat.remoteHostId, chatInfo.id)
+            if (chatModel.chatId.value == chatInfo.id) {
+              chatModel.chatId.value = null
+              ModalManager.end.closeModals()
+            }
+            ntfManager.cancelNotificationsForChat(chatInfo.id)
+            close?.invoke()
           }
-          ntfManager.cancelNotificationsForChat(chatInfo.id)
-          close?.invoke()
         }
       }
     },
@@ -169,7 +172,9 @@ private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMembe
       withBGApi {
         val updatedMember = chatModel.controller.apiRemoveMember(rhId, groupInfo.groupId, mem.groupMemberId)
         if (updatedMember != null) {
-          chatModel.upsertGroupMember(rhId, groupInfo, updatedMember)
+          withChats {
+            upsertGroupMember(rhId, groupInfo, updatedMember)
+          }
         }
       }
     },

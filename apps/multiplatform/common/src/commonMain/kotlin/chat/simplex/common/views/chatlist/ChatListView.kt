@@ -415,7 +415,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
       }
     } else {
       val padding = if (appPlatform.isDesktop) 0.dp else 7.dp
-      if (chatModel.chats.size > 0) {
+      if (chatModel.chats.value.isNotEmpty()) {
         ToggleFilterEnabledButton() 
       }
       Spacer(Modifier.width(padding))
@@ -488,7 +488,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
   }
   val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
-  val allChats = remember { chatModel.chats }
+  val allChats = remember { chatModel.chats.value }
   // In some not always reproducible situations this code produce IndexOutOfBoundsException on Compose's side
   // which is related to [derivedStateOf]. Using safe alternative instead
   // val chats by remember(search, showUnreadAndFavorites) { derivedStateOf { filteredChats(showUnreadAndFavorites, search, allChats.toList()) } }

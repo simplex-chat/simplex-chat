@@ -127,7 +127,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
       })
     }
   }
-  if (chatModel.chats.size >= 8) {
+  if (chatModel.chats.value.size >= 8) {
     barButtons.add {
       IconButton({ showSearch = true }) {
         Icon(painterResource(MR.images.ic_search_500), stringResource(MR.strings.search_verb), tint = MaterialTheme.colors.primary)
@@ -186,7 +186,7 @@ private fun ShareList(
 ) {
   val chats by remember(search) {
     derivedStateOf {
-      val sorted = chatModel.chats.toList().sortedByDescending { it.chatInfo is ChatInfo.Local }
+      val sorted = chatModel.chats.value.toList().sortedByDescending { it.chatInfo is ChatInfo.Local }
       if (search.isEmpty()) {
         sorted.filter { it.chatInfo.ready }
       } else {
