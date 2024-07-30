@@ -163,6 +163,7 @@ struct SelectedItemsBottomToolbar: View {
         guard let selected = selectedItems, selected.count > 0 else {
             return false
         }
+        possibleToDeleteForEveryone = true
         return chatItems.filter { item in selected.contains(item.id) }.allSatisfy({ ci in
             if !ci.meta.deletable || ci.localNote {
                 possibleToDeleteForEveryone = false
