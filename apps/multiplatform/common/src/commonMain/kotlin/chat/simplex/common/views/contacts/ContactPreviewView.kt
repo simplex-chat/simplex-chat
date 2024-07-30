@@ -16,6 +16,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.DEFAULT_SPACE_AFTER_ICON
+import chat.simplex.common.ui.theme.Indigo
 import chat.simplex.res.MR
 
 @Composable
@@ -39,6 +40,7 @@ fun ContactPreviewView(
             deleting -> MaterialTheme.colors.secondary
             contactType == ContactType.CARD -> MaterialTheme.colors.primary
             contactType == ContactType.REQUEST -> MaterialTheme.colors.primary
+            contactType == ContactType.RECENT && chat.chatInfo.incognito -> Indigo
             else -> Color.Unspecified
         }
 
