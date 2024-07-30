@@ -647,7 +647,7 @@
 /* rcv group event chat item */
 "blocked %@" = "engellendi %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item */
 "blocked by admin" = "yönetici tarafından engellendi";
 
 /* No comment provided by engineer. */
@@ -2739,7 +2739,7 @@
    time to disappear */
 "off" = "kapalı";
 
-/* No comment provided by engineer. */
+/* blur media */
 "Off" = "Kapalı";
 
 /* feature offered item */
