@@ -1261,15 +1261,15 @@ struct ChatView: View {
         }
 
         private func deleteMessages() {
-            let itemsId = deletingItems
-            if itemsId.count > 0 {
+            let itemIds = deletingItems
+            if itemIds.count > 0 {
                 let chatInfo = chat.chatInfo
                 Task {
                     do {
                         let deletedItems = try await apiDeleteChatItems(
                             type: chatInfo.chatType,
                             id: chatInfo.apiId,
-                            itemsId: itemsId,
+                            itemIds: itemIds,
                             mode: .cidmInternal
                         )
                         await MainActor.run {
@@ -1290,22 +1290,22 @@ struct ChatView: View {
                 logger.debug("ChatView deleteMessage: in Task")
                 do {
                     if let di = deletingItem {
-                        let itemDeletion: ChatItemDeletion? = if case .cidmBroadcast = mode,
+                        let r = if case .cidmBroadcast = mode,
                            let (groupInfo, groupMember) = di.memberToModerate(chat.chatInfo) {
                             try await apiDeleteMemberChatItems(
                                 groupId: groupInfo.apiId,
-                                itemsId: [di.id]
-                            ).first
+                                itemIds: [di.id]
+                            )
                         } else {
                             try await apiDeleteChatItems(
                                 type: chat.chatInfo.chatType,
                                 id: chat.chatInfo.apiId,
-                                itemsId: [di.id],
+                                itemIds: [di.id],
                                 mode: mode
-                            ).first
+                            )
                         }
-                        if let itemDeletion {
-                            DispatchQueue.main.async {
+                        if let itemDeletion = r.first {
+                            await MainActor.run {
                                 deletingItem = nil
                                 if let toItem = itemDeletion.toChatItem {
                                     _ = m.upsertChatItem(chat.chatInfo, toItem.chatItem)

@@ -431,14 +431,14 @@ func apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, re
     throw r
 }
 
-func apiDeleteChatItems(type: ChatType, id: Int64, itemsId: [Int64], mode: CIDeleteMode) async throws -> [ChatItemDeletion] {
-    let r = await chatSendCmd(.apiDeleteChatItem(type: type, id: id, itemId: itemsId, mode: mode), bgDelay: msgDelay)
+func apiDeleteChatItems(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode) async throws -> [ChatItemDeletion] {
+    let r = await chatSendCmd(.apiDeleteChatItem(type: type, id: id, itemIds: itemIds, mode: mode), bgDelay: msgDelay)
     if case let .chatItemsDeleted(_, items, _) = r { return items }
     throw r
 }
 
-func apiDeleteMemberChatItems(groupId: Int64, itemsId: [Int64]) async throws -> [ChatItemDeletion] {
-    let r = await chatSendCmd(.apiDeleteMemberChatItem(groupId: groupId, itemId: itemsId), bgDelay: msgDelay)
+func apiDeleteMemberChatItems(groupId: Int64, itemIds: [Int64]) async throws -> [ChatItemDeletion] {
+    let r = await chatSendCmd(.apiDeleteMemberChatItem(groupId: groupId, itemIds: itemIds), bgDelay: msgDelay)
     if case let .chatItemsDeleted(_, items, _) = r { return items }
     throw r
 }

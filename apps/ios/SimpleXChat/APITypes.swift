@@ -46,8 +46,8 @@ public enum ChatCommand {
     case apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: Int64?, msg: MsgContent, live: Bool, ttl: Int?)
     case apiCreateChatItem(noteFolderId: Int64, file: CryptoFile?, msg: MsgContent)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
-    case apiDeleteChatItem(type: ChatType, id: Int64, itemId: [Int64], mode: CIDeleteMode)
-    case apiDeleteMemberChatItem(groupId: Int64, itemId: [Int64])
+    case apiDeleteChatItem(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode)
+    case apiDeleteMemberChatItem(groupId: Int64, itemIds: [Int64])
     case apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, reaction: MsgReaction)
     case apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64, ttl: Int?)
     case apiGetNtfToken
@@ -199,8 +199,8 @@ public enum ChatCommand {
                 let msg = encodeJSON(ComposedMessage(fileSource: file, msgContent: mc))
                 return "/_create *\(noteFolderId) json \(msg)"
             case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
-            case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
-            case let .apiDeleteMemberChatItem(groupId, itemId): return "/_delete member item #\(groupId) \(itemId.map({ "\($0)" }).joined(separator: ","))"
+            case let .apiDeleteChatItem(type, id, itemIds, mode): return "/_delete item \(ref(type, id)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
+            case let .apiDeleteMemberChatItem(groupId, itemIds): return "/_delete member item #\(groupId) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
             case let .apiChatItemReaction(type, id, itemId, add, reaction): return "/_reaction \(ref(type, id)) \(itemId) \(onOff(add)) \(encodeJSON(reaction))"
             case let .apiForwardChatItem(toChatType, toChatId, fromChatType, fromChatId, itemId, ttl):
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
