@@ -1392,14 +1392,14 @@ testMultipleUserAddresses =
       cLinkAlisa <- getContactLink alice True
       bob ##> ("/c " <> cLinkAlisa)
       alice <#? bob
-      alice #$> ("/_get chats 2 pcc=on", chats, [("<@bob", ""), ("*", "")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("<@bob", ""), ("@SimpleX-Status", ""), ("@SimpleX Chat team", ""), ("*", "")])
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alisa: contact is connected")
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", lastChatFeature), ("*", "")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", lastChatFeature), ("@SimpleX-Status", ""), ("@SimpleX Chat team", ""), ("*", "")])
       alice <##> bob
 
       bob #> "@alice hey alice"
@@ -1430,7 +1430,7 @@ testMultipleUserAddresses =
         (cath <## "alisa: contact is connected")
         (alice <## "cath (Catherine): contact is connected")
       threadDelay 100000
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", lastChatFeature), ("@bob", "hey"), ("*", "")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", lastChatFeature), ("@bob", "hey"), ("@SimpleX-Status", ""), ("@SimpleX Chat team", ""), ("*", "")])
       alice <##> cath
 
       -- first user doesn't have cath as contact
@@ -1633,7 +1633,7 @@ testUsersDifferentCIExpirationTTL tmp = do
       bob #> "@alisa alisa 4"
       alice <# "bob> alisa 4"
 
-      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 3000000
 
@@ -1646,11 +1646,11 @@ testUsersDifferentCIExpirationTTL tmp = do
       -- second user messages
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 2000000
 
-      alice #$> ("/_get chat @4 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [])
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
@@ -1716,7 +1716,7 @@ testUsersRestartCIExpiration tmp = do
       bob #> "@alisa alisa 4"
       alice <# "bob> alisa 4"
 
-      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 3000000
 
@@ -1729,11 +1729,11 @@ testUsersRestartCIExpiration tmp = do
       -- second user messages
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 3000000
 
-      alice #$> ("/_get chat @4 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [])
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
@@ -1775,7 +1775,7 @@ testEnableCIExpirationOnlyForOneUser tmp = do
       bob #> "@alisa alisa 4"
       alice <# "bob> alisa 4"
 
-      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 2000000
 
@@ -1787,14 +1787,14 @@ testEnableCIExpirationOnlyForOneUser tmp = do
       -- messages are not deleted for second user
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
     withTestChatCfg tmp cfg "alice" $ \alice -> do
       alice <## "1 contacts connected (use /cs for the list)"
       alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
 
       -- messages are not deleted for second user after restart
-      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
       alice #> "@bob alisa 5"
       bob <# "alisa> alisa 5"
@@ -1804,7 +1804,7 @@ testEnableCIExpirationOnlyForOneUser tmp = do
       threadDelay 2000000
 
       -- new messages are not deleted for second user
-      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4"), (1, "alisa 5"), (0, "alisa 6")])
+      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4"), (1, "alisa 5"), (0, "alisa 6")])
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
@@ -1838,12 +1838,12 @@ testDisableCIExpirationOnlyForOneUser tmp = do
       bob #> "@alisa alisa 2"
       alice <# "bob> alisa 2"
 
-      alice #$> ("/_get chat @4 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2")])
+      alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2")])
 
       threadDelay 2000000
 
       -- second user messages are deleted
-      alice #$> ("/_get chat @4 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [])
 
     withTestChatCfg tmp cfg "alice" $ \alice -> do
       alice <## "1 contacts connected (use /cs for the list)"
@@ -1857,12 +1857,12 @@ testDisableCIExpirationOnlyForOneUser tmp = do
       bob #> "@alisa alisa 4"
       alice <# "bob> alisa 4"
 
-      alice #$> ("/_get chat @4 count=100", chat, [(1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @6 count=100", chat, [(1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 2000000
 
       -- second user messages are deleted
-      alice #$> ("/_get chat @4 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [])
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
@@ -1877,7 +1877,7 @@ testUsersTimedMessages tmp = do
       alice ##> "/create user alisa"
       showActiveUser alice "alisa"
       connectUsers alice bob
-      configureTimedMessages alice bob "4" "3"
+      configureTimedMessages alice bob "6" "3"
 
       -- first user messages
       alice ##> "/user alice"
@@ -1906,7 +1906,7 @@ testUsersTimedMessages tmp = do
 
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @4 count=100", chat, [(1, "alisa 1"), (0, "alisa 2")])
+      alice #$> ("/_get chat @6 count=100", chat, [(1, "alisa 1"), (0, "alisa 2")])
 
       threadDelay 1000000
 
@@ -1921,7 +1921,7 @@ testUsersTimedMessages tmp = do
 
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @4 count=100", chat, [(1, "alisa 1"), (0, "alisa 2")])
+      alice #$> ("/_get chat @6 count=100", chat, [(1, "alisa 1"), (0, "alisa 2")])
 
       threadDelay 1000000
 
@@ -1932,7 +1932,7 @@ testUsersTimedMessages tmp = do
 
       alice ##> "/user"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @4 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [])
 
       -- first user messages
       alice ##> "/user alice"
@@ -1962,7 +1962,7 @@ testUsersTimedMessages tmp = do
 
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @4 count=100", chat, [(1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @6 count=100", chat, [(1, "alisa 3"), (0, "alisa 4")])
 
       -- messages are deleted after restart
       threadDelay 1000000
@@ -1978,7 +1978,7 @@ testUsersTimedMessages tmp = do
 
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @4 count=100", chat, [(1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @6 count=100", chat, [(1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 1000000
 
@@ -1989,7 +1989,7 @@ testUsersTimedMessages tmp = do
 
       alice ##> "/user"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @4 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [])
   where
     configureTimedMessages :: HasCallStack => TestCC -> TestCC -> String -> String -> IO ()
     configureTimedMessages alice bob bobId ttl = do
