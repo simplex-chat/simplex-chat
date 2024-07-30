@@ -121,7 +121,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
         if (!chatModel.desktopNoUserNoRemote) {
           ChatList(chatModel, searchText = searchText)
         }
-        if (chatModel.chats.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
+        if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
           Text(stringResource(
             if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
           if (!stopped && !newChatSheetState.collectAsState().value.isVisible() && chatModel.chatRunning.value == true && searchText.value.text.isEmpty()) {
@@ -523,7 +523,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
       ChatListNavLinkView(chat, nextChatSelected)
     }
   }
-  if (chats.isEmpty() && chatModel.chats.isNotEmpty()) {
+  if (chats.isEmpty() && chatModel.chats.value.isNotEmpty()) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
       Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary)
     }

@@ -81,7 +81,7 @@ fun getContactsToAdd(chatModel: ChatModel, search: String): List<Contact> {
   val memberContactIds = chatModel.groupMembers
     .filter { it.memberCurrent }
     .mapNotNull { it.memberContactId }
-  return chatModel.chats
+  return chatModel.chats.value
     .asSequence()
     .map { it.chatInfo }
     .filterIsInstance<ChatInfo.Direct>()

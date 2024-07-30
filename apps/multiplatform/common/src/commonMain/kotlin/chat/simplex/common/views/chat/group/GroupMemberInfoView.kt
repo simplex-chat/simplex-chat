@@ -52,7 +52,7 @@ fun GroupMemberInfoView(
   closeAll: () -> Unit, // Close all open windows up to ChatView
 ) {
   BackHandler(onBack = close)
-  val chat = chatModel.chats.firstOrNull { ch -> ch.id == chatModel.chatId.value && ch.remoteHostId == rhId }
+  val chat = chatModel.chats.value.firstOrNull { ch -> ch.id == chatModel.chatId.value && ch.remoteHostId == rhId }
   val connStats = remember { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   var progressIndicator by remember { mutableStateOf(false) }

@@ -54,7 +54,7 @@ object ChatModel {
   val ctrlInitInProgress = mutableStateOf(false)
   val dbMigrationInProgress = mutableStateOf(false)
   val incompleteInitializedDbRemoved = mutableStateOf(false)
-  val chats = mutableStateListOf<Chat>()
+  val chats = mutableStateOf(SnapshotStateList<Chat>())
   // map of connections network statuses, key is agent connection id
   val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
   val switchingUsersAndHosts = mutableStateOf(false)
@@ -2102,45 +2102,55 @@ data class ChatItem (
   }
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.add(index: Int, chatItem: ChatItem) {
-  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(index, chatItem) }
+fun <T> MutableState<SnapshotStateList<T>>.add(index: Int, elem: T) {
+  value = SnapshotStateList<T>().apply { addAll(value); add(index, elem) }
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.add(chatItem: ChatItem) {
-  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(chatItem) }
+fun <T> MutableState<SnapshotStateList<T>>.add(elem: T) {
+  value = SnapshotStateList<T>().apply { addAll(value); add(elem) }
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.addAll(index: Int, chatItems: List<ChatItem>) {
-  value = SnapshotStateList<ChatItem>().apply { addAll(value); addAll(index, chatItems) }
+fun <T> MutableState<SnapshotStateList<T>>.addAll(index: Int, elems: List<T>) {
+  value = SnapshotStateList<T>().apply { addAll(value); addAll(index, elems) }
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.addAll(chatItems: List<ChatItem>) {
-  value = SnapshotStateList<ChatItem>().apply { addAll(value); addAll(chatItems) }
+fun <T> MutableState<SnapshotStateList<T>>.addAll(elems: List<T>) {
+  value = SnapshotStateList<T>().apply { addAll(value); addAll(elems) }
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.removeAll(block: (ChatItem) -> Boolean) {
-  value = SnapshotStateList<ChatItem>().apply { addAll(value); removeAll(block) }
+fun <T> MutableState<SnapshotStateList<T>>.removeAll(block: (T) -> Boolean) {
+  value = SnapshotStateList<T>().apply { addAll(value); removeAll(block) }
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.removeAt(index: Int) {
-  value = SnapshotStateList<ChatItem>().apply { addAll(value); removeAt(index) }
+fun <T> MutableState<SnapshotStateList<T>>.removeAt(index: Int): T {
+  val new = SnapshotStateList<T>()
+  new.addAll(value)
+  val res = new.removeAt(index)
+  value = new
+  return res
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.removeLast() {
-  value = SnapshotStateList<ChatItem>().apply { addAll(value); removeLast() }
+fun <T> MutableState<SnapshotStateList<T>>.removeLast() {
+  value = SnapshotStateList<T>().apply { addAll(value); removeLast() }
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.replaceAll(chatItems: List<ChatItem>) {
-  value = SnapshotStateList<ChatItem>().apply { addAll(chatItems) }
+fun <T> MutableState<SnapshotStateList<T>>.replaceAll(elems: List<T>) {
+  value = SnapshotStateList<T>().apply { addAll(elems) }
 }
 
-fun MutableState<SnapshotStateList<ChatItem>>.clear() {
-  value = SnapshotStateList<ChatItem>()
+fun <T> MutableState<SnapshotStateList<T>>.clear() {
+  value = SnapshotStateList<T>()
 }
 
-fun State<SnapshotStateList<ChatItem>>.asReversed(): MutableList<ChatItem> = value.asReversed()
+fun <T> State<SnapshotStateList<T>>.asReversed(): MutableList<T> = value.asReversed()
 
-val State<List<ChatItem>>.size: Int get() = value.size
+fun <T> State<SnapshotStateList<T>>.toList(): List<T> = value.toList()
+
+operator fun <T> State<SnapshotStateList<T>>.get(i: Int): T = value[i]
+
+operator fun <T> State<SnapshotStateList<T>>.set(index: Int, elem: T) { value[index] = elem }
+
+val State<List<Any>>.size: Int get() = value.size
 
 enum class CIMergeCategory {
   MemberConnected,

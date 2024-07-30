@@ -45,7 +45,7 @@ import kotlin.math.sign
 
 @Composable
 fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: String) -> Unit) {
-  val activeChat = remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatId }) }
+  val activeChat = remember { mutableStateOf(chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == chatId }) }
   val searchText = rememberSaveable { mutableStateOf("") }
   val user = chatModel.currentUser.value
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
@@ -87,7 +87,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
          * TODO: Re-write [ChatModel.chats] logic to a new list assignment instead of changing content of mutableList to prevent that
          * */
         try {
-          chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
+          chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
         } catch (e: ConcurrentModificationException) {
           Log.e(TAG, e.stackTraceToString())
           null
@@ -112,7 +112,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
     // Having activeChat reloaded on every change in it is inefficient (UI lags)
     val unreadCount = remember {
       derivedStateOf {
-        chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }?.chatStats?.unreadCount ?: 0
+        chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }?.chatStats?.unreadCount ?: 0
       }
     }
     val clipboard = LocalClipboardManager.current

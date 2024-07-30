@@ -57,7 +57,7 @@ fun ChatInfoView(
 ) {
   BackHandler(onBack = close)
   val contact = rememberUpdatedState(contact).value
-  val chat = remember(contact.id) { chatModel.chats.firstOrNull { it.id == contact.id } }
+  val chat = remember(contact.id) { chatModel.chats.value.firstOrNull { it.id == contact.id } }
   val currentUser = remember { chatModel.currentUser }.value
   val connStats = remember(contact.id, connectionStats) { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
@@ -347,7 +347,7 @@ fun ChatInfoLayout(
 
       WallpaperButton {
         ModalManager.end.showModal {
-          val chat = remember { derivedStateOf { chatModel.chats.firstOrNull { it.id == chat.id } } }
+          val chat = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chat.id } } }
           val c = chat.value
           if (c != null) {
             ChatWallpaperEditorModal(c)

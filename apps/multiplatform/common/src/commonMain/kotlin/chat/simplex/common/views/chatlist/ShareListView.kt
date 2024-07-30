@@ -61,7 +61,7 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
         modifier = Modifier
           .fillMaxSize()
       ) {
-        if (chatModel.chats.isNotEmpty()) {
+        if (chatModel.chats.value.isNotEmpty()) {
           ShareList(
             chatModel,
             search = searchInList,

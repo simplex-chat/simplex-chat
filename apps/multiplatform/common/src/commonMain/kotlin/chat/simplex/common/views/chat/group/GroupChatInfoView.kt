@@ -43,7 +43,7 @@ const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit) {
   BackHandler(onBack = close)
   // TODO derivedStateOf?
-  val chat = chatModel.chats.firstOrNull { ch -> ch.id == chatId && ch.remoteHostId == rhId }
+  val chat = chatModel.chats.value.firstOrNull { ch -> ch.id == chatId && ch.remoteHostId == rhId }
   val currentUser = chatModel.currentUser.value
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null && chat.chatInfo is ChatInfo.Group && currentUser != null) {
@@ -235,7 +235,7 @@ fun GroupChatInfoLayout(
 
         WallpaperButton {
           ModalManager.end.showModal {
-            val chat = remember { derivedStateOf { chatModel.chats.firstOrNull { it.id == chat.id } } }
+            val chat = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chat.id } } }
             val c = chat.value
             if (c != null) {
               ChatWallpaperEditorModal(c)

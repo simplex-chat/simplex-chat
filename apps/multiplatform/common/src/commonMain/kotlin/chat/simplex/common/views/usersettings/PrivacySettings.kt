@@ -164,7 +164,7 @@ fun PrivacySettingsView(
         DeliveryReceiptsSection(
           currentUser = currentUser,
           setOrAskSendReceiptsContacts = { enable ->
-            val contactReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
+            val contactReceiptsOverrides = chatModel.chats.value.fold(0) { count, chat ->
               if (chat.chatInfo is ChatInfo.Direct) {
                 val sendRcpts = chat.chatInfo.contact.chatSettings.sendRcpts
                 count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
@@ -179,7 +179,7 @@ fun PrivacySettingsView(
             }
           },
           setOrAskSendReceiptsGroups = { enable ->
-            val groupReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
+            val groupReceiptsOverrides = chatModel.chats.value.fold(0) { count, chat ->
               if (chat.chatInfo is ChatInfo.Group) {
                 val sendRcpts = chat.chatInfo.groupInfo.chatSettings.sendRcpts
                 count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
