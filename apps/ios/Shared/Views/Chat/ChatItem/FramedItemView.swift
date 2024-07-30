@@ -49,7 +49,7 @@ struct FramedItemView: View {
                 if let qi = chatItem.quotedItem {
                     ciQuoteView(qi)
                         .onTapGesture {
-                            if let ci = m.reversedChatItems.first(where: { $0.id == qi.itemId }) {
+                            if let ci = ItemsModel.shared.reversedChatItems.first(where: { $0.id == qi.itemId }) {
                                 withAnimation {
                                     scrollModel.scrollToItem(id: ci.id)
                                 }

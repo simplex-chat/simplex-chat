@@ -334,7 +334,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               }
             },
             openDirectChat = { contactId ->
-              withBGApi {
+              scope.launch {
                 openDirectChat(chatRh, contactId, chatModel)
               }
             },
@@ -1149,6 +1149,8 @@ private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: 
            * this coroutine will be canceled with the message "Current mutation had a higher priority" because of animatedScroll.
            * Which breaks auto-scrolling to bottom. So just ignoring the exception
            * */
+        } catch (e: IllegalArgumentException) {
+          Log.e(TAG, "Failed to scroll: ${e.stackTraceToString()}")
         }
       }
   }

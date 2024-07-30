@@ -69,11 +69,11 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
 import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
-import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, ServerQueueInfo, SMPServerSubs, UserNetworkInfo)
+import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction, withTransactionPriority)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Client (SMPProxyFallback (..), SMPProxyMode (..), SocksMode (..))
@@ -264,6 +264,7 @@ data ChatCommand
   | APIDeleteUser UserId Bool (Maybe UserPwd)
   | DeleteUser UserName Bool (Maybe UserPwd)
   | StartChat {mainApp :: Bool, enableSndFiles :: Bool} -- enableSndFiles has no effect when mainApp is True
+  | CheckChatRunning
   | APIStopChat
   | APIActivateChat {restoreChat :: Bool}
   | APISuspendChat {suspendTimeout :: Int}
@@ -292,8 +293,8 @@ data ChatCommand
   | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessage :: ComposedMessage}
   | APICreateChatItem {noteFolderId :: NoteFolderId, composedMessage :: ComposedMessage}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
-  | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
-  | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
+  | APIDeleteChatItem ChatRef (NonEmpty ChatItemId) CIDeleteMode
+  | APIDeleteMemberChatItem GroupId (NonEmpty ChatItemId)
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
   | APIForwardChatItem {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemId :: ChatItemId, ttl :: Maybe Int}
   | APIUserRead UserId
@@ -598,7 +599,7 @@ data ChatResponse
   | CRChatItemUpdated {user :: User, chatItem :: AChatItem}
   | CRChatItemNotChanged {user :: User, chatItem :: AChatItem}
   | CRChatItemReaction {user :: User, added :: Bool, reaction :: ACIReaction}
-  | CRChatItemDeleted {user :: User, deletedChatItem :: AChatItem, toChatItem :: Maybe AChatItem, byUser :: Bool, timed :: Bool}
+  | CRChatItemsDeleted {user :: User, chatItemDeletions :: [ChatItemDeletion], byUser :: Bool, timed :: Bool}
   | CRChatItemDeletedNotFound {user :: User, contact :: Contact, sharedMsgId :: SharedMsgId}
   | CRBroadcastSent {user :: User, msgContent :: MsgContent, successes :: Int, failures :: Int, timestamp :: UTCTime}
   | CRMsgIntegrityError {user :: User, msgError :: MsgErrorType}
@@ -1080,6 +1081,12 @@ tmeToPref currentTTL tme = uncurry TimedMessagesPreference $ case tme of
   TMEEnableKeepTTL -> (FAYes, currentTTL)
   TMEDisableKeepTTL -> (FANo, currentTTL)
 
+data ChatItemDeletion = ChatItemDeletion
+  { deletedChatItem :: AChatItem,
+    toChatItem :: Maybe AChatItem
+  }
+  deriving (Show)
+
 data ChatLogLevel = CLLDebug | CLLInfo | CLLWarning | CLLError | CLLImportant
   deriving (Eq, Ord, Show)
 
@@ -1393,11 +1400,24 @@ toView' ev = do
 
 withStore' :: (DB.Connection -> IO a) -> CM a
 withStore' action = withStore $ liftIO . action
+{-# INLINE withStore' #-}
+
+withFastStore' :: (DB.Connection -> IO a) -> CM a
+withFastStore' action = withFastStore $ liftIO . action
+{-# INLINE withFastStore' #-}
 
 withStore :: (DB.Connection -> ExceptT StoreError IO a) -> CM a
-withStore action = do
+withStore = withStorePriority False
+{-# INLINE withStore #-}
+
+withFastStore :: (DB.Connection -> ExceptT StoreError IO a) -> CM a
+withFastStore = withStorePriority True
+{-# INLINE withFastStore #-}
+
+withStorePriority :: Bool -> (DB.Connection -> ExceptT StoreError IO a) -> CM a
+withStorePriority priority action = do
   ChatController {chatStore} <- ask
-  liftIOEither $ withTransaction chatStore (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
+  liftIOEither $ withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
 
 withStoreBatch :: Traversable t => (DB.Connection -> t (IO (Either ChatError a))) -> CM' (t (Either ChatError a))
 withStoreBatch actions = do
@@ -1472,6 +1492,8 @@ $(JQ.deriveJSON defaultJSON ''RatchetSyncProgress)
 $(JQ.deriveJSON defaultJSON ''ServerAddress)
 
 $(JQ.deriveJSON defaultJSON ''ParsedServerAddress)
+
+$(JQ.deriveJSON defaultJSON ''ChatItemDeletion)
 
 $(JQ.deriveJSON defaultJSON ''CoreVersionInfo)
 
