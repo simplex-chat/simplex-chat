@@ -1187,6 +1187,7 @@ testSubscribeAppNSE tmp =
         alice <## "chat suspended"
         nseAlice ##> "/_start main=off"
         nseAlice <## "chat started"
+        threadDelay 100000
         nseAlice ##> "/ad"
         cLink <- getContactLink nseAlice True
         bob ##> ("/c " <> cLink)
