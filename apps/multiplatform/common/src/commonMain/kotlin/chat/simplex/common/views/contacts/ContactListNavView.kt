@@ -14,16 +14,12 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
 private fun onRequestAccepted(chat: Chat) {
-    when (val chatInfo = chat.chatInfo) {
-        is ChatInfo.Direct -> {
-            if (chatInfo.contact.sndReady) {
-                openLoadedChat(chat, chatModel)
-            } else {
-                ModalManager.center.closeModals()
-            }
+    val chatInfo = chat.chatInfo
+    if (chatInfo is ChatInfo.Direct) {
+        ModalManager.center.closeModals()
+        if (chatInfo.contact.sndReady) {
+            openLoadedChat(chat, chatModel)
         }
-
-        else -> ModalManager.center.closeModals()
     }
 }
 
