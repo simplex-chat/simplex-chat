@@ -535,16 +535,16 @@ fun ChatInfoLayout(
     Row(
       Modifier
         .fillMaxWidth()
-        .padding(horizontal = 10.dp),
+        .padding(horizontal = DEFAULT_PADDING),
       horizontalArrangement = Arrangement.Center,
       verticalAlignment = Alignment.CenterVertically
     ) {
       SearchButton(chat, contact, close, onSearchClicked)
-      Spacer(Modifier.width(DEFAULT_PADDING))
+      Spacer(Modifier.weight(1f))
       AudioCallButton(chat, contact)
-      Spacer(Modifier.width(DEFAULT_PADDING))
+      Spacer(Modifier.weight(1f))
       VideoButton(chat, contact)
-      Spacer(Modifier.width(DEFAULT_PADDING))
+      Spacer(Modifier.weight(1f))
       MuteButton(chat, contact)
     }
 
@@ -893,6 +893,10 @@ private fun showCallsProhibitedAlert() {
     text = generalGetString(MR.strings.calls_prohibited_ask_to_enable_calls_alert_text)
   )
 }
+
+// for ChatInfoView (it has most buttons - 4) we use Spacer(Modifier.weight(1f)) to fit,
+// for GroupChat And GroupMemberInfoViews (2 to 3 buttons) we use this as approximately equal to spacing in ChatInfoView
+val INFO_VIEW_BUTTONS_PADDING = 36.dp
 
 @Composable
 fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, disabledLook: Boolean, onClick: () -> Unit) {

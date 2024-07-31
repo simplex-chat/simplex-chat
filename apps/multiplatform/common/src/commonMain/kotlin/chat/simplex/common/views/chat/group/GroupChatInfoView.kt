@@ -276,16 +276,16 @@ fun GroupChatInfoLayout(
       Row(
         Modifier
           .fillMaxWidth()
-          .padding(horizontal = 10.dp),
+          .padding(horizontal = DEFAULT_PADDING),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
       ) {
         SearchButton(chat, groupInfo, close, onSearchClicked)
         if (groupInfo.canAddMembers) {
-          Spacer(Modifier.width(DEFAULT_PADDING))
+          Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
           AddGroupMembersButton(chat, groupInfo)
         }
-        Spacer(Modifier.width(DEFAULT_PADDING))
+        Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
         MuteButton(chat, groupInfo)
       }
 

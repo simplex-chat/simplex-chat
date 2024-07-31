@@ -312,7 +312,7 @@ fun GroupMemberInfoLayout(
     Row(
       Modifier
         .fillMaxWidth()
-        .padding(horizontal = 10.dp),
+        .padding(horizontal = DEFAULT_PADDING),
       horizontalArrangement = Arrangement.Center,
       verticalAlignment = Alignment.CenterVertically
     ) {
@@ -320,9 +320,9 @@ fun GroupMemberInfoLayout(
       if (knownChat != null) {
         val (chat, contact) = knownChat
         OpenChatButton(onClick = { openDirectChat(contact.contactId) })
-        Spacer(Modifier.width(DEFAULT_PADDING))
+        Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
         AudioCallButton(chat, contact)
-        Spacer(Modifier.width(DEFAULT_PADDING))
+        Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
         VideoButton(chat, contact)
       } else if (groupInfo.fullGroupPreferences.directMessages.on(groupInfo.membership)) {
         if (contactId != null) {
@@ -330,11 +330,11 @@ fun GroupMemberInfoLayout(
         } else {
           OpenChatButton(onClick = { createMemberContact() })
         }
-        Spacer(Modifier.width(DEFAULT_PADDING))
+        Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
         InfoViewActionButton(painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, onClick = {
           showSendMessageToEnableCallsAlert()
         })
-        Spacer(Modifier.width(DEFAULT_PADDING))
+        Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
         InfoViewActionButton(painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = false, disabledLook = true, onClick = {
           showSendMessageToEnableCallsAlert()
         })
@@ -342,11 +342,11 @@ fun GroupMemberInfoLayout(
         InfoViewActionButton(painterResource(MR.images.ic_chat_bubble), generalGetString(MR.strings.info_view_message_button), disabled = false, disabledLook = true, onClick = {
           showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_send_message_to_member_alert_title))
         })
-        Spacer(Modifier.width(DEFAULT_PADDING))
+        Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
         InfoViewActionButton(painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, onClick = {
           showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title))
         })
-        Spacer(Modifier.width(DEFAULT_PADDING))
+        Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
         InfoViewActionButton(painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = false, disabledLook = true, onClick = {
           showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title))
         })
