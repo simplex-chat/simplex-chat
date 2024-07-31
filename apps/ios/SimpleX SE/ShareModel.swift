@@ -396,8 +396,7 @@ extension NSItemProvider {
 
                 // Static
                 } else {
-                    if let url = try? await inPlaceUrl(type: type),
-                       let image = downsampleImage(at: url, to: MAX_DOWNSAMPLE_SIZE),
+                    if let image = await staticImage(),
                        let cryptoFile = saveImage(image),
                        let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
                         .success(.image(preview: preview, cryptoFile: cryptoFile))
@@ -480,6 +479,17 @@ extension NSItemProvider {
             if hasItemConformingToTypeIdentifier(type.identifier) { return type }
         }
         return nil
+    }
+
+    private func staticImage() async -> UIImage? {
+        if let url = try? await inPlaceUrl(type: .image),
+           let downsampledImage = downsampleImage(at: url, to: MAX_DOWNSAMPLE_SIZE) {
+            downsampledImage
+        } else {
+            /// Fallback to loading image directly from `ItemProvider`
+            /// in case loading from disk is not possible. Required for sharing screenshots.
+            try? await loadItem(forTypeIdentifier: UTType.image.identifier) as? UIImage
+        }
     }
 }
 
