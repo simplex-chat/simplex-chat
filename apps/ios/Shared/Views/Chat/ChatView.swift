@@ -842,26 +842,26 @@ struct ChatView: View {
                                 .padding(.leading, 12)
                         }
                         chatItemWithMenu(ci, range, maxWidth)
-                            .padding(.bottom, 5)
                             .padding(.trailing)
                             .padding(.leading, memberImageSize + 8 + 12)
                     }
+                    .padding(.bottom, 5)
                 }
             } else {
                 HStack(alignment: .center, spacing: 0) {
                     if selectedChatItems != nil && ci.canBeDeletedForSelf {
-                        if chat.chatInfo.chatType == .direct {
-                            SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
-                                .padding(.leading)
-                        } else {
+                        if chat.chatInfo.chatType == .group {
                             SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
                                 .padding(.leading, 12)
+                        } else {
+                            SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
+                                .padding(.leading)
                         }
                     }
                     chatItemWithMenu(ci, range, maxWidth)
                         .padding(.horizontal)
-                        .padding(.bottom, 5)
                 }
+                .padding(.bottom, 5)
             }
         }
 
