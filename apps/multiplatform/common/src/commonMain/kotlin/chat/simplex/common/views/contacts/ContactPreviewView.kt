@@ -1,8 +1,6 @@
 package chat.simplex.common.views.contacts
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,9 +12,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
-import chat.simplex.common.ui.theme.DEFAULT_PADDING
-import chat.simplex.common.ui.theme.DEFAULT_SPACE_AFTER_ICON
-import chat.simplex.common.ui.theme.Indigo
+import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 
 @Composable
@@ -71,7 +67,7 @@ fun ContactPreviewView(
     }
 
     Row(
-        modifier = Modifier.padding(PaddingValues(horizontal = DEFAULT_PADDING)),
+        modifier = Modifier.padding(PaddingValues(horizontal = DEFAULT_PADDING_HALF)),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(contentAlignment = Alignment.BottomEnd) {

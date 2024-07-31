@@ -1,11 +1,9 @@
 package chat.simplex.common.views.contacts
 
-import SectionView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -190,7 +188,12 @@ fun ContactsSearchBar(
 
     Row(verticalAlignment = Alignment.CenterVertically) {
         val focusRequester = remember { FocusRequester() }
-        Icon(painterResource(MR.images.ic_search), null, Modifier.padding(horizontal = DEFAULT_PADDING_HALF), tint = MaterialTheme.colors.secondary)
+        Icon(
+            painterResource(MR.images.ic_search),
+            contentDescription = null,
+            Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF).size(24.dp * fontSizeSqrtMultiplier),
+            tint = MaterialTheme.colors.secondary
+        )
         SearchTextField(
             Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
             placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
