@@ -12,6 +12,7 @@ import SimpleXChat
 struct ShareView: View {
     @ObservedObject var model: ShareModel
     @Environment(\.colorScheme) var colorScheme
+    @State private var password = String()
 
     var body: some View {
         NavigationView {
@@ -53,7 +54,16 @@ struct ShareView: View {
             placement: .navigationBarDrawer(displayMode: .always)
         )
         .alert($model.errorAlert) { alert in
-            Button("Ok") { model.completion() }
+            if model.alertRequiresPassword {
+                SecureField("Password", text: $password)
+                Button("Ok") { 
+                    model.setup(with: password)
+                    password = String()
+                }
+                Button("Cancel", role: .cancel) { model.completion() }
+            } else {
+                Button("Ok") { model.completion() }
+            }
         }
     }
 
