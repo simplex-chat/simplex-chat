@@ -745,15 +745,15 @@ processChatCommand' vr = \case
   APISendMessage (ChatRef cType chatId) live itemTTL cm -> withUser $ \user -> case cType of
     CTDirect ->
       withContactLock "sendMessage" chatId $
-        sendContactContentMessage user chatId live itemTTL cm Nothing
+        sendContactContentMessage user chatId live itemTTL (cm :| []) Nothing
     CTGroup ->
       withGroupLock "sendMessage" chatId $
-        sendGroupContentMessage user chatId live itemTTL cm Nothing
+        sendGroupContentMessage user chatId live itemTTL (cm :| []) Nothing
     CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APICreateChatItem folderId cm -> withUser $ \user ->
-    createNoteFolderContentItem user folderId cm Nothing
+    createNoteFolderContentItem user folderId (cm :| []) Nothing
   APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> case cType of
     CTDirect -> withContactLock "updateChatItem" chatId $ do
       ct@Contact {contactId} <- withFastStore $ \db -> getContact db vr user chatId
@@ -956,18 +956,18 @@ processChatCommand' vr = \case
           throwChatError (CECommandError $ "reaction already " <> if add then "added" else "removed")
         when (add && length rs >= maxMsgReactions) $
           throwChatError (CECommandError "too many reactions")
-  APIForwardChatItem (ChatRef toCType toChatId) (ChatRef fromCType fromChatId) itemId itemTTL -> withUser $ \user -> case toCType of
+  APIForwardChatItem (ChatRef toCType toChatId) (ChatRef fromCType fromChatId) (itemId :| _) itemTTL -> withUser $ \user -> case toCType of
     CTDirect -> do
       (cm, ciff) <- prepareForward user
       withContactLock "forwardChatItem, to contact" toChatId $
-        sendContactContentMessage user toChatId False itemTTL cm ciff
+        sendContactContentMessage user toChatId False itemTTL (cm :| []) ciff
     CTGroup -> do
       (cm, ciff) <- prepareForward user
       withGroupLock "forwardChatItem, to group" toChatId $
-        sendGroupContentMessage user toChatId False itemTTL cm ciff
+        sendGroupContentMessage user toChatId False itemTTL (cm :| []) ciff
     CTLocal -> do
       (cm, ciff) <- prepareForward user
-      createNoteFolderContentItem user toChatId cm ciff
+      createNoteFolderContentItem user toChatId (cm :| []) ciff
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
@@ -1729,17 +1729,17 @@ processChatCommand' vr = \case
     contactId <- withFastStore $ \db -> getContactIdByName db user fromContactName
     forwardedItemId <- withFastStore $ \db -> getDirectChatItemIdByText' db user contactId forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTDirect contactId) forwardedItemId Nothing
+    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTDirect contactId) (forwardedItemId :| []) Nothing
   ForwardGroupMessage toChatName fromGroupName fromMemberName_ forwardedMsg -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user fromGroupName
     forwardedItemId <- withFastStore $ \db -> getGroupChatItemIdByText db user groupId fromMemberName_ forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTGroup groupId) forwardedItemId Nothing
+    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTGroup groupId) (forwardedItemId :| []) Nothing
   ForwardLocalMessage toChatName forwardedMsg -> withUser $ \user -> do
     folderId <- withFastStore (`getUserNoteFolderId` user)
     forwardedItemId <- withFastStore $ \db -> getLocalChatItemIdByText' db user folderId forwardedMsg
     toChatRef <- getChatRef user toChatName
-    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTLocal folderId) forwardedItemId Nothing
+    processChatCommand $ APIForwardChatItem toChatRef (ChatRef CTLocal folderId) (forwardedItemId :| []) Nothing
   SendMessage (ChatName cType name) msg -> withUser $ \user -> do
     let mc = MCText msg
     case cType of
@@ -2803,8 +2803,8 @@ processChatCommand' vr = \case
               forM_ (timed_ >>= timedDeleteAt') $
                 startProximateTimedItemThread user (ChatRef CTDirect contactId, itemId)
         _ -> pure () -- prohibited
-    sendContactContentMessage :: User -> ContactId -> Bool -> Maybe Int -> ComposedMessage -> Maybe CIForwardedFrom -> CM ChatResponse
-    sendContactContentMessage user contactId live itemTTL (ComposedMessage file_ quotedItemId_ mc) itemForwarded = do
+    sendContactContentMessage :: User -> ContactId -> Bool -> Maybe Int -> NonEmpty ComposedMessage -> Maybe CIForwardedFrom -> CM ChatResponse
+    sendContactContentMessage user contactId live itemTTL ((ComposedMessage file_ quotedItemId_ mc) :| _) itemForwarded = do
       ct@Contact {contactUsed} <- withFastStore $ \db -> getContact db vr user contactId
       assertDirectAllowed user MDSnd ct XMsgNew_
       unless contactUsed $ withFastStore' $ \db -> updateContactUsed db user ct
@@ -2843,8 +2843,8 @@ processChatCommand' vr = \case
             quoteData ChatItem {content = CISndMsgContent qmc} = pure (qmc, CIQDirectSnd, True)
             quoteData ChatItem {content = CIRcvMsgContent qmc} = pure (qmc, CIQDirectRcv, False)
             quoteData _ = throwChatError CEInvalidQuote
-    sendGroupContentMessage :: User -> GroupId -> Bool -> Maybe Int -> ComposedMessage -> Maybe CIForwardedFrom -> CM ChatResponse
-    sendGroupContentMessage user groupId live itemTTL (ComposedMessage file_ quotedItemId_ mc) itemForwarded = do
+    sendGroupContentMessage :: User -> GroupId -> Bool -> Maybe Int -> NonEmpty ComposedMessage -> Maybe CIForwardedFrom -> CM ChatResponse
+    sendGroupContentMessage user groupId live itemTTL ((ComposedMessage file_ quotedItemId_ mc) :| _) itemForwarded = do
       g@(Group gInfo _) <- withFastStore $ \db -> getGroup db vr user groupId
       assertUserGroupRole gInfo GRAuthor
       send g
@@ -2889,8 +2889,8 @@ processChatCommand' vr = \case
                   \db -> createSndFTDescrXFTP db user (Just m) conn ft dummyFileDescr
             saveMemberFD _ = pure ()
       pure (fInv, ciFile)
-    createNoteFolderContentItem :: User -> NoteFolderId -> ComposedMessage -> Maybe CIForwardedFrom -> CM ChatResponse
-    createNoteFolderContentItem user folderId (ComposedMessage file_ quotedItemId_ mc) itemForwarded = do
+    createNoteFolderContentItem :: User -> NoteFolderId -> NonEmpty ComposedMessage -> Maybe CIForwardedFrom -> CM ChatResponse
+    createNoteFolderContentItem user folderId ((ComposedMessage file_ quotedItemId_ mc) :| _) itemForwarded = do
       forM_ quotedItemId_ $ \_ -> throwError $ ChatError $ CECommandError "not supported"
       nf <- withFastStore $ \db -> getNoteFolder db user folderId
       createdAt <- liftIO getCurrentTime
@@ -7602,7 +7602,7 @@ chatCommandP =
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <*> _strP <* A.space <*> ciDeleteMode),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <*> _strP),
       "/_reaction " *> (APIChatItemReaction <$> chatRefP <* A.space <*> A.decimal <* A.space <*> onOffP <* A.space <*> jsonP),
-      "/_forward " *> (APIForwardChatItem <$> chatRefP <* A.space <*> chatRefP <* A.space <*> A.decimal <*> sendMessageTTLP),
+      "/_forward " *> (APIForwardChatItem <$> chatRefP <* A.space <*> chatRefP <*> _strP <*> sendMessageTTLP),
       "/_read user " *> (APIUserRead <$> A.decimal),
       "/read user" $> UserRead,
       "/_read chat " *> (APIChatRead <$> chatRefP <*> optional (A.space *> ((,) <$> ("from=" *> A.decimal) <* A.space <*> ("to=" *> A.decimal)))),
