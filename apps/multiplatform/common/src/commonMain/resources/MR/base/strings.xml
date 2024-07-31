@@ -1550,6 +1550,17 @@
   <string name="message_queue_info_none">none</string>
   <string name="message_queue_info_server_info">server queue info: %1$s\n\nlast received msg: %2$s</string>
 
+  <string name="cant_call_contact_alert_title">Can\'t call contact</string>
+  <string name="cant_call_contact_connecting_wait_alert_text">Connecting to contact, please wait or check later!</string>
+  <string name="cant_call_contact_deleted_alert_text">Contact is deleted.</string>
+  <string name="allow_calls_question">Allow calls?</string>
+  <string name="you_need_to_allow_calls">You need to allow your contact to call to be able to call them.</string>
+  <string name="calls_prohibited_alert_title">Calls prohibited!</string>
+  <string name="calls_prohibited_ask_to_enable_calls_alert_text">Please ask your contact to enable calls.</string>
+  <string name="cant_call_member_alert_title">Can\'t call group member</string>
+  <string name="cant_call_member_send_message_alert_text">Send message to enable calls.</string>
+  <string name="cant_send_message_to_member_alert_title">Can\'t message group member</string>
+
   <!-- GroupWelcomeView.kt -->
   <string name="group_welcome_title">Welcome message</string>
   <string name="save_welcome_message_question">Save welcome message?</string>

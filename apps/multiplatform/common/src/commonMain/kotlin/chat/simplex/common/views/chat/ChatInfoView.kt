@@ -541,7 +541,7 @@ fun ChatInfoLayout(
     ) {
       SearchButton(chat, contact, close, onSearchClicked)
       Spacer(Modifier.width(DEFAULT_PADDING))
-      CallButton(chat, contact)
+      AudioCallButton(chat, contact)
       Spacer(Modifier.width(DEFAULT_PADDING))
       VideoButton(chat, contact)
       Spacer(Modifier.width(DEFAULT_PADDING))
@@ -767,10 +767,12 @@ fun LocalAliasEditor(
 
 @Composable
 fun SearchButton(chat: Chat, contact: Contact, close: () -> Unit, onSearchClicked: () -> Unit) {
+  val disabled = !contact.ready || chat.chatItems.isEmpty()
   InfoViewActionButton(
     icon = painterResource(MR.images.ic_search),
     title = generalGetString(MR.strings.info_view_search_button),
-    disabled = !contact.ready || chat.chatItems.isEmpty(),
+    disabled = disabled,
+    disabledLook = disabled,
     onClick = {
       if (appPlatform.isAndroid) {
         close.invoke()
@@ -783,11 +785,13 @@ fun SearchButton(chat: Chat, contact: Contact, close: () -> Unit, onSearchClicke
 @Composable
 fun MuteButton(chat: Chat, contact: Contact) {
   val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
+  val disabled = !contact.ready || !contact.active
 
   InfoViewActionButton(
     icon =  if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
     title = if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
-    disabled = !contact.ready || !contact.active,
+    disabled = disabled,
+    disabledLook = disabled,
     onClick = {
       toggleNotifications(chat, !ntfsEnabled.value, chatModel, ntfsEnabled)
     }
@@ -795,31 +799,103 @@ fun MuteButton(chat: Chat, contact: Contact) {
 }
 
 @Composable
-fun CallButton(chat: Chat, contact: Contact) {
-  InfoViewActionButton(
+fun AudioCallButton(chat: Chat, contact: Contact) {
+  CallButton(
+    chat,
+    contact,
     icon = painterResource(MR.images.ic_call),
     title = generalGetString(MR.strings.info_view_call_button),
-    disabled = !contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall.value != null,
-    onClick = {
-      startChatCall(chat, CallMediaType.Audio)
-    }
+    mediaType = CallMediaType.Audio
   )
 }
 
 @Composable
 fun VideoButton(chat: Chat, contact: Contact) {
-  InfoViewActionButton(
+  CallButton(
+    chat,
+    contact,
     icon = painterResource(MR.images.ic_videocam),
     title = generalGetString(MR.strings.info_view_video_button),
-    disabled = !contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall.value != null,
-    onClick = {
-      startChatCall(chat, CallMediaType.Video)
-    }
+    mediaType = CallMediaType.Video
   )
 }
 
 @Composable
-fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, onClick: () -> Unit) {
+fun CallButton(chat: Chat, contact: Contact, icon: Painter, title: String, mediaType: CallMediaType) {
+  val canCall = contact.ready && contact.active && contact.mergedPreferences.calls.enabled.forUser && chatModel.activeCall.value == null
+  val needToAllowCallsToContact = remember(chat.chatInfo) {
+    chat.chatInfo is ChatInfo.Direct && with(chat.chatInfo.contact.mergedPreferences.calls) {
+      ((userPreference as? ContactUserPref.User)?.preference?.allow == FeatureAllowed.NO || (userPreference as? ContactUserPref.Contact)?.preference?.allow == FeatureAllowed.NO) &&
+          contactPreference.allow == FeatureAllowed.YES
+    }
+  }
+  val allowedCallsByPrefs = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.Calls) }
+
+  InfoViewActionButton(
+    icon = icon,
+    title = title,
+    disabled = chatModel.activeCall.value != null,
+    disabledLook = !canCall,
+    onClick =
+      when {
+        canCall -> { { startChatCall(chat, mediaType) } }
+        contact.nextSendGrpInv -> { { showCantCallContactSendMessageAlert() } }
+        !contact.active -> { { showCantCallContactDeletedAlert() } }
+        !contact.ready -> { { showCantCallContactConnectingAlert() } }
+        needToAllowCallsToContact -> { { showNeedToAllowCallsAlert(onConfirm = { allowCallsToContact(chat) }) } }
+        !allowedCallsByPrefs -> { { showCallsProhibitedAlert() }}
+        else -> { { AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.cant_call_contact_alert_title)) } }
+      }
+  )
+}
+
+private fun showCantCallContactSendMessageAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.cant_call_contact_alert_title),
+    text = generalGetString(MR.strings.cant_call_member_send_message_alert_text)
+  )
+}
+
+private fun showCantCallContactConnectingAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.cant_call_contact_alert_title),
+    text = generalGetString(MR.strings.cant_call_contact_connecting_wait_alert_text)
+  )
+}
+
+private fun showCantCallContactDeletedAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.cant_call_contact_alert_title),
+    text = generalGetString(MR.strings.cant_call_contact_deleted_alert_text)
+  )
+}
+
+private fun showNeedToAllowCallsAlert(onConfirm: () -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.allow_calls_question),
+    text = generalGetString(MR.strings.you_need_to_allow_calls),
+    confirmText = generalGetString(MR.strings.allow_verb),
+    dismissText = generalGetString(MR.strings.cancel_verb),
+    onConfirm = onConfirm,
+  )
+}
+
+private fun allowCallsToContact(chat: Chat) {
+  val contact = (chat.chatInfo as ChatInfo.Direct?)?.contact ?: return
+  withBGApi {
+    chatModel.controller.allowFeatureToContact(chat.remoteHostId, contact, ChatFeature.Calls)
+  }
+}
+
+private fun showCallsProhibitedAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.calls_prohibited_alert_title),
+    text = generalGetString(MR.strings.calls_prohibited_ask_to_enable_calls_alert_text)
+  )
+}
+
+@Composable
+fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, disabledLook: Boolean, onClick: () -> Unit) {
   Column(
     horizontalAlignment = Alignment.CenterHorizontally,
     verticalArrangement = Arrangement.Center
@@ -831,7 +907,7 @@ fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, onClic
       Box(
         modifier = Modifier
           .background(
-            if (disabled) MaterialTheme.colors.secondaryVariant else MaterialTheme.colors.primary,
+            if (disabledLook) MaterialTheme.colors.secondaryVariant else MaterialTheme.colors.primary,
             shape = CircleShape
           )
           .padding(16.dp)
@@ -840,7 +916,7 @@ fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, onClic
           icon,
           contentDescription = null,
           Modifier.size(24.dp * fontSizeSqrtMultiplier),
-          tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.onPrimary
+          tint = if (disabledLook) MaterialTheme.colors.secondary else MaterialTheme.colors.onPrimary
         )
       }
     }

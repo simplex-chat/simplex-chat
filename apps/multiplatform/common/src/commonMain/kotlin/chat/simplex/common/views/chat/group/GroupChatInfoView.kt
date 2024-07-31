@@ -180,10 +180,13 @@ private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMembe
 
 @Composable
 fun SearchButton(chat: Chat, group: GroupInfo, close: () -> Unit, onSearchClicked: () -> Unit) {
+  val disabled = !group.ready || chat.chatItems.isEmpty()
+
   InfoViewActionButton(
     icon = painterResource(MR.images.ic_search),
     title = generalGetString(MR.strings.info_view_search_button),
-    disabled = !group.ready || chat.chatItems.isEmpty(),
+    disabled = disabled,
+    disabledLook = disabled,
     onClick = {
       if (appPlatform.isAndroid) {
         close.invoke()
@@ -201,6 +204,7 @@ fun MuteButton(chat: Chat, groupInfo: GroupInfo) {
     icon =  if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
     title = if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
     disabled = !groupInfo.ready,
+    disabledLook = !groupInfo.ready,
     onClick = {
       toggleNotifications(chat, !ntfsEnabled.value, chatModel, ntfsEnabled)
     }
@@ -213,6 +217,7 @@ fun AddGroupMembersButton(chat: Chat, groupInfo: GroupInfo) {
     icon =  if (groupInfo.incognito) painterResource(MR.images.ic_add_link) else painterResource(MR.images.ic_person_add_500),
     title = stringResource(MR.strings.action_button_add_members),
     disabled = !groupInfo.ready,
+    disabledLook = !groupInfo.ready,
     onClick = {
       if (groupInfo.incognito) {
         openGroupLink(groupInfo = groupInfo, rhId = chat.remoteHostId)
