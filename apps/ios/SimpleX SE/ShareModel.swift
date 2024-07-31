@@ -189,7 +189,7 @@ class ShareModel: ObservableObject {
                 )
             } else {
                 ErrorAlert(
-                    title: "Encrypted database",
+                    title: "Database encrypted!",
                     message: "Database passphrase is required to open chat."
                 )
             }
