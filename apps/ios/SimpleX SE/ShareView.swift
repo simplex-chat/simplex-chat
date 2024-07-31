@@ -13,6 +13,7 @@ struct ShareView: View {
     @ObservedObject var model: ShareModel
     @Environment(\.colorScheme) var colorScheme
     @State private var password = String()
+    @AppStorage(GROUP_DEFAULT_PROFILE_IMAGE_CORNER_RADIUS, store: groupDefaults) private var radius = defaultProfileImageCorner
 
     var body: some View {
         NavigationView {
@@ -22,7 +23,7 @@ struct ShareView: View {
                         HStack {
                             profileImage(
                                 chatInfoId: chat.chatInfo.id,
-                                systemFallback: chatIconName(chat.chatInfo),
+                                iconName: chatIconName(chat.chatInfo),
                                 size: 30
                             )
                             Text(chat.chatInfo.displayName)
@@ -169,17 +170,17 @@ struct ShareView: View {
         .background(Material.ultraThin)
     }
 
-    private func profileImage(chatInfoId: ChatInfo.ID, systemFallback: String, size: Double) -> some View {
-        Group {
-            if let uiImage = model.profileImages[chatInfoId] {
-                Image(uiImage: uiImage).resizable()
-            } else {
-                Image(systemName: systemFallback).resizable()
-            }
+    @ViewBuilder private func profileImage(chatInfoId: ChatInfo.ID, iconName: String, size: Double) -> some View {
+        if let uiImage = model.profileImages[chatInfoId] {
+            clipProfileImage(Image(uiImage: uiImage), size: size, radius: radius)
+        } else {
+            Image(systemName: iconName)
+                .resizable()
+                .foregroundColor(Color(uiColor: .tertiaryLabel))
+                .frame(width: size, height: size)
+// add background when adding themes to SE
+//                .background(Circle().fill(backgroundColor != nil ? backgroundColor! : .clear))
         }
-        .foregroundStyle(Color(.tertiaryLabel))
-        .frame(width: size, height: size)
-        .clipShape(RoundedRectangle(cornerRadius: size * 0.225, style: .continuous))
     }
 
     private func radioButton(selected: Bool) -> some View {

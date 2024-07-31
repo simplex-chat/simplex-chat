@@ -334,6 +334,9 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "y después elige:";
 
+/* No comment provided by engineer. */
+"Accent" = "Color";
+
 /* accept contact request via notification
    accept incoming call via notification */
 "Accept" = "Aceptar";
@@ -349,6 +352,15 @@
 
 /* call status */
 "accepted call" = "llamada aceptada";
+
+/* No comment provided by engineer. */
+"Acknowledged" = "Recibido";
+
+/* No comment provided by engineer. */
+"Acknowledgement errors" = "Errores de reconocimiento";
+
+/* No comment provided by engineer. */
+"Active connections" = "Conexiones activas";
 
 /* No comment provided by engineer. */
 "Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Añade la dirección a tu perfil para que tus contactos puedan compartirla con otros. La actualización del perfil se enviará a tus contactos.";
@@ -375,6 +387,15 @@
 "Add welcome message" = "Añadir mensaje de bienvenida";
 
 /* No comment provided by engineer. */
+"Additional accent" = "Acento adicional";
+
+/* No comment provided by engineer. */
+"Additional accent 2" = "Color adicional 2";
+
+/* No comment provided by engineer. */
+"Additional secondary" = "Secundario adicional";
+
+/* No comment provided by engineer. */
 "Address" = "Dirección";
 
 /* No comment provided by engineer. */
@@ -395,6 +416,9 @@
 /* No comment provided by engineer. */
 "Advanced network settings" = "Configuración avanzada de red";
 
+/* No comment provided by engineer. */
+"Advanced settings" = "Configuración avanzada";
+
 /* chat item text */
 "agreeing encryption for %@…" = "acordando cifrado para %@…";
 
@@ -411,6 +435,9 @@
 "All data is erased when it is entered." = "Al introducirlo todos los datos son eliminados.";
 
 /* No comment provided by engineer. */
+"All data is private to your device." = "Todos los datos son privados para tu dispositivo.";
+
+/* No comment provided by engineer. */
 "All group members will remain connected." = "Todos los miembros del grupo permanecerán conectados.";
 
 /* feature role */
@@ -424,6 +451,9 @@
 
 /* No comment provided by engineer. */
 "All new messages from %@ will be hidden!" = "¡Los mensajes nuevos de %@ estarán ocultos!";
+
+/* No comment provided by engineer. */
+"All profiles" = "Todos los perfiles";
 
 /* No comment provided by engineer. */
 "All your contacts will remain connected." = "Todos tus contactos permanecerán conectados.";
@@ -552,6 +582,9 @@
 "Apply" = "Aplicar";
 
 /* No comment provided by engineer. */
+"Apply to" = "Aplicar a";
+
+/* No comment provided by engineer. */
 "Archive and upload" = "Archivar y subir";
 
 /* No comment provided by engineer. */
@@ -559,6 +592,9 @@
 
 /* No comment provided by engineer. */
 "Attach" = "Adjuntar";
+
+/* No comment provided by engineer. */
+"attempts" = "intentos";
 
 /* No comment provided by engineer. */
 "Audio & video calls" = "Llamadas y videollamadas";
@@ -603,6 +639,9 @@
 "Back" = "Volver";
 
 /* No comment provided by engineer. */
+"Background" = "Fondo";
+
+/* No comment provided by engineer. */
 "Bad desktop address" = "Dirección ordenador incorrecta";
 
 /* integrity error chat item */
@@ -622,6 +661,9 @@
 
 /* No comment provided by engineer. */
 "Better messages" = "Mensajes mejorados";
+
+/* No comment provided by engineer. */
+"Black" = "Negro";
 
 /* No comment provided by engineer. */
 "Block" = "Bloquear";
@@ -647,7 +689,7 @@
 /* rcv group event chat item */
 "blocked %@" = "ha bloqueado a %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item */
 "blocked by admin" = "bloqueado por administrador";
 
 /* No comment provided by engineer. */
@@ -714,6 +756,9 @@
 "Cannot access keychain to save database password" = "Keychain inaccesible para guardar la contraseña de la base de datos";
 
 /* No comment provided by engineer. */
+"Cannot forward message" = "No se puede reenviar el mensaje";
+
+/* No comment provided by engineer. */
 "Cannot receive file" = "No se puede recibir el archivo";
 
 /* snd error text */
@@ -772,6 +817,9 @@
 "Chat archive" = "Archivo del chat";
 
 /* No comment provided by engineer. */
+"Chat colors" = "Colores del chat";
+
+/* No comment provided by engineer. */
 "Chat console" = "Consola de Chat";
 
 /* No comment provided by engineer. */
@@ -799,6 +847,9 @@
 "Chat preferences" = "Preferencias de Chat";
 
 /* No comment provided by engineer. */
+"Chat theme" = "Tema de chat";
+
+/* No comment provided by engineer. */
 "Chats" = "Chats";
 
 /* No comment provided by engineer. */
@@ -817,6 +868,15 @@
 "Choose from library" = "Elige de la biblioteca";
 
 /* No comment provided by engineer. */
+"Chunks deleted" = "Bloques eliminados";
+
+/* No comment provided by engineer. */
+"Chunks downloaded" = "Bloques descargados";
+
+/* No comment provided by engineer. */
+"Chunks uploaded" = "Bloques subidos";
+
+/* No comment provided by engineer. */
 "Clear" = "Vaciar";
 
 /* No comment provided by engineer. */
@@ -832,6 +892,9 @@
 "Clear verification" = "Eliminar verificación";
 
 /* No comment provided by engineer. */
+"Color mode" = "Modo de color";
+
+/* No comment provided by engineer. */
 "colored" = "coloreado";
 
 /* server test step */
@@ -844,7 +907,13 @@
 "complete" = "completado";
 
 /* No comment provided by engineer. */
+"Completed" = "Completado";
+
+/* No comment provided by engineer. */
 "Configure ICE servers" = "Configure servidores ICE";
+
+/* No comment provided by engineer. */
+"Configured %@ servers" = "%@ servidores configurados";
 
 /* No comment provided by engineer. */
 "Confirm" = "Confirmar";
@@ -913,16 +982,25 @@
 "connected" = "conectado";
 
 /* No comment provided by engineer. */
+"Connected" = "Conectado";
+
+/* No comment provided by engineer. */
 "Connected desktop" = "Ordenador conectado";
 
 /* rcv group event chat item */
 "connected directly" = "conectado directamente";
 
 /* No comment provided by engineer. */
+"Connected servers" = "Servidores conectados";
+
+/* No comment provided by engineer. */
 "Connected to desktop" = "Conectado con ordenador";
 
 /* No comment provided by engineer. */
 "connecting" = "conectando";
+
+/* No comment provided by engineer. */
+"Connecting" = "Conectando";
 
 /* No comment provided by engineer. */
 "connecting (accepted)" = "conectando (aceptado)";
@@ -972,8 +1050,14 @@
 /* No comment provided by engineer. */
 "Connection timeout" = "Tiempo de conexión agotado";
 
+/* No comment provided by engineer. */
+"Connection with desktop stopped" = "La conexión con el escritorio (desktop) se ha parado";
+
 /* connection information */
 "connection:%@" = "conexión: % @";
+
+/* No comment provided by engineer. */
+"Connections" = "Conexiones";
 
 /* profile update event chat item */
 "contact %@ changed to %@" = "el contacto %1$@ ha cambiado a %2$@";
@@ -1016,6 +1100,9 @@
 
 /* No comment provided by engineer. */
 "Copy" = "Copiar";
+
+/* No comment provided by engineer. */
+"Copy error" = "Copiar error";
 
 /* No comment provided by engineer. */
 "Core version: v%@" = "Versión Core: v%@";
@@ -1063,6 +1150,9 @@
 "Create your profile" = "Crea tu perfil";
 
 /* No comment provided by engineer. */
+"Created" = "Creado";
+
+/* No comment provided by engineer. */
 "Created at" = "Creado";
 
 /* copied message info */
@@ -1087,6 +1177,9 @@
 "Current passphrase…" = "Contraseña actual…";
 
 /* No comment provided by engineer. */
+"Current profile" = "Perfil actual";
+
+/* No comment provided by engineer. */
 "Currently maximum supported file size is %@." = "El tamaño máximo de archivo admitido es %@.";
 
 /* dropdown time picker choice */
@@ -1096,7 +1189,13 @@
 "Custom time" = "Tiempo personalizado";
 
 /* No comment provided by engineer. */
+"Customize theme" = "Personalizar tema";
+
+/* No comment provided by engineer. */
 "Dark" = "Oscuro";
+
+/* No comment provided by engineer. */
+"Dark mode colors" = "Colores en modo oscuro";
 
 /* No comment provided by engineer. */
 "Database downgrade" = "Degradación de la base de datos";
@@ -1166,6 +1265,9 @@
 
 /* message decrypt error item */
 "Decryption error" = "Error descifrado";
+
+/* No comment provided by engineer. */
+"decryption errors" = "errores de descifrado";
 
 /* pref value */
 "default (%@)" = "predeterminado (%@)";
@@ -1294,6 +1396,9 @@
 "deleted" = "eliminado";
 
 /* No comment provided by engineer. */
+"Deleted" = "Eliminado";
+
+/* No comment provided by engineer. */
 "Deleted at" = "Eliminado";
 
 /* copied message info */
@@ -1304,6 +1409,9 @@
 
 /* rcv group event chat item */
 "deleted group" = "grupo eliminado";
+
+/* No comment provided by engineer. */
+"Deletion errors" = "Errores de borrado";
 
 /* No comment provided by engineer. */
 "Delivery" = "Entrega";
@@ -1328,6 +1436,12 @@
 
 /* snd error text */
 "Destination server error: %@" = "Error del servidor de destino: %@";
+
+/* No comment provided by engineer. */
+"Detailed statistics" = "Estadísticas detalladas";
+
+/* No comment provided by engineer. */
+"Details" = "Detalles";
 
 /* No comment provided by engineer. */
 "Develop" = "Desarrollo";
@@ -1432,10 +1546,19 @@
 "Download" = "Descargar";
 
 /* No comment provided by engineer. */
+"Download errors" = "Errores en la descarga";
+
+/* No comment provided by engineer. */
 "Download failed" = "Descarga fallida";
 
 /* server test step */
 "Download file" = "Descargar archivo";
+
+/* No comment provided by engineer. */
+"Downloaded" = "Descargado";
+
+/* No comment provided by engineer. */
+"Downloaded files" = "Archivos descargados";
 
 /* No comment provided by engineer. */
 "Downloading archive" = "Descargando archivo";
@@ -1448,6 +1571,9 @@
 
 /* integrity error chat item */
 "duplicate message" = "mensaje duplicado";
+
+/* No comment provided by engineer. */
+"duplicates" = "duplicados";
 
 /* No comment provided by engineer. */
 "Duration" = "Duración";
@@ -1708,6 +1834,9 @@
 "Error exporting chat database" = "Error al exportar base de datos";
 
 /* No comment provided by engineer. */
+"Error exporting theme: %@" = "Error al exportar tema: %@";
+
+/* No comment provided by engineer. */
 "Error importing chat database" = "Error al importar base de datos";
 
 /* No comment provided by engineer. */
@@ -1723,7 +1852,16 @@
 "Error receiving file" = "Error al recibir archivo";
 
 /* No comment provided by engineer. */
+"Error reconnecting server" = "Error al reconectar con el servidor";
+
+/* No comment provided by engineer. */
+"Error reconnecting servers" = "Error al reconectar con los servidores";
+
+/* No comment provided by engineer. */
 "Error removing member" = "Error al eliminar miembro";
+
+/* No comment provided by engineer. */
+"Error resetting statistics" = "Error al restablecer las estadísticas";
 
 /* No comment provided by engineer. */
 "Error saving %@ servers" = "Error al guardar servidores %@";
@@ -1805,6 +1943,9 @@
 "Error: URL is invalid" = "Error: la URL no es válida";
 
 /* No comment provided by engineer. */
+"Errors" = "Errores";
+
+/* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Incluso si está desactivado para la conversación.";
 
 /* No comment provided by engineer. */
@@ -1817,10 +1958,16 @@
 "Expand" = "Expandir";
 
 /* No comment provided by engineer. */
+"expired" = "expirado";
+
+/* No comment provided by engineer. */
 "Export database" = "Exportar base de datos";
 
 /* No comment provided by engineer. */
 "Export error:" = "Error al exportar:";
+
+/* No comment provided by engineer. */
+"Export theme" = "Exportar tema";
 
 /* No comment provided by engineer. */
 "Exported database archive." = "Archivo de base de datos exportado.";
@@ -1842,6 +1989,21 @@
 
 /* No comment provided by engineer. */
 "Favorite" = "Favoritos";
+
+/* No comment provided by engineer. */
+"File error" = "Error de archivo";
+
+/* file error text */
+"File not found - most likely file was deleted or cancelled." = "Archivo no encontrado, probablemente haya sido borrado o cancelado.";
+
+/* file error text */
+"File server error: %@" = "Error del servidor de archivos: %@";
+
+/* No comment provided by engineer. */
+"File status" = "Estado del archivo";
+
+/* copied message info */
+"File status: %@" = "Estado del archivo: %@";
 
 /* No comment provided by engineer. */
 "File will be deleted from servers." = "El archivo será eliminado de los servidores.";
@@ -1956,6 +2118,12 @@
 
 /* No comment provided by engineer. */
 "GIFs and stickers" = "GIFs y stickers";
+
+/* message preview */
+"Good afternoon!" = "¡Buenas tardes!";
+
+/* message preview */
+"Good morning!" = "¡Buenos días!";
 
 /* No comment provided by engineer. */
 "Group" = "Grupo";
@@ -2135,6 +2303,9 @@
 "Import failed" = "Error de importación";
 
 /* No comment provided by engineer. */
+"Import theme" = "Importar tema";
+
+/* No comment provided by engineer. */
 "Importing archive" = "Importando archivo";
 
 /* No comment provided by engineer. */
@@ -2154,6 +2325,9 @@
 
 /* No comment provided by engineer. */
 "In-call sounds" = "Sonido de llamada";
+
+/* No comment provided by engineer. */
+"inactive" = "inactivo";
 
 /* No comment provided by engineer. */
 "Incognito" = "Incógnito";
@@ -2217,6 +2391,9 @@
 
 /* No comment provided by engineer. */
 "Interface" = "Interfaz";
+
+/* No comment provided by engineer. */
+"Interface colors" = "Colores del interfaz";
 
 /* invalid chat data */
 "invalid chat" = "chat no válido";
@@ -2470,6 +2647,9 @@
 /* rcv group event chat item */
 "member connected" = "conectado";
 
+/* item status text */
+"Member inactive" = "Miembro inactivo";
+
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". All group members will be notified." = "El rol del miembro cambiará a \"%@\" y se notificará al grupo.";
 
@@ -2478,6 +2658,9 @@
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "El miembro será expulsado del grupo. ¡No podrá deshacerse!";
+
+/* No comment provided by engineer. */
+"Menus" = "Menus";
 
 /* item status text */
 "Message delivery error" = "Error en la entrega del mensaje";
@@ -2490,6 +2673,12 @@
 
 /* No comment provided by engineer. */
 "Message draft" = "Borrador de mensaje";
+
+/* item status text */
+"Message forwarded" = "Mensaje reenviado";
+
+/* item status description */
+"Message may be delivered later if member becomes active." = "El mensaje puede ser entregado más tarde si el miembro vuelve a estar activo.";
 
 /* No comment provided by engineer. */
 "Message queue info" = "Información cola de mensajes";
@@ -2507,6 +2696,9 @@
 "message received" = "mensaje recibido";
 
 /* No comment provided by engineer. */
+"Message reception" = "Recepción de mensaje";
+
+/* No comment provided by engineer. */
 "Message routing fallback" = "Enrutamiento de mensajes alternativo";
 
 /* No comment provided by engineer. */
@@ -2514,6 +2706,12 @@
 
 /* No comment provided by engineer. */
 "Message source remains private." = "El autor del mensaje se mantiene privado.";
+
+/* No comment provided by engineer. */
+"Message status" = "Estado del mensaje";
+
+/* copied message info */
+"Message status: %@" = "Estado del mensaje: %@";
 
 /* No comment provided by engineer. */
 "Message text" = "Contacto y texto";
@@ -2529,6 +2727,12 @@
 
 /* No comment provided by engineer. */
 "Messages from %@ will be shown!" = "¡Los mensajes de %@ serán mostrados!";
+
+/* No comment provided by engineer. */
+"Messages received" = "Mensajes recibidos";
+
+/* No comment provided by engineer. */
+"Messages sent" = "Mensajes enviados";
 
 /* No comment provided by engineer. */
 "Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Los mensajes, archivos y llamadas están protegidos mediante **cifrado de extremo a extremo** con secreto perfecto hacía adelante, repudio y recuperación tras ataque.";
@@ -2695,6 +2899,9 @@
 /* No comment provided by engineer. */
 "No device token!" = "¡Sin dispositivo token!";
 
+/* item status description */
+"No direct connection yet, message is forwarded by admin." = "Aún no hay conexión directa, el mensaje es reenviado por el administrador.";
+
 /* No comment provided by engineer. */
 "no e2e encryption" = "sin cifrar";
 
@@ -2706,6 +2913,9 @@
 
 /* No comment provided by engineer. */
 "No history" = "Sin historial";
+
+/* No comment provided by engineer. */
+"No info, try to reload" = "No hay información, intenta recargar";
 
 /* No comment provided by engineer. */
 "No network connection" = "Sin conexión de red";
@@ -2739,7 +2949,7 @@
    time to disappear */
 "off" = "desactivado";
 
-/* No comment provided by engineer. */
+/* blur media */
 "Off" = "Desactivado";
 
 /* feature offered item */
@@ -2833,6 +3043,9 @@
 "Open migration to another device" = "Abrir menú migración a otro dispositivo";
 
 /* No comment provided by engineer. */
+"Open server settings" = "Abrir configuración del servidor";
+
+/* No comment provided by engineer. */
 "Open Settings" = "Abrir Configuración";
 
 /* authentication reason */
@@ -2857,7 +3070,16 @@
 "Or show this code" = "O muestra este código QR";
 
 /* No comment provided by engineer. */
+"other" = "otro";
+
+/* No comment provided by engineer. */
 "Other" = "Otro";
+
+/* No comment provided by engineer. */
+"Other %@ servers" = "Otros servidores %@";
+
+/* No comment provided by engineer. */
+"other errors" = "otros errores";
 
 /* member role */
 "owner" = "propietario";
@@ -2902,6 +3124,9 @@
 "peer-to-peer" = "p2p";
 
 /* No comment provided by engineer. */
+"Pending" = "Pendiente";
+
+/* No comment provided by engineer. */
 "People can connect to you only via the links you share." = "Las personas pueden conectarse contigo solo mediante los enlaces que compartes.";
 
 /* No comment provided by engineer. */
@@ -2921,6 +3146,9 @@
 
 /* No comment provided by engineer. */
 "Please ask your contact to enable sending voice messages." = "Solicita que tu contacto habilite el envío de mensajes de voz.";
+
+/* No comment provided by engineer. */
+"Please check that mobile and desktop are connected to the same local network, and that desktop firewall allows the connection.\nPlease share any other issues with the developers." = "Comprueba que el móvil y el ordenador están conectados a la misma red local y que el cortafuegos del ordenador permite la conexión.\nPor favor, comparte cualquier otro problema con los desarrolladores.";
 
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Comprueba que has usado el enlace correcto o pide a tu contacto que te envíe otro.";
@@ -2980,6 +3208,9 @@
 "Preview" = "Vista previa";
 
 /* No comment provided by engineer. */
+"Previously connected servers" = "Servidores conectados previamente";
+
+/* No comment provided by engineer. */
 "Privacy & security" = "Privacidad y Seguridad";
 
 /* No comment provided by engineer. */
@@ -3001,6 +3232,9 @@
 "Private routing" = "Enrutamiento privado";
 
 /* No comment provided by engineer. */
+"Private routing error" = "Error de enrutamiento privado";
+
+/* No comment provided by engineer. */
 "Profile and server connections" = "Datos del perfil y conexiones";
 
 /* No comment provided by engineer. */
@@ -3017,6 +3251,9 @@
 
 /* No comment provided by engineer. */
 "Profile password" = "Contraseña del perfil";
+
+/* No comment provided by engineer. */
+"Profile theme" = "Tema del perfil";
 
 /* No comment provided by engineer. */
 "Profile update will be sent to your contacts." = "La actualización del perfil se enviará a tus contactos.";
@@ -3067,6 +3304,12 @@
 "Protocol timeout per KB" = "Timeout protocolo por KB";
 
 /* No comment provided by engineer. */
+"Proxied" = "Con proxy";
+
+/* No comment provided by engineer. */
+"Proxied servers" = "Servidores con proxy";
+
+/* No comment provided by engineer. */
 "Push notifications" = "Notificaciones automáticas";
 
 /* No comment provided by engineer. */
@@ -3109,6 +3352,9 @@
 "Receipts are disabled" = "Las confirmaciones están desactivadas";
 
 /* No comment provided by engineer. */
+"Receive errors" = "Errores de recepción";
+
+/* No comment provided by engineer. */
 "received answer…" = "respuesta recibida…";
 
 /* No comment provided by engineer. */
@@ -3125,6 +3371,15 @@
 
 /* message info title */
 "Received message" = "Mensaje entrante";
+
+/* No comment provided by engineer. */
+"Received messages" = "Mensajes recibidos";
+
+/* No comment provided by engineer. */
+"Received reply" = "Respuesta recibida";
+
+/* No comment provided by engineer. */
+"Received total" = "Total recibido";
 
 /* No comment provided by engineer. */
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "La dirección de recepción pasará a otro servidor. El cambio se completará cuando el remitente esté en línea.";
@@ -3145,7 +3400,22 @@
 "Recipients see updates as you type them." = "Los destinatarios ven actualizarse mientras escribes.";
 
 /* No comment provided by engineer. */
+"Reconnect" = "Reconectar";
+
+/* No comment provided by engineer. */
 "Reconnect all connected servers to force message delivery. It uses additional traffic." = "Reconectar todos los servidores conectados para forzar la entrega del mensaje. Se usa tráfico adicional.";
+
+/* No comment provided by engineer. */
+"Reconnect all servers" = "Reconectar todos los servidores";
+
+/* No comment provided by engineer. */
+"Reconnect all servers?" = "¿Reconectar todos los servidores?";
+
+/* No comment provided by engineer. */
+"Reconnect server to force message delivery. It uses additional traffic." = "Reconectar el servidor para forzar la entrega de mensajes. Usa tráfico adicional.";
+
+/* No comment provided by engineer. */
+"Reconnect server?" = "¿Reconectar servidor?";
 
 /* No comment provided by engineer. */
 "Reconnect servers?" = "¿Reconectar servidores?";
@@ -3179,6 +3449,9 @@
 
 /* No comment provided by engineer. */
 "Remove" = "Eliminar";
+
+/* No comment provided by engineer. */
+"Remove image" = "Eliminar imagen";
 
 /* No comment provided by engineer. */
 "Remove member" = "Expulsar miembro";
@@ -3238,10 +3511,22 @@
 "Reset" = "Restablecer";
 
 /* No comment provided by engineer. */
+"Reset all statistics" = "Restablecer estadísticas";
+
+/* No comment provided by engineer. */
+"Reset all statistics?" = "¿Restablecer todas las estadísticas?";
+
+/* No comment provided by engineer. */
 "Reset colors" = "Restablecer colores";
 
 /* No comment provided by engineer. */
+"Reset to app theme" = "Restablecer al tema de la aplicación";
+
+/* No comment provided by engineer. */
 "Reset to defaults" = "Restablecer valores predetarminados";
+
+/* No comment provided by engineer. */
+"Reset to user theme" = "Restablecer al tema del usuario";
 
 /* No comment provided by engineer. */
 "Restart the app to create a new chat profile" = "Reinicia la aplicación para crear un perfil nuevo";
@@ -3358,6 +3643,12 @@
 "Saved WebRTC ICE servers will be removed" = "Los servidores WebRTC ICE guardados serán eliminados";
 
 /* No comment provided by engineer. */
+"Scale" = "Escala";
+
+/* No comment provided by engineer. */
+"Scan / Paste link" = "Escanear / Pegar enlace";
+
+/* No comment provided by engineer. */
 "Scan code" = "Escanear código";
 
 /* No comment provided by engineer. */
@@ -3384,6 +3675,9 @@
 /* network option */
 "sec" = "seg";
 
+/* No comment provided by engineer. */
+"Secondary" = "Secundario";
+
 /* time unit */
 "seconds" = "segundos";
 
@@ -3392,6 +3686,9 @@
 
 /* server test step */
 "Secure queue" = "Cola segura";
+
+/* No comment provided by engineer. */
+"Secured" = "Seguro";
 
 /* No comment provided by engineer. */
 "Security assessment" = "Evaluación de la seguridad";
@@ -3404,6 +3701,9 @@
 
 /* No comment provided by engineer. */
 "Select" = "Seleccionar";
+
+/* No comment provided by engineer. */
+"Selected chat preferences prohibit this message." = "Las preferencias seleccionadas no permiten este mensaje.";
 
 /* No comment provided by engineer. */
 "Self-destruct" = "Autodestrucción";
@@ -3437,6 +3737,9 @@
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Enviar mensaje temporal";
+
+/* No comment provided by engineer. */
+"Send errors" = "Errores de envío";
 
 /* No comment provided by engineer. */
 "Send link previews" = "Enviar previsualizacion de enlaces";
@@ -3504,6 +3807,9 @@
 /* copied message info */
 "Sent at: %@" = "Enviado: %@";
 
+/* No comment provided by engineer. */
+"Sent directly" = "Enviado directamente";
+
 /* notification */
 "Sent file event" = "Evento de archivo enviado";
 
@@ -3511,7 +3817,25 @@
 "Sent message" = "Mensaje saliente";
 
 /* No comment provided by engineer. */
+"Sent messages" = "Mensajes enviados";
+
+/* No comment provided by engineer. */
 "Sent messages will be deleted after set time." = "Los mensajes enviados se eliminarán una vez transcurrido el tiempo establecido.";
+
+/* No comment provided by engineer. */
+"Sent reply" = "Respuesta enviada";
+
+/* No comment provided by engineer. */
+"Sent total" = "Total enviado";
+
+/* No comment provided by engineer. */
+"Sent via proxy" = "Enviado mediante proxy";
+
+/* No comment provided by engineer. */
+"Server address" = "Dirección del servidor";
+
+/* No comment provided by engineer. */
+"Server address is incompatible with network settings: %@." = "La dirección del servidor es incompatible con la configuración de la red: %@.";
 
 /* srv error text. */
 "Server address is incompatible with network settings." = "La dirección del servidor es incompatible con la configuración de la red.";
@@ -3528,11 +3852,23 @@
 /* No comment provided by engineer. */
 "Server test failed!" = "¡Error en prueba del servidor!";
 
+/* No comment provided by engineer. */
+"Server type" = "Tipo de servidor";
+
 /* srv error text */
 "Server version is incompatible with network settings." = "La versión del servidor es incompatible con la configuración de red.";
 
 /* No comment provided by engineer. */
+"Server version is incompatible with your app: %@." = "La versión del servidor es incompatible con tu aplicación: %@.";
+
+/* No comment provided by engineer. */
 "Servers" = "Servidores";
+
+/* No comment provided by engineer. */
+"Servers info" = "Info servidores";
+
+/* No comment provided by engineer. */
+"Servers statistics will be reset - this cannot be undone!" = "Las estadísticas de los servidores serán restablecidas. ¡No podrá deshacerse!";
 
 /* No comment provided by engineer. */
 "Session code" = "Código de sesión";
@@ -3542,6 +3878,9 @@
 
 /* No comment provided by engineer. */
 "Set contact name…" = "Escribe el nombre del contacto…";
+
+/* No comment provided by engineer. */
+"Set default theme" = "Establecer tema predeterminado";
 
 /* No comment provided by engineer. */
 "Set group preferences" = "Establecer preferencias de grupo";
@@ -3613,6 +3952,9 @@
 "Show message status" = "Estado del mensaje";
 
 /* No comment provided by engineer. */
+"Show percentage" = "Mostrar porcentaje";
+
+/* No comment provided by engineer. */
 "Show preview" = "Mostrar vista previa";
 
 /* No comment provided by engineer. */
@@ -3620,6 +3962,9 @@
 
 /* No comment provided by engineer. */
 "Show:" = "Mostrar:";
+
+/* No comment provided by engineer. */
+"SimpleX" = "SimpleX";
 
 /* No comment provided by engineer. */
 "SimpleX address" = "Dirección SimpleX";
@@ -3667,6 +4012,9 @@
 "Simplified incognito mode" = "Modo incógnito simplificado";
 
 /* No comment provided by engineer. */
+"Size" = "Tamaño";
+
+/* No comment provided by engineer. */
 "Skip" = "Omitir";
 
 /* No comment provided by engineer. */
@@ -3674,6 +4022,9 @@
 
 /* No comment provided by engineer. */
 "Small groups (max 20)" = "Grupos pequeños (máx. 20)";
+
+/* No comment provided by engineer. */
+"SMP server" = "Servidor SMP";
 
 /* No comment provided by engineer. */
 "SMP servers" = "Servidores SMP";
@@ -3700,7 +4051,13 @@
 "Start migration" = "Iniciar migración";
 
 /* No comment provided by engineer. */
+"Starting from %@." = "Iniciado desde %@.";
+
+/* No comment provided by engineer. */
 "starting…" = "inicializando…";
+
+/* No comment provided by engineer. */
+"Statistics" = "Estadísticas";
 
 /* No comment provided by engineer. */
 "Stop" = "Parar";
@@ -3743,6 +4100,15 @@
 
 /* No comment provided by engineer. */
 "Submit" = "Enviar";
+
+/* No comment provided by engineer. */
+"Subscribed" = "Suscrito";
+
+/* No comment provided by engineer. */
+"Subscription errors" = "Errores de suscripción";
+
+/* No comment provided by engineer. */
+"Subscriptions ignored" = "Suscripciones ignoradas";
 
 /* No comment provided by engineer. */
 "Support SimpleX Chat" = "Soporte SimpleX Chat";
@@ -3791,6 +4157,9 @@
 
 /* No comment provided by engineer. */
 "TCP_KEEPINTVL" = "TCP_KEEPINTVL";
+
+/* No comment provided by engineer. */
+"Temporary file error" = "Error en archivo temporal";
 
 /* server test failure */
 "Test failed at step %@." = "La prueba ha fallado en el paso %@.";
@@ -3874,6 +4243,9 @@
 "The text you pasted is not a SimpleX link." = "El texto pegado no es un enlace SimpleX.";
 
 /* No comment provided by engineer. */
+"Themes" = "Temas";
+
+/* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Esta configuración afecta a tu perfil actual **%@**.";
 
 /* No comment provided by engineer. */
@@ -3916,7 +4288,13 @@
 "This is your own SimpleX address!" = "¡Esta es tu propia dirección SimpleX!";
 
 /* No comment provided by engineer. */
+"This link was used with another mobile device, please create a new link on the desktop." = "Este enlace ha sido usado en otro dispositivo móvil, por favor crea un enlace nuevo en el ordenador.";
+
+/* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Esta configuración se aplica a los mensajes del perfil actual **%@**.";
+
+/* No comment provided by engineer. */
+"Title" = "Título";
 
 /* No comment provided by engineer. */
 "To ask any questions and to receive updates:" = "Para consultar cualquier duda y recibir actualizaciones:";
@@ -3958,7 +4336,13 @@
 "Toggle incognito when connecting." = "Activa incógnito al conectar.";
 
 /* No comment provided by engineer. */
+"Total" = "Total";
+
+/* No comment provided by engineer. */
 "Transport isolation" = "Aislamiento de transporte";
+
+/* No comment provided by engineer. */
+"Transport sessions" = "Sesiones de transporte";
 
 /* No comment provided by engineer. */
 "Trying to connect to the server used to receive messages from this contact (error: %@)." = "Intentando conectar con el servidor usado para recibir mensajes de este contacto (error: %@).";
@@ -4096,10 +4480,19 @@
 "Upgrade and open chat" = "Actualizar y abrir Chat";
 
 /* No comment provided by engineer. */
+"Upload errors" = "Errores en subida";
+
+/* No comment provided by engineer. */
 "Upload failed" = "Error de subida";
 
 /* server test step */
 "Upload file" = "Subir archivo";
+
+/* No comment provided by engineer. */
+"Uploaded" = "Subido";
+
+/* No comment provided by engineer. */
+"Uploaded files" = "Archivos subidos";
 
 /* No comment provided by engineer. */
 "Uploading archive" = "Subiendo archivo";
@@ -4145,6 +4538,9 @@
 
 /* No comment provided by engineer. */
 "User profile" = "Perfil de usuario";
+
+/* No comment provided by engineer. */
+"User selection" = "Selección de usuarios";
 
 /* No comment provided by engineer. */
 "Using .onion hosts requires compatible VPN provider." = "Usar hosts .onion requiere un proveedor VPN compatible.";
@@ -4255,6 +4651,12 @@
 "Waiting for video" = "Esperando el vídeo";
 
 /* No comment provided by engineer. */
+"Wallpaper accent" = "Color imagen de fondo";
+
+/* No comment provided by engineer. */
+"Wallpaper background" = "Color de fondo";
+
+/* No comment provided by engineer. */
 "wants to connect to you!" = "¡quiere contactar contigo!";
 
 /* No comment provided by engineer. */
@@ -4326,8 +4728,14 @@
 /* snd error text */
 "Wrong key or unknown connection - most likely this connection is deleted." = "Clave incorrecta o conexión desconocida - probablemente esta conexión fue eliminada.";
 
+/* file error text */
+"Wrong key or unknown file chunk address - most likely file is deleted." = "Clave incorrecta o dirección del bloque del archivo desconocida. Es probable que el archivo se haya eliminado.";
+
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "¡Contraseña incorrecta!";
+
+/* No comment provided by engineer. */
+"XFTP server" = "Servidor XFTP";
 
 /* No comment provided by engineer. */
 "XFTP servers" = "Servidores XFTP";
@@ -4387,6 +4795,9 @@
 "You are invited to group" = "Has sido invitado a un grupo";
 
 /* No comment provided by engineer. */
+"You are not connected to these servers. Private routing is used to deliver messages to them." = "No estás conectado a estos servidores. Para enviarles mensajes se usa el enrutamiento privado.";
+
+/* No comment provided by engineer. */
 "you are observer" = "Tu rol es observador";
 
 /* snd group event chat item */
@@ -4414,7 +4825,7 @@
 "You can make it visible to your SimpleX contacts via Settings." = "Puedes hacerlo visible para tus contactos de SimpleX en Configuración.";
 
 /* notification body */
-"You can now chat with %@" = "Ya puedes enviar mensajes a %@";
+"You can now chat with %@" = "Ya puedes chatear con %@";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "Puedes configurar las notificaciones de la pantalla de bloqueo desde Configuración.";

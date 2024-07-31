@@ -11,6 +11,8 @@ import SwiftUI
 
 public let appSuspendTimeout: Int = 15 // seconds
 
+public let defaultProfileImageCorner: Double = 22.5
+
 let GROUP_DEFAULT_APP_STATE = "appState"
 let GROUP_DEFAULT_NSE_STATE = "nseState"
 let GROUP_DEFAULT_SE_STATE = "seState"
@@ -20,11 +22,18 @@ public let GROUP_DEFAULT_CHAT_LAST_BACKGROUND_RUN = "chatLastBackgroundRun"
 let GROUP_DEFAULT_NTF_PREVIEW_MODE = "ntfPreviewMode"
 public let GROUP_DEFAULT_NTF_ENABLE_LOCAL = "ntfEnableLocal" // no longer used
 public let GROUP_DEFAULT_NTF_ENABLE_PERIODIC = "ntfEnablePeriodic" // no longer used
+// replaces DEFAULT_PERFORM_LA
+let GROUP_DEFAULT_PERFORM_LA = "performLocalAuthentication"
+public let GROUP_DEFAULT_ALLOW_SHARE_EXTENSION = "allowShareExtension"
+// replaces DEFAULT_PRIVACY_LINK_PREVIEWS
+let GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
 // This setting is a main one, while having an unused duplicate from the past: DEFAULT_PRIVACY_ACCEPT_IMAGES
 let GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 public let GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE = "privacyTransferImagesInline" // no longer used
 public let GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES = "privacyEncryptLocalFiles"
 public let GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS = "privacyAskToApproveRelays"
+// replaces DEFAULT_PROFILE_IMAGE_CORNER_RADIUS
+public let GROUP_DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
 let GROUP_DEFAULT_NTF_BADGE_COUNT = "ntgBadgeCount"
 let GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS = "networkUseOnionHosts"
 let GROUP_DEFAULT_NETWORK_SESSION_MODE = "networkSessionMode"
@@ -72,10 +81,14 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_INCOGNITO: false,
         GROUP_DEFAULT_STORE_DB_PASSPHRASE: true,
         GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE: false,
+        GROUP_DEFAULT_PERFORM_LA: true,
+        GROUP_DEFAULT_ALLOW_SHARE_EXTENSION: false,
+        GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS: false,
         GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
         GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE: false,
         GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES: true,
         GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS: true,
+        GROUP_DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
         GROUP_DEFAULT_CONFIRM_DB_UPGRADES: false,
         GROUP_DEFAULT_CALL_KIT_ENABLED: true,
         GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED: false,
@@ -190,12 +203,20 @@ public let ntfPreviewModeGroupDefault = EnumDefault<NotificationPreviewMode>(
 
 public let incognitoGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_INCOGNITO)
 
+public let performLAGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PERFORM_LA)
+
+public let allowShareExtensionGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_ALLOW_SHARE_EXTENSION)
+
+public let privacyLinkPreviewsGroupDefault =  BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS)
+
 // This setting is a main one, while having an unused duplicate from the past: DEFAULT_PRIVACY_ACCEPT_IMAGES
 public let privacyAcceptImagesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES)
 
 public let privacyEncryptLocalFilesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES)
 
 public let privacyAskToApproveRelaysGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS)
+
+public let profileImageCornerRadiusGroupDefault = Default<Double>(defaults: groupDefaults, forKey: GROUP_DEFAULT_PROFILE_IMAGE_CORNER_RADIUS)
 
 public let ntfBadgeCountGroupDefault = IntDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_BADGE_COUNT)
 

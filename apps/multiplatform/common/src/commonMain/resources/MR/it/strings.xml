@@ -1874,7 +1874,7 @@
     <string name="cannot_share_message_alert_title">Impossibile inviare il messaggio</string>
     <string name="cannot_share_message_alert_text">Le preferenze della chat selezionata vietano questo messaggio.</string>
     <string name="connections">Connessioni</string>
-    <string name="servers_info_subscriptions_connections_subscribed">Connessioni sottoscritte</string>
+    <string name="servers_info_subscriptions_connections_subscribed">Connessioni attive</string>
     <string name="created">Creato</string>
     <string name="decryption_errors">errori di decifrazione</string>
     <string name="servers_info_detailed_statistics">Statistiche dettagliate</string>
@@ -1883,7 +1883,7 @@
     <string name="servers_info_reconnect_server_error">Errore di riconnessione al server</string>
     <string name="servers_info_reconnect_servers_error">Errore di riconnessione ai server</string>
     <string name="expired_label">scaduto</string>
-    <string name="servers_info_subscriptions_section_header">Iscrizioni ai messaggi</string>
+    <string name="servers_info_subscriptions_section_header">Ricezione messaggi</string>
     <string name="other_label">altro</string>
     <string name="other_errors">altri errori</string>
     <string name="servers_info_subscriptions_connections_pending">In attesa</string>
@@ -1933,12 +1933,12 @@
     <string name="member_inactive_desc">Il messaggio può essere consegnato più tardi se il membro diventa attivo.</string>
     <string name="smp_servers_configured">Server SMP configurati</string>
     <string name="smp_servers_other">Altri server SMP</string>
-    <string name="subscription_percentage">Percentuale di iscrizione</string>
+    <string name="subscription_percentage">Mostra percentuale</string>
     <string name="member_info_member_inactive">inattivo</string>
     <string name="appearance_zoom">Zoom</string>
     <string name="servers_info_sessions_connected">Connesso</string>
     <string name="servers_info_sessions_connecting">In connessione</string>
-    <string name="current_user">Utente attuale</string>
+    <string name="current_user">Profilo attuale</string>
     <string name="servers_info_details">Dettagli</string>
     <string name="servers_info_sessions_errors">Errori</string>
     <string name="servers_info_messages_received">Messaggi ricevuti</string>
@@ -1948,7 +1948,7 @@
     <string name="servers_info_target">Informazioni di</string>
     <string name="servers_info_statistics_section_header">Statistiche</string>
     <string name="servers_info_transport_sessions_section_header">Sessioni di trasporto</string>
-    <string name="all_users">Tutti gli utenti</string>
+    <string name="all_users">Tutti i profili</string>
     <string name="attempts_label">tentativi</string>
     <string name="xftp_servers_configured">Server XFTP configurati</string>
     <string name="completed">Completato</string>
@@ -1989,4 +1989,15 @@
     <string name="app_check_for_updates_download_completed_title">Aggiornamento dell\'app scaricato</string>
     <string name="app_check_for_updates_notice_title">Cerca aggiornamenti</string>
     <string name="app_check_for_updates_button_install">Installa aggiornamento</string>
+    <string name="proxy_destination_error_failed_to_connect">Il server di inoltro %1$s non è riuscito a connettersi al server di destinazione %2$s. Riprova più tardi.</string>
+    <string name="smp_proxy_error_broker_host">L\'indirizzo del server di inoltro è incompatibile con le impostazioni di rete: %1$s.</string>
+    <string name="proxy_destination_error_broker_host">L\'indirizzo del server di destinazione di %1$s è incompatibile con le impostazioni del server di inoltro %2$s.</string>
+    <string name="proxy_destination_error_broker_version">La versione del server di destinazione di %1$s è incompatibile con il server di inoltro %2$s.</string>
+    <string name="smp_proxy_error_connecting">Errore di connessione al server di inoltro %1$s. Riprova più tardi.</string>
+    <string name="smp_proxy_error_broker_version">La versione server di inoltro è incompatibile con le impostazioni di rete: %1$s.</string>
+    <string name="privacy_media_blur_radius_off">Off</string>
+    <string name="privacy_media_blur_radius">Sfocatura file multimediali</string>
+    <string name="privacy_media_blur_radius_soft">Leggera</string>
+    <string name="privacy_media_blur_radius_medium">Media</string>
+    <string name="privacy_media_blur_radius_strong">Forte</string>
 </resources>

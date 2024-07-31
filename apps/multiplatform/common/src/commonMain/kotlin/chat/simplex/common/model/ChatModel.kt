@@ -1761,6 +1761,12 @@ enum class ConnStatus {
 }
 
 @Serializable
+data class ChatItemDeletion (
+  val deletedChatItem: AChatItem,
+  val toChatItem: AChatItem? = null
+)
+
+@Serializable
 class AChatItem (
   val chatInfo: ChatInfo,
   val chatItem: ChatItem
