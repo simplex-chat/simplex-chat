@@ -250,31 +250,31 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
                 val groupMember = toModerate?.second
                 val deletedChatItem: ChatItem?
                 val toChatItem: ChatItem?
-                if (mode == CIDeleteMode.cidmBroadcast && groupInfo != null && groupMember != null) {
-                  val r = chatModel.controller.apiDeleteMemberChatItem(
+                val r = if (mode == CIDeleteMode.cidmBroadcast && groupInfo != null && groupMember != null) {
+                  chatModel.controller.apiDeleteMemberChatItems(
                     chatRh,
                     groupId = groupInfo.groupId,
-                    groupMemberId = groupMember.groupMemberId,
-                    itemId = itemId
+                    itemIds = listOf(itemId)
                   )
-                  deletedChatItem = r?.first
-                  toChatItem = r?.second
                 } else {
-                  val r = chatModel.controller.apiDeleteChatItem(
+                  chatModel.controller.apiDeleteChatItems(
                     chatRh,
                     type = cInfo.chatType,
                     id = cInfo.apiId,
-                    itemId = itemId,
+                    itemIds = listOf(itemId),
                     mode = mode
                   )
-                  deletedChatItem = r?.deletedChatItem?.chatItem
-                  toChatItem = r?.toChatItem?.chatItem
                 }
-                withChats {
-                  if (toChatItem == null && deletedChatItem != null) {
-                    removeChatItem(chatRh, cInfo, deletedChatItem)
-                  } else if (toChatItem != null) {
-                    upsertChatItem(chatRh, cInfo, toChatItem)
+                val deleted = r?.firstOrNull()
+                if (deleted != null) {
+                  deletedChatItem = deleted.deletedChatItem.chatItem
+                  toChatItem = deleted.toChatItem?.chatItem
+                  withChats {
+                    if (toChatItem != null) {
+                      upsertChatItem(chatRh, cInfo, toChatItem)
+                    } else {
+                      removeChatItem(chatRh, cInfo, deletedChatItem)
+                    }
                   }
                 }
               }
@@ -283,18 +283,14 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               if (itemIds.isNotEmpty()) {
                 val chatInfo = chat.chatInfo
                 withBGApi {
-                  val deletedItems: ArrayList<ChatItem> = arrayListOf()
-                  for (itemId in itemIds) {
-                    val di = chatModel.controller.apiDeleteChatItem(
-                      chatRh, chatInfo.chatType, chatInfo.apiId, itemId, CIDeleteMode.cidmInternal
-                    )?.deletedChatItem?.chatItem
-                    if (di != null) {
-                      deletedItems.add(di)
-                    }
-                  }
-                  withChats {
-                    for (di in deletedItems) {
-                      removeChatItem(chatRh, chatInfo, di)
+                  val deleted = chatModel.controller.apiDeleteChatItems(
+                    chatRh, chatInfo.chatType, chatInfo.apiId, itemIds, CIDeleteMode.cidmInternal
+                  )
+                  if (deleted != null) {
+                    withChats {
+                      for (di in deleted) {
+                        removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
+                      }
                     }
                   }
                 }

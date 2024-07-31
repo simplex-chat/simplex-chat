@@ -360,6 +360,9 @@
 "Acknowledgement errors" = "Fehler bei der Bestätigung";
 
 /* No comment provided by engineer. */
+"Active connections" = "Aktive Verbindungen";
+
+/* No comment provided by engineer. */
 "Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Fügen Sie die Adresse Ihrem Profil hinzu, damit Ihre Kontakte sie mit anderen Personen teilen können. Es wird eine Profilaktualisierung an Ihre Kontakte gesendet.";
 
 /* No comment provided by engineer. */
@@ -426,13 +429,13 @@
 "All app data is deleted." = "Werden die App-Daten komplett gelöscht.";
 
 /* No comment provided by engineer. */
-"All chats and messages will be deleted - this cannot be undone!" = "Alle Chats und Nachrichten werden gelöscht. Dies kann nicht rückgängig gemacht werden!";
+"All chats and messages will be deleted - this cannot be undone!" = "Es werden alle Chats und Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden!";
 
 /* No comment provided by engineer. */
 "All data is erased when it is entered." = "Alle Daten werden gelöscht, sobald dieser eingegeben wird.";
 
 /* No comment provided by engineer. */
-"All data is private to your device." = "Alle Daten sind auf Ihrem Gerät geschützt.";
+"All data is private to your device." = "Alle Daten werden nur auf Ihrem Gerät gespeichert.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Alle Gruppenmitglieder bleiben verbunden.";
@@ -444,7 +447,7 @@
 "All messages will be deleted - this cannot be undone!" = "Es werden alle Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden!";
 
 /* No comment provided by engineer. */
-"All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Alle Nachrichten werden gelöscht . Dies kann nicht rückgängig gemacht werden! Die Nachrichten werden NUR bei Ihnen gelöscht.";
+"All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Es werden alle Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden! Die Nachrichten werden NUR bei Ihnen gelöscht.";
 
 /* No comment provided by engineer. */
 "All new messages from %@ will be hidden!" = "Von %@ werden alle neuen Nachrichten ausgeblendet!";
@@ -686,7 +689,7 @@
 /* rcv group event chat item */
 "blocked %@" = "%@ wurde blockiert";
 
-/* marked deleted chat item preview text */
+/* blocked chat item */
 "blocked by admin" = "wurde vom Administrator blockiert";
 
 /* No comment provided by engineer. */
@@ -908,6 +911,9 @@
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "ICE-Server konfigurieren";
+
+/* No comment provided by engineer. */
+"Configured %@ servers" = "Konfigurierte %@ Server";
 
 /* No comment provided by engineer. */
 "Confirm" = "Bestätigen";
@@ -2354,10 +2360,10 @@
 "Incoming video call" = "Eingehender Videoanruf";
 
 /* No comment provided by engineer. */
-"Incompatible database version" = "Inkompatible Datenbank-Version";
+"Incompatible database version" = "Datenbank-Version nicht kompatibel";
 
 /* No comment provided by engineer. */
-"Incompatible version" = "Inkompatible Version";
+"Incompatible version" = "Version nicht kompatibel";
 
 /* PIN entry */
 "Incorrect passcode" = "Zugangscode ist falsch";
@@ -2690,6 +2696,9 @@
 "message received" = "Nachricht empfangen";
 
 /* No comment provided by engineer. */
+"Message reception" = "Nachrichtenempfang";
+
+/* No comment provided by engineer. */
 "Message routing fallback" = "Fallback für das Nachrichten-Routing";
 
 /* No comment provided by engineer. */
@@ -2940,7 +2949,7 @@
    time to disappear */
 "off" = "Aus";
 
-/* No comment provided by engineer. */
+/* blur media */
 "Off" = "Aus";
 
 /* feature offered item */
@@ -3065,6 +3074,9 @@
 
 /* No comment provided by engineer. */
 "Other" = "Andere";
+
+/* No comment provided by engineer. */
+"Other %@ servers" = "Andere %@ Server";
 
 /* No comment provided by engineer. */
 "other errors" = "Andere Fehler";
@@ -3220,6 +3232,9 @@
 "Private routing" = "Privates Routing";
 
 /* No comment provided by engineer. */
+"Private routing error" = "Fehler beim privaten Routing";
+
+/* No comment provided by engineer. */
 "Profile and server connections" = "Profil und Serververbindungen";
 
 /* No comment provided by engineer. */
@@ -3289,7 +3304,7 @@
 "Protocol timeout per KB" = "Protokollzeitüberschreitung pro kB";
 
 /* No comment provided by engineer. */
-"Proxied" = "Proxy";
+"Proxied" = "Proxied";
 
 /* No comment provided by engineer. */
 "Proxied servers" = "Proxy-Server";
@@ -3819,8 +3834,11 @@
 /* No comment provided by engineer. */
 "Server address" = "Server-Adresse";
 
+/* No comment provided by engineer. */
+"Server address is incompatible with network settings: %@." = "Die Server-Adresse ist nicht mit den Netzwerkeinstellungen kompatibel: %@.";
+
 /* srv error text. */
-"Server address is incompatible with network settings." = "Die Server-Adresse ist nicht mit den Netzwerk-Einstellungen kompatibel.";
+"Server address is incompatible with network settings." = "Die Server-Adresse ist nicht mit den Netzwerkeinstellungen kompatibel.";
 
 /* queue info */
 "server queue info: %@\n\nlast received msg: %@" = "Server-Warteschlangen-Information: %1$@\n\nZuletzt empfangene Nachricht: %2$@";
@@ -3838,7 +3856,10 @@
 "Server type" = "Server-Typ";
 
 /* srv error text */
-"Server version is incompatible with network settings." = "Die Server-Version ist nicht mit den Netzwerk-Einstellungen kompatibel.";
+"Server version is incompatible with network settings." = "Die Server-Version ist nicht mit den Netzwerkeinstellungen kompatibel.";
+
+/* No comment provided by engineer. */
+"Server version is incompatible with your app: %@." = "Die Server-Version ist nicht mit Ihrer App kompatibel: %@.";
 
 /* No comment provided by engineer. */
 "Servers" = "Server";
@@ -3929,6 +3950,9 @@
 
 /* No comment provided by engineer. */
 "Show message status" = "Nachrichtenstatus anzeigen";
+
+/* No comment provided by engineer. */
+"Show percentage" = "Prozentualen Anteil anzeigen";
 
 /* No comment provided by engineer. */
 "Show preview" = "Vorschau anzeigen";
@@ -4228,10 +4252,10 @@
 "They can be overridden in contact and group settings." = "Sie können in den Kontakteinstellungen überschrieben werden.";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Diese Aktion kann nicht rückgängig gemacht werden! Alle empfangenen und gesendeten Dateien und Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.";
+"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Diese Aktion kann nicht rückgängig gemacht werden! Es werden alle empfangenen und gesendeten Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Diese Aktion kann nicht rückgängig gemacht werden! Alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, werden gelöscht. Dieser Vorgang kann mehrere Minuten dauern.";
+"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Diese Aktion kann nicht rückgängig gemacht werden! Es werden alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, gelöscht. Dieser Vorgang kann mehrere Minuten dauern.";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Diese Aktion kann nicht rückgängig gemacht werden! Ihr Profil und Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren.";

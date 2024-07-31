@@ -599,7 +599,7 @@
 /* rcv group event chat item */
 "blocked %@" = "已封禁 %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item */
 "blocked by admin" = "由管理员封禁";
 
 /* No comment provided by engineer. */
@@ -2571,7 +2571,7 @@
    time to disappear */
 "off" = "关闭";
 
-/* No comment provided by engineer. */
+/* blur media */
 "Off" = "关闭";
 
 /* feature offered item */

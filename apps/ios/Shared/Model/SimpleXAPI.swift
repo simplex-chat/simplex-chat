@@ -431,15 +431,15 @@ func apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, re
     throw r
 }
 
-func apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode) async throws -> (ChatItem, ChatItem?) {
-    let r = await chatSendCmd(.apiDeleteChatItem(type: type, id: id, itemId: itemId, mode: mode), bgDelay: msgDelay)
-    if case let .chatItemDeleted(_, deletedChatItem, toChatItem, _) = r { return (deletedChatItem.chatItem, toChatItem?.chatItem) }
+func apiDeleteChatItems(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode) async throws -> [ChatItemDeletion] {
+    let r = await chatSendCmd(.apiDeleteChatItem(type: type, id: id, itemIds: itemIds, mode: mode), bgDelay: msgDelay)
+    if case let .chatItemsDeleted(_, items, _) = r { return items }
     throw r
 }
 
-func apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64) async throws -> (ChatItem, ChatItem?) {
-    let r = await chatSendCmd(.apiDeleteMemberChatItem(groupId: groupId, groupMemberId: groupMemberId, itemId: itemId), bgDelay: msgDelay)
-    if case let .chatItemDeleted(_, deletedChatItem, toChatItem, _) = r { return (deletedChatItem.chatItem, toChatItem?.chatItem) }
+func apiDeleteMemberChatItems(groupId: Int64, itemIds: [Int64]) async throws -> [ChatItemDeletion] {
+    let r = await chatSendCmd(.apiDeleteMemberChatItem(groupId: groupId, itemIds: itemIds), bgDelay: msgDelay)
+    if case let .chatItemsDeleted(_, items, _) = r { return items }
     throw r
 }
 
@@ -1746,21 +1746,25 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.updateChatItem(r.chatInfo, r.chatReaction.chatItem)
             }
         }
-    case let .chatItemDeleted(user, deletedChatItem, toChatItem, _):
+    case let .chatItemsDeleted(user, items, _):
         if !active(user) {
-            if toChatItem == nil && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled {
-                await MainActor.run {
-                    m.decreaseUnreadCounter(user: user)
+            for item in items {
+                if item.toChatItem == nil && item.deletedChatItem.chatItem.isRcvNew && item.deletedChatItem.chatInfo.ntfsEnabled {
+                    await MainActor.run {
+                        m.decreaseUnreadCounter(user: user)
+                    }
                 }
             }
             return
         }
 
         await MainActor.run {
-            if let toChatItem = toChatItem {
-                _ = m.upsertChatItem(toChatItem.chatInfo, toChatItem.chatItem)
-            } else {
-                m.removeChatItem(deletedChatItem.chatInfo, deletedChatItem.chatItem)
+            for item in items {
+                if let toChatItem = item.toChatItem {
+                    _ = m.upsertChatItem(toChatItem.chatInfo, toChatItem.chatItem)
+                } else {
+                    m.removeChatItem(item.deletedChatItem.chatInfo, item.deletedChatItem.chatItem)
+                }
             }
         }
     case let .receivedGroupInvitation(user, groupInfo, _, _):

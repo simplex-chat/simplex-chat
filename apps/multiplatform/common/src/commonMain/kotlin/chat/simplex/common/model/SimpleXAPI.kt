@@ -885,16 +885,16 @@ object ChatController {
     return null
   }
 
-  suspend fun apiDeleteChatItem(rh: Long?, type: ChatType, id: Long, itemId: Long, mode: CIDeleteMode): CR.ChatItemDeleted? {
-    val r = sendCmd(rh, CC.ApiDeleteChatItem(type, id, itemId, mode))
-    if (r is CR.ChatItemDeleted) return r
+  suspend fun apiDeleteChatItems(rh: Long?, type: ChatType, id: Long, itemIds: List<Long>, mode: CIDeleteMode): List<ChatItemDeletion>? {
+    val r = sendCmd(rh, CC.ApiDeleteChatItem(type, id, itemIds, mode))
+    if (r is CR.ChatItemsDeleted) return r.chatItemDeletions
     Log.e(TAG, "apiDeleteChatItem bad response: ${r.responseType} ${r.details}")
     return null
   }
 
-  suspend fun apiDeleteMemberChatItem(rh: Long?, groupId: Long, groupMemberId: Long, itemId: Long): Pair<ChatItem, ChatItem?>? {
-    val r = sendCmd(rh, CC.ApiDeleteMemberChatItem(groupId, groupMemberId, itemId))
-    if (r is CR.ChatItemDeleted) return r.deletedChatItem.chatItem to r.toChatItem?.chatItem
+  suspend fun apiDeleteMemberChatItems(rh: Long?, groupId: Long, itemIds: List<Long>): List<ChatItemDeletion>? {
+    val r = sendCmd(rh, CC.ApiDeleteMemberChatItem(groupId, itemIds))
+    if (r is CR.ChatItemsDeleted) return r.chatItemDeletions
     Log.e(TAG, "apiDeleteMemberChatItem bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -2136,34 +2136,35 @@ object ChatController {
           }
         }
       }
-      is CR.ChatItemDeleted -> {
+      is CR.ChatItemsDeleted -> {
         if (!active(r.user)) {
-          if (r.toChatItem == null && r.deletedChatItem.chatItem.isRcvNew && r.deletedChatItem.chatInfo.ntfsEnabled) {
-            chatModel.decreaseUnreadCounter(rhId, r.user)
+          r.chatItemDeletions.forEach { (deletedChatItem, toChatItem) ->
+            if (toChatItem == null && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled) {
+              chatModel.decreaseUnreadCounter(rhId, r.user)
+            }
           }
           return
         }
-
-        val cInfo = r.deletedChatItem.chatInfo
-        val cItem = r.deletedChatItem.chatItem
-        AudioPlayer.stop(cItem)
-        val isLastChatItem = chatModel.getChat(cInfo.id)?.chatItems?.lastOrNull()?.id == cItem.id
-        if (isLastChatItem && ntfManager.hasNotificationsForChat(cInfo.id)) {
-          ntfManager.cancelNotificationsForChat(cInfo.id)
-          ntfManager.displayNotification(
-            r.user,
-            cInfo.id,
-            cInfo.displayName,
-            generalGetString(if (r.toChatItem != null) MR.strings.marked_deleted_description else MR.strings.deleted_description)
-          )
-        }
-        if (r.toChatItem == null) {
-          withChats {
-            removeChatItem(rhId, cInfo, cItem)
+        r.chatItemDeletions.forEach { (deletedChatItem, toChatItem) ->
+          val cInfo = deletedChatItem.chatInfo
+          val cItem = deletedChatItem.chatItem
+          AudioPlayer.stop(cItem)
+          val isLastChatItem = chatModel.getChat(cInfo.id)?.chatItems?.lastOrNull()?.id == cItem.id
+          if (isLastChatItem && ntfManager.hasNotificationsForChat(cInfo.id)) {
+            ntfManager.cancelNotificationsForChat(cInfo.id)
+            ntfManager.displayNotification(
+              r.user,
+              cInfo.id,
+              cInfo.displayName,
+              generalGetString(if (toChatItem != null) MR.strings.marked_deleted_description else MR.strings.deleted_description)
+            )
           }
-        } else {
           withChats {
-            upsertChatItem(rhId, cInfo, r.toChatItem.chatItem)
+            if (toChatItem == null) {
+              removeChatItem(rhId, cInfo, cItem)
+            } else {
+              upsertChatItem(rhId, cInfo, toChatItem.chatItem)
+            }
           }
         }
       }
@@ -2822,8 +2823,8 @@ sealed class CC {
   class ApiSendMessage(val type: ChatType, val id: Long, val file: CryptoFile?, val quotedItemId: Long?, val mc: MsgContent, val live: Boolean, val ttl: Int?): CC()
   class ApiCreateChatItem(val noteFolderId: Long, val file: CryptoFile?, val mc: MsgContent): CC()
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent, val live: Boolean): CC()
-  class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
-  class ApiDeleteMemberChatItem(val groupId: Long, val groupMemberId: Long, val itemId: Long): CC()
+  class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemIds: List<Long>, val mode: CIDeleteMode): CC()
+  class ApiDeleteMemberChatItem(val groupId: Long, val itemIds: List<Long>): CC()
   class ApiChatItemReaction(val type: ChatType, val id: Long, val itemId: Long, val add: Boolean, val reaction: MsgReaction): CC()
   class ApiForwardChatItem(val toChatType: ChatType, val toChatId: Long, val fromChatType: ChatType, val fromChatId: Long, val itemId: Long, val ttl: Int?): CC()
   class ApiNewGroup(val userId: Long, val incognito: Boolean, val groupProfile: GroupProfile): CC()
@@ -2972,8 +2973,8 @@ sealed class CC {
       "/_create *$noteFolderId json ${json.encodeToString(ComposedMessage(file, null, mc))}"
     }
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId live=${onOff(live)} ${mc.cmdString}"
-    is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
-    is ApiDeleteMemberChatItem -> "/_delete member item #$groupId $groupMemberId $itemId"
+    is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} ${itemIds.joinToString(",")} ${mode.deleteMode}"
+    is ApiDeleteMemberChatItem -> "/_delete member item #$groupId ${itemIds.joinToString(",")}"
     is ApiChatItemReaction -> "/_reaction ${chatRef(type, id)} $itemId ${onOff(add)} ${json.encodeToString(reaction)}"
     is ApiForwardChatItem -> {
       val ttlStr = if (ttl != null) "$ttl" else "default"
@@ -4764,7 +4765,7 @@ sealed class CR {
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: UserRef, val added: Boolean, val reaction: ACIReaction): CR()
-  @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val user: UserRef, val deletedChatItem: AChatItem, val toChatItem: AChatItem? = null, val byUser: Boolean): CR()
+  @Serializable @SerialName("chatItemsDeleted") class ChatItemsDeleted(val user: UserRef, val chatItemDeletions: List<ChatItemDeletion>, val byUser: Boolean): CR()
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
@@ -4939,7 +4940,7 @@ sealed class CR {
     is ChatItemUpdated -> "chatItemUpdated"
     is ChatItemNotChanged -> "chatItemNotChanged"
     is ChatItemReaction -> "chatItemReaction"
-    is ChatItemDeleted -> "chatItemDeleted"
+    is ChatItemsDeleted -> "chatItemsDeleted"
     is GroupCreated -> "groupCreated"
     is SentGroupInvitation -> "sentGroupInvitation"
     is UserAcceptedGroupSent -> "userAcceptedGroupSent"
@@ -5106,7 +5107,7 @@ sealed class CR {
     is ChatItemUpdated -> withUser(user, json.encodeToString(chatItem))
     is ChatItemNotChanged -> withUser(user, json.encodeToString(chatItem))
     is ChatItemReaction -> withUser(user, "added: $added\n${json.encodeToString(reaction)}")
-    is ChatItemDeleted -> withUser(user, "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}\nbyUser: $byUser")
+    is ChatItemsDeleted -> withUser(user, "${chatItemDeletions.map { (deletedChatItem, toChatItem) -> "deletedChatItem: ${json.encodeToString(deletedChatItem)}\ntoChatItem: ${json.encodeToString(toChatItem)}" }} \nbyUser: $byUser")
     is GroupCreated -> withUser(user, json.encodeToString(groupInfo))
     is SentGroupInvitation -> withUser(user, "groupInfo: $groupInfo\ncontact: $contact\nmember: $member")
     is UserAcceptedGroupSent -> json.encodeToString(groupInfo)
