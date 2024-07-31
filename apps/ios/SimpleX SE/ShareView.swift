@@ -55,8 +55,8 @@ struct ShareView: View {
         )
         .alert($model.errorAlert) { alert in
             if model.alertRequiresPassword {
-                SecureField("Password", text: $password)
-                Button("Ok") { 
+                SecureField("Passphrase", text: $password)
+                Button("Ok") {
                     model.setup(with: password)
                     password = String()
                 }
