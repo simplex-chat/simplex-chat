@@ -55,7 +55,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                                 ModalManager.center.closeModals()
                             }
                         }
-                        ContactType.REMOVED -> {
+                        ContactType.CHAT_DELETED -> {
                             openLoadedChat(chat, chatModel)
                             chatModel.updateContact(rhId, chat.chatInfo.contact.copy(chatDeleted = false))
                             ModalManager.center.closeModals()
