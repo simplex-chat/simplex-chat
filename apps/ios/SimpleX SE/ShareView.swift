@@ -19,18 +19,31 @@ struct ShareView: View {
             ZStack(alignment: .bottom) {
                 if model.isLoaded {
                     List(model.filteredChats) { chat in
+                        let isProhibited = model.isProhibited(chat)
+                        let isSelected = model.selected == chat
                         HStack {
                             profileImage(
                                 chatInfoId: chat.chatInfo.id,
                                 iconName: chatIconName(chat.chatInfo),
                                 size: 30
                             )
-                            Text(chat.chatInfo.displayName)
+                            Text(chat.chatInfo.displayName).foregroundStyle(
+                                isProhibited ? .secondary : .primary
+                            )
                             Spacer()
-                            radioButton(selected: chat == model.selected)
+                            radioButton(selected: isSelected && !isProhibited)
                         }
                         .contentShape(Rectangle())
-                        .onTapGesture { model.selected = model.selected == chat ? nil : chat }
+                        .onTapGesture {
+                            if isProhibited {
+                                model.errorAlert = ErrorAlert(
+                                    title: "Cannot forward message",
+                                    message: "Selected chat preferences prohibit this message."
+                                ) { Text("Ok") }
+                            } else {
+                                model.selected = isSelected ? nil : chat
+                            }
+                        }
                         .tag(chat)
                     }
                 } else {
@@ -56,6 +69,9 @@ struct ShareView: View {
         .alert($model.errorAlert) { alert in
             Button("Ok") { model.completion() }
         }
+        .onChange(of: model.comment) {
+            model.hasSimplexLink = hasSimplexLink($0)
+        }
     }
 
     private func compose(isLoading: Bool) -> some View {
@@ -67,7 +83,7 @@ struct ShareView: View {
             HStack {
                 Group {
                     if #available(iOSApplicationExtension 16.0, *) {
-                        TextField("Comment", text: $model.comment, axis: .vertical)
+                        TextField("Comment", text: $model.comment, axis: .vertical).lineLimit(6)
                     } else {
                         TextField("Comment", text: $model.comment)
                     }

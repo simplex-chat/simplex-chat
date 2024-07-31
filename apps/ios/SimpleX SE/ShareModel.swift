@@ -27,6 +27,7 @@ class ShareModel: ObservableObject {
     @Published var isLoaded = false
     @Published var bottomBar: BottomBar = .loadingSpinner
     @Published var errorAlert: ErrorAlert?
+    @Published var hasSimplexLink = false
 
     enum BottomBar {
         case sendButton
@@ -48,7 +49,13 @@ class ShareModel: ObservableObject {
     
     private var itemProvider: NSItemProvider?
 
-    var isSendDisbled: Bool { sharedContent == nil || selected == nil }
+    var isSendDisbled: Bool { sharedContent == nil || selected == nil || isProhibited(selected) }
+
+    func isProhibited(_ chat: ChatData?) -> Bool {
+        if let chat, let sharedContent {
+            sharedContent.prohibited(in: chat, hasSimplexLink: hasSimplexLink)
+        } else { false }
+    }
 
     var filteredChats: Array<ChatData> {
         search.isEmpty
@@ -371,6 +378,14 @@ enum SharedContent {
         case .text: .text(comment)
         case .data: .file(comment)
         }
+    }
+
+    func prohibited(in chatData: ChatData, hasSimplexLink: Bool) -> Bool {
+        chatData.prohibitedByPref(
+            hasSimplexLink: hasSimplexLink,
+            isMediaOrFileAttachment: cryptoFile != nil,
+            isVoice: false
+        )
     }
 }
 
