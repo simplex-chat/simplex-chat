@@ -852,8 +852,7 @@ struct ChatView: View {
                     if selectedChatItems != nil && ci.canBeDeletedForSelf {
                         if chat.chatInfo.chatType == .direct {
                             SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
-                                .padding(.leading, 9)
-                                .offset(x: 3)
+                                .padding(.leading)
                         } else {
                             SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
                                 .padding(.leading, 12)
