@@ -25,6 +25,7 @@ fun ContactPreviewView(
     disabled: Boolean,
 ) {
     val cInfo = chat.chatInfo
+    val contactType = getContactType(chat)
 
     @Composable
     fun VerifiedIcon() {
@@ -34,7 +35,6 @@ fun ContactPreviewView(
     @Composable
     fun chatPreviewTitle() {
         val deleting by remember(disabled, chat.id) { mutableStateOf(chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id)) }
-        val contactType = getContactType(chat)
 
         val textColor = when {
             deleting -> MaterialTheme.colors.secondary
@@ -87,15 +87,22 @@ fun ContactPreviewView(
         Spacer(Modifier.fillMaxWidth().weight(1f))
 
         if (chat.chatInfo is ChatInfo.ContactRequest) {
-            Text(
-                text = generalGetString(MR.strings.contact_type_new).uppercase(),
-                color = MaterialTheme.colors.onPrimary,
-                fontSize = 10.sp * fontSizeMultiplier,
+            Icon(
+                painterResource(MR.images.ic_check),
+                contentDescription = generalGetString(MR.strings.contact_type_new),
+                tint = MaterialTheme.colors.secondary,
                 modifier = Modifier
-                    .background(MaterialTheme.colors.primary, shape = CircleShape)
-                    .badgeLayout()
-                    .padding(horizontal = 4.dp)
-                    .padding(vertical = 2.dp)
+                    .size(17.dp)
+            )
+        }
+
+        if (contactType == ContactType.CARD) {
+            Icon(
+                painterResource(MR.images.ic_mail),
+                contentDescription = generalGetString(MR.strings.contact_type_new),
+                tint = MaterialTheme.colors.secondary,
+                modifier = Modifier
+                    .size(17.dp)
             )
         }
 
