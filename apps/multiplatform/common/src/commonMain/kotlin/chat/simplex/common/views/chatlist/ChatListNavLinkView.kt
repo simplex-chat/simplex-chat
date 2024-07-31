@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
@@ -556,7 +557,9 @@ fun markChatRead(c: Chat, chatModel: ChatModel) {
   withApi {
     if (chat.chatStats.unreadCount > 0) {
       val minUnreadItemId = chat.chatStats.minUnreadItemId
-      chatModel.markChatItemsRead(chat)
+      withChats {
+        markChatItemsRead(chat)
+      }
       chatModel.controller.apiChatRead(
         chat.remoteHostId,
         chat.chatInfo.chatType,
@@ -573,7 +576,9 @@ fun markChatRead(c: Chat, chatModel: ChatModel) {
         false
       )
       if (success) {
-        chatModel.replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+        withChats {
+          replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+        }
       }
     }
   }
@@ -591,7 +596,9 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
       true
     )
     if (success) {
-      chatModel.replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
+      withChats {
+        replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
+      }
     }
   }
 }
@@ -631,7 +638,9 @@ fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRe
     val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, apiId)
     if (contact != null && isCurrentUser && contactRequest != null) {
       val chat = Chat(remoteHostId = rhId, ChatInfo.Direct(contact), listOf())
-      chatModel.replaceChat(rhId, contactRequest.id, chat)
+      withChats {
+        replaceChat(rhId, contactRequest.id, chat)
+      }
       chatModel.setContactNetworkStatus(contact, NetworkStatus.Connected())
     }
   }
@@ -640,7 +649,9 @@ fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRe
 fun rejectContactRequest(rhId: Long?, contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
   withBGApi {
     chatModel.controller.apiRejectContactRequest(rhId, contactRequest.apiId)
-    chatModel.removeChat(rhId, contactRequest.id)
+    withChats {
+      removeChat(rhId, contactRequest.id)
+    }
   }
 }
 
@@ -656,7 +667,9 @@ fun deleteContactConnectionAlert(rhId: Long?, connection: PendingContactConnecti
       withBGApi {
         AlertManager.shared.hideAlert()
         if (chatModel.controller.apiDeleteChat(rhId, ChatType.ContactConnection, connection.apiId)) {
-          chatModel.removeChat(rhId, connection.id)
+          withChats {
+            removeChat(rhId, connection.id)
+          }
           onSuccess()
         }
       }
@@ -675,7 +688,9 @@ fun pendingContactAlertDialog(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatMo
       withBGApi {
         val r = chatModel.controller.apiDeleteChat(rhId, chatInfo.chatType, chatInfo.apiId)
         if (r) {
-          chatModel.removeChat(rhId, chatInfo.id)
+          withChats {
+            removeChat(rhId, chatInfo.id)
+          }
           if (chatModel.chatId.value == chatInfo.id) {
             chatModel.chatId.value = null
             ModalManager.end.closeModals()
@@ -737,7 +752,9 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
 suspend fun connectContactViaAddress(chatModel: ChatModel, rhId: Long?, contactId: Long, incognito: Boolean): Boolean {
   val contact = chatModel.controller.apiConnectContactViaAddress(rhId, incognito, contactId)
   if (contact != null) {
-    chatModel.updateContact(rhId, contact)
+    withChats {
+      updateContact(rhId, contact)
+    }
     AlertManager.privacySensitive.showAlertMsg(
       title = generalGetString(MR.strings.connection_request_sent),
       text = generalGetString(MR.strings.you_will_be_connected_when_your_connection_request_is_accepted),
@@ -778,7 +795,9 @@ fun deleteGroup(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
   withBGApi {
     val r = chatModel.controller.apiDeleteChat(rhId, ChatType.Group, groupInfo.apiId)
     if (r) {
-      chatModel.removeChat(rhId, groupInfo.id)
+      withChats {
+        removeChat(rhId, groupInfo.id)
+      }
       if (chatModel.chatId.value == groupInfo.id) {
         chatModel.chatId.value = null
         ModalManager.end.closeModals()
@@ -827,7 +846,9 @@ fun updateChatSettings(chat: Chat, chatSettings: ChatSettings, chatModel: ChatMo
       else -> false
     }
     if (res && newChatInfo != null) {
-      chatModel.updateChatInfo(chat.remoteHostId, newChatInfo)
+      withChats {
+        updateChatInfo(chat.remoteHostId, newChatInfo)
+      }
       if (chatSettings.enableNtfs != MsgFilter.All) {
         ntfManager.cancelNotificationsForChat(chat.id)
       }

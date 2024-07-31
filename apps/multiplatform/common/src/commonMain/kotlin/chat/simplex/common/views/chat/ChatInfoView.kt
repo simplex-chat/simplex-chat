@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -57,7 +58,7 @@ fun ChatInfoView(
 ) {
   BackHandler(onBack = close)
   val contact = rememberUpdatedState(contact).value
-  val chat = remember(contact.id) { chatModel.chats.firstOrNull { it.id == contact.id } }
+  val chat = remember(contact.id) { chatModel.chats.value.firstOrNull { it.id == contact.id } }
   val currentUser = remember { chatModel.currentUser }.value
   val connStats = remember(contact.id, connectionStats) { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
@@ -102,7 +103,9 @@ fun ChatInfoView(
             val cStats = chatModel.controller.apiSwitchContact(chatRh, contact.contactId)
             connStats.value = cStats
             if (cStats != null) {
-              chatModel.updateContactConnectionStats(chatRh, contact, cStats)
+              withChats {
+                updateContactConnectionStats(chatRh, contact, cStats)
+              }
             }
             close.invoke()
           }
@@ -114,7 +117,9 @@ fun ChatInfoView(
             val cStats = chatModel.controller.apiAbortSwitchContact(chatRh, contact.contactId)
             connStats.value = cStats
             if (cStats != null) {
-              chatModel.updateContactConnectionStats(chatRh, contact, cStats)
+              withChats {
+                updateContactConnectionStats(chatRh, contact, cStats)
+              }
             }
           }
         })
@@ -124,7 +129,9 @@ fun ChatInfoView(
           val cStats = chatModel.controller.apiSyncContactRatchet(chatRh, contact.contactId, force = false)
           connStats.value = cStats
           if (cStats != null) {
-            chatModel.updateContactConnectionStats(chatRh, contact, cStats)
+            withChats {
+              updateContactConnectionStats(chatRh, contact, cStats)
+            }
           }
           close.invoke()
         }
@@ -135,7 +142,9 @@ fun ChatInfoView(
             val cStats = chatModel.controller.apiSyncContactRatchet(chatRh, contact.contactId, force = true)
             connStats.value = cStats
             if (cStats != null) {
-              chatModel.updateContactConnectionStats(chatRh, contact, cStats)
+              withChats {
+                updateContactConnectionStats(chatRh, contact, cStats)
+              }
             }
             close.invoke()
           }
@@ -151,14 +160,16 @@ fun ChatInfoView(
               verify = { code ->
                 chatModel.controller.apiVerifyContact(chatRh, ct.contactId, code)?.let { r ->
                   val (verified, existingCode) = r
-                  chatModel.updateContact(
-                    chatRh,
-                    ct.copy(
-                      activeConn = ct.activeConn?.copy(
-                        connectionCode = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
+                  withChats {
+                    updateContact(
+                      chatRh,
+                      ct.copy(
+                        activeConn = ct.activeConn?.copy(
+                          connectionCode = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
+                        )
                       )
                     )
-                  )
+                  }
                   r
                 }
               },
@@ -247,7 +258,9 @@ fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, notify
     val chatRh = chat.remoteHostId
     val r = chatModel.controller.apiDeleteChat(chatRh, chatInfo.chatType, chatInfo.apiId, notify)
     if (r) {
-      chatModel.removeChat(chatRh, chatInfo.id)
+      withChats {
+        removeChat(chatRh, chatInfo.id)
+      }
       if (chatModel.chatId.value == chatInfo.id) {
         chatModel.chatId.value = null
         ModalManager.end.closeModals()
@@ -347,7 +360,7 @@ fun ChatInfoLayout(
 
       WallpaperButton {
         ModalManager.end.showModal {
-          val chat = remember { derivedStateOf { chatModel.chats.firstOrNull { it.id == chat.id } } }
+          val chat = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chat.id } } }
           val c = chat.value
           if (c != null) {
             ChatWallpaperEditorModal(c)
@@ -768,10 +781,12 @@ suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, c
   wallpaperFilesToDelete.forEach(::removeWallpaperFile)
 
   if (controller.apiSetChatUIThemes(chat.remoteHostId, chat.id, changedThemes)) {
-    if (chat.chatInfo is ChatInfo.Direct) {
-      chatModel.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(contact = chat.chatInfo.contact.copy(uiThemes = changedThemes)))
-    } else if (chat.chatInfo is ChatInfo.Group) {
-      chatModel.updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(groupInfo = chat.chatInfo.groupInfo.copy(uiThemes = changedThemes)))
+    withChats {
+      if (chat.chatInfo is ChatInfo.Direct) {
+        updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(contact = chat.chatInfo.contact.copy(uiThemes = changedThemes)))
+      } else if (chat.chatInfo is ChatInfo.Group) {
+        updateChatInfo(chat.remoteHostId, chat.chatInfo.copy(groupInfo = chat.chatInfo.groupInfo.copy(uiThemes = changedThemes)))
+      }
     }
   }
 }
@@ -779,7 +794,9 @@ suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, c
 private fun setContactAlias(chat: Chat, localAlias: String, chatModel: ChatModel) = withBGApi {
   val chatRh = chat.remoteHostId
   chatModel.controller.apiSetContactAlias(chatRh, chat.chatInfo.apiId, localAlias)?.let {
-    chatModel.updateContact(chatRh, it)
+    withChats {
+      updateContact(chatRh, it)
+    }
   }
 }
 

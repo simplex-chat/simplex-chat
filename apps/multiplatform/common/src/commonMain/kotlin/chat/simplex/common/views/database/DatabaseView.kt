@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.ChatModel.updatingChatsMutex
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -502,7 +502,11 @@ fun deleteChatDatabaseFilesAndState() {
   // Clear sensitive data on screen just in case ModalManager will fail to prevent hiding its modals while database encrypts itself
   chatModel.chatId.value = null
   chatModel.chatItems.clear()
-  chatModel.chats.clear()
+  withLongRunningApi {
+    withChats {
+      chats.clear()
+    }
+  }
   chatModel.users.clear()
   ntfManager.cancelAllNotifications()
 }
@@ -714,10 +718,10 @@ private fun afterSetCiTTL(
   appFilesCountAndSize.value = directoryFileCountAndSize(appFilesDir.absolutePath)
   withApi {
     try {
-      updatingChatsMutex.withLock {
+      withChats {
         // this is using current remote host on purpose - if it changes during update, it will load correct chats
         val chats = m.controller.apiGetChats(m.remoteHostId())
-        m.updateChats(chats)
+        updateChats(chats)
       }
     } catch (e: Exception) {
       Log.e(TAG, "apiGetChats error: ${e.message}")
