@@ -15,7 +15,8 @@ struct SelectedItemsTopToolbar: View {
     @Binding var selectedChatItems: Set<Int64>?
 
     var body: some View {
-        return Text("Selected \(selectedChatItems?.count ?? 0)").font(.headline)
+        let count = selectedChatItems?.count ?? 0
+        return Text(count == 0 ? "Nothing selected" : "Selected \(count)").font(.headline)
             .foregroundColor(theme.colors.onBackground)
             .frame(width: 220)
     }

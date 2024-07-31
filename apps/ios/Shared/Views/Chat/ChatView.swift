@@ -111,7 +111,7 @@ struct ChatView: View {
         .background(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
         .environmentObject(theme)
-        .confirmationDialog(selectedChatItems?.count == 1 ? "Delete message?" : "Delete \((selectedChatItems?.count ?? 0)) messages", isPresented: $showDeleteSelectedMessages, titleVisibility: .visible) {
+        .confirmationDialog(selectedChatItems?.count == 1 ? "Delete message?" : "Delete \((selectedChatItems?.count ?? 0)) messages?", isPresented: $showDeleteSelectedMessages, titleVisibility: .visible) {
             Button("Delete for me", role: .destructive) {
                 if let selected = selectedChatItems {
                     deleteMessages(chat, selected.sorted(), .cidmInternal, moderate: false, deletedSelectedMessages)                }
