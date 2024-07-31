@@ -84,43 +84,49 @@ struct SelectedItemsBottomToolbar: View {
     @State var allButtonsDisabled = false
 
     var body: some View {
-        HStack(alignment: .center) {
-            Button {
-                deleteItems(possibleToDeleteForEveryone)
-            } label: {
-                Image(systemName: "trash")
-                    .resizable()
-                    .frame(width: 20, height: 20, alignment: .center)
-                    .foregroundColor(!deleteButtonEnabled && allButtonsDisabled ? theme.colors.secondary: .red)
-            }
-            .disabled(!deleteButtonEnabled || allButtonsDisabled)
+        VStack(spacing: 0) {
+            Divider()
 
-            Spacer()
-            Button {
-                moderateItems()
-            } label: {
-                Image(systemName: "flag")
-                    .resizable()
-                    .frame(width: 20, height: 20, alignment: .center)
-                    .foregroundColor(moderateButtonEnabled ? .red : theme.colors.secondary)
-            }
-            .disabled(!moderateButtonEnabled || allButtonsDisabled)
-            .opacity(possibleToModerate ? 1 : 0)
-            .allowsHitTesting(possibleToModerate)
+            HStack(alignment: .center) {
+                Button {
+                    deleteItems(possibleToDeleteForEveryone)
+                } label: {
+                    Image(systemName: "trash")
+                        .resizable()
+                        .frame(width: 20, height: 20, alignment: .center)
+                        .foregroundColor(!deleteButtonEnabled && allButtonsDisabled ? theme.colors.secondary: .red)
+                }
+                .disabled(!deleteButtonEnabled || allButtonsDisabled)
+
+                Spacer()
+                Button {
+                    moderateItems()
+                } label: {
+                    Image(systemName: "flag")
+                        .resizable()
+                        .frame(width: 20, height: 20, alignment: .center)
+                        .foregroundColor(moderateButtonEnabled ? .red : theme.colors.secondary)
+                }
+                .disabled(!moderateButtonEnabled || allButtonsDisabled)
+                .opacity(possibleToModerate ? 1 : 0)
+                .allowsHitTesting(possibleToModerate)
 
 
-            Spacer()
-            Button {
-                //shareItems()
-            } label: {
-                Image(systemName: "square.and.arrow.up")
-                    .resizable()
-                    .frame(width: 20, height: 20, alignment: .center)
-                    .foregroundColor(theme.colors.primary)
+                Spacer()
+                Button {
+                    //shareItems()
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .resizable()
+                        .frame(width: 20, height: 20, alignment: .center)
+                        .foregroundColor(theme.colors.primary)
+                }
+                .disabled(allButtonsDisabled)
+                .opacity(0)
+                .allowsHitTesting(false)
             }
-            .disabled(allButtonsDisabled)
-            .opacity(0)
-            .allowsHitTesting(false)
+            .frame(maxHeight: .infinity)
+            .padding([.leading, .trailing], 12)
         }
         .onAppear {
             cleanUpNonExistent(chatItems, selectedChatItems)
@@ -129,7 +135,6 @@ struct SelectedItemsBottomToolbar: View {
             deleteButtonEnabled = deleteButtonEnabled(chatItems, selectedChatItems)
             possibleToModerate = possibleToModerate(chatInfo)
             moderateButtonEnabled = moderateButtonEnabled(chatInfo, chatItems, selectedChatItems)
-            logger.debug("LALAL1 \(selectedChatItems?.count ?? -1) \(allButtonsDisabled) \(deleteButtonEnabled) \(possibleToModerate) \(moderateButtonEnabled)")
         }
         .onChange(of: chatItems) { items in
             cleanUpNonExistent(items, selectedChatItems)
@@ -137,7 +142,6 @@ struct SelectedItemsBottomToolbar: View {
             deleteButtonEnabled = deleteButtonEnabled(items, selectedChatItems)
             possibleToModerate = possibleToModerate(chatInfo)
             moderateButtonEnabled = possibleToModerate && !allButtonsDisabled ? moderateButtonEnabled(chatInfo, items, selectedChatItems) : false
-            logger.debug("LALAL2 \(selectedChatItems?.count ?? -1) \(allButtonsDisabled) \(deleteButtonEnabled) \(possibleToModerate) \(moderateButtonEnabled)")
         }
         .onChange(of: selectedChatItems) { selected in
             cleanUpNonExistent(chatItems, selected)
@@ -145,10 +149,9 @@ struct SelectedItemsBottomToolbar: View {
             allButtonsDisabled = !(1...20).contains(selectedChatItems?.count ?? 0)
             deleteButtonEnabled = deleteButtonEnabled(chatItems, selected)
             moderateButtonEnabled = possibleToModerate && !allButtonsDisabled ? moderateButtonEnabled(chatInfo, chatItems, selected) : false
-            logger.debug("LALAL3 \(selectedChatItems?.count ?? -1) \(allButtonsDisabled) \(deleteButtonEnabled) \(possibleToModerate) \(moderateButtonEnabled)")
         }
-        .padding([.leading, .trailing], 10)
-        .frame(height: 54)
+        .frame(height: 55.5)
+        .background(.thinMaterial)
     }
 
     func cleanUpNonExistent(_ chatItems: [ChatItem], _ selectedItems: [Int64]?) {
@@ -168,7 +171,7 @@ struct SelectedItemsBottomToolbar: View {
             if !ci.meta.deletable || ci.localNote {
                 possibleToDeleteForEveryone = false
             }
-            return (ci.content.msgContent != nil && !ci.meta.isLive) || ci.meta.itemDeleted != nil || ci.isDeletedContent || ci.mergeCategory != nil || ci.showLocalDelete
+            return ci.canBeDeletedForSelf
         })
     }
 
