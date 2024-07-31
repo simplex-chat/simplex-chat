@@ -140,12 +140,12 @@ fun NewChatSheetLayout(
             extraPadding = true
           )
         }
-        SectionDividerSpaced()
+        SectionDividerSpaced(maxBottomPadding = false)
+
         val deletedContactTypes = listOf(ContactType.CHAT_DELETED)
         val deletedChats by remember(chatModel.chats, deletedContactTypes) {
           derivedStateOf { contactChats(chatModel.chats, deletedContactTypes) }
         }
-
         if (deletedChats.isNotEmpty()) {
           SectionView {
             SectionItemView(
