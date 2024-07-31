@@ -58,9 +58,11 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                             }
                         }
                         ContactType.CHAT_DELETED -> {
-                            openLoadedChat(chat, chatModel)
-                            chatModel.updateContact(rhId, chat.chatInfo.contact.copy(chatDeleted = false))
-                            ModalManager.center.closeModals()
+                            withApi {
+                                openChat(rhId, chat.chatInfo, chatModel)
+                                chatModel.updateContact(rhId, chat.chatInfo.contact.copy(chatDeleted = false))
+                                ModalManager.center.closeModals()
+                            }
                         }
                         ContactType.CARD -> {
                             askCurrentOrIncognitoProfileConnectContactViaAddress(
