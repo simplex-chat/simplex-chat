@@ -27,6 +27,7 @@ class ShareModel: ObservableObject {
     @Published var isLoaded = false
     @Published var bottomBar: BottomBar = .loadingSpinner
     @Published var errorAlert: ErrorAlert?
+    @Published var alertRequiresPassword = false
 
     enum BottomBar {
         case sendButton
@@ -71,43 +72,47 @@ class ShareModel: ObservableObject {
                     apiSuspendChat(expired: $0)
                 }
             }
-            // Init Chat
-            Task {
-                if let e = initChat() {
-                    await MainActor.run { errorAlert = e }
-                } else {
-                    // Load Chats
-                    Task {
-                        switch fetchChats() {
-                        case let .success(chats):
-                            // Decode base64 images on background thread
-                            let profileImages = chats.reduce(into: Dictionary<ChatInfo.ID, UIImage>()) { dict, chatData in
-                                if let profileImage = chatData.chatInfo.image,
-                                   let uiImage = UIImage(base64Encoded: profileImage) {
-                                    dict[chatData.id] = uiImage
-                                }
+            setup()
+        }
+    }
+
+    func setup(with dbKey: String? = nil) {
+        // Init Chat
+        Task {
+            if let e = initChat(with: dbKey) {
+                await MainActor.run { errorAlert = e }
+            } else {
+                // Load Chats
+                Task {
+                    switch fetchChats() {
+                    case let .success(chats):
+                        // Decode base64 images on background thread
+                        let profileImages = chats.reduce(into: Dictionary<ChatInfo.ID, UIImage>()) { dict, chatData in
+                            if let profileImage = chatData.chatInfo.image,
+                               let uiImage = UIImage(base64Encoded: profileImage) {
+                                dict[chatData.id] = uiImage
                             }
-                            await MainActor.run {
-                                self.chats = chats
-                                self.profileImages = profileImages
-                                withAnimation { isLoaded = true }
-                            }
-                        case let .failure(error):
-                            await MainActor.run { errorAlert = error }
                         }
+                        await MainActor.run {
+                            self.chats = chats
+                            self.profileImages = profileImages
+                            withAnimation { isLoaded = true }
+                        }
+                    case let .failure(error):
+                        await MainActor.run { errorAlert = error }
                     }
-                    // Process Attachment
-                    Task {
-                        switch await self.itemProvider!.sharedContent() {
-                        case let .success(chatItemContent):
-                            await MainActor.run {
-                                self.sharedContent = chatItemContent
-                                self.bottomBar = .sendButton
-                                if case let .text(string) = chatItemContent { comment = string }
-                            }
-                        case let .failure(errorAlert):
-                            await MainActor.run { self.errorAlert = errorAlert }
+                }
+                // Process Attachment
+                Task {
+                    switch await self.itemProvider!.sharedContent() {
+                    case let .success(chatItemContent):
+                        await MainActor.run {
+                            self.sharedContent = chatItemContent
+                            self.bottomBar = .sendButton
+                            if case let .text(string) = chatItemContent { comment = string }
                         }
+                    case let .failure(errorAlert):
+                        await MainActor.run { self.errorAlert = errorAlert }
                     }
                 }
             }
@@ -149,14 +154,15 @@ class ShareModel: ObservableObject {
         }
     }
 
-    private func initChat() -> ErrorAlert? {
+    private func initChat(with dbKey: String? = nil) -> ErrorAlert? {
         do {
-            if hasChatCtrl() {
+            if hasChatCtrl() && dbKey == nil {
                 try apiActivateChat()
             } else {
+                resetChatCtrl() // Clears retained migration result
                 registerGroupDefaults()
                 haskell_init_se()
-                let (_, result) = chatMigrateInit(confirmMigrations: defaultMigrationConfirmation())
+                let (_, result) = chatMigrateInit(dbKey, confirmMigrations: defaultMigrationConfirmation())
                 if let e = migrationError(result) { return e }
                 try apiSetAppFilePaths(
                     filesFolder: getAppFilesDirectory().path,
@@ -175,8 +181,9 @@ class ShareModel: ObservableObject {
     private func migrationError(_ r: DBMigrationResult) -> ErrorAlert? {
         let useKeychain = storeDBPassphraseGroupDefault.get()
         let storedDBKey = kcDatabasePassword.get()
-        // This switch duplicates DatabaseErrorView.
-        // TODO allow entering passphrase and make messages the same as in DatabaseErrorView.
+        if case .errorNotADatabase = r {
+            Task { await MainActor.run { self.alertRequiresPassword = true } }
+        }
         return switch r {
         case .errorNotADatabase:
             if useKeychain && storedDBKey != nil && storedDBKey != "" {
@@ -186,8 +193,8 @@ class ShareModel: ObservableObject {
                 )
             } else {
                 ErrorAlert(
-                    title: "Encrypted database",
-                    message: "Sharing is not supported when passphrase is not stored in KeyChain."
+                    title: "Database encrypted!",
+                    message: "Database passphrase is required to open chat."
                 )
             }
         case let .errorMigration(_, migrationError):
@@ -393,8 +400,7 @@ extension NSItemProvider {
 
                 // Static
                 } else {
-                    if let url = try? await inPlaceUrl(type: type),
-                       let image = downsampleImage(at: url, to: MAX_DOWNSAMPLE_SIZE),
+                    if let image = await staticImage(),
                        let cryptoFile = saveImage(image),
                        let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
                         .success(.image(preview: preview, cryptoFile: cryptoFile))
@@ -476,6 +482,17 @@ extension NSItemProvider {
             if hasItemConformingToTypeIdentifier(type.identifier) { return type }
         }
         return nil
+    }
+
+    private func staticImage() async -> UIImage? {
+        if let url = try? await inPlaceUrl(type: .image),
+           let downsampledImage = downsampleImage(at: url, to: MAX_DOWNSAMPLE_SIZE) {
+            downsampledImage
+        } else {
+            /// Fallback to loading image directly from `ItemProvider`
+            /// in case loading from disk is not possible. Required for sharing screenshots.
+            try? await loadItem(forTypeIdentifier: UTType.image.identifier) as? UIImage
+        }
     }
 }
 
