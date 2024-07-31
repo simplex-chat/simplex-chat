@@ -1015,7 +1015,7 @@ struct ChatView: View {
                 if !live || !ci.meta.isLive {
                     deleteButton(ci)
                 }
-                if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo) {
+                if let (groupInfo, _) = ci.memberToModerate(chat.chatInfo), ci.chatDir != .groupSnd {
                     moderateButton(ci, groupInfo)
                 }
             } else if ci.meta.itemDeleted != nil {
