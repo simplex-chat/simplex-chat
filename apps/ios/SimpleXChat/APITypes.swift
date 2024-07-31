@@ -2115,7 +2115,7 @@ public struct AppSettings: Codable, Equatable, Hashable {
     public var androidCallOnLockScreen: AppSettingsLockScreenCalls? = nil
     public var iosCallKitEnabled: Bool? = nil
     public var iosCallKitCallsInRecents: Bool? = nil
-    public var uiProfileImageCornerRadius: Float? = nil
+    public var uiProfileImageCornerRadius: Double? = nil
     public var uiColorScheme: String? = nil
     public var uiDarkColorScheme: String? = nil
     public var uiCurrentThemeIds: [String: String]? = nil
