@@ -1880,10 +1880,10 @@
     <string name="smp_servers_other">其他 SMP 服务器</string>
     <string name="xftp_servers_other">其他 XFTP 服务器</string>
     <string name="scan_paste_link">扫描/粘贴链接</string>
-    <string name="subscription_percentage">订阅百分比</string>
+    <string name="subscription_percentage">显示百分比</string>
     <string name="member_info_member_inactive">不活跃</string>
     <string name="appearance_zoom">缩放</string>
-    <string name="all_users">所有用户</string>
+    <string name="all_users">所有配置文件</string>
     <string name="servers_info_files_tab">文件</string>
     <string name="servers_info_missing">没有信息，试试重新加载</string>
     <string name="servers_info">服务器信息</string>
@@ -1891,7 +1891,7 @@
     <string name="servers_info_sessions_connected">已连接</string>
     <string name="servers_info_connected_servers_section_header">已连接的服务器</string>
     <string name="servers_info_sessions_connecting">连接中</string>
-    <string name="servers_info_subscriptions_connections_subscribed">订阅的连接</string>
+    <string name="servers_info_subscriptions_connections_subscribed">活跃连接</string>
     <string name="servers_info_detailed_statistics">详细统计数据</string>
     <string name="servers_info_details">详情</string>
     <string name="servers_info_downloaded">已下载</string>
@@ -1901,7 +1901,7 @@
     <string name="servers_info_reset_stats_alert_error_title">重设统计数据出错</string>
     <string name="servers_info_sessions_errors">错误</string>
     <string name="servers_info_messages_received">收到的消息</string>
-    <string name="servers_info_subscriptions_section_header">消息订阅</string>
+    <string name="servers_info_subscriptions_section_header">消息接收</string>
     <string name="servers_info_subscriptions_connections_pending">待连接</string>
     <string name="servers_info_previously_connected_servers_section_header">先前连接的服务器</string>
     <string name="servers_info_proxied_servers_section_header">已代理的服务器</string>
@@ -1962,7 +1962,7 @@
     <string name="subscription_results_ignored">订阅被忽略</string>
     <string name="smp_servers_configured">已配置的 SMP 服务器</string>
     <string name="xftp_servers_configured">已配置的 XFTP 服务器</string>
-    <string name="current_user">当前用户</string>
+    <string name="current_user">当前配置文件</string>
     <string name="servers_info_transport_sessions_section_header">传输会话</string>
     <string name="servers_info_uploaded">已上传</string>
     <string name="member_info_member_disabled">已停用</string>
@@ -1989,4 +1989,15 @@
     <string name="app_check_for_updates_beta">测试版</string>
     <string name="app_check_for_updates_installed_successfully_title">安装成功</string>
     <string name="app_check_for_updates_button_install">安装更新</string>
+    <string name="proxy_destination_error_broker_version">%1$s 的目的地服务器版本不兼容转发服务器 %2$s.</string>
+    <string name="proxy_destination_error_failed_to_connect">转发服务器 %1$s 连接目的地服务器 %2$s 失败。请稍后尝试。</string>
+    <string name="smp_proxy_error_broker_host">转发服务器地址不兼容网络设置：%1$s。</string>
+    <string name="smp_proxy_error_broker_version">转发服务器版本不兼容网络设置：%1$s。</string>
+    <string name="proxy_destination_error_broker_host">%1$s 的目的地服务器地址不兼容转发服务器 %2$s 的设置</string>
+    <string name="smp_proxy_error_connecting">连接转发服务器 %1$s 出错。请稍后尝试。</string>
+    <string name="privacy_media_blur_radius">模糊媒体文件</string>
+    <string name="privacy_media_blur_radius_medium">中度</string>
+    <string name="privacy_media_blur_radius_off">关闭</string>
+    <string name="privacy_media_blur_radius_soft">轻柔</string>
+    <string name="privacy_media_blur_radius_strong">强烈</string>
 </resources>
