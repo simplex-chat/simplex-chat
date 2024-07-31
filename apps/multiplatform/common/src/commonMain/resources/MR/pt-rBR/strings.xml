@@ -1658,4 +1658,10 @@
     <string name="allow_to_send_simplex_links">Permitir o envio de links do SimpleX.</string>
     <string name="feature_roles_all_members">Todos os membros</string>
     <string name="wallpaper_advanced_settings">Configurações avançadas</string>
+    <string name="app_check_for_updates_notice_title">Verificar atualizações</string>
+    <string name="completed">Completado</string>
+    <string name="smp_servers_configured">Servidores SMP configurados</string>
+    <string name="xftp_servers_configured">Servidores XFTP configurados</string>
+    <string name="migrate_from_device_check_connection_and_try_again">Verifique sua conexão de internet e tente novamente</string>
+    <string name="app_check_for_updates">Verificar atualizações</string>
 </resources>
