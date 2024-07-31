@@ -33,14 +33,6 @@ extension ChatLike {
         }
     }
 
-    public func prohibitedByPref(msgContent: MsgContent?) -> Bool {
-        prohibitedByPref(
-            hasSimplexLink: hasSimplexLink(msgContent?.text),
-            isMediaOrFileAttachment: msgContent?.isMediaOrFileAttachment ?? false,
-            isVoice: msgContent?.isVoice ?? false
-        )
-    }
-
     public func prohibitedByPref(
         hasSimplexLink: Bool,
         isMediaOrFileAttachment: Bool,

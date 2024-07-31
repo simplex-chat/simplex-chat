@@ -40,7 +40,7 @@ struct ShareView: View {
                                 model.errorAlert = ErrorAlert(
                                     title: "Cannot forward message",
                                     message: "Selected chat preferences prohibit this message."
-                                ) { Text("Ok") }
+                                ) { Button("Ok", role: .cancel) { } }
                             } else {
                                 model.selected = isSelected ? nil : chat
                             }
