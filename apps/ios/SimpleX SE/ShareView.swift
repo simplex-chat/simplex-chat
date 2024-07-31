@@ -12,6 +12,7 @@ import SimpleXChat
 struct ShareView: View {
     @ObservedObject var model: ShareModel
     @Environment(\.colorScheme) var colorScheme
+    @State private var password = String()
     @AppStorage(GROUP_DEFAULT_PROFILE_IMAGE_CORNER_RADIUS, store: groupDefaults) private var radius = defaultProfileImageCorner
 
     var body: some View {
@@ -67,7 +68,16 @@ struct ShareView: View {
             placement: .navigationBarDrawer(displayMode: .always)
         )
         .alert($model.errorAlert) { alert in
-            Button("Ok") { model.completion() }
+            if model.alertRequiresPassword {
+                SecureField("Passphrase", text: $password)
+                Button("Ok") {
+                    model.setup(with: password)
+                    password = String()
+                }
+                Button("Cancel", role: .cancel) { model.completion() }
+            } else {
+                Button("Ok") { model.completion() }
+            }
         }
         .onChange(of: model.comment) {
             model.hasSimplexLink = hasSimplexLink($0)
