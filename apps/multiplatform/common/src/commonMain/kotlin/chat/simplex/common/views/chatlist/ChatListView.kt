@@ -152,9 +152,6 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
         if (chatModel.chats.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
           Text(stringResource(
             if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
-          if (!stopped && chatModel.chatRunning.value == true && searchText.value.text.isEmpty()) {
-            OnboardingButtons()
-          }
         }
       }
     }
@@ -178,32 +175,6 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
         userPickerState.value = AnimatedViewState.GONE
       }
     }
-  }
-}
-
-@Composable
-private fun OnboardingButtons() {
-  Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
-    ConnectButton(
-      generalGetString(MR.strings.tap_to_start_new_chat)
-    ) {
-      showNewChatSheet()
-    }
-
-    val color = MaterialTheme.colors.primaryVariant
-    Canvas(modifier = Modifier.width(40.dp).height(10.dp), onDraw = {
-      val trianglePath = Path().apply {
-        moveTo(0.dp.toPx(), 0f)
-        lineTo(16.dp.toPx(), 0.dp.toPx())
-        lineTo(8.dp.toPx(), 10.dp.toPx())
-        lineTo(0.dp.toPx(), 0.dp.toPx())
-      }
-      drawPath(
-        color = color,
-        path = trianglePath
-      )
-    })
-    Spacer(Modifier.height(62.dp))
   }
 }
 
