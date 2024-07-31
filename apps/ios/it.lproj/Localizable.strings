@@ -360,6 +360,9 @@
 "Acknowledgement errors" = "Errori di riconoscimento";
 
 /* No comment provided by engineer. */
+"Active connections" = "Connessioni attive";
+
+/* No comment provided by engineer. */
 "Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Aggiungi l'indirizzo al tuo profilo, in modo che i tuoi contatti possano condividerlo con altre persone. L'aggiornamento del profilo verrà inviato ai tuoi contatti.";
 
 /* No comment provided by engineer. */
@@ -686,7 +689,7 @@
 /* rcv group event chat item */
 "blocked %@" = "ha bloccato %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item */
 "blocked by admin" = "bloccato dall'amministratore";
 
 /* No comment provided by engineer. */
@@ -908,6 +911,9 @@
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "Configura server ICE";
+
+/* No comment provided by engineer. */
+"Configured %@ servers" = "Configurati %@ server";
 
 /* No comment provided by engineer. */
 "Confirm" = "Conferma";
@@ -2690,6 +2696,9 @@
 "message received" = "messaggio ricevuto";
 
 /* No comment provided by engineer. */
+"Message reception" = "Ricezione messaggi";
+
+/* No comment provided by engineer. */
 "Message routing fallback" = "Ripiego instradamento messaggio";
 
 /* No comment provided by engineer. */
@@ -2940,7 +2949,7 @@
    time to disappear */
 "off" = "off";
 
-/* No comment provided by engineer. */
+/* blur media */
 "Off" = "Off";
 
 /* feature offered item */
@@ -3065,6 +3074,9 @@
 
 /* No comment provided by engineer. */
 "Other" = "Altro";
+
+/* No comment provided by engineer. */
+"Other %@ servers" = "Altri %@ server";
 
 /* No comment provided by engineer. */
 "other errors" = "altri errori";
@@ -3218,6 +3230,9 @@
 
 /* No comment provided by engineer. */
 "Private routing" = "Instradamento privato";
+
+/* No comment provided by engineer. */
+"Private routing error" = "Errore di instradamento privato";
 
 /* No comment provided by engineer. */
 "Profile and server connections" = "Profilo e connessioni al server";
@@ -3819,6 +3834,9 @@
 /* No comment provided by engineer. */
 "Server address" = "Indirizzo server";
 
+/* No comment provided by engineer. */
+"Server address is incompatible with network settings: %@." = "L'indirizzo del server è incompatibile con le impostazioni di rete: %@.";
+
 /* srv error text. */
 "Server address is incompatible with network settings." = "L'indirizzo del server non è compatibile con le impostazioni di rete.";
 
@@ -3839,6 +3857,9 @@
 
 /* srv error text */
 "Server version is incompatible with network settings." = "La versione del server non è compatibile con le impostazioni di rete.";
+
+/* No comment provided by engineer. */
+"Server version is incompatible with your app: %@." = "La versione del server è incompatibile con la tua app: %@.";
 
 /* No comment provided by engineer. */
 "Servers" = "Server";
@@ -3929,6 +3950,9 @@
 
 /* No comment provided by engineer. */
 "Show message status" = "Mostra stato del messaggio";
+
+/* No comment provided by engineer. */
+"Show percentage" = "Mostra percentuale";
 
 /* No comment provided by engineer. */
 "Show preview" = "Mostra anteprima";

@@ -461,12 +461,11 @@ object ChatController {
     Log.d(TAG, "user: $user")
     try {
       apiSetNetworkConfig(getNetCfg())
-      val justStarted = apiStartChat()
-      appPrefs.chatStopped.set(false)
+      val chatRunning = apiCheckChatRunning()
       val users = listUsers(null)
       chatModel.users.clear()
       chatModel.users.addAll(users)
-      if (justStarted) {
+      if (!chatRunning) {
         chatModel.currentUser.value = user
         chatModel.localUserCreated.value = true
         getUserChatData(null)
@@ -485,6 +484,8 @@ object ChatController {
         }
         Log.d(TAG, "startChat: running")
       }
+      apiStartChat()
+      appPrefs.chatStopped.set(false)
     } catch (e: Throwable) {
       Log.e(TAG, "failed starting chat $e")
       throw e
@@ -738,6 +739,15 @@ object ChatController {
     }
   }
 
+  private suspend fun apiCheckChatRunning(): Boolean {
+    val r = sendCmd(null, CC.CheckChatRunning())
+    when (r) {
+      is CR.ChatRunning -> return true
+      is CR.ChatStopped -> return false
+      else -> throw Exception("failed check chat running: ${r.responseType} ${r.details}")
+    }
+  }
+
   suspend fun apiStopChat(): Boolean {
     val r = sendCmd(null, CC.ApiStopChat())
     when (r) {
@@ -875,16 +885,16 @@ object ChatController {
     return null
   }
 
-  suspend fun apiDeleteChatItem(rh: Long?, type: ChatType, id: Long, itemId: Long, mode: CIDeleteMode): CR.ChatItemDeleted? {
-    val r = sendCmd(rh, CC.ApiDeleteChatItem(type, id, itemId, mode))
-    if (r is CR.ChatItemDeleted) return r
+  suspend fun apiDeleteChatItems(rh: Long?, type: ChatType, id: Long, itemIds: List<Long>, mode: CIDeleteMode): List<ChatItemDeletion>? {
+    val r = sendCmd(rh, CC.ApiDeleteChatItem(type, id, itemIds, mode))
+    if (r is CR.ChatItemsDeleted) return r.chatItemDeletions
     Log.e(TAG, "apiDeleteChatItem bad response: ${r.responseType} ${r.details}")
     return null
   }
 
-  suspend fun apiDeleteMemberChatItem(rh: Long?, groupId: Long, groupMemberId: Long, itemId: Long): Pair<ChatItem, ChatItem?>? {
-    val r = sendCmd(rh, CC.ApiDeleteMemberChatItem(groupId, groupMemberId, itemId))
-    if (r is CR.ChatItemDeleted) return r.deletedChatItem.chatItem to r.toChatItem?.chatItem
+  suspend fun apiDeleteMemberChatItems(rh: Long?, groupId: Long, itemIds: List<Long>): List<ChatItemDeletion>? {
+    val r = sendCmd(rh, CC.ApiDeleteMemberChatItem(groupId, itemIds))
+    if (r is CR.ChatItemsDeleted) return r.chatItemDeletions
     Log.e(TAG, "apiDeleteMemberChatItem bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -2094,31 +2104,34 @@ object ChatController {
           chatModel.updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
         }
       }
-      is CR.ChatItemDeleted -> {
+      is CR.ChatItemsDeleted -> {
         if (!active(r.user)) {
-          if (r.toChatItem == null && r.deletedChatItem.chatItem.isRcvNew && r.deletedChatItem.chatInfo.ntfsEnabled) {
-            chatModel.decreaseUnreadCounter(rhId, r.user)
+          r.chatItemDeletions.forEach { (deletedChatItem, toChatItem) ->
+            if (toChatItem == null && deletedChatItem.chatItem.isRcvNew && deletedChatItem.chatInfo.ntfsEnabled) {
+              chatModel.decreaseUnreadCounter(rhId, r.user)
+            }
           }
           return
         }
-
-        val cInfo = r.deletedChatItem.chatInfo
-        val cItem = r.deletedChatItem.chatItem
-        AudioPlayer.stop(cItem)
-        val isLastChatItem = chatModel.getChat(cInfo.id)?.chatItems?.lastOrNull()?.id == cItem.id
-        if (isLastChatItem && ntfManager.hasNotificationsForChat(cInfo.id)) {
-          ntfManager.cancelNotificationsForChat(cInfo.id)
-          ntfManager.displayNotification(
-            r.user,
-            cInfo.id,
-            cInfo.displayName,
-            generalGetString(if (r.toChatItem != null) MR.strings.marked_deleted_description else MR.strings.deleted_description)
-          )
-        }
-        if (r.toChatItem == null) {
-          chatModel.removeChatItem(rhId, cInfo, cItem)
-        } else {
-          chatModel.upsertChatItem(rhId, cInfo, r.toChatItem.chatItem)
+        r.chatItemDeletions.forEach { (deletedChatItem, toChatItem) ->
+          val cInfo = deletedChatItem.chatInfo
+          val cItem = deletedChatItem.chatItem
+          AudioPlayer.stop(cItem)
+          val isLastChatItem = chatModel.getChat(cInfo.id)?.chatItems?.lastOrNull()?.id == cItem.id
+          if (isLastChatItem && ntfManager.hasNotificationsForChat(cInfo.id)) {
+            ntfManager.cancelNotificationsForChat(cInfo.id)
+            ntfManager.displayNotification(
+              r.user,
+              cInfo.id,
+              cInfo.displayName,
+              generalGetString(if (toChatItem != null) MR.strings.marked_deleted_description else MR.strings.deleted_description)
+            )
+          }
+          if (toChatItem == null) {
+            chatModel.removeChatItem(rhId, cInfo, cItem)
+          } else {
+            chatModel.upsertChatItem(rhId, cInfo, toChatItem.chatItem)
+          }
         }
       }
       is CR.ReceivedGroupInvitation -> {
@@ -2709,6 +2722,7 @@ sealed class CC {
   class ApiUnmuteUser(val userId: Long): CC()
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
   class StartChat(val mainApp: Boolean): CC()
+  class CheckChatRunning: CC()
   class ApiStopChat: CC()
   @Serializable
   class ApiSetAppFilePaths(val appFilesFolder: String, val appTempFolder: String, val appAssetsFolder: String, val appRemoteHostsFolder: String): CC()
@@ -2726,8 +2740,8 @@ sealed class CC {
   class ApiSendMessage(val type: ChatType, val id: Long, val file: CryptoFile?, val quotedItemId: Long?, val mc: MsgContent, val live: Boolean, val ttl: Int?): CC()
   class ApiCreateChatItem(val noteFolderId: Long, val file: CryptoFile?, val mc: MsgContent): CC()
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent, val live: Boolean): CC()
-  class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
-  class ApiDeleteMemberChatItem(val groupId: Long, val groupMemberId: Long, val itemId: Long): CC()
+  class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemIds: List<Long>, val mode: CIDeleteMode): CC()
+  class ApiDeleteMemberChatItem(val groupId: Long, val itemIds: List<Long>): CC()
   class ApiChatItemReaction(val type: ChatType, val id: Long, val itemId: Long, val add: Boolean, val reaction: MsgReaction): CC()
   class ApiForwardChatItem(val toChatType: ChatType, val toChatId: Long, val fromChatType: ChatType, val fromChatId: Long, val itemId: Long, val ttl: Int?): CC()
   class ApiNewGroup(val userId: Long, val incognito: Boolean, val groupProfile: GroupProfile): CC()
@@ -2854,6 +2868,7 @@ sealed class CC {
     is ApiUnmuteUser -> "/_unmute user $userId"
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
     is StartChat -> "/_start main=${onOff(mainApp)}"
+    is CheckChatRunning -> "/_check running"
     is ApiStopChat -> "/_stop"
     is ApiSetAppFilePaths -> "/set file paths ${json.encodeToString(this)}"
     is ApiSetEncryptLocalFiles -> "/_files_encrypt ${onOff(enable)}"
@@ -2875,8 +2890,8 @@ sealed class CC {
       "/_create *$noteFolderId json ${json.encodeToString(ComposedMessage(file, null, mc))}"
     }
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId live=${onOff(live)} ${mc.cmdString}"
-    is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
-    is ApiDeleteMemberChatItem -> "/_delete member item #$groupId $groupMemberId $itemId"
+    is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} ${itemIds.joinToString(",")} ${mode.deleteMode}"
+    is ApiDeleteMemberChatItem -> "/_delete member item #$groupId ${itemIds.joinToString(",")}"
     is ApiChatItemReaction -> "/_reaction ${chatRef(type, id)} $itemId ${onOff(add)} ${json.encodeToString(reaction)}"
     is ApiForwardChatItem -> {
       val ttlStr = if (ttl != null) "$ttl" else "default"
@@ -3007,6 +3022,7 @@ sealed class CC {
     is ApiUnmuteUser -> "apiUnmuteUser"
     is ApiDeleteUser -> "apiDeleteUser"
     is StartChat -> "startChat"
+    is CheckChatRunning -> "checkChatRunning"
     is ApiStopChat -> "apiStopChat"
     is ApiSetAppFilePaths -> "apiSetAppFilePaths"
     is ApiSetEncryptLocalFiles -> "apiSetEncryptLocalFiles"
@@ -4666,7 +4682,7 @@ sealed class CR {
   @Serializable @SerialName("chatItemUpdated") class ChatItemUpdated(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemNotChanged") class ChatItemNotChanged(val user: UserRef, val chatItem: AChatItem): CR()
   @Serializable @SerialName("chatItemReaction") class ChatItemReaction(val user: UserRef, val added: Boolean, val reaction: ACIReaction): CR()
-  @Serializable @SerialName("chatItemDeleted") class ChatItemDeleted(val user: UserRef, val deletedChatItem: AChatItem, val toChatItem: AChatItem? = null, val byUser: Boolean): CR()
+  @Serializable @SerialName("chatItemsDeleted") class ChatItemsDeleted(val user: UserRef, val chatItemDeletions: List<ChatItemDeletion>, val byUser: Boolean): CR()
   // group events
   @Serializable @SerialName("groupCreated") class GroupCreated(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
@@ -4841,7 +4857,7 @@ sealed class CR {
     is ChatItemUpdated -> "chatItemUpdated"
     is ChatItemNotChanged -> "chatItemNotChanged"
     is ChatItemReaction -> "chatItemReaction"
-    is ChatItemDeleted -> "chatItemDeleted"
+    is ChatItemsDeleted -> "chatItemsDeleted"
     is GroupCreated -> "groupCreated"
     is SentGroupInvitation -> "sentGroupInvitation"
     is UserAcceptedGroupSent -> "userAcceptedGroupSent"
@@ -5008,7 +5024,7 @@ sealed class CR {
     is ChatItemUpdated -> withUser(user, json.encodeToString(chatItem))
     is ChatItemNotChanged -> withUser(user, json.encodeToString(chatItem))
     is ChatItemReaction -> withUser(user, "added: $added\n${json.encodeToString(reaction)}")
-    is ChatItemDeleted -> withUser(user, "deletedChatItem:\n${json.encodeToString(deletedChatItem)}\ntoChatItem:\n${json.encodeToString(toChatItem)}\nbyUser: $byUser")
+    is ChatItemsDeleted -> withUser(user, "${chatItemDeletions.map { (deletedChatItem, toChatItem) -> "deletedChatItem: ${json.encodeToString(deletedChatItem)}\ntoChatItem: ${json.encodeToString(toChatItem)}" }} \nbyUser: $byUser")
     is GroupCreated -> withUser(user, json.encodeToString(groupInfo))
     is SentGroupInvitation -> withUser(user, "groupInfo: $groupInfo\ncontact: $contact\nmember: $member")
     is UserAcceptedGroupSent -> json.encodeToString(groupInfo)

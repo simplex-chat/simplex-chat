@@ -13,6 +13,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.launch
 
 @Composable
 fun ShareListNavLinkView(
@@ -23,6 +24,7 @@ fun ShareListNavLinkView(
   hasSimplexLink: Boolean
 ) {
   val stopped = chatModel.chatRunning.value == false
+  val scope = rememberCoroutineScope()
   when (chat.chatInfo) {
     is ChatInfo.Direct -> {
       val voiceProhibited = isVoice && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
@@ -32,7 +34,7 @@ fun ShareListNavLinkView(
           if (voiceProhibited) {
             showForwardProhibitedByPrefAlert()
           } else {
-            directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel)
+            scope.launch { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) }
           }
         },
         stopped
@@ -49,7 +51,7 @@ fun ShareListNavLinkView(
           if (prohibitedByPref) {
             showForwardProhibitedByPrefAlert()
           } else {
-            groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel)
+            scope.launch { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel) }
           }
         },
         stopped
@@ -58,7 +60,7 @@ fun ShareListNavLinkView(
     is ChatInfo.Local ->
       ShareListNavLinkLayout(
         chatLinkPreview = { SharePreviewView(chat, disabled = false) },
-        click = { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) },
+        click = { scope.launch { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) } },
         stopped
       )
     is ChatInfo.ContactRequest, is ChatInfo.ContactConnection, is ChatInfo.InvalidJSON -> {}

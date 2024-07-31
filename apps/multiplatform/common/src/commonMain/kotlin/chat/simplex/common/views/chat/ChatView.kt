@@ -249,30 +249,30 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
                 val groupMember = toModerate?.second
                 val deletedChatItem: ChatItem?
                 val toChatItem: ChatItem?
-                if (mode == CIDeleteMode.cidmBroadcast && groupInfo != null && groupMember != null) {
-                  val r = chatModel.controller.apiDeleteMemberChatItem(
+                val r = if (mode == CIDeleteMode.cidmBroadcast && groupInfo != null && groupMember != null) {
+                  chatModel.controller.apiDeleteMemberChatItems(
                     chatRh,
                     groupId = groupInfo.groupId,
-                    groupMemberId = groupMember.groupMemberId,
-                    itemId = itemId
+                    itemIds = listOf(itemId)
                   )
-                  deletedChatItem = r?.first
-                  toChatItem = r?.second
                 } else {
-                  val r = chatModel.controller.apiDeleteChatItem(
+                  chatModel.controller.apiDeleteChatItems(
                     chatRh,
                     type = cInfo.chatType,
                     id = cInfo.apiId,
-                    itemId = itemId,
+                    itemIds = listOf(itemId),
                     mode = mode
                   )
-                  deletedChatItem = r?.deletedChatItem?.chatItem
-                  toChatItem = r?.toChatItem?.chatItem
                 }
-                if (toChatItem == null && deletedChatItem != null) {
-                  chatModel.removeChatItem(chatRh, cInfo, deletedChatItem)
-                } else if (toChatItem != null) {
-                  chatModel.upsertChatItem(chatRh, cInfo, toChatItem)
+                val deleted = r?.firstOrNull()
+                if (deleted != null) {
+                  deletedChatItem = deleted.deletedChatItem.chatItem
+                  toChatItem = deleted.toChatItem?.chatItem
+                  if (toChatItem != null) {
+                    chatModel.upsertChatItem(chatRh, cInfo, toChatItem)
+                  } else {
+                    chatModel.removeChatItem(chatRh, cInfo, deletedChatItem)
+                  }
                 }
               }
             },
@@ -280,17 +280,13 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               if (itemIds.isNotEmpty()) {
                 val chatInfo = chat.chatInfo
                 withBGApi {
-                  val deletedItems: ArrayList<ChatItem> = arrayListOf()
-                  for (itemId in itemIds) {
-                    val di = chatModel.controller.apiDeleteChatItem(
-                      chatRh, chatInfo.chatType, chatInfo.apiId, itemId, CIDeleteMode.cidmInternal
-                    )?.deletedChatItem?.chatItem
-                    if (di != null) {
-                      deletedItems.add(di)
+                  val deleted = chatModel.controller.apiDeleteChatItems(
+                    chatRh, chatInfo.chatType, chatInfo.apiId, itemIds, CIDeleteMode.cidmInternal
+                  )
+                  if (deleted != null) {
+                    for (di in deleted) {
+                      chatModel.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
                     }
-                  }
-                  for (di in deletedItems) {
-                    chatModel.removeChatItem(chatRh, chatInfo, di)
                   }
                 }
               }
@@ -341,7 +337,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               }
             },
             openDirectChat = { contactId ->
-              withBGApi {
+              scope.launch {
                 openDirectChat(chatRh, contactId, chatModel)
               }
             },
@@ -1156,6 +1152,8 @@ private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: 
            * this coroutine will be canceled with the message "Current mutation had a higher priority" because of animatedScroll.
            * Which breaks auto-scrolling to bottom. So just ignoring the exception
            * */
+        } catch (e: IllegalArgumentException) {
+          Log.e(TAG, "Failed to scroll: ${e.stackTraceToString()}")
         }
       }
   }

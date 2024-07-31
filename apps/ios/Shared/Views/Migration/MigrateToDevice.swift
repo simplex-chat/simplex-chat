@@ -331,7 +331,7 @@ struct MigrateToDevice: View {
                 case let .migrationError(mtrError):
                     ("Incompatible database version",
                      nil,
-                     "\(NSLocalizedString("Error: ", comment: "")) \(DatabaseErrorView.mtrErrorDescription(mtrError))",
+                     "\(NSLocalizedString("Error: ", comment: "")) \(mtrErrorDescription(mtrError))",
                      nil)
                 }
             default: ("Error", nil, "Unknown error", nil)

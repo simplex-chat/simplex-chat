@@ -27,6 +27,7 @@ public enum ChatCommand {
     case apiUnmuteUser(userId: Int64)
     case apiDeleteUser(userId: Int64, delSMPQueues: Bool, viewPwd: String?)
     case startChat(mainApp: Bool, enableSndFiles: Bool)
+    case checkChatRunning
     case apiStopChat
     case apiActivateChat(restoreChat: Bool)
     case apiSuspendChat(timeoutMicroseconds: Int)
@@ -45,8 +46,8 @@ public enum ChatCommand {
     case apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: Int64?, msg: MsgContent, live: Bool, ttl: Int?)
     case apiCreateChatItem(noteFolderId: Int64, file: CryptoFile?, msg: MsgContent)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
-    case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
-    case apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64)
+    case apiDeleteChatItem(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode)
+    case apiDeleteMemberChatItem(groupId: Int64, itemIds: [Int64])
     case apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, reaction: MsgReaction)
     case apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64, ttl: Int?)
     case apiGetNtfToken
@@ -173,6 +174,7 @@ public enum ChatCommand {
             case let .apiUnmuteUser(userId): return "/_unmute user \(userId)"
             case let .apiDeleteUser(userId, delSMPQueues, viewPwd): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))\(maybePwd(viewPwd))"
             case let .startChat(mainApp, enableSndFiles): return "/_start main=\(onOff(mainApp)) snd_files=\(onOff(enableSndFiles))"
+            case .checkChatRunning: return "/_check running"
             case .apiStopChat: return "/_stop"
             case let .apiActivateChat(restore): return "/_app activate restore=\(onOff(restore))"
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
@@ -197,8 +199,8 @@ public enum ChatCommand {
                 let msg = encodeJSON(ComposedMessage(fileSource: file, msgContent: mc))
                 return "/_create *\(noteFolderId) json \(msg)"
             case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
-            case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
-            case let .apiDeleteMemberChatItem(groupId, groupMemberId, itemId): return "/_delete member item #\(groupId) \(groupMemberId) \(itemId)"
+            case let .apiDeleteChatItem(type, id, itemIds, mode): return "/_delete item \(ref(type, id)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
+            case let .apiDeleteMemberChatItem(groupId, itemIds): return "/_delete member item #\(groupId) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
             case let .apiChatItemReaction(type, id, itemId, add, reaction): return "/_reaction \(ref(type, id)) \(itemId) \(onOff(add)) \(encodeJSON(reaction))"
             case let .apiForwardChatItem(toChatType, toChatId, fromChatType, fromChatId, itemId, ttl):
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
@@ -334,6 +336,7 @@ public enum ChatCommand {
             case .apiUnmuteUser: return "apiUnmuteUser"
             case .apiDeleteUser: return "apiDeleteUser"
             case .startChat: return "startChat"
+            case .checkChatRunning: return "checkChatRunning"
             case .apiStopChat: return "apiStopChat"
             case .apiActivateChat: return "apiActivateChat"
             case .apiSuspendChat: return "apiSuspendChat"
@@ -595,7 +598,7 @@ public enum ChatResponse: Decodable, Error {
     case chatItemUpdated(user: UserRef, chatItem: AChatItem)
     case chatItemNotChanged(user: UserRef, chatItem: AChatItem)
     case chatItemReaction(user: UserRef, added: Bool, reaction: ACIReaction)
-    case chatItemDeleted(user: UserRef, deletedChatItem: AChatItem, toChatItem: AChatItem?, byUser: Bool)
+    case chatItemsDeleted(user: UserRef, chatItemDeletions: [ChatItemDeletion], byUser: Bool)
     case contactsList(user: UserRef, contacts: [Contact])
     // group events
     case groupCreated(user: UserRef, groupInfo: GroupInfo)
@@ -764,7 +767,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatItemUpdated: return "chatItemUpdated"
             case .chatItemNotChanged: return "chatItemNotChanged"
             case .chatItemReaction: return "chatItemReaction"
-            case .chatItemDeleted: return "chatItemDeleted"
+            case .chatItemsDeleted: return "chatItemsDeleted"
             case .contactsList: return "contactsList"
             case .groupCreated: return "groupCreated"
             case .sentGroupInvitation: return "sentGroupInvitation"
@@ -931,7 +934,10 @@ public enum ChatResponse: Decodable, Error {
             case let .chatItemUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemNotChanged(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemReaction(u, added, reaction): return withUser(u, "added: \(added)\n\(String(describing: reaction))")
-            case let .chatItemDeleted(u, deletedChatItem, toChatItem, byUser): return withUser(u, "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))\nbyUser: \(byUser)")
+            case let .chatItemsDeleted(u, items, byUser):
+                let itemsString = items.map { item in
+                    "deletedChatItem:\n\(String(describing: item.deletedChatItem))\ntoChatItem:\n\(String(describing: item.toChatItem))" }.joined(separator: "\n")
+                return withUser(u, itemsString + "\nbyUser: \(byUser)")
             case let .contactsList(u, contacts): return withUser(u, String(describing: contacts))
             case let .groupCreated(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .sentGroupInvitation(u, groupInfo, contact, member): return withUser(u, "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)")
