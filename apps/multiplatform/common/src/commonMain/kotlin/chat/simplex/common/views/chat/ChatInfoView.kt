@@ -542,13 +542,6 @@ fun ChatInfoLayout(
       horizontalArrangement = Arrangement.Center,
       verticalAlignment = Alignment.CenterVertically
     ) {
-      if (contact.activeConn == null && contact.profile.contactLink != null && contact.active) {
-        ConnectButton(openedFromChatView, chat, contact, close)
-        Spacer(Modifier.width(DEFAULT_PADDING))
-      } else if (!contact.active && !contact.chatDeleted) {
-        OpenButton(openedFromChatView, chat, contact, close)
-        Spacer(Modifier.width(DEFAULT_PADDING))
-      }
       SearchButton(chat, contact, close, onSearchClicked)
       Spacer(Modifier.width(DEFAULT_PADDING))
       CallButton(chat, contact)
@@ -773,79 +766,6 @@ fun LocalAliasEditor(
   DisposableEffect(chatId) {
     onDispose { if (updatedValueAtLeastOnce) updateValue(state.value.text) } // just in case snapshotFlow will be canceled when user presses Back too fast
   }
-}
-
-// when contact is a "contact card"
-@Composable
-private fun ConnectButton(openedFromChatView: Boolean, chat: Chat, contact: Contact, close: () -> Unit) {
-  InfoViewActionButton(
-    icon = painterResource(MR.images.ic_chat_bubble),
-    title = generalGetString(MR.strings.info_view_connect_button),
-    disabled = false,
-    onClick = {
-      AlertManager.privacySensitive.showAlertDialogButtonsColumn(
-        title = String.format(generalGetString(MR.strings.connect_with_contact_name_question), contact.chatViewName),
-        buttons = {
-          Column {
-            SectionItemView({
-              AlertManager.privacySensitive.hideAlert()
-              infoConnectContactViaAddress(openedFromChatView, chat, contact, incognito = false, close)
-            }) {
-              Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-            }
-            SectionItemView({
-              AlertManager.privacySensitive.hideAlert()
-              infoConnectContactViaAddress(openedFromChatView, chat, contact, incognito = true, close)
-            }) {
-              Text(generalGetString(MR.strings.connect_use_new_incognito_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-            }
-            SectionItemView({
-              AlertManager.privacySensitive.hideAlert()
-            }) {
-              Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-            }
-          }
-        },
-        hostDevice = hostDevice(chat.remoteHostId),
-      )
-    }
-  )
-}
-
-private fun infoConnectContactViaAddress(openedFromChatView: Boolean, chat: Chat, contact: Contact, incognito: Boolean, close: () -> Unit) {
-  withBGApi {
-    val ok = connectContactViaAddress(chatModel, chat.remoteHostId, contact.contactId, incognito = incognito)
-    if (ok) {
-      if (openedFromChatView) {
-        close.invoke()
-      } else {
-        if (contact.chatDeleted) {
-          chatModel.updateContact(chat.remoteHostId, contact.copy(chatDeleted = false))
-        }
-        close.invoke()
-        openDirectChat(chat.remoteHostId, contact.contactId, chatModel)
-      }
-    }
-  }
-}
-
-@Composable
-private fun OpenButton(openedFromChatView: Boolean, chat: Chat, contact: Contact, close: () -> Unit) {
-  InfoViewActionButton(
-    icon = painterResource(MR.images.ic_chat_bubble),
-    title = generalGetString(MR.strings.info_view_open_button),
-    disabled = false,
-    onClick = {
-      if (openedFromChatView) {
-        close.invoke()
-      } else {
-        close.invoke()
-        withBGApi {
-          openDirectChat(chat.remoteHostId, contact.contactId, chatModel)
-        }
-      }
-    }
-  )
 }
 
 @Composable
