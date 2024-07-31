@@ -34,8 +34,6 @@ import chat.simplex.common.views.usersettings.SettingsView
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.CIFileViewScope
-import chat.simplex.common.views.contacts.ContactType
-import chat.simplex.common.views.contacts.getContactType
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
@@ -620,11 +618,11 @@ private fun filteredChats(
   } else {
     val s = if (searchShowingSimplexLink.value) "" else searchText.trim().lowercase()
     if (s.isEmpty() && !showUnreadAndFavorites)
-      chats.filter { chat -> !chat.chatInfo.chatDeleted && getContactType(chat) != ContactType.CARD }
+      chats.filter { chat -> !chat.chatInfo.chatDeleted && chatContactType(chat) != ContactType.CARD }
     else {
       chats.filter { chat ->
         when (val cInfo = chat.chatInfo) {
-          is ChatInfo.Direct -> getContactType(chat) != ContactType.CARD && !chat.chatInfo.chatDeleted && (
+          is ChatInfo.Direct -> chatContactType(chat) != ContactType.CARD && !chat.chatInfo.chatDeleted && (
             if (s.isEmpty()) {
               chat.id == chatModel.chatId.value || filtered(chat)
             } else {

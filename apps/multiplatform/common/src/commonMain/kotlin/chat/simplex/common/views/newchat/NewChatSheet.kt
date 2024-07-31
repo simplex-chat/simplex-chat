@@ -14,8 +14,12 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.TextRange
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -23,22 +27,14 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.model.ChatController
-import chat.simplex.common.model.RemoteHostInfo
+import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.contacts.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
-
-@Composable
-fun NewChatButton(icon: Painter, text: String, click: () -> Unit, textColor: Color = Color.Unspecified, iconColor: Color = MaterialTheme.colors.secondary, disabled: Boolean = false, extraPadding: Boolean = false) {
-  SectionItemView(click, disabled = disabled) {
-    Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else iconColor)
-    TextIconSpaced(extraPadding)
-    Text(text, color = if (disabled) MaterialTheme.colors.secondary else textColor)
-  }
-}
+import kotlinx.coroutines.flow.distinctUntilChanged
+import java.net.URI
 
 @Composable
 fun NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
@@ -72,10 +68,35 @@ fun NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
   }
 }
 
+enum class ContactType {
+  CARD, REQUEST, RECENT, CHAT_DELETED, UNLISTED
+}
+
+fun chatContactType(chat: Chat): ContactType {
+  return when (val cInfo = chat.chatInfo) {
+    is ChatInfo.ContactRequest -> ContactType.REQUEST
+    is ChatInfo.Direct -> {
+      val contact = cInfo.contact;
+
+      when {
+        contact.activeConn == null && contact.profile.contactLink != null -> ContactType.CARD
+        contact.chatDeleted -> ContactType.CHAT_DELETED
+        contact.contactStatus == ContactStatus.Active -> ContactType.RECENT
+        else -> ContactType.UNLISTED
+      }
+    }
+    else -> ContactType.UNLISTED
+  }
+}
+
+private fun filterContactTypes(c: List<Chat>, contactTypes: List<ContactType>): List<Chat> {
+  return c.filter { chat -> contactTypes.contains(chatContactType(chat)) }
+}
+
 private var lazyListState = 0 to 0
 
 @Composable
-fun NewChatSheetLayout(
+private fun NewChatSheetLayout(
   rh: RemoteHostInfo?,
   addContact: () -> Unit,
   scanPaste: () -> Unit,
@@ -89,10 +110,10 @@ fun NewChatSheetLayout(
   val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
   val baseContactTypes = listOf(ContactType.CARD, ContactType.RECENT, ContactType.REQUEST)
   val contactTypes by remember(baseContactTypes, searchText.value.text.isEmpty()) {
-    derivedStateOf { getContactTypes(baseContactTypes, searchText.value.text.isEmpty()) }
+    derivedStateOf { contactTypesSearchTargets(baseContactTypes, searchText.value.text.isEmpty()) }
   }
   val allChats by remember(chatModel.chats, contactTypes) {
-    derivedStateOf { contactChats(chatModel.chats, contactTypes) }
+    derivedStateOf { filterContactTypes(chatModel.chats, contactTypes) }
   }
   val filteredContactChats = filteredContactChats(
     showUnreadAndFavorites = showUnreadAndFavorites,
@@ -144,7 +165,7 @@ fun NewChatSheetLayout(
 
         val deletedContactTypes = listOf(ContactType.CHAT_DELETED)
         val deletedChats by remember(chatModel.chats, deletedContactTypes) {
-          derivedStateOf { contactChats(chatModel.chats, deletedContactTypes) }
+          derivedStateOf { filterContactTypes(chatModel.chats, deletedContactTypes) }
         }
         if (deletedChats.isNotEmpty()) {
           SectionView {
@@ -199,6 +220,270 @@ fun NewChatSheetLayout(
           generalGetString(MR.strings.no_filtered_contacts),
           color = MaterialTheme.colors.secondary
         )
+      }
+    }
+  }
+}
+
+@Composable
+private fun NewChatButton(icon: Painter, text: String, click: () -> Unit, textColor: Color = Color.Unspecified, iconColor: Color = MaterialTheme.colors.secondary, disabled: Boolean = false, extraPadding: Boolean = false) {
+  SectionItemView(click, disabled = disabled) {
+    Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else iconColor)
+    TextIconSpaced(extraPadding)
+    Text(text, color = if (disabled) MaterialTheme.colors.secondary else textColor)
+  }
+}
+
+@Composable
+private fun ContactsSearchBar(
+  listState: LazyListState,
+  searchText: MutableState<TextFieldValue>,
+  searchShowingSimplexLink: MutableState<Boolean>,
+  searchChatFilteredBySimplexLink: MutableState<String?>,
+  close: () -> Unit
+) {
+  var focused by remember { mutableStateOf(false) }
+
+  Row(verticalAlignment = Alignment.CenterVertically) {
+    val focusRequester = remember { FocusRequester() }
+    Icon(
+      painterResource(MR.images.ic_search),
+      contentDescription = null,
+      Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF).size(24.dp * fontSizeSqrtMultiplier),
+      tint = MaterialTheme.colors.secondary
+    )
+    SearchTextField(
+      Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
+      placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
+      alwaysVisible = true,
+      searchText = searchText,
+      trailingContent = null,
+    ) {
+      searchText.value = searchText.value.copy(it)
+    }
+    val hasText = remember { derivedStateOf { searchText.value.text.isNotEmpty() } }
+    if (hasText.value) {
+      val hideSearchOnBack: () -> Unit = { searchText.value = TextFieldValue() }
+      BackHandler(onBack = hideSearchOnBack)
+      KeyChangeEffect(chatModel.currentRemoteHost.value) {
+        hideSearchOnBack()
+      }
+    } else {
+      Row {
+        val padding = if (appPlatform.isDesktop) 0.dp else 7.dp
+        if (chatModel.chats.size > 0) {
+          ToggleFilterButton()
+        }
+        Spacer(Modifier.width(padding))
+      }
+    }
+    val focusManager = LocalFocusManager.current
+    val keyboardState = getKeyboardState()
+    LaunchedEffect(keyboardState.value) {
+      if (keyboardState.value == KeyboardState.Closed && focused) {
+        focusManager.clearFocus()
+      }
+    }
+    val view = LocalMultiplatformView()
+    LaunchedEffect(Unit) {
+      snapshotFlow { searchText.value.text }
+        .distinctUntilChanged()
+        .collect {
+          val link = strHasSingleSimplexLink(it.trim())
+          if (link != null) {
+            // if SimpleX link is pasted, show connection dialogue
+            hideKeyboard(view)
+            if (link.format is Format.SimplexLink) {
+              val linkText =
+                link.simplexLinkText(link.format.linkType, link.format.smpHosts)
+              searchText.value =
+                searchText.value.copy(linkText, selection = TextRange.Zero)
+            }
+            searchShowingSimplexLink.value = true
+            searchChatFilteredBySimplexLink.value = null
+            connect(
+              link = link.text,
+              searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+              close = close,
+              cleanup = { searchText.value = TextFieldValue() }
+            )
+          } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
+            if (it.isNotEmpty()) {
+              // if some other text is pasted, enter search mode
+              focusRequester.requestFocus()
+            } else if (listState.layoutInfo.totalItemsCount > 0) {
+              listState.scrollToItem(0)
+            }
+            searchShowingSimplexLink.value = false
+            searchChatFilteredBySimplexLink.value = null
+          }
+        }
+    }
+  }
+}
+
+@Composable
+private fun ToggleFilterButton() {
+  val pref = remember { ChatController.appPrefs.showUnreadAndFavorites }
+  IconButton(onClick = { pref.set(!pref.get()) }) {
+    val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
+    Icon(
+      painterResource(MR.images.ic_filter_list),
+      null,
+      tint = if (pref.state.value) MaterialTheme.colors.background else MaterialTheme.colors.secondary,
+      modifier = Modifier
+        .padding(3.dp)
+        .background(color = if (pref.state.value) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
+        .border(width = 1.dp, color = if (pref.state.value) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
+        .padding(3.dp)
+        .size(sp16)
+    )
+  }
+}
+
+private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<String?>, close: () -> Unit, cleanup: (() -> Unit)?) {
+  withBGApi {
+    planAndConnect(
+      chatModel.remoteHostId(),
+      URI.create(link),
+      incognito = null,
+      filterKnownContact = { searchChatFilteredBySimplexLink.value = it.id },
+      close = close,
+      cleanup = cleanup,
+    )
+  }
+}
+
+private fun filteredContactChats(
+  showUnreadAndFavorites: Boolean,
+  searchShowingSimplexLink: State<Boolean>,
+  searchChatFilteredBySimplexLink: State<String?>,
+  searchText: String,
+  contactChats: List<Chat>
+): List<Chat> {
+  val linkChatId = searchChatFilteredBySimplexLink.value
+  val s = if (searchShowingSimplexLink.value) "" else searchText.trim().lowercase()
+
+  return if (linkChatId != null) {
+    contactChats.filter { it.id == linkChatId }
+  } else {
+    contactChats.filter { chat ->
+      filterChat(
+        chat = chat,
+        searchText = s,
+        showUnreadAndFavorites = showUnreadAndFavorites
+      )
+    }
+  }
+    .sortedWith(chatsByTypeComparator)
+}
+
+private fun filterChat(chat: Chat, searchText: String, showUnreadAndFavorites: Boolean): Boolean {
+  var meetsPredicate = true;
+  val s = searchText.trim().lowercase()
+  val cInfo = chat.chatInfo
+
+  if (searchText.isNotEmpty()) {
+    meetsPredicate = viewNameContains(cInfo, s) ||
+        if (cInfo is ChatInfo.Direct) (cInfo.contact.profile.displayName.lowercase().contains(s) ||
+            cInfo.contact.fullName.lowercase().contains(s)) else false
+  }
+
+  if (showUnreadAndFavorites) {
+    meetsPredicate = meetsPredicate && (cInfo.chatSettings?.favorite ?: false)
+  }
+
+  return meetsPredicate;
+}
+
+private fun viewNameContains(cInfo: ChatInfo, s: String): Boolean =
+  cInfo.chatViewName.lowercase().contains(s.lowercase())
+
+private val chatsByTypeComparator = Comparator<Chat> { chat1, chat2 ->
+  val chat1Type = chatContactType(chat1)
+  val chat2Type = chatContactType(chat2)
+
+  when {
+    chat1Type.ordinal < chat2Type.ordinal -> -1
+    chat1Type.ordinal > chat2Type.ordinal -> 1
+
+    else -> chat2.chatInfo.chatTs.compareTo(chat1.chatInfo.chatTs)
+  }
+}
+
+private fun contactTypesSearchTargets(baseContactTypes: List<ContactType>, searchEmpty: Boolean): List<ContactType> {
+  return if (baseContactTypes.contains(ContactType.CHAT_DELETED) || searchEmpty) {
+    baseContactTypes
+  } else {
+    baseContactTypes + ContactType.CHAT_DELETED
+  }
+}
+
+@Composable
+private fun DeletedContactsView(rh: RemoteHostInfo?, close: () -> Unit) {
+  Column(
+    Modifier.fillMaxSize(),
+  ) {
+    Box(contentAlignment = Alignment.Center) {
+      val bottomPadding = DEFAULT_PADDING
+      AppBarTitle(
+        stringResource(MR.strings.deleted_chats),
+        hostDevice(rh?.remoteHostId),
+        bottomPadding = bottomPadding
+      )
+    }
+    val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
+    val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
+    val searchShowingSimplexLink = remember { mutableStateOf(false) }
+    val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
+    val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
+    val contactTypes = listOf(ContactType.CHAT_DELETED)
+    val allChats by remember(chatModel.chats, contactTypes) {
+      derivedStateOf { filterContactTypes(chatModel.chats, contactTypes) }
+    }
+    val filteredContactChats = filteredContactChats(
+      showUnreadAndFavorites = showUnreadAndFavorites,
+      searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+      searchShowingSimplexLink = searchShowingSimplexLink,
+      searchText = searchText.value.text,
+      contactChats = allChats
+    )
+
+    LazyColumn(
+      Modifier.fillMaxWidth(),
+      listState
+    ) {
+      item {
+        Divider()
+        ContactsSearchBar(
+          listState = listState,
+          searchText = searchText,
+          searchShowingSimplexLink = searchShowingSimplexLink,
+          searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+          close = close
+        )
+        Divider()
+
+        Spacer(Modifier.padding(bottom = DEFAULT_PADDING))
+      }
+
+      itemsIndexed(filteredContactChats) { index, chat ->
+        val nextChatSelected = remember(chat.id, filteredContactChats) {
+          derivedStateOf {
+            chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+          }
+        }
+        ContactListNavLinkView(chat, nextChatSelected)
+      }
+    }
+    if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
+      Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING)) {
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+          Text(
+            generalGetString(MR.strings.no_filtered_contacts),
+            color = MaterialTheme.colors.secondary
+          )
+        }
       }
     }
   }

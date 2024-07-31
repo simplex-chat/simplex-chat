@@ -10,6 +10,8 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.newchat.ContactType
+import chat.simplex.common.views.newchat.chatContactType
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
@@ -28,7 +30,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
     val showMenu = remember { mutableStateOf(false) }
     val rhId = chat.remoteHostId
     val disabled = chatModel.chatRunning.value == false || chatModel.deletedChats.value.contains(rhId to chat.chatInfo.id)
-    val contactType = getContactType(chat)
+    val contactType = chatContactType(chat)
 
     LaunchedEffect(chat.id) {
         showMenu.value = false

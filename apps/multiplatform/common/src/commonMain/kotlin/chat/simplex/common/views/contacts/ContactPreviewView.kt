@@ -13,6 +13,8 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.newchat.ContactType
+import chat.simplex.common.views.newchat.chatContactType
 import chat.simplex.res.MR
 
 @Composable
@@ -21,7 +23,7 @@ fun ContactPreviewView(
     disabled: Boolean,
 ) {
     val cInfo = chat.chatInfo
-    val contactType = getContactType(chat)
+    val contactType = chatContactType(chat)
 
     @Composable
     fun VerifiedIcon() {
