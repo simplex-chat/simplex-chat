@@ -26,7 +26,7 @@ private fun onRequestAccepted(chat: Chat) {
 }
 
 @Composable
-fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
+fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI: State<Boolean>) {
     val showMenu = remember { mutableStateOf(false) }
     val rhId = chat.remoteHostId
     val disabled = chatModel.chatRunning.value == false || chatModel.deletedChats.value.contains(rhId to chat.chatInfo.id)
@@ -85,6 +85,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                 disabled,
                 selectedChat,
                 nextChatSelected,
+                oneHandUI
             )
         }
         is ChatInfo.ContactRequest -> {
@@ -118,6 +119,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
                 disabled,
                 selectedChat,
                 nextChatSelected,
+                oneHandUI
             )
         }
         else -> {}

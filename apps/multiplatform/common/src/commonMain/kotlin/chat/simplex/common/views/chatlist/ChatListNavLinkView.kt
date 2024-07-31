@@ -857,7 +857,7 @@ expect fun ChatListNavLinkLayout(
   disabled: Boolean,
   selectedChat: State<Boolean>,
   nextChatSelected: State<Boolean>,
-  oneHandUI: State<Boolean>? = null
+  oneHandUI: State<Boolean>
 )
 
 @Preview/*(

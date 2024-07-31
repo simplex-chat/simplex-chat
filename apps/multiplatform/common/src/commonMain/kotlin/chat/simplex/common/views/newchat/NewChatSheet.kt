@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
@@ -38,8 +39,10 @@ import java.net.URI
 
 @Composable
 fun NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
+  val oneHandUI = remember { chatModel.controller.appPrefs.oneHandUI }
+
   Column(
-    Modifier.fillMaxSize(),
+    modifier = Modifier.fillMaxSize()
   ) {
     Box(contentAlignment = Alignment.Center) {
       val bottomPadding = DEFAULT_PADDING
@@ -52,19 +55,28 @@ fun NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
 
     val closeAll = { ModalManager.closeAllModalsEverywhere() }
 
-    NewChatSheetLayout(
-      addContact = {
-        ModalManager.center.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll ) }
-      },
-      scanPaste = {
-        ModalManager.center.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = true, close = closeAll) }
-      },
-      createGroup = {
-        ModalManager.center.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
-      },
-      rh = rh,
-      close = close
-    )
+    var modifier = Modifier.fillMaxSize()
+
+    if (oneHandUI.state.value) {
+      modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
+    }
+
+    Column(modifier = modifier) {
+      NewChatSheetLayout(
+        addContact = {
+          ModalManager.center.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll ) }
+        },
+        scanPaste = {
+          ModalManager.center.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = true, close = closeAll) }
+        },
+        createGroup = {
+          ModalManager.center.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
+        },
+        rh = rh,
+        close = close,
+        oneHandUI = oneHandUI
+      )
+    }
   }
 }
 
@@ -102,6 +114,7 @@ private fun NewChatSheetLayout(
   scanPaste: () -> Unit,
   createGroup: () -> Unit,
   close: () -> Unit,
+  oneHandUI: SharedPreference<Boolean>
 ) {
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
@@ -123,6 +136,12 @@ private fun NewChatSheetLayout(
     contactChats = allChats
   )
 
+  var sectionModifier = Modifier.fillMaxWidth()
+
+  if (oneHandUI.state.value) {
+    sectionModifier = sectionModifier.scale(scaleX = 1f, scaleY = -1f)
+  }
+
   LazyColumn(
     Modifier.fillMaxWidth(),
     listState
@@ -134,32 +153,35 @@ private fun NewChatSheetLayout(
         searchText = searchText,
         searchShowingSimplexLink = searchShowingSimplexLink,
         searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
-        close = close
+        close = close,
+        oneHandUI = oneHandUI
       )
       Divider()
 
       Spacer(Modifier.padding(bottom = DEFAULT_PADDING))
 
       if (searchText.value.text.isEmpty()) {
-        SectionView {
-          NewChatButton(
-            icon = painterResource(MR.images.ic_add_link),
-            text = stringResource(MR.strings.add_contact_tab),
-            click = addContact,
-            extraPadding = true
-          )
-          NewChatButton(
-            icon = painterResource(MR.images.ic_qr_code),
-            text = stringResource(MR.strings.scan_paste_link),
-            click = scanPaste,
-            extraPadding = true
-          )
-          NewChatButton(
-            icon = painterResource(MR.images.ic_group),
-            text = stringResource(MR.strings.create_group_button),
-            click = createGroup,
-            extraPadding = true
-          )
+        Row(modifier = sectionModifier) {
+          SectionView {
+            NewChatButton(
+              icon = painterResource(MR.images.ic_add_link),
+              text = stringResource(MR.strings.add_contact_tab),
+              click = addContact,
+              extraPadding = true
+            )
+            NewChatButton(
+              icon = painterResource(MR.images.ic_qr_code),
+              text = stringResource(MR.strings.scan_paste_link),
+              click = scanPaste,
+              extraPadding = true
+            )
+            NewChatButton(
+              icon = painterResource(MR.images.ic_group),
+              text = stringResource(MR.strings.create_group_button),
+              click = createGroup,
+              extraPadding = true
+            )
+          }
         }
         SectionDividerSpaced(maxBottomPadding = false)
 
@@ -168,25 +190,27 @@ private fun NewChatSheetLayout(
           derivedStateOf { filterContactTypes(chatModel.chats, deletedContactTypes) }
         }
         if (deletedChats.isNotEmpty()) {
-          SectionView {
-            SectionItemView(
-              click = {
-                ModalManager.center.showCustomModal { closeDeletedChats ->
-                  ModalView(close = closeDeletedChats) {
-                    DeletedContactsView(rh = rh, close = {
-                      ModalManager.center.closeModals()
-                    })
+          Row(modifier = sectionModifier) {
+            SectionView {
+              SectionItemView(
+                click = {
+                  ModalManager.center.showCustomModal { closeDeletedChats ->
+                    ModalView(close = closeDeletedChats) {
+                      DeletedContactsView(rh = rh, close = {
+                        ModalManager.center.closeModals()
+                      })
+                    }
                   }
                 }
+              ) {
+                Icon(
+                  painterResource(MR.images.ic_folder_open),
+                  contentDescription = stringResource(MR.strings.deleted_chats),
+                  tint = MaterialTheme.colors.secondary,
+                )
+                TextIconSpaced(extraPadding = true)
+                Text(text = stringResource(MR.strings.deleted_chats), color = MaterialTheme.colors.onBackground)
               }
-            ) {
-              Icon(
-                painterResource(MR.images.ic_folder_open),
-                contentDescription = stringResource(MR.strings.deleted_chats),
-                tint = MaterialTheme.colors.secondary,
-              )
-              TextIconSpaced(extraPadding = true)
-              Text(text = stringResource(MR.strings.deleted_chats), color = MaterialTheme.colors.onBackground)
             }
           }
           SectionDividerSpaced()
@@ -198,7 +222,7 @@ private fun NewChatSheetLayout(
       if (filteredContactChats.isNotEmpty()) {
         Text(
           stringResource(MR.strings.contact_list_header_title).uppercase(), color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
-          modifier = Modifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), fontSize = 12.sp
+          modifier = sectionModifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), fontSize = 12.sp
         )
       }
     }
@@ -209,12 +233,12 @@ private fun NewChatSheetLayout(
           chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
         }
       }
-      ContactListNavLinkView(chat, nextChatSelected)
+      ContactListNavLinkView(chat, nextChatSelected, oneHandUI.state)
     }
   }
 
   if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
-    Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING)) {
+    Column(sectionModifier.fillMaxSize().padding(DEFAULT_PADDING)) {
       Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Text(
           generalGetString(MR.strings.no_filtered_contacts),
@@ -226,7 +250,15 @@ private fun NewChatSheetLayout(
 }
 
 @Composable
-private fun NewChatButton(icon: Painter, text: String, click: () -> Unit, textColor: Color = Color.Unspecified, iconColor: Color = MaterialTheme.colors.secondary, disabled: Boolean = false, extraPadding: Boolean = false) {
+private fun NewChatButton(
+  icon: Painter,
+  text: String,
+  click: () -> Unit,
+  textColor: Color = Color.Unspecified,
+  iconColor: Color = MaterialTheme.colors.secondary,
+  disabled: Boolean = false,
+  extraPadding: Boolean = false,
+) {
   SectionItemView(click, disabled = disabled) {
     Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else iconColor)
     TextIconSpaced(extraPadding)
@@ -240,11 +272,18 @@ private fun ContactsSearchBar(
   searchText: MutableState<TextFieldValue>,
   searchShowingSimplexLink: MutableState<Boolean>,
   searchChatFilteredBySimplexLink: MutableState<String?>,
-  close: () -> Unit
+  close: () -> Unit,
+  oneHandUI: SharedPreference<Boolean>
 ) {
+  var modifier = Modifier.fillMaxWidth();
+
+  if (oneHandUI.state.value) {
+    modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
+  }
+
   var focused by remember { mutableStateOf(false) }
 
-  Row(verticalAlignment = Alignment.CenterVertically) {
+  Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
     val focusRequester = remember { FocusRequester() }
     Icon(
       painterResource(MR.images.ic_search),
@@ -432,6 +471,7 @@ private fun DeletedContactsView(rh: RemoteHostInfo?, close: () -> Unit) {
         bottomPadding = bottomPadding
       )
     }
+    val oneHandUI = remember { chatModel.controller.appPrefs.oneHandUI }
     val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
     val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
     val searchShowingSimplexLink = remember { mutableStateOf(false) }
@@ -460,7 +500,8 @@ private fun DeletedContactsView(rh: RemoteHostInfo?, close: () -> Unit) {
           searchText = searchText,
           searchShowingSimplexLink = searchShowingSimplexLink,
           searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
-          close = close
+          close = close,
+          oneHandUI = oneHandUI
         )
         Divider()
 
@@ -473,7 +514,7 @@ private fun DeletedContactsView(rh: RemoteHostInfo?, close: () -> Unit) {
             chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
           }
         }
-        ContactListNavLinkView(chat, nextChatSelected)
+        ContactListNavLinkView(chat, nextChatSelected, oneHandUI.state)
       }
     }
     if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
@@ -582,6 +623,6 @@ fun ActionButton(
 @Composable
 private fun PreviewNewChatSheet() {
   SimpleXTheme {
-    NewChatSheetLayout(rh = null, scanPaste = {}, addContact = {}, createGroup = {}, close = {})
+    NewChatSheet(rh = null, close = {})
   }
 }
