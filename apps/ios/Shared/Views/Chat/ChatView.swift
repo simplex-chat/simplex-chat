@@ -82,8 +82,8 @@ struct ChatView: View {
                 }
                 floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
             }
+            connectingText()
             if selectedChatItems == nil {
-                connectingText()
                 ComposeView(
                     chat: chat,
                     composeState: $composeState,
@@ -128,11 +128,13 @@ struct ChatView: View {
         .onAppear {
             loadChat(chat: chat)
             initChatView()
+            selectedChatItems = nil
         }
         .onChange(of: chatModel.chatId) { cId in
             showChatInfoSheet = false
             stopAudioPlayer()
             if let cId {
+                selectedChatItems = nil
                 if let c = chatModel.getChat(cId) {
                     chat = c
                 }
@@ -719,12 +721,11 @@ struct ChatView: View {
                         let prev = i == prevHidden ? prevItem : im.reversedChatItems[i + 1]
                         chatItemView(ci, nil, prev)
                         .overlay {
-                            if selectedChatItems != nil && ci.canBeDeletedForSelf {
+                            if let selected = selectedChatItems, ci.canBeDeletedForSelf {
                                 Color.clear
                                     .contentShape(Rectangle())
                                     .onTapGesture {
-                                        let items = selectedChatItems?.map { $0 } ?? []
-                                        let checked = items.contains(ci.id)
+                                        let checked = selected.contains(ci.id)
                                         selectUnselectChatItem(select: !checked, ci)
                                     }
                             }
@@ -733,12 +734,11 @@ struct ChatView: View {
                 } else {
                     chatItemView(chatItem, range, prevItem)
                     .overlay {
-                        if selectedChatItems != nil && chatItem.canBeDeletedForSelf {
+                        if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
                             Color.clear
                                 .contentShape(Rectangle())
                                 .onTapGesture {
-                                    let items = selectedChatItems?.map { $0 } ?? []
-                                    let checked = items.contains(chatItem.id)
+                                    let checked = selected.contains(chatItem.id)
                                     selectUnselectChatItem(select: !checked, chatItem)
                                 }
                         }
