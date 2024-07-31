@@ -114,13 +114,13 @@ struct ChatView: View {
         .confirmationDialog(selectedChatItems?.count == 1 ? "Delete message?" : "Delete \((selectedChatItems?.count ?? 0)) messages", isPresented: $showDeleteSelectedMessages, titleVisibility: .visible) {
             Button("Delete for me", role: .destructive) {
                 if let selected = selectedChatItems {
-                    deleteMessages(chat, selected, .cidmInternal, deletedSelectedMessages)                }
+                    deleteMessages(chat, selected, .cidmInternal, moderate: false, deletedSelectedMessages)                }
             }
             if allowToDeleteSelectedMessagesForAll {
                 Button(broadcastDeleteButtonText(chat), role: .destructive) {
                     if let selected = selectedChatItems {
                         allowToDeleteSelectedMessagesForAll = false
-                        deleteMessages(chat, selected, .cidmBroadcast, deletedSelectedMessages)
+                        deleteMessages(chat, selected, .cidmBroadcast, moderate: false, deletedSelectedMessages)
                     }
                 }
             }
@@ -611,7 +611,7 @@ struct ChatView: View {
             ),
             primaryButton: .destructive(Text("Delete")) {
                 if let selected = selectedChatItems {
-                    deleteMessages(chat, selected, .cidmBroadcast, deletedSelectedMessages)
+                    deleteMessages(chat, selected, .cidmBroadcast, moderate: true, deletedSelectedMessages)
                 }
             },
             secondaryButton: .cancel()
@@ -897,17 +897,17 @@ struct ChatView: View {
             }
                 .confirmationDialog("Delete message?", isPresented: $showDeleteMessage, titleVisibility: .visible) {
                     Button("Delete for me", role: .destructive) {
-                        deleteMessage(.cidmInternal)
+                        deleteMessage(.cidmInternal, moderate: false)
                     }
                     if let di = deletingItem, di.meta.deletable && !di.localNote {
                         Button(broadcastDeleteButtonText(chat), role: .destructive) {
-                            deleteMessage(.cidmBroadcast)
+                            deleteMessage(.cidmBroadcast, moderate: false)
                         }
                     }
                 }
                 .confirmationDialog(deleteMessagesTitle, isPresented: $showDeleteMessages, titleVisibility: .visible) {
                     Button("Delete for me", role: .destructive) {
-                        deleteMessages(chat, deletingItems)
+                        deleteMessages(chat, deletingItems, moderate: false)
                     }
                 }
                 .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
@@ -1352,7 +1352,7 @@ struct ChatView: View {
                             ),
                     primaryButton: .destructive(Text("Delete")) {
                         deletingItem = ci
-                        deleteMessage(.cidmBroadcast)
+                        deleteMessage(.cidmBroadcast, moderate: true)
                     },
                     secondaryButton: .cancel()
                 ))
@@ -1434,13 +1434,14 @@ struct ChatView: View {
             }
         }
 
-        private func deleteMessage(_ mode: CIDeleteMode) {
+        private func deleteMessage(_ mode: CIDeleteMode, moderate: Bool) {
             logger.debug("ChatView deleteMessage")
             Task {
                 logger.debug("ChatView deleteMessage: in Task")
                 do {
                     if let di = deletingItem {
                         let r = if case .cidmBroadcast = mode,
+                           moderate,
                            let (groupInfo, _) = di.memberToModerate(chat.chatInfo) {
                             try await apiDeleteMemberChatItems(
                                 groupId: groupInfo.apiId,
@@ -1496,13 +1497,14 @@ private func broadcastDeleteButtonText(_ chat: Chat) -> LocalizedStringKey {
     chat.chatInfo.featureEnabled(.fullDelete) ? "Delete for everyone" : "Mark deleted for everyone"
 }
 
-private func deleteMessages(_ chat: Chat, _ deletingItems: [Int64], _ mode: CIDeleteMode = .cidmInternal, _ onSuccess: @escaping () async -> Void = {}) {
+private func deleteMessages(_ chat: Chat, _ deletingItems: [Int64], _ mode: CIDeleteMode = .cidmInternal, moderate: Bool, _ onSuccess: @escaping () async -> Void = {}) {
     let itemIds = deletingItems
     if itemIds.count > 0 {
         let chatInfo = chat.chatInfo
         Task {
             do {
                 let deletedItems = if case .cidmBroadcast = mode,
+                    moderate,
                     case .group = chat.chatInfo {
                     try await apiDeleteMemberChatItems(
                         groupId: chatInfo.apiId,

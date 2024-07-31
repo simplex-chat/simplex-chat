@@ -94,7 +94,7 @@ struct SelectedItemsBottomToolbar: View {
                     Image(systemName: "trash")
                         .resizable()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(!deleteButtonEnabled && allButtonsDisabled ? theme.colors.secondary: .red)
+                        .foregroundColor(!deleteButtonEnabled || allButtonsDisabled ? theme.colors.secondary: .red)
                 }
                 .disabled(!deleteButtonEnabled || allButtonsDisabled)
 
@@ -105,11 +105,10 @@ struct SelectedItemsBottomToolbar: View {
                     Image(systemName: "flag")
                         .resizable()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(moderateButtonEnabled ? .red : theme.colors.secondary)
+                        .foregroundColor(!moderateButtonEnabled || allButtonsDisabled ? theme.colors.secondary : .red)
                 }
                 .disabled(!moderateButtonEnabled || allButtonsDisabled)
                 .opacity(possibleToModerate ? 1 : 0)
-                .allowsHitTesting(possibleToModerate)
 
 
                 Spacer()
@@ -119,11 +118,10 @@ struct SelectedItemsBottomToolbar: View {
                     Image(systemName: "square.and.arrow.up")
                         .resizable()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(theme.colors.primary)
+                        .foregroundColor(allButtonsDisabled ? theme.colors.secondary : theme.colors.primary)
                 }
                 .disabled(allButtonsDisabled)
                 .opacity(0)
-                .allowsHitTesting(false)
             }
             .frame(maxHeight: .infinity)
             .padding([.leading, .trailing], 12)

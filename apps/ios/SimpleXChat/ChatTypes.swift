@@ -2463,7 +2463,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
                     : nil
         case let (.group(groupInfo), .groupSnd):
             let m = groupInfo.membership
-            return m.memberRole >= .observer ? (groupInfo, nil) : nil
+            return m.memberRole >= .admin ? (groupInfo, nil) : nil
         default: return nil
         }
     }
