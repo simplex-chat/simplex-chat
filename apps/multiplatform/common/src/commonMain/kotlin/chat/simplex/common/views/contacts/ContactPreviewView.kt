@@ -87,7 +87,7 @@ fun ContactPreviewView(
         if (chat.chatInfo is ChatInfo.ContactRequest) {
             Icon(
                 painterResource(MR.images.ic_check),
-                contentDescription = generalGetString(MR.strings.contact_type_new),
+                contentDescription = null,
                 tint = MaterialTheme.colors.secondary,
                 modifier = Modifier
                     .size(17.dp)
@@ -97,7 +97,7 @@ fun ContactPreviewView(
         if (contactType == ContactType.CARD) {
             Icon(
                 painterResource(MR.images.ic_mail),
-                contentDescription = generalGetString(MR.strings.contact_type_new),
+                contentDescription = null,
                 tint = MaterialTheme.colors.secondary,
                 modifier = Modifier
                     .size(17.dp)

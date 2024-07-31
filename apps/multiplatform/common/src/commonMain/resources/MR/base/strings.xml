@@ -667,6 +667,10 @@
   <string name="invalid_qr_code">Invalid QR code</string>
   <string name="code_you_scanned_is_not_simplex_link_qr_code">The code you scanned is not a SimpleX link QR code.</string>
 
+  <string name="deleted_chats">Deleted chats</string>
+  <string name="no_filtered_contacts">No filtered contacts</string>
+  <string name="contact_list_header_title">Your contacts</string>
+
   <!-- ScanCodeView.kt -->
   <string name="scan_code">Scan code</string>
   <string name="incorrect_code">Incorrect security code!</string>
@@ -2224,10 +2228,4 @@
   <string name="download_errors">Download errors</string>
   <string name="server_address">Server address</string>
   <string name="open_server_settings_button">Open server settings</string>
-
-  <!-- ContactsView.kt -->
-  <string name="contact_type_new">New</string>
-  <string name="deleted_chats">Deleted chats</string>
-  <string name="no_filtered_contacts">No filtered contacts</string>
-  <string name="contact_list_header_title">Your contacts</string>
 </resources>
