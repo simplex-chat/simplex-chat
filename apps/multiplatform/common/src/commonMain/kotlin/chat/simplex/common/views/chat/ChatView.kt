@@ -191,7 +191,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
                       code = chatModel.controller.apiGetContactCode(chatRh, chat.chatInfo.apiId)?.second
                       preloadedCode = code
                     }
-                    ChatInfoView(chatModel, openedFromChatView = true, (chat.chatInfo as ChatInfo.Direct).contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close) {
+                    ChatInfoView(chatModel, (chat.chatInfo as ChatInfo.Direct).contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close) {
                       showSearch.value = true
                     }
                   } else if (chat?.chatInfo is ChatInfo.Group) {

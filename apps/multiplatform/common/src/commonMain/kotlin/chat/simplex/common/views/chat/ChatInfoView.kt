@@ -53,7 +53,6 @@ import java.io.File
 @Composable
 fun ChatInfoView(
   chatModel: ChatModel,
-  openedFromChatView: Boolean,
   contact: Contact,
   connectionStats: ConnectionStats?,
   customUserProfile: Profile?,
@@ -75,7 +74,6 @@ fun ChatInfoView(
     val chatRh = chat.remoteHostId
     val sendReceipts = remember(contact.id) { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) }
     ChatInfoLayout(
-      openedFromChatView = openedFromChatView,
       chat,
       contact,
       currentUser,
@@ -490,7 +488,6 @@ fun clearNoteFolderDialog(chat: Chat, close: (() -> Unit)? = null) {
 
 @Composable
 fun ChatInfoLayout(
-  openedFromChatView: Boolean,
   chat: Chat,
   contact: Contact,
   currentUser: User,
@@ -1144,7 +1141,6 @@ fun queueInfoText(info: Pair<RcvMsgInfo?, QueueInfo>): String {
 fun PreviewChatInfoLayout() {
   SimpleXTheme {
     ChatInfoLayout(
-      openedFromChatView = false,
       chat = Chat(
         remoteHostId = null,
         chatInfo = ChatInfo.Direct.sampleData,
