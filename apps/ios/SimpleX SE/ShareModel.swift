@@ -58,6 +58,10 @@ class ShareModel: ObservableObject {
     }
 
     func setup(context: NSExtensionContext) {
+        if performLAGroupDefault.get() && !allowShareExtensionGroupDefault.get() {
+            errorAlert = ErrorAlert(title: "App is locked!", message: "You can allow sharing in Privacy & Security / SimpleX Lock settings.")
+            return
+        }
         if let item = context.inputItems.first as? NSExtensionItem,
            let itemProvider = item.attachments?.first {
             self.itemProvider = itemProvider
@@ -433,12 +437,11 @@ extension NSItemProvider {
             case .url:
                 if let url = try? await loadItem(forTypeIdentifier: type.identifier) as? URL {
                     let content: SharedContent =
-//                        Option to disable previews needs to be taken into account
-//                        if let linkPreview = await getLinkPreview(for: url) {
-//                            .url(preview: linkPreview)
-//                        } else {
+                        if privacyLinkPreviewsGroupDefault.get(), let linkPreview = await getLinkPreview(for: url) {
+                            .url(preview: linkPreview)
+                        } else {
                             .text(string: url.absoluteString)
-//                        }
+                        }
                     return .success(content)
                 } else { return .failure(ErrorAlert("Error preparing message")) }
 
