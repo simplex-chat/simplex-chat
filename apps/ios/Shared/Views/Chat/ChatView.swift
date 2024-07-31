@@ -43,7 +43,7 @@ struct ChatView: View {
     @State private var showGroupLinkSheet: Bool = false
     @State private var groupLink: String?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
-    @State private var selectedChatItems: [Int64]? = nil
+    @State private var selectedChatItems: Set<Int64>? = nil
     @State private var showDeleteSelectedMessages: Bool = false
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
 
@@ -114,13 +114,13 @@ struct ChatView: View {
         .confirmationDialog(selectedChatItems?.count == 1 ? "Delete message?" : "Delete \((selectedChatItems?.count ?? 0)) messages", isPresented: $showDeleteSelectedMessages, titleVisibility: .visible) {
             Button("Delete for me", role: .destructive) {
                 if let selected = selectedChatItems {
-                    deleteMessages(chat, selected, .cidmInternal, moderate: false, deletedSelectedMessages)                }
+                    deleteMessages(chat, selected.sorted(), .cidmInternal, moderate: false, deletedSelectedMessages)                }
             }
             if allowToDeleteSelectedMessagesForAll {
                 Button(broadcastDeleteButtonText(chat), role: .destructive) {
                     if let selected = selectedChatItems {
                         allowToDeleteSelectedMessagesForAll = false
-                        deleteMessages(chat, selected, .cidmBroadcast, moderate: false, deletedSelectedMessages)
+                        deleteMessages(chat, selected.sorted(), .cidmBroadcast, moderate: false, deletedSelectedMessages)
                     }
                 }
             }
@@ -613,7 +613,7 @@ struct ChatView: View {
             ),
             primaryButton: .destructive(Text("Delete")) {
                 if let selected = selectedChatItems {
-                    deleteMessages(chat, selected, .cidmBroadcast, moderate: true, deletedSelectedMessages)
+                    deleteMessages(chat, selected.sorted(), .cidmBroadcast, moderate: true, deletedSelectedMessages)
                 }
             },
             secondaryButton: .cancel()
@@ -702,7 +702,7 @@ struct ChatView: View {
         @State private var chatItemInfo: ChatItemInfo?
         @State private var showForwardingSheet: Bool = false
 
-        @Binding var selectedChatItems: [Int64]?
+        @Binding var selectedChatItems: Set<Int64>?
 
         @State private var allowMenu: Bool = true
 
@@ -1001,9 +1001,6 @@ struct ChatView: View {
                     && !ci.isLiveDummy && !live {
                     forwardButton
                 }
-                if selectedChatItems == nil {
-                    selectButton(ci)
-                }
                 if !ci.isLiveDummy {
                     viewInfoButton(ci)
                 }
@@ -1029,30 +1026,22 @@ struct ChatView: View {
                 } else if range != nil {
                     expandButton()
                 }
-                if selectedChatItems == nil {
-                    selectButton(ci)
-                }
                 viewInfoButton(ci)
                 deleteButton(ci)
             } else if ci.isDeletedContent {
-                if selectedChatItems == nil {
-                    selectButton(ci)
-                }
                 viewInfoButton(ci)
                 deleteButton(ci)
             } else if ci.mergeCategory != nil && ((range?.count ?? 0) > 1 || revealed) {
                 if revealed { shrinkButton() } else { expandButton() }
-                if selectedChatItems == nil {
-                    selectButton(ci)
-                }
                 deleteButton(ci)
             } else if ci.showLocalDelete {
-                if selectedChatItems == nil {
-                    selectButton(ci)
-                }
                 deleteButton(ci)
             } else {
                 EmptyView()
+            }
+            if selectedChatItems == nil && ci.canBeDeletedForSelf {
+                Divider()
+                selectButton(ci)
             }
         }
 
@@ -1425,11 +1414,11 @@ struct ChatView: View {
                 itemIds.append(ci.id)
             }
             if select {
-                selectedChatItems?.append(contentsOf: itemIds)
-            } else {
-                itemIds.forEach { id in
-                    selectedChatItems?.removeAll(where: { $0 == id })
+                if let sel = selectedChatItems {
+                    selectedChatItems = sel.union(itemIds)
                 }
+            } else {
+                itemIds.forEach { selectedChatItems?.remove($0) }
             }
         }
 
@@ -1474,12 +1463,12 @@ struct ChatView: View {
         private struct SelectedChatItem: View {
             @EnvironmentObject var theme: AppTheme
             var ciId: Int64
-            @Binding var selectedChatItems: [Int64]?
+            @Binding var selectedChatItems: Set<Int64>?
             @State var checked: Bool = false
             var body: some View {
                 Image(systemName: checked ? "checkmark.circle.fill" : "circle")
                     .resizable()
-                    .foregroundColor(checked ? theme.colors.primary : theme.colors.secondary)
+                    .foregroundColor(checked ? theme.colors.primary : Color(uiColor: .tertiaryLabel))
                     .frame(width: 24, height: 24)
                     .onAppear {
                         checked = selectedChatItems?.contains(ciId) == true

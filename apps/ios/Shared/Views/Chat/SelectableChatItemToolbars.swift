@@ -12,7 +12,7 @@ import SimpleXChat
 struct SelectedItemsTopToolbar: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var theme: AppTheme
-    @Binding var selectedChatItems: [Int64]?
+    @Binding var selectedChatItems: Set<Int64>?
 
     var body: some View {
         return Text("Selected \(selectedChatItems?.count ?? 0)").font(.headline)
@@ -24,18 +24,18 @@ struct SelectedItemsTopToolbar: View {
 struct SelectedItemsBottomToolbar: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var theme: AppTheme
-    var chatItems: [ChatItem]
-    @Binding var selectedChatItems: [Int64]?
+    let chatItems: [ChatItem]
+    @Binding var selectedChatItems: Set<Int64>?
     var chatInfo: ChatInfo
     // Bool - delete for everyone is possible
     var deleteItems: (Bool) -> Void
     var moderateItems: () -> Void
     //var shareItems: () -> Void
-    @State var deleteButtonEnabled: Bool = false
-    @State var possibleToDeleteForEveryone: Bool = false
+    @State var deleteEnabled: Bool = false
+    @State var deleteForEveryoneEnabled: Bool = false
 
-    @State var possibleToModerate: Bool = false
-    @State var moderateButtonEnabled: Bool = false
+    @State var canModerate: Bool = false
+    @State var moderateEnabled: Bool = false
 
     @State var allButtonsDisabled = false
 
@@ -45,14 +45,14 @@ struct SelectedItemsBottomToolbar: View {
 
             HStack(alignment: .center) {
                 Button {
-                    deleteItems(possibleToDeleteForEveryone)
+                    deleteItems(deleteForEveryoneEnabled)
                 } label: {
                     Image(systemName: "trash")
                         .resizable()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(!deleteButtonEnabled || allButtonsDisabled ? theme.colors.secondary: .red)
+                        .foregroundColor(!deleteEnabled || allButtonsDisabled ? theme.colors.secondary: .red)
                 }
-                .disabled(!deleteButtonEnabled || allButtonsDisabled)
+                .disabled(!deleteEnabled || allButtonsDisabled)
 
                 Spacer()
                 Button {
@@ -61,10 +61,10 @@ struct SelectedItemsBottomToolbar: View {
                     Image(systemName: "flag")
                         .resizable()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(!moderateButtonEnabled || allButtonsDisabled ? theme.colors.secondary : .red)
+                        .foregroundColor(!moderateEnabled || allButtonsDisabled ? theme.colors.secondary : .red)
                 }
-                .disabled(!moderateButtonEnabled || allButtonsDisabled)
-                .opacity(possibleToModerate ? 1 : 0)
+                .disabled(!moderateEnabled || allButtonsDisabled)
+                .opacity(canModerate ? 1 : 0)
 
 
                 Spacer()
@@ -98,35 +98,25 @@ struct SelectedItemsBottomToolbar: View {
         .background(.thinMaterial)
     }
 
-    private func recheckItems(_ chatInfo: ChatInfo, _ chatItems: [ChatItem], _ selectedItems: [Int64]?) {
-        cleanUpNonExistent(chatItems, selectedItems)
-
+    private func recheckItems(_ chatInfo: ChatInfo, _ chatItems: [ChatItem], _ selectedItems: Set<Int64>?) {
         let count = selectedItems?.count ?? 0
         allButtonsDisabled = count == 0 || count > 20
-        deleteButtonEnabled = deleteButtonEnabled(chatItems, selectedItems)
-        possibleToModerate = possibleToModerate(chatInfo)
-        moderateButtonEnabled = moderateButtonEnabled(chatInfo, chatItems, selectedItems)
-    }
-
-    private func cleanUpNonExistent(_ chatItems: [ChatItem], _ selectedItems: [Int64]?) {
-        var selected = selectedItems ?? []
-        selected.removeAll(where: { selectedId in !chatItems.contains(where: { $0.id == selectedId }) })
-        if selectedChatItems != nil && selectedChatItems != selected {
-            selectedChatItems = selected
-        }
-    }
-
-    private func deleteButtonEnabled(_ chatItems: [ChatItem], _ selectedItems: [Int64]?) -> Bool {
-        guard let selected = selectedItems, selected.count > 0 else {
-            return false
-        }
-        possibleToDeleteForEveryone = true
-        return chatItems.filter { item in selected.contains(item.id) }.allSatisfy({ ci in
-            if !ci.meta.deletable || ci.localNote {
-                possibleToDeleteForEveryone = false
+        canModerate = possibleToModerate(chatInfo)
+        if let selected = selectedItems {
+            (deleteEnabled, deleteForEveryoneEnabled, moderateEnabled, _, selectedChatItems) = chatItems.reduce((true, true, true, true, [])) { (r, ci) in
+                if selected.contains(ci.id) {
+                    var (de, dee, me, onlyOwnGroupItems, sel) = r
+                    de = de && ci.canBeDeletedForSelf
+                    dee = dee && ci.meta.deletable && !ci.localNote
+                    onlyOwnGroupItems = onlyOwnGroupItems && ci.chatDir == .groupSnd
+                    me = me && !onlyOwnGroupItems && ci.content.msgContent != nil && ci.memberToModerate(chatInfo) != nil
+                    sel.insert(ci.id) // we are collecting new selected items here to account for any changes in chat items list
+                    return (de, dee, me, onlyOwnGroupItems, sel)
+                } else {
+                    return r
+                }
             }
-            return ci.canBeDeletedForSelf
-        })
+        }
     }
 
     private func possibleToModerate(_ chatInfo: ChatInfo) -> Bool {
@@ -135,19 +125,5 @@ struct SelectedItemsBottomToolbar: View {
             groupInfo.membership.memberRole >= .admin
         default: false
         }
-    }
-
-    private func moderateButtonEnabled(_ chatInfo: ChatInfo, _ chatItems: [ChatItem], _ selectedItems: [Int64]?) -> Bool {
-        guard let selected = selectedItems, selected.count > 0 else {
-            return false
-        }
-        var onlyOwnItems = true
-        let canModerate = chatItems.filter { item in selected.contains(item.id) }.allSatisfy({ ci in
-            if ci.chatDir != .groupSnd {
-                onlyOwnItems = false
-            }
-            return ci.content.msgContent != nil && ci.memberToModerate(chatInfo) != nil
-        })
-        return canModerate && !onlyOwnItems
     }
 }
