@@ -632,21 +632,41 @@ final class ChatModel: ObservableObject {
         
         func popRecentChats() {
             let m = ChatModel.shared
-            var ixs: IndexSet = []
-            var chs: [Chat] = []
+            var chs: [(Int, Chat)] = []
             var skipped: ChatId?
+            // collect chats that received updates
             for chatId in chatsToPop {
                 if m.chatId == chatId {
                     skipped = chatId
-                } else if let i = m.getChatIndex(chatId), i > 0 {
-                    ixs.insert(i)
-                    chs.append(m.chats[i])
+                } else if let i = m.getChatIndex(chatId) {
+                    // we don't exclude index 0 here, because it may still be the most recent chat
+                    chs.append((i, m.chats[i]))
                 }
             }
-            chs.sort { ch1, ch2 in ch1.chatInfo.chatTs > ch2.chatInfo.chatTs }
-            withAnimation {
-                m.chats.remove(atOffsets: ixs)
-                m.chats.insert(contentsOf: chs, at: 0)
+            
+            // sort them by timestamp in descending order
+            chs.sort { ch1, ch2 in ch1.1.chatInfo.chatTs > ch2.1.chatInfo.chatTs }
+
+            // This is optimization to avoid popping chats which position didn't change.
+            // Find the first chat that needs to be popped, starting from the bottom of the list.
+            var i = chs.count - 1
+            while i >= 0 && chs[i].0 == i {
+                i -= 1
+            }
+            if i >= 0 {
+                // collect all chats and indices that need to be popped
+                var ixs: IndexSet = []
+                var toPop: [Chat] = []
+                for j in 0...i {
+                    let (ix, ch) = chs[j]
+                    ixs.insert(ix)
+                    toPop.append(ch)
+                }
+                // pop chats
+                withAnimation {
+                    m.chats.remove(atOffsets: ixs)
+                    m.chats.insert(contentsOf: toPop, at: 0)
+                }
             }
             chatsToPop = if let skipped { [skipped] } else { [] }
         }
