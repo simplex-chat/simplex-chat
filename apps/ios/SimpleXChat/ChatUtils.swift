@@ -16,7 +16,7 @@ public protocol ChatLike {
 
 extension ChatLike {
     public func groupFeatureEnabled(_ feature: GroupFeature) -> Bool {
-        if case let .group(groupInfo) = chatInfo {
+        if case let .group(groupInfo) = self.chatInfo {
             let p = groupInfo.fullGroupPreferences
             return switch feature {
             case .timedMessages: p.timedMessages.on
