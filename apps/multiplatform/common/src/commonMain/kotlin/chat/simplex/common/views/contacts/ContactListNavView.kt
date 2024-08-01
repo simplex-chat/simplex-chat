@@ -19,7 +19,7 @@ import kotlinx.coroutines.delay
 private fun onRequestAccepted(chat: Chat) {
     val chatInfo = chat.chatInfo
     if (chatInfo is ChatInfo.Direct) {
-        ModalManager.center.closeModals()
+        ModalManager.start.closeModals()
         if (chatInfo.contact.sndReady) {
             openLoadedChat(chat, chatModel)
         }
@@ -55,7 +55,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHand
                         ContactType.RECENT -> {
                             withApi {
                                 openChat(rhId, chat.chatInfo, chatModel)
-                                ModalManager.center.closeModals()
+                                ModalManager.start.closeModals()
                             }
                         }
                         ContactType.CHAT_DELETED -> {
@@ -64,7 +64,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHand
                                 withChats {
                                     updateContact(rhId, chat.chatInfo.contact.copy(chatDeleted = false))
                                 }
-                                ModalManager.center.closeModals()
+                                ModalManager.start.closeModals()
                             }
                         }
                         ContactType.CARD -> {
@@ -72,7 +72,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHand
                                 chatModel,
                                 rhId,
                                 chat.chatInfo.contact,
-                                close = { ModalManager.center.closeModals() },
+                                close = { ModalManager.start.closeModals() },
                                 openChat = true
                             )
                         }

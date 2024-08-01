@@ -55,7 +55,7 @@ fun NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
       }
     }
 
-    val closeAll = { ModalManager.closeAllModalsEverywhere() }
+    val closeAll = { ModalManager.start.closeModals() }
 
     var modifier = Modifier.fillMaxSize()
 
@@ -66,13 +66,13 @@ fun NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
     Column(modifier = modifier) {
       NewChatSheetLayout(
         addContact = {
-          ModalManager.center.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll ) }
+          ModalManager.start.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll ) }
         },
         scanPaste = {
-          ModalManager.center.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll) }
+          ModalManager.start.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll) }
         },
         createGroup = {
-          ModalManager.center.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
+          ModalManager.start.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
         },
         rh = rh,
         close = close,
@@ -196,7 +196,7 @@ private fun NewChatSheetLayout(
             SectionView {
               SectionItemView(
                 click = {
-                  ModalManager.center.showCustomModal { closeDeletedChats ->
+                  ModalManager.start.showCustomModal { closeDeletedChats ->
                     ModalView(
                       close = closeDeletedChats,
                       closeOnTop = !oneHandUI.state.value,
@@ -204,7 +204,7 @@ private fun NewChatSheetLayout(
                       endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) }
                     ) {
                       DeletedContactsView(rh = rh, close = {
-                        ModalManager.center.closeModals()
+                        ModalManager.start.closeModals()
                       })
                     }
                   }

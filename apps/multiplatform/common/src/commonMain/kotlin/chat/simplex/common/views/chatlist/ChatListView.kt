@@ -44,8 +44,8 @@ import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
 private fun showNewChatSheet(oneHandUI: State<Boolean>, barTitle: String) {
-  ModalManager.center.closeModals()
-  ModalManager.center.showModalCloseable(
+  ModalManager.start.closeModals()
+  ModalManager.start.showModalCloseable(
     closeOnTop = !oneHandUI.value,
     closeBarTitle = if (oneHandUI.value) barTitle else null,
     endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) }
