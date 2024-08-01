@@ -84,6 +84,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
+import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..))
 import Simplex.Messaging.Agent.Protocol (ACorrId, ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
@@ -327,7 +328,7 @@ createUserContactLink db User {userId} agentConnId cReq subMode =
       "INSERT INTO user_contact_links (user_id, conn_req_contact, created_at, updated_at) VALUES (?,?,?,?)"
       (userId, cReq, currentTs, currentTs)
     userContactLinkId <- insertedRowId db
-    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
+    void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId ConnNew initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
 getUserAddressConnections :: DB.Connection -> VersionRangeChat -> User -> ExceptT StoreError IO [Connection]
 getUserAddressConnections db vr User {userId} = do
@@ -523,10 +524,9 @@ getProtocolServers db User {userId} =
       (userId, decodeLatin1 $ strEncode protocol)
   where
     protocol = protocolTypeI @p
-    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Int) -> ServerCfg p
-    toServerCfg (host, port, keyHash, auth_, preset, tested, enabledInt) =
+    toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Bool) -> ServerCfg p
+    toServerCfg (host, port, keyHash, auth_, preset, tested, enabled) =
       let server = ProtoServerWithAuth (ProtocolServer protocol host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
-          enabled = toServerEnabled enabledInt
        in ServerCfg {server, preset, tested, enabled}
 
 overwriteProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> [ServerCfg p] -> ExceptT StoreError IO ()
@@ -543,7 +543,7 @@ overwriteProtocolServers db User {userId} servers =
             (protocol, host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
           VALUES (?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((protocol, host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_) :. (preset, tested, fromServerEnabled enabled, userId, currentTs, currentTs))
+        ((protocol, host, port, keyHash, safeDecodeUtf8 . unBasicAuth <$> auth_) :. (preset, tested, enabled, userId, currentTs, currentTs))
     pure $ Right ()
   where
     protocol = decodeLatin1 $ strEncode $ protocolTypeI @p

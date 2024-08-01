@@ -44,6 +44,7 @@ struct SendMessageView: View {
 
     var body: some View {
         ZStack {
+            let composeShape = RoundedRectangle(cornerSize: CGSize(width: 20, height: 20))
             HStack(alignment: .bottom) {
                 ZStack(alignment: .leading) {
                     if case .voicePreview = composeState.preview {
@@ -66,7 +67,6 @@ struct SendMessageView: View {
                         .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-
                 if progressByTimeout {
                     ProgressView()
                         .scaleEffect(1.4)
@@ -84,10 +84,9 @@ struct SendMessageView: View {
                 }
             }
             .padding(.vertical, 1)
-            .overlay(
-            RoundedRectangle(cornerSize: CGSize(width: 20, height: 20))
-                .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
-            )
+            .background(theme.colors.background)
+            .clipShape(composeShape)
+            .overlay(composeShape.strokeBorder(.secondary, lineWidth: 0.5).opacity(0.7))
         }
         .onChange(of: composeState.message, perform: { text in updateFont(text) })
         .onChange(of: composeState.inProgress) { inProgress in
@@ -258,6 +257,9 @@ struct SendMessageView: View {
         var body: some View {
             Button(action: {}) {
                 Image(systemName: "mic.fill")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 20, height: 20)
                     .foregroundColor(theme.colors.primary)
             }
             .disabled(disabled)
@@ -311,6 +313,9 @@ struct SendMessageView: View {
             }
         } label: {
             Image(systemName: "mic")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 20, height: 20)
                 .foregroundColor(theme.colors.secondary)
         }
         .disabled(composeState.inProgress)

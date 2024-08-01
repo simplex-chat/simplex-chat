@@ -1,6 +1,8 @@
 package chat.simplex.common.views.chat.item
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.HoverInteraction
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -17,8 +19,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_MAX_IMAGE_WIDTH
+import chat.simplex.common.views.chat.chatViewScrollState
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.runBlocking
@@ -29,8 +33,10 @@ fun CIImageView(
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
+  smallView: Boolean,
   receiveFile: (Long) -> Unit
 ) {
+  val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
   @Composable
   fun progressIndicator() {
     CircularProgressIndicator(
@@ -55,7 +61,7 @@ fun CIImageView(
     if (file != null) {
       Box(
         Modifier
-          .padding(8.dp)
+          .padding(if (smallView) 0.dp else 8.dp)
           .size(20.dp),
         contentAlignment = Alignment.Center
       ) {
@@ -104,8 +110,9 @@ fun CIImageView(
           onLongClick = { showMenu.value = true },
           onClick = onClick
         )
-        .onRightClick { showMenu.value = true },
-      contentScale = ContentScale.FillWidth,
+        .onRightClick { showMenu.value = true }
+        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+      contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
     )
   }
 
@@ -127,8 +134,9 @@ fun CIImageView(
             onLongClick = { showMenu.value = true },
             onClick = onClick
           )
-          .onRightClick { showMenu.value = true },
-        contentScale = ContentScale.FillWidth,
+          .onRightClick { showMenu.value = true }
+          .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
+        contentScale = if (smallView) ContentScale.Crop else ContentScale.FillWidth,
       )
     } else {
       Box(Modifier
@@ -137,7 +145,8 @@ fun CIImageView(
           onLongClick = { showMenu.value = true },
           onClick = {}
         )
-        .onRightClick { showMenu.value = true },
+        .onRightClick { showMenu.value = true }
+        .privacyBlur(!smallView, blurred, scrollState = chatViewScrollState.collectAsState(), onLongClick = { showMenu.value = true }),
         contentAlignment = Alignment.Center
       ) {
         imageView(base64ToBitmap(image), onClick = {
@@ -173,7 +182,8 @@ fun CIImageView(
   }
 
   Box(
-    Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID),
+    Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID)
+      .desktopModifyBlurredState(!smallView, blurred, showMenu),
     contentAlignment = Alignment.TopEnd
   ) {
     val res: MutableState<Triple<ImageBitmap, ByteArray, String>?> = remember {
@@ -191,7 +201,7 @@ fun CIImageView(
       }
     } else {
       KeyChangeEffect(file) {
-        if (res.value == null) {
+        if (res.value == null || res.value!!.third != getLoadedFilePath(file)) {
           res.value = imageAndFilePath(file)
         }
       }
@@ -255,9 +265,19 @@ fun CIImageView(
         }
       })
     }
-    loadingIndicator()
+    // Do not show download icon when the view is blurred
+    if (!smallView && (!showDownloadButton(file?.fileStatus) || !blurred.value)) {
+      loadingIndicator()
+    } else if (smallView && file?.showStatusIconInSmallView == true) {
+      Box(Modifier.align(Alignment.Center)) {
+        loadingIndicator()
+      }
+    }
   }
 }
+
+private fun showDownloadButton(status: CIFileStatus?): Boolean =
+  status is CIFileStatus.RcvInvitation || status is CIFileStatus.RcvAborted
 
 @Composable
 expect fun SimpleAndAnimatedImageView(

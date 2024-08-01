@@ -43,6 +43,21 @@ private func addTermItem(_ items: inout [TerminalItem], _ item: TerminalItem) {
     items.append(item)
 }
 
+class ItemsModel: ObservableObject {
+    static let shared = ItemsModel()
+    private let publisher = ObservableObjectPublisher()
+    private var bag = Set<AnyCancellable>()
+    var reversedChatItems: [ChatItem] = [] {
+        willSet { publisher.send() }
+    }
+    init() {
+        publisher
+            .throttle(for: 0.25, scheduler: DispatchQueue.main, latest: true)
+            .sink { self.objectWillChange.send() }
+            .store(in: &bag)
+    }
+}
+
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
@@ -69,10 +84,11 @@ final class ChatModel: ObservableObject {
     @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
     // current chat
     @Published var chatId: String?
-    @Published var reversedChatItems: [ChatItem] = []
     var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
     @Published var chatToTop: String?
     @Published var groupMembers: [GMember] = []
+    @Published var groupMembersIndexes: Dictionary<Int64, Int> = [:] // groupMemberId to index in groupMembers list
+    @Published var membersLoaded = false
     // items in the terminal view
     @Published var showingTerminal = false
     @Published var terminalItems: [TerminalItem] = []
@@ -114,6 +130,8 @@ final class ChatModel: ObservableObject {
     var filesToDelete: Set<URL> = []
 
     static let shared = ChatModel()
+
+    let im = ItemsModel.shared
 
     static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
 
@@ -180,8 +198,30 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func populateGroupMembersIndexes() {
+        groupMembersIndexes.removeAll()
+        for (i, member) in groupMembers.enumerated() {
+            groupMembersIndexes[member.groupMemberId] = i
+        }
+    }
+
     func getGroupMember(_ groupMemberId: Int64) -> GMember? {
-        groupMembers.first { $0.groupMemberId == groupMemberId }
+        if let i = groupMembersIndexes[groupMemberId] {
+            return groupMembers[i]
+        }
+        return nil
+    }
+
+    func loadGroupMembers(_ groupInfo: GroupInfo, updateView: @escaping () -> Void = {}) async {
+        let groupMembers = await apiListMembers(groupInfo.groupId)
+        await MainActor.run {
+            if chatId == groupInfo.id {
+                self.groupMembers = groupMembers.map { GMember.init($0) }
+                self.populateGroupMembersIndexes()
+                self.membersLoaded = true
+                updateView()
+            }
+        }
     }
 
     private func getChatIndex(_ id: String) -> Int? {
@@ -319,7 +359,7 @@ final class ChatModel: ObservableObject {
         var res: Bool
         if let chat = getChat(cInfo.id) {
             if let pItem = chat.chatItems.last {
-                if pItem.id == cItem.id || (chatId == cInfo.id && reversedChatItems.first(where: { $0.id == cItem.id }) == nil) {
+                if pItem.id == cItem.id || (chatId == cInfo.id && im.reversedChatItems.first(where: { $0.id == cItem.id }) == nil) {
                     chat.chatItems = [cItem]
                 }
             } else {
@@ -329,6 +369,9 @@ final class ChatModel: ObservableObject {
         } else {
             addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
             res = true
+        }
+        if cItem.isDeletedContent || cItem.meta.itemDeleted != nil {
+            VoiceItemState.stopVoiceInChatView(cInfo, cItem)
         }
         // update current chat
         return chatId == cInfo.id ? _upsertChatItem(cInfo, cItem) : res
@@ -346,7 +389,7 @@ final class ChatModel: ObservableObject {
                 if let status = chatItemStatuses.removeValue(forKey: ci.id), case .sndNew = ci.meta.itemStatus {
                     ci.meta.itemStatus = status
                 }
-                reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
+                im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
             }
             return true
         }
@@ -370,17 +413,17 @@ final class ChatModel: ObservableObject {
     }
 
     private func _updateChatItem(at i: Int, with cItem: ChatItem) {
-        reversedChatItems[i] = cItem
-        reversedChatItems[i].viewTimestamp = .now
+        im.reversedChatItems[i] = cItem
+        im.reversedChatItems[i].viewTimestamp = .now
     }
 
     func getChatItemIndex(_ cItem: ChatItem) -> Int? {
-        reversedChatItems.firstIndex(where: { $0.id == cItem.id })
+        im.reversedChatItems.firstIndex(where: { $0.id == cItem.id })
     }
 
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
-        if cItem.isRcvNew {
-            decreaseUnreadCounter(cInfo)
+        if cItem.isRcvNew, let chatIndex = getChatIndex(cInfo.id) {
+            decreaseUnreadCounter(chatIndex)
         }
         // update previews
         if let chat = getChat(cInfo.id) {
@@ -392,23 +435,24 @@ final class ChatModel: ObservableObject {
         if chatId == cInfo.id {
             if let i = getChatItemIndex(cItem) {
                 _ = withAnimation {
-                    self.reversedChatItems.remove(at: i)
+                    im.reversedChatItems.remove(at: i)
                 }
             }
         }
+        VoiceItemState.stopVoiceInChatView(cInfo, cItem)
     }
 
     func nextChatItemData<T>(_ chatItemId: Int64, previous: Bool, map: @escaping (ChatItem) -> T?) -> T? {
-        guard var i = reversedChatItems.firstIndex(where: { $0.id == chatItemId }) else { return nil }
+        guard var i = im.reversedChatItems.firstIndex(where: { $0.id == chatItemId }) else { return nil }
         if previous {
-            while i < reversedChatItems.count - 1 {
+            while i < im.reversedChatItems.count - 1 {
                 i += 1
-                if let res = map(reversedChatItems[i]) { return res }
+                if let res = map(im.reversedChatItems[i]) { return res }
             }
         } else {
             while i > 0 {
                 i -= 1
-                if let res = map(reversedChatItems[i]) { return res }
+                if let res = map(im.reversedChatItems[i]) { return res }
             }
         }
         return nil
@@ -439,7 +483,7 @@ final class ChatModel: ObservableObject {
     func addLiveDummy(_ chatInfo: ChatInfo) -> ChatItem {
         let cItem = ChatItem.liveDummy(chatInfo.chatType)
         withAnimation {
-            reversedChatItems.insert(cItem, at: 0)
+            im.reversedChatItems.insert(cItem, at: 0)
         }
         return cItem
     }
@@ -447,15 +491,15 @@ final class ChatModel: ObservableObject {
     func removeLiveDummy(animated: Bool = true) {
         if hasLiveDummy {
             if animated {
-                withAnimation { _ = reversedChatItems.removeFirst() }
+                withAnimation { _ = im.reversedChatItems.removeFirst() }
             } else {
-                _ = reversedChatItems.removeFirst()
+                _ = im.reversedChatItems.removeFirst()
             }
         }
     }
 
     private var hasLiveDummy: Bool {
-        reversedChatItems.first?.isLiveDummy == true
+        im.reversedChatItems.first?.isLiveDummy == true
     }
 
     func markChatItemsRead(_ cInfo: ChatInfo) {
@@ -472,7 +516,7 @@ final class ChatModel: ObservableObject {
 
     private func markCurrentChatRead(fromIndex i: Int = 0) {
         var j = i
-        while j < reversedChatItems.count {
+        while j < im.reversedChatItems.count {
             markChatItemRead_(j)
             j += 1
         }
@@ -486,7 +530,7 @@ final class ChatModel: ObservableObject {
                     var unreadBelow = 0
                     var j = i - 1
                     while j >= 0 {
-                        if case .rcvNew = self.reversedChatItems[j].meta.itemStatus {
+                        if case .rcvNew = self.im.reversedChatItems[j].meta.itemStatus {
                             unreadBelow += 1
                         }
                         j -= 1
@@ -521,37 +565,66 @@ final class ChatModel: ObservableObject {
         // clear current chat
         if chatId == cInfo.id {
             chatItemStatuses = [:]
-            reversedChatItems = []
+            im.reversedChatItems = []
         }
     }
 
-    func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) {
-        if chatId == cInfo.id, let i = getChatItemIndex(cItem) {
-            if reversedChatItems[i].isRcvNew {
-                // update current chat
-                markChatItemRead_(i)
-                // update preview
-                decreaseUnreadCounter(cInfo)
+    func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
+        if chatId == cInfo.id,
+           let itemIndex = getChatItemIndex(cItem),
+           let chatIndex = getChatIndex(cInfo.id),
+           im.reversedChatItems[itemIndex].isRcvNew {
+            await MainActor.run {
+                withTransaction(Transaction()) {
+                    // update current chat
+                    markChatItemRead_(itemIndex)
+                    // update preview
+                    unreadCollector.decreaseUnreadCounter(chatIndex)
+                }
             }
+        }
+    }
+
+    private let unreadCollector = UnreadCollector()
+
+    class UnreadCollector {
+        private let subject = PassthroughSubject<Int, Never>()
+        private var bag = Set<AnyCancellable>()
+        private var dictionary = Dictionary<Int, Int>()
+
+        init() {
+            subject
+                .debounce(for: 1, scheduler: DispatchQueue.main)
+                .sink { _ in
+                    self.dictionary.forEach { key, value in
+                        ChatModel.shared.decreaseUnreadCounter(key, by: value)
+                    }
+                    self.dictionary = Dictionary<Int, Int>()
+                }
+                .store(in: &bag)
+        }
+        
+        // Only call from main thread
+        func decreaseUnreadCounter(_ chatIndex: Int) {
+            dictionary[chatIndex] = (dictionary[chatIndex] ?? 0) + 1
+            subject.send(chatIndex)
         }
     }
 
     private func markChatItemRead_(_ i: Int) {
-        let meta = reversedChatItems[i].meta
+        let meta = im.reversedChatItems[i].meta
         if case .rcvNew = meta.itemStatus {
-            reversedChatItems[i].meta.itemStatus = .rcvRead
-            reversedChatItems[i].viewTimestamp = .now
+            im.reversedChatItems[i].meta.itemStatus = .rcvRead
+            im.reversedChatItems[i].viewTimestamp = .now
             if meta.itemLive != true, let ttl = meta.itemTimed?.ttl {
-                reversedChatItems[i].meta.itemTimed?.deleteAt = .now + TimeInterval(ttl)
+                im.reversedChatItems[i].meta.itemTimed?.deleteAt = .now + TimeInterval(ttl)
             }
         }
     }
 
-    func decreaseUnreadCounter(_ cInfo: ChatInfo) {
-        if let i = getChatIndex(cInfo.id) {
-            chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount - 1
-            decreaseUnreadCounter(user: currentUser!)
-        }
+    func decreaseUnreadCounter(_ chatIndex: Int, by count: Int = 1) {
+        chats[chatIndex].chatStats.unreadCount = chats[chatIndex].chatStats.unreadCount - count
+        decreaseUnreadCounter(user: currentUser!, by: count)
     }
 
     func increaseUnreadCounter(user: any UserLike) {
@@ -581,8 +654,8 @@ final class ChatModel: ObservableObject {
         var ns: [String] = []
         if let ciCategory = chatItem.mergeCategory,
            var i = getChatItemIndex(chatItem) {
-            while i < reversedChatItems.count {
-                let ci = reversedChatItems[i]
+            while i < im.reversedChatItems.count {
+                let ci = im.reversedChatItems[i]
                 if ci.mergeCategory != ciCategory { break }
                 if let m = ci.memberConnected {
                     ns.append(m.displayName)
@@ -597,7 +670,7 @@ final class ChatModel: ObservableObject {
     // returns the index of the passed item and the next item (it has smaller index)
     func getNextChatItem(_ ci: ChatItem) -> (Int?, ChatItem?) {
         if let i = getChatItemIndex(ci) {
-            (i, i > 0 ? reversedChatItems[i - 1] : nil)
+            (i, i > 0 ? im.reversedChatItems[i - 1] : nil)
         } else {
             (nil, nil)
         }
@@ -607,10 +680,10 @@ final class ChatModel: ObservableObject {
     // and the previous visible item with another merge category
     func getPrevShownChatItem(_ ciIndex: Int?, _ ciCategory: CIMergeCategory?) -> (Int?, ChatItem?) {
         guard var i = ciIndex else { return (nil, nil) }
-        let fst = reversedChatItems.count - 1
+        let fst = im.reversedChatItems.count - 1
         while i < fst {
             i = i + 1
-            let ci = reversedChatItems[i]
+            let ci = im.reversedChatItems[i]
             if ciCategory == nil || ciCategory != ci.mergeCategory {
                 return (i - 1, ci)
             }
@@ -623,7 +696,7 @@ final class ChatModel: ObservableObject {
         var prevMember: GroupMember? = nil
         var memberIds: Set<Int64> = []
         for i in range {
-            if case let .groupRcv(m) = reversedChatItems[i].chatDir {
+            if case let .groupRcv(m) = im.reversedChatItems[i].chatDir {
                 if prevMember == nil && m.groupMemberId != member.groupMemberId { prevMember = m }
                 memberIds.insert(m.groupMemberId)
             }
@@ -667,14 +740,17 @@ final class ChatModel: ObservableObject {
         }
         // update current chat
         if chatId == groupInfo.id {
-            if let i = groupMembers.firstIndex(where: { $0.groupMemberId == member.groupMemberId }) {
+            if let i = groupMembersIndexes[member.groupMemberId] {
                 withAnimation(.default) {
                     self.groupMembers[i].wrapped = member
                     self.groupMembers[i].created = Date.now
                 }
                 return false
             } else {
-                withAnimation { groupMembers.append(GMember(member)) }
+                withAnimation {
+                    groupMembers.append(GMember(member))
+                    groupMembersIndexes[member.groupMemberId] = groupMembers.count - 1
+                }
                 return true
             }
         } else {
@@ -695,9 +771,9 @@ final class ChatModel: ObservableObject {
         var i = 0
         var totalBelow = 0
         var unreadBelow = 0
-        while i < reversedChatItems.count - 1 && !itemsInView.contains(reversedChatItems[i].viewId) {
+        while i < im.reversedChatItems.count - 1 && !itemsInView.contains(im.reversedChatItems[i].viewId) {
             totalBelow += 1
-            if reversedChatItems[i].isRcvNew {
+            if im.reversedChatItems[i].isRcvNew {
                 unreadBelow += 1
             }
             i += 1
@@ -706,12 +782,12 @@ final class ChatModel: ObservableObject {
     }
 
     func topItemInView(itemsInView: Set<String>) -> ChatItem? {
-        let maxIx = reversedChatItems.count - 1
+        let maxIx = im.reversedChatItems.count - 1
         var i = 0
-        let inView = { itemsInView.contains(self.reversedChatItems[$0].viewId) }
+        let inView = { itemsInView.contains(self.im.reversedChatItems[$0].viewId) }
         while i < maxIx && !inView(i) { i += 1 }
         while i < maxIx && inView(i) { i += 1 }
-        return reversedChatItems[min(i - 1, maxIx)]
+        return im.reversedChatItems[min(i - 1, maxIx)]
     }
 
     func setContactNetworkStatus(_ contact: Contact, _ status: NetworkStatus) {
@@ -744,7 +820,7 @@ struct UnreadChatItemCounts: Equatable {
     var unreadBelow: Int
 }
 
-final class Chat: ObservableObject, Identifiable {
+final class Chat: ObservableObject, Identifiable, ChatLike {
     @Published var chatInfo: ChatInfo
     @Published var chatItems: [ChatItem]
     @Published var chatStats: ChatStats

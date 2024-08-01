@@ -17,6 +17,16 @@ struct SomeAlert: Identifiable {
     var id: String
 }
 
+struct SomeActionSheet: Identifiable {
+    var actionSheet: ActionSheet
+    var id: String
+}
+
+struct SomeSheet<Content: View>: Identifiable {
+    @ViewBuilder var content: Content
+    var id: String
+}
+
 private enum NewChatViewAlert: Identifiable {
     case planAndConnectAlert(alert: PlanAndConnectAlert)
     case newChatSomeAlert(alert: SomeAlert)

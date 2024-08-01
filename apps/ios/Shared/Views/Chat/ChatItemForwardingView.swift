@@ -22,7 +22,7 @@ struct ChatItemForwardingView: View {
     @FocusState private var searchFocused
     @State private var alert: SomeAlert?
     @State private var hasSimplexLink_: Bool?
-    private let chatsToForwardTo = filterChatsToForwardTo()
+    private let chatsToForwardTo = filterChatsToForwardTo(chats: ChatModel.shared.chats)
 
     var body: some View {
         NavigationView {
@@ -64,22 +64,6 @@ struct ChatItemForwardingView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .modifier(ThemedBackground())
             }
-        }
-    }
-
-    private func foundChat(_ chat: Chat, _ searchStr: String) -> Bool {
-        let cInfo = chat.chatInfo
-        return switch cInfo {
-        case let .direct(contact):
-            viewNameContains(cInfo, searchStr) ||
-            contact.profile.displayName.localizedLowercase.contains(searchStr) ||
-            contact.fullName.localizedLowercase.contains(searchStr)
-        default:
-            viewNameContains(cInfo, searchStr)
-        }
-
-        func viewNameContains(_ cInfo: ChatInfo, _ s: String) -> Bool {
-            cInfo.chatViewName.localizedLowercase.contains(s)
         }
     }
 
@@ -162,27 +146,6 @@ struct ChatItemForwardingView: View {
     }
 }
 
-private func filterChatsToForwardTo() -> [Chat] {
-    var filteredChats = ChatModel.shared.chats.filter { c in
-        c.chatInfo.chatType != .local && canForwardToChat(c)
-    }
-    if let privateNotes = ChatModel.shared.chats.first(where: { $0.chatInfo.chatType == .local }) {
-        filteredChats.insert(privateNotes, at: 0)
-    }
-    return filteredChats
-}
-
-private func canForwardToChat(_ chat: Chat) -> Bool {
-    switch chat.chatInfo {
-    case let .direct(contact): contact.sendMsgEnabled && !contact.nextSendGrpInv
-    case let .group(groupInfo): groupInfo.sendMsgEnabled
-    case let .local(noteFolder): noteFolder.sendMsgEnabled
-    case .contactRequest: false
-    case .contactConnection: false
-    case .invalidJSON: false
-    }
-}
-
 #Preview {
     ChatItemForwardingView(
         ci: ChatItem.getSample(1, .directSnd, .now, "hello"),
@@ -190,3 +153,4 @@ private func canForwardToChat(_ chat: Chat) -> Bool {
         composeState: Binding.constant(ComposeState(message: "hello"))
     ).environmentObject(CurrentColors.toAppTheme())
 }
+

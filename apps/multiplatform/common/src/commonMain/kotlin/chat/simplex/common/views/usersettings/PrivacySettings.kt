@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.res.MR
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.ProfileNameField
 import chat.simplex.common.views.helpers.*
@@ -31,7 +32,10 @@ import chat.simplex.common.views.isValidDisplayName
 import chat.simplex.common.views.localauth.SetAppPasscodeView
 import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
+import kotlin.math.min
+import kotlin.math.roundToInt
 
 enum class LAMode {
   SYSTEM,
@@ -95,6 +99,9 @@ fun PrivacySettingsView(
         withBGApi { chatModel.controller.apiSetEncryptLocalFiles(enable) }
       })
       SettingsPreferenceItem(painterResource(MR.images.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
+      BlurRadiusOptions(remember { appPrefs.privacyMediaBlurRadius.state }) {
+        appPrefs.privacyMediaBlurRadius.set(it)
+      }
       SettingsPreferenceItem(painterResource(MR.images.ic_security), stringResource(MR.strings.protect_ip_address), chatModel.controller.appPrefs.privacyAskToApproveRelays)
     }
     SectionCustomFooter {
@@ -115,14 +122,16 @@ fun PrivacySettingsView(
           chatModel.currentUser.value = currentUser.copy(sendRcptsContacts = enable)
           if (clearOverrides) {
             // For loop here is to prevent ConcurrentModificationException that happens with forEach
-            for (i in 0 until chatModel.chats.size) {
-              val chat = chatModel.chats[i]
-              if (chat.chatInfo is ChatInfo.Direct) {
-                var contact = chat.chatInfo.contact
-                val sendRcpts = contact.chatSettings.sendRcpts
-                if (sendRcpts != null && sendRcpts != enable) {
-                  contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
-                  chatModel.updateContact(currentUser.remoteHostId, contact)
+            withChats {
+              for (i in 0 until chats.size) {
+                val chat = chats[i]
+                if (chat.chatInfo is ChatInfo.Direct) {
+                  var contact = chat.chatInfo.contact
+                  val sendRcpts = contact.chatSettings.sendRcpts
+                  if (sendRcpts != null && sendRcpts != enable) {
+                    contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
+                    updateContact(currentUser.remoteHostId, contact)
+                  }
                 }
               }
             }
@@ -137,15 +146,17 @@ fun PrivacySettingsView(
           chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
           chatModel.currentUser.value = currentUser.copy(sendRcptsSmallGroups = enable)
           if (clearOverrides) {
-            // For loop here is to prevent ConcurrentModificationException that happens with forEach
-            for (i in 0 until chatModel.chats.size) {
-              val chat = chatModel.chats[i]
-              if (chat.chatInfo is ChatInfo.Group) {
-                var groupInfo = chat.chatInfo.groupInfo
-                val sendRcpts = groupInfo.chatSettings.sendRcpts
-                if (sendRcpts != null && sendRcpts != enable) {
-                  groupInfo = groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(sendRcpts = null))
-                  chatModel.updateGroup(currentUser.remoteHostId, groupInfo)
+            withChats {
+              // For loop here is to prevent ConcurrentModificationException that happens with forEach
+              for (i in 0 until chats.size) {
+                val chat = chats[i]
+                if (chat.chatInfo is ChatInfo.Group) {
+                  var groupInfo = chat.chatInfo.groupInfo
+                  val sendRcpts = groupInfo.chatSettings.sendRcpts
+                  if (sendRcpts != null && sendRcpts != enable) {
+                    groupInfo = groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(sendRcpts = null))
+                    updateGroup(currentUser.remoteHostId, groupInfo)
+                  }
                 }
               }
             }
@@ -158,7 +169,7 @@ fun PrivacySettingsView(
         DeliveryReceiptsSection(
           currentUser = currentUser,
           setOrAskSendReceiptsContacts = { enable ->
-            val contactReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
+            val contactReceiptsOverrides = chatModel.chats.value.fold(0) { count, chat ->
               if (chat.chatInfo is ChatInfo.Direct) {
                 val sendRcpts = chat.chatInfo.contact.chatSettings.sendRcpts
                 count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
@@ -173,7 +184,7 @@ fun PrivacySettingsView(
             }
           },
           setOrAskSendReceiptsGroups = { enable ->
-            val groupReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
+            val groupReceiptsOverrides = chatModel.chats.value.fold(0) { count, chat ->
               if (chat.chatInfo is ChatInfo.Group) {
                 val sendRcpts = chat.chatInfo.groupInfo.chatSettings.sendRcpts
                 count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
@@ -213,6 +224,30 @@ private fun SimpleXLinkOptions(simplexLinkModeState: State<SimplexLinkMode>, onS
     simplexLinkModeState,
     icon = null,
     enabled = remember { mutableStateOf(true) },
+    onSelected = onSelected
+  )
+}
+
+@Composable
+private fun BlurRadiusOptions(state: State<Int>, onSelected: (Int) -> Unit) {
+  val choices = listOf(0, 12, 24, 48)
+  val pickerValues = choices + if (choices.contains(state.value)) emptyList() else listOf(state.value)
+  val values = remember {
+    pickerValues.map {
+      when (it) {
+        0 -> it to generalGetString(MR.strings.privacy_media_blur_radius_off)
+        12 -> it to generalGetString(MR.strings.privacy_media_blur_radius_soft)
+        24 -> it to generalGetString(MR.strings.privacy_media_blur_radius_medium)
+        48 -> it to generalGetString(MR.strings.privacy_media_blur_radius_strong)
+        else -> it to "$it"
+      }
+    }
+  }
+  ExposedDropDownSettingRow(
+    generalGetString(MR.strings.privacy_media_blur_radius),
+    values,
+    state,
+    icon = painterResource(MR.images.ic_blur_on),
     onSelected = onSelected
   )
 }

@@ -10,35 +10,6 @@ import SwiftUI
 import LinkPresentation
 import SimpleXChat
 
-func getLinkPreview(url: URL, cb: @escaping (LinkPreview?) -> Void) {
-    logger.debug("getLinkMetadata: fetching URL preview")
-    LPMetadataProvider().startFetchingMetadata(for: url){ metadata, error in
-        if let e = error {
-            logger.error("Error retrieving link metadata: \(e.localizedDescription)")
-        }
-        if let metadata = metadata,
-           let imageProvider = metadata.imageProvider,
-           imageProvider.canLoadObject(ofClass: UIImage.self) {
-            imageProvider.loadObject(ofClass: UIImage.self){ object, error in
-                var linkPreview: LinkPreview? = nil
-                if let error = error {
-                    logger.error("Couldn't load image preview from link metadata with error: \(error.localizedDescription)")
-                } else {
-                    if let image = object as? UIImage,
-                       let resized = resizeImageToStrSize(image, maxDataSize: 14000),
-                       let title = metadata.title,
-                       let uri = metadata.originalURL {
-                        linkPreview = LinkPreview(uri: uri, title: title, image: resized)
-                    }
-                }
-                cb(linkPreview)
-            }
-        } else {
-            cb(nil)
-        }
-    }
-}
-
 struct ComposeLinkView: View {
     @EnvironmentObject var theme: AppTheme
     let linkPreview: LinkPreview?
@@ -63,14 +34,13 @@ struct ComposeLinkView: View {
         .padding(.vertical, 1)
         .padding(.trailing, 12)
         .background(theme.appColors.sentMessage)
+        .frame(minHeight: 54)
         .frame(maxWidth: .infinity)
-        .padding(.top, 8)
     }
 
     private func linkPreviewView(_ linkPreview: LinkPreview) -> some View {
         HStack(alignment: .center, spacing: 8) {
-            if let data = Data(base64Encoded: dropImagePrefix(linkPreview.image)),
-               let uiImage = UIImage(data: data) {
+            if let uiImage = UIImage(base64Encoded: linkPreview.image) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fit)

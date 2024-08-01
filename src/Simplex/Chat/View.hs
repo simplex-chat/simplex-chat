@@ -52,17 +52,17 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
-import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..))
+import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..), ServerCfg (..))
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
-import Simplex.Messaging.Client (SMPProxyFallback, SMPProxyMode (..))
+import Simplex.Messaging.Client (SMPProxyFallback, SMPProxyMode (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, ProtoServerWithAuth, ProtocolServer (..), ProtocolTypeI, SProtocolType (..))
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, ProtocolServer (..), ProtocolTypeI, SProtocolType (..))
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
@@ -127,7 +127,10 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRChatItemStatusUpdated u ci -> ttyUser u $ viewChatItemStatusUpdated ci ts tz testView showReceipts
   CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewItemUpdate chat item liveItems ts tz
   CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
-  CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> ttyUser u $ unmuted u chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
+  CRChatItemsDeleted u deletions byUser timed -> case deletions of
+    [ChatItemDeletion (AChatItem _ _ chat deletedItem) toItem] ->
+      ttyUser u $ unmuted u chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
+    deletions' -> ttyUser u [sShow (length deletions') <> " messages deleted"]
   CRChatItemReaction u added (ACIReaction _ _ chat reaction) -> ttyUser u $ unmutedReaction u chat reaction $ viewItemReaction showReactions chat reaction added ts tz
   CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent u mc s f t -> ttyUser u $ viewSentBroadcast mc s f ts tz t
@@ -176,7 +179,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
   CRContactDeletedByContact u c -> ttyUser u [ttyFullContact c <> " deleted contact with you"]
   CRChatCleared u chatInfo -> ttyUser u $ viewChatCleared chatInfo
-  CRAcceptingContactRequest u c -> ttyUser u [ttyFullContact c <> ": accepting contact request..."]
+  CRAcceptingContactRequest u c -> ttyUser u $ viewAcceptingContactRequest c
   CRContactAlreadyExists u c -> ttyUser u [ttyFullContact c <> ": contact already exists"]
   CRContactRequestAlreadyAccepted u c -> ttyUser u [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CRUserContactLinkCreated u cReq -> ttyUser u $ connReqContact_ "Your new chat address is created!" cReq
@@ -231,6 +234,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRStandaloneFileInfo info_ -> maybe ["no file information in URI"] (\j -> [viewJSON j]) info_
   CRContactConnecting u _ -> ttyUser u []
   CRContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
+  CRContactSndReady u ct -> ttyUser u [ttyFullContact ct <> ": you can send messages to contact"]
   CRContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
   CRSubscriptionEnd u acEntity ->
     let Connection {connId} = entityConnection acEntity
@@ -365,6 +369,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       "chat entity locks: " <> viewJSON chatEntityLocks,
       "agent locks: " <> viewJSON agentLocks
     ]
+  CRAgentSubsTotal u subsTotal _ -> ttyUser u ["total subscriptions: " <> sShow subsTotal]
   CRAgentServersSummary u serversSummary -> ttyUser u ["agent servers summary: " <> viewJSON serversSummary]
   CRAgentSubs {activeSubs, pendingSubs, removedSubs} ->
     [plain $ "Subscriptions: active = " <> show (sum activeSubs) <> ", pending = " <> show (sum pendingSubs) <> ", removed = " <> show (sum $ M.map length removedSubs)]
@@ -406,7 +411,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRAppSettings as -> ["app settings: " <> viewJSON as]
   CRTimedAction _ _ -> []
-  CRCustomChatResponse u r -> ttyUser' u $ [plain r]
+  CRCustomChatResponse u r -> ttyUser' u $ map plain $ T.lines r
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
     ttyUser user@User {showNtfs, activeUser} ss
@@ -963,6 +968,11 @@ viewSentInvitation incognitoProfile testView =
         message = ["connection request sent incognito!"]
     Nothing -> ["connection request sent!"]
 
+viewAcceptingContactRequest :: Contact -> [StyledString]
+viewAcceptingContactRequest ct
+  | contactReady ct = [ttyFullContact ct <> ": accepting contact request, you can send messages to contact"]
+  | otherwise = [ttyFullContact ct <> ": accepting contact request..."]
+
 viewReceivedContactRequest :: ContactName -> Profile -> [StyledString]
 viewReceivedContactRequest c Profile {fullName} =
   [ ttyFullName c fullName <> " wants to connect to you!",
@@ -1183,8 +1193,8 @@ viewUserServers (AUPS UserProtoServers {serverProtocol = p, protoServers, preset
     pName = protocolName p
     customServers =
       if null protoServers
-        then ("no " <> pName <> " servers saved, using presets: ") : viewServers id presetServers
-        else viewServers (\ServerCfg {server} -> server) protoServers
+        then ("no " <> pName <> " servers saved, using presets: ") : viewServers presetServers
+        else viewServers protoServers
 
 protocolName :: ProtocolTypeI p => SProtocolType p -> StyledString
 protocolName = plain . map toUpper . T.unpack . decodeLatin1 . strEncode
@@ -1217,11 +1227,11 @@ viewChatItemTTL = \case
     deletedAfter ttlStr = ["old messages are set to be deleted after: " <> ttlStr]
 
 viewNetworkConfig :: NetworkConfig -> [StyledString]
-viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout, smpProxyMode, smpProxyFallback} =
-  [ plain $ maybe "direct network connection" (("using SOCKS5 proxy " <>) . show) socksProxy,
+viewNetworkConfig NetworkConfig {socksProxy, socksMode, tcpTimeout, smpProxyMode, smpProxyFallback} =
+  [ plain $ maybe "direct network connection" ((\sp -> "using SOCKS5 proxy " <> sp <> if socksMode == SMOnion then " for onion servers ONLY." else " for ALL servers.") . show) socksProxy,
     "TCP timeout: " <> sShow tcpTimeout,
     plain $ smpProxyModeStr smpProxyMode smpProxyFallback,
-    "use " <> highlight' "/network socks=<on/off/[ipv4]:port>[ timeout=<seconds>][ smp-proxy=always/unknown/unprotected/never][ smp-proxy-fallback=no/protected/yes]" <> " to change settings"
+    "use " <> highlight' "/network socks=<on/off/[ipv4]:port>[ socks-mode=always/onion][ smp-proxy=always/unknown/unprotected/never][ smp-proxy-fallback=no/protected/yes][ timeout=<seconds>]" <> " to change settings"
   ]
 
 smpProxyModeStr :: SMPProxyMode -> SMPProxyFallback -> String
@@ -1281,8 +1291,8 @@ viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =
   ["receiving messages via: " <> viewRcvQueuesInfo rcvQueuesInfo | not $ null rcvQueuesInfo]
     <> ["sending messages via: " <> viewSndQueuesInfo sndQueuesInfo | not $ null sndQueuesInfo]
 
-viewServers :: ProtocolTypeI p => (a -> ProtoServerWithAuth p) -> NonEmpty a -> [StyledString]
-viewServers f = map (plain . B.unpack . strEncode . f) . L.toList
+viewServers :: ProtocolTypeI p => NonEmpty (ServerCfg p) -> [StyledString]
+viewServers = map (plain . B.unpack . strEncode . (\ServerCfg {server} -> server)) . L.toList
 
 viewRcvQueuesInfo :: [RcvQueueInfo] -> StyledString
 viewRcvQueuesInfo = plain . intercalate ", " . map showQueueInfo

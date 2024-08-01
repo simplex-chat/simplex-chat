@@ -80,6 +80,7 @@ fun MainScreen() {
       laUnavailableInstructionAlert()
     }
   }
+  platform.desktopShowAppUpdateNotice()
   LaunchedEffect(chatModel.clearOverlays.value) {
     if (chatModel.clearOverlays.value) {
       ModalManager.closeAllModalsEverywhere()

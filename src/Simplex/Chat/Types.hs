@@ -53,7 +53,6 @@ import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
-import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
@@ -1378,7 +1377,7 @@ data ConnStatus
     ConnRequested
   | -- | initiating party accepted connection with agent LET command (to be renamed to ACPT) (allowConnection)
     ConnAccepted
-  | -- | connection can be sent messages to (after joining party received INFO notification)
+  | -- | connection can be sent messages to (after joining party received INFO notification, or after securing snd queue on join)
     ConnSndReady
   | -- | connection is ready for both parties to send and receive messages
     ConnReady
@@ -1589,9 +1588,9 @@ commandExpectedResponse = \case
   CFCreateConnGrpInv -> t INV_
   CFCreateConnFileInvDirect -> t INV_
   CFCreateConnFileInvGroup -> t INV_
-  CFJoinConn -> t OK_
+  CFJoinConn -> t JOINED_
   CFAllowConn -> t OK_
-  CFAcceptContact -> t OK_
+  CFAcceptContact -> t JOINED_
   CFAckMessage -> t OK_
   CFDeleteConn -> t OK_
   where
@@ -1627,46 +1626,6 @@ data NoteFolder = NoteFolder
   deriving (Eq, Show)
 
 type NoteFolderId = Int64
-
-data ServerCfg p = ServerCfg
-  { server :: ProtoServerWithAuth p,
-    preset :: Bool,
-    tested :: Maybe Bool,
-    enabled :: ServerEnabled
-  }
-  deriving (Show)
-
-data ServerEnabled
-  = SEDisabled
-  | SEEnabled
-  | -- server is marked as known, but it's not in the list of configured servers;
-    -- e.g., it may be added via an unknown server dialogue and user didn't manually configure it,
-    -- meaning server wasn't tested (or at least such option wasn't presented in UI)
-    -- and it may be inoperable for user due to server password
-    SEKnown
-  deriving (Eq, Show)
-
-pattern DBSEDisabled :: Int
-pattern DBSEDisabled = 0
-
-pattern DBSEEnabled :: Int
-pattern DBSEEnabled = 1
-
-pattern DBSEKnown :: Int
-pattern DBSEKnown = 2
-
-toServerEnabled :: Int -> ServerEnabled
-toServerEnabled = \case
-  DBSEDisabled -> SEDisabled
-  DBSEEnabled -> SEEnabled
-  DBSEKnown -> SEKnown
-  _ -> SEDisabled
-
-fromServerEnabled :: ServerEnabled -> Int
-fromServerEnabled = \case
-  SEDisabled -> DBSEDisabled
-  SEEnabled -> DBSEEnabled
-  SEKnown -> DBSEKnown
 
 data ChatVersion
 
@@ -1795,12 +1754,3 @@ $(JQ.deriveJSON defaultJSON ''Contact)
 $(JQ.deriveJSON defaultJSON ''ContactRef)
 
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
-
-$(JQ.deriveJSON (enumJSON $ dropPrefix "SE") ''ServerEnabled)
-
-instance ProtocolTypeI p => ToJSON (ServerCfg p) where
-  toEncoding = $(JQ.mkToEncoding defaultJSON ''ServerCfg)
-  toJSON = $(JQ.mkToJSON defaultJSON ''ServerCfg)
-
-instance ProtocolTypeI p => FromJSON (ServerCfg p) where
-  parseJSON = $(JQ.mkParseJSON defaultJSON ''ServerCfg)

@@ -120,11 +120,6 @@
         <target>%@ ได้รับการตรวจสอบแล้ว</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ servers" xml:space="preserve">
-        <source>%@ servers</source>
-        <target>%@ เซิร์ฟเวอร์</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="%@ uploaded" xml:space="preserve">
         <source>%@ uploaded</source>
         <note>No comment provided by engineer.</note>
@@ -559,6 +554,10 @@
         <source>Acknowledgement errors</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Active connections" xml:space="preserve">
+        <source>Active connections</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve">
         <source>Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</source>
         <target>เพิ่มที่อยู่ลงในโปรไฟล์ของคุณ เพื่อให้ผู้ติดต่อของคุณสามารถแชร์กับผู้อื่นได้ การอัปเดตโปรไฟล์จะถูกส่งไปยังผู้ติดต่อของคุณ</target>
@@ -578,14 +577,14 @@
         <target>เพิ่มโปรไฟล์</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add server" xml:space="preserve">
+        <source>Add server</source>
+        <target>เพิ่มเซิร์ฟเวอร์</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Add servers by scanning QR codes." xml:space="preserve">
         <source>Add servers by scanning QR codes.</source>
         <target>เพิ่มเซิร์ฟเวอร์โดยการสแกนรหัสคิวอาร์โค้ด</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Add server…" xml:space="preserve">
-        <source>Add server…</source>
-        <target>เพิ่มเซิร์ฟเวอร์…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">
@@ -675,8 +674,8 @@
         <source>All new messages from %@ will be hidden!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All users" xml:space="preserve">
-        <source>All users</source>
+      <trans-unit id="All profiles" xml:space="preserve">
+        <source>All profiles</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
@@ -1006,6 +1005,10 @@
         <source>Blocked by admin</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Blur media" xml:space="preserve">
+        <source>Blur media</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
         <source>Both you and your contact can add message reactions.</source>
         <target>ทั้งคุณและผู้ติดต่อของคุณสามารถเพิ่มปฏิกิริยาของข้อความได้</target>
@@ -1290,6 +1293,10 @@
         <target>กำหนดค่าเซิร์ฟเวอร์ ICE</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Configured %@ servers" xml:space="preserve">
+        <source>Configured %@ servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Confirm" xml:space="preserve">
         <source>Confirm</source>
         <target>ยืนยัน</target>
@@ -1428,6 +1435,10 @@ This is your own one-time link!</source>
         <target>การเชื่อมต่อผิดพลาด (AUTH)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connection notifications" xml:space="preserve">
+        <source>Connection notifications</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connection request sent!" xml:space="preserve">
         <source>Connection request sent!</source>
         <target>ส่งคําขอเชื่อมต่อแล้ว!</target>
@@ -1448,10 +1459,6 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Connections" xml:space="preserve">
         <source>Connections</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Connections subscribed" xml:space="preserve">
-        <source>Connections subscribed</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact allows" xml:space="preserve">
@@ -1618,8 +1625,8 @@ This is your own one-time link!</source>
         <target>รหัสผ่านปัจจุบัน…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Current user" xml:space="preserve">
-        <source>Current user</source>
+      <trans-unit id="Current profile" xml:space="preserve">
+        <source>Current profile</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
@@ -1993,9 +2000,17 @@ This cannot be undone!</source>
         <source>Desktop devices</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve">
+        <source>Destination server address of %@ is incompatible with forwarding server %@ settings.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Destination server error: %@" xml:space="preserve">
         <source>Destination server error: %@</source>
         <note>snd error text</note>
+      </trans-unit>
+      <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve">
+        <source>Destination server version of %@ is incompatible with forwarding server %@.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Detailed statistics" xml:space="preserve">
         <source>Detailed statistics</source>
@@ -2058,6 +2073,10 @@ This cannot be undone!</source>
       <trans-unit id="Disable for all" xml:space="preserve">
         <source>Disable for all</source>
         <target>ปิดการใช้งานสำหรับทุกคน</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Disabled" xml:space="preserve">
+        <source>Disabled</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disappearing message" xml:space="preserve">
@@ -2270,6 +2289,10 @@ This cannot be undone!</source>
         <target>เปิดใช้งานรหัสผ่านแบบทําลายตัวเอง</target>
         <note>set passcode view</note>
       </trans-unit>
+      <trans-unit id="Enabled" xml:space="preserve">
+        <source>Enabled</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enabled for" xml:space="preserve">
         <source>Enabled for</source>
         <note>No comment provided by engineer.</note>
@@ -2428,6 +2451,10 @@ This cannot be undone!</source>
       <trans-unit id="Error changing setting" xml:space="preserve">
         <source>Error changing setting</source>
         <target>เกิดข้อผิดพลาดในการเปลี่ยนการตั้งค่า</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve">
+        <source>Error connecting to forwarding server %@. Please try later.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error creating address" xml:space="preserve">
@@ -2902,6 +2929,18 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Forwarded from" xml:space="preserve">
         <source>Forwarded from</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve">
+        <source>Forwarding server %@ failed to connect to destination server %@. Please try later.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Forwarding server address is incompatible with network settings: %@." xml:space="preserve">
+        <source>Forwarding server address is incompatible with network settings: %@.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Forwarding server version is incompatible with network settings: %@." xml:space="preserve">
+        <source>Forwarding server version is incompatible with network settings: %@.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarding server: %@&#10;Destination server error: %@" xml:space="preserve">
@@ -3682,10 +3721,18 @@ This is your link for group %@!</source>
         <target>สูงสุด 30 วินาที รับทันที</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Medium" xml:space="preserve">
+        <source>Medium</source>
+        <note>blur media</note>
+      </trans-unit>
       <trans-unit id="Member" xml:space="preserve">
         <source>Member</source>
         <target>สมาชิก</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Member inactive" xml:space="preserve">
+        <source>Member inactive</source>
+        <note>item status text</note>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
         <source>Member role will be changed to "%@". All group members will be notified.</source>
@@ -3725,6 +3772,14 @@ This is your link for group %@!</source>
         <target>ร่างข้อความ</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Message forwarded" xml:space="preserve">
+        <source>Message forwarded</source>
+        <note>item status text</note>
+      </trans-unit>
+      <trans-unit id="Message may be delivered later if member becomes active." xml:space="preserve">
+        <source>Message may be delivered later if member becomes active.</source>
+        <note>item status description</note>
+      </trans-unit>
       <trans-unit id="Message queue info" xml:space="preserve">
         <source>Message queue info</source>
         <note>No comment provided by engineer.</note>
@@ -3742,6 +3797,10 @@ This is your link for group %@!</source>
       <trans-unit id="Message reactions are prohibited in this group." xml:space="preserve">
         <source>Message reactions are prohibited in this group.</source>
         <target>ปฏิกิริยาบนข้อความเป็นสิ่งต้องห้ามในกลุ่มนี้</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Message reception" xml:space="preserve">
+        <source>Message reception</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message routing fallback" xml:space="preserve">
@@ -3763,10 +3822,6 @@ This is your link for group %@!</source>
       <trans-unit id="Message status: %@" xml:space="preserve">
         <source>Message status: %@</source>
         <note>copied message info</note>
-      </trans-unit>
-      <trans-unit id="Message subscriptions" xml:space="preserve">
-        <source>Message subscriptions</source>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message text" xml:space="preserve">
         <source>Message text</source>
@@ -4017,6 +4072,10 @@ This is your link for group %@!</source>
         <target>ไม่มีโทเค็นอุปกรณ์!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="No direct connection yet, message is forwarded by admin." xml:space="preserve">
+        <source>No direct connection yet, message is forwarded by admin.</source>
+        <note>item status description</note>
+      </trans-unit>
       <trans-unit id="No filtered chats" xml:space="preserve">
         <source>No filtered chats</source>
         <target>ไม่มีการกรองการแชท</target>
@@ -4080,7 +4139,7 @@ This is your link for group %@!</source>
       <trans-unit id="Off" xml:space="preserve">
         <source>Off</source>
         <target>ปิด</target>
-        <note>No comment provided by engineer.</note>
+        <note>blur media</note>
       </trans-unit>
       <trans-unit id="Ok" xml:space="preserve">
         <source>Ok</source>
@@ -4250,6 +4309,10 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Other" xml:space="preserve">
         <source>Other</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Other %@ servers" xml:space="preserve">
+        <source>Other %@ servers</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -4473,6 +4536,10 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Private routing" xml:space="preserve">
         <source>Private routing</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Private routing error" xml:space="preserve">
+        <source>Private routing error</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
@@ -5347,6 +5414,10 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Server address is incompatible with network settings.</source>
         <note>srv error text.</note>
       </trans-unit>
+      <trans-unit id="Server address is incompatible with network settings: %@." xml:space="preserve">
+        <source>Server address is incompatible with network settings: %@.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
         <source>Server requires authorization to create queues, check password</source>
         <target>เซิร์ฟเวอร์ต้องการการอนุญาตในการสร้างคิว โปรดตรวจสอบรหัสผ่าน</target>
@@ -5369,6 +5440,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Server version is incompatible with network settings." xml:space="preserve">
         <source>Server version is incompatible with network settings.</source>
         <note>srv error text</note>
+      </trans-unit>
+      <trans-unit id="Server version is incompatible with your app: %@." xml:space="preserve">
+        <source>Server version is incompatible with your app: %@.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Servers" xml:space="preserve">
         <source>Servers</source>
@@ -5500,6 +5575,10 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Show message status</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Show percentage" xml:space="preserve">
+        <source>Show percentage</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
         <source>Show preview</source>
         <target>แสดงตัวอย่าง</target>
@@ -5608,6 +5687,10 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Small groups (max 20)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Soft" xml:space="preserve">
+        <source>Soft</source>
+        <note>blur media</note>
+      </trans-unit>
       <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve">
         <source>Some non-fatal errors occurred during import - you may see Chat console for more details.</source>
         <target>ข้อผิดพลาดที่ไม่ร้ายแรงบางอย่างเกิดขึ้นระหว่างการนำเข้า - คุณอาจดูรายละเอียดเพิ่มเติมได้ที่คอนโซล Chat</target>
@@ -5702,6 +5785,10 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Stopping chat</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Strong" xml:space="preserve">
+        <source>Strong</source>
+        <note>blur media</note>
+      </trans-unit>
       <trans-unit id="Submit" xml:space="preserve">
         <source>Submit</source>
         <target>ส่ง</target>
@@ -5713,10 +5800,6 @@ Enable in *Network &amp; servers* settings.</source>
       </trans-unit>
       <trans-unit id="Subscription errors" xml:space="preserve">
         <source>Subscription errors</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Subscription percentage" xml:space="preserve">
-        <source>Subscription percentage</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Subscriptions ignored" xml:space="preserve">
@@ -6715,8 +6798,8 @@ Repeat join request?</source>
         <source>You can make it visible to your SimpleX contacts via Settings.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now send messages to %@" xml:space="preserve">
-        <source>You can now send messages to %@</source>
+      <trans-unit id="You can now chat with %@" xml:space="preserve">
+        <source>You can now chat with %@</source>
         <target>ตอนนี้คุณสามารถส่งข้อความถึง %@</target>
         <note>notification body</note>
       </trans-unit>
@@ -7107,7 +7190,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="blocked by admin" xml:space="preserve">
         <source>blocked by admin</source>
-        <note>blocked chat item</note>
+        <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
         <source>bold</source>
@@ -7428,6 +7511,10 @@ SimpleX servers cannot see your profile.</source>
       <trans-unit id="iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." xml:space="preserve">
         <source>iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications.</source>
         <target>iOS Keychain จะใช้เพื่อจัดเก็บรหัสผ่านอย่างปลอดภัยหลังจากที่คุณรีสตาร์ทแอปหรือเปลี่ยนรหัสผ่าน ซึ่งจะช่วยให้รับการแจ้งเตือนแบบทันทีได้</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="inactive" xml:space="preserve">
+        <source>inactive</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="incognito via contact address link" xml:space="preserve">
@@ -7957,6 +8044,156 @@ last received msg: %2$@</source>
         <source>Copyright © 2022 SimpleX Chat. All rights reserved.</source>
         <target>ลิขสิทธิ์ © 2022 SimpleX Chat สงวนลิขสิทธิ์</target>
         <note>Copyright (human-readable)</note>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="SimpleX SE/en.lproj/InfoPlist.strings" source-language="en" target-language="th" datatype="plaintext">
+    <header>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
+    </header>
+    <body>
+      <trans-unit id="CFBundleDisplayName" xml:space="preserve">
+        <source>SimpleX SE</source>
+        <note>Bundle display name</note>
+      </trans-unit>
+      <trans-unit id="CFBundleName" xml:space="preserve">
+        <source>SimpleX SE</source>
+        <note>Bundle name</note>
+      </trans-unit>
+      <trans-unit id="NSHumanReadableCopyright" xml:space="preserve">
+        <source>Copyright © 2024 SimpleX Chat. All rights reserved.</source>
+        <note>Copyright (human-readable)</note>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="SimpleX SE/en.lproj/Localizable.strings" source-language="en" target-language="th" datatype="plaintext">
+    <header>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
+    </header>
+    <body>
+      <trans-unit id="%@" xml:space="preserve">
+        <source>%@</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
+        <source>Cannot access keychain to save database password</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Comment" xml:space="preserve">
+        <source>Comment</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
+        <source>Currently maximum supported file size is %@.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Database downgrade required" xml:space="preserve">
+        <source>Database downgrade required</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Database error" xml:space="preserve">
+        <source>Database error</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
+        <source>Database passphrase is different from saved in the keychain.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Database upgrade required" xml:space="preserve">
+        <source>Database upgrade required</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Dismiss Sheet" xml:space="preserve">
+        <source>Dismiss Sheet</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Encrypted database" xml:space="preserve">
+        <source>Encrypted database</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error preparing file" xml:space="preserve">
+        <source>Error preparing file</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error preparing message" xml:space="preserve">
+        <source>Error preparing message</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error: %@" xml:space="preserve">
+        <source>Error: %@</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="File error" xml:space="preserve">
+        <source>File error</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Incompatible database version" xml:space="preserve">
+        <source>Incompatible database version</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Invalid migration confirmation" xml:space="preserve">
+        <source>Invalid migration confirmation</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Keep Trying" xml:space="preserve">
+        <source>Keep Trying</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Keychain error" xml:space="preserve">
+        <source>Keychain error</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Large file!" xml:space="preserve">
+        <source>Large file!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No active profile" xml:space="preserve">
+        <source>No active profile</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="No network connection" xml:space="preserve">
+        <source>No network connection</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Ok" xml:space="preserve">
+        <source>Ok</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Open the app to downgrade the database." xml:space="preserve">
+        <source>Open the app to downgrade the database.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Open the app to upgrade the database." xml:space="preserve">
+        <source>Open the app to upgrade the database.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Please create a profile in the SimpleX app" xml:space="preserve">
+        <source>Please create a profile in the SimpleX app</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sending File" xml:space="preserve">
+        <source>Sending File</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Share" xml:space="preserve">
+        <source>Share</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sharing is not supported when passphrase is not stored in KeyChain." xml:space="preserve">
+        <source>Sharing is not supported when passphrase is not stored in KeyChain.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unknown database error: %@" xml:space="preserve">
+        <source>Unknown database error: %@</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unsupported format" xml:space="preserve">
+        <source>Unsupported format</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Wrong database passphrase" xml:space="preserve">
+        <source>Wrong database passphrase</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
   </file>

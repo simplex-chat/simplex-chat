@@ -122,7 +122,7 @@
     <string name="chat_item_ttl_week">1 semana</string>
     <string name="accept_contact_button">Aceitar</string>
     <string name="callstatus_accepted">aceitar chamada</string>
-    <string name="smp_servers_add">Adicionar servidor…</string>
+    <string name="smp_servers_add">Adicionar servidor</string>
     <string name="accept">Aceitar</string>
     <string name="accept_connection_request__question">Aceitar pedido de ligação\?</string>
     <string name="accept_contact_incognito_button">Aceitar modo anónimo</string>

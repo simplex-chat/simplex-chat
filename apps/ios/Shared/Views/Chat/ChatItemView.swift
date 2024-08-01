@@ -16,28 +16,20 @@ struct ChatItemView: View {
     var maxWidth: CGFloat = .infinity
     @Binding var revealed: Bool
     @Binding var allowMenu: Bool
-    @Binding var audioPlayer: AudioPlayer?
-    @Binding var playbackState: VoiceMessagePlaybackState
-    @Binding var playbackTime: TimeInterval?
+
     init(
         chat: Chat,
         chatItem: ChatItem,
         showMember: Bool = false,
         maxWidth: CGFloat = .infinity,
         revealed: Binding<Bool>,
-        allowMenu: Binding<Bool> = .constant(false),
-        audioPlayer: Binding<AudioPlayer?> = .constant(nil),
-        playbackState: Binding<VoiceMessagePlaybackState> = .constant(.noPlayback),
-        playbackTime: Binding<TimeInterval?> = .constant(nil)
+        allowMenu: Binding<Bool> = .constant(false)
     ) {
         self.chat = chat
         self.chatItem = chatItem
         self.maxWidth = maxWidth
         _revealed = revealed
         _allowMenu = allowMenu
-        _audioPlayer = audioPlayer
-        _playbackState = playbackState
-        _playbackTime = playbackTime
     }
 
     var body: some View {
@@ -48,7 +40,7 @@ struct ChatItemView: View {
             if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
                 EmojiItemView(chat: chat, chatItem: ci)
             } else if ci.content.text.isEmpty, case let .voice(_, duration) = ci.content.msgContent {
-                CIVoiceView(chat: chat, chatItem: ci, recordingFile: ci.file, duration: duration, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime, allowMenu: $allowMenu)
+                CIVoiceView(chat: chat, chatItem: ci, recordingFile: ci.file, duration: duration, allowMenu: $allowMenu)
             } else if ci.content.msgContent == nil {
                 ChatItemContentView(chat: chat, chatItem: chatItem, revealed: $revealed, msgContentView: { Text(ci.text) }) // msgContent is unreachable branch in this case
             } else {
@@ -68,9 +60,7 @@ struct ChatItemView: View {
                 default: nil
                 }
             }
-            .map { dropImagePrefix($0) }
-            .flatMap { Data(base64Encoded: $0) }
-            .flatMap { UIImage(data: $0) }
+            .flatMap { UIImage(base64Encoded: $0) }
         let adjustedMaxWidth = {
             if let preview, preview.size.width <= preview.size.height {
                 maxWidth * 0.75
@@ -86,10 +76,7 @@ struct ChatItemView: View {
             maxWidth: maxWidth,
             imgWidth: adjustedMaxWidth,
             videoWidth: adjustedMaxWidth,
-            allowMenu: $allowMenu,
-            audioPlayer: $audioPlayer,
-            playbackState: $playbackState,
-            playbackTime: $playbackTime
+            allowMenu: $allowMenu
         )
     }
 }

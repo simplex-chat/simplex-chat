@@ -530,6 +530,12 @@ val desktopDensityScaleMultiplier: Float
   @Composable get() = if (appPlatform.isDesktop) remember { appPrefs.densityScale.state }.value else 1f
 
 @Composable
+fun TextUnit.toDp(): Dp {
+  check(type == TextUnitType.Sp) { "Only Sp can convert to Px" }
+  return Dp(value * LocalDensity.current.fontScale)
+}
+
+@Composable
 fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenGone: () -> Unit) {
   DisposableEffect(Unit) {
     always()

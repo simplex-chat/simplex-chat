@@ -12,14 +12,15 @@ import SimpleXChat
 struct CILinkView: View {
     @EnvironmentObject var theme: AppTheme
     let linkPreview: LinkPreview
+    @State private var blurred: Bool = UserDefaults.standard.integer(forKey: DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS) > 0
 
     var body: some View {
         VStack(alignment: .center, spacing: 6) {
-            if let data = Data(base64Encoded: dropImagePrefix(linkPreview.image)),
-               let uiImage = UIImage(data: data) {
+            if let uiImage = UIImage(base64Encoded: linkPreview.image) {
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFit()
+                    .modifier(PrivacyBlur(blurred: $blurred))
             }
             VStack(alignment: .leading, spacing: 6) {
                 Text(linkPreview.title)

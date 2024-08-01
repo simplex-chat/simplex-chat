@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.res.MR
 
@@ -33,7 +34,9 @@ fun PreferencesView(m: ChatModel, user: User, close: () -> Unit,) {
       if (updated != null) {
         val (updatedProfile, updatedContacts) = updated
         m.updateCurrentUser(user.remoteHostId, updatedProfile, preferences)
-        updatedContacts.forEach { m.updateContact(user.remoteHostId, it) }
+        withChats {
+          updatedContacts.forEach { updateContact(user.remoteHostId, it) }
+        }
         currentPreferences = preferences
       }
       afterSave()
