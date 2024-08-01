@@ -1989,4 +1989,15 @@
     <string name="subscription_errors">Erreurs d\'inscription</string>
     <string name="subscription_results_ignored">Inscriptions ignorées</string>
     <string name="uploaded_files">Fichiers téléversés</string>
+    <string name="privacy_media_blur_radius_medium">Modéré</string>
+    <string name="privacy_media_blur_radius">Flouter les médias</string>
+    <string name="proxy_destination_error_broker_host">L\'adresse du serveur de destination %1$s est incompatible avec les paramètres du serveur de redirection %2$s.</string>
+    <string name="proxy_destination_error_broker_version">La version du serveur de destination %1$s est incompatible avec le serveur de redirection %2$s.</string>
+    <string name="proxy_destination_error_failed_to_connect">Le serveur de redirection %1$s n\'a pas réussi à se connecter au serveur de destination %2$s. Veuillez réessayer plus tard.</string>
+    <string name="smp_proxy_error_broker_host">L\'adresse du serveur de redirection est incompatible avec les paramètres du réseau : %1$s.</string>
+    <string name="smp_proxy_error_broker_version">La version du serveur de redirection est incompatible avec les paramètres du réseau : %1$s.</string>
+    <string name="privacy_media_blur_radius_strong">Fort</string>
+    <string name="smp_proxy_error_connecting">Erreur de connexion au serveur de redirection %1$s. Veuillez réessayer plus tard.</string>
+    <string name="privacy_media_blur_radius_off">Off</string>
+    <string name="privacy_media_blur_radius_soft">Léger</string>
 </resources>
