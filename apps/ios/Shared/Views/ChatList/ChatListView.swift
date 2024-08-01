@@ -130,7 +130,7 @@ struct ChatListView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 switch chatModel.chatRunning {
-                case .some(true): NewChatMenuButton(newChatMenuOption: $newChatMenuOption)
+                case .some(true): NewChatMenuButton()
                 case .some(false): chatStoppedIcon()
                 case .none: EmptyView()
                 }

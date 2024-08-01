@@ -39,7 +39,8 @@ struct ChatHelp: View {
 
                 HStack(spacing: 8) {
                     Text("Tap button ")
-                    NewChatMenuButton(newChatMenuOption: $newChatMenuOption)
+                    // TODO: Check this.
+                    NewChatMenuButton()
                     Text("above, then choose:")
                 }
 
