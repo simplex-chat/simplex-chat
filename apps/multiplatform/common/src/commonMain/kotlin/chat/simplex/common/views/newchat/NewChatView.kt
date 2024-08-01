@@ -25,6 +25,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -218,8 +219,10 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
     withBGApi {
       val contactConn = contactConnection.value ?: return@withBGApi
       val conn = controller.apiSetConnectionIncognito(rhId, contactConn.pccConnId, incognito.value) ?: return@withBGApi
-      contactConnection.value = conn
-      chatModel.updateContactConnection(rhId, conn)
+      withChats {
+        contactConnection.value = conn
+        updateContactConnection(rhId, conn)
+      }
     }
     chatModel.markShowingInvitationUsed()
   }
@@ -368,9 +371,11 @@ private fun createInvitation(
   withBGApi {
     val (r, alert) = controller.apiAddContact(rhId, incognito = controller.appPrefs.incognito.get())
     if (r != null) {
-      chatModel.updateContactConnection(rhId, r.second)
-      chatModel.showingInvitation.value = ShowingInvitation(connId = r.second.id, connReq = simplexChatLink(r.first), connChatUsed = false)
-      contactConnection.value = r.second
+      withChats {
+        updateContactConnection(rhId, r.second)
+        chatModel.showingInvitation.value = ShowingInvitation(connId = r.second.id, connReq = simplexChatLink(r.first), connChatUsed = false)
+        contactConnection.value = r.second
+      }
     } else {
       creatingConnReq.value = false
       if (alert != null) {

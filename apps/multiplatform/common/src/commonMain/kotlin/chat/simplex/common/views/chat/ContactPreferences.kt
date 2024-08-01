@@ -19,6 +19,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.PreferenceToggle
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.res.MR
 
@@ -40,8 +41,10 @@ fun ContactPreferencesView(
       val prefs = contactFeaturesAllowedToPrefs(featuresAllowed)
       val toContact = m.controller.apiSetContactPrefs(rhId, ct.contactId, prefs)
       if (toContact != null) {
-        m.updateContact(rhId, toContact)
-        currentFeaturesAllowed = featuresAllowed
+        withChats {
+          updateContact(rhId, toContact)
+          currentFeaturesAllowed = featuresAllowed
+        }
       }
       afterSave()
     }

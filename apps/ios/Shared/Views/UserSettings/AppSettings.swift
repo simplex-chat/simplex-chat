@@ -76,7 +76,7 @@ extension AppSettings {
         c.androidCallOnLockScreen = AppSettingsLockScreenCalls(rawValue: def.string(forKey: ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN)!)
         c.iosCallKitEnabled = callKitEnabledGroupDefault.get()
         c.iosCallKitCallsInRecents = def.bool(forKey: DEFAULT_CALL_KIT_CALLS_IN_RECENTS)
-        c.uiProfileImageCornerRadius = def.float(forKey: DEFAULT_PROFILE_IMAGE_CORNER_RADIUS)
+        c.uiProfileImageCornerRadius = def.double(forKey: DEFAULT_PROFILE_IMAGE_CORNER_RADIUS)
         c.uiColorScheme = currentThemeDefault.get()
         c.uiDarkColorScheme = systemDarkThemeDefault.get()
         c.uiCurrentThemeIds = currentThemeIdsDefault.get()

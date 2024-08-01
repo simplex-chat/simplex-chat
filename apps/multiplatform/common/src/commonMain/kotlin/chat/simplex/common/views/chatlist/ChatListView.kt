@@ -151,7 +151,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
         if (!chatModel.desktopNoUserNoRemote) {
           ChatList(chatModel, searchText = searchText, oneHandUI = oneHandUI)
         }
-        if (chatModel.chats.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
+        if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
           Text(stringResource(
             if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
         }
@@ -460,7 +460,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
       }
     } else {
       val padding = if (appPlatform.isDesktop) 0.dp else 7.dp
-      if (chatModel.chats.size > 0) {
+      if (chatModel.chats.value.isNotEmpty()) {
         ToggleFilterEnabledButton() 
       }
       Spacer(Modifier.width(padding))
@@ -565,7 +565,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
   // val chats by remember(search, showUnreadAndFavorites) { derivedStateOf { filteredChats(showUnreadAndFavorites, search, allChats.toList()) } }
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
-  val chats = filteredChats(showUnreadAndFavorites, searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.toList())
+  val chats = filteredChats(showUnreadAndFavorites, searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList())
   LazyColumnWithScrollBar(
     Modifier.fillMaxWidth(),
     listState
@@ -596,7 +596,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
       ChatListNavLinkView(chat, nextChatSelected, oneHandUI.state)
     }
   }
-  if (chats.isEmpty() && chatModel.chats.isNotEmpty()) {
+  if (chats.isEmpty() && chatModel.chats.value.isNotEmpty()) {
     var modifier = Modifier.fillMaxSize();
 
     if (oneHandUI.state.value) {
