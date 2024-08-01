@@ -639,7 +639,7 @@ final class ChatModel: ObservableObject {
             for chatId in chatsToPop {
                 if m.chatId == chatId {
                     skipped = chatId
-                } else if let i = m.getChatIndex(chatId) {
+                } else if let i = m.getChatIndex(chatId), i > 0 {
                     ixs.insert(i)
                     chs.append(m.chats[i])
                 }
