@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import chat.simplex.common.model.ChatController.appPrefs
@@ -24,6 +25,8 @@ fun ModalView(
   enableClose: Boolean = true,
   background: Color = MaterialTheme.colors.background,
   modifier: Modifier = Modifier,
+  closeOnTop: Boolean = true,
+  closeBarTitle: String? = null,
   endButtons: @Composable RowScope.() -> Unit = {},
   content: @Composable () -> Unit,
 ) {
@@ -32,8 +35,15 @@ fun ModalView(
   }
   Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
     Column(if (background != MaterialTheme.colors.background) Modifier.background(background) else Modifier.themedBackground()) {
-      CloseSheetBar(if (enableClose) close else null, showClose, endButtons = endButtons)
-      Box(modifier) { content() }
+      if (closeOnTop) {
+        CloseSheetBar(if (enableClose) close else null, showClose, endButtons = endButtons)
+      }
+      Box(if (closeOnTop) modifier else modifier.padding(bottom = AppBarHeight * fontSizeSqrtMultiplier)) {
+        content()
+      }
+    }
+    if (!closeOnTop) {
+      CloseSheetBar(if (enableClose) close else null, showClose, endButtons = endButtons, arrangement = Arrangement.Bottom, closeBarTitle = closeBarTitle)
     }
   }
 }
@@ -60,17 +70,17 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   // java.lang.IllegalStateException: Reading a state that was created after the snapshot was taken or in a snapshot that has not yet been applied
   private var passcodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
 
-  fun showModal(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
+  fun showModal(settings: Boolean = false, showClose: Boolean = true, closeOnTop: Boolean = true, closeBarTitle: String? = null,endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
     val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, endButtons = endButtons, content = { data.content() })
+      ModalView(close, showClose = showClose, closeOnTop = closeOnTop, closeBarTitle = closeBarTitle, endButtons = endButtons, content = { data.content() })
     }
   }
 
-  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
+  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, closeOnTop: Boolean = true, closeBarTitle: String? = null, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
     val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, endButtons = endButtons, content = { data.content(close) })
+      ModalView(close, showClose = showClose, endButtons = endButtons, closeOnTop = closeOnTop, closeBarTitle = closeBarTitle, content = { data.content(close) })
     }
   }
 

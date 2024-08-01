@@ -44,13 +44,15 @@ fun NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
   Column(
     modifier = Modifier.fillMaxSize()
   ) {
-    Box(contentAlignment = Alignment.Center) {
-      val bottomPadding = DEFAULT_PADDING
-      AppBarTitle(
-        stringResource(MR.strings.new_chat),
-        hostDevice(rh?.remoteHostId),
-        bottomPadding = bottomPadding
-      )
+    if (!oneHandUI.state.value) {
+      Box(contentAlignment = Alignment.Center) {
+        val bottomPadding = DEFAULT_PADDING
+        AppBarTitle(
+          stringResource(MR.strings.new_chat),
+          hostDevice(rh?.remoteHostId),
+          bottomPadding = bottomPadding
+        )
+      }
     }
 
     val closeAll = { ModalManager.closeAllModalsEverywhere() }
@@ -195,7 +197,12 @@ private fun NewChatSheetLayout(
               SectionItemView(
                 click = {
                   ModalManager.center.showCustomModal { closeDeletedChats ->
-                    ModalView(close = closeDeletedChats) {
+                    ModalView(
+                      close = closeDeletedChats,
+                      closeOnTop = !oneHandUI.state.value,
+                      closeBarTitle = if (oneHandUI.state.value) generalGetString(MR.strings.deleted_chats) else null,
+                      endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) }
+                    ) {
                       DeletedContactsView(rh = rh, close = {
                         ModalManager.center.closeModals()
                       })
@@ -219,7 +226,7 @@ private fun NewChatSheetLayout(
     }
 
     item {
-      if (filteredContactChats.isNotEmpty()) {
+      if (filteredContactChats.isNotEmpty() && !oneHandUI.state.value) {
         Text(
           stringResource(MR.strings.contact_list_header_title).uppercase(), color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
           modifier = sectionModifier.padding(start = DEFAULT_PADDING, bottom = 5.dp), fontSize = 12.sp
@@ -460,18 +467,28 @@ private fun contactTypesSearchTargets(baseContactTypes: List<ContactType>, searc
 
 @Composable
 private fun DeletedContactsView(rh: RemoteHostInfo?, close: () -> Unit) {
+  val oneHandUI = remember { chatModel.controller.appPrefs.oneHandUI }
+
+  var modifier = Modifier.fillMaxSize()
+
+  if (oneHandUI.state.value) {
+    modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
+  }
+
   Column(
-    Modifier.fillMaxSize(),
+    modifier,
   ) {
-    Box(contentAlignment = Alignment.Center) {
-      val bottomPadding = DEFAULT_PADDING
-      AppBarTitle(
-        stringResource(MR.strings.deleted_chats),
-        hostDevice(rh?.remoteHostId),
-        bottomPadding = bottomPadding
-      )
+    if (!oneHandUI.state.value) {
+      Box(contentAlignment = Alignment.Center) {
+        val bottomPadding = DEFAULT_PADDING
+        AppBarTitle(
+          stringResource(MR.strings.deleted_chats),
+          hostDevice(rh?.remoteHostId),
+          bottomPadding = bottomPadding
+        )
+      }
     }
-    val oneHandUI = remember { chatModel.controller.appPrefs.oneHandUI }
+
     val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
     val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
     val searchShowingSimplexLink = remember { mutableStateOf(false) }

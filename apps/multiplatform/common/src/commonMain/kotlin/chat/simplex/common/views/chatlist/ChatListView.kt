@@ -43,9 +43,13 @@ import kotlinx.serialization.json.Json
 import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
-private fun showNewChatSheet() {
+private fun showNewChatSheet(oneHandUI: State<Boolean>, barTitle: String) {
   ModalManager.center.closeModals()
-  ModalManager.center.showModalCloseable { close ->
+  ModalManager.center.showModalCloseable(
+    closeOnTop = !oneHandUI.value,
+    closeBarTitle = if (oneHandUI.value) barTitle else null,
+    endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) }
+  ) { close ->
     NewChatSheet(rh = chatModel.currentRemoteHost.value, close)
   }
 }
@@ -114,7 +118,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
         FloatingActionButton(
           onClick = {
             if (!stopped) {
-              showNewChatSheet()
+              showNewChatSheet(oneHandUI.state, generalGetString(MR.strings.new_chat))
             }
           },
           Modifier
@@ -205,7 +209,7 @@ private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableSt
       IconButton(
         onClick = {
           if (!stopped) {
-            showNewChatSheet()
+            showNewChatSheet(oneHandUI.state, generalGetString(MR.strings.new_chat))
           }
         },
       ) {

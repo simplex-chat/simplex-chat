@@ -11,16 +11,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
-fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Color = if (close != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary, endButtons: @Composable RowScope.() -> Unit = {}) {
+fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Color = if (close != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,  arrangement: Arrangement.Vertical = Arrangement.Top, closeBarTitle: String? = null, endButtons: @Composable RowScope.() -> Unit = {}) {
   Column(
-    Modifier
+    verticalArrangement = arrangement,
+    modifier = Modifier
       .fillMaxWidth()
       .heightIn(min = AppBarHeight * fontSizeSqrtMultiplier)
       .padding(horizontal = AppBarHorizontalPadding)
@@ -36,6 +39,18 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
             NavigationButtonBack(tintColor = tintColor, onButtonClicked = close)
           } else {
             Spacer(Modifier)
+          }
+          if (!closeBarTitle.isNullOrEmpty()) {
+            Row(
+              horizontalArrangement = Arrangement.Center,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Text(
+                closeBarTitle,
+                color = MaterialTheme.colors.onBackground,
+                fontWeight = FontWeight.SemiBold,
+              )
+            }
           }
           Row {
             endButtons()
