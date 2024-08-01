@@ -69,12 +69,12 @@ fun GroupMemberInfoView(
       developerTools,
       connectionCode,
       getContactChat = { chatModel.getContactChat(it) },
-      openDirectChat = {
+      openDirectChat = { contactId ->
         withBGApi {
-          val c = chatModel.controller.apiGetChat(rhId, ChatType.Direct, it)
+          val c = chatModel.controller.apiGetChat(rhId, ChatType.Direct, contactId)
           if (c != null) {
             withChats {
-              if (chatModel.getContactChat(it) == null) {
+              if (chatModel.getContactChat(contactId) == null) {
                 addChat(c)
               }
               chatModel.chatItemStatuses.clear()

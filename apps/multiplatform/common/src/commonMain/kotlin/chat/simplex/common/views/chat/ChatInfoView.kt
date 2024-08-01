@@ -793,9 +793,9 @@ suspend fun save(applyToMode: DefaultThemeMode?, newTheme: ThemeModeOverride?, c
 
 private fun setContactAlias(chat: Chat, localAlias: String, chatModel: ChatModel) = withBGApi {
   val chatRh = chat.remoteHostId
-  chatModel.controller.apiSetContactAlias(chatRh, chat.chatInfo.apiId, localAlias)?.let {
+  chatModel.controller.apiSetContactAlias(chatRh, chat.chatInfo.apiId, localAlias)?.let { contact ->
     withChats {
-      updateContact(chatRh, it)
+      updateContact(chatRh, contact)
     }
   }
 }
