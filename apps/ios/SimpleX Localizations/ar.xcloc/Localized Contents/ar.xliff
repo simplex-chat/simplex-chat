@@ -3687,6 +3687,30 @@ SimpleX servers cannot see your profile.</source>
         <source>%@ connected</source>
         <target state="translated">%@ متصل</target>
       </trans-unit>
+      <trans-unit id="%lld minutes" xml:space="preserve" approved="no">
+        <source>%lld minutes</source>
+        <target state="translated">%lld دقائق</target>
+      </trans-unit>
+      <trans-unit id="%@, %@ and %lld members" xml:space="preserve" approved="no">
+        <source>%@, %@ and %lld members</source>
+        <target state="translated">%@, %@ و %lld أعضاء</target>
+      </trans-unit>
+      <trans-unit id="%d weeks" xml:space="preserve" approved="no">
+        <source>%d weeks</source>
+        <target state="translated">%d أسابيع</target>
+      </trans-unit>
+      <trans-unit id="%@ uploaded" xml:space="preserve" approved="no">
+        <source>%@ uploaded</source>
+        <target state="translated">%@ تم الرفع</target>
+      </trans-unit>
+      <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve" approved="no">
+        <source>%@, %@ and %lld other members connected</source>
+        <target state="translated">%@, %@ و %lld أعضاء آخرين متصلين</target>
+      </trans-unit>
+      <trans-unit id="%lld seconds" xml:space="preserve" approved="no">
+        <source>%lld seconds</source>
+        <target state="translated">%lld ثواني</target>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="ar" datatype="plaintext">
