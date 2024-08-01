@@ -144,7 +144,7 @@ private fun NewChatSheetLayout(
     sectionModifier = sectionModifier.scale(scaleX = 1f, scaleY = -1f)
   }
 
-  LazyColumn(
+  LazyColumnWithScrollBar(
     Modifier.fillMaxWidth(),
     listState
   ) {
@@ -506,7 +506,7 @@ private fun DeletedContactsView(rh: RemoteHostInfo?, close: () -> Unit) {
       contactChats = allChats
     )
 
-    LazyColumn(
+    LazyColumnWithScrollBar(
       Modifier.fillMaxWidth(),
       listState
     ) {
