@@ -349,7 +349,7 @@
     <string name="delete_pending_connection__question">Függő kapcsolatfelvételi kérések törlése?</string>
     <string name="database_encrypted">Adatbázis titkosítva!</string>
     <string name="clear_chat_question">Üzenetek kiürítése?</string>
-    <string name="database_downgrade">Visszatérés a korábbi adatbázis verzióra</string>
+    <string name="database_downgrade">Adatbázis visszafejlesztése</string>
     <string name="clear_chat_button">Üzenetek kiürítése</string>
     <string name="database_passphrase_will_be_updated">Adatbázis titkosítási jelmondat frissítve lesz.</string>
     <string name="multicast_connect_automatically">Kapcsolódás automatikusan</string>
@@ -381,7 +381,7 @@
     <string name="ttl_months">%d hónap</string>
     <string name="delete_address__question">Cím törlése?</string>
     <string name="receipts_contacts_title_disable">Üzenet kézbesítési jelentések letiltása?</string>
-    <string name="passphrase_is_different">Az adatbázis jelmondat eltérő a Keystore-ba elmentettől.</string>
+    <string name="passphrase_is_different">Az adatbázis jelmondata eltér a Keystore-ban lévőtől.</string>
     <string name="direct_messages">Közvetlen üzenetek</string>
     <string name="icon_descr_email">E-mail</string>
     <string name="receipts_contacts_disable_for_all">Letiltás mindenki számára</string>
@@ -508,7 +508,7 @@
     <string name="encrypt_database">Titkosít</string>
     <string name="alert_title_no_group">Csoport nem található!</string>
     <string name="error_saving_smp_servers">Hiba az SMP kiszolgálók mentésekor</string>
-    <string name="downgrade_and_open_chat">Visszatérés a korábbi verzióra és a csevegés megnyitása</string>
+    <string name="downgrade_and_open_chat">Visszafejlesztés és a csevegés megnyitása</string>
     <string name="icon_descr_group_inactive">A csoport inaktív</string>
     <string name="v5_0_large_files_support_descr">Gyors és nem kell várni, amíg a feladó online lesz!</string>
     <string name="error_joining_group">Hiba a csoporthoz való csatlakozáskor</string>
@@ -1079,7 +1079,7 @@
     <string name="your_current_profile">Jelenlegi profil</string>
     <string name="smp_server_test_upload_file">Fájl feltöltése</string>
     <string name="prohibit_calls">A hívások kezdeményezése le van tiltva.</string>
-    <string name="network_use_onion_hosts_required">Megkövetelt</string>
+    <string name="network_use_onion_hosts_required">Szükséges</string>
     <string name="ntf_channel_messages">SimpleX Chat üzenetek</string>
     <string name="restore_database_alert_confirm">Visszaállítás</string>
     <string name="setup_database_passphrase">Adatbázis jelmondat beállítása</string>
@@ -1122,7 +1122,7 @@
     <string name="view_security_code">Biztonsági kód megtekintése</string>
     <string name="unblock_member_question">Tag feloldása?</string>
     <string name="sender_may_have_deleted_the_connection_request">A küldő törölhette a kapcsolódási kérelmet.</string>
-    <string name="wrong_passphrase">Téves adatbázis jelmondat</string>
+    <string name="wrong_passphrase">Hibás adatbázis jelmondat</string>
     <string name="your_SMP_servers">SMP kiszolgálók</string>
     <string name="send_receipts_disabled_alert_title">Az üzenet kézbesítési jelentések le vannak tiltva</string>
     <string name="open_database_folder">Adatbázis mappa megnyitása</string>
@@ -1169,7 +1169,7 @@
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="unlink_desktop">Szétkapcsolás</string>
     <string name="incognito_random_profile">Véletlenszerű profil</string>
-    <string name="wrong_passphrase_title">Téves jelmondat!</string>
+    <string name="wrong_passphrase_title">Hibás jelmondat!</string>
     <string name="prohibit_message_reactions_group">Az üzenetreakciók küldése le van tiltva.</string>
     <string name="language_system">Rendszer</string>
     <string name="icon_descr_received_msg_status_unread">olvasatlan</string>
@@ -1768,7 +1768,7 @@
 \nHiba: %2$s</string>
     <string name="snd_error_expired">Hálózati problémák - az üzenet többszöri elküldési kísérlet után lejárt.</string>
     <string name="srv_error_version">A kiszolgáló verziója nem kompatibilis a hálózati beállításokkal.</string>
-    <string name="snd_error_auth">Rossz kulcs vagy ismeretlen kapcsolat - valószínűleg ez a kapcsolat törlődött.</string>
+    <string name="snd_error_auth">Hibás kulcs vagy ismeretlen kapcsolat - valószínűleg ez a kapcsolat törlődött.</string>
     <string name="snd_error_proxy_relay">Továbbító kiszolgáló: %1$s
 \nCélkiszolgáló hiba: %2$s</string>
     <string name="ci_status_other_error">Hiba: %1$s</string>
@@ -1779,7 +1779,7 @@
     <string name="network_smp_proxy_mode_unknown">Ismeretlen átjátszók</string>
     <string name="network_smp_proxy_fallback_allow_protected">Ha az IP-cím rejtett</string>
     <string name="private_routing_show_message_status">Üzenet állapot megjelenítése</string>
-    <string name="network_smp_proxy_fallback_allow_downgrade">Korábbi verzióra történő visszatérés engedélyezése</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Visszafejlesztés engedélyezése</string>
     <string name="network_smp_proxy_mode_always">Mindig</string>
     <string name="network_smp_proxy_fallback_prohibit">Nem</string>
     <string name="network_smp_proxy_mode_unprotected">Nem védett</string>
