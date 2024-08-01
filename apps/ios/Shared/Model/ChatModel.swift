@@ -125,6 +125,35 @@ final class ChatModel: ObservableObject {
     @Published var pasteboardHasStrings: Bool = UIPasteboard.general.hasStrings
     @Published var networkInfo = UserNetworkInfo(networkType: .other, online: true)
 
+    private var chatMoveSubject = PassthroughSubject<Void, Never>()
+    private var bag = Set<AnyCancellable>()
+    private var chatIDsToMove = [Chat.ID]() {
+        didSet {
+            if !chatIDsToMove.isEmpty { chatMoveSubject.send() }
+        }
+    }
+
+    private func moveChatIDs() {
+        withAnimation(chatId == nil ? .default : nil) {
+            chats.move(
+                fromOffsets: IndexSet(
+                    self.chatIDsToMove.compactMap {
+                        chatId in self.chats.firstIndex(where: { $0.id == chatId })
+                    }
+                ),
+                toOffset: .zero
+            )
+            chatIDsToMove = [Chat.ID]()
+        }
+    }
+
+    init() {
+        chatMoveSubject
+            .throttle(for: 10, scheduler: DispatchQueue.main, latest: true)
+            .sink { self.moveChatIDs() }
+            .store(in: &bag)
+    }
+
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
     var filesToDelete: Set<URL> = []
@@ -337,12 +366,13 @@ final class ChatModel: ObservableObject {
                 increaseUnreadCounter(user: currentUser!)
             }
             if i > 0 {
-                if chatId == nil {
-                    withAnimation { popChat_(i) }
-                } else if chatId == cInfo.id  {
+                if chatId == cInfo.id  {
                     chatToTop = cInfo.id
                 } else {
-                    popChat_(i)
+                    if let index = chatIDsToMove.firstIndex(of: cInfo.id) {
+                        chatIDsToMove.remove(at: index)
+                    }
+                    chatIDsToMove.append(cInfo.id)
                 }
             }
         } else {
