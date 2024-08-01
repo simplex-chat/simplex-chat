@@ -194,8 +194,8 @@ object ChatModel {
     }
   }
 
-  suspend fun <T> withChats(action: suspend ChatsContext.() -> T): T = updatingChatsMutex.withLock {
-    chatsContext.action()
+  suspend fun <T> withChats(action: suspend ChatsContext.(ChatsContext) -> T): T = updatingChatsMutex.withLock {
+    chatsContext.action(chatsContext)
   }
 
   class ChatsContext {
