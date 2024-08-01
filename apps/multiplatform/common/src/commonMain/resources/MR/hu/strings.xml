@@ -299,7 +299,7 @@
     <string name="group_member_status_accepted">kapcsolódás (elfogadva)</string>
     <string name="smp_servers_check_address">Kiszolgáló címének ellenőrzése és újrapróbálkozás.</string>
     <string name="delete_group_question">Csoport törlése?</string>
-    <string name="confirm_database_upgrades">Adatbázis frissítés megerősítése</string>
+    <string name="confirm_database_upgrades">Adatbázis fejlesztésének megerősítése</string>
     <string name="create_your_profile">Saját profil létrehozása</string>
     <string name="snd_conn_event_switch_queue_phase_changing">cím megváltoztatása…</string>
     <string name="display_name_connecting">kapcsolódás…</string>
@@ -1407,7 +1407,7 @@
     <string name="group_main_profile_sent">A fő csevegési profilja elküldésre kerül a csoporttagok számára</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Később engedélyezheti őket az alkalmazás Adatvédelem és biztonság menüpontban.</string>
     <string name="to_reveal_profile_enter_password">Rejtett profilja megjelenítéséhez írja be a teljes jelszavát a keresőmezőbe a Csevegési profilok menüben.</string>
-    <string name="upgrade_and_open_chat">A csevegés frissítése és megnyitása</string>
+    <string name="upgrade_and_open_chat">Fejlesztés és a csevegés megnyitása</string>
     <string name="you_need_to_allow_to_send_voice">Hangüzeneteket küldéséhez engedélyeznie kell azok küldését az ismerősei számára.</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Beállíthatja, hogy mely kiszolgáló(ko)n keresztül <b>fogadja</b> az üzeneteket, ismerősöket – a kiszolgálók, amelyeket az üzenetküldéshez használ.]]></string>
     <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Már a(z) <b>%1$s</b> csoport tagja.]]></string>
@@ -1983,4 +1983,8 @@
     <string name="app_check_for_updates_notice_disable">Letiltás</string>
     <string name="app_check_for_updates_disabled">Letiltva</string>
     <string name="app_check_for_updates_stable">Stabil</string>
+    <string name="smp_proxy_error_connecting">Hiba a(z) %1$s továbbító kiszolgálóhoz való kapcsolódáskor. Próbálja meg később.</string>
+    <string name="proxy_destination_error_broker_version">A(z) %1$s célkiszolgáló verziója nem kompatibilis a(z) %2$s továbbító kiszolgálóval.</string>
+    <string name="proxy_destination_error_failed_to_connect">A(z) %1$s továbbító kiszolgáló nem tudott csatlakozni a(z) %2$s célkiszolgálóhoz. Próbálja meg később.</string>
+    <string name="proxy_destination_error_broker_host">A(z) %1$s célkiszolgáló címe nem kompatibilis a(z) %2$s továbbító kiszolgáló beállításaival.</string>
 </resources>
