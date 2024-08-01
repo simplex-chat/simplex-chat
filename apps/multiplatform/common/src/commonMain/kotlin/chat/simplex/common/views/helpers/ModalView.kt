@@ -42,6 +42,7 @@ fun ModalView(
         content()
       }
     }
+
     if (!closeOnTop) {
       CloseSheetBar(if (enableClose) close else null, showClose, endButtons = endButtons, arrangement = Arrangement.Bottom, closeBarTitle = closeBarTitle)
     }

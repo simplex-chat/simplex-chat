@@ -26,11 +26,11 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chatlist.ScrollDirection
 import chat.simplex.common.views.contacts.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -130,6 +130,28 @@ private fun NewChatSheetLayout(
   val allChats by remember(chatModel.chats.value, contactTypes) {
     derivedStateOf { filterContactTypes(chatModel.chats.value, contactTypes) }
   }
+  var scrollDirection by remember { mutableStateOf(ScrollDirection.Idle) }
+  var previousIndex by remember { mutableStateOf(0) }
+  var previousScrollOffset by remember { mutableStateOf(0) }
+
+  LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
+    val currentIndex = listState.firstVisibleItemIndex
+    val currentScrollOffset = listState.firstVisibleItemScrollOffset
+    val threshold = 25
+
+    scrollDirection = when {
+      currentIndex > previousIndex -> ScrollDirection.Down
+      currentIndex < previousIndex -> ScrollDirection.Up
+      currentScrollOffset > previousScrollOffset + threshold -> ScrollDirection.Down
+      currentScrollOffset < previousScrollOffset - threshold -> ScrollDirection.Up
+      currentScrollOffset == previousScrollOffset -> ScrollDirection.Idle
+      else -> scrollDirection
+    }
+
+    previousIndex = currentIndex
+    previousScrollOffset = currentScrollOffset
+  }
+
   val filteredContactChats = filteredContactChats(
     showUnreadAndFavorites = showUnreadAndFavorites,
     searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
@@ -148,40 +170,61 @@ private fun NewChatSheetLayout(
     Modifier.fillMaxWidth(),
     listState
   ) {
+    stickyHeader {
+      Column(
+        Modifier
+          .offset {
+            val y = if (searchText.value.text.isEmpty()) {
+              if (oneHandUI.state.value && scrollDirection == ScrollDirection.Up) {
+                0
+              } else if (listState.firstVisibleItemIndex == 0) -listState.firstVisibleItemScrollOffset else -1000
+            } else {
+              0
+            }
+            IntOffset(0, y)
+          }
+          .background(MaterialTheme.colors.background)
+      ) {
+        if (!oneHandUI.state.value) {
+          Divider()
+        }
+        ContactsSearchBar(
+          listState = listState,
+          searchText = searchText,
+          searchShowingSimplexLink = searchShowingSimplexLink,
+          searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+          close = close,
+          oneHandUI = oneHandUI
+        )
+        Divider()
+      }
+    }
     item {
-      Divider()
-      ContactsSearchBar(
-        listState = listState,
-        searchText = searchText,
-        searchShowingSimplexLink = searchShowingSimplexLink,
-        searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
-        close = close,
-        oneHandUI = oneHandUI
-      )
-      Divider()
-
       Spacer(Modifier.padding(bottom = DEFAULT_PADDING))
 
       if (searchText.value.text.isEmpty()) {
-        Row(modifier = sectionModifier) {
+        Row {
           SectionView {
             NewChatButton(
               icon = painterResource(MR.images.ic_add_link),
               text = stringResource(MR.strings.add_contact_tab),
               click = addContact,
-              extraPadding = true
+              extraPadding = true,
+              oneHandUI = oneHandUI.state
             )
             NewChatButton(
               icon = painterResource(MR.images.ic_qr_code),
               text = if (appPlatform.isAndroid) stringResource(MR.strings.scan_paste_link) else stringResource(MR.strings.paste_link),
               click = scanPaste,
-              extraPadding = true
+              extraPadding = true,
+              oneHandUI = oneHandUI.state
             )
             NewChatButton(
               icon = painterResource(MR.images.ic_group),
               text = stringResource(MR.strings.create_group_button),
               click = createGroup,
-              extraPadding = true
+              extraPadding = true,
+              oneHandUI = oneHandUI.state
             )
           }
         }
@@ -265,11 +308,14 @@ private fun NewChatButton(
   iconColor: Color = MaterialTheme.colors.secondary,
   disabled: Boolean = false,
   extraPadding: Boolean = false,
+  oneHandUI: State<Boolean>
 ) {
   SectionItemView(click, disabled = disabled) {
-    Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else iconColor)
-    TextIconSpaced(extraPadding)
-    Text(text, color = if (disabled) MaterialTheme.colors.secondary else textColor)
+    Row(modifier = if (oneHandUI.value) Modifier.scale(scaleX = 1f, scaleY = -1f) else Modifier) {
+      Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else iconColor)
+      TextIconSpaced(extraPadding)
+      Text(text, color = if (disabled) MaterialTheme.colors.secondary else textColor)
+    }
   }
 }
 
