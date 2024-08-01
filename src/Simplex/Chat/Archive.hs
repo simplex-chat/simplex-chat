@@ -59,13 +59,13 @@ exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
     copyFile (dbFilePath chatStore) $ dir </> archiveChatDbFile
     copyFile (dbFilePath agentStore) $ dir </> archiveAgentDbFile
     forM_ filesPath $ \fp ->
-      copyValidDirectoryFiles validEntrySelector AEExportFile fp $ dir </> archiveFilesFolder
+      copyValidDirectoryFiles entrySelectorError AEExportFile fp $ dir </> archiveFilesFolder
     forM_ assetsPath $ \fp ->
       copyDirectoryFiles (fp </> wallpapersFolder) $ dir </> archiveAssetsFolder </> wallpapersFolder
     let method = if disableCompression == Just True then Z.Store else Z.Deflate
     Z.createArchive archivePath $ Z.packDirRecur method Z.mkEntrySelector dir
   where
-    validEntrySelector _ = pure True
+    entrySelectorError f = (Z.mkEntrySelector f $> Nothing) `E.catchAny` (pure . Just . show)
 
 importArchive :: ArchiveConfig -> CM' [ArchiveError]
 importArchive cfg@ArchiveConfig {archivePath} =
@@ -96,21 +96,20 @@ withTempDir cfg = case parentTempDirectory (cfg :: ArchiveConfig) of
   _ -> withSystemTempDirectory
 
 copyDirectoryFiles :: FilePath -> FilePath -> CM' [ArchiveError]
-copyDirectoryFiles fromDir toDir = copyValidDirectoryFiles (\_ -> pure True) AEImportFile fromDir toDir
+copyDirectoryFiles fromDir toDir = copyValidDirectoryFiles (\_ -> pure Nothing) AEImportFile fromDir toDir
 
-copyValidDirectoryFiles :: (FilePath -> IO Bool) -> (FilePath -> String -> ArchiveError) -> FilePath -> FilePath -> CM' [ArchiveError]
-copyValidDirectoryFiles valid mkErr fromDir toDir = do
+copyValidDirectoryFiles :: (FilePath -> IO (Maybe String)) -> (FilePath -> String -> ArchiveError) -> FilePath -> FilePath -> CM' [ArchiveError]
+copyValidDirectoryFiles fileError mkErr fromDir toDir = do
   createDirectoryIfMissing True toDir
   fs <- listDirectory fromDir
   foldM copyFileCatchError [] fs
   where
     copyFileCatchError fileErrs f =
-      ifM
-        (liftIO $ valid f)
-        ( (copyDirectoryFile f $> fileErrs)
+      liftIO (fileError f) >>= \case
+        Nothing ->
+          (copyDirectoryFile f $> fileErrs)
             `E.catch` \(e :: E.SomeException) -> pure (mkErr f (show e) : fileErrs)
-        )
-        (pure $ mkErr f "invalid file" : fileErrs)
+        Just e ->  pure $ mkErr f e : fileErrs
     copyDirectoryFile f = do
       let fn = takeFileName f
           f' = fromDir </> fn
