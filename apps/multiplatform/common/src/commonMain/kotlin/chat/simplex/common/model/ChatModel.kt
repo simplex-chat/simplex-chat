@@ -1891,7 +1891,7 @@ data class ChatItem (
       }
     }
 
-  fun memberToModerate(chatInfo: ChatInfo): Pair<GroupInfo, GroupMember>? {
+  fun memberToModerate(chatInfo: ChatInfo): Pair<GroupInfo, GroupMember?>? {
     return if (chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupRcv) {
       val m = chatInfo.groupInfo.membership
       if (m.memberRole >= GroupMemberRole.Admin && m.memberRole >= chatDir.groupMember.memberRole && meta.itemDeleted == null) {
@@ -1899,10 +1899,29 @@ data class ChatItem (
       } else {
       null
       }
+    } else if (chatInfo is ChatInfo.Group && chatDir is CIDirection.GroupSnd) {
+      val m = chatInfo.groupInfo.membership
+      if (m.memberRole >= GroupMemberRole.Admin) {
+        chatInfo.groupInfo to null
+      } else {
+        null
+      }
     } else {
       null
     }
   }
+
+  val showLocalDelete: Boolean
+    get() = when (content) {
+      is CIContent.SndDirectE2EEInfo -> false
+      is CIContent.RcvDirectE2EEInfo -> false
+      is CIContent.SndGroupE2EEInfo -> false
+      is CIContent.RcvGroupE2EEInfo -> false
+      else -> true
+    }
+
+  val canBeDeletedForSelf: Boolean
+    get() = (content.msgContent != null && !meta.isLive) || meta.itemDeleted != null || isDeletedContent || mergeCategory != null || showLocalDelete
 
   val showNotification: Boolean get() =
     when (content) {

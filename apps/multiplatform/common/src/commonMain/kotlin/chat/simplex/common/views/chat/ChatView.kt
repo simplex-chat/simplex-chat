@@ -1,5 +1,7 @@
 package chat.simplex.common.views.chat
 
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
@@ -11,8 +13,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -23,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.CIDirection.DirectRcv
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
@@ -64,6 +67,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
   val attachmentOption = rememberSaveable { mutableStateOf<AttachmentOption?>(null) }
   val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
+  val selectedChatItems = rememberSaveable { mutableStateOf(null as Set<Long>?) }
   LaunchedEffect(Unit) {
     // snapshotFlow here is because it reacts much faster on changes in chatModel.chatId.value.
     // With LaunchedEffect(chatModel.chatId.value) there is a noticeable delay before reconstruction of the view
@@ -102,6 +106,11 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         }
     }
   }
+  KeyChangeEffect(chatModel.chatId.value) {
+    if (chatModel.chatId.value != null) {
+      selectedChatItems.value = null
+    }
+  }
   val view = LocalMultiplatformView()
   val chat = activeChat.value
   if (chat == null || user == null) {
@@ -127,26 +136,57 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             unreadCount,
             composeState,
             composeView = {
-              Column(
-                Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-              ) {
-                if (
-                  chat.chatInfo is ChatInfo.Direct
-                  && !chat.chatInfo.contact.sndReady
-                  && chat.chatInfo.contact.active
-                  && !chat.chatInfo.contact.nextSendGrpInv
+              if (selectedChatItems.value == null) {
+                Column(
+                  Modifier.fillMaxWidth(),
+                  horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                  Text(
-                    generalGetString(MR.strings.contact_connection_pending),
-                    Modifier.padding(top = 4.dp),
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colors.secondary
+                  if (
+                    chat.chatInfo is ChatInfo.Direct
+                    && !chat.chatInfo.contact.sndReady
+                    && chat.chatInfo.contact.active
+                    && !chat.chatInfo.contact.nextSendGrpInv
+                  ) {
+                    Text(
+                      generalGetString(MR.strings.contact_connection_pending),
+                      Modifier.padding(top = 4.dp),
+                      fontSize = 14.sp,
+                      color = MaterialTheme.colors.secondary
+                    )
+                  }
+                  ComposeView(
+                    chatModel, chat, composeState, attachmentOption,
+                    showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } }
                   )
                 }
-                ComposeView(
-                  chatModel, chat, composeState, attachmentOption,
-                  showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } }
+              } else {
+                SelectedItemsBottomToolbar(
+                  chatItems = remember { chatModel.chatItems }.value,
+                  selectedChatItems = selectedChatItems,
+                  chatInfo = chat.chatInfo,
+                  deleteItems = { canDeleteForAll ->
+                    val itemIds = selectedChatItems.value
+                    if (itemIds != null) {
+                      deleteMessagesAlertDialog(
+                        itemIds.sorted(),
+                        generalGetString(if (itemIds.size == 1) MR.strings.delete_message_mark_deleted_warning else MR.strings.delete_messages_mark_deleted_warning),
+                        forAll = canDeleteForAll,
+                        deleteMessages = { ids, forAll -> deleteMessages(chat, ids, forAll, moderate = false) {
+                          selectedChatItems.value = null
+                        } }
+                      )
+                    }
+                },
+                moderateItems = {
+                  if (chat.chatInfo is ChatInfo.Group) {
+                    val itemIds = selectedChatItems.value
+                    if (itemIds != null) {
+                      moderateMessagesAlertDialog(itemIds.sorted(), moderateMessageQuestionText(chat.chatInfo.featureEnabled(ChatFeature.FullDelete), itemIds.size), deleteMessages = { ids ->
+                        deleteMessages(chat, ids, true, moderate = true)
+                      })
+                    }
+                  }
+                }
                 )
               }
             },
@@ -155,6 +195,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             searchText,
             useLinkPreviews = useLinkPreviews,
             linkMode = chatModel.simplexLinkMode.value,
+            selectedChatItems = selectedChatItems,
             back = {
               hideKeyboard(view)
               AudioPlayer.stop()
@@ -279,23 +320,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
                 }
               }
             },
-            deleteMessages = { itemIds ->
-              if (itemIds.isNotEmpty()) {
-                val chatInfo = chat.chatInfo
-                withBGApi {
-                  val deleted = chatModel.controller.apiDeleteChatItems(
-                    chatRh, chatInfo.chatType, chatInfo.apiId, itemIds, CIDeleteMode.cidmInternal
-                  )
-                  if (deleted != null) {
-                    withChats {
-                      for (di in deleted) {
-                        removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
-                      }
-                    }
-                  }
-                }
-              }
-            },
+            deleteMessages = { itemIds -> deleteMessages(chat, itemIds, false, moderate = false) },
             receiveFile = { fileId ->
               withBGApi { chatModel.controller.receiveFile(chatRh, user, fileId) }
             },
@@ -546,6 +571,7 @@ fun ChatLayout(
   searchValue: State<String>,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
+  selectedChatItems: MutableState<Set<Long>?>,
   back: () -> Unit,
   info: () -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
@@ -619,7 +645,13 @@ fun ChatLayout(
         }
 
         Scaffold(
-          topBar = { ChatInfoToolbar(chat, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged) },
+          topBar = {
+            if (selectedChatItems.value == null) {
+              ChatInfoToolbar(chat, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged)
+            } else {
+              SelectedItemsTopToolbar(selectedChatItems)
+            }
+          },
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding(),
           floatingActionButton = { floatingButton.value() },
@@ -642,7 +674,7 @@ fun ChatLayout(
           ) {
             ChatItemsList(
               chat, unreadCount, composeState, searchValue,
-              useLinkPreviews, linkMode, showMemberInfo, loadPrevMessages, deleteMessage, deleteMessages,
+              useLinkPreviews, linkMode, selectedChatItems, showMemberInfo, loadPrevMessages, deleteMessage, deleteMessages,
               receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
               updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
               setReaction, showItemDetails, markRead, setFloatingButton, onComposed, developerTools, showViaProxy,
@@ -902,6 +934,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   searchValue: State<String>,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
+  selectedChatItems: MutableState<Set<Long>?>,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadPrevMessages: () -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
@@ -1013,86 +1046,117 @@ fun BoxWithConstraintsScope.ChatItemsList(
           tryOrShowError("${cItem.id}ChatItem", error = {
             CIBrokenComposableView(if (cItem.chatDir.sent) Alignment.CenterEnd else Alignment.CenterStart)
           }) {
-            ChatItemView(chat.remoteHostId, chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy)
+            ChatItemView(chat.remoteHostId, chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools, showViaProxy = showViaProxy)
           }
         }
 
         @Composable
         fun ChatItemView(cItem: ChatItem, range: IntRange?, prevItem: ChatItem?) {
-          val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
-          if (chat.chatInfo is ChatInfo.Group) {
-            if (cItem.chatDir is CIDirection.GroupRcv) {
-              val member = cItem.chatDir.groupMember
-              val (prevMember, memCount) =
-                if (range != null) {
-                  chatModel.getPrevHiddenMember(member, range)
-                } else {
-                  null to 1
-                }
-              if (prevItem == null || showMemberImage(member, prevItem) || prevMember != null) {
-                Column(
-                  Modifier
-                    .padding(top = 8.dp)
-                    .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp),
-                  verticalArrangement = Arrangement.spacedBy(4.dp),
-                  horizontalAlignment = Alignment.Start
-                ) {
-                  if (cItem.content.showMemberName) {
-                    val memberNameStyle = SpanStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
-                    val memberNameString = if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
-                      buildAnnotatedString {
-                        withStyle(memberNameStyle.copy(fontWeight = FontWeight.Medium)) { append(member.memberRole.text) }
-                        append(" ")
-                        withStyle(memberNameStyle) { append(memberNames(member, prevMember, memCount)) }
-                      }
-                    } else {
-                      buildAnnotatedString {
-                        withStyle(memberNameStyle) { append(memberNames(member, prevMember, memCount)) }
-                      }
-                    }
-                    Text(
-                      memberNameString,
-                      Modifier.padding(start = MEMBER_IMAGE_SIZE + 10.dp),
-                      maxLines = 2
-                    )
+          val sent = cItem.chatDir.sent
+          Box(Modifier.padding(bottom = 4.dp)) {
+            val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null && cItem.meta.itemForwarded == null
+            val selectionVisible = selectedChatItems.value != null && cItem.canBeDeletedForSelf
+            val selectionOffset by animateDpAsState(if (selectionVisible && !sent) 4.dp + 22.dp * fontSizeMultiplier else 0.dp)
+            val swipeableOrSelectionModifier = (if (selectionVisible) Modifier else swipeableModifier).graphicsLayer { translationX = selectionOffset.toPx() }
+            if (chat.chatInfo is ChatInfo.Group) {
+              if (cItem.chatDir is CIDirection.GroupRcv) {
+                val member = cItem.chatDir.groupMember
+                val (prevMember, memCount) =
+                  if (range != null) {
+                    chatModel.getPrevHiddenMember(member, range)
+                  } else {
+                    null to 1
                   }
-                  Row(
-                    swipeableModifier,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                if (prevItem == null || showMemberImage(member, prevItem) || prevMember != null) {
+                  Column(
+                    Modifier
+                      .padding(top = 8.dp)
+                      .padding(start = 8.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalAlignment = Alignment.Start
                   ) {
-                    Box(Modifier.clickable { showMemberInfo(chat.chatInfo.groupInfo, member) }) {
-                      MemberImage(member)
+                    if (cItem.content.showMemberName) {
+                      val memberNameStyle = SpanStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
+                      val memberNameString = if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
+                        buildAnnotatedString {
+                          withStyle(memberNameStyle.copy(fontWeight = FontWeight.Medium)) { append(member.memberRole.text) }
+                          append(" ")
+                          withStyle(memberNameStyle) { append(memberNames(member, prevMember, memCount)) }
+                        }
+                      } else {
+                        buildAnnotatedString {
+                          withStyle(memberNameStyle) { append(memberNames(member, prevMember, memCount)) }
+                        }
+                      }
+                      Text(
+                        memberNameString,
+                        Modifier.padding(start = MEMBER_IMAGE_SIZE + 10.dp),
+                        maxLines = 2
+                      )
                     }
-                    ChatItemViewShortHand(cItem, range)
+                    Box(contentAlignment = Alignment.CenterStart) {
+                      androidx.compose.animation.AnimatedVisibility(selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+                        SelectedChatItem(Modifier, cItem.id, selectedChatItems)
+                      }
+                      Row(
+                        swipeableOrSelectionModifier,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                      ) {
+                        Box(Modifier.clickable { showMemberInfo(chat.chatInfo.groupInfo, member) }) {
+                          MemberImage(member)
+                        }
+                        ChatItemViewShortHand(cItem, range)
+                      }
+                    }
+                  }
+                } else {
+                  Box(contentAlignment = Alignment.CenterStart) {
+                    AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+                      SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
+                    }
+                    Row(
+                      Modifier
+                        .padding(start = 8.dp + MEMBER_IMAGE_SIZE + 4.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
+                        .then(swipeableOrSelectionModifier)
+                    ) {
+                      ChatItemViewShortHand(cItem, range)
+                    }
                   }
                 }
               } else {
-                Row(
-                  Modifier
-                    .padding(start = 8.dp + MEMBER_IMAGE_SIZE + 4.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
-                    .then(swipeableModifier)
+                Box(contentAlignment = Alignment.CenterStart) {
+                  AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+                    SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
+                  }
+                  Box(
+                    Modifier
+                      .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp)
+                      .then(if (selectionVisible) Modifier else swipeableModifier)
+                  ) {
+                    ChatItemViewShortHand(cItem, range)
+                  }
+                }
+              }
+            } else { // direct message
+              Box(contentAlignment = Alignment.CenterStart) {
+                AnimatedVisibility (selectionVisible, enter = fadeIn(), exit = fadeOut()) {
+                  SelectedChatItem(Modifier.padding(start = 8.dp), cItem.id, selectedChatItems)
+                }
+                Box(
+                  Modifier.padding(
+                    start = if (sent && !voiceWithTransparentBack) 76.dp else 12.dp,
+                    end = if (sent || voiceWithTransparentBack) 12.dp else 76.dp,
+                  ).then(if (!selectionVisible || !sent) swipeableOrSelectionModifier else Modifier)
                 ) {
                   ChatItemViewShortHand(cItem, range)
                 }
               }
-            } else {
-              Box(
-                Modifier
-                  .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp)
-                  .then(swipeableModifier)
-              ) {
-                ChatItemViewShortHand(cItem, range)
-              }
             }
-          } else { // direct message
-            val sent = cItem.chatDir.sent
-            Box(
-              Modifier.padding(
-                start = if (sent && !voiceWithTransparentBack) 76.dp else 12.dp,
-                end = if (sent || voiceWithTransparentBack) 12.dp else 76.dp,
-              ).then(swipeableModifier)
-            ) {
-              ChatItemViewShortHand(cItem, range)
+            if (selectionVisible) {
+              Box(Modifier.matchParentSize().clickable {
+                val checked = selectedChatItems.value?.contains(cItem.id) == true
+                selectUnselectChatItem(select = !checked, cItem, revealed, selectedChatItems)
+              })
             }
           }
         }
@@ -1393,6 +1457,98 @@ private fun bottomEndFloatingButton(
   }
 }
 
+@Composable
+private fun SelectedChatItem(
+  modifier: Modifier,
+  ciId: Long,
+  selectedChatItems: State<Set<Long>?>,
+) {
+  val checked = remember { derivedStateOf { selectedChatItems.value?.contains(ciId) == true } }
+  Icon(
+    painterResource(if (checked.value) MR.images.ic_check_circle else MR.images.ic_radio_button_unchecked),
+    null,
+    modifier.size(22.dp * fontSizeMultiplier),
+    tint = if (checked.value) {
+      MaterialTheme.colors.primary
+    } else if (isInDarkTheme()) {
+      // .tertiaryLabel instead of .secondary
+      Color(red = 235f / 255f, 235f / 255f, 245f / 255f, 76f / 255f)
+    } else {
+      // .tertiaryLabel instead of .secondary
+      Color(red = 60f / 255f, 60f / 255f, 67f / 255f, 76f / 255f)
+    }
+  )
+}
+
+private fun selectUnselectChatItem(select: Boolean, ci: ChatItem, revealed: State<Boolean>, selectedChatItems: MutableState<Set<Long>?>) {
+  val itemIds = mutableSetOf<Long>()
+  if (!revealed.value) {
+    val currIndex = chatModel.getChatItemIndexOrNull(ci)
+    val ciCategory = ci.mergeCategory
+    if (currIndex != null && ciCategory != null) {
+      val (prevHidden, _) = chatModel.getPrevShownChatItem(currIndex, ciCategory)
+      val range = chatViewItemsRange(currIndex, prevHidden)
+      if (range != null) {
+        val reversedChatItems = chatModel.chatItems.asReversed()
+        for (i in range) {
+          itemIds.add(reversedChatItems[i].id)
+        }
+      } else {
+        itemIds.add(ci.id)
+      }
+    } else {
+      itemIds.add(ci.id)
+    }
+  } else {
+    itemIds.add(ci.id)
+  }
+  if (select) {
+    val sel = selectedChatItems.value ?: setOf()
+    selectedChatItems.value = sel.union(itemIds)
+  } else {
+    val sel = (selectedChatItems.value ?: setOf()).toMutableSet()
+    sel.removeAll(itemIds)
+    selectedChatItems.value = sel
+  }
+}
+
+private fun deleteMessages(chat: Chat, itemIds: List<Long>, forAll: Boolean, moderate: Boolean, onSuccess: () -> Unit = {}) {
+  if (itemIds.isNotEmpty()) {
+    withBGApi {
+      val chatInfo = chat.chatInfo
+      val chatRh = chat.remoteHostId
+      val deleted = if (chatInfo is ChatInfo.Group && forAll && moderate) {
+        chatModel.controller.apiDeleteMemberChatItems(
+          chatRh,
+          groupId = chatInfo.groupInfo.groupId,
+          itemIds = itemIds
+        )
+      } else {
+        chatModel.controller.apiDeleteChatItems(
+          chatRh,
+          type = chatInfo.chatType,
+          id = chatInfo.apiId,
+          itemIds = itemIds,
+          mode = if (forAll) CIDeleteMode.cidmBroadcast else CIDeleteMode.cidmInternal
+        )
+      }
+      if (deleted != null) {
+        withChats {
+          for (di in deleted) {
+            val toChatItem = di.toChatItem?.chatItem
+            if (toChatItem != null) {
+              upsertChatItem(chatRh, chatInfo, toChatItem)
+            } else {
+              removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
+            }
+          }
+        }
+        onSuccess()
+      }
+    }
+  }
+}
+
 private fun markUnreadChatAsRead(activeChat: MutableState<Chat?>, chatModel: ChatModel) {
   val chat = activeChat.value
   if (chat?.chatStats?.unreadChat != true) return
@@ -1575,6 +1731,7 @@ fun PreviewChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
+      selectedChatItems = remember { mutableStateOf(setOf()) },
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },
@@ -1649,6 +1806,7 @@ fun PreviewGroupChatLayout() {
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
+      selectedChatItems = remember { mutableStateOf(setOf()) },
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },
