@@ -152,8 +152,14 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
           ChatList(chatModel, searchText = searchText, oneHandUI = oneHandUI)
         }
         if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
+          var textModifier = Modifier.align(Alignment.Center)
+
+          if (oneHandUI.state.value) {
+            textModifier = textModifier.scale(scaleX = 1f, scaleY = -1f)
+          }
+
           Text(stringResource(
-            if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
+            if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), textModifier, color = MaterialTheme.colors.secondary)
         }
       }
     }
