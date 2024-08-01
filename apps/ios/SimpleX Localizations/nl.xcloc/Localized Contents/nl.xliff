@@ -783,8 +783,9 @@
         <target>Toestaan dat verdwijnende berichten worden verzonden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow sharing" xml:space="preserve">
+      <trans-unit id="Allow sharing" xml:space="preserve" approved="no">
         <source>Allow sharing</source>
+        <target state="translated">Delen toestaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
@@ -1077,8 +1078,9 @@
         <target>Geblokkeerd door beheerder</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Blur media" xml:space="preserve">
+      <trans-unit id="Blur media" xml:space="preserve" approved="no">
         <source>Blur media</source>
+        <target state="translated">Vervaag media</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -1546,8 +1548,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Verbindingsfout (AUTH)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection notifications" xml:space="preserve">
+      <trans-unit id="Connection notifications" xml:space="preserve" approved="no">
         <source>Connection notifications</source>
+        <target state="translated">Verbindingsmeldingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection request sent!" xml:space="preserve">
@@ -1898,8 +1901,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Verwijderen</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Delete %lld messages of members?" xml:space="preserve">
+      <trans-unit id="Delete %lld messages of members?" xml:space="preserve" approved="no">
         <source>Delete %lld messages of members?</source>
+        <target state="translated">%lld berichten van leden verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete %lld messages?" xml:space="preserve">
@@ -2144,8 +2148,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Desktop apparaten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve">
+      <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve" approved="no">
         <source>Destination server address of %@ is incompatible with forwarding server %@ settings.</source>
+        <target state="translated">Het bestemmingsserveradres van %@ is niet compatibel met de doorstuurserverinstellingen %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Destination server error: %@" xml:space="preserve">
@@ -2153,8 +2158,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Bestemmingsserverfout: %@</target>
         <note>snd error text</note>
       </trans-unit>
-      <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve">
+      <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve" approved="no">
         <source>Destination server version of %@ is incompatible with forwarding server %@.</source>
+        <target state="translated">De versie van de bestemmingsserver %@ is niet compatibel met de doorstuurserver %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Detailed statistics" xml:space="preserve">
@@ -2222,8 +2228,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Uitschakelen voor iedereen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disabled" xml:space="preserve">
+      <trans-unit id="Disabled" xml:space="preserve" approved="no">
         <source>Disabled</source>
+        <target state="translated">Uitgeschakeld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disappearing message" xml:space="preserve">
@@ -2451,8 +2458,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Zelfvernietigings wachtwoord inschakelen</target>
         <note>set passcode view</note>
       </trans-unit>
-      <trans-unit id="Enabled" xml:space="preserve">
+      <trans-unit id="Enabled" xml:space="preserve" approved="no">
         <source>Enabled</source>
+        <target state="translated">Ingeschakeld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enabled for" xml:space="preserve">
@@ -2625,8 +2633,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Fout bij wijzigen van instelling</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve">
+      <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve" approved="no">
         <source>Error connecting to forwarding server %@. Please try later.</source>
+        <target state="translated">Fout bij het verbinden met doorstuurserver %@. Probeer het later opnieuw.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error creating address" xml:space="preserve">
@@ -3135,8 +3144,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Doorgestuurd vanuit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve">
+      <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve" approved="no">
         <source>Forwarding server %@ failed to connect to destination server %@. Please try later.</source>
+        <target state="translated">De doorstuurserver %@ kon geen verbinding maken met de bestemmingsserver %@. Probeer het later opnieuw.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarding server address is incompatible with network settings: %@." xml:space="preserve">
