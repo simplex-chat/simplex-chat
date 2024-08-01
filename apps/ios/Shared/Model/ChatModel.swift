@@ -614,7 +614,7 @@ final class ChatModel: ObservableObject {
 
         init() {
             subject
-                .throttle(for: 10, scheduler: DispatchQueue.main, latest: true)
+                .throttle(for: 3, scheduler: DispatchQueue.main, latest: true)
                 .sink { self.popRecentChats() }
                 .store(in: &bag)
         }
