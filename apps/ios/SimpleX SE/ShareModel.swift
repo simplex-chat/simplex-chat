@@ -19,10 +19,10 @@ private let MAX_DOWNSAMPLE_SIZE: Int64 = 2000
 
 class ShareModel: ObservableObject {
     @Published var sharedContent: SharedContent?
-    @Published var chats = Array<ChatData>()
-    @Published var profileImages = Dictionary<ChatInfo.ID, UIImage>()
-    @Published var search = String()
-    @Published var comment = String()
+    @Published var chats: [ChatData] = []
+    @Published var profileImages: [ChatInfo.ID: UIImage] = [:]
+    @Published var search = ""
+    @Published var comment = ""
     @Published var selected: ChatData?
     @Published var isLoaded = false
     @Published var bottomBar: BottomBar = .loadingSpinner
@@ -51,6 +51,13 @@ class ShareModel: ObservableObject {
     private var itemProvider: NSItemProvider?
 
     var isSendDisbled: Bool { sharedContent == nil || selected == nil || isProhibited(selected) }
+    
+    var isLinkPreview: Bool {
+        switch sharedContent {
+        case .url: true
+        default: false
+        }
+    }
 
     func isProhibited(_ chat: ChatData?) -> Bool {
         if let chat, let sharedContent {
@@ -58,7 +65,7 @@ class ShareModel: ObservableObject {
         } else { false }
     }
 
-    var filteredChats: Array<ChatData> {
+    var filteredChats: [ChatData] {
         search.isEmpty
         ? filterChatsToForwardTo(chats: chats)
         : filterChatsToForwardTo(chats: chats)
@@ -111,7 +118,7 @@ class ShareModel: ObservableObject {
                 }
                 // Process Attachment
                 Task {
-                    switch await self.itemProvider!.sharedContent() {
+                    switch await getSharedContent(self.itemProvider!) {
                     case let .success(chatItemContent):
                         await MainActor.run {
                             self.sharedContent = chatItemContent
@@ -381,7 +388,7 @@ enum SharedContent {
         switch self {
         case let .image(preview, _): .image(text: comment, image: preview)
         case let .movie(preview, duration, _): .video(text: comment, image: preview, duration: duration)
-        case let .url(preview): .link(text: comment, preview: preview)
+        case let .url(preview): .link(text: preview.uri.absoluteString + (comment == "" ? "" : "\n" + comment), preview: preview)
         case .text: .text(comment)
         case .data: .file(comment)
         }
@@ -396,91 +403,89 @@ enum SharedContent {
     }
 }
 
-extension NSItemProvider {
-    fileprivate func sharedContent() async -> Result<SharedContent, ErrorAlert> {
-        if let type = firstMatching(of: [.image, .movie, .fileURL, .url, .text]) {
-            switch type {
-                // Prepare Image message
-            case .image:
-
-                // Animated
-                return if hasItemConformingToTypeIdentifier(UTType.gif.identifier) {
-                    if let url = try? await inPlaceUrl(type: type),
-                       let data = try? Data(contentsOf: url),
-                       let image = UIImage(data: data),
-                       let cryptoFile = saveFile(data, generateNewFileName("IMG", "gif"), encrypted: privacyEncryptLocalFilesGroupDefault.get()),
-                       let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
-                        .success(.image(preview: preview, cryptoFile: cryptoFile))
-                    } else { .failure(ErrorAlert("Error preparing message")) }
-
-                // Static
-                } else {
-                    if let image = await staticImage(),
-                       let cryptoFile = saveImage(image),
-                       let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
-                        .success(.image(preview: preview, cryptoFile: cryptoFile))
-                    } else { .failure(ErrorAlert("Error preparing message")) }
-                }
-
-            // Prepare Movie message
-            case .movie:
+fileprivate func getSharedContent(_ ip: NSItemProvider) async -> Result<SharedContent, ErrorAlert> {
+    if let type = firstMatching(of: [.image, .movie, .fileURL, .url, .text]) {
+        switch type {
+            // Prepare Image message
+        case .image:
+            // Animated
+            return if ip.hasItemConformingToTypeIdentifier(UTType.gif.identifier) {
                 if let url = try? await inPlaceUrl(type: type),
-                   let trancodedUrl = await transcodeVideo(from: url),
-                   let (image, duration) = AVAsset(url: trancodedUrl).generatePreview(),
-                   let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE),
-                   let cryptoFile = moveTempFileFromURL(trancodedUrl) {
-                    try? FileManager.default.removeItem(at: trancodedUrl)
-                    return .success(.movie(preview: preview, duration: duration, cryptoFile: cryptoFile))
-                } else { return .failure(ErrorAlert("Error preparing message")) }
-
-            // Prepare Data message
-            case .fileURL:
-                if let url = try? await inPlaceUrl(type: .data) {
-                    if isFileTooLarge(for: url) {
-                        let sizeString = ByteCountFormatter.string(
-                            fromByteCount: Int64(getMaxFileSize(.xftp)),
-                            countStyle: .binary
-                        )
-                        return .failure(
-                            ErrorAlert(
-                                title: "Large file!",
-                                message: "Currently maximum supported file size is \(sizeString)."
-                            )
-                        )
-                    }
-                    if let file = saveFileFromURL(url) {
-                        return .success(.data(cryptoFile: file))
-                    }
-                }
-                return .failure(ErrorAlert("Error preparing file"))
-
-            // Prepare Link message
-            case .url:
-                if let url = try? await loadItem(forTypeIdentifier: type.identifier) as? URL {
-                    let content: SharedContent =
-                        if privacyLinkPreviewsGroupDefault.get(), let linkPreview = await getLinkPreview(for: url) {
-                            .url(preview: linkPreview)
-                        } else {
-                            .text(string: url.absoluteString)
-                        }
-                    return .success(content)
-                } else { return .failure(ErrorAlert("Error preparing message")) }
-
-            // Prepare Text message
-            case .text:
-                return if let text = try? await loadItem(forTypeIdentifier: type.identifier) as? String {
-                    .success(.text(string: text))
+                   let data = try? Data(contentsOf: url),
+                   let image = UIImage(data: data),
+                   let cryptoFile = saveFile(data, generateNewFileName("IMG", "gif"), encrypted: privacyEncryptLocalFilesGroupDefault.get()),
+                   let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
+                    .success(.image(preview: preview, cryptoFile: cryptoFile))
                 } else { .failure(ErrorAlert("Error preparing message")) }
-            default: return .failure(ErrorAlert("Unsupported format"))
+
+            // Static
+            } else {
+                if let image = await staticImage(),
+                   let cryptoFile = saveImage(image),
+                   let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
+                    .success(.image(preview: preview, cryptoFile: cryptoFile))
+                } else { .failure(ErrorAlert("Error preparing message")) }
             }
-        } else {
-            return .failure(ErrorAlert("Unsupported format"))
+
+        // Prepare Movie message
+        case .movie:
+            if let url = try? await inPlaceUrl(type: type),
+               let trancodedUrl = await transcodeVideo(from: url),
+               let (image, duration) = AVAsset(url: trancodedUrl).generatePreview(),
+               let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE),
+               let cryptoFile = moveTempFileFromURL(trancodedUrl) {
+                try? FileManager.default.removeItem(at: trancodedUrl)
+                return .success(.movie(preview: preview, duration: duration, cryptoFile: cryptoFile))
+            } else { return .failure(ErrorAlert("Error preparing message")) }
+
+        // Prepare Data message
+        case .fileURL:
+            if let url = try? await inPlaceUrl(type: .data) {
+                if isFileTooLarge(for: url) {
+                    let sizeString = ByteCountFormatter.string(
+                        fromByteCount: Int64(getMaxFileSize(.xftp)),
+                        countStyle: .binary
+                    )
+                    return .failure(
+                        ErrorAlert(
+                            title: "Large file!",
+                            message: "Currently maximum supported file size is \(sizeString)."
+                        )
+                    )
+                }
+                if let file = saveFileFromURL(url) {
+                    return .success(.data(cryptoFile: file))
+                }
+            }
+            return .failure(ErrorAlert("Error preparing file"))
+
+        // Prepare Link message
+        case .url:
+            if let url = try? await ip.loadItem(forTypeIdentifier: type.identifier) as? URL {
+                let content: SharedContent =
+                    if privacyLinkPreviewsGroupDefault.get(), let linkPreview = await getLinkPreview(for: url) {
+                        .url(preview: linkPreview)
+                    } else {
+                        .text(string: url.absoluteString)
+                    }
+                return .success(content)
+            } else { return .failure(ErrorAlert("Error preparing message")) }
+
+        // Prepare Text message
+        case .text:
+            return if let text = try? await ip.loadItem(forTypeIdentifier: type.identifier) as? String {
+                .success(.text(string: text))
+            } else { .failure(ErrorAlert("Error preparing message")) }
+        default: return .failure(ErrorAlert("Unsupported format"))
         }
+    } else {
+        return .failure(ErrorAlert("Unsupported format"))
     }
 
-    private func inPlaceUrl(type: UTType) async throws -> URL {
+
+    func inPlaceUrl(type: UTType) async throws -> URL {
         try await withCheckedThrowingContinuation { cont in
-            let _ = loadInPlaceFileRepresentation(forTypeIdentifier: type.identifier) { url, bool, error in
+            let _ = ip.loadInPlaceFileRepresentation(forTypeIdentifier: type.identifier) { url, bool, error in
                 if let url = url {
                     cont.resume(returning: url)
                 } else if let error = error {
@@ -492,21 +497,21 @@ extension NSItemProvider {
         }
     }
 
-    private func firstMatching(of types: Array<UTType>) -> UTType? {
+    func firstMatching(of types: Array<UTType>) -> UTType? {
         for type in types {
-            if hasItemConformingToTypeIdentifier(type.identifier) { return type }
+            if ip.hasItemConformingToTypeIdentifier(type.identifier) { return type }
         }
         return nil
     }
 
-    private func staticImage() async -> UIImage? {
+    func staticImage() async -> UIImage? {
         if let url = try? await inPlaceUrl(type: .image),
            let downsampledImage = downsampleImage(at: url, to: MAX_DOWNSAMPLE_SIZE) {
             downsampledImage
         } else {
             /// Fallback to loading image directly from `ItemProvider`
             /// in case loading from disk is not possible. Required for sharing screenshots.
-            try? await loadItem(forTypeIdentifier: UTType.image.identifier) as? UIImage
+            try? await ip.loadItem(forTypeIdentifier: UTType.image.identifier) as? UIImage
         }
     }
 }
