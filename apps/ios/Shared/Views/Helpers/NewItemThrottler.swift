@@ -30,12 +30,7 @@ class NewItemThrottler {
     }
 
     func receive(_ cItem: ChatItem, for cInfo: ChatInfo) {
-        // Messages sent to the current chat are updated directly
-        if ChatModel.shared.chatId == cInfo.id {
-            ChatModel.shared.addChatItem(cInfo, cItem)
-        } else {
-            DispatchQueue.main.async { self.accumulated.append((cInfo, cItem)) }
-            subject.send()
-        }
+        DispatchQueue.main.async { self.accumulated.append((cInfo, cItem)) }
+        subject.send()
     }
 }
