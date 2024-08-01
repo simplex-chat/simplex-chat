@@ -1815,7 +1815,7 @@
     <string name="saved_chat_item_info_tab">נשמר</string>
     <string name="saved_from_chat_item_info_title">נשמר מ</string>
     <string name="recipients_can_not_see_who_message_from">מקבלי ההודעה לא יוכלו לראות מי שלח את ההודעה</string>
-    <string name="forward_chat_item">הועבר</string>
+    <string name="forward_chat_item">העבר</string>
     <string name="forward_message">מעביר הודעה…</string>
     <string name="simplex_links_not_allowed">קישורי SimpleX לא מאופשרים</string>
     <string name="network_smp_proxy_mode_private_routing">מסלול פרטי</string>
