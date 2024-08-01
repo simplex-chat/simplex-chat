@@ -158,9 +158,10 @@ struct ChatListView: View {
                     .offset(x: -8)
                 }
             }
-            .onChange(of: chatModel.chatId) { chatId in
-                if chatId == nil {
-                    chatModel.popChatCollector.popRecentChats()
+            .onChange(of: chatModel.chatId) { chId in
+                if chId == nil, let chatId = chatModel.chatToTop {
+                    chatModel.chatToTop = nil
+                    chatModel.popChat(chatId)
                 }
                 stopAudioPlayer()
             }

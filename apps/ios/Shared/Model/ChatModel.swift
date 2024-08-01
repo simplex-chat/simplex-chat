@@ -85,6 +85,7 @@ final class ChatModel: ObservableObject {
     // current chat
     @Published var chatId: String?
     var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
+    @Published var chatToTop: String?
     @Published var groupMembers: [GMember] = []
     @Published var groupMembersIndexes: Dictionary<Int64, Int> = [:] // groupMemberId to index in groupMembers list
     @Published var membersLoaded = false
@@ -300,7 +301,7 @@ final class ChatModel: ObservableObject {
                     if chatId != c.chatInfo.id  {
                         popChat_(j, to: i)
                     }  else if i == 0 {
-                        popChatCollector.addChat(c.chatInfo.id)
+                        chatToTop = c.chatInfo.id
                     }
                 }
             } else {
@@ -336,7 +337,11 @@ final class ChatModel: ObservableObject {
                 increaseUnreadCounter(user: currentUser!)
             }
             if i > 0 {
-                popChatCollector.addChat(cInfo.id)
+                if chatId == cInfo.id {
+                    chatToTop = cInfo.id
+                } else {
+                    popChatCollector.addChat(cInfo.id)
+                }
             }
         } else {
             addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
@@ -760,6 +765,12 @@ final class ChatModel: ObservableObject {
             }
         }
         return (prevMember, memberIds.count)
+    }
+
+    func popChat(_ id: String) {
+        if let i = getChatIndex(id) {
+            popChat_(i)
+        }
     }
 
     private func popChat_(_ i: Int, to position: Int = 0) {
