@@ -632,7 +632,6 @@ final class ChatModel: ObservableObject {
         
         func popRecentChats() {
             let m = ChatModel.shared
-            if m.chatId != nil { return }
             var ixs: IndexSet = []
             var chs: [Chat] = []
             var skipped: ChatId?
