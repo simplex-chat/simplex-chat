@@ -1711,7 +1711,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         let cItem = aChatItem.chatItem
         await MainActor.run {
             if active(user) {
-                NewItemThrottler.shared.receive(cItem, for: cInfo)
+                m.addChatItem(cInfo, cItem)
             } else if cItem.isRcvNew && cInfo.ntfsEnabled {
                 m.increaseUnreadCounter(user: user)
             }
