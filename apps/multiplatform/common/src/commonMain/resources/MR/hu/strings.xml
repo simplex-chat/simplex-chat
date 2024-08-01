@@ -1987,4 +1987,11 @@
     <string name="proxy_destination_error_broker_version">A(z) %1$s célkiszolgáló verziója nem kompatibilis a(z) %2$s továbbító kiszolgálóval.</string>
     <string name="proxy_destination_error_failed_to_connect">A(z) %1$s továbbító kiszolgáló nem tudott csatlakozni a(z) %2$s célkiszolgálóhoz. Próbálja meg később.</string>
     <string name="proxy_destination_error_broker_host">A(z) %1$s célkiszolgáló címe nem kompatibilis a(z) %2$s továbbító kiszolgáló beállításaival.</string>
+    <string name="privacy_media_blur_radius">Média elhomályosítása</string>
+    <string name="privacy_media_blur_radius_medium">Közepes</string>
+    <string name="privacy_media_blur_radius_off">Kikapcsolva</string>
+    <string name="privacy_media_blur_radius_soft">Enyhe</string>
+    <string name="privacy_media_blur_radius_strong">Erős</string>
+    <string name="smp_proxy_error_broker_host">A továbbító kiszolgáló címe nem kompatibilis a hálózati beállításokkal: %1$s.</string>
+    <string name="smp_proxy_error_broker_version">A továbbító kiszolgáló verziója nem kompatibilis a hálózati beállításokkal: %1$s.</string>
 </resources>
