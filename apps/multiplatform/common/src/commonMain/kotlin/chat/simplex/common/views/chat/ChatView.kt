@@ -657,6 +657,7 @@ fun ChatInfoToolbar(
   onSearchValueChanged: (String) -> Unit,
   showSearch: MutableState<Boolean>
 ) {
+  val scope = rememberCoroutineScope()
   val showMenu = rememberSaveable { mutableStateOf(false) }
 
   val onBackClicked = {
@@ -671,12 +672,14 @@ fun ChatInfoToolbar(
     BackHandler(onBack = onBackClicked)
   }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
+  val menuItems = arrayListOf<@Composable () -> Unit>()
   val activeCall by remember { chatModel.activeCall }
   if (chat.chatInfo is ChatInfo.Local) {
     barButtons.add {
-      IconButton({
-        showMenu.value = false
-        showSearch.value = true
+      IconButton(
+        {
+          showMenu.value = false
+          showSearch.value = true
         }, enabled = chat.chatInfo.noteFolder.ready
       ) {
         Icon(
@@ -685,6 +688,13 @@ fun ChatInfoToolbar(
           tint = if (chat.chatInfo.noteFolder.ready) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
         )
       }
+    }
+  } else {
+    menuItems.add {
+      ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
+        showMenu.value = false
+        showSearch.value = true
+      })
     }
   }
 
@@ -746,6 +756,21 @@ fun ChatInfoToolbar(
         }
       }
     }
+    if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active && activeCall == null) {
+      menuItems.add {
+        if (appPlatform.isAndroid) {
+          ItemAction(stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current), painterResource(MR.images.ic_videocam), onClick = {
+            showMenu.value = false
+            startCall(CallMediaType.Video)
+          })
+        } else {
+          ItemAction(stringResource(MR.strings.icon_descr_audio_call).capitalize(Locale.current), painterResource(MR.images.ic_call_500), onClick = {
+            showMenu.value = false
+            startCall(CallMediaType.Audio)
+          })
+        }
+      }
+    }
   } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.canAddMembers) {
     if (!chat.chatInfo.incognito) {
       barButtons.add {
@@ -768,6 +793,32 @@ fun ChatInfoToolbar(
     }
   }
 
+  if ((chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.ready && chat.chatInfo.contact.active) || chat.chatInfo is ChatInfo.Group) {
+    val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
+    menuItems.add {
+      ItemAction(
+        if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
+        if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
+        onClick = {
+          showMenu.value = false
+          // Just to make a delay before changing state of ntfsEnabled, otherwise it will redraw menu item with new value before closing the menu
+          scope.launch {
+            delay(200)
+            changeNtfsState(!ntfsEnabled.value, ntfsEnabled)
+          }
+        }
+      )
+    }
+  }
+
+  if (menuItems.isNotEmpty()) {
+    barButtons.add {
+      IconButton({ showMenu.value = true }) {
+        Icon(MoreVertFilled, stringResource(MR.strings.icon_descr_more_button), tint = MaterialTheme.colors.primary)
+      }
+    }
+  }
+
   DefaultTopAppBar(
     navigationButton = { if (appPlatform.isAndroid || showSearch.value) { NavigationButtonBack(onBackClicked) }  },
     title = { ChatInfoToolbarTitle(chat.chatInfo) },
@@ -778,6 +829,12 @@ fun ChatInfoToolbar(
   )
 
   Divider(Modifier.padding(top = AppBarHeight * fontSizeSqrtMultiplier))
+
+  Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd).offset(y = AppBarHeight * fontSizeSqrtMultiplier)) {
+    DefaultDropdownMenu(showMenu) {
+      menuItems.forEach { it() }
+    }
+  }
 }
 
 @Composable
