@@ -3149,12 +3149,14 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target state="translated">De doorstuurserver %@ kon geen verbinding maken met de bestemmingsserver %@. Probeer het later opnieuw.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forwarding server address is incompatible with network settings: %@." xml:space="preserve">
+      <trans-unit id="Forwarding server address is incompatible with network settings: %@." xml:space="preserve" approved="no">
         <source>Forwarding server address is incompatible with network settings: %@.</source>
+        <target state="translated">Het adres van de doorstuurserver is niet compatibel met de netwerkinstellingen: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forwarding server version is incompatible with network settings: %@." xml:space="preserve">
+      <trans-unit id="Forwarding server version is incompatible with network settings: %@." xml:space="preserve" approved="no">
         <source>Forwarding server version is incompatible with network settings: %@.</source>
+        <target state="translated">De doorstuurserverversie is niet compatibel met de netwerkinstellingen: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarding server: %@&#10;Destination server error: %@" xml:space="preserve">
@@ -3976,8 +3978,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Max 30 seconden, direct ontvangen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Medium" xml:space="preserve">
+      <trans-unit id="Medium" xml:space="preserve" approved="no">
         <source>Medium</source>
+        <target state="translated">Medium</target>
         <note>blur media</note>
       </trans-unit>
       <trans-unit id="Member" xml:space="preserve">
@@ -4405,8 +4408,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Niet compatibel!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Nothing selected" xml:space="preserve">
+      <trans-unit id="Nothing selected" xml:space="preserve" approved="no">
         <source>Nothing selected</source>
+        <target state="translated">Niets geselecteerd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Notifications" xml:space="preserve">
@@ -5584,8 +5588,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Selecteer</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Selected %lld" xml:space="preserve">
+      <trans-unit id="Selected %lld" xml:space="preserve" approved="no">
         <source>Selected %lld</source>
+        <target state="translated">%lld geselecteerd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve">
@@ -5953,8 +5958,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Deel deze eenmalige uitnodigingslink</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share to SimpleX" xml:space="preserve">
+      <trans-unit id="Share to SimpleX" xml:space="preserve" approved="no">
         <source>Share to SimpleX</source>
+        <target state="translated">Delen op SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share with contacts" xml:space="preserve">
@@ -6107,8 +6113,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Kleine groepen (max 20)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Soft" xml:space="preserve">
+      <trans-unit id="Soft" xml:space="preserve" approved="no">
         <source>Soft</source>
+        <target state="translated">Soft</target>
         <note>blur media</note>
       </trans-unit>
       <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve">
@@ -6211,8 +6218,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Chat stoppen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Strong" xml:space="preserve">
+      <trans-unit id="Strong" xml:space="preserve" approved="no">
         <source>Strong</source>
+        <target state="translated">Krachtig</target>
         <note>blur media</note>
       </trans-unit>
       <trans-unit id="Submit" xml:space="preserve">
@@ -6422,12 +6430,14 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>Het bericht wordt gemarkeerd als gemodereerd voor alle leden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The messages will be deleted for all members." xml:space="preserve">
+      <trans-unit id="The messages will be deleted for all members." xml:space="preserve" approved="no">
         <source>The messages will be deleted for all members.</source>
+        <target state="translated">De berichten worden voor alle leden verwijderd.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The messages will be marked as moderated for all members." xml:space="preserve">
+      <trans-unit id="The messages will be marked as moderated for all members." xml:space="preserve" approved="no">
         <source>The messages will be marked as moderated for all members.</source>
+        <target state="translated">De berichten worden voor alle leden als gemodereerd gemarkeerd.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The next generation of private messaging" xml:space="preserve">
@@ -8624,16 +8634,19 @@ laatst ontvangen bericht: %2$@</target>
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
     </header>
     <body>
-      <trans-unit id="CFBundleDisplayName" xml:space="preserve">
+      <trans-unit id="CFBundleDisplayName" xml:space="preserve" approved="no">
         <source>SimpleX SE</source>
+        <target state="translated">SimpleX SE</target>
         <note>Bundle display name</note>
       </trans-unit>
-      <trans-unit id="CFBundleName" xml:space="preserve">
+      <trans-unit id="CFBundleName" xml:space="preserve" approved="no">
         <source>SimpleX SE</source>
+        <target state="translated">SimpleX SE</target>
         <note>Bundle name</note>
       </trans-unit>
-      <trans-unit id="NSHumanReadableCopyright" xml:space="preserve">
+      <trans-unit id="NSHumanReadableCopyright" xml:space="preserve" approved="no">
         <source>Copyright © 2024 SimpleX Chat. All rights reserved.</source>
+        <target state="translated">Copyright © 2024 SimpleX Chat. All rights reserved.</target>
         <note>Copyright (human-readable)</note>
       </trans-unit>
     </body>
@@ -8643,88 +8656,108 @@ laatst ontvangen bericht: %2$@</target>
       <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="15.4" build-num="15F31d"/>
     </header>
     <body>
-      <trans-unit id="%@" xml:space="preserve">
+      <trans-unit id="%@" xml:space="preserve" approved="no">
         <source>%@</source>
+        <target state="translated">%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App is locked!" xml:space="preserve">
+      <trans-unit id="App is locked!" xml:space="preserve" approved="no">
         <source>App is locked!</source>
+        <target state="translated">App is vergrendeld!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cancel" xml:space="preserve">
+      <trans-unit id="Cancel" xml:space="preserve" approved="no">
         <source>Cancel</source>
+        <target state="translated">Annuleren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
+      <trans-unit id="Cannot access keychain to save database password" xml:space="preserve" approved="no">
         <source>Cannot access keychain to save database password</source>
+        <target state="translated">Kan geen toegang krijgen tot de keychain om het database wachtwoord op te slaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Cannot forward message" xml:space="preserve">
+      <trans-unit id="Cannot forward message" xml:space="preserve" approved="no">
         <source>Cannot forward message</source>
+        <target state="translated">Kan bericht niet doorsturen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Comment" xml:space="preserve">
+      <trans-unit id="Comment" xml:space="preserve" approved="no">
         <source>Comment</source>
+        <target state="translated">Opmerking</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
+      <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve" approved="no">
         <source>Currently maximum supported file size is %@.</source>
+        <target state="translated">De momenteel maximaal ondersteunde bestandsgrootte is %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database downgrade required" xml:space="preserve">
+      <trans-unit id="Database downgrade required" xml:space="preserve" approved="no">
         <source>Database downgrade required</source>
+        <target state="translated">Database downgrade vereist</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database encrypted!" xml:space="preserve">
+      <trans-unit id="Database encrypted!" xml:space="preserve" approved="no">
         <source>Database encrypted!</source>
+        <target state="translated">Database versleuteld!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database error" xml:space="preserve">
+      <trans-unit id="Database error" xml:space="preserve" approved="no">
         <source>Database error</source>
+        <target state="translated">Database fout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
+      <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve" approved="no">
         <source>Database passphrase is different from saved in the keychain.</source>
+        <target state="translated">Het wachtwoord van de database verschilt van het wachtwoord die in de keychain is opgeslagen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase is required to open chat." xml:space="preserve">
+      <trans-unit id="Database passphrase is required to open chat." xml:space="preserve" approved="no">
         <source>Database passphrase is required to open chat.</source>
+        <target state="translated">Database wachtwoord is vereist om je gesprekken te openen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database upgrade required" xml:space="preserve">
+      <trans-unit id="Database upgrade required" xml:space="preserve" approved="no">
         <source>Database upgrade required</source>
+        <target state="translated">Database upgrade vereist</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Dismiss Sheet" xml:space="preserve">
         <source>Dismiss Sheet</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error preparing file" xml:space="preserve">
+      <trans-unit id="Error preparing file" xml:space="preserve" approved="no">
         <source>Error preparing file</source>
+        <target state="translated">Fout bij voorbereiden bestand</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error preparing message" xml:space="preserve">
+      <trans-unit id="Error preparing message" xml:space="preserve" approved="no">
         <source>Error preparing message</source>
+        <target state="translated">Fout bij het voorbereiden van bericht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error: %@" xml:space="preserve">
+      <trans-unit id="Error: %@" xml:space="preserve" approved="no">
         <source>Error: %@</source>
+        <target state="translated">Fout: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File error" xml:space="preserve">
+      <trans-unit id="File error" xml:space="preserve" approved="no">
         <source>File error</source>
+        <target state="translated">Bestandsfout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incompatible database version" xml:space="preserve">
+      <trans-unit id="Incompatible database version" xml:space="preserve" approved="no">
         <source>Incompatible database version</source>
+        <target state="translated">Incompatibele database versie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invalid migration confirmation" xml:space="preserve">
+      <trans-unit id="Invalid migration confirmation" xml:space="preserve" approved="no">
         <source>Invalid migration confirmation</source>
+        <target state="translated">Ongeldige migratie bevestiging</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Keep Trying" xml:space="preserve">
+      <trans-unit id="Keep Trying" xml:space="preserve" approved="no">
         <source>Keep Trying</source>
+        <target state="translated">Blijven proberen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keychain error" xml:space="preserve">
