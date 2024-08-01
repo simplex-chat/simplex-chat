@@ -44,6 +44,7 @@ struct NewChatSheet: View {
     @State var newChatMenuOption: NewChatMenuOption?
     @EnvironmentObject var theme: AppTheme
     @State private var baseContactTypes: [ContactType] = [.card, .request, .recent]
+    @EnvironmentObject var chatModel: ChatModel
 
     var body: some View {
         NavigationView {
@@ -73,6 +74,17 @@ struct NewChatSheet: View {
                     newChatActionButton("person.2", color: theme.colors.secondary) { Text("Create group") }
                 }
             }
+            
+            if (!filterContactTypes(chats: chatModel.chats, contactTypes: [.chatDeleted]).isEmpty) {
+                Section {
+                    NavigationLink {
+                        DeletedChats()
+                    } label: {
+                        newChatActionButton("folder", color: theme.colors.secondary) { Text("Deleted chats") }
+                    }
+                }
+            }
+            
             Section(header: Text("Your contacts").textCase(.uppercase).foregroundColor(theme.colors.secondary)) {
                 ContactsList(baseContactTypes: $baseContactTypes)
             }
@@ -115,6 +127,11 @@ func chatContactType(chat: Chat) -> ContactType {
     }
 }
 
+private func filterContactTypes(chats: [Chat], contactTypes: [ContactType]) -> [Chat] {
+    return chats.filter { chat in
+        contactTypes.contains(chatContactType(chat: chat))
+    }
+}
 
 struct ContactsList: View {
     @EnvironmentObject var chatModel: ChatModel
@@ -146,12 +163,6 @@ struct ContactsList: View {
             return baseContactTypes
         } else {
             return baseContactTypes + [.chatDeleted]
-        }
-    }
-    
-    private func filterContactTypes(chats: [Chat], contactTypes: [ContactType]) -> [Chat] {
-        return chats.filter { chat in
-            contactTypes.contains(chatContactType(chat: chat))
         }
     }
     
@@ -211,6 +222,17 @@ struct ContactsList: View {
         }
 
         return filteredChats.sorted(by: chatsByTypeComparator)
+    }
+}
+
+struct DeletedChats: View {
+    @State private var baseContactTypes: [ContactType] = [.chatDeleted]
+
+    var body: some View {
+        List {
+            ContactsList(baseContactTypes: $baseContactTypes)
+        }
+        .modifier(ThemedBackground(grouped: true))
     }
 }
 
