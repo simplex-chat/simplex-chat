@@ -388,7 +388,7 @@ enum SharedContent {
         switch self {
         case let .image(preview, _): .image(text: comment, image: preview)
         case let .movie(preview, duration, _): .video(text: comment, image: preview, duration: duration)
-        case let .url(preview): .link(text: preview.uri.absoluteString + (comment == "" ? "" : " " + comment), preview: preview)
+        case let .url(preview): .link(text: preview.uri.absoluteString + (comment == "" ? "" : "\n" + comment), preview: preview)
         case .text: .text(comment)
         case .data: .file(comment)
         }
