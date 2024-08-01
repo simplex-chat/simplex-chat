@@ -17,6 +17,7 @@ struct GroupChatInfoView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
     @Binding var groupInfo: GroupInfo
+    var onSearch: () -> Void
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: String?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
@@ -68,6 +69,20 @@ struct GroupChatInfoView: View {
             List {
                 groupInfoHeader()
                     .listRowBackground(Color.clear)
+
+                HStack {
+                    searchButton()
+                    // TODO fix spacing of make disabled
+                    if groupInfo.canAddMembers {
+                        Spacer()
+                        addMembersActionButton()
+                    }
+                    Spacer()
+                    muteButton()
+                }
+                .padding(.horizontal)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
 
                 Section {
                     if groupInfo.canEdit {
@@ -196,6 +211,38 @@ struct GroupChatInfoView: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    private func searchButton() -> some View {
+        InfoViewActionButtonLayout(image: "magnifyingglass", title: "open")
+            .onTapGesture {
+                dismiss()
+                onSearch()
+            }
+            .disabled(!groupInfo.ready || chat.chatItems.isEmpty)
+    }
+
+    private func addMembersActionButton() -> some View {
+        InfoViewActionButtonLayout(image: chat.chatInfo.incognito ? "link.badge.plus" : "person.badge.plus", title: "invite")
+            .onTapGesture {
+                if chat.chatInfo.incognito {
+                    // TODO openGroupLink
+                } else {
+                    // TODO addGroupMembers
+                }
+            }
+            .disabled(!groupInfo.ready)
+    }
+
+    private func muteButton() -> some View {
+        InfoViewActionButtonLayout(
+            image: chat.chatInfo.ntfsEnabled ? "speaker.slash" : "speaker.wave.2",
+            title: chat.chatInfo.ntfsEnabled ? "mute" : "unmute"
+        )
+        .onTapGesture {
+            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
+        }
+        .disabled(!groupInfo.ready)
     }
 
     private func addMembersButton() -> some View {
@@ -577,7 +624,8 @@ struct GroupChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
         GroupChatInfoView(
             chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []),
-            groupInfo: Binding.constant(GroupInfo.sampleData)
+            groupInfo: Binding.constant(GroupInfo.sampleData),
+            onSearch: {}
         )
     }
 }

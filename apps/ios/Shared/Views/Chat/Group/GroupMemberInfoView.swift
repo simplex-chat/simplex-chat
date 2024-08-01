@@ -102,6 +102,15 @@ struct GroupMemberInfoView: View {
                         Spacer()
                         InfoViewActionButtonLayout(image: "video.fill", title: "video")
                             .disabled(true)
+                    } else { // no known contact chat && directMessages are off
+                        InfoViewActionButtonLayout(image: "message.fill", title: "message")
+                            .disabled(true)
+                        Spacer()
+                        InfoViewActionButtonLayout(image: "phone.fill", title: "call")
+                            .disabled(true)
+                        Spacer()
+                        InfoViewActionButtonLayout(image: "video.fill", title: "video")
+                            .disabled(true)
                     }
                 }
                 .padding(.horizontal)
@@ -331,22 +340,6 @@ struct GroupMemberInfoView: View {
                     }
                 }
             }
-    }
-
-    private func callButton(_ contact: Contact) -> some View {
-        InfoViewActionButtonLayout(image: "phone.fill", title: "call")
-            .onTapGesture {
-                CallController.shared.startCall(contact, .audio)
-            }
-            .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall != nil)
-    }
-
-    private func videoButton(_ contact: Contact) -> some View {
-        InfoViewActionButtonLayout(image: "video.fill", title: "video")
-            .onTapGesture {
-                CallController.shared.startCall(contact, .video)
-            }
-            .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall != nil)
     }
 
     private func groupMemberInfoHeader(_ mem: GroupMember) -> some View {

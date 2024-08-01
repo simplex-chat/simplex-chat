@@ -186,10 +186,10 @@ struct ChatView: View {
                     }
                     .appSheet(isPresented: $showChatInfoSheet) {
                         ChatInfoView(
-                            openedFromChatView: true,
                             chat: chat,
                             contact: contact,
-                            localAlias: chat.chatInfo.localAlias
+                            localAlias: chat.chatInfo.localAlias,
+                            onSearch: { focusSearch() }
                         )
                     }
                 } else if case let .group(groupInfo) = cInfo {
@@ -208,7 +208,8 @@ struct ChatView: View {
                                     chat.chatInfo = .group(groupInfo: gInfo)
                                     chat.created = Date.now
                                 }
-                            )
+                            ),
+                            onSearch: { focusSearch() }
                         )
                     }
                 } else if case .local = cInfo {
@@ -550,12 +551,16 @@ struct ChatView: View {
 
     private func searchButton() -> some View {
         Button {
-            searchMode = true
-            searchFocussed = true
-            searchText = ""
+            focusSearch()
         } label: {
             Label("Search", systemImage: "magnifyingglass")
         }
+    }
+
+    private func focusSearch() {
+        searchMode = true
+        searchFocussed = true
+        searchText = ""
     }
 
     private func addMembersButton() -> some View {

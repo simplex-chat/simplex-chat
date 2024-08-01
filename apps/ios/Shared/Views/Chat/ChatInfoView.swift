@@ -92,10 +92,10 @@ struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
-    var openedFromChatView: Bool
     @ObservedObject var chat: Chat
     @State var contact: Contact
     @State var localAlias: String
+    var onSearch: () -> Void
     @State private var connectionStats: ConnectionStats? = nil
     @State private var customUserProfile: Profile? = nil
     @State private var connectionCode: String? = nil
@@ -149,17 +149,13 @@ struct ChatInfoView: View {
                 .listRowSeparator(.hidden)
                 
                 HStack {
-                    if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
-                        connectButton()
-                    } else if !contact.active && !contact.chatDeleted {
-                        openButton()
-                    } else {
-                        messageButton()
-                    }
+                    searchButton()
                     Spacer()
-                    callButton()
+                    callButton(contact)
                     Spacer()
-                    videoButton()
+                    videoButton(contact)
+                    Spacer()
+                    muteButton()
                 }
                 .padding(.horizontal)
                 .listRowBackground(Color.clear)
@@ -393,84 +389,27 @@ struct ChatInfoView: View {
             }
         }
     }
-    
-    // when contact is a "contact card"
-    private func connectButton() -> some View {
-        InfoViewActionButtonLayout(image: "message.fill", title: "connect")
+
+    private func searchButton() -> some View {
+        InfoViewActionButtonLayout(image: "magnifyingglass", title: "open")
             .onTapGesture {
-                showConnectContactViaAddressDialog = true
+                dismiss()
+                onSearch()
             }
-            .confirmationDialog("Connect with \(contact.chatViewName)", isPresented: $showConnectContactViaAddressDialog, titleVisibility: .visible) {
-                Button("Use current profile") { connectContactViaAddress_(contact, false) }
-                Button("Use new incognito profile") { connectContactViaAddress_(contact, true) }
-            }
+            .disabled(!contact.ready || chat.chatItems.isEmpty)
     }
-    
-    private func connectContactViaAddress_(_ contact: Contact, _ incognito: Bool) {
-        Task {
-            let ok = await connectContactViaAddress(contact.contactId, incognito)
-            if ok {
-                await MainActor.run {
-                    if openedFromChatView {
-                        dismiss()
-                    } else {
-                        if contact.chatDeleted {
-                            var updatedContact = contact
-                            updatedContact.chatDeleted = false
-                            chatModel.updateContact(updatedContact)
-                        }
-                        chatModel.chatId = chat.id
-                    }
-                }
-            }
+
+    private func muteButton() -> some View {
+        InfoViewActionButtonLayout(
+            image: chat.chatInfo.ntfsEnabled ? "speaker.slash" : "speaker.wave.2",
+            title: chat.chatInfo.ntfsEnabled ? "mute" : "unmute"
+        )
+        .onTapGesture {
+            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
         }
+        .disabled(!contact.ready || !contact.active)
     }
-    
-    private func openButton() -> some View {
-        InfoViewActionButtonLayout(image: "message.fill", title: "open")
-            .onTapGesture {
-                if openedFromChatView {
-                    dismiss()
-                } else {
-                    chatModel.chatId = chat.id
-                }
-            }
-    }
-    
-    // TODO show keyboard
-    private func messageButton() -> some View {
-        InfoViewActionButtonLayout(image: "message.fill", title: "message")
-            .onTapGesture {
-                if openedFromChatView {
-                    dismiss()
-                } else {
-                    if contact.chatDeleted {
-                        var updatedContact = contact
-                        updatedContact.chatDeleted = false
-                        chatModel.updateContact(updatedContact)
-                    }
-                    chatModel.chatId = chat.id
-                }
-            }
-            .disabled(!contact.sendMsgEnabled)
-    }
-    
-    private func callButton() -> some View {
-        InfoViewActionButtonLayout(image: "phone.fill", title: "call")
-            .onTapGesture {
-                CallController.shared.startCall(contact, .audio)
-            }
-            .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall != nil)
-    }
-    
-    private func videoButton() -> some View {
-        InfoViewActionButtonLayout(image: "video.fill", title: "video")
-            .onTapGesture {
-                CallController.shared.startCall(contact, .video)
-            }
-            .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || chatModel.activeCall != nil)
-    }
-    
+
     private func verifyCodeButton(_ code: String) -> some View {
         NavigationLink {
             VerifyCodeView(
@@ -676,6 +615,22 @@ struct ChatInfoView: View {
     }
 }
 
+func callButton(_ contact: Contact) -> some View {
+    InfoViewActionButtonLayout(image: "phone.fill", title: "call")
+        .onTapGesture {
+            CallController.shared.startCall(contact, .audio)
+        }
+        .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || ChatModel.shared.activeCall != nil)
+}
+
+func videoButton(_ contact: Contact) -> some View {
+    InfoViewActionButtonLayout(image: "video.fill", title: "video")
+        .onTapGesture {
+            CallController.shared.startCall(contact, .video)
+        }
+        .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || ChatModel.shared.activeCall != nil)
+}
+
 struct InfoViewActionButtonLayout: View {
     var image: String
     var title: LocalizedStringKey
@@ -685,7 +640,7 @@ struct InfoViewActionButtonLayout: View {
             Image(systemName: image)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 24, height: 24)
+                .frame(width: 20, height: 20)
             Text(title)
                 .font(.caption)
         }
@@ -693,7 +648,7 @@ struct InfoViewActionButtonLayout: View {
         .foregroundColor(.accentColor)
         .background(Color(.secondarySystemGroupedBackground))
         .cornerRadius(12.0)
-        .frame(width: 90, height: 60)
+        .frame(width: 82, height: 56)
     }
 }
 
@@ -1076,10 +1031,10 @@ private func deleteNotReadyContact(
 struct ChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
         ChatInfoView(
-            openedFromChatView: true,
             chat: Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: []),
             contact: Contact.sampleData,
-            localAlias: ""
+            localAlias: "",
+            onSearch: {}
         )
     }
 }
