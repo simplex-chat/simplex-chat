@@ -298,7 +298,11 @@ final class ChatModel: ObservableObject {
                 chat.chatItems = c.chatItems
                 chat.chatStats = c.chatStats
                 if i != j {
-                    chatsToPop.insert(c.chatInfo.id)
+                    if chatId != c.chatInfo.id  {
+                        popChat_(j, to: i)
+                    }  else if i == 0 {
+                        chatsToPop.insert(c.chatInfo.id)
+                    }
                 }
             } else {
                 addChat(Chat(c), at: i)
@@ -670,6 +674,11 @@ final class ChatModel: ObservableObject {
             }
             chatsToPop = if let skipped { [skipped] } else { [] }
         }
+    }
+    
+    private func popChat_(_ i: Int, to position: Int = 0) {
+        let chat = chats.remove(at: i)
+        chats.insert(chat, at: position)
     }
     
     private func markChatItemRead_(_ i: Int) {
