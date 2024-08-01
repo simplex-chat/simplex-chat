@@ -69,7 +69,7 @@ fun NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
           ModalManager.center.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll ) }
         },
         scanPaste = {
-          ModalManager.center.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = true, close = closeAll) }
+          ModalManager.center.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll) }
         },
         createGroup = {
           ModalManager.center.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
@@ -173,7 +173,7 @@ private fun NewChatSheetLayout(
             )
             NewChatButton(
               icon = painterResource(MR.images.ic_qr_code),
-              text = stringResource(MR.strings.scan_paste_link),
+              text = if (appPlatform.isAndroid) stringResource(MR.strings.scan_paste_link) else stringResource(MR.strings.paste_link),
               click = scanPaste,
               extraPadding = true
             )
