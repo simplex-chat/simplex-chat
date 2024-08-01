@@ -753,9 +753,9 @@
         <target>Az eltűnő üzenetek küldése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi az ön számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow downgrade" xml:space="preserve">
+      <trans-unit id="Allow downgrade" xml:space="preserve" approved="no">
         <source>Allow downgrade</source>
-        <target>Korábbi verzióra történő visszatérés engedélyezése</target>
+        <target state="translated">Visszafejlesztés engedélyezése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you. (24 hours)" xml:space="preserve">
@@ -1399,9 +1399,9 @@
         <target>Jelkód megerősítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm database upgrades" xml:space="preserve">
+      <trans-unit id="Confirm database upgrades" xml:space="preserve" approved="no">
         <source>Confirm database upgrades</source>
-        <target>Adatbázis frissítés megerősítése</target>
+        <target state="translated">Adatbázis fejlesztésének megerősítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm files from unknown servers." xml:space="preserve">
@@ -1798,9 +1798,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Adatbázis azonosítók és átviteli izolációs beállítások.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database downgrade" xml:space="preserve">
+      <trans-unit id="Database downgrade" xml:space="preserve" approved="no">
         <source>Database downgrade</source>
-        <target>Visszatérés a korábbi adatbázis verzióra</target>
+        <target state="translated">Adatbázis visszafejlesztése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database encrypted!" xml:space="preserve">
@@ -1903,7 +1903,7 @@ Ez az egyszer használatos hivatkozása!</target>
       </trans-unit>
       <trans-unit id="Delete %lld messages of members?" xml:space="preserve" approved="no">
         <source>Delete %lld messages of members?</source>
-        <target state="translated">A tagok %lld üzeneteinek törlése?</target>
+        <target state="translated">Tagok %lld üzenetének törlése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete %lld messages?" xml:space="preserve">
@@ -2148,8 +2148,9 @@ Ez a művelet nem vonható vissza!</target>
         <target>Számítógépek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve">
+      <trans-unit id="Destination server address of %@ is incompatible with forwarding server %@ settings." xml:space="preserve" approved="no">
         <source>Destination server address of %@ is incompatible with forwarding server %@ settings.</source>
+        <target state="translated">A(z) %@ célkiszolgáló címe nem kompatibilis a(z) %@ továbbító kiszolgáló beállításaival.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Destination server error: %@" xml:space="preserve">
@@ -2157,8 +2158,9 @@ Ez a művelet nem vonható vissza!</target>
         <target>Célkiszolgáló hiba: %@</target>
         <note>snd error text</note>
       </trans-unit>
-      <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve">
+      <trans-unit id="Destination server version of %@ is incompatible with forwarding server %@." xml:space="preserve" approved="no">
         <source>Destination server version of %@ is incompatible with forwarding server %@.</source>
+        <target state="translated">A(z) %@ célkiszolgáló verziója nem kompatibilis a(z) %@ továbbító kiszolgálóval.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Detailed statistics" xml:space="preserve">
@@ -2321,9 +2323,9 @@ Ez a művelet nem vonható vissza!</target>
         <target>Ne mutasd újra</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Downgrade and open chat" xml:space="preserve">
+      <trans-unit id="Downgrade and open chat" xml:space="preserve" approved="no">
         <source>Downgrade and open chat</source>
-        <target>Visszatérés a korábbi verzióra és a csevegés megnyitása</target>
+        <target state="translated">Visszafejlesztés és a csevegés megnyitása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Download" xml:space="preserve">
@@ -2631,8 +2633,9 @@ Ez a művelet nem vonható vissza!</target>
         <target>Hiba a beállítás megváltoztatásakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve">
+      <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve" approved="no">
         <source>Error connecting to forwarding server %@. Please try later.</source>
+        <target state="translated">Hiba a(z) %@ továbbító kiszolgálóhoz való kapcsolódáskor. Próbálja meg később.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error creating address" xml:space="preserve">
@@ -3141,16 +3144,19 @@ Ez a művelet nem vonható vissza!</target>
         <target>Továbbítva innen:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve">
+      <trans-unit id="Forwarding server %@ failed to connect to destination server %@. Please try later." xml:space="preserve" approved="no">
         <source>Forwarding server %@ failed to connect to destination server %@. Please try later.</source>
+        <target state="translated">A(z) %@ továbbító kiszolgáló nem tudott csatlakozni a(z) %@ célkiszolgálóhoz. Próbálja meg később.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forwarding server address is incompatible with network settings: %@." xml:space="preserve">
+      <trans-unit id="Forwarding server address is incompatible with network settings: %@." xml:space="preserve" approved="no">
         <source>Forwarding server address is incompatible with network settings: %@.</source>
+        <target state="translated">A továbbító kiszolgáló címe nem kompatibilis a hálózati beállításokkal: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Forwarding server version is incompatible with network settings: %@." xml:space="preserve">
+      <trans-unit id="Forwarding server version is incompatible with network settings: %@." xml:space="preserve" approved="no">
         <source>Forwarding server version is incompatible with network settings: %@.</source>
+        <target state="translated">A továbbító kiszolgáló verziója nem kompatibilis a hálózati beállításokkal: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Forwarding server: %@&#10;Destination server error: %@" xml:space="preserve">
@@ -5272,9 +5278,9 @@ Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.<
         <target>Válasz</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Required" xml:space="preserve">
+      <trans-unit id="Required" xml:space="preserve" approved="no">
         <source>Required</source>
-        <target>Megkövetelt</target>
+        <target state="translated">Szükséges</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reset" xml:space="preserve">
@@ -5954,12 +5960,12 @@ Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.<
       </trans-unit>
       <trans-unit id="Share to SimpleX" xml:space="preserve" approved="no">
         <source>Share to SimpleX</source>
-        <target state="translated">Megosztás a SimpleX számára</target>
+        <target state="translated">Megosztás a SimpleX-ben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share with contacts" xml:space="preserve">
+      <trans-unit id="Share with contacts" xml:space="preserve" approved="no">
         <source>Share with contacts</source>
-        <target>Megosztás ismerősökkel</target>
+        <target state="translated">Megosztás az ismerősökkel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show QR code" xml:space="preserve">
@@ -6426,7 +6432,7 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
       </trans-unit>
       <trans-unit id="The messages will be deleted for all members." xml:space="preserve" approved="no">
         <source>The messages will be deleted for all members.</source>
-        <target state="translated">Az üzenetek minden tagnál törlésre kerülnek.</target>
+        <target state="translated">Az üzenetek minden tag számára törlésre kerülnek.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The messages will be marked as moderated for all members." xml:space="preserve" approved="no">
@@ -6823,9 +6829,9 @@ A kapcsolódáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsol
         <target>A beállítás frissítésével a kliens újrakapcsolódik az összes kiszolgálóhoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Upgrade and open chat" xml:space="preserve">
+      <trans-unit id="Upgrade and open chat" xml:space="preserve" approved="no">
         <source>Upgrade and open chat</source>
-        <target>A csevegés frissítése és megnyitása</target>
+        <target state="translated">Fejlesztés és a csevegés megnyitása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upload errors" xml:space="preserve">
@@ -7173,14 +7179,14 @@ A kapcsolódáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsol
         <target>Tor vagy VPN nélkül az IP-címe látható lesz ezen XFTP átjátszók számára: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Wrong database passphrase" xml:space="preserve">
+      <trans-unit id="Wrong database passphrase" xml:space="preserve" approved="no">
         <source>Wrong database passphrase</source>
-        <target>Téves adatbázis jelmondat</target>
+        <target state="translated">Hibás adatbázis jelmondat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Wrong key or unknown connection - most likely this connection is deleted." xml:space="preserve">
+      <trans-unit id="Wrong key or unknown connection - most likely this connection is deleted." xml:space="preserve" approved="no">
         <source>Wrong key or unknown connection - most likely this connection is deleted.</source>
-        <target>Rossz kulcs vagy ismeretlen kapcsolat - valószínűleg ez a kapcsolat törlődött.</target>
+        <target state="translated">Hibás kulcs vagy ismeretlen kapcsolat - valószínűleg ez a kapcsolat törlődött.</target>
         <note>snd error text</note>
       </trans-unit>
       <trans-unit id="Wrong key or unknown file chunk address - most likely file is deleted." xml:space="preserve">
@@ -7188,9 +7194,9 @@ A kapcsolódáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsol
         <target>Hibás kulcs vagy ismeretlen fájltöredék cím - valószínűleg a fájl törlődött.</target>
         <note>file error text</note>
       </trans-unit>
-      <trans-unit id="Wrong passphrase!" xml:space="preserve">
+      <trans-unit id="Wrong passphrase!" xml:space="preserve" approved="no">
         <source>Wrong passphrase!</source>
-        <target>Téves jelmondat!</target>
+        <target state="translated">Hibás jelmondat!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="XFTP server" xml:space="preserve">
@@ -8687,7 +8693,7 @@ utoljára fogadott üzenet: %2$@</target>
       </trans-unit>
       <trans-unit id="Database downgrade required" xml:space="preserve" approved="no">
         <source>Database downgrade required</source>
-        <target state="translated">Adatbázis visszaminősítése szükséges</target>
+        <target state="translated">Adatbázis visszafejlesztése szükséges</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database encrypted!" xml:space="preserve" approved="no">
@@ -8702,7 +8708,7 @@ utoljára fogadott üzenet: %2$@</target>
       </trans-unit>
       <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve" approved="no">
         <source>Database passphrase is different from saved in the keychain.</source>
-        <target state="translated">Az adatbázis jelmondata eltér a kulcstárlóban mentettől.</target>
+        <target state="translated">Az adatbázis jelmondata eltér a kulcstartóban lévőtől.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is required to open chat." xml:space="preserve" approved="no">
@@ -8712,7 +8718,7 @@ utoljára fogadott üzenet: %2$@</target>
       </trans-unit>
       <trans-unit id="Database upgrade required" xml:space="preserve" approved="no">
         <source>Database upgrade required</source>
-        <target state="translated">Adatbázis fejlesztése megkövetelt</target>
+        <target state="translated">Adatbázis fejlesztése szükséges</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Dismiss Sheet" xml:space="preserve" approved="no">
@@ -8782,7 +8788,7 @@ utoljára fogadott üzenet: %2$@</target>
       </trans-unit>
       <trans-unit id="Open the app to downgrade the database." xml:space="preserve" approved="no">
         <source>Open the app to downgrade the database.</source>
-        <target state="translated">Nyissa meg az alkalmazást az adatbázis leminősítéséhez.</target>
+        <target state="translated">Nyissa meg az alkalmazást az adatbázis visszafejlesztéséhez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open the app to upgrade the database." xml:space="preserve" approved="no">
@@ -8827,12 +8833,12 @@ utoljára fogadott üzenet: %2$@</target>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve" approved="no">
         <source>Wrong database passphrase</source>
-        <target state="translated">Téves adatbázis jelmondat</target>
+        <target state="translated">Hibás adatbázis jelmondat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can allow sharing in Privacy &amp; Security / SimpleX Lock settings." xml:space="preserve" approved="no">
         <source>You can allow sharing in Privacy &amp; Security / SimpleX Lock settings.</source>
-        <target state="translated">A megosztást az Adatvédelem és biztonság / SimpleX zárolás menüpontban engedélyezheti.</target>
+        <target state="translated">A megosztást az Adatvédelem és biztonság / SimpleX zár menüpontban engedélyezheti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
