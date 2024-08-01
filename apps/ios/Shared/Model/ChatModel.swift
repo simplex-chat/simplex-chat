@@ -289,7 +289,6 @@ final class ChatModel: ObservableObject {
     }
 
     func updateChats(with newChats: [ChatData]) {
-        var chatsToPop: Set<ChatId> = []
         for i in 0..<newChats.count {
             let c = newChats[i]
             if let j = getChatIndex(c.id)   {
@@ -301,14 +300,13 @@ final class ChatModel: ObservableObject {
                     if chatId != c.chatInfo.id  {
                         popChat_(j, to: i)
                     }  else if i == 0 {
-                        chatsToPop.insert(c.chatInfo.id)
+                        popChatCollector.addChat(c.chatInfo.id)
                     }
                 }
             } else {
                 addChat(Chat(c), at: i)
             }
         }
-        popChatCollector.addChats(chatsToPop)
         NtfManager.shared.setNtfBadgeCount(totalUnreadCountForAllUsers())
     }
 
@@ -628,12 +626,7 @@ final class ChatModel: ObservableObject {
             chatsToPop.insert(chatId)
             subject.send()
         }
-        
-        func addChats(_ chatIds: Set<ChatId>) {
-            chatsToPop = chatsToPop.union(chatIds)
-            subject.send()
-        }
-        
+                
         func popRecentChats() {
             let m = ChatModel.shared
             var chs: [(Int, Chat)] = []
@@ -674,11 +667,6 @@ final class ChatModel: ObservableObject {
             }
             chatsToPop = if let skipped { [skipped] } else { [] }
         }
-    }
-    
-    private func popChat_(_ i: Int, to position: Int = 0) {
-        let chat = chats.remove(at: i)
-        chats.insert(chat, at: position)
     }
     
     private func markChatItemRead_(_ i: Int) {
@@ -772,6 +760,11 @@ final class ChatModel: ObservableObject {
             }
         }
         return (prevMember, memberIds.count)
+    }
+
+    private func popChat_(_ i: Int, to position: Int = 0) {
+        let chat = chats.remove(at: i)
+        chats.insert(chat, at: position)
     }
 
     func dismissConnReqView(_ id: String) {
