@@ -10,6 +10,7 @@ import Foundation
 import SwiftUI
 import AVKit
 import SwiftyGif
+import LinkPresentation
 
 public func getLoadedFileSource(_ file: CIFile?) -> CryptoFile? {
     if let file = file, file.loaded {
@@ -158,6 +159,34 @@ public func imageHasAlpha(_ img: UIImage) -> Bool {
     return false
 }
 
+/// Reduces image size, while consuming less RAM
+///
+/// Used by ShareExtension to downsize large images
+/// before passing them to regular image processing pipeline
+/// to avoid exceeding 120MB memory
+///
+/// - Parameters:
+///   - url: Location of the image data
+///   - size: Maximum dimension (width or height)
+/// - Returns: Downsampled image or `nil`, if the image can't be located
+public func downsampleImage(at url: URL, to size: Int64) -> UIImage? {
+    autoreleasepool {
+        if let source = CGImageSourceCreateWithURL(url as CFURL, nil) {
+            CGImageSourceCreateThumbnailAtIndex(
+                    source,
+                    Int.zero,
+                    [
+                        kCGImageSourceCreateThumbnailFromImageAlways: true,
+                        kCGImageSourceShouldCacheImmediately: true,
+                        kCGImageSourceCreateThumbnailWithTransform: true,
+                        kCGImageSourceThumbnailMaxPixelSize: String(size) as CFString
+                    ] as CFDictionary
+                )
+            .map { UIImage(cgImage: $0) }
+        } else { nil }
+    }
+}
+
 public func saveFileFromURL(_ url: URL) -> CryptoFile? {
     let encrypted = privacyEncryptLocalFilesGroupDefault.get()
     let savedFile: CryptoFile?
@@ -281,6 +310,21 @@ private func dropPrefix(_ s: String, _ prefix: String) -> String {
     s.hasPrefix(prefix) ? String(s.dropFirst(prefix.count)) : s
 }
 
+public func makeVideoQualityLower(_ input: URL, outputUrl: URL) async -> Bool {
+    let asset: AVURLAsset = AVURLAsset(url: input, options: nil)
+    if let s = AVAssetExportSession(asset: asset, presetName: AVAssetExportPreset640x480) {
+        s.outputURL = outputUrl
+        s.outputFileType = .mp4
+        s.metadataItemFilter = AVMetadataItemFilter.forSharing()
+        await s.export()
+        if let err = s.error {
+            logger.error("Failed to export video with error: \(err)")
+        }
+        return s.status == .completed
+    }
+    return false
+}
+
 extension AVAsset {
     public func generatePreview() -> (UIImage, Int)? {
         let generator = AVAssetImageGenerator(asset: self)
@@ -346,5 +390,60 @@ extension UIImage {
         } else {
             return nil
         }
+    }
+}
+
+public func getLinkPreview(url: URL, cb: @escaping (LinkPreview?) -> Void) {
+    logger.debug("getLinkMetadata: fetching URL preview")
+    LPMetadataProvider().startFetchingMetadata(for: url){ metadata, error in
+        if let e = error {
+            logger.error("Error retrieving link metadata: \(e.localizedDescription)")
+        }
+        if let metadata = metadata,
+           let imageProvider = metadata.imageProvider,
+           imageProvider.canLoadObject(ofClass: UIImage.self) {
+            imageProvider.loadObject(ofClass: UIImage.self){ object, error in
+                var linkPreview: LinkPreview? = nil
+                if let error = error {
+                    logger.error("Couldn't load image preview from link metadata with error: \(error.localizedDescription)")
+                } else {
+                    if let image = object as? UIImage,
+                       let resized = resizeImageToStrSize(image, maxDataSize: 14000),
+                       let title = metadata.title,
+                       let uri = metadata.originalURL {
+                        linkPreview = LinkPreview(uri: uri, title: title, image: resized)
+                    }
+                }
+                cb(linkPreview)
+            }
+        } else {
+            logger.error("Could not load link preview image")
+            cb(nil)
+        }
+    }
+}
+
+public func getLinkPreview(for url: URL) async -> LinkPreview? {
+    await withCheckedContinuation { cont in
+        getLinkPreview(url: url) { cont.resume(returning: $0) }
+    }
+}
+
+private let squareToCircleRatio = 0.935
+
+private let radiusFactor = (1 - squareToCircleRatio) / 50
+
+@ViewBuilder public func clipProfileImage(_ img: Image, size: CGFloat, radius: Double) -> some View {
+    let v = img.resizable()
+    if radius >= 50 {
+        v.frame(width: size, height: size).clipShape(Circle())
+    } else if radius <= 0 {
+        let sz = size * squareToCircleRatio
+        v.frame(width: sz, height: sz).padding((size - sz) / 2)
+    } else {
+        let sz = size * (squareToCircleRatio + radius * radiusFactor)
+        v.frame(width: sz, height: sz)
+        .clipShape(RoundedRectangle(cornerRadius: sz * radius / 100, style: .continuous))
+        .padding((size - sz) / 2)
     }
 }

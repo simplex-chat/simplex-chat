@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
@@ -28,7 +29,7 @@ import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 
 @Composable
@@ -56,6 +57,8 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
     }
   }
 
+  val scope = rememberCoroutineScope()
+
   when (chat.chatInfo) {
     is ChatInfo.Direct -> {
       val contactNetworkStatus = chatModel.contactNetworkStatus(chat.chatInfo.contact)
@@ -65,7 +68,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
             ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, disabled, linkMode, inProgress = false, progressByTimeout = false)
           }
         },
-        click = { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) },
+        click = { scope.launch { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
             ContactMenuItems(chat, chat.chatInfo.contact, chatModel, showMenu, showMarkRead)
@@ -84,7 +87,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
             ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress.value, progressByTimeout)
           }
         },
-        click = { if (!inProgress.value) groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel, inProgress) },
+        click = { if (!inProgress.value) scope.launch { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel, inProgress) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
             GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, inProgress, showMarkRead)
@@ -102,7 +105,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
             ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress = false, progressByTimeout = false)
           }
         },
-        click = { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) },
+        click = { scope.launch { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
             NoteFolderMenuItems(chat, showMenu, showMarkRead)
@@ -178,42 +181,42 @@ private fun ErrorChatListItem() {
   }
 }
 
-fun directChatAction(rhId: Long?, contact: Contact, chatModel: ChatModel) {
+suspend fun directChatAction(rhId: Long?, contact: Contact, chatModel: ChatModel) {
   when {
     contact.activeConn == null && contact.profile.contactLink != null -> askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, rhId, contact, close = null, openChat = true)
-    else -> withBGApi { openChat(rhId, ChatInfo.Direct(contact), chatModel) }
+    else -> openChat(rhId, ChatInfo.Direct(contact), chatModel)
   }
 }
 
-fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, inProgress: MutableState<Boolean>? = null) {
+suspend fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, inProgress: MutableState<Boolean>? = null) {
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(rhId, groupInfo, chatModel, inProgress)
     GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert(rhId)
-    else -> withBGApi { openChat(rhId, ChatInfo.Group(groupInfo), chatModel) }
+    else -> openChat(rhId, ChatInfo.Group(groupInfo), chatModel)
   }
 }
 
-fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) {
-  withBGApi { openChat(rhId, ChatInfo.Local(noteFolder), chatModel) }
+suspend fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) {
+  openChat(rhId, ChatInfo.Local(noteFolder), chatModel)
 }
 
-suspend fun openDirectChat(rhId: Long?, contactId: Long, chatModel: ChatModel) {
+suspend fun openDirectChat(rhId: Long?, contactId: Long, chatModel: ChatModel) = coroutineScope {
   val chat = chatModel.controller.apiGetChat(rhId, ChatType.Direct, contactId)
-  if (chat != null) {
+  if (chat != null && isActive) {
     openLoadedChat(chat, chatModel)
   }
 }
 
-suspend fun openGroupChat(rhId: Long?, groupId: Long, chatModel: ChatModel) {
+suspend fun openGroupChat(rhId: Long?, groupId: Long, chatModel: ChatModel) = coroutineScope {
   val chat = chatModel.controller.apiGetChat(rhId, ChatType.Group, groupId)
-  if (chat != null) {
+  if (chat != null && isActive) {
     openLoadedChat(chat, chatModel)
   }
 }
 
-suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatModel) {
+suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatModel) = coroutineScope {
   val chat = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId)
-  if (chat != null) {
+  if (chat != null && isActive) {
     openLoadedChat(chat, chatModel)
   }
 }
@@ -554,7 +557,9 @@ fun markChatRead(c: Chat, chatModel: ChatModel) {
   withApi {
     if (chat.chatStats.unreadCount > 0) {
       val minUnreadItemId = chat.chatStats.minUnreadItemId
-      chatModel.markChatItemsRead(chat)
+      withChats {
+        markChatItemsRead(chat)
+      }
       chatModel.controller.apiChatRead(
         chat.remoteHostId,
         chat.chatInfo.chatType,
@@ -571,7 +576,9 @@ fun markChatRead(c: Chat, chatModel: ChatModel) {
         false
       )
       if (success) {
-        chatModel.replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+        withChats {
+          replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+        }
       }
     }
   }
@@ -589,7 +596,9 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
       true
     )
     if (success) {
-      chatModel.replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
+      withChats {
+        replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
+      }
     }
   }
 }
@@ -629,7 +638,9 @@ fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRe
     val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, apiId)
     if (contact != null && isCurrentUser && contactRequest != null) {
       val chat = Chat(remoteHostId = rhId, ChatInfo.Direct(contact), listOf())
-      chatModel.replaceChat(rhId, contactRequest.id, chat)
+      withChats {
+        replaceChat(rhId, contactRequest.id, chat)
+      }
       chatModel.setContactNetworkStatus(contact, NetworkStatus.Connected())
     }
   }
@@ -638,7 +649,9 @@ fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRe
 fun rejectContactRequest(rhId: Long?, contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
   withBGApi {
     chatModel.controller.apiRejectContactRequest(rhId, contactRequest.apiId)
-    chatModel.removeChat(rhId, contactRequest.id)
+    withChats {
+      removeChat(rhId, contactRequest.id)
+    }
   }
 }
 
@@ -654,7 +667,9 @@ fun deleteContactConnectionAlert(rhId: Long?, connection: PendingContactConnecti
       withBGApi {
         AlertManager.shared.hideAlert()
         if (chatModel.controller.apiDeleteChat(rhId, ChatType.ContactConnection, connection.apiId)) {
-          chatModel.removeChat(rhId, connection.id)
+          withChats {
+            removeChat(rhId, connection.id)
+          }
           onSuccess()
         }
       }
@@ -673,7 +688,9 @@ fun pendingContactAlertDialog(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatMo
       withBGApi {
         val r = chatModel.controller.apiDeleteChat(rhId, chatInfo.chatType, chatInfo.apiId)
         if (r) {
-          chatModel.removeChat(rhId, chatInfo.id)
+          withChats {
+            removeChat(rhId, chatInfo.id)
+          }
           if (chatModel.chatId.value == chatInfo.id) {
             chatModel.chatId.value = null
             ModalManager.end.closeModals()
@@ -735,7 +752,9 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
 suspend fun connectContactViaAddress(chatModel: ChatModel, rhId: Long?, contactId: Long, incognito: Boolean): Boolean {
   val contact = chatModel.controller.apiConnectContactViaAddress(rhId, incognito, contactId)
   if (contact != null) {
-    chatModel.updateContact(rhId, contact)
+    withChats {
+      updateContact(rhId, contact)
+    }
     AlertManager.privacySensitive.showAlertMsg(
       title = generalGetString(MR.strings.connection_request_sent),
       text = generalGetString(MR.strings.you_will_be_connected_when_your_connection_request_is_accepted),
@@ -776,7 +795,9 @@ fun deleteGroup(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
   withBGApi {
     val r = chatModel.controller.apiDeleteChat(rhId, ChatType.Group, groupInfo.apiId)
     if (r) {
-      chatModel.removeChat(rhId, groupInfo.id)
+      withChats {
+        removeChat(rhId, groupInfo.id)
+      }
       if (chatModel.chatId.value == groupInfo.id) {
         chatModel.chatId.value = null
         ModalManager.end.closeModals()
@@ -825,7 +846,9 @@ fun updateChatSettings(chat: Chat, chatSettings: ChatSettings, chatModel: ChatMo
       else -> false
     }
     if (res && newChatInfo != null) {
-      chatModel.updateChatInfo(chat.remoteHostId, newChatInfo)
+      withChats {
+        updateChatInfo(chat.remoteHostId, newChatInfo)
+      }
       if (chatSettings.enableNtfs != MsgFilter.All) {
         ntfManager.cancelNotificationsForChat(chat.id)
       }

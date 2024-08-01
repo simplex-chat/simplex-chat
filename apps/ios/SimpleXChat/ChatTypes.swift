@@ -1463,7 +1463,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
     )
 }
 
-public struct ChatData: Decodable, Identifiable, Hashable {
+public struct ChatData: Decodable, Identifiable, Hashable, ChatLike {
     public var chatInfo: ChatInfo
     public var chatItems: [ChatItem]
     public var chatStats: ChatStats
@@ -2234,6 +2234,11 @@ public struct NtfMsgInfo: Decodable, Hashable {
     public var msgTs: Date
 }
 
+public struct ChatItemDeletion: Decodable, Hashable {
+    public var deletedChatItem: AChatItem
+    public var toChatItem: AChatItem? = nil
+}
+
 public struct AChatItem: Decodable, Hashable {
     public var chatInfo: ChatInfo
     public var chatItem: ChatItem
@@ -2449,13 +2454,16 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         }
     }
 
-    public func memberToModerate(_ chatInfo: ChatInfo) -> (GroupInfo, GroupMember)? {
+    public func memberToModerate(_ chatInfo: ChatInfo) -> (GroupInfo, GroupMember?)? {
         switch (chatInfo, chatDir) {
         case let (.group(groupInfo), .groupRcv(groupMember)):
             let m = groupInfo.membership
             return m.memberRole >= .admin && m.memberRole >= groupMember.memberRole && meta.itemDeleted == nil
                     ? (groupInfo, groupMember)
                     : nil
+        case let (.group(groupInfo), .groupSnd):
+            let m = groupInfo.membership
+            return m.memberRole >= .admin ? (groupInfo, nil) : nil
         default: return nil
         }
     }
@@ -2468,6 +2476,10 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         case .rcvGroupE2EEInfo: return false
         default: return true
         }
+    }
+
+    public var canBeDeletedForSelf: Bool {
+        (content.msgContent != nil && !meta.isLive) || meta.itemDeleted != nil || isDeletedContent || mergeCategory != nil || showLocalDelete
     }
 
     public static func getSample (_ id: Int64, _ dir: CIDirection, _ ts: Date, _ text: String, _ status: CIStatus = .sndNew, quotedItem: CIQuote? = nil, file: CIFile? = nil, itemDeleted: CIDeleted? = nil, itemEdited: Bool = false, itemLive: Bool = false, deletable: Bool = true, editable: Bool = true) -> ChatItem {

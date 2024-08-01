@@ -22,7 +22,7 @@ struct GroupLinkView: View {
 
     private enum GroupLinkAlert: Identifiable {
         case deleteLink
-        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
+        case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
             switch self {
@@ -113,7 +113,7 @@ struct GroupLinkView: View {
                         }, secondaryButton: .cancel()
                     )
                 case let .error(title, error):
-                    return Alert(title: Text(title), message: Text(error))
+                    return mkAlert(title: title, message: error)
                 }
             }
             .onChange(of: groupLinkMemberRole) { _ in

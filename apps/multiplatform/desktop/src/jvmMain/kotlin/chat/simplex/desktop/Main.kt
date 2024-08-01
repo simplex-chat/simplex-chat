@@ -9,6 +9,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.*
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.size
 import chat.simplex.common.platform.*
 import chat.simplex.common.platform.DesktopPlatform
 import chat.simplex.common.showApp

@@ -1120,10 +1120,6 @@ struct ComposeView: View {
     }
 }
 
-func parsedMsgHasSimplexLink(_ parsedMsg: [FormattedText]) -> Bool {
-    parsedMsg.contains(where: { ft in ft.format?.isSimplexLink ?? false })
-}
-
 struct ComposeView_Previews: PreviewProvider {
     static var previews: some View {
         let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])

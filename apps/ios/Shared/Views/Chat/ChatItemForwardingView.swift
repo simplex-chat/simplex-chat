@@ -21,8 +21,7 @@ struct ChatItemForwardingView: View {
     @State private var searchText: String = ""
     @FocusState private var searchFocused
     @State private var alert: SomeAlert?
-    @State private var hasSimplexLink_: Bool?
-    private let chatsToForwardTo = filterChatsToForwardTo()
+    private let chatsToForwardTo = filterChatsToForwardTo(chats: ChatModel.shared.chats)
 
     var body: some View {
         NavigationView {
@@ -67,50 +66,6 @@ struct ChatItemForwardingView: View {
         }
     }
 
-    private func foundChat(_ chat: Chat, _ searchStr: String) -> Bool {
-        let cInfo = chat.chatInfo
-        return switch cInfo {
-        case let .direct(contact):
-            viewNameContains(cInfo, searchStr) ||
-            contact.profile.displayName.localizedLowercase.contains(searchStr) ||
-            contact.fullName.localizedLowercase.contains(searchStr)
-        default:
-            viewNameContains(cInfo, searchStr)
-        }
-
-        func viewNameContains(_ cInfo: ChatInfo, _ s: String) -> Bool {
-            cInfo.chatViewName.localizedLowercase.contains(s)
-        }
-    }
-
-    private func prohibitedByPref(_ chat: Chat) -> Bool {
-        // preference checks should match checks in compose view
-        let simplexLinkProhibited = hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
-        let fileProhibited = (ci.content.msgContent?.isMediaOrFileAttachment ?? false) && !chat.groupFeatureEnabled(.files)
-        let voiceProhibited = (ci.content.msgContent?.isVoice ?? false) && !chat.chatInfo.featureEnabled(.voice)
-        return switch chat.chatInfo {
-        case .direct: voiceProhibited
-        case .group: simplexLinkProhibited || fileProhibited || voiceProhibited
-        case .local: false
-        case .contactRequest: false
-        case .contactConnection: false
-        case .invalidJSON: false
-        }
-    }
-
-    private var hasSimplexLink: Bool {
-        if let hasSimplexLink_ { return hasSimplexLink_ }
-        let r =
-            if let mcText = ci.content.msgContent?.text,
-               let parsedMsg = parseSimpleXMarkdown(mcText) {
-                parsedMsgHasSimplexLink(parsedMsg)
-            } else {
-                false
-            }
-        hasSimplexLink_ = r
-        return r
-    }
-
     private func emptyList() -> some View {
         Text("No filtered chats")
             .foregroundColor(theme.colors.secondary)
@@ -118,7 +73,11 @@ struct ChatItemForwardingView: View {
     }
 
     @ViewBuilder private func forwardListChatView(_ chat: Chat) -> some View {
-        let prohibited = prohibitedByPref(chat)
+        let prohibited = chat.prohibitedByPref(
+            hasSimplexLink: hasSimplexLink(ci.content.msgContent?.text),
+            isMediaOrFileAttachment: ci.content.msgContent?.isMediaOrFileAttachment ?? false,
+            isVoice: ci.content.msgContent?.isVoice ?? false
+        )
         Button {
             if prohibited {
                 alert = SomeAlert(
@@ -162,27 +121,6 @@ struct ChatItemForwardingView: View {
     }
 }
 
-private func filterChatsToForwardTo() -> [Chat] {
-    var filteredChats = ChatModel.shared.chats.filter { c in
-        c.chatInfo.chatType != .local && canForwardToChat(c)
-    }
-    if let privateNotes = ChatModel.shared.chats.first(where: { $0.chatInfo.chatType == .local }) {
-        filteredChats.insert(privateNotes, at: 0)
-    }
-    return filteredChats
-}
-
-private func canForwardToChat(_ chat: Chat) -> Bool {
-    switch chat.chatInfo {
-    case let .direct(contact): contact.sendMsgEnabled && !contact.nextSendGrpInv
-    case let .group(groupInfo): groupInfo.sendMsgEnabled
-    case let .local(noteFolder): noteFolder.sendMsgEnabled
-    case .contactRequest: false
-    case .contactConnection: false
-    case .invalidJSON: false
-    }
-}
-
 #Preview {
     ChatItemForwardingView(
         ci: ChatItem.getSample(1, .directSnd, .now, "hello"),
@@ -190,3 +128,4 @@ private func canForwardToChat(_ chat: Chat) -> Bool {
         composeState: Binding.constant(ComposeState(message: "hello"))
     ).environmentObject(CurrentColors.toAppTheme())
 }
+

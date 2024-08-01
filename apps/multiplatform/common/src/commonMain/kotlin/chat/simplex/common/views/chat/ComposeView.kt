@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.filesToDelete
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.*
@@ -393,7 +394,9 @@ fun ComposeView(
       ttl = ttl
     )
     if (aChatItem != null) {
-      chatModel.addChatItem(chat.remoteHostId, cInfo, aChatItem.chatItem)
+      withChats {
+        addChatItem(chat.remoteHostId, cInfo, aChatItem.chatItem)
+      }
       return aChatItem.chatItem
     }
     if (file != null) removeFile(file.filePath)
@@ -421,7 +424,9 @@ fun ComposeView(
         ttl = ttl
       )
       if (chatItem != null) {
-        chatModel.addChatItem(rhId, chat.chatInfo, chatItem)
+        withChats {
+          addChatItem(rhId, chat.chatInfo, chatItem)
+        }
       }
       return chatItem
     }
@@ -458,7 +463,9 @@ fun ComposeView(
       val mc = checkLinkPreview()
       val contact = chatModel.controller.apiSendMemberContactInvitation(chat.remoteHostId, chat.chatInfo.apiId, mc)
       if (contact != null) {
-        chatModel.updateContact(chat.remoteHostId, contact)
+        withChats {
+          updateContact(chat.remoteHostId, contact)
+        }
       }
     }
 
@@ -474,7 +481,9 @@ fun ComposeView(
           mc = updateMsgContent(oldMsgContent),
           live = live
         )
-        if (updatedItem != null) chatModel.upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
+        if (updatedItem != null) withChats {
+          upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
+        }
         return updatedItem?.chatItem
       }
       return null

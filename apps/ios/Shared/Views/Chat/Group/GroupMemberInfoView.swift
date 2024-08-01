@@ -37,7 +37,7 @@ struct GroupMemberInfoView: View {
         case syncConnectionForceAlert
         case planAndConnectAlert(alert: PlanAndConnectAlert)
         case queueInfo(info: String)
-        case error(title: LocalizedStringKey, error: LocalizedStringKey)
+        case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
             switch self {
@@ -237,7 +237,7 @@ struct GroupMemberInfoView: View {
                 case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncMemberConnection(force: true) })
                 case let .planAndConnectAlert(alert): return planAndConnectAlert(alert, dismiss: true)
                 case let .queueInfo(info): return queueInfoAlert(info)
-                case let .error(title, error): return Alert(title: Text(title), message: Text(error))
+                case let .error(title, error): return mkAlert(title: title, message: error)
                 }
             }
             .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: true) }
