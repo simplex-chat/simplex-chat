@@ -3667,13 +3667,25 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="## In reply to" xml:space="preserve" approved="no">
         <source>## In reply to</source>
-        <target state="translated">## ردًا على</target>
+        <target state="translated">## ردًّا على</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="%@ and %@ connected" xml:space="preserve" approved="no">
         <source>%@ and %@ connected</source>
         <target state="translated">%@ و %@ متصل</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="%@ downloaded" xml:space="preserve" approved="no">
+        <source>%@ downloaded</source>
+        <target state="translated">%@ تم التنزيل</target>
+      </trans-unit>
+      <trans-unit id="%@ and %@" xml:space="preserve" approved="no">
+        <source>%@ and %@</source>
+        <target state="translated">%@ و %@</target>
+      </trans-unit>
+      <trans-unit id="%@ connected" xml:space="preserve" approved="no">
+        <source>%@ connected</source>
+        <target state="translated">%@ متصل</target>
       </trans-unit>
     </body>
   </file>
