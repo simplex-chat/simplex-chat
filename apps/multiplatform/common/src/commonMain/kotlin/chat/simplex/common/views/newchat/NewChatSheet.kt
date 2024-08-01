@@ -127,8 +127,8 @@ private fun NewChatSheetLayout(
   val contactTypes by remember(baseContactTypes, searchText.value.text.isEmpty()) {
     derivedStateOf { contactTypesSearchTargets(baseContactTypes, searchText.value.text.isEmpty()) }
   }
-  val allChats by remember(chatModel.chats, contactTypes) {
-    derivedStateOf { filterContactTypes(chatModel.chats, contactTypes) }
+  val allChats by remember(chatModel.chats.value, contactTypes) {
+    derivedStateOf { filterContactTypes(chatModel.chats.value, contactTypes) }
   }
   val filteredContactChats = filteredContactChats(
     showUnreadAndFavorites = showUnreadAndFavorites,
@@ -188,8 +188,8 @@ private fun NewChatSheetLayout(
         SectionDividerSpaced(maxBottomPadding = false)
 
         val deletedContactTypes = listOf(ContactType.CHAT_DELETED)
-        val deletedChats by remember(chatModel.chats, deletedContactTypes) {
-          derivedStateOf { filterContactTypes(chatModel.chats, deletedContactTypes) }
+        val deletedChats by remember(chatModel.chats.value, deletedContactTypes) {
+          derivedStateOf { filterContactTypes(chatModel.chats.value, deletedContactTypes) }
         }
         if (deletedChats.isNotEmpty()) {
           Row(modifier = sectionModifier) {
@@ -495,8 +495,8 @@ private fun DeletedContactsView(rh: RemoteHostInfo?, close: () -> Unit) {
     val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
     val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
     val contactTypes = listOf(ContactType.CHAT_DELETED)
-    val allChats by remember(chatModel.chats, contactTypes) {
-      derivedStateOf { filterContactTypes(chatModel.chats, contactTypes) }
+    val allChats by remember(chatModel.chats.value, contactTypes) {
+      derivedStateOf { filterContactTypes(chatModel.chats.value, contactTypes) }
     }
     val filteredContactChats = filteredContactChats(
       showUnreadAndFavorites = showUnreadAndFavorites,

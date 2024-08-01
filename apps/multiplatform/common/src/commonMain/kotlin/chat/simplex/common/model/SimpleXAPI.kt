@@ -2123,7 +2123,9 @@ object ChatController {
         if (active(r.user)) {
           if (cInfo is ChatInfo.Direct && cInfo.chatDeleted) {
             val updatedContact = cInfo.contact.copy(chatDeleted = false)
-            chatModel.updateContact(rhId, updatedContact)
+            withChats {
+              updateContact(rhId, updatedContact)
+            }
           }
           withChats {
             addChatItem(rhId, cInfo, cItem)

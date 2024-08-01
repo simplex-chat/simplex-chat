@@ -462,11 +462,11 @@ fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDe
       withChats {
         when (chatDeleteMode) {
           is ChatDeleteMode.Full ->
-            chatModel.removeChat(chatRh, chatInfo.id)
+            removeChat(chatRh, chatInfo.id)
           is ChatDeleteMode.Entity ->
-            chatModel.updateContact(chatRh, ct)
+            updateContact(chatRh, ct)
           is ChatDeleteMode.Messages ->
-            chatModel.clearChat(chatRh, ChatInfo.Direct(ct))
+            clearChat(chatRh, ChatInfo.Direct(ct))
         }
       }
       if (chatModel.chatId.value == chatInfo.id) {
