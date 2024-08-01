@@ -539,7 +539,8 @@ private fun DeletedContactsView(rh: RemoteHostInfo?, close: () -> Unit) {
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
           Text(
             generalGetString(MR.strings.no_filtered_contacts),
-            color = MaterialTheme.colors.secondary
+            color = MaterialTheme.colors.secondary,
+            modifier = if (oneHandUI.state.value) Modifier.scale(scaleX = 1f, scaleY = -1f) else Modifier
           )
         }
       }
