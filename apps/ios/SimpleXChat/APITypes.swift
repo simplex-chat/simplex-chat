@@ -26,7 +26,8 @@ public enum ChatCommand {
     case apiMuteUser(userId: Int64)
     case apiUnmuteUser(userId: Int64)
     case apiDeleteUser(userId: Int64, delSMPQueues: Bool, viewPwd: String?)
-    case startChat(mainApp: Bool)
+    case startChat(mainApp: Bool, enableSndFiles: Bool)
+    case checkChatRunning
     case apiStopChat
     case apiActivateChat(restoreChat: Bool)
     case apiSuspendChat(timeoutMicroseconds: Int)
@@ -45,8 +46,8 @@ public enum ChatCommand {
     case apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: Int64?, msg: MsgContent, live: Bool, ttl: Int?)
     case apiCreateChatItem(noteFolderId: Int64, file: CryptoFile?, msg: MsgContent)
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
-    case apiDeleteChatItem(type: ChatType, id: Int64, itemId: Int64, mode: CIDeleteMode)
-    case apiDeleteMemberChatItem(groupId: Int64, groupMemberId: Int64, itemId: Int64)
+    case apiDeleteChatItem(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode)
+    case apiDeleteMemberChatItem(groupId: Int64, itemIds: [Int64])
     case apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, reaction: MsgReaction)
     case apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64, ttl: Int?)
     case apiGetNtfToken
@@ -146,6 +147,7 @@ public enum ChatCommand {
     case apiStandaloneFileInfo(url: String)
     // misc
     case showVersion
+    case getAgentSubsTotal(userId: Int64)
     case getAgentServersSummary(userId: Int64)
     case resetAgentServersStats
     case string(String)
@@ -171,7 +173,8 @@ public enum ChatCommand {
             case let .apiMuteUser(userId): return "/_mute user \(userId)"
             case let .apiUnmuteUser(userId): return "/_unmute user \(userId)"
             case let .apiDeleteUser(userId, delSMPQueues, viewPwd): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))\(maybePwd(viewPwd))"
-            case let .startChat(mainApp): return "/_start main=\(onOff(mainApp))"
+            case let .startChat(mainApp, enableSndFiles): return "/_start main=\(onOff(mainApp)) snd_files=\(onOff(enableSndFiles))"
+            case .checkChatRunning: return "/_check running"
             case .apiStopChat: return "/_stop"
             case let .apiActivateChat(restore): return "/_app activate restore=\(onOff(restore))"
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
@@ -196,8 +199,8 @@ public enum ChatCommand {
                 let msg = encodeJSON(ComposedMessage(fileSource: file, msgContent: mc))
                 return "/_create *\(noteFolderId) json \(msg)"
             case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
-            case let .apiDeleteChatItem(type, id, itemId, mode): return "/_delete item \(ref(type, id)) \(itemId) \(mode.rawValue)"
-            case let .apiDeleteMemberChatItem(groupId, groupMemberId, itemId): return "/_delete member item #\(groupId) \(groupMemberId) \(itemId)"
+            case let .apiDeleteChatItem(type, id, itemIds, mode): return "/_delete item \(ref(type, id)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
+            case let .apiDeleteMemberChatItem(groupId, itemIds): return "/_delete member item #\(groupId) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
             case let .apiChatItemReaction(type, id, itemId, add, reaction): return "/_reaction \(ref(type, id)) \(itemId) \(onOff(add)) \(encodeJSON(reaction))"
             case let .apiForwardChatItem(toChatType, toChatId, fromChatType, fromChatId, itemId, ttl):
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
@@ -305,6 +308,7 @@ public enum ChatCommand {
             case let .apiDownloadStandaloneFile(userId, link, file): return "/_download \(userId) \(link) \(file.filePath)"
             case let .apiStandaloneFileInfo(link): return "/_download info \(link)"
             case .showVersion: return "/version"
+            case let .getAgentSubsTotal(userId): return "/get subs total \(userId)"
             case let .getAgentServersSummary(userId): return "/get servers summary \(userId)"
             case .resetAgentServersStats: return "/reset servers stats"
             case let .string(str): return str
@@ -328,6 +332,7 @@ public enum ChatCommand {
             case .apiUnmuteUser: return "apiUnmuteUser"
             case .apiDeleteUser: return "apiDeleteUser"
             case .startChat: return "startChat"
+            case .checkChatRunning: return "checkChatRunning"
             case .apiStopChat: return "apiStopChat"
             case .apiActivateChat: return "apiActivateChat"
             case .apiSuspendChat: return "apiSuspendChat"
@@ -443,6 +448,7 @@ public enum ChatCommand {
             case .apiDownloadStandaloneFile: return "apiDownloadStandaloneFile"
             case .apiStandaloneFileInfo: return "apiStandaloneFileInfo"
             case .showVersion: return "showVersion"
+            case .getAgentSubsTotal: return "getAgentSubsTotal"
             case .getAgentServersSummary: return "getAgentServersSummary"
             case .resetAgentServersStats: return "resetAgentServersStats"
             case .string: return "console command"
@@ -571,6 +577,7 @@ public enum ChatResponse: Decodable, Error {
     case userContactLinkDeleted(user: User)
     case contactConnected(user: UserRef, contact: Contact, userCustomProfile: Profile?)
     case contactConnecting(user: UserRef, contact: Contact)
+    case contactSndReady(user: UserRef, contact: Contact)
     case receivedContactRequest(user: UserRef, contactRequest: UserContactRequest)
     case acceptingContactRequest(user: UserRef, contact: Contact)
     case contactRequestRejected(user: UserRef)
@@ -587,7 +594,7 @@ public enum ChatResponse: Decodable, Error {
     case chatItemUpdated(user: UserRef, chatItem: AChatItem)
     case chatItemNotChanged(user: UserRef, chatItem: AChatItem)
     case chatItemReaction(user: UserRef, added: Bool, reaction: ACIReaction)
-    case chatItemDeleted(user: UserRef, deletedChatItem: AChatItem, toChatItem: AChatItem?, byUser: Bool)
+    case chatItemsDeleted(user: UserRef, chatItemDeletions: [ChatItemDeletion], byUser: Bool)
     case contactsList(user: UserRef, contacts: [Contact])
     // group events
     case groupCreated(user: UserRef, groupInfo: GroupInfo)
@@ -657,7 +664,7 @@ public enum ChatResponse: Decodable, Error {
     case callInvitations(callInvitations: [RcvCallInvitation])
     case ntfTokenStatus(status: NtfTknStatus)
     case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode, ntfServer: String)
-    case ntfMessages(user_: User?, connEntity_: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
+    case ntfMessages(user_: User?, connEntity_: ConnectionEntity?, msgTs: Date?, ntfMessage_: NtfMsgInfo?)
     case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgInfo)
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
     case contactDisabled(user: UserRef, contact: Contact)
@@ -673,6 +680,7 @@ public enum ChatResponse: Decodable, Error {
     // misc
     case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
     case cmdOk(user: UserRef?)
+    case agentSubsTotal(user: UserRef, subsTotal: SMPServerSubs, hasSession: Bool)
     case agentServersSummary(user: UserRef, serversSummary: PresentedServersSummary)
     case agentSubsSummary(user: UserRef, subsSummary: SMPServerSubs)
     case chatCmdError(user_: UserRef?, chatError: ChatError)
@@ -738,6 +746,7 @@ public enum ChatResponse: Decodable, Error {
             case .userContactLinkDeleted: return "userContactLinkDeleted"
             case .contactConnected: return "contactConnected"
             case .contactConnecting: return "contactConnecting"
+            case .contactSndReady: return "contactSndReady"
             case .receivedContactRequest: return "receivedContactRequest"
             case .acceptingContactRequest: return "acceptingContactRequest"
             case .contactRequestRejected: return "contactRequestRejected"
@@ -754,7 +763,7 @@ public enum ChatResponse: Decodable, Error {
             case .chatItemUpdated: return "chatItemUpdated"
             case .chatItemNotChanged: return "chatItemNotChanged"
             case .chatItemReaction: return "chatItemReaction"
-            case .chatItemDeleted: return "chatItemDeleted"
+            case .chatItemsDeleted: return "chatItemsDeleted"
             case .contactsList: return "contactsList"
             case .groupCreated: return "groupCreated"
             case .sentGroupInvitation: return "sentGroupInvitation"
@@ -833,6 +842,7 @@ public enum ChatResponse: Decodable, Error {
             case .contactPQEnabled: return "contactPQEnabled"
             case .versionInfo: return "versionInfo"
             case .cmdOk: return "cmdOk"
+            case .agentSubsTotal: return "agentSubsTotal"
             case .agentServersSummary: return "agentServersSummary"
             case .agentSubsSummary: return "agentSubsSummary"
             case .chatCmdError: return "chatCmdError"
@@ -903,6 +913,7 @@ public enum ChatResponse: Decodable, Error {
             case .userContactLinkDeleted: return noDetails
             case let .contactConnected(u, contact, _): return withUser(u, String(describing: contact))
             case let .contactConnecting(u, contact): return withUser(u, String(describing: contact))
+            case let .contactSndReady(u, contact): return withUser(u, String(describing: contact))
             case let .receivedContactRequest(u, contactRequest): return withUser(u, String(describing: contactRequest))
             case let .acceptingContactRequest(u, contact): return withUser(u, String(describing: contact))
             case .contactRequestRejected: return noDetails
@@ -919,7 +930,10 @@ public enum ChatResponse: Decodable, Error {
             case let .chatItemUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemNotChanged(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemReaction(u, added, reaction): return withUser(u, "added: \(added)\n\(String(describing: reaction))")
-            case let .chatItemDeleted(u, deletedChatItem, toChatItem, byUser): return withUser(u, "deletedChatItem:\n\(String(describing: deletedChatItem))\ntoChatItem:\n\(String(describing: toChatItem))\nbyUser: \(byUser)")
+            case let .chatItemsDeleted(u, items, byUser):
+                let itemsString = items.map { item in
+                    "deletedChatItem:\n\(String(describing: item.deletedChatItem))\ntoChatItem:\n\(String(describing: item.toChatItem))" }.joined(separator: "\n")
+                return withUser(u, itemsString + "\nbyUser: \(byUser)")
             case let .contactsList(u, contacts): return withUser(u, String(describing: contacts))
             case let .groupCreated(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .sentGroupInvitation(u, groupInfo, contact, member): return withUser(u, "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)")
@@ -998,6 +1012,7 @@ public enum ChatResponse: Decodable, Error {
             case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
             case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
             case .cmdOk: return noDetails
+            case let .agentSubsTotal(u, subsTotal, hasSession): return withUser(u, "subsTotal: \(String(describing: subsTotal))\nhasSession: \(hasSession)")
             case let .agentServersSummary(u, serversSummary): return withUser(u, String(describing: serversSummary))
             case let .agentSubsSummary(u, subsSummary): return withUser(u, String(describing: subsSummary))
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
@@ -1036,6 +1051,13 @@ public enum ChatDeleteMode: Codable {
         case let .full(notify): "full notify=\(onOff(notify))"
         case let .entity(notify): "entity notify=\(onOff(notify))"
         case .messages: "messages"
+        }
+    }
+
+    public var isEntity: Bool {
+        switch self {
+        case .entity: return true
+        default: return false
         }
     }
 }
@@ -1132,20 +1154,20 @@ public struct ProtoServersConfig: Codable {
 public struct UserProtoServers: Decodable {
     public var serverProtocol: ServerProtocol
     public var protoServers: [ServerCfg]
-    public var presetServers: [String]
+    public var presetServers: [ServerCfg]
 }
 
-public struct ServerCfg: Identifiable, Equatable, Codable {
+public struct ServerCfg: Identifiable, Equatable, Codable, Hashable {
     public var server: String
     public var preset: Bool
     public var tested: Bool?
-    public var enabled: ServerEnabled
+    public var enabled: Bool
     var createdAt = Date()
 //    public var sendEnabled: Bool // can we potentially want to prevent sending on the servers we use to receive?
 // Even if we don't see the use case, it's probably better to allow it in the model
 // In any case, "trusted/known" servers are out of scope of this change
 
-    public init(server: String, preset: Bool, tested: Bool?, enabled: ServerEnabled) {
+    public init(server: String, preset: Bool, tested: Bool?, enabled: Bool) {
         self.server = server
         self.preset = preset
         self.tested = tested
@@ -1158,7 +1180,7 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
 
     public var id: String { "\(server) \(createdAt)" }
 
-    public static var empty = ServerCfg(server: "", preset: false, tested: nil, enabled: .enabled)
+    public static var empty = ServerCfg(server: "", preset: false, tested: nil, enabled: false)
 
     public var isEmpty: Bool {
         server.trimmingCharacters(in: .whitespaces) == ""
@@ -1175,19 +1197,19 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
             server: "smp://abcd@smp8.simplex.im",
             preset: true,
             tested: true,
-            enabled: .enabled
+            enabled: true
         ),
         custom: ServerCfg(
             server: "smp://abcd@smp9.simplex.im",
             preset: false,
             tested: false,
-            enabled: .disabled
+            enabled: false
         ),
         untested: ServerCfg(
             server: "smp://abcd@smp10.simplex.im",
             preset: false,
             tested: nil,
-            enabled: .enabled
+            enabled: true
         )
     )
 
@@ -1197,12 +1219,6 @@ public struct ServerCfg: Identifiable, Equatable, Codable {
         case tested
         case enabled
     }
-}
-
-public enum ServerEnabled: String, Codable {
-    case disabled
-    case enabled
-    case known
 }
 
 public enum ProtocolTestStep: String, Decodable, Equatable {
@@ -1244,7 +1260,7 @@ public struct ProtocolTestFailure: Decodable, Error, Equatable {
     public var localizedDescription: String {
         let err = String.localizedStringWithFormat(NSLocalizedString("Test failed at step %@.", comment: "server test failure"), testStep.text)
         switch testError {
-        case .SMP(.AUTH):
+        case .SMP(_, .AUTH):
             return err + " " + NSLocalizedString("Server requires authorization to create queues, check password", comment: "server test error")
         case .XFTP(.AUTH):
             return err + " " + NSLocalizedString("Server requires authorization to upload, check password", comment: "server test error")
@@ -1303,42 +1319,32 @@ public struct NetCfg: Codable, Equatable, Hashable {
     var socksMode: SocksMode = .always
     public var hostMode: HostMode = .publicHost
     public var requiredHostMode = true
-    public var sessionMode: TransportSessionMode
-    public var smpProxyMode: SMPProxyMode = .never
-    public var smpProxyFallback: SMPProxyFallback = .allow
+    public var sessionMode = TransportSessionMode.user
+    public var smpProxyMode: SMPProxyMode = .unknown
+    public var smpProxyFallback: SMPProxyFallback = .allowProtected
     public var tcpConnectTimeout: Int // microseconds
     public var tcpTimeout: Int // microseconds
     public var tcpTimeoutPerKb: Int // microseconds
     public var rcvConcurrency: Int // pool size
-    public var tcpKeepAlive: KeepAliveOpts?
+    public var tcpKeepAlive: KeepAliveOpts? = KeepAliveOpts.defaults
     public var smpPingInterval: Int // microseconds
-    public var smpPingCount: Int // times
-    public var logTLSErrors: Bool
+    public var smpPingCount: Int = 3 // times
+    public var logTLSErrors: Bool = false
 
     public static let defaults: NetCfg = NetCfg(
-        socksProxy: nil,
-        sessionMode: TransportSessionMode.user,
         tcpConnectTimeout: 25_000_000,
         tcpTimeout: 15_000_000,
         tcpTimeoutPerKb: 10_000,
         rcvConcurrency: 12,
-        tcpKeepAlive: KeepAliveOpts.defaults,
-        smpPingInterval: 1200_000_000,
-        smpPingCount: 3,
-        logTLSErrors: false
+        smpPingInterval: 1200_000_000
     )
 
     public static let proxyDefaults: NetCfg = NetCfg(
-        socksProxy: nil,
-        sessionMode: TransportSessionMode.user,
         tcpConnectTimeout: 35_000_000,
         tcpTimeout: 20_000_000,
         tcpTimeoutPerKb: 15_000,
         rcvConcurrency: 8,
-        tcpKeepAlive: KeepAliveOpts.defaults,
-        smpPingInterval: 1200_000_000,
-        smpPingCount: 3,
-        logTLSErrors: false
+        smpPingInterval: 1200_000_000
     )
 
     public var enableKeepAlive: Bool { tcpKeepAlive != nil }
@@ -1913,9 +1919,10 @@ public enum SQLiteError: Decodable, Hashable {
 public enum AgentErrorType: Decodable, Hashable {
     case CMD(cmdErr: CommandErrorType)
     case CONN(connErr: ConnectionErrorType)
-    case SMP(smpErr: ProtocolErrorType)
+    case SMP(serverAddress: String, smpErr: ProtocolErrorType)
     case NTF(ntfErr: ProtocolErrorType)
     case XFTP(xftpErr: XFTPErrorType)
+    case PROXY(proxyServer: String, relayServer: String, proxyErr: ProxyClientError)
     case RCP(rcpErr: RCErrorType)
     case BROKER(brokerAddress: String, brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
@@ -1953,11 +1960,21 @@ public enum ProtocolErrorType: Decodable, Hashable {
     case BLOCK
     case SESSION
     case CMD(cmdErr: ProtocolCommandError)
+    indirect case PROXY(proxyErr: ProxyError)
     case AUTH
+    case CRYPTO
     case QUOTA
     case NO_MSG
     case LARGE_MSG
+    case EXPIRED
     case INTERNAL
+}
+
+public enum ProxyError: Decodable, Hashable {
+    case PROTOCOL(protocolErr: ProtocolErrorType)
+    case BROKER(brokerErr: BrokerErrorType)
+    case BASIC_AUTH
+    case NO_SESSION
 }
 
 public enum XFTPErrorType: Decodable, Hashable {
@@ -1975,6 +1992,12 @@ public enum XFTPErrorType: Decodable, Hashable {
     case TIMEOUT
     case REDIRECT(redirectError: String)
     case INTERNAL
+}
+
+public enum ProxyClientError: Decodable, Hashable {
+    case protocolError(protocolErr: ProtocolErrorType)
+    case unexpectedResponse(responseStr: String)
+    case responseError(responseErr: ProtocolErrorType)
 }
 
 public enum RCErrorType: Decodable, Hashable {
@@ -2006,6 +2029,7 @@ public enum ProtocolCommandError: Decodable, Hashable {
 
 public enum ProtocolTransportError: Decodable, Hashable {
     case badBlock
+    case version
     case largeMsg
     case badSession
     case noServerAuth
@@ -2095,6 +2119,7 @@ public struct AppSettings: Codable, Equatable, Hashable {
     public var privacyShowChatPreviews: Bool? = nil
     public var privacySaveLastDraft: Bool? = nil
     public var privacyProtectScreen: Bool? = nil
+    public var privacyMediaBlurRadius: Int? = nil
     public var notificationMode: AppSettingsNotificationMode? = nil
     public var notificationPreviewMode: NotificationPreviewMode? = nil
     public var webrtcPolicyRelay: Bool? = nil
@@ -2107,7 +2132,7 @@ public struct AppSettings: Codable, Equatable, Hashable {
     public var androidCallOnLockScreen: AppSettingsLockScreenCalls? = nil
     public var iosCallKitEnabled: Bool? = nil
     public var iosCallKitCallsInRecents: Bool? = nil
-    public var uiProfileImageCornerRadius: Float? = nil
+    public var uiProfileImageCornerRadius: Double? = nil
     public var uiColorScheme: String? = nil
     public var uiDarkColorScheme: String? = nil
     public var uiCurrentThemeIds: [String: String]? = nil
@@ -2125,6 +2150,7 @@ public struct AppSettings: Codable, Equatable, Hashable {
         if privacyShowChatPreviews != def.privacyShowChatPreviews { empty.privacyShowChatPreviews = privacyShowChatPreviews }
         if privacySaveLastDraft != def.privacySaveLastDraft { empty.privacySaveLastDraft = privacySaveLastDraft }
         if privacyProtectScreen != def.privacyProtectScreen { empty.privacyProtectScreen = privacyProtectScreen }
+        if privacyMediaBlurRadius != def.privacyMediaBlurRadius { empty.privacyMediaBlurRadius = privacyMediaBlurRadius }
         if notificationMode != def.notificationMode { empty.notificationMode = notificationMode }
         if notificationPreviewMode != def.notificationPreviewMode { empty.notificationPreviewMode = notificationPreviewMode }
         if webrtcPolicyRelay != def.webrtcPolicyRelay { empty.webrtcPolicyRelay = webrtcPolicyRelay }
@@ -2156,6 +2182,7 @@ public struct AppSettings: Codable, Equatable, Hashable {
             privacyShowChatPreviews: true,
             privacySaveLastDraft: true,
             privacyProtectScreen: false,
+            privacyMediaBlurRadius: 0,
             notificationMode: AppSettingsNotificationMode.instant,
             notificationPreviewMode: NotificationPreviewMode.message,
             webrtcPolicyRelay: true,
@@ -2332,6 +2359,8 @@ public struct ServerSessions: Codable {
         ssErrors: 0,
         ssConnecting: 0
     )
+
+    public var hasSess: Bool { ssConnected > 0 }
 }
 
 public struct SMPServerSubs: Codable {
@@ -2385,6 +2414,10 @@ public struct AgentSMPServerStatsData: Codable {
     public var _connSubAttempts: Int
     public var _connSubIgnored: Int
     public var _connSubErrs: Int
+    public var _ntfKey: Int
+    public var _ntfKeyAttempts: Int
+    public var _ntfKeyDeleted: Int
+    public var _ntfKeyDeleteAttempts: Int
 }
 
 public struct XFTPServersSummary: Codable {
@@ -2423,4 +2456,13 @@ public struct AgentXFTPServerStatsData: Codable {
     public var _deletions: Int
     public var _deleteAttempts: Int
     public var _deleteErrs: Int
+}
+
+public struct AgentNtfServerStatsData: Codable {
+    public var _ntfCreated: Int
+    public var _ntfCreateAttempts: Int
+    public var _ntfChecked: Int
+    public var _ntfCheckAttempts: Int
+    public var _ntfDeleted: Int
+    public var _ntfDelAttempts: Int
 }

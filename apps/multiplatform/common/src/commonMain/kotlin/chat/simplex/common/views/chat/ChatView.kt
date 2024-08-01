@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.group.*
@@ -45,7 +46,7 @@ import kotlin.math.sign
 
 @Composable
 fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: String) -> Unit) {
-  val activeChat = remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatId }) }
+  val activeChat = remember { mutableStateOf(chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == chatId }) }
   val searchText = rememberSaveable { mutableStateOf("") }
   val user = chatModel.currentUser.value
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
@@ -87,7 +88,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
          * TODO: Re-write [ChatModel.chats] logic to a new list assignment instead of changing content of mutableList to prevent that
          * */
         try {
-          chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
+          chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }
         } catch (e: ConcurrentModificationException) {
           Log.e(TAG, e.stackTraceToString())
           null
@@ -112,7 +113,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
     // Having activeChat reloaded on every change in it is inefficient (UI lags)
     val unreadCount = remember {
       derivedStateOf {
-        chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }?.chatStats?.unreadCount ?: 0
+        chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }?.chatStats?.unreadCount ?: 0
       }
     }
     val clipboard = LocalClipboardManager.current
@@ -132,7 +133,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               ) {
                 if (
                   chat.chatInfo is ChatInfo.Direct
-                  && !chat.chatInfo.contact.ready
+                  && !chat.chatInfo.contact.sndReady
                   && chat.chatInfo.contact.active
                   && !chat.chatInfo.contact.nextSendGrpInv
                 ) {
@@ -159,6 +160,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               AudioPlayer.stop()
               chatModel.chatId.value = null
               chatModel.groupMembers.clear()
+              chatModel.groupMembersIndexes.clear()
             },
             info = {
               if (ModalManager.end.hasModalsOpen()) {
@@ -248,30 +250,32 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
                 val groupMember = toModerate?.second
                 val deletedChatItem: ChatItem?
                 val toChatItem: ChatItem?
-                if (mode == CIDeleteMode.cidmBroadcast && groupInfo != null && groupMember != null) {
-                  val r = chatModel.controller.apiDeleteMemberChatItem(
+                val r = if (mode == CIDeleteMode.cidmBroadcast && groupInfo != null && groupMember != null) {
+                  chatModel.controller.apiDeleteMemberChatItems(
                     chatRh,
                     groupId = groupInfo.groupId,
-                    groupMemberId = groupMember.groupMemberId,
-                    itemId = itemId
+                    itemIds = listOf(itemId)
                   )
-                  deletedChatItem = r?.first
-                  toChatItem = r?.second
                 } else {
-                  val r = chatModel.controller.apiDeleteChatItem(
+                  chatModel.controller.apiDeleteChatItems(
                     chatRh,
                     type = cInfo.chatType,
                     id = cInfo.apiId,
-                    itemId = itemId,
+                    itemIds = listOf(itemId),
                     mode = mode
                   )
-                  deletedChatItem = r?.deletedChatItem?.chatItem
-                  toChatItem = r?.toChatItem?.chatItem
                 }
-                if (toChatItem == null && deletedChatItem != null) {
-                  chatModel.removeChatItem(chatRh, cInfo, deletedChatItem)
-                } else if (toChatItem != null) {
-                  chatModel.upsertChatItem(chatRh, cInfo, toChatItem)
+                val deleted = r?.firstOrNull()
+                if (deleted != null) {
+                  deletedChatItem = deleted.deletedChatItem.chatItem
+                  toChatItem = deleted.toChatItem?.chatItem
+                  withChats {
+                    if (toChatItem != null) {
+                      upsertChatItem(chatRh, cInfo, toChatItem)
+                    } else {
+                      removeChatItem(chatRh, cInfo, deletedChatItem)
+                    }
+                  }
                 }
               }
             },
@@ -279,17 +283,15 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               if (itemIds.isNotEmpty()) {
                 val chatInfo = chat.chatInfo
                 withBGApi {
-                  val deletedItems: ArrayList<ChatItem> = arrayListOf()
-                  for (itemId in itemIds) {
-                    val di = chatModel.controller.apiDeleteChatItem(
-                      chatRh, chatInfo.chatType, chatInfo.apiId, itemId, CIDeleteMode.cidmInternal
-                    )?.deletedChatItem?.chatItem
-                    if (di != null) {
-                      deletedItems.add(di)
+                  val deleted = chatModel.controller.apiDeleteChatItems(
+                    chatRh, chatInfo.chatType, chatInfo.apiId, itemIds, CIDeleteMode.cidmInternal
+                  )
+                  if (deleted != null) {
+                    withChats {
+                      for (di in deleted) {
+                        removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
+                      }
                     }
-                  }
-                  for (di in deletedItems) {
-                    chatModel.removeChatItem(chatRh, chatInfo, di)
                   }
                 }
               }
@@ -340,7 +342,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               }
             },
             openDirectChat = { contactId ->
-              withBGApi {
+              scope.launch {
                 openDirectChat(chatRh, contactId, chatModel)
               }
             },
@@ -354,7 +356,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
                 if (r != null) {
                   val contactStats = r.first
                   if (contactStats != null)
-                    chatModel.updateContactConnectionStats(chatRh, contact, contactStats)
+                    withChats {
+                      updateContactConnectionStats(chatRh, contact, contactStats)
+                    }
                 }
               }
             },
@@ -364,7 +368,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
                 if (r != null) {
                   val memStats = r.second
                   if (memStats != null) {
-                    chatModel.updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, memStats)
+                    withChats {
+                      updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, memStats)
+                    }
                   }
                 }
               }
@@ -373,7 +379,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               withBGApi {
                 val cStats = chatModel.controller.apiSyncContactRatchet(chatRh, contact.contactId, force = false)
                 if (cStats != null) {
-                  chatModel.updateContactConnectionStats(chatRh, contact, cStats)
+                  withChats {
+                    updateContactConnectionStats(chatRh, contact, cStats)
+                  }
                 }
               }
             },
@@ -381,7 +389,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               withBGApi {
                 val r = chatModel.controller.apiSyncGroupMemberRatchet(chatRh, groupInfo.apiId, member.groupMemberId, force = false)
                 if (r != null) {
-                  chatModel.updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, r.second)
+                  withChats {
+                    updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, r.second)
+                  }
                 }
               }
             },
@@ -402,7 +412,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
                   reaction = reaction
                 )
                 if (updatedCI != null) {
-                  chatModel.updateChatItem(cInfo, updatedCI)
+                  withChats {
+                    updateChatItem(cInfo, updatedCI)
+                  }
                 }
               }
             },
@@ -467,15 +479,17 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               }
             },
             markRead = { range, unreadCountAfter ->
-              chatModel.markChatItemsRead(chat, range, unreadCountAfter)
-              ntfManager.cancelNotificationsForChat(chat.id)
               withBGApi {
-                chatModel.controller.apiChatRead(
-                  chatRh,
-                  chat.chatInfo.chatType,
-                  chat.chatInfo.apiId,
-                  range
-                )
+                withChats {
+                  markChatItemsRead(chat, range, unreadCountAfter)
+                  ntfManager.cancelNotificationsForChat(chat.id)
+                  chatModel.controller.apiChatRead(
+                    chatRh,
+                    chat.chatInfo.chatType,
+                    chat.chatInfo.apiId,
+                    range
+                  )
+                }
               }
             },
             changeNtfsState = { enabled, currentValue -> toggleNotifications(chat, enabled, chatModel, currentValue) },
@@ -1024,10 +1038,21 @@ fun BoxWithConstraintsScope.ChatItemsList(
                   horizontalAlignment = Alignment.Start
                 ) {
                   if (cItem.content.showMemberName) {
+                    val memberNameStyle = SpanStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
+                    val memberNameString = if (memCount == 1 && member.memberRole > GroupMemberRole.Member) {
+                      buildAnnotatedString {
+                        withStyle(memberNameStyle.copy(fontWeight = FontWeight.Medium)) { append(member.memberRole.text) }
+                        append(" ")
+                        withStyle(memberNameStyle) { append(memberNames(member, prevMember, memCount)) }
+                      }
+                    } else {
+                      buildAnnotatedString {
+                        withStyle(memberNameStyle) { append(memberNames(member, prevMember, memCount)) }
+                      }
+                    }
                     Text(
-                      memberNames(member, prevMember, memCount),
+                      memberNameString,
                       Modifier.padding(start = MEMBER_IMAGE_SIZE + 10.dp),
-                      style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary),
                       maxLines = 2
                     )
                   }
@@ -1101,6 +1126,12 @@ fun BoxWithConstraintsScope.ChatItemsList(
     }
   }
   FloatingButtons(chatModel.chatItems, unreadCount, chat.chatStats.minUnreadItemId, searchValue, markRead, setFloatingButton, listState)
+  LaunchedEffect(Unit) {
+    snapshotFlow { listState.isScrollInProgress }
+      .collect {
+        chatViewScrollState.value = it
+      }
+  }
 }
 
 @Composable
@@ -1127,7 +1158,7 @@ private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: 
       .filter { listState.layoutInfo.visibleItemsInfo.firstOrNull()?.key != it }
       .collect {
         try {
-          if (listState.firstVisibleItemIndex == 0 || (listState.firstVisibleItemIndex == 1 && listState.layoutInfo.totalItemsCount == chatItems.size)) {
+          if (listState.firstVisibleItemIndex == 0 || (listState.firstVisibleItemIndex == 1 && listState.layoutInfo.totalItemsCount == chatItems.value.size)) {
             if (appPlatform.isAndroid) listState.animateScrollToItem(0) else listState.scrollToItem(0)
           } else {
             if (appPlatform.isAndroid) listState.animateScrollBy(scrollDistance) else listState.scrollBy(scrollDistance)
@@ -1138,6 +1169,8 @@ private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: 
            * this coroutine will be canceled with the message "Current mutation had a higher priority" because of animatedScroll.
            * Which breaks auto-scrolling to bottom. So just ignoring the exception
            * */
+        } catch (e: IllegalArgumentException) {
+          Log.e(TAG, "Failed to scroll: ${e.stackTraceToString()}")
         }
       }
   }
@@ -1229,7 +1262,7 @@ fun BoxWithConstraintsScope.FloatingButtons(
         painterResource(MR.images.ic_check),
         onClick = {
           markRead(
-            CC.ItemRange(minUnreadItemId, chatItems.value[chatItems.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1].id - 1),
+            CC.ItemRange(minUnreadItemId, chatItems.value[chatItems.value.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1].id - 1),
             bottomUnreadCount
           )
           showDropDown.value = false
@@ -1314,6 +1347,8 @@ private fun TopEndFloatingButton(
   }
 }
 
+val chatViewScrollState = MutableStateFlow(false)
+
 private fun bottomEndFloatingButton(
   unreadCount: Int,
   showButtonWithCounter: Boolean,
@@ -1370,8 +1405,10 @@ private fun markUnreadChatAsRead(activeChat: MutableState<Chat?>, chatModel: Cha
       false
     )
     if (success && chat.id == activeChat.value?.id) {
-      activeChat.value = chat.copy(chatStats = chat.chatStats.copy(unreadChat = false))
-      chatModel.replaceChat(chatRh, chat.id, activeChat.value!!)
+      withChats {
+        activeChat.value = chat.copy(chatStats = chat.chatStats.copy(unreadChat = false))
+        replaceChat(chatRh, chat.id, activeChat.value!!)
+      }
     }
   }
 }
@@ -1404,7 +1441,7 @@ sealed class ProviderMedia {
   data class Video(val uri: URI, val fileSource: CryptoFile?, val preview: String): ProviderMedia()
 }
 
-private fun providerForGallery(
+fun providerForGallery(
   listStateIndex: Int,
   chatItems: List<ChatItem>,
   cItemId: Long,

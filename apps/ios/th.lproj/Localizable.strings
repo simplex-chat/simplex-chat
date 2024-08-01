@@ -109,9 +109,6 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ ได้รับการตรวจสอบแล้ว";
 
-/* No comment provided by engineer. */
-"%@ servers" = "%@ เซิร์ฟเวอร์";
-
 /* notification title */
 "%@ wants to connect!" = "%@ อยากเชื่อมต่อ!";
 
@@ -259,9 +256,6 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "ด้านบน จากนั้นเลือก:";
 
-/* No comment provided by engineer. */
-"Accent color" = "สีเน้น";
-
 /* accept contact request via notification
    accept incoming call via notification */
 "Accept" = "รับ";
@@ -285,7 +279,7 @@
 "Add profile" = "เพิ่มโปรไฟล์";
 
 /* No comment provided by engineer. */
-"Add server…" = "เพิ่มเซิร์ฟเวอร์…";
+"Add server" = "เพิ่มเซิร์ฟเวอร์";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "เพิ่มเซิร์ฟเวอร์โดยการสแกนรหัสคิวอาร์โค้ด";
@@ -639,9 +633,6 @@
 /* No comment provided by engineer. */
 "colored" = "มีสี";
 
-/* No comment provided by engineer. */
-"Colors" = "สี";
-
 /* server test step */
 "Compare file" = "เปรียบเทียบไฟล์";
 
@@ -765,7 +756,7 @@
 /* No comment provided by engineer. */
 "Continue" = "ดำเนินการต่อ";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "คัดลอก";
 
 /* No comment provided by engineer. */
@@ -1386,7 +1377,8 @@
 /* No comment provided by engineer. */
 "Error: " = "ผิดพลาด: ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "ข้อผิดพลาด: % @";
 
 /* No comment provided by engineer. */
@@ -2108,7 +2100,7 @@
    time to disappear */
 "off" = "ปิด";
 
-/* No comment provided by engineer. */
+/* blur media */
 "Off" = "ปิด";
 
 /* feature offered item */
@@ -2976,9 +2968,6 @@
 "The servers for new connections of your current chat profile **%@**." = "เซิร์ฟเวอร์สำหรับการเชื่อมต่อใหม่ของโปรไฟล์การแชทปัจจุบันของคุณ **%@**";
 
 /* No comment provided by engineer. */
-"Theme" = "ธีม";
-
-/* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "การตั้งค่าเหล่านี้ใช้สำหรับโปรไฟล์ปัจจุบันของคุณ **%@**";
 
 /* No comment provided by engineer. */
@@ -3312,7 +3301,7 @@
 "You can hide or mute a user profile - swipe it to the right." = "คุณสามารถซ่อนหรือปิดเสียงโปรไฟล์ผู้ใช้ - ปัดไปทางขวา";
 
 /* notification body */
-"You can now send messages to %@" = "ตอนนี้คุณสามารถส่งข้อความถึง %@";
+"You can now chat with %@" = "ตอนนี้คุณสามารถส่งข้อความถึง %@";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "คุณสามารถตั้งค่าแสดงตัวอย่างการแจ้งเตือนบนหน้าจอล็อคผ่านการตั้งค่า";

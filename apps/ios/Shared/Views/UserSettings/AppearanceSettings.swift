@@ -144,7 +144,8 @@ struct AppearanceSettings: View {
                     Text("Themes")
                         .foregroundColor(theme.colors.secondary)
                 }
-                .onChange(of: profileImageCornerRadius) { _ in
+                .onChange(of: profileImageCornerRadius) { cornerRadius in
+                    profileImageCornerRadiusGroupDefault.set(cornerRadius)
                     saveThemeToDatabase(nil)
                 }
                 .onChange(of: colorMode) { mode in

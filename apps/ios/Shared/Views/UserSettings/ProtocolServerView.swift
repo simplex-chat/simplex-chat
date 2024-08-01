@@ -15,7 +15,6 @@ struct ProtocolServerView: View {
     let serverProtocol: ServerProtocol
     @Binding var server: ServerCfg
     @State var serverToEdit: ServerCfg
-    @State var serverEnabled: Bool
     @State private var showTestFailure = false
     @State private var testing = false
     @State private var testFailure: ProtocolTestFailure?
@@ -113,10 +112,10 @@ struct ProtocolServerView: View {
                 Spacer()
                 showTestStatus(server: serverToEdit)
             }
-            Toggle("Use for new connections", isOn: $serverEnabled)
-                .onChange(of: serverEnabled) { enabled in
-                    serverToEdit.enabled = enabled ? .enabled : .disabled
-                }
+            let useForNewDisabled = serverToEdit.tested != true && !serverToEdit.preset
+            Toggle("Use for new connections", isOn: $serverToEdit.enabled)
+                .disabled(useForNewDisabled)
+                .foregroundColor(useForNewDisabled ? theme.colors.secondary : theme.colors.onBackground)
         }
     }
 }
@@ -176,17 +175,12 @@ func testServerConnection(server: Binding<ServerCfg>) async -> ProtocolTestFailu
     }
 }
 
-func serverHostname(_ srv: String) -> String {
-    parseServerAddress(srv)?.hostnames.first ?? srv
-}
-
 struct ProtocolServerView_Previews: PreviewProvider {
     static var previews: some View {
         ProtocolServerView(
             serverProtocol: .smp,
             server: Binding.constant(ServerCfg.sampleData.custom),
-            serverToEdit: ServerCfg.sampleData.custom,
-            serverEnabled: true
+            serverToEdit: ServerCfg.sampleData.custom
         )
     }
 }

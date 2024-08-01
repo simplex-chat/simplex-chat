@@ -36,7 +36,7 @@
     <string name="accept_contact_incognito_button">गुप्त स्वीकार करें</string>
     <string name="smp_servers_preset_add">पूर्वनिर्धारित सर्वर जोड़ें</string>
     <string name="users_add">प्रोफ़ाइल जोड़ें</string>
-    <string name="smp_servers_add">सर्वर जोड़े…</string>
+    <string name="smp_servers_add">सर्वर जोड़े</string>
     <string name="notifications_mode_service">हमेशा बने रहें</string>
     <string name="attach">संलग्न करना</string>
     <string name="network_settings">उन्नत संजाल समायोजन</string>

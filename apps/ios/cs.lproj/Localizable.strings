@@ -130,9 +130,6 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ je ověřený";
 
-/* No comment provided by engineer. */
-"%@ servers" = "%@ servery";
-
 /* notification title */
 "%@ wants to connect!" = "%@ se chce připojit!";
 
@@ -289,9 +286,6 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "výše, pak vyberte:";
 
-/* No comment provided by engineer. */
-"Accent color" = "Zbarvení";
-
 /* accept contact request via notification
    accept incoming call via notification */
 "Accept" = "Přijmout";
@@ -318,7 +312,7 @@
 "Add profile" = "Přidat profil";
 
 /* No comment provided by engineer. */
-"Add server…" = "Přidat server…";
+"Add server" = "Přidat server";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "Přidejte servery skenováním QR kódů.";
@@ -678,9 +672,6 @@
 /* No comment provided by engineer. */
 "colored" = "barevné";
 
-/* No comment provided by engineer. */
-"Colors" = "Barvy";
-
 /* server test step */
 "Compare file" = "Porovnat soubor";
 
@@ -813,7 +804,7 @@
 /* No comment provided by engineer. */
 "Continue" = "Pokračovat";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "Kopírovat";
 
 /* No comment provided by engineer. */
@@ -1461,7 +1452,8 @@
 /* No comment provided by engineer. */
 "Error: " = "Chyba: ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "Chyba: %@";
 
 /* No comment provided by engineer. */
@@ -2198,7 +2190,7 @@
    time to disappear */
 "off" = "vypnuto";
 
-/* No comment provided by engineer. */
+/* blur media */
 "Off" = "Vypnout";
 
 /* feature offered item */
@@ -3096,9 +3088,6 @@
 "The servers for new connections of your current chat profile **%@**." = "Servery pro nová připojení vašeho aktuálního chat profilu **%@**.";
 
 /* No comment provided by engineer. */
-"Theme" = "Téma";
-
-/* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Toto nastavení je pro váš aktuální profil **%@**.";
 
 /* No comment provided by engineer. */
@@ -3447,7 +3436,7 @@
 "You can hide or mute a user profile - swipe it to the right." = "Profil uživatele můžete skrýt nebo ztlumit - přejeďte prstem doprava.";
 
 /* notification body */
-"You can now send messages to %@" = "Nyní můžete posílat zprávy %@";
+"You can now chat with %@" = "Nyní můžete posílat zprávy %@";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "Náhled oznámení na zamykací obrazovce můžete změnit v nastavení.";

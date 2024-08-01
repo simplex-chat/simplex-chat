@@ -198,6 +198,7 @@ testMultiWordProfileNames =
              ]
       cath <## "#'Our Team' 'Alice Jones' is creating direct contact 'Alice Jones' with you"
       cath <# "'Alice Jones'> hello"
+      cath <## "'Alice Jones': you can send messages to contact"
       cath <## "'Alice Jones': contact is connected"
       alice <## "'Cath Johnson': contact is connected"
       cath ##> "/p 'Cath J'"
@@ -224,7 +225,7 @@ testUserContactLink =
       alice <#? bob
       alice @@@ [("<@bob", "")]
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -236,7 +237,7 @@ testUserContactLink =
       alice <#? cath
       alice @@@ [("<@cath", ""), ("@bob", "hey")]
       alice ##> "/ac cath"
-      alice <## "cath (Catherine): accepting contact request..."
+      alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
       concurrently_
         (cath <## "alice (Alice): contact is connected")
         (alice <## "cath (Catherine): contact is connected")
@@ -254,7 +255,7 @@ testProfileLink =
       bob ##> ("/c " <> cLink)
       alice <#? bob
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -269,7 +270,7 @@ testProfileLink =
       cath ##> ("/c " <> cLink)
       alice <#? cath
       alice ##> "/ac cath"
-      alice <## "cath (Catherine): accepting contact request..."
+      alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
       concurrently_
         (cath <## "alice (Alice): contact is connected")
         (alice <## "cath (Catherine): contact is connected")
@@ -336,7 +337,7 @@ testUserContactLinkAutoAccept =
       alice <#? bob
       alice @@@ [("<@bob", "")]
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -350,6 +351,7 @@ testUserContactLinkAutoAccept =
       cath ##> ("/c " <> cLink)
       cath <## "connection request sent!"
       alice <## "cath (Catherine): accepting contact request..."
+      alice <## "cath (Catherine): you can send messages to contact"
       concurrently_
         (cath <## "alice (Alice): contact is connected")
         (alice <## "cath (Catherine): contact is connected")
@@ -364,7 +366,7 @@ testUserContactLinkAutoAccept =
       alice <#? dan
       alice @@@ [("<@dan", ""), ("@cath", "hey"), ("@bob", "hey")]
       alice ##> "/ac dan"
-      alice <## "dan (Daniel): accepting contact request..."
+      alice <## "dan (Daniel): accepting contact request, you can send messages to contact"
       concurrently_
         (dan <## "alice (Alice): contact is connected")
         (alice <## "dan (Daniel): contact is connected")
@@ -391,7 +393,7 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     bob @@@! [(":3", "", Just ConnJoined), (":2", "", Just ConnJoined), (":1", "", Just ConnJoined)]
 
     alice ##> "/ac bob"
-    alice <## "bob (Bob): accepting contact request..."
+    alice <## "bob (Bob): accepting contact request, you can send messages to contact"
     concurrently_
       (bob <## "alice (Alice): contact is connected")
       (alice <## "bob (Bob): contact is connected")
@@ -423,7 +425,7 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     alice <#? cath
     alice @@@ [("<@cath", ""), ("@bob", "hey")]
     alice ##> "/ac cath"
-    alice <## "cath (Catherine): accepting contact request..."
+    alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
     concurrently_
       (cath <## "alice (Alice): contact is connected")
       (alice <## "cath (Catherine): contact is connected")
@@ -465,7 +467,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     alice ##> "/ac bob"
     alice <## "no contact request from bob"
     alice ##> "/ac robert"
-    alice <## "robert (Robert): accepting contact request..."
+    alice <## "robert (Robert): accepting contact request, you can send messages to contact"
     concurrently_
       (bob <## "alice (Alice): contact is connected")
       (alice <## "robert (Robert): contact is connected")
@@ -500,7 +502,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     alice <#? cath
     alice @@@ [("<@cath", ""), ("@robert", "hey")]
     alice ##> "/ac cath"
-    alice <## "cath (Catherine): accepting contact request..."
+    alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
     concurrently_
       (cath <## "alice (Alice): contact is connected")
       (alice <## "cath (Catherine): contact is connected")
@@ -566,13 +568,13 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
     alice <## "bob (Bob): accepting contact request..."
+    alice <## "bob (Bob): you can send messages to contact"
+    alice <# "@bob hello!"
     concurrentlyN_
       [ do
-          bob <## "alice (Alice): contact is connected"
-          bob <# "alice> hello!",
-        do
-          alice <## "bob (Bob): contact is connected"
-          alice <# "@bob hello!"
+          bob <# "alice> hello!"
+          bob <## "alice (Alice): contact is connected",
+        alice <## "bob (Bob): contact is connected"
       ]
 
 testAutoReplyMessageInIncognito :: HasCallStack => FilePath -> IO ()
@@ -588,17 +590,16 @@ testAutoReplyMessageInIncognito = testChat2 aliceProfile bobProfile $
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
     alice <## "bob (Bob): accepting contact request..."
+    alice <## "bob (Bob): you can send messages to contact"
+    alice <# "i @bob hello!"
     aliceIncognito <- getTermLine alice
     concurrentlyN_
       [ do
-          bob <## (aliceIncognito <> ": contact is connected")
-          bob <# (aliceIncognito <> "> hello!"),
+          bob <# (aliceIncognito <> "> hello!")
+          bob <## (aliceIncognito <> ": contact is connected"),
         do
           alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
-          alice
-            <### [ "use /i bob to print out this incognito profile again",
-                   WithTime "i @bob hello!"
-                 ]
+          alice <## "use /i bob to print out this incognito profile again"
       ]
 
 testPlanAddressOkKnown :: HasCallStack => FilePath -> IO ()
@@ -615,7 +616,7 @@ testPlanAddressOkKnown =
       alice <#? bob
       alice @@@ [("<@bob", "")]
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -654,7 +655,7 @@ testPlanAddressOwn tmp =
     alice <## "to reject: /rc alice_1 (the sender will NOT be notified)"
     alice @@@ [("<@alice_1", ""), (":2", "")]
     alice ##> "/ac alice_1"
-    alice <## "alice_1 (Alice): accepting contact request..."
+    alice <## "alice_1 (Alice): accepting contact request, you can send messages to contact"
     alice
       <### [ "alice_1 (Alice): contact is connected",
              "alice_2 (Alice): contact is connected"
@@ -705,7 +706,7 @@ testPlanAddressConnecting tmp = do
     alice <## "to accept: /ac bob"
     alice <## "to reject: /rc bob (the sender will NOT be notified)"
     alice ##> "/ac bob"
-    alice <## "bob (Bob): accepting contact request..."
+    alice <## "bob (Bob): accepting contact request, you can send messages to contact"
   withTestChat tmp "bob" $ \bob -> do
     threadDelay 500000
     bob <## "alice (Alice): contact is connected"
@@ -772,7 +773,7 @@ testPlanAddressContactDeletedReconnected =
       bob ##> ("/c " <> cLink)
       alice <#? bob
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -803,7 +804,7 @@ testPlanAddressContactDeletedReconnected =
       alice <## "to accept: /ac bob"
       alice <## "to reject: /rc bob (the sender will NOT be notified)"
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice_1 (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -877,7 +878,7 @@ testPlanAddressContactViaAddress =
       alice <## "to accept: /ac bob"
       alice <## "to reject: /rc bob (the sender will NOT be notified)"
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -971,7 +972,7 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     alice <## ("to accept: /ac " <> bobIncognito)
     alice <## ("to reject: /rc " <> bobIncognito <> " (the sender will NOT be notified)")
     alice ##> ("/ac " <> bobIncognito)
-    alice <## (bobIncognito <> ": accepting contact request...")
+    alice <## (bobIncognito <> ": accepting contact request, you can send messages to contact")
     _ <- getTermLine bob
     concurrentlyN_
       [ do
@@ -1005,7 +1006,7 @@ testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfil
     bob ##> ("/c " <> cLink)
     alice <#? bob
     alice ##> "/accept incognito bob"
-    alice <## "bob (Bob): accepting contact request..."
+    alice <## "bob (Bob): accepting contact request, you can send messages to contact"
     aliceIncognitoBob <- getTermLine alice
     concurrentlyN_
       [ bob <## (aliceIncognitoBob <> ": contact is connected"),
@@ -1033,7 +1034,7 @@ testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfil
     cath ##> ("/c " <> cLink)
     alice <#? cath
     alice ##> "/_accept incognito=on 1"
-    alice <## "cath (Catherine): accepting contact request..."
+    alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
     aliceIncognitoCath <- getTermLine alice
     concurrentlyN_
       [ cath <## (aliceIncognitoCath <> ": contact is connected"),
@@ -2036,6 +2037,7 @@ testGroupPrefsDirectForRole = testChat4 aliceProfile bobProfile cathProfile danP
       <### [ "#team alice is creating direct contact alice with you",
              WithTime "alice> hello dan"
            ]
+    dan <## "alice (Alice): you can send messages to contact"
     concurrently_
       (alice <## "dan (Daniel): contact is connected")
       (dan <## "alice (Alice): contact is connected")
@@ -2167,7 +2169,7 @@ testSetUITheme =
       a <## "you've shared main profile with this contact"
       a <## "connection not verified, use /code command to see security code"
       a <## "quantum resistant end-to-end encryption"
-      a <## "peer chat protocol version range: (Version 1, Version 8)"
+      a <## "peer chat protocol version range: (Version 1, Version 9)"
     groupInfo a = do
       a <## "group ID: 1"
       a <## "current members: 1"

@@ -6,6 +6,8 @@
 module Simplex.Chat.Stats where
 
 import qualified Data.Aeson.TH as J
+import Data.List (partition)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust)
@@ -21,8 +23,10 @@ data PresentedServersSummary = PresentedServersSummary
   { statsStartedAt :: UTCTime,
     allUsersSMP :: SMPServersSummary,
     allUsersXFTP :: XFTPServersSummary,
+    allUsersNtf :: NtfServersSummary,
     currentUserSMP :: SMPServersSummary,
-    currentUserXFTP :: XFTPServersSummary
+    currentUserXFTP :: XFTPServersSummary,
+    currentUserNtf :: NtfServersSummary
   }
   deriving (Show)
 
@@ -101,55 +105,89 @@ data XFTPServerSummary = XFTPServerSummary
   }
   deriving (Show)
 
+data NtfServersSummary = NtfServersSummary
+  { ntfTotals :: NtfTotals,
+    currentlyUsedNtfServers :: [NtfServerSummary],
+    previouslyUsedNtfServers :: [NtfServerSummary]
+  }
+  deriving (Show)
+
+data NtfTotals = NtfTotals
+  { sessions :: ServerSessions,
+    stats :: AgentNtfServerStatsData
+  }
+  deriving (Show)
+
+data NtfServerSummary = NtfServerSummary
+  { ntfServer :: NtfServer,
+    known :: Maybe Bool,
+    sessions :: Maybe ServerSessions,
+    stats :: Maybe AgentNtfServerStatsData
+  }
+  deriving (Show)
+
 -- Maps AgentServersSummary to PresentedServersSummary:
 -- - currentUserServers is for currentUser;
 -- - users are passed to exclude hidden users from totalServersSummary;
 -- - if currentUser is hidden, it should be accounted in totalServersSummary;
 -- - known is set only in user level summaries based on passed userSMPSrvs and userXFTPSrvs
-toPresentedServersSummary :: AgentServersSummary -> [User] -> User -> [SMPServer] -> [XFTPServer] -> PresentedServersSummary
-toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrvs = do
+toPresentedServersSummary :: AgentServersSummary -> [User] -> User -> NonEmpty SMPServer -> NonEmpty XFTPServer -> [NtfServer] -> PresentedServersSummary
+toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrvs userNtfSrvs = do
   let (userSMPSrvsSumms, allSMPSrvsSumms) = accSMPSrvsSummaries
-      (userSMPTotals, allSMPTotals) = (accSMPTotals userSMPSrvsSumms, accSMPTotals allSMPSrvsSumms)
       (userSMPCurr, userSMPPrev, userSMPProx) = smpSummsIntoCategories userSMPSrvsSumms
       (allSMPCurr, allSMPPrev, allSMPProx) = smpSummsIntoCategories allSMPSrvsSumms
-      (userXFTPSrvsSumms, allXFTPSrvsSumms) = accXFTPSrvsSummaries
-      (userXFTPTotals, allXFTPTotals) = (accXFTPTotals userXFTPSrvsSumms, accXFTPTotals allXFTPSrvsSumms)
+  let (userXFTPSrvsSumms, allXFTPSrvsSumms) = accXFTPSrvsSummaries
       (userXFTPCurr, userXFTPPrev) = xftpSummsIntoCategories userXFTPSrvsSumms
       (allXFTPCurr, allXFTPPrev) = xftpSummsIntoCategories allXFTPSrvsSumms
+  let (userNtfSrvsSumms, allNtfSrvsSumms) = accNtfSrvsSummaries
+      (userNtfCurr, userNtfPrev) = ntfSummsIntoCategories userNtfSrvsSumms
+      (allNtfCurr, allNtfPrev) = ntfSummsIntoCategories allNtfSrvsSumms
   PresentedServersSummary
     { statsStartedAt,
       allUsersSMP =
         SMPServersSummary
-          { smpTotals = allSMPTotals,
+          { smpTotals = accSMPTotals allSMPSrvsSumms,
             currentlyUsedSMPServers = allSMPCurr,
             previouslyUsedSMPServers = allSMPPrev,
             onlyProxiedSMPServers = allSMPProx
           },
       allUsersXFTP =
         XFTPServersSummary
-          { xftpTotals = allXFTPTotals,
+          { xftpTotals = accXFTPTotals allXFTPSrvsSumms,
             currentlyUsedXFTPServers = allXFTPCurr,
             previouslyUsedXFTPServers = allXFTPPrev
           },
+      allUsersNtf =
+        NtfServersSummary
+          { ntfTotals = accNtfTotals allNtfSrvsSumms,
+            currentlyUsedNtfServers = allNtfCurr,
+            previouslyUsedNtfServers = allNtfPrev
+          },
       currentUserSMP =
         SMPServersSummary
-          { smpTotals = userSMPTotals,
+          { smpTotals = accSMPTotals userSMPSrvsSumms,
             currentlyUsedSMPServers = userSMPCurr,
             previouslyUsedSMPServers = userSMPPrev,
             onlyProxiedSMPServers = userSMPProx
           },
       currentUserXFTP =
         XFTPServersSummary
-          { xftpTotals = userXFTPTotals,
+          { xftpTotals = accXFTPTotals userXFTPSrvsSumms,
             currentlyUsedXFTPServers = userXFTPCurr,
             previouslyUsedXFTPServers = userXFTPPrev
+          },
+      currentUserNtf =
+        NtfServersSummary
+          { ntfTotals = accNtfTotals userNtfSrvsSumms,
+            currentlyUsedNtfServers = userNtfCurr,
+            previouslyUsedNtfServers = userNtfPrev
           }
     }
   where
-    AgentServersSummary {statsStartedAt, smpServersSessions, smpServersSubs, smpServersStats, xftpServersSessions, xftpServersStats, xftpRcvInProgress, xftpSndInProgress, xftpDelInProgress} = agentSummary
+    AgentServersSummary {statsStartedAt, smpServersSessions, smpServersSubs, smpServersStats, xftpServersSessions, xftpServersStats, xftpRcvInProgress, xftpSndInProgress, xftpDelInProgress, ntfServersSessions, ntfServersStats} = agentSummary
     countUserInAll auId = countUserInAllStats (AgentUserId auId) currentUser users
     accSMPTotals :: Map SMPServer SMPServerSummary -> SMPTotals
-    accSMPTotals = M.foldr addTotals initialTotals
+    accSMPTotals = M.foldr' addTotals initialTotals
       where
         initialTotals = SMPTotals {sessions = ServerSessions 0 0 0, subs = SMPServerSubs 0 0, stats = newAgentSMPServerStatsData}
         addTotals SMPServerSummary {sessions, subs, stats} SMPTotals {sessions = accSess, subs = accSubs, stats = accStats} =
@@ -159,7 +197,7 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
               stats = maybe accStats (accStats `addSMPStatsData`) stats
             }
     accXFTPTotals :: Map XFTPServer XFTPServerSummary -> XFTPTotals
-    accXFTPTotals = M.foldr addTotals initialTotals
+    accXFTPTotals = M.foldr' addTotals initialTotals
       where
         initialTotals = XFTPTotals {sessions = ServerSessions 0 0 0, stats = newAgentXFTPServerStatsData}
         addTotals XFTPServerSummary {sessions, stats} XFTPTotals {sessions = accSess, stats = accStats} =
@@ -167,10 +205,19 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
             { sessions = maybe accSess (accSess `addServerSessions`) sessions,
               stats = maybe accStats (accStats `addXFTPStatsData`) stats
             }
-    smpSummsIntoCategories :: Map SMPServer SMPServerSummary -> ([SMPServerSummary], [SMPServerSummary], [SMPServerSummary])
-    smpSummsIntoCategories = foldr partitionSummary ([], [], [])
+    accNtfTotals :: Map NtfServer NtfServerSummary -> NtfTotals
+    accNtfTotals = M.foldr' addTotals initialTotals
       where
-        partitionSummary srvSumm (curr, prev, prox)
+        initialTotals = NtfTotals {sessions = ServerSessions 0 0 0, stats = newAgentNtfServerStatsData}
+        addTotals NtfServerSummary {sessions, stats} NtfTotals {sessions = accSess, stats = accStats} =
+          NtfTotals
+            { sessions = maybe accSess (accSess `addServerSessions`) sessions,
+              stats = maybe accStats (accStats `addNtfStatsData`) stats
+            }
+    smpSummsIntoCategories :: Map SMPServer SMPServerSummary -> ([SMPServerSummary], [SMPServerSummary], [SMPServerSummary])
+    smpSummsIntoCategories = M.foldr' addSummary ([], [], [])
+      where
+        addSummary srvSumm (curr, prev, prox)
           | isCurrentlyUsed srvSumm = (srvSumm : curr, prev, prox)
           | isPreviouslyUsed srvSumm = (curr, srvSumm : prev, prox)
           | otherwise = (curr, prev, srvSumm : prox)
@@ -182,42 +229,29 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
           Just AgentSMPServerStatsData {_sentDirect, _sentProxied, _sentDirectAttempts, _sentProxiedAttempts, _recvMsgs, _connCreated, _connSecured, _connSubscribed, _connSubAttempts} ->
             _sentDirect > 0 || _sentProxied > 0 || _sentDirectAttempts > 0 || _sentProxiedAttempts > 0 || _recvMsgs > 0 || _connCreated > 0 || _connSecured > 0 || _connSubscribed > 0 || _connSubAttempts > 0
     xftpSummsIntoCategories :: Map XFTPServer XFTPServerSummary -> ([XFTPServerSummary], [XFTPServerSummary])
-    xftpSummsIntoCategories = foldr partitionSummary ([], [])
+    xftpSummsIntoCategories = partition isCurrentlyUsed . M.elems
       where
-        partitionSummary srvSumm (curr, prev)
-          | isCurrentlyUsed srvSumm = (srvSumm : curr, prev)
-          | otherwise = (curr, srvSumm : prev)
         isCurrentlyUsed XFTPServerSummary {sessions, rcvInProgress, sndInProgress, delInProgress} =
           isJust sessions || rcvInProgress || sndInProgress || delInProgress
+    ntfSummsIntoCategories :: Map NtfServer NtfServerSummary -> ([NtfServerSummary], [NtfServerSummary])
+    ntfSummsIntoCategories = partition isCurrentlyUsed . M.elems
+      where
+        isCurrentlyUsed NtfServerSummary {sessions} = isJust sessions
     accSMPSrvsSummaries :: (Map SMPServer SMPServerSummary, Map SMPServer SMPServerSummary)
     accSMPSrvsSummaries = M.foldrWithKey' (addServerData addStats) summs2 smpServersStats
       where
         summs1 = M.foldrWithKey' (addServerData addSessions) (M.empty, M.empty) smpServersSessions
         summs2 = M.foldrWithKey' (addServerData addSubs) summs1 smpServersSubs
-        addServerData ::
-          (a -> SMPServerSummary -> SMPServerSummary) ->
-          (UserId, SMPServer) ->
-          a ->
-          (Map SMPServer SMPServerSummary, Map SMPServer SMPServerSummary) ->
-          (Map SMPServer SMPServerSummary, Map SMPServer SMPServerSummary)
-        addServerData addData (userId, srv) d (userSumms, allUsersSumms) = (userSumms', allUsersSumms')
-          where
-            userSumms'
-              | userId == aUserId currentUser = alterSumms newUserSummary userSumms
-              | otherwise = userSumms
-            allUsersSumms'
-              | countUserInAll userId = alterSumms newSummary allUsersSumms
-              | otherwise = allUsersSumms
-            alterSumms n = M.alter (Just . addData d . fromMaybe n) srv
-            newUserSummary = (newSummary :: SMPServerSummary) {known = Just $ srv `elem` userSMPSrvs}
-            newSummary =
-              SMPServerSummary
-                { smpServer = srv,
-                  known = Nothing,
-                  sessions = Nothing,
-                  subs = Nothing,
-                  stats = Nothing
-                }
+        addServerData = addServerData_ newSummary newUserSummary
+        newUserSummary srv = (newSummary srv :: SMPServerSummary) {known = Just $ srv `elem` userSMPSrvs}
+        newSummary srv =
+          SMPServerSummary
+            { smpServer = srv,
+              known = Nothing,
+              sessions = Nothing,
+              subs = Nothing,
+              stats = Nothing
+            }
         addSessions :: ServerSessions -> SMPServerSummary -> SMPServerSummary
         addSessions s summ@SMPServerSummary {sessions} = summ {sessions = Just $ maybe s (s `addServerSessions`) sessions}
         addSubs :: SMPServerSubs -> SMPServerSummary -> SMPServerSummary
@@ -228,36 +262,56 @@ toPresentedServersSummary agentSummary users currentUser userSMPSrvs userXFTPSrv
     accXFTPSrvsSummaries = M.foldrWithKey' (addServerData addStats) summs1 xftpServersStats
       where
         summs1 = M.foldrWithKey' (addServerData addSessions) (M.empty, M.empty) xftpServersSessions
-        addServerData ::
-          (a -> XFTPServerSummary -> XFTPServerSummary) ->
-          (UserId, XFTPServer) ->
-          a ->
-          (Map XFTPServer XFTPServerSummary, Map XFTPServer XFTPServerSummary) ->
-          (Map XFTPServer XFTPServerSummary, Map XFTPServer XFTPServerSummary)
-        addServerData addData (userId, srv) d (userSumms, allUsersSumms) = (userSumms', allUsersSumms')
-          where
-            userSumms'
-              | userId == aUserId currentUser = alterSumms newUserSummary userSumms
-              | otherwise = userSumms
-            allUsersSumms'
-              | countUserInAll userId = alterSumms newSummary allUsersSumms
-              | otherwise = allUsersSumms
-            alterSumms n = M.alter (Just . addData d . fromMaybe n) srv
-            newUserSummary = (newSummary :: XFTPServerSummary) {known = Just $ srv `elem` userXFTPSrvs}
-            newSummary =
-              XFTPServerSummary
-                { xftpServer = srv,
-                  known = Nothing,
-                  sessions = Nothing,
-                  stats = Nothing,
-                  rcvInProgress = srv `elem` xftpRcvInProgress,
-                  sndInProgress = srv `elem` xftpSndInProgress,
-                  delInProgress = srv `elem` xftpDelInProgress
-                }
+        addServerData = addServerData_ newSummary newUserSummary
         addSessions :: ServerSessions -> XFTPServerSummary -> XFTPServerSummary
         addSessions s summ@XFTPServerSummary {sessions} = summ {sessions = Just $ maybe s (s `addServerSessions`) sessions}
         addStats :: AgentXFTPServerStatsData -> XFTPServerSummary -> XFTPServerSummary
         addStats s summ@XFTPServerSummary {stats} = summ {stats = Just $ maybe s (s `addXFTPStatsData`) stats}
+        newUserSummary srv = (newSummary srv :: XFTPServerSummary) {known = Just $ srv `elem` userXFTPSrvs}
+        newSummary srv =
+          XFTPServerSummary
+            { xftpServer = srv,
+              known = Nothing,
+              sessions = Nothing,
+              stats = Nothing,
+              rcvInProgress = srv `elem` xftpRcvInProgress,
+              sndInProgress = srv `elem` xftpSndInProgress,
+              delInProgress = srv `elem` xftpDelInProgress
+            }
+    accNtfSrvsSummaries :: (Map NtfServer NtfServerSummary, Map NtfServer NtfServerSummary)
+    accNtfSrvsSummaries = M.foldrWithKey' (addServerData addStats) summs1 ntfServersStats
+      where
+        summs1 = M.foldrWithKey' (addServerData addSessions) (M.empty, M.empty) ntfServersSessions
+        addServerData = addServerData_ newSummary newUserSummary
+        addSessions :: ServerSessions -> NtfServerSummary -> NtfServerSummary
+        addSessions s summ@NtfServerSummary {sessions} = summ {sessions = Just $ maybe s (s `addServerSessions`) sessions}
+        addStats :: AgentNtfServerStatsData -> NtfServerSummary -> NtfServerSummary
+        addStats s summ@NtfServerSummary {stats} = summ {stats = Just $ maybe s (s `addNtfStatsData`) stats}
+        newUserSummary srv = (newSummary srv :: NtfServerSummary) {known = Just $ srv `elem` userNtfSrvs}
+        newSummary srv =
+          NtfServerSummary
+            { ntfServer = srv,
+              known = Nothing,
+              sessions = Nothing,
+              stats = Nothing
+            }
+    addServerData_ ::
+      (ProtocolServer p -> s) ->
+      (ProtocolServer p -> s) ->
+      (a -> s -> s) ->
+      (UserId, ProtocolServer p) ->
+      a ->
+      (Map (ProtocolServer p) s, Map (ProtocolServer p) s) ->
+      (Map (ProtocolServer p) s, Map (ProtocolServer p) s)
+    addServerData_ newSummary newUserSummary addData (userId, srv) d (userSumms, allUsersSumms) = (userSumms', allUsersSumms')
+      where
+        userSumms'
+          | userId == aUserId currentUser = alterSumms (newUserSummary srv) userSumms
+          | otherwise = userSumms
+        allUsersSumms'
+          | countUserInAll userId = alterSumms (newSummary srv) allUsersSumms
+          | otherwise = allUsersSumms
+        alterSumms n = M.alter (Just . addData d . fromMaybe n) srv
     addServerSessions :: ServerSessions -> ServerSessions -> ServerSessions
     addServerSessions ss1 ss2 =
       ServerSessions
@@ -290,5 +344,11 @@ $(J.deriveJSON defaultJSON ''XFTPTotals)
 $(J.deriveJSON defaultJSON ''XFTPServerSummary)
 
 $(J.deriveJSON defaultJSON ''XFTPServersSummary)
+
+$(J.deriveJSON defaultJSON ''NtfTotals)
+
+$(J.deriveJSON defaultJSON ''NtfServerSummary)
+
+$(J.deriveJSON defaultJSON ''NtfServersSummary)
 
 $(J.deriveJSON defaultJSON ''PresentedServersSummary)
