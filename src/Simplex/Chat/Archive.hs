@@ -59,11 +59,13 @@ exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
     copyFile (dbFilePath chatStore) $ dir </> archiveChatDbFile
     copyFile (dbFilePath agentStore) $ dir </> archiveAgentDbFile
     forM_ filesPath $ \fp ->
-      copyDirectoryFiles fp $ dir </> archiveFilesFolder
+      copyValidDirectoryFiles validEntrySelector AEExportFile fp $ dir </> archiveFilesFolder
     forM_ assetsPath $ \fp ->
       copyDirectoryFiles (fp </> wallpapersFolder) $ dir </> archiveAssetsFolder </> wallpapersFolder
     let method = if disableCompression == Just True then Z.Store else Z.Deflate
     Z.createArchive archivePath $ Z.packDirRecur method Z.mkEntrySelector dir
+  where
+    validEntrySelector _ = pure True
 
 importArchive :: ArchiveConfig -> CM' [ArchiveError]
 importArchive cfg@ArchiveConfig {archivePath} =
@@ -94,14 +96,21 @@ withTempDir cfg = case parentTempDirectory (cfg :: ArchiveConfig) of
   _ -> withSystemTempDirectory
 
 copyDirectoryFiles :: FilePath -> FilePath -> CM' [ArchiveError]
-copyDirectoryFiles fromDir toDir = do
+copyDirectoryFiles fromDir toDir = copyValidDirectoryFiles (\_ -> pure True) AEImportFile fromDir toDir
+
+copyValidDirectoryFiles :: (FilePath -> IO Bool) -> (FilePath -> String -> ArchiveError) -> FilePath -> FilePath -> CM' [ArchiveError]
+copyValidDirectoryFiles valid mkErr fromDir toDir = do
   createDirectoryIfMissing True toDir
   fs <- listDirectory fromDir
   foldM copyFileCatchError [] fs
   where
     copyFileCatchError fileErrs f =
-      (copyDirectoryFile f $> fileErrs)
-        `E.catch` \(e :: E.SomeException) -> pure (AEImportFile f (ChatError . CEException $ show e) : fileErrs)
+      ifM
+        (liftIO $ valid f)
+        ( (copyDirectoryFile f $> fileErrs)
+            `E.catch` \(e :: E.SomeException) -> pure (mkErr f (show e) : fileErrs)
+        )
+        (pure $ mkErr f "invalid file" : fileErrs)
     copyDirectoryFile f = do
       let fn = takeFileName f
           f' = fromDir </> fn

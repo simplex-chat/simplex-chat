@@ -1251,7 +1251,8 @@ data RemoteCtrlStopReason
 
 data ArchiveError
   = AEImport {chatError :: ChatError}
-  | AEImportFile {file :: String, chatError :: ChatError}
+  | AEImportFile {file :: String, fileError :: String}
+  | AEExportFile {file :: String, fileError :: String}
   deriving (Show, Exception)
 
 -- | Host (mobile) side of transport to process remote commands and forward notifications
