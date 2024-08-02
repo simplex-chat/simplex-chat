@@ -617,7 +617,7 @@ final class ChatModel: ObservableObject {
     class PopChatCollector {
         private let subject = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
-        private var chatsToPop: Set<ChatId> = []
+        private var chatsToPop: [ChatId: Date] = [:]
 
         init() {
             subject
@@ -628,49 +628,31 @@ final class ChatModel: ObservableObject {
 
         // Only call from main thread
         func addChat(_ chatId: ChatId) {
-            chatsToPop.insert(chatId)
+            chatsToPop[chatId] = Date.now
             subject.send()
         }
                 
         func popRecentChats() {
             let m = ChatModel.shared
-            var chs: [(Int, Chat)] = []
-            var skipped: ChatId?
+            var ixs: IndexSet = []
+            var chs: [(Chat, Date)] = []
             // collect chats that received updates
-            for chatId in chatsToPop {
-                if m.chatId == chatId {
-                    skipped = chatId
-                } else if let i = m.getChatIndex(chatId) {
-                    // we don't exclude index 0 here, because it may still be the most recent chat
-                    chs.append((i, m.chats[i]))
+            for (chatId, ts) in chatsToPop {
+                if m.chatId != chatId, let i = m.getChatIndex(chatId) {
+                    ixs.insert(i)
+                    chs.append((m.chats[i], ts))
                 }
             }
             
-            // sort them by timestamp in descending order
-            chs.sort { ch1, ch2 in ch1.1.chatInfo.chatTs > ch2.1.chatInfo.chatTs }
+            // sort chats by timestamp in descending order
+            chs.sort { ch1, ch2 in ch1.1 > ch2.1 }
 
-            // This is optimization to avoid popping chats which position didn't change.
-            // Find the first chat that needs to be popped, starting from the bottom of the list.
-            var i = chs.count - 1
-            while i >= 0 && chs[i].0 == i {
-                i -= 1
+            withAnimation {
+                m.chats.remove(atOffsets: ixs)
+                m.chats.insert(contentsOf: chs.map { $0.0 }, at: 0)
             }
-            if i >= 0 {
-                // collect all chats and indices that need to be popped
-                var ixs: IndexSet = []
-                var toPop: [Chat] = []
-                for j in 0...i {
-                    let (ix, ch) = chs[j]
-                    ixs.insert(ix)
-                    toPop.append(ch)
-                }
-                // pop chats
-                withAnimation {
-                    m.chats.remove(atOffsets: ixs)
-                    m.chats.insert(contentsOf: toPop, at: 0)
-                }
-            }
-            chatsToPop = if let skipped { [skipped] } else { [] }
+
+            chatsToPop = [:]
         }
     }
     
