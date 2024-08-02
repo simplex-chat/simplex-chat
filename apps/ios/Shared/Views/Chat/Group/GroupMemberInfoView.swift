@@ -256,9 +256,9 @@ struct GroupMemberInfoView: View {
                 Spacer()
                 knownDirectChatButton(chat)
                 Spacer()
-                audioCallButton(contact, showAlert: { alert = .someAlert(alert: $0) })
+                audioCallButton(chat, contact, showAlert: { alert = .someAlert(alert: $0) })
                 Spacer()
-                videoButton(contact, showAlert: { alert = .someAlert(alert: $0) })
+                videoButton(chat, contact, showAlert: { alert = .someAlert(alert: $0) })
                 Spacer()
             } else if groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
                 if let contactId = member.memberContactId {
@@ -269,21 +269,21 @@ struct GroupMemberInfoView: View {
                     createMemberContactButton()
                 }
                 Spacer()
-                InfoViewActionButtonLayout(image: "phone.fill", title: "call", disabledLook: true)
+                InfoViewActionButtonLayout(image: "phone", title: "call", disabledLook: true)
                     .onTapGesture { showSendMessageToEnableCallsAlert() }
                 Spacer()
-                InfoViewActionButtonLayout(image: "video.fill", title: "video", disabledLook: true)
+                InfoViewActionButtonLayout(image: "video", title: "video", disabledLook: true)
                     .onTapGesture { showSendMessageToEnableCallsAlert() }
                 Spacer()
             } else { // no known contact chat && directMessages are off
                 Spacer()
-                InfoViewActionButtonLayout(image: "message.fill", title: "message", disabledLook: true)
+                InfoViewActionButtonLayout(image: "message", title: "message", disabledLook: true)
                     .onTapGesture { showDirectMessagesProhibitedAlert("Can't message member") }
                 Spacer()
-                InfoViewActionButtonLayout(image: "phone.fill", title: "call", disabledLook: true)
+                InfoViewActionButtonLayout(image: "phone", title: "call", disabledLook: true)
                     .onTapGesture { showDirectMessagesProhibitedAlert("Can't call member") }
                 Spacer()
-                InfoViewActionButtonLayout(image: "video.fill", title: "video", disabledLook: true)
+                InfoViewActionButtonLayout(image: "video", title: "video", disabledLook: true)
                     .onTapGesture { showDirectMessagesProhibitedAlert("Can't call member") }
                 Spacer()
             }
@@ -325,7 +325,7 @@ struct GroupMemberInfoView: View {
     }
 
     func knownDirectChatButton(_ chat: Chat) -> some View {
-        InfoViewActionButtonLayout(image: "message.fill", title: "message")
+        InfoViewActionButtonLayout(image: "message", title: "message")
             .onTapGesture {
                 dismissAllSheets(animated: true)
                 DispatchQueue.main.async {
@@ -335,7 +335,7 @@ struct GroupMemberInfoView: View {
     }
 
     func newDirectChatButton(_ contactId: Int64) -> some View {
-        InfoViewActionButtonLayout(image: "message.fill", title: "message")
+        InfoViewActionButtonLayout(image: "message", title: "message")
             .onTapGesture {
                 do {
                     let chat = try apiGetChat(type: .direct, id: contactId)
@@ -351,7 +351,7 @@ struct GroupMemberInfoView: View {
     }
 
     func createMemberContactButton() -> some View {
-        InfoViewActionButtonLayout(image: "message.fill", title: "message")
+        InfoViewActionButtonLayout(image: "message", title: "message")
             .onTapGesture {
                 progressIndicator = true
                 Task {

@@ -152,9 +152,9 @@ struct ChatInfoView: View {
                     Spacer()
                     searchButton()
                     Spacer()
-                    audioCallButton(contact, showAlert: { alert = .someAlert(alert: $0) })
+                    audioCallButton(chat, contact, showAlert: { alert = .someAlert(alert: $0) })
                     Spacer()
-                    videoButton(contact, showAlert: { alert = .someAlert(alert: $0) })
+                    videoButton(chat, contact, showAlert: { alert = .someAlert(alert: $0) })
                     Spacer()
                     muteButton()
                     Spacer()
@@ -617,20 +617,22 @@ struct ChatInfoView: View {
     }
 }
 
-func audioCallButton(_ contact: Contact, showAlert: @escaping (SomeAlert) -> Void) -> some View {
+func audioCallButton(_ chat: Chat, _ contact: Contact, showAlert: @escaping (SomeAlert) -> Void) -> some View {
     callButton(
+        chat,
         contact,
-        image: "phone.fill",
+        image: "phone",
         title: "call",
         mediaType: .audio,
         showAlert: showAlert
     )
 }
 
-func videoButton(_ contact: Contact, showAlert: @escaping (SomeAlert) -> Void) -> some View {
+func videoButton(_ chat: Chat, _ contact: Contact, showAlert: @escaping (SomeAlert) -> Void) -> some View {
     callButton(
+        chat,
         contact,
-        image: "video.fill",
+        image: "video",
         title: "video",
         mediaType: .video,
         showAlert: showAlert
@@ -638,6 +640,7 @@ func videoButton(_ contact: Contact, showAlert: @escaping (SomeAlert) -> Void) -
 }
 
 @ViewBuilder private func callButton(
+    _ chat: Chat,
     _ contact: Contact,
     image: String,
     title: LocalizedStringKey,
@@ -645,7 +648,7 @@ func videoButton(_ contact: Contact, showAlert: @escaping (SomeAlert) -> Void) -
     showAlert: @escaping (SomeAlert) -> Void
 ) -> some View {
     let canCall = contact.ready && contact.active && contact.mergedPreferences.calls.enabled.forUser && ChatModel.shared.activeCall == nil
-    InfoViewActionButtonLayout(image: "video.fill", title: "video", disabledLook: !canCall)
+    InfoViewActionButtonLayout(image: image, title: title, disabledLook: !canCall)
         .onTapGesture {
             if canCall {
                 CallController.shared.startCall(contact, mediaType)
@@ -673,6 +676,37 @@ func videoButton(_ contact: Contact, showAlert: @escaping (SomeAlert) -> Void) -
                     ),
                     id: "can't call contact, contact not ready"
                 ))
+            } else {
+                switch chat.chatInfo.showEnableCallsAlert {
+                case .userEnable:
+                    showAlert(SomeAlert(
+                        alert: Alert(
+                            title: Text("Allow calls?"),
+                            message: Text("You need to allow your contact to call to be able to call them."),
+                            primaryButton: .default(Text("Allow")) {
+                                allowFeatureToContact(contact, .calls)
+                            },
+                            secondaryButton: .cancel()
+                        ),
+                        id: "allow calls"
+                    ))
+                case .askContact:
+                    showAlert(SomeAlert(
+                        alert: mkAlert(
+                            title: "Calls prohibited!",
+                            message: "Please ask your contact to enable calls."
+                        ),
+                        id: "calls prohibited, ask contact"
+                    ))
+                case .other:
+                    showAlert(SomeAlert(
+                        alert: mkAlert(
+                            title: "Calls prohibited!",
+                            message: "Please check yours and your contact preferences."
+                        )
+                        , id: "calls prohibited, ask contact"
+                    ))
+                }
             }
         }
         .disabled(ChatModel.shared.activeCall != nil)

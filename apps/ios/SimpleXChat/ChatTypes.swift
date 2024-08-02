@@ -1410,6 +1410,27 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public enum ShowEnableCallsAlert: Hashable {
+        case userEnable
+        case askContact
+        case other
+    }
+
+    public var showEnableCallsAlert: ShowEnableCallsAlert {
+        switch self {
+        case let .direct(contact):
+            if contact.mergedPreferences.calls.userPreference.preference.allow == .no {
+                return .userEnable
+            } else if contact.mergedPreferences.calls.contactPreference.allow == .no {
+                return .askContact
+            } else {
+                return .other
+            }
+        default:
+            return .other
+        }
+    }
+
     public var ntfsEnabled: Bool {
         self.chatSettings?.enableNtfs == .all
     }
