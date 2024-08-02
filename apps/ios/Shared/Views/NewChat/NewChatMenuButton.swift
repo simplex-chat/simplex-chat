@@ -269,9 +269,9 @@ struct ContactsListSearchBar: View {
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
-        VStack {
-            HStack {
-                HStack {
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
                     TextField("Search or paste SimpleX link", text: $searchText)
                         .foregroundColor(searchShowingSimplexLink ? theme.colors.secondary : theme.colors.onBackground)
@@ -287,7 +287,7 @@ struct ContactsListSearchBar: View {
                 }
                 .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
                 .foregroundColor(theme.colors.secondary)
-                .background(Color(.tertiarySystemFill))
+                .background(theme.colors.background)
                 .cornerRadius(10.0)
 
                 if searchFocussed {
@@ -301,7 +301,6 @@ struct ContactsListSearchBar: View {
                     toggleFilterButton()
                 }
             }
-            Divider()
         }
         .onChange(of: searchFocussed) { sf in
             withAnimation { searchMode = sf }
