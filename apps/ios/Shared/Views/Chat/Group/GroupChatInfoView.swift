@@ -72,6 +72,7 @@ struct GroupChatInfoView: View {
                     .listRowBackground(Color.clear)
 
                 HStack {
+                    Spacer()
                     searchButton()
                     // TODO fix spacing of make disabled
                     if groupInfo.canAddMembers {
@@ -80,6 +81,7 @@ struct GroupChatInfoView: View {
                     }
                     Spacer()
                     muteButton()
+                    Spacer()
                 }
                 .padding(.horizontal)
                 .listRowBackground(Color.clear)
