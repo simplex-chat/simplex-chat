@@ -25,8 +25,9 @@ struct NewChatMenuButton: View {
                 .scaledToFit()
                 .frame(width: 24, height: 24)
         }
-        .sheet(isPresented: $showNewChatSheet) {
+        .appSheet(isPresented: $showNewChatSheet) {
             NewChatSheet()
+                .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
         }
     }
 }
