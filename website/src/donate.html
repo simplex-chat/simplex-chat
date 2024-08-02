@@ -192,9 +192,128 @@ templateEngineOverride: njk
     input[type=range].btcpay-input-range:focus::-ms-fill-upper {
         background: #fff;
     }
+
+    .donate-content h2{
+        color: #0197ff;
+        font-weight: 700;
+        font-size: 28px;
+        line-height: 36px;
+        margin-bottom: 28px;
+        text-align: left;
+    }
+
+    :is([dir="rtl"] .donate-content h2) {
+        text-align: right;
+    }
+
+    .donate-content p{
+        color: #0d0e12;
+        line-height: 24px;
+        font-size: 16px;
+        margin-bottom: 12px;
+    }
+
+    :is(.dark .donate-content p) {
+        color: #ffffff;
+    }
+
+    @media (min-width: 768px) {
+        .donate-content h2{
+            font-size: 35px;
+            line-height: 43px;
+        }
+    }
+
+    .donate-content a {
+        color: #0053D0;
+        text-decoration: underline;
+        text-underline-offset: 4px;
+    }
+
+    .dark .donate-content a,
+    .dark .donate-content h2 {
+        color: #70F0F9;
+    }
+
+    .donate-content ul,
+    .donate-content ol {
+        list-style-position: inside;
+        overflow: auto;
+        margin: 10px 0;
+    }
+
+    .donate-content > ul{
+        margin-bottom: 1.5rem;
+    }
+
+    .donate-content ul li,
+    .donate-content ol li {
+        margin-right: 0;
+        margin-left: 0;
+        -webkit-margin-start: 1.1rem;
+        color: #0d0e12;
+        word-wrap: break-word;
+        white-space: normal; 
+    }
+
+    @media (min-width: 1024px) {
+        .donate-content ul li,
+        .donate-content ol li {
+            word-break: break-all;
+        }
+    }
+
+    .dark .donate-content ul li,
+    .dark .donate-content ol li {
+        color: #fff;
+    }
+
+    .donate-content ul li::marker,
+    .donate-content ol li::marker {
+        color: #0d0e12;
+    }
+
+    .dark .donate-content ul li::marker,
+    .dark .donate-content ol li::marker {
+        color: white;
+    }
+
+    .donate-content ul li {
+        list-style: disc;
+        letter-spacing: 0.4px;
+    }
+
+    .donate-content ol li {
+        list-style: decimal;
+    }
+
+    .donate-content > p:nth-last-child(3),
+    .donate-content > p:nth-last-child(2){
+        margin-bottom: 4px;
+    }
+
+    .donate-content > p:nth-last-child(3) {
+        font-weight: bold;
+    }
+
+    .donate-form{
+        padding: 5rem 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .donate-form form{
+        scale: 1.2;
+    }
 </style>
 <section
-    class="bg-primary-bg-light dark:bg-primary-bg-dark py-[75px] mt-[66px] px-5 lg:h-[calc(100vh-66px)] lg:max-h-[888px] lg:flex lg:items-center">
+    class="container bg-primary-bg-light dark:bg-primary-bg-dark mt-[66px] px-5 flex flex-col-reverse lg:flex-row lg:gap-5">
+    <div class="donate-content flex-[5] py-[75px]">
+        {% includeReadmeSectionHtml 'Help us with donations' %}
+    </div>
+
+    <div class="donate-form flex-[4] max-h-[calc(100vh-66px)]">
     <form method="POST" action="https://btcpay.simplex.chat/api/v1/invoices" class="btcpay-form btcpay-form--block">
         <input type="hidden" name="storeId" value="932Twc9xWnAzFx1iA5VRMoRVEvn7tydmpwqqTVf6ziiV" />
         <input type="hidden" name="jsonResponse" value="true" />
@@ -216,6 +335,7 @@ templateEngineOverride: njk
                 style="height:57px;display:inline-block;padding:5% 0 5% 5px;vertical-align:middle;">
         </button>
     </form>
+    </div>
 </section>
 <script>
     (function () {
