@@ -16,7 +16,7 @@ import chat.simplex.res.MR
 
 @Composable
 fun DefaultTopAppBar(
-  navigationButton: @Composable RowScope.() -> Unit,
+  navigationButton: (@Composable RowScope.() -> Unit)? = null,
   title: (@Composable () -> Unit)?,
   onTitleClick: (() -> Unit)? = null,
   showSearch: Boolean,
@@ -135,5 +135,6 @@ private fun TopAppBar(
 
 val AppBarHeight = 56.dp
 val AppBarHorizontalPadding = 4.dp
+val BottomAppBarHeight = 60.dp
 private val TitleInsetWithoutIcon = DEFAULT_PADDING - AppBarHorizontalPadding
 val TitleInsetWithIcon = 72.dp

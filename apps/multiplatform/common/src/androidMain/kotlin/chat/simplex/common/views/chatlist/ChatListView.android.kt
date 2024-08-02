@@ -36,7 +36,7 @@ private val CALL_BOTTOM_ICON_OFFSET = (-15).dp
 private val CALL_BOTTOM_ICON_HEIGHT = CALL_INTERACTIVE_AREA_HEIGHT + CALL_BOTTOM_ICON_OFFSET
 
 @Composable
-actual fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableStateFlow<AnimatedViewState>) {
+actual fun ActiveCallInteractiveArea(call: Call) {
   val onClick = { platform.androidStartCallActivity(false) }
   Box(Modifier.offset(y = CALL_TOP_OFFSET).height(CALL_INTERACTIVE_AREA_HEIGHT)) {
     val source = remember { MutableInteractionSource() }

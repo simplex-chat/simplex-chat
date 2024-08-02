@@ -52,9 +52,11 @@ actual fun LazyColumnWithScrollBar(
           }
         }
     }
-    LazyColumn(modifier.then(if (appPlatform.isDesktop) scrollModifier else Modifier), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
-      DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, reverseLayout)
+    Box {
+      LazyColumn(modifier.then(if (appPlatform.isDesktop) scrollModifier else Modifier), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
+      Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+        DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, reverseLayout)
+      }
     }
   }
 }
