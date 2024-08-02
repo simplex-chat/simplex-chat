@@ -52,13 +52,29 @@ struct ContactListNavLink: View {
         }
     }
 
-    // regular active contact
     func recentContactNavLink(_ contact: Contact) -> some View {
         contactPreview(contact, titleColor: theme.colors.onBackground)
+            .onTapGesture {
+                dismissAllSheets(animated: true) {
+                    ChatModel.shared.chatId = contact.id
+                }
+            }
     }
 
     func deletedChatNavLink(_ contact: Contact) -> some View {
         contactPreview(contact, titleColor: theme.colors.onBackground)
+            .onTapGesture {
+                Task {
+                    await MainActor.run {
+                        var updatedContact = contact
+                        updatedContact.chatDeleted = false
+                        ChatModel.shared.updateContact(updatedContact)
+                    }
+                    dismissAllSheets(animated: true) {
+                        ChatModel.shared.chatId = contact.id
+                    }
+                }
+            }
     }
 
     func contactPreview(_ contact: Contact, titleColor: Color) -> some View {
