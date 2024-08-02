@@ -21,7 +21,7 @@ interface PlatformInterface {
   fun androidChatInitializedAndStarted() {}
   fun androidIsBackgroundCallAllowed(): Boolean = true
   fun androidSetNightModeIfSupported() {}
-  fun androidSetStatusAndNavBarColors(isLight: Boolean, statusBackgroundColor: Color, navBackgroundColor: Color) {}
+  fun androidSetStatusAndNavBarColors(isLight: Boolean, statusBackgroundColor: Color, navBackgroundColor: Color, hasTop: Boolean, hasBottom: Boolean) {}
   fun androidStartCallActivity(acceptCall: Boolean, remoteHostId: Long? = null, chatId: ChatId? = null) {}
   fun androidPictureInPictureAllowed(): Boolean = true
   fun androidCallEnded() {}

@@ -12,8 +12,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.onGloballyPositioned
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.CryptoFile
 import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.views.chat.ProviderMedia
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -55,6 +57,9 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
   val scope = rememberCoroutineScope()
   val playersToRelease = rememberSaveable { mutableSetOf<URI>() }
   DisposableEffectOnGone(
+    always = {
+      platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, Color.Black, Color.Black, false, false)
+    },
     whenGone = { playersToRelease.forEach { VideoPlayerHolder.release(it, true, true) } }
   )
 

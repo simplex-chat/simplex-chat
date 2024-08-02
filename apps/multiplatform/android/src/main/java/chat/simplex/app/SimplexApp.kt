@@ -271,19 +271,33 @@ class SimplexApp: Application(), LifecycleEventObserver {
         uiModeManager.setApplicationNightMode(mode)
       }
 
-      override fun androidSetStatusAndNavBarColors(isLight: Boolean, statusBackgroundColor: Color, navBackgroundColor: Color) {
+      override fun androidSetStatusAndNavBarColors(isLight: Boolean, statusBackgroundColor: Color, navBackgroundColor: Color, hasTop: Boolean, hasBottom: Boolean) {
         val window = mainActivity.get()?.window ?: return
-        if (window.statusBarColor == statusBackgroundColor.toArgb()) return
-        window.statusBarColor = statusBackgroundColor.toArgb()
-        window.navigationBarColor = (if (appPrefs.oneHandUI.get()) {
+        @Suppress("DEPRECATION")
+        val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
+
+        val statusBar = (if (hasTop) {
+          statusBackgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
+        } else {
+          statusBackgroundColor
+        }).toArgb()
+        val navBar = (if (hasBottom) {
           navBackgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
         } else {
           navBackgroundColor
         }).toArgb()
-        @Suppress("DEPRECATION")
-        val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
-        windowInsetController?.isAppearanceLightStatusBars = isLight
-        windowInsetController?.isAppearanceLightNavigationBars = isLight
+        if (window.statusBarColor != statusBar) {
+          window.statusBarColor = statusBar
+        }
+        if (windowInsetController?.isAppearanceLightStatusBars != isLight) {
+          windowInsetController?.isAppearanceLightStatusBars = isLight
+        }
+        if (window.navigationBarColor != navBar) {
+          window.navigationBarColor = navBar
+        }
+        if (windowInsetController?.isAppearanceLightNavigationBars != isLight) {
+          windowInsetController?.isAppearanceLightNavigationBars = isLight
+        }
       }
 
       override fun androidStartCallActivity(acceptCall: Boolean, remoteHostId: Long?, chatId: ChatId?) {

@@ -469,17 +469,19 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
             showViaProxy = chatModel.controller.appPrefs.showSentViaProxy.get(),
             showSearch = showSearch
           )
-          val backgroundColor = MaterialTheme.colors.background
-          val backgroundColorState = rememberUpdatedState(backgroundColor)
-          LaunchedEffect(Unit) {
-            snapshotFlow { ModalManager.center.modalCount.value > 0 || chatModel.chatId.value == null }
-              .collect { globalBackground ->
-                if (globalBackground) {
-                  platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, CurrentColors.value.colors.background)
-                } else {
-                  platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, backgroundColorState.value, backgroundColorState.value)
+          if (appPlatform.isAndroid) {
+            val backgroundColor = MaterialTheme.colors.background
+            val backgroundColorState = rememberUpdatedState(backgroundColor)
+            LaunchedEffect(Unit) {
+              snapshotFlow { ModalManager.center.modalCount.value > 0 }
+                .collect { modalBackground ->
+                  if (modalBackground) {
+                    platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, CurrentColors.value.colors.background, false, false)
+                  } else {
+                    platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, backgroundColorState.value, backgroundColorState.value, true, true)
+                  }
                 }
-              }
+            }
           }
         }
       }

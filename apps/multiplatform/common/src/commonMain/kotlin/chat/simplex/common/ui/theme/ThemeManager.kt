@@ -105,7 +105,7 @@ object ThemeManager {
     CurrentColors.value = currentColors(null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
     platform.androidSetNightModeIfSupported()
     val c = CurrentColors.value.colors
-    platform.androidSetStatusAndNavBarColors(c.isLight, c.background, c.background)
+    platform.androidSetStatusAndNavBarColors(c.isLight, c.background, c.background, !ChatController.appPrefs.oneHandUI.get(), ChatController.appPrefs.oneHandUI.get())
   }
 
   fun changeDarkTheme(theme: String) {
@@ -125,7 +125,7 @@ object ThemeManager {
     CurrentColors.value = currentColors(null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
     if (name == ThemeColor.BACKGROUND) {
       val c = CurrentColors.value.colors
-      platform.androidSetStatusAndNavBarColors(c.isLight, c.background, c.background)
+      platform.androidSetStatusAndNavBarColors(c.isLight, c.background, c.background, false, false)
     }
   }
 
