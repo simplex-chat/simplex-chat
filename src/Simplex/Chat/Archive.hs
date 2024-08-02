@@ -52,18 +52,20 @@ archiveAssetsFolder = "simplex_v1_assets"
 wallpapersFolder :: String
 wallpapersFolder = "wallpapers"
 
-exportArchive :: ArchiveConfig -> CM' ()
+exportArchive :: ArchiveConfig -> CM' [ArchiveError]
 exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
   withTempDir cfg "simplex-chat." $ \dir -> do
     StorageFiles {chatStore, agentStore, filesPath, assetsPath} <- storageFiles
     copyFile (dbFilePath chatStore) $ dir </> archiveChatDbFile
     copyFile (dbFilePath agentStore) $ dir </> archiveAgentDbFile
-    forM_ filesPath $ \fp ->
-      copyValidDirectoryFiles entrySelectorError AEExportFile fp $ dir </> archiveFilesFolder
+    errs <-
+      forM filesPath $ \fp ->
+        copyValidDirectoryFiles entrySelectorError fp $ dir </> archiveFilesFolder
     forM_ assetsPath $ \fp ->
       copyDirectoryFiles (fp </> wallpapersFolder) $ dir </> archiveAssetsFolder </> wallpapersFolder
     let method = if disableCompression == Just True then Z.Store else Z.Deflate
     Z.createArchive archivePath $ Z.packDirRecur method Z.mkEntrySelector dir
+    pure $ fromMaybe [] errs
   where
     entrySelectorError f = (Z.mkEntrySelector f $> Nothing) `E.catchAny` (pure . Just . show)
 
@@ -87,7 +89,7 @@ importArchive cfg@ArchiveConfig {archivePath} =
           (doesDirectoryExist fromDir)
           (copyDirectoryFiles fromDir fp)
           (pure [])
-          `E.catch` \(e :: E.SomeException) -> pure [AEImport . ChatError . CEException $ show e]
+          `E.catch` \(e :: E.SomeException) -> pure [AEImport $ show e]
       _ -> pure []
 
 withTempDir :: ArchiveConfig -> (String -> (FilePath -> CM' a) -> CM' a)
@@ -96,20 +98,22 @@ withTempDir cfg = case parentTempDirectory (cfg :: ArchiveConfig) of
   _ -> withSystemTempDirectory
 
 copyDirectoryFiles :: FilePath -> FilePath -> CM' [ArchiveError]
-copyDirectoryFiles fromDir toDir = copyValidDirectoryFiles (\_ -> pure Nothing) AEImportFile fromDir toDir
+copyDirectoryFiles fromDir toDir = copyValidDirectoryFiles (\_ -> pure Nothing) fromDir toDir
 
-copyValidDirectoryFiles :: (FilePath -> IO (Maybe String)) -> (FilePath -> String -> ArchiveError) -> FilePath -> FilePath -> CM' [ArchiveError]
-copyValidDirectoryFiles fileError mkErr fromDir toDir = do
+copyValidDirectoryFiles :: (FilePath -> IO (Maybe String)) -> FilePath -> FilePath -> CM' [ArchiveError]
+copyValidDirectoryFiles isFileError fromDir toDir = do
   createDirectoryIfMissing True toDir
   fs <- listDirectory fromDir
   foldM copyFileCatchError [] fs
   where
     copyFileCatchError fileErrs f =
-      liftIO (fileError f) >>= \case
+      liftIO (isFileError f) >>= \case
         Nothing ->
           (copyDirectoryFile f $> fileErrs)
-            `E.catch` \(e :: E.SomeException) -> pure (mkErr f (show e) : fileErrs)
-        Just e ->  pure $ mkErr f e : fileErrs
+            `E.catch` \(e :: E.SomeException) -> addErr $ show e
+        Just e ->  addErr e
+      where
+        addErr e = pure $ AEFileError f e : fileErrs
     copyDirectoryFile f = do
       let fn = takeFileName f
           f' = fromDir </> fn

@@ -15,6 +15,7 @@ enum DatabaseAlert: Identifiable {
     case importArchive
     case archiveImported
     case archiveImportedWithErrors(archiveErrors: [ArchiveError])
+    case archiveExportedWithErrors(archivePath: URL, archiveErrors: [ArchiveError])
     case deleteChat
     case chatDeleted
     case deleteLegacyDatabase
@@ -29,6 +30,7 @@ enum DatabaseAlert: Identifiable {
         case .importArchive: return "importArchive"
         case .archiveImported: return "archiveImported"
         case .archiveImportedWithErrors: return "archiveImportedWithErrors"
+        case .archiveExportedWithErrors: return "archiveExportedWithErrors"
         case .deleteChat: return "deleteChat"
         case .chatDeleted: return "chatDeleted"
         case .deleteLegacyDatabase: return "deleteLegacyDatabase"
@@ -265,10 +267,18 @@ struct DatabaseView: View {
                 title: Text("Chat database imported"),
                 message: Text("Restart the app to use imported chat database")
             )
-        case .archiveImportedWithErrors:
+        case let .archiveImportedWithErrors(errs):
             return Alert(
                 title: Text("Chat database imported"),
-                message: Text("Restart the app to use imported chat database") + Text("\n") + Text("Some non-fatal errors occurred during import - you may see Chat console for more details.")
+                message: Text("Restart the app to use imported chat database") + Text("\n") + Text("Some non-fatal errors occurred during import:") + archiveErrorsText(errs)
+            )
+        case let .archiveExportedWithErrors(archivePath, errs):
+            return Alert(
+                title: Text("Chat database exported"),
+                message: Text("You may save the exported archive.") + Text("\n") + Text("Some file(s) were not exported:") + archiveErrorsText(errs),
+                dismissButton: .default(Text("Continue")) {
+                    showShareSheet(items: [archivePath])
+                }
             )
         case .deleteChat:
             return Alert(
@@ -317,7 +327,18 @@ struct DatabaseView: View {
             return Alert(title: Text(title), message: Text(error))
         }
     }
-
+    
+    private func archiveErrorsText(_ errs: [ArchiveError]) -> Text {
+        Text("\n" + errs.map(showArchiveError).joined(separator: "\n"))
+    }
+    
+    private func showArchiveError(_ err: ArchiveError) -> String {
+        switch err {
+        case let .import(importError): importError
+        case let .fileError(file, fileError): "\(file): \(fileError)"
+        }
+    }
+    
     private func authStopChat() {
         if UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA) {
             authenticate(reason: NSLocalizedString("Stop SimpleX", comment: "authentication reason")) { laResult in
@@ -349,9 +370,16 @@ struct DatabaseView: View {
         progressIndicator = true
         Task {
             do {
-                let archivePath = try await exportChatArchive()
-                showShareSheet(items: [archivePath])
-                await MainActor.run { progressIndicator = false }
+                let (archivePath, archiveErrors) = try await exportChatArchive()
+                if archiveErrors.isEmpty {
+                    showShareSheet(items: [archivePath])
+                    await MainActor.run { progressIndicator = false }
+                } else {
+                    await MainActor.run {
+                        alert = .archiveExportedWithErrors(archivePath: archivePath, archiveErrors: archiveErrors)
+                        progressIndicator = false
+                    }
+                }
             } catch let error {
                 await MainActor.run {
                     alert = .error(title: "Error exporting chat database", error: responseError(error))
