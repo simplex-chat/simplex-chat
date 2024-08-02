@@ -1405,7 +1405,7 @@
     <string name="network_disable_socks">Közvetlen internet kapcsolat használata?</string>
     <string name="you_will_still_receive_calls_and_ntfs">Továbbra is kap hívásokat és értesítéseket a némított profiloktól, ha azok aktívak.</string>
     <string name="group_main_profile_sent">A fő csevegési profilja elküldésre kerül a csoporttagok számára</string>
-    <string name="you_can_enable_delivery_receipts_later_alert">Később engedélyezheti őket az alkalmazás Adatvédelem és biztonság menüpontban.</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">Később engedélyezheti őket az alkalmazás „Adatvédelem és biztonság” menüben.</string>
     <string name="to_reveal_profile_enter_password">Rejtett profilja megjelenítéséhez írja be a teljes jelszavát a keresőmezőbe a Csevegési profilok menüben.</string>
     <string name="upgrade_and_open_chat">Fejlesztés és a csevegés megnyitása</string>
     <string name="you_need_to_allow_to_send_voice">Hangüzeneteket küldéséhez engedélyeznie kell azok küldését az ismerősei számára.</string>
@@ -1996,9 +1996,9 @@
     <string name="smp_proxy_error_broker_version">A továbbító kiszolgáló verziója nem kompatibilis a hálózati beállításokkal: %1$s.</string>
     <string name="info_view_call_button">hívás</string>
     <string name="delete_contact_cannot_undo_warning">Az ismerős törlésre fog kerülni - ez a művelet nem vonható vissza!</string>
-    <string name="only_delete_conversation">Csak a csevegést törölje</string>
+    <string name="only_delete_conversation">Csak a beszélgetés törlése</string>
     <string name="info_view_open_button">megnyitás</string>
-    <string name="conversation_deleted">Csevegés törölve!</string>
+    <string name="conversation_deleted">Beszélgetés törölve!</string>
     <string name="contact_deleted">Ismerős törölve!</string>
     <string name="deleted_chats">Törölt csevegések</string>
     <string name="no_filtered_contacts">Nincsenek szűrt ismerősök</string>
@@ -2007,14 +2007,23 @@
     <string name="cant_call_contact_alert_title">Nem lehet felhívni az ismerőst</string>
     <string name="cant_send_message_to_member_alert_title">Nem lehet üzenetet küldeni a csoporttagnak</string>
     <string name="cant_call_contact_connecting_wait_alert_text">Kapcsolódás az ismerőshöz, várjon vagy ellenőrízze később!</string>
-    <string name="cant_call_contact_deleted_alert_text">Ismerős törölve.</string>
+    <string name="cant_call_contact_deleted_alert_text">Törölt ismerős.</string>
     <string name="cant_call_member_alert_title">Nem lehet felhívni a csoporttagot</string>
     <string name="allow_calls_question">Hívások engedélyezése?</string>
     <string name="action_button_add_members">Meghívás</string>
     <string name="info_view_message_button">üzenet</string>
-    <string name="keep_conversation">Csevegés megtartása</string>
+    <string name="keep_conversation">Beszélgetés megtartása</string>
     <string name="confirm_delete_contact_question">Bitosan törli az ismerőst?</string>
     <string name="info_view_connect_button">kapcsolódás</string>
     <string name="one_hand_ui">Egykezes UI</string>
     <string name="delete_without_notification">Törlés értesítés nélkül</string>
+    <string name="toolbar_settings">Beállítások</string>
+    <string name="info_view_search_button">keresés</string>
+    <string name="info_view_video_button">videó</string>
+    <string name="you_can_still_send_messages_to_contact">A „Törölt csevegésekből” továbbra is küldhet üzeneteket neki: %1$s.</string>
+    <string name="contact_list_header_title">Ismerősök</string>
+    <string name="calls_prohibited_ask_to_enable_calls_alert_text">Kérje meg az ismerősét, hogy engedélyezze a hívásokat.</string>
+    <string name="cant_call_member_send_message_alert_text">Üzenet küldése a hívások engedélyezéséhez.</string>
+    <string name="you_need_to_allow_calls">Engedélyeznie kell a hívásokat az ismerőse számára, hogy fel tudják hívni egymást.</string>
+    <string name="you_can_still_view_conversation_with_contact">A(z) %1$s nevű ismerősével folytatott beszélgetéseit továbbra is megtekintheti a csevegések listájában.</string>
 </resources>
