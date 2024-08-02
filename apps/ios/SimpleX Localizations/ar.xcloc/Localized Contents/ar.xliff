@@ -39,7 +39,7 @@
       </trans-unit>
       <trans-unit id="!1 colored!" xml:space="preserve" approved="no">
         <source>!1 colored!</source>
-        <target state="translated">! 1 ملون!</target>
+        <target state="translated">! 1 مُلوَّن!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="#secret#" xml:space="preserve" approved="no">
@@ -124,7 +124,7 @@
       </trans-unit>
       <trans-unit id="%lld contact(s) selected" xml:space="preserve" approved="no">
         <source>%lld contact(s) selected</source>
-        <target state="translated">%lld تم اختيار جهة الاتصال</target>
+        <target state="translated">%lld تم اختيار جهات الاتصال</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve" approved="no">
@@ -3742,6 +3742,30 @@ SimpleX servers cannot see your profile.</source>
       <trans-unit id="%lld messages blocked" xml:space="preserve" approved="no">
         <source>%lld messages blocked</source>
         <target state="translated">%lld رسائل محظوره</target>
+      </trans-unit>
+      <trans-unit id="%u messages skipped." xml:space="preserve" approved="no">
+        <source>%u messages skipped.</source>
+        <target state="translated">%u تم تخطي الرسائل.</target>
+      </trans-unit>
+      <trans-unit id="**Add contact**: to create a new invitation link, or connect via a link you received." xml:space="preserve" approved="no">
+        <source>**Add contact**: to create a new invitation link, or connect via a link you received.</source>
+        <target state="translated">**إضافة جهة اتصال**: لإنشاء رابط دعوة جديد، أو الاتصال عبر الرابط الذي تلقيتوهم.</target>
+      </trans-unit>
+      <trans-unit id="**Create group**: to create a new group." xml:space="preserve" approved="no">
+        <source>**Create group**: to create a new group.</source>
+        <target state="translated">**إنشاء مجموعة**: لإنشاء مجموعة جديدة.</target>
+      </trans-unit>
+      <trans-unit id="(this device v%@)" xml:space="preserve" approved="no">
+        <source>(this device v%@)</source>
+        <target state="translated">(هذا الجهاز v%@)</target>
+      </trans-unit>
+      <trans-unit id="(new)" xml:space="preserve" approved="no">
+        <source>(new)</source>
+        <target state="translated">(جديد)</target>
+      </trans-unit>
+      <trans-unit id="**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." xml:space="preserve" approved="no">
+        <source>**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection.</source>
+        <target state="translated">**يرجى الملاحظة**: سيؤدي استخدام نفس قاعدة البيانات على جهازين إلى كسر فك تشفير الرسائل من اتصالاتك، كحماية أمنية.</target>
       </trans-unit>
     </body>
   </file>
