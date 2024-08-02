@@ -217,13 +217,16 @@ class AppPreferences {
 
   val desktopWindowState = mkStrPreference(SHARED_PREFS_DESKTOP_WINDOW_STATE, null)
 
+  val showDeleteConversationNotice = mkBoolPreference(SHARED_PREFS_SHOW_DELETE_CONVERSATION_NOTICE, true)
+  val showDeleteContactNotice = mkBoolPreference(SHARED_PREFS_SHOW_DELETE_CONTACT_NOTICE, true)
   val showSentViaProxy = mkBoolPreference(SHARED_PREFS_SHOW_SENT_VIA_RPOXY, false)
 
 
   val iosCallKitEnabled = mkBoolPreference(SHARED_PREFS_IOS_CALL_KIT_ENABLED, true)
   val iosCallKitCallsInRecents = mkBoolPreference(SHARED_PREFS_IOS_CALL_KIT_CALLS_IN_RECENTS, false)
 
-  
+  val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, false)
+
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
       get = fun() = settings.getInt(prefName, default),
@@ -381,6 +384,7 @@ class AppPreferences {
     private const val SHARED_PREFS_ENCRYPTION_STARTED_AT = "EncryptionStartedAt"
     private const val SHARED_PREFS_NEW_DATABASE_INITIALIZED = "NewDatabaseInitialized"
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
+    private const val SHARED_PREFS_ONE_HAND_UI = "OneHandUI"
     private const val SHARED_PREFS_SELF_DESTRUCT = "LocalAuthenticationSelfDestruct"
     private const val SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME = "LocalAuthenticationSelfDestructDisplayName"
     private const val SHARED_PREFS_PQ_EXPERIMENTAL_ENABLED = "PQExperimentalEnabled" // no longer used
@@ -401,6 +405,8 @@ class AppPreferences {
     private const val SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "ConnectRemoteViaMulticastAuto"
     private const val SHARED_PREFS_OFFER_REMOTE_MULTICAST = "OfferRemoteMulticast"
     private const val SHARED_PREFS_DESKTOP_WINDOW_STATE = "DesktopWindowState"
+    private const val SHARED_PREFS_SHOW_DELETE_CONVERSATION_NOTICE = "showDeleteConversationNotice"
+    private const val SHARED_PREFS_SHOW_DELETE_CONTACT_NOTICE = "showDeleteContactNotice"
     private const val SHARED_PREFS_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"
 
     private const val SHARED_PREFS_IOS_CALL_KIT_ENABLED = "iOSCallKitEnabled"
@@ -1177,18 +1183,18 @@ object ChatController {
     }
   }
 
-  suspend fun deleteChat(chat: Chat, notify: Boolean? = null) {
+  suspend fun deleteChat(chat: Chat, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)) {
     val cInfo = chat.chatInfo
-    if (apiDeleteChat(rh = chat.remoteHostId, type = cInfo.chatType, id = cInfo.apiId, notify = notify)) {
+    if (apiDeleteChat(rh = chat.remoteHostId, type = cInfo.chatType, id = cInfo.apiId, chatDeleteMode = chatDeleteMode)) {
       withChats {
         removeChat(chat.remoteHostId, cInfo.id)
       }
     }
   }
 
-  suspend fun apiDeleteChat(rh: Long?, type: ChatType, id: Long, notify: Boolean? = null): Boolean {
+  suspend fun apiDeleteChat(rh: Long?, type: ChatType, id: Long, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)): Boolean {
     chatModel.deletedChats.value += rh to type.type + id
-    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, notify))
+    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode))
     val success = when {
       r is CR.ContactDeleted && type == ChatType.Direct -> true
       r is CR.ContactConnectionDeleted && type == ChatType.ContactConnection -> true
@@ -1207,6 +1213,22 @@ object ChatController {
     }
     chatModel.deletedChats.value -= rh to type.type + id
     return success
+  }
+
+  suspend fun apiDeleteContact(rh: Long?, id: Long, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)): Contact? {
+    val type = ChatType.Direct
+    chatModel.deletedChats.value += rh to type.type + id
+    val r = sendCmd(rh, CC.ApiDeleteChat(type, id, chatDeleteMode))
+    val contact = when {
+      r is CR.ContactDeleted -> r.contact
+      else -> {
+        val titleId = MR.strings.error_deleting_contact
+        apiErrorAlert("apiDeleteChat", generalGetString(titleId), r)
+        null
+      }
+    }
+    chatModel.deletedChats.value -= rh to type.type + id
+    return contact
   }
 
   fun clearChat(chat: Chat, close: (() -> Unit)? = null) {
@@ -2099,6 +2121,12 @@ object ChatController {
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         if (active(r.user)) {
+          if (cInfo is ChatInfo.Direct && cInfo.chatDeleted) {
+            val updatedContact = cInfo.contact.copy(chatDeleted = false)
+            withChats {
+              updateContact(rhId, updatedContact)
+            }
+          }
           withChats {
             addChatItem(rhId, cInfo, cItem)
           }
@@ -2873,7 +2901,7 @@ sealed class CC {
   class APIConnectPlan(val userId: Long, val connReq: String): CC()
   class APIConnect(val userId: Long, val incognito: Boolean, val connReq: String): CC()
   class ApiConnectContactViaAddress(val userId: Long, val incognito: Boolean, val contactId: Long): CC()
-  class ApiDeleteChat(val type: ChatType, val id: Long, val notify: Boolean?): CC()
+  class ApiDeleteChat(val type: ChatType, val id: Long, val chatDeleteMode: ChatDeleteMode): CC()
   class ApiClearChat(val type: ChatType, val id: Long): CC()
   class ApiListContacts(val userId: Long): CC()
   class ApiUpdateProfile(val userId: Long, val profile: Profile): CC()
@@ -3026,11 +3054,7 @@ sealed class CC {
     is APIConnectPlan -> "/_connect plan $userId $connReq"
     is APIConnect -> "/_connect $userId incognito=${onOff(incognito)} $connReq"
     is ApiConnectContactViaAddress -> "/_connect contact $userId incognito=${onOff(incognito)} $contactId"
-    is ApiDeleteChat -> if (notify != null) {
-      "/_delete ${chatRef(type, id)} notify=${onOff(notify)}"
-    } else {
-      "/_delete ${chatRef(type, id)}"
-    }
+    is ApiDeleteChat -> "/_delete ${chatRef(type, id)} ${chatDeleteMode.cmdString}"
     is ApiClearChat -> "/_clear chat ${chatRef(type, id)}"
     is ApiListContacts -> "/_contacts $userId"
     is ApiUpdateProfile -> "/_profile $userId ${json.encodeToString(profile)}"
@@ -3252,8 +3276,6 @@ sealed class CC {
       null
     }
 
-  private fun onOff(b: Boolean): String = if (b) "on" else "off"
-
   private fun maybePwd(pwd: String?): String = if (pwd == "" || pwd == null) "" else " " + json.encodeToString(pwd)
 
   companion object {
@@ -3262,6 +3284,8 @@ sealed class CC {
     fun protoServersStr(servers: List<ServerCfg>) = json.encodeToString(ProtoServersConfig(servers))
   }
 }
+
+fun onOff(b: Boolean): String = if (b) "on" else "off"
 
 @Serializable
 data class NewUser(
@@ -5231,6 +5255,19 @@ fun chatError(r: CR): ChatErrorType? {
 }
 
 @Serializable
+sealed class ChatDeleteMode {
+  @Serializable @SerialName("full") class Full(val notify: Boolean): ChatDeleteMode()
+  @Serializable @SerialName("entity") class Entity(val notify: Boolean): ChatDeleteMode()
+  @Serializable @SerialName("messages") class Messages: ChatDeleteMode()
+
+  val cmdString: String get() = when (this) {
+    is ChatDeleteMode.Full -> "full notify=${onOff(notify)}"
+    is ChatDeleteMode.Entity -> "entity notify=${onOff(notify)}"
+    is ChatDeleteMode.Messages -> "messages"
+  }
+}
+
+@Serializable
 sealed class ConnectionPlan {
   @Serializable @SerialName("invitationLink") class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
   @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan): ConnectionPlan()
@@ -6117,6 +6154,7 @@ data class AppSettings(
   var uiDarkColorScheme: String? = null,
   var uiCurrentThemeIds: Map<String, String>? = null,
   var uiThemes: List<ThemeOverrides>? = null,
+  var oneHandUI: Boolean? = null
 ) {
   fun prepareForExport(): AppSettings {
     val empty = AppSettings()
@@ -6147,6 +6185,7 @@ data class AppSettings(
     if (uiDarkColorScheme != def.uiDarkColorScheme) { empty.uiDarkColorScheme = uiDarkColorScheme }
     if (uiCurrentThemeIds != def.uiCurrentThemeIds) { empty.uiCurrentThemeIds = uiCurrentThemeIds }
     if (uiThemes != def.uiThemes) { empty.uiThemes = uiThemes }
+    if (oneHandUI != def.oneHandUI) { empty.oneHandUI = oneHandUI }
     return empty
   }
 
@@ -6185,6 +6224,7 @@ data class AppSettings(
     uiDarkColorScheme?.let { def.systemDarkTheme.set(it) }
     uiCurrentThemeIds?.let { def.currentThemeIds.set(it) }
     uiThemes?.let { def.themeOverrides.set(it.skipDuplicates()) }
+    oneHandUI?.let { def.oneHandUI.set(it) }
   }
 
   companion object {
@@ -6216,6 +6256,7 @@ data class AppSettings(
         uiDarkColorScheme = DefaultTheme.SIMPLEX.themeName,
         uiCurrentThemeIds = null,
         uiThemes = null,
+        oneHandUI = false
       )
 
     val current: AppSettings
@@ -6248,6 +6289,7 @@ data class AppSettings(
           uiDarkColorScheme = def.systemDarkTheme.get() ?: DefaultTheme.SIMPLEX.themeName,
           uiCurrentThemeIds = def.currentThemeIds.get(),
           uiThemes = def.themeOverrides.get(),
+          oneHandUI = def.oneHandUI.get()
         )
     }
   }
