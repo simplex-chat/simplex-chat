@@ -165,23 +165,14 @@ actual fun PlatformTextField(
       },
     cursorBrush = SolidColor(MaterialTheme.colors.secondary),
     decorationBox = { innerTextField ->
-      Surface(
-        shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colors.secondary),
-        contentColor = LocalContentColor.current
-      ) {
-        Row(
-          Modifier.background(MaterialTheme.colors.background),
-          verticalAlignment = Alignment.Bottom
+      Row(verticalAlignment = Alignment.Bottom) {
+        CompositionLocalProvider(
+          LocalLayoutDirection provides if (isRtl) LayoutDirection.Rtl else LocalLayoutDirection.current
         ) {
-          CompositionLocalProvider(
-            LocalLayoutDirection provides if (isRtl) LayoutDirection.Rtl else LocalLayoutDirection.current
-          ) {
-            Column(Modifier.weight(1f).padding(start = 12.dp, end = 32.dp)) {
-              Spacer(Modifier.height(8.dp))
-              innerTextField()
-              Spacer(Modifier.height(10.dp))
-            }
+          Column(Modifier.weight(1f).padding(start = 12.dp, end = 32.dp)) {
+            Spacer(Modifier.height(8.dp))
+            innerTextField()
+            Spacer(Modifier.height(10.dp))
           }
         }
       }
