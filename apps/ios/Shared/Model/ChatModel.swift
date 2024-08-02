@@ -613,31 +613,37 @@ final class ChatModel: ObservableObject {
 
         init() {
             subject
-                .throttle(for: 5, scheduler: DispatchQueue.main, latest: true)
+                .throttle(for: 2, scheduler: DispatchQueue.main, latest: true)
                 .sink {
                     let m = ChatModel.shared
-                    withAnimation(m.chatId == nil ? .default : nil) {
-                        m.chats = m.chats.sorted {
-                            switch ($0.orderingTimestamp, $1.orderingTimestamp) {
-                            case let (lhs?, rhs?): lhs > rhs
-                            case (nil, nil): false
-                            case (nil, _?):  false
-                            case (_?, nil):  true
-                            }
+                    if m.chatId == nil {
+                        withAnimation {
+                            m.chats = m.chats.sorted(by: m.compareChats)
                         }
+                    } else {
+                        m.chats = m.chats.sorted(by: m.compareChats)
                     }
                 }
                 .store(in: &bag)
         }
-
+        
         func addChat(_ chatId: ChatId) {
             if let index = ChatModel.shared.getChatIndex(chatId) {
-                ChatModel.shared.chats[index].orderingTimestamp = CFAbsoluteTimeGetCurrent()
+                ChatModel.shared.chats[index].popTs = CFAbsoluteTimeGetCurrent()
                 subject.send()
             }
         }
     }
-    
+
+    private func compareChats(_ ch1: Chat, _ ch2: Chat) -> Bool {
+        switch (ch1.popTs, ch2.popTs) {
+        case let (lhs?, rhs?): lhs > rhs
+        case (nil, nil): false
+        case (nil, _?):  false
+        case (_?, nil):  true
+        }
+    }
+
     private func markChatItemRead_(_ i: Int) {
         let meta = im.reversedChatItems[i].meta
         if case .rcvNew = meta.itemStatus {
@@ -852,7 +858,7 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
     @Published var chatItems: [ChatItem]
     @Published var chatStats: ChatStats
     var created = Date.now
-    var orderingTimestamp: CFAbsoluteTime?
+    var popTs: CFAbsoluteTime?
 
     init(_ cData: ChatData) {
         self.chatInfo = cData.chatInfo
