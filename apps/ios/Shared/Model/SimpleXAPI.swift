@@ -931,7 +931,7 @@ func apiRejectContactRequest(contactReqId: Int64) async throws {
     throw r
 }
 
-func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)) async throws {
+func apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)? = nil) async throws {
     try await sendCommandOkResp(.apiChatRead(type: type, id: id, itemRange: itemRange))
 }
 
@@ -1191,7 +1191,24 @@ func markChatRead(_ chat: Chat, aboveItem: ChatItem? = nil) async {
             await markChatUnread(chat, unreadChat: false)
         }
     } catch {
-        logger.error("markChatRead apiChatRead error: \(responseError(error))")
+        logger.error("markChatRead error: \(responseError(error))")
+    }
+}
+
+func markChatReadAll(_ chat: Chat) async {
+    do {
+        if chat.chatStats.unreadCount > 0 {
+            let cInfo = chat.chatInfo
+            try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId)
+            await MainActor.run {
+                withAnimation { ChatModel.shared.markChatItemsRead(cInfo) }
+            }
+        }
+        if chat.chatStats.unreadChat {
+            await markChatUnread(chat, unreadChat: false)
+        }
+    } catch {
+        logger.error("markChatReadAll error: \(responseError(error))")
     }
 }
 

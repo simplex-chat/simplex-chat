@@ -249,7 +249,7 @@ struct ChatListNavLink: View {
     @ViewBuilder private func markReadButton() -> some View {
         if chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat {
             Button {
-                Task { await markChatRead(chat) }
+                Task { await markChatReadAll(chat) }
             } label: {
                 Label("Read", systemImage: "checkmark")
             }

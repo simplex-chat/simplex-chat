@@ -128,7 +128,7 @@ public enum ChatCommand {
     case apiCallStatus(contact: Contact, callStatus: WebRTCCallStatus)
     // WebRTC calls /
     case apiGetNetworkStatuses
-    case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
+    case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64)?)
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
     case receiveFile(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool?, inline: Bool?)
     case setFileToReceive(fileId: Int64, userApprovedRelays: Bool, encrypted: Bool?)
@@ -295,7 +295,11 @@ public enum ChatCommand {
             case .apiGetCallInvitations: return "/_call get"
             case let .apiCallStatus(contact, callStatus): return "/_call status @\(contact.apiId) \(callStatus.rawValue)"
             case .apiGetNetworkStatuses: return "/_network_statuses"
-            case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
+            case let .apiChatRead(type, id, itemRange): if let (from, to) = itemRange {
+                return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
+            } else {
+                return "/_read chat \(ref(type, id))"
+            }
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
             case let .receiveFile(fileId, userApprovedRelays, encrypt, inline): return "/freceive \(fileId)\(onOffParam("approved_relays", userApprovedRelays))\(onOffParam("encrypt", encrypt))\(onOffParam("inline", inline))"
             case let .setFileToReceive(fileId, userApprovedRelays, encrypt): return "/_set_file_to_receive \(fileId)\(onOffParam("approved_relays", userApprovedRelays))\(onOffParam("encrypt", encrypt))"
