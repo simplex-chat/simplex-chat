@@ -270,12 +270,12 @@ struct DatabaseView: View {
         case let .archiveImportedWithErrors(errs):
             return Alert(
                 title: Text("Chat database imported"),
-                message: Text("Restart the app to use imported chat database") + Text("\n") + Text("Some non-fatal errors occurred during import:") + archiveErrorsText(errs)
+                message: Text("Restart the app to use imported chat database") + Text(verbatim: "\n\n") + Text("Some non-fatal errors occurred during import:") + archiveErrorsText(errs)
             )
         case let .archiveExportedWithErrors(archivePath, errs):
             return Alert(
                 title: Text("Chat database exported"),
-                message: Text("You may save the exported archive.") + Text("\n") + Text("Some file(s) were not exported:") + archiveErrorsText(errs),
+                message: Text("You may save the exported archive.") + Text(verbatim: "\n\n") + Text("Some file(s) were not exported:") + archiveErrorsText(errs),
                 dismissButton: .default(Text("Continue")) {
                     showShareSheet(items: [archivePath])
                 }
@@ -327,18 +327,7 @@ struct DatabaseView: View {
             return Alert(title: Text(title), message: Text(error))
         }
     }
-    
-    private func archiveErrorsText(_ errs: [ArchiveError]) -> Text {
-        Text("\n" + errs.map(showArchiveError).joined(separator: "\n"))
-    }
-    
-    private func showArchiveError(_ err: ArchiveError) -> String {
-        switch err {
-        case let .import(importError): importError
-        case let .fileError(file, fileError): "\(file): \(fileError)"
-        }
-    }
-    
+
     private func authStopChat() {
         if UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA) {
             authenticate(reason: NSLocalizedString("Stop SimpleX", comment: "authentication reason")) { laResult in
@@ -511,6 +500,17 @@ struct DatabaseView: View {
     private func deleteFiles() {
         deleteAppFiles()
         appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
+    }
+}
+
+func archiveErrorsText(_ errs: [ArchiveError]) -> Text {
+    return Text("\n" + errs.map(showArchiveError).joined(separator: "\n"))
+    
+    func showArchiveError(_ err: ArchiveError) -> String {
+        switch err {
+        case let .import(importError): importError
+        case let .fileError(file, fileError): "\(file): \(fileError)"
+        }
     }
 }
 
