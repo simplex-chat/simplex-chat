@@ -661,101 +661,74 @@ private struct CallButton: View {
 
     var body: some View {
         let canCall = contact.ready && contact.active && chat.chatInfo.featureEnabled(.calls) && ChatModel.shared.activeCall == nil
-        
-        Group {
-            if canCall {
-                callButtonLayout(canCall)
-                    .onTapGesture {
-                        CallController.shared.startCall(contact, mediaType)
-                    }
-            } else if contact.nextSendGrpInv {
-                callButtonLayout(canCall)
-                    .onTapGesture {
+
+        InfoViewActionButtonLayout(image: image, title: title, disabledLook: !canCall)
+            .onTapGesture {
+                if canCall {
+                    CallController.shared.startCall(contact, mediaType)
+                } else if contact.nextSendGrpInv {
+                    showAlert(SomeAlert(
+                        alert: mkAlert(
+                            title: "Can't call contact",
+                            message: "Send message to enable calls."
+                        ),
+                        id: "can't call contact, send message"
+                    ))
+                } else if !contact.active {
+                    showAlert(SomeAlert(
+                        alert: mkAlert(
+                            title: "Can't call contact",
+                            message: "Contact is deleted."
+                        ),
+                        id: "can't call contact, contact deleted"
+                    ))
+                } else if !contact.ready {
+                    showAlert(SomeAlert(
+                        alert: mkAlert(
+                            title: "Can't call contact",
+                            message: "Connecting to contact, please wait or check later!"
+                        ),
+                        id: "can't call contact, contact not ready"
+                    ))
+                } else if !chat.chatInfo.featureEnabled(.calls) {
+                    switch chat.chatInfo.showEnableCallsAlert {
+                    case .userEnable:
+                        showAlert(SomeAlert(
+                            alert: Alert(
+                                title: Text("Allow calls?"),
+                                message: Text("You need to allow your contact to call to be able to call them."),
+                                primaryButton: .default(Text("Allow")) {
+                                    allowFeatureToContact(contact, .calls)
+                                },
+                                secondaryButton: .cancel()
+                            ),
+                            id: "allow calls"
+                        ))
+                    case .askContact:
                         showAlert(SomeAlert(
                             alert: mkAlert(
-                                title: "Can't call contact",
-                                message: "Send message to enable calls."
+                                title: "Calls prohibited!",
+                                message: "Please ask your contact to enable calls."
                             ),
-                            id: "can't call contact, send message"
-                        ))
-                    }
-            } else if !contact.active {
-                callButtonLayout(canCall)
-                    .onTapGesture {
-                        showAlert(SomeAlert(
-                            alert: mkAlert(
-                                title: "Can't call contact",
-                                message: "Contact is deleted."
-                            ),
-                            id: "can't call contact, contact deleted"
-                        ))
-                    }
-            } else if !contact.ready {
-                callButtonLayout(canCall)
-                    .onTapGesture {
-                        showAlert(SomeAlert(
-                            alert: mkAlert(
-                                title: "Can't call contact",
-                                message: "Connecting to contact, please wait or check later!"
-                            ),
-                            id: "can't call contact, contact not ready"
-                        ))
-                    }
-            } else if !chat.chatInfo.featureEnabled(.calls) {
-                switch chat.chatInfo.showEnableCallsAlert {
-                case .userEnable:
-                    callButtonLayout(canCall)
-                        .onTapGesture {
-                            showAlert(SomeAlert(
-                                alert: Alert(
-                                    title: Text("Allow calls?"),
-                                    message: Text("You need to allow your contact to call to be able to call them."),
-                                    primaryButton: .default(Text("Allow")) {
-                                        allowFeatureToContact(contact, .calls)
-                                    },
-                                    secondaryButton: .cancel()
-                                ),
-                                id: "allow calls"
-                            ))
-                        }
-                case .askContact:
-                    callButtonLayout(canCall)
-                        .onTapGesture {
-                            showAlert(SomeAlert(
-                                alert: mkAlert(
-                                    title: "Calls prohibited!",
-                                    message: "Please ask your contact to enable calls."
-                                ),
-                                id: "calls prohibited, ask contact"
-                            ))
-                        }
-                case .other:
-                    callButtonLayout(canCall)
-                        .onTapGesture {
-                            showAlert(SomeAlert(
-                                alert: mkAlert(
-                                    title: "Calls prohibited!",
-                                    message: "Please check yours and your contact preferences."
-                                )
-                                , id: "calls prohibited, ask contact"
-                            ))
-                        }
-                }
-            } else {
-                callButtonLayout(canCall)
-                    .onTapGesture {
-                        showAlert(SomeAlert(
-                            alert: mkAlert(title: "Can't call contact"),
                             id: "calls prohibited, ask contact"
                         ))
+                    case .other:
+                        showAlert(SomeAlert(
+                            alert: mkAlert(
+                                title: "Calls prohibited!",
+                                message: "Please check yours and your contact preferences."
+                            )
+                            , id: "calls prohibited, ask contact"
+                        ))
                     }
+                } else {
+                    showAlert(SomeAlert(
+                        alert: mkAlert(title: "Can't call contact"),
+                        id: "calls prohibited, ask contact"
+                    ))
+                }
             }
-        }
-        .disabled(ChatModel.shared.activeCall != nil)
-    }
-
-    func callButtonLayout(_ canCall: Bool) -> some View {
-        InfoViewActionButtonLayout(image: image, title: title, disabledLook: !canCall)
+            .disabled(ChatModel.shared.activeCall != nil)
     }
 }
 
