@@ -58,7 +58,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
   val playersToRelease = rememberSaveable { mutableSetOf<URI>() }
   DisposableEffectOnGone(
     always = {
-      platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, Color.Black, Color.Black, false, false)
+      platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, Color.Black, false, false)
     },
     whenGone = { playersToRelease.forEach { VideoPlayerHolder.release(it, true, true) } }
   )

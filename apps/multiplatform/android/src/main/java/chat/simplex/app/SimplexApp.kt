@@ -271,20 +271,20 @@ class SimplexApp: Application(), LifecycleEventObserver {
         uiModeManager.setApplicationNightMode(mode)
       }
 
-      override fun androidSetStatusAndNavBarColors(isLight: Boolean, statusBackgroundColor: Color, navBackgroundColor: Color, hasTop: Boolean, hasBottom: Boolean) {
+      override fun androidSetStatusAndNavBarColors(isLight: Boolean, backgroundColor: Color, hasTop: Boolean, hasBottom: Boolean) {
         val window = mainActivity.get()?.window ?: return
         @Suppress("DEPRECATION")
         val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
 
         val statusBar = (if (hasTop) {
-          statusBackgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
+          backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
         } else {
-          statusBackgroundColor
+          backgroundColor
         }).toArgb()
         val navBar = (if (hasBottom) {
-          navBackgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
+          backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
         } else {
-          navBackgroundColor
+          backgroundColor
         }).toArgb()
         if (window.statusBarColor != statusBar) {
           window.statusBarColor = statusBar

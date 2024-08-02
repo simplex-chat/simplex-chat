@@ -265,7 +265,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
           .distinctUntilChanged()
           .collect {
             if (it == null) {
-              platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, CurrentColors.value.colors.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+              platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
               onComposed(null)
             }
             currentChatId.value = it
@@ -277,9 +277,9 @@ fun AndroidScreen(settingsState: SettingsViewState) {
         .filter { chatModel.chatId.value == null }
         .collect { modalBackground ->
           if (modalBackground) {
-            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, CurrentColors.value.colors.background, false, false)
+            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, false, false)
           } else {
-            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, CurrentColors.value.colors.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
           }
         }
     }
