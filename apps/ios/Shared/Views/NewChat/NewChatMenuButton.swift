@@ -176,7 +176,7 @@ struct ContactsList: View {
         let contactChats = filterContactTypes(chats: chatModel.chats, contactTypes: contactTypes)
         let filteredContactChats = filteredContactChats(
             showUnreadAndFavorites: showUnreadAndFavorites,
-            searchShowingSimplexLink: false,
+            searchShowingSimplexLink: searchShowingSimplexLink,
             searchChatFilteredBySimplexLink: searchChatFilteredBySimplexLink,
             searchText: searchText,
             contactChats: contactChats
