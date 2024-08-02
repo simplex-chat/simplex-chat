@@ -1161,9 +1161,16 @@ func networkErrorAlert(_ r: ChatResponse) -> Alert? {
 func acceptContactRequest(incognito: Bool, contactRequest: UserContactRequest) async {
     if let contact = await apiAcceptContactRequest(incognito: incognito, contactReqId: contactRequest.apiId) {
         let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
-        DispatchQueue.main.async {
+        await MainActor.run {
             ChatModel.shared.replaceChat(contactRequest.id, chat)
             ChatModel.shared.setContactNetworkStatus(contact, .connected)
+        }
+        if contact.sndReady {
+            DispatchQueue.main.async {
+                dismissAllSheets(animated: true) {
+                    ChatModel.shared.chatId = chat.id
+                }
+            }
         }
     }
 }

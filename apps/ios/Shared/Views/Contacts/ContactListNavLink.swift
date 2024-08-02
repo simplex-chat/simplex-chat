@@ -15,6 +15,8 @@ struct ContactListNavLink: View {
     @State private var alert: SomeAlert? = nil
     @State private var actionSheet: SomeActionSheet? = nil
     @State private var sheet: SomeSheet<AnyView>? = nil
+    @State private var showConnectContactViaAddressDialog = false
+    @State private var showContactRequestDialog = false
 
     var body: some View {
         let contactType = chatContactType(chat: chat)
@@ -33,7 +35,7 @@ struct ContactListNavLink: View {
                     EmptyView()
                 }
             case let .contactRequest(contactRequest):
-                contactRequestPreview(contactRequest)
+                contactRequestNavLink(contactRequest)
             default:
                 EmptyView()
             }
@@ -61,7 +63,7 @@ struct ContactListNavLink: View {
 
     func contactPreview(_ contact: Contact, titleColor: Color) -> some View {
         HStack{
-            ProfileImage(imageStr: contact.image, size: 38)
+            ProfileImage(imageStr: contact.image, size: 30)
 
             previewTitle(contact, titleColor: titleColor)
 
@@ -135,11 +137,32 @@ struct ContactListNavLink: View {
                 }
                 .tint(.red)
             }
+            .onTapGesture { showConnectContactViaAddressDialog = true }
+            .confirmationDialog("Connect with \(contact.chatViewName)", isPresented: $showConnectContactViaAddressDialog, titleVisibility: .visible) {
+                Button("Use current profile") { connectContactViaAddress_(contact, false) }
+                Button("Use new incognito profile") { connectContactViaAddress_(contact, true) }
+            }
+    }
+
+    private func connectContactViaAddress_(_ contact: Contact, _ incognito: Bool) {
+        Task {
+            let ok = await connectContactViaAddress(contact.contactId, incognito, showAlert: { alert = SomeAlert(alert: $0, id: "ContactListNavLink connectContactViaAddress") })
+            if ok {
+                await MainActor.run {
+                    ChatModel.shared.chatId = contact.id
+                }
+                DispatchQueue.main.async {
+                    dismissAllSheets(animated: true) {
+                        AlertManager.shared.showAlert(connReqSentAlert(.contact))
+                    }
+                }
+            }
+        }
     }
 
     func contactCardPreview(_ contact: Contact) -> some View {
         HStack{
-            ProfileImage(imageStr: contact.image, size: 38)
+            ProfileImage(imageStr: contact.image, size: 30)
 
             Text(chat.chatInfo.chatViewName)
                 .foregroundColor(.accentColor)
@@ -157,11 +180,35 @@ struct ContactListNavLink: View {
 
     func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
         contactRequestPreview(contactRequest)
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button {
+                    Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) }
+                } label: { Label("Accept", systemImage: "checkmark") }
+                    .tint(theme.colors.primary)
+                Button {
+                    Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) }
+                } label: {
+                    Label("Accept incognito", systemImage: "theatermasks")
+                }
+                .tint(.indigo)
+                Button {
+                    alert = SomeAlert(alert: rejectContactRequestAlert(contactRequest), id: "rejectContactRequestAlert")
+                } label: {
+                    Label("Reject", systemImage: "multiply")
+                }
+                .tint(.red)
+            }
+            .onTapGesture { showContactRequestDialog = true }
+            .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
+                Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) } }
+                Button("Accept incognito") { Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) } }
+                Button("Reject (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest) } }
+            }
     }
 
     func contactRequestPreview(_ contactRequest: UserContactRequest) -> some View {
         HStack{
-            ProfileImage(imageStr: contactRequest.image, size: 38)
+            ProfileImage(imageStr: contactRequest.image, size: 30)
 
             Text(chat.chatInfo.chatViewName)
                 .foregroundColor(.accentColor)

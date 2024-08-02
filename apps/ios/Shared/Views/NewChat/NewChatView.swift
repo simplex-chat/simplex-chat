@@ -847,7 +847,10 @@ private func connectContactViaAddress_(_ contact: Contact, dismiss: Bool, incogn
                 dismissAllSheets(animated: true)
             }
         }
-        _ = await connectContactViaAddress(contact.contactId, incognito)
+        let ok = await connectContactViaAddress(contact.contactId, incognito, showAlert: { AlertManager.shared.showAlert($0) })
+        if ok {
+            AlertManager.shared.showAlert(connReqSentAlert(.contact))
+        }
         cleanup?()
     }
 }

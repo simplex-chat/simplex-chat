@@ -432,17 +432,6 @@ struct ChatListNavLink: View {
         )
     }
 
-    private func rejectContactRequestAlert(_ contactRequest: UserContactRequest) -> Alert {
-        Alert(
-            title: Text("Reject contact request"),
-            message: Text("The sender will NOT be notified"),
-            primaryButton: .destructive(Text("Reject")) {
-                Task { await rejectContactRequest(contactRequest) }
-            },
-            secondaryButton: .cancel()
-        )
-    }
-
     private func groupInvitationAcceptedAlert() -> Alert {
         Alert(
             title: Text("Joining group"),
@@ -464,14 +453,26 @@ struct ChatListNavLink: View {
 
     private func connectContactViaAddress_(_ contact: Contact, _ incognito: Bool) {
         Task {
-            let ok = await connectContactViaAddress(contact.contactId, incognito)
+            let ok = await connectContactViaAddress(contact.contactId, incognito, showAlert: { AlertManager.shared.showAlert($0) })
             if ok {
                 await MainActor.run {
                     chatModel.chatId = contact.id
                 }
+                AlertManager.shared.showAlert(connReqSentAlert(.contact))
             }
         }
     }
+}
+
+func rejectContactRequestAlert(_ contactRequest: UserContactRequest) -> Alert {
+    Alert(
+        title: Text("Reject contact request"),
+        message: Text("The sender will NOT be notified"),
+        primaryButton: .destructive(Text("Reject")) {
+            Task { await rejectContactRequest(contactRequest) }
+        },
+        secondaryButton: .cancel()
+    )
 }
 
 func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection, showError: @escaping (ErrorAlert) -> Void, success: @escaping () -> Void = {}) -> Alert {
@@ -500,15 +501,14 @@ func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection,
     )
 }
 
-func connectContactViaAddress(_ contactId: Int64, _ incognito: Bool) async -> Bool {
+func connectContactViaAddress(_ contactId: Int64, _ incognito: Bool, showAlert: (Alert) -> Void) async -> Bool {
     let (contact, alert) = await apiConnectContactViaAddress(incognito: incognito, contactId: contactId)
     if let alert = alert {
-        AlertManager.shared.showAlert(alert)
+        showAlert(alert)
         return false
     } else if let contact = contact {
         await MainActor.run {
             ChatModel.shared.updateContact(contact)
-            AlertManager.shared.showAlert(connReqSentAlert(.contact))
         }
         return true
     }

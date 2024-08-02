@@ -53,7 +53,7 @@ struct GroupMemberInfoView: View {
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
             case let .planAndConnectAlert(alert): return "planAndConnectAlert \(alert.id)"
             case let .queueInfo(info): return "queueInfo \(info)"
-            case let .someAlert(alert): return "chatInfoSomeAlert \(alert.id)"
+            case let .someAlert(alert): return "someAlert \(alert.id)"
             case let .error(title, _): return "error \(title)"
             }
         }
