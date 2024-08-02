@@ -58,7 +58,6 @@ actual fun PlatformTextField(
 ) {
   val cs = composeState.value
   val textColor = MaterialTheme.colors.onBackground
-  val tintColor = MaterialTheme.colors.secondaryVariant
   val padding = PaddingValues(12.dp, 7.dp, 45.dp, 0.dp)
   val paddingStart = with(LocalDensity.current) { 12.dp.roundToPx() }
   val paddingTop = with(LocalDensity.current) { 7.dp.roundToPx() }
@@ -111,9 +110,6 @@ actual fun PlatformTextField(
     editText.inputType = InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or editText.inputType
     editText.setTextColor(textColor.toArgb())
     editText.textSize = textStyle.value.fontSize.value * appPrefs.fontScale.get()
-//    val drawable = androidAppContext.getDrawable(R.drawable.send_msg_view_background)!!
-//    DrawableCompat.setTint(drawable, tintColor.toArgb())
-//    editText.background = drawable
     editText.background = ColorDrawable(Color.Transparent.toArgb())
     editText.setPadding(paddingStart, paddingTop, paddingEnd, paddingBottom)
     editText.setText(cs.message)
@@ -140,7 +136,6 @@ actual fun PlatformTextField(
   }) {
     it.setTextColor(textColor.toArgb())
     it.textSize = textStyle.value.fontSize.value * appPrefs.fontScale.get()
-    DrawableCompat.setTint(it.background, tintColor.toArgb())
     it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview
     it.isFocusableInTouchMode = it.isFocusable
     if (cs.message != it.text.toString()) {
