@@ -37,6 +37,7 @@ struct GroupMemberInfoView: View {
         case syncConnectionForceAlert
         case planAndConnectAlert(alert: PlanAndConnectAlert)
         case queueInfo(info: String)
+        case someAlert(alert: SomeAlert)
         case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
@@ -52,6 +53,7 @@ struct GroupMemberInfoView: View {
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
             case let .planAndConnectAlert(alert): return "planAndConnectAlert \(alert.id)"
             case let .queueInfo(info): return "queueInfo \(info)"
+            case let .someAlert(alert): return "chatInfoSomeAlert \(alert.id)"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -83,46 +85,10 @@ struct GroupMemberInfoView: View {
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                 
-                HStack {
-                    if let contactId = member.memberContactId, let (chat, contact) = knownDirectChat(contactId) {
-                        Spacer()
-                        knownDirectChatButton(chat)
-                        Spacer()
-                        callButton(contact)
-                        Spacer()
-                        videoButton(contact)
-                        Spacer()
-                    } else if groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
-                        if let contactId = member.memberContactId {
-                            Spacer()
-                            newDirectChatButton(contactId)
-                        } else if member.activeConn?.peerChatVRange.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) ?? false {
-                            Spacer()
-                            createMemberContactButton()
-                        }
-                        Spacer()
-                        InfoViewActionButtonLayout(image: "phone.fill", title: "call")
-                            .disabled(true)
-                        Spacer()
-                        InfoViewActionButtonLayout(image: "video.fill", title: "video")
-                            .disabled(true)
-                        Spacer()
-                    } else { // no known contact chat && directMessages are off
-                        Spacer()
-                        InfoViewActionButtonLayout(image: "message.fill", title: "message")
-                            .disabled(true)
-                        Spacer()
-                        InfoViewActionButtonLayout(image: "phone.fill", title: "call")
-                            .disabled(true)
-                        Spacer()
-                        InfoViewActionButtonLayout(image: "video.fill", title: "video")
-                            .disabled(true)
-                        Spacer()
-                    }
-                }
-                .padding(.horizontal)
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
+                infoActionButtons(member)
+                    .padding(.horizontal)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
 
                 if member.memberActive {
                     Section {
@@ -271,6 +237,7 @@ struct GroupMemberInfoView: View {
                 case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncMemberConnection(force: true) })
                 case let .planAndConnectAlert(alert): return planAndConnectAlert(alert, dismiss: true)
                 case let .queueInfo(info): return queueInfoAlert(info)
+                case let .someAlert(a): return a.alert
                 case let .error(title, error): return mkAlert(title: title, message: error)
                 }
             }
@@ -281,6 +248,66 @@ struct GroupMemberInfoView: View {
             }
         }
         .modifier(ThemedBackground(grouped: true))
+    }
+
+    func infoActionButtons(_ member: GroupMember) -> some View {
+        HStack {
+            if let contactId = member.memberContactId, let (chat, contact) = knownDirectChat(contactId) {
+                Spacer()
+                knownDirectChatButton(chat)
+                Spacer()
+                audioCallButton(contact, showAlert: { alert = .someAlert(alert: $0) })
+                Spacer()
+                videoButton(contact, showAlert: { alert = .someAlert(alert: $0) })
+                Spacer()
+            } else if groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
+                if let contactId = member.memberContactId {
+                    Spacer()
+                    newDirectChatButton(contactId)
+                } else if member.activeConn?.peerChatVRange.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) ?? false {
+                    Spacer()
+                    createMemberContactButton()
+                }
+                Spacer()
+                InfoViewActionButtonLayout(image: "phone.fill", title: "call", disabledLook: true)
+                    .onTapGesture { showSendMessageToEnableCallsAlert() }
+                Spacer()
+                InfoViewActionButtonLayout(image: "video.fill", title: "video", disabledLook: true)
+                    .onTapGesture { showSendMessageToEnableCallsAlert() }
+                Spacer()
+            } else { // no known contact chat && directMessages are off
+                Spacer()
+                InfoViewActionButtonLayout(image: "message.fill", title: "message", disabledLook: true)
+                    .onTapGesture { showDirectMessagesProhibitedAlert("Can't message member") }
+                Spacer()
+                InfoViewActionButtonLayout(image: "phone.fill", title: "call", disabledLook: true)
+                    .onTapGesture { showDirectMessagesProhibitedAlert("Can't call member") }
+                Spacer()
+                InfoViewActionButtonLayout(image: "video.fill", title: "video", disabledLook: true)
+                    .onTapGesture { showDirectMessagesProhibitedAlert("Can't call member") }
+                Spacer()
+            }
+        }
+    }
+
+    func showSendMessageToEnableCallsAlert() {
+        alert = .someAlert(alert: SomeAlert(
+            alert: mkAlert(
+                title: "Can't call member",
+                message: "Send message to enable calls."
+            ),
+            id: "can't call member, send message"
+        ))
+    }
+
+    func showDirectMessagesProhibitedAlert(_ title: LocalizedStringKey) {
+        alert = .someAlert(alert: SomeAlert(
+            alert: mkAlert(
+                title: title,
+                message: "Direct messages between members are prohibited in this group."
+            ),
+            id: "can't message member, direct messages prohibited"
+        ))
     }
 
     func connectViaAddressButton(_ contactLink: String) -> some View {

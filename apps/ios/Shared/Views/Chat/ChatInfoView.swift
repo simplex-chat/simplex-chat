@@ -115,7 +115,7 @@ struct ChatInfoView: View {
         case abortSwitchAddressAlert
         case syncConnectionForceAlert
         case queueInfo(info: String)
-        case chatInfoSomeAlert(alert: SomeAlert)
+        case someAlert(alert: SomeAlert)
         case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
@@ -126,7 +126,7 @@ struct ChatInfoView: View {
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
             case let .queueInfo(info): return "queueInfo \(info)"
-            case let .chatInfoSomeAlert(alert): return "chatInfoSomeAlert \(alert.id)"
+            case let .someAlert(alert): return "chatInfoSomeAlert \(alert.id)"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -152,9 +152,9 @@ struct ChatInfoView: View {
                     Spacer()
                     searchButton()
                     Spacer()
-                    callButton(contact)
+                    audioCallButton(contact, showAlert: { alert = .someAlert(alert: $0) })
                     Spacer()
-                    videoButton(contact)
+                    videoButton(contact, showAlert: { alert = .someAlert(alert: $0) })
                     Spacer()
                     muteButton()
                     Spacer()
@@ -311,7 +311,7 @@ struct ChatInfoView: View {
             case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchContactAddress)
             case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncContactConnection(force: true) })
             case let .queueInfo(info): return queueInfoAlert(info)
-            case let .chatInfoSomeAlert(a): return a.alert
+            case let .someAlert(a): return a.alert
             case let .error(title, error): return mkAlert(title: title, message: error)
             }
         }
@@ -520,7 +520,7 @@ struct ChatInfoView: View {
             deleteContactDialog(
                 chat,
                 contact,
-                showAlert: { alert = .chatInfoSomeAlert(alert: $0) },
+                showAlert: { alert = .someAlert(alert: $0) },
                 showActionSheet: { actionSheet = $0 },
                 showSheetContent: { sheet = $0 }
             )
@@ -617,7 +617,7 @@ struct ChatInfoView: View {
     }
 }
 
-func callButton(_ contact: Contact) -> some View {
+func audioCallButton(_ contact: Contact, showAlert: @escaping (SomeAlert) -> Void) -> some View {
     InfoViewActionButtonLayout(image: "phone.fill", title: "call")
         .onTapGesture {
             CallController.shared.startCall(contact, .audio)
@@ -625,7 +625,7 @@ func callButton(_ contact: Contact) -> some View {
         .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || ChatModel.shared.activeCall != nil)
 }
 
-func videoButton(_ contact: Contact) -> some View {
+func videoButton(_ contact: Contact, showAlert: @escaping (SomeAlert) -> Void) -> some View {
     InfoViewActionButtonLayout(image: "video.fill", title: "video")
         .onTapGesture {
             CallController.shared.startCall(contact, .video)
@@ -636,6 +636,7 @@ func videoButton(_ contact: Contact) -> some View {
 struct InfoViewActionButtonLayout: View {
     var image: String
     var title: LocalizedStringKey
+    var disabledLook: Bool = false
 
     var body: some View {
         VStack(spacing: 4) {
@@ -651,6 +652,7 @@ struct InfoViewActionButtonLayout: View {
         .background(Color(.secondarySystemGroupedBackground))
         .cornerRadius(12.0)
         .frame(width: 82, height: 56)
+        .disabled(disabledLook)
     }
 }
 
