@@ -1899,7 +1899,6 @@
     <string name="app_check_for_updates">בדוק עבור עדכונים</string>
     <string name="servers_info_sessions_connected">מחובר</string>
     <string name="servers_info_connected_servers_section_header">שרתים מחוברים</string>
-    <string name="app_check_for_updates_button_download"></string>
     <string name="app_check_for_updates_notice_title">בודק עבור עדכונים חדשים</string>
     <string name="servers_info_sessions_connecting">מתחבר</string>
     <string name="created">נוצר</string>
