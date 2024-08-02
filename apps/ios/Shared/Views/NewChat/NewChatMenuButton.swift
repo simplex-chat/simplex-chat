@@ -9,14 +9,6 @@
 import SwiftUI
 import SimpleXChat
 
-enum NewChatMenuOption: Identifiable {
-    case newContact
-    case scanPaste
-    case newGroup
-
-    var id: Self { self }
-}
-
 enum ContactType: Int {
     case card, request, recent, chatDeleted, unlisted
 }
@@ -42,7 +34,6 @@ struct NewChatMenuButton: View {
 private var indent: CGFloat = 36
 
 struct NewChatSheet: View {
-    @State var newChatMenuOption: NewChatMenuOption?
     @EnvironmentObject var theme: AppTheme
     @State private var baseContactTypes: [ContactType] = [.card, .request, .recent]
     @EnvironmentObject var chatModel: ChatModel
@@ -78,20 +69,20 @@ struct NewChatSheet: View {
             
             if (searchText.isEmpty) {
                 Section {
-                    Button {
-                        newChatMenuOption = .newContact
+                    NavigationLink {
+                        NewChatView(selection: .invite)
                     } label: {
-                        newChatActionButton("link.badge.plus", color: theme.colors.secondary) { Text("Add contact") }
+                        Label("Add contact", systemImage: "link.badge.plus")
                     }
-                    Button {
-                        newChatMenuOption = .scanPaste
+                    NavigationLink {
+                        NewChatView(selection: .connect, showQRCodeScanner: true)
                     } label: {
-                        newChatActionButton("qrcode", color: theme.colors.secondary) { Text("Scan / Paste link") }
+                        Label("Scan / Paste link", systemImage: "qrcode")
                     }
-                    Button {
-                        newChatMenuOption = .newGroup
+                    NavigationLink {
+                        AddGroupView()
                     } label: {
-                        newChatActionButton("person.2", color: theme.colors.secondary) { Text("Create group") }
+                        Label("Create group", systemImage: "person.2")
                     }
                 }
                 
@@ -115,13 +106,6 @@ struct NewChatSheet: View {
                     searchShowingSimplexLink: $searchShowingSimplexLink,
                     searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
                 )
-            }
-        }
-        .sheet(item: $newChatMenuOption) { opt in
-            switch opt {
-            case .newContact: NewChatView(selection: .invite)
-            case .scanPaste: NewChatView(selection: .connect, showQRCodeScanner: true)
-            case .newGroup: AddGroupView()
             }
         }
     }

@@ -18,7 +18,6 @@ struct ChatListView: View {
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
-    @State private var newChatMenuOption: NewChatMenuOption? = nil
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
 
@@ -43,9 +42,6 @@ struct ChatListView: View {
                 destination: chatView
             ) {
                 VStack {
-                    if chatModel.chats.isEmpty {
-                        onboardingButtons()
-                    }
                     chatListView
                 }
             }
@@ -196,42 +192,6 @@ struct ChatListView: View {
         Circle()
             .frame(width: size, height: size)
             .foregroundColor(theme.colors.primary)
-    }
-
-    private func onboardingButtons() -> some View {
-        VStack(alignment: .trailing, spacing: 0) {
-            Path { p in
-                p.move(to: CGPoint(x: 8, y: 0))
-                p.addLine(to: CGPoint(x: 16, y: 10))
-                p.addLine(to: CGPoint(x: 0, y: 10))
-                p.addLine(to: CGPoint(x: 8, y: 0))
-            }
-            .fill(theme.colors.primary)
-            .frame(width: 20, height: 10)
-            .padding(.trailing, 12)
-
-            connectButton("Tap to start a new chat") {
-                newChatMenuOption = .newContact
-            }
-
-            Spacer()
-            Text("You have no chats")
-                .foregroundColor(theme.colors.secondary)
-                .frame(maxWidth: .infinity)
-        }
-        .padding(.trailing, 6)
-        .frame(maxHeight: .infinity)
-    }
-
-    private func connectButton(_ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(label)
-                .padding(.vertical, 10)
-                .padding(.horizontal, 20)
-        }
-        .background(theme.colors.primary)
-        .foregroundColor(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     @ViewBuilder private func chatView() -> some View {
