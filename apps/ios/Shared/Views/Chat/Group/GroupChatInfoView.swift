@@ -21,7 +21,8 @@ struct GroupChatInfoView: View {
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: String?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
-    @State private var showAddMembersSheet: Bool = false
+    @State private var groupLinkNavLinkActive: Bool = false
+    @State private var addMembersNavLinkActive: Bool = false
     @State private var connectionStats: ConnectionStats?
     @State private var connectionCode: String?
     @State private var sendReceipts = SendReceipts.userDefault(true)
@@ -222,16 +223,38 @@ struct GroupChatInfoView: View {
             .disabled(!groupInfo.ready || chat.chatItems.isEmpty)
     }
 
-    private func addMembersActionButton() -> some View {
-        InfoViewActionButtonLayout(image: chat.chatInfo.incognito ? "link.badge.plus" : "person.badge.plus", title: "invite")
-            .onTapGesture {
-                if chat.chatInfo.incognito {
-                    // TODO openGroupLink
-                } else {
-                    // TODO addGroupMembers
+    @ViewBuilder private func addMembersActionButton() -> some View {
+        if chat.chatInfo.incognito {
+            ZStack {
+                InfoViewActionButtonLayout(image: "link.badge.plus", title: "invite")
+                    .onTapGesture {
+                        groupLinkNavLinkActive = true
+                    }
+
+                NavigationLink(isActive: $groupLinkNavLinkActive) {
+                    groupLinkDestinationView()
+                } label: {
+                    EmptyView()
                 }
+                .hidden()
             }
             .disabled(!groupInfo.ready)
+        } else {
+            ZStack {
+                InfoViewActionButtonLayout(image: "person.badge.plus", title: "invite")
+                    .onTapGesture {
+                        addMembersNavLinkActive = true
+                    }
+
+                NavigationLink(isActive: $addMembersNavLinkActive) {
+                    addMembersDestinationView()
+                } label: {
+                    EmptyView()
+                }
+                .hidden()
+            }
+            .disabled(!groupInfo.ready)
+        }
     }
 
     private func muteButton() -> some View {
@@ -247,20 +270,24 @@ struct GroupChatInfoView: View {
 
     private func addMembersButton() -> some View {
         NavigationLink {
-            AddGroupMembersView(chat: chat, groupInfo: groupInfo)
-                .onAppear {
-                    searchFocussed = false
-                    Task {
-                        let groupMembers = await apiListMembers(groupInfo.groupId)
-                        await MainActor.run {
-                            chatModel.groupMembers = groupMembers.map { GMember.init($0) }
-                            chatModel.populateGroupMembersIndexes()
-                        }
-                    }
-                }
+            addMembersDestinationView()
         } label: {
             Label("Invite members", systemImage: "plus")
         }
+    }
+
+    private func addMembersDestinationView() -> some View {
+        AddGroupMembersView(chat: chat, groupInfo: groupInfo)
+            .onAppear {
+                searchFocussed = false
+                Task {
+                    let groupMembers = await apiListMembers(groupInfo.groupId)
+                    await MainActor.run {
+                        chatModel.groupMembers = groupMembers.map { GMember.init($0) }
+                        chatModel.populateGroupMembersIndexes()
+                    }
+                }
+            }
     }
 
     private struct MemberRowView: View {
@@ -399,16 +426,7 @@ struct GroupChatInfoView: View {
 
     private func groupLinkButton() -> some View {
         NavigationLink {
-            GroupLinkView(
-                groupId: groupInfo.groupId,
-                groupLink: $groupLink,
-                groupLinkMemberRole: $groupLinkMemberRole,
-                showTitle: false,
-                creatingGroup: false
-            )
-            .navigationBarTitle("Group link")
-            .modifier(ThemedBackground(grouped: true))
-            .navigationBarTitleDisplayMode(.large)
+            groupLinkDestinationView()
         } label: {
             if groupLink == nil {
                 Label("Create group link", systemImage: "link.badge.plus")
@@ -416,6 +434,19 @@ struct GroupChatInfoView: View {
                 Label("Group link", systemImage: "link")
             }
         }
+    }
+
+    private func groupLinkDestinationView() -> some View {
+        GroupLinkView(
+            groupId: groupInfo.groupId,
+            groupLink: $groupLink,
+            groupLinkMemberRole: $groupLinkMemberRole,
+            showTitle: false,
+            creatingGroup: false
+        )
+        .navigationBarTitle("Group link")
+        .modifier(ThemedBackground(grouped: true))
+        .navigationBarTitleDisplayMode(.large)
     }
 
     private func editGroupButton() -> some View {
