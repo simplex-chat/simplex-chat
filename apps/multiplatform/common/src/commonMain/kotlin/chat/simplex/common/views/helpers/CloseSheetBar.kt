@@ -11,6 +11,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.background
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.ui.theme.*
@@ -18,17 +20,26 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 
 @Composable
-fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Color = if (close != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary, endButtons: @Composable RowScope.() -> Unit = {}) {
+fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Color = if (close != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,  arrangement: Arrangement.Vertical = Arrangement.Top, closeBarTitle: String? = null, endButtons: @Composable RowScope.() -> Unit = {}) {
+  var rowModifier = Modifier
+    .fillMaxWidth()
+    .height(AppBarHeight * fontSizeSqrtMultiplier)
+
+  if (!closeBarTitle.isNullOrEmpty()) {
+    rowModifier = rowModifier.background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f))
+  }
+
   Column(
-    Modifier
+    verticalArrangement = arrangement,
+    modifier = Modifier
       .fillMaxWidth()
       .heightIn(min = AppBarHeight * fontSizeSqrtMultiplier)
-      .padding(horizontal = AppBarHorizontalPadding)
   ) {
     Row(
+      modifier = Modifier.padding(horizontal = AppBarHorizontalPadding),
       content = {
         Row(
-          Modifier.fillMaxWidth().height(AppBarHeight * fontSizeSqrtMultiplier),
+          rowModifier,
           horizontalArrangement = Arrangement.SpaceBetween,
           verticalAlignment = Alignment.CenterVertically
         ) {
@@ -36,6 +47,18 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
             NavigationButtonBack(tintColor = tintColor, onButtonClicked = close)
           } else {
             Spacer(Modifier)
+          }
+          if (!closeBarTitle.isNullOrEmpty()) {
+            Row(
+              horizontalArrangement = Arrangement.Center,
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Text(
+                closeBarTitle,
+                color = MaterialTheme.colors.onBackground,
+                fontWeight = FontWeight.SemiBold,
+              )
+            }
           }
           Row {
             endButtons()

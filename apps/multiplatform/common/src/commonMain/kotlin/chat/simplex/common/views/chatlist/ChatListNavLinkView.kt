@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chatlist
 
 import SectionItemView
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -33,7 +34,7 @@ import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 
 @Composable
-fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
+fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI: State<Boolean>) {
   val showMenu = remember { mutableStateOf(false) }
   val showMarkRead = remember(chat.chatStats.unreadCount, chat.chatStats.unreadChat) {
     chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
@@ -48,6 +49,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   val showChatPreviews = chatModel.showChatPreviews.value
   val inProgress = remember { mutableStateOf(false) }
   var progressByTimeout by rememberSaveable { mutableStateOf(false) }
+
   LaunchedEffect(inProgress.value) {
     progressByTimeout = if (inProgress.value) {
       delay(1000)
@@ -78,6 +80,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         disabled,
         selectedChat,
         nextChatSelected,
+        oneHandUI
       )
     }
     is ChatInfo.Group ->
@@ -97,6 +100,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         disabled,
         selectedChat,
         nextChatSelected,
+        oneHandUI
       )
     is ChatInfo.Local -> {
       ChatListNavLinkLayout(
@@ -115,6 +119,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         disabled,
         selectedChat,
         nextChatSelected,
+        oneHandUI
       )
     }
     is ChatInfo.ContactRequest ->
@@ -134,6 +139,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         disabled,
         selectedChat,
         nextChatSelected,
+        oneHandUI
       )
     is ChatInfo.ContactConnection ->
       ChatListNavLinkLayout(
@@ -154,6 +160,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         disabled,
         selectedChat,
         nextChatSelected,
+        oneHandUI
       )
     is ChatInfo.InvalidJSON ->
       ChatListNavLinkLayout(
@@ -170,12 +177,13 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         disabled,
         selectedChat,
         nextChatSelected,
+        oneHandUI
       )
   }
 }
 
 @Composable
-private fun ErrorChatListItem() {
+fun ErrorChatListItem() {
   Box(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp)) {
     Text(stringResource(MR.strings.error_showing_content), color = MaterialTheme.colors.error, fontStyle = FontStyle.Italic)
   }
@@ -472,13 +480,13 @@ fun LeaveGroupAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, sh
 }
 
 @Composable
-fun ContactRequestMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactRequest, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+fun ContactRequestMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactRequest, chatModel: ChatModel, showMenu: MutableState<Boolean>, onSuccess: ((chat: Chat) -> Unit)? = null) {
   ItemAction(
     stringResource(MR.strings.accept_contact_button),
     painterResource(MR.images.ic_check),
     color = MaterialTheme.colors.onBackground,
     onClick = {
-      acceptContactRequest(rhId, incognito = false, chatInfo.apiId, chatInfo, true, chatModel)
+      acceptContactRequest(rhId, incognito = false, chatInfo.apiId, chatInfo, true, chatModel, onSuccess)
       showMenu.value = false
     }
   )
@@ -487,7 +495,7 @@ fun ContactRequestMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactRequest, chat
     painterResource(MR.images.ic_theater_comedy),
     color = MaterialTheme.colors.onBackground,
     onClick = {
-      acceptContactRequest(rhId, incognito = true, chatInfo.apiId, chatInfo, true, chatModel)
+      acceptContactRequest(rhId, incognito = true, chatInfo.apiId, chatInfo, true, chatModel, onSuccess)
       showMenu.value = false
     }
   )
@@ -603,7 +611,7 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
   }
 }
 
-fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
+fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel, onSucess: ((chat: Chat) -> Unit)? = null) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.accept_connection_request__question),
     text = AnnotatedString(generalGetString(MR.strings.if_you_choose_to_reject_the_sender_will_not_be_notified)),
@@ -611,13 +619,13 @@ fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactReque
       Column {
         SectionItemView({
           AlertManager.shared.hideAlert()
-          acceptContactRequest(rhId, incognito = false, contactRequest.apiId, contactRequest, true, chatModel)
+          acceptContactRequest(rhId, incognito = false, contactRequest.apiId, contactRequest, true, chatModel, onSucess)
         }) {
           Text(generalGetString(MR.strings.accept_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
-          acceptContactRequest(rhId, incognito = true, contactRequest.apiId, contactRequest, true, chatModel)
+          acceptContactRequest(rhId, incognito = true, contactRequest.apiId, contactRequest, true, chatModel, onSucess)
         }) {
           Text(generalGetString(MR.strings.accept_contact_incognito_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
@@ -633,7 +641,7 @@ fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactReque
   )
 }
 
-fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRequest: ChatInfo.ContactRequest?, isCurrentUser: Boolean, chatModel: ChatModel) {
+fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRequest: ChatInfo.ContactRequest?, isCurrentUser: Boolean, chatModel: ChatModel, close: ((chat: Chat) -> Unit)? = null ) {
   withBGApi {
     val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, apiId)
     if (contact != null && isCurrentUser && contactRequest != null) {
@@ -642,6 +650,7 @@ fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRe
         replaceChat(rhId, contactRequest.id, chat)
       }
       chatModel.setContactNetworkStatus(contact, NetworkStatus.Connected())
+      close?.invoke(chat)
     }
   }
 }
@@ -869,6 +878,7 @@ expect fun ChatListNavLinkLayout(
   disabled: Boolean,
   selectedChat: State<Boolean>,
   nextChatSelected: State<Boolean>,
+  oneHandUI: State<Boolean>
 )
 
 @Preview/*(
@@ -911,7 +921,8 @@ fun PreviewChatListNavLinkDirect() {
       showMenu = remember { mutableStateOf(false) },
       disabled = false,
       selectedChat = remember { mutableStateOf(false) },
-      nextChatSelected = remember { mutableStateOf(false) }
+      nextChatSelected = remember { mutableStateOf(false) },
+      oneHandUI = remember { mutableStateOf(false) }
     )
   }
 }
@@ -956,7 +967,8 @@ fun PreviewChatListNavLinkGroup() {
       showMenu = remember { mutableStateOf(false) },
       disabled = false,
       selectedChat = remember { mutableStateOf(false) },
-      nextChatSelected = remember { mutableStateOf(false) }
+      nextChatSelected = remember { mutableStateOf(false) },
+      oneHandUI = remember { mutableStateOf(false) }
     )
   }
 }
@@ -978,7 +990,8 @@ fun PreviewChatListNavLinkContactRequest() {
       showMenu = remember { mutableStateOf(false) },
       disabled = false,
       selectedChat = remember { mutableStateOf(false) },
-      nextChatSelected = remember { mutableStateOf(false) }
+      nextChatSelected = remember { mutableStateOf(false) },
+      oneHandUI = remember { mutableStateOf(false) }
     )
   }
 }

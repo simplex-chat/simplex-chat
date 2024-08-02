@@ -78,7 +78,7 @@ fun AppearanceScope.AppearanceLayout(
     Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.appearance_settings))
-    SectionView(stringResource(MR.strings.settings_section_title_language), padding = PaddingValues()) {
+    SectionView(stringResource(MR.strings.settings_section_title_interface), padding = PaddingValues()) {
       val context = LocalContext.current
       //      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       //        SectionItemWithValue(
@@ -104,6 +104,8 @@ fun AppearanceScope.AppearanceLayout(
         }
       }
       //      }
+
+      SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), ChatModel.controller.appPrefs.oneHandUI)
     }
 
     SectionDividerSpaced(maxTopPadding = true)
