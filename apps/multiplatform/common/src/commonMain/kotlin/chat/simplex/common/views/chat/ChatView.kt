@@ -1465,7 +1465,7 @@ private fun SelectedChatItem(
 ) {
   val checked = remember { derivedStateOf { selectedChatItems.value?.contains(ciId) == true } }
   Icon(
-    painterResource(if (checked.value) MR.images.ic_check_circle else MR.images.ic_radio_button_unchecked),
+    painterResource(if (checked.value) MR.images.ic_check_circle_filled else MR.images.ic_radio_button_unchecked),
     null,
     modifier.size(22.dp * fontSizeMultiplier),
     tint = if (checked.value) {
