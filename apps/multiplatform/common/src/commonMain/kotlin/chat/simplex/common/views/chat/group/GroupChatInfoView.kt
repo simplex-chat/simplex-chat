@@ -57,7 +57,7 @@ fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLi
       sendReceipts = sendReceipts,
       setSendReceipts = { sendRcpts ->
         val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
-        updateChatSettings(chat, chatSettings, chatModel)
+        updateChatSettings(chat.remoteHostId, chat.chatInfo, chatSettings, chatModel)
         sendReceipts.value = sendRcpts
       },
       members = chatModel.groupMembers

@@ -235,7 +235,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
   BoxWithConstraints {
     val call = remember { chatModel.activeCall} .value
     val showCallArea = call != null && call.callState != CallState.WaitCapabilities && call.callState != CallState.InvitationAccepted
-    var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
+    val currentChatId = remember { mutableStateOf(chatModel.chatId.value) }
     val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
     Box(
       Modifier
@@ -265,7 +265,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
           .distinctUntilChanged()
           .collect {
             if (it == null) onComposed(null)
-            currentChatId = it
+            currentChatId.value = it
           }
       }
     }
@@ -273,8 +273,8 @@ fun AndroidScreen(settingsState: SettingsViewState) {
       .graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }
       .padding(top = if (showCallArea) ANDROID_CALL_TOP_PADDING else 0.dp)
     ) Box2@{
-      currentChatId?.let {
-        ChatView(it, chatModel, onComposed)
+      currentChatId.value?.let {
+        ChatView(currentChatId, onComposed)
       }
     }
     if (call != null && showCallArea) {
@@ -298,7 +298,7 @@ fun StartPartOfScreen(settingsState: SettingsViewState) {
 
 @Composable
 fun CenterPartOfScreen() {
-  val currentChatId by remember { ChatModel.chatId }
+  val currentChatId = remember { ChatModel.chatId }
   LaunchedEffect(Unit) {
     snapshotFlow { currentChatId }
       .distinctUntilChanged()
@@ -308,7 +308,7 @@ fun CenterPartOfScreen() {
         }
       }
   }
-  when (val id = currentChatId) {
+  when (currentChatId.value) {
     null -> {
       if (!rememberUpdatedState(ModalManager.center.hasModalsOpen()).value) {
         Box(
@@ -323,7 +323,7 @@ fun CenterPartOfScreen() {
         ModalManager.center.showInView()
       }
     }
-    else -> ChatView(id, chatModel) {}
+    else -> ChatView(currentChatId) {}
   }
 }
 
