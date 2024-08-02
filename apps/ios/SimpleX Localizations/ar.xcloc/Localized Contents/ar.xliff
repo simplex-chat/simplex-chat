@@ -107,8 +107,9 @@
         <target state="translated">%d ثانية</target>
         <note>message ttl</note>
       </trans-unit>
-      <trans-unit id="%d skipped message(s)" xml:space="preserve">
+      <trans-unit id="%d skipped message(s)" xml:space="preserve" approved="no">
         <source>%d skipped message(s)</source>
+        <target state="translated">%d الرسائل المتخطية</target>
         <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="%lld" xml:space="preserve" approved="no">
@@ -121,12 +122,14 @@
         <target state="needs-translation">%lld %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld contact(s) selected" xml:space="preserve">
+      <trans-unit id="%lld contact(s) selected" xml:space="preserve" approved="no">
         <source>%lld contact(s) selected</source>
+        <target state="translated">%lld تم اختيار جهة الاتصال</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve">
+      <trans-unit id="%lld file(s) with total size of %@" xml:space="preserve" approved="no">
         <source>%lld file(s) with total size of %@</source>
+        <target state="translated">%lld الملفات ذات الحجم الإجمالي %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld members" xml:space="preserve" approved="no">
@@ -134,8 +137,9 @@
         <target state="translated">%lld أعضاء</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld second(s)" xml:space="preserve">
+      <trans-unit id="%lld second(s)" xml:space="preserve" approved="no">
         <source>%lld second(s)</source>
+        <target state="translated">%lld ثوانى</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldd" xml:space="preserve" approved="no">
@@ -3710,6 +3714,34 @@ SimpleX servers cannot see your profile.</source>
       <trans-unit id="%lld seconds" xml:space="preserve" approved="no">
         <source>%lld seconds</source>
         <target state="translated">%lld ثواني</target>
+      </trans-unit>
+      <trans-unit id="%u messages failed to decrypt." xml:space="preserve" approved="no">
+        <source>%u messages failed to decrypt.</source>
+        <target state="translated">%u فشلت عملية فك تشفير الرسائل.</target>
+      </trans-unit>
+      <trans-unit id="%lld messages marked deleted" xml:space="preserve" approved="no">
+        <source>%lld messages marked deleted</source>
+        <target state="translated">%lld الرسائل معلمه بالحذف</target>
+      </trans-unit>
+      <trans-unit id="%lld messages moderated by %@" xml:space="preserve" approved="no">
+        <source>%lld messages moderated by %@</source>
+        <target state="translated">%lld رسائل تمت إدارتها بواسطة %@</target>
+      </trans-unit>
+      <trans-unit id="%lld new interface languages" xml:space="preserve" approved="no">
+        <source>%lld new interface languages</source>
+        <target state="translated">%lld لغات واجهة جديدة</target>
+      </trans-unit>
+      <trans-unit id="%lld group events" xml:space="preserve" approved="no">
+        <source>%lld group events</source>
+        <target state="translated">%lld أحداث المجموعة</target>
+      </trans-unit>
+      <trans-unit id="%lld messages blocked by admin" xml:space="preserve" approved="no">
+        <source>%lld messages blocked by admin</source>
+        <target state="translated">%lld رسائل محظورة بواسطه المسؤول</target>
+      </trans-unit>
+      <trans-unit id="%lld messages blocked" xml:space="preserve" approved="no">
+        <source>%lld messages blocked</source>
+        <target state="translated">%lld رسائل محظوره</target>
       </trans-unit>
     </body>
   </file>
