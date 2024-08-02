@@ -6,6 +6,7 @@ import androidx.compose.material.Divider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.views.helpers.*
@@ -19,8 +20,14 @@ actual fun ChatListNavLinkLayout(
   disabled: Boolean,
   selectedChat: State<Boolean>,
   nextChatSelected: State<Boolean>,
+  oneHandUI: State<Boolean>
 ) {
   var modifier = Modifier.fillMaxWidth()
+
+  if (oneHandUI != null && oneHandUI.value) {
+    modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
+  }
+
   if (!disabled) modifier = modifier
     .combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
     .onRightClick { showMenu.value = true }
