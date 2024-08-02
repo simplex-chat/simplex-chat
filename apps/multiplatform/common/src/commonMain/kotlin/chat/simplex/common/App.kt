@@ -276,7 +276,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
       snapshotFlow { ModalManager.center.modalCount.value > 0 }
         .filter { chatModel.chatId.value == null }
         .collect { modalBackground ->
-          if (modalBackground) {
+          if (modalBackground && !chatModel.newChatSheetVisible.value) {
             platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, false, false)
           } else {
             platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
