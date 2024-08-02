@@ -570,7 +570,6 @@ final class ChatModel: ObservableObject {
     func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
         if chatId == cInfo.id,
            let itemIndex = getChatItemIndex(cItem),
-           let chatIndex = getChatIndex(cInfo.id),
            im.reversedChatItems[itemIndex].isRcvNew {
             await MainActor.run {
                 withTransaction(Transaction()) {
@@ -620,21 +619,28 @@ final class ChatModel: ObservableObject {
 
         init() {
             subject
-                .throttle(for: 3, scheduler: DispatchQueue.main, latest: true)
+                .throttle(for: 5, scheduler: DispatchQueue.main, latest: true)
                 .sink {
                     let m = ChatModel.shared
-                    m.chats = m.chats.sorted { $0.orderingTimestamp > $1.orderingTimestamp }
+                    withAnimation(m.chatId == nil ? .default : nil) {
+                        m.chats = m.chats.sorted {
+                            switch ($0.orderingTimestamp, $1.orderingTimestamp) {
+                            case let (lhs?, rhs?): lhs > rhs
+                            case (nil, nil): false
+                            case (nil, _?):  false
+                            case (_?, nil):  true
+                            }
+                        }
+                    }
                 }
                 .store(in: &bag)
         }
 
-        // Only call from main thread
         func addChat(_ chatId: ChatId) {
-            let m = ChatModel.shared
-            if let index = m.getChatIndex(chatId) {
-                m.chats[index].orderingTimestamp = CFAbsoluteTimeGetCurrent()
+            if let index = ChatModel.shared.getChatIndex(chatId) {
+                ChatModel.shared.chats[index].orderingTimestamp = CFAbsoluteTimeGetCurrent()
+                subject.send()
             }
-            subject.send()
         }
     }
     
@@ -852,7 +858,7 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
     @Published var chatItems: [ChatItem]
     @Published var chatStats: ChatStats
     var created = Date.now
-    var orderingTimestamp = CFAbsoluteTimeGetCurrent()
+    var orderingTimestamp: CFAbsoluteTime?
 
     init(_ cData: ChatData) {
         self.chatInfo = cData.chatInfo
