@@ -1,6 +1,7 @@
 package chat.simplex.common.ui.theme
 
 import androidx.compose.material.Colors
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.MutableState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -103,6 +104,8 @@ object ThemeManager {
     appPrefs.currentTheme.set(theme)
     CurrentColors.value = currentColors(null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
     platform.androidSetNightModeIfSupported()
+    val c = CurrentColors.value.colors
+    platform.androidSetStatusAndNavBarColors(c.isLight, c.background, c.background)
   }
 
   fun changeDarkTheme(theme: String) {
@@ -120,6 +123,10 @@ object ThemeManager {
     themeIds[nonSystemThemeName] = prevValue.themeId
     appPrefs.currentThemeIds.set(themeIds)
     CurrentColors.value = currentColors(null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
+    if (name == ThemeColor.BACKGROUND) {
+      val c = CurrentColors.value.colors
+      platform.androidSetStatusAndNavBarColors(c.isLight, c.background, c.background)
+    }
   }
 
   fun applyThemeColor(name: ThemeColor, color: Color? = null, pref: MutableState<ThemeModeOverride>) {

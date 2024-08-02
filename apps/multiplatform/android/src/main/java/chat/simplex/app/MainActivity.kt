@@ -24,11 +24,13 @@ import java.lang.ref.WeakReference
 class MainActivity: FragmentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    mainActivity = WeakReference(this)
     platform.androidSetNightModeIfSupported()
+    val c = CurrentColors.value.colors
+    platform.androidSetStatusAndNavBarColors(c.isLight, c.background, c.background)
     applyAppLocale(ChatModel.controller.appPrefs.appLanguage)
     super.onCreate(savedInstanceState)
     // testJson()
-    mainActivity = WeakReference(this)
     // When call ended and orientation changes, it re-process old intent, it's unneeded.
     // Only needed to be processed on first creation of activity
     if (savedInstanceState == null) {

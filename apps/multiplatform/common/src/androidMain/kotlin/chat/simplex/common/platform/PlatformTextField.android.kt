@@ -2,6 +2,7 @@ package chat.simplex.common.platform
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.text.InputType
 import android.util.Log
@@ -16,6 +17,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
@@ -109,9 +111,10 @@ actual fun PlatformTextField(
     editText.inputType = InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or editText.inputType
     editText.setTextColor(textColor.toArgb())
     editText.textSize = textStyle.value.fontSize.value * appPrefs.fontScale.get()
-    val drawable = androidAppContext.getDrawable(R.drawable.send_msg_view_background)!!
-    DrawableCompat.setTint(drawable, tintColor.toArgb())
-    editText.background = drawable
+//    val drawable = androidAppContext.getDrawable(R.drawable.send_msg_view_background)!!
+//    DrawableCompat.setTint(drawable, tintColor.toArgb())
+//    editText.background = drawable
+    editText.background = ColorDrawable(Color.Transparent.toArgb())
     editText.setPadding(paddingStart, paddingTop, paddingEnd, paddingBottom)
     editText.setText(cs.message)
     if (Build.VERSION.SDK_INT >= 29) {

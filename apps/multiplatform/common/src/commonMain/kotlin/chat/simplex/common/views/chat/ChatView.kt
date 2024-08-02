@@ -469,6 +469,18 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
             showViaProxy = chatModel.controller.appPrefs.showSentViaProxy.get(),
             showSearch = showSearch
           )
+          val backgroundColor = MaterialTheme.colors.background
+          val backgroundColorState = rememberUpdatedState(backgroundColor)
+          LaunchedEffect(Unit) {
+            snapshotFlow { ModalManager.center.modalCount.value > 0 || chatModel.chatId.value == null }
+              .collect { globalBackground ->
+                if (globalBackground) {
+                  platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, CurrentColors.value.colors.background)
+                } else {
+                  platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, backgroundColorState.value, backgroundColorState.value)
+                }
+              }
+          }
         }
       }
       is ChatInfo.ContactConnection -> {

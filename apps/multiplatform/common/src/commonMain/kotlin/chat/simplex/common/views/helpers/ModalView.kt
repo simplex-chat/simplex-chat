@@ -64,7 +64,8 @@ class ModalData {
 
 class ModalManager(private val placement: ModalPlacement? = null) {
   private val modalViews = arrayListOf<Triple<Boolean, ModalData, (@Composable ModalData.(close: () -> Unit) -> Unit)>>()
-  private val modalCount = mutableStateOf(0)
+  private val _modalCount = mutableStateOf(0)
+  val modalCount: State<Int> = _modalCount
   private val toRemove = mutableSetOf<Int>()
   private var oldViewChanging = AtomicBoolean(false)
   // Don't use mutableStateOf() here, because it produces this if showing from SimpleXAPI.startChat():
@@ -97,7 +98,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     // to prevent unneeded animation on different situations
     val anim = if (appPlatform.isAndroid) animated else animated && (modalCount.value > 0 || placement == ModalPlacement.START)
     modalViews.add(Triple(anim, data, modal))
-    modalCount.value = modalViews.size - toRemove.size
+    _modalCount.value = modalViews.size - toRemove.size
 
     if (placement == ModalPlacement.CENTER) {
       ChatModel.chatId.value = null
@@ -123,13 +124,13 @@ class ModalManager(private val placement: ModalPlacement? = null) {
       if (modalViews.lastOrNull()?.first == false) modalViews.removeAt(modalViews.lastIndex)
       else runAtomically { toRemove.add(modalViews.lastIndex - min(toRemove.size, modalViews.lastIndex)) }
     }
-    modalCount.value = modalViews.size - toRemove.size
+    _modalCount.value = modalViews.size - toRemove.size
   }
 
   fun closeModals() {
     modalViews.clear()
     toRemove.clear()
-    modalCount.value = 0
+    _modalCount.value = 0
   }
 
   fun closeModalsExceptFirst() {

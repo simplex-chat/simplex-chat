@@ -873,7 +873,7 @@ fun ComposeView(
       }
     }
     Row(
-      modifier = Modifier.background(MaterialTheme.colors.background).padding(end = 8.dp),
+      modifier = Modifier.background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)).padding(end = 8.dp),
       verticalAlignment = Alignment.Bottom,
     ) {
       val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)
