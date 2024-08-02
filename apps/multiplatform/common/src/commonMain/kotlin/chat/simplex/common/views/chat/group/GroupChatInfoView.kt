@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -40,10 +41,10 @@ import kotlinx.coroutines.launch
 const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
 @Composable
-fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit) {
+fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit, onSearchClicked: () -> Unit) {
   BackHandler(onBack = close)
   // TODO derivedStateOf?
-  val chat = chatModel.chats.firstOrNull { ch -> ch.id == chatId && ch.remoteHostId == rhId }
+  val chat = chatModel.chats.value.firstOrNull { ch -> ch.id == chatId && ch.remoteHostId == rhId }
   val currentUser = chatModel.currentUser.value
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null && chat.chatInfo is ChatInfo.Group && currentUser != null) {
@@ -113,7 +114,8 @@ fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLi
       leaveGroup = { leaveGroupDialog(rhId, groupInfo, chatModel, close) },
       manageGroupLink = {
           ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, groupLinkMemberRole, onGroupLinkUpdated) }
-      }
+      },
+      onSearchClicked = onSearchClicked
     )
   }
 }
@@ -131,13 +133,15 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
       withBGApi {
         val r = chatModel.controller.apiDeleteChat(chat.remoteHostId, chatInfo.chatType, chatInfo.apiId)
         if (r) {
-          chatModel.removeChat(chat.remoteHostId, chatInfo.id)
-          if (chatModel.chatId.value == chatInfo.id) {
-            chatModel.chatId.value = null
-            ModalManager.end.closeModals()
+          withChats {
+            removeChat(chat.remoteHostId, chatInfo.id)
+            if (chatModel.chatId.value == chatInfo.id) {
+              chatModel.chatId.value = null
+              ModalManager.end.closeModals()
+            }
+            ntfManager.cancelNotificationsForChat(chatInfo.id)
+            close?.invoke()
           }
-          ntfManager.cancelNotificationsForChat(chatInfo.id)
-          close?.invoke()
         }
       }
     },
@@ -169,13 +173,66 @@ private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMembe
       withBGApi {
         val updatedMember = chatModel.controller.apiRemoveMember(rhId, groupInfo.groupId, mem.groupMemberId)
         if (updatedMember != null) {
-          chatModel.upsertGroupMember(rhId, groupInfo, updatedMember)
+          withChats {
+            upsertGroupMember(rhId, groupInfo, updatedMember)
+          }
         }
       }
     },
     destructive = true,
   )
 }
+
+@Composable
+fun SearchButton(chat: Chat, group: GroupInfo, close: () -> Unit, onSearchClicked: () -> Unit) {
+  val disabled = !group.ready || chat.chatItems.isEmpty()
+
+  InfoViewActionButton(
+    icon = painterResource(MR.images.ic_search),
+    title = generalGetString(MR.strings.info_view_search_button),
+    disabled = disabled,
+    disabledLook = disabled,
+    onClick = {
+      if (appPlatform.isAndroid) {
+        close.invoke()
+      }
+      onSearchClicked()
+    }
+  )
+}
+
+@Composable
+fun MuteButton(chat: Chat, groupInfo: GroupInfo) {
+  val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
+
+  InfoViewActionButton(
+    icon =  if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
+    title = if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
+    disabled = !groupInfo.ready,
+    disabledLook = !groupInfo.ready,
+    onClick = {
+      toggleNotifications(chat, !ntfsEnabled.value, chatModel, ntfsEnabled)
+    }
+  )
+}
+
+@Composable
+fun AddGroupMembersButton(chat: Chat, groupInfo: GroupInfo) {
+  InfoViewActionButton(
+    icon =  if (groupInfo.incognito) painterResource(MR.images.ic_add_link) else painterResource(MR.images.ic_person_add_500),
+    title = stringResource(MR.strings.action_button_add_members),
+    disabled = !groupInfo.ready,
+    disabledLook = !groupInfo.ready,
+    onClick = {
+      if (groupInfo.incognito) {
+        openGroupLink(groupInfo = groupInfo, rhId = chat.remoteHostId)
+      } else {
+        addGroupMembers(groupInfo = groupInfo, rhId = chat.remoteHostId)
+      }
+    }
+  )
+}
+
 
 @Composable
 fun GroupChatInfoLayout(
@@ -196,6 +253,8 @@ fun GroupChatInfoLayout(
   clearChat: () -> Unit,
   leaveGroup: () -> Unit,
   manageGroupLink: () -> Unit,
+  close: () -> Unit = { ModalManager.closeAllModalsEverywhere()},
+  onSearchClicked: () -> Unit
 ) {
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
@@ -219,6 +278,24 @@ fun GroupChatInfoLayout(
       }
       SectionSpacer()
 
+      Row(
+        Modifier
+          .fillMaxWidth()
+          .padding(horizontal = DEFAULT_PADDING),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        SearchButton(chat, groupInfo, close, onSearchClicked)
+        if (groupInfo.canAddMembers) {
+          Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
+          AddGroupMembersButton(chat, groupInfo)
+        }
+        Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
+        MuteButton(chat, groupInfo)
+      }
+
+      SectionSpacer()
+
       SectionView {
         if (groupInfo.canEdit) {
           EditGroupProfileButton(editGroupProfile)
@@ -235,7 +312,7 @@ fun GroupChatInfoLayout(
 
         WallpaperButton {
           ModalManager.end.showModal {
-            val chat = remember { derivedStateOf { chatModel.chats.firstOrNull { it.id == chat.id } } }
+            val chat = remember { derivedStateOf { chatModel.chats.value.firstOrNull { it.id == chat.id } } }
             val c = chat.value
             if (c != null) {
               ChatWallpaperEditorModal(c)
@@ -584,7 +661,7 @@ fun PreviewGroupChatInfoLayout() {
       members = listOf(GroupMember.sampleData, GroupMember.sampleData, GroupMember.sampleData),
       developerTools = false,
       groupLink = null,
-      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {},
+      addMembers = {}, showMemberInfo = {}, editGroupProfile = {}, addOrEditWelcomeMessage = {}, openPreferences = {}, deleteGroup = {}, clearChat = {}, leaveGroup = {}, manageGroupLink = {}, onSearchClicked = {},
     )
   }
 }

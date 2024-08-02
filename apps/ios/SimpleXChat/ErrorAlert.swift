@@ -72,25 +72,25 @@ extension View {
         _ errorAlert: Binding<ErrorAlert?>,
         @ViewBuilder actions: (ErrorAlert) -> A = { _ in EmptyView() }
     ) -> some View {
-        if let alert = errorAlert.wrappedValue {
-            self.alert(
-                alert.title,
-                isPresented: Binding<Bool>(
-                    get: { errorAlert.wrappedValue != nil },
-                    set: { if !$0 { errorAlert.wrappedValue = nil } }
-                ),
-                actions: {
-                    if let actions_ = alert.actions {
-                        actions_()
-                    } else {
-                        actions(alert)
-                    }
-                },
-                message: {
-                    if let message = alert.message { Text(message) }
+        alert(
+            errorAlert.wrappedValue?.title ?? "",
+            isPresented: Binding<Bool>(
+                get: { errorAlert.wrappedValue != nil },
+                set: { if !$0 { errorAlert.wrappedValue = nil } }
+            ),
+            actions: {
+                if let actions_ = errorAlert.wrappedValue?.actions {
+                    actions_()
+                } else {
+                    if let alert = errorAlert.wrappedValue { actions(alert) }
                 }
-            )
-        } else { self }
+            },
+            message: {
+                if let message = errorAlert.wrappedValue?.message {
+                    Text(message)
+                }
+            }
+        )
     }
 }
 

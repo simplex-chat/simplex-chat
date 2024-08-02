@@ -32,6 +32,7 @@ import chat.simplex.common.views.isValidDisplayName
 import chat.simplex.common.views.localauth.SetAppPasscodeView
 import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -121,14 +122,16 @@ fun PrivacySettingsView(
           chatModel.currentUser.value = currentUser.copy(sendRcptsContacts = enable)
           if (clearOverrides) {
             // For loop here is to prevent ConcurrentModificationException that happens with forEach
-            for (i in 0 until chatModel.chats.size) {
-              val chat = chatModel.chats[i]
-              if (chat.chatInfo is ChatInfo.Direct) {
-                var contact = chat.chatInfo.contact
-                val sendRcpts = contact.chatSettings.sendRcpts
-                if (sendRcpts != null && sendRcpts != enable) {
-                  contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
-                  chatModel.updateContact(currentUser.remoteHostId, contact)
+            withChats {
+              for (i in 0 until chats.size) {
+                val chat = chats[i]
+                if (chat.chatInfo is ChatInfo.Direct) {
+                  var contact = chat.chatInfo.contact
+                  val sendRcpts = contact.chatSettings.sendRcpts
+                  if (sendRcpts != null && sendRcpts != enable) {
+                    contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
+                    updateContact(currentUser.remoteHostId, contact)
+                  }
                 }
               }
             }
@@ -143,15 +146,17 @@ fun PrivacySettingsView(
           chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
           chatModel.currentUser.value = currentUser.copy(sendRcptsSmallGroups = enable)
           if (clearOverrides) {
-            // For loop here is to prevent ConcurrentModificationException that happens with forEach
-            for (i in 0 until chatModel.chats.size) {
-              val chat = chatModel.chats[i]
-              if (chat.chatInfo is ChatInfo.Group) {
-                var groupInfo = chat.chatInfo.groupInfo
-                val sendRcpts = groupInfo.chatSettings.sendRcpts
-                if (sendRcpts != null && sendRcpts != enable) {
-                  groupInfo = groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(sendRcpts = null))
-                  chatModel.updateGroup(currentUser.remoteHostId, groupInfo)
+            withChats {
+              // For loop here is to prevent ConcurrentModificationException that happens with forEach
+              for (i in 0 until chats.size) {
+                val chat = chats[i]
+                if (chat.chatInfo is ChatInfo.Group) {
+                  var groupInfo = chat.chatInfo.groupInfo
+                  val sendRcpts = groupInfo.chatSettings.sendRcpts
+                  if (sendRcpts != null && sendRcpts != enable) {
+                    groupInfo = groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(sendRcpts = null))
+                    updateGroup(currentUser.remoteHostId, groupInfo)
+                  }
                 }
               }
             }
@@ -164,7 +169,7 @@ fun PrivacySettingsView(
         DeliveryReceiptsSection(
           currentUser = currentUser,
           setOrAskSendReceiptsContacts = { enable ->
-            val contactReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
+            val contactReceiptsOverrides = chatModel.chats.value.fold(0) { count, chat ->
               if (chat.chatInfo is ChatInfo.Direct) {
                 val sendRcpts = chat.chatInfo.contact.chatSettings.sendRcpts
                 count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
@@ -179,7 +184,7 @@ fun PrivacySettingsView(
             }
           },
           setOrAskSendReceiptsGroups = { enable ->
-            val groupReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
+            val groupReceiptsOverrides = chatModel.chats.value.fold(0) { count, chat ->
               if (chat.chatInfo is ChatInfo.Group) {
                 val sendRcpts = chat.chatInfo.groupInfo.chatSettings.sendRcpts
                 count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
