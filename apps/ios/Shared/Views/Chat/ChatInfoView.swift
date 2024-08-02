@@ -618,19 +618,64 @@ struct ChatInfoView: View {
 }
 
 func audioCallButton(_ contact: Contact, showAlert: @escaping (SomeAlert) -> Void) -> some View {
-    InfoViewActionButtonLayout(image: "phone.fill", title: "call")
-        .onTapGesture {
-            CallController.shared.startCall(contact, .audio)
-        }
-        .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || ChatModel.shared.activeCall != nil)
+    callButton(
+        contact,
+        image: "phone.fill",
+        title: "call",
+        mediaType: .audio,
+        showAlert: showAlert
+    )
 }
 
 func videoButton(_ contact: Contact, showAlert: @escaping (SomeAlert) -> Void) -> some View {
-    InfoViewActionButtonLayout(image: "video.fill", title: "video")
+    callButton(
+        contact,
+        image: "video.fill",
+        title: "video",
+        mediaType: .video,
+        showAlert: showAlert
+    )
+}
+
+@ViewBuilder private func callButton(
+    _ contact: Contact,
+    image: String,
+    title: LocalizedStringKey,
+    mediaType: CallMediaType,
+    showAlert: @escaping (SomeAlert) -> Void
+) -> some View {
+    let canCall = contact.ready && contact.active && contact.mergedPreferences.calls.enabled.forUser && ChatModel.shared.activeCall == nil
+    InfoViewActionButtonLayout(image: "video.fill", title: "video", disabledLook: !canCall)
         .onTapGesture {
-            CallController.shared.startCall(contact, .video)
+            if canCall {
+                CallController.shared.startCall(contact, mediaType)
+            } else if contact.nextSendGrpInv {
+                showAlert(SomeAlert(
+                    alert: mkAlert(
+                        title: "Can't call contact",
+                        message: "Send message to enable calls."
+                    ),
+                    id: "can't call contact, send message"
+                ))
+            } else if !contact.active {
+                showAlert(SomeAlert(
+                    alert: mkAlert(
+                        title: "Can't call contact",
+                        message: "Contact is deleted."
+                    ),
+                    id: "can't call contact, contact deleted"
+                ))
+            } else if !contact.ready {
+                showAlert(SomeAlert(
+                    alert: mkAlert(
+                        title: "Can't call contact",
+                        message: "Connecting to contact, please wait or check later!"
+                    ),
+                    id: "can't call contact, contact not ready"
+                ))
+            }
         }
-        .disabled(!contact.ready || !contact.active || !contact.mergedPreferences.calls.enabled.forUser || ChatModel.shared.activeCall != nil)
+        .disabled(ChatModel.shared.activeCall != nil)
 }
 
 struct InfoViewActionButtonLayout: View {
