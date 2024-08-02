@@ -460,7 +460,7 @@
     <string name="desktop_app_version_is_incompatible">Számítógép kliens verziója %s nem kompatibilis ezzel az alkalmazással.</string>
     <string name="delivery">Kézbesítés</string>
     <string name="total_files_count_and_size">%d fájl %s összméretben</string>
-    <string name="database_passphrase_is_required">Adatbázis jelmondat szükséges a csevegés megnyitásához.</string>
+    <string name="database_passphrase_is_required">A csevegés megnyitásához adja meg az adatbázis jelmondatát.</string>
     <string name="ttl_d">%dnap</string>
     <string name="receipts_contacts_enable_for_all">Engedélyezés mindenki számára</string>
     <string name="delivery_receipts_are_disabled">A kézbesítési jelentések le vannak tiltva!</string>
@@ -1476,7 +1476,7 @@
     <string name="v5_0_app_passcode_descr">Rendszerhitelesítés helyetti beállítás.</string>
     <string name="switch_receiving_address_desc">A fogadó cím egy másik kiszolgálóra változik. A címváltoztatás a feladó online állapotba kerülése után fejeződik be.</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">A csevegés megállítása a csevegő adatbázis exportálásához, importálásához, vagy törléséhez. A csevegés megállítása alatt nem tud üzeneteket fogadni és küldeni.</string>
-    <string name="save_passphrase_in_keychain">Jelmondat mentése a kulcstárolóba</string>
+    <string name="save_passphrase_in_keychain">Jelmondat mentése a Keystore-ba</string>
     <string name="v4_6_chinese_spanish_interface_descr">Köszönet a felhasználóknak - hozzájárulás a Weblaten!</string>
     <string name="save_passphrase_in_settings">Jelmondat mentése a beállításokban</string>
     <string name="send_receipts_disabled_alert_msg">Ennek a csoportnak több mint %1$d tagja van, a kézbesítési jelentések nem kerülnek elküldésre.</string>
