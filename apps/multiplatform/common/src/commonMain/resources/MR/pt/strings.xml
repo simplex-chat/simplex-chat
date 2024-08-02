@@ -951,4 +951,6 @@
     <string name="receipts_groups_disable_for_all">Desativar para todos os grupos</string>
     <string name="your_chat_database">A tua base de dados de conversas</string>
     <string name="servers_info_details">Detalhes</string>
+    <string name="you_can_share_this_address_with_your_contacts">Você pode partilhar o seu endereço com os seus contactos para permitir que se conectem com %s.</string>
+    <string name="you_can_share_your_address">Você pode partilhar o seu endereço como uma ligação ou código QR - qualquer pessoa pode conectar-se a si.</string>
 </resources>
