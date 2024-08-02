@@ -719,7 +719,9 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
     val scope = rememberCoroutineScope()
 
     suspend fun setServersSummary() {
-      serversSummary.value = chatModel.controller.getAgentServersSummary(chatModel.remoteHostId())
+      if (chatModel.currentUser.value != null) {
+        serversSummary.value = chatModel.controller.getAgentServersSummary(chatModel.remoteHostId())
+      }
     }
 
     LaunchedEffect(Unit) {

@@ -773,6 +773,10 @@
         <target>Дозволити надсилання зникаючих повідомлень.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Allow sharing" xml:space="preserve">
+        <source>Allow sharing</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Allow to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
         <source>Allow to irreversibly delete sent messages. (24 hours)</source>
         <target>Дозволяє безповоротно видаляти надіслані повідомлення. (24 години)</target>
@@ -1861,6 +1865,10 @@ This is your own one-time link!</source>
         <source>Delete</source>
         <target>Видалити</target>
         <note>chat item action</note>
+      </trans-unit>
+      <trans-unit id="Delete %lld messages of members?" xml:space="preserve">
+        <source>Delete %lld messages of members?</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete %lld messages?" xml:space="preserve">
         <source>Delete %lld messages?</source>
@@ -4322,6 +4330,10 @@ This is your link for group %@!</source>
         <target>Не сумісні!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Nothing selected" xml:space="preserve">
+        <source>Nothing selected</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Notifications" xml:space="preserve">
         <source>Notifications</source>
         <target>Сповіщення</target>
@@ -5466,6 +5478,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Select" xml:space="preserve">
         <source>Select</source>
         <target>Виберіть</target>
+        <note>chat item action</note>
+      </trans-unit>
+      <trans-unit id="Selected %lld" xml:space="preserve">
+        <source>Selected %lld</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve">
@@ -5817,6 +5833,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Share this 1-time invite link" xml:space="preserve">
         <source>Share this 1-time invite link</source>
         <target>Поділіться цим одноразовим посиланням-запрошенням</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Share to SimpleX" xml:space="preserve">
+        <source>Share to SimpleX</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share with contacts" xml:space="preserve">
@@ -6273,6 +6293,14 @@ It can happen because of some bug or when the connection is compromised.</source
       <trans-unit id="The message will be marked as moderated for all members." xml:space="preserve">
         <source>The message will be marked as moderated for all members.</source>
         <target>Повідомлення буде позначено як модероване для всіх учасників.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The messages will be deleted for all members." xml:space="preserve">
+        <source>The messages will be deleted for all members.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The messages will be marked as moderated for all members." xml:space="preserve">
+        <source>The messages will be marked as moderated for all members.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The next generation of private messaging" xml:space="preserve">
@@ -8471,8 +8499,20 @@ last received msg: %2$@</source>
         <source>%@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="App is locked!" xml:space="preserve">
+        <source>App is locked!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Cancel" xml:space="preserve">
+        <source>Cancel</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Cannot access keychain to save database password" xml:space="preserve">
         <source>Cannot access keychain to save database password</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Cannot forward message" xml:space="preserve">
+        <source>Cannot forward message</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Comment" xml:space="preserve">
@@ -8487,6 +8527,10 @@ last received msg: %2$@</source>
         <source>Database downgrade required</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Database encrypted!" xml:space="preserve">
+        <source>Database encrypted!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Database error" xml:space="preserve">
         <source>Database error</source>
         <note>No comment provided by engineer.</note>
@@ -8495,16 +8539,16 @@ last received msg: %2$@</source>
         <source>Database passphrase is different from saved in the keychain.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Database passphrase is required to open chat." xml:space="preserve">
+        <source>Database passphrase is required to open chat.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Database upgrade required" xml:space="preserve">
         <source>Database upgrade required</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Dismiss Sheet" xml:space="preserve">
         <source>Dismiss Sheet</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Encrypted database" xml:space="preserve">
-        <source>Encrypted database</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error preparing file" xml:space="preserve">
@@ -8563,8 +8607,16 @@ last received msg: %2$@</source>
         <source>Open the app to upgrade the database.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Passphrase" xml:space="preserve">
+        <source>Passphrase</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Please create a profile in the SimpleX app" xml:space="preserve">
         <source>Please create a profile in the SimpleX app</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve">
+        <source>Selected chat preferences prohibit this message.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending File" xml:space="preserve">
@@ -8573,10 +8625,6 @@ last received msg: %2$@</source>
       </trans-unit>
       <trans-unit id="Share" xml:space="preserve">
         <source>Share</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Sharing is not supported when passphrase is not stored in KeyChain." xml:space="preserve">
-        <source>Sharing is not supported when passphrase is not stored in KeyChain.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unknown database error: %@" xml:space="preserve">
@@ -8589,6 +8637,10 @@ last received msg: %2$@</source>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
         <source>Wrong database passphrase</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can allow sharing in Privacy &amp; Security / SimpleX Lock settings." xml:space="preserve">
+        <source>You can allow sharing in Privacy &amp; Security / SimpleX Lock settings.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
