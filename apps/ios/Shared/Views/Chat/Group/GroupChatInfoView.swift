@@ -74,7 +74,6 @@ struct GroupChatInfoView: View {
                 HStack {
                     Spacer()
                     searchButton()
-                    // TODO fix spacing of make disabled
                     if groupInfo.canAddMembers {
                         Spacer()
                         addMembersActionButton()
