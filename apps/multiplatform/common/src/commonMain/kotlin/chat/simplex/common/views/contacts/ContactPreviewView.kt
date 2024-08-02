@@ -90,7 +90,7 @@ fun ContactPreviewView(
                 contentDescription = null,
                 tint = MaterialTheme.colors.primary,
                 modifier = Modifier
-                    .size(21.dp)
+                    .size(23.dp)
             )
         }
 
