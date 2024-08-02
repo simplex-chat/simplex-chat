@@ -88,9 +88,9 @@ fun ContactPreviewView(
             Icon(
                 painterResource(MR.images.ic_check),
                 contentDescription = null,
-                tint = MaterialTheme.colors.secondary,
+                tint = MaterialTheme.colors.primary,
                 modifier = Modifier
-                    .size(17.dp)
+                    .size(21.dp)
             )
         }
 
@@ -98,9 +98,9 @@ fun ContactPreviewView(
             Icon(
                 painterResource(MR.images.ic_mail),
                 contentDescription = null,
-                tint = MaterialTheme.colors.secondary,
+                tint = MaterialTheme.colors.primary,
                 modifier = Modifier
-                    .size(17.dp)
+                    .size(21.dp)
             )
         }
 
