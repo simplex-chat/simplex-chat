@@ -256,9 +256,9 @@ struct GroupMemberInfoView: View {
                 Spacer()
                 knownDirectChatButton(chat)
                 Spacer()
-                audioCallButton(chat, contact, showAlert: { alert = .someAlert(alert: $0) })
+                AudioCallButton(chat: chat, contact: contact, showAlert: { alert = .someAlert(alert: $0) })
                 Spacer()
-                videoButton(chat, contact, showAlert: { alert = .someAlert(alert: $0) })
+                VideoButton(chat: chat, contact: contact, showAlert: { alert = .someAlert(alert: $0) })
                 Spacer()
             } else if groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
                 if let contactId = member.memberContactId {
