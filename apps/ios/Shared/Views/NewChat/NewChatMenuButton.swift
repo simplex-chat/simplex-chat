@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 enum NewChatMenuOption: Identifiable {
     case newContact

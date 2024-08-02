@@ -96,6 +96,7 @@ struct ChatListNavLink: View {
                             deleteContactDialog(
                                 chat,
                                 contact,
+                                dismissToChatList: false,
                                 showAlert: { alert = $0 },
                                 showActionSheet: { actionSheet = $0 },
                                 showSheetContent: { sheet = $0 }
@@ -129,6 +130,7 @@ struct ChatListNavLink: View {
                         deleteContactDialog(
                             chat,
                             contact,
+                            dismissToChatList: false,
                             showAlert: { alert = $0 },
                             showActionSheet: { actionSheet = $0 },
                             showSheetContent: { sheet = $0 }

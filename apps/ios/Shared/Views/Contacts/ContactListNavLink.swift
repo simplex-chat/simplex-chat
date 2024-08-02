@@ -9,40 +9,171 @@
 import SwiftUI
 import SimpleXChat
 
-struct ContactPreview: View {
-    @ObservedObject var chat: Chat
-    @EnvironmentObject var theme: AppTheme
-
-    var textColor: Color {
-        let contactType = chatContactType(chat: chat)
-        
-        switch contactType {
-        case .card, .request:
-            return .accentColor
-        case .recent:
-            if chat.chatInfo.incognito {
-                return .indigo
-            }
-        default:
-            return theme.colors.onBackground
-        }
-        
-        return theme.colors.onBackground
-    }
-
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text(chat.chatInfo.chatViewName)
-                .lineLimit(1)
-                .foregroundColor(textColor)
-        }
-    }
-}
-
 struct ContactListNavLink: View {
+    @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
-    
+    @State private var alert: SomeAlert? = nil
+    @State private var actionSheet: SomeActionSheet? = nil
+    @State private var sheet: SomeSheet<AnyView>? = nil
+
     var body: some View {
-        ContactPreview(chat: chat)
+        let contactType = chatContactType(chat: chat)
+
+        Group {
+            switch (chat.chatInfo) {
+            case let .direct(contact):
+                switch contactType {
+                case .recent:
+                    recentContactNavLink(contact)
+                case .chatDeleted:
+                    deletedChatNavLink(contact)
+                case .card:
+                    contactCardNavLink(contact)
+                default:
+                    EmptyView()
+                }
+            case let .contactRequest(contactRequest):
+                contactRequestPreview(contactRequest)
+            default:
+                EmptyView()
+            }
+        }
+        .alert(item: $alert) { $0.alert }
+        .actionSheet(item: $actionSheet) { $0.actionSheet }
+        .sheet(item: $sheet) {
+            if #available(iOS 16.0, *) {
+                $0.content
+                    .presentationDetents([.fraction(0.4)])
+            } else {
+                $0.content
+            }
+        }
+    }
+
+    // regular active contact
+    func recentContactNavLink(_ contact: Contact) -> some View {
+        contactPreview(contact, titleColor: theme.colors.onBackground)
+    }
+
+    func deletedChatNavLink(_ contact: Contact) -> some View {
+        contactPreview(contact, titleColor: theme.colors.onBackground)
+    }
+
+    func contactPreview(_ contact: Contact, titleColor: Color) -> some View {
+        HStack{
+            ProfileImage(imageStr: contact.image, size: 38)
+
+            previewTitle(contact, titleColor: titleColor)
+
+            Spacer()
+
+            HStack {
+                if chat.chatInfo.chatSettings?.favorite ?? false {
+                    Image(systemName: "star.fill")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 18, height: 18)
+                        .foregroundColor(.secondary.opacity(0.65))
+                }
+                if contact.contactConnIncognito {
+                    Image(systemName: "theatermasks")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 22, height: 22)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button {
+                deleteContactDialog(
+                    chat,
+                    contact,
+                    dismissToChatList: false,
+                    showAlert: { alert = $0 },
+                    showActionSheet: { actionSheet = $0 },
+                    showSheetContent: { sheet = $0 }
+                )
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+            .tint(.red)
+        }
+    }
+
+    @ViewBuilder private func previewTitle(_ contact: Contact, titleColor: Color) -> some View {
+        let t = Text(chat.chatInfo.chatViewName).foregroundColor(titleColor)
+        (
+            contact.verified == true
+            ? verifiedIcon + t
+            : t
+        )
+        .lineLimit(1)
+    }
+
+    private var verifiedIcon: Text {
+        (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+            .foregroundColor(.secondary)
+            .baselineOffset(1)
+            .kerning(-2)
+    }
+
+    func contactCardNavLink(_ contact: Contact) -> some View {
+        contactCardPreview(contact)
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button {
+                    deleteContactDialog(
+                        chat,
+                        contact,
+                        dismissToChatList: false,
+                        showAlert: { alert = $0 },
+                        showActionSheet: { actionSheet = $0 },
+                        showSheetContent: { sheet = $0 }
+                    )
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+                .tint(.red)
+            }
+    }
+
+    func contactCardPreview(_ contact: Contact) -> some View {
+        HStack{
+            ProfileImage(imageStr: contact.image, size: 38)
+
+            Text(chat.chatInfo.chatViewName)
+                .foregroundColor(.accentColor)
+                .lineLimit(1)
+
+            Spacer()
+
+            Image(systemName: "envelope")
+                .resizable()
+                .scaledToFill()
+                .frame(width: 14, height: 14)
+                .foregroundColor(.accentColor)
+        }
+    }
+
+    func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
+        contactRequestPreview(contactRequest)
+    }
+
+    func contactRequestPreview(_ contactRequest: UserContactRequest) -> some View {
+        HStack{
+            ProfileImage(imageStr: contactRequest.image, size: 38)
+
+            Text(chat.chatInfo.chatViewName)
+                .foregroundColor(.accentColor)
+                .lineLimit(1)
+
+            Spacer()
+
+            Image(systemName: "checkmark")
+                .resizable()
+                .scaledToFill()
+                .frame(width: 14, height: 14)
+                .foregroundColor(.accentColor)
+        }
     }
 }

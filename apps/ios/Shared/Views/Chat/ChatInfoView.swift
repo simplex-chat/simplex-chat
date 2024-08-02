@@ -520,6 +520,7 @@ struct ChatInfoView: View {
             deleteContactDialog(
                 chat,
                 contact,
+                dismissToChatList: true,
                 showAlert: { alert = .someAlert(alert: $0) },
                 showActionSheet: { actionSheet = $0 },
                 showSheetContent: { sheet = $0 }
@@ -943,22 +944,24 @@ func queueInfoAlert(_ info: String) -> Alert {
 func deleteContactDialog(
     _ chat: Chat,
     _ contact: Contact,
+    dismissToChatList: Bool,
     showAlert: @escaping (SomeAlert) -> Void,
     showActionSheet: @escaping (SomeActionSheet) -> Void,
     showSheetContent: @escaping (SomeSheet<AnyView>) -> Void
 ) {
     if contact.sndReady && contact.active && !contact.chatDeleted {
-        deleteContactOrConversationDialog(chat, contact, showAlert, showActionSheet, showSheetContent)
+        deleteContactOrConversationDialog(chat, contact, dismissToChatList, showAlert, showActionSheet, showSheetContent)
     } else if contact.sndReady && contact.active && contact.chatDeleted {
-        deleteContactWithoutConversation(chat, contact, showAlert, showActionSheet)
+        deleteContactWithoutConversation(chat, contact, dismissToChatList, showAlert, showActionSheet)
     } else { // !(contact.sndReady && contact.active)
-        deleteNotReadyContact(chat, contact, showAlert, showActionSheet)
+        deleteNotReadyContact(chat, contact, dismissToChatList, showAlert, showActionSheet)
     }
 }
 
 private func deleteContactOrConversationDialog(
     _ chat: Chat,
     _ contact: Contact,
+    _ dismissToChatList: Bool,
     _ showAlert: @escaping (SomeAlert) -> Void,
     _ showActionSheet: @escaping (SomeActionSheet) -> Void,
     _ showSheetContent: @escaping (SomeSheet<AnyView>) -> Void
@@ -968,7 +971,7 @@ private func deleteContactOrConversationDialog(
             title: Text("Delete contact?"),
             buttons: [
                 .destructive(Text("Only delete conversation")) {
-                    deleteContactMaybeErrorAlert(chat, contact, chatDeleteMode: .messages, showAlert)
+                    deleteContactMaybeErrorAlert(chat, contact, chatDeleteMode: .messages, dismissToChatList, showAlert)
                 },
                 .destructive(Text("Delete contact")) {
                     showSheetContent(SomeSheet(
@@ -976,6 +979,7 @@ private func deleteContactOrConversationDialog(
                             DeleteActiveContactDialog(
                                 chat: chat,
                                 contact: contact,
+                                dismissToChatList: dismissToChatList,
                                 showAlert: showAlert
                             )
                         ) },
@@ -993,23 +997,32 @@ private func deleteContactMaybeErrorAlert(
     _ chat: Chat,
     _ contact: Contact,
     chatDeleteMode: ChatDeleteMode,
+    _ dismissToChatList: Bool,
     _ showAlert: @escaping (SomeAlert) -> Void
 ) {
     Task {
         let alert_ = await deleteContactChat(chat, chatDeleteMode: chatDeleteMode)
         if let alert = alert_ {
-            showAlert(SomeAlert(alert: alert, id: "deleteContactMaybeErrorAlert"))
+            showAlert(SomeAlert(alert: alert, id: "deleteContactMaybeErrorAlert, error"))
         } else {
-            await MainActor.run {
-                ChatModel.shared.chatId = nil
-            }
-            DispatchQueue.main.async {
-                dismissAllSheets(animated: true) {
-                    if case .messages = chatDeleteMode, showDeleteConversationNoticeDefault.get() {
-                        AlertManager.shared.showAlert(deleteConversationNotice(contact))
-                    } else if chatDeleteMode.isEntity, showDeleteContactNoticeDefault.get() {
-                        AlertManager.shared.showAlert(deleteContactNotice(contact))
+            if dismissToChatList {
+                await MainActor.run {
+                    ChatModel.shared.chatId = nil
+                }
+                DispatchQueue.main.async {
+                    dismissAllSheets(animated: true) {
+                        if case .messages = chatDeleteMode, showDeleteConversationNoticeDefault.get() {
+                            AlertManager.shared.showAlert(deleteConversationNotice(contact))
+                        } else if chatDeleteMode.isEntity, showDeleteContactNoticeDefault.get() {
+                            AlertManager.shared.showAlert(deleteContactNotice(contact))
+                        }
                     }
+                }
+            } else {
+                if case .messages = chatDeleteMode, showDeleteConversationNoticeDefault.get() {
+                    showAlert(SomeAlert(alert: deleteConversationNotice(contact), id: "deleteContactMaybeErrorAlert, deleteConversationNotice"))
+                } else if chatDeleteMode.isEntity, showDeleteContactNoticeDefault.get() {
+                    showAlert(SomeAlert(alert: deleteContactNotice(contact), id: "deleteContactMaybeErrorAlert, deleteContactNotice"))
                 }
             }
         }
@@ -1051,9 +1064,11 @@ enum ContactDeleteMode {
 }
 
 struct DeleteActiveContactDialog: View {
+    @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
     var chat: Chat
     var contact: Contact
+    var dismissToChatList: Bool
     var showAlert: (SomeAlert) -> Void
     @State private var keepConversation = false
 
@@ -1064,13 +1079,15 @@ struct DeleteActiveContactDialog: View {
                     Toggle("Keep conversation", isOn: $keepConversation)
 
                     Button(role: .destructive) {
-                        deleteContactMaybeErrorAlert(chat, contact, chatDeleteMode: contactDeleteMode.toChatDeleteMode(notify: false), showAlert)
+                        dismiss()
+                        deleteContactMaybeErrorAlert(chat, contact, chatDeleteMode: contactDeleteMode.toChatDeleteMode(notify: false), dismissToChatList, showAlert)
                     } label: {
                         Text("Delete without notification")
                     }
 
                     Button(role: .destructive) {
-                        deleteContactMaybeErrorAlert(chat, contact, chatDeleteMode: contactDeleteMode.toChatDeleteMode(notify: true), showAlert)
+                        dismiss()
+                        deleteContactMaybeErrorAlert(chat, contact, chatDeleteMode: contactDeleteMode.toChatDeleteMode(notify: true), dismissToChatList, showAlert)
                     } label: {
                         Text("Delete and notify contact")
                     }
@@ -1091,6 +1108,7 @@ struct DeleteActiveContactDialog: View {
 private func deleteContactWithoutConversation(
     _ chat: Chat,
     _ contact: Contact,
+    _ dismissToChatList: Bool,
     _ showAlert: @escaping (SomeAlert) -> Void,
     _ showActionSheet: @escaping (SomeActionSheet) -> Void
 ) {
@@ -1099,10 +1117,10 @@ private func deleteContactWithoutConversation(
             title: Text("Confirm contact deletion?"),
             buttons: [
                 .destructive(Text("Delete and notify contact")) {
-                    deleteContactMaybeErrorAlert(chat, contact, chatDeleteMode: .full(notify: true), showAlert)
+                    deleteContactMaybeErrorAlert(chat, contact, chatDeleteMode: .full(notify: true), dismissToChatList, showAlert)
                 },
                 .destructive(Text("Delete without notification")) {
-                    deleteContactMaybeErrorAlert(chat, contact, chatDeleteMode: .full(notify: false), showAlert)
+                    deleteContactMaybeErrorAlert(chat, contact, chatDeleteMode: .full(notify: false), dismissToChatList, showAlert)
                 },
                 .cancel()
             ]
@@ -1114,6 +1132,7 @@ private func deleteContactWithoutConversation(
 private func deleteNotReadyContact(
     _ chat: Chat,
     _ contact: Contact,
+    _ dismissToChatList: Bool,
     _ showAlert: @escaping (SomeAlert) -> Void,
     _ showActionSheet: @escaping (SomeActionSheet) -> Void
 ) {
@@ -1122,7 +1141,7 @@ private func deleteNotReadyContact(
             title: Text("Confirm contact deletion?"),
             buttons: [
                 .destructive(Text("Confirm")) {
-                    deleteContactMaybeErrorAlert(chat, contact, chatDeleteMode: .full(notify: false), showAlert)
+                    deleteContactMaybeErrorAlert(chat, contact, chatDeleteMode: .full(notify: false), dismissToChatList, showAlert)
                 },
                 .cancel()
             ]
