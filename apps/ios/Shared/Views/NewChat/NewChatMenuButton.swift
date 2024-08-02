@@ -374,16 +374,34 @@ struct DeletedChats: View {
     
     var body: some View {
         List {
-            ContactsList(
-                baseContactTypes: $baseContactTypes,
+            ContactsListSearchBar(
                 searchMode: $searchMode,
-                searchText: $searchText,
                 searchFocussed: $searchFocussed,
+                searchText: $searchText,
                 searchShowingSimplexLink: $searchShowingSimplexLink,
                 searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
             )
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            .frame(maxWidth: .infinity)
+            
+            Section {
+                ContactsList(
+                    baseContactTypes: $baseContactTypes,
+                    searchMode: $searchMode,
+                    searchText: $searchText,
+                    searchFocussed: $searchFocussed,
+                    searchShowingSimplexLink: $searchShowingSimplexLink,
+                    searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+                )
+            }
         }
+        .navigationTitle("Deleted chats")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarHidden(searchMode)
         .modifier(ThemedBackground(grouped: true))
+
     }
 }
 
