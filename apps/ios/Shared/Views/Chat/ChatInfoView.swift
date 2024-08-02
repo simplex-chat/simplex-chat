@@ -149,6 +149,7 @@ struct ChatInfoView: View {
                 .listRowSeparator(.hidden)
                 
                 HStack {
+                    Spacer()
                     searchButton()
                     Spacer()
                     callButton(contact)
@@ -156,6 +157,7 @@ struct ChatInfoView: View {
                     videoButton(contact)
                     Spacer()
                     muteButton()
+                    Spacer()
                 }
                 .padding(.horizontal)
                 .listRowBackground(Color.clear)

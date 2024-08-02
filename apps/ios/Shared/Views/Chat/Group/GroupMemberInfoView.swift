@@ -85,15 +85,19 @@ struct GroupMemberInfoView: View {
                 
                 HStack {
                     if let contactId = member.memberContactId, let (chat, contact) = knownDirectChat(contactId) {
+                        Spacer()
                         knownDirectChatButton(chat)
                         Spacer()
                         callButton(contact)
                         Spacer()
                         videoButton(contact)
+                        Spacer()
                     } else if groupInfo.fullGroupPreferences.directMessages.on(for: groupInfo.membership) {
                         if let contactId = member.memberContactId {
+                            Spacer()
                             newDirectChatButton(contactId)
                         } else if member.activeConn?.peerChatVRange.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) ?? false {
+                            Spacer()
                             createMemberContactButton()
                         }
                         Spacer()
@@ -102,7 +106,9 @@ struct GroupMemberInfoView: View {
                         Spacer()
                         InfoViewActionButtonLayout(image: "video.fill", title: "video")
                             .disabled(true)
+                        Spacer()
                     } else { // no known contact chat && directMessages are off
+                        Spacer()
                         InfoViewActionButtonLayout(image: "message.fill", title: "message")
                             .disabled(true)
                         Spacer()
@@ -111,6 +117,7 @@ struct GroupMemberInfoView: View {
                         Spacer()
                         InfoViewActionButtonLayout(image: "video.fill", title: "video")
                             .disabled(true)
+                        Spacer()
                     }
                 }
                 .padding(.horizontal)
