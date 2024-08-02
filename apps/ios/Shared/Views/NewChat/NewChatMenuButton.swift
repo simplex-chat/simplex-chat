@@ -46,48 +46,75 @@ struct NewChatSheet: View {
     @EnvironmentObject var theme: AppTheme
     @State private var baseContactTypes: [ContactType] = [.card, .request, .recent]
     @EnvironmentObject var chatModel: ChatModel
-
+    @State private var searchMode = false
+    @FocusState var searchFocussed: Bool
+    @State private var searchText = ""
+    @State private var searchShowingSimplexLink = false
+    @State private var searchChatFilteredBySimplexLink: String? = nil
+    
     var body: some View {
         NavigationView {
             viewBody()
                 .navigationTitle("New Chat")
                 .navigationBarTitleDisplayMode(.inline)
+                .navigationBarHidden(searchMode)
                 .modifier(ThemedBackground(grouped: true))
         }
     }
     
     @ViewBuilder private func viewBody() -> some View {
         List {
-            Section {
-                Button {
-                    newChatMenuOption = .newContact
-                } label: {
-                    newChatActionButton("link.badge.plus", color: theme.colors.secondary) { Text("Add contact") }
-                }
-                Button {
-                    newChatMenuOption = .scanPaste
-                } label: {
-                    newChatActionButton("qrcode", color: theme.colors.secondary) { Text("Scan / Paste link") }
-                }
-                Button {
-                    newChatMenuOption = .newGroup
-                } label: {
-                    newChatActionButton("person.2", color: theme.colors.secondary) { Text("Create group") }
-                }
-            }
+            ContactsListSearchBar(
+                searchMode: $searchMode,
+                searchFocussed: $searchFocussed,
+                searchText: $searchText,
+                searchShowingSimplexLink: $searchShowingSimplexLink,
+                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+            )
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            .frame(maxWidth: .infinity)
             
-            if (!filterContactTypes(chats: chatModel.chats, contactTypes: [.chatDeleted]).isEmpty) {
+            if (searchText.isEmpty) {
                 Section {
-                    NavigationLink {
-                        DeletedChats()
+                    Button {
+                        newChatMenuOption = .newContact
                     } label: {
-                        newChatActionButton("folder", color: theme.colors.secondary) { Text("Deleted chats") }
+                        newChatActionButton("link.badge.plus", color: theme.colors.secondary) { Text("Add contact") }
+                    }
+                    Button {
+                        newChatMenuOption = .scanPaste
+                    } label: {
+                        newChatActionButton("qrcode", color: theme.colors.secondary) { Text("Scan / Paste link") }
+                    }
+                    Button {
+                        newChatMenuOption = .newGroup
+                    } label: {
+                        newChatActionButton("person.2", color: theme.colors.secondary) { Text("Create group") }
+                    }
+                }
+                
+                if (!filterContactTypes(chats: chatModel.chats, contactTypes: [.chatDeleted]).isEmpty) {
+                    Section {
+                        NavigationLink {
+                            DeletedChats()
+                        } label: {
+                            newChatActionButton("folder", color: theme.colors.secondary) { Text("Deleted chats") }
+                        }
                     }
                 }
             }
             
             Section(header: Text("Your contacts").textCase(.uppercase).foregroundColor(theme.colors.secondary)) {
-                ContactsList(baseContactTypes: $baseContactTypes)
+                ContactsList(
+                    baseContactTypes: $baseContactTypes,
+                    searchMode: $searchMode,
+                    searchText: $searchText,
+                    searchFocussed: $searchFocussed,
+                    searchShowingSimplexLink: $searchShowingSimplexLink,
+                    searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+                )
             }
         }
         .sheet(item: $newChatMenuOption) { opt in
@@ -137,10 +164,12 @@ private func filterContactTypes(chats: [Chat], contactTypes: [ContactType]) -> [
 struct ContactsList: View {
     @EnvironmentObject var chatModel: ChatModel
     @Binding var baseContactTypes: [ContactType]
-    @State private var searchText = ""
+    @Binding var searchMode: Bool
+    @Binding var searchText: String
+    @FocusState.Binding var searchFocussed: Bool
+    @Binding var searchShowingSimplexLink: Bool
+    @Binding var searchChatFilteredBySimplexLink: String?
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
-    @State private var searchShowingSimplexLink = false
-    @State private var searchChatFilteredBySimplexLink: String? = nil
     
     var body: some View {
         let contactTypes = contactTypesSearchTargets(baseContactTypes: baseContactTypes, searchEmpty: searchText.isEmpty)
@@ -226,12 +255,134 @@ struct ContactsList: View {
     }
 }
 
-struct DeletedChats: View {
-    @State private var baseContactTypes: [ContactType] = [.chatDeleted]
+struct ContactsListSearchBar: View {
+    @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
+    @Binding var searchMode: Bool
+    @FocusState.Binding var searchFocussed: Bool
+    @Binding var searchText: String
+    @Binding var searchShowingSimplexLink: Bool
+    @Binding var searchChatFilteredBySimplexLink: String?
+    @State private var ignoreSearchTextChange = false
+    @State private var alert: PlanAndConnectAlert?
+    @State private var sheet: PlanAndConnectActionSheet?
+    @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
+        VStack {
+            HStack {
+                HStack {
+                    Image(systemName: "magnifyingglass")
+                    TextField("Search or paste SimpleX link", text: $searchText)
+                        .foregroundColor(searchShowingSimplexLink ? theme.colors.secondary : theme.colors.onBackground)
+                        .disabled(searchShowingSimplexLink)
+                        .focused($searchFocussed)
+                        .frame(maxWidth: .infinity)
+                    if !searchText.isEmpty {
+                        Image(systemName: "xmark.circle.fill")
+                            .onTapGesture {
+                                searchText = ""
+                            }
+                    }
+                }
+                .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
+                .foregroundColor(theme.colors.secondary)
+                .background(Color(.tertiarySystemFill))
+                .cornerRadius(10.0)
+
+                if searchFocussed {
+                    Text("Cancel")
+                        .foregroundColor(theme.colors.primary)
+                        .onTapGesture {
+                            searchText = ""
+                            searchFocussed = false
+                        }
+                } else if m.chats.count > 0 {
+                    toggleFilterButton()
+                }
+            }
+            Divider()
+        }
+        .onChange(of: searchFocussed) { sf in
+            withAnimation { searchMode = sf }
+        }
+        .onChange(of: searchText) { t in
+            if ignoreSearchTextChange {
+                ignoreSearchTextChange = false
+            } else {
+                if let link = strHasSingleSimplexLink(t.trimmingCharacters(in: .whitespaces)) { // if SimpleX link is pasted, show connection dialogue
+                    searchFocussed = false
+                    if case let .simplexLink(linkType, _, smpHosts) = link.format {
+                        ignoreSearchTextChange = true
+                        searchText = simplexLinkText(linkType, smpHosts)
+                    }
+                    searchShowingSimplexLink = true
+                    searchChatFilteredBySimplexLink = nil
+                    connect(link.text)
+                } else {
+                    if t != "" { // if some other text is pasted, enter search mode
+                        searchFocussed = true
+                    }
+                    searchShowingSimplexLink = false
+                    searchChatFilteredBySimplexLink = nil
+                }
+            }
+        }
+        .alert(item: $alert) { a in
+            planAndConnectAlert(a, dismiss: true, cleanup: { searchText = "" })
+        }
+        .actionSheet(item: $sheet) { s in
+            planAndConnectActionSheet(s, dismiss: true, cleanup: { searchText = "" })
+        }
+    }
+
+    private func toggleFilterButton() -> some View {
+        ZStack {
+            Color.clear
+                .frame(width: 22, height: 22)
+            Image(systemName: showUnreadAndFavorites ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease")
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(showUnreadAndFavorites ? theme.colors.primary : theme.colors.secondary)
+                .frame(width: showUnreadAndFavorites ? 22 : 16, height: showUnreadAndFavorites ? 22 : 16)
+                .onTapGesture {
+                    showUnreadAndFavorites = !showUnreadAndFavorites
+                }
+        }
+    }
+
+    private func connect(_ link: String) {
+        planAndConnect(
+            link,
+            showAlert: { alert = $0 },
+            showActionSheet: { sheet = $0 },
+            dismiss: false,
+            incognito: nil,
+            filterKnownContact: { searchChatFilteredBySimplexLink = $0.id },
+            filterKnownGroup: { searchChatFilteredBySimplexLink = $0.id }
+        )
+    }
+}
+
+
+struct DeletedChats: View {
+    @State private var baseContactTypes: [ContactType] = [.chatDeleted]
+    @State private var searchMode = false
+    @FocusState var searchFocussed: Bool
+    @State private var searchText = ""
+    @State private var searchShowingSimplexLink = false
+    @State private var searchChatFilteredBySimplexLink: String? = nil
+    
+    var body: some View {
         List {
-            ContactsList(baseContactTypes: $baseContactTypes)
+            ContactsList(
+                baseContactTypes: $baseContactTypes,
+                searchMode: $searchMode,
+                searchText: $searchText,
+                searchFocussed: $searchFocussed,
+                searchShowingSimplexLink: $searchShowingSimplexLink,
+                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+            )
         }
         .modifier(ThemedBackground(grouped: true))
     }
