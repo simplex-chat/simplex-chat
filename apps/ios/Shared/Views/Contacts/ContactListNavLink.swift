@@ -61,6 +61,7 @@ struct ContactListNavLink: View {
             }
     }
 
+    // TODO fix - contact doesn't stay in chat list
     func deletedChatNavLink(_ contact: Contact) -> some View {
         contactPreview(contact, titleColor: theme.colors.onBackground)
             .onTapGesture {
@@ -69,9 +70,9 @@ struct ContactListNavLink: View {
                         var updatedContact = contact
                         updatedContact.chatDeleted = false
                         ChatModel.shared.updateContact(updatedContact)
-                    }
-                    dismissAllSheets(animated: true) {
-                        ChatModel.shared.chatId = contact.id
+                        dismissAllSheets(animated: true) {
+                            ChatModel.shared.chatId = contact.id
+                        }
                     }
                 }
             }
@@ -102,6 +103,7 @@ struct ContactListNavLink: View {
                 }
             }
         }
+        .background(theme.colors.background)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
                 deleteContactDialog(
@@ -192,6 +194,7 @@ struct ContactListNavLink: View {
                 .frame(width: 14, height: 14)
                 .foregroundColor(.accentColor)
         }
+        .background(theme.colors.background)
     }
 
     func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
@@ -238,5 +241,6 @@ struct ContactListNavLink: View {
                 .frame(width: 14, height: 14)
                 .foregroundColor(.accentColor)
         }
+        .background(theme.colors.background)
     }
 }
