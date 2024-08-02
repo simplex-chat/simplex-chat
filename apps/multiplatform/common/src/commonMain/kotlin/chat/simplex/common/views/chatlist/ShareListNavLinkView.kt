@@ -6,6 +6,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -21,7 +22,8 @@ fun ShareListNavLinkView(
   chatModel: ChatModel,
   isMediaOrFileAttachment: Boolean,
   isVoice: Boolean,
-  hasSimplexLink: Boolean
+  hasSimplexLink: Boolean,
+  oneHandUI: State<Boolean>
 ) {
   val stopped = chatModel.chatRunning.value == false
   val scope = rememberCoroutineScope()
@@ -29,7 +31,7 @@ fun ShareListNavLinkView(
     is ChatInfo.Direct -> {
       val voiceProhibited = isVoice && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
       ShareListNavLinkLayout(
-        chatLinkPreview = { SharePreviewView(chat, disabled = voiceProhibited) },
+        chatLinkPreview = { SharePreviewView(chat, disabled = voiceProhibited, oneHandUI = oneHandUI) },
         click = {
           if (voiceProhibited) {
             showForwardProhibitedByPrefAlert()
@@ -46,7 +48,7 @@ fun ShareListNavLinkView(
       val voiceProhibited = isVoice && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
       val prohibitedByPref = simplexLinkProhibited || fileProhibited || voiceProhibited
       ShareListNavLinkLayout(
-        chatLinkPreview = { SharePreviewView(chat, disabled = prohibitedByPref) },
+        chatLinkPreview = { SharePreviewView(chat, disabled = prohibitedByPref, oneHandUI = oneHandUI) },
         click = {
           if (prohibitedByPref) {
             showForwardProhibitedByPrefAlert()
@@ -59,7 +61,7 @@ fun ShareListNavLinkView(
     }
     is ChatInfo.Local ->
       ShareListNavLinkLayout(
-        chatLinkPreview = { SharePreviewView(chat, disabled = false) },
+        chatLinkPreview = { SharePreviewView(chat, disabled = false, oneHandUI = oneHandUI) },
         click = { scope.launch { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) } },
         stopped
       )
@@ -78,7 +80,7 @@ private fun showForwardProhibitedByPrefAlert() {
 private fun ShareListNavLinkLayout(
   chatLinkPreview: @Composable () -> Unit,
   click: () -> Unit,
-  stopped: Boolean
+  stopped: Boolean,
 ) {
   SectionItemView(minHeight = 50.dp, click = click, disabled = stopped) {
     chatLinkPreview()
@@ -87,9 +89,15 @@ private fun ShareListNavLinkLayout(
 }
 
 @Composable
-private fun SharePreviewView(chat: Chat, disabled: Boolean) {
+private fun SharePreviewView(chat: Chat, disabled: Boolean, oneHandUI: State<Boolean>) {
+  var modifier = Modifier.fillMaxSize()
+
+  if (oneHandUI.value) {
+    modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
+  }
+
   Row(
-    Modifier.fillMaxSize(),
+    modifier,
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {

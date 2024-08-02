@@ -336,15 +336,7 @@ final class ChatModel: ObservableObject {
                 chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount + 1
                 increaseUnreadCounter(user: currentUser!)
             }
-            if i > 0 {
-                if chatId == nil {
-                    withAnimation { popChat_(i) }
-                } else if chatId == cInfo.id  {
-                    chatToTop = cInfo.id
-                } else {
-                    popChat_(i)
-                }
-            }
+            popChatCollector.addChat(cInfo.id)
         } else {
             addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
         }
@@ -572,14 +564,13 @@ final class ChatModel: ObservableObject {
     func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
         if chatId == cInfo.id,
            let itemIndex = getChatItemIndex(cItem),
-           let chatIndex = getChatIndex(cInfo.id),
            im.reversedChatItems[itemIndex].isRcvNew {
             await MainActor.run {
                 withTransaction(Transaction()) {
                     // update current chat
                     markChatItemRead_(itemIndex)
                     // update preview
-                    unreadCollector.decreaseUnreadCounter(chatIndex)
+                    unreadCollector.decreaseUnreadCounter(cInfo.id)
                 }
             }
         }
@@ -588,26 +579,59 @@ final class ChatModel: ObservableObject {
     private let unreadCollector = UnreadCollector()
 
     class UnreadCollector {
-        private let subject = PassthroughSubject<Int, Never>()
+        private let subject = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
-        private var dictionary = Dictionary<Int, Int>()
+        private var unreadCounts: [ChatId: Int] = [:]
 
         init() {
             subject
                 .debounce(for: 1, scheduler: DispatchQueue.main)
-                .sink { _ in
-                    self.dictionary.forEach { key, value in
-                        ChatModel.shared.decreaseUnreadCounter(key, by: value)
+                .sink {
+                    let m = ChatModel.shared
+                    for (chatId, count) in self.unreadCounts {
+                        if let i = m.getChatIndex(chatId) {
+                            m.decreaseUnreadCounter(i, by: count)
+                        }
                     }
-                    self.dictionary = Dictionary<Int, Int>()
+                    self.unreadCounts = [:]
                 }
                 .store(in: &bag)
         }
         
         // Only call from main thread
-        func decreaseUnreadCounter(_ chatIndex: Int) {
-            dictionary[chatIndex] = (dictionary[chatIndex] ?? 0) + 1
-            subject.send(chatIndex)
+        func decreaseUnreadCounter(_ chatId: ChatId) {
+            unreadCounts[chatId] = (unreadCounts[chatId] ?? 0) + 1
+            subject.send()
+        }
+    }
+
+    let popChatCollector = PopChatCollector()
+    
+    class PopChatCollector {
+        private let subject = PassthroughSubject<Void, Never>()
+        private var bag = Set<AnyCancellable>()
+
+        init() {
+            subject
+                .throttle(for: 2, scheduler: DispatchQueue.main, latest: true)
+                .sink {
+                    let m = ChatModel.shared
+                    if m.chatId == nil {
+                        withAnimation {
+                            m.chats = m.chats.sorted(using: KeyPathComparator(\.popTs, order: .reverse))
+                        }
+                    } else {
+                        m.chats = m.chats.sorted(using: KeyPathComparator(\.popTs, order: .reverse))
+                    }
+                }
+                .store(in: &bag)
+        }
+        
+        func addChat(_ chatId: ChatId) {
+            if let index = ChatModel.shared.getChatIndex(chatId) {
+                ChatModel.shared.chats[index].popTs = CFAbsoluteTimeGetCurrent()
+                subject.send()
+            }
         }
     }
 
@@ -825,6 +849,7 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
     @Published var chatItems: [ChatItem]
     @Published var chatStats: ChatStats
     var created = Date.now
+    var popTs: CFAbsoluteTime?
 
     init(_ cData: ChatData) {
         self.chatInfo = cData.chatInfo

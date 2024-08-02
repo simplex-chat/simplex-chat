@@ -265,10 +265,10 @@ fun GroupMemberInfoLayout(
   verifyClicked: () -> Unit,
 ) {
   val cStats = connStats.value
-  fun knownDirectChat(contactId: Long): Chat? {
+  fun knownDirectChat(contactId: Long): Pair<Chat, Contact>? {
     val chat = getContactChat(contactId)
     return if (chat != null && chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.directOrUsed) {
-      chat
+      chat to chat.chatInfo.contact
     } else {
       null
     }
@@ -328,17 +328,53 @@ fun GroupMemberInfoLayout(
 
     val contactId = member.memberContactId
 
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .padding(horizontal = DEFAULT_PADDING),
+      horizontalArrangement = Arrangement.Center,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      val knownChat = if (contactId != null) knownDirectChat(contactId) else null
+      if (knownChat != null) {
+        val (chat, contact) = knownChat
+        OpenChatButton(onClick = { openDirectChat(contact.contactId) })
+        Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
+        AudioCallButton(chat, contact)
+        Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
+        VideoButton(chat, contact)
+      } else if (groupInfo.fullGroupPreferences.directMessages.on(groupInfo.membership)) {
+        if (contactId != null) {
+          OpenChatButton(onClick = { openDirectChat(contactId) }) // legacy - only relevant for direct contacts created when joining group
+        } else {
+          OpenChatButton(onClick = { createMemberContact() })
+        }
+        Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
+        InfoViewActionButton(painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, onClick = {
+          showSendMessageToEnableCallsAlert()
+        })
+        Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
+        InfoViewActionButton(painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = false, disabledLook = true, onClick = {
+          showSendMessageToEnableCallsAlert()
+        })
+      } else { // no known contact chat && directMessages are off
+        InfoViewActionButton(painterResource(MR.images.ic_chat_bubble), generalGetString(MR.strings.info_view_message_button), disabled = false, disabledLook = true, onClick = {
+          showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_send_message_to_member_alert_title))
+        })
+        Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
+        InfoViewActionButton(painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, onClick = {
+          showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title))
+        })
+        Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
+        InfoViewActionButton(painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = false, disabledLook = true, onClick = {
+          showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title))
+        })
+      }
+    }
+    SectionSpacer()
+
     if (member.memberActive) {
       SectionView {
-        if (contactId != null && knownDirectChat(contactId) != null) {
-          OpenChatButton(onClick = { openDirectChat(contactId) })
-        } else if (groupInfo.fullGroupPreferences.directMessages.on(groupInfo.membership)) {
-          if (contactId != null) {
-            OpenChatButton(onClick = { openDirectChat(contactId) })
-          } else if (member.activeConn?.peerChatVRange?.isCompatibleRange(CREATE_MEMBER_CONTACT_VRANGE) == true) {
-            OpenChatButton(onClick = { createMemberContact() })
-          }
-        }
         if (connectionCode != null) {
           VerifyCodeButton(member.verified, verifyClicked)
         }
@@ -439,6 +475,20 @@ fun GroupMemberInfoLayout(
   }
 }
 
+private fun showSendMessageToEnableCallsAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.cant_call_member_alert_title),
+    text = generalGetString(MR.strings.cant_call_member_send_message_alert_text)
+  )
+}
+
+private fun showDirectMessagesProhibitedAlert(title: String) {
+  AlertManager.shared.showAlertMsg(
+    title = title,
+    text = generalGetString(MR.strings.direct_messages_are_prohibited_in_chat)
+  )
+}
+
 @Composable
 fun GroupMemberInfoHeader(member: GroupMember) {
   Column(
@@ -532,12 +582,12 @@ fun RemoveMemberButton(onClick: () -> Unit) {
 
 @Composable
 fun OpenChatButton(onClick: () -> Unit) {
-  SettingsActionItem(
-    painterResource(MR.images.ic_chat),
-    stringResource(MR.strings.button_send_direct_message),
-    click = onClick,
-    textColor = MaterialTheme.colors.primary,
-    iconColor = MaterialTheme.colors.primary,
+  InfoViewActionButton(
+    icon = painterResource(MR.images.ic_chat_bubble),
+    title = generalGetString(MR.strings.info_view_message_button),
+    disabled = false,
+    disabledLook = false,
+    onClick = onClick
   )
 }
 

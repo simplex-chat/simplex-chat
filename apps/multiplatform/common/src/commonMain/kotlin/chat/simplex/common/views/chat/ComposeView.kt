@@ -836,7 +836,7 @@ fun ComposeView(
     chatModel.sharedContent.value = null
   }
 
-  val userCanSend = rememberUpdatedState(chat.userCanSend)
+  val userCanSend = rememberUpdatedState(chat.chatInfo.userCanSend)
   val sendMsgEnabled = rememberUpdatedState(chat.chatInfo.sendMsgEnabled)
   val userIsObserver = rememberUpdatedState(chat.userIsObserver)
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
@@ -936,8 +936,8 @@ fun ComposeView(
           }
       }
 
-      LaunchedEffect(rememberUpdatedState(chat.userCanSend).value) {
-        if (!chat.userCanSend) {
+      LaunchedEffect(rememberUpdatedState(chat.chatInfo.userCanSend).value) {
+        if (!chat.chatInfo.userCanSend) {
           clearCurrentDraft()
           clearState()
         }

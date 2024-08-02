@@ -12,18 +12,23 @@ import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.*
+import chat.simplex.common.views.call.CallMediaType
+import chat.simplex.common.views.chatlist.*
 import androidx.compose.ui.text.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -55,6 +60,7 @@ fun ChatInfoView(
   localAlias: String,
   connectionCode: String?,
   close: () -> Unit,
+  onSearchClicked: () -> Unit
 ) {
   BackHandler(onBack = close)
   val contact = rememberUpdatedState(contact).value
@@ -75,7 +81,7 @@ fun ChatInfoView(
       sendReceipts = sendReceipts,
       setSendReceipts = { sendRcpts ->
         val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
-        updateChatSettings(chat, chatSettings, chatModel)
+        updateChatSettings(chat.remoteHostId, chat.chatInfo, chatSettings, chatModel)
         sendReceipts.value = sendRcpts
       },
       connStats = connStats,
@@ -177,7 +183,9 @@ fun ChatInfoView(
             )
           }
         }
-      }
+      },
+      close = close,
+      onSearchClicked = onSearchClicked
     )
   }
 }
@@ -212,34 +220,42 @@ sealed class SendReceipts {
 
 fun deleteContactDialog(chat: Chat, chatModel: ChatModel, close: (() -> Unit)? = null) {
   val chatInfo = chat.chatInfo
+  if (chatInfo is ChatInfo.Direct) {
+    val contact = chatInfo.contact
+    when {
+      contact.sndReady && contact.active && !chatInfo.chatDeleted ->
+        deleteContactOrConversationDialog(chat, contact, chatModel, close)
+
+      contact.sndReady && contact.active && chatInfo.chatDeleted ->
+        deleteContactWithoutConversation(chat, chatModel, close)
+
+      else -> // !(contact.sndReady && contact.active)
+        deleteNotReadyContact(chat, chatModel, close)
+    }
+  }
+}
+
+private fun deleteContactOrConversationDialog(chat: Chat, contact: Contact, chatModel: ChatModel, close: (() -> Unit)?) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.delete_contact_question),
-    text = AnnotatedString(generalGetString(MR.strings.delete_contact_all_messages_deleted_cannot_undo_warning)),
     buttons = {
       Column {
-        if (chatInfo is ChatInfo.Direct && chatInfo.contact.sndReady && chatInfo.contact.active) {
-          // Delete and notify contact
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            deleteContact(chat, chatModel, close, notify = true)
-          }) {
-            Text(generalGetString(MR.strings.delete_and_notify_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+        // Only delete conversation
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          deleteContact(chat, chatModel, close, chatDeleteMode = ChatDeleteMode.Messages())
+          if (chatModel.controller.appPrefs.showDeleteConversationNotice.get()) {
+            showDeleteConversationNotice(contact)
           }
-          // Delete
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            deleteContact(chat, chatModel, close, notify = false)
-          }) {
-            Text(generalGetString(MR.strings.delete_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
-          }
-        } else {
-          // Delete
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            deleteContact(chat, chatModel, close)
-          }) {
-            Text(generalGetString(MR.strings.delete_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
-          }
+        }) {
+          Text(generalGetString(MR.strings.only_delete_conversation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+        }
+        // Delete contact
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          deleteActiveContactDialog(chat, contact, chatModel, close)
+        }) {
+          Text(generalGetString(MR.strings.button_delete_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
         }
         // Cancel
         SectionItemView({
@@ -252,14 +268,206 @@ fun deleteContactDialog(chat: Chat, chatModel: ChatModel, close: (() -> Unit)? =
   )
 }
 
-fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, notify: Boolean? = null) {
+private fun showDeleteConversationNotice(contact: Contact) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.conversation_deleted),
+    text = String.format(generalGetString(MR.strings.you_can_still_send_messages_to_contact), contact.displayName),
+    confirmText = generalGetString(MR.strings.ok),
+    dismissText = generalGetString(MR.strings.dont_show_again),
+    onDismiss = {
+      chatModel.controller.appPrefs.showDeleteConversationNotice.set(false)
+    },
+  )
+}
+
+sealed class ContactDeleteMode {
+  class Full: ContactDeleteMode()
+  class Entity: ContactDeleteMode()
+
+  fun toChatDeleteMode(notify: Boolean): ChatDeleteMode =
+    when (this) {
+      is Full -> ChatDeleteMode.Full(notify)
+      is Entity -> ChatDeleteMode.Entity(notify)
+    }
+}
+
+private fun deleteActiveContactDialog(chat: Chat, contact: Contact, chatModel: ChatModel, close: (() -> Unit)? = null) {
+  val contactDeleteMode = mutableStateOf<ContactDeleteMode>(ContactDeleteMode.Full())
+
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.delete_contact_question),
+    text = generalGetString(MR.strings.delete_contact_cannot_undo_warning),
+    buttons = {
+      Column {
+        // Keep conversation toggle
+        SectionItemView {
+          Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+          ) {
+            Text(stringResource(MR.strings.keep_conversation))
+            Spacer(Modifier.width(DEFAULT_PADDING))
+            DefaultSwitch(
+              checked = contactDeleteMode.value is ContactDeleteMode.Entity,
+              onCheckedChange = {
+                contactDeleteMode.value =
+                  if (it) ContactDeleteMode.Entity() else ContactDeleteMode.Full()
+              },
+            )
+          }
+        }
+        // Delete without notification
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          deleteContact(chat, chatModel, close, chatDeleteMode = contactDeleteMode.value.toChatDeleteMode(notify = false))
+          if (contactDeleteMode.value is ContactDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
+            showDeleteContactNotice(contact)
+          }
+        }) {
+          Text(generalGetString(MR.strings.delete_without_notification), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+        }
+        // Delete contact and notify
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          deleteContact(chat, chatModel, close, chatDeleteMode = contactDeleteMode.value.toChatDeleteMode(notify = true))
+          if (contactDeleteMode.value is ContactDeleteMode.Entity && chatModel.controller.appPrefs.showDeleteContactNotice.get()) {
+            showDeleteContactNotice(contact)
+          }
+        }) {
+          Text(generalGetString(MR.strings.delete_and_notify_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+        }
+        // Cancel
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+    }
+  )
+}
+
+private fun deleteContactWithoutConversation(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.confirm_delete_contact_question),
+    text = generalGetString(MR.strings.delete_contact_cannot_undo_warning),
+    buttons = {
+      Column {
+        // Delete and notify contact
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          deleteContact(
+            chat,
+            chatModel,
+            close,
+            chatDeleteMode = ContactDeleteMode.Full().toChatDeleteMode(notify = true)
+          )
+        }) {
+          Text(
+            generalGetString(MR.strings.delete_and_notify_contact),
+            Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colors.error
+          )
+        }
+        // Delete without notification
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          deleteContact(
+            chat,
+            chatModel,
+            close,
+            chatDeleteMode = ContactDeleteMode.Full().toChatDeleteMode(notify = false)
+          )
+        }) {
+          Text(
+            generalGetString(MR.strings.delete_without_notification),
+            Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colors.error
+          )
+        }
+      }
+      // Cancel
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+      }) {
+        Text(
+          stringResource(MR.strings.cancel_verb),
+          Modifier.fillMaxWidth(),
+          textAlign = TextAlign.Center,
+          color = MaterialTheme.colors.primary
+        )
+      }
+    }
+  )
+}
+
+private fun deleteNotReadyContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.confirm_delete_contact_question),
+    text = generalGetString(MR.strings.delete_contact_cannot_undo_warning),
+    buttons = {
+      // Confirm
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+        deleteContact(
+          chat,
+          chatModel,
+          close,
+          chatDeleteMode = ContactDeleteMode.Full().toChatDeleteMode(notify = false)
+        )
+      }) {
+        Text(
+          generalGetString(MR.strings.confirm_verb),
+          Modifier.fillMaxWidth(),
+          textAlign = TextAlign.Center,
+          color = MaterialTheme.colors.error
+        )
+      }
+      // Cancel
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+      }) {
+        Text(
+          stringResource(MR.strings.cancel_verb),
+          Modifier.fillMaxWidth(),
+          textAlign = TextAlign.Center,
+          color = MaterialTheme.colors.primary
+        )
+      }
+    }
+  )
+}
+
+private fun showDeleteContactNotice(contact: Contact) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.contact_deleted),
+    text = String.format(generalGetString(MR.strings.you_can_still_view_conversation_with_contact), contact.displayName),
+    confirmText = generalGetString(MR.strings.ok),
+    dismissText = generalGetString(MR.strings.dont_show_again),
+    onDismiss = {
+      chatModel.controller.appPrefs.showDeleteContactNotice.set(false)
+    },
+  )
+}
+
+fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, chatDeleteMode: ChatDeleteMode = ChatDeleteMode.Full(notify = true)) {
   val chatInfo = chat.chatInfo
   withBGApi {
     val chatRh = chat.remoteHostId
-    val r = chatModel.controller.apiDeleteChat(chatRh, chatInfo.chatType, chatInfo.apiId, notify)
-    if (r) {
+    val ct = chatModel.controller.apiDeleteContact(chatRh, chatInfo.apiId, chatDeleteMode)
+    if (ct != null) {
       withChats {
-        removeChat(chatRh, chatInfo.id)
+        when (chatDeleteMode) {
+          is ChatDeleteMode.Full ->
+            removeChat(chatRh, chatInfo.id)
+          is ChatDeleteMode.Entity ->
+            updateContact(chatRh, ct)
+          is ChatDeleteMode.Messages ->
+            clearChat(chatRh, ChatInfo.Direct(ct))
+        }
       }
       if (chatModel.chatId.value == chatInfo.id) {
         chatModel.chatId.value = null
@@ -313,6 +521,8 @@ fun ChatInfoLayout(
   syncContactConnection: () -> Unit,
   syncContactConnectionForce: () -> Unit,
   verifyClicked: () -> Unit,
+  close: () -> Unit,
+  onSearchClicked: () -> Unit
 ) {
   val cStats = connStats.value
   val scrollState = rememberScrollState()
@@ -332,7 +542,27 @@ fun ChatInfoLayout(
     }
 
     LocalAliasEditor(chat.id, localAlias, updateValue = onLocalAliasChanged)
+
     SectionSpacer()
+
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .padding(horizontal = DEFAULT_PADDING),
+      horizontalArrangement = Arrangement.Center,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      SearchButton(chat, contact, close, onSearchClicked)
+      Spacer(Modifier.weight(1f))
+      AudioCallButton(chat, contact)
+      Spacer(Modifier.weight(1f))
+      VideoButton(chat, contact)
+      Spacer(Modifier.weight(1f))
+      MuteButton(chat, contact)
+    }
+
+    SectionSpacer()
+
     if (customUserProfile != null) {
       SectionView(generalGetString(MR.strings.incognito).uppercase()) {
         SectionItemViewSpaceBetween {
@@ -545,6 +775,174 @@ fun LocalAliasEditor(
   }
   DisposableEffect(chatId) {
     onDispose { if (updatedValueAtLeastOnce) updateValue(state.value.text) } // just in case snapshotFlow will be canceled when user presses Back too fast
+  }
+}
+
+@Composable
+fun SearchButton(chat: Chat, contact: Contact, close: () -> Unit, onSearchClicked: () -> Unit) {
+  val disabled = !contact.ready || chat.chatItems.isEmpty()
+  InfoViewActionButton(
+    icon = painterResource(MR.images.ic_search),
+    title = generalGetString(MR.strings.info_view_search_button),
+    disabled = disabled,
+    disabledLook = disabled,
+    onClick = {
+      if (appPlatform.isAndroid) {
+        close.invoke()
+      }
+      onSearchClicked()
+    }
+  )
+}
+
+@Composable
+fun MuteButton(chat: Chat, contact: Contact) {
+  val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
+  val disabled = !contact.ready || !contact.active
+
+  InfoViewActionButton(
+    icon =  if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
+    title = if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
+    disabled = disabled,
+    disabledLook = disabled,
+    onClick = {
+      toggleNotifications(chat.remoteHostId, chat.chatInfo, !ntfsEnabled.value, chatModel, ntfsEnabled)
+    }
+  )
+}
+
+@Composable
+fun AudioCallButton(chat: Chat, contact: Contact) {
+  CallButton(
+    chat,
+    contact,
+    icon = painterResource(MR.images.ic_call),
+    title = generalGetString(MR.strings.info_view_call_button),
+    mediaType = CallMediaType.Audio
+  )
+}
+
+@Composable
+fun VideoButton(chat: Chat, contact: Contact) {
+  CallButton(
+    chat,
+    contact,
+    icon = painterResource(MR.images.ic_videocam),
+    title = generalGetString(MR.strings.info_view_video_button),
+    mediaType = CallMediaType.Video
+  )
+}
+
+@Composable
+fun CallButton(chat: Chat, contact: Contact, icon: Painter, title: String, mediaType: CallMediaType) {
+  val canCall = contact.ready && contact.active && contact.mergedPreferences.calls.enabled.forUser && chatModel.activeCall.value == null
+  val needToAllowCallsToContact = remember(chat.chatInfo) {
+    chat.chatInfo is ChatInfo.Direct && with(chat.chatInfo.contact.mergedPreferences.calls) {
+      ((userPreference as? ContactUserPref.User)?.preference?.allow == FeatureAllowed.NO || (userPreference as? ContactUserPref.Contact)?.preference?.allow == FeatureAllowed.NO) &&
+          contactPreference.allow == FeatureAllowed.YES
+    }
+  }
+  val allowedCallsByPrefs = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.Calls) }
+
+  InfoViewActionButton(
+    icon = icon,
+    title = title,
+    disabled = chatModel.activeCall.value != null,
+    disabledLook = !canCall,
+    onClick =
+      when {
+        canCall -> { { startChatCall(chat.remoteHostId, chat.chatInfo, mediaType) } }
+        contact.nextSendGrpInv -> { { showCantCallContactSendMessageAlert() } }
+        !contact.active -> { { showCantCallContactDeletedAlert() } }
+        !contact.ready -> { { showCantCallContactConnectingAlert() } }
+        needToAllowCallsToContact -> { { showNeedToAllowCallsAlert(onConfirm = { allowCallsToContact(chat) }) } }
+        !allowedCallsByPrefs -> { { showCallsProhibitedAlert() }}
+        else -> { { AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.cant_call_contact_alert_title)) } }
+      }
+  )
+}
+
+private fun showCantCallContactSendMessageAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.cant_call_contact_alert_title),
+    text = generalGetString(MR.strings.cant_call_member_send_message_alert_text)
+  )
+}
+
+private fun showCantCallContactConnectingAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.cant_call_contact_alert_title),
+    text = generalGetString(MR.strings.cant_call_contact_connecting_wait_alert_text)
+  )
+}
+
+private fun showCantCallContactDeletedAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.cant_call_contact_alert_title),
+    text = generalGetString(MR.strings.cant_call_contact_deleted_alert_text)
+  )
+}
+
+private fun showNeedToAllowCallsAlert(onConfirm: () -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.allow_calls_question),
+    text = generalGetString(MR.strings.you_need_to_allow_calls),
+    confirmText = generalGetString(MR.strings.allow_verb),
+    dismissText = generalGetString(MR.strings.cancel_verb),
+    onConfirm = onConfirm,
+  )
+}
+
+private fun allowCallsToContact(chat: Chat) {
+  val contact = (chat.chatInfo as ChatInfo.Direct?)?.contact ?: return
+  withBGApi {
+    chatModel.controller.allowFeatureToContact(chat.remoteHostId, contact, ChatFeature.Calls)
+  }
+}
+
+private fun showCallsProhibitedAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.calls_prohibited_alert_title),
+    text = generalGetString(MR.strings.calls_prohibited_ask_to_enable_calls_alert_text)
+  )
+}
+
+// for ChatInfoView (it has most buttons - 4) we use Spacer(Modifier.weight(1f)) to fit,
+// for GroupChat And GroupMemberInfoViews (2 to 3 buttons) we use this as approximately equal to spacing in ChatInfoView
+val INFO_VIEW_BUTTONS_PADDING = 36.dp
+
+@Composable
+fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, disabledLook: Boolean, onClick: () -> Unit) {
+  Column(
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.Center
+  ) {
+    IconButton(
+      onClick = onClick,
+      enabled = !disabled
+    ) {
+      Box(
+        modifier = Modifier
+          .background(
+            if (disabledLook) MaterialTheme.colors.secondaryVariant else MaterialTheme.colors.primary,
+            shape = CircleShape
+          )
+          .padding(16.dp)
+      ) {
+        Icon(
+          icon,
+          contentDescription = null,
+          Modifier.size(24.dp * fontSizeSqrtMultiplier),
+          tint = if (disabledLook) MaterialTheme.colors.secondary else MaterialTheme.colors.onPrimary
+        )
+      }
+    }
+    Text(
+      title.capitalize(Locale.current),
+      style = MaterialTheme.typography.subtitle2.copy(fontWeight = FontWeight.Normal),
+      color = MaterialTheme.colors.secondary,
+      modifier = Modifier.padding(top = DEFAULT_SPACE_AFTER_ICON)
+    )
   }
 }
 
@@ -864,6 +1262,8 @@ fun PreviewChatInfoLayout() {
       syncContactConnection = {},
       syncContactConnectionForce = {},
       verifyClicked = {},
+      close = {},
+      onSearchClicked = {}
     )
   }
 }
