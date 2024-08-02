@@ -69,7 +69,7 @@
       </trans-unit>
       <trans-unit id="%@ is not verified" xml:space="preserve" approved="no">
         <source>%@ is not verified</source>
-        <target state="translated">%@ لم يتم التحقق منها</target>
+        <target state="translated">%@ لم يتم التحقق منه</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is verified" xml:space="preserve" approved="no">
@@ -359,24 +359,29 @@
         <source>Accept requests</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add preset servers" xml:space="preserve">
+      <trans-unit id="Add preset servers" xml:space="preserve" approved="no">
         <source>Add preset servers</source>
+        <target state="translated">إضافة خوادم محددة مسبقا</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add profile" xml:space="preserve">
+      <trans-unit id="Add profile" xml:space="preserve" approved="no">
         <source>Add profile</source>
+        <target state="translated">إضافة الملف الشخصي</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add servers by scanning QR codes." xml:space="preserve">
+      <trans-unit id="Add servers by scanning QR codes." xml:space="preserve" approved="no">
         <source>Add servers by scanning QR codes.</source>
+        <target state="translated">إضافة خوادم عن طريق مسح رموز QR.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add server" xml:space="preserve">
+      <trans-unit id="Add server" xml:space="preserve" approved="no">
         <source>Add server</source>
+        <target state="translated">أضف الخادم</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add to another device" xml:space="preserve">
+      <trans-unit id="Add to another device" xml:space="preserve" approved="no">
         <source>Add to another device</source>
+        <target state="translated">أضف إلى جهاز آخر</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
@@ -3836,6 +3841,50 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">- رسائل صوتية تصل مدتها إلى 5 دقائق.
 - وقت مخصص للاختفاء.
 - تعديل السجل.</target>
+      </trans-unit>
+      <trans-unit id="Add welcome message" xml:space="preserve" approved="no">
+        <source>Add welcome message</source>
+        <target state="translated">إضافة رسالة ترحيب</target>
+      </trans-unit>
+      <trans-unit id="Abort changing address?" xml:space="preserve" approved="no">
+        <source>Abort changing address?</source>
+        <target state="translated">هل تريد إلغاء تغيير العنوان؟</target>
+      </trans-unit>
+      <trans-unit id="Add contact" xml:space="preserve" approved="no">
+        <source>Add contact</source>
+        <target state="translated">إضافة جهة اتصال</target>
+      </trans-unit>
+      <trans-unit id="Abort" xml:space="preserve" approved="no">
+        <source>Abort</source>
+        <target state="translated">إحباط</target>
+      </trans-unit>
+      <trans-unit id="About SimpleX address" xml:space="preserve" approved="no">
+        <source>About SimpleX address</source>
+        <target state="translated">حول عنوان SimpleX</target>
+      </trans-unit>
+      <trans-unit id="Accept connection request?" xml:space="preserve" approved="no">
+        <source>Accept connection request?</source>
+        <target state="translated">قبول طلب الاتصال؟</target>
+      </trans-unit>
+      <trans-unit id="Acknowledged" xml:space="preserve" approved="no">
+        <source>Acknowledged</source>
+        <target state="translated">معترف به</target>
+      </trans-unit>
+      <trans-unit id="Acknowledgement errors" xml:space="preserve" approved="no">
+        <source>Acknowledgement errors</source>
+        <target state="translated">أخطاء الإقرار</target>
+      </trans-unit>
+      <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve" approved="no">
+        <source>Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</source>
+        <target state="translated">أضف عنوانًا إلى ملفكم الشخصي، حتى تتمكن جهات الاتصال الخاصة بكم من مشاركته مع أشخاص اخرين. سيتم إرسال تحديث الملف الشخصي إلى جهات الاتصال الخاصة بكم.</target>
+      </trans-unit>
+      <trans-unit id="Abort changing address" xml:space="preserve" approved="no">
+        <source>Abort changing address</source>
+        <target state="translated">إحباط تغيير العنوان</target>
+      </trans-unit>
+      <trans-unit id="Active connections" xml:space="preserve" approved="no">
+        <source>Active connections</source>
+        <target state="translated">اتصالات نشطة</target>
       </trans-unit>
     </body>
   </file>
