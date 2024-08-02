@@ -415,17 +415,17 @@ object ChatModel {
       }
     }
 
-    fun markChatItemsRead(chat: Chat, range: CC.ItemRange? = null, unreadCountAfter: Int? = null) {
-      val cInfo = chat.chatInfo
-      val markedRead = markItemsReadInCurrentChat(chat, range)
+    fun markChatItemsRead(remoteHostId: Long?, chatInfo: ChatInfo, range: CC.ItemRange? = null, unreadCountAfter: Int? = null) {
+      val cInfo = chatInfo
+      val markedRead = markItemsReadInCurrentChat(chatInfo, range)
       // update preview
-      val chatIdx = getChatIndex(chat.remoteHostId, cInfo.id)
+      val chatIdx = getChatIndex(remoteHostId, cInfo.id)
       if (chatIdx >= 0) {
         val chat = chats[chatIdx]
         val lastId = chat.chatItems.lastOrNull()?.id
         if (lastId != null) {
           val unreadCount = unreadCountAfter ?: if (range != null) chat.chatStats.unreadCount - markedRead else 0
-          decreaseUnreadCounter(chat.remoteHostId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
+          decreaseUnreadCounter(remoteHostId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
           chats[chatIdx] = chat.copy(
             chatStats = chat.chatStats.copy(
               unreadCount = unreadCount,
@@ -528,8 +528,8 @@ object ChatModel {
     }
   }
 
-  private fun markItemsReadInCurrentChat(chat: Chat, range: CC.ItemRange? = null): Int {
-    val cInfo = chat.chatInfo
+  private fun markItemsReadInCurrentChat(chatInfo: ChatInfo, range: CC.ItemRange? = null): Int {
+    val cInfo = chatInfo
     var markedRead = 0
     if (chatId.value == cInfo.id) {
       var i = 0
@@ -824,14 +824,6 @@ data class Chat(
   val chatItems: List<ChatItem>,
   val chatStats: ChatStats = ChatStats()
 ) {
-  val userCanSend: Boolean
-    get() = when (chatInfo) {
-      is ChatInfo.Direct -> true
-      is ChatInfo.Group -> chatInfo.groupInfo.membership.memberRole >= GroupMemberRole.Member
-      is ChatInfo.Local -> true
-      else -> false
-    }
-
   val nextSendGrpInv: Boolean
     get() = when (chatInfo) {
       is ChatInfo.Direct -> chatInfo.contact.nextSendGrpInv
@@ -1048,6 +1040,15 @@ sealed class ChatInfo: SomeChat, NamedChat {
       is ContactConnection -> contactConnection.updatedAt
       is InvalidJSON -> updatedAt
     }
+
+  val userCanSend: Boolean
+    get() = when (this) {
+      is ChatInfo.Direct -> true
+      is ChatInfo.Group -> groupInfo.membership.memberRole >= GroupMemberRole.Member
+      is ChatInfo.Local -> true
+      else -> false
+    }
+
 }
 
 @Serializable
