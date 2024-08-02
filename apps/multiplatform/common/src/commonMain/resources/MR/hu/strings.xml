@@ -2006,14 +2006,14 @@
     <string name="calls_prohibited_alert_title">A hívások le vannak tiltva!</string>
     <string name="cant_call_contact_alert_title">Nem lehet felhívni az ismerőst</string>
     <string name="cant_send_message_to_member_alert_title">Nem lehet üzenetet küldeni a csoporttagnak</string>
-    <string name="cant_call_contact_connecting_wait_alert_text">Kapcsolódás az ismerőshöz, várjon vagy ellenőrízze később!</string>
+    <string name="cant_call_contact_connecting_wait_alert_text">Kapcsolódás az ismerőshöz, várjon vagy ellenőrizze később!</string>
     <string name="cant_call_contact_deleted_alert_text">Törölt ismerős.</string>
     <string name="cant_call_member_alert_title">Nem lehet felhívni a csoporttagot</string>
     <string name="allow_calls_question">Hívások engedélyezése?</string>
     <string name="action_button_add_members">Meghívás</string>
     <string name="info_view_message_button">üzenet</string>
     <string name="keep_conversation">Beszélgetés megtartása</string>
-    <string name="confirm_delete_contact_question">Bitosan törli az ismerőst?</string>
+    <string name="confirm_delete_contact_question">Biztosan törli az ismerőst?</string>
     <string name="info_view_connect_button">kapcsolódás</string>
     <string name="one_hand_ui">Egykezes UI</string>
     <string name="delete_without_notification">Törlés értesítés nélkül</string>
