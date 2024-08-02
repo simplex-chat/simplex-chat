@@ -189,7 +189,7 @@
       </trans-unit>
       <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve" approved="no">
         <source>**Add new contact**: to create your one-time QR Code or link for your contact.</source>
-        <target state="translated">** إضافة جهة اتصال جديدة **: لإنشاء رمز QR لمرة واحدة أو رابط جهة الاتصال الخاصة بك.</target>
+        <target state="translated">** إضافة جهة اتصال جديدة **: لإنشاء رمز QR لمرة واحدة أو رابط جهة الاتصال الخاصة بكم.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Create link / QR code** for your contact to use." xml:space="preserve" approved="no">
@@ -199,12 +199,12 @@
       </trans-unit>
       <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve" approved="no">
         <source>**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have.</source>
-        <target state="translated">** المزيد من الخصوصية **: تحقق من الرسائل الجديدة كل 20 دقيقة. تتم مشاركة رمز الجهاز مع خادم SimpleX Chat ، ولكن ليس عدد جهات الاتصال أو الرسائل لديك.</target>
+        <target state="translated">** المزيد من الخصوصية **: تحققوا من الرسائل الجديدة كل 20 دقيقة. تتم مشاركة رمز الجهاز مع خادم SimpleX Chat ، ولكن ليس عدد جهات الاتصال أو الرسائل لديكم.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app)." xml:space="preserve" approved="no">
         <source>**Most private**: do not use SimpleX Chat notifications server, check messages periodically in the background (depends on how often you use the app).</source>
-        <target state="translated">** الأكثر خصوصية **: لا تستخدم خادم إشعارات SimpleX Chat ، وتحقق من الرسائل بشكل دوري في الخلفية (يعتمد على عدد مرات استخدامك للتطبيق).</target>
+        <target state="translated">** الأكثر خصوصية **: لا تستخدم خادم إشعارات SimpleX Chat ، وتحقق من الرسائل بشكل دوري في الخلفية (يعتمد على عدد مرات استخدامكم للتطبيق).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Paste received link** or open it in the browser and tap **Open in mobile app**." xml:space="preserve" approved="no">
@@ -214,7 +214,7 @@
       </trans-unit>
       <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve" approved="no">
         <source>**Please note**: you will NOT be able to recover or change passphrase if you lose it.</source>
-        <target state="translated">** يرجى ملاحظة **: لن تتمكن من استعادة أو تغيير عبارة المرور إذا فقدتها.</target>
+        <target state="translated">** يرجى ملاحظة **: لن تتمكنوا من استعادة أو تغيير عبارة المرور إذا فقدتموها.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve" approved="no">
@@ -309,7 +309,7 @@
       </trans-unit>
       <trans-unit id="A separate TCP connection will be used **for each chat profile you have in the app**." xml:space="preserve" approved="no">
         <source>A separate TCP connection will be used **for each chat profile you have in the app**.</source>
-        <target state="translated">سيتم استخدام اتصال TCP منفصل ** لكل ملف تعريف دردشة لديك في التطبيق **.</target>
+        <target state="translated">سيتم استخدام اتصال TCP منفصل ** لكل ملف تعريف دردشة لديكم في التطبيق **.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="A separate TCP connection will be used **for each contact and group member**.&#10;**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." xml:space="preserve" approved="no">
@@ -3741,7 +3741,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="%lld messages blocked" xml:space="preserve" approved="no">
         <source>%lld messages blocked</source>
-        <target state="translated">%lld رسائل محظوره</target>
+        <target state="translated">%lld رسائل تم حظرها</target>
       </trans-unit>
       <trans-unit id="%u messages skipped." xml:space="preserve" approved="no">
         <source>%u messages skipped.</source>
@@ -3765,7 +3765,77 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection." xml:space="preserve" approved="no">
         <source>**Please note**: using the same database on two devices will break the decryption of messages from your connections, as a security protection.</source>
-        <target state="translated">**يرجى الملاحظة**: سيؤدي استخدام نفس قاعدة البيانات على جهازين إلى كسر فك تشفير الرسائل من اتصالاتك، كحماية أمنية.</target>
+        <target state="translated">**يرجى الملاحظة**: سيؤدي استخدام نفس قاعدة البيانات على جهازين إلى كسر فك تشفير الرسائل من اتصالاتكم كحماية أمنية.</target>
+      </trans-unit>
+      <trans-unit id="A new random profile will be shared." xml:space="preserve" approved="no">
+        <source>A new random profile will be shared.</source>
+        <target state="translated">سيتم مشاركة ملف تعريفي عشوائي جديد.</target>
+      </trans-unit>
+      <trans-unit id="30 seconds" xml:space="preserve" approved="no">
+        <source>30 seconds</source>
+        <target state="translated">30 ثانيه</target>
+      </trans-unit>
+      <trans-unit id="- more stable message delivery.&#10;- a bit better groups.&#10;- and more!" xml:space="preserve" approved="no">
+        <source>- more stable message delivery.
+- a bit better groups.
+- and more!</source>
+        <target state="translated">- تسليم رسائل أكثر استقرارًا.
+- مجموعات أفضل قليلاً.
+- والمزيد!</target>
+      </trans-unit>
+      <trans-unit id="0 sec" xml:space="preserve" approved="no">
+        <source>0 sec</source>
+        <target state="translated">0 ثانيه</target>
+      </trans-unit>
+      <trans-unit id="1 minute" xml:space="preserve" approved="no">
+        <source>1 minute</source>
+        <target state="translated">1 دقيقة</target>
+      </trans-unit>
+      <trans-unit id="5 minutes" xml:space="preserve" approved="no">
+        <source>5 minutes</source>
+        <target state="translated">5 دقائق</target>
+      </trans-unit>
+      <trans-unit id="&lt;p&gt;Hi!&lt;/p&gt;&#10;&lt;p&gt;&lt;a href=&quot;%@&quot;&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;" xml:space="preserve" approved="no">
+        <source>&lt;p&gt;Hi!&lt;/p&gt;
+&lt;p&gt;&lt;a href="%@"&gt;Connect to me via SimpleX Chat&lt;/a&gt;&lt;/p&gt;</source>
+        <target state="translated">&lt;p&gt;مرحبا!&lt;/p&gt;
+&lt;p&gt;&lt;a href="%@"&gt;أتصل بى من خلال SimpleX Chat&lt;/a&gt;&lt;/p&gt;</target>
+      </trans-unit>
+      <trans-unit id="0s" xml:space="preserve" approved="no">
+        <source>0s</source>
+        <target state="translated">0 ث</target>
+      </trans-unit>
+      <trans-unit id="A few more things" xml:space="preserve" approved="no">
+        <source>A few more things</source>
+        <target state="translated">بعض الأشياء الأخرى</target>
+      </trans-unit>
+      <trans-unit id="- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!&#10;- delivery receipts (up to 20 members).&#10;- faster and more stable." xml:space="preserve" approved="no">
+        <source>- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!
+- delivery receipts (up to 20 members).
+- faster and more stable.</source>
+        <target state="translated">- أتصل بـ [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!
+- delivery receipts (up to 20 members).
+- أسرع و أكثر اسْتِقْرارًا.</target>
+      </trans-unit>
+      <trans-unit id="**Warning**: the archive will be removed." xml:space="preserve" approved="no">
+        <source>**Warning**: the archive will be removed.</source>
+        <target state="translated">**تحذير**: سيتم إزالة الأرشيف.</target>
+      </trans-unit>
+      <trans-unit id="- optionally notify deleted contacts.&#10;- profile names with spaces.&#10;- and more!" xml:space="preserve" approved="no">
+        <source>- optionally notify deleted contacts.
+- profile names with spaces.
+- and more!</source>
+        <target state="translated">- إخطار جهات الاتصال المحذوفة بشكل اختياري.
+- أسماء الملفات الشخصية مع المسافات.
+- والمزيد!</target>
+      </trans-unit>
+      <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve" approved="no">
+        <source>- voice messages up to 5 minutes.
+- custom time to disappear.
+- editing history.</source>
+        <target state="translated">- رسائل صوتية تصل مدتها إلى 5 دقائق.
+- وقت مخصص للاختفاء.
+- تعديل السجل.</target>
       </trans-unit>
     </body>
   </file>
