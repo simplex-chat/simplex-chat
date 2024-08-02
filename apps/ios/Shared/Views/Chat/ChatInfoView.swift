@@ -718,13 +718,13 @@ private struct CallButton: View {
                                 title: "Calls prohibited!",
                                 message: "Please check yours and your contact preferences."
                             )
-                            , id: "calls prohibited, ask contact"
+                            , id: "calls prohibited, other"
                         ))
                     }
                 } else {
                     showAlert(SomeAlert(
                         alert: mkAlert(title: "Can't call contact"),
-                        id: "calls prohibited, ask contact"
+                        id: "can't call contact"
                     ))
                 }
             }
