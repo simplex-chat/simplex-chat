@@ -618,10 +618,10 @@ final class ChatModel: ObservableObject {
                     let m = ChatModel.shared
                     if m.chatId == nil {
                         withAnimation {
-                            m.chats = m.chats.sorted(by: m.compareChats)
+                            m.chats = m.chats.sorted(using: KeyPathComparator(\.popTs, order: .reverse))
                         }
                     } else {
-                        m.chats = m.chats.sorted(by: m.compareChats)
+                        m.chats = m.chats.sorted(using: KeyPathComparator(\.popTs, order: .reverse))
                     }
                 }
                 .store(in: &bag)
@@ -632,15 +632,6 @@ final class ChatModel: ObservableObject {
                 ChatModel.shared.chats[index].popTs = CFAbsoluteTimeGetCurrent()
                 subject.send()
             }
-        }
-    }
-
-    private func compareChats(_ ch1: Chat, _ ch2: Chat) -> Bool {
-        switch (ch1.popTs, ch2.popTs) {
-        case let (lhs?, rhs?): lhs > rhs
-        case (nil, nil): false
-        case (nil, _?):  false
-        case (_?, nil):  true
         }
     }
 
