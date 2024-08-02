@@ -336,13 +336,7 @@ final class ChatModel: ObservableObject {
                 chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount + 1
                 increaseUnreadCounter(user: currentUser!)
             }
-            if i > 0 {
-                if chatId == cInfo.id {
-                    chatToTop = cInfo.id
-                } else {
-                    popChatCollector.addChat(cInfo.id)
-                }
-            }
+            popChatCollector.addChat(cInfo.id)
         } else {
             addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
         }
