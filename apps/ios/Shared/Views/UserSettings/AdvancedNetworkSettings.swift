@@ -210,7 +210,7 @@ struct AdvancedNetworkSettings: View {
                 showSaveDialog = true
             }
         })
-        .confirmationDialog("Update settings?", isPresented: $showSaveDialog, titleVisibility: .visible) {
+        .confirmationDialog("Update network settings?", isPresented: $showSaveDialog, titleVisibility: .visible) {
             Button("Save and reconnect") {
                 if saveNetCfg() {
                     dismiss()

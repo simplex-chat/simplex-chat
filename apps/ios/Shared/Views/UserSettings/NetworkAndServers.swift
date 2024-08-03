@@ -53,9 +53,6 @@ struct NetworkAndServers: View {
                 } header: {
                     Text("Messages & files")
                         .foregroundColor(theme.colors.secondary)
-                } footer: {
-                    Text("Using .onion hosts requires compatible VPN provider.")
-                        .foregroundColor(theme.colors.secondary)
                 }
 
                 Section(header: Text("Calls").foregroundColor(theme.colors.secondary)) {

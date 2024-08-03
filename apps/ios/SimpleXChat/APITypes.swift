@@ -1374,7 +1374,7 @@ public enum SMPProxyMode: String, Codable, Hashable, SelectableItem {
     public var label: LocalizedStringKey {
         switch self {
         case .always: return "always"
-        case .unknown: return "unknown relays"
+        case .unknown: return "unknown servers"
         case .unprotected: return "unprotected"
         case .never: return "never"
         }
