@@ -190,9 +190,7 @@ private fun NewChatSheetLayout(
           }
           .background(MaterialTheme.colors.background)
       ) {
-        if (!oneHandUI.state.value) {
-          Divider()
-        }
+        Divider()
         ContactsSearchBar(
           listState = listState,
           searchText = searchText,
