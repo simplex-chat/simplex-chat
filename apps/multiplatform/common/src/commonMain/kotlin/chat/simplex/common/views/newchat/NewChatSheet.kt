@@ -41,32 +41,47 @@ import java.net.URI
 fun NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
   val oneHandUI = remember { chatModel.controller.appPrefs.oneHandUI }
 
-  Column(
-    modifier = Modifier.fillMaxSize()
-  ) {
-    val closeAll = { ModalManager.start.closeModals() }
-
-    var modifier = Modifier.fillMaxSize()
-
-    if (oneHandUI.state.value) {
-      modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
+  Scaffold(
+    bottomBar = {
+      if (oneHandUI.state.value) {
+        CloseSheetBar(
+          close = close,
+          showClose = true,
+          endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) },
+          arrangement = Arrangement.Bottom,
+          closeBarTitle = generalGetString(MR.strings.new_chat)
+        )
+        Divider()
+      }
     }
+  ) {
+    Column(
+      modifier = Modifier.fillMaxSize().padding(it)
+    ) {
+      val closeAll = { ModalManager.start.closeModals() }
 
-    Column(modifier = modifier) {
-      NewChatSheetLayout(
-        addContact = {
-          ModalManager.start.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll ) }
-        },
-        scanPaste = {
-          ModalManager.start.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll) }
-        },
-        createGroup = {
-          ModalManager.start.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
-        },
-        rh = rh,
-        close = close,
-        oneHandUI = oneHandUI
-      )
+      var modifier = Modifier.fillMaxSize()
+
+      if (oneHandUI.state.value) {
+        modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
+      }
+
+      Column(modifier = modifier) {
+        NewChatSheetLayout(
+          addContact = {
+            ModalManager.start.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll ) }
+          },
+          scanPaste = {
+            ModalManager.start.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll) }
+          },
+          createGroup = {
+            ModalManager.start.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
+          },
+          rh = rh,
+          close = close,
+          oneHandUI = oneHandUI
+        )
+      }
     }
   }
 }
@@ -190,7 +205,9 @@ private fun NewChatSheetLayout(
           }
           .background(MaterialTheme.colors.background)
       ) {
-        Divider()
+        if (!oneHandUI.state.value) {
+          Divider()
+        }
         ContactsSearchBar(
           listState = listState,
           searchText = searchText,
@@ -246,10 +263,8 @@ private fun NewChatSheetLayout(
                     ModalView(
                       close = closeDeletedChats,
                       closeOnTop = !oneHandUI.state.value,
-                      closeBarTitle = if (oneHandUI.state.value) generalGetString(MR.strings.deleted_chats) else null,
-                      endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) }
                     ) {
-                      DeletedContactsView(rh = rh, close = {
+                      DeletedContactsView(rh = rh, closeDeletedChats = closeDeletedChats, close = {
                         ModalManager.start.closeModals()
                       })
                     }
@@ -515,82 +530,99 @@ private fun contactTypesSearchTargets(baseContactTypes: List<ContactType>, searc
 }
 
 @Composable
-private fun DeletedContactsView(rh: RemoteHostInfo?, close: () -> Unit) {
+private fun DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats: () -> Unit, close: () -> Unit) {
   val oneHandUI = remember { chatModel.controller.appPrefs.oneHandUI }
 
-  var modifier = Modifier.fillMaxSize()
-
-  if (oneHandUI.state.value) {
-    modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
-  }
-
-  Column(
-    modifier,
+  Scaffold(
+    bottomBar = {
+      if (oneHandUI.state.value) {
+        CloseSheetBar(
+          close = closeDeletedChats,
+          showClose = true,
+          endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) },
+          arrangement = Arrangement.Bottom,
+          closeBarTitle = generalGetString(MR.strings.deleted_chats)
+        )
+        Divider()
+      }
+    }
   ) {
-    if (!oneHandUI.state.value) {
-      Box(contentAlignment = Alignment.Center) {
-        val bottomPadding = DEFAULT_PADDING
-        AppBarTitle(
-          stringResource(MR.strings.deleted_chats),
-          hostDevice(rh?.remoteHostId),
-          bottomPadding = bottomPadding
-        )
-      }
+    var modifier = Modifier.fillMaxSize().padding(it)
+
+    if (oneHandUI.state.value) {
+      modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
     }
 
-    val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
-    val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
-    val searchShowingSimplexLink = remember { mutableStateOf(false) }
-    val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
-    val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
-    val contactTypes = listOf(ContactType.CHAT_DELETED)
-    val allChats by remember(chatModel.chats.value, contactTypes) {
-      derivedStateOf { filterContactTypes(chatModel.chats.value, contactTypes) }
-    }
-    val filteredContactChats = filteredContactChats(
-      showUnreadAndFavorites = showUnreadAndFavorites,
-      searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
-      searchShowingSimplexLink = searchShowingSimplexLink,
-      searchText = searchText.value.text,
-      contactChats = allChats
-    )
-
-    LazyColumnWithScrollBar(
-      Modifier.fillMaxWidth(),
-      listState
+    Column(
+      modifier,
     ) {
-      item {
-        Divider()
-        ContactsSearchBar(
-          listState = listState,
-          searchText = searchText,
-          searchShowingSimplexLink = searchShowingSimplexLink,
-          searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
-          close = close,
-          oneHandUI = oneHandUI
-        )
-        Divider()
-
-        Spacer(Modifier.padding(bottom = DEFAULT_PADDING))
-      }
-
-      itemsIndexed(filteredContactChats) { index, chat ->
-        val nextChatSelected = remember(chat.id, filteredContactChats) {
-          derivedStateOf {
-            chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
-          }
-        }
-        ContactListNavLinkView(chat, nextChatSelected, oneHandUI.state)
-      }
-    }
-    if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
-      Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING)) {
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-          Text(
-            generalGetString(MR.strings.no_filtered_contacts),
-            color = MaterialTheme.colors.secondary,
-            modifier = if (oneHandUI.state.value) Modifier.scale(scaleX = 1f, scaleY = -1f) else Modifier
+      if (!oneHandUI.state.value) {
+        Box(contentAlignment = Alignment.Center) {
+          val bottomPadding = DEFAULT_PADDING
+          AppBarTitle(
+            stringResource(MR.strings.deleted_chats),
+            hostDevice(rh?.remoteHostId),
+            bottomPadding = bottomPadding
           )
+        }
+      }
+
+      val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
+      val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
+      val searchShowingSimplexLink = remember { mutableStateOf(false) }
+      val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
+      val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
+      val contactTypes = listOf(ContactType.CHAT_DELETED)
+      val allChats by remember(chatModel.chats.value, contactTypes) {
+        derivedStateOf { filterContactTypes(chatModel.chats.value, contactTypes) }
+      }
+      val filteredContactChats = filteredContactChats(
+        showUnreadAndFavorites = showUnreadAndFavorites,
+        searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+        searchShowingSimplexLink = searchShowingSimplexLink,
+        searchText = searchText.value.text,
+        contactChats = allChats
+      )
+
+      LazyColumnWithScrollBar(
+        Modifier.fillMaxWidth(),
+        listState
+      ) {
+        item {
+          if (!oneHandUI.state.value) {
+            Divider()
+          }
+          ContactsSearchBar(
+            listState = listState,
+            searchText = searchText,
+            searchShowingSimplexLink = searchShowingSimplexLink,
+            searchChatFilteredBySimplexLink = searchChatFilteredBySimplexLink,
+            close = close,
+            oneHandUI = oneHandUI
+          )
+          Divider()
+
+          Spacer(Modifier.padding(bottom = DEFAULT_PADDING))
+        }
+
+        itemsIndexed(filteredContactChats) { index, chat ->
+          val nextChatSelected = remember(chat.id, filteredContactChats) {
+            derivedStateOf {
+              chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
+            }
+          }
+          ContactListNavLinkView(chat, nextChatSelected, oneHandUI.state)
+        }
+      }
+      if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
+        Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING)) {
+          Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            Text(
+              generalGetString(MR.strings.no_filtered_contacts),
+              color = MaterialTheme.colors.secondary,
+              modifier = if (oneHandUI.state.value) Modifier.scale(scaleX = 1f, scaleY = -1f) else Modifier
+            )
+          }
         }
       }
     }
