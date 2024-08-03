@@ -98,16 +98,15 @@ struct NewChatSheet: View {
                 }
             }
             
-            Section(header: Text("Your contacts").textCase(.uppercase).foregroundColor(theme.colors.secondary)) {
-                ContactsList(
-                    baseContactTypes: $baseContactTypes,
-                    searchMode: $searchMode,
-                    searchText: $searchText,
-                    searchFocussed: $searchFocussed,
-                    searchShowingSimplexLink: $searchShowingSimplexLink,
-                    searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-                )
-            }
+            ContactsList(
+                baseContactTypes: $baseContactTypes,
+                searchMode: $searchMode,
+                searchText: $searchText,
+                header: "Your Contacts",
+                searchFocussed: $searchFocussed,
+                searchShowingSimplexLink: $searchShowingSimplexLink,
+                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+            )
         }
     }
     
@@ -147,10 +146,12 @@ private func filterContactTypes(chats: [Chat], contactTypes: [ContactType]) -> [
 }
 
 struct ContactsList: View {
+    @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatModel: ChatModel
     @Binding var baseContactTypes: [ContactType]
     @Binding var searchMode: Bool
     @Binding var searchText: String
+    var header: String? = nil
     @FocusState.Binding var searchFocussed: Bool
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: String?
@@ -167,10 +168,39 @@ struct ContactsList: View {
             contactChats: contactChats
         )
         
-        ForEach(filteredContactChats, id: \.viewId) { chat in
-            ContactListNavLink(chat: chat)
-                .disabled(chatModel.chatRunning != true)
+        if !filteredContactChats.isEmpty {
+            Section(header: Group {
+                if let header = header {
+                    Text(header)
+                        .textCase(.uppercase)
+                        .foregroundColor(theme.colors.secondary)
+                    }
+                }
+            ) {
+                ForEach(filteredContactChats, id: \.viewId) { chat in
+                    ContactListNavLink(chat: chat)
+                        .disabled(chatModel.chatRunning != true)
+                }
+            }
         }
+        
+        if filteredContactChats.isEmpty && !contactChats.isEmpty {
+            noResultSection(text: "No filtered contacts")
+        } else if contactChats.isEmpty {
+            noResultSection(text: "No contacts")
+        }
+    }
+    
+    @ViewBuilder private func noResultSection(text: String) -> some View {
+        Section {
+            Text(text)
+                .foregroundColor(theme.colors.secondary)
+                .frame(maxWidth: .infinity, alignment: .center)
+
+        }
+        .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets(top: 7, leading: 0, bottom: 7, trailing: 0))
     }
     
     private func contactTypesSearchTargets(baseContactTypes: [ContactType], searchEmpty: Bool) -> [ContactType] {
@@ -371,16 +401,14 @@ struct DeletedChats: View {
             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
             .frame(maxWidth: .infinity)
             
-            Section {
-                ContactsList(
-                    baseContactTypes: $baseContactTypes,
-                    searchMode: $searchMode,
-                    searchText: $searchText,
-                    searchFocussed: $searchFocussed,
-                    searchShowingSimplexLink: $searchShowingSimplexLink,
-                    searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-                )
-            }
+            ContactsList(
+                baseContactTypes: $baseContactTypes,
+                searchMode: $searchMode,
+                searchText: $searchText,
+                searchFocussed: $searchFocussed,
+                searchShowingSimplexLink: $searchShowingSimplexLink,
+                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+            )
         }
         .navigationTitle("Deleted chats")
         .navigationBarTitleDisplayMode(.inline)
