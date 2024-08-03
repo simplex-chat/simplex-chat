@@ -225,7 +225,7 @@ private fun NewChatSheetLayout(
       }
     }
     item {
-      Spacer(Modifier.padding(bottom = DEFAULT_PADDING))
+      Spacer(Modifier.padding(bottom = 27.dp))
 
       if (searchText.value.text.isEmpty()) {
         Row {
@@ -283,7 +283,7 @@ private fun NewChatSheetLayout(
               }
             }
           }
-          SectionDividerSpaced()
+          SectionDividerSpaced(maxBottomPadding = false)
         }
       }
     }
