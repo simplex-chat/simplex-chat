@@ -44,17 +44,6 @@ fun NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
   Column(
     modifier = Modifier.fillMaxSize()
   ) {
-    if (!oneHandUI.state.value) {
-      Box(contentAlignment = Alignment.Center) {
-        val bottomPadding = DEFAULT_PADDING
-        AppBarTitle(
-          stringResource(MR.strings.new_chat),
-          hostDevice(rh?.remoteHostId),
-          bottomPadding = bottomPadding
-        )
-      }
-    }
-
     val closeAll = { ModalManager.start.closeModals() }
 
     var modifier = Modifier.fillMaxSize()
@@ -171,6 +160,18 @@ private fun NewChatSheetLayout(
     Modifier.fillMaxWidth(),
     listState
   ) {
+    if (!oneHandUI.state.value) {
+      item {
+        Box(contentAlignment = Alignment.Center) {
+          val bottomPadding = DEFAULT_PADDING
+          AppBarTitle(
+            stringResource(MR.strings.new_chat),
+            hostDevice(rh?.remoteHostId),
+            bottomPadding = bottomPadding
+          )
+        }
+      }
+    }
     stickyHeader {
       Column(
         Modifier
