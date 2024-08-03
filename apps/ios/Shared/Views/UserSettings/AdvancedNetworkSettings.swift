@@ -24,34 +24,114 @@ enum NetworkSettingsAlert: Identifiable {
 }
 
 struct AdvancedNetworkSettings: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
+    @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
     @State private var netCfg = NetCfg.defaults
     @State private var currentNetCfg = NetCfg.defaults
     @State private var cfgLoaded = false
     @State private var enableKeepAlive = true
     @State private var keepAliveOpts = KeepAliveOpts.defaults
     @State private var showSettingsAlert: NetworkSettingsAlert?
+    @State private var onionHosts: OnionHosts = .no
+    @State private var showSaveDialog = false
 
     var body: some View {
         VStack {
             List {
                 Section {
-                    Button {
-                        updateNetCfgView(NetCfg.defaults)
-                        showSettingsAlert = .update
+                    NavigationLink {
+                        List {
+                            Section {
+                                SelectionListView(list: SMPProxyMode.values, selection: $netCfg.smpProxyMode) { mode in
+                                    netCfg.smpProxyMode = mode
+                                }
+                            } footer: {
+                                Text(proxyModeInfo(netCfg.smpProxyMode))
+                                    .font(.callout)
+                                    .foregroundColor(theme.colors.secondary)
+                            }
+                        }
+                        .navigationTitle("Private routing")
+                        .modifier(ThemedBackground(grouped: true))
+                        .navigationBarTitleDisplayMode(.inline)
                     } label: {
-                        Text("Reset to defaults")
+                        HStack {
+                            Text("Private routing")
+                            Spacer()
+                            Text(netCfg.smpProxyMode.label)
+                        }
                     }
-                    .disabled(currentNetCfg == NetCfg.defaults)
-
-                    Button {
-                        updateNetCfgView(NetCfg.proxyDefaults)
-                        showSettingsAlert = .update
+                    
+                    NavigationLink {
+                        List {
+                            Section {
+                                SelectionListView(list: SMPProxyFallback.values, selection: $netCfg.smpProxyFallback) { mode in
+                                    netCfg.smpProxyFallback = mode
+                                }
+                                .disabled(netCfg.smpProxyMode == .never)
+                            } footer: {
+                                Text(proxyFallbackInfo(netCfg.smpProxyFallback))
+                                    .font(.callout)
+                                    .foregroundColor(theme.colors.secondary)
+                            }
+                        }
+                        .navigationTitle("Allow downgrade")
+                        .modifier(ThemedBackground(grouped: true))
+                        .navigationBarTitleDisplayMode(.inline)
                     } label: {
-                        Text("Set timeouts for proxy/VPN")
+                        HStack {
+                            Text("Allow downgrade")
+                            Spacer()
+                            Text(netCfg.smpProxyFallback.label)
+                        }
                     }
-                    .disabled(currentNetCfg == NetCfg.proxyDefaults)
 
+                    Toggle("Show message status", isOn: $showSentViaProxy)
+                } header: {
+                    Text("Private message routing")
+                        .foregroundColor(theme.colors.secondary)
+                } footer: {
+                    VStack(alignment: .leading) {
+                        Text("To protect your IP address, private routing uses your SMP servers to deliver messages.")
+                        if showSentViaProxy {
+                            Text("Show → on messages sent via private routing.")
+                        }
+                    }
+                    .foregroundColor(theme.colors.secondary)
+                }
+
+                Section {
+                    Picker("Use .onion hosts", selection: $onionHosts) {
+                        ForEach(OnionHosts.values, id: \.self) { Text($0.text) }
+                    }
+                    .frame(height: 36)
+                } footer: {
+                    Text(onionHostsInfo(onionHosts))
+                        .foregroundColor(theme.colors.secondary)
+                }
+                .onChange(of: onionHosts) { hosts in
+                    if hosts != OnionHosts(netCfg: currentNetCfg) {
+                        let (hostMode, requiredHostMode) = hosts.hostMode
+                        netCfg.hostMode = hostMode
+                        netCfg.requiredHostMode = requiredHostMode
+                    }
+                }
+                
+                if developerTools {
+                    Section {
+                        Picker("Transport isolation", selection: $netCfg.sessionMode) {
+                            ForEach(TransportSessionMode.values, id: \.self) { Text($0.text) }
+                        }
+                        .frame(height: 36)
+                    } footer: {
+                        Text(sessionModeInfo(netCfg.sessionMode))
+                            .foregroundColor(theme.colors.secondary)
+                    }
+                }
+
+                Section("TCP connection") {
                     timeoutSettingPicker("TCP connection timeout", selection: $netCfg.tcpConnectTimeout, values: [10_000000, 15_000000, 20_000000, 30_000000, 45_000000, 60_000000, 90_000000], label: secondsLabel)
                     timeoutSettingPicker("Protocol timeout", selection: $netCfg.tcpTimeout, values: [5_000000, 7_000000, 10_000000, 15_000000, 20_000000, 30_000000], label: secondsLabel)
                     timeoutSettingPicker("Protocol timeout per KB", selection: $netCfg.tcpTimeoutPerKb, values: [2_500, 5_000, 10_000, 15_000, 20_000, 30_000], label: secondsLabel)
@@ -72,24 +152,21 @@ struct AdvancedNetworkSettings: View {
                         }
                         .foregroundColor(theme.colors.secondary)
                     }
-                } header: {
-                        Text("")
-                        .foregroundColor(theme.colors.secondary)
-                } footer: {
-                    HStack {
-                        Button {
-                            updateNetCfgView(currentNetCfg)
-                        } label: {
-                            Label("Revert", systemImage: "arrow.counterclockwise").font(.callout)
-                        }
+                }
+                
+                Section {
+                    Button("Reset to defaults") {
+                        updateNetCfgView(NetCfg.defaults)
+                    }
+                    .disabled(netCfg == NetCfg.defaults)
 
-                        Spacer()
-
-                        Button {
-                            showSettingsAlert = .update
-                        } label: {
-                            Label("Save", systemImage: "checkmark").font(.callout)
-                        }
+                    Button("Set timeouts for proxy/VPN") {
+                        updateNetCfgView(netCfg.withProxyTimeouts)
+                    }
+                    .disabled(netCfg.hasProxyTimeouts)
+                    
+                    Button("Save settings") {
+                        showSettingsAlert = .update
                     }
                     .disabled(netCfg == currentNetCfg)
                 }
@@ -111,10 +188,10 @@ struct AdvancedNetworkSettings: View {
             switch a {
             case .update:
                 return Alert(
-                    title: Text("Update network settings?"),
+                    title: Text("Update settings?"),
                     message: Text("Updating settings will re-connect the client to all servers."),
                     primaryButton: .default(Text("Ok")) {
-                        saveNetCfg()
+                        _ = saveNetCfg()
                     },
                     secondaryButton: .cancel()
                 )
@@ -125,23 +202,43 @@ struct AdvancedNetworkSettings: View {
                 )
             }
         }
+        .modifier(BackButton(disabled: Binding.constant(false)) {
+            if netCfg == currentNetCfg {
+                dismiss()
+                cfgLoaded = false
+            } else {
+                showSaveDialog = true
+            }
+        })
+        .confirmationDialog("Update settings?", isPresented: $showSaveDialog, titleVisibility: .visible) {
+            Button("Save and reconnect") {
+                if saveNetCfg() {
+                    dismiss()
+                    cfgLoaded = false
+                }
+            }
+            Button("Exit without saving") { dismiss() }
+        }
     }
 
     private func updateNetCfgView(_ cfg: NetCfg) {
         netCfg = cfg
+        onionHosts = OnionHosts(netCfg: netCfg)
         enableKeepAlive = netCfg.enableKeepAlive
         keepAliveOpts = netCfg.tcpKeepAlive ?? KeepAliveOpts.defaults
     }
 
-    private func saveNetCfg() {
+    private func saveNetCfg() -> Bool {
         do {
             try setNetworkConfig(netCfg)
             currentNetCfg = netCfg
             setNetCfg(netCfg)
+            return true
         } catch let error {
             let err = responseError(error)
             showSettingsAlert = .error(err: err)
             logger.error("\(err)")
+            return false
         }
     }
 
@@ -163,6 +260,38 @@ struct AdvancedNetworkSettings: View {
             }
         }
         .frame(height: 36)
+    }
+    
+    private func onionHostsInfo(_ hosts: OnionHosts) -> LocalizedStringKey {
+        switch hosts {
+        case .no: return "Onion hosts will not be used."
+        case .prefer: return "Onion hosts will be used when available.\nRequires compatible VPN."
+        case .require: return "Onion hosts will be **required** for connection.\nRequires compatible VPN."
+        }
+    }
+
+    private func sessionModeInfo(_ mode: TransportSessionMode) -> LocalizedStringKey {
+        switch mode {
+        case .user: return "A separate TCP connection will be used **for each chat profile you have in the app**."
+        case .entity: return "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail."
+        }
+    }
+    
+    private func proxyModeInfo(_ mode: SMPProxyMode) -> LocalizedStringKey {
+        switch mode {
+        case .always: return "Always use private routing."
+        case .unknown: return "Use private routing with unknown servers."
+        case .unprotected: return "Use private routing with unknown servers when IP address is not protected."
+        case .never: return "Do NOT use private routing."
+        }
+    }
+    
+    private func proxyFallbackInfo(_ proxyFallback: SMPProxyFallback) -> LocalizedStringKey {
+        switch proxyFallback {
+        case .allow: return "Send messages directly when your or destination server does not support private routing."
+        case .allowProtected: return "Send messages directly when IP address is protected and your or destination server does not support private routing."
+        case .prohibit: return "Do NOT send messages directly, even if your or destination server does not support private routing."
+        }
     }
 }
 

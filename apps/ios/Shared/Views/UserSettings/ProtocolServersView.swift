@@ -130,7 +130,7 @@ struct ProtocolServersView: View {
                 showSaveDialog = true
             }
         })
-        .confirmationDialog("Save servers?", isPresented: $showSaveDialog) {
+        .confirmationDialog("Save servers?", isPresented: $showSaveDialog, titleVisibility: .visible) {
             Button("Save") {
                 saveServers()
                 dismiss()
