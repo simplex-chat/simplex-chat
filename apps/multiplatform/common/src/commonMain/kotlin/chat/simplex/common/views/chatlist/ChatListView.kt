@@ -88,19 +88,21 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   Scaffold(
     topBar = {
       if (!oneHandUI.state.value) {
-        Box(Modifier.padding(end = endPadding)) {
+        Column(Modifier.padding(end = endPadding)) {
           ChatListToolbar(
             scaffoldState.drawerState,
             userPickerState,
             stopped,
             oneHandUI
           )
+          Divider()
         }
       }
     },
     bottomBar = {
       if (oneHandUI.state.value) {
-        Box(Modifier.padding(end = endPadding)) {
+        Column(Modifier.padding(end = endPadding)) {
+          Divider()
           ChatListToolbar(
             scaffoldState.drawerState,
             userPickerState,
@@ -227,9 +229,10 @@ private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableSt
         },
       ) {
         Box(
+          contentAlignment = Alignment.Center,
           modifier = Modifier
             .background(if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary, shape = CircleShape)
-            .padding(DEFAULT_PADDING_HALF)
+            .size(33.dp * fontSizeSqrtMultiplier) // 26 = 37 * 0.7
         ){
           Icon(
             painterResource(MR.images.ic_edit_filled),
@@ -327,7 +330,6 @@ private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableSt
     onSearchValueChanged = {},
     buttons = barButtons
   )
-  Divider(Modifier.padding(top = AppBarHeight * fontSizeSqrtMultiplier))
 }
 
 @Composable
