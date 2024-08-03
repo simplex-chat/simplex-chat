@@ -124,6 +124,7 @@ import Simplex.RemoteControl.Invitation (RCInvitation (..), RCSignedInvitation (
 import Simplex.RemoteControl.Types (RCCtrlAddress (..))
 import System.Exit (ExitCode, exitSuccess)
 import System.FilePath (takeFileName, (</>))
+import qualified System.FilePath as FP
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush)
 import System.Random (randomRIO)
 import Text.Read (readMaybe)
@@ -677,7 +678,7 @@ processChatCommand' vr = \case
         chatWriteVar sel $ Just f
   APISetEncryptLocalFiles on -> chatWriteVar encryptLocalFiles on >> ok_
   SetContactMergeEnabled onOff -> chatWriteVar contactMergeEnabled onOff >> ok_
-  APIExportArchive cfg -> checkChatStopped $ lift (exportArchive cfg) >> ok_
+  APIExportArchive cfg -> checkChatStopped $ CRArchiveExported <$> lift (exportArchive cfg)
   ExportArchive -> do
     ts <- liftIO getCurrentTime
     let filePath = "simplex-chat." <> formatTime defaultTimeLocale "%FT%H%M%SZ" ts <> ".zip"
@@ -5207,8 +5208,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           _ -> pure ()
 
     processFileInvitation :: Maybe FileInvitation -> MsgContent -> (DB.Connection -> FileInvitation -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer) -> CM (Maybe (RcvFileTransfer, CIFile 'MDRcv))
-    processFileInvitation fInv_ mc createRcvFT = forM fInv_ $ \fInv@FileInvitation {fileName, fileSize} -> do
+    processFileInvitation fInv_ mc createRcvFT = forM fInv_ $ \fInv' -> do
       ChatConfig {fileChunkSize} <- asks config
+      let fInv@FileInvitation {fileName, fileSize} = mkValidFileInvitation fInv'
       inline <- receiveInlineMode fInv (Just mc) fileChunkSize
       ft@RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvFT db fInv inline fileChunkSize
       let fileProtocol = if isJust xftpRcvFile then FPXFTP else FPSMP
@@ -5223,6 +5225,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       let RcvFileTransfer {cryptoArgs} = ft'
           fileSource = (`CryptoFile` cryptoArgs) <$> filePath
       pure (ft', CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol})
+
+    mkValidFileInvitation :: FileInvitation -> FileInvitation
+    mkValidFileInvitation fInv@FileInvitation {fileName} = fInv {fileName = FP.makeValid $ FP.takeFileName fileName}
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> Maybe Int -> Maybe Bool -> CM ()
     messageUpdate ct@Contact {contactId} sharedMsgId mc msg@RcvMessage {msgId} msgMeta ttl live_ = do
@@ -5463,8 +5468,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     -- TODO remove once XFile is discontinued
     processFileInvitation' :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> CM ()
-    processFileInvitation' ct fInv@FileInvitation {fileName, fileSize} msg@RcvMessage {sharedMsgId_} msgMeta = do
+    processFileInvitation' ct fInv' msg@RcvMessage {sharedMsgId_} msgMeta = do
       ChatConfig {fileChunkSize} <- asks config
+      let fInv@FileInvitation {fileName, fileSize} = mkValidFileInvitation fInv'
       inline <- receiveInlineMode fInv Nothing fileChunkSize
       RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvFileTransfer db userId ct fInv inline fileChunkSize
       let fileProtocol = if isJust xftpRcvFile then FPXFTP else FPSMP

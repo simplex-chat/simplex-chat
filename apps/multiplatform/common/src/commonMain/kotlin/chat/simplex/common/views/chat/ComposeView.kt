@@ -836,7 +836,7 @@ fun ComposeView(
     chatModel.sharedContent.value = null
   }
 
-  val userCanSend = rememberUpdatedState(chat.userCanSend)
+  val userCanSend = rememberUpdatedState(chat.chatInfo.userCanSend)
   val sendMsgEnabled = rememberUpdatedState(chat.chatInfo.sendMsgEnabled)
   val userIsObserver = rememberUpdatedState(chat.userIsObserver)
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
@@ -872,6 +872,7 @@ fun ComposeView(
         }
       }
     }
+    Divider()
     Row(
       modifier = Modifier.background(MaterialTheme.colors.background).padding(end = 8.dp),
       verticalAlignment = Alignment.Bottom,
@@ -895,7 +896,7 @@ fun ComposeView(
             && !nextSendGrpInv.value
       IconButton(
         attachmentClicked,
-        Modifier.padding(bottom = if (appPlatform.isAndroid) 0.dp else with(LocalDensity.current) { 7.sp.toDp() }),
+        Modifier.padding(bottom = if (appPlatform.isAndroid) 2.dp else with(LocalDensity.current) { 7.sp.toDp() }),
         enabled = attachmentEnabled
       ) {
         Icon(
@@ -936,8 +937,8 @@ fun ComposeView(
           }
       }
 
-      LaunchedEffect(rememberUpdatedState(chat.userCanSend).value) {
-        if (!chat.userCanSend) {
+      LaunchedEffect(rememberUpdatedState(chat.chatInfo.userCanSend).value) {
+        if (!chat.chatInfo.userCanSend) {
           clearCurrentDraft()
           clearState()
         }

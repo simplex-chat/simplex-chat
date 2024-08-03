@@ -46,12 +46,18 @@ import kotlin.time.Duration.Companion.seconds
 private fun showNewChatSheet(oneHandUI: State<Boolean>, barTitle: String) {
   ModalManager.start.closeModals()
   ModalManager.end.closeModals()
+  chatModel.newChatSheetVisible.value = true
   ModalManager.start.showModalCloseable(
     closeOnTop = !oneHandUI.value,
     closeBarTitle = if (oneHandUI.value) barTitle else null,
     endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) }
   ) { close ->
     NewChatSheet(rh = chatModel.currentRemoteHost.value, close)
+    DisposableEffect(Unit) {
+      onDispose {
+        chatModel.newChatSheetVisible.value = false
+      }
+    }
   }
 }
 

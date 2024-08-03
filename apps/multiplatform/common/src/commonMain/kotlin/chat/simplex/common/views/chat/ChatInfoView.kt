@@ -81,7 +81,7 @@ fun ChatInfoView(
       sendReceipts = sendReceipts,
       setSendReceipts = { sendRcpts ->
         val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
-        updateChatSettings(chat, chatSettings, chatModel)
+        updateChatSettings(chat.remoteHostId, chat.chatInfo, chatSettings, chatModel)
         sendReceipts.value = sendRcpts
       },
       connStats = connStats,
@@ -806,7 +806,7 @@ fun MuteButton(chat: Chat, contact: Contact) {
     disabled = disabled,
     disabledLook = disabled,
     onClick = {
-      toggleNotifications(chat, !ntfsEnabled.value, chatModel, ntfsEnabled)
+      toggleNotifications(chat.remoteHostId, chat.chatInfo, !ntfsEnabled.value, chatModel, ntfsEnabled)
     }
   )
 }
@@ -851,7 +851,7 @@ fun CallButton(chat: Chat, contact: Contact, icon: Painter, title: String, media
     disabledLook = !canCall,
     onClick =
       when {
-        canCall -> { { startChatCall(chat, mediaType) } }
+        canCall -> { { startChatCall(chat.remoteHostId, chat.chatInfo, mediaType) } }
         contact.nextSendGrpInv -> { { showCantCallContactSendMessageAlert() } }
         !contact.active -> { { showCantCallContactDeletedAlert() } }
         !contact.ready -> { { showCantCallContactConnectingAlert() } }

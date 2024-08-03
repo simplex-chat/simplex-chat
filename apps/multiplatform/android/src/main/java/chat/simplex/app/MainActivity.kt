@@ -13,6 +13,7 @@ import chat.simplex.app.model.NtfManager.getUserIdFromIntent
 import chat.simplex.common.*
 import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
@@ -24,11 +25,13 @@ import java.lang.ref.WeakReference
 class MainActivity: FragmentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    mainActivity = WeakReference(this)
     platform.androidSetNightModeIfSupported()
+    val c = CurrentColors.value.colors
+    platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
     applyAppLocale(ChatModel.controller.appPrefs.appLanguage)
     super.onCreate(savedInstanceState)
     // testJson()
-    mainActivity = WeakReference(this)
     // When call ended and orientation changes, it re-process old intent, it's unneeded.
     // Only needed to be processed on first creation of activity
     if (savedInstanceState == null) {

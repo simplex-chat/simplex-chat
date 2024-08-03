@@ -685,6 +685,7 @@ public enum ChatResponse: Decodable, Error {
     case agentSubsSummary(user: UserRef, subsSummary: SMPServerSubs)
     case chatCmdError(user_: UserRef?, chatError: ChatError)
     case chatError(user_: UserRef?, chatError: ChatError)
+    case archiveExported(archiveErrors: [ArchiveError])
     case archiveImported(archiveErrors: [ArchiveError])
     case appSettings(appSettings: AppSettings)
 
@@ -847,6 +848,7 @@ public enum ChatResponse: Decodable, Error {
             case .agentSubsSummary: return "agentSubsSummary"
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
+            case .archiveExported: return "archiveExported"
             case .archiveImported: return "archiveImported"
             case .appSettings: return "appSettings"
             }
@@ -1017,6 +1019,7 @@ public enum ChatResponse: Decodable, Error {
             case let .agentSubsSummary(u, subsSummary): return withUser(u, String(describing: subsSummary))
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
             case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
+            case let .archiveExported(archiveErrors): return String(describing: archiveErrors)
             case let .archiveImported(archiveErrors): return String(describing: archiveErrors)
             case let .appSettings(appSettings): return String(describing: appSettings)
             }
@@ -2053,8 +2056,8 @@ public enum SMPAgentError: Decodable, Hashable {
 }
 
 public enum ArchiveError: Decodable, Hashable {
-    case `import`(chatError: ChatError)
-    case importFile(file: String, chatError: ChatError)
+    case `import`(importError: String)
+    case fileError(file: String, fileError: String)
 }
 
 public enum RemoteCtrlError: Decodable, Hashable {

@@ -279,8 +279,10 @@ func apiGetAppSettings(settings: AppSettings) throws -> AppSettings {
     throw r
 }
 
-func apiExportArchive(config: ArchiveConfig) async throws {
-    try await sendCommandOkResp(.apiExportArchive(config: config))
+func apiExportArchive(config: ArchiveConfig) async throws -> [ArchiveError] {
+    let r = await chatSendCmd(.apiExportArchive(config: config))
+    if case let .archiveExported(archiveErrors) = r { return archiveErrors }
+    throw r
 }
 
 func apiImportArchive(config: ArchiveConfig) async throws -> [ArchiveError] {
