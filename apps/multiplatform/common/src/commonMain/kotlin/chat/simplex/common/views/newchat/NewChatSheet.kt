@@ -49,7 +49,8 @@ fun NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
           showClose = true,
           endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) },
           arrangement = Arrangement.Bottom,
-          closeBarTitle = generalGetString(MR.strings.new_chat)
+          closeBarTitle = generalGetString(MR.strings.new_chat),
+          barPaddingValues = PaddingValues(horizontal = 0.dp)
         )
         Divider()
       }
@@ -541,7 +542,8 @@ private fun DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats: () -> Un
           showClose = true,
           endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) },
           arrangement = Arrangement.Bottom,
-          closeBarTitle = generalGetString(MR.strings.deleted_chats)
+          closeBarTitle = generalGetString(MR.strings.deleted_chats),
+          barPaddingValues = PaddingValues(horizontal = 0.dp)
         )
         Divider()
       }
