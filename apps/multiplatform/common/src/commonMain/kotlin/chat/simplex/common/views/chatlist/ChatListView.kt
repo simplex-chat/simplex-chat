@@ -232,7 +232,7 @@ private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableSt
           contentAlignment = Alignment.Center,
           modifier = Modifier
             .background(if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary, shape = CircleShape)
-            .size(33.dp * fontSizeSqrtMultiplier) // 26 = 37 * 0.7
+            .size(33.dp * fontSizeSqrtMultiplier)
         ){
           Icon(
             painterResource(MR.images.ic_edit_filled),
