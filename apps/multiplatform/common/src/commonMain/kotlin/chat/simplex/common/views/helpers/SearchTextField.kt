@@ -63,6 +63,7 @@ fun SearchTextField(
     focusedIndicatorColor = Color.Unspecified,
     unfocusedIndicatorColor = Color.Unspecified,
     disabledIndicatorColor = Color.Unspecified,
+    placeholderColor = MaterialTheme.colors.secondary,
   )
   val shape = MaterialTheme.shapes.small.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize)
   val interactionSource = remember { MutableInteractionSource() }
@@ -88,7 +89,7 @@ fun SearchTextField(
     textStyle = TextStyle(
       color = MaterialTheme.colors.onBackground,
       fontWeight = FontWeight.Normal,
-      fontSize = 16.sp
+      fontSize = 15.sp
     ),
     interactionSource = interactionSource,
     decorationBox = @Composable { innerTextField ->
