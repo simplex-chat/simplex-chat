@@ -56,18 +56,20 @@ struct NewChatSheet: View {
     
     @ViewBuilder private func viewBody() -> some View {
         List {
-            ContactsListSearchBar(
-                searchMode: $searchMode,
-                searchFocussed: $searchFocussed,
-                searchText: $searchText,
-                searchShowingSimplexLink: $searchShowingSimplexLink,
-                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-            )
+            HStack {
+                ContactsListSearchBar(
+                    searchMode: $searchMode,
+                    searchFocussed: $searchFocussed,
+                    searchText: $searchText,
+                    searchShowingSimplexLink: $searchShowingSimplexLink,
+                    searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+                )
+                .frame(maxWidth: .infinity)
+            }
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-            .frame(maxWidth: .infinity)
-            
+
             if (searchText.isEmpty) {
                 Section {
                     NavigationLink {
@@ -288,6 +290,9 @@ struct ContactsListSearchBar: View {
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 16, height: 16)
                     TextField("Search or paste SimpleX link", text: $searchText)
                         .foregroundColor(searchShowingSimplexLink ? theme.colors.secondary : theme.colors.onBackground)
                         .disabled(searchShowingSimplexLink)
@@ -295,6 +300,9 @@ struct ContactsListSearchBar: View {
                         .frame(maxWidth: .infinity)
                     if !searchText.isEmpty {
                         Image(systemName: "xmark.circle.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 16, height: 16)
                             .onTapGesture {
                                 searchText = ""
                             }
