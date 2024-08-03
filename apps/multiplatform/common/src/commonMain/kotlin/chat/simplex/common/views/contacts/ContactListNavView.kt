@@ -16,7 +16,7 @@ import chat.simplex.common.views.newchat.chatContactType
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
-private fun onRequestAccepted(chat: Chat) {
+fun onRequestAccepted(chat: Chat) {
     val chatInfo = chat.chatInfo
     if (chatInfo is ChatInfo.Direct) {
         ModalManager.start.closeModals()
