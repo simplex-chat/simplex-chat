@@ -63,7 +63,7 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
        * It will be dropped automatically when connection established or when user goes away from this screen.
        * It applies only to Android because on Desktop center space will not be overlapped by [AddContactLearnMore]
        **/
-      if (chatModel.showingInvitation.value != null && (ModalManager.start.openModalCount() == 1 || appPlatform.isDesktop)) {
+      if (chatModel.showingInvitation.value != null && ModalManager.start.openModalCount() == 1) {
         val conn = contactConnection.value
         if (chatModel.showingInvitation.value?.connChatUsed == false && conn != null) {
           AlertManager.shared.showAlertDialog(
@@ -78,7 +78,7 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
                 controller.deleteChat(Chat(remoteHostId = rh?.remoteHostId, chatInfo = chatInfo, chatItems = listOf()))
                 if (chatModel.chatId.value == chatInfo.id) {
                   chatModel.chatId.value = null
-                  ModalManager.end.closeModals()
+                  ModalManager.start.closeModals()
                 }
               }
             }
@@ -212,8 +212,7 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
   Spacer(Modifier.height(10.dp))
   val incognito = remember { mutableStateOf(controller.appPrefs.incognito.get()) }
   IncognitoToggle(controller.appPrefs.incognito, incognito) {
-    if (appPlatform.isDesktop) ModalManager.end.closeModals()
-    ModalManager.end.showModal { IncognitoView() }
+    ModalManager.start.showModal { IncognitoView() }
   }
   KeyChangeEffect(incognito.value) {
     withBGApi {
@@ -233,8 +232,7 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
 private fun AddContactLearnMoreButton() {
   IconButton(
     {
-      if (appPlatform.isDesktop) ModalManager.end.closeModals()
-      ModalManager.end.showModalCloseable { close ->
+      ModalManager.start.showModalCloseable { close ->
         AddContactLearnMore(close)
       }
     },
