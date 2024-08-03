@@ -40,10 +40,16 @@ import java.net.URI
 @Composable
 fun NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
   val oneHandUI = remember { chatModel.controller.appPrefs.oneHandUI }
+  val showToolbarInOneHandUI = remember { mutableStateOf(oneHandUI.state.value) }
+  val keyboardState by getKeyboardState()
+
+  LaunchedEffect(keyboardState, oneHandUI) {
+    showToolbarInOneHandUI.value = keyboardState == KeyboardState.Closed && oneHandUI.state.value
+  }
 
   Scaffold(
     bottomBar = {
-      if (oneHandUI.state.value) {
+      if (showToolbarInOneHandUI.value) {
         CloseSheetBar(
           close = close,
           showClose = true,
@@ -121,7 +127,7 @@ private fun NewChatSheetLayout(
   scanPaste: () -> Unit,
   createGroup: () -> Unit,
   close: () -> Unit,
-  oneHandUI: SharedPreference<Boolean>
+  oneHandUI: SharedPreference<Boolean>,
 ) {
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
@@ -533,10 +539,16 @@ private fun contactTypesSearchTargets(baseContactTypes: List<ContactType>, searc
 @Composable
 private fun DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats: () -> Unit, close: () -> Unit) {
   val oneHandUI = remember { chatModel.controller.appPrefs.oneHandUI }
+  val showToolbarInOneHandUI = remember { mutableStateOf(oneHandUI.state.value) }
+  val keyboardState by getKeyboardState()
+
+  LaunchedEffect(keyboardState, oneHandUI) {
+    showToolbarInOneHandUI.value = keyboardState == KeyboardState.Closed && oneHandUI.state.value
+  }
 
   Scaffold(
     bottomBar = {
-      if (oneHandUI.state.value) {
+      if (showToolbarInOneHandUI.value) {
         CloseSheetBar(
           close = closeDeletedChats,
           showClose = true,
