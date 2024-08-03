@@ -689,7 +689,7 @@
 /* rcv group event chat item */
 "blocked %@" = "%@ bloqué";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "bloqué par l'administrateur";
 
 /* No comment provided by engineer. */
@@ -2699,12 +2699,6 @@
 "Message reception" = "Réception de message";
 
 /* No comment provided by engineer. */
-"Message routing fallback" = "Rabattement du routage des messages";
-
-/* No comment provided by engineer. */
-"Message routing mode" = "Mode de routage des messages";
-
-/* No comment provided by engineer. */
 "Message source remains private." = "La source du message reste privée.";
 
 /* No comment provided by engineer. */
@@ -2977,10 +2971,10 @@
 "One-time invitation link" = "Lien d'invitation unique";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "Les hôtes .onion seront nécessaires pour la connexion. Nécessite l'activation d'un VPN.";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "Les hôtes .onion seront **nécessaires** pour la connexion.\nNécessite l'activation d'un VPN.";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "Les hôtes .onion seront utilisés dès que possible. Nécessite l'activation d'un VPN.";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "Les hôtes .onion seront utilisés dès que possible.\nNécessite l'activation d'un VPN.";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "Les hôtes .onion ne seront pas utilisés.";
@@ -3553,9 +3547,6 @@
 "Reveal" = "Révéler";
 
 /* No comment provided by engineer. */
-"Revert" = "Revenir en arrière";
-
-/* No comment provided by engineer. */
 "Revoke" = "Révoquer";
 
 /* cancel file action */
@@ -3699,7 +3690,7 @@
 /* chat item text */
 "security code changed" = "code de sécurité modifié";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "Choisir";
 
 /* No comment provided by engineer. */
@@ -4022,9 +4013,6 @@
 
 /* No comment provided by engineer. */
 "SMP server" = "Serveur SMP";
-
-/* No comment provided by engineer. */
-"SMP servers" = "Serveurs SMP";
 
 /* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Des erreurs non fatales se sont produites lors de l'importation - vous pouvez consulter la console de chat pour plus de détails.";
@@ -4408,7 +4396,7 @@
 "Unknown error" = "Erreur inconnue";
 
 /* No comment provided by engineer. */
-"unknown relays" = "relais inconnus";
+"unknown servers" = "relais inconnus";
 
 /* No comment provided by engineer. */
 "Unknown servers!" = "Serveurs inconnus !";
@@ -4450,16 +4438,10 @@
 "Update" = "Mise à jour";
 
 /* No comment provided by engineer. */
-"Update .onion hosts setting?" = "Mettre à jour le paramètre des hôtes .onion ?";
-
-/* No comment provided by engineer. */
 "Update database passphrase" = "Mise à jour de la phrase secrète de la base de données";
 
 /* No comment provided by engineer. */
 "Update network settings?" = "Mettre à jour les paramètres réseau ?";
-
-/* No comment provided by engineer. */
-"Update transport isolation mode?" = "Mettre à jour le mode d'isolement du transport ?";
 
 /* rcv group event chat item */
 "updated group profile" = "mise à jour du profil de groupe";
@@ -4469,9 +4451,6 @@
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "La mise à jour des ces paramètres reconnectera le client à tous les serveurs.";
-
-/* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "La mise à jour de ce paramètre reconnectera le client à tous les serveurs.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Mettre à niveau et ouvrir le chat";
@@ -4538,9 +4517,6 @@
 
 /* No comment provided by engineer. */
 "User selection" = "Sélection de l'utilisateur";
-
-/* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = "L'utilisation des hôtes .onion nécessite un fournisseur VPN compatible.";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "Vous utilisez les serveurs SimpleX.";
@@ -4733,9 +4709,6 @@
 
 /* No comment provided by engineer. */
 "XFTP server" = "Serveur XFTP";
-
-/* No comment provided by engineer. */
-"XFTP servers" = "Serveurs XFTP";
 
 /* pref value */
 "yes" = "oui";
