@@ -121,7 +121,7 @@ final class ChatModel: ObservableObject {
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
     // tracks keyboard height via subscription in AppDelegate
-    @Published var keyboardHeight: CGFloat = 0
+//    @Published var keyboardHeight: CGFloat = 0
     @Published var pasteboardHasStrings: Bool = UIPasteboard.general.hasStrings
     @Published var networkInfo = UserNetworkInfo(networkType: .other, online: true)
 

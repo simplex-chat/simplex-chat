@@ -15,30 +15,30 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         logger.debug("AppDelegate: didFinishLaunchingWithOptions")
         application.registerForRemoteNotifications()
-        if #available(iOS 17.0, *) { trackKeyboard() }
+//        if #available(iOS 17.0, *) { trackKeyboard() }
         NotificationCenter.default.addObserver(self, selector: #selector(pasteboardChanged), name: UIPasteboard.changedNotification, object: nil)
         removePasscodesIfReinstalled()
         prepareForLaunch()
         return true
     }
 
-    @available(iOS 17.0, *)
-    private func trackKeyboard() {
-        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
-    }
-
-    @available(iOS 17.0, *)
-    @objc func keyboardWillShow(_ notification: Notification) {
-        if let keyboardFrame: NSValue = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue {
-            ChatModel.shared.keyboardHeight = keyboardFrame.cgRectValue.height
-        }
-    }
-
-    @available(iOS 17.0, *)
-    @objc func keyboardWillHide(_ notification: Notification) {
-        ChatModel.shared.keyboardHeight = 0
-    }
+//    @available(iOS 17.0, *)
+//    private func trackKeyboard() {
+//        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillShow), name: UIResponder.keyboardWillShowNotification, object: nil)
+//        NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
+//    }
+//
+//    @available(iOS 17.0, *)
+//    @objc func keyboardWillShow(_ notification: Notification) {
+//        if let keyboardFrame: NSValue = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue {
+//            ChatModel.shared.keyboardHeight = keyboardFrame.cgRectValue.height
+//        }
+//    }
+//
+//    @available(iOS 17.0, *)
+//    @objc func keyboardWillHide(_ notification: Notification) {
+//        ChatModel.shared.keyboardHeight = 0
+//    }
 
     @objc func pasteboardChanged() {
         ChatModel.shared.pasteboardHasStrings = UIPasteboard.general.hasStrings

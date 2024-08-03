@@ -199,6 +199,7 @@
 		CE3097FB2C4C0C9F00180898 /* ErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE3097FA2C4C0C9F00180898 /* ErrorAlert.swift */; };
 		CE38A29A2C3FCA54005ED185 /* ImageUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CBD2859295711D700EC2CF4 /* ImageUtils.swift */; };
 		CE38A29C2C3FCD72005ED185 /* SwiftyGif in Frameworks */ = {isa = PBXBuildFile; productRef = CE38A29B2C3FCD72005ED185 /* SwiftyGif */; };
+		CE7547EB2C5E27A0009579B7 /* SwiftUIIntrospect in Frameworks */ = {isa = PBXBuildFile; productRef = CE7547EA2C5E27A0009579B7 /* SwiftUIIntrospect */; };
 		CE984D4B2C36C5D500E3AEFF /* ChatItemClipShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE984D4A2C36C5D500E3AEFF /* ChatItemClipShape.swift */; };
 		CEDE70222C48FD9500233B1F /* SEChatState.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEDE70212C48FD9500233B1F /* SEChatState.swift */; };
 		CEE723AA2C3BD3D70009AE93 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE723A92C3BD3D70009AE93 /* ShareViewController.swift */; };
@@ -614,6 +615,7 @@
 				5CE2BA702845308900EC33A6 /* SimpleXChat.framework in Frameworks */,
 				8C8118722C220B5B00E6FC94 /* Yams in Frameworks */,
 				D741547829AF89AF0022400A /* StoreKit.framework in Frameworks */,
+				CE7547EB2C5E27A0009579B7 /* SwiftUIIntrospect in Frameworks */,
 				D7197A1829AE89660055C05A /* WebRTC in Frameworks */,
 				D77B92DC2952372200A5A1CC /* SwiftyGif in Frameworks */,
 				D7F0E33929964E7E0068AF69 /* LZString in Frameworks */,
@@ -1132,6 +1134,7 @@
 				D7F0E33829964E7E0068AF69 /* LZString */,
 				D7197A1729AE89660055C05A /* WebRTC */,
 				8C8118712C220B5B00E6FC94 /* Yams */,
+				CE7547EA2C5E27A0009579B7 /* SwiftUIIntrospect */,
 			);
 			productName = "SimpleX (iOS)";
 			productReference = 5CA059CA279559F40002BEB4 /* SimpleX.app */;
@@ -1276,6 +1279,7 @@
 				D7F0E33729964E7D0068AF69 /* XCRemoteSwiftPackageReference "lzstring-swift" */,
 				D7197A1629AE89660055C05A /* XCRemoteSwiftPackageReference "WebRTC" */,
 				8C73C1162C21E17B00892670 /* XCRemoteSwiftPackageReference "Yams" */,
+				CE7547E92C5E27A0009579B7 /* XCRemoteSwiftPackageReference "swiftui-introspect" */,
 			);
 			productRefGroup = 5CA059CB279559F40002BEB4 /* Products */;
 			projectDirPath = "";
@@ -2314,6 +2318,14 @@
 				version = 5.1.2;
 			};
 		};
+		CE7547E92C5E27A0009579B7 /* XCRemoteSwiftPackageReference "swiftui-introspect" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/siteline/swiftui-introspect.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.3.0;
+			};
+		};
 		D7197A1629AE89660055C05A /* XCRemoteSwiftPackageReference "WebRTC" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/simplex-chat/WebRTC.git";
@@ -2355,6 +2367,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D77B92DA2952372200A5A1CC /* XCRemoteSwiftPackageReference "SwiftyGif" */;
 			productName = SwiftyGif;
+		};
+		CE7547EA2C5E27A0009579B7 /* SwiftUIIntrospect */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CE7547E92C5E27A0009579B7 /* XCRemoteSwiftPackageReference "swiftui-introspect" */;
+			productName = SwiftUIIntrospect;
 		};
 		D7197A1729AE89660055C05A /* WebRTC */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -1,5 +1,5 @@
 {
-  "originHash" : "e2611d1e91fd8071abc106776ba14ee2e395d2ad08a78e073381294abc10f115",
+  "originHash" : "bd7a2619a245f48ea1ce0b8d9b12a526e3acd0b018feed1a97d088ada38733c3",
   "pins" : [
     {
       "identity" : "codescanner",
@@ -19,11 +19,19 @@
       }
     },
     {
+      "identity" : "swiftui-introspect",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/siteline/swiftui-introspect.git",
+      "state" : {
+        "revision" : "807f73ce09a9b9723f12385e592b4e0aaebd3336",
+        "version" : "1.3.0"
+      }
+    },
+    {
       "identity" : "swiftygif",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/kirualex/SwiftyGif",
       "state" : {
-        "branch" : "master",
         "revision" : "5e8619335d394901379c9add5c4c1c2f420b3800"
       }
     },
