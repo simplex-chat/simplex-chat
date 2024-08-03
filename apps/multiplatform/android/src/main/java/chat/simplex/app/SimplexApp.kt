@@ -7,9 +7,13 @@ import chat.simplex.common.platform.Log
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.*
+import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.view.ViewCompat
 import androidx.lifecycle.*
 import androidx.work.*
 import chat.simplex.app.model.NtfManager
@@ -18,16 +22,14 @@ import chat.simplex.app.views.call.CallActivity
 import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.model.ChatModel.updatingChatsMutex
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
-import chat.simplex.common.ui.theme.CurrentColors
-import chat.simplex.common.ui.theme.DefaultTheme
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import com.jakewharton.processphoenix.ProcessPhoenix
 import kotlinx.coroutines.*
-import kotlinx.coroutines.sync.withLock
 import java.io.*
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -86,7 +88,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         Lifecycle.Event.ON_START -> {
           isAppOnForeground = true
           if (chatModel.chatRunning.value == true) {
-            updatingChatsMutex.withLock {
+            withChats {
               kotlin.runCatching {
                 val currentUserId = chatModel.currentUser.value?.userId
                 val chats = ArrayList(chatController.apiGetChats(chatModel.remoteHostId()))
@@ -99,7 +101,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
                     /** Pass old chatStats because unreadCounter can be changed already while [ChatController.apiGetChats] is executing */
                     if (indexOfCurrentChat >= 0) chats[indexOfCurrentChat] = chats[indexOfCurrentChat].copy(chatStats = oldStats)
                   }
-                  chatModel.updateChats(chats)
+                  updateChats(chats)
                 }
               }.onFailure { Log.e(TAG, it.stackTraceToString()) }
             }
@@ -267,6 +269,35 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         val uiModeManager = androidAppContext.getSystemService(UI_MODE_SERVICE) as UiModeManager
         uiModeManager.setApplicationNightMode(mode)
+      }
+
+      override fun androidSetStatusAndNavBarColors(isLight: Boolean, backgroundColor: Color, hasTop: Boolean, hasBottom: Boolean) {
+        val window = mainActivity.get()?.window ?: return
+        @Suppress("DEPRECATION")
+        val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
+
+        val statusBar = (if (hasTop) {
+          backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
+        } else {
+          backgroundColor
+        }).toArgb()
+        val navBar = (if (hasBottom) {
+          backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
+        } else {
+          backgroundColor
+        }).toArgb()
+        if (window.statusBarColor != statusBar) {
+          window.statusBarColor = statusBar
+        }
+        if (windowInsetController?.isAppearanceLightStatusBars != isLight) {
+          windowInsetController?.isAppearanceLightStatusBars = isLight
+        }
+        if (window.navigationBarColor != navBar) {
+          window.navigationBarColor = navBar
+        }
+        if (windowInsetController?.isAppearanceLightNavigationBars != isLight) {
+          windowInsetController?.isAppearanceLightNavigationBars = isLight
+        }
       }
 
       override fun androidStartCallActivity(acceptCall: Boolean, remoteHostId: Long?, chatId: ChatId?) {

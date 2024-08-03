@@ -30,6 +30,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.saveAppLocale
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.painterResource
@@ -78,7 +79,7 @@ fun AppearanceScope.AppearanceLayout(
     Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.appearance_settings))
-    SectionView(stringResource(MR.strings.settings_section_title_language), padding = PaddingValues()) {
+    SectionView(stringResource(MR.strings.settings_section_title_interface), padding = PaddingValues()) {
       val context = LocalContext.current
       //      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       //        SectionItemWithValue(
@@ -104,6 +105,11 @@ fun AppearanceScope.AppearanceLayout(
         }
       }
       //      }
+
+      SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), ChatModel.controller.appPrefs.oneHandUI) {
+        val c = CurrentColors.value.colors
+        platform.androidSetStatusAndNavBarColors(c.isLight, c.background, false, false)
+      }
     }
 
     SectionDividerSpaced(maxTopPadding = true)

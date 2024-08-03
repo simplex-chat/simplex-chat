@@ -2169,7 +2169,7 @@ testSetUITheme =
       a <## "you've shared main profile with this contact"
       a <## "connection not verified, use /code command to see security code"
       a <## "quantum resistant end-to-end encryption"
-      a <## "peer chat protocol version range: (Version 1, Version 8)"
+      a <## "peer chat protocol version range: (Version 1, Version 9)"
     groupInfo a = do
       a <## "group ID: 1"
       a <## "current members: 1"

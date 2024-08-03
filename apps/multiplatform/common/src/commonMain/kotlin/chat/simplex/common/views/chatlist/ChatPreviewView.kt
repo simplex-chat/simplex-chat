@@ -207,7 +207,7 @@ fun ChatPreviewView(
     } else {
       when (cInfo) {
         is ChatInfo.Direct ->
-          if (cInfo.contact.activeConn == null && cInfo.contact.profile.contactLink != null) {
+          if (cInfo.contact.activeConn == null && cInfo.contact.profile.contactLink != null && cInfo.contact.active) {
             Text(stringResource(MR.strings.contact_tap_to_connect), color = MaterialTheme.colors.primary)
           } else if (!cInfo.contact.sndReady && cInfo.contact.activeConn != null) {
             if (cInfo.contact.nextSendGrpInv) {

@@ -18,6 +18,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.group.AddGroupMembersView
 import chat.simplex.common.views.chatlist.setGroupMembers
@@ -32,19 +33,22 @@ import kotlinx.coroutines.launch
 import java.net.URI
 
 @Composable
-fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit) {
+fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, closeAll: () -> Unit) {
   val rhId = rh?.remoteHostId
   AddGroupLayout(
     createGroup = { incognito, groupProfile ->
       withBGApi {
         val groupInfo = chatModel.controller.apiNewGroup(rhId, incognito, groupProfile)
         if (groupInfo != null) {
-          chatModel.updateGroup(rhId = rhId, groupInfo)
-          chatModel.chatItems.clear()
-          chatModel.chatItemStatuses.clear()
-          chatModel.chatId.value = groupInfo.id
+          withChats {
+            updateGroup(rhId = rhId, groupInfo)
+            chatModel.chatItems.clear()
+            chatModel.chatItemStatuses.clear()
+            chatModel.chatId.value = groupInfo.id
+          }
           setGroupMembers(rhId, groupInfo, chatModel)
-          close.invoke()
+          closeAll.invoke()
+
           if (!groupInfo.incognito) {
             ModalManager.end.showModalCloseable(true) { close ->
               AddGroupMembersView(rhId, groupInfo, creatingGroup = true, chatModel, close)

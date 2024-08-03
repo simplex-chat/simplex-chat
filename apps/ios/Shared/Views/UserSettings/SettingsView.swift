@@ -18,7 +18,7 @@ let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? 
 
 let DEFAULT_SHOW_LA_NOTICE = "showLocalAuthenticationNotice"
 let DEFAULT_LA_NOTICE_SHOWN = "localAuthenticationNoticeShown"
-let DEFAULT_PERFORM_LA = "performLocalAuthentication"
+let DEFAULT_PERFORM_LA = "performLocalAuthentication" // deprecated, moved to app group
 let DEFAULT_LA_MODE = "localAuthenticationMode"
 let DEFAULT_LA_LOCK_DELAY = "localAuthenticationLockDelay"
 let DEFAULT_LA_SELF_DESTRUCT = "localAuthenticationSelfDestruct"
@@ -28,7 +28,7 @@ let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_WEBRTC_ICE_SERVERS = "webrtcICEServers"
 let DEFAULT_CALL_KIT_CALLS_IN_RECENTS = "callKitCallsInRecents"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages" // unused. Use GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES instead
-let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
+let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews" // deprecated, moved to app group
 let DEFAULT_PRIVACY_SIMPLEX_LINK_MODE = "privacySimplexLinkMode"
 let DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS = "privacyShowChatPreviews"
 let DEFAULT_PRIVACY_SAVE_LAST_DRAFT = "privacySaveLastDraft"
@@ -165,6 +165,9 @@ let themeOverridesDefault: CodableDefault<[ThemeOverrides]> = CodableDefault(def
 
 func setGroupDefaults() {
     privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))
+    performLAGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA))
+    privacyLinkPreviewsGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS))
+    profileImageCornerRadiusGroupDefault.set(UserDefaults.standard.double(forKey: DEFAULT_PROFILE_IMAGE_CORNER_RADIUS))
 }
 
 public class StringDefault {
