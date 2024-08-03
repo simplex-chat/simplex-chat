@@ -165,7 +165,7 @@ struct AdvancedNetworkSettings: View {
                     }
                     .disabled(netCfg.hasProxyTimeouts)
                     
-                    Button("Save settings") {
+                    Button("Save and reconnect") {
                         showSettingsAlert = .update
                     }
                     .disabled(netCfg == currentNetCfg)

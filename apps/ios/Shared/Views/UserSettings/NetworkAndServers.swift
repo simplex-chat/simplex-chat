@@ -32,7 +32,7 @@ struct NetworkAndServers: View {
                             .navigationTitle("Your SMP servers")
                             .modifier(ThemedBackground(grouped: true))
                     } label: {
-                        Text("SMP servers")
+                        Text("Message servers")
                     }
 
                     NavigationLink {
@@ -40,7 +40,7 @@ struct NetworkAndServers: View {
                             .navigationTitle("Your XFTP servers")
                             .modifier(ThemedBackground(grouped: true))
                     } label: {
-                        Text("XFTP servers")
+                        Text("Media & file servers")
                     }
 
                     NavigationLink {
@@ -48,7 +48,7 @@ struct NetworkAndServers: View {
                             .navigationTitle("Advanced settings")
                             .modifier(ThemedBackground(grouped: true))
                     } label: {
-                        Text("Advanced settings")
+                        Text("Advanced network settings")
                     }
                 } header: {
                     Text("Messages & files")
