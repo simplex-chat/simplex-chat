@@ -553,6 +553,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
   var scrollDirection by remember { mutableStateOf(ScrollDirection.Idle) }
   var previousIndex by remember { mutableStateOf(0) }
   var previousScrollOffset by remember { mutableStateOf(0) }
+  val keyboardState by getKeyboardState()
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
     val currentIndex = listState.firstVisibleItemIndex
@@ -592,7 +593,10 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
         Modifier
           .offset {
             val y = if (searchText.value.text.isEmpty()) {
-              if (oneHandUI.state.value && scrollDirection == ScrollDirection.Up) {
+              if (
+                (oneHandUI.state.value && scrollDirection == ScrollDirection.Up) ||
+                (appPlatform.isAndroid && keyboardState == KeyboardState.Opened)
+              ) {
                 0
               } else if (listState.firstVisibleItemIndex == 0) -listState.firstVisibleItemScrollOffset else -1000
             } else {
