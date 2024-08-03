@@ -211,12 +211,14 @@ struct ChatListView: View {
         } else {
             let s = searchString()
             return s == "" && !showUnreadAndFavorites
-            ? chatModel.chats.filter { chat in !chat.chatInfo.chatDeleted }
+            ? chatModel.chats.filter { chat in
+                !chat.chatInfo.chatDeleted && chatContactType(chat: chat) != ContactType.card
+            }
             : chatModel.chats.filter { chat in
                 let cInfo = chat.chatInfo
                 switch cInfo {
                 case let .direct(contact):
-                    return !contact.chatDeleted && (
+                    return !contact.chatDeleted && chatContactType(chat: chat) != ContactType.card && (
                         s == ""
                         ? filtered(chat)
                         : (viewNameContains(cInfo, s) ||
