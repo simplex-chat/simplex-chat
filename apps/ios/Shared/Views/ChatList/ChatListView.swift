@@ -11,7 +11,6 @@ import SimpleXChat
 import SwiftUIIntrospect
 
 fileprivate var contentOffsetObservation: NSKeyValueObservation?
-fileprivate var contentSizeObservation: NSKeyValueObservation?
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
@@ -228,15 +227,6 @@ struct ChatListView: View {
                         }
                     }
                 }
-            }
-        }
-
-        if contentSizeObservation == nil {
-            contentSizeObservation = collectionView.observe(
-                \.contentSize,
-                 options: [.new, .old]
-            ) { (cv, change) in
-                
             }
         }
     }
