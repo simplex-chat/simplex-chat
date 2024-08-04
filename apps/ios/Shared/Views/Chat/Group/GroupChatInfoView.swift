@@ -226,7 +226,7 @@ struct GroupChatInfoView: View {
         var body: some View {
             let member = groupMember.wrapped
             let v = HStack{
-                ProfileImage(imageStr: member.image, size: 38)
+                MemberProfileImage(member, size: 38)
                     .padding(.trailing, 2)
                 // TODO server connection status
                 VStack(alignment: .leading) {
