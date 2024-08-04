@@ -2176,7 +2176,10 @@ object ChatController {
         r.chatItemDeletions.forEach { (deletedChatItem, toChatItem) ->
           val cInfo = deletedChatItem.chatInfo
           val cItem = deletedChatItem.chatItem
-          AudioPlayer.stop(cItem)
+          if (chatModel.chatId.value != null) {
+            // Stop voice playback only inside a chat, allow to play in a chat list
+            AudioPlayer.stop(cItem)
+          }
           val isLastChatItem = chatModel.getChat(cInfo.id)?.chatItems?.lastOrNull()?.id == cItem.id
           if (isLastChatItem && ntfManager.hasNotificationsForChat(cInfo.id)) {
             ntfManager.cancelNotificationsForChat(cInfo.id)

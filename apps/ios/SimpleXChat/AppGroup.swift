@@ -66,8 +66,8 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_NTF_ENABLE_PERIODIC: false,
         GROUP_DEFAULT_NETWORK_USE_ONION_HOSTS: OnionHosts.no.rawValue,
         GROUP_DEFAULT_NETWORK_SESSION_MODE: TransportSessionMode.user.rawValue,
-        GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE: SMPProxyMode.never.rawValue,
-        GROUP_DEFAULT_NETWORK_SMP_PROXY_FALLBACK: SMPProxyFallback.allow.rawValue,
+        GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE: SMPProxyMode.unknown.rawValue,
+        GROUP_DEFAULT_NETWORK_SMP_PROXY_FALLBACK: SMPProxyFallback.allowProtected.rawValue,
         GROUP_DEFAULT_NETWORK_TCP_CONNECT_TIMEOUT: NetCfg.defaults.tcpConnectTimeout,
         GROUP_DEFAULT_NETWORK_TCP_TIMEOUT: NetCfg.defaults.tcpTimeout,
         GROUP_DEFAULT_NETWORK_TCP_TIMEOUT_PER_KB: NetCfg.defaults.tcpTimeoutPerKb,
@@ -235,13 +235,13 @@ public let networkSessionModeGroupDefault = EnumDefault<TransportSessionMode>(
 public let networkSMPProxyModeGroupDefault = EnumDefault<SMPProxyMode>(
     defaults: groupDefaults,
     forKey: GROUP_DEFAULT_NETWORK_SMP_PROXY_MODE,
-    withDefault: .never
+    withDefault: .unknown
 )
 
 public let networkSMPProxyFallbackGroupDefault = EnumDefault<SMPProxyFallback>(
     defaults: groupDefaults,
     forKey: GROUP_DEFAULT_NETWORK_SMP_PROXY_FALLBACK,
-    withDefault: .allow
+    withDefault: .allowProtected
 )
 
 public let storeDBPassphraseGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_STORE_DB_PASSPHRASE)

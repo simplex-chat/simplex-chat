@@ -27,6 +27,7 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.group.deleteGroupDialog
 import chat.simplex.common.views.chat.group.leaveGroupDialog
 import chat.simplex.common.views.chat.item.ItemAction
+import chat.simplex.common.views.contacts.onRequestAccepted
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
@@ -129,7 +130,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI:
             ContactRequestView(chat.chatInfo)
           }
         },
-        click = { contactRequestAlertDialog(chat.remoteHostId, chat.chatInfo, chatModel) },
+        click = { contactRequestAlertDialog(chat.remoteHostId, chat.chatInfo, chatModel) { onRequestAccepted(it) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
             ContactRequestMenuItems(chat.remoteHostId, chat.chatInfo, chatModel, showMenu)

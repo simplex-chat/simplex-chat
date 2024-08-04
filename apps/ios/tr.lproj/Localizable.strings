@@ -647,7 +647,7 @@
 /* rcv group event chat item */
 "blocked %@" = "engellendi %@";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "yönetici tarafından engellendi";
 
 /* No comment provided by engineer. */
@@ -2507,12 +2507,6 @@
 "message received" = "mesaj alındı";
 
 /* No comment provided by engineer. */
-"Message routing fallback" = "Mesaj yönlendirme yedeklemesi";
-
-/* No comment provided by engineer. */
-"Message routing mode" = "Mesaj yönlendirme modu";
-
-/* No comment provided by engineer. */
 "Message source remains private." = "Mesaj kaynağı gizli kalır.";
 
 /* No comment provided by engineer. */
@@ -2767,10 +2761,10 @@
 "One-time invitation link" = "Tek zamanlı bağlantı daveti";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "Bağlantı için Onion ana bilgisayarları gerekecektir. VPN'nin etkinleştirilmesi gerekir.";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "Bağlantı için Onion ana bilgisayarları gerekecektir.\nVPN'nin etkinleştirilmesi gerekir.";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "Onion ana bilgisayarları mevcutsa kullanılacaktır. VPN'nin etkinleştirilmesi gerekir.";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "Onion ana bilgisayarları mevcutsa kullanılacaktır.\nVPN'nin etkinleştirilmesi gerekir.";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "Onion ana bilgisayarları kullanılmayacaktır.";
@@ -3268,9 +3262,6 @@
 "Reveal" = "Göster";
 
 /* No comment provided by engineer. */
-"Revert" = "Geri al";
-
-/* No comment provided by engineer. */
 "Revoke" = "İptal et";
 
 /* cancel file action */
@@ -3402,7 +3393,7 @@
 /* chat item text */
 "security code changed" = "güvenlik kodu değiştirildi";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "Seç";
 
 /* No comment provided by engineer. */
@@ -3674,9 +3665,6 @@
 
 /* No comment provided by engineer. */
 "Small groups (max 20)" = "Küçük gruplar (en fazla 20 kişi)";
-
-/* No comment provided by engineer. */
-"SMP servers" = "SMP sunucuları";
 
 /* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "İçe aktarma sırasında bazı ölümcül olmayan hatalar oluştu - daha fazla ayrıntı için Sohbet konsoluna bakabilirsiniz.";
@@ -4027,7 +4015,7 @@
 "Unknown error" = "Bilinmeyen hata";
 
 /* No comment provided by engineer. */
-"unknown relays" = "bilinmeyen yönlendiriciler";
+"unknown servers" = "bilinmeyen yönlendiriciler";
 
 /* No comment provided by engineer. */
 "Unknown servers!" = "Bilinmeyen sunucular!";
@@ -4069,16 +4057,10 @@
 "Update" = "Güncelle";
 
 /* No comment provided by engineer. */
-"Update .onion hosts setting?" = ".onion ana bilgisayarların ayarı güncellensin mi?";
-
-/* No comment provided by engineer. */
 "Update database passphrase" = "Veritabanı parolasını güncelle";
 
 /* No comment provided by engineer. */
 "Update network settings?" = "Bağlantı ayarları güncellensin mi?";
-
-/* No comment provided by engineer. */
-"Update transport isolation mode?" = "Taşıma izolasyon modu güncellensin mi?";
 
 /* rcv group event chat item */
 "updated group profile" = "grup profili güncellendi";
@@ -4088,9 +4070,6 @@
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Ayarların güncellenmesi, istemciyi tüm sunuculara yeniden bağlayacaktır.";
-
-/* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "Bu ayarın güncellenmesi, istemciyi tüm sunuculara yeniden bağlayacaktır.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Yükselt ve sohbeti aç";
@@ -4145,9 +4124,6 @@
 
 /* No comment provided by engineer. */
 "User profile" = "Kullanıcı profili";
-
-/* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = ".onion ana bilgisayarlarını kullanmak için uyumlu VPN sağlayıcısı gerekir.";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "SimpleX Chat sunucuları kullanılıyor.";
@@ -4328,9 +4304,6 @@
 
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Yanlış parola!";
-
-/* No comment provided by engineer. */
-"XFTP servers" = "XFTP sunucuları";
 
 /* pref value */
 "yes" = "evet";
