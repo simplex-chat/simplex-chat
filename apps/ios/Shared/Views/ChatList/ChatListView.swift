@@ -144,7 +144,10 @@ struct ChatListView: View {
         VStack(spacing: .zero) {
             if !chats.isEmpty {
                 ScrollViewReader { scrollProxy in
-                    List(chats.reversed()) { chat in
+                    func scrollToBottom() {
+                        if let first = chats.first { scrollProxy.scrollTo(first.id) }
+                    }
+                    return List(chats.reversed()) { chat in
                         ChatListNavLink(chat: chat)
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
                             .listRowBackground(Color.clear)
@@ -152,17 +155,19 @@ struct ChatListView: View {
                     }
                     .introspect(.list, on: .iOS(.v16, .v17)) { setObservations(for: $0) }
                     .listStyle(.plain)
+                    .onChange(of: chats.count) { _ in scrollToBottom() }
                     .onChange(of: searchFocussed) { sf in
                         if sf, let firstChat = chats.first {
                             Task {
+                                // Wait for keyboard animation to finish (0.21)
                                 try? await Task.sleep(nanoseconds: 200_000_000)
                                 withAnimation { scrollProxy.scrollTo(firstChat.id) }
                             }
                         }
                     }
                     .task {
-                        if initialAppearance, let firstChat = chats.first {
-                            scrollProxy.scrollTo(firstChat.id)
+                        if initialAppearance {
+                            scrollToBottom()
                             initialAppearance = false
                         }
                     }
@@ -218,7 +223,7 @@ struct ChatListView: View {
                         return
                     }
 
-                    // Hide search bar when max amount of scroll in
+                    // Show/Hide search bar when scrolled for more than `MAX` amount
                     if newOffset > .zero,
                        bottomOffset > .zero {
                         let MAX: CGFloat = 64
