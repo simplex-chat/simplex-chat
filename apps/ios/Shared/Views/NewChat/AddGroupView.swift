@@ -206,7 +206,7 @@ struct AddGroupView: View {
                 chat = c
             }
         } catch {
-            dismiss()
+            dismissAllSheets()
             AlertManager.shared.showAlert(
                 Alert(
                     title: Text("Error creating group"),
