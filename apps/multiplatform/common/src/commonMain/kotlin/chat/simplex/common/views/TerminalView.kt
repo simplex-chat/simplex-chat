@@ -79,30 +79,33 @@ fun TerminalLayout(
     Scaffold(
       topBar = { CloseSheetBar(close) },
       bottomBar = {
-        Box(Modifier.padding(horizontal = 8.dp)) {
-          SendMsgView(
-            composeState = composeState,
-            showVoiceRecordIcon = false,
-            recState = remember { mutableStateOf(RecordingState.NotStarted) },
-            isDirectChat = false,
-            liveMessageAlertShown = SharedPreference(get = { false }, set = {}),
-            sendMsgEnabled = true,
-            sendButtonEnabled = true,
-            nextSendGrpInv = false,
-            needToAllowVoiceToContact = false,
-            allowedVoiceByPrefs = false,
-            userIsObserver = false,
-            userCanSend = true,
-            allowVoiceToContact = {},
-            placeholder = "",
-            sendMessage = { sendCommand() },
-            sendLiveMessage = null,
-            updateLiveMessage = null,
-            editPrevMessage = {},
-            onMessageChange = ::onMessageChange,
-            onFilesPasted = {},
-            textStyle = textStyle
-          )
+        Column {
+          Divider()
+          Box(Modifier.padding(horizontal = 8.dp)) {
+            SendMsgView(
+              composeState = composeState,
+              showVoiceRecordIcon = false,
+              recState = remember { mutableStateOf(RecordingState.NotStarted) },
+              isDirectChat = false,
+              liveMessageAlertShown = SharedPreference(get = { false }, set = {}),
+              sendMsgEnabled = true,
+              sendButtonEnabled = true,
+              nextSendGrpInv = false,
+              needToAllowVoiceToContact = false,
+              allowedVoiceByPrefs = false,
+              userIsObserver = false,
+              userCanSend = true,
+              allowVoiceToContact = {},
+              placeholder = "",
+              sendMessage = { sendCommand() },
+              sendLiveMessage = null,
+              updateLiveMessage = null,
+              editPrevMessage = {},
+              onMessageChange = ::onMessageChange,
+              onFilesPasted = {},
+              textStyle = textStyle
+            )
+          }
         }
       },
       contentColor = LocalContentColor.current,
