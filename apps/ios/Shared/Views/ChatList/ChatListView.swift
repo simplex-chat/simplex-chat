@@ -185,6 +185,9 @@ struct ChatListView: View {
             .clipped()
             .background(Material.bar.opacity(isSearchExpanded ? 1 : .zero))
         }
+        .safeAreaInset(edge: .top) {
+            Divider().background(Material.ultraThin)
+        }
         .onChange(of: chatModel.chatId) { _ in
             if chatModel.chatId == nil, let chatId = chatModel.chatToTop {
                 chatModel.chatToTop = nil
