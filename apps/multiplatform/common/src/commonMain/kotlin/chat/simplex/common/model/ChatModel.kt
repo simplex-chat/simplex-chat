@@ -345,6 +345,9 @@ object ChatModel {
       return withContext(Dispatchers.Main) {
         // update current chat
         if (chatId.value == cInfo.id) {
+          if (cItem.isDeletedContent || cItem.meta.itemDeleted != null) {
+            AudioPlayer.stop(cItem)
+          }
           val items = chatItems.value
           val itemIndex = items.indexOfFirst { it.id == cItem.id }
           if (itemIndex >= 0) {

@@ -478,7 +478,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                   if (modalBackground) {
                     platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, false, false)
                   } else {
-                    platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, backgroundColorState.value, true, true)
+                    platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, backgroundColorState.value, true, false)
                   }
                 }
             }
@@ -593,9 +593,11 @@ fun ChatLayout(
       )
   ) {
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
+      val elevation = remember { derivedStateOf { if (attachmentBottomSheetState.currentValue == ModalBottomSheetValue.Hidden) 0.dp else ModalBottomSheetDefaults.Elevation } }
       ModalBottomSheetLayout(
         scrimColor = Color.Black.copy(alpha = 0.12F),
         modifier = Modifier.navigationBarsWithImePadding(),
+        sheetElevation = elevation.value,
         sheetContent = {
           ChooseAttachmentView(
             attachmentOption,

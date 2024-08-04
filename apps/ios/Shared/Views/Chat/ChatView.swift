@@ -376,7 +376,7 @@ struct ChatView: View {
         reversedChatItems
             .enumerated()
             .filter { (index, chatItem) in
-                if let mergeCategory = chatItem.mergeCategory, index > .zero {
+                if let mergeCategory = chatItem.mergeCategory, index > 0 {
                     mergeCategory != reversedChatItems[index - 1].mergeCategory
                 } else {
                     true
@@ -456,7 +456,7 @@ struct ChatView: View {
         init() {
             unreadChatItemCounts = UnreadChatItemCounts(
                 isNearBottom: true,
-                unreadBelow: .zero
+                unreadBelow: 0
             )
             events
                 .receive(on: DispatchQueue.global(qos: .background))
@@ -813,7 +813,7 @@ struct ChatView: View {
                                     .padding(.trailing, 12)
                             }
                             HStack(alignment: .top, spacing: 8) {
-                                ProfileImage(imageStr: member.memberProfile.image, size: memberImageSize, backgroundColor: theme.colors.background)
+                                MemberProfileImage(member, size: memberImageSize, backgroundColor: theme.colors.background)
                                     .onTapGesture {
                                         if m.membersLoaded {
                                             selectedMember = m.getGroupMember(member.groupMemberId)
@@ -1098,7 +1098,7 @@ struct ChatView: View {
         }
 
         func reactions(from: Int? = nil, till: Int? = nil) -> some View {
-            ForEach(availableReactions[(from ?? .zero)..<(till ?? availableReactions.count)]) { reaction in
+            ForEach(availableReactions[(from ?? 0)..<(till ?? availableReactions.count)]) { reaction in
                 Button(reaction.text) {
                     setReaction(chatItem, add: true, reaction: reaction)
                 }

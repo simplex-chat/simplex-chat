@@ -11,11 +11,11 @@ import android.view.ViewGroup
 import android.view.inputmethod.*
 import android.widget.EditText
 import android.widget.TextView
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -51,6 +51,7 @@ actual fun PlatformTextField(
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
+  placeholder: String,
   onMessageChange: (String) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
@@ -58,10 +59,11 @@ actual fun PlatformTextField(
 ) {
   val cs = composeState.value
   val textColor = MaterialTheme.colors.onBackground
-  val padding = PaddingValues(12.dp, 7.dp, 45.dp, 0.dp)
-  val paddingStart = with(LocalDensity.current) { 12.dp.roundToPx() }
+  val hintColor = MaterialTheme.colors.secondary
+  val padding = PaddingValues(0.dp, 7.dp, 50.dp, 0.dp)
+  val paddingStart = 0
   val paddingTop = with(LocalDensity.current) { 7.dp.roundToPx() }
-  val paddingEnd = with(LocalDensity.current) { 45.dp.roundToPx() }
+  val paddingEnd = with(LocalDensity.current) { 50.dp.roundToPx() }
   val paddingBottom = with(LocalDensity.current) { 7.dp.roundToPx() }
   var showKeyboard by remember { mutableStateOf(false) }
   var freeFocus by remember { mutableStateOf(false) }
@@ -113,6 +115,8 @@ actual fun PlatformTextField(
     editText.background = ColorDrawable(Color.Transparent.toArgb())
     editText.setPadding(paddingStart, paddingTop, paddingEnd, paddingBottom)
     editText.setText(cs.message)
+    editText.hint = placeholder
+    editText.setHintTextColor(hintColor.toArgb())
     if (Build.VERSION.SDK_INT >= 29) {
       editText.textCursorDrawable?.let { DrawableCompat.setTint(it, CurrentColors.value.colors.secondary.toArgb()) }
     } else {
@@ -135,6 +139,8 @@ actual fun PlatformTextField(
     editText
   }) {
     it.setTextColor(textColor.toArgb())
+    it.setHintTextColor(hintColor.toArgb())
+    it.hint = placeholder
     it.textSize = textStyle.value.fontSize.value * appPrefs.fontScale.get()
     it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview
     it.isFocusableInTouchMode = it.isFocusable
