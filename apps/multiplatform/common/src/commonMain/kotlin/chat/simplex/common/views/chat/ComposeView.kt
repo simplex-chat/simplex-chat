@@ -894,7 +894,7 @@ fun ComposeView(
             && !nextSendGrpInv.value
       IconButton(
         attachmentClicked,
-        Modifier.padding(bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 7.sp.toDp()),
+        Modifier.padding(bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp()),
         enabled = attachmentEnabled
       ) {
         Icon(

@@ -61,7 +61,7 @@ fun SendMsgView(
 ) {
   val showCustomDisappearingMessageDialog = remember { mutableStateOf(false) }
 
-  Box(Modifier.padding(vertical = 8.dp)) {
+  Box(Modifier.padding(vertical = if (appPlatform.isAndroid) 8.dp else 6.dp)) {
     val cs = composeState.value
     var progressByTimeout by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(composeState.value.inProgress) {
