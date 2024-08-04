@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
@@ -16,7 +17,7 @@ import chat.simplex.common.views.newchat.chatContactType
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
-private fun onRequestAccepted(chat: Chat) {
+fun onRequestAccepted(chat: Chat) {
     val chatInfo = chat.chatInfo
     if (chatInfo is ChatInfo.Direct) {
         ModalManager.start.closeModals()
@@ -27,7 +28,8 @@ private fun onRequestAccepted(chat: Chat) {
 }
 
 @Composable
-fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI: State<Boolean>) {
+fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
+    val oneHandUI = remember { appPrefs.oneHandUI.state }
     val showMenu = remember { mutableStateOf(false) }
     val rhId = chat.remoteHostId
     val disabled = chatModel.chatRunning.value == false || chatModel.deletedChats.value.contains(rhId to chat.chatInfo.id)

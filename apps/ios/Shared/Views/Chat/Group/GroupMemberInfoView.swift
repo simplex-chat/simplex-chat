@@ -378,7 +378,7 @@ struct GroupMemberInfoView: View {
 
     private func groupMemberInfoHeader(_ mem: GroupMember) -> some View {
         VStack {
-            ProfileImage(imageStr: mem.image, size: 192, color: Color(uiColor: .tertiarySystemFill))
+            MemberProfileImage(mem, size: 192, color: Color(uiColor: .tertiarySystemFill))
                 .padding(.top, 12)
                 .padding()
             if mem.verified {
@@ -638,6 +638,21 @@ struct GroupMemberInfoView: View {
             }
         }
     }
+}
+
+func MemberProfileImage(
+    _ mem: GroupMember,
+    size: CGFloat,
+    color: Color = Color(uiColor: .tertiarySystemGroupedBackground),
+    backgroundColor: Color? = nil
+) -> some View {
+    ProfileImage(
+        imageStr: mem.image,
+        size: size,
+        color: color,
+        backgroundColor: backgroundColor,
+        blurred: mem.blocked
+    )
 }
 
 func blockMemberAlert(_ gInfo: GroupInfo, _ mem: GroupMember) -> Alert {
