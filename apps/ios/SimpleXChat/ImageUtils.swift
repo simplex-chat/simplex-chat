@@ -434,31 +434,24 @@ private let squareToCircleRatio = 0.935
 private let radiusFactor = (1 - squareToCircleRatio) / 50
 
 @ViewBuilder public func clipProfileImage(_ img: Image, size: CGFloat, radius: Double, blurred: Bool = false) -> some View {
-    let v = img.resizable()
     if radius >= 50 {
-        v.frame(width: size, height: size)
-        .if(blurred) { $0.blur(radius: size / 4) }
-        .clipShape(Circle())
+        blurredFrame(img, size, blurred).clipShape(Circle())
     } else if radius <= 0 {
         let sz = size * squareToCircleRatio
-        v.frame(width: sz, height: sz)
-        .if(blurred) { $0.blur(radius: sz / 4) }
-        .padding((size - sz) / 2)
+        blurredFrame(img, sz, blurred).padding((size - sz) / 2)
     } else {
         let sz = size * (squareToCircleRatio + radius * radiusFactor)
-        v.frame(width: sz, height: sz)
-        .if(blurred) { $0.blur(radius: sz / 4) }
+        blurredFrame(img, sz, blurred)
         .clipShape(RoundedRectangle(cornerRadius: sz * radius / 100, style: .continuous))
         .padding((size - sz) / 2)
     }
 }
 
-public extension View {
-    @ViewBuilder func `if`<Content: View>(_ condition: Bool, transform: (Self) -> Content) -> some View {
-        if condition {
-            transform(self)
-        } else {
-            self
-        }
+@ViewBuilder private func blurredFrame(_ img: Image, _ size: CGFloat, _ blurred: Bool) -> some View {
+    let v = img.resizable().frame(width: size, height: size)
+    if blurred {
+        v.blur(radius: size / 4)
+    } else {
+        v
     }
 }
