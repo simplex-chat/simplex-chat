@@ -149,7 +149,7 @@ fun UserPicker(
     .padding(bottom = 10.dp, top = 10.dp)
     .graphicsLayer {
       alpha = animatedFloat.value
-      translationY = (animatedFloat.value - 1) * xOffset
+      translationY = (if (chatModel.controller.appPrefs.oneHandUI.state.value) -1 else 1) * (animatedFloat.value - 1) * xOffset
     },
     contentAlignment = contentAlignment
   ) {
