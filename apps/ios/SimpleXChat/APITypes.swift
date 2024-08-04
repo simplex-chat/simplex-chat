@@ -1325,13 +1325,31 @@ public struct NetCfg: Codable, Equatable, Hashable {
         smpPingInterval: 1200_000_000
     )
 
-    public static let proxyDefaults: NetCfg = NetCfg(
+    static let proxyDefaults: NetCfg = NetCfg(
         tcpConnectTimeout: 35_000_000,
         tcpTimeout: 20_000_000,
         tcpTimeoutPerKb: 15_000,
         rcvConcurrency: 8,
         smpPingInterval: 1200_000_000
     )
+    
+    public var withProxyTimeouts: NetCfg {
+        var cfg = self
+        cfg.tcpConnectTimeout = NetCfg.proxyDefaults.tcpConnectTimeout
+        cfg.tcpTimeout = NetCfg.proxyDefaults.tcpTimeout
+        cfg.tcpTimeoutPerKb = NetCfg.proxyDefaults.tcpTimeoutPerKb
+        cfg.rcvConcurrency = NetCfg.proxyDefaults.rcvConcurrency
+        cfg.smpPingInterval = NetCfg.proxyDefaults.smpPingInterval
+        return cfg
+    }
+    
+    public var hasProxyTimeouts: Bool {
+        tcpConnectTimeout == NetCfg.proxyDefaults.tcpConnectTimeout &&
+        tcpTimeout == NetCfg.proxyDefaults.tcpTimeout &&
+        tcpTimeoutPerKb == NetCfg.proxyDefaults.tcpTimeoutPerKb &&
+        rcvConcurrency == NetCfg.proxyDefaults.rcvConcurrency &&
+        smpPingInterval == NetCfg.proxyDefaults.smpPingInterval
+    }
 
     public var enableKeepAlive: Bool { tcpKeepAlive != nil }
 }
@@ -1347,16 +1365,16 @@ public enum SocksMode: String, Codable, Hashable {
     case onion = "onion"
 }
 
-public enum SMPProxyMode: String, Codable, Hashable {
+public enum SMPProxyMode: String, Codable, Hashable, SelectableItem {
     case always = "always"
     case unknown = "unknown"
     case unprotected = "unprotected"
     case never = "never"
 
-    public var text: LocalizedStringKey {
+    public var label: LocalizedStringKey {
         switch self {
         case .always: return "always"
-        case .unknown: return "unknown relays"
+        case .unknown: return "unknown servers"
         case .unprotected: return "unprotected"
         case .never: return "never"
         }
@@ -1367,12 +1385,12 @@ public enum SMPProxyMode: String, Codable, Hashable {
     public static let values: [SMPProxyMode] = [.always, .unknown, .unprotected, .never]
 }
 
-public enum SMPProxyFallback: String, Codable, Hashable {
+public enum SMPProxyFallback: String, Codable, Hashable, SelectableItem {
     case allow = "allow"
     case allowProtected = "allowProtected"
     case prohibit = "prohibit"
 
-    public var text: LocalizedStringKey {
+    public var label: LocalizedStringKey {
         switch self {
         case .allow: return "yes"
         case .allowProtected: return "when IP hidden"
