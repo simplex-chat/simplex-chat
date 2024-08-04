@@ -399,7 +399,6 @@
   <string name="files_and_media_not_allowed">Files and media not allowed</string>
   <string name="voice_messages_not_allowed">Voice messages not allowed</string>
   <string name="compose_message_placeholder">Message</string>
-  <string name="compose_terminal_placeholder">Command</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>

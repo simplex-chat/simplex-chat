@@ -94,7 +94,7 @@ fun TerminalLayout(
             userIsObserver = false,
             userCanSend = true,
             allowVoiceToContact = {},
-            placeholder = stringResource(MR.strings.compose_terminal_placeholder),
+            placeholder = "",
             sendMessage = { sendCommand() },
             sendLiveMessage = null,
             updateLiveMessage = null,
