@@ -85,7 +85,7 @@ struct ShareView: View {
     }
 
     private func compose(isLoading: Bool) -> some View {
-        VStack(spacing: .zero) {
+        VStack(spacing: 0) {
             Divider()
             if let content = model.sharedContent  {
                itemPreview(content)
@@ -179,7 +179,7 @@ struct ShareView: View {
 
     private func loadingBar(progress: Double) -> some View {
         VStack {
-            Text("Sending File")
+            Text("Sending message…")
             ProgressView(value: progress)
         }
         .padding()
