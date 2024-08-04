@@ -218,24 +218,25 @@ private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableSt
   if (oneHandUI.state.value) {
     val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
 
-    barButtons.add {
-      IconButton(
-        onClick = {
-          if (!stopped) {
+    if (!stopped) {
+      barButtons.add {
+        IconButton(
+          onClick = {
             showNewChatSheet(oneHandUI.state, generalGetString(MR.strings.new_chat))
+          },
+        ) {
+          Box(
+            modifier = Modifier
+              .background(MaterialTheme.colors.primary, shape = CircleShape)
+              .padding(DEFAULT_PADDING_HALF)
+          ) {
+            Icon(
+              painterResource(MR.images.ic_edit_filled),
+              stringResource(MR.strings.add_contact_or_create_group),
+              Modifier.size(sp16),
+              tint = Color.White
+            )
           }
-        },
-      ) {
-        Box(
-          modifier = Modifier
-            .background(if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary, shape = CircleShape)
-            .padding(DEFAULT_PADDING_HALF)
-        ){
-          Icon(
-            painterResource(MR.images.ic_edit_filled),
-            stringResource(MR.strings.add_contact_or_create_group),
-            Modifier.size(sp16),
-            tint = if (!stopped) MaterialTheme.colors.onPrimary else MaterialTheme.colors.onSecondary)
         }
       }
     }

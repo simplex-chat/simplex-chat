@@ -478,7 +478,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                   if (modalBackground) {
                     platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, false, false)
                   } else {
-                    platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, backgroundColorState.value, true, true)
+                    platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, backgroundColorState.value, true, false)
                   }
                 }
             }

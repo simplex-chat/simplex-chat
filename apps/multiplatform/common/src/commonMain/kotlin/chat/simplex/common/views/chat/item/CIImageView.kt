@@ -269,7 +269,7 @@ fun CIImageView(
     if (!smallView && (!showDownloadButton(file?.fileStatus) || !blurred.value)) {
       loadingIndicator()
     } else if (smallView && file?.showStatusIconInSmallView == true) {
-      Box(Modifier.align(Alignment.Center)) {
+      Box(Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
         loadingIndicator()
       }
     }

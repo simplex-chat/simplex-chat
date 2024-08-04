@@ -15,12 +15,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
@@ -51,6 +49,7 @@ fun SendMsgView(
   allowVoiceToContact: () -> Unit,
   timedMessageAllowed: Boolean = false,
   customDisappearingMessageTimePref: SharedPreference<Int>? = null,
+  placeholder: String,
   sendMessage: (Int?) -> Unit,
   sendLiveMessage: (suspend () -> Unit)? = null,
   updateLiveMessage: (suspend () -> Unit)? = null,
@@ -80,13 +79,24 @@ fun SendMsgView(
       (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
         cs.endLiveDisabled ||
         !sendButtonEnabled
-    PlatformTextField(composeState, sendMsgEnabled, sendMsgButtonDisabled, textStyle, showDeleteTextButton, userIsObserver, onMessageChange, editPrevMessage, onFilesPasted) {
+    val clicksOnTextFieldDisabled = !sendMsgEnabled || cs.preview is ComposePreview.VoicePreview || !userCanSend || cs.inProgress
+    PlatformTextField(
+      composeState,
+      sendMsgEnabled,
+      sendMsgButtonDisabled,
+      textStyle,
+      showDeleteTextButton,
+      userIsObserver,
+      if (clicksOnTextFieldDisabled) "" else placeholder,
+      onMessageChange,
+      editPrevMessage,
+      onFilesPasted
+    ) {
       if (!cs.inProgress) {
         sendMessage(null)
       }
     }
-    // Disable clicks on text field
-    if (!sendMsgEnabled || cs.preview is ComposePreview.VoicePreview || !userCanSend || cs.inProgress) {
+    if (clicksOnTextFieldDisabled) {
       Box(
         Modifier
           .matchParentSize()
@@ -101,7 +111,7 @@ fun SendMsgView(
     if (showDeleteTextButton.value) {
       DeleteTextButton(composeState)
     }
-    Box(Modifier.align(Alignment.BottomEnd).padding(bottom = if (appPlatform.isAndroid) 0.dp else with(LocalDensity.current) { 5.sp.toDp() } * fontSizeSqrtMultiplier)) {
+    Box(Modifier.align(Alignment.BottomEnd).padding(bottom = if (appPlatform.isAndroid) 0.dp else 5.sp.toDp() * fontSizeSqrtMultiplier)) {
       val sendButtonSize = remember { Animatable(36f) }
       val sendButtonAlpha = remember { Animatable(1f) }
       val scope = rememberCoroutineScope()
@@ -564,6 +574,7 @@ fun PreviewSendMsgView() {
       userCanSend = true,
       allowVoiceToContact = {},
       timedMessageAllowed = false,
+      placeholder = "",
       sendMessage = {},
       editPrevMessage = {},
       onMessageChange = { _ -> },
@@ -599,6 +610,7 @@ fun PreviewSendMsgViewEditing() {
       userCanSend = true,
       allowVoiceToContact = {},
       timedMessageAllowed = false,
+      placeholder = "",
       sendMessage = {},
       editPrevMessage = {},
       onMessageChange = { _ -> },
@@ -634,6 +646,7 @@ fun PreviewSendMsgViewInProgress() {
       userCanSend = true,
       allowVoiceToContact = {},
       timedMessageAllowed = false,
+      placeholder = "",
       sendMessage = {},
       editPrevMessage = {},
       onMessageChange = { _ -> },

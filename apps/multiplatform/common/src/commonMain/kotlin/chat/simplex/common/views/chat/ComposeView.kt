@@ -872,11 +872,9 @@ fun ComposeView(
         }
       }
     }
+    Column(Modifier.background(MaterialTheme.colors.background)) {
     Divider()
-    Row(
-      modifier = Modifier.background(MaterialTheme.colors.background).padding(end = 8.dp),
-      verticalAlignment = Alignment.Bottom,
-    ) {
+    Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
       val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)
       val attachmentClicked = if (isGroupAndProhibitedFiles) {
         {
@@ -896,7 +894,7 @@ fun ComposeView(
             && !nextSendGrpInv.value
       IconButton(
         attachmentClicked,
-        Modifier.padding(bottom = if (appPlatform.isAndroid) 2.dp else with(LocalDensity.current) { 7.sp.toDp() }),
+        Modifier.padding(bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 7.sp.toDp()),
         enabled = attachmentEnabled
       ) {
         Icon(
@@ -925,7 +923,7 @@ fun ComposeView(
         snapshotFlow { recState.value }
           .distinctUntilChanged()
           .collect {
-            when(it) {
+            when (it) {
               is RecordingState.Started -> onAudioAdded(it.filePath, it.progressMs, false)
               is RecordingState.Finished -> if (it.durationMs > 300) {
                 onAudioAdded(it.filePath, it.durationMs, true)
@@ -1005,6 +1003,7 @@ fun ComposeView(
         sendButtonColor = sendButtonColor,
         timedMessageAllowed = timedMessageAllowed,
         customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,
+        placeholder = stringResource(MR.strings.compose_message_placeholder),
         sendMessage = { ttl ->
           sendMessage(ttl)
           resetLinkPreview()
@@ -1021,5 +1020,6 @@ fun ComposeView(
         textStyle = textStyle
       )
     }
+  }
   }
 }

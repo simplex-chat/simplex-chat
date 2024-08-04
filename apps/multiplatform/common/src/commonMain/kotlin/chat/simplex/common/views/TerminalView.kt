@@ -20,6 +20,8 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
 fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
@@ -92,6 +94,7 @@ fun TerminalLayout(
             userIsObserver = false,
             userCanSend = true,
             allowVoiceToContact = {},
+            placeholder = stringResource(MR.strings.compose_terminal_placeholder),
             sendMessage = { sendCommand() },
             sendLiveMessage = null,
             updateLiveMessage = null,
