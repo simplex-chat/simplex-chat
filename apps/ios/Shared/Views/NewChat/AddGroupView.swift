@@ -35,9 +35,10 @@ struct AddGroupView: View {
                     creatingGroup: true,
                     showFooterCounter: false
                 ) { _ in
-                    dismiss()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        m.chatId = groupInfo.id
+                        dismissAllSheets(animated: true) {
+                            m.chatId = groupInfo.id
+                        }
                     }
                 }
             } else {
@@ -48,9 +49,10 @@ struct AddGroupView: View {
                     showTitle: true,
                     creatingGroup: true
                 ) {
-                    dismiss()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        m.chatId = groupInfo.id
+                        dismissAllSheets(animated: true) {
+                            m.chatId = groupInfo.id
+                        }
                     }
                 }
             }
