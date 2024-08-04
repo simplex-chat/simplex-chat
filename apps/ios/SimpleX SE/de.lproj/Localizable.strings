@@ -1,7 +1,108 @@
-/* 
-  Localizable.strings
-  SimpleX
+/* No comment provided by engineer. */
+"%@" = "%@";
 
-  Created by EP on 30/07/2024.
-  Copyright © 2024 SimpleX Chat. All rights reserved.
-*/
+/* No comment provided by engineer. */
+"App is locked!" = "Die App ist gesperrt!";
+
+/* No comment provided by engineer. */
+"Cancel" = "Abbrechen";
+
+/* No comment provided by engineer. */
+"Cannot access keychain to save database password" = "Es ist nicht möglich, auf den Schlüsselbund zuzugreifen, um das Datenbankpasswort zu speichern";
+
+/* No comment provided by engineer. */
+"Cannot forward message" = "Nachricht kann nicht weitergeleitet werden";
+
+/* No comment provided by engineer. */
+"Comment" = "Kommentieren";
+
+/* No comment provided by engineer. */
+"Currently maximum supported file size is %@." = "Die maximale erlaubte Dateigröße beträgt aktuell %@.";
+
+/* No comment provided by engineer. */
+"Database downgrade required" = "Datenbank-Herabstufung erforderlich";
+
+/* No comment provided by engineer. */
+"Database encrypted!" = "Datenbank verschlüsselt!";
+
+/* No comment provided by engineer. */
+"Database error" = "Datenbankfehler";
+
+/* No comment provided by engineer. */
+"Database passphrase is different from saved in the keychain." = "Das Datenbank-Passwort unterscheidet sich vom im Schlüsselbund gespeicherten.";
+
+/* No comment provided by engineer. */
+"Database passphrase is required to open chat." = "Ein Datenbank-Passwort ist erforderlich, um den Chat zu öffnen.";
+
+/* No comment provided by engineer. */
+"Database upgrade required" = "Datenbank-Aktualisierung erforderlich";
+
+/* No comment provided by engineer. */
+"Error preparing file" = "Fehler beim Vorbereiten der Datei";
+
+/* No comment provided by engineer. */
+"Error preparing message" = "Fehler beim Vorbereiten der Nachricht";
+
+/* No comment provided by engineer. */
+"Error: %@" = "Fehler: %@";
+
+/* No comment provided by engineer. */
+"File error" = "Dateifehler";
+
+/* No comment provided by engineer. */
+"Incompatible database version" = "Datenbank-Version nicht kompatibel";
+
+/* No comment provided by engineer. */
+"Invalid migration confirmation" = "Migrations-Bestätigung ungültig";
+
+/* No comment provided by engineer. */
+"Keep Trying" = "Weiter versuchen";
+
+/* No comment provided by engineer. */
+"Keychain error" = "Schlüsselbund-Fehler";
+
+/* No comment provided by engineer. */
+"Large file!" = "Große Datei!";
+
+/* No comment provided by engineer. */
+"No active profile" = "Kein aktives Profil";
+
+/* No comment provided by engineer. */
+"No network connection" = "Keine Netzwerkverbindung";
+
+/* No comment provided by engineer. */
+"Ok" = "OK";
+
+/* No comment provided by engineer. */
+"Open the app to downgrade the database." = "Öffne die App, um die Datenbank herabzustufen.";
+
+/* No comment provided by engineer. */
+"Open the app to upgrade the database." = "Öffne die App, um die Datenbank zu aktualisieren.";
+
+/* No comment provided by engineer. */
+"Passphrase" = "Passwort";
+
+/* No comment provided by engineer. */
+"Please create a profile in the SimpleX app" = "Bitte erstelle ein Profil in der SimpleX-App";
+
+/* No comment provided by engineer. */
+"Selected chat preferences prohibit this message." = "Diese Nachricht ist wegen der gewählten Chat-Einstellungen nicht erlaubt.";
+
+/* No comment provided by engineer. */
+"Sending File" = "Datei wird gesendet";
+
+/* No comment provided by engineer. */
+"Share" = "Teilen";
+
+/* No comment provided by engineer. */
+"Unknown database error: %@" = "Unbekannter Datenbankfehler: %@";
+
+/* No comment provided by engineer. */
+"Unsupported format" = "Nicht unterstütztes Format";
+
+/* No comment provided by engineer. */
+"Wrong database passphrase" = "Falsches Datenbank-Passwort";
+
+/* No comment provided by engineer. */
+"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "Du kannst das Teilen in den Einstellungen zu Datenschutz & Sicherheit bzw. SimpleX-Sperre erlauben.";
+

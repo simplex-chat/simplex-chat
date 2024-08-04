@@ -813,13 +813,13 @@
     <string name="connect_with_contact_name_question">Conectar com %1$s?</string>
     <string name="audio_device_earpiece">Auricular</string>
     <string name="devices">Dispositivos</string>
-    <string name="open_on_mobile_and_scan_qr_code">Abrir <i>Usar a partir de computador</i> na aplicação mobile e ler código QR.</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Abrir <i>Usar a partir de computador</i> na aplicação mobile e ler código QR.]]></string>
     <string name="you_sent_group_invitation">Você enviou um convite de grupo</string>
     <string name="snd_group_event_changed_role_for_yourself">você mudou o seu cargo para %s</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">você mudou o endereço para %s</string>
     <string name="v5_3_new_interface_languages">6 novos idiomas de interface</string>
     <string name="desktop_app_version_is_incompatible">A versão %s da aplicação de computador não é compatível com esta aplicação.</string>
-    <string name="remote_host_disconnected_from">Desconectado do dispositivo móvel <b>%s</b> com a razão: %s</string>
+    <string name="remote_host_disconnected_from"><![CDATA[Desconectado do dispositivo móvel <b>%s</b> com a razão: %s]]></string>
     <string name="connect__your_profile_will_be_shared">O seu perfil %1$s vai ser partilhado.</string>
     <string name="download_file">Transferir</string>
     <string name="abort_switch_receiving_address_confirm">Cancelar</string>

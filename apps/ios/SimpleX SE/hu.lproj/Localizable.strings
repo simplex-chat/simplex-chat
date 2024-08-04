@@ -1,7 +1,111 @@
-/* 
-  Localizable.strings
-  SimpleX
+/* No comment provided by engineer. */
+"%@" = "%@";
 
-  Created by EP on 30/07/2024.
-  Copyright © 2024 SimpleX Chat. All rights reserved.
-*/
+/* No comment provided by engineer. */
+"App is locked!" = "Az alkalmazás zárolva!";
+
+/* No comment provided by engineer. */
+"Cancel" = "Mégse";
+
+/* No comment provided by engineer. */
+"Cannot access keychain to save database password" = "Nem lehet hozzáférni a kulcstartóhoz az adatbázis jelszavának mentéséhez";
+
+/* No comment provided by engineer. */
+"Cannot forward message" = "Nem lehet továbbítani az üzenetet";
+
+/* No comment provided by engineer. */
+"Comment" = "Hozzászólás";
+
+/* No comment provided by engineer. */
+"Currently maximum supported file size is %@." = "Jelenleg a maximális támogatott fájlméret %@.";
+
+/* No comment provided by engineer. */
+"Database downgrade required" = "Adatbázis visszafejlesztése szükséges";
+
+/* No comment provided by engineer. */
+"Database encrypted!" = "Adatbázis titkosítva!";
+
+/* No comment provided by engineer. */
+"Database error" = "Adatbázis hiba";
+
+/* No comment provided by engineer. */
+"Database passphrase is different from saved in the keychain." = "Az adatbázis jelmondata eltér a kulcstartóban lévőtől.";
+
+/* No comment provided by engineer. */
+"Database passphrase is required to open chat." = "Adatbázis jelmondat szükséges a csevegés megnyitásához.";
+
+/* No comment provided by engineer. */
+"Database upgrade required" = "Adatbázis fejlesztése szükséges";
+
+/* No comment provided by engineer. */
+"Dismiss Sheet" = "Lap elvetése";
+
+/* No comment provided by engineer. */
+"Error preparing file" = "Hiba a fájl előkészítésekor";
+
+/* No comment provided by engineer. */
+"Error preparing message" = "Hiba az üzenet előkészítésekor";
+
+/* No comment provided by engineer. */
+"Error: %@" = "Hiba: %@";
+
+/* No comment provided by engineer. */
+"File error" = "Fájlhiba";
+
+/* No comment provided by engineer. */
+"Incompatible database version" = "Nem kompatibilis adatbázis verzió";
+
+/* No comment provided by engineer. */
+"Invalid migration confirmation" = "Érvénytelen átköltöztetési visszaigazolás";
+
+/* No comment provided by engineer. */
+"Keep Trying" = "Próbálkozzon tovább";
+
+/* No comment provided by engineer. */
+"Keychain error" = "Kulcstartó hiba";
+
+/* No comment provided by engineer. */
+"Large file!" = "Nagy fájl!";
+
+/* No comment provided by engineer. */
+"No active profile" = "Nincs aktív profil";
+
+/* No comment provided by engineer. */
+"No network connection" = "Nincs hálózati kapcsolat";
+
+/* No comment provided by engineer. */
+"Ok" = "Rendben";
+
+/* No comment provided by engineer. */
+"Open the app to downgrade the database." = "Nyissa meg az alkalmazást az adatbázis visszafejlesztéséhez.";
+
+/* No comment provided by engineer. */
+"Open the app to upgrade the database." = "Nyissa meg az alkalmazást az adatbázis fejlesztéséhez.";
+
+/* No comment provided by engineer. */
+"Passphrase" = "Jelmondat";
+
+/* No comment provided by engineer. */
+"Please create a profile in the SimpleX app" = "Hozzon létre egy profilt a SimpleX alkalmazásban";
+
+/* No comment provided by engineer. */
+"Selected chat preferences prohibit this message." = "A kiválasztott csevegési beállítások tiltják ezt az üzenetet.";
+
+/* No comment provided by engineer. */
+"Sending File" = "Fájl küldése";
+
+/* No comment provided by engineer. */
+"Share" = "Megosztás";
+
+/* No comment provided by engineer. */
+"Unknown database error: %@" = "Ismeretlen adatbázis hiba: %@";
+
+/* No comment provided by engineer. */
+"Unsupported format" = "Nem támogatott formátum";
+
+/* No comment provided by engineer. */
+"Wrong database passphrase" = "Hibás adatbázis jelmondat";
+
+/* No comment provided by engineer. */
+"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "A megosztást az Adatvédelem és biztonság / SimpleX zár menüpontban engedélyezheti.";
+
