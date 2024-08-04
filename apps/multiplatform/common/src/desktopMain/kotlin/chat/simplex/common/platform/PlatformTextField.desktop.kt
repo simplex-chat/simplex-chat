@@ -56,7 +56,7 @@ actual fun PlatformTextField(
   val focusRequester = remember { FocusRequester() }
   val focusManager = LocalFocusManager.current
   val keyboard = LocalSoftwareKeyboardController.current
-  val padding = PaddingValues(12.dp, 12.dp, 45.dp, 0.dp)
+  val padding = PaddingValues(0.dp, 12.dp, 50.dp, 0.dp)
   LaunchedEffect(cs.contextItem) {
     if (cs.contextItem !is ComposeContextItem.QuotedItem) return@LaunchedEffect
     // In replying state
@@ -167,7 +167,7 @@ actual fun PlatformTextField(
         CompositionLocalProvider(
           LocalLayoutDirection provides if (isRtl) LayoutDirection.Rtl else LocalLayoutDirection.current
         ) {
-          Column(Modifier.weight(1f).padding(end = 50.dp)) {
+          Column(Modifier.weight(1f).padding(start = 0.dp, end = 50.dp)) {
             Spacer(Modifier.height(8.dp))
             TextFieldDefaults.TextFieldDecorationBox(
               value = textFieldValue.text,
