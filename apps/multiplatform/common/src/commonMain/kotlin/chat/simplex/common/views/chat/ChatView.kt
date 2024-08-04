@@ -593,9 +593,11 @@ fun ChatLayout(
       )
   ) {
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
+      val elevation = remember { derivedStateOf { if (attachmentBottomSheetState.currentValue == ModalBottomSheetValue.Hidden) 0.dp else ModalBottomSheetDefaults.Elevation } }
       ModalBottomSheetLayout(
         scrimColor = Color.Black.copy(alpha = 0.12F),
         modifier = Modifier.navigationBarsWithImePadding(),
+        sheetElevation = elevation.value,
         sheetContent = {
           ChooseAttachmentView(
             attachmentOption,
