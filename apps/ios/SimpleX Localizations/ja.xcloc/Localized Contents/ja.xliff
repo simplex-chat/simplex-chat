@@ -1209,6 +1209,10 @@
         <target>チャットのデータベースが削除されました</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Chat database exported" xml:space="preserve">
+        <source>Chat database exported</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat database imported" xml:space="preserve">
         <source>Chat database imported</source>
         <target>チャットのデータベースが読み込まれました</target>
@@ -3771,6 +3775,10 @@ This is your link for group %@!</source>
         <target>最大 30 秒で即時受信します。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Media &amp; file servers" xml:space="preserve">
+        <source>Media &amp; file servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Medium" xml:space="preserve">
         <source>Medium</source>
         <note>blur media</note>
@@ -3852,12 +3860,8 @@ This is your link for group %@!</source>
         <source>Message reception</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message routing fallback" xml:space="preserve">
-        <source>Message routing fallback</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Message routing mode" xml:space="preserve">
-        <source>Message routing mode</source>
+      <trans-unit id="Message servers" xml:space="preserve">
+        <source>Message servers</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message source remains private." xml:space="preserve">
@@ -4217,14 +4221,18 @@ This is your link for group %@!</source>
         <target>使い捨ての招待リンク</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will be required for connection. Requires enabling VPN." xml:space="preserve">
-        <source>Onion hosts will be required for connection. Requires enabling VPN.</source>
-        <target>接続にオニオンのホストが必要となります。VPN を有効にする必要があります。</target>
+      <trans-unit id="Onion hosts will be **required** for connection.&#10;Requires compatible VPN." xml:space="preserve">
+        <source>Onion hosts will be **required** for connection.
+Requires compatible VPN.</source>
+        <target>接続にオニオンのホストが必要となります。
+VPN を有効にする必要があります。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will be used when available. Requires enabling VPN." xml:space="preserve">
-        <source>Onion hosts will be used when available. Requires enabling VPN.</source>
-        <target>オニオンのホストが利用可能時に使われます。VPN を有効にする必要があります。</target>
+      <trans-unit id="Onion hosts will be used when available.&#10;Requires compatible VPN." xml:space="preserve">
+        <source>Onion hosts will be used when available.
+Requires compatible VPN.</source>
+        <target>オニオンのホストが利用可能時に使われます。
+VPN を有効にする必要があります。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Onion hosts will not be used." xml:space="preserve">
@@ -5050,11 +5058,6 @@ Enable in *Network &amp; servers* settings.</source>
         <target>開示する</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Revert" xml:space="preserve">
-        <source>Revert</source>
-        <target>元に戻す</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Revoke" xml:space="preserve">
         <source>Revoke</source>
         <target>取り消す</target>
@@ -5084,11 +5087,6 @@ Enable in *Network &amp; servers* settings.</source>
         <source>SMP server</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SMP servers" xml:space="preserve">
-        <source>SMP servers</source>
-        <target>SMPサーバ</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Safely receive files" xml:space="preserve">
         <source>Safely receive files</source>
         <note>No comment provided by engineer.</note>
@@ -5115,6 +5113,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="Save and notify group members" xml:space="preserve">
         <source>Save and notify group members</source>
         <target>保存して、グループのメンバーにに知らせる</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Save and reconnect" xml:space="preserve">
+        <source>Save and reconnect</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save and update group profile" xml:space="preserve">
@@ -5755,9 +5757,17 @@ Enable in *Network &amp; servers* settings.</source>
         <source>Soft</source>
         <note>blur media</note>
       </trans-unit>
+      <trans-unit id="Some file(s) were not exported:" xml:space="preserve">
+        <source>Some file(s) were not exported:</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve">
         <source>Some non-fatal errors occurred during import - you may see Chat console for more details.</source>
         <target>インポート中に致命的でないエラーが発生しました - 詳細はチャットコンソールを参照してください。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Some non-fatal errors occurred during import:" xml:space="preserve">
+        <source>Some non-fatal errors occurred during import:</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Somebody" xml:space="preserve">
@@ -5883,6 +5893,10 @@ Enable in *Network &amp; servers* settings.</source>
       <trans-unit id="System authentication" xml:space="preserve">
         <source>System authentication</source>
         <target>システム認証</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="TCP connection" xml:space="preserve">
+        <source>TCP connection</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP connection timeout" xml:space="preserve">
@@ -6392,11 +6406,6 @@ To connect, please ask your contact to create another connection link and check 
         <target>更新</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update .onion hosts setting?" xml:space="preserve">
-        <source>Update .onion hosts setting?</source>
-        <target>.onionのホスト設定を更新しますか？</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Update database passphrase" xml:space="preserve">
         <source>Update database passphrase</source>
         <target>データベースのパスフレーズを更新</target>
@@ -6407,18 +6416,12 @@ To connect, please ask your contact to create another connection link and check 
         <target>ネットワーク設定を更新しますか？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update transport isolation mode?" xml:space="preserve">
-        <source>Update transport isolation mode?</source>
-        <target>トランスポート隔離モードを更新しますか？</target>
+      <trans-unit id="Update settings?" xml:space="preserve">
+        <source>Update settings?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
         <source>Updating settings will re-connect the client to all servers.</source>
-        <target>設定を更新すると、全サーバにクライントの再接続が行われます。</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Updating this setting will re-connect the client to all servers." xml:space="preserve">
-        <source>Updating this setting will re-connect the client to all servers.</source>
         <target>設定を更新すると、全サーバにクライントの再接続が行われます。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -6519,11 +6522,6 @@ To connect, please ask your contact to create another connection link and check 
       </trans-unit>
       <trans-unit id="User selection" xml:space="preserve">
         <source>User selection</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Using .onion hosts requires compatible VPN provider." xml:space="preserve">
-        <source>Using .onion hosts requires compatible VPN provider.</source>
-        <target>.onionホストを使用するには、互換性のあるVPNプロバイダーが必要です。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Using SimpleX Chat servers." xml:space="preserve">
@@ -6762,11 +6760,6 @@ To connect, please ask your contact to create another connection link and check 
         <source>XFTP server</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="XFTP servers" xml:space="preserve">
-        <source>XFTP servers</source>
-        <target>XFTPサーバ</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="You" xml:space="preserve">
         <source>You</source>
         <target>あなた</target>
@@ -6963,6 +6956,14 @@ Repeat connection request?</source>
       <trans-unit id="You joined this group. Connecting to inviting group member." xml:space="preserve">
         <source>You joined this group. Connecting to inviting group member.</source>
         <target>グループに参加しました。招待をくれたメンバーに接続してます。</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You may migrate the exported database." xml:space="preserve">
+        <source>You may migrate the exported database.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You may save the exported archive." xml:space="preserve">
+        <source>You may save the exported archive.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve">
@@ -7909,8 +7910,8 @@ last received msg: %2$@</source>
         <target>不明</target>
         <note>connection info</note>
       </trans-unit>
-      <trans-unit id="unknown relays" xml:space="preserve">
-        <source>unknown relays</source>
+      <trans-unit id="unknown servers" xml:space="preserve">
+        <source>unknown servers</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="unknown status" xml:space="preserve">

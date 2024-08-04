@@ -2215,10 +2215,10 @@
 "One-time invitation link" = "Jednorázový zvací odkaz";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "Pro připojení budou vyžadováni Onion hostitelé. Vyžaduje povolení sítě VPN.";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "Pro připojení budou vyžadováni Onion hostitelé.\nVyžaduje povolení sítě VPN.";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "Onion hostitelé budou použiti, pokud jsou k dispozici. Vyžaduje povolení sítě VPN.";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "Onion hostitelé budou použiti, pokud jsou k dispozici.\nVyžaduje povolení sítě VPN.";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "Onion hostitelé nebudou použiti.";
@@ -2596,9 +2596,6 @@
 "Reveal" = "Odhalit";
 
 /* No comment provided by engineer. */
-"Revert" = "Vrátit";
-
-/* No comment provided by engineer. */
 "Revoke" = "Odvolat";
 
 /* cancel file action */
@@ -2700,7 +2697,7 @@
 /* chat item text */
 "security code changed" = "bezpečnostní kód změněn";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "Vybrat";
 
 /* No comment provided by engineer. */
@@ -2921,9 +2918,6 @@
 
 /* No comment provided by engineer. */
 "Small groups (max 20)" = "Malé skupiny (max. 20)";
-
-/* No comment provided by engineer. */
-"SMP servers" = "SMP servery";
 
 /* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Během importu došlo k nezávažným chybám - podrobnosti naleznete v chat konzoli.";
@@ -3217,25 +3211,16 @@
 "Update" = "Aktualizovat";
 
 /* No comment provided by engineer. */
-"Update .onion hosts setting?" = "Aktualizovat nastavení hostitelů .onion?";
-
-/* No comment provided by engineer. */
 "Update database passphrase" = "Aktualizovat přístupovou frázi databáze";
 
 /* No comment provided by engineer. */
 "Update network settings?" = "Aktualizovat nastavení sítě?";
-
-/* No comment provided by engineer. */
-"Update transport isolation mode?" = "Aktualizovat režim dopravní izolace?";
 
 /* rcv group event chat item */
 "updated group profile" = "aktualizoval profil skupiny";
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Aktualizací nastavení se klient znovu připojí ke všem serverům.";
-
-/* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "Aktualizace tohoto nastavení znovu připojí klienta ke všem serverům.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Zvýšit a otevřít chat";
@@ -3269,9 +3254,6 @@
 
 /* No comment provided by engineer. */
 "User profile" = "Profil uživatele";
-
-/* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = "Použití hostitelů .onion vyžaduje kompatibilního poskytovatele VPN.";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "Používat servery SimpleX Chat.";
@@ -3386,9 +3368,6 @@
 
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Špatná přístupová fráze!";
-
-/* No comment provided by engineer. */
-"XFTP servers" = "XFTP servery";
 
 /* pref value */
 "yes" = "ano";

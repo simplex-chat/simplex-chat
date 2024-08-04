@@ -2501,12 +2501,6 @@
 "message received" = "получено сообщение";
 
 /* No comment provided by engineer. */
-"Message routing fallback" = "Прямая доставка сообщений";
-
-/* No comment provided by engineer. */
-"Message routing mode" = "Режим доставки сообщений";
-
-/* No comment provided by engineer. */
 "Message source remains private." = "Источник сообщения остаётся конфиденциальным.";
 
 /* No comment provided by engineer. */
@@ -2761,10 +2755,10 @@
 "One-time invitation link" = "Одноразовая ссылка";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "Подключаться только к onion хостам. Требуется включенный VPN.";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "Подключаться только к **onion** хостам.\nТребуется совместимый VPN.";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "Onion хосты используются, если возможно. Требуется включенный VPN.";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "Onion хосты используются, если возможно.\nТребуется совместимый VPN.";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "Onion хосты не используются.";
@@ -3262,9 +3256,6 @@
 "Reveal" = "Показать";
 
 /* No comment provided by engineer. */
-"Revert" = "Отменить изменения";
-
-/* No comment provided by engineer. */
 "Revoke" = "Отозвать";
 
 /* cancel file action */
@@ -3396,7 +3387,7 @@
 /* chat item text */
 "security code changed" = "код безопасности изменился";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "Выбрать";
 
 /* No comment provided by engineer. */
@@ -3665,9 +3656,6 @@
 
 /* No comment provided by engineer. */
 "Small groups (max 20)" = "Маленькие группы (до 20)";
-
-/* No comment provided by engineer. */
-"SMP servers" = "SMP серверы";
 
 /* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Во время импорта произошли некоторые ошибки - для получения более подробной информации вы можете обратиться к консоли.";
@@ -4018,7 +4006,7 @@
 "Unknown error" = "Неизвестная ошибка";
 
 /* No comment provided by engineer. */
-"unknown relays" = "неизвестные серверы";
+"unknown servers" = "неизвестные серверы";
 
 /* No comment provided by engineer. */
 "Unknown servers!" = "Неизвестные серверы!";
@@ -4060,16 +4048,10 @@
 "Update" = "Обновить";
 
 /* No comment provided by engineer. */
-"Update .onion hosts setting?" = "Обновить настройки .onion хостов?";
-
-/* No comment provided by engineer. */
 "Update database passphrase" = "Поменять пароль";
 
 /* No comment provided by engineer. */
 "Update network settings?" = "Обновить настройки сети?";
-
-/* No comment provided by engineer. */
-"Update transport isolation mode?" = "Обновить режим отдельных сессий?";
 
 /* rcv group event chat item */
 "updated group profile" = "обновил(а) профиль группы";
@@ -4079,9 +4061,6 @@
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Обновление настроек приведет к сбросу и установке нового соединения со всеми серверами.";
-
-/* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "Обновление этих настроек приведет к сбросу и установке нового соединения со всеми серверами.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Обновить и открыть чат";
@@ -4136,9 +4115,6 @@
 
 /* No comment provided by engineer. */
 "User profile" = "Профиль чата";
-
-/* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = "Для использования .onion хостов требуется совместимый VPN провайдер.";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "Используются серверы, предоставленные SimpleX Chat.";
@@ -4319,9 +4295,6 @@
 
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Неправильный пароль!";
-
-/* No comment provided by engineer. */
-"XFTP servers" = "XFTP серверы";
 
 /* pref value */
 "yes" = "да";

@@ -2263,10 +2263,10 @@
 "One-time invitation link" = "使い捨ての招待リンク";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "接続にオニオンのホストが必要となります。VPN を有効にする必要があります。";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "接続にオニオンのホストが必要となります。\nVPN を有効にする必要があります。";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "オニオンのホストが利用可能時に使われます。VPN を有効にする必要があります。";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "オニオンのホストが利用可能時に使われます。\nVPN を有効にする必要があります。";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "オニオンのホストが使われません。";
@@ -2641,9 +2641,6 @@
 "Reveal" = "開示する";
 
 /* No comment provided by engineer. */
-"Revert" = "元に戻す";
-
-/* No comment provided by engineer. */
 "Revoke" = "取り消す";
 
 /* cancel file action */
@@ -2745,7 +2742,7 @@
 /* chat item text */
 "security code changed" = "セキュリティコードが変更されました";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "選択";
 
 /* No comment provided by engineer. */
@@ -2939,9 +2936,6 @@
 
 /* No comment provided by engineer. */
 "Small groups (max 20)" = "小グループ（最大20名）";
-
-/* No comment provided by engineer. */
-"SMP servers" = "SMPサーバ";
 
 /* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "インポート中に致命的でないエラーが発生しました - 詳細はチャットコンソールを参照してください。";
@@ -3229,25 +3223,16 @@
 "Update" = "更新";
 
 /* No comment provided by engineer. */
-"Update .onion hosts setting?" = ".onionのホスト設定を更新しますか？";
-
-/* No comment provided by engineer. */
 "Update database passphrase" = "データベースのパスフレーズを更新";
 
 /* No comment provided by engineer. */
 "Update network settings?" = "ネットワーク設定を更新しますか？";
-
-/* No comment provided by engineer. */
-"Update transport isolation mode?" = "トランスポート隔離モードを更新しますか？";
 
 /* rcv group event chat item */
 "updated group profile" = "グループプロフィールを更新しました";
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "設定を更新すると、全サーバにクライントの再接続が行われます。";
-
-/* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "設定を更新すると、全サーバにクライントの再接続が行われます。";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "アップグレードしてチャットを開く";
@@ -3281,9 +3266,6 @@
 
 /* No comment provided by engineer. */
 "User profile" = "ユーザープロフィール";
-
-/* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = ".onionホストを使用するには、互換性のあるVPNプロバイダーが必要です。";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "SimpleX チャット サーバーを使用する。";
@@ -3398,9 +3380,6 @@
 
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "パスフレーズが違います！";
-
-/* No comment provided by engineer. */
-"XFTP servers" = "XFTPサーバ";
 
 /* pref value */
 "yes" = "はい";

@@ -1252,6 +1252,10 @@
         <target>Base de données du chat supprimée</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Chat database exported" xml:space="preserve">
+        <source>Chat database exported</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat database imported" xml:space="preserve">
         <source>Chat database imported</source>
         <target>Base de données du chat importée</target>
@@ -3966,6 +3970,10 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Max 30 secondes, réception immédiate.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Media &amp; file servers" xml:space="preserve">
+        <source>Media &amp; file servers</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Medium" xml:space="preserve">
         <source>Medium</source>
         <note>blur media</note>
@@ -4055,14 +4063,8 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Réception de message</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message routing fallback" xml:space="preserve">
-        <source>Message routing fallback</source>
-        <target>Rabattement du routage des messages</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Message routing mode" xml:space="preserve">
-        <source>Message routing mode</source>
-        <target>Mode de routage des messages</target>
+      <trans-unit id="Message servers" xml:space="preserve">
+        <source>Message servers</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message source remains private." xml:space="preserve">
@@ -4448,14 +4450,18 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Lien d'invitation unique</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will be required for connection. Requires enabling VPN." xml:space="preserve">
-        <source>Onion hosts will be required for connection. Requires enabling VPN.</source>
-        <target>Les hôtes .onion seront nécessaires pour la connexion. Nécessite l'activation d'un VPN.</target>
+      <trans-unit id="Onion hosts will be **required** for connection.&#10;Requires compatible VPN." xml:space="preserve">
+        <source>Onion hosts will be **required** for connection.
+Requires compatible VPN.</source>
+        <target>Les hôtes .onion seront **nécessaires** pour la connexion.
+Nécessite l'activation d'un VPN.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Onion hosts will be used when available. Requires enabling VPN." xml:space="preserve">
-        <source>Onion hosts will be used when available. Requires enabling VPN.</source>
-        <target>Les hôtes .onion seront utilisés dès que possible. Nécessite l'activation d'un VPN.</target>
+      <trans-unit id="Onion hosts will be used when available.&#10;Requires compatible VPN." xml:space="preserve">
+        <source>Onion hosts will be used when available.
+Requires compatible VPN.</source>
+        <target>Les hôtes .onion seront utilisés dès que possible.
+Nécessite l'activation d'un VPN.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Onion hosts will not be used." xml:space="preserve">
@@ -5344,11 +5350,6 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
         <target>Révéler</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Revert" xml:space="preserve">
-        <source>Revert</source>
-        <target>Revenir en arrière</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Revoke" xml:space="preserve">
         <source>Revoke</source>
         <target>Révoquer</target>
@@ -5379,11 +5380,6 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
         <target>Serveur SMP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SMP servers" xml:space="preserve">
-        <source>SMP servers</source>
-        <target>Serveurs SMP</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Safely receive files" xml:space="preserve">
         <source>Safely receive files</source>
         <target>Réception de fichiers en toute sécurité</target>
@@ -5412,6 +5408,10 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
       <trans-unit id="Save and notify group members" xml:space="preserve">
         <source>Save and notify group members</source>
         <target>Enregistrer et en informer les membres du groupe</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Save and reconnect" xml:space="preserve">
+        <source>Save and reconnect</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save and update group profile" xml:space="preserve">
@@ -6100,9 +6100,17 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
         <source>Soft</source>
         <note>blur media</note>
       </trans-unit>
+      <trans-unit id="Some file(s) were not exported:" xml:space="preserve">
+        <source>Some file(s) were not exported:</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve">
         <source>Some non-fatal errors occurred during import - you may see Chat console for more details.</source>
         <target>Des erreurs non fatales se sont produites lors de l'importation - vous pouvez consulter la console de chat pour plus de détails.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Some non-fatal errors occurred during import:" xml:space="preserve">
+        <source>Some non-fatal errors occurred during import:</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Somebody" xml:space="preserve">
@@ -6237,6 +6245,10 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
       <trans-unit id="System authentication" xml:space="preserve">
         <source>System authentication</source>
         <target>Authentification du système</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="TCP connection" xml:space="preserve">
+        <source>TCP connection</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP connection timeout" xml:space="preserve">
@@ -6778,11 +6790,6 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Mise à jour</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update .onion hosts setting?" xml:space="preserve">
-        <source>Update .onion hosts setting?</source>
-        <target>Mettre à jour le paramètre des hôtes .onion ?</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Update database passphrase" xml:space="preserve">
         <source>Update database passphrase</source>
         <target>Mise à jour de la phrase secrète de la base de données</target>
@@ -6793,19 +6800,13 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Mettre à jour les paramètres réseau ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update transport isolation mode?" xml:space="preserve">
-        <source>Update transport isolation mode?</source>
-        <target>Mettre à jour le mode d'isolement du transport ?</target>
+      <trans-unit id="Update settings?" xml:space="preserve">
+        <source>Update settings?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
         <source>Updating settings will re-connect the client to all servers.</source>
         <target>La mise à jour des ces paramètres reconnectera le client à tous les serveurs.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Updating this setting will re-connect the client to all servers." xml:space="preserve">
-        <source>Updating this setting will re-connect the client to all servers.</source>
-        <target>La mise à jour de ce paramètre reconnectera le client à tous les serveurs.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upgrade and open chat" xml:space="preserve">
@@ -6916,11 +6917,6 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
       <trans-unit id="User selection" xml:space="preserve">
         <source>User selection</source>
         <target>Sélection de l'utilisateur</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Using .onion hosts requires compatible VPN provider." xml:space="preserve">
-        <source>Using .onion hosts requires compatible VPN provider.</source>
-        <target>L'utilisation des hôtes .onion nécessite un fournisseur VPN compatible.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Using SimpleX Chat servers." xml:space="preserve">
@@ -7183,11 +7179,6 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Serveur XFTP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="XFTP servers" xml:space="preserve">
-        <source>XFTP servers</source>
-        <target>Serveurs XFTP</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="You" xml:space="preserve">
         <source>You</source>
         <target>Vous</target>
@@ -7400,6 +7391,14 @@ Répéter la demande de connexion ?</target>
       <trans-unit id="You joined this group. Connecting to inviting group member." xml:space="preserve">
         <source>You joined this group. Connecting to inviting group member.</source>
         <target>Vous avez rejoint ce groupe. Connexion à l'invitation d'un membre du groupe.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You may migrate the exported database." xml:space="preserve">
+        <source>You may migrate the exported database.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You may save the exported archive." xml:space="preserve">
+        <source>You may save the exported archive.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve">
@@ -8382,8 +8381,8 @@ dernier message reçu : %2$@</target>
         <target>inconnu</target>
         <note>connection info</note>
       </trans-unit>
-      <trans-unit id="unknown relays" xml:space="preserve">
-        <source>unknown relays</source>
+      <trans-unit id="unknown servers" xml:space="preserve">
+        <source>unknown servers</source>
         <target>relais inconnus</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
