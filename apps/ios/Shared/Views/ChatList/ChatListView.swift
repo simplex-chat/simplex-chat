@@ -10,7 +10,8 @@ import SwiftUI
 import SimpleXChat
 import SwiftUIIntrospect
 
-fileprivate var observation: NSKeyValueObservation?
+fileprivate var contentOffsetObservation: NSKeyValueObservation?
+fileprivate var contentSizeObservation: NSKeyValueObservation?
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
@@ -39,7 +40,7 @@ struct ChatListView: View {
     }
 
     private var viewBody: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack(alignment: .bottomLeading) {
             NavStackCompat(
                 isActive: Binding(
                     get: { chatModel.chatId != nil },
@@ -65,7 +66,7 @@ struct ChatListView: View {
                 showSettings: $showSettings,
                 showConnectDesktop: $showConnectDesktop,
                 userPickerVisible: $userPickerVisible
-            )
+            ).offset(y: -48)
         }
         .sheet(isPresented: $showConnectDesktop) {
             ConnectDesktopView()
@@ -95,7 +96,7 @@ struct ChatListView: View {
         }
         .listStyle(.plain)
         .background(theme.colors.background)
-//        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(true)
         .toolbar {
             ToolbarItem(placement: .bottomBar) {
@@ -138,9 +139,10 @@ struct ChatListView: View {
         }
     }
 
+    @ViewBuilder
     private var chatList: some View {
         let chats = filteredChats()
-        return ZStack {
+        VStack(spacing: .zero) {
             if !chats.isEmpty {
                 ScrollViewReader { scrollProxy in
                     List(chats.reversed()) { chat in
@@ -149,11 +151,14 @@ struct ChatListView: View {
                             .listRowBackground(Color.clear)
                             .id(chat.id)
                     }
-                    .introspect(.list, on: .iOS(.v16, .v17)) { setObservation(collectionView: $0) }
+                    .introspect(.list, on: .iOS(.v16, .v17)) { setObservations(for: $0) }
                     .listStyle(.plain)
                     .onChange(of: searchFocussed) { sf in
                         if sf, let firstChat = chats.first {
-                            scrollProxy.scrollTo(firstChat.id)
+                            Task {
+                                try? await Task.sleep(nanoseconds: 200_000_000)
+                                withAnimation { scrollProxy.scrollTo(firstChat.id) }
+                            }
                         }
                     }
                     .task {
@@ -168,18 +173,15 @@ struct ChatListView: View {
                     .foregroundStyle(theme.colors.secondary)
                     .frame(maxHeight: .infinity)
             }
-        }
-        .safeAreaInset(edge: .bottom) {
-            VStack(spacing: .zero) {
-                Divider()
-                ChatListSearchBar(
-                    searchMode: $searchMode,
-                    searchFocussed: $searchFocussed,
-                    searchText: $searchText,
-                    searchShowingSimplexLink: $searchShowingSimplexLink,
-                    searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-                ).padding(8)
-            }
+            Divider()
+            ChatListSearchBar(
+                searchMode: $searchMode,
+                searchFocussed: $searchFocussed,
+                searchText: $searchText,
+                searchShowingSimplexLink: $searchShowingSimplexLink,
+                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+            )
+            .padding(8)
             .frame(height: isSearchExpanded ? nil : .zero)
             .clipped()
             .background(Material.bar.opacity(isSearchExpanded ? 1 : .zero))
@@ -196,23 +198,45 @@ struct ChatListView: View {
         }
     }
 
-    private func setObservation(collectionView: UICollectionView) {
-        if observation == nil {
-            observation = collectionView.observe(
+    private func setObservations(for collectionView: UICollectionView) {
+        var scrollDistance: CGFloat = .zero
+        if contentOffsetObservation == nil {
+            contentOffsetObservation = collectionView.observe(
                 \.contentOffset,
                  options: [.new, .old]
             ) { (cv, change) in
                 if let newOffset = change.newValue?.y,
-                   let oldOffset = change.oldValue?.y,
-                   newOffset > .zero,
-                   cv.contentSize.height - cv.visibleSize.height - newOffset + cv.safeAreaInsets.bottom > .zero {
-                    if abs(newOffset - oldOffset) > 10 {
-                        let ise = oldOffset < newOffset
-                        if isSearchExpanded != ise && !searchFocussed {
-                            withAnimation(.easeOut(duration: 0.15)) { isSearchExpanded = ise }
+                   let oldOffset = change.oldValue?.y {
+                    let bottomOffset = cv.contentSize.height - cv.visibleSize.height - newOffset + cv.safeAreaInsets.bottom
+
+                    // Present search bar when near bottom
+                    if !isSearchExpanded, bottomOffset < 32 {
+                        scrollDistance = .zero
+                        isSearchExpanded = true
+                        return
+                    }
+
+                    // Hide search bar when max amount of scroll in
+                    if newOffset > .zero,
+                       bottomOffset > .zero {
+                        let MAX: CGFloat = 64
+                        scrollDistance = min(max(scrollDistance + oldOffset - newOffset, -MAX), +MAX)
+                        if (isSearchExpanded && scrollDistance == +MAX) ||
+                          (!isSearchExpanded && scrollDistance == -MAX) {
+                            scrollDistance = .zero
+                            withAnimation(.easeOut(duration: 0.15)) { isSearchExpanded.toggle() }
                         }
                     }
                 }
+            }
+        }
+
+        if contentSizeObservation == nil {
+            contentSizeObservation = collectionView.observe(
+                \.contentSize,
+                 options: [.new, .old]
+            ) { (cv, change) in
+                
             }
         }
     }
