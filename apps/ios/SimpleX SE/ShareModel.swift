@@ -29,6 +29,7 @@ class ShareModel: ObservableObject {
     @Published var errorAlert: ErrorAlert?
     @Published var hasSimplexLink = false
     @Published var alertRequiresPassword = false
+    var networkTimeout = CFAbsoluteTimeGetCurrent()
 
     enum BottomBar {
         case sendButton
@@ -148,7 +149,7 @@ class ShareModel: ObservableObject {
                     if selected.chatInfo.chatType == .local {
                         completion()
                     } else {
-                        await MainActor.run { self.bottomBar = .loadingBar(progress: .zero) }
+                        await MainActor.run { self.bottomBar = .loadingBar(progress: 0) }
                         if let e = await handleEvents(
                             isGroupChat: ci.chatInfo.chatType == .group,
                             isWithoutFile: sharedContent.cryptoFile == nil,
@@ -290,14 +291,13 @@ class ShareModel: ObservableObject {
         CompletionHandler.isEventLoopEnabled = true
         let ch = CompletionHandler()
         if isWithoutFile { await ch.completeFile() }
-        var networkTimeout = CFAbsoluteTimeGetCurrent()
+        networkTimeout = CFAbsoluteTimeGetCurrent()
         while await ch.isRunning {
             if CFAbsoluteTimeGetCurrent() - networkTimeout > 30 {
-                networkTimeout = CFAbsoluteTimeGetCurrent()
                 await MainActor.run {
-                    self.errorAlert = ErrorAlert(title: "No network connection") {
-                        Button("Keep Trying", role: .cancel) {  }
-                        Button("Dismiss Sheet", role: .destructive) { self.completion() }
+                    self.errorAlert = ErrorAlert(title: "Slow network?", message: "Sending a message takes longer than expected.") {
+                        Button("Wait", role: .cancel) { self.networkTimeout = CFAbsoluteTimeGetCurrent() }
+                        Button("Cancel", role: .destructive) { self.completion() }
                     }
                 }
             }

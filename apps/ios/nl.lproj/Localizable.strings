@@ -689,7 +689,7 @@
 /* rcv group event chat item */
 "blocked %@" = "geblokkeerd %@";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "geblokkeerd door beheerder";
 
 /* No comment provided by engineer. */
@@ -2699,12 +2699,6 @@
 "Message reception" = "Bericht ontvangst";
 
 /* No comment provided by engineer. */
-"Message routing fallback" = "Terugval op berichtroutering";
-
-/* No comment provided by engineer. */
-"Message routing mode" = "Berichtrouteringsmodus";
-
-/* No comment provided by engineer. */
 "Message source remains private." = "Berichtbron blijft privé.";
 
 /* No comment provided by engineer. */
@@ -2977,10 +2971,10 @@
 "One-time invitation link" = "Eenmalige uitnodiging link";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "Onion hosts zullen nodig zijn voor verbinding. Vereist het inschakelen van VPN.";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "Onion hosts zullen nodig zijn voor verbinding.\nVereist het inschakelen van VPN.";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "Onion hosts worden gebruikt indien beschikbaar. Vereist het inschakelen van VPN.";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "Onion hosts worden gebruikt indien beschikbaar.\nVereist het inschakelen van VPN.";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "Onion hosts worden niet gebruikt.";
@@ -3553,9 +3547,6 @@
 "Reveal" = "Onthullen";
 
 /* No comment provided by engineer. */
-"Revert" = "Terugdraaien";
-
-/* No comment provided by engineer. */
 "Revoke" = "Intrekken";
 
 /* cancel file action */
@@ -3699,7 +3690,7 @@
 /* chat item text */
 "security code changed" = "beveiligingscode gewijzigd";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "Selecteer";
 
 /* No comment provided by engineer. */
@@ -4025,9 +4016,6 @@
 
 /* No comment provided by engineer. */
 "SMP server" = "SMP server";
-
-/* No comment provided by engineer. */
-"SMP servers" = "SMP servers";
 
 /* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Er zijn enkele niet-fatale fouten opgetreden tijdens het importeren - u kunt de Chat console raadplegen voor meer details.";
@@ -4411,7 +4399,7 @@
 "Unknown error" = "Onbekende fout";
 
 /* No comment provided by engineer. */
-"unknown relays" = "onbekende relays";
+"unknown servers" = "onbekende relays";
 
 /* No comment provided by engineer. */
 "Unknown servers!" = "Onbekende servers!";
@@ -4453,16 +4441,10 @@
 "Update" = "Update";
 
 /* No comment provided by engineer. */
-"Update .onion hosts setting?" = ".onion hosts-instelling updaten?";
-
-/* No comment provided by engineer. */
 "Update database passphrase" = "Database wachtwoord bijwerken";
 
 /* No comment provided by engineer. */
 "Update network settings?" = "Netwerk instellingen bijwerken?";
-
-/* No comment provided by engineer. */
-"Update transport isolation mode?" = "Transportisolatiemodus updaten?";
 
 /* rcv group event chat item */
 "updated group profile" = "bijgewerkt groep profiel";
@@ -4472,9 +4454,6 @@
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Door de instellingen bij te werken, wordt de client opnieuw verbonden met alle servers.";
-
-/* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "Als u deze instelling bijwerkt, wordt de client opnieuw verbonden met alle servers.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Upgrade en open chat";
@@ -4541,9 +4520,6 @@
 
 /* No comment provided by engineer. */
 "User selection" = "Gebruikersselectie";
-
-/* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = "Het gebruik van .onion-hosts vereist een compatibele VPN-provider.";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "SimpleX Chat servers gebruiken.";
@@ -4736,9 +4712,6 @@
 
 /* No comment provided by engineer. */
 "XFTP server" = "XFTP server";
-
-/* No comment provided by engineer. */
-"XFTP servers" = "XFTP servers";
 
 /* pref value */
 "yes" = "Ja";

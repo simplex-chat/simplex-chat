@@ -689,7 +689,7 @@
 /* rcv group event chat item */
 "blocked %@" = "letiltotta őt: %@";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "letiltva az admin által";
 
 /* No comment provided by engineer. */
@@ -2699,12 +2699,6 @@
 "Message reception" = "Üzenetjelentés";
 
 /* No comment provided by engineer. */
-"Message routing fallback" = "Üzenet útválasztási tartalék";
-
-/* No comment provided by engineer. */
-"Message routing mode" = "Üzenet útválasztási mód";
-
-/* No comment provided by engineer. */
 "Message source remains private." = "Az üzenet forrása titokban marad.";
 
 /* No comment provided by engineer. */
@@ -2977,10 +2971,10 @@
 "One-time invitation link" = "Egyszer használatos meghívó hivatkozás";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "A kapcsolódáshoz Onion kiszolgálókra lesz szükség. VPN engedélyezése szükséges.";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "A kapcsolódáshoz Onion kiszolgálókra lesz szükség.\nVPN engedélyezése szükséges.";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "Onion kiszolgálók használata, ha azok rendelkezésre állnak. VPN engedélyezése szükséges.";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "Onion kiszolgálók használata, ha azok rendelkezésre állnak.\nVPN engedélyezése szükséges.";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "Onion kiszolgálók nem lesznek használva.";
@@ -3553,9 +3547,6 @@
 "Reveal" = "Felfedés";
 
 /* No comment provided by engineer. */
-"Revert" = "Visszaállítás";
-
-/* No comment provided by engineer. */
 "Revoke" = "Visszavonás";
 
 /* cancel file action */
@@ -3699,7 +3690,7 @@
 /* chat item text */
 "security code changed" = "a biztonsági kód megváltozott";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "Választás";
 
 /* No comment provided by engineer. */
@@ -4025,9 +4016,6 @@
 
 /* No comment provided by engineer. */
 "SMP server" = "SMP-kiszolgáló";
-
-/* No comment provided by engineer. */
-"SMP servers" = "SMP kiszolgálók";
 
 /* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Néhány nem végzetes hiba történt az importálás során – további részletekért a csevegési konzolban olvashat.";
@@ -4411,7 +4399,7 @@
 "Unknown error" = "Ismeretlen hiba";
 
 /* No comment provided by engineer. */
-"unknown relays" = "ismeretlen átjátszók";
+"unknown servers" = "ismeretlen átjátszók";
 
 /* No comment provided by engineer. */
 "Unknown servers!" = "Ismeretlen kiszolgálók!";
@@ -4453,16 +4441,10 @@
 "Update" = "Frissítés";
 
 /* No comment provided by engineer. */
-"Update .onion hosts setting?" = "Tor .onion kiszolgálók beállításainak frissítése?";
-
-/* No comment provided by engineer. */
 "Update database passphrase" = "Adatbázis jelmondat megváltoztatása";
 
 /* No comment provided by engineer. */
 "Update network settings?" = "Hálózati beállítások megváltoztatása?";
-
-/* No comment provided by engineer. */
-"Update transport isolation mode?" = "Kapcsolat izolációs mód frissítése?";
 
 /* rcv group event chat item */
 "updated group profile" = "frissítette a csoport profilját";
@@ -4472,9 +4454,6 @@
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "A beállítások frissítése a kiszolgálókhoz való újra kapcsolódással jár.";
-
-/* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "A beállítás frissítésével a kliens újrakapcsolódik az összes kiszolgálóhoz.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "A csevegés frissítése és megnyitása";
@@ -4541,9 +4520,6 @@
 
 /* No comment provided by engineer. */
 "User selection" = "Felhasználó kiválasztása";
-
-/* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = "A .onion kiszolgálók használatához kompatibilis VPN szolgáltatóra van szükség.";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "SimpleX Chat kiszolgálók használatban.";
@@ -4736,9 +4712,6 @@
 
 /* No comment provided by engineer. */
 "XFTP server" = "XFTP-kiszolgáló";
-
-/* No comment provided by engineer. */
-"XFTP servers" = "XFTP kiszolgálók";
 
 /* pref value */
 "yes" = "igen";

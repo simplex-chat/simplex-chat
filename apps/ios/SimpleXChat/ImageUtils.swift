@@ -174,7 +174,7 @@ public func downsampleImage(at url: URL, to size: Int64) -> UIImage? {
         if let source = CGImageSourceCreateWithURL(url as CFURL, nil) {
             CGImageSourceCreateThumbnailAtIndex(
                     source,
-                    Int.zero,
+                    0,
                     [
                         kCGImageSourceCreateThumbnailFromImageAlways: true,
                         kCGImageSourceShouldCacheImmediately: true,

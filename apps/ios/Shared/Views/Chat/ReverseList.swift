@@ -33,7 +33,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             case let .item(id):
                 controller.scroll(to: items.firstIndex(where: { $0.id == id }), position: .bottom)
             case .bottom:
-                controller.scroll(to: .zero, position: .top)
+                controller.scroll(to: 0, position: .top)
             }
         } else {
             controller.update(items: items)
@@ -45,7 +45,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
         private enum Section { case main }
         private let representer: ReverseList
         private var dataSource: UITableViewDiffableDataSource<Section, Item>!
-        private var itemCount: Int = .zero
+        private var itemCount: Int = 0
         private var bag = Set<AnyCancellable>()
 
         init(representer: ReverseList) {
@@ -80,7 +80,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
                 if #available(iOS 16.0, *) {
                     cell.contentConfiguration = UIHostingConfiguration { self.representer.content(item) }
-                        .margins(.all, .zero)
+                        .margins(.all, 0)
                         .minSize(height: 1) // Passing zero will result in system default of 44 points being used
                 } else {
                     if let cell = cell as? HostingCell<Content> {
@@ -153,7 +153,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                     animated = true
                 }
                 tableView.scrollToRow(
-                    at: IndexPath(row: index, section: .zero),
+                    at: IndexPath(row: index, section: 0),
                     at: position,
                     animated: animated
                 )
@@ -168,7 +168,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             dataSource.defaultRowAnimation = .none
             dataSource.apply(
                 snapshot,
-                animatingDifferences: itemCount != .zero && abs(items.count - itemCount) == 1
+                animatingDifferences: itemCount != 0 && abs(items.count - itemCount) == 1
             )
             itemCount = items.count
         }
