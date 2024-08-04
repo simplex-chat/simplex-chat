@@ -280,7 +280,7 @@ private fun NewChatSheetLayout(
       if (filteredContactChats.isNotEmpty() && !oneHandUI.value) {
         Text(
           stringResource(MR.strings.contact_list_header_title).uppercase(), color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
-          modifier = sectionModifier.padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF, bottom = 5.dp), fontSize = 12.sp
+          modifier = sectionModifier.padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF, bottom = DEFAULT_PADDING_HALF), fontSize = 12.sp
         )
       }
     }
