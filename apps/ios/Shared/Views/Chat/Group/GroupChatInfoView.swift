@@ -216,7 +216,7 @@ struct GroupChatInfoView: View {
     }
 
     private func searchButton() -> some View {
-        InfoViewActionButtonLayout(image: "magnifyingglass", title: "open")
+        InfoViewActionButtonLayout(image: "magnifyingglass", title: "search")
             .onTapGesture {
                 dismiss()
                 onSearch()
