@@ -155,12 +155,13 @@ struct ChatListView: View {
                     }
                     .introspect(.list, on: .iOS(.v16, .v17)) { setObservations(for: $0) }
                     .listStyle(.plain)
+                    .padding(.top, -8) // Offset implicit padding from navigation view with hidden top bar
                     .onChange(of: chats.count) { _ in scrollToBottom() }
                     .onChange(of: searchFocussed) { sf in
                         if sf, let firstChat = chats.first {
                             Task {
-                                // Wait for keyboard animation to finish (0.21)
-                                try? await Task.sleep(nanoseconds: 200_000_000)
+                                // Wait for keyboard animation to finish (0.22 seconds)
+                                try? await Task.sleep(nanoseconds: 220_000_000)
                                 withAnimation { scrollProxy.scrollTo(firstChat.id) }
                             }
                         }
