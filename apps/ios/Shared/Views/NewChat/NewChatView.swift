@@ -30,7 +30,6 @@ struct SomeSheet<Content: View>: Identifiable {
 private enum NewChatViewAlert: Identifiable {
     case planAndConnectAlert(alert: PlanAndConnectAlert)
     case newChatSomeAlert(alert: SomeAlert)
-
     var id: String {
         switch self {
         case let .planAndConnectAlert(alert): return "planAndConnectAlert \(alert.id)"
@@ -57,6 +56,7 @@ struct NewChatView: View {
     @State private var creatingConnReq = false
     @State private var pastedLink: String = ""
     @State private var alert: NewChatViewAlert?
+    @Binding var parentAlert: SomeAlert?
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -129,19 +129,22 @@ struct NewChatView: View {
         .onDisappear {
             if !(m.showingInvitation?.connChatUsed ?? true),
                let conn = contactConnection {
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("Keep unused invitation?"),
-                    message: Text("You can view invitation link again in connection details."),
-                    primaryButton: .default(Text("Keep")) {},
-                    secondaryButton: .destructive(Text("Delete")) {
-                        Task {
-                            await deleteChat(Chat(
-                                chatInfo: .contactConnection(contactConnection: conn),
-                                chatItems: []
-                            ))
+                parentAlert = SomeAlert(
+                    alert: Alert(
+                        title: Text("Keep unused invitation?"),
+                        message: Text("You can view invitation link again in connection details."),
+                        primaryButton: .default(Text("Keep")) {},
+                        secondaryButton: .destructive(Text("Delete")) {
+                            Task {
+                                await deleteChat(Chat(
+                                    chatInfo: .contactConnection(contactConnection: conn),
+                                    chatItems: []
+                                ))
+                            }
                         }
-                    }
-                ))
+                    ),
+                    id: "keepUnusedInvitation"
+                )
             }
             m.showingInvitation = nil
         }
@@ -974,8 +977,13 @@ func connReqSentAlert(_ type: ConnReqType) -> Alert {
     )
 }
 
-#Preview {
-    NewChatView(
-        selection: .invite
-    )
+struct NewChatView_Previews: PreviewProvider {
+    static var previews: some View {
+        @State var parentAlert: SomeAlert?
+
+        NewChatView(
+            selection: .invite,
+            parentAlert: $parentAlert
+        )
+    }
 }

@@ -43,6 +43,7 @@ struct NewChatSheet: View {
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
+    @State private var alert: SomeAlert? = nil
     
     var body: some View {
         NavigationView {
@@ -51,6 +52,9 @@ struct NewChatSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationBarHidden(searchMode)
                 .modifier(ThemedBackground(grouped: true))
+                .alert(item: $alert) { a in
+                    return a.alert
+                }
         }
     }
     
@@ -73,12 +77,12 @@ struct NewChatSheet: View {
             if (searchText.isEmpty) {
                 Section {
                     NavigationLink {
-                        NewChatView(selection: .invite)
+                        NewChatView(selection: .invite, parentAlert: $alert)
                     } label: {
                         Label("Add contact", systemImage: "link.badge.plus")
                     }
                     NavigationLink {
-                        NewChatView(selection: .connect, showQRCodeScanner: true)
+                        NewChatView(selection: .connect, showQRCodeScanner: true, parentAlert: $alert)
                     } label: {
                         Label("Scan / Paste link", systemImage: "qrcode")
                     }
