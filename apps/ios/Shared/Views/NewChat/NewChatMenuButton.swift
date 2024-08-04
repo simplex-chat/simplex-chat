@@ -15,6 +15,8 @@ enum ContactType: Int {
 
 struct NewChatMenuButton: View {
     @State private var showNewChatSheet = false
+    @State private var alert: SomeAlert? = nil
+    @State private var globalAlert: SomeAlert? = nil
 
     var body: some View {
             Button {
@@ -26,8 +28,20 @@ struct NewChatMenuButton: View {
                 .frame(width: 24, height: 24)
         }
         .appSheet(isPresented: $showNewChatSheet) {
-            NewChatSheet()
+            NewChatSheet(alert: $alert)
                 .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
+                .alert(item: $alert) { a in
+                    return a.alert
+                }
+        }
+        .onChange(of: alert?.id) { a in
+            if !showNewChatSheet && alert != nil {
+                globalAlert = alert
+                alert = nil
+            }
+        }
+        .alert(item: $globalAlert) { a in
+            return a.alert
         }
     }
 }
@@ -43,7 +57,7 @@ struct NewChatSheet: View {
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
-    @State private var alert: SomeAlert? = nil
+    @Binding var alert: SomeAlert?
     
     var body: some View {
         NavigationView {
@@ -52,9 +66,6 @@ struct NewChatSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationBarHidden(searchMode)
                 .modifier(ThemedBackground(grouped: true))
-                .alert(item: $alert) { a in
-                    return a.alert
-                }
         }
     }
     
