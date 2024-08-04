@@ -8720,10 +8720,6 @@ Zuletzt empfangene Nachricht: %2$@</target>
         <target>Datenbank-Aktualisierung erforderlich</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Dismiss Sheet" xml:space="preserve">
-        <source>Dismiss Sheet</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Error preparing file" xml:space="preserve">
         <source>Error preparing file</source>
         <target>Fehler beim Vorbereiten der Datei</target>
@@ -8754,11 +8750,6 @@ Zuletzt empfangene Nachricht: %2$@</target>
         <target>Migrations-Bestätigung ungültig</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Keep Trying" xml:space="preserve">
-        <source>Keep Trying</source>
-        <target>Weiter versuchen</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Keychain error" xml:space="preserve">
         <source>Keychain error</source>
         <target>Schlüsselbund-Fehler</target>
@@ -8772,11 +8763,6 @@ Zuletzt empfangene Nachricht: %2$@</target>
       <trans-unit id="No active profile" xml:space="preserve">
         <source>No active profile</source>
         <target>Kein aktives Profil</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="No network connection" xml:space="preserve">
-        <source>No network connection</source>
-        <target>Keine Netzwerkverbindung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ok" xml:space="preserve">
@@ -8809,14 +8795,21 @@ Zuletzt empfangene Nachricht: %2$@</target>
         <target>Diese Nachricht ist wegen der gewählten Chat-Einstellungen nicht erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending File" xml:space="preserve">
-        <source>Sending File</source>
-        <target>Datei wird gesendet</target>
+      <trans-unit id="Sending a message takes longer than expected." xml:space="preserve">
+        <source>Sending a message takes longer than expected.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sending message…" xml:space="preserve">
+        <source>Sending message…</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share" xml:space="preserve">
         <source>Share</source>
         <target>Teilen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Slow network?" xml:space="preserve">
+        <source>Slow network?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unknown database error: %@" xml:space="preserve">
@@ -8827,6 +8820,10 @@ Zuletzt empfangene Nachricht: %2$@</target>
       <trans-unit id="Unsupported format" xml:space="preserve">
         <source>Unsupported format</source>
         <target>Nicht unterstütztes Format</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Wait" xml:space="preserve">
+        <source>Wait</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">

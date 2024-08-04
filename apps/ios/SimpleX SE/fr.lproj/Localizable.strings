@@ -38,9 +38,6 @@
 "Database upgrade required" = "Mise à niveau de la base de données nécessaire";
 
 /* No comment provided by engineer. */
-"Dismiss Sheet" = "Fiche de rejet";
-
-/* No comment provided by engineer. */
 "Error preparing file" = "Erreur lors de la préparation du fichier";
 
 /* No comment provided by engineer. */
@@ -59,9 +56,6 @@
 "Invalid migration confirmation" = "Confirmation de migration invalide";
 
 /* No comment provided by engineer. */
-"Keep Trying" = "Continuer à essayer";
-
-/* No comment provided by engineer. */
 "Keychain error" = "Erreur de la keychain";
 
 /* No comment provided by engineer. */
@@ -69,9 +63,6 @@
 
 /* No comment provided by engineer. */
 "No active profile" = "Pas de profil actif";
-
-/* No comment provided by engineer. */
-"No network connection" = "Pas de connexion au réseau";
 
 /* No comment provided by engineer. */
 "Ok" = "Ok";
@@ -90,9 +81,6 @@
 
 /* No comment provided by engineer. */
 "Selected chat preferences prohibit this message." = "Les paramètres de chat sélectionnés ne permettent pas l'envoi de ce message.";
-
-/* No comment provided by engineer. */
-"Sending File" = "Envoi de fichier";
 
 /* No comment provided by engineer. */
 "Share" = "Partager";

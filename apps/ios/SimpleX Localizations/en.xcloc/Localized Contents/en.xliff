@@ -8730,11 +8730,6 @@ last received msg: %2$@</target>
         <target>Database upgrade required</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Dismiss Sheet" xml:space="preserve">
-        <source>Dismiss Sheet</source>
-        <target>Dismiss Sheet</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Error preparing file" xml:space="preserve">
         <source>Error preparing file</source>
         <target>Error preparing file</target>
@@ -8765,11 +8760,6 @@ last received msg: %2$@</target>
         <target>Invalid migration confirmation</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Keep Trying" xml:space="preserve">
-        <source>Keep Trying</source>
-        <target>Keep Trying</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Keychain error" xml:space="preserve">
         <source>Keychain error</source>
         <target>Keychain error</target>
@@ -8783,11 +8773,6 @@ last received msg: %2$@</target>
       <trans-unit id="No active profile" xml:space="preserve">
         <source>No active profile</source>
         <target>No active profile</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="No network connection" xml:space="preserve">
-        <source>No network connection</source>
-        <target>No network connection</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Ok" xml:space="preserve">
@@ -8820,14 +8805,24 @@ last received msg: %2$@</target>
         <target>Selected chat preferences prohibit this message.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending File" xml:space="preserve">
-        <source>Sending File</source>
-        <target>Sending File</target>
+      <trans-unit id="Sending a message takes longer than expected." xml:space="preserve">
+        <source>Sending a message takes longer than expected.</source>
+        <target>Sending a message takes longer than expected.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Sending message…" xml:space="preserve">
+        <source>Sending message…</source>
+        <target>Sending message…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share" xml:space="preserve">
         <source>Share</source>
         <target>Share</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Slow network?" xml:space="preserve">
+        <source>Slow network?</source>
+        <target>Slow network?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unknown database error: %@" xml:space="preserve">
@@ -8838,6 +8833,11 @@ last received msg: %2$@</target>
       <trans-unit id="Unsupported format" xml:space="preserve">
         <source>Unsupported format</source>
         <target>Unsupported format</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Wait" xml:space="preserve">
+        <source>Wait</source>
+        <target>Wait</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">

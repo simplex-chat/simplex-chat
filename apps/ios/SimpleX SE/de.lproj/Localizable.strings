@@ -56,9 +56,6 @@
 "Invalid migration confirmation" = "Migrations-Bestätigung ungültig";
 
 /* No comment provided by engineer. */
-"Keep Trying" = "Weiter versuchen";
-
-/* No comment provided by engineer. */
 "Keychain error" = "Schlüsselbund-Fehler";
 
 /* No comment provided by engineer. */
@@ -66,9 +63,6 @@
 
 /* No comment provided by engineer. */
 "No active profile" = "Kein aktives Profil";
-
-/* No comment provided by engineer. */
-"No network connection" = "Keine Netzwerkverbindung";
 
 /* No comment provided by engineer. */
 "Ok" = "OK";
@@ -87,9 +81,6 @@
 
 /* No comment provided by engineer. */
 "Selected chat preferences prohibit this message." = "Diese Nachricht ist wegen der gewählten Chat-Einstellungen nicht erlaubt.";
-
-/* No comment provided by engineer. */
-"Sending File" = "Datei wird gesendet";
 
 /* No comment provided by engineer. */
 "Share" = "Teilen";
