@@ -648,23 +648,22 @@ final class ChatModel: ObservableObject {
 
     func changeUnreadCounter(_ chatIndex: Int, by count: Int) {
         chats[chatIndex].chatStats.unreadCount = chats[chatIndex].chatStats.unreadCount + count
-        decreaseUnreadCounter(user: currentUser!, by: -count)
+        changeUnreadCounter(user: currentUser!, by: count)
     }
 
     func increaseUnreadCounter(user: any UserLike) {
         changeUnreadCounter(user: user, by: 1)
-        NtfManager.shared.incNtfBadgeCount()
     }
 
     func decreaseUnreadCounter(user: any UserLike, by: Int = 1) {
         changeUnreadCounter(user: user, by: -by)
-        NtfManager.shared.decNtfBadgeCount(by: by)
     }
 
     private func changeUnreadCounter(user: any UserLike, by: Int) {
         if let i = users.firstIndex(where: { $0.user.userId == user.userId }) {
             users[i].unreadCount += by
         }
+        NtfManager.shared.changeNtfBadgeCount(by: by)
     }
 
     func totalUnreadCountForAllUsers() -> Int {
