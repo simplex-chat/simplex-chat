@@ -2030,4 +2030,5 @@
     <string name="moderate_messages_will_be_deleted_warning">De berichten worden voor alle leden verwijderd.</string>
     <string name="moderate_messages_will_be_marked_warning">De berichten worden voor alle leden als gemodereerd gemarkeerd.</string>
     <string name="info_view_video_button">video</string>
+    <string name="you_can_still_view_conversation_with_contact">Je kunt nog steeds het gesprek met %1$s bekijken in de lijst met chats.</string>
 </resources>
