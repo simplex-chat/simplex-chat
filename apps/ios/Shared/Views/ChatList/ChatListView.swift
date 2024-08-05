@@ -142,7 +142,7 @@ struct ChatListView: View {
     @ViewBuilder
     private var chatList: some View {
         let chats = filteredChats()
-        VStack(spacing: .zero) {
+        VStack(spacing: 0) {
             ZStack {
                 ScrollViewReader { scrollProxy in
                     func scrollToBottom() {
@@ -189,9 +189,9 @@ struct ChatListView: View {
                 searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
             )
             .padding(8)
-            .frame(height: isSearchBarVisible ? nil : .zero)
+            .frame(height: isSearchBarVisible ? nil : 0)
             .clipped()
-            .background(Material.bar.opacity(isSearchBarVisible ? 1 : .zero))
+            .background(Material.bar.opacity(isSearchBarVisible ? 1 : 0))
         }
         .padding(.top, -8) // Offset implicit padding from navigation view with hidden top bar
         .safeAreaInset(edge: .top) {
@@ -212,7 +212,7 @@ struct ChatListView: View {
     private func setObservations(for cv: UICollectionView) {
         if collectionView != cv {
             collectionView = cv
-            var scrollDistance: CGFloat = .zero
+            var scrollDistance: CGFloat = 0
             contentOffsetObservation?.invalidate()
             contentOffsetObservation = cv.observe(
                 \.contentOffset,
@@ -224,14 +224,14 @@ struct ChatListView: View {
 
                     // Present search bar when near bottom
                     if !isSearchExpanded, bottomOffset < 32 {
-                        scrollDistance = .zero
+                        scrollDistance = 0
                         isSearchExpanded = true
                         return
                     }
 
                     // Show/Hide search bar when scrolled for more than `MAX` amount
                     if newOffset > .zero,
-                       bottomOffset > .zero {
+                       bottomOffset > 0  {
                         let MAX: CGFloat = 64
                         scrollDistance = min(max(scrollDistance + oldOffset - newOffset, -MAX), +MAX)
                         if (isSearchExpanded && scrollDistance == +MAX) ||
