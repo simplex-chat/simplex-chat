@@ -1993,4 +1993,9 @@
     <string name="proxy_destination_error_failed_to_connect">Doorstuurserver %1$s kon geen verbinding maken met bestemmingsserver %2$s. Probeer het later opnieuw.</string>
     <string name="smp_proxy_error_broker_host">Het doorstuuradres is niet compatibel met de netwerkinstellingen: %1$s.</string>
     <string name="smp_proxy_error_broker_version">De doorstuurserverversie is niet compatibel met de netwerkinstellingen: %1$s.</string>
+    <string name="cant_call_contact_alert_title">Kan contact niet bellen</string>
+    <string name="allow_calls_question">Oproepen toestaan?</string>
+    <string name="info_view_call_button">bellen</string>
+    <string name="cant_call_member_alert_title">Kan geen groepslid bellen</string>
+    <string name="calls_prohibited_alert_title">Bellen verboden!</string>
 </resources>
