@@ -114,7 +114,7 @@ fun ProfileIconModifier(size: Dp, padding: Boolean = true, blurred: Boolean = fa
   val r = max(0f, percent.value)
   val pad = if (padding) size / 12 else 0.dp
   val m = Modifier.size(size)
-  return when {
+  val m1 = when {
     r >= 50 ->
       m.padding(pad).clip(CircleShape)
     r <= 0 -> {
@@ -125,7 +125,8 @@ fun ProfileIconModifier(size: Dp, padding: Boolean = true, blurred: Boolean = fa
       val sz = (size - 2 * pad) * (squareToCircleRatio + r * radiusFactor)
       m.padding((size - sz) / 2).clip(RoundedCornerShape(size = sz * r / 100))
     }
-  }.then(if (blurred) Modifier.blur(size / 4) else Modifier)
+  }
+  return if (blurred) m1.blur(size / 4) else m1
 }
 
 /** [AccountCircleFilled] has its inner padding which leads to visible border if there is background underneath.
