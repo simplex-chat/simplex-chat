@@ -60,19 +60,6 @@ struct NewChatView: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            HStack {
-                Text("New chat")
-                    .font(.largeTitle)
-                    .bold()
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer()
-                InfoSheetButton {
-                    AddContactLearnMore(showTitle: true)
-                }
-            }
-            .padding()
-            .padding(.top)
-
             Picker("New chat", selection: $selection) {
                 Label("Add contact", systemImage: "link")
                     .tag(NewChatOption.invite)
@@ -120,6 +107,13 @@ struct NewChatView: View {
                     }
                 }
             )
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                InfoSheetButton {
+                    AddContactLearnMore(showTitle: true)
+                }
+            }
         }
         .modifier(ThemedBackground(grouped: true))
         .onChange(of: invitationUsed) { used in

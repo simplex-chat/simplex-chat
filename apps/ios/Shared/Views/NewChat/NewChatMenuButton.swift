@@ -92,11 +92,17 @@ struct NewChatSheet: View {
                 Section {
                     NavigationLink {
                         NewChatView(selection: .invite, parentAlert: $alert)
+                            .navigationTitle("New chat")
+                            .modifier(ThemedBackground(grouped: true))
+                            .navigationBarTitleDisplayMode(.large)
                     } label: {
                         Label("Add contact", systemImage: "link.badge.plus")
                     }
                     NavigationLink {
                         NewChatView(selection: .connect, showQRCodeScanner: true, parentAlert: $alert)
+                            .navigationTitle("New chat")
+                            .modifier(ThemedBackground(grouped: true))
+                            .navigationBarTitleDisplayMode(.large)
                     } label: {
                         Label("Scan / Paste link", systemImage: "qrcode")
                     }
