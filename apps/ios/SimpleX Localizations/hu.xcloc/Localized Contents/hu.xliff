@@ -1254,8 +1254,9 @@
         <target>Csevegési adatbázis törölve</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat database exported" xml:space="preserve">
+      <trans-unit id="Chat database exported" xml:space="preserve" approved="no">
         <source>Chat database exported</source>
+        <target state="translated">Csevegési adatbázis exportálva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat database imported" xml:space="preserve">
@@ -3982,8 +3983,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Max. 30 másodperc, azonnal érkezett.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Media &amp; file servers" xml:space="preserve">
+      <trans-unit id="Media &amp; file servers" xml:space="preserve" approved="no">
         <source>Media &amp; file servers</source>
+        <target state="translated">Média és fájlkiszolgálók</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Medium" xml:space="preserve">
@@ -4076,8 +4078,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Üzenetjelentés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message servers" xml:space="preserve">
+      <trans-unit id="Message servers" xml:space="preserve" approved="no">
         <source>Message servers</source>
+        <target state="translated">Üzenetkiszolgálók</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message source remains private." xml:space="preserve">
@@ -5424,8 +5427,9 @@ Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.<
         <target>Mentés és a csoporttagok értesítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save and reconnect" xml:space="preserve">
+      <trans-unit id="Save and reconnect" xml:space="preserve" approved="no">
         <source>Save and reconnect</source>
+        <target state="translated">Mentés és újrakapcsolódás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save and update group profile" xml:space="preserve">
@@ -6118,8 +6122,9 @@ Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.<
         <target>Enyhe</target>
         <note>blur media</note>
       </trans-unit>
-      <trans-unit id="Some file(s) were not exported:" xml:space="preserve">
+      <trans-unit id="Some file(s) were not exported:" xml:space="preserve" approved="no">
         <source>Some file(s) were not exported:</source>
+        <target state="translated">Néhány fájl nem került exportálásra:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve">
@@ -6127,8 +6132,9 @@ Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.<
         <target>Néhány nem végzetes hiba történt az importálás során – további részletekért a csevegési konzolban olvashat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Some non-fatal errors occurred during import:" xml:space="preserve">
+      <trans-unit id="Some non-fatal errors occurred during import:" xml:space="preserve" approved="no">
         <source>Some non-fatal errors occurred during import:</source>
+        <target state="translated">Néhány nem végzetes hiba történt az importálás során:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Somebody" xml:space="preserve">
@@ -6266,8 +6272,9 @@ Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.<
         <target>Rendszerhitelesítés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="TCP connection" xml:space="preserve">
+      <trans-unit id="TCP connection" xml:space="preserve" approved="no">
         <source>TCP connection</source>
+        <target state="translated">TCP kapcsolat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP connection timeout" xml:space="preserve">
@@ -6821,8 +6828,9 @@ A kapcsolódáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsol
         <target>Hálózati beállítások megváltoztatása?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update settings?" xml:space="preserve">
+      <trans-unit id="Update settings?" xml:space="preserve" approved="no">
         <source>Update settings?</source>
+        <target state="translated">Beállítások frissítése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
@@ -7414,8 +7422,9 @@ Kapcsolódási kérés megismétlése?</target>
         <target>Csatlakozott ehhez a csoporthoz. Kapcsolódás a meghívó csoporttaghoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You may migrate the exported database." xml:space="preserve">
+      <trans-unit id="You may migrate the exported database." xml:space="preserve" approved="no">
         <source>You may migrate the exported database.</source>
+        <target state="translated">Az exportált adatbázist átköltöztetheti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You may save the exported archive." xml:space="preserve">
