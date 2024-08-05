@@ -155,7 +155,6 @@ struct ChatListView: View {
                     }
                     .introspect(.list, on: .iOS(.v16, .v17)) { setObservations(for: $0) }
                     .listStyle(.plain)
-                    .padding(.top, -8) // Offset implicit padding from navigation view with hidden top bar
                     .onChange(of: chats.count) { _ in scrollToBottom() }
                     .onChange(of: searchFocussed) { sf in
                         if sf, let firstChat = chats.first {
@@ -191,6 +190,7 @@ struct ChatListView: View {
             .clipped()
             .background(Material.bar.opacity(isSearchExpanded ? 1 : .zero))
         }
+        .padding(.top, -8) // Offset implicit padding from navigation view with hidden top bar
         .safeAreaInset(edge: .top) {
             Divider().background(Material.ultraThin)
         }
