@@ -1987,4 +1987,15 @@
     <string name="app_check_for_updates_update_available">Update beschikbaar: %s</string>
     <string name="app_check_for_updates_canceled">Downloaden van update geannuleerd</string>
     <string name="app_check_for_updates_notice_desc">Als u op de hoogte wilt worden gehouden van de nieuwe releases, schakelt u periodieke controle op stabiele of bètaversies in.</string>
+    <string name="privacy_media_blur_radius">Vervaag media</string>
+    <string name="privacy_media_blur_radius_medium">Medium</string>
+    <string name="privacy_media_blur_radius_off">uit</string>
+    <string name="privacy_media_blur_radius_soft">Soft</string>
+    <string name="privacy_media_blur_radius_strong">Krachtig</string>
+    <string name="proxy_destination_error_broker_host">Het doelserveradres van %1$s is niet compatibel met de instellingen van de doorstuurserver %2$s.</string>
+    <string name="proxy_destination_error_broker_version">De doelserverversie van %1$s is incompatibel met de doorstuurserver %2$s.</string>
+    <string name="smp_proxy_error_connecting">Fout bij verbinden met doorstuurserver %1$s. Probeer het later opnieuw.</string>
+    <string name="proxy_destination_error_failed_to_connect">Doorstuurserver %1$s kon geen verbinding maken met bestemmingsserver %2$s. Probeer het later opnieuw.</string>
+    <string name="smp_proxy_error_broker_host">Het doorstuuradres is niet compatibel met de netwerkinstellingen: %1$s.</string>
+    <string name="smp_proxy_error_broker_version">De doorstuurserverversie is niet compatibel met de netwerkinstellingen: %1$s.</string>
 </resources>

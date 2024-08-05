@@ -1,7 +1,9 @@
-/* 
-  InfoPlist.strings
-  SimpleX
+/* Bundle display name */
+"CFBundleDisplayName" = "SimpleX SE";
 
-  Created by EP on 30/07/2024.
-  Copyright © 2024 SimpleX Chat. All rights reserved.
-*/
+/* Bundle name */
+"CFBundleName" = "SimpleX SE";
+
+/* Copyright (human-readable) */
+"NSHumanReadableCopyright" = "Copyright © 2024 SimpleX Chat. Alle Rechte vorbehalten.";
+

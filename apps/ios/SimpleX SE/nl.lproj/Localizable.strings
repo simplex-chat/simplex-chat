@@ -1,7 +1,57 @@
-/* 
-  Localizable.strings
-  SimpleX
+/* No comment provided by engineer. */
+"%@" = "%@";
 
-  Created by EP on 30/07/2024.
-  Copyright © 2024 SimpleX Chat. All rights reserved.
-*/
+/* No comment provided by engineer. */
+"App is locked!" = "App is vergrendeld!";
+
+/* No comment provided by engineer. */
+"Cancel" = "Annuleren";
+
+/* No comment provided by engineer. */
+"Cannot access keychain to save database password" = "Kan geen toegang krijgen tot de keychain om het database wachtwoord op te slaan";
+
+/* No comment provided by engineer. */
+"Cannot forward message" = "Kan bericht niet doorsturen";
+
+/* No comment provided by engineer. */
+"Comment" = "Opmerking";
+
+/* No comment provided by engineer. */
+"Currently maximum supported file size is %@." = "De momenteel maximaal ondersteunde bestandsgrootte is %@.";
+
+/* No comment provided by engineer. */
+"Database downgrade required" = "Database downgrade vereist";
+
+/* No comment provided by engineer. */
+"Database encrypted!" = "Database versleuteld!";
+
+/* No comment provided by engineer. */
+"Database error" = "Database fout";
+
+/* No comment provided by engineer. */
+"Database passphrase is different from saved in the keychain." = "Het wachtwoord van de database verschilt van het wachtwoord die in de keychain is opgeslagen.";
+
+/* No comment provided by engineer. */
+"Database passphrase is required to open chat." = "Database wachtwoord is vereist om je gesprekken te openen.";
+
+/* No comment provided by engineer. */
+"Database upgrade required" = "Database upgrade vereist";
+
+/* No comment provided by engineer. */
+"Error preparing file" = "Fout bij voorbereiden bestand";
+
+/* No comment provided by engineer. */
+"Error preparing message" = "Fout bij het voorbereiden van bericht";
+
+/* No comment provided by engineer. */
+"Error: %@" = "Fout: %@";
+
+/* No comment provided by engineer. */
+"File error" = "Bestandsfout";
+
+/* No comment provided by engineer. */
+"Incompatible database version" = "Incompatibele database versie";
+
+/* No comment provided by engineer. */
+"Invalid migration confirmation" = "Ongeldige migratie bevestiging";
+
