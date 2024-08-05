@@ -71,20 +71,11 @@ struct GroupChatInfoView: View {
                 groupInfoHeader()
                     .listRowBackground(Color.clear)
 
-                HStack {
-                    Spacer()
-                    searchButton()
-                    if groupInfo.canAddMembers {
-                        Spacer()
-                        addMembersActionButton()
-                    }
-                    Spacer()
-                    muteButton()
-                    Spacer()
-                }
-                .padding(.horizontal)
-                .listRowBackground(Color.clear)
-                .listRowSeparator(.hidden)
+                infoActionButtons()
+                    .padding(.horizontal)
+                    .frame(maxWidth: .infinity)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
 
                 Section {
                     if groupInfo.canEdit {
@@ -215,6 +206,16 @@ struct GroupChatInfoView: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
+    func infoActionButtons() -> some View {
+        HStack(alignment: .center, spacing: 8) {
+            searchButton()
+            if groupInfo.canAddMembers {
+                addMembersActionButton()
+            }
+            muteButton()
+        }
+    }
+
     private func searchButton() -> some View {
         InfoViewActionButtonLayout(image: "magnifyingglass", title: "search")
             .onTapGesture {
@@ -237,12 +238,13 @@ struct GroupChatInfoView: View {
                 } label: {
                     EmptyView()
                 }
+                .frame(width: 1, height: 1)
                 .hidden()
             }
             .disabled(!groupInfo.ready)
         } else {
             ZStack {
-                InfoViewActionButtonLayout(image: "person.badge.plus", title: "invite")
+                InfoViewActionButtonLayout(image: "person.fill.badge.plus", title: "invite")
                     .onTapGesture {
                         addMembersNavLinkActive = true
                     }
@@ -252,6 +254,7 @@ struct GroupChatInfoView: View {
                 } label: {
                     EmptyView()
                 }
+                .frame(width: 1, height: 1)
                 .hidden()
             }
             .disabled(!groupInfo.ready)
@@ -260,7 +263,7 @@ struct GroupChatInfoView: View {
 
     private func muteButton() -> some View {
         InfoViewActionButtonLayout(
-            image: chat.chatInfo.ntfsEnabled ? "speaker.slash" : "speaker.wave.2",
+            image: chat.chatInfo.ntfsEnabled ? "speaker.slash.fill" : "speaker.wave.2.fill",
             title: chat.chatInfo.ntfsEnabled ? "mute" : "unmute"
         )
         .onTapGesture {

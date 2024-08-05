@@ -148,18 +148,14 @@ struct ChatInfoView: View {
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
                 
-                HStack {
-                    Spacer()
+                HStack(alignment: .center, spacing: 8) {
                     searchButton()
-                    Spacer()
                     AudioCallButton(chat: chat, contact: contact, showAlert: { alert = .someAlert(alert: $0) })
-                    Spacer()
                     VideoButton(chat: chat, contact: contact, showAlert: { alert = .someAlert(alert: $0) })
-                    Spacer()
                     muteButton()
-                    Spacer()
                 }
                 .padding(.horizontal)
+                .frame(maxWidth: .infinity)
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
                 
@@ -403,7 +399,7 @@ struct ChatInfoView: View {
 
     private func muteButton() -> some View {
         InfoViewActionButtonLayout(
-            image: chat.chatInfo.ntfsEnabled ? "speaker.slash" : "speaker.wave.2",
+            image: chat.chatInfo.ntfsEnabled ? "speaker.slash.fill" : "speaker.wave.2.fill",
             title: chat.chatInfo.ntfsEnabled ? "mute" : "unmute"
         )
         .onTapGesture {
@@ -627,7 +623,7 @@ struct AudioCallButton: View {
         CallButton(
             chat: chat,
             contact: contact,
-            image: "phone",
+            image: "phone.fill",
             title: "call",
             mediaType: .audio,
             showAlert: showAlert
@@ -644,7 +640,7 @@ struct VideoButton: View {
         CallButton(
             chat: chat,
             contact: contact,
-            image: "video",
+            image: "video.fill",
             title: "video",
             mediaType: .video,
             showAlert: showAlert
@@ -750,8 +746,8 @@ struct InfoViewActionButtonLayout: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .foregroundColor(.accentColor)
         .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(12.0)
-        .frame(width: 82, height: 56)
+        .cornerRadius(10.0)
+        .frame(width: 83, height: 60)
         .disabled(disabledLook)
     }
 }
