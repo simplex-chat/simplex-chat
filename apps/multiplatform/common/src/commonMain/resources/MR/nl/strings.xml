@@ -2021,4 +2021,8 @@
     <string name="one_hand_ui">Gebruikersinterface met één hand</string>
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Vraag uw contactpersoon om oproepen in te schakelen.</string>
     <string name="no_filtered_contacts">Geen gefilterde contacten</string>
+    <string name="select_verb">Selecteer</string>
+    <string name="selected_chat_items_selected_n">Geselecteerd %d</string>
+    <string name="cant_call_member_send_message_alert_text">Stuur een bericht om oproepen mogelijk te maken.</string>
+    <string name="info_view_search_button">zoekopdracht</string>
 </resources>
