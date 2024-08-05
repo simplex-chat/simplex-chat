@@ -333,8 +333,7 @@ final class ChatModel: ObservableObject {
                 [cItem]
             }
             if case .rcvNew = cItem.meta.itemStatus {
-                chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount + 1
-                increaseUnreadCounter(user: currentUser!)
+                unreadCollector.changeUnreadCounter(cInfo.id, by: 1)
             }
             popChatCollector.addChat(cInfo.id)
         } else {
@@ -415,7 +414,7 @@ final class ChatModel: ObservableObject {
 
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         if cItem.isRcvNew, let chatIndex = getChatIndex(cInfo.id) {
-            decreaseUnreadCounter(chatIndex)
+            changeUnreadCounter(chatIndex, by: -1)
         }
         // update previews
         if let chat = getChat(cInfo.id) {
@@ -570,7 +569,7 @@ final class ChatModel: ObservableObject {
                     // update current chat
                     markChatItemRead_(itemIndex)
                     // update preview
-                    unreadCollector.decreaseUnreadCounter(cInfo.id)
+                    unreadCollector.changeUnreadCounter(cInfo.id, by: -1)
                 }
             }
         }
@@ -590,17 +589,18 @@ final class ChatModel: ObservableObject {
                     let m = ChatModel.shared
                     for (chatId, count) in self.unreadCounts {
                         if let i = m.getChatIndex(chatId) {
-                            m.decreaseUnreadCounter(i, by: count)
+                            m.changeUnreadCounter(i, by: count)
                         }
                     }
                     self.unreadCounts = [:]
                 }
                 .store(in: &bag)
         }
-        
-        // Only call from main thread
-        func decreaseUnreadCounter(_ chatId: ChatId) {
-            unreadCounts[chatId] = (unreadCounts[chatId] ?? 0) + 1
+
+        func changeUnreadCounter(_ chatId: ChatId, by count: Int) {
+            DispatchQueue.main.async {
+                self.unreadCounts[chatId] = (self.unreadCounts[chatId] ?? 0) + count
+            }
             subject.send()
         }
     }
@@ -646,9 +646,9 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func decreaseUnreadCounter(_ chatIndex: Int, by count: Int = 1) {
-        chats[chatIndex].chatStats.unreadCount = chats[chatIndex].chatStats.unreadCount - count
-        decreaseUnreadCounter(user: currentUser!, by: count)
+    func changeUnreadCounter(_ chatIndex: Int, by count: Int) {
+        chats[chatIndex].chatStats.unreadCount = chats[chatIndex].chatStats.unreadCount + count
+        decreaseUnreadCounter(user: currentUser!, by: -count)
     }
 
     func increaseUnreadCounter(user: any UserLike) {
