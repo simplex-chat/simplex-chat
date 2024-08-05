@@ -470,6 +470,21 @@ object ChatModel {
       // update current chat
       return if (chatId.value == groupInfo.id) {
         val memberIndex = groupMembersIndexes[member.groupMemberId]
+        val updated = chatItems.value.map {
+          // Take into account only specific changes, not all. Other member updates are not important and can be skipped
+          if (it.chatDir is CIDirection.GroupRcv && it.chatDir.groupMember.groupMemberId == member.groupMemberId &&
+            (it.chatDir.groupMember.image != member.image ||
+                it.chatDir.groupMember.chatViewName != member.chatViewName ||
+                it.chatDir.groupMember.blocked != member.blocked ||
+                it.chatDir.groupMember.memberRole != member.memberRole)
+            )
+            it.copy(chatDir = CIDirection.GroupRcv(member))
+          else
+            it
+        }
+        if (updated != chatItems.value) {
+          chatItems.replaceAll(updated)
+        }
         if (memberIndex != null) {
           groupMembers[memberIndex] = member
           false
