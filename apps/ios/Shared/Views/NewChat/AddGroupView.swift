@@ -35,24 +35,28 @@ struct AddGroupView: View {
                     creatingGroup: true,
                     showFooterCounter: false
                 ) { _ in
-                    dismiss()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        m.chatId = groupInfo.id
+                        dismissAllSheets(animated: true) {
+                            m.chatId = groupInfo.id
+                        }
                     }
                 }
+                .navigationBarTitleDisplayMode(.inline)
             } else {
                 GroupLinkView(
                     groupId: groupInfo.groupId,
                     groupLink: $groupLink,
                     groupLinkMemberRole: $groupLinkMemberRole,
-                    showTitle: true,
+                    showTitle: false,
                     creatingGroup: true
                 ) {
-                    dismiss()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        m.chatId = groupInfo.id
+                        dismissAllSheets(animated: true) {
+                            m.chatId = groupInfo.id
+                        }
                     }
                 }
+                .navigationBarTitle("Group link")
             }
         } else {
             createGroupView().keyboardPadding()
@@ -62,13 +66,6 @@ struct AddGroupView: View {
     func createGroupView() -> some View {
         List {
             Group {
-                Text("Create secret group")
-                    .font(.largeTitle)
-                    .bold()
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.bottom, 24)
-                    .onTapGesture(perform: hideKeyboard)
-
                 ZStack(alignment: .center) {
                     ZStack(alignment: .topTrailing) {
                         ProfileImage(imageStr: profile.image, size: 128)
@@ -204,13 +201,14 @@ struct AddGroupView: View {
                 chat = c
             }
         } catch {
-            dismiss()
-            AlertManager.shared.showAlert(
-                Alert(
-                    title: Text("Error creating group"),
-                    message: Text(responseError(error))
+            dismissAllSheets(animated: true) {
+                AlertManager.shared.showAlert(
+                    Alert(
+                        title: Text("Error creating group"),
+                        message: Text(responseError(error))
+                    )
                 )
-            )
+            }
         }
     }
 

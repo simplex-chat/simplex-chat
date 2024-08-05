@@ -275,7 +275,7 @@ struct ChatPreviewView: View {
         } else {
             switch (chat.chatInfo) {
             case let .direct(contact):
-                if contact.activeConn == nil && contact.profile.contactLink != nil {
+                if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
                     chatPreviewInfoText("Tap to Connect")
                         .foregroundColor(theme.colors.primary)
                 } else if !contact.sndReady && contact.activeConn != nil {
