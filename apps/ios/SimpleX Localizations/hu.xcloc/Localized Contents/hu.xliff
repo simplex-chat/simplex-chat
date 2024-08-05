@@ -7427,8 +7427,9 @@ Kapcsolódási kérés megismétlése?</target>
         <target state="translated">Az exportált adatbázist átköltöztetheti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You may save the exported archive." xml:space="preserve">
+      <trans-unit id="You may save the exported archive." xml:space="preserve" approved="no">
         <source>You may save the exported archive.</source>
+        <target state="translated">Az exportált archívumot elmentheti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve">
@@ -8804,12 +8805,14 @@ utoljára fogadott üzenet: %2$@</target>
         <target>A kiválasztott csevegési beállítások tiltják ezt az üzenetet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending a message takes longer than expected." xml:space="preserve">
+      <trans-unit id="Sending a message takes longer than expected." xml:space="preserve" approved="no">
         <source>Sending a message takes longer than expected.</source>
+        <target state="translated">Az üzenet elküldése a vártnál tovább tart.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending message…" xml:space="preserve">
+      <trans-unit id="Sending message…" xml:space="preserve" approved="no">
         <source>Sending message…</source>
+        <target state="translated">Üzenet küldése…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share" xml:space="preserve">
@@ -8817,8 +8820,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Megosztás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Slow network?" xml:space="preserve">
+      <trans-unit id="Slow network?" xml:space="preserve" approved="no">
         <source>Slow network?</source>
+        <target state="translated">Lassú internetkapcsolat?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unknown database error: %@" xml:space="preserve">
@@ -8831,8 +8835,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Nem támogatott formátum</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Wait" xml:space="preserve">
+      <trans-unit id="Wait" xml:space="preserve" approved="no">
         <source>Wait</source>
+        <target state="translated">Várjon</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
