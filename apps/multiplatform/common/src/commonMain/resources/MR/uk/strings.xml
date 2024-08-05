@@ -251,7 +251,6 @@
     <string name="network_settings_title">Налаштування мережі</string>
     <string name="network_enable_socks">Використовувати SOCKS-проксі?</string>
     <string name="network_disable_socks">Використовувати прямий підключення до Інтернету?</string>
-    <string name="update_onion_hosts_settings_question">Оновити налаштування .onion-хостів?</string>
     <string name="network_use_onion_hosts">Використовувати .onion-хости</string>
     <string name="network_use_onion_hosts_prefer">Якщо доступно</string>
     <string name="network_use_onion_hosts_no">Ні</string>
@@ -640,8 +639,6 @@
     <string name="error_saving_ICE_servers">Помилка збереження серверів ICE</string>
     <string name="network_use_onion_hosts_required_desc">.Onion-хости будуть обов\'язковими для підключення.
 \nЗверніть увагу: ви не зможете підключитися до серверів без адреси .onion.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Хости .onion будуть використовуватися, якщо доступні.</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Хости .onion будуть обов\'язковими для підключення.</string>
     <string name="show_developer_options">Показати параметри розробника</string>
     <string name="developer_options">Ідентифікатори бази даних та опція ізоляції транспорту.</string>
     <string name="shutdown_alert_desc">Сповіщення перестануть працювати, поки ви не перезапустите додаток</string>
@@ -953,7 +950,6 @@
     <string name="image_descr_link_preview">зображення попереднього перегляду посилання</string>
     <string name="icon_descr_cancel_link_preview">скасувати попередній перегляд посилання</string>
     <string name="icon_descr_settings">Налаштування</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Хости .onion не будуть використовуватися.</string>
     <string name="icon_descr_call_progress">Виклик у процесі</string>
     <string name="database_error">Помилка бази даних</string>
     <string name="restore_database_alert_confirm">Відновити</string>
@@ -997,7 +993,6 @@
     <string name="section_title_for_console">ДЛЯ КОНСОЛІ</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">Учасника буде вилучено з групи - цю дію неможливо скасувати!</string>
     <string name="change_role">Змінити роль</string>
-    <string name="network_options_revert">Відновити</string>
     <string name="you_will_still_receive_calls_and_ntfs">Ви все ще отримуватимете дзвінки та сповіщення від приглушених профілів, коли вони активні.</string>
     <string name="ttl_months">%d місяці</string>
     <string name="ttl_mth">%dmth</string>

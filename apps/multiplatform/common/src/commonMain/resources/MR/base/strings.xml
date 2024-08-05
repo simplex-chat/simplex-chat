@@ -768,7 +768,6 @@
   <string name="network_enable_socks_info">Access the servers via SOCKS proxy on port %d? Proxy must be started before enabling this option.</string>
   <string name="network_disable_socks">Use direct Internet connection?</string>
   <string name="network_disable_socks_info">If you confirm, the messaging servers will be able to see your IP address, and your provider - which servers you are connecting to.</string>
-  <string name="update_onion_hosts_settings_question">Update .onion hosts setting?</string>
   <string name="network_use_onion_hosts">Use .onion hosts</string>
   <string name="network_use_onion_hosts_prefer">When available</string>
   <string name="network_use_onion_hosts_no">No</string>
@@ -776,9 +775,6 @@
   <string name="network_use_onion_hosts_prefer_desc">Onion hosts will be used when available.</string>
   <string name="network_use_onion_hosts_no_desc">Onion hosts will not be used.</string>
   <string name="network_use_onion_hosts_required_desc">Onion hosts will be required for connection.\nPlease note: you will not be able to connect to the servers without .onion address.</string>
-  <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion hosts will be used when available.</string>
-  <string name="network_use_onion_hosts_no_desc_in_alert">Onion hosts will not be used.</string>
-  <string name="network_use_onion_hosts_required_desc_in_alert">Onion hosts will be required for connection.</string>
   <string name="network_session_mode_transport_isolation">Transport isolation</string>
   <string name="network_session_mode_user">Chat profile</string>
   <string name="network_session_mode_entity">Connection</string>
@@ -1621,7 +1617,6 @@
   <string name="network_option_ping_interval">PING interval</string>
   <string name="network_option_ping_count">PING count</string>
   <string name="network_option_enable_tcp_keep_alive">Enable TCP keep-alive</string>
-  <string name="network_options_revert">Revert</string>
   <string name="network_options_save">Save</string>
   <string name="network_options_save_and_reconnect">Save and reconnect</string>
   <string name="update_network_settings_question">Update network settings?</string>

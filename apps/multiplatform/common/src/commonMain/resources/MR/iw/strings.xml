@@ -604,8 +604,6 @@
     <string name="theme_light">בהיר</string>
     <string name="import_theme_error_desc">ודאו שלקובץ יש תחביר YAML תקין. ייצאו ערכת נושא כדי לקבל דוגמה למבנה תקין של קובץ ערכת נושא.</string>
     <string name="message_delivery_error_desc">ככל הנראה איש קשר זה מחק את החיבור איתך.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">ייעשה שימוש במארחי Onion כאשר יהיו זמינים.</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">מארחי Onion יידרשו לחיבור.</string>
     <string name="moderated_item_description">נחסם על ידי %s</string>
     <string name="la_no_app_password">אין קוד גישה לאפליקציה</string>
     <string name="videos_limit_desc">ניתן לשלוח רק 10 סרטונים בו־זמנית</string>
@@ -674,7 +672,6 @@
     <string name="network_use_onion_hosts_required_desc">יידרשו מארחי onion לחיבור.
 \nשימו לב: לא תוכלו להתחבר לשרתים ללא כתובת .onion.</string>
     <string name="network_use_onion_hosts_no_desc">לא ייעשה שימוש במארחי Onion.</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">לא ייעשה שימוש במארחי Onion.</string>
     <string name="callstatus_missed">שיחה שלא נענתה</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[רק מכשירי לקוח מאחסנים פרופילי משתמש, אנשי קשר, קבוצות, והודעות שנשלחו עם <b>הצפנה מקצה־לקצה דו־שכבתית</b>.]]></string>
     <string name="status_no_e2e_encryption">ללא הצפנה מקצה־לקצה</string>
@@ -902,7 +899,6 @@
     <string name="custom_time_unit_seconds">שניות</string>
     <string name="custom_time_picker_select">אישור</string>
     <string name="role_in_group">תפקיד</string>
-    <string name="network_options_revert">ביטול</string>
     <string name="save_and_update_group_profile">שמור ועדכן את פרופיל הקבוצה</string>
     <string name="save_welcome_message_question">לשמור הודעת פתיחה\?</string>
     <string name="current_version_timestamp">%s (נוכחי)</string>
@@ -1077,7 +1073,6 @@
     <string name="to_share_with_your_contact">(כדי לשתף עם איש הקשר שלך)</string>
     <string name="to_start_a_new_chat_help_header">כדי להתחיל צ׳אט חדש</string>
     <string name="smp_servers_use_server_for_new_conn">השתמש עבור חיבורים חדשים</string>
-    <string name="update_onion_hosts_settings_question">לעדכן הגדרות מארחי ‪.onion‬\?‬</string>
     <string name="to_verify_compare">כדי לאמת הצפנה מקצה־לקצה עם איש הקשר שלכם, יש להשוות (או לסרוק) את הקוד במכשירים שלכם.</string>
     <string name="your_chat_profiles">פרופילי צ׳אט</string>
     <string name="update_network_session_mode_question">לעדכן מצב בידוד תעבורה\?</string>

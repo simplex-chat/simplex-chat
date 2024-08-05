@@ -322,8 +322,6 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
       SectionItemView(save, disabled = saveDisabled) {
         Text(stringResource(MR.strings.network_options_save_and_reconnect), color = if (saveDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
       }
-      // LALAL
-      // FooterButton(painterResource(MR.images.ic_replay), stringResource(MR.strings.network_options_revert), revert, footerDisabled)
     }
     SectionBottomSpacer()
   }
