@@ -1288,7 +1288,6 @@
   <string name="database_downgrade">Database downgrade</string>
   <string name="incompatible_database_version">Incompatible database version</string>
   <string name="confirm_database_upgrades">Confirm database upgrades</string>
-  <string name="one_hand_ui">One-hand UI</string>
   <string name="chat_toolbar_position">Chat toolbar position</string>
   <string name="chat_toolbar_position_top">Top</string>
   <string name="chat_toolbar_position_bottom">Bottom</string>

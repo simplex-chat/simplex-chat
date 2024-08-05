@@ -2011,7 +2011,6 @@
     <string name="you_can_still_view_conversation_with_contact">你仍可以在聊天列表中查看与 %1$s 的对话。</string>
     <string name="paste_link">粘贴链接</string>
     <string name="contact_list_header_title">联系人</string>
-    <string name="one_hand_ui">单手用户界面</string>
     <string name="cant_call_contact_connecting_wait_alert_text">正在连接联系人，请等候或稍后检查！</string>
     <string name="cant_call_contact_deleted_alert_text">联系人被删除了。</string>
     <string name="you_need_to_allow_calls">要能够呼叫联系人，你需要先允许联系人进行呼叫。</string>

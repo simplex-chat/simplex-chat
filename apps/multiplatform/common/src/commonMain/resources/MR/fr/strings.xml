@@ -2017,7 +2017,6 @@
     <string name="no_filtered_contacts">Pas de contacts filtrés</string>
     <string name="paste_link">Coller le lien</string>
     <string name="contact_list_header_title">Vos contacts</string>
-    <string name="one_hand_ui">Interface utilisateur à une main</string>
     <string name="cant_call_contact_deleted_alert_text">Le contact est supprimé.</string>
     <string name="calls_prohibited_alert_title">Les appels ne sont pas autorisés !</string>
     <string name="you_need_to_allow_calls">Vous devez autoriser votre contact à appeler pour pouvoir l\'appeler.</string>

@@ -2094,7 +2094,6 @@
     <string name="deleted_chats">Gelöschte Chats</string>
     <string name="no_filtered_contacts">Keine gefilterten Kontakte</string>
     <string name="contact_list_header_title">Ihre Kontakte</string>
-    <string name="one_hand_ui">Einhand-Bedienoberfläche</string>
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Bitten Sie Ihren Kontakt darum, Anrufe zu aktivieren.</string>
     <string name="you_need_to_allow_calls">Sie müssen Ihrem Kontakt Anrufe zu Ihnen erlauben, bevor Sie ihn selbst anrufen können.</string>
     <string name="allow_calls_question">Anrufe erlauben?</string>

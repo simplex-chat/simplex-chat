@@ -2015,7 +2015,6 @@
     <string name="you_can_still_send_messages_to_contact">لا يزال بإمكانك إرسال الرسائل إلى %1$s من الدردشات المحذوفة.</string>
     <string name="paste_link">ألصق الرابط</string>
     <string name="contact_list_header_title">جهات اتصالك</string>
-    <string name="one_hand_ui">واجهة مستخدم بيد واحدة</string>
     <string name="cant_call_contact_deleted_alert_text">حُذفت جهة الاتصال.</string>
     <string name="allow_calls_question">السماح بالمكالمات؟</string>
     <string name="cant_call_member_send_message_alert_text">أرسل رسالة لتفعيل المكالمات.</string>
