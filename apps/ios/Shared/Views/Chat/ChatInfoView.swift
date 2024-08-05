@@ -1096,8 +1096,8 @@ struct DeleteActiveContactDialog: View {
                         .foregroundColor(theme.colors.secondary)
                 }
             }
+            .modifier(ThemedBackground(grouped: true))
         }
-        .modifier(ThemedBackground(grouped: true))
     }
 
     var contactDeleteMode: ContactDeleteMode {
