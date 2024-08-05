@@ -413,8 +413,8 @@ final class ChatModel: ObservableObject {
     }
 
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
-        if cItem.isRcvNew, let chatIndex = getChatIndex(cInfo.id) {
-            changeUnreadCounter(chatIndex, by: -1)
+        if cItem.isRcvNew {
+            unreadCollector.changeUnreadCounter(cInfo.id, by: -1)
         }
         // update previews
         if let chat = getChat(cInfo.id) {
