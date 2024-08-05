@@ -54,6 +54,9 @@ struct ChatListView: View {
                 userPickerVisible: $userPickerVisible
             )
         }
+        .safeAreaInset(edge: .top) {
+            if oneHandUI { Divider().background(Material.ultraThin) }
+        }
         .sheet(isPresented: $showConnectDesktop) {
             ConnectDesktopView()
         }
@@ -150,7 +153,6 @@ struct ChatListView: View {
     var principalToolbarItem: some View {
         HStack(spacing: 4) {
             Text("Chats")
-
                 .font(.headline)
                 // TODO: For testing, remove after oneHandUI is implemented
                 .contentShape(Rectangle()).onTapGesture { oneHandUI.toggle() }
@@ -171,30 +173,28 @@ struct ChatListView: View {
     @ViewBuilder private var chatList: some View {
         let cs = filteredChats()
         ZStack {
-            VStack {
-                List {
-                    if !chatModel.chats.isEmpty {
-                        ChatListSearchBar(
-                            searchMode: $searchMode,
-                            searchFocussed: $searchFocussed,
-                            searchText: $searchText,
-                            searchShowingSimplexLink: $searchShowingSimplexLink,
-                            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-                        )
-                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                        .frame(maxWidth: .infinity)
-                    }
-                    ForEach(cs, id: \.viewId) { chat in
-                        ChatListNavLink(chat: chat)
-                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                            .padding(.trailing, -16)
-                            .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
-                            .listRowBackground(Color.clear)
-                    }
-                    .offset(x: -8)
+            List {
+                if !chatModel.chats.isEmpty {
+                    ChatListSearchBar(
+                        searchMode: $searchMode,
+                        searchFocussed: $searchFocussed,
+                        searchText: $searchText,
+                        searchShowingSimplexLink: $searchShowingSimplexLink,
+                        searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+                    )
+                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+                    .frame(maxWidth: .infinity)
                 }
+                ForEach(cs, id: \.viewId) { chat in
+                    ChatListNavLink(chat: chat)
+                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                        .padding(.trailing, -16)
+                        .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
+                        .listRowBackground(Color.clear)
+                }
+                .offset(x: -8)
             }
             .onChange(of: chatModel.chatId) { chId in
                 if chId == nil, let chatId = chatModel.chatToTop {
