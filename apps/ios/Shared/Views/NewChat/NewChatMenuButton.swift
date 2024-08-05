@@ -304,43 +304,43 @@ struct ContactsListSearchBar: View {
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 12) {
-                HStack(spacing: 4) {
-                    Image(systemName: "magnifyingglass")
+        HStack(spacing: 12) {
+            HStack(spacing: 4) {
+                Spacer()
+                    .frame(width: 8)
+                Image(systemName: "magnifyingglass")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 16, height: 16)
+                TextField("Search or paste SimpleX link", text: $searchText)
+                    .foregroundColor(searchShowingSimplexLink ? theme.colors.secondary : theme.colors.onBackground)
+                    .disabled(searchShowingSimplexLink)
+                    .focused($searchFocussed)
+                    .frame(maxWidth: .infinity)
+                if !searchText.isEmpty {
+                    Image(systemName: "xmark.circle.fill")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 16, height: 16)
-                    TextField("Search or paste SimpleX link", text: $searchText)
-                        .foregroundColor(searchShowingSimplexLink ? theme.colors.secondary : theme.colors.onBackground)
-                        .disabled(searchShowingSimplexLink)
-                        .focused($searchFocussed)
-                        .frame(maxWidth: .infinity)
-                    if !searchText.isEmpty {
-                        Image(systemName: "xmark.circle.fill")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 16, height: 16)
-                            .onTapGesture {
-                                searchText = ""
-                            }
-                    }
-                }
-                .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
-                .foregroundColor(theme.colors.secondary)
-                .background(theme.colors.isLight ? theme.colors.background : theme.colors.secondaryVariant)
-                .cornerRadius(10.0)
-
-                if searchFocussed {
-                    Text("Cancel")
-                        .foregroundColor(theme.colors.primary)
                         .onTapGesture {
                             searchText = ""
-                            searchFocussed = false
                         }
-                } else if m.chats.count > 0 {
-                    toggleFilterButton()
                 }
+            }
+            .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
+            .foregroundColor(theme.colors.secondary)
+            .background(theme.colors.isLight ? theme.colors.background : theme.colors.secondaryVariant)
+            .cornerRadius(10.0)
+
+            if searchFocussed {
+                Text("Cancel")
+                    .foregroundColor(theme.colors.primary)
+                    .onTapGesture {
+                        searchText = ""
+                        searchFocussed = false
+                    }
+            } else if m.chats.count > 0 {
+                toggleFilterButton()
             }
         }
         .onChange(of: searchFocussed) { sf in
