@@ -1401,7 +1401,7 @@
     <string name="network_disable_socks">Közvetlen internet kapcsolat használata?</string>
     <string name="you_will_still_receive_calls_and_ntfs">Továbbra is kap hívásokat és értesítéseket a némított profiloktól, ha azok aktívak.</string>
     <string name="group_main_profile_sent">A fő csevegési profilja elküldésre kerül a csoporttagok számára</string>
-    <string name="you_can_enable_delivery_receipts_later_alert">Később engedélyezheti őket az alkalmazás „Adatvédelem és biztonság” menüben.</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">Később engedélyezheti őket az alkalmazás „Adatvédelem és biztonság” menüjében.</string>
     <string name="to_reveal_profile_enter_password">Rejtett profilja felfedéséhez írja be a teljes jelszavát a keresőmezőbe a Csevegési profilok menüben.</string>
     <string name="upgrade_and_open_chat">Fejlesztés és a csevegés megnyitása</string>
     <string name="you_need_to_allow_to_send_voice">Hangüzeneteket küldéséhez engedélyeznie kell azok küldését az ismerősei számára.</string>
@@ -2022,11 +2022,11 @@
     <string name="you_need_to_allow_calls">Engedélyeznie kell a hívásokat az ismerőse számára, hogy fel tudják hívni egymást.</string>
     <string name="you_can_still_view_conversation_with_contact">A(z) %1$s nevű ismerősével folytatott beszélgetéseit továbbra is megtekintheti a csevegések listájában.</string>
     <string name="compose_message_placeholder">Üzenet</string>
-    <string name="select_verb">Választás</string>
+    <string name="select_verb">Kiválaszt</string>
     <string name="moderate_messages_will_be_marked_warning">Az üzenetek minden tag számára moderáltként lesznek megjelölve.</string>
     <string name="selected_chat_items_nothing_selected">Nincs kiválasztva semmi</string>
     <string name="delete_messages_mark_deleted_warning">Az üzenetek törlésre lesznek jelölve. A címzett(ek) képes(ek) lesz(nek) felfedni ezt az üzenetet.</string>
     <string name="delete_members_messages__question">Törli a tagok %d üzenetét?</string>
-    <string name="selected_chat_items_selected_n">Kiválasztott %d</string>
+    <string name="selected_chat_items_selected_n">%d kiválasztva</string>
     <string name="moderate_messages_will_be_deleted_warning">Az üzenetek minden tag számára törlésre kerülnek.</string>
 </resources>
