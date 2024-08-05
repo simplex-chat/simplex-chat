@@ -53,29 +53,60 @@ struct ContactListNavLink: View {
     }
 
     func recentContactNavLink(_ contact: Contact) -> some View {
-        contactPreview(contact, titleColor: theme.colors.onBackground)
-            .onTapGesture {
-                dismissAllSheets(animated: true) {
-                    ChatModel.shared.chatId = contact.id
-                }
+        Button {
+            dismissAllSheets(animated: true) {
+                ChatModel.shared.chatId = contact.id
             }
+        } label: {
+            contactPreview(contact, titleColor: theme.colors.onBackground)
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button {
+                deleteContactDialog(
+                    chat,
+                    contact,
+                    dismissToChatList: false,
+                    showAlert: { alert = $0 },
+                    showActionSheet: { actionSheet = $0 },
+                    showSheetContent: { sheet = $0 }
+                )
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+            .tint(.red)
+        }
     }
 
-    // TODO fix - contact doesn't stay in chat list
     func deletedChatNavLink(_ contact: Contact) -> some View {
-        contactPreview(contact, titleColor: theme.colors.onBackground)
-            .onTapGesture {
-                Task {
-                    await MainActor.run {
-                        var updatedContact = contact
-                        updatedContact.chatDeleted = false
-                        ChatModel.shared.updateContact(updatedContact)
-                        dismissAllSheets(animated: true) {
-                            ChatModel.shared.chatId = contact.id
-                        }
+        Button {
+            Task {
+                await MainActor.run {
+                    var updatedContact = contact
+                    updatedContact.chatDeleted = false
+                    ChatModel.shared.updateContact(updatedContact)
+                    dismissAllSheets(animated: true) {
+                        ChatModel.shared.chatId = contact.id
                     }
                 }
             }
+        } label: {
+            contactPreview(contact, titleColor: theme.colors.onBackground)
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button {
+                deleteContactDialog(
+                    chat,
+                    contact,
+                    dismissToChatList: false,
+                    showAlert: { alert = $0 },
+                    showActionSheet: { actionSheet = $0 },
+                    showSheetContent: { sheet = $0 }
+                )
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+            .tint(.red)
+        }
     }
 
     func contactPreview(_ contact: Contact, titleColor: Color) -> some View {
@@ -103,22 +134,6 @@ struct ContactListNavLink: View {
                 }
             }
         }
-        .background(theme.colors.background)
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button {
-                deleteContactDialog(
-                    chat,
-                    contact,
-                    dismissToChatList: false,
-                    showAlert: { alert = $0 },
-                    showActionSheet: { actionSheet = $0 },
-                    showSheetContent: { sheet = $0 }
-                )
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-            .tint(.red)
-        }
     }
 
     @ViewBuilder private func previewTitle(_ contact: Contact, titleColor: Color) -> some View {
@@ -139,27 +154,30 @@ struct ContactListNavLink: View {
     }
 
     func contactCardNavLink(_ contact: Contact) -> some View {
-        contactCardPreview(contact)
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                Button {
-                    deleteContactDialog(
-                        chat,
-                        contact,
-                        dismissToChatList: false,
-                        showAlert: { alert = $0 },
-                        showActionSheet: { actionSheet = $0 },
-                        showSheetContent: { sheet = $0 }
-                    )
-                } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-                .tint(.red)
+        Button {
+            showConnectContactViaAddressDialog = true
+        } label: {
+            contactCardPreview(contact)
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button {
+                deleteContactDialog(
+                    chat,
+                    contact,
+                    dismissToChatList: false,
+                    showAlert: { alert = $0 },
+                    showActionSheet: { actionSheet = $0 },
+                    showSheetContent: { sheet = $0 }
+                )
+            } label: {
+                Label("Delete", systemImage: "trash")
             }
-            .onTapGesture { showConnectContactViaAddressDialog = true }
-            .confirmationDialog("Connect with \(contact.chatViewName)", isPresented: $showConnectContactViaAddressDialog, titleVisibility: .visible) {
-                Button("Use current profile") { connectContactViaAddress_(contact, false) }
-                Button("Use new incognito profile") { connectContactViaAddress_(contact, true) }
-            }
+            .tint(.red)
+        }
+        .confirmationDialog("Connect with \(contact.chatViewName)", isPresented: $showConnectContactViaAddressDialog, titleVisibility: .visible) {
+            Button("Use current profile") { connectContactViaAddress_(contact, false) }
+            Button("Use new incognito profile") { connectContactViaAddress_(contact, true) }
+        }
     }
 
     private func connectContactViaAddress_(_ contact: Contact, _ incognito: Bool) {
@@ -194,35 +212,37 @@ struct ContactListNavLink: View {
                 .frame(width: 14, height: 14)
                 .foregroundColor(.accentColor)
         }
-        .background(theme.colors.background)
     }
 
     func contactRequestNavLink(_ contactRequest: UserContactRequest) -> some View {
-        contactRequestPreview(contactRequest)
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                Button {
-                    Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) }
-                } label: { Label("Accept", systemImage: "checkmark") }
-                    .tint(theme.colors.primary)
-                Button {
-                    Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) }
-                } label: {
-                    Label("Accept incognito", systemImage: "theatermasks")
-                }
-                .tint(.indigo)
-                Button {
-                    alert = SomeAlert(alert: rejectContactRequestAlert(contactRequest), id: "rejectContactRequestAlert")
-                } label: {
-                    Label("Reject", systemImage: "multiply")
-                }
-                .tint(.red)
+        Button {
+            showContactRequestDialog = true
+        } label: {
+            contactRequestPreview(contactRequest)
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button {
+                Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) }
+            } label: { Label("Accept", systemImage: "checkmark") }
+                .tint(theme.colors.primary)
+            Button {
+                Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) }
+            } label: {
+                Label("Accept incognito", systemImage: "theatermasks")
             }
-            .onTapGesture { showContactRequestDialog = true }
-            .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
-                Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) } }
-                Button("Accept incognito") { Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) } }
-                Button("Reject (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest) } }
+            .tint(.indigo)
+            Button {
+                alert = SomeAlert(alert: rejectContactRequestAlert(contactRequest), id: "rejectContactRequestAlert")
+            } label: {
+                Label("Reject", systemImage: "multiply")
             }
+            .tint(.red)
+        }
+        .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
+            Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) } }
+            Button("Accept incognito") { Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) } }
+            Button("Reject (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest) } }
+        }
     }
 
     func contactRequestPreview(_ contactRequest: UserContactRequest) -> some View {
@@ -241,6 +261,5 @@ struct ContactListNavLink: View {
                 .frame(width: 14, height: 14)
                 .foregroundColor(.accentColor)
         }
-        .background(theme.colors.background)
     }
 }
