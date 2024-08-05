@@ -782,9 +782,9 @@ object ChatController {
     throw Exception("failed to get app settings: ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiExportArchive(config: ArchiveConfig) {
+  suspend fun apiExportArchive(config: ArchiveConfig): List<ArchiveError> {
     val r = sendCmd(null, CC.ApiExportArchive(config))
-    if (r is CR.CmdOk) return
+    if (r is CR.ArchiveExported) return r.archiveErrors
     throw Exception("failed to export archive: ${r.responseType} ${r.details}")
   }
 
@@ -2176,7 +2176,10 @@ object ChatController {
         r.chatItemDeletions.forEach { (deletedChatItem, toChatItem) ->
           val cInfo = deletedChatItem.chatInfo
           val cItem = deletedChatItem.chatItem
-          AudioPlayer.stop(cItem)
+          if (chatModel.chatId.value != null) {
+            // Stop voice playback only inside a chat, allow to play in a chat list
+            AudioPlayer.stop(cItem)
+          }
           val isLastChatItem = chatModel.getChat(cInfo.id)?.chatItems?.lastOrNull()?.id == cItem.id
           if (isLastChatItem && ntfManager.hasNotificationsForChat(cInfo.id)) {
             ntfManager.cancelNotificationsForChat(cInfo.id)
@@ -4882,6 +4885,7 @@ sealed class CR {
   @Serializable @SerialName("cmdOk") class CmdOk(val user: UserRef?): CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val user_: UserRef?, val chatError: ChatError): CR()
   @Serializable @SerialName("chatError") class ChatRespError(val user_: UserRef?, val chatError: ChatError): CR()
+  @Serializable @SerialName("archiveExported") class ArchiveExported(val archiveErrors: List<ArchiveError>): CR()
   @Serializable @SerialName("archiveImported") class ArchiveImported(val archiveErrors: List<ArchiveError>): CR()
   @Serializable @SerialName("appSettings") class AppSettingsR(val appSettings: AppSettings): CR()
   @Serializable @SerialName("agentSubsTotal") class AgentSubsTotal(val user: UserRef, val subsTotal: SMPServerSubs, val hasSession: Boolean): CR()
@@ -5051,6 +5055,7 @@ sealed class CR {
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
     is ChatRespError -> "chatError"
+    is ArchiveExported -> "archiveExported"
     is ArchiveImported -> "archiveImported"
     is AppSettingsR -> "appSettings"
     is Response -> "* $type"
@@ -5235,6 +5240,7 @@ sealed class CR {
     is CmdOk -> withUser(user, noDetails())
     is ChatCmdError -> withUser(user_, chatError.string)
     is ChatRespError -> withUser(user_, chatError.string)
+    is ArchiveExported -> "${archiveErrors.map { it.string } }"
     is ArchiveImported -> "${archiveErrors.map { it.string } }"
     is AppSettingsR -> json.encodeToString(appSettings)
     is Response -> json
@@ -6040,11 +6046,11 @@ sealed class RCErrorType {
 @Serializable
 sealed class ArchiveError {
   val string: String get() = when (this) {
-    is ArchiveErrorImport -> "import ${chatError.string}"
-    is ArchiveErrorImportFile -> "importFile $file ${chatError.string}"
+    is ArchiveErrorImport -> "import ${importError}"
+    is ArchiveErrorFile -> "importFile $file ${fileError}"
   }
-  @Serializable @SerialName("import") class ArchiveErrorImport(val chatError: ChatError): ArchiveError()
-  @Serializable @SerialName("importFile") class ArchiveErrorImportFile(val file: String, val chatError: ChatError): ArchiveError()
+  @Serializable @SerialName("import") class ArchiveErrorImport(val importError: String): ArchiveError()
+  @Serializable @SerialName("fileError") class ArchiveErrorFile(val file: String, val fileError: String): ArchiveError()
 }
 
 @Serializable

@@ -836,7 +836,7 @@ fun ComposeView(
     chatModel.sharedContent.value = null
   }
 
-  val userCanSend = rememberUpdatedState(chat.userCanSend)
+  val userCanSend = rememberUpdatedState(chat.chatInfo.userCanSend)
   val sendMsgEnabled = rememberUpdatedState(chat.chatInfo.sendMsgEnabled)
   val userIsObserver = rememberUpdatedState(chat.userIsObserver)
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
@@ -872,10 +872,9 @@ fun ComposeView(
         }
       }
     }
-    Row(
-      modifier = Modifier.background(MaterialTheme.colors.background).padding(end = 8.dp),
-      verticalAlignment = Alignment.Bottom,
-    ) {
+    Column(Modifier.background(MaterialTheme.colors.background)) {
+    Divider()
+    Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
       val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)
       val attachmentClicked = if (isGroupAndProhibitedFiles) {
         {
@@ -895,7 +894,7 @@ fun ComposeView(
             && !nextSendGrpInv.value
       IconButton(
         attachmentClicked,
-        Modifier.padding(bottom = if (appPlatform.isAndroid) 0.dp else with(LocalDensity.current) { 7.sp.toDp() }),
+        Modifier.padding(bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp() * fontSizeSqrtMultiplier),
         enabled = attachmentEnabled
       ) {
         Icon(
@@ -924,7 +923,7 @@ fun ComposeView(
         snapshotFlow { recState.value }
           .distinctUntilChanged()
           .collect {
-            when(it) {
+            when (it) {
               is RecordingState.Started -> onAudioAdded(it.filePath, it.progressMs, false)
               is RecordingState.Finished -> if (it.durationMs > 300) {
                 onAudioAdded(it.filePath, it.durationMs, true)
@@ -936,8 +935,8 @@ fun ComposeView(
           }
       }
 
-      LaunchedEffect(rememberUpdatedState(chat.userCanSend).value) {
-        if (!chat.userCanSend) {
+      LaunchedEffect(rememberUpdatedState(chat.chatInfo.userCanSend).value) {
+        if (!chat.chatInfo.userCanSend) {
           clearCurrentDraft()
           clearState()
         }
@@ -1004,6 +1003,7 @@ fun ComposeView(
         sendButtonColor = sendButtonColor,
         timedMessageAllowed = timedMessageAllowed,
         customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,
+        placeholder = stringResource(MR.strings.compose_message_placeholder),
         sendMessage = { ttl ->
           sendMessage(ttl)
           resetLinkPreview()
@@ -1020,5 +1020,6 @@ fun ComposeView(
         textStyle = textStyle
       )
     }
+  }
   }
 }

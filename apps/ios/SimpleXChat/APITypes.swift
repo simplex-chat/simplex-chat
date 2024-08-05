@@ -689,6 +689,7 @@ public enum ChatResponse: Decodable, Error {
     case agentSubsSummary(user: UserRef, subsSummary: SMPServerSubs)
     case chatCmdError(user_: UserRef?, chatError: ChatError)
     case chatError(user_: UserRef?, chatError: ChatError)
+    case archiveExported(archiveErrors: [ArchiveError])
     case archiveImported(archiveErrors: [ArchiveError])
     case appSettings(appSettings: AppSettings)
 
@@ -851,6 +852,7 @@ public enum ChatResponse: Decodable, Error {
             case .agentSubsSummary: return "agentSubsSummary"
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
+            case .archiveExported: return "archiveExported"
             case .archiveImported: return "archiveImported"
             case .appSettings: return "appSettings"
             }
@@ -1021,6 +1023,7 @@ public enum ChatResponse: Decodable, Error {
             case let .agentSubsSummary(u, subsSummary): return withUser(u, String(describing: subsSummary))
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
             case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
+            case let .archiveExported(archiveErrors): return String(describing: archiveErrors)
             case let .archiveImported(archiveErrors): return String(describing: archiveErrors)
             case let .appSettings(appSettings): return String(describing: appSettings)
             }
@@ -1322,13 +1325,31 @@ public struct NetCfg: Codable, Equatable, Hashable {
         smpPingInterval: 1200_000_000
     )
 
-    public static let proxyDefaults: NetCfg = NetCfg(
+    static let proxyDefaults: NetCfg = NetCfg(
         tcpConnectTimeout: 35_000_000,
         tcpTimeout: 20_000_000,
         tcpTimeoutPerKb: 15_000,
         rcvConcurrency: 8,
         smpPingInterval: 1200_000_000
     )
+    
+    public var withProxyTimeouts: NetCfg {
+        var cfg = self
+        cfg.tcpConnectTimeout = NetCfg.proxyDefaults.tcpConnectTimeout
+        cfg.tcpTimeout = NetCfg.proxyDefaults.tcpTimeout
+        cfg.tcpTimeoutPerKb = NetCfg.proxyDefaults.tcpTimeoutPerKb
+        cfg.rcvConcurrency = NetCfg.proxyDefaults.rcvConcurrency
+        cfg.smpPingInterval = NetCfg.proxyDefaults.smpPingInterval
+        return cfg
+    }
+    
+    public var hasProxyTimeouts: Bool {
+        tcpConnectTimeout == NetCfg.proxyDefaults.tcpConnectTimeout &&
+        tcpTimeout == NetCfg.proxyDefaults.tcpTimeout &&
+        tcpTimeoutPerKb == NetCfg.proxyDefaults.tcpTimeoutPerKb &&
+        rcvConcurrency == NetCfg.proxyDefaults.rcvConcurrency &&
+        smpPingInterval == NetCfg.proxyDefaults.smpPingInterval
+    }
 
     public var enableKeepAlive: Bool { tcpKeepAlive != nil }
 }
@@ -1344,16 +1365,16 @@ public enum SocksMode: String, Codable, Hashable {
     case onion = "onion"
 }
 
-public enum SMPProxyMode: String, Codable, Hashable {
+public enum SMPProxyMode: String, Codable, Hashable, SelectableItem {
     case always = "always"
     case unknown = "unknown"
     case unprotected = "unprotected"
     case never = "never"
 
-    public var text: LocalizedStringKey {
+    public var label: LocalizedStringKey {
         switch self {
         case .always: return "always"
-        case .unknown: return "unknown relays"
+        case .unknown: return "unknown servers"
         case .unprotected: return "unprotected"
         case .never: return "never"
         }
@@ -1364,12 +1385,12 @@ public enum SMPProxyMode: String, Codable, Hashable {
     public static let values: [SMPProxyMode] = [.always, .unknown, .unprotected, .never]
 }
 
-public enum SMPProxyFallback: String, Codable, Hashable {
+public enum SMPProxyFallback: String, Codable, Hashable, SelectableItem {
     case allow = "allow"
     case allowProtected = "allowProtected"
     case prohibit = "prohibit"
 
-    public var text: LocalizedStringKey {
+    public var label: LocalizedStringKey {
         switch self {
         case .allow: return "yes"
         case .allowProtected: return "when IP hidden"
@@ -2036,8 +2057,8 @@ public enum SMPAgentError: Decodable, Hashable {
 }
 
 public enum ArchiveError: Decodable, Hashable {
-    case `import`(chatError: ChatError)
-    case importFile(file: String, chatError: ChatError)
+    case `import`(importError: String)
+    case fileError(file: String, fileError: String)
 }
 
 public enum RemoteCtrlError: Decodable, Hashable {

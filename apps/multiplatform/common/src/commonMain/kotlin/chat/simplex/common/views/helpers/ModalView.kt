@@ -26,7 +26,6 @@ fun ModalView(
   background: Color = MaterialTheme.colors.background,
   modifier: Modifier = Modifier,
   closeOnTop: Boolean = true,
-  closeBarTitle: String? = null,
   endButtons: @Composable RowScope.() -> Unit = {},
   content: @Composable () -> Unit,
 ) {
@@ -38,13 +37,9 @@ fun ModalView(
       if (closeOnTop) {
         CloseSheetBar(if (enableClose) close else null, showClose, endButtons = endButtons)
       }
-      Box(if (closeOnTop) modifier else modifier.padding(bottom = AppBarHeight * fontSizeSqrtMultiplier)) {
+      Box(modifier = modifier) {
         content()
       }
-    }
-
-    if (!closeOnTop) {
-      CloseSheetBar(if (enableClose) close else null, showClose, endButtons = endButtons, arrangement = Arrangement.Bottom, closeBarTitle = closeBarTitle)
     }
   }
 }
@@ -64,24 +59,25 @@ class ModalData {
 
 class ModalManager(private val placement: ModalPlacement? = null) {
   private val modalViews = arrayListOf<Triple<Boolean, ModalData, (@Composable ModalData.(close: () -> Unit) -> Unit)>>()
-  private val modalCount = mutableStateOf(0)
+  private val _modalCount = mutableStateOf(0)
+  val modalCount: State<Int> = _modalCount
   private val toRemove = mutableSetOf<Int>()
   private var oldViewChanging = AtomicBoolean(false)
   // Don't use mutableStateOf() here, because it produces this if showing from SimpleXAPI.startChat():
   // java.lang.IllegalStateException: Reading a state that was created after the snapshot was taken or in a snapshot that has not yet been applied
   private var passcodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
 
-  fun showModal(settings: Boolean = false, showClose: Boolean = true, closeOnTop: Boolean = true, closeBarTitle: String? = null,endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
+  fun showModal(settings: Boolean = false, showClose: Boolean = true, closeOnTop: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
     val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, closeOnTop = closeOnTop, closeBarTitle = closeBarTitle, endButtons = endButtons, content = { data.content() })
+      ModalView(close, showClose = showClose, closeOnTop = closeOnTop, endButtons = endButtons, content = { data.content() })
     }
   }
 
-  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, closeOnTop: Boolean = true, closeBarTitle: String? = null, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
+  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, closeOnTop: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
     val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, endButtons = endButtons, closeOnTop = closeOnTop, closeBarTitle = closeBarTitle, content = { data.content(close) })
+      ModalView(close, showClose = showClose, endButtons = endButtons, closeOnTop = closeOnTop, content = { data.content(close) })
     }
   }
 
@@ -97,7 +93,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     // to prevent unneeded animation on different situations
     val anim = if (appPlatform.isAndroid) animated else animated && (modalCount.value > 0 || placement == ModalPlacement.START)
     modalViews.add(Triple(anim, data, modal))
-    modalCount.value = modalViews.size - toRemove.size
+    _modalCount.value = modalViews.size - toRemove.size
 
     if (placement == ModalPlacement.CENTER) {
       ChatModel.chatId.value = null
@@ -123,13 +119,13 @@ class ModalManager(private val placement: ModalPlacement? = null) {
       if (modalViews.lastOrNull()?.first == false) modalViews.removeAt(modalViews.lastIndex)
       else runAtomically { toRemove.add(modalViews.lastIndex - min(toRemove.size, modalViews.lastIndex)) }
     }
-    modalCount.value = modalViews.size - toRemove.size
+    _modalCount.value = modalViews.size - toRemove.size
   }
 
   fun closeModals() {
     modalViews.clear()
     toRemove.clear()
-    modalCount.value = 0
+    _modalCount.value = 0
   }
 
   fun closeModalsExceptFirst() {

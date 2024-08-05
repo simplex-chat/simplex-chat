@@ -2125,10 +2125,10 @@
 "One-time invitation link" = "ลิงก์คำเชิญแบบใช้ครั้งเดียว";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "จำเป็นต้องมีโฮสต์หัวหอมสำหรับการเชื่อมต่อ ต้องเปิดใช้งาน VPN สำหรับการเชื่อมต่อ";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "จำเป็นต้องมีโฮสต์หัวหอมสำหรับการเชื่อมต่อ ต้องเปิดใช้งาน VPN สำหรับการเชื่อมต่อ";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "จำเป็นต้องมีโฮสต์หัวหอมสำหรับการเชื่อมต่อ ต้องเปิดใช้งาน VPN สำหรับการเชื่อมต่อ";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "จำเป็นต้องมีโฮสต์หัวหอมสำหรับการเชื่อมต่อ ต้องเปิดใช้งาน VPN สำหรับการเชื่อมต่อ";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "โฮสต์หัวหอมจะไม่ถูกใช้";
@@ -2497,9 +2497,6 @@
 "Reveal" = "เปิดเผย";
 
 /* No comment provided by engineer. */
-"Revert" = "เปลี่ยนกลับ";
-
-/* No comment provided by engineer. */
 "Revoke" = "ถอน";
 
 /* cancel file action */
@@ -2601,7 +2598,7 @@
 /* chat item text */
 "security code changed" = "เปลี่ยนรหัสความปลอดภัยแล้ว";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "เลือก";
 
 /* No comment provided by engineer. */
@@ -2801,9 +2798,6 @@
 
 /* No comment provided by engineer. */
 "Skipped messages" = "ข้อความที่ข้ามไป";
-
-/* No comment provided by engineer. */
-"SMP servers" = "เซิร์ฟเวอร์ SMP";
 
 /* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "ข้อผิดพลาดที่ไม่ร้ายแรงบางอย่างเกิดขึ้นระหว่างการนำเข้า - คุณอาจดูรายละเอียดเพิ่มเติมได้ที่คอนโซล Chat";
@@ -3088,25 +3082,16 @@
 "Update" = "อัปเดต";
 
 /* No comment provided by engineer. */
-"Update .onion hosts setting?" = "อัปเดตการตั้งค่าโฮสต์ .onion ไหม?";
-
-/* No comment provided by engineer. */
 "Update database passphrase" = "อัปเดตรหัสผ่านของฐานข้อมูล";
 
 /* No comment provided by engineer. */
 "Update network settings?" = "อัปเดตการตั้งค่าเครือข่ายไหม?";
-
-/* No comment provided by engineer. */
-"Update transport isolation mode?" = "อัปเดตโหมดการแยกการขนส่งไหม?";
 
 /* rcv group event chat item */
 "updated group profile" = "อัปเดตโปรไฟล์กลุ่มแล้ว";
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "การอัปเดตการตั้งค่าจะเชื่อมต่อไคลเอนต์กับเซิร์ฟเวอร์ทั้งหมดอีกครั้ง";
-
-/* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "การอัปเดตการตั้งค่านี้จะเชื่อมต่อไคลเอนต์กับเซิร์ฟเวอร์ทั้งหมดอีกครั้ง";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "อัปเกรดและเปิดการแชท";
@@ -3134,9 +3119,6 @@
 
 /* No comment provided by engineer. */
 "User profile" = "โปรไฟล์ผู้ใช้";
-
-/* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = "การใช้โฮสต์ .onion ต้องการผู้ให้บริการ VPN ที่เข้ากันได้";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "กำลังใช้เซิร์ฟเวอร์ SimpleX Chat อยู่";
@@ -3251,9 +3233,6 @@
 
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "รหัสผ่านผิด!";
-
-/* No comment provided by engineer. */
-"XFTP servers" = "เซิร์ฟเวอร์ XFTP";
 
 /* pref value */
 "yes" = "ใช่";
