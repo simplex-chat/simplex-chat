@@ -10,7 +10,7 @@ import SwiftUI
 import SimpleXChat
 import SwiftUIIntrospect
 
-fileprivate var contentOffsetObservation: NSKeyValueObservation?
+private weak var collectionView: UICollectionView?
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
@@ -27,6 +27,7 @@ struct ChatListView: View {
 
     @State private var initialAppearance = true
     @State private var isSearchExpanded = true
+    @State private var contentOffsetObservation: NSKeyValueObservation?
 
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
@@ -142,7 +143,7 @@ struct ChatListView: View {
     private var chatList: some View {
         let chats = filteredChats()
         VStack(spacing: .zero) {
-            if !chats.isEmpty {
+            ZStack {
                 ScrollViewReader { scrollProxy in
                     func scrollToBottom() {
                         if let first = chats.first { scrollProxy.scrollTo(first.id) }
@@ -153,7 +154,7 @@ struct ChatListView: View {
                             .listRowBackground(Color.clear)
                             .id(chat.id)
                     }
-                    .introspect(.list, on: .iOS(.v16, .v17)) { setObservations(for: $0) }
+                    .introspect(.list, on: .iOS(.v16, .v17, .v18)) { setObservations(for: $0) }
                     .listStyle(.plain)
                     .onChange(of: chats.count) { _ in scrollToBottom() }
                     .onChange(of: searchFocussed) { sf in
@@ -172,12 +173,14 @@ struct ChatListView: View {
                         }
                     }
                 }
-            } else if !chatModel.chats.isEmpty {
-                Text("No filtered chats")
-                    .foregroundStyle(theme.colors.secondary)
-                    .frame(maxHeight: .infinity)
+                if chats.isEmpty && !chatModel.chats.isEmpty {
+                    Text("No filtered chats")
+                        .foregroundStyle(theme.colors.secondary)
+                        .frame(maxHeight: .infinity)
+                }
             }
             Divider()
+            let isSearchBarVisible = isSearchExpanded || searchFocussed
             ChatListSearchBar(
                 searchMode: $searchMode,
                 searchFocussed: $searchFocussed,
@@ -186,9 +189,9 @@ struct ChatListView: View {
                 searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
             )
             .padding(8)
-            .frame(height: isSearchExpanded ? nil : .zero)
+            .frame(height: isSearchBarVisible ? nil : .zero)
             .clipped()
-            .background(Material.bar.opacity(isSearchExpanded ? 1 : .zero))
+            .background(Material.bar.opacity(isSearchBarVisible ? 1 : .zero))
         }
         .padding(.top, -8) // Offset implicit padding from navigation view with hidden top bar
         .safeAreaInset(edge: .top) {
@@ -206,10 +209,12 @@ struct ChatListView: View {
         }
     }
 
-    private func setObservations(for collectionView: UICollectionView) {
-        var scrollDistance: CGFloat = .zero
-        if contentOffsetObservation == nil {
-            contentOffsetObservation = collectionView.observe(
+    private func setObservations(for cv: UICollectionView) {
+        if collectionView != cv {
+            collectionView = cv
+            var scrollDistance: CGFloat = .zero
+            contentOffsetObservation?.invalidate()
+            contentOffsetObservation = cv.observe(
                 \.contentOffset,
                  options: [.new, .old]
             ) { (cv, change) in
@@ -231,7 +236,6 @@ struct ChatListView: View {
                         scrollDistance = min(max(scrollDistance + oldOffset - newOffset, -MAX), +MAX)
                         if (isSearchExpanded && scrollDistance == +MAX) ||
                           (!isSearchExpanded && scrollDistance == -MAX) {
-                            scrollDistance = .zero
                             withAnimation(.easeOut(duration: 0.15)) { isSearchExpanded.toggle() }
                         }
                     }
