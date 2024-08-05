@@ -13,6 +13,7 @@ struct DeveloperView: View {
     @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(GROUP_DEFAULT_CONFIRM_DB_UPGRADES, store: groupDefaults) private var confirmDatabaseUpgrades = false
+    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = false
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
@@ -33,9 +34,6 @@ struct DeveloperView: View {
                     } label: {
                         settingsRow("terminal", color: theme.colors.secondary) { Text("Chat console") }
                     }
-                    settingsRow("internaldrive", color: theme.colors.secondary) {
-                        Toggle("Confirm database upgrades", isOn: $confirmDatabaseUpgrades)
-                    }
                     settingsRow("chevron.left.forwardslash.chevron.right", color: theme.colors.secondary) {
                         Toggle("Show developer options", isOn: $developerTools)
                     }
@@ -44,6 +42,19 @@ struct DeveloperView: View {
                 } footer: {
                     ((developerTools ? Text("Show:") : Text("Hide:")) + Text(" ") + Text("Database IDs and Transport isolation option."))
                         .foregroundColor(theme.colors.secondary)
+                }
+                
+                if developerTools {
+                    Section {
+                        settingsRow("internaldrive", color: theme.colors.secondary) {
+                            Toggle("Confirm database upgrades", isOn: $confirmDatabaseUpgrades)
+                        }
+                        settingsRow("hand.wave", color: theme.colors.secondary) {
+                            Toggle("One-hand UI", isOn: $oneHandUI)
+                        }
+                    } header: {
+                        Text("Developer options")
+                    }
                 }
             }
         }
