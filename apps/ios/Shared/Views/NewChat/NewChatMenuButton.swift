@@ -34,6 +34,9 @@ struct NewChatMenuButton: View {
                     return a.alert
                 }
         }
+        // This is a workaround to show "Keep unused invitation" alert in both following cases:
+        // - on going back from NewChatView to NewChatSheet,
+        // - on dismissing NewChatMenuButton sheet while on NewChatView (skipping NewChatSheet)
         .onChange(of: alert?.id) { a in
             if !showNewChatSheet && alert != nil {
                 globalAlert = alert
