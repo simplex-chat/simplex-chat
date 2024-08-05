@@ -1998,4 +1998,27 @@
     <string name="info_view_call_button">bellen</string>
     <string name="cant_call_member_alert_title">Kan geen groepslid bellen</string>
     <string name="calls_prohibited_alert_title">Bellen verboden!</string>
+    <string name="confirm_delete_contact_question">Contact verwijderen bevestigen?</string>
+    <string name="conversation_deleted">Gesprek verwijderd!</string>
+    <string name="delete_without_notification">Verwijderen zonder melding</string>
+    <string name="deleted_chats">Verwijderde chats</string>
+    <string name="cant_call_contact_deleted_alert_text">Contact is verwijderd.</string>
+    <string name="cant_call_contact_connecting_wait_alert_text">Er wordt verbinding gemaakt met het contact. Even geduld of controleer het later!</string>
+    <string name="cant_send_message_to_member_alert_title">Kan geen bericht sturen naar groepslid</string>
+    <string name="delete_members_messages__question">%d berichten van leden verwijderen?</string>
+    <string name="compose_message_placeholder">Bericht</string>
+    <string name="delete_messages_mark_deleted_warning">Berichten worden gemarkeerd voor verwijdering. De ontvanger(s) kunnen deze berichten onthullen.</string>
+    <string name="selected_chat_items_nothing_selected">Niets geselecteerd</string>
+    <string name="info_view_connect_button">verbinden</string>
+    <string name="contact_deleted">Contact verwijderd!</string>
+    <string name="delete_contact_cannot_undo_warning">Het contact wordt verwijderd. Dit kan niet ongedaan worden gemaakt!</string>
+    <string name="keep_conversation">Blijf in gesprek</string>
+    <string name="info_view_message_button">bericht</string>
+    <string name="only_delete_conversation">Alleen conversatie verwijderen</string>
+    <string name="info_view_open_button">open</string>
+    <string name="paste_link">Plak de link</string>
+    <string name="action_button_add_members">Uitnodiging</string>
+    <string name="one_hand_ui">Gebruikersinterface met één hand</string>
+    <string name="calls_prohibited_ask_to_enable_calls_alert_text">Vraag uw contactpersoon om oproepen in te schakelen.</string>
+    <string name="no_filtered_contacts">Geen gefilterde contacten</string>
 </resources>
