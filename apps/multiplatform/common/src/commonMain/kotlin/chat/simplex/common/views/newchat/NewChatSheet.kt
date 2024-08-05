@@ -40,9 +40,9 @@ import java.net.URI
 
 @Composable
 fun NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
-  val chatToolbarOnTop = remember { appPrefs.chatToolbarOnTop.state }
+  val chatToolbarOnBottom = remember { appPrefs.chatToolbarOnBottom.state }
   val keyboardState by getKeyboardState()
-  val showBottomToolbar = remember { derivedStateOf { keyboardState == KeyboardState.Closed && chatToolbarOnTop.value } }
+  val showBottomToolbar = remember { derivedStateOf { keyboardState == KeyboardState.Closed && chatToolbarOnBottom.value } }
 
   Scaffold(
     bottomBar = {
@@ -66,7 +66,7 @@ fun NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
     ) {
       val closeAll = { ModalManager.start.closeModals() }
 
-      Column(modifier = Modifier.fillMaxSize().then(if (chatToolbarOnTop.value) Modifier.scale(scaleX = 1f, scaleY = -1f) else Modifier)) {
+      Column(modifier = Modifier.fillMaxSize().then(if (chatToolbarOnBottom.value) Modifier.scale(scaleX = 1f, scaleY = -1f) else Modifier)) {
         NewChatSheetLayout(
           addContact = {
             ModalManager.start.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll ) }
@@ -120,7 +120,7 @@ private fun NewChatSheetLayout(
   createGroup: () -> Unit,
   close: () -> Unit,
 ) {
-  val chatToolbarOnTop = remember { appPrefs.chatToolbarOnTop.state }
+  val chatToolbarOnBottom = remember { appPrefs.chatToolbarOnBottom.state }
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
@@ -164,12 +164,12 @@ private fun NewChatSheetLayout(
     contactChats = allChats
   )
 
-  val sectionModifier = if (chatToolbarOnTop.value) Modifier.fillMaxWidth().scale(scaleX = 1f, scaleY = -1f) else Modifier.fillMaxWidth()
+  val sectionModifier = if (chatToolbarOnBottom.value) Modifier.fillMaxWidth().scale(scaleX = 1f, scaleY = -1f) else Modifier.fillMaxWidth()
   LazyColumnWithScrollBar(
     Modifier.fillMaxWidth(),
     listState
   ) {
-    if (!chatToolbarOnTop.value) {
+    if (!chatToolbarOnBottom.value) {
       item {
         Box(contentAlignment = Alignment.Center) {
           val bottomPadding = DEFAULT_PADDING
@@ -187,7 +187,7 @@ private fun NewChatSheetLayout(
           .offset {
             val y = if (searchText.value.text.isEmpty()) {
               if (
-                (chatToolbarOnTop.value && scrollDirection == ScrollDirection.Up) ||
+                (chatToolbarOnBottom.value && scrollDirection == ScrollDirection.Up) ||
                 (appPlatform.isAndroid && keyboardState == KeyboardState.Opened)
                 ) {
                 0
@@ -199,7 +199,7 @@ private fun NewChatSheetLayout(
           }
           .background(MaterialTheme.colors.background)
       ) {
-        if (!chatToolbarOnTop.value) {
+        if (!chatToolbarOnBottom.value) {
           Divider()
         }
         ContactsSearchBar(
@@ -252,7 +252,7 @@ private fun NewChatSheetLayout(
                   ModalManager.start.showCustomModal { closeDeletedChats ->
                     ModalView(
                       close = closeDeletedChats,
-                      closeOnTop = !chatToolbarOnTop.value,
+                      closeOnTop = !chatToolbarOnBottom.value,
                     ) {
                       DeletedContactsView(rh = rh, closeDeletedChats = closeDeletedChats, close = {
                         ModalManager.start.closeModals()
@@ -277,7 +277,7 @@ private fun NewChatSheetLayout(
     }
 
     item {
-      if (filteredContactChats.isNotEmpty() && !chatToolbarOnTop.value) {
+      if (filteredContactChats.isNotEmpty() && !chatToolbarOnBottom.value) {
         Text(
           stringResource(MR.strings.contact_list_header_title).uppercase(), color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
           modifier = sectionModifier.padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF, bottom = DEFAULT_PADDING_HALF), fontSize = 12.sp
@@ -317,10 +317,10 @@ private fun NewChatButton(
   disabled: Boolean = false,
   extraPadding: Boolean = false,
 ) {
-  val chatToolbarOnTop = remember { appPrefs.chatToolbarOnTop.state }
+  val chatToolbarOnBottom = remember { appPrefs.chatToolbarOnBottom.state }
 
   SectionItemView(click, disabled = disabled) {
-    Row(modifier = if (chatToolbarOnTop.value) Modifier.scale(scaleX = 1f, scaleY = -1f) else Modifier) {
+    Row(modifier = if (chatToolbarOnBottom.value) Modifier.scale(scaleX = 1f, scaleY = -1f) else Modifier) {
       Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else iconColor)
       TextIconSpaced(extraPadding)
       Text(text, color = if (disabled) MaterialTheme.colors.secondary else textColor)
@@ -336,9 +336,9 @@ private fun ContactsSearchBar(
   searchChatFilteredBySimplexLink: MutableState<String?>,
   close: () -> Unit,
 ) {
-  val chatToolbarOnTop = remember { appPrefs.chatToolbarOnTop.state }
+  val chatToolbarOnBottom = remember { appPrefs.chatToolbarOnBottom.state }
 
-  val modifier = if (chatToolbarOnTop.value) Modifier.fillMaxWidth().scale(scaleX = 1f, scaleY = -1f) else Modifier.fillMaxWidth()
+  val modifier = if (chatToolbarOnBottom.value) Modifier.fillMaxWidth().scale(scaleX = 1f, scaleY = -1f) else Modifier.fillMaxWidth()
   var focused by remember { mutableStateOf(false) }
 
   Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
@@ -518,9 +518,9 @@ private fun contactTypesSearchTargets(baseContactTypes: List<ContactType>, searc
 
 @Composable
 private fun DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats: () -> Unit, close: () -> Unit) {
-  val chatToolbarOnTop = remember { appPrefs.chatToolbarOnTop.state }
+  val chatToolbarOnBottom = remember { appPrefs.chatToolbarOnBottom.state }
   val keyboardState by getKeyboardState()
-  val showBottomToolbar = remember { derivedStateOf { keyboardState == KeyboardState.Closed && chatToolbarOnTop.value } }
+  val showBottomToolbar = remember { derivedStateOf { keyboardState == KeyboardState.Closed && chatToolbarOnBottom.value } }
 
   Scaffold(
     bottomBar = {
@@ -541,9 +541,9 @@ private fun DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats: () -> Un
       Modifier
         .fillMaxSize()
         .padding(it)
-        .then(if (chatToolbarOnTop.value) Modifier.scale(scaleX = 1f, scaleY = -1f) else Modifier),
+        .then(if (chatToolbarOnBottom.value) Modifier.scale(scaleX = 1f, scaleY = -1f) else Modifier),
     ) {
-      if (!chatToolbarOnTop.value) {
+      if (!chatToolbarOnBottom.value) {
         Box(contentAlignment = Alignment.Center) {
           val bottomPadding = DEFAULT_PADDING
           AppBarTitle(
@@ -575,7 +575,7 @@ private fun DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats: () -> Un
         listState
       ) {
         item {
-          if (!chatToolbarOnTop.value) {
+          if (!chatToolbarOnBottom.value) {
             Divider()
           }
           ContactsSearchBar(
@@ -605,7 +605,7 @@ private fun DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats: () -> Un
             Text(
               generalGetString(MR.strings.no_filtered_contacts),
               color = MaterialTheme.colors.secondary,
-              modifier = if (chatToolbarOnTop.value) Modifier.scale(scaleX = 1f, scaleY = -1f) else Modifier
+              modifier = if (chatToolbarOnBottom.value) Modifier.scale(scaleX = 1f, scaleY = -1f) else Modifier
             )
           }
         }

@@ -225,7 +225,7 @@ class AppPreferences {
   val iosCallKitEnabled = mkBoolPreference(SHARED_PREFS_IOS_CALL_KIT_ENABLED, true)
   val iosCallKitCallsInRecents = mkBoolPreference(SHARED_PREFS_IOS_CALL_KIT_CALLS_IN_RECENTS, false)
 
-  val chatToolbarOnTop = mkBoolPreference(SHARED_PREFS_CHAT_TOOLBAR_ON_TOP, false)
+  val chatToolbarOnBottom = mkBoolPreference(SHARED_PREFS_CHAT_TOOLBAR_ON_BOTTOM, false)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
@@ -384,7 +384,7 @@ class AppPreferences {
     private const val SHARED_PREFS_ENCRYPTION_STARTED_AT = "EncryptionStartedAt"
     private const val SHARED_PREFS_NEW_DATABASE_INITIALIZED = "NewDatabaseInitialized"
     private const val SHARED_PREFS_CONFIRM_DB_UPGRADES = "ConfirmDBUpgrades"
-    private const val SHARED_PREFS_CHAT_TOOLBAR_ON_TOP = "ChatToolbarOnTop"
+    private const val SHARED_PREFS_CHAT_TOOLBAR_ON_BOTTOM = "ChatToolbarOnBottom"
     private const val SHARED_PREFS_SELF_DESTRUCT = "LocalAuthenticationSelfDestruct"
     private const val SHARED_PREFS_SELF_DESTRUCT_DISPLAY_NAME = "LocalAuthenticationSelfDestructDisplayName"
     private const val SHARED_PREFS_PQ_EXPERIMENTAL_ENABLED = "PQExperimentalEnabled" // no longer used
@@ -6160,7 +6160,7 @@ data class AppSettings(
   var uiDarkColorScheme: String? = null,
   var uiCurrentThemeIds: Map<String, String>? = null,
   var uiThemes: List<ThemeOverrides>? = null,
-  var chatToolbarOnTop: Boolean? = null
+  var chatToolbarOnBottom: Boolean? = null
 ) {
   fun prepareForExport(): AppSettings {
     val empty = AppSettings()
@@ -6191,7 +6191,7 @@ data class AppSettings(
     if (uiDarkColorScheme != def.uiDarkColorScheme) { empty.uiDarkColorScheme = uiDarkColorScheme }
     if (uiCurrentThemeIds != def.uiCurrentThemeIds) { empty.uiCurrentThemeIds = uiCurrentThemeIds }
     if (uiThemes != def.uiThemes) { empty.uiThemes = uiThemes }
-    if (chatToolbarOnTop != def.chatToolbarOnTop) { empty.chatToolbarOnTop = chatToolbarOnTop }
+    if (chatToolbarOnBottom != def.chatToolbarOnBottom) { empty.chatToolbarOnBottom = chatToolbarOnBottom }
     return empty
   }
 
@@ -6230,7 +6230,7 @@ data class AppSettings(
     uiDarkColorScheme?.let { def.systemDarkTheme.set(it) }
     uiCurrentThemeIds?.let { def.currentThemeIds.set(it) }
     uiThemes?.let { def.themeOverrides.set(it.skipDuplicates()) }
-    chatToolbarOnTop?.let { def.chatToolbarOnTop.set(it) }
+    chatToolbarOnBottom?.let { def.chatToolbarOnBottom.set(it) }
   }
 
   companion object {
@@ -6262,7 +6262,7 @@ data class AppSettings(
         uiDarkColorScheme = DefaultTheme.SIMPLEX.themeName,
         uiCurrentThemeIds = null,
         uiThemes = null,
-        chatToolbarOnTop = false
+        chatToolbarOnBottom = false
       )
 
     val current: AppSettings
@@ -6295,7 +6295,7 @@ data class AppSettings(
           uiDarkColorScheme = def.systemDarkTheme.get() ?: DefaultTheme.SIMPLEX.themeName,
           uiCurrentThemeIds = def.currentThemeIds.get(),
           uiThemes = def.themeOverrides.get(),
-          chatToolbarOnTop = def.chatToolbarOnTop.get()
+          chatToolbarOnBottom = def.chatToolbarOnBottom.get()
         )
     }
   }

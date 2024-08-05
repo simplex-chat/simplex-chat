@@ -112,15 +112,15 @@ fun AppearanceScope.AppearanceLayout(
         false to generalGetString(MR.strings.chat_toolbar_position_top)
       )
 
-      val toolbarPositionValues by remember(appPrefs.chatToolbarOnTop.state.value) { mutableStateOf(toolbarPositions.map { it.key to it.value }) }
+      val toolbarPositionValues by remember(appPrefs.chatToolbarOnBottom.state.value) { mutableStateOf(toolbarPositions.map { it.key to it.value }) }
       ExposedDropDownSettingRow(
         generalGetString(MR.strings.chat_toolbar_position),
         toolbarPositionValues,
-        appPrefs.chatToolbarOnTop.state,
+        appPrefs.chatToolbarOnBottom.state,
         icon = null,
         enabled = remember { mutableStateOf(true) },
         onSelected = {
-          appPrefs.chatToolbarOnTop.set(it)
+          appPrefs.chatToolbarOnBottom.set(it)
           val c = CurrentColors.value.colors
           platform.androidSetStatusAndNavBarColors(c.isLight, c.background, false, false)
         }

@@ -23,7 +23,7 @@ fun ShareListNavLinkView(
   isMediaOrFileAttachment: Boolean,
   isVoice: Boolean,
   hasSimplexLink: Boolean,
-  chatToolbarOnTop: State<Boolean>
+  chatToolbarOnBottom: State<Boolean>
 ) {
   val stopped = chatModel.chatRunning.value == false
   val scope = rememberCoroutineScope()
@@ -31,7 +31,7 @@ fun ShareListNavLinkView(
     is ChatInfo.Direct -> {
       val voiceProhibited = isVoice && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
       ShareListNavLinkLayout(
-        chatLinkPreview = { SharePreviewView(chat, disabled = voiceProhibited, chatToolbarOnTop = chatToolbarOnTop) },
+        chatLinkPreview = { SharePreviewView(chat, disabled = voiceProhibited, chatToolbarOnBottom = chatToolbarOnBottom) },
         click = {
           if (voiceProhibited) {
             showForwardProhibitedByPrefAlert()
@@ -48,7 +48,7 @@ fun ShareListNavLinkView(
       val voiceProhibited = isVoice && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
       val prohibitedByPref = simplexLinkProhibited || fileProhibited || voiceProhibited
       ShareListNavLinkLayout(
-        chatLinkPreview = { SharePreviewView(chat, disabled = prohibitedByPref, chatToolbarOnTop = chatToolbarOnTop) },
+        chatLinkPreview = { SharePreviewView(chat, disabled = prohibitedByPref, chatToolbarOnBottom = chatToolbarOnBottom) },
         click = {
           if (prohibitedByPref) {
             showForwardProhibitedByPrefAlert()
@@ -61,7 +61,7 @@ fun ShareListNavLinkView(
     }
     is ChatInfo.Local ->
       ShareListNavLinkLayout(
-        chatLinkPreview = { SharePreviewView(chat, disabled = false, chatToolbarOnTop = chatToolbarOnTop) },
+        chatLinkPreview = { SharePreviewView(chat, disabled = false, chatToolbarOnBottom = chatToolbarOnBottom) },
         click = { scope.launch { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) } },
         stopped
       )
@@ -89,10 +89,10 @@ private fun ShareListNavLinkLayout(
 }
 
 @Composable
-private fun SharePreviewView(chat: Chat, disabled: Boolean, chatToolbarOnTop: State<Boolean>) {
+private fun SharePreviewView(chat: Chat, disabled: Boolean, chatToolbarOnBottom: State<Boolean>) {
   var modifier = Modifier.fillMaxSize()
 
-  if (chatToolbarOnTop.value) {
+  if (chatToolbarOnBottom.value) {
     modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
   }
 
