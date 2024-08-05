@@ -262,7 +262,7 @@ private fun NewChatSheetLayout(
                 }
               ) {
                 Icon(
-                  painterResource(MR.images.ic_folder_open),
+                  painterResource(MR.images.ic_inventory_2),
                   contentDescription = stringResource(MR.strings.deleted_chats),
                   tint = MaterialTheme.colors.secondary,
                 )
@@ -291,7 +291,7 @@ private fun NewChatSheetLayout(
           chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
         }
       }
-      ContactListNavLinkView(chat, nextChatSelected)
+      ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = true)
     }
   }
 
@@ -596,7 +596,7 @@ private fun DeletedContactsView(rh: RemoteHostInfo?, closeDeletedChats: () -> Un
               chatModel.chatId.value != null && filteredContactChats.getOrNull(index + 1)?.id == chatModel.chatId.value
             }
           }
-          ContactListNavLinkView(chat, nextChatSelected)
+          ContactListNavLinkView(chat, nextChatSelected, showDeletedChatIcon = false)
         }
       }
       if (filteredContactChats.isEmpty() && allChats.isNotEmpty()) {
