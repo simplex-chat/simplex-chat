@@ -311,14 +311,19 @@
   <string name="hide_verb">Hide</string>
   <string name="allow_verb">Allow</string>
   <string name="moderate_verb">Moderate</string>
+  <string name="select_verb">Select</string>
   <string name="expand_verb">Expand</string>
   <string name="delete_message__question">Delete message?</string>
   <string name="delete_messages__question">Delete %d messages?</string>
   <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
   <string name="delete_message_mark_deleted_warning">Message will be marked for deletion. The recipient(s) will be able to reveal this message.</string>
+  <string name="delete_messages_mark_deleted_warning">Messages will be marked for deletion. The recipient(s) will be able to reveal these messages.</string>
   <string name="delete_member_message__question">Delete member message?</string>
+  <string name="delete_members_messages__question">Delete %d messages of members?</string>
   <string name="moderate_message_will_be_deleted_warning">The message will be deleted for all members.</string>
+  <string name="moderate_messages_will_be_deleted_warning">The messages will be deleted for all members.</string>
   <string name="moderate_message_will_be_marked_warning">The message will be marked as moderated for all members.</string>
+  <string name="moderate_messages_will_be_marked_warning">The messages will be marked as moderated for all members.</string>
   <string name="for_me_only">Delete for me</string>
   <string name="for_everybody">For everyone</string>
   <string name="stop_file__action">Stop file</string>
@@ -368,6 +373,8 @@
 
   <!-- ChatView.kt -->
   <string name="no_selected_chat">No selected chat</string>
+  <string name="selected_chat_items_nothing_selected">Nothing selected</string>
+  <string name="selected_chat_items_selected_n">Selected %d</string>
 
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>

@@ -5316,6 +5316,278 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">%@ ו-%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connect automatically" xml:space="preserve" approved="no">
+        <source>Connect automatically</source>
+        <target state="translated">התבר אוטומטי</target>
+      </trans-unit>
+      <trans-unit id="Create profile" xml:space="preserve" approved="no">
+        <source>Create profile</source>
+        <target state="translated">צור פרופיל</target>
+      </trans-unit>
+      <trans-unit id="Created at: %@" xml:space="preserve" approved="no">
+        <source>Created at: %@</source>
+        <target state="translated">נוצר ב:%@</target>
+      </trans-unit>
+      <trans-unit id="Desktop devices" xml:space="preserve" approved="no">
+        <source>Desktop devices</source>
+        <target state="translated">מכשירי מחשב</target>
+      </trans-unit>
+      <trans-unit id="Discover via local network" xml:space="preserve" approved="no">
+        <source>Discover via local network</source>
+        <target state="translated">גלה באמצעות הרשת המקומית</target>
+      </trans-unit>
+      <trans-unit id="Forward" xml:space="preserve" approved="no">
+        <source>Forward</source>
+        <target state="translated">העבר</target>
+      </trans-unit>
+      <trans-unit id="Group already exists" xml:space="preserve" approved="no">
+        <source>Group already exists</source>
+        <target state="translated">קבוצה כבר קיימת</target>
+      </trans-unit>
+      <trans-unit id="Connected to desktop" xml:space="preserve" approved="no">
+        <source>Connected to desktop</source>
+        <target state="translated">מחובר למחשב</target>
+      </trans-unit>
+      <trans-unit id="Group already exists!" xml:space="preserve" approved="no">
+        <source>Group already exists!</source>
+        <target state="translated">קבוצה כבר קיימת!</target>
+      </trans-unit>
+      <trans-unit id="Confirm upload" xml:space="preserve" approved="no">
+        <source>Confirm upload</source>
+        <target state="translated">אשר ההעלאה</target>
+      </trans-unit>
+      <trans-unit id="Block for all" xml:space="preserve" approved="no">
+        <source>Block for all</source>
+        <target state="translated">חסום לכולם</target>
+      </trans-unit>
+      <trans-unit id="Blocked by admin" xml:space="preserve" approved="no">
+        <source>Blocked by admin</source>
+        <target state="translated">נחסם ע"י מנהל</target>
+      </trans-unit>
+      <trans-unit id="Block member for all?" xml:space="preserve" approved="no">
+        <source>Block member for all?</source>
+        <target state="translated">לחסום את החבר לכולם?</target>
+      </trans-unit>
+      <trans-unit id="Camera not available" xml:space="preserve" approved="no">
+        <source>Camera not available</source>
+        <target state="translated">מצלמה לא זמינה</target>
+      </trans-unit>
+      <trans-unit id="Connect to desktop" xml:space="preserve" approved="no">
+        <source>Connect to desktop</source>
+        <target state="translated">חבר למחשב</target>
+      </trans-unit>
+      <trans-unit id="Created at" xml:space="preserve" approved="no">
+        <source>Created at</source>
+        <target state="translated">נוצר ב</target>
+      </trans-unit>
+      <trans-unit id="(new)" xml:space="preserve" approved="no">
+        <source>(new)</source>
+        <target state="translated">(חדש)</target>
+      </trans-unit>
+      <trans-unit id="Block member" xml:space="preserve" approved="no">
+        <source>Block member</source>
+        <target state="translated">חבר חסום</target>
+      </trans-unit>
+      <trans-unit id="Block member?" xml:space="preserve" approved="no">
+        <source>Block member?</source>
+        <target state="translated">לחסום חבר?</target>
+      </trans-unit>
+      <trans-unit id="Creating link…" xml:space="preserve" approved="no">
+        <source>Creating link…</source>
+        <target state="translated">יוצר קישור…</target>
+      </trans-unit>
+      <trans-unit id="Files" xml:space="preserve" approved="no">
+        <source>Files</source>
+        <target state="translated">קבצים</target>
+      </trans-unit>
+      <trans-unit id="Disabled" xml:space="preserve" approved="no">
+        <source>Disabled</source>
+        <target state="translated">מושבת</target>
+      </trans-unit>
+      <trans-unit id="Enter passphrase" xml:space="preserve" approved="no">
+        <source>Enter passphrase</source>
+        <target state="translated">הכנס סיסמא</target>
+      </trans-unit>
+      <trans-unit id="Apply" xml:space="preserve" approved="no">
+        <source>Apply</source>
+        <target state="translated">החל</target>
+      </trans-unit>
+      <trans-unit id="Apply to" xml:space="preserve" approved="no">
+        <source>Apply to</source>
+        <target state="translated">החל ל</target>
+      </trans-unit>
+      <trans-unit id="Background" xml:space="preserve" approved="no">
+        <source>Background</source>
+        <target state="translated">ברקע</target>
+      </trans-unit>
+      <trans-unit id="Black" xml:space="preserve" approved="no">
+        <source>Black</source>
+        <target state="translated">שחור</target>
+      </trans-unit>
+      <trans-unit id="Blur media" xml:space="preserve" approved="no">
+        <source>Blur media</source>
+        <target state="translated">טשטש מדיה</target>
+      </trans-unit>
+      <trans-unit id="Chat theme" xml:space="preserve" approved="no">
+        <source>Chat theme</source>
+        <target state="translated">צבע ערכת נושא</target>
+      </trans-unit>
+      <trans-unit id="Completed" xml:space="preserve" approved="no">
+        <source>Completed</source>
+        <target state="translated">הושלם</target>
+      </trans-unit>
+      <trans-unit id="Connected" xml:space="preserve" approved="no">
+        <source>Connected</source>
+        <target state="translated">מחובר</target>
+      </trans-unit>
+      <trans-unit id="Connection notifications" xml:space="preserve" approved="no">
+        <source>Connection notifications</source>
+        <target state="translated">התראות חיבור</target>
+      </trans-unit>
+      <trans-unit id="Connections" xml:space="preserve" approved="no">
+        <source>Connections</source>
+        <target state="translated">חיבורים</target>
+      </trans-unit>
+      <trans-unit id="Current profile" xml:space="preserve" approved="no">
+        <source>Current profile</source>
+        <target state="translated">פרופיל נוכחי</target>
+      </trans-unit>
+      <trans-unit id="Disconnect desktop?" xml:space="preserve" approved="no">
+        <source>Disconnect desktop?</source>
+        <target state="translated">להתנתק מהמחשב?</target>
+      </trans-unit>
+      <trans-unit id="Discover and join groups" xml:space="preserve" approved="no">
+        <source>Discover and join groups</source>
+        <target state="translated">גלה והצטרף לקבוצות</target>
+      </trans-unit>
+      <trans-unit id="Enabled" xml:space="preserve" approved="no">
+        <source>Enabled</source>
+        <target state="translated">מופעל</target>
+      </trans-unit>
+      <trans-unit id="Error opening chat" xml:space="preserve" approved="no">
+        <source>Error opening chat</source>
+        <target state="translated">שגיאה בפתיחת הצ'אט</target>
+      </trans-unit>
+      <trans-unit id="Good morning!" xml:space="preserve" approved="no">
+        <source>Good morning!</source>
+        <target state="translated">בוקר טוב!</target>
+      </trans-unit>
+      <trans-unit id="Connect to yourself?&#10;This is your own SimpleX address!" xml:space="preserve" approved="no">
+        <source>Connect to yourself?
+This is your own SimpleX address!</source>
+        <target state="translated">להתחבר אליך?
+זו כתובת הSimpleX שלך!</target>
+      </trans-unit>
+      <trans-unit id="Connect to yourself?" xml:space="preserve" approved="no">
+        <source>Connect to yourself?</source>
+        <target state="translated">להתחבר אליך?</target>
+      </trans-unit>
+      <trans-unit id="Connect to yourself?&#10;This is your own one-time link!" xml:space="preserve" approved="no">
+        <source>Connect to yourself?
+This is your own one-time link!</source>
+        <target state="translated">להתחבר אליך?
+זו כתובת ההזמנה החד-פעמי שלך!</target>
+      </trans-unit>
+      <trans-unit id="Connected desktop" xml:space="preserve" approved="no">
+        <source>Connected desktop</source>
+        <target state="translated">מחשב מחובר</target>
+      </trans-unit>
+      <trans-unit id="Connected servers" xml:space="preserve" approved="no">
+        <source>Connected servers</source>
+        <target state="translated">שרתים מחוברים</target>
+      </trans-unit>
+      <trans-unit id="Enter group name…" xml:space="preserve" approved="no">
+        <source>Enter group name…</source>
+        <target state="translated">הכנס שם לקבוצה…</target>
+      </trans-unit>
+      <trans-unit id="Enter this device name…" xml:space="preserve" approved="no">
+        <source>Enter this device name…</source>
+        <target state="translated">הכנס שם למכשיר הזה…</target>
+      </trans-unit>
+      <trans-unit id="Enter your name…" xml:space="preserve" approved="no">
+        <source>Enter your name…</source>
+        <target state="translated">הכנס את השם שלך…</target>
+      </trans-unit>
+      <trans-unit id="Error decrypting file" xml:space="preserve" approved="no">
+        <source>Error decrypting file</source>
+        <target state="translated">שגיאה בפענוח הקובץ</target>
+      </trans-unit>
+      <trans-unit id="Errors" xml:space="preserve" approved="no">
+        <source>Errors</source>
+        <target state="translated">שגיאות</target>
+      </trans-unit>
+      <trans-unit id="File status" xml:space="preserve" approved="no">
+        <source>File status</source>
+        <target state="translated">מצב הקובץ</target>
+      </trans-unit>
+      <trans-unit id="Connecting" xml:space="preserve" approved="no">
+        <source>Connecting</source>
+        <target state="translated">מתחבר</target>
+      </trans-unit>
+      <trans-unit id="Connecting to desktop" xml:space="preserve" approved="no">
+        <source>Connecting to desktop</source>
+        <target state="translated">מתחבר למחשב</target>
+      </trans-unit>
+      <trans-unit id="Deleted" xml:space="preserve" approved="no">
+        <source>Deleted</source>
+        <target state="translated">נמחק</target>
+      </trans-unit>
+      <trans-unit id="Deletion errors" xml:space="preserve" approved="no">
+        <source>Deletion errors</source>
+        <target state="translated">שגיאות במחיקה</target>
+      </trans-unit>
+      <trans-unit id="Details" xml:space="preserve" approved="no">
+        <source>Details</source>
+        <target state="translated">פרטים</target>
+      </trans-unit>
+      <trans-unit id="Forwarded" xml:space="preserve" approved="no">
+        <source>Forwarded</source>
+        <target state="translated">הועבר</target>
+      </trans-unit>
+      <trans-unit id="Found desktop" xml:space="preserve" approved="no">
+        <source>Found desktop</source>
+        <target state="translated">נמצא מחשב</target>
+      </trans-unit>
+      <trans-unit id="Good afternoon!" xml:space="preserve" approved="no">
+        <source>Good afternoon!</source>
+        <target state="translated">אחר צהריים טובים!</target>
+      </trans-unit>
+      <trans-unit id="Desktop address" xml:space="preserve" approved="no">
+        <source>Desktop address</source>
+        <target state="translated">כתובת מחשב</target>
+      </trans-unit>
+      <trans-unit id="Forwarded from" xml:space="preserve" approved="no">
+        <source>Forwarded from</source>
+        <target state="translated">הועבר מ</target>
+      </trans-unit>
+      <trans-unit id="History is not sent to new members." xml:space="preserve" approved="no">
+        <source>History is not sent to new members.</source>
+        <target state="translated">היסטוריה לא נשלחת לחברים חדשים.</target>
+      </trans-unit>
+      <trans-unit id="Created" xml:space="preserve" approved="no">
+        <source>Created</source>
+        <target state="translated">נוצר</target>
+      </trans-unit>
+      <trans-unit id="Copy error" xml:space="preserve" approved="no">
+        <source>Copy error</source>
+        <target state="translated">שגיאת העתקה</target>
+      </trans-unit>
+      <trans-unit id="Create group" xml:space="preserve" approved="no">
+        <source>Create group</source>
+        <target state="translated">צור קבוצה</target>
+      </trans-unit>
+      <trans-unit id="Enabled for" xml:space="preserve" approved="no">
+        <source>Enabled for</source>
+        <target state="translated">מופעל עבור</target>
+      </trans-unit>
+      <trans-unit id="Error creating message" xml:space="preserve" approved="no">
+        <source>Error creating message</source>
+        <target state="translated">שגיאה ביצירת הודעה</target>
+      </trans-unit>
+      <trans-unit id="File error" xml:space="preserve" approved="no">
+        <source>File error</source>
+        <target state="translated">שגיאה בקובץ</target>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="he" datatype="plaintext">

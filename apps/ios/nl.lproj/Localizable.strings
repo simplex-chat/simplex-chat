@@ -492,6 +492,9 @@
 "Allow sending disappearing messages." = "Toestaan dat verdwijnende berichten worden verzonden.";
 
 /* No comment provided by engineer. */
+"Allow sharing" = "Delen toestaan";
+
+/* No comment provided by engineer. */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Sta toe om verzonden berichten onomkeerbaar te verwijderen. (24 uur)";
 
 /* No comment provided by engineer. */
@@ -694,6 +697,9 @@
 
 /* No comment provided by engineer. */
 "Blocked by admin" = "Geblokkeerd door beheerder";
+
+/* No comment provided by engineer. */
+"Blur media" = "Vervaag media";
 
 /* No comment provided by engineer. */
 "bold" = "vetgedrukt";
@@ -1042,6 +1048,9 @@
 "connection established" = "verbinding gemaakt";
 
 /* No comment provided by engineer. */
+"Connection notifications" = "Verbindingsmeldingen";
+
+/* No comment provided by engineer. */
 "Connection request sent!" = "Verbindingsverzoek verzonden!";
 
 /* No comment provided by engineer. */
@@ -1282,6 +1291,9 @@
 "Delete" = "Verwijderen";
 
 /* No comment provided by engineer. */
+"Delete %lld messages of members?" = "%lld berichten van leden verwijderen?";
+
+/* No comment provided by engineer. */
 "Delete %lld messages?" = "%lld berichten verwijderen?";
 
 /* No comment provided by engineer. */
@@ -1434,8 +1446,14 @@
 /* No comment provided by engineer. */
 "Desktop devices" = "Desktop apparaten";
 
+/* No comment provided by engineer. */
+"Destination server address of %@ is incompatible with forwarding server %@ settings." = "Het bestemmingsserveradres van %@ is niet compatibel met de doorstuurserverinstellingen %@.";
+
 /* snd error text */
 "Destination server error: %@" = "Bestemmingsserverfout: %@";
+
+/* No comment provided by engineer. */
+"Destination server version of %@ is incompatible with forwarding server %@." = "De versie van de bestemmingsserver %@ is niet compatibel met de doorstuurserver %@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Gedetailleerde statistieken";
@@ -1484,6 +1502,9 @@
 
 /* No comment provided by engineer. */
 "disabled" = "uitgeschakeld";
+
+/* No comment provided by engineer. */
+"Disabled" = "Uitgeschakeld";
 
 /* No comment provided by engineer. */
 "Disappearing message" = "Verdwijnend bericht";
@@ -1633,6 +1654,9 @@
 "enabled" = "ingeschakeld";
 
 /* No comment provided by engineer. */
+"Enabled" = "Ingeschakeld";
+
+/* No comment provided by engineer. */
 "Enabled for" = "Ingeschakeld voor";
 
 /* enabled status */
@@ -1772,6 +1796,9 @@
 
 /* No comment provided by engineer. */
 "Error changing setting" = "Fout bij wijzigen van instelling";
+
+/* No comment provided by engineer. */
+"Error connecting to forwarding server %@. Please try later." = "Fout bij het verbinden met doorstuurserver %@. Probeer het later opnieuw.";
 
 /* No comment provided by engineer. */
 "Error creating address" = "Fout bij aanmaken van adres";
@@ -2085,6 +2112,15 @@
 
 /* No comment provided by engineer. */
 "Forwarded from" = "Doorgestuurd vanuit";
+
+/* No comment provided by engineer. */
+"Forwarding server %@ failed to connect to destination server %@. Please try later." = "De doorstuurserver %@ kon geen verbinding maken met de bestemmingsserver %@. Probeer het later opnieuw.";
+
+/* No comment provided by engineer. */
+"Forwarding server address is incompatible with network settings: %@." = "Het adres van de doorstuurserver is niet compatibel met de netwerkinstellingen: %@.";
+
+/* No comment provided by engineer. */
+"Forwarding server version is incompatible with network settings: %@." = "De doorstuurserverversie is niet compatibel met de netwerkinstellingen: %@.";
 
 /* snd error text */
 "Forwarding server: %@\nDestination server error: %@" = "Doorstuurserver: %1$@\nBestemmingsserverfout: %2$@";
@@ -2635,6 +2671,9 @@
 /* No comment provided by engineer. */
 "Max 30 seconds, received instantly." = "Max 30 seconden, direct ontvangen.";
 
+/* blur media */
+"Medium" = "Medium";
+
 /* member role */
 "member" = "lid";
 
@@ -2925,6 +2964,9 @@
 
 /* No comment provided by engineer. */
 "Not compatible!" = "Niet compatibel!";
+
+/* No comment provided by engineer. */
+"Nothing selected" = "Niets geselecteerd";
 
 /* No comment provided by engineer. */
 "Notifications" = "Meldingen";
@@ -3694,6 +3736,9 @@
 "Select" = "Selecteer";
 
 /* No comment provided by engineer. */
+"Selected %lld" = "%lld geselecteerd";
+
+/* No comment provided by engineer. */
 "Selected chat preferences prohibit this message." = "Geselecteerde chat voorkeuren verbieden dit bericht.";
 
 /* No comment provided by engineer. */
@@ -3925,6 +3970,9 @@
 "Share this 1-time invite link" = "Deel deze eenmalige uitnodigingslink";
 
 /* No comment provided by engineer. */
+"Share to SimpleX" = "Delen op SimpleX";
+
+/* No comment provided by engineer. */
 "Share with contacts" = "Delen met contacten";
 
 /* No comment provided by engineer. */
@@ -4017,6 +4065,9 @@
 /* No comment provided by engineer. */
 "SMP server" = "SMP server";
 
+/* blur media */
+"Soft" = "Soft";
+
 /* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Er zijn enkele niet-fatale fouten opgetreden tijdens het importeren - u kunt de Chat console raadplegen voor meer details.";
 
@@ -4085,6 +4136,9 @@
 
 /* No comment provided by engineer. */
 "strike" = "staking";
+
+/* blur media */
+"Strong" = "Krachtig";
 
 /* No comment provided by engineer. */
 "Submit" = "Indienen";
@@ -4208,6 +4262,12 @@
 
 /* No comment provided by engineer. */
 "The message will be marked as moderated for all members." = "Het bericht wordt gemarkeerd als gemodereerd voor alle leden.";
+
+/* No comment provided by engineer. */
+"The messages will be deleted for all members." = "De berichten worden voor alle leden verwijderd.";
+
+/* No comment provided by engineer. */
+"The messages will be marked as moderated for all members." = "De berichten worden voor alle leden als gemodereerd gemarkeerd.";
 
 /* No comment provided by engineer. */
 "The next generation of private messaging" = "De volgende generatie privéberichten";

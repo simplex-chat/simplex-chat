@@ -299,7 +299,7 @@
     <string name="group_member_status_accepted">kapcsolódás (elfogadva)</string>
     <string name="smp_servers_check_address">Kiszolgáló címének ellenőrzése és újrapróbálkozás.</string>
     <string name="delete_group_question">Csoport törlése?</string>
-    <string name="confirm_database_upgrades">Adatbázis frissítés megerősítése</string>
+    <string name="confirm_database_upgrades">Adatbázis fejlesztésének megerősítése</string>
     <string name="create_your_profile">Saját profil létrehozása</string>
     <string name="snd_conn_event_switch_queue_phase_changing">cím megváltoztatása…</string>
     <string name="display_name_connecting">kapcsolódás…</string>
@@ -349,7 +349,7 @@
     <string name="delete_pending_connection__question">Függő kapcsolatfelvételi kérések törlése?</string>
     <string name="database_encrypted">Adatbázis titkosítva!</string>
     <string name="clear_chat_question">Üzenetek kiürítése?</string>
-    <string name="database_downgrade">Visszatérés a korábbi adatbázis verzióra</string>
+    <string name="database_downgrade">Adatbázis visszafejlesztése</string>
     <string name="clear_chat_button">Üzenetek kiürítése</string>
     <string name="database_passphrase_will_be_updated">Adatbázis titkosítási jelmondat frissítve lesz.</string>
     <string name="multicast_connect_automatically">Kapcsolódás automatikusan</string>
@@ -381,7 +381,7 @@
     <string name="ttl_months">%d hónap</string>
     <string name="delete_address__question">Cím törlése?</string>
     <string name="receipts_contacts_title_disable">Üzenet kézbesítési jelentések letiltása?</string>
-    <string name="passphrase_is_different">Az adatbázis jelmondat eltérő a Keystore-ba elmentettől.</string>
+    <string name="passphrase_is_different">Az adatbázis jelmondata eltér a Keystore-ban lévőtől.</string>
     <string name="direct_messages">Közvetlen üzenetek</string>
     <string name="icon_descr_email">E-mail</string>
     <string name="receipts_contacts_disable_for_all">Letiltás mindenki számára</string>
@@ -460,7 +460,7 @@
     <string name="desktop_app_version_is_incompatible">Számítógép kliens verziója %s nem kompatibilis ezzel az alkalmazással.</string>
     <string name="delivery">Kézbesítés</string>
     <string name="total_files_count_and_size">%d fájl %s összméretben</string>
-    <string name="database_passphrase_is_required">Adatbázis jelmondat szükséges a csevegés megnyitásához.</string>
+    <string name="database_passphrase_is_required">A csevegés megnyitásához adja meg az adatbázis jelmondatát.</string>
     <string name="ttl_d">%dnap</string>
     <string name="receipts_contacts_enable_for_all">Engedélyezés mindenki számára</string>
     <string name="delivery_receipts_are_disabled">A kézbesítési jelentések le vannak tiltva!</string>
@@ -508,7 +508,7 @@
     <string name="encrypt_database">Titkosít</string>
     <string name="alert_title_no_group">Csoport nem található!</string>
     <string name="error_saving_smp_servers">Hiba az SMP kiszolgálók mentésekor</string>
-    <string name="downgrade_and_open_chat">Visszatérés a korábbi verzióra és a csevegés megnyitása</string>
+    <string name="downgrade_and_open_chat">Visszafejlesztés és a csevegés megnyitása</string>
     <string name="icon_descr_group_inactive">A csoport inaktív</string>
     <string name="v5_0_large_files_support_descr">Gyors és nem kell várni, amíg a feladó online lesz!</string>
     <string name="error_joining_group">Hiba a csoporthoz való csatlakozáskor</string>
@@ -1079,7 +1079,7 @@
     <string name="your_current_profile">Jelenlegi profil</string>
     <string name="smp_server_test_upload_file">Fájl feltöltése</string>
     <string name="prohibit_calls">A hívások kezdeményezése le van tiltva.</string>
-    <string name="network_use_onion_hosts_required">Megkövetelt</string>
+    <string name="network_use_onion_hosts_required">Szükséges</string>
     <string name="ntf_channel_messages">SimpleX Chat üzenetek</string>
     <string name="restore_database_alert_confirm">Visszaállítás</string>
     <string name="setup_database_passphrase">Adatbázis jelmondat beállítása</string>
@@ -1122,7 +1122,7 @@
     <string name="view_security_code">Biztonsági kód megtekintése</string>
     <string name="unblock_member_question">Tag feloldása?</string>
     <string name="sender_may_have_deleted_the_connection_request">A küldő törölhette a kapcsolódási kérelmet.</string>
-    <string name="wrong_passphrase">Téves adatbázis jelmondat</string>
+    <string name="wrong_passphrase">Hibás adatbázis jelmondat</string>
     <string name="your_SMP_servers">SMP kiszolgálók</string>
     <string name="send_receipts_disabled_alert_title">Az üzenet kézbesítési jelentések le vannak tiltva</string>
     <string name="open_database_folder">Adatbázis mappa megnyitása</string>
@@ -1169,7 +1169,7 @@
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="unlink_desktop">Szétkapcsolás</string>
     <string name="incognito_random_profile">Véletlenszerű profil</string>
-    <string name="wrong_passphrase_title">Téves jelmondat!</string>
+    <string name="wrong_passphrase_title">Hibás jelmondat!</string>
     <string name="prohibit_message_reactions_group">Az üzenetreakciók küldése le van tiltva.</string>
     <string name="language_system">Rendszer</string>
     <string name="icon_descr_received_msg_status_unread">olvasatlan</string>
@@ -1405,9 +1405,9 @@
     <string name="network_disable_socks">Közvetlen internet kapcsolat használata?</string>
     <string name="you_will_still_receive_calls_and_ntfs">Továbbra is kap hívásokat és értesítéseket a némított profiloktól, ha azok aktívak.</string>
     <string name="group_main_profile_sent">A fő csevegési profilja elküldésre kerül a csoporttagok számára</string>
-    <string name="you_can_enable_delivery_receipts_later_alert">Később engedélyezheti őket az alkalmazás Adatvédelem és biztonság menüpontban.</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">Később engedélyezheti őket az alkalmazás „Adatvédelem és biztonság” menüben.</string>
     <string name="to_reveal_profile_enter_password">Rejtett profilja megjelenítéséhez írja be a teljes jelszavát a keresőmezőbe a Csevegési profilok menüben.</string>
-    <string name="upgrade_and_open_chat">A csevegés frissítése és megnyitása</string>
+    <string name="upgrade_and_open_chat">Fejlesztés és a csevegés megnyitása</string>
     <string name="you_need_to_allow_to_send_voice">Hangüzeneteket küldéséhez engedélyeznie kell azok küldését az ismerősei számára.</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Beállíthatja, hogy mely kiszolgáló(ko)n keresztül <b>fogadja</b> az üzeneteket, ismerősöket – a kiszolgálók, amelyeket az üzenetküldéshez használ.]]></string>
     <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Már a(z) <b>%1$s</b> csoport tagja.]]></string>
@@ -1476,7 +1476,7 @@
     <string name="v5_0_app_passcode_descr">Rendszerhitelesítés helyetti beállítás.</string>
     <string name="switch_receiving_address_desc">A fogadó cím egy másik kiszolgálóra változik. A címváltoztatás a feladó online állapotba kerülése után fejeződik be.</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">A csevegés megállítása a csevegő adatbázis exportálásához, importálásához, vagy törléséhez. A csevegés megállítása alatt nem tud üzeneteket fogadni és küldeni.</string>
-    <string name="save_passphrase_in_keychain">Jelmondat mentése a kulcstárolóba</string>
+    <string name="save_passphrase_in_keychain">Jelmondat mentése a Keystore-ba</string>
     <string name="v4_6_chinese_spanish_interface_descr">Köszönet a felhasználóknak - hozzájárulás a Weblaten!</string>
     <string name="save_passphrase_in_settings">Jelmondat mentése a beállításokban</string>
     <string name="send_receipts_disabled_alert_msg">Ennek a csoportnak több mint %1$d tagja van, a kézbesítési jelentések nem kerülnek elküldésre.</string>
@@ -1768,7 +1768,7 @@
 \nHiba: %2$s</string>
     <string name="snd_error_expired">Hálózati problémák - az üzenet többszöri elküldési kísérlet után lejárt.</string>
     <string name="srv_error_version">A kiszolgáló verziója nem kompatibilis a hálózati beállításokkal.</string>
-    <string name="snd_error_auth">Rossz kulcs vagy ismeretlen kapcsolat - valószínűleg ez a kapcsolat törlődött.</string>
+    <string name="snd_error_auth">Hibás kulcs vagy ismeretlen kapcsolat - valószínűleg ez a kapcsolat törlődött.</string>
     <string name="snd_error_proxy_relay">Továbbító kiszolgáló: %1$s
 \nCélkiszolgáló hiba: %2$s</string>
     <string name="ci_status_other_error">Hiba: %1$s</string>
@@ -1779,7 +1779,7 @@
     <string name="network_smp_proxy_mode_unknown">Ismeretlen átjátszók</string>
     <string name="network_smp_proxy_fallback_allow_protected">Ha az IP-cím rejtett</string>
     <string name="private_routing_show_message_status">Üzenet állapot megjelenítése</string>
-    <string name="network_smp_proxy_fallback_allow_downgrade">Korábbi verzióra történő visszatérés engedélyezése</string>
+    <string name="network_smp_proxy_fallback_allow_downgrade">Visszafejlesztés engedélyezése</string>
     <string name="network_smp_proxy_mode_always">Mindig</string>
     <string name="network_smp_proxy_fallback_prohibit">Nem</string>
     <string name="network_smp_proxy_mode_unprotected">Nem védett</string>
@@ -1983,4 +1983,47 @@
     <string name="app_check_for_updates_notice_disable">Letiltás</string>
     <string name="app_check_for_updates_disabled">Letiltva</string>
     <string name="app_check_for_updates_stable">Stabil</string>
+    <string name="smp_proxy_error_connecting">Hiba a(z) %1$s továbbító kiszolgálóhoz való kapcsolódáskor. Próbálja meg később.</string>
+    <string name="proxy_destination_error_broker_version">A(z) %1$s célkiszolgáló verziója nem kompatibilis a(z) %2$s továbbító kiszolgálóval.</string>
+    <string name="proxy_destination_error_failed_to_connect">A(z) %1$s továbbító kiszolgáló nem tudott csatlakozni a(z) %2$s célkiszolgálóhoz. Próbálja meg később.</string>
+    <string name="proxy_destination_error_broker_host">A(z) %1$s célkiszolgáló címe nem kompatibilis a(z) %2$s továbbító kiszolgáló beállításaival.</string>
+    <string name="privacy_media_blur_radius">Média elhomályosítása</string>
+    <string name="privacy_media_blur_radius_medium">Közepes</string>
+    <string name="privacy_media_blur_radius_off">Kikapcsolva</string>
+    <string name="privacy_media_blur_radius_soft">Enyhe</string>
+    <string name="privacy_media_blur_radius_strong">Erős</string>
+    <string name="smp_proxy_error_broker_host">A továbbító kiszolgáló címe nem kompatibilis a hálózati beállításokkal: %1$s.</string>
+    <string name="smp_proxy_error_broker_version">A továbbító kiszolgáló verziója nem kompatibilis a hálózati beállításokkal: %1$s.</string>
+    <string name="info_view_call_button">hívás</string>
+    <string name="delete_contact_cannot_undo_warning">Az ismerős törlésre fog kerülni - ez a művelet nem vonható vissza!</string>
+    <string name="only_delete_conversation">Csak a beszélgetés törlése</string>
+    <string name="info_view_open_button">megnyitás</string>
+    <string name="conversation_deleted">Beszélgetés törölve!</string>
+    <string name="contact_deleted">Ismerős törölve!</string>
+    <string name="deleted_chats">Törölt csevegések</string>
+    <string name="no_filtered_contacts">Nincsenek szűrt ismerősök</string>
+    <string name="paste_link">Hivatkozás beillesztése</string>
+    <string name="calls_prohibited_alert_title">A hívások le vannak tiltva!</string>
+    <string name="cant_call_contact_alert_title">Nem lehet felhívni az ismerőst</string>
+    <string name="cant_send_message_to_member_alert_title">Nem lehet üzenetet küldeni a csoporttagnak</string>
+    <string name="cant_call_contact_connecting_wait_alert_text">Kapcsolódás az ismerőshöz, várjon vagy ellenőrizze később!</string>
+    <string name="cant_call_contact_deleted_alert_text">Törölt ismerős.</string>
+    <string name="cant_call_member_alert_title">Nem lehet felhívni a csoporttagot</string>
+    <string name="allow_calls_question">Hívások engedélyezése?</string>
+    <string name="action_button_add_members">Meghívás</string>
+    <string name="info_view_message_button">üzenet</string>
+    <string name="keep_conversation">Beszélgetés megtartása</string>
+    <string name="confirm_delete_contact_question">Biztosan törli az ismerőst?</string>
+    <string name="info_view_connect_button">kapcsolódás</string>
+    <string name="one_hand_ui">Egykezes UI</string>
+    <string name="delete_without_notification">Törlés értesítés nélkül</string>
+    <string name="toolbar_settings">Beállítások</string>
+    <string name="info_view_search_button">keresés</string>
+    <string name="info_view_video_button">videó</string>
+    <string name="you_can_still_send_messages_to_contact">A „Törölt csevegésekből” továbbra is küldhet üzeneteket neki: %1$s.</string>
+    <string name="contact_list_header_title">Ismerősök</string>
+    <string name="calls_prohibited_ask_to_enable_calls_alert_text">Kérje meg az ismerősét, hogy engedélyezze a hívásokat.</string>
+    <string name="cant_call_member_send_message_alert_text">Üzenet küldése a hívások engedélyezéséhez.</string>
+    <string name="you_need_to_allow_calls">Engedélyeznie kell a hívásokat az ismerőse számára, hogy fel tudják hívni egymást.</string>
+    <string name="you_can_still_view_conversation_with_contact">A(z) %1$s nevű ismerősével folytatott beszélgetéseit továbbra is megtekintheti a csevegések listájában.</string>
 </resources>

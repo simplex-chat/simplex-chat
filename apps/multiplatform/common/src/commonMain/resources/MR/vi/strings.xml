@@ -542,4 +542,19 @@
     <string name="app_check_for_updates_notice_disable">Tắt</string>
     <string name="member_info_member_disabled">đã bị tắt</string>
     <string name="disappearing_messages_are_prohibited">Tin nhắn tự xóa bị cấm trong nhóm này.</string>
+    <string name="info_view_call_button">gọi</string>
+    <string name="info_view_connect_button">kết nối</string>
+    <string name="delete_contact_cannot_undo_warning">Liên hệ sẽ bị xóa - điều này không thể hoàn tác!</string>
+    <string name="conversation_deleted">Cuộc trò chuyện đã bị xóa!</string>
+    <string name="privacy_media_blur_radius">Làm mờ phương tiện truyền thông</string>
+    <string name="cant_call_contact_alert_title">Không thể gọi liên hệ</string>
+    <string name="allow_calls_question">Cho phép thực hiện cuộc gọi?</string>
+    <string name="calls_prohibited_alert_title">Cuộc gọi bị cấm!</string>
+    <string name="cant_call_contact_connecting_wait_alert_text">Đang kết nối tới liên hệ, xin vui lòng đợi hoặc kiểm tra sau!</string>
+    <string name="cant_call_contact_deleted_alert_text">Liên hệ đã bị xóa.</string>
+    <string name="cant_send_message_to_member_alert_title">Không thể nhắn tin cho thành viên nhóm</string>
+    <string name="cant_call_member_alert_title">Không thể gọi thành viên nhóm</string>
+    <string name="confirm_delete_contact_question">Xác nhận xóa liên hệ?</string>
+    <string name="contact_deleted">Liên hệ đã bị xóa!</string>
+    <string name="deleted_chats">Đã xóa các cuộc trò chuyện</string>
 </resources>
