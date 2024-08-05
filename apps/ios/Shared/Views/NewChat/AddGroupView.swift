@@ -206,13 +206,14 @@ struct AddGroupView: View {
                 chat = c
             }
         } catch {
-            dismissAllSheets()
-            AlertManager.shared.showAlert(
-                Alert(
-                    title: Text("Error creating group"),
-                    message: Text(responseError(error))
+            dismissAllSheets(animated: true) {
+                AlertManager.shared.showAlert(
+                    Alert(
+                        title: Text("Error creating group"),
+                        message: Text(responseError(error))
+                    )
                 )
-            )
+            }
         }
     }
 
