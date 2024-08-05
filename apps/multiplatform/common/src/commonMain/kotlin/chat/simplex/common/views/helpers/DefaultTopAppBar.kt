@@ -54,6 +54,15 @@ fun NavigationButtonBack(onButtonClicked: (() -> Unit)?, tintColor: Color = if (
 }
 
 @Composable
+fun NavigationButtonClose(onButtonClicked: (() -> Unit)?, tintColor: Color = if (onButtonClicked != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary, height: Dp = 24.dp) {
+  IconButton(onButtonClicked ?: {}, enabled = onButtonClicked != null) {
+    Icon(
+      painterResource(MR.images.ic_close), stringResource(MR.strings.back), Modifier.height(height), tint = tintColor
+    )
+  }
+}
+
+@Composable
 fun ShareButton(onButtonClicked: () -> Unit) {
   IconButton(onButtonClicked) {
     Icon(
