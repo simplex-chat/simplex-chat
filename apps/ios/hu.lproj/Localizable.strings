@@ -95,7 +95,7 @@
 "**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." = "**Javasolt**: az eszköztoken és az értesítések elküldésre kerülnek a SimpleX Chat értesítési kiszolgálóra, kivéve az üzenet tartalma, mérete vagy az, hogy kitől származik.";
 
 /* No comment provided by engineer. */
-"**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Figyelmeztetés**: Az azonnali push-értesítésekhez a kulcstárolóban tárolt jelmondat megadása szükséges.";
+"**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Figyelmeztetés**: Az azonnali push-értesítésekhez a kulcstartóban tárolt jelmondat megadása szükséges.";
 
 /* No comment provided by engineer. */
 "**Warning**: the archive will be removed." = "**Figyelem**: az archívum törlésre kerül.";
@@ -474,7 +474,7 @@
 "Allow disappearing messages only if your contact allows it to you." = "Az eltűnő üzenetek küldése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi az ön számára.";
 
 /* No comment provided by engineer. */
-"Allow downgrade" = "Korábbi verzióra történő visszatérés engedélyezése";
+"Allow downgrade" = "Visszafejlesztés engedélyezése";
 
 /* No comment provided by engineer. */
 "Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Az üzenetek végleges törlése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi. (24 óra)";
@@ -490,6 +490,9 @@
 
 /* No comment provided by engineer. */
 "Allow sending disappearing messages." = "Az eltűnő üzenetek küldése engedélyezve van.";
+
+/* No comment provided by engineer. */
+"Allow sharing" = "Megosztás engedélyezése";
 
 /* No comment provided by engineer. */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Elküldött üzenetek végleges törlésének engedélyezése. (24 óra)";
@@ -694,6 +697,9 @@
 
 /* No comment provided by engineer. */
 "Blocked by admin" = "Letiltva az admin által";
+
+/* No comment provided by engineer. */
+"Blur media" = "Média elhomályosítása";
 
 /* No comment provided by engineer. */
 "bold" = "félkövér";
@@ -919,7 +925,7 @@
 "Confirm" = "Megerősítés";
 
 /* No comment provided by engineer. */
-"Confirm database upgrades" = "Adatbázis frissítés megerősítése";
+"Confirm database upgrades" = "Adatbázis fejlesztésének megerősítése";
 
 /* No comment provided by engineer. */
 "Confirm files from unknown servers." = "Ismeretlen kiszolgálókról származó fájlok jóváhagyása.";
@@ -1040,6 +1046,9 @@
 
 /* chat list item title (it should not be shown */
 "connection established" = "kapcsolat létrehozva";
+
+/* No comment provided by engineer. */
+"Connection notifications" = "Kapcsolódási értesítések";
 
 /* No comment provided by engineer. */
 "Connection request sent!" = "Kapcsolódási kérés elküldve!";
@@ -1198,13 +1207,13 @@
 "Dark mode colors" = "Sötét mód színei";
 
 /* No comment provided by engineer. */
-"Database downgrade" = "Visszatérés a korábbi adatbázis verzióra";
+"Database downgrade" = "Adatbázis visszafejlesztése";
 
 /* No comment provided by engineer. */
 "Database encrypted!" = "Adatbázis titkosítva!";
 
 /* No comment provided by engineer. */
-"Database encryption passphrase will be updated and stored in the keychain.\n" = "Az adatbázis titkosítási jelmondata frissül és tárolódik a kulcstárolóban.\n";
+"Database encryption passphrase will be updated and stored in the keychain.\n" = "Az adatbázis titkosítási jelmondata frissül és tárolódik a kulcstartóban.\n";
 
 /* No comment provided by engineer. */
 "Database encryption passphrase will be updated.\n" = "Adatbázis titkosítási jelmondat frissítve lesz.\n";
@@ -1234,10 +1243,10 @@
 "Database passphrase & export" = "Adatbázis jelmondat és exportálás";
 
 /* No comment provided by engineer. */
-"Database passphrase is different from saved in the keychain." = "Az adatbázis jelmondata eltér a kulcstárlóban mentettől.";
+"Database passphrase is different from saved in the keychain." = "Az adatbázis jelmondata eltér a kulcstartóban mentettől.";
 
 /* No comment provided by engineer. */
-"Database passphrase is required to open chat." = "Adatbázis jelmondat szükséges a csevegés megnyitásához.";
+"Database passphrase is required to open chat." = "A csevegés megnyitásához adja meg az adatbázis jelmondatát.";
 
 /* No comment provided by engineer. */
 "Database upgrade" = "Adatbázis fejlesztése";
@@ -1246,7 +1255,7 @@
 "database version is newer than the app, but no down migration for: %@" = "az adatbázis verziója újabb, mint az alkalmazásé, de nincs visszafelé átköltöztetés ehhez: %@";
 
 /* No comment provided by engineer. */
-"Database will be encrypted and the passphrase stored in the keychain.\n" = "Az adatbázis titkosítva lesz, a jelmondat pedig a kulcstárolóban lesz tárolva.\n";
+"Database will be encrypted and the passphrase stored in the keychain.\n" = "Az adatbázis titkosítva lesz, a jelmondat pedig a kulcstartóban lesz tárolva.\n";
 
 /* No comment provided by engineer. */
 "Database will be encrypted.\n" = "Az adatbázis titkosításra kerül.\n";
@@ -1280,6 +1289,9 @@
 
 /* chat item action */
 "Delete" = "Törlés";
+
+/* No comment provided by engineer. */
+"Delete %lld messages of members?" = "Tagok %lld üzenetének törlése?";
 
 /* No comment provided by engineer. */
 "Delete %lld messages?" = "Töröl %lld üzenetet?";
@@ -1434,8 +1446,14 @@
 /* No comment provided by engineer. */
 "Desktop devices" = "Számítógépek";
 
+/* No comment provided by engineer. */
+"Destination server address of %@ is incompatible with forwarding server %@ settings." = "A(z) %@ célkiszolgáló címe nem kompatibilis a(z) %@ továbbító kiszolgáló beállításaival.";
+
 /* snd error text */
 "Destination server error: %@" = "Célkiszolgáló hiba: %@";
+
+/* No comment provided by engineer. */
+"Destination server version of %@ is incompatible with forwarding server %@." = "A(z) %@ célkiszolgáló verziója nem kompatibilis a(z) %@ továbbító kiszolgálóval.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Részletes statisztikák";
@@ -1484,6 +1502,9 @@
 
 /* No comment provided by engineer. */
 "disabled" = "letiltva";
+
+/* No comment provided by engineer. */
+"Disabled" = "Letiltva";
 
 /* No comment provided by engineer. */
 "Disappearing message" = "Eltűnő üzenet";
@@ -1540,7 +1561,7 @@
 "Don't show again" = "Ne mutasd újra";
 
 /* No comment provided by engineer. */
-"Downgrade and open chat" = "Visszatérés a korábbi verzióra és a csevegés megnyitása";
+"Downgrade and open chat" = "Visszafejlesztés és a csevegés megnyitása";
 
 /* chat item action */
 "Download" = "Letöltés";
@@ -1633,6 +1654,9 @@
 "enabled" = "engedélyezve";
 
 /* No comment provided by engineer. */
+"Enabled" = "Engedélyezve";
+
+/* No comment provided by engineer. */
 "Enabled for" = "Engedélyezve";
 
 /* enabled status */
@@ -1669,7 +1693,7 @@
 "Encrypted message: database migration error" = "Titkosított üzenet: adatbázis-átköltöztetés hiba";
 
 /* notification */
-"Encrypted message: keychain error" = "Titkosított üzenet: kulcstároló hiba";
+"Encrypted message: keychain error" = "Titkosított üzenet: kulcstartó hiba";
 
 /* notification */
 "Encrypted message: no passphrase" = "Titkosított üzenet: nincs jelmondat";
@@ -1774,6 +1798,9 @@
 "Error changing setting" = "Hiba a beállítás megváltoztatásakor";
 
 /* No comment provided by engineer. */
+"Error connecting to forwarding server %@. Please try later." = "Hiba a(z) %@ továbbító kiszolgálóhoz való kapcsolódáskor. Próbálja meg később.";
+
+/* No comment provided by engineer. */
 "Error creating address" = "Hiba a cím létrehozásakor";
 
 /* No comment provided by engineer. */
@@ -1876,7 +1903,7 @@
 "Error saving passcode" = "Hiba a jelkód mentése közben";
 
 /* No comment provided by engineer. */
-"Error saving passphrase to keychain" = "Hiba a jelmondat kulcstárolóba történő mentésekor";
+"Error saving passphrase to keychain" = "Hiba a jelmondat kulcstartóba történő mentésekor";
 
 /* when migrating */
 "Error saving settings" = "Hiba a beállítások mentésekor";
@@ -2085,6 +2112,15 @@
 
 /* No comment provided by engineer. */
 "Forwarded from" = "Továbbítva innen:";
+
+/* No comment provided by engineer. */
+"Forwarding server %@ failed to connect to destination server %@. Please try later." = "A(z) %@ továbbító kiszolgáló nem tudott csatlakozni a(z) %@ célkiszolgálóhoz. Próbálja meg később.";
+
+/* No comment provided by engineer. */
+"Forwarding server address is incompatible with network settings: %@." = "A továbbító kiszolgáló címe nem kompatibilis a hálózati beállításokkal: %@.";
+
+/* No comment provided by engineer. */
+"Forwarding server version is incompatible with network settings: %@." = "A továbbító kiszolgáló verziója nem kompatibilis a hálózati beállításokkal: %@.";
 
 /* snd error text */
 "Forwarding server: %@\nDestination server error: %@" = "Továbbító kiszolgáló: %1$@\nCélkiszolgáló hiba:%2$@";
@@ -2459,10 +2495,10 @@
 "invited via your group link" = "meghíva az ön csoport hivatkozásán keresztül";
 
 /* No comment provided by engineer. */
-"iOS Keychain is used to securely store passphrase - it allows receiving push notifications." = "Az iOS kulcstár a jelmondat biztonságos tárolására szolgál - lehetővé teszi a push-értesítések fogadását.";
+"iOS Keychain is used to securely store passphrase - it allows receiving push notifications." = "Az iOS kulcstartó a jelmondat biztonságos tárolására szolgál - lehetővé teszi a push-értesítések fogadását.";
 
 /* No comment provided by engineer. */
-"iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." = "Az iOS kulcstár az alkalmazás újraindítása, vagy a jelmondat módosítása után a jelmondat biztonságos tárolására szolgál - lehetővé teszi a push-értesítések fogadását.";
+"iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." = "Az iOS kulcstartó az alkalmazás újraindítása, vagy a jelmondat módosítása után a jelmondat biztonságos tárolására szolgál - lehetővé teszi a push-értesítések fogadását.";
 
 /* No comment provided by engineer. */
 "Irreversible message deletion" = "Végleges üzenettörlés";
@@ -2534,10 +2570,10 @@
 "Keep your connections" = "Kapcsolatok megtartása";
 
 /* No comment provided by engineer. */
-"Keychain error" = "Kulcstároló hiba";
+"Keychain error" = "Kulcstartó hiba";
 
 /* No comment provided by engineer. */
-"KeyChain error" = "Kulcstároló hiba";
+"KeyChain error" = "Kulcstartó hiba";
 
 /* No comment provided by engineer. */
 "Large file!" = "Nagy fájl!";
@@ -2634,6 +2670,9 @@
 
 /* No comment provided by engineer. */
 "Max 30 seconds, received instantly." = "Max. 30 másodperc, azonnal érkezett.";
+
+/* blur media */
+"Medium" = "Közepes";
 
 /* member role */
 "member" = "tag";
@@ -2925,6 +2964,9 @@
 
 /* No comment provided by engineer. */
 "Not compatible!" = "Nem kompatibilis!";
+
+/* No comment provided by engineer. */
+"Nothing selected" = "Semmi sincs kiválasztva";
 
 /* No comment provided by engineer. */
 "Notifications" = "Értesítések";
@@ -3454,7 +3496,7 @@
 "Remove member?" = "Biztosan eltávolítja?";
 
 /* No comment provided by engineer. */
-"Remove passphrase from keychain?" = "Jelmondat eltávolítása a kulcstárolóból?";
+"Remove passphrase from keychain?" = "Jelmondat eltávolítása a kulcstartóból?";
 
 /* No comment provided by engineer. */
 "removed" = "eltávolítva";
@@ -3499,7 +3541,7 @@
 "Reply" = "Válasz";
 
 /* No comment provided by engineer. */
-"Required" = "Megkövetelt";
+"Required" = "Szükséges";
 
 /* No comment provided by engineer. */
 "Reset" = "Alaphelyzetbe állítás";
@@ -3595,7 +3637,7 @@
 "Save passphrase and open chat" = "Jelmondat elmentése és csevegés megnyitása";
 
 /* No comment provided by engineer. */
-"Save passphrase in Keychain" = "Jelmondat mentése a kulcstárban";
+"Save passphrase in Keychain" = "Jelmondat mentése a kulcstartóba";
 
 /* No comment provided by engineer. */
 "Save preferences?" = "Beállítások mentése?";
@@ -3692,6 +3734,9 @@
 
 /* chat item action */
 "Select" = "Választás";
+
+/* No comment provided by engineer. */
+"Selected %lld" = "%lld kiválasztva";
 
 /* No comment provided by engineer. */
 "Selected chat preferences prohibit this message." = "A kiválasztott csevegési beállítások tiltják ezt az üzenetet.";
@@ -3925,7 +3970,10 @@
 "Share this 1-time invite link" = "Egyszer használatos meghívó hivatkozás megosztása";
 
 /* No comment provided by engineer. */
-"Share with contacts" = "Megosztás ismerősökkel";
+"Share to SimpleX" = "Megosztás a SimpleX-ben";
+
+/* No comment provided by engineer. */
+"Share with contacts" = "Megosztás az ismerősökkel";
 
 /* No comment provided by engineer. */
 "Show → on messages sent via private routing." = "Egy „→” jel megjelenítése a privát útválasztáson keresztül küldött üzeneteknél.";
@@ -4017,6 +4065,9 @@
 /* No comment provided by engineer. */
 "SMP server" = "SMP-kiszolgáló";
 
+/* blur media */
+"Soft" = "Enyhe";
+
 /* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Néhány nem végzetes hiba történt az importálás során – további részletekért a csevegési konzolban olvashat.";
 
@@ -4085,6 +4136,9 @@
 
 /* No comment provided by engineer. */
 "strike" = "áthúzott";
+
+/* blur media */
+"Strong" = "Erős";
 
 /* No comment provided by engineer. */
 "Submit" = "Elküldés";
@@ -4208,6 +4262,12 @@
 
 /* No comment provided by engineer. */
 "The message will be marked as moderated for all members." = "Az üzenet minden tag számára moderáltként lesz megjelölve.";
+
+/* No comment provided by engineer. */
+"The messages will be deleted for all members." = "Az üzenetek minden tag számára törlésre kerülnek.";
+
+/* No comment provided by engineer. */
+"The messages will be marked as moderated for all members." = "Az üzenetek moderáltként lesznek megjelölve minden tag számára.";
 
 /* No comment provided by engineer. */
 "The next generation of private messaging" = "A privát üzenetküldés következő generációja";
@@ -4456,7 +4516,7 @@
 "Updating settings will re-connect the client to all servers." = "A beállítások frissítése a kiszolgálókhoz való újra kapcsolódással jár.";
 
 /* No comment provided by engineer. */
-"Upgrade and open chat" = "A csevegés frissítése és megnyitása";
+"Upgrade and open chat" = "Fejlesztés és a csevegés megnyitása";
 
 /* No comment provided by engineer. */
 "Upload errors" = "Feltöltési hibák";
@@ -4699,16 +4759,16 @@
 "Without Tor or VPN, your IP address will be visible to these XFTP relays: %@." = "Tor vagy VPN nélkül az IP-címe látható lesz ezen XFTP átjátszók számára: %@.";
 
 /* No comment provided by engineer. */
-"Wrong database passphrase" = "Téves adatbázis jelmondat";
+"Wrong database passphrase" = "Hibás adatbázis jelmondat";
 
 /* snd error text */
-"Wrong key or unknown connection - most likely this connection is deleted." = "Rossz kulcs vagy ismeretlen kapcsolat - valószínűleg ez a kapcsolat törlődött.";
+"Wrong key or unknown connection - most likely this connection is deleted." = "Hibás kulcs vagy ismeretlen kapcsolat - valószínűleg ez a kapcsolat törlődött.";
 
 /* file error text */
 "Wrong key or unknown file chunk address - most likely file is deleted." = "Hibás kulcs vagy ismeretlen fájltöredék cím - valószínűleg a fájl törlődött.";
 
 /* No comment provided by engineer. */
-"Wrong passphrase!" = "Téves jelmondat!";
+"Wrong passphrase!" = "Hibás jelmondat!";
 
 /* No comment provided by engineer. */
 "XFTP server" = "XFTP-kiszolgáló";

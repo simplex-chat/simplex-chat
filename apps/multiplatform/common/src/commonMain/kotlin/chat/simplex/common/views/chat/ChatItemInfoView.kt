@@ -28,6 +28,7 @@ import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.group.MemberProfileImage
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
@@ -334,7 +335,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     SectionItemView(
       padding = PaddingValues(horizontal = 0.dp)
     ) {
-      ProfileImage(size = 36.dp, member.image)
+      MemberProfileImage(size = 36.dp, member)
       Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
       Text(
         member.chatViewName,

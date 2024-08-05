@@ -25,8 +25,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
@@ -495,7 +494,7 @@ fun GroupMemberInfoHeader(member: GroupMember) {
     Modifier.padding(horizontal = 16.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    ProfileImage(size = 192.dp, member.image, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
+    MemberProfileImage(size = 192.dp, member, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
     val text = buildAnnotatedString {
       if (member.verified) {
         appendInlineContent(id = "shieldIcon")
@@ -623,6 +622,22 @@ private fun RoleSelectionRow(
       onSelected = onSelected
     )
   }
+}
+
+@Composable
+fun MemberProfileImage(
+  size: Dp,
+  mem: GroupMember,
+  color: Color = MaterialTheme.colors.secondaryVariant,
+  backgroundColor: Color? = null
+) {
+  ProfileImage(
+    size = size,
+    image = mem.image,
+    color = color,
+    backgroundColor = backgroundColor,
+    blurred = mem.blocked
+  )
 }
 
 private fun updateMemberRoleDialog(
