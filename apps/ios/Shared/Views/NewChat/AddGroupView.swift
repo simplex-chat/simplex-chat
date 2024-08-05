@@ -41,12 +41,13 @@ struct AddGroupView: View {
                         }
                     }
                 }
+                .navigationBarTitleDisplayMode(.inline)
             } else {
                 GroupLinkView(
                     groupId: groupInfo.groupId,
                     groupLink: $groupLink,
                     groupLinkMemberRole: $groupLinkMemberRole,
-                    showTitle: true,
+                    showTitle: false,
                     creatingGroup: true
                 ) {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -55,6 +56,7 @@ struct AddGroupView: View {
                         }
                     }
                 }
+                .navigationBarTitle("Group link")
             }
         } else {
             createGroupView().keyboardPadding()
@@ -64,13 +66,6 @@ struct AddGroupView: View {
     func createGroupView() -> some View {
         List {
             Group {
-                Text("Create secret group")
-                    .font(.largeTitle)
-                    .bold()
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.bottom, 24)
-                    .onTapGesture(perform: hideKeyboard)
-
                 ZStack(alignment: .center) {
                     ZStack(alignment: .topTrailing) {
                         ProfileImage(imageStr: profile.image, size: 128)
