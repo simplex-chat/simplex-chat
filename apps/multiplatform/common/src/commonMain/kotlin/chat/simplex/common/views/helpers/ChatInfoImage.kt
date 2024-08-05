@@ -11,8 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
@@ -55,7 +54,8 @@ fun ProfileImage(
   image: String? = null,
   icon: ImageResource = MR.images.ic_account_circle_filled,
   color: Color = MaterialTheme.colors.secondaryVariant,
-  backgroundColor: Color? = null
+  backgroundColor: Color? = null,
+  blurred: Boolean = false
 ) {
   Box(Modifier.size(size)) {
     if (image == null) {
@@ -88,7 +88,7 @@ fun ProfileImage(
         imageBitmap,
         stringResource(MR.strings.image_descr_profile_image),
         contentScale = ContentScale.Crop,
-        modifier = ProfileIconModifier(size)
+        modifier = ProfileIconModifier(size, blurred = blurred)
       )
     }
   }
@@ -109,7 +109,7 @@ private const val squareToCircleRatio = 0.935f
 private const val radiusFactor = (1 - squareToCircleRatio) / 50
 
 @Composable
-fun ProfileIconModifier(size: Dp, padding: Boolean = true): Modifier {
+fun ProfileIconModifier(size: Dp, padding: Boolean = true, blurred: Boolean = false): Modifier {
   val percent = remember { appPreferences.profileImageCornerRadius.state }
   val r = max(0f, percent.value)
   val pad = if (padding) size / 12 else 0.dp
@@ -125,7 +125,7 @@ fun ProfileIconModifier(size: Dp, padding: Boolean = true): Modifier {
       val sz = (size - 2 * pad) * (squareToCircleRatio + r * radiusFactor)
       m.padding((size - sz) / 2).clip(RoundedCornerShape(size = sz * r / 100))
     }
-  }
+  }.then(if (blurred) Modifier.blur(size / 4) else Modifier)
 }
 
 /** [AccountCircleFilled] has its inner padding which leads to visible border if there is background underneath.

@@ -487,7 +487,7 @@ private fun MemberRow(member: GroupMember, user: Boolean = false, onClick: (() -
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-      ProfileImage(size = 46.dp, member.image)
+      MemberProfileImage(size = 46.dp, member)
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))
       Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
