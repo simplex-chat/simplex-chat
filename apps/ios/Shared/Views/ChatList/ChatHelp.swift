@@ -38,7 +38,6 @@ struct ChatHelp: View {
 
                 HStack(spacing: 8) {
                     Text("Tap button ")
-                    // TODO: Check this.
                     NewChatMenuButton()
                     Text("above, then choose:")
                 }

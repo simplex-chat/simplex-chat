@@ -148,21 +148,22 @@ struct ChatInfoView: View {
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
                 
-                HStack {
-                    Spacer()
-                    searchButton()
-                    Spacer()
-                    AudioCallButton(chat: chat, contact: contact, showAlert: { alert = .someAlert(alert: $0) })
-                    Spacer()
-                    VideoButton(chat: chat, contact: contact, showAlert: { alert = .someAlert(alert: $0) })
-                    Spacer()
-                    muteButton()
-                    Spacer()
+                GeometryReader { g in
+                    HStack(alignment: .center, spacing: 8) {
+                        let buttonWidth = g.size.width / 4
+                        searchButton(width: buttonWidth)
+                        AudioCallButton(chat: chat, contact: contact, showAlert: { alert = .someAlert(alert: $0) }, width: buttonWidth)
+                        VideoButton(chat: chat, contact: contact, showAlert: { alert = .someAlert(alert: $0) }, width: buttonWidth)
+                        muteButton(width: buttonWidth)
+                    }
                 }
-                .padding(.horizontal)
+                .padding(.trailing)
+                .frame(maxWidth: .infinity)
+                .frame(height: infoViewActionButtonHeight)
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
-                
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 8))
+
                 if let customUserProfile = customUserProfile {
                     Section(header: Text("Incognito").foregroundColor(theme.colors.secondary)) {
                         HStack {
@@ -392,8 +393,8 @@ struct ChatInfoView: View {
         }
     }
 
-    private func searchButton() -> some View {
-        InfoViewActionButtonLayout(image: "magnifyingglass", title: "search")
+    private func searchButton(width: CGFloat) -> some View {
+        InfoViewActionButtonLayout(image: "magnifyingglass", title: "search", width: width)
             .onTapGesture {
                 dismiss()
                 onSearch()
@@ -401,10 +402,11 @@ struct ChatInfoView: View {
             .disabled(!contact.ready || chat.chatItems.isEmpty)
     }
 
-    private func muteButton() -> some View {
+    private func muteButton(width: CGFloat) -> some View {
         InfoViewActionButtonLayout(
-            image: chat.chatInfo.ntfsEnabled ? "speaker.slash" : "speaker.wave.2",
-            title: chat.chatInfo.ntfsEnabled ? "mute" : "unmute"
+            image: chat.chatInfo.ntfsEnabled ? "speaker.slash.fill" : "speaker.wave.2.fill",
+            title: chat.chatInfo.ntfsEnabled ? "mute" : "unmute",
+            width: width
         )
         .onTapGesture {
             toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
@@ -622,15 +624,17 @@ struct AudioCallButton: View {
     var chat: Chat
     var contact: Contact
     var showAlert: (SomeAlert) -> Void
+    var width: CGFloat = infoViewActionButtonWidth
 
     var body: some View {
         CallButton(
             chat: chat,
             contact: contact,
-            image: "phone",
+            image: "phone.fill",
             title: "call",
             mediaType: .audio,
-            showAlert: showAlert
+            showAlert: showAlert,
+            width: width
         )
     }
 }
@@ -639,15 +643,17 @@ struct VideoButton: View {
     var chat: Chat
     var contact: Contact
     var showAlert: (SomeAlert) -> Void
+    var width: CGFloat = infoViewActionButtonWidth
 
     var body: some View {
         CallButton(
             chat: chat,
             contact: contact,
-            image: "video",
+            image: "video.fill",
             title: "video",
             mediaType: .video,
-            showAlert: showAlert
+            showAlert: showAlert,
+            width: width
         )
     }
 }
@@ -659,11 +665,12 @@ private struct CallButton: View {
     var title: LocalizedStringKey
     var mediaType: CallMediaType
     var showAlert: (SomeAlert) -> Void
+    var width: CGFloat = infoViewActionButtonWidth
 
     var body: some View {
         let canCall = contact.ready && contact.active && chat.chatInfo.featureEnabled(.calls) && ChatModel.shared.activeCall == nil
 
-        InfoViewActionButtonLayout(image: image, title: title, disabledLook: !canCall)
+        InfoViewActionButtonLayout(image: image, title: title, disabledLook: !canCall, width: width)
             .onTapGesture {
                 if canCall {
                     CallController.shared.startCall(contact, mediaType)
@@ -733,10 +740,15 @@ private struct CallButton: View {
     }
 }
 
+let infoViewActionButtonWidth: CGFloat = 83
+
+let infoViewActionButtonHeight: CGFloat = 60
+
 struct InfoViewActionButtonLayout: View {
     var image: String
     var title: LocalizedStringKey
     var disabledLook: Bool = false
+    var width: CGFloat = infoViewActionButtonWidth
 
     var body: some View {
         VStack(spacing: 4) {
@@ -750,8 +762,8 @@ struct InfoViewActionButtonLayout: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .foregroundColor(.accentColor)
         .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(12.0)
-        .frame(width: 82, height: 56)
+        .cornerRadius(10.0)
+        .frame(width: width, height: infoViewActionButtonHeight)
         .disabled(disabledLook)
     }
 }
