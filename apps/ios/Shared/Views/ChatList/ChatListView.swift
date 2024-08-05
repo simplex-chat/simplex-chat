@@ -40,11 +40,7 @@ struct ChatListView: View {
                     set: { _ in }
                 ),
                 destination: chatView
-            ) {
-                VStack {
-                    chatListView
-                }
-            }
+            ) { chatListView }
             if userPickerVisible {
                 Rectangle().fill(.white.opacity(0.001)).onTapGesture {
                     withAnimation {
@@ -64,9 +60,8 @@ struct ChatListView: View {
     }
 
     private var chatListView: some View {
-        VStack {
+        withToolbar {
             chatList
-            toolbar
         }
         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .onDisappear() { withAnimation { userPickerVisible = false } }
@@ -89,56 +84,87 @@ struct ChatListView: View {
         .listStyle(.plain)
         .background(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarHidden(searchMode)
+        .navigationBarHidden(searchMode || oneHandUI)
     }
-    
-    @ViewBuilder private var toolbar: some View {
-        let t = VStack{}.toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                let user = chatModel.currentUser ?? User.sampleData
-                ZStack(alignment: .topTrailing) {
-                    ProfileImage(imageStr: user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
-                        .padding(.trailing, 4)
-                    let allRead = chatModel.users
-                        .filter { u in !u.user.activeUser && !u.user.hidden }
-                        .allSatisfy { u in u.unreadCount == 0 }
-                    if !allRead {
-                        unreadBadge(size: 12)
-                    }
-                }
-                .onTapGesture {
-                    if chatModel.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
-                        withAnimation {
-                            userPickerVisible.toggle()
-                        }
+
+    @ViewBuilder
+    func withToolbar(content: () -> some View) -> some View {
+        if #available(iOS 16.0, *) {
+            content()
+                .toolbarBackground(.visible, for: oneHandUI ? .bottomBar : .navigationBar)
+                .toolbar {
+                    if oneHandUI {
+                        bottomToolbar
                     } else {
-                        showSettings = true
+                        topToolbar
                     }
                 }
-            }
-            ToolbarItem(placement: .principal) {
-                HStack(spacing: 4) {
-                    Text("Chats")
-                        .font(.headline)
-                    SubsStatusIndicator()
-                }
-                .frame(maxWidth: .infinity, alignment: .center)
-            }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                switch chatModel.chatRunning {
-                case .some(true): NewChatMenuButton()
-                case .some(false): chatStoppedIcon()
-                case .none: EmptyView()
-                }
+        } else {
+            content().toolbar { topToolbar }
+        }
+    }
+
+    @ToolbarContentBuilder
+    var topToolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) { leadingToolbarItem }
+        ToolbarItem(placement: .principal) { principalToolbarItem }
+        ToolbarItem(placement: .topBarTrailing) { trailingToolbarItem }
+    }
+
+    @ToolbarContentBuilder
+    var bottomToolbar: some ToolbarContent {
+        ToolbarItem(placement: .bottomBar) {
+            HStack {
+                leadingToolbarItem
+                principalToolbarItem
+                trailingToolbarItem
             }
         }
-        
-        if #unavailable(iOS 16) {
-            t
-        } else if oneHandUI {
-            t.toolbarBackground(.visible, for: .navigationBar)
-        } else {
-            t.toolbarBackground(.visible, for: .bottomBar)
+    }
+
+    @ViewBuilder
+    var leadingToolbarItem: some View {
+        let user = chatModel.currentUser ?? User.sampleData
+        ZStack(alignment: .topTrailing) {
+            ProfileImage(imageStr: user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
+                .padding(.trailing, 4)
+            let allRead = chatModel.users
+                .filter { u in !u.user.activeUser && !u.user.hidden }
+                .allSatisfy { u in u.unreadCount == 0 }
+            if !allRead {
+                unreadBadge(size: 12)
+            }
+        }
+        .onTapGesture {
+            if chatModel.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
+                withAnimation {
+                    userPickerVisible.toggle()
+                }
+            } else {
+                showSettings = true
+            }
+        }
+    }
+
+    @ViewBuilder
+    var principalToolbarItem: some View {
+        HStack(spacing: 4) {
+            Text("Chats")
+                .contentShape(Rectangle())
+                .font(.headline).onTapGesture {
+                    oneHandUI.toggle()
+                }
+            SubsStatusIndicator()
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    @ViewBuilder
+    var trailingToolbarItem: some View {
+        switch chatModel.chatRunning {
+        case .some(true): NewChatMenuButton()
+        case .some(false): chatStoppedIcon()
+        case .none: EmptyView()
         }
     }
 
