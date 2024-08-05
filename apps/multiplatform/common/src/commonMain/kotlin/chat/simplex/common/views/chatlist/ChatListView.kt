@@ -43,12 +43,12 @@ import kotlinx.serialization.json.Json
 import java.net.URI
 import kotlin.time.Duration.Companion.seconds
 
-private fun showNewChatSheet(oneHandUI: State<Boolean>) {
+private fun showNewChatSheet(chatToolbarOnTop: State<Boolean>) {
   ModalManager.start.closeModals()
   ModalManager.end.closeModals()
   chatModel.newChatSheetVisible.value = true
   ModalManager.start.showModalCloseable(
-    closeOnTop = !oneHandUI.value,
+    closeOnTop = !chatToolbarOnTop.value,
   ) { close ->
     NewChatSheet(rh = chatModel.currentRemoteHost.value, close)
     DisposableEffect(Unit) {
@@ -61,7 +61,7 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
 
 @Composable
 fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
-  val oneHandUI = remember { chatModel.controller.appPrefs.oneHandUI }
+  val chatToolbarOnTop = remember { chatModel.controller.appPrefs.chatToolbarOnTop }
 
   LaunchedEffect(Unit) {
     if (shouldShowWhatsNew(chatModel)) {
@@ -85,27 +85,27 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   val (userPickerState, scaffoldState ) = settingsState
   Scaffold(
     topBar = {
-      if (!oneHandUI.state.value) {
+      if (!chatToolbarOnTop.state.value) {
         Column(Modifier.padding(end = endPadding)) {
           ChatListToolbar(
             scaffoldState.drawerState,
             userPickerState,
             stopped,
-            oneHandUI
+            chatToolbarOnTop
           )
           Divider()
         }
       }
     },
     bottomBar = {
-      if (oneHandUI.state.value) {
+      if (chatToolbarOnTop.state.value) {
         Column(Modifier.padding(end = endPadding)) {
           Divider()
           ChatListToolbar(
             scaffoldState.drawerState,
             userPickerState,
             stopped,
-            oneHandUI
+            chatToolbarOnTop
           )
         }
       }
@@ -121,11 +121,11 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
     drawerGesturesEnabled = appPlatform.isAndroid,
     floatingActionButton = {
-      if (!oneHandUI.state.value && searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
+      if (!chatToolbarOnTop.state.value && searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
         FloatingActionButton(
           onClick = {
             if (!stopped) {
-              showNewChatSheet(oneHandUI.state)
+              showNewChatSheet(chatToolbarOnTop.state)
             }
           },
           Modifier
@@ -146,7 +146,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     }
   ) {
     var modifier = Modifier.padding(it).padding(end = endPadding)
-    if (oneHandUI.state.value) {
+    if (chatToolbarOnTop.state.value) {
       modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
     }
 
@@ -156,12 +156,12 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
           .fillMaxSize()
       ) {
         if (!chatModel.desktopNoUserNoRemote) {
-          ChatList(chatModel, searchText = searchText, oneHandUI = oneHandUI)
+          ChatList(chatModel, searchText = searchText, chatToolbarOnTop = chatToolbarOnTop)
         }
         if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
           var textModifier = Modifier.align(Alignment.Center)
 
-          if (oneHandUI.state.value) {
+          if (chatToolbarOnTop.state.value) {
             textModifier = textModifier.scale(scaleX = 1f, scaleY = -1f)
           }
 
@@ -184,7 +184,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       UserPicker(
         chatModel = chatModel,
         userPickerState = userPickerState,
-        contentAlignment = if (oneHandUI.state.value) Alignment.BottomStart else Alignment.TopStart
+        contentAlignment = if (chatToolbarOnTop.state.value) Alignment.BottomStart else Alignment.TopStart
       ) {
         scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
         userPickerState.value = AnimatedViewState.GONE
@@ -210,19 +210,19 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean, oneHandUI: SharedPreference<Boolean>) {
+private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean, chatToolbarOnTop: SharedPreference<Boolean>) {
   val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val updatingProgress = remember { chatModel.updatingProgress }.value
 
-  if (oneHandUI.state.value) {
+  if (chatToolbarOnTop.state.value) {
     val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
 
     if (!stopped) {
       barButtons.add {
         IconButton(
           onClick = {
-            showNewChatSheet(oneHandUI.state)
+            showNewChatSheet(chatToolbarOnTop.state)
           },
         ) {
           Box(
@@ -441,10 +441,10 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
 }
 
 @Composable
-private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<String?>, oneHandUI: SharedPreference<Boolean>) {
+private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<String?>, chatToolbarOnTop: SharedPreference<Boolean>) {
   var modifier = Modifier.fillMaxWidth();
 
-  if (oneHandUI.state.value) {
+  if (chatToolbarOnTop.state.value) {
     modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
   }
 
@@ -547,7 +547,7 @@ enum class ScrollDirection {
 }
 
 @Composable
-private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>, oneHandUI: SharedPreference<Boolean>) {
+private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>, chatToolbarOnTop: SharedPreference<Boolean>) {
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   var scrollDirection by remember { mutableStateOf(ScrollDirection.Idle) }
   var previousIndex by remember { mutableStateOf(0) }
@@ -593,7 +593,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
           .offset {
             val y = if (searchText.value.text.isEmpty()) {
               if (
-                (oneHandUI.state.value && scrollDirection == ScrollDirection.Up) ||
+                (chatToolbarOnTop.state.value && scrollDirection == ScrollDirection.Up) ||
                 (appPlatform.isAndroid && keyboardState == KeyboardState.Opened)
               ) {
                 0
@@ -605,7 +605,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
           }
           .background(MaterialTheme.colors.background)
       ) {
-        ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, oneHandUI)
+        ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, chatToolbarOnTop)
         Divider()
       }
     }
@@ -613,13 +613,13 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
       val nextChatSelected = remember(chat.id, chats) { derivedStateOf {
         chatModel.chatId.value != null && chats.getOrNull(index + 1)?.id == chatModel.chatId.value
       } }
-      ChatListNavLinkView(chat, nextChatSelected, oneHandUI.state)
+      ChatListNavLinkView(chat, nextChatSelected, chatToolbarOnTop.state)
     }
   }
   if (chats.isEmpty() && chatModel.chats.value.isNotEmpty()) {
     var modifier = Modifier.fillMaxSize();
 
-    if (oneHandUI.state.value) {
+    if (chatToolbarOnTop.state.value) {
       modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
     }
 

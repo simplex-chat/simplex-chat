@@ -35,7 +35,7 @@ actual fun ChatListNavLinkLayout(
   disabled: Boolean,
   selectedChat: State<Boolean>,
   nextChatSelected: State<Boolean>,
-  oneHandUI: State<Boolean>,
+  chatToolbarOnTop: State<Boolean>,
 ) {
   var modifier = Modifier.fillMaxWidth()
   if (!disabled) modifier = modifier

@@ -23,7 +23,7 @@ fun ShareListNavLinkView(
   isMediaOrFileAttachment: Boolean,
   isVoice: Boolean,
   hasSimplexLink: Boolean,
-  oneHandUI: State<Boolean>
+  chatToolbarOnTop: State<Boolean>
 ) {
   val stopped = chatModel.chatRunning.value == false
   val scope = rememberCoroutineScope()
@@ -31,7 +31,7 @@ fun ShareListNavLinkView(
     is ChatInfo.Direct -> {
       val voiceProhibited = isVoice && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
       ShareListNavLinkLayout(
-        chatLinkPreview = { SharePreviewView(chat, disabled = voiceProhibited, oneHandUI = oneHandUI) },
+        chatLinkPreview = { SharePreviewView(chat, disabled = voiceProhibited, chatToolbarOnTop = chatToolbarOnTop) },
         click = {
           if (voiceProhibited) {
             showForwardProhibitedByPrefAlert()
@@ -48,7 +48,7 @@ fun ShareListNavLinkView(
       val voiceProhibited = isVoice && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
       val prohibitedByPref = simplexLinkProhibited || fileProhibited || voiceProhibited
       ShareListNavLinkLayout(
-        chatLinkPreview = { SharePreviewView(chat, disabled = prohibitedByPref, oneHandUI = oneHandUI) },
+        chatLinkPreview = { SharePreviewView(chat, disabled = prohibitedByPref, chatToolbarOnTop = chatToolbarOnTop) },
         click = {
           if (prohibitedByPref) {
             showForwardProhibitedByPrefAlert()
@@ -61,7 +61,7 @@ fun ShareListNavLinkView(
     }
     is ChatInfo.Local ->
       ShareListNavLinkLayout(
-        chatLinkPreview = { SharePreviewView(chat, disabled = false, oneHandUI = oneHandUI) },
+        chatLinkPreview = { SharePreviewView(chat, disabled = false, chatToolbarOnTop = chatToolbarOnTop) },
         click = { scope.launch { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) } },
         stopped
       )
@@ -89,10 +89,10 @@ private fun ShareListNavLinkLayout(
 }
 
 @Composable
-private fun SharePreviewView(chat: Chat, disabled: Boolean, oneHandUI: State<Boolean>) {
+private fun SharePreviewView(chat: Chat, disabled: Boolean, chatToolbarOnTop: State<Boolean>) {
   var modifier = Modifier.fillMaxSize()
 
-  if (oneHandUI.value) {
+  if (chatToolbarOnTop.value) {
     modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
   }
 

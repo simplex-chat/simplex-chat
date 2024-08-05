@@ -35,6 +35,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.delay
+import java.util.Locale
 
 enum class AppIcon(val image: ImageResource) {
   DEFAULT(MR.images.ic_simplex_light),
@@ -106,10 +107,24 @@ fun AppearanceScope.AppearanceLayout(
       }
       //      }
 
-      SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), ChatModel.controller.appPrefs.oneHandUI) {
-        val c = CurrentColors.value.colors
-        platform.androidSetStatusAndNavBarColors(c.isLight, c.background, false, false)
-      }
+      val toolbarPositions = mapOf(
+        true to generalGetString(MR.strings.chat_toolbar_position_bottom),
+        false to generalGetString(MR.strings.chat_toolbar_position_top)
+      )
+
+      val toolbarPositionValues by remember(appPrefs.chatToolbarOnTop.state.value) { mutableStateOf(toolbarPositions.map { it.key to it.value }) }
+      ExposedDropDownSettingRow(
+        generalGetString(MR.strings.chat_toolbar_position),
+        toolbarPositionValues,
+        appPrefs.chatToolbarOnTop.state,
+        icon = null,
+        enabled = remember { mutableStateOf(true) },
+        onSelected = {
+          appPrefs.chatToolbarOnTop.set(it)
+          val c = CurrentColors.value.colors
+          platform.androidSetStatusAndNavBarColors(c.isLight, c.background, false, false)
+        }
+      )
     }
 
     SectionDividerSpaced(maxTopPadding = true)

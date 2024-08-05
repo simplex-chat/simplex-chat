@@ -28,7 +28,7 @@ class MainActivity: FragmentActivity() {
     mainActivity = WeakReference(this)
     platform.androidSetNightModeIfSupported()
     val c = CurrentColors.value.colors
-    platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+    platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.chatToolbarOnTop.get(), appPrefs.chatToolbarOnTop.get())
     applyAppLocale(ChatModel.controller.appPrefs.appLanguage)
     super.onCreate(savedInstanceState)
     // testJson()
