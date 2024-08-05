@@ -396,10 +396,9 @@ struct ContactsListSearchBar: View {
             link,
             showAlert: { alert = $0 },
             showActionSheet: { sheet = $0 },
-            dismiss: false,
+            dismiss: true,
             incognito: nil,
-            filterKnownContact: { searchChatFilteredBySimplexLink = $0.id },
-            filterKnownGroup: { searchChatFilteredBySimplexLink = $0.id }
+            filterKnownContact: { searchChatFilteredBySimplexLink = $0.id }
         )
     }
 }
