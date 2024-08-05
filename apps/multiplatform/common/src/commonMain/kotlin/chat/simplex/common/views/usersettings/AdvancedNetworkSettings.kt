@@ -2,39 +2,54 @@ package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
 import SectionCustomFooter
+import SectionDividerSpaced
 import SectionItemView
+import SectionItemWithValue
 import SectionView
+import SectionViewSelectableCards
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalDensity
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.model.ChatModel
+import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.chatModel
 import chat.simplex.res.MR
 import java.text.DecimalFormat
 
 @Composable
-fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
-  val currentCfg = remember { mutableStateOf(chatModel.controller.getNetCfg()) }
+fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> Unit, close: () -> Unit) {
+  val currentRemoteHost by remember { chatModel.currentRemoteHost }
+  val developerTools = remember { appPrefs.developerTools.get() }
+
+  // Will be actual once the screen is re-opened
+  val savedCfg = remember { mutableStateOf(controller.getNetCfg()) }
+  // Will have an edited state when the screen is re-opened
+  val currentCfg = remember { stateGetOrPut("currentCfg") { controller.getNetCfg() } }
   val currentCfgVal = currentCfg.value // used only on initialization
+
+  val onionHosts = remember { mutableStateOf(currentCfgVal.onionHosts) }
+  val sessionMode = remember { mutableStateOf(currentCfgVal.sessionMode) }
+  val smpProxyMode = remember { mutableStateOf(currentCfgVal.smpProxyMode) }
+  val smpProxyFallback = remember { mutableStateOf(currentCfgVal.smpProxyFallback) }
+
+  val networkUseSocksProxy: MutableState<Boolean> = remember { mutableStateOf(currentCfgVal.useSocksProxy) }
   val networkTCPConnectTimeout = remember { mutableStateOf(currentCfgVal.tcpConnectTimeout) }
   val networkTCPTimeout = remember { mutableStateOf(currentCfgVal.tcpTimeout) }
   val networkTCPTimeoutPerKb = remember { mutableStateOf(currentCfgVal.tcpTimeoutPerKb) }
-  var networkRcvConcurrency = remember { mutableStateOf(currentCfgVal.rcvConcurrency) }
+  val networkRcvConcurrency = remember { mutableStateOf(currentCfgVal.rcvConcurrency) }
   val networkSMPPingInterval = remember { mutableStateOf(currentCfgVal.smpPingInterval) }
   val networkSMPPingCount = remember { mutableStateOf(currentCfgVal.smpPingCount) }
   val networkEnableKeepAlive = remember { mutableStateOf(currentCfgVal.enableKeepAlive) }
@@ -63,11 +78,11 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     }
     return NetCfg(
       socksProxy = currentCfg.value.socksProxy,
-      hostMode = currentCfg.value.hostMode,
-      requiredHostMode = currentCfg.value.requiredHostMode,
-      sessionMode = currentCfg.value.sessionMode,
-      smpProxyMode = currentCfg.value.smpProxyMode,
-      smpProxyFallback = currentCfg.value.smpProxyFallback,
+//      hostMode = currentCfg.value.hostMode,
+//      requiredHostMode = currentCfg.value.requiredHostMode,
+      sessionMode = sessionMode.value,
+      smpProxyMode = smpProxyMode.value,
+      smpProxyFallback = smpProxyFallback.value,
       tcpConnectTimeout = networkTCPConnectTimeout.value,
       tcpTimeout = networkTCPTimeout.value,
       tcpTimeoutPerKb = networkTCPTimeoutPerKb.value,
@@ -75,10 +90,14 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       tcpKeepAlive = tcpKeepAlive,
       smpPingInterval = networkSMPPingInterval.value,
       smpPingCount = networkSMPPingCount.value
-    )
+    ).withOnionHosts(onionHosts.value)
   }
 
   fun updateView(cfg: NetCfg) {
+    onionHosts.value = cfg.onionHosts
+    sessionMode.value = cfg.sessionMode
+    smpProxyMode.value = cfg.smpProxyMode
+    smpProxyFallback.value = cfg.smpProxyFallback
     networkTCPConnectTimeout.value = cfg.tcpConnectTimeout
     networkTCPTimeout.value = cfg.tcpTimeout
     networkTCPTimeoutPerKb.value = cfg.tcpTimeoutPerKb
@@ -101,6 +120,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
     withBGApi {
       chatModel.controller.apiSetNetworkConfig(cfg)
       currentCfg.value = cfg
+      savedCfg.value = cfg
       chatModel.controller.setNetCfg(cfg)
     }
   }
@@ -108,29 +128,67 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   fun reset() {
     val newCfg = if (currentCfg.value.useSocksProxy) NetCfg.proxyDefaults else NetCfg.defaults
     updateView(newCfg)
-    saveCfg(newCfg)
+    currentCfg.value = newCfg
   }
 
-  AdvancedNetworkSettingsLayout(
-    networkTCPConnectTimeout,
-    networkTCPTimeout,
-    networkTCPTimeoutPerKb,
-    networkRcvConcurrency,
-    networkSMPPingInterval,
-    networkSMPPingCount,
-    networkEnableKeepAlive,
-    networkTCPKeepIdle,
-    networkTCPKeepIntvl,
-    networkTCPKeepCnt,
-    resetDisabled = if (currentCfg.value.useSocksProxy) currentCfg.value == NetCfg.proxyDefaults else currentCfg.value == NetCfg.defaults,
-    reset = { showUpdateNetworkSettingsDialog(::reset) },
-    footerDisabled = buildCfg() == currentCfg.value,
-    revert = { updateView(currentCfg.value) },
-    save = { showUpdateNetworkSettingsDialog { saveCfg(buildCfg()) } }
-  )
+  val saveDisabled = buildCfg() == savedCfg.value
+
+  ModalView(
+    close = {
+      if (saveDisabled) {
+        close()
+      } else {
+        showUnsavedChangesAlert({
+          saveCfg(buildCfg())
+          close()
+        }, close)
+      }
+    },
+  ) {
+    AdvancedNetworkSettingsLayout(
+      currentRemoteHost = currentRemoteHost,
+      networkUseSocksProxy = networkUseSocksProxy,
+      developerTools = developerTools,
+      onionHosts = onionHosts,
+      useOnion = { onionHosts.value = it; currentCfg.value = currentCfg.value.withOnionHosts(it) },
+      sessionMode = sessionMode,
+      smpProxyMode = smpProxyMode,
+      smpProxyFallback = smpProxyFallback,
+      networkTCPConnectTimeout,
+      networkTCPTimeout,
+      networkTCPTimeoutPerKb,
+      networkRcvConcurrency,
+      networkSMPPingInterval,
+      networkSMPPingCount,
+      networkEnableKeepAlive,
+      networkTCPKeepIdle,
+      networkTCPKeepIntvl,
+      networkTCPKeepCnt,
+      updateSessionMode = { sessionMode.value = it; currentCfg.value = currentCfg.value.copy(sessionMode = it) },
+      updateSMPProxyMode = { smpProxyMode.value = it; currentCfg.value = currentCfg.value.copy(smpProxyMode = it) },
+      updateSMPProxyFallback = { smpProxyFallback.value = it; currentCfg.value = currentCfg.value.copy(smpProxyFallback = it) },
+      showModal = showModal,
+      resetDisabled = if (currentCfg.value.useSocksProxy) buildCfg() == NetCfg.proxyDefaults else buildCfg() == NetCfg.defaults,
+      reset = ::reset,
+      saveDisabled = saveDisabled,
+      save = {
+        showUpdateNetworkSettingsDialog {
+          saveCfg(buildCfg())
+        }
+      }
+    )
+  }
 }
 
 @Composable fun AdvancedNetworkSettingsLayout(
+  currentRemoteHost: RemoteHostInfo?,
+  networkUseSocksProxy: State<Boolean>,
+  developerTools: Boolean,
+  onionHosts: MutableState<OnionHosts>,
+  useOnion: (OnionHosts) -> Unit,
+  sessionMode: MutableState<TransportSessionMode>,
+  smpProxyMode: MutableState<SMPProxyMode>,
+  smpProxyFallback: MutableState<SMPProxyFallback>,
   networkTCPConnectTimeout: MutableState<Long>,
   networkTCPTimeout: MutableState<Long>,
   networkTCPTimeoutPerKb: MutableState<Long>,
@@ -141,10 +199,13 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   networkTCPKeepIdle: MutableState<Int>,
   networkTCPKeepIntvl: MutableState<Int>,
   networkTCPKeepCnt: MutableState<Int>,
+  updateSessionMode: (TransportSessionMode) -> Unit,
+  updateSMPProxyMode: (SMPProxyMode) -> Unit,
+  updateSMPProxyFallback: (SMPProxyFallback) -> Unit,
+  showModal: (ModalData.() -> Unit) -> Unit,
   resetDisabled: Boolean,
   reset: () -> Unit,
-  footerDisabled: Boolean,
-  revert: () -> Unit,
+  saveDisabled: Boolean,
   save: () -> Unit
 ) {
   val secondsLabel = stringResource(MR.strings.network_option_seconds_label)
@@ -154,10 +215,41 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       .fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.network_settings_title))
-    SectionView {
-      SectionItemView {
-        ResetToDefaultsButton(reset, disabled = resetDisabled)
+
+    if (currentRemoteHost == null) {
+      SectionView(generalGetString(MR.strings.settings_section_title_private_message_routing)) {
+        SMPProxyModePicker(smpProxyMode, showModal, updateSMPProxyMode)
+        SMPProxyFallbackPicker(smpProxyFallback, showModal, updateSMPProxyFallback, enabled = remember { derivedStateOf { smpProxyMode.value != SMPProxyMode.Never } })
+        SettingsPreferenceItem(painterResource(MR.images.ic_arrow_forward), stringResource(MR.strings.private_routing_show_message_status), chatModel.controller.appPrefs.showSentViaProxy)
       }
+      SectionCustomFooter {
+        Text(stringResource(MR.strings.private_routing_explanation))
+      }
+      Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 32.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
+    }
+
+    if (currentRemoteHost == null && networkUseSocksProxy.value) {
+      SectionView(stringResource(MR.strings.network_socks_proxy).uppercase()) {
+        UseOnionHosts(onionHosts, networkUseSocksProxy, showModal, useOnion)
+        SectionCustomFooter {
+          Column {
+            Text(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
+            Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+            Text(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
+          }
+        }
+      }
+      Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 32.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
+    }
+
+    if (currentRemoteHost == null && developerTools) {
+      SectionView(stringResource(MR.strings.network_session_mode_transport_isolation).uppercase()) {
+        SessionModePicker(sessionMode, showModal, updateSessionMode)
+      }
+      SectionDividerSpaced()
+    }
+
+    SectionView(stringResource(MR.strings.network_option_tcp_connection).uppercase()) {
       SectionItemView {
         TimeoutSettingRow(
           stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeout,
@@ -220,23 +312,94 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
         }
       }
     }
-    SectionCustomFooter {
-      SettingsSectionFooter(revert, save, footerDisabled)
+
+    SectionDividerSpaced(maxBottomPadding = false)
+
+    SectionView {
+      SectionItemView(reset, disabled = resetDisabled) {
+        Text(stringResource(MR.strings.network_options_reset_to_defaults), color = if (resetDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+      }
+      SectionItemView(save, disabled = saveDisabled) {
+        Text(stringResource(MR.strings.network_options_save_and_reconnect), color = if (saveDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+      }
+      // LALAL
+      // FooterButton(painterResource(MR.images.ic_replay), stringResource(MR.strings.network_options_revert), revert, footerDisabled)
     }
     SectionBottomSpacer()
   }
 }
 
 @Composable
-fun ResetToDefaultsButton(reset: () -> Unit, disabled: Boolean) {
-  val modifier = if (disabled) Modifier else Modifier.clickable { reset() }
-  Row(
-    modifier.fillMaxSize(),
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    val color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-    Text(stringResource(MR.strings.network_options_reset_to_defaults), color = color)
+private fun SMPProxyModePicker(
+  smpProxyMode: MutableState<SMPProxyMode>,
+  showModal: (@Composable ModalData.() -> Unit) -> Unit,
+  updateSMPProxyMode: (SMPProxyMode) -> Unit,
+) {
+  val density = LocalDensity.current
+  val values = remember {
+    SMPProxyMode.values().map {
+      when (it) {
+        SMPProxyMode.Always -> ValueTitleDesc(SMPProxyMode.Always, generalGetString(MR.strings.network_smp_proxy_mode_always), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_mode_always_description), density))
+        SMPProxyMode.Unknown -> ValueTitleDesc(SMPProxyMode.Unknown, generalGetString(MR.strings.network_smp_proxy_mode_unknown), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_mode_unknown_description), density))
+        SMPProxyMode.Unprotected -> ValueTitleDesc(SMPProxyMode.Unprotected, generalGetString(MR.strings.network_smp_proxy_mode_unprotected), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_mode_unprotected_description), density))
+        SMPProxyMode.Never -> ValueTitleDesc(SMPProxyMode.Never, generalGetString(MR.strings.network_smp_proxy_mode_never), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_mode_never_description), density))
+      }
+    }
   }
+
+  SectionItemWithValue(
+    generalGetString(MR.strings.network_smp_proxy_mode_private_routing),
+    smpProxyMode,
+    values,
+    icon = painterResource(MR.images.ic_settings_ethernet),
+    onSelected = {
+      showModal {
+        ColumnWithScrollBar(
+          Modifier.fillMaxWidth(),
+        ) {
+          AppBarTitle(stringResource(MR.strings.network_smp_proxy_mode_private_routing))
+          SectionViewSelectableCards(null, smpProxyMode, values, updateSMPProxyMode)
+        }
+      }
+    }
+  )
+}
+
+@Composable
+private fun SMPProxyFallbackPicker(
+  smpProxyFallback: MutableState<SMPProxyFallback>,
+  showModal: (@Composable ModalData.() -> Unit) -> Unit,
+  updateSMPProxyFallback: (SMPProxyFallback) -> Unit,
+  enabled: State<Boolean>,
+) {
+  val density = LocalDensity.current
+  val values = remember {
+    SMPProxyFallback.values().map {
+      when (it) {
+        SMPProxyFallback.Allow -> ValueTitleDesc(SMPProxyFallback.Allow, generalGetString(MR.strings.network_smp_proxy_fallback_allow), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_fallback_allow_description), density))
+        SMPProxyFallback.AllowProtected -> ValueTitleDesc(SMPProxyFallback.AllowProtected, generalGetString(MR.strings.network_smp_proxy_fallback_allow_protected), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_fallback_allow_protected_description), density))
+        SMPProxyFallback.Prohibit -> ValueTitleDesc(SMPProxyFallback.Prohibit, generalGetString(MR.strings.network_smp_proxy_fallback_prohibit), escapedHtmlToAnnotatedString(generalGetString(MR.strings.network_smp_proxy_fallback_prohibit_description), density))
+      }
+    }
+  }
+
+  SectionItemWithValue(
+    generalGetString(MR.strings.network_smp_proxy_fallback_allow_downgrade),
+    smpProxyFallback,
+    values,
+    icon = painterResource(MR.images.ic_arrows_left_right),
+    enabled = enabled,
+    onSelected = {
+      showModal {
+        ColumnWithScrollBar(
+          Modifier.fillMaxWidth(),
+        ) {
+          AppBarTitle(stringResource(MR.strings.network_smp_proxy_fallback_allow_downgrade))
+          SectionViewSelectableCards(null, smpProxyFallback, values, updateSMPProxyFallback)
+        }
+      }
+    }
+  )
 }
 
 @Composable
@@ -377,43 +540,6 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
   }
 }
 
-@Composable
-fun SettingsSectionFooter(revert: () -> Unit, save: () -> Unit, disabled: Boolean) {
-  Row(
-    Modifier.fillMaxWidth(),
-    horizontalArrangement = Arrangement.SpaceBetween,
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    FooterButton(painterResource(MR.images.ic_replay), stringResource(MR.strings.network_options_revert), revert, disabled)
-    FooterButton(painterResource(MR.images.ic_check), stringResource(MR.strings.network_options_save), save, disabled)
-  }
-}
-
-@Composable
-fun FooterButton(icon: Painter, title: String, action: () -> Unit, disabled: Boolean) {
-  Surface(
-    shape = RoundedCornerShape(20.dp),
-    color = Color.Black.copy(alpha = 0f),
-    contentColor = LocalContentColor.current
-  ) {
-    val modifier = if (disabled) Modifier else Modifier.clickable { action() }
-    Row(
-      modifier.padding(8.dp),
-      horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-      Icon(
-        icon,
-        title,
-        tint = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-      )
-      Text(
-        title,
-        color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-      )
-    }
-  }
-}
-
 fun showUpdateNetworkSettingsDialog(action: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.update_network_settings_question),
@@ -423,11 +549,27 @@ fun showUpdateNetworkSettingsDialog(action: () -> Unit) {
   )
 }
 
+private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
+  AlertManager.shared.showAlertDialogStacked(
+    title = generalGetString(MR.strings.update_network_settings_question),
+    confirmText = generalGetString(MR.strings.network_options_save_and_reconnect),
+    dismissText = generalGetString(MR.strings.exit_without_saving),
+    onConfirm = save,
+    onDismiss = revert,
+  )
+}
+
 @Preview
 @Composable
 fun PreviewAdvancedNetworkSettingsLayout() {
   SimpleXTheme {
     AdvancedNetworkSettingsLayout(
+      currentRemoteHost = null,
+      networkUseSocksProxy = remember { mutableStateOf(false) },
+      developerTools = false,
+      sessionMode = remember { mutableStateOf(TransportSessionMode.User) },
+      smpProxyMode = remember { mutableStateOf(SMPProxyMode.Never) },
+      smpProxyFallback = remember { mutableStateOf(SMPProxyFallback.Allow) },
       networkTCPConnectTimeout = remember { mutableStateOf(10_000000) },
       networkTCPTimeout = remember { mutableStateOf(10_000000) },
       networkTCPTimeoutPerKb = remember { mutableStateOf(10_000) },
@@ -438,10 +580,15 @@ fun PreviewAdvancedNetworkSettingsLayout() {
       networkTCPKeepIdle = remember { mutableStateOf(10) },
       networkTCPKeepIntvl = remember { mutableStateOf(10) },
       networkTCPKeepCnt = remember { mutableStateOf(10) },
+      onionHosts = remember { mutableStateOf(OnionHosts.PREFER) },
+      useOnion = {},
+      updateSessionMode = {},
+      updateSMPProxyMode = {},
+      updateSMPProxyFallback = {},
+      showModal = {},
       resetDisabled = false,
       reset = {},
-      footerDisabled = false,
-      revert = {},
+      saveDisabled = false,
       save = {}
     )
   }
