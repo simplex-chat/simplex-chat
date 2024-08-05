@@ -97,7 +97,6 @@ chatDirectTests = do
     it "create second user" testCreateSecondUser
     it "multiple users subscribe and receive messages after restart" testUsersSubscribeAfterRestart
     it "both users have contact link" testMultipleUserAddresses
-    it "create user with default servers" testCreateUserDefaultServers
     it "create user with same servers" testCreateUserSameServers
     it "delete user" testDeleteUser
     it "users have different chat item TTL configuration, chat items expire" testUsersDifferentCIExpirationTTL
@@ -1488,39 +1487,6 @@ testMultipleUserAddresses =
       showActiveUser alice "alice (Alice)"
       alice @@@ [("@bob", "hey alice")]
 
-testCreateUserDefaultServers :: HasCallStack => FilePath -> IO ()
-testCreateUserDefaultServers =
-  testChat2 aliceProfile bobProfile $
-    \alice _ -> do
-      alice #$> ("/smp smp://2345-w==@smp2.example.im smp://3456-w==@smp3.example.im:5224", id, "ok")
-      alice #$> ("/xftp xftp://2345-w==@xftp2.example.im xftp://3456-w==@xftp3.example.im:5224", id, "ok")
-      checkCustomServers alice
-
-      alice ##> "/create user alisa"
-      showActiveUser alice "alisa"
-
-      alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
-      alice #$> ("/xftp", id, "xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002")
-
-      -- with same_servers=off
-      alice ##> "/user alice"
-      showActiveUser alice "alice (Alice)"
-      checkCustomServers alice
-
-      alice ##> "/create user same_servers=off alisa2"
-      showActiveUser alice "alisa2"
-
-      alice #$> ("/smp", id, "smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001")
-      alice #$> ("/xftp", id, "xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002")
-  where
-    checkCustomServers alice = do
-      alice ##> "/smp"
-      alice <## "smp://2345-w==@smp2.example.im"
-      alice <## "smp://3456-w==@smp3.example.im:5224"
-      alice ##> "/xftp"
-      alice <## "xftp://2345-w==@xftp2.example.im"
-      alice <## "xftp://3456-w==@xftp3.example.im:5224"
-
 testCreateUserSameServers :: HasCallStack => FilePath -> IO ()
 testCreateUserSameServers =
   testChat2 aliceProfile bobProfile $
@@ -1529,7 +1495,7 @@ testCreateUserSameServers =
       alice #$> ("/xftp xftp://2345-w==@xftp2.example.im xftp://3456-w==@xftp3.example.im:5224", id, "ok")
       checkCustomServers alice
 
-      alice ##> "/create user same_servers=on alisa"
+      alice ##> "/create user alisa"
       showActiveUser alice "alisa"
 
       checkCustomServers alice
