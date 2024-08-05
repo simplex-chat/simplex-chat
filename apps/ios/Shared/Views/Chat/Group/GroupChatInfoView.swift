@@ -74,8 +74,10 @@ struct GroupChatInfoView: View {
                 infoActionButtons()
                     .padding(.horizontal)
                     .frame(maxWidth: .infinity)
+                    .frame(height: infoViewActionButtonHeight)
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
 
                 Section {
                     if groupInfo.canEdit {
