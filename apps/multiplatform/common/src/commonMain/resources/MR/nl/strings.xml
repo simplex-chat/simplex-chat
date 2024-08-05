@@ -2025,4 +2025,9 @@
     <string name="selected_chat_items_selected_n">Geselecteerd %d</string>
     <string name="cant_call_member_send_message_alert_text">Stuur een bericht om oproepen mogelijk te maken.</string>
     <string name="info_view_search_button">zoekopdracht</string>
+    <string name="you_can_still_send_messages_to_contact">Je kunt nog steeds berichten sturen naar %1$s vanuit de Verwijderde chats.</string>
+    <string name="toolbar_settings">Instellingen</string>
+    <string name="moderate_messages_will_be_deleted_warning">De berichten worden voor alle leden verwijderd.</string>
+    <string name="moderate_messages_will_be_marked_warning">De berichten worden voor alle leden als gemodereerd gemarkeerd.</string>
+    <string name="info_view_video_button">video</string>
 </resources>
