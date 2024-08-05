@@ -134,7 +134,8 @@ struct NewChatSheet: View {
                 header: "Your Contacts",
                 searchFocussed: $searchFocussed,
                 searchShowingSimplexLink: $searchShowingSimplexLink,
-                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
+                showDeletedChatIcon: true
             )
         }
     }
@@ -184,6 +185,7 @@ struct ContactsList: View {
     @FocusState.Binding var searchFocussed: Bool
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: String?
+    var showDeletedChatIcon: Bool
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     
     var body: some View {
@@ -207,7 +209,7 @@ struct ContactsList: View {
                 }
             ) {
                 ForEach(filteredContactChats, id: \.viewId) { chat in
-                    ContactListNavLink(chat: chat)
+                    ContactListNavLink(chat: chat, showDeletedChatIcon: showDeletedChatIcon)
                         .disabled(chatModel.chatRunning != true)
                 }
             }
@@ -441,7 +443,8 @@ struct DeletedChats: View {
                 searchText: $searchText,
                 searchFocussed: $searchFocussed,
                 searchShowingSimplexLink: $searchShowingSimplexLink,
-                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
+                showDeletedChatIcon: false
             )
         }
         .navigationTitle("Deleted chats")

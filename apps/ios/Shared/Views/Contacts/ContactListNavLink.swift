@@ -12,6 +12,7 @@ import SimpleXChat
 struct ContactListNavLink: View {
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
+    var showDeletedChatIcon: Bool
     @State private var alert: SomeAlert? = nil
     @State private var actionSheet: SomeActionSheet? = nil
     @State private var sheet: SomeSheet<AnyView>? = nil
@@ -118,7 +119,13 @@ struct ContactListNavLink: View {
             Spacer()
 
             HStack {
-                if chat.chatInfo.chatSettings?.favorite ?? false {
+                if showDeletedChatIcon && contact.chatDeleted {
+                    Image(systemName: "archivebox")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 18, height: 18)
+                        .foregroundColor(.secondary.opacity(0.65))
+                } else if chat.chatInfo.chatSettings?.favorite ?? false {
                     Image(systemName: "star.fill")
                         .resizable()
                         .scaledToFill()
