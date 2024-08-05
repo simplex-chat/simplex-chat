@@ -1254,8 +1254,9 @@
         <target>Chat database verwijderd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat database exported" xml:space="preserve">
+      <trans-unit id="Chat database exported" xml:space="preserve" approved="no">
         <source>Chat database exported</source>
+        <target state="translated">Chat database geëxporteerd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat database imported" xml:space="preserve">
@@ -3982,8 +3983,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Max 30 seconden, direct ontvangen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Media &amp; file servers" xml:space="preserve">
+      <trans-unit id="Media &amp; file servers" xml:space="preserve" approved="no">
         <source>Media &amp; file servers</source>
+        <target state="translated">Media- en bestandsservers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Medium" xml:space="preserve">
@@ -4076,8 +4078,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Bericht ontvangst</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message servers" xml:space="preserve">
+      <trans-unit id="Message servers" xml:space="preserve" approved="no">
         <source>Message servers</source>
+        <target state="translated">Berichtservers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message source remains private." xml:space="preserve">
@@ -5424,8 +5427,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Opslaan en groep leden melden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save and reconnect" xml:space="preserve">
+      <trans-unit id="Save and reconnect" xml:space="preserve" approved="no">
         <source>Save and reconnect</source>
+        <target state="translated">Opslaan en opnieuw verbinden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save and update group profile" xml:space="preserve">
@@ -6118,8 +6122,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Soft</target>
         <note>blur media</note>
       </trans-unit>
-      <trans-unit id="Some file(s) were not exported:" xml:space="preserve">
+      <trans-unit id="Some file(s) were not exported:" xml:space="preserve" approved="no">
         <source>Some file(s) were not exported:</source>
+        <target state="translated">Sommige bestanden zijn niet geëxporteerd:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve">
@@ -6127,8 +6132,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Er zijn enkele niet-fatale fouten opgetreden tijdens het importeren - u kunt de Chat console raadplegen voor meer details.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Some non-fatal errors occurred during import:" xml:space="preserve">
+      <trans-unit id="Some non-fatal errors occurred during import:" xml:space="preserve" approved="no">
         <source>Some non-fatal errors occurred during import:</source>
+        <target state="translated">Er zijn enkele niet-fatale fouten opgetreden tijdens het importeren:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Somebody" xml:space="preserve">
@@ -6266,8 +6272,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Systeem authenticatie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="TCP connection" xml:space="preserve">
+      <trans-unit id="TCP connection" xml:space="preserve" approved="no">
         <source>TCP connection</source>
+        <target state="translated">TCP verbinding</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP connection timeout" xml:space="preserve">
@@ -6821,8 +6828,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Netwerk instellingen bijwerken?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update settings?" xml:space="preserve">
+      <trans-unit id="Update settings?" xml:space="preserve" approved="no">
         <source>Update settings?</source>
+        <target state="translated">Instellingen actualiseren?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
@@ -7414,12 +7422,14 @@ Verbindingsverzoek herhalen?</target>
         <target>Je bent lid geworden van deze groep. Verbinding maken met uitnodigend groepslid.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You may migrate the exported database." xml:space="preserve">
+      <trans-unit id="You may migrate the exported database." xml:space="preserve" approved="no">
         <source>You may migrate the exported database.</source>
+        <target state="translated">U kunt de geëxporteerde database migreren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You may save the exported archive." xml:space="preserve">
+      <trans-unit id="You may save the exported archive." xml:space="preserve" approved="no">
         <source>You may save the exported archive.</source>
+        <target state="translated">U kunt het geëxporteerde archief opslaan.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve">
@@ -8750,76 +8760,94 @@ laatst ontvangen bericht: %2$@</target>
         <target>Ongeldige migratie bevestiging</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Keychain error" xml:space="preserve">
+      <trans-unit id="Keychain error" xml:space="preserve" approved="no">
         <source>Keychain error</source>
+        <target state="translated">Keychain fout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Large file!" xml:space="preserve">
+      <trans-unit id="Large file!" xml:space="preserve" approved="no">
         <source>Large file!</source>
+        <target state="translated">Groot bestand!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No active profile" xml:space="preserve">
+      <trans-unit id="No active profile" xml:space="preserve" approved="no">
         <source>No active profile</source>
+        <target state="translated">Geen actief profiel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Ok" xml:space="preserve">
+      <trans-unit id="Ok" xml:space="preserve" approved="no">
         <source>Ok</source>
+        <target state="translated">Ok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open the app to downgrade the database." xml:space="preserve">
+      <trans-unit id="Open the app to downgrade the database." xml:space="preserve" approved="no">
         <source>Open the app to downgrade the database.</source>
+        <target state="translated">Open de app om de database te downgraden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open the app to upgrade the database." xml:space="preserve">
+      <trans-unit id="Open the app to upgrade the database." xml:space="preserve" approved="no">
         <source>Open the app to upgrade the database.</source>
+        <target state="translated">Open de app om de database te upgraden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Passphrase" xml:space="preserve">
+      <trans-unit id="Passphrase" xml:space="preserve" approved="no">
         <source>Passphrase</source>
+        <target state="translated">Wachtwoord</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please create a profile in the SimpleX app" xml:space="preserve">
+      <trans-unit id="Please create a profile in the SimpleX app" xml:space="preserve" approved="no">
         <source>Please create a profile in the SimpleX app</source>
+        <target state="translated">Maak een profiel aan in de SimpleX app</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve">
+      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve" approved="no">
         <source>Selected chat preferences prohibit this message.</source>
+        <target state="translated">Geselecteerde chat voorkeuren verbieden dit bericht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending a message takes longer than expected." xml:space="preserve">
+      <trans-unit id="Sending a message takes longer than expected." xml:space="preserve" approved="no">
         <source>Sending a message takes longer than expected.</source>
+        <target state="translated">Het verzenden van een bericht duurt langer dan verwacht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending message…" xml:space="preserve">
+      <trans-unit id="Sending message…" xml:space="preserve" approved="no">
         <source>Sending message…</source>
+        <target state="translated">Bericht versturen…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share" xml:space="preserve">
+      <trans-unit id="Share" xml:space="preserve" approved="no">
         <source>Share</source>
+        <target state="translated">Deel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Slow network?" xml:space="preserve">
+      <trans-unit id="Slow network?" xml:space="preserve" approved="no">
         <source>Slow network?</source>
+        <target state="translated">Traag netwerk?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unknown database error: %@" xml:space="preserve">
+      <trans-unit id="Unknown database error: %@" xml:space="preserve" approved="no">
         <source>Unknown database error: %@</source>
+        <target state="translated">Onbekende database fout: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unsupported format" xml:space="preserve">
+      <trans-unit id="Unsupported format" xml:space="preserve" approved="no">
         <source>Unsupported format</source>
+        <target state="translated">Niet ondersteund formaat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Wait" xml:space="preserve">
+      <trans-unit id="Wait" xml:space="preserve" approved="no">
         <source>Wait</source>
+        <target state="translated">wachten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Wrong database passphrase" xml:space="preserve">
+      <trans-unit id="Wrong database passphrase" xml:space="preserve" approved="no">
         <source>Wrong database passphrase</source>
+        <target state="translated">Verkeerde database wachtwoord</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can allow sharing in Privacy &amp; Security / SimpleX Lock settings." xml:space="preserve">
+      <trans-unit id="You can allow sharing in Privacy &amp; Security / SimpleX Lock settings." xml:space="preserve" approved="no">
         <source>You can allow sharing in Privacy &amp; Security / SimpleX Lock settings.</source>
+        <target state="translated">U kunt delen toestaan in de instellingen voor Privacy en beveiliging / SimpleX Lock.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
