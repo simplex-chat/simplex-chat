@@ -98,6 +98,7 @@ struct NewChatView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .modifier(ThemedBackground(grouped: true))
             .background(
                 // Rectangle is needed for swipe gesture to work on mostly empty views (creatingLinkProgressView and retryButton)
                 Rectangle()
