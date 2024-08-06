@@ -266,13 +266,19 @@ struct SubsStatusIndicator: View {
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
 
     var body: some View {
-        Button {
-            showServersSummary = true
-        } label: {
-            HStack(spacing: 4) {
-                SubscriptionStatusIndicatorView(subs: subs, hasSess: hasSess)
-                if showSubscriptionPercentage {
-                    SubscriptionStatusPercentageView(subs: subs, hasSess: hasSess)
+        ZStack {
+            if subs.total == 0 && !hasSess {
+                EmptyView()
+            } else {
+                Button {
+                    showServersSummary = true
+                } label: {
+                    HStack(spacing: 4) {
+                        SubscriptionStatusIndicatorView(subs: subs, hasSess: hasSess)
+                        if showSubscriptionPercentage {
+                            SubscriptionStatusPercentageView(subs: subs, hasSess: hasSess)
+                        }
+                    }
                 }
             }
         }
@@ -282,8 +288,9 @@ struct SubsStatusIndicator: View {
         .onDisappear {
             stopTimer()
         }
-        .sheet(isPresented: $showServersSummary) {
+        .appSheet(isPresented: $showServersSummary) {
             ServersSummaryView()
+                .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
         }
     }
 
