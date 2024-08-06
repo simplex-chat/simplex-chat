@@ -106,7 +106,7 @@ fun AppearanceScope.AppearanceLayout(
         }
       }
       //      }
-      SettingsPreferenceItem(icon = null, stringResource(MR.strings.reachable_chat_toolbar), ChatModel.controller.appPrefs.reachableChatToolbar) {
+      SettingsPreferenceItem(icon = null, stringResource(MR.strings.reachable_chat_toolbar), ChatModel.controller.appPrefs.oneHandUI) {
         val c = CurrentColors.value.colors
         platform.androidSetStatusAndNavBarColors(c.isLight, c.background, false, false)
       }

@@ -20,11 +20,11 @@ actual fun ChatListNavLinkLayout(
   disabled: Boolean,
   selectedChat: State<Boolean>,
   nextChatSelected: State<Boolean>,
-  reachableChatToolbar: State<Boolean>
+  oneHandUI: State<Boolean>
 ) {
   var modifier = Modifier.fillMaxWidth()
 
-  if (reachableChatToolbar != null && reachableChatToolbar.value) {
+  if (oneHandUI != null && oneHandUI.value) {
     modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
   }
 
