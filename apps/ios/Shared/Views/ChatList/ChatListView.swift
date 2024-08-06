@@ -302,19 +302,13 @@ struct SubsStatusIndicator: View {
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
 
     var body: some View {
-        ZStack {
-            if subs.total == 0 && !hasSess {
-                EmptyView()
-            } else {
-                Button {
-                    showServersSummary = true
-                } label: {
-                    HStack(spacing: 4) {
-                        SubscriptionStatusIndicatorView(subs: subs, hasSess: hasSess)
-                        if showSubscriptionPercentage {
-                            SubscriptionStatusPercentageView(subs: subs, hasSess: hasSess)
-                        }
-                    }
+        Button {
+            showServersSummary = true
+        } label: {
+            HStack(spacing: 4) {
+                SubscriptionStatusIndicatorView(subs: subs, hasSess: hasSess)
+                if showSubscriptionPercentage {
+                    SubscriptionStatusPercentageView(subs: subs, hasSess: hasSess)
                 }
             }
         }
