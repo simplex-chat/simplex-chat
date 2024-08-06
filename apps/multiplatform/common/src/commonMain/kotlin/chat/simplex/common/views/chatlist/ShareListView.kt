@@ -32,9 +32,23 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
     contentColor = LocalContentColor.current,
     drawerContentColor = LocalContentColor.current,
     scaffoldState = scaffoldState,
-    topBar = { if (!oneHandUI.state.value) Column { ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() } } },
-    bottomBar = { if (oneHandUI.state.value) Column { ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() } } },
-    ) {
+    topBar = {
+      if (!oneHandUI.state.value) {
+        Column {
+          ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() }
+          Divider()
+        }
+      }
+    },
+    bottomBar = {
+      if (oneHandUI.state.value) {
+        Column {
+          Divider()
+          ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() }
+        }
+      }
+    }
+  ) {
     val sharedContent = chatModel.sharedContent.value
     var isMediaOrFileAttachment = false
     var isVoice = false
@@ -189,7 +203,6 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
-  Divider()
 }
 
 @Composable
