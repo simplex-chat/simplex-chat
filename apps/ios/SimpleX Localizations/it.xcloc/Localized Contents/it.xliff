@@ -1254,8 +1254,9 @@
         <target>Database della chat eliminato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat database exported" xml:space="preserve">
+      <trans-unit id="Chat database exported" xml:space="preserve" approved="no">
         <source>Chat database exported</source>
+        <target state="translated">Database della chat esportato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat database imported" xml:space="preserve">
@@ -3982,8 +3983,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Max 30 secondi, ricevuto istantaneamente.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Media &amp; file servers" xml:space="preserve">
+      <trans-unit id="Media &amp; file servers" xml:space="preserve" approved="no">
         <source>Media &amp; file servers</source>
+        <target state="translated">Server di multimediali e file</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Medium" xml:space="preserve">
@@ -4076,8 +4078,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Ricezione messaggi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message servers" xml:space="preserve">
+      <trans-unit id="Message servers" xml:space="preserve" approved="no">
         <source>Message servers</source>
+        <target state="translated">Server dei messaggi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message source remains private." xml:space="preserve">
@@ -5424,8 +5427,9 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Salva e avvisa i membri del gruppo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save and reconnect" xml:space="preserve">
+      <trans-unit id="Save and reconnect" xml:space="preserve" approved="no">
         <source>Save and reconnect</source>
+        <target state="translated">Salva e riconnetti</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save and update group profile" xml:space="preserve">
@@ -6118,8 +6122,9 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Leggera</target>
         <note>blur media</note>
       </trans-unit>
-      <trans-unit id="Some file(s) were not exported:" xml:space="preserve">
+      <trans-unit id="Some file(s) were not exported:" xml:space="preserve" approved="no">
         <source>Some file(s) were not exported:</source>
+        <target state="translated">Alcuni file non sono stati esportati:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve">
@@ -6127,8 +6132,9 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Si sono verificati alcuni errori non gravi durante l'importazione: vedi la console della chat per i dettagli.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Some non-fatal errors occurred during import:" xml:space="preserve">
+      <trans-unit id="Some non-fatal errors occurred during import:" xml:space="preserve" approved="no">
         <source>Some non-fatal errors occurred during import:</source>
+        <target state="translated">Si sono verificati alcuni errori non fatali durante l'importazione:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Somebody" xml:space="preserve">
@@ -6266,8 +6272,9 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Autenticazione di sistema</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="TCP connection" xml:space="preserve">
+      <trans-unit id="TCP connection" xml:space="preserve" approved="no">
         <source>TCP connection</source>
+        <target state="translated">Connessione TCP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="TCP connection timeout" xml:space="preserve">
@@ -6821,8 +6828,9 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <target>Aggiornare le impostazioni di rete?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update settings?" xml:space="preserve">
+      <trans-unit id="Update settings?" xml:space="preserve" approved="no">
         <source>Update settings?</source>
+        <target state="translated">Aggiornare le impostazioni?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updating settings will re-connect the client to all servers." xml:space="preserve">
@@ -7414,12 +7422,14 @@ Ripetere la richiesta di connessione?</target>
         <target>Sei entrato/a in questo gruppo. Connessione al membro del gruppo invitante.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You may migrate the exported database." xml:space="preserve">
+      <trans-unit id="You may migrate the exported database." xml:space="preserve" approved="no">
         <source>You may migrate the exported database.</source>
+        <target state="translated">Puoi migrare il database esportato.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You may save the exported archive." xml:space="preserve">
+      <trans-unit id="You may save the exported archive." xml:space="preserve" approved="no">
         <source>You may save the exported archive.</source>
+        <target state="translated">Puoi salvare l'archivio esportato.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve">
@@ -8795,12 +8805,14 @@ ultimo msg ricevuto: %2$@</target>
         <target>Le preferenze della chat selezionata vietano questo messaggio.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending a message takes longer than expected." xml:space="preserve">
+      <trans-unit id="Sending a message takes longer than expected." xml:space="preserve" approved="no">
         <source>Sending a message takes longer than expected.</source>
+        <target state="translated">L'invio di un messaggio richiede più tempo del previsto.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sending message…" xml:space="preserve">
+      <trans-unit id="Sending message…" xml:space="preserve" approved="no">
         <source>Sending message…</source>
+        <target state="translated">Invio messaggio…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share" xml:space="preserve">
@@ -8808,8 +8820,9 @@ ultimo msg ricevuto: %2$@</target>
         <target>Condividi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Slow network?" xml:space="preserve">
+      <trans-unit id="Slow network?" xml:space="preserve" approved="no">
         <source>Slow network?</source>
+        <target state="translated">Rete lenta?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unknown database error: %@" xml:space="preserve">
@@ -8822,8 +8835,9 @@ ultimo msg ricevuto: %2$@</target>
         <target>Formato non supportato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Wait" xml:space="preserve">
+      <trans-unit id="Wait" xml:space="preserve" approved="no">
         <source>Wait</source>
+        <target state="translated">Attendi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
