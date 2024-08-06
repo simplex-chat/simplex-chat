@@ -44,6 +44,7 @@ struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
+    @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = false
     @ObservedObject var chat: Chat
     @State private var showContactRequestDialog = false
     @State private var showJoinGroupDialog = false
@@ -56,9 +57,7 @@ struct ChatListNavLink: View {
     @State private var inProgress = false
     @State private var progressByTimeout = false
 
-    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = false
-
-    var dynamicRowHeight: CGFloat { dynamicSizes[userFont]?.rowHeight ?? 80 }
+    var dynamicRowHeight: CGFloat { dynamicSize(userFont).rowHeight }
 
     var body: some View {
         Group {
