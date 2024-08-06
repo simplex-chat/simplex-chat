@@ -428,6 +428,42 @@ private let versionDescriptions: [VersionDescription] = [
             )
         ]
     ),
+    VersionDescription(
+        version: "v6.0",
+        post: URL(string: "https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html"),
+        features: [
+            FeatureDescription(
+                icon: "arrow.forward",
+                title: "Private message routing 🚀",
+                description: "Protects your IP address and connections."
+            ),
+            FeatureDescription(
+                icon: "person.text.rectangle",
+                title: "Your contacts your way",
+                description: "- Search contacts when starting chat.\n- Archive contacts to chat later."
+            ),
+            FeatureDescription(
+                icon: "platter.filled.bottom.iphone",
+                title: "Reachable chat toolbar 👋",
+                description: "Use the app with one hand."
+            ),
+            FeatureDescription(
+                icon: "link",
+                title: "Connect to your friends faster",
+                description: "Even when they are offline."
+            ),
+            FeatureDescription(
+                icon: "trash",
+                title: "Delete many messages",
+                description: "Select up to 20 messages at once."
+            ),
+            FeatureDescription(
+                icon: "network",
+                title: "Connection and servers status",
+                description: "Stay in control of your network."
+            )
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
