@@ -49,7 +49,9 @@ struct ChatListNavLink: View {
     @State private var showJoinGroupDialog = false
     @State private var showContactConnectionInfo = false
     @State private var showInvalidJSON = false
-    @State private var showDeleteContactActionSheet = false
+    @State private var alert: SomeAlert? = nil
+    @State private var actionSheet: SomeActionSheet? = nil
+    @State private var sheet: SomeSheet<AnyView>? = nil
     @State private var showConnectContactViaAddressDialog = false
     @State private var inProgress = false
     @State private var progressByTimeout = false
@@ -83,15 +85,22 @@ struct ChatListNavLink: View {
             }
         }
     }
-
+    
     @ViewBuilder private func contactNavLink(_ contact: Contact) -> some View {
         Group {
-            if contact.activeConn == nil && contact.profile.contactLink != nil {
+            if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
                 ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
                     .frame(height: dynamicRowHeight)
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button {
-                            showDeleteContactActionSheet = true
+                            deleteContactDialog(
+                                chat,
+                                contact,
+                                dismissToChatList: false,
+                                showAlert: { alert = $0 },
+                                showActionSheet: { actionSheet = $0 },
+                                showSheetContent: { sheet = $0 }
+                            )
                         } label: {
                             Label("Delete", systemImage: "trash")
                         }
@@ -118,11 +127,14 @@ struct ChatListNavLink: View {
                         clearChatButton()
                     }
                     Button {
-                        if contact.sndReady || !contact.active {
-                            showDeleteContactActionSheet = true
-                        } else {
-                            AlertManager.shared.showAlert(deletePendingContactAlert(chat, contact))
-                        }
+                        deleteContactDialog(
+                            chat,
+                            contact,
+                            dismissToChatList: false,
+                            showAlert: { alert = $0 },
+                            showActionSheet: { actionSheet = $0 },
+                            showSheetContent: { sheet = $0 }
+                        )
                     } label: {
                         Label("Delete", systemImage: "trash")
                     }
@@ -131,24 +143,14 @@ struct ChatListNavLink: View {
                 .frame(height: dynamicRowHeight)
             }
         }
-        .actionSheet(isPresented: $showDeleteContactActionSheet) {
-            if contact.sndReady && contact.active {
-                return ActionSheet(
-                    title: Text("Delete contact?\nThis cannot be undone!"),
-                    buttons: [
-                        .destructive(Text("Delete and notify contact")) { Task { await deleteChat(chat, notify: true) } },
-                        .destructive(Text("Delete")) { Task { await deleteChat(chat, notify: false) } },
-                        .cancel()
-                    ]
-                )
+        .alert(item: $alert) { $0.alert }
+        .actionSheet(item: $actionSheet) { $0.actionSheet }
+        .sheet(item: $sheet) {
+            if #available(iOS 16.0, *) {
+                $0.content
+                    .presentationDetents([.fraction(0.4)])
             } else {
-                return ActionSheet(
-                    title: Text("Delete contact?\nThis cannot be undone!"),
-                    buttons: [
-                        .destructive(Text("Delete")) { Task { await deleteChat(chat) } },
-                        .cancel()
-                    ]
-                )
+                $0.content
             }
         }
     }
@@ -430,57 +432,11 @@ struct ChatListNavLink: View {
         )
     }
 
-    private func rejectContactRequestAlert(_ contactRequest: UserContactRequest) -> Alert {
-        Alert(
-            title: Text("Reject contact request"),
-            message: Text("The sender will NOT be notified"),
-            primaryButton: .destructive(Text("Reject")) {
-                Task { await rejectContactRequest(contactRequest) }
-            },
-            secondaryButton: .cancel()
-        )
-    }
-
-    private func pendingContactAlert(_ chat: Chat, _ contact: Contact) -> Alert {
-        Alert(
-            title: Text("Contact is not connected yet!"),
-            message: Text("Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)."),
-            primaryButton: .cancel(),
-            secondaryButton: .destructive(Text("Delete Contact")) {
-                removePendingContact(chat, contact)
-            }
-        )
-    }
-
     private func groupInvitationAcceptedAlert() -> Alert {
         Alert(
             title: Text("Joining group"),
             message: Text("You joined this group. Connecting to inviting group member.")
         )
-    }
-
-    private func deletePendingContactAlert(_ chat: Chat, _ contact: Contact) -> Alert {
-        Alert(
-            title: Text("Delete pending connection"),
-            message: Text("Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)."),
-            primaryButton: .destructive(Text("Delete")) {
-                removePendingContact(chat, contact)
-            },
-            secondaryButton: .cancel()
-        )
-    }
-
-    private func removePendingContact(_ chat: Chat, _ contact: Contact) {
-        Task {
-            do {
-                try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
-                DispatchQueue.main.async {
-                    chatModel.removeChat(contact.id)
-                }
-            } catch let error {
-                logger.error("ChatListNavLink.removePendingContact apiDeleteChat error: \(responseError(error))")
-            }
-        }
     }
 
     private func invalidJSONPreview(_ json: String) -> some View {
@@ -497,14 +453,26 @@ struct ChatListNavLink: View {
 
     private func connectContactViaAddress_(_ contact: Contact, _ incognito: Bool) {
         Task {
-            let ok = await connectContactViaAddress(contact.contactId, incognito)
+            let ok = await connectContactViaAddress(contact.contactId, incognito, showAlert: { AlertManager.shared.showAlert($0) })
             if ok {
                 await MainActor.run {
                     chatModel.chatId = contact.id
                 }
+                AlertManager.shared.showAlert(connReqSentAlert(.contact))
             }
         }
     }
+}
+
+func rejectContactRequestAlert(_ contactRequest: UserContactRequest) -> Alert {
+    Alert(
+        title: Text("Reject contact request"),
+        message: Text("The sender will NOT be notified"),
+        primaryButton: .destructive(Text("Reject")) {
+            Task { await rejectContactRequest(contactRequest) }
+        },
+        secondaryButton: .cancel()
+    )
 }
 
 func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection, showError: @escaping (ErrorAlert) -> Void, success: @escaping () -> Void = {}) -> Alert {
@@ -533,15 +501,14 @@ func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection,
     )
 }
 
-func connectContactViaAddress(_ contactId: Int64, _ incognito: Bool) async -> Bool {
+func connectContactViaAddress(_ contactId: Int64, _ incognito: Bool, showAlert: (Alert) -> Void) async -> Bool {
     let (contact, alert) = await apiConnectContactViaAddress(incognito: incognito, contactId: contactId)
     if let alert = alert {
-        AlertManager.shared.showAlert(alert)
+        showAlert(alert)
         return false
     } else if let contact = contact {
         await MainActor.run {
             ChatModel.shared.updateContact(contact)
-            AlertManager.shared.showAlert(connReqSentAlert(.contact))
         }
         return true
     }

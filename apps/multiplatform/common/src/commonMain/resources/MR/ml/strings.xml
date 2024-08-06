@@ -320,7 +320,6 @@
     <string name="switch_receiving_address">സ്വീകരിക്കുന്ന വിലാസം മാറുക</string>
     <string name="conn_stats_section_title_servers">സെർവറുകൾ</string>
     <string name="network_options_save">സംരക്ഷിക്കുക</string>
-    <string name="network_options_revert">പഴയപടിയാക്കുക</string>
     <string name="theme_system">സംവിധാനം</string>
     <string name="language_system">സംവിധാനം</string>
     <string name="color_title">ശീർഷകം</string>

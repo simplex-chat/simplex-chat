@@ -641,7 +641,7 @@
 /* rcv group event chat item */
 "blocked %@" = "блокиран %@";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "блокиран от админ";
 
 /* No comment provided by engineer. */
@@ -985,9 +985,6 @@
 "Contact is connected" = "Контактът е свързан";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "Контактът все още не е свързан!";
-
-/* No comment provided by engineer. */
 "Contact name" = "Име на контакт";
 
 /* No comment provided by engineer. */
@@ -1201,12 +1198,6 @@
 "Delete contact" = "Изтрий контакт";
 
 /* No comment provided by engineer. */
-"Delete Contact" = "Изтрий контакт";
-
-/* No comment provided by engineer. */
-"Delete contact?\nThis cannot be undone!" = "Изтрий контакт?\nТова не може да бъде отменено!";
-
-/* No comment provided by engineer. */
 "Delete database" = "Изтрий базата данни";
 
 /* No comment provided by engineer. */
@@ -1259,9 +1250,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Изтрий старата база данни?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Изтрий предстоящата връзка";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Изтрий предстоящата връзка?";
@@ -1652,9 +1640,6 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "Грешка при изтриване на връзката";
-
-/* No comment provided by engineer. */
-"Error deleting contact" = "Грешка при изтриване на контакт";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Грешка при изтриване на базата данни";
@@ -2719,10 +2704,10 @@
 "One-time invitation link" = "Линк за еднократна покана";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "За свързване ще са необходими Onion хостове. Изисква се активиране на VPN.";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "За свързване ще са **необходими** Onion хостове.\nИзисква се активиране на VPN.";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "Ще се използват Onion хостове, когато са налични. Изисква се активиране на VPN.";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "Ще се използват Onion хостове, когато са налични.\nИзисква се активиране на VPN.";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "Няма се използват Onion хостове.";
@@ -3205,9 +3190,6 @@
 "Reveal" = "Покажи";
 
 /* No comment provided by engineer. */
-"Revert" = "Отмени промените";
-
-/* No comment provided by engineer. */
 "Revoke" = "Отзови";
 
 /* cancel file action */
@@ -3336,7 +3318,7 @@
 /* chat item text */
 "security code changed" = "кодът за сигурност е променен";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "Избери";
 
 /* No comment provided by engineer. */
@@ -3362,9 +3344,6 @@
 
 /* No comment provided by engineer. */
 "send direct message" = "изпрати лично съобщение";
-
-/* No comment provided by engineer. */
-"Send direct message" = "Изпрати лично съобщение";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Изпрати лично съобщение за свързване";
@@ -3589,9 +3568,6 @@
 "Small groups (max 20)" = "Малки групи (максимум 20)";
 
 /* No comment provided by engineer. */
-"SMP servers" = "SMP сървъри";
-
-/* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Някои не-фатални грешки са възникнали по време на импортиране - може да видите конзолата за повече подробности.";
 
 /* notification title */
@@ -3689,9 +3665,6 @@
 
 /* No comment provided by engineer. */
 "Tap to scan" = "Докосни за сканиране";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "Докосни за започване на нов чат";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "Времето на изчакване за установяване на TCP връзка";
@@ -3967,16 +3940,10 @@
 "Update" = "Актуализация";
 
 /* No comment provided by engineer. */
-"Update .onion hosts setting?" = "Актуализиране на настройката за .onion хостове?";
-
-/* No comment provided by engineer. */
 "Update database passphrase" = "Актуализирай паролата на базата данни";
 
 /* No comment provided by engineer. */
 "Update network settings?" = "Актуализиране на мрежовите настройки?";
-
-/* No comment provided by engineer. */
-"Update transport isolation mode?" = "Актуализиране на режима на изолация на транспорта?";
 
 /* rcv group event chat item */
 "updated group profile" = "актуализиран профил на групата";
@@ -3986,9 +3953,6 @@
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Актуализирането на настройките ще свърже отново клиента към всички сървъри.";
-
-/* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "Актуализирането на тази настройка ще свърже повторно клиента към всички сървъри.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Актуализирай и отвори чата";
@@ -4037,9 +4001,6 @@
 
 /* No comment provided by engineer. */
 "User profile" = "Потребителски профил";
-
-/* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = "Използването на .onion хостове изисква съвместим VPN доставчик.";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "Използват се сървърите на SimpleX Chat.";
@@ -4209,9 +4170,6 @@
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Грешна парола!";
 
-/* No comment provided by engineer. */
-"XFTP servers" = "XFTP сървъри";
-
 /* pref value */
 "yes" = "да";
 
@@ -4348,9 +4306,6 @@
 "You have already requested connection!\nRepeat connection request?" = "Вече сте направили заявката за връзка!\nИзпрати отново заявката за свързване?";
 
 /* No comment provided by engineer. */
-"You have no chats" = "Нямате чатове";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Трябва да въвеждате парола при всяко стартиране на приложението - тя не се съхранява на устройството.";
 
 /* No comment provided by engineer. */
@@ -4439,9 +4394,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Вашите чат профили";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Вашият контакт трябва да бъде онлайн, за да осъществите връзката.\nМожете да откажете тази връзка и да премахнете контакта (и да опитате по -късно с нов линк).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Вашият контакт изпрати файл, който е по-голям от поддържания в момента максимален размер (%@).";

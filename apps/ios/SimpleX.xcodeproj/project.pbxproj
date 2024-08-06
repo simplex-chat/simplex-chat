@@ -199,6 +199,7 @@
 		8CC4ED902BD7B8530078AEE8 /* CallAudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */; };
 		8CC956EE2BC0041000412A11 /* NetworkObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC956ED2BC0041000412A11 /* NetworkObserver.swift */; };
 		8CE848A32C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE848A22C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift */; };
+		B76E6C312C5C41D900EC11AA /* ContactListNavLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = B76E6C302C5C41D900EC11AA /* ContactListNavLink.swift */; };
 		CE1EB0E42C459A660099D896 /* ShareAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE1EB0E32C459A660099D896 /* ShareAPI.swift */; };
 		CE2AD9CE2C452A4D00E844E3 /* ChatUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE2AD9CD2C452A4D00E844E3 /* ChatUtils.swift */; };
 		CE3097FB2C4C0C9F00180898 /* ErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE3097FA2C4C0C9F00180898 /* ErrorAlert.swift */; };
@@ -541,6 +542,7 @@
 		8CC4ED8F2BD7B8530078AEE8 /* CallAudioDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallAudioDeviceManager.swift; sourceTree = "<group>"; };
 		8CC956ED2BC0041000412A11 /* NetworkObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkObserver.swift; sourceTree = "<group>"; };
 		8CE848A22C5A0FA000D5C7C8 /* SelectableChatItemToolbars.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectableChatItemToolbars.swift; sourceTree = "<group>"; };
+		B76E6C302C5C41D900EC11AA /* ContactListNavLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactListNavLink.swift; sourceTree = "<group>"; };
 		CE1EB0E32C459A660099D896 /* ShareAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareAPI.swift; sourceTree = "<group>"; };
 		CE2AD9CD2C452A4D00E844E3 /* ChatUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatUtils.swift; sourceTree = "<group>"; };
 		CE3097FA2C4C0C9F00180898 /* ErrorAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorAlert.swift; sourceTree = "<group>"; };
@@ -695,6 +697,7 @@
 		5C2E260D27A30E2400F70299 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				B76E6C2F2C5C41C300EC11AA /* Contacts */,
 				5CB0BA8C282711BC00B3292C /* Onboarding */,
 				3C714775281C080100CB4D4B /* Call */,
 				5C971E1F27AEBF7000C8A3CE /* Helpers */,
@@ -1086,6 +1089,14 @@
 			path = Theme;
 			sourceTree = "<group>";
 		};
+		B76E6C2F2C5C41C300EC11AA /* Contacts */ = {
+			isa = PBXGroup;
+			children = (
+				B76E6C302C5C41D900EC11AA /* ContactListNavLink.swift */,
+			);
+			path = Contacts;
+			sourceTree = "<group>";
+		};
 		CEE723A82C3BD3D70009AE93 /* SimpleX SE */ = {
 			isa = PBXGroup;
 			children = (
@@ -1392,6 +1403,7 @@
 				64466DC829FC2B3B00E3D48D /* CreateSimpleXAddress.swift in Sources */,
 				3CDBCF4827FF621E00354CDD /* CILinkView.swift in Sources */,
 				5C7505A827B6D34800BE3227 /* ChatInfoToolbar.swift in Sources */,
+				B76E6C312C5C41D900EC11AA /* ContactListNavLink.swift in Sources */,
 				5C10D88A28F187F300E58BF0 /* FullScreenMediaView.swift in Sources */,
 				D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */,
 				CE984D4B2C36C5D500E3AEFF /* ChatItemClipShape.swift in Sources */,

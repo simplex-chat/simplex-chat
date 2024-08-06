@@ -396,7 +396,6 @@
     <string name="network_enable_socks_info">Zugriff auf die Server über SOCKS-Proxy auf Port %d? Der Proxy muss gestartet werden, bevor diese Option aktiviert wird.</string>
     <string name="network_disable_socks">Direkte Internetverbindung verwenden?</string>
     <string name="network_disable_socks_info">Wenn Sie dies bestätigen, können die Messaging-Server Ihre IP-Adresse sowie Ihren Provider sehen und mit welchen Servern Sie sich verbinden.</string>
-    <string name="update_onion_hosts_settings_question">Einstellung für .onion-Hosts aktualisieren?</string>
     <string name="network_use_onion_hosts">Verwende .onion-Hosts</string>
     <string name="network_use_onion_hosts_prefer">Wenn verfügbar</string>
     <string name="network_use_onion_hosts_no">Nein</string>
@@ -405,9 +404,6 @@
     <string name="network_use_onion_hosts_no_desc">Onion-Hosts werden nicht verwendet.</string>
     <string name="network_use_onion_hosts_required_desc">Für die Verbindung werden Onion-Hosts benötigt.
 \nBitte beachten Sie: Ohne .onion-Adresse können Sie keine Verbindung mit den Servern herstellen.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Wenn Onion-Hosts verfügbar sind, werden sie verwendet.</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Onion-Hosts werden nicht verwendet.</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Für die Verbindung werden Onion-Hosts benötigt.</string>
     <string name="appearance_settings">Erscheinungsbild</string>
     <!-- Address Items - UserAddressView.kt -->
     <string name="create_address">Adresse erstellen</string>
@@ -826,7 +822,6 @@
     <string name="network_option_protocol_timeout">Protokollzeitüberschreitung</string>
     <string name="network_option_ping_interval">PING-Intervall</string>
     <string name="network_option_enable_tcp_keep_alive">TCP-Keep-Alive aktivieren</string>
-    <string name="network_options_revert">Zurücksetzen</string>
     <string name="network_options_save">Speichern</string>
     <string name="update_network_settings_question">Netzwerkeinstellungen aktualisieren?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Die Aktualisierung der Einstellungen wird den Client wieder mit allen Servern verbinden.</string>
@@ -1732,7 +1727,7 @@
     <string name="migrate_from_device_all_data_will_be_uploaded">Alle Ihre Kontakte, Unterhaltungen und Dateien werden sicher verschlüsselt und in Daten-Paketen auf die konfigurierten XTFP-Relais hochgeladen.</string>
     <string name="migrate_from_device_archive_and_upload">Archivieren und Hochladen</string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Warnung</b>: Das Archiv wird gelöscht.]]></string>
-    <string name="migrate_from_device_check_connection_and_try_again">Überprüfen Sie Ihre Internet-Verbindung und probieren Sie es nochmals</string>
+    <string name="migrate_from_device_check_connection_and_try_again">Überprüfen Sie Ihre Internetverbindung und probieren Sie es nochmals</string>
     <string name="migrate_from_device_archiving_database">Datenbank wird archiviert</string>
     <string name="migrate_from_device_using_on_two_device_breaks_encryption"><![CDATA[<b>Bitte beachten Sie</b>: Aus Sicherheitsgründen wird die Nachrichtenentschlüsselung Ihrer Verbindungen abgebrochen, wenn Sie die gleiche Datenbank auf zwei Geräten nutzen.]]></string>
     <string name="migrate_from_device_cancel_migration">Migration abbrechen</string>
@@ -1850,15 +1845,15 @@
     <string name="settings_section_title_profile_images">Profil-Bilder</string>
     <string name="v5_7_shape_profile_images">Form der Profil-Bilder</string>
     <string name="v5_7_shape_profile_images_descr">Quadratisch, kreisförmig oder irgendetwas dazwischen.</string>
-    <string name="snd_error_relay">Fehler auf dem Zielserver: %1$s</string>
+    <string name="snd_error_relay">Fehler auf dem Ziel-Server: %1$s</string>
     <string name="ci_status_other_error">Fehler: %1$s</string>
     <string name="message_delivery_warning_title">Warnung bei der Nachrichtenzustellung</string>
     <string name="snd_error_auth">Falscher Schlüssel oder unbekannte Verbindung - höchstwahrscheinlich ist diese Verbindung gelöscht.</string>
     <string name="srv_error_version">Die Server-Version ist nicht mit den Netzwerkeinstellungen kompatibel.</string>
     <string name="snd_error_quota">Kapazität überschritten - der Empfänger hat die zuvor gesendeten Nachrichten nicht empfangen.</string>
-    <string name="snd_error_proxy_relay">Weiterleitungsserver: %1$s
-\nFehler auf dem Zielserver: %2$s</string>
-    <string name="snd_error_proxy">Weiterleitungsserver: %1$s
+    <string name="snd_error_proxy_relay">Weiterleitungs-Server: %1$s
+\nFehler auf dem Ziel-Server: %2$s</string>
+    <string name="snd_error_proxy">Weiterleitungs-Server: %1$s
 \nFehler: %2$s</string>
     <string name="snd_error_expired">Netzwerk-Fehler - die Nachricht ist nach vielen Sende-Versuchen abgelaufen.</string>
     <string name="srv_error_host">Die Server-Adresse ist nicht mit den Netzwerkeinstellungen kompatibel.</string>
@@ -1877,10 +1872,10 @@
     <string name="private_routing_show_message_status">Nachrichtenstatus anzeigen</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">Herabstufung erlauben</string>
     <string name="network_smp_proxy_mode_always_description">Sie nutzen immer privates Routing.</string>
-    <string name="network_smp_proxy_fallback_prohibit_description">Nachrichten werden nicht direkt versendet, selbst wenn Ihr oder der Zielserver kein privates Routing unterstützt.</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">Nachrichten werden nicht direkt versendet, selbst wenn Ihr oder der Ziel-Server kein privates Routing unterstützt.</string>
     <string name="settings_section_title_private_message_routing">PRIVATES NACHRICHTEN-ROUTING</string>
-    <string name="network_smp_proxy_fallback_allow_protected_description">Nachrichten werden direkt versendet, wenn die IP-Adresse geschützt ist, und Ihr oder der Zielserver kein privates Routing unterstützt.</string>
-    <string name="network_smp_proxy_fallback_allow_description">Nachrichten werden direkt versendet, wenn Ihr oder der Zielserver kein privates Routing unterstützt.</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">Nachrichten werden direkt versendet, wenn die IP-Adresse geschützt ist, und Ihr oder der Ziel-Server kein privates Routing unterstützt.</string>
+    <string name="network_smp_proxy_fallback_allow_description">Nachrichten werden direkt versendet, wenn Ihr oder der Ziel-Server kein privates Routing unterstützt.</string>
     <string name="private_routing_explanation">Zum Schutz Ihrer IP-Adresse, wird für die Nachrichten-Auslieferung privates Routing über Ihre konfigurierten SMP-Server genutzt.</string>
     <string name="network_smp_proxy_mode_unprotected_description">Sie nutzen privates Routing mit unbekannten Servern, wenn Ihre IP-Adresse nicht geschützt ist.</string>
     <string name="protect_ip_address">IP-Adresse schützen</string>
@@ -2057,7 +2052,7 @@
     <string name="servers_info_uploaded">Hochgeladen</string>
     <string name="servers_info_proxied_servers_section_footer">Sie sind nicht mit diesen Servern verbunden. Zur Auslieferung von Nachrichten an diese Server wird privates Routing genutzt.</string>
     <string name="servers_info_subscriptions_total">Summe aller Abonnements</string>
-    <string name="servers_info_reset_stats_alert_message">Die Serverstatistiken werden zurückgesetzt. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="servers_info_reset_stats_alert_message">Die Server-Statistiken werden zurückgesetzt. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="size">Größe</string>
     <string name="servers_info_starting_from">Beginnend mit %s.</string>
     <string name="subscribed">Abonniert</string>
@@ -2071,15 +2066,55 @@
     <string name="app_check_for_updates_update_available">Aktualisierung verfügbar: %s</string>
     <string name="app_check_for_updates_notice_desc">Aktivieren Sie die periodische Überprüfung auf stabile oder Beta-Versionen der App, um über neue Versionen benachrichtigt zu werden.</string>
     <string name="app_check_for_updates_canceled">Herunterladen der Aktualisierung abgebrochen</string>
-    <string name="smp_proxy_error_broker_host">Die Weiterleitungsserver-Adresse ist nicht kompatibel mit den Netzwerkeinstellungen: %1$s.</string>
-    <string name="proxy_destination_error_failed_to_connect">Die Verbindung des Weiterleitungsservers %1$s zum Zielserver %2$s schlug fehl. Bitte versuchen Sie es später erneut.</string>
-    <string name="proxy_destination_error_broker_version">Die Zielserver-Version von %1$s ist nicht mit dem Weiterleitungsserver %2$s kompatibel.</string>
-    <string name="smp_proxy_error_broker_version">Die Weiterleitungsserver-Version ist nicht kompatibel mit den Netzwerkeinstellungen: %1$s.</string>
-    <string name="proxy_destination_error_broker_host">Die Zielserver-Adresse von %1$s ist nicht mit den Einstellungen des Weiterleitungsservers %2$s kompatibel.</string>
-    <string name="smp_proxy_error_connecting">Fehler beim Verbinden zum Weiterleitungsserver %1$s. Bitte versuchen Sie es später erneut.</string>
-    <string name="privacy_media_blur_radius">Medium unscharf machen</string>
+    <string name="smp_proxy_error_broker_host">Die Weiterleitungs-Server-Adresse ist nicht kompatibel mit den Netzwerkeinstellungen: %1$s.</string>
+    <string name="proxy_destination_error_failed_to_connect">Die Verbindung des Weiterleitungs-Servers %1$s zum Ziel-Server %2$s schlug fehl. Bitte versuchen Sie es später erneut.</string>
+    <string name="proxy_destination_error_broker_version">Die Ziel-Server-Version von %1$s ist nicht mit dem Weiterleitungs-Server %2$s kompatibel.</string>
+    <string name="smp_proxy_error_broker_version">Die Weiterleitungs-Server-Version ist nicht kompatibel mit den Netzwerkeinstellungen: %1$s.</string>
+    <string name="proxy_destination_error_broker_host">Die Ziel-Server-Adresse von %1$s ist nicht mit den Einstellungen des Weiterleitungs-Servers %2$s kompatibel.</string>
+    <string name="smp_proxy_error_connecting">Fehler beim Verbinden zum Weiterleitungs-Server %1$s. Bitte versuchen Sie es später erneut.</string>
+    <string name="privacy_media_blur_radius">Medium verpixeln</string>
     <string name="privacy_media_blur_radius_soft">Weich</string>
-    <string name="privacy_media_blur_radius_strong">Hart</string>
-    <string name="privacy_media_blur_radius_medium">Medium</string>
+    <string name="privacy_media_blur_radius_strong">Stark</string>
+    <string name="privacy_media_blur_radius_medium">Mittel</string>
     <string name="privacy_media_blur_radius_off">Aus</string>
+    <string name="info_view_connect_button">Verbinden</string>
+    <string name="info_view_message_button">Nachricht</string>
+    <string name="info_view_open_button">Öffnen</string>
+    <string name="conversation_deleted">Unterhaltung gelöscht!</string>
+    <string name="only_delete_conversation">Nur die Unterhaltung löschen</string>
+    <string name="info_view_search_button">Suchen</string>
+    <string name="info_view_video_button">Video</string>
+    <string name="you_can_still_view_conversation_with_contact">Sie können die Unterhaltung mit %1$s weiterhin in der Chatliste einsehen.</string>
+    <string name="paste_link">Link einfügen</string>
+    <string name="deleted_chats">Gelöschte Chats</string>
+    <string name="no_filtered_contacts">Keine gefilterten Kontakte</string>
+    <string name="contact_list_header_title">Ihre Kontakte</string>
+    <string name="one_hand_ui">Einhand-Bedienoberfläche</string>
+    <string name="calls_prohibited_ask_to_enable_calls_alert_text">Bitten Sie Ihren Kontakt darum, Anrufe zu aktivieren.</string>
+    <string name="you_need_to_allow_calls">Sie müssen Ihrem Kontakt Anrufe zu Ihnen erlauben, bevor Sie ihn selbst anrufen können.</string>
+    <string name="allow_calls_question">Anrufe erlauben?</string>
+    <string name="info_view_call_button">Anrufen</string>
+    <string name="cant_call_contact_alert_title">Kontakt kann nicht angerufen werden</string>
+    <string name="calls_prohibited_alert_title">Anrufe nicht zugelassen!</string>
+    <string name="confirm_delete_contact_question">Löschen des Kontakts bestätigen?</string>
+    <string name="contact_deleted">Kontakt gelöscht!</string>
+    <string name="cant_call_member_alert_title">Gruppenmitglied kann nicht angerufen werden</string>
+    <string name="cant_send_message_to_member_alert_title">Nachricht an Gruppenmitglied nicht möglich</string>
+    <string name="cant_call_contact_connecting_wait_alert_text">Verbinde mit Kontakt, bitte warten oder später erneut überprüfen!</string>
+    <string name="cant_call_contact_deleted_alert_text">Kontakt wurde gelöscht.</string>
+    <string name="delete_contact_cannot_undo_warning">Kontakt wird gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
+    <string name="delete_without_notification">Ohne Benachrichtigung löschen</string>
+    <string name="action_button_add_members">Einladen</string>
+    <string name="keep_conversation">Unterhaltung behalten</string>
+    <string name="cant_call_member_send_message_alert_text">Nachricht senden, um Anrufe zu aktivieren.</string>
+    <string name="you_can_still_send_messages_to_contact">Sie können weiterhin Nachrichten an %1$s von den gelöschten Chats aus senden.</string>
+    <string name="toolbar_settings">Einstellungen</string>
+    <string name="moderate_messages_will_be_deleted_warning">Die Nachrichten werden für alle Mitglieder gelöscht.</string>
+    <string name="moderate_messages_will_be_marked_warning">Die Nachrichten werden für alle Mitglieder als moderiert markiert.</string>
+    <string name="delete_members_messages__question">%d Nachrichten der Mitglieder löschen?</string>
+    <string name="compose_message_placeholder">Nachricht</string>
+    <string name="delete_messages_mark_deleted_warning">Nachrichten werden zur Löschung markiert. Der/Die Empfänger hat/haben die Möglichkeit, diese Nachrichten aufzudecken.</string>
+    <string name="selected_chat_items_selected_n">%d ausgewählt</string>
+    <string name="selected_chat_items_nothing_selected">Es wurde Nichts ausgewählt</string>
+    <string name="select_verb">Auswählen</string>
 </resources>

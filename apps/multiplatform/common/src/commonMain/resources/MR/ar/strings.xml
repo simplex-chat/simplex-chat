@@ -334,7 +334,7 @@
     <string name="error_changing_role">خطأ في تغيير الدور</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d فشل فك تعمية الرسائل.</string>
     <string name="dark_theme">سمة داكنة</string>
-    <string name="deleted_description">حُذِفت</string>
+    <string name="deleted_description">حُذفت</string>
     <string name="database_passphrase_and_export">عبارة مرور قاعدة البيانات وتصديرها</string>
     <string name="delete_files_and_media_all">حذف جميع الملفات</string>
     <string name="delete_after">حذف بعد</string>
@@ -353,8 +353,8 @@
     <string name="button_delete_group">حذف المجموعة</string>
     <string name="delete_group_question">حذف المجموعة؟</string>
     <string name="delete_link">حذف الرابط</string>
-    <string name="share_text_deleted_at">حُذِفت في: %s</string>
-    <string name="rcv_group_event_group_deleted">المجموعة حُذِفت</string>
+    <string name="share_text_deleted_at">حُذفت في: %s</string>
+    <string name="rcv_group_event_group_deleted">المجموعة حُذفت</string>
     <string name="delete_image">حذف الصورة</string>
     <string name="v5_1_custom_themes">تخصيص السمات</string>
     <string name="delete_database">حذف قاعدة البيانات</string>
@@ -398,7 +398,7 @@
     <string name="current_passphrase">عبارة المرور الحالية…</string>
     <string name="database_encryption_will_be_updated">سيتم تحديث عبارة مرور تعمية قاعدة البيانات وتخزينها في Keystore.</string>
     <string name="info_row_database_id">معرّف قاعدة البيانات</string>
-    <string name="info_row_deleted_at">حُذِفت في</string>
+    <string name="info_row_deleted_at">حُذفت في</string>
     <string name="ttl_d">%d يوم</string>
     <string name="ttl_days">%d أيام</string>
     <string name="custom_time_picker_custom">مخصص</string>
@@ -773,7 +773,6 @@
     <string name="old_database_archive">أرشيف قاعدة البيانات القديمة</string>
     <string name="feature_off">غير مفعّل</string>
     <string name="one_time_link">رابط دعوة لمرة واحدة</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">سوف تكون مضيفات البصل مطلوبة للاتصال.</string>
     <string name="group_member_role_observer">المراقب</string>
     <string name="item_info_no_text">لا يوجد نص</string>
     <string name="new_member_role">دور عضو جديد</string>
@@ -789,8 +788,6 @@
     <string name="network_use_onion_hosts_no">لا</string>
     <string name="network_use_onion_hosts_required_desc">سوف تكون مضيفات البصل مطلوبة للاتصال.
 \nيُرجى ملاحظة: أنك لن تتمكن من الاتصال بالخوادم بدون عنوان onion.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">سيتم استخدام مضيفات البصل عند توفرها.</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">لن يتم استخدام مضيفات البصل.</string>
     <string name="self_destruct_new_display_name">اسم عرض جديد:</string>
     <string name="new_passphrase">عبارة مرور جديدة…</string>
     <string name="icon_descr_server_status_pending">قيد الانتظار</string>
@@ -892,7 +889,6 @@
     <string name="info_row_updated_at">حٌديثت السجل في</string>
     <string name="share_text_updated_at">حٌديثت السجل في: %s</string>
     <string name="restore_database_alert_confirm">استعادة</string>
-    <string name="network_options_revert">إرجاع</string>
     <string name="v4_4_live_messages_desc">يرى المستلمون التحديثات أثناء كتابتها.</string>
     <string name="feature_received_prohibited">استلمت، ممنوع</string>
     <string name="save_servers_button">حفظ</string>
@@ -1165,7 +1161,6 @@
     <string name="your_chat_profiles">ملفات تعريف الدردشة الخاصة بك</string>
     <string name="your_simplex_contact_address">عنوان SimpleX الخاص بك</string>
     <string name="your_SMP_servers">خوادم SMP الخاصة بك</string>
-    <string name="update_onion_hosts_settings_question">هل تريد تحديث إعداد مضيفي onion.؟</string>
     <string name="onboarding_notifications_mode_off">عندما يكون التطبيق قيد التشغيل</string>
     <string name="call_connection_via_relay">عبر المُرحل</string>
     <string name="you_joined_this_group">لقد انضممت إلى هذه المجموعة</string>
@@ -1403,7 +1398,7 @@
     <string name="block_member_desc">سيتم إخفاء كافة الرسائل الجديدة من %s!</string>
     <string name="blocked_item_description">محظور</string>
     <string name="v5_4_block_group_members">حظر أعضاء المجموعة</string>
-    <string name="rcv_direct_event_contact_deleted">جهة الاتصال حُذِفت</string>
+    <string name="rcv_direct_event_contact_deleted">جهة الاتصال حُذفت</string>
     <string name="v5_4_incognito_groups_descr">أنشِئ مجموعة باستخدام ملف تعريف عشوائي.</string>
     <string name="create_group_button">أنشِئ مجموعة</string>
     <string name="create_another_profile_button">أنشِئ ملف تعريف</string>
@@ -1930,7 +1925,7 @@
     <string name="connections">الاتصالات</string>
     <string name="created">أُنشئت</string>
     <string name="decryption_errors">أخطاء فك التعمية</string>
-    <string name="deleted">حُذِفت</string>
+    <string name="deleted">حُذفت</string>
     <string name="downloaded_files">الملفات التي نُزّلت</string>
     <string name="download_errors">أخطاء التنزيل</string>
     <string name="expired_label">منتهية الصلاحيّة</string>
@@ -1998,4 +1993,36 @@
     <string name="privacy_media_blur_radius">تمويه الوسائط</string>
     <string name="privacy_media_blur_radius_medium">متوسط</string>
     <string name="privacy_media_blur_radius_soft">ناعم</string>
+    <string name="info_view_call_button">المكالمة</string>
+    <string name="info_view_connect_button">اتصل</string>
+    <string name="info_view_message_button">الرسالة</string>
+    <string name="info_view_open_button">افتح</string>
+    <string name="info_view_search_button">بحث</string>
+    <string name="toolbar_settings">الإعدادات</string>
+    <string name="info_view_video_button">فيديو</string>
+    <string name="confirm_delete_contact_question">تأكيد حذف جهة الاتصال؟</string>
+    <string name="contact_deleted">حُذفت جهة الاتصال!</string>
+    <string name="delete_contact_cannot_undo_warning">سيتم حذف جهة الاتصال - لا يمكن التراجع عن هذا!</string>
+    <string name="conversation_deleted">حُذفت المحادثة!</string>
+    <string name="delete_without_notification">احذف دون إشعار</string>
+    <string name="keep_conversation">أبقِ المحادثة</string>
+    <string name="only_delete_conversation">احذف المحادثة فقط</string>
+    <string name="you_can_still_send_messages_to_contact">لا يزال بإمكانك إرسال الرسائل إلى %1$s من الدردشات المحذوفة.</string>
+    <string name="paste_link">ألصق الرابط</string>
+    <string name="contact_list_header_title">جهات اتصالك</string>
+    <string name="one_hand_ui">واجهة مستخدم بيد واحدة</string>
+    <string name="cant_call_contact_deleted_alert_text">حُذفت جهة الاتصال.</string>
+    <string name="allow_calls_question">السماح بالمكالمات؟</string>
+    <string name="cant_call_member_send_message_alert_text">أرسل رسالة لتفعيل المكالمات.</string>
+    <string name="calls_prohibited_alert_title">المكالمات ممنوعة!</string>
+    <string name="cant_call_member_alert_title">لا يمكن مكالمة أحد أعضاء المجموعة</string>
+    <string name="cant_send_message_to_member_alert_title">لا يمكن إرسال رسالة إلى عضو المجموعة</string>
+    <string name="cant_call_contact_connecting_wait_alert_text">جارِ الاتصال بجهة الاتصال، يُرجى الانتظار أو التحقق لاحقًا!</string>
+    <string name="deleted_chats">حُذفت الدردشات</string>
+    <string name="action_button_add_members">ادعُ</string>
+    <string name="no_filtered_contacts">لا توجد جهات اتصال مُصفاة</string>
+    <string name="cant_call_contact_alert_title">لا يمكن مكالمة جهة الاتصال</string>
+    <string name="you_can_still_view_conversation_with_contact">لا يزال بإمكانك عرض المحادثة مع %1$s في قائمة الدردشات.</string>
+    <string name="you_need_to_allow_calls">يجب عليك السماح لجهات اتصالك بالاتصال حتى تتمكن من الاتصال بها.</string>
+    <string name="calls_prohibited_ask_to_enable_calls_alert_text">يُرجى الطلب من جهة اتصالك تفعيل المكالمات.</string>
 </resources>

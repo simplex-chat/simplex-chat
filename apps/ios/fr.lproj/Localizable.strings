@@ -492,6 +492,9 @@
 "Allow sending disappearing messages." = "Autorise l’envoi de messages éphémères.";
 
 /* No comment provided by engineer. */
+"Allow sharing" = "Autoriser le partage";
+
+/* No comment provided by engineer. */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Autoriser la suppression irréversible de messages envoyés. (24 heures)";
 
 /* No comment provided by engineer. */
@@ -689,11 +692,14 @@
 /* rcv group event chat item */
 "blocked %@" = "%@ bloqué";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "bloqué par l'administrateur";
 
 /* No comment provided by engineer. */
 "Blocked by admin" = "Bloqué par l'administrateur";
+
+/* No comment provided by engineer. */
+"Blur media" = "Flouter les médias";
 
 /* No comment provided by engineer. */
 "bold" = "gras";
@@ -1042,6 +1048,9 @@
 "connection established" = "connexion établie";
 
 /* No comment provided by engineer. */
+"Connection notifications" = "Notifications de connexion";
+
+/* No comment provided by engineer. */
 "Connection request sent!" = "Demande de connexion envoyée !";
 
 /* No comment provided by engineer. */
@@ -1079,9 +1088,6 @@
 
 /* notification */
 "Contact is connected" = "Le contact est connecté";
-
-/* No comment provided by engineer. */
-"Contact is not connected yet!" = "Le contact n'est pas encore connecté !";
 
 /* No comment provided by engineer. */
 "Contact name" = "Nom du contact";
@@ -1282,6 +1288,9 @@
 "Delete" = "Supprimer";
 
 /* No comment provided by engineer. */
+"Delete %lld messages of members?" = "Supprimer %lld messages de membres ?";
+
+/* No comment provided by engineer. */
 "Delete %lld messages?" = "Supprimer %lld messages ?";
 
 /* No comment provided by engineer. */
@@ -1316,12 +1325,6 @@
 
 /* No comment provided by engineer. */
 "Delete contact" = "Supprimer le contact";
-
-/* No comment provided by engineer. */
-"Delete Contact" = "Supprimer le contact";
-
-/* No comment provided by engineer. */
-"Delete contact?\nThis cannot be undone!" = "Supprimer le contact ?\nCette opération ne peut être annulée !";
 
 /* No comment provided by engineer. */
 "Delete database" = "Supprimer la base de données";
@@ -1378,9 +1381,6 @@
 "Delete old database?" = "Supprimer l'ancienne base de données ?";
 
 /* No comment provided by engineer. */
-"Delete pending connection" = "Supprimer la connexion en attente";
-
-/* No comment provided by engineer. */
 "Delete pending connection?" = "Supprimer la connexion en attente ?";
 
 /* No comment provided by engineer. */
@@ -1434,8 +1434,14 @@
 /* No comment provided by engineer. */
 "Desktop devices" = "Appareils de bureau";
 
+/* No comment provided by engineer. */
+"Destination server address of %@ is incompatible with forwarding server %@ settings." = "L'adresse du serveur de destination %@ est incompatible avec les paramètres du serveur de redirection %@.";
+
 /* snd error text */
 "Destination server error: %@" = "Erreur du serveur de destination : %@";
+
+/* No comment provided by engineer. */
+"Destination server version of %@ is incompatible with forwarding server %@." = "La version du serveur de destination %@ est incompatible avec le serveur de redirection %@.";
 
 /* No comment provided by engineer. */
 "Detailed statistics" = "Statistiques détaillées";
@@ -1484,6 +1490,9 @@
 
 /* No comment provided by engineer. */
 "disabled" = "désactivé";
+
+/* No comment provided by engineer. */
+"Disabled" = "Désactivé";
 
 /* No comment provided by engineer. */
 "Disappearing message" = "Message éphémère";
@@ -1633,6 +1642,9 @@
 "enabled" = "activé";
 
 /* No comment provided by engineer. */
+"Enabled" = "Activé";
+
+/* No comment provided by engineer. */
 "Enabled for" = "Activé pour";
 
 /* enabled status */
@@ -1774,6 +1786,9 @@
 "Error changing setting" = "Erreur de changement de paramètre";
 
 /* No comment provided by engineer. */
+"Error connecting to forwarding server %@. Please try later." = "Erreur de connexion au serveur de redirection %@. Veuillez réessayer plus tard.";
+
+/* No comment provided by engineer. */
 "Error creating address" = "Erreur lors de la création de l'adresse";
 
 /* No comment provided by engineer. */
@@ -1802,9 +1817,6 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "Erreur lors de la suppression de la connexion";
-
-/* No comment provided by engineer. */
-"Error deleting contact" = "Erreur lors de la suppression du contact";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Erreur lors de la suppression de la base de données";
@@ -2085,6 +2097,15 @@
 
 /* No comment provided by engineer. */
 "Forwarded from" = "Transféré depuis";
+
+/* No comment provided by engineer. */
+"Forwarding server %@ failed to connect to destination server %@. Please try later." = "Le serveur de redirection %@ n'a pas réussi à se connecter au serveur de destination %@. Veuillez réessayer plus tard.";
+
+/* No comment provided by engineer. */
+"Forwarding server address is incompatible with network settings: %@." = "L'adresse du serveur de redirection est incompatible avec les paramètres du réseau : %@.";
+
+/* No comment provided by engineer. */
+"Forwarding server version is incompatible with network settings: %@." = "La version du serveur de redirection est incompatible avec les paramètres du réseau : %@.";
 
 /* snd error text */
 "Forwarding server: %@\nDestination server error: %@" = "Serveur de transfert : %1$@\nErreur du serveur de destination : %2$@";
@@ -2635,6 +2656,9 @@
 /* No comment provided by engineer. */
 "Max 30 seconds, received instantly." = "Max 30 secondes, réception immédiate.";
 
+/* blur media */
+"Medium" = "Modéré";
+
 /* member role */
 "member" = "membre";
 
@@ -2697,12 +2721,6 @@
 
 /* No comment provided by engineer. */
 "Message reception" = "Réception de message";
-
-/* No comment provided by engineer. */
-"Message routing fallback" = "Rabattement du routage des messages";
-
-/* No comment provided by engineer. */
-"Message routing mode" = "Mode de routage des messages";
 
 /* No comment provided by engineer. */
 "Message source remains private." = "La source du message reste privée.";
@@ -2933,6 +2951,9 @@
 "Not compatible!" = "Non compatible !";
 
 /* No comment provided by engineer. */
+"Nothing selected" = "Aucune sélection";
+
+/* No comment provided by engineer. */
 "Notifications" = "Notifications";
 
 /* No comment provided by engineer. */
@@ -2977,10 +2998,10 @@
 "One-time invitation link" = "Lien d'invitation unique";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "Les hôtes .onion seront nécessaires pour la connexion. Nécessite l'activation d'un VPN.";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "Les hôtes .onion seront **nécessaires** pour la connexion.\nNécessite l'activation d'un VPN.";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "Les hôtes .onion seront utilisés dès que possible. Nécessite l'activation d'un VPN.";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "Les hôtes .onion seront utilisés dès que possible.\nNécessite l'activation d'un VPN.";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "Les hôtes .onion ne seront pas utilisés.";
@@ -3553,9 +3574,6 @@
 "Reveal" = "Révéler";
 
 /* No comment provided by engineer. */
-"Revert" = "Revenir en arrière";
-
-/* No comment provided by engineer. */
 "Revoke" = "Révoquer";
 
 /* cancel file action */
@@ -3699,8 +3717,11 @@
 /* chat item text */
 "security code changed" = "code de sécurité modifié";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "Choisir";
+
+/* No comment provided by engineer. */
+"Selected %lld" = "%lld sélectionné(s)";
 
 /* No comment provided by engineer. */
 "Selected chat preferences prohibit this message." = "Les préférences de chat sélectionnées interdisent ce message.";
@@ -3728,9 +3749,6 @@
 
 /* No comment provided by engineer. */
 "send direct message" = "envoyer un message direct";
-
-/* No comment provided by engineer. */
-"Send direct message" = "Envoyer un message direct";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Envoyer un message direct pour vous connecter";
@@ -3934,6 +3952,9 @@
 "Share this 1-time invite link" = "Partager ce lien d'invitation unique";
 
 /* No comment provided by engineer. */
+"Share to SimpleX" = "Partager sur SimpleX";
+
+/* No comment provided by engineer. */
 "Share with contacts" = "Partager avec vos contacts";
 
 /* No comment provided by engineer. */
@@ -3962,6 +3983,9 @@
 
 /* No comment provided by engineer. */
 "Show:" = "Afficher :";
+
+/* No comment provided by engineer. */
+"SimpleX" = "SimpleX";
 
 /* No comment provided by engineer. */
 "SimpleX address" = "Adresse SimpleX";
@@ -4023,8 +4047,8 @@
 /* No comment provided by engineer. */
 "SMP server" = "Serveur SMP";
 
-/* No comment provided by engineer. */
-"SMP servers" = "Serveurs SMP";
+/* blur media */
+"Soft" = "Léger";
 
 /* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Des erreurs non fatales se sont produites lors de l'importation - vous pouvez consulter la console de chat pour plus de détails.";
@@ -4095,6 +4119,9 @@
 /* No comment provided by engineer. */
 "strike" = "barré";
 
+/* blur media */
+"Strong" = "Fort";
+
 /* No comment provided by engineer. */
 "Submit" = "Soumettre";
 
@@ -4139,9 +4166,6 @@
 
 /* No comment provided by engineer. */
 "Tap to scan" = "Appuyez pour scanner";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "Appuyez ici pour démarrer une nouvelle discussion";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "Délai de connexion TCP";
@@ -4217,6 +4241,12 @@
 
 /* No comment provided by engineer. */
 "The message will be marked as moderated for all members." = "Le message sera marqué comme modéré pour tous les membres.";
+
+/* No comment provided by engineer. */
+"The messages will be deleted for all members." = "Les messages seront supprimés pour tous les membres.";
+
+/* No comment provided by engineer. */
+"The messages will be marked as moderated for all members." = "Les messages seront marqués comme modérés pour tous les membres.";
 
 /* No comment provided by engineer. */
 "The next generation of private messaging" = "La nouvelle génération de messagerie privée";
@@ -4408,7 +4438,7 @@
 "Unknown error" = "Erreur inconnue";
 
 /* No comment provided by engineer. */
-"unknown relays" = "relais inconnus";
+"unknown servers" = "relais inconnus";
 
 /* No comment provided by engineer. */
 "Unknown servers!" = "Serveurs inconnus !";
@@ -4450,16 +4480,10 @@
 "Update" = "Mise à jour";
 
 /* No comment provided by engineer. */
-"Update .onion hosts setting?" = "Mettre à jour le paramètre des hôtes .onion ?";
-
-/* No comment provided by engineer. */
 "Update database passphrase" = "Mise à jour de la phrase secrète de la base de données";
 
 /* No comment provided by engineer. */
 "Update network settings?" = "Mettre à jour les paramètres réseau ?";
-
-/* No comment provided by engineer. */
-"Update transport isolation mode?" = "Mettre à jour le mode d'isolement du transport ?";
 
 /* rcv group event chat item */
 "updated group profile" = "mise à jour du profil de groupe";
@@ -4469,9 +4493,6 @@
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "La mise à jour des ces paramètres reconnectera le client à tous les serveurs.";
-
-/* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "La mise à jour de ce paramètre reconnectera le client à tous les serveurs.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Mettre à niveau et ouvrir le chat";
@@ -4538,9 +4559,6 @@
 
 /* No comment provided by engineer. */
 "User selection" = "Sélection de l'utilisateur";
-
-/* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = "L'utilisation des hôtes .onion nécessite un fournisseur VPN compatible.";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "Vous utilisez les serveurs SimpleX.";
@@ -4734,9 +4752,6 @@
 /* No comment provided by engineer. */
 "XFTP server" = "Serveur XFTP";
 
-/* No comment provided by engineer. */
-"XFTP servers" = "Serveurs XFTP";
-
 /* pref value */
 "yes" = "oui";
 
@@ -4876,9 +4891,6 @@
 "You have already requested connection!\nRepeat connection request?" = "Vous avez déjà demandé une connexion !\nRépéter la demande de connexion ?";
 
 /* No comment provided by engineer. */
-"You have no chats" = "Vous n'avez aucune discussion";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Vous devez saisir la phrase secrète à chaque fois que l'application démarre - elle n'est pas stockée sur l'appareil.";
 
 /* No comment provided by engineer. */
@@ -4967,9 +4979,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Vos profils de chat";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Votre contact a besoin d'être en ligne pour completer la connexion.\nVous pouvez annuler la connexion et supprimer le contact (et réessayer plus tard avec un autre lien).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Votre contact a envoyé un fichier plus grand que la taille maximale supportée actuellement(%@).";

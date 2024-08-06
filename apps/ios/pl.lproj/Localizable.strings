@@ -689,7 +689,7 @@
 /* rcv group event chat item */
 "blocked %@" = "zablokowany %@";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "zablokowany przez admina";
 
 /* No comment provided by engineer. */
@@ -1081,9 +1081,6 @@
 "Contact is connected" = "Kontakt jest połączony";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "Kontakt nie jest jeszcze połączony!";
-
-/* No comment provided by engineer. */
 "Contact name" = "Nazwa kontaktu";
 
 /* No comment provided by engineer. */
@@ -1318,12 +1315,6 @@
 "Delete contact" = "Usuń kontakt";
 
 /* No comment provided by engineer. */
-"Delete Contact" = "Usuń Kontakt";
-
-/* No comment provided by engineer. */
-"Delete contact?\nThis cannot be undone!" = "Usunąć kontakt?\nTo nie może być cofnięte!";
-
-/* No comment provided by engineer. */
 "Delete database" = "Usuń bazę danych";
 
 /* No comment provided by engineer. */
@@ -1376,9 +1367,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Usunąć starą bazę danych?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Usuń oczekujące połączenie";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Usunąć oczekujące połączenie?";
@@ -1802,9 +1790,6 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "Błąd usuwania połączenia";
-
-/* No comment provided by engineer. */
-"Error deleting contact" = "Błąd usuwania kontaktu";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Błąd usuwania bazy danych";
@@ -2699,12 +2684,6 @@
 "Message reception" = "Odebranie wiadomości";
 
 /* No comment provided by engineer. */
-"Message routing fallback" = "Rezerwowe trasowania wiadomości";
-
-/* No comment provided by engineer. */
-"Message routing mode" = "Tryb trasowania wiadomości";
-
-/* No comment provided by engineer. */
 "Message source remains private." = "Źródło wiadomości pozostaje prywatne.";
 
 /* No comment provided by engineer. */
@@ -2977,10 +2956,10 @@
 "One-time invitation link" = "Jednorazowy link zaproszenia";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "Hosty onion będą wymagane do połączenia. Wymaga włączenia VPN.";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "Hosty onion będą wymagane do połączenia.\nWymaga włączenia VPN.";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "Hosty onion będą używane, gdy będą dostępne. Wymaga włączenia VPN.";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "Hosty onion będą używane, gdy będą dostępne.\nWymaga włączenia VPN.";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "Hosty onion nie będą używane.";
@@ -3553,9 +3532,6 @@
 "Reveal" = "Ujawnij";
 
 /* No comment provided by engineer. */
-"Revert" = "Przywrócić";
-
-/* No comment provided by engineer. */
 "Revoke" = "Odwołaj";
 
 /* cancel file action */
@@ -3699,7 +3675,7 @@
 /* chat item text */
 "security code changed" = "kod bezpieczeństwa zmieniony";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "Wybierz";
 
 /* No comment provided by engineer. */
@@ -3728,9 +3704,6 @@
 
 /* No comment provided by engineer. */
 "send direct message" = "wyślij wiadomość bezpośrednią";
-
-/* No comment provided by engineer. */
-"Send direct message" = "Wyślij wiadomość bezpośrednią";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Wyślij wiadomość bezpośrednią aby połączyć";
@@ -4027,9 +4000,6 @@
 "SMP server" = "Serwer SMP";
 
 /* No comment provided by engineer. */
-"SMP servers" = "Serwery SMP";
-
-/* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Podczas importu wystąpiły niekrytyczne błędy - więcej szczegółów można znaleźć w konsoli czatu.";
 
 /* notification title */
@@ -4142,9 +4112,6 @@
 
 /* No comment provided by engineer. */
 "Tap to scan" = "Dotknij, aby zeskanować";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "Dotknij, aby rozpocząć nowy czat";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "Limit czasu połączenia TCP";
@@ -4411,7 +4378,7 @@
 "Unknown error" = "Nieznany błąd";
 
 /* No comment provided by engineer. */
-"unknown relays" = "nieznane przekaźniki";
+"unknown servers" = "nieznane przekaźniki";
 
 /* No comment provided by engineer. */
 "Unknown servers!" = "Nieznane serwery!";
@@ -4453,16 +4420,10 @@
 "Update" = "Aktualizuj";
 
 /* No comment provided by engineer. */
-"Update .onion hosts setting?" = "Zaktualizować ustawienie hostów .onion?";
-
-/* No comment provided by engineer. */
 "Update database passphrase" = "Aktualizuj hasło do bazy danych";
 
 /* No comment provided by engineer. */
 "Update network settings?" = "Zaktualizować ustawienia sieci?";
-
-/* No comment provided by engineer. */
-"Update transport isolation mode?" = "Zaktualizować tryb izolacji transportu?";
 
 /* rcv group event chat item */
 "updated group profile" = "zaktualizowano profil grupy";
@@ -4472,9 +4433,6 @@
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Aktualizacja ustawień spowoduje ponowne połączenie klienta ze wszystkimi serwerami.";
-
-/* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "Aktualizacja tych ustawień spowoduje ponowne połączenie klienta ze wszystkimi serwerami.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Zaktualizuj i otwórz czat";
@@ -4541,9 +4499,6 @@
 
 /* No comment provided by engineer. */
 "User selection" = "Wybór użytkownika";
-
-/* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = "Używanie hostów .onion wymaga kompatybilnego dostawcy VPN.";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "Używanie serwerów SimpleX Chat.";
@@ -4737,9 +4692,6 @@
 /* No comment provided by engineer. */
 "XFTP server" = "Serwer XFTP";
 
-/* No comment provided by engineer. */
-"XFTP servers" = "Serwery XFTP";
-
 /* pref value */
 "yes" = "tak";
 
@@ -4879,9 +4831,6 @@
 "You have already requested connection!\nRepeat connection request?" = "Już prosiłeś o połączenie!\nPowtórzyć prośbę połączenia?";
 
 /* No comment provided by engineer. */
-"You have no chats" = "Nie masz czatów";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Musisz wprowadzić hasło przy każdym uruchomieniu aplikacji - nie jest one przechowywane na urządzeniu.";
 
 /* No comment provided by engineer. */
@@ -4970,9 +4919,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Twoje profile czatu";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Twój kontakt musi być online, aby połączenie zostało zakończone.\nMożesz anulować to połączenie i usunąć kontakt (i spróbować później z nowym linkiem).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Twój kontakt wysłał plik, który jest większy niż obecnie obsługiwany maksymalny rozmiar (%@).";

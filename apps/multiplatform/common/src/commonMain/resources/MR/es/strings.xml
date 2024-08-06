@@ -447,7 +447,6 @@
     <string name="ensure_smp_server_address_are_correct_format_and_unique">Asegúrate de que las direcciones del servidor SMP tienen el formato correcto, están separadas por líneas y no están duplicadas.</string>
     <string name="icon_descr_instant_notifications">Notificación instantánea</string>
     <string name="network_settings_title">Configuración de red</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">No se usarán hosts .onion</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Sólo los dispositivos cliente almacenan perfiles de usuario, contactos, grupos y mensajes enviados con <b>cifrado de extremo a extremo de 2 capas</b> .]]></string>
     <string name="onboarding_notifications_mode_subtitle">Puedes cambiar estos ajustes más tarde en Configuración.</string>
     <string name="onboarding_notifications_mode_service">Instantánea</string>
@@ -466,7 +465,6 @@
     <string name="notification_preview_mode_message">Contacto y texto</string>
     <string name="member_info_section_title_member">MIEMBRO</string>
     <string name="chat_item_ttl_none">nunca</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Se requieren hosts .onion para la conexión</string>
     <string name="network_use_onion_hosts_no_desc">No se usarán hosts .onion</string>
     <string name="settings_notification_preview_title">Vista previa de notificaciones</string>
     <string name="alert_title_group_invitation_expired">¡Invitación caducada!</string>
@@ -511,7 +509,6 @@
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Asegúrate de que las direcciones del servidor WebRTC ICE tienen el formato correcto, están separadas por líneas y no duplicadas.</string>
     <string name="network_use_onion_hosts_required_desc">Se requieren hosts .onion para la conexión
 \nRecuerda: no podrás conectarte a servidores que no tengan dirección .onion.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Se usarán hosts .onion si están disponibles.</string>
     <string name="immune_to_spam_and_abuse">Inmune a spam y abuso</string>
     <string name="many_people_asked_how_can_it_deliver"><![CDATA[Muchos se preguntarán: <i>si SimpleX no tiene identificadores de usuario, ¿cómo puede entregar los mensajes\?</i>]]></string>
     <string name="incoming_video_call">Videollamada entrante</string>
@@ -636,7 +633,6 @@
     <string name="save_and_notify_contacts">Guardar y notificar contactos</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">Protocolo y código abiertos: cualquiera puede usar los servidores.</string>
     <string name="role_in_group">Rol</string>
-    <string name="network_options_revert">Revertir</string>
     <string name="network_option_ping_interval">Intervalo PING</string>
     <string name="network_option_ping_count">Contador PING</string>
     <string name="only_your_contact_can_delete">Sólo tu contacto puede eliminar mensajes de forma irreversible (tu puedes marcarlos para eliminar). (24 horas)</string>
@@ -800,7 +796,6 @@
     <string name="star_on_github">Estrella en GitHub</string>
     <string name="smp_servers_per_user">Lista de servidores para las conexiones nuevas de tu perfil actual</string>
     <string name="network_disable_socks">¿Usar conexión directa a Internet\?</string>
-    <string name="update_onion_hosts_settings_question">¿Actualizar la configuración de los hosts .onion\?</string>
     <string name="profile_is_only_shared_with_your_contacts">El perfil sólo se comparte con tus contactos.</string>
     <string name="callstate_starting">inicializando…</string>
     <string name="alert_title_skipped_messages">Mensajes omitidos</string>

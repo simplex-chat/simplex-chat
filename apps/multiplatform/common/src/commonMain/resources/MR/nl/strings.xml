@@ -546,7 +546,6 @@
     <string name="one_time_link">Eenmalige uitnodiging link</string>
     <string name="paste_button">Plakken</string>
     <string name="smp_servers_preset_address">Vooraf ingesteld server adres</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Onion hosts worden niet gebruikt.</string>
     <string name="onboarding_notifications_mode_title">Privé meldingen</string>
     <string name="paste_the_link_you_received">Plak de link die je hebt ontvangen</string>
     <string name="onboarding_notifications_mode_periodic">Periodiek</string>
@@ -573,7 +572,6 @@
     <string name="enter_passphrase_notification_title">Wachtwoord is nodig</string>
     <string name="feature_off">uit</string>
     <string name="add_contact">Eenmalige uitnodiging link</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Onion hosts zijn vereist voor verbinding.</string>
     <string name="only_group_owners_can_change_prefs">Alleen groep eigenaren kunnen groep voorkeuren wijzigen.</string>
     <string name="only_stored_on_members_devices">(alleen opgeslagen door groepsleden)</string>
     <string name="smp_servers_preset_server">Vooraf ingestelde server</string>
@@ -584,7 +582,6 @@
     <string name="ok">OK</string>
     <string name="network_use_onion_hosts_required_desc">Onion hosts zijn vereist voor verbinding.</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion hosts worden gebruikt indien beschikbaar.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion hosts worden gebruikt indien beschikbaar.</string>
     <string name="network_use_onion_hosts_no_desc">Onion hosts worden niet gebruikt.</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">Open-source protocol en code. Iedereen kan de servers draaien.</string>
     <string name="people_can_connect_only_via_links_you_share">Mensen kunnen alleen verbinding met u maken via de links die u deelt.</string>
@@ -808,7 +805,6 @@
     <string name="network_options_reset_to_defaults">Resetten naar standaardwaarden</string>
     <string name="switch_receiving_address">Ontvangst adres wijzigen</string>
     <string name="network_option_protocol_timeout">Protocol timeout</string>
-    <string name="network_options_revert">Terugdraaien</string>
     <string name="network_options_save">Opslaan</string>
     <string name="network_option_seconds_label">sec</string>
     <string name="incognito_info_share">Wanneer je een incognito profiel met iemand deelt, wordt dit profiel gebruikt voor de groepen waarvoor ze je uitnodigen.</string>
@@ -904,7 +900,6 @@
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[U kunt <font color="#0088ff">verbinding maken met SimpleX Chat ontwikkelaars om vragen te stellen en updates te ontvangen</font>.]]></string>
     <string name="connection_error_auth_desc">Tenzij uw contact de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.
 \nOm verbinding te maken, vraagt u uw contact om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.</string>
-    <string name="update_onion_hosts_settings_question">.onion hosts-instelling updaten\?</string>
     <string name="use_simplex_chat_servers__question">SimpleX Chat servers gebruiken\?</string>
     <string name="voice_messages_are_prohibited">Spraak berichten zijn verboden in deze groep.</string>
     <string name="personal_welcome">Welkom %1$s!</string>
@@ -1987,4 +1982,55 @@
     <string name="app_check_for_updates_update_available">Update beschikbaar: %s</string>
     <string name="app_check_for_updates_canceled">Downloaden van update geannuleerd</string>
     <string name="app_check_for_updates_notice_desc">Als u op de hoogte wilt worden gehouden van de nieuwe releases, schakelt u periodieke controle op stabiele of bètaversies in.</string>
+    <string name="privacy_media_blur_radius">Vervaag media</string>
+    <string name="privacy_media_blur_radius_medium">Medium</string>
+    <string name="privacy_media_blur_radius_off">uit</string>
+    <string name="privacy_media_blur_radius_soft">Soft</string>
+    <string name="privacy_media_blur_radius_strong">Krachtig</string>
+    <string name="proxy_destination_error_broker_host">Het doelserveradres van %1$s is niet compatibel met de instellingen van de doorstuurserver %2$s.</string>
+    <string name="proxy_destination_error_broker_version">De doelserverversie van %1$s is incompatibel met de doorstuurserver %2$s.</string>
+    <string name="smp_proxy_error_connecting">Fout bij verbinden met doorstuurserver %1$s. Probeer het later opnieuw.</string>
+    <string name="proxy_destination_error_failed_to_connect">Doorstuurserver %1$s kon geen verbinding maken met bestemmingsserver %2$s. Probeer het later opnieuw.</string>
+    <string name="smp_proxy_error_broker_host">Het doorstuuradres is niet compatibel met de netwerkinstellingen: %1$s.</string>
+    <string name="smp_proxy_error_broker_version">De doorstuurserverversie is niet compatibel met de netwerkinstellingen: %1$s.</string>
+    <string name="cant_call_contact_alert_title">Kan contact niet bellen</string>
+    <string name="allow_calls_question">Oproepen toestaan?</string>
+    <string name="info_view_call_button">bellen</string>
+    <string name="cant_call_member_alert_title">Kan geen groepslid bellen</string>
+    <string name="calls_prohibited_alert_title">Bellen verboden!</string>
+    <string name="confirm_delete_contact_question">Contact verwijderen bevestigen?</string>
+    <string name="conversation_deleted">Gesprek verwijderd!</string>
+    <string name="delete_without_notification">Verwijderen zonder melding</string>
+    <string name="deleted_chats">Verwijderde chats</string>
+    <string name="cant_call_contact_deleted_alert_text">Contact is verwijderd.</string>
+    <string name="cant_call_contact_connecting_wait_alert_text">Er wordt verbinding gemaakt met het contact. Even geduld of controleer het later!</string>
+    <string name="cant_send_message_to_member_alert_title">Kan geen bericht sturen naar groepslid</string>
+    <string name="delete_members_messages__question">%d berichten van leden verwijderen?</string>
+    <string name="compose_message_placeholder">Bericht</string>
+    <string name="delete_messages_mark_deleted_warning">Berichten worden gemarkeerd voor verwijdering. De ontvanger(s) kunnen deze berichten onthullen.</string>
+    <string name="selected_chat_items_nothing_selected">Niets geselecteerd</string>
+    <string name="info_view_connect_button">verbinden</string>
+    <string name="contact_deleted">Contact verwijderd!</string>
+    <string name="delete_contact_cannot_undo_warning">Het contact wordt verwijderd. Dit kan niet ongedaan worden gemaakt!</string>
+    <string name="keep_conversation">Blijf in gesprek</string>
+    <string name="info_view_message_button">bericht</string>
+    <string name="only_delete_conversation">Alleen conversatie verwijderen</string>
+    <string name="info_view_open_button">open</string>
+    <string name="paste_link">Plak de link</string>
+    <string name="action_button_add_members">Uitnodiging</string>
+    <string name="one_hand_ui">Gebruikersinterface met één hand</string>
+    <string name="calls_prohibited_ask_to_enable_calls_alert_text">Vraag uw contactpersoon om oproepen in te schakelen.</string>
+    <string name="no_filtered_contacts">Geen gefilterde contacten</string>
+    <string name="select_verb">Selecteer</string>
+    <string name="selected_chat_items_selected_n">Geselecteerd %d</string>
+    <string name="cant_call_member_send_message_alert_text">Stuur een bericht om oproepen mogelijk te maken.</string>
+    <string name="info_view_search_button">zoekopdracht</string>
+    <string name="you_can_still_send_messages_to_contact">Je kunt nog steeds berichten sturen naar %1$s vanuit de Verwijderde chats.</string>
+    <string name="toolbar_settings">Instellingen</string>
+    <string name="moderate_messages_will_be_deleted_warning">De berichten worden voor alle leden verwijderd.</string>
+    <string name="moderate_messages_will_be_marked_warning">De berichten worden voor alle leden als gemodereerd gemarkeerd.</string>
+    <string name="info_view_video_button">video</string>
+    <string name="you_can_still_view_conversation_with_contact">Je kunt nog steeds het gesprek met %1$s bekijken in de lijst met chats.</string>
+    <string name="you_need_to_allow_calls">U moet uw contactpersoon toestemming geven om te bellen, zodat hij/zij je kan bellen.</string>
+    <string name="contact_list_header_title">Jouw contacten</string>
 </resources>

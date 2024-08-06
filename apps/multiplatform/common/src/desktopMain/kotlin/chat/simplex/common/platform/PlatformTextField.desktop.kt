@@ -1,9 +1,7 @@
 package chat.simplex.common.platform
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
@@ -17,8 +15,7 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.chat.*
@@ -49,6 +46,7 @@ actual fun PlatformTextField(
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
+  placeholder: String,
   onMessageChange: (String) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
@@ -58,7 +56,7 @@ actual fun PlatformTextField(
   val focusRequester = remember { FocusRequester() }
   val focusManager = LocalFocusManager.current
   val keyboard = LocalSoftwareKeyboardController.current
-  val padding = PaddingValues(12.dp, 12.dp, 45.dp, 0.dp)
+  val padding = PaddingValues(0.dp, 12.dp, 50.dp, 0.dp)
   LaunchedEffect(cs.contextItem) {
     if (cs.contextItem !is ComposeContextItem.QuotedItem) return@LaunchedEffect
     // In replying state
@@ -169,9 +167,20 @@ actual fun PlatformTextField(
         CompositionLocalProvider(
           LocalLayoutDirection provides if (isRtl) LayoutDirection.Rtl else LocalLayoutDirection.current
         ) {
-          Column(Modifier.weight(1f).padding(start = 12.dp, end = 32.dp)) {
+          Column(Modifier.weight(1f).padding(start = 0.dp, end = 50.dp)) {
             Spacer(Modifier.height(8.dp))
-            innerTextField()
+            TextFieldDefaults.TextFieldDecorationBox(
+              value = textFieldValue.text,
+              innerTextField = innerTextField,
+              placeholder = { Text(placeholder, style = textStyle.value.copy(color = MaterialTheme.colors.secondary)) },
+              singleLine = false,
+              enabled = true,
+              isError = false,
+              trailingIcon = null,
+              interactionSource = remember { MutableInteractionSource() },
+              contentPadding = PaddingValues(),
+              visualTransformation = VisualTransformation.None,
+            )
             Spacer(Modifier.height(10.dp))
           }
         }

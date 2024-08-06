@@ -179,32 +179,18 @@ struct ChatView: View {
                 } else if case let .direct(contact) = cInfo {
                     Button {
                         Task {
-                            do {
-                                let (stats, profile) = try await apiContactInfo(chat.chatInfo.apiId)
-                                let (ct, code) = try await apiGetContactCode(chat.chatInfo.apiId)
-                                await MainActor.run {
-                                    connectionStats = stats
-                                    customUserProfile = profile
-                                    connectionCode = code
-                                    if contact.activeConn?.connectionCode != ct.activeConn?.connectionCode {
-                                        chat.chatInfo = .direct(contact: ct)
-                                    }
-                                }
-                            } catch let error {
-                                logger.error("apiContactInfo or apiGetContactCode error: \(responseError(error))")
-                            }
-                            await MainActor.run { showChatInfoSheet = true }
+                            showChatInfoSheet = true
                         }
                     } label: {
                         ChatInfoToolbar(chat: chat)
                     }
-                    .appSheet(isPresented: $showChatInfoSheet, onDismiss: {
-                        connectionStats = nil
-                        customUserProfile = nil
-                        connectionCode = nil
-                        theme = buildTheme()
-                    }) {
-                        ChatInfoView(chat: chat, contact: contact, connectionStats: $connectionStats, customUserProfile: $customUserProfile, localAlias: chat.chatInfo.localAlias, connectionCode: $connectionCode)
+                    .appSheet(isPresented: $showChatInfoSheet) {
+                        ChatInfoView(
+                            chat: chat,
+                            contact: contact,
+                            localAlias: chat.chatInfo.localAlias,
+                            onSearch: { focusSearch() }
+                        )
                     }
                 } else if case let .group(groupInfo) = cInfo {
                     Button {
@@ -222,7 +208,8 @@ struct ChatView: View {
                                     chat.chatInfo = .group(groupInfo: gInfo)
                                     chat.created = Date.now
                                 }
-                            )
+                            ),
+                            onSearch: { focusSearch() }
                         )
                     }
                 } else if case .local = cInfo {
@@ -376,7 +363,7 @@ struct ChatView: View {
         reversedChatItems
             .enumerated()
             .filter { (index, chatItem) in
-                if let mergeCategory = chatItem.mergeCategory, index > .zero {
+                if let mergeCategory = chatItem.mergeCategory, index > 0 {
                     mergeCategory != reversedChatItems[index - 1].mergeCategory
                 } else {
                     true
@@ -456,7 +443,7 @@ struct ChatView: View {
         init() {
             unreadChatItemCounts = UnreadChatItemCounts(
                 isNearBottom: true,
-                unreadBelow: .zero
+                unreadBelow: 0
             )
             events
                 .receive(on: DispatchQueue.global(qos: .background))
@@ -564,12 +551,16 @@ struct ChatView: View {
 
     private func searchButton() -> some View {
         Button {
-            searchMode = true
-            searchFocussed = true
-            searchText = ""
+            focusSearch()
         } label: {
             Label("Search", systemImage: "magnifyingglass")
         }
+    }
+
+    private func focusSearch() {
+        searchMode = true
+        searchFocussed = true
+        searchText = ""
     }
 
     private func addMembersButton() -> some View {
@@ -813,7 +804,7 @@ struct ChatView: View {
                                     .padding(.trailing, 12)
                             }
                             HStack(alignment: .top, spacing: 8) {
-                                ProfileImage(imageStr: member.memberProfile.image, size: memberImageSize, backgroundColor: theme.colors.background)
+                                MemberProfileImage(member, size: memberImageSize, backgroundColor: theme.colors.background)
                                     .onTapGesture {
                                         if m.membersLoaded {
                                             selectedMember = m.getGroupMember(member.groupMemberId)
@@ -1098,7 +1089,7 @@ struct ChatView: View {
         }
 
         func reactions(from: Int? = nil, till: Int? = nil) -> some View {
-            ForEach(availableReactions[(from ?? .zero)..<(till ?? availableReactions.count)]) { reaction in
+            ForEach(availableReactions[(from ?? 0)..<(till ?? availableReactions.count)]) { reaction in
                 Button(reaction.text) {
                     setReaction(chatItem, add: true, reaction: reaction)
                 }

@@ -148,8 +148,10 @@ defaultChatConfig =
       defaultServers =
         DefaultAgentServers
           { smp = _defaultSMPServers,
+            useSMP = 4,
             ntf = _defaultNtfServers,
             xftp = L.map (presetServerCfg True) defaultXFTPServers,
+            useXFTP = L.length defaultXFTPServers,
             netCfg = defaultNetworkConfig
           },
       tbqSize = 1024,
@@ -178,7 +180,13 @@ _defaultSMPServers =
   L.fromList $
     map
       (presetServerCfg True)
-      [ "smp://h--vW7ZSkXPeOUpfxlFGgauQmXNFOzGoizak7Ult7cw=@smp15.simplex.im,oauu4bgijybyhczbnxtlggo6hiubahmeutaqineuyy23aojpih3dajad.onion",
+      [ "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion",
+        "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im,jssqzccmrcws6bhmn77vgmhfjmhwlyr3u7puw4erkyoosywgl67slqqd.onion",
+        "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im,rb2pbttocvnbrngnwziclp2f4ckjq65kebafws6g4hy22cdaiv5dwjqd.onion",
+        "smp://1OwYGt-yqOfe2IyVHhxz3ohqo3aCCMjtB-8wn4X_aoY=@smp11.simplex.im,6ioorbm6i3yxmuoezrhjk6f6qgkc4syabh7m3so74xunb5nzr4pwgfqd.onion",
+        "smp://UkMFNAXLXeAAe0beCa4w6X_zp18PwxSaSjY17BKUGXQ=@smp12.simplex.im,ie42b5weq7zdkghocs3mgxdjeuycheeqqmksntj57rmejagmg4eor5yd.onion",
+        "smp://enEkec4hlR3UtKx2NMpOUK_K4ZuDxjWBO1d9Y4YXVaA=@smp14.simplex.im,aspkyu2sopsnizbyfabtsicikr2s4r3ti35jogbcekhm3fsoeyjvgrid.onion",
+        "smp://h--vW7ZSkXPeOUpfxlFGgauQmXNFOzGoizak7Ult7cw=@smp15.simplex.im,oauu4bgijybyhczbnxtlggo6hiubahmeutaqineuyy23aojpih3dajad.onion",
         "smp://hejn2gVIqNU6xjtGM3OwQeuk8ZEbDXVJXAlnSBJBWUA=@smp16.simplex.im,p3ktngodzi6qrf7w64mmde3syuzrv57y55hxabqcq3l5p6oi7yzze6qd.onion",
         "smp://ZKe4uxF4Z_aLJJOEsC-Y6hSkXgQS5-oc442JQGkyP8M=@smp17.simplex.im,ogtwfxyi3h2h5weftjjpjmxclhb5ugufa5rcyrmg7j4xlch7qsr5nuqd.onion",
         "smp://PtsqghzQKU83kYTlQ1VKg996dW4Cw4x_bvpKmiv8uns=@smp18.simplex.im,lyqpnwbs2zqfr45jqkncwpywpbtq7jrhxnib5qddtr6npjyezuwd3nqd.onion",
@@ -188,13 +196,7 @@ _defaultSMPServers =
         (presetServerCfg False)
         [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im,o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion",
           "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im,jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion",
-          "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion",
-          "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion",
-          "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im,jssqzccmrcws6bhmn77vgmhfjmhwlyr3u7puw4erkyoosywgl67slqqd.onion",
-          "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im,rb2pbttocvnbrngnwziclp2f4ckjq65kebafws6g4hy22cdaiv5dwjqd.onion",
-          "smp://1OwYGt-yqOfe2IyVHhxz3ohqo3aCCMjtB-8wn4X_aoY=@smp11.simplex.im,6ioorbm6i3yxmuoezrhjk6f6qgkc4syabh7m3so74xunb5nzr4pwgfqd.onion",
-          "smp://UkMFNAXLXeAAe0beCa4w6X_zp18PwxSaSjY17BKUGXQ=@smp12.simplex.im,ie42b5weq7zdkghocs3mgxdjeuycheeqqmksntj57rmejagmg4eor5yd.onion",
-          "smp://enEkec4hlR3UtKx2NMpOUK_K4ZuDxjWBO1d9Y4YXVaA=@smp14.simplex.im,aspkyu2sopsnizbyfabtsicikr2s4r3ti35jogbcekhm3fsoeyjvgrid.onion"
+          "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
         ]
 
 _defaultNtfServers :: [NtfServer]
@@ -380,10 +382,30 @@ withFileLock name = withEntityLock name . CLFile
 useServers :: UserProtocol p => ChatConfig -> SProtocolType p -> [ServerCfg p] -> NonEmpty (ServerCfg p)
 useServers ChatConfig {defaultServers} p = fromMaybe (cfgServers p defaultServers) . nonEmpty
 
-cfgServers :: UserProtocol p => SProtocolType p -> (DefaultAgentServers -> NonEmpty (ServerCfg p))
+randomServers :: forall p. UserProtocol p => SProtocolType p -> ChatConfig -> IO (NonEmpty (ServerCfg p), [ServerCfg p])
+randomServers p ChatConfig {defaultServers} = do
+  let srvs = cfgServers p defaultServers
+      (enbldSrvs, dsbldSrvs) = L.partition (\ServerCfg {enabled} -> enabled) srvs
+      toUse = cfgServersToUse p defaultServers
+  if length enbldSrvs <= toUse
+    then pure (srvs, [])
+    else do
+      (enbldSrvs', srvsToDisable) <- splitAt toUse <$> shuffle enbldSrvs
+      let dsbldSrvs' = map (\srv -> (srv :: ServerCfg p) {enabled = False}) srvsToDisable
+          srvs' = sortOn server' $ enbldSrvs' <> dsbldSrvs' <> dsbldSrvs
+      pure (fromMaybe srvs $ L.nonEmpty srvs', srvs')
+  where
+    server' ServerCfg {server = ProtoServerWithAuth srv _} = srv
+
+cfgServers :: UserProtocol p => SProtocolType p -> DefaultAgentServers -> NonEmpty (ServerCfg p)
 cfgServers p DefaultAgentServers {smp, xftp} = case p of
   SPSMP -> smp
   SPXFTP -> xftp
+
+cfgServersToUse :: UserProtocol p => SProtocolType p -> DefaultAgentServers -> Int
+cfgServersToUse p DefaultAgentServers {useSMP, useXFTP} = case p of
+  SPSMP -> useSMP
+  SPXFTP -> useXFTP
 
 -- enableSndFiles has no effect when mainApp is True
 startChatController :: Bool -> Bool -> CM' (Async ())
@@ -523,7 +545,7 @@ processChatCommand cmd =
 processChatCommand' :: VersionRangeChat -> ChatCommand -> CM ChatResponse
 processChatCommand' vr = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
-  CreateActiveUser NewUser {profile, sameServers, pastTimestamp} -> do
+  CreateActiveUser NewUser {profile, pastTimestamp} -> do
     forM_ profile $ \Profile {displayName} -> checkValidName displayName
     p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
     u <- asks currentUser
@@ -546,15 +568,13 @@ processChatCommand' vr = \case
       createPresetContactCards :: User -> CM ()
       createPresetContactCards user =
         withFastStore $ \db -> do
-          createContact db user simplexTeamContactProfile
           createContact db user simplexStatusContactProfile
+          createContact db user simplexTeamContactProfile
       chooseServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> CM (NonEmpty (ServerCfg p), [ServerCfg p])
-      chooseServers protocol
-        | sameServers =
-            asks currentUser >>= readTVarIO >>= \case
-              Nothing -> throwChatError CENoActiveUser
-              Just user -> chosenServers =<< withFastStore' (`getProtocolServers` user)
-        | otherwise = chosenServers []
+      chooseServers protocol =
+        asks currentUser >>= readTVarIO >>= \case
+          Nothing -> asks config >>= liftIO . randomServers protocol
+          Just user -> chosenServers =<< withFastStore' (`getProtocolServers` user)
         where
           chosenServers servers = do
             cfg <- asks config
@@ -7914,10 +7934,9 @@ chatCommandP =
     onOffP = ("on" $> True) <|> ("off" $> False)
     profileNames = (,) <$> displayName <*> fullNameP
     newUserP = do
-      sameServers <- "same_servers=" *> onOffP <* A.space <|> pure False
       (cName, fullName) <- profileNames
       let profile = Just Profile {displayName = cName, fullName, image = Nothing, contactLink = Nothing, preferences = Nothing}
-      pure NewUser {profile, sameServers, pastTimestamp = False}
+      pure NewUser {profile, pastTimestamp = False}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString
     groupProfile = do

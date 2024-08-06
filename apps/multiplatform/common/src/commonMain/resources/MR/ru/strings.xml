@@ -394,7 +394,6 @@
     <string name="network_enable_socks_info">Соединяться с серверами через SOCKS прокси через порт %d? Прокси должен быть запущен до включения этой опции.</string>
     <string name="network_disable_socks">Использовать прямое соединение с Интернет?</string>
     <string name="network_disable_socks_info">Если Вы подтвердите, серверы смогут видеть Ваш IP адрес, а провайдер - с какими серверами Вы соединяетесь.</string>
-    <string name="update_onion_hosts_settings_question">Обновить настройки .onion хостов?</string>
     <string name="network_use_onion_hosts">Использовать .onion хосты</string>
     <string name="network_use_onion_hosts_prefer">Когда возможно</string>
     <string name="network_use_onion_hosts_no">Нет</string>
@@ -403,9 +402,6 @@
     <string name="network_use_onion_hosts_no_desc">Onion хосты не используются.</string>
     <string name="network_use_onion_hosts_required_desc">Подключаться только к onion хостам.
 \nОбратите внимание: Вы не сможете соединиться с серверами, у которых нет .onion адреса.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion хосты используются, если возможно.</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Onion хосты не используются.</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Подключаться только к onion хостам.</string>
     <string name="appearance_settings">Интерфейс</string>
     <!-- Address Items - UserAddressView.kt -->
     <string name="create_address">Создать адрес</string>
@@ -831,7 +827,6 @@
     <string name="network_option_protocol_timeout">Таймаут протокола</string>
     <string name="network_option_ping_interval">Интервал PING</string>
     <string name="network_option_enable_tcp_keep_alive">Включить TCP keep-alive</string>
-    <string name="network_options_revert">Отменить изменения</string>
     <string name="network_options_save">Сохранить</string>
     <string name="update_network_settings_question">Обновить настройки сети?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Обновление настроек приведет к переподключению клиента ко всем серверам.</string>
@@ -1941,4 +1936,22 @@
     <string name="color_wallpaper_tint">Рисунок обоев</string>
     <string name="color_wallpaper_background">Фон обоев</string>
     <string name="chat_theme_apply_to_mode">Применить к</string>
+    <string name="cannot_share_message_alert_title">Не удается отправить сообщение</string>
+    <string name="app_check_for_updates_beta">Бета</string>
+    <string name="servers_info_sessions_connected">Соединeно</string>
+    <string name="attempts_label">попытки</string>
+    <string name="completed">Готово</string>
+    <string name="confirm_delete_contact_question">Потвердить удаление контакта?</string>
+    <string name="privacy_media_blur_radius">Размытие изображения</string>
+    <string name="all_users">Все профили</string>
+    <string name="app_check_for_updates_notice_title">Проверка на наличиее обновлений</string>
+    <string name="allow_calls_question">Разрешить звонки?</string>
+    <string name="calls_prohibited_alert_title">Звонки запрещены!</string>
+    <string name="cant_call_member_alert_title">Не удается позвонить члену группы</string>
+    <string name="app_check_for_updates_download_completed_title">Обновление скачано</string>
+    <string name="info_view_call_button">звонок</string>
+    <string name="cant_call_contact_alert_title">Не удается позвонить контакту</string>
+    <string name="cant_send_message_to_member_alert_title">Не удается написать члену группы</string>
+    <string name="app_check_for_updates">Проверка на наличиее обновлений</string>
+    <string name="info_view_connect_button">соединиться</string>
 </resources>

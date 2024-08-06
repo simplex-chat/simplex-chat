@@ -997,9 +997,6 @@
 "Contact is connected" = "Соединение с контактом установлено";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "Соединение еще не установлено!";
-
-/* No comment provided by engineer. */
 "Contact name" = "Имена контактов";
 
 /* No comment provided by engineer. */
@@ -1213,12 +1210,6 @@
 "Delete contact" = "Удалить контакт";
 
 /* No comment provided by engineer. */
-"Delete Contact" = "Удалить контакт";
-
-/* No comment provided by engineer. */
-"Delete contact?\nThis cannot be undone!" = "Удалить контакт?\nЭто не может быть отменено!";
-
-/* No comment provided by engineer. */
 "Delete database" = "Удалить данные чата";
 
 /* No comment provided by engineer. */
@@ -1271,9 +1262,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Удалить предыдущую версию данных?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Удалить соединение";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Удалить ожидаемое соединение?";
@@ -1673,9 +1661,6 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "Ошибка при удалении соединения";
-
-/* No comment provided by engineer. */
-"Error deleting contact" = "Ошибка при удалении контакта";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Ошибка при удалении данных чата";
@@ -2501,12 +2486,6 @@
 "message received" = "получено сообщение";
 
 /* No comment provided by engineer. */
-"Message routing fallback" = "Прямая доставка сообщений";
-
-/* No comment provided by engineer. */
-"Message routing mode" = "Режим доставки сообщений";
-
-/* No comment provided by engineer. */
 "Message source remains private." = "Источник сообщения остаётся конфиденциальным.";
 
 /* No comment provided by engineer. */
@@ -2761,10 +2740,10 @@
 "One-time invitation link" = "Одноразовая ссылка";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "Подключаться только к onion хостам. Требуется включенный VPN.";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "Подключаться только к **onion** хостам.\nТребуется совместимый VPN.";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "Onion хосты используются, если возможно. Требуется включенный VPN.";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "Onion хосты используются, если возможно.\nТребуется совместимый VPN.";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "Onion хосты не используются.";
@@ -3262,9 +3241,6 @@
 "Reveal" = "Показать";
 
 /* No comment provided by engineer. */
-"Revert" = "Отменить изменения";
-
-/* No comment provided by engineer. */
 "Revoke" = "Отозвать";
 
 /* cancel file action */
@@ -3396,7 +3372,7 @@
 /* chat item text */
 "security code changed" = "код безопасности изменился";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "Выбрать";
 
 /* No comment provided by engineer. */
@@ -3422,9 +3398,6 @@
 
 /* No comment provided by engineer. */
 "send direct message" = "отправьте сообщение";
-
-/* No comment provided by engineer. */
-"Send direct message" = "Отправить сообщение";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Отправьте сообщение чтобы соединиться";
@@ -3667,9 +3640,6 @@
 "Small groups (max 20)" = "Маленькие группы (до 20)";
 
 /* No comment provided by engineer. */
-"SMP servers" = "SMP серверы";
-
-/* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Во время импорта произошли некоторые ошибки - для получения более подробной информации вы можете обратиться к консоли.";
 
 /* notification title */
@@ -3767,9 +3737,6 @@
 
 /* No comment provided by engineer. */
 "Tap to scan" = "Нажмите, чтобы сканировать";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "Нажмите, чтобы начать чат";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "Таймаут TCP соединения";
@@ -4018,7 +3985,7 @@
 "Unknown error" = "Неизвестная ошибка";
 
 /* No comment provided by engineer. */
-"unknown relays" = "неизвестные серверы";
+"unknown servers" = "неизвестные серверы";
 
 /* No comment provided by engineer. */
 "Unknown servers!" = "Неизвестные серверы!";
@@ -4060,16 +4027,10 @@
 "Update" = "Обновить";
 
 /* No comment provided by engineer. */
-"Update .onion hosts setting?" = "Обновить настройки .onion хостов?";
-
-/* No comment provided by engineer. */
 "Update database passphrase" = "Поменять пароль";
 
 /* No comment provided by engineer. */
 "Update network settings?" = "Обновить настройки сети?";
-
-/* No comment provided by engineer. */
-"Update transport isolation mode?" = "Обновить режим отдельных сессий?";
 
 /* rcv group event chat item */
 "updated group profile" = "обновил(а) профиль группы";
@@ -4079,9 +4040,6 @@
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Обновление настроек приведет к сбросу и установке нового соединения со всеми серверами.";
-
-/* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "Обновление этих настроек приведет к сбросу и установке нового соединения со всеми серверами.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Обновить и открыть чат";
@@ -4136,9 +4094,6 @@
 
 /* No comment provided by engineer. */
 "User profile" = "Профиль чата";
-
-/* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = "Для использования .onion хостов требуется совместимый VPN провайдер.";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "Используются серверы, предоставленные SimpleX Chat.";
@@ -4320,9 +4275,6 @@
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Неправильный пароль!";
 
-/* No comment provided by engineer. */
-"XFTP servers" = "XFTP серверы";
-
 /* pref value */
 "yes" = "да";
 
@@ -4459,9 +4411,6 @@
 "You have already requested connection!\nRepeat connection request?" = "Вы уже запросили соединение!\nПовторить запрос?";
 
 /* No comment provided by engineer. */
-"You have no chats" = "У Вас нет чатов";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Пароль не сохранен на устройстве — Вы будете должны ввести его при каждом запуске чата.";
 
 /* No comment provided by engineer. */
@@ -4550,9 +4499,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Ваши профили чата";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Ваш контакт должен быть в сети чтобы установить соединение.\nВы можете отменить соединение и удалить контакт (и попробовать позже с другой ссылкой).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ваш контакт отправил файл, размер которого превышает максимальный размер (%@).";

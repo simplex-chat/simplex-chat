@@ -440,7 +440,7 @@ struct ChatItemInfoView: View {
 
     private func memberDeliveryStatusView(_ member: GroupMember, _ status: GroupSndStatus, _ sentViaProxy: Bool?) -> some View {
         HStack{
-            ProfileImage(imageStr: member.image, size: 30)
+            MemberProfileImage(member, size: 30)
                 .padding(.trailing, 2)
             Text(member.chatViewName)
                 .lineLimit(1)

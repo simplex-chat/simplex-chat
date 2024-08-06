@@ -16,7 +16,7 @@ import chat.simplex.common.views.newchat.chatContactType
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
-private fun onRequestAccepted(chat: Chat) {
+fun onRequestAccepted(chat: Chat) {
     val chatInfo = chat.chatInfo
     if (chatInfo is ChatInfo.Direct) {
         ModalManager.start.closeModals()
@@ -27,7 +27,7 @@ private fun onRequestAccepted(chat: Chat) {
 }
 
 @Composable
-fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI: State<Boolean>) {
+fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDeletedChatIcon: Boolean) {
     val showMenu = remember { mutableStateOf(false) }
     val rhId = chat.remoteHostId
     val disabled = chatModel.chatRunning.value == false || chatModel.deletedChats.value.contains(rhId to chat.chatInfo.id)
@@ -46,7 +46,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHand
             ChatListNavLinkLayout(
                 chatLinkPreview = {
                     tryOrShowError("${chat.id}ContactListNavLink", error = { ErrorChatListItem() }) {
-                        ContactPreviewView(chat, disabled)
+                        ContactPreviewView(chat, disabled, showDeletedChatIcon)
                     }
                 },
                 click = {
@@ -88,14 +88,13 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHand
                 disabled,
                 selectedChat,
                 nextChatSelected,
-                oneHandUI
             )
         }
         is ChatInfo.ContactRequest -> {
             ChatListNavLinkLayout(
                 chatLinkPreview = {
                     tryOrShowError("${chat.id}ContactListNavLink", error = { ErrorChatListItem() }) {
-                        ContactPreviewView(chat, disabled)
+                        ContactPreviewView(chat, disabled, showDeletedChatIcon)
                     }
                 },
                 click = {
@@ -121,9 +120,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHand
                 showMenu,
                 disabled,
                 selectedChat,
-                nextChatSelected,
-                oneHandUI
-            )
+                nextChatSelected)
         }
         else -> {}
     }

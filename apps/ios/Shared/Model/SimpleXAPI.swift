@@ -137,8 +137,8 @@ func apiGetActiveUser(ctrl: chat_ctrl? = nil) throws -> User? {
     }
 }
 
-func apiCreateActiveUser(_ p: Profile?, sameServers: Bool = false, pastTimestamp: Bool = false, ctrl: chat_ctrl? = nil) throws -> User {
-    let r = chatSendCmdSync(.createActiveUser(profile: p, sameServers: sameServers, pastTimestamp: pastTimestamp), ctrl)
+func apiCreateActiveUser(_ p: Profile?, pastTimestamp: Bool = false, ctrl: chat_ctrl? = nil) throws -> User {
+    let r = chatSendCmdSync(.createActiveUser(profile: p, pastTimestamp: pastTimestamp), ctrl)
     if case let .activeUser(user) = r { return user }
     throw r
 }
@@ -340,7 +340,13 @@ func loadChat(chat: Chat, search: String = "") {
         m.chatItemStatuses = [:]
         im.reversedChatItems = []
         let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
-        m.updateChatInfo(chat.chatInfo)
+        if case let .direct(contact) = chat.chatInfo, !cInfo.chatDeleted, chat.chatInfo.chatDeleted {
+            var updatedContact = contact
+            updatedContact.chatDeleted = false
+            m.updateContact(updatedContact)
+        } else {
+            m.updateChatInfo(chat.chatInfo)
+        }
         im.reversedChatItems = chat.chatItems.reversed()
     } catch let error {
         logger.error("loadChat error: \(responseError(error))")
@@ -761,22 +767,38 @@ func apiConnectContactViaAddress(incognito: Bool, contactId: Int64) async -> (Co
     return (nil, alert)
 }
 
-func apiDeleteChat(type: ChatType, id: Int64, notify: Bool? = nil) async throws {
+func apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async throws {
     let chatId = type.rawValue + id.description
     DispatchQueue.main.async { ChatModel.shared.deletedChats.insert(chatId) }
     defer { DispatchQueue.main.async { ChatModel.shared.deletedChats.remove(chatId) } }
-    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id, notify: notify), bgTask: false)
+    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id, chatDeleteMode: chatDeleteMode), bgTask: false)
     if case .direct = type, case .contactDeleted = r { return }
     if case .contactConnection = type, case .contactConnectionDeleted = r { return }
     if case .group = type, case .groupDeletedUser = r { return }
     throw r
 }
 
-func deleteChat(_ chat: Chat, notify: Bool? = nil) async {
+func apiDeleteContact(id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async throws -> Contact {
+    let type: ChatType = .direct
+    let chatId = type.rawValue + id.description
+    if case .full = chatDeleteMode {
+        DispatchQueue.main.async { ChatModel.shared.deletedChats.insert(chatId) }
+    }
+    defer {
+        if case .full = chatDeleteMode {
+            DispatchQueue.main.async { ChatModel.shared.deletedChats.remove(chatId) }
+        }
+    }
+    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id, chatDeleteMode: chatDeleteMode), bgTask: false)
+    if case let .contactDeleted(_, contact) = r { return contact }
+    throw r
+}
+
+func deleteChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async {
     do {
         let cInfo = chat.chatInfo
-        try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId, notify: notify)
-        DispatchQueue.main.async { ChatModel.shared.removeChat(cInfo.id) }
+        try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId, chatDeleteMode: chatDeleteMode)
+        await MainActor.run { ChatModel.shared.removeChat(cInfo.id) }
     } catch let error {
         logger.error("deleteChat apiDeleteChat error: \(responseError(error))")
         AlertManager.shared.showAlertMsg(
@@ -785,6 +807,39 @@ func deleteChat(_ chat: Chat, notify: Bool? = nil) async {
         )
     }
 }
+
+func deleteContactChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async -> Alert? {
+    do {
+        let cInfo = chat.chatInfo
+        let ct = try await apiDeleteContact(id: cInfo.apiId, chatDeleteMode: chatDeleteMode)
+        await MainActor.run {
+            switch chatDeleteMode {
+            case .full:
+                ChatModel.shared.removeChat(cInfo.id)
+            case .entity:
+                ChatModel.shared.removeChat(cInfo.id)
+                ChatModel.shared.addChat(Chat(
+                    chatInfo: .direct(contact: ct),
+                    chatItems: chat.chatItems
+                ))
+            case .messages:
+                ChatModel.shared.removeChat(cInfo.id)
+                ChatModel.shared.addChat(Chat(
+                    chatInfo: .direct(contact: ct),
+                    chatItems: []
+                ))
+            }
+        }
+    } catch let error {
+        logger.error("deleteContactChat apiDeleteContact error: \(responseError(error))")
+        return mkAlert(
+            title: "Error deleting chat!",
+            message: "Error: \(responseError(error))"
+        )
+    }
+    return nil
+}
+
 
 func apiClearChat(type: ChatType, id: Int64) async throws -> ChatInfo {
     let r = await chatSendCmd(.apiClearChat(type: type, id: id), bgTask: false)
@@ -1114,9 +1169,16 @@ func networkErrorAlert(_ r: ChatResponse) -> Alert? {
 func acceptContactRequest(incognito: Bool, contactRequest: UserContactRequest) async {
     if let contact = await apiAcceptContactRequest(incognito: incognito, contactReqId: contactRequest.apiId) {
         let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
-        DispatchQueue.main.async {
+        await MainActor.run {
             ChatModel.shared.replaceChat(contactRequest.id, chat)
             ChatModel.shared.setContactNetworkStatus(contact, .connected)
+        }
+        if contact.sndReady {
+            DispatchQueue.main.async {
+                dismissAllSheets(animated: true) {
+                    ChatModel.shared.chatId = chat.id
+                }
+            }
         }
     }
 }
@@ -1713,6 +1775,11 @@ func processReceivedMsg(_ res: ChatResponse) async {
         let cItem = aChatItem.chatItem
         await MainActor.run {
             if active(user) {
+                if case let .direct(contact) = cInfo, contact.chatDeleted {
+                    var updatedContact = contact
+                    updatedContact.chatDeleted = false
+                    m.updateContact(updatedContact)
+                }
                 m.addChatItem(cInfo, cItem)
             } else if cItem.isRcvNew && cInfo.ntfsEnabled {
                 m.increaseUnreadCounter(user: user)

@@ -599,7 +599,7 @@
 /* rcv group event chat item */
 "blocked %@" = "已封禁 %@";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "由管理员封禁";
 
 /* No comment provided by engineer. */
@@ -925,9 +925,6 @@
 "Contact is connected" = "联系已连接";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "联系人尚未连接！";
-
-/* No comment provided by engineer. */
 "Contact name" = "联系人姓名";
 
 /* No comment provided by engineer. */
@@ -1132,9 +1129,6 @@
 "Delete contact" = "删除联系人";
 
 /* No comment provided by engineer. */
-"Delete Contact" = "删除联系人";
-
-/* No comment provided by engineer. */
 "Delete database" = "删除数据库";
 
 /* No comment provided by engineer. */
@@ -1187,9 +1181,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "删除旧数据库吗？";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "删除挂起连接";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "删除待定连接？";
@@ -1568,9 +1559,6 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "删除连接错误";
-
-/* No comment provided by engineer. */
-"Error deleting contact" = "删除联系人错误";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "删除数据库错误";
@@ -2599,10 +2587,10 @@
 "One-time invitation link" = "一次性邀请链接";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "Onion 主机将用于连接。需要启用 VPN。";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "Onion 主机将用于连接。需要启用 VPN。";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "当可用时，将使用 Onion 主机。需要启用 VPN。";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "当可用时，将使用 Onion 主机。需要启用 VPN。";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "将不会使用 Onion 主机。";
@@ -3061,9 +3049,6 @@
 "Reveal" = "揭示";
 
 /* No comment provided by engineer. */
-"Revert" = "恢复";
-
-/* No comment provided by engineer. */
 "Revoke" = "撤销";
 
 /* cancel file action */
@@ -3189,7 +3174,7 @@
 /* chat item text */
 "security code changed" = "安全密码已更改";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "选择";
 
 /* No comment provided by engineer. */
@@ -3215,9 +3200,6 @@
 
 /* No comment provided by engineer. */
 "send direct message" = "发送私信";
-
-/* No comment provided by engineer. */
-"Send direct message" = "发送私信";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "发送私信来连接";
@@ -3442,9 +3424,6 @@
 "Small groups (max 20)" = "小群组（最多 20 人）";
 
 /* No comment provided by engineer. */
-"SMP servers" = "SMP 服务器";
-
-/* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "导入过程中发生了一些非致命错误——您可以查看聊天控制台了解更多详细信息。";
 
 /* notification title */
@@ -3542,9 +3521,6 @@
 
 /* No comment provided by engineer. */
 "Tap to scan" = "轻按扫描";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "点击开始一个新聊天";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "TCP 连接超时";
@@ -3814,16 +3790,10 @@
 "Update" = "更新";
 
 /* No comment provided by engineer. */
-"Update .onion hosts setting?" = "更新 .onion 主机设置？";
-
-/* No comment provided by engineer. */
 "Update database passphrase" = "更新数据库密码";
 
 /* No comment provided by engineer. */
 "Update network settings?" = "更新网络设置？";
-
-/* No comment provided by engineer. */
-"Update transport isolation mode?" = "更新传输隔离模式？";
 
 /* rcv group event chat item */
 "updated group profile" = "已更新的群组资料";
@@ -3833,9 +3803,6 @@
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "更新设置会将客户端重新连接到所有服务器。";
-
-/* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "更新此设置将重新连接客户端到所有服务器。";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "升级并打开聊天";
@@ -3881,9 +3848,6 @@
 
 /* No comment provided by engineer. */
 "User profile" = "用户资料";
-
-/* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = "使用 .onion 主机需要兼容的 VPN 提供商。";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "使用 SimpleX Chat 服务器。";
@@ -4047,9 +4011,6 @@
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "密码错误！";
 
-/* No comment provided by engineer. */
-"XFTP servers" = "XFTP 服务器";
-
 /* pref value */
 "yes" = "是";
 
@@ -4162,9 +4123,6 @@
 "You have already requested connection via this address!" = "你已经请求通过此地址进行连接！";
 
 /* No comment provided by engineer. */
-"You have no chats" = "您没有聊天记录";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "您必须在每次应用程序启动时输入密码——它不存储在设备上。";
 
 /* No comment provided by engineer. */
@@ -4247,9 +4205,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "您的聊天资料";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "您的联系人需要在线才能完成连接。\n您可以取消此连接并删除联系人（然后尝试使用新链接）。";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "您的联系人发送的文件大于当前支持的最大大小 (%@)。";

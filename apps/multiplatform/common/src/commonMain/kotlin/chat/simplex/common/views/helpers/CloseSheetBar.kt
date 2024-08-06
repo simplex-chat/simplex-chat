@@ -20,7 +20,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 
 @Composable
-fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Color = if (close != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,  arrangement: Arrangement.Vertical = Arrangement.Top, closeBarTitle: String? = null, endButtons: @Composable RowScope.() -> Unit = {}) {
+fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Color = if (close != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,  arrangement: Arrangement.Vertical = Arrangement.Top, closeBarTitle: String? = null, barPaddingValues: PaddingValues = PaddingValues(horizontal = AppBarHorizontalPadding), endButtons: @Composable RowScope.() -> Unit = {}) {
   var rowModifier = Modifier
     .fillMaxWidth()
     .height(AppBarHeight * fontSizeSqrtMultiplier)
@@ -36,7 +36,7 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
       .heightIn(min = AppBarHeight * fontSizeSqrtMultiplier)
   ) {
     Row(
-      modifier = Modifier.padding(horizontal = AppBarHorizontalPadding),
+      modifier = Modifier.padding(barPaddingValues),
       content = {
         Row(
           rowModifier,
@@ -70,7 +70,7 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
 }
 
 @Composable
-fun AppBarTitle(title: String, hostDevice: Pair<Long?, String>? = null,  withPadding: Boolean = true, bottomPadding: Dp = DEFAULT_PADDING * 1.5f) {
+fun AppBarTitle(title: String, hostDevice: Pair<Long?, String>? = null,  withPadding: Boolean = true, bottomPadding: Dp = DEFAULT_PADDING * 1.5f + 8.dp) {
   val theme = CurrentColors.collectAsState()
   val titleColor = MaterialTheme.appColors.title
   val brush = if (theme.value.base == DefaultTheme.SIMPLEX)
