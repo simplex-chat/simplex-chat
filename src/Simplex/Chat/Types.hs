@@ -124,7 +124,6 @@ data User = User
 
 data NewUser = NewUser
   { profile :: Maybe Profile,
-    sameServers :: Bool,
     pastTimestamp :: Bool
   }
   deriving (Show)
