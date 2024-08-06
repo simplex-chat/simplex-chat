@@ -31,14 +31,16 @@ struct SwipeLabel: View {
     private class SwipeActionView: UIView {
         private let imageView = UIImageView()
         private let label = UILabel()
+        private let fontSize: CGFloat
 
         init(systemName: String, text: String) {
-            super.init(frame: CGRect(x: 0, y: 0, width: 64, height: 48))
+            fontSize = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .body).pointSize
+            super.init(frame: CGRect(x: 0, y: 0, width: 64, height: 32 + fontSize))
             imageView.image = UIImage(systemName: systemName)
             imageView.contentMode = .scaleAspectFit
             label.text = NSLocalizedString(text, comment: "swipe action")
             label.textAlignment = .center
-            label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+            label.font = UIFont.systemFont(ofSize: fontSize, weight: .medium)
             addSubview(imageView)
             addSubview(label)
         }
@@ -54,7 +56,7 @@ struct SwipeLabel: View {
                 x: 0,
                 y: 32,
                 width: 64,
-                height: 16
+                height: fontSize
             )
         }
 
