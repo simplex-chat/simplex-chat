@@ -22,8 +22,9 @@ struct ChatListView: View {
     @State private var showConnectDesktop = false
 
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
-    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = false
-    
+    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = true
+    @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
+
     var body: some View {
         if #available(iOS 16.0, *) {
             viewBody.scrollDismissesKeyboard(.immediately)
@@ -186,6 +187,12 @@ struct ChatListView: View {
                     .listRowBackground(Color.clear)
                     .frame(maxWidth: .infinity)
                 }
+                if !oneHandUICardShown {
+                    OneHandUICard()
+                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                }
                 ForEach(cs, id: \.viewId) { chat in
                     ChatListNavLink(chat: chat)
                         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
@@ -206,6 +213,9 @@ struct ChatListView: View {
             .onChange(of: chatModel.currentUser?.userId) { _ in
                 stopAudioPlayer()
             }
+//            .onAppear {
+//                oneHandUICardShown = false
+//            }
             if cs.isEmpty && !chatModel.chats.isEmpty {
                 Text("No filtered chats")
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)

@@ -56,7 +56,7 @@ struct ChatListNavLink: View {
     @State private var inProgress = false
     @State private var progressByTimeout = false
 
-    var dynamicRowHeight: CGFloat { dynamicSizes[userFont]?.rowHeight ?? 80 }
+    var dynamicRowHeight: CGFloat { dynamicSize(userFont).rowHeight }
 
     var body: some View {
         Group {

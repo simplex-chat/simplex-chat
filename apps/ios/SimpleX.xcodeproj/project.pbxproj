@@ -214,6 +214,7 @@
 		D77B92DC2952372200A5A1CC /* SwiftyGif in Frameworks */ = {isa = PBXBuildFile; productRef = D77B92DB2952372200A5A1CC /* SwiftyGif */; };
 		D7F0E33929964E7E0068AF69 /* LZString in Frameworks */ = {isa = PBXBuildFile; productRef = D7F0E33829964E7E0068AF69 /* LZString */; };
 		E50581062C3DDD9D009C3F71 /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = E50581052C3DDD9D009C3F71 /* Yams */; };
+		E51CC1E62C62085600DB91FE /* OneHandUICard.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51CC1E52C62085600DB91FE /* OneHandUICard.swift */; };
 		E5DCF8DB2C56FAC1007928CC /* SimpleXChat.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; };
 		E5DCF8E12C5847EB007928CC /* libHSsimplex-chat-6.0.0.3-5yF58NJ20MV4vZ7jQKFAxB.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E5DCF8DC2C5847EB007928CC /* libHSsimplex-chat-6.0.0.3-5yF58NJ20MV4vZ7jQKFAxB.a */; };
 		E5DCF8E22C5847EB007928CC /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E5DCF8DD2C5847EB007928CC /* libgmp.a */; };
@@ -549,6 +550,7 @@
 		D741547729AF89AF0022400A /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/StoreKit.framework; sourceTree = DEVELOPER_DIR; };
 		D741547929AF90B00022400A /* PushKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PushKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/PushKit.framework; sourceTree = DEVELOPER_DIR; };
 		D7AA2C3429A936B400737B40 /* MediaEncryption.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; name = MediaEncryption.playground; path = Shared/MediaEncryption.playground; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
+		E51CC1E52C62085600DB91FE /* OneHandUICard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneHandUICard.swift; sourceTree = "<group>"; };
 		E5DCF8DC2C5847EB007928CC /* libHSsimplex-chat-6.0.0.3-5yF58NJ20MV4vZ7jQKFAxB.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-6.0.0.3-5yF58NJ20MV4vZ7jQKFAxB.a"; sourceTree = "<group>"; };
 		E5DCF8DD2C5847EB007928CC /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
 		E5DCF8DE2C5847EB007928CC /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
@@ -935,6 +937,7 @@
 				5C10D88728EED12E00E58BF0 /* ContactConnectionInfo.swift */,
 				18415835CBD939A9ABDC108A /* UserPicker.swift */,
 				64EEB0F62C353F1C00972D62 /* ServersSummaryView.swift */,
+				E51CC1E52C62085600DB91FE /* OneHandUICard.swift */,
 			);
 			path = ChatList;
 			sourceTree = "<group>";
@@ -1361,6 +1364,7 @@
 				5C93292F29239A170090FFF9 /* ProtocolServersView.swift in Sources */,
 				5CB924D727A8563F00ACCCDD /* SettingsView.swift in Sources */,
 				5CEACCE327DE9246000BD591 /* ComposeView.swift in Sources */,
+				E51CC1E62C62085600DB91FE /* OneHandUICard.swift in Sources */,
 				5C65DAF929D0CC20003CEE45 /* DeveloperView.swift in Sources */,
 				5C36027327F47AD5009F19D9 /* AppDelegate.swift in Sources */,
 				5CB924E127A867BA00ACCCDD /* UserProfile.swift in Sources */,

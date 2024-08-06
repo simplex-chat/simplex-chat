@@ -33,7 +33,7 @@ struct AppearanceSettings: View {
     }()
     @State private var darkModeTheme: String = UserDefaults.standard.string(forKey: DEFAULT_SYSTEM_DARK_THEME) ?? DefaultTheme.DARK.themeName
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileImageCornerRadius = defaultProfileImageCorner
-    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = false
+    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = true
 
     @State var themeUserDestination: (Int64, ThemeModeOverrides?)? = {
         if let currentUser = ChatModel.shared.currentUser, let uiThemes = currentUser.uiThemes, uiThemes.preferredMode(!CurrentColors.colors.isLight) != nil {
