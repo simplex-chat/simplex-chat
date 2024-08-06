@@ -597,10 +597,7 @@ private fun MutableState<MigrationToState?>.importArchive(archivePath: String, n
         val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
         val archiveErrors = controller.apiImportArchive(config)
         if (archiveErrors.isNotEmpty()) {
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.chat_database_imported),
-            generalGetString(MR.strings.non_fatal_errors_occured_during_import)
-          )
+          showArchiveImportedWithErrorsAlert(archiveErrors)
         }
         state = MigrationToState.Passphrase("", netCfg)
         MigrationToDeviceState.save(MigrationToDeviceState.Passphrase(netCfg))
