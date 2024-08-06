@@ -1,5 +1,5 @@
 {
-  "originHash" : "e2611d1e91fd8071abc106776ba14ee2e395d2ad08a78e073381294abc10f115",
+  "originHash" : "415d895b8472ba92f7fa95973495513f544dcde3cbf09f6928a489d8c8731c14",
   "pins" : [
     {
       "identity" : "codescanner",
@@ -16,6 +16,15 @@
       "location" : "https://github.com/Ibrahimhass/lzstring-swift",
       "state" : {
         "revision" : "7f62f21de5b18582a950e1753b775cc614722407"
+      }
+    },
+    {
+      "identity" : "swiftui-introspect",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/siteline/swiftui-introspect.git",
+      "state" : {
+        "revision" : "807f73ce09a9b9723f12385e592b4e0aaebd3336",
+        "version" : "1.3.0"
       }
     },
     {

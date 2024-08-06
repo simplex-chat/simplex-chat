@@ -8,6 +8,9 @@
 
 import SwiftUI
 import SimpleXChat
+import SwiftUIIntrospect
+
+private weak var collectionView: UICollectionView?
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
@@ -20,6 +23,9 @@ struct ChatListView: View {
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
+
+    @State private var isSearchExpanded = true
+    @State private var contentOffsetObservation: NSKeyValueObservation?
 
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
@@ -86,15 +92,47 @@ struct ChatListView: View {
             ))
         }
         .safeAreaInset(edge: .top) {
-            if oneHandUI { Divider().background(Material.ultraThin) }
+            if oneHandUI {
+                Divider().background(Material.thin)
+            } else {
+                searchBar
+            }
         }
+        .safeAreaInset(edge: .bottom) {
+            if oneHandUI { searchBar }
+        }
+
+    }
+    
+    @ViewBuilder
+    var searchBar: some View {
+        // TODO: Preserve height, without hardcoding it. Remove `.font(.system(size: 18))` after done.
+        let height: Double = 56
+        let isVisible = isSearchExpanded || searchFocussed
+        VStack(spacing: 0) {
+            if oneHandUI { Divider() }
+            ChatListSearchBar(
+                searchMode: $searchMode,
+                searchFocussed: $searchFocussed,
+                searchText: $searchText,
+                searchShowingSimplexLink: $searchShowingSimplexLink,
+                searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+            )
+            .padding(8)
+            .frame(height: isVisible ? height : 0)
+            .opacity(isVisible ? 1 : 0)
+            if !oneHandUI { Divider() }
+        }
+        .background(Material.thin)
+        .padding(oneHandUI ? .top : .bottom, isVisible ? 0 : height)
     }
 
     @ViewBuilder
     func withToolbar(content: () -> some View) -> some View {
         if #available(iOS 16.0, *) {
             content()
-                .toolbarBackground(.visible, for: oneHandUI ? .bottomBar : .navigationBar)
+                .toolbarBackground(.hidden, for: .navigationBar)
+                .toolbarBackground(.hidden, for: .bottomBar)
                 .toolbar {
                     if oneHandUI {
                         bottomToolbar
@@ -152,10 +190,7 @@ struct ChatListView: View {
     @ViewBuilder
     var principalToolbarItem: some View {
         HStack(spacing: 4) {
-            Text("Chats")
-                .font(.headline)
-                // TODO: For testing, remove after oneHandUI is implemented
-                .contentShape(Rectangle()).onTapGesture { oneHandUI.toggle() }
+            Text("Chats").font(.headline)
             SubsStatusIndicator()
         }
         .frame(maxWidth: .infinity, alignment: .center)
@@ -174,19 +209,6 @@ struct ChatListView: View {
         let cs = filteredChats()
         ZStack {
             List {
-                if !chatModel.chats.isEmpty {
-                    ChatListSearchBar(
-                        searchMode: $searchMode,
-                        searchFocussed: $searchFocussed,
-                        searchText: $searchText,
-                        searchShowingSimplexLink: $searchShowingSimplexLink,
-                        searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-                    )
-                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-                    .frame(maxWidth: .infinity)
-                }
                 if !oneHandUICardShown {
                     OneHandUICard()
                         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
@@ -202,6 +224,7 @@ struct ChatListView: View {
                 }
                 .offset(x: -8)
             }
+            .introspect(.list, on: .iOS(.v16, .v17, .v18)) { setObservations(for: $0) }
             .listStyle(.plain)
             .onChange(of: chatModel.chatId) { chId in
                 if chId == nil, let chatId = chatModel.chatToTop {
@@ -220,6 +243,33 @@ struct ChatListView: View {
                 Text("No filtered chats")
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
+            }
+        }
+    }
+
+    private func setObservations(for cv: UICollectionView) {
+        if collectionView != cv {
+            collectionView = cv
+            var scrollDistance: CGFloat = 0
+            contentOffsetObservation?.invalidate()
+            contentOffsetObservation = cv.observe(
+                \.contentOffset,
+                 options: [.new, .old]
+            ) { (cv, change) in
+                if let newOffset = change.newValue?.y,
+                   let oldOffset = change.oldValue?.y {
+                    let bottomOffset = cv.contentSize.height - cv.visibleSize.height - newOffset + cv.safeAreaInsets.bottom
+                    // Show/Hide search bar when scrolled for more than `MAX` amount
+                    if newOffset > .zero,
+                       bottomOffset > 0 {
+                        let MAX: CGFloat = 64
+                        scrollDistance = min(max(scrollDistance + oldOffset - newOffset, -MAX), +MAX)
+                        if (isSearchExpanded && scrollDistance == -MAX) ||
+                          (!isSearchExpanded && scrollDistance == +MAX) {
+                            withAnimation(.easeOut(duration: 0.15)) { isSearchExpanded.toggle() }
+                        }
+                    }
+                }
             }
         }
     }
@@ -366,39 +416,37 @@ struct ChatListSearchBar: View {
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 12) {
-                HStack(spacing: 4) {
-                    Image(systemName: "magnifyingglass")
-                    TextField("Search or paste SimpleX link", text: $searchText)
-                        .foregroundColor(searchShowingSimplexLink ? theme.colors.secondary : theme.colors.onBackground)
-                        .disabled(searchShowingSimplexLink)
-                        .focused($searchFocussed)
-                        .frame(maxWidth: .infinity)
-                    if !searchText.isEmpty {
-                        Image(systemName: "xmark.circle.fill")
-                            .onTapGesture {
-                                searchText = ""
-                            }
-                    }
-                }
-                .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
-                .foregroundColor(theme.colors.secondary)
-                .background(Color(.tertiarySystemFill))
-                .cornerRadius(10.0)
-
-                if searchFocussed {
-                    Text("Cancel")
-                        .foregroundColor(theme.colors.primary)
+        HStack(spacing: 12) {
+            HStack(spacing: 4) {
+                Image(systemName: "magnifyingglass")
+                TextField("Search or paste SimpleX link", text: $searchText)
+                    .font(.system(size: 18))
+                    .foregroundColor(searchShowingSimplexLink ? theme.colors.secondary : theme.colors.onBackground)
+                    .disabled(searchShowingSimplexLink)
+                    .focused($searchFocussed)
+                    .frame(maxWidth: .infinity)
+                if !searchText.isEmpty {
+                    Image(systemName: "xmark.circle.fill")
                         .onTapGesture {
                             searchText = ""
-                            searchFocussed = false
                         }
-                } else if m.chats.count > 0 {
-                    toggleFilterButton()
                 }
             }
-            Divider()
+            .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
+            .foregroundColor(theme.colors.secondary)
+            .background(Color(.tertiarySystemFill))
+            .cornerRadius(10.0)
+
+            if searchFocussed {
+                Text("Cancel")
+                    .foregroundColor(theme.colors.primary)
+                    .onTapGesture {
+                        searchText = ""
+                        searchFocussed = false
+                    }
+            } else if m.chats.count > 0 {
+                toggleFilterButton()
+            }
         }
         .onChange(of: searchFocussed) { sf in
             withAnimation { searchMode = sf }
