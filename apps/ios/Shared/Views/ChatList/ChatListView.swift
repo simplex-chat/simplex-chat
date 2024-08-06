@@ -282,8 +282,9 @@ struct SubsStatusIndicator: View {
         .onDisappear {
             stopTimer()
         }
-        .sheet(isPresented: $showServersSummary) {
+        .appSheet(isPresented: $showServersSummary) {
             ServersSummaryView()
+                .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
         }
     }
 
