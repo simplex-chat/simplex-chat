@@ -225,7 +225,7 @@ class AppPreferences {
   val iosCallKitEnabled = mkBoolPreference(SHARED_PREFS_IOS_CALL_KIT_ENABLED, true)
   val iosCallKitCallsInRecents = mkBoolPreference(SHARED_PREFS_IOS_CALL_KIT_CALLS_IN_RECENTS, false)
 
-  val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, false)
+  val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, appPlatform.isAndroid)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
@@ -6221,7 +6221,7 @@ data class AppSettings(
     uiDarkColorScheme?.let { def.systemDarkTheme.set(it) }
     uiCurrentThemeIds?.let { def.currentThemeIds.set(it) }
     uiThemes?.let { def.themeOverrides.set(it.skipDuplicates()) }
-    oneHandUI?.let { def.oneHandUI.set(it) }
+    oneHandUI?.let { def.oneHandUI.set(if (appPlatform.isAndroid) it else false) }
   }
 
   companion object {
@@ -6253,7 +6253,7 @@ data class AppSettings(
         uiDarkColorScheme = DefaultTheme.SIMPLEX.themeName,
         uiCurrentThemeIds = null,
         uiThemes = null,
-        oneHandUI = false
+        oneHandUI = true
       )
 
     val current: AppSettings
