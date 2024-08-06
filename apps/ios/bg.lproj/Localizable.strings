@@ -985,9 +985,6 @@
 "Contact is connected" = "Контактът е свързан";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "Контактът все още не е свързан!";
-
-/* No comment provided by engineer. */
 "Contact name" = "Име на контакт";
 
 /* No comment provided by engineer. */
@@ -1201,12 +1198,6 @@
 "Delete contact" = "Изтрий контакт";
 
 /* No comment provided by engineer. */
-"Delete Contact" = "Изтрий контакт";
-
-/* No comment provided by engineer. */
-"Delete contact?\nThis cannot be undone!" = "Изтрий контакт?\nТова не може да бъде отменено!";
-
-/* No comment provided by engineer. */
 "Delete database" = "Изтрий базата данни";
 
 /* No comment provided by engineer. */
@@ -1259,9 +1250,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Изтрий старата база данни?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Изтрий предстоящата връзка";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Изтрий предстоящата връзка?";
@@ -1652,9 +1640,6 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "Грешка при изтриване на връзката";
-
-/* No comment provided by engineer. */
-"Error deleting contact" = "Грешка при изтриване на контакт";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Грешка при изтриване на базата данни";
@@ -3361,9 +3346,6 @@
 "send direct message" = "изпрати лично съобщение";
 
 /* No comment provided by engineer. */
-"Send direct message" = "Изпрати лично съобщение";
-
-/* No comment provided by engineer. */
 "Send direct message to connect" = "Изпрати лично съобщение за свързване";
 
 /* No comment provided by engineer. */
@@ -3683,9 +3665,6 @@
 
 /* No comment provided by engineer. */
 "Tap to scan" = "Докосни за сканиране";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "Докосни за започване на нов чат";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "Времето на изчакване за установяване на TCP връзка";
@@ -4327,9 +4306,6 @@
 "You have already requested connection!\nRepeat connection request?" = "Вече сте направили заявката за връзка!\nИзпрати отново заявката за свързване?";
 
 /* No comment provided by engineer. */
-"You have no chats" = "Нямате чатове";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Трябва да въвеждате парола при всяко стартиране на приложението - тя не се съхранява на устройството.";
 
 /* No comment provided by engineer. */
@@ -4418,9 +4394,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Вашите чат профили";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Вашият контакт трябва да бъде онлайн, за да осъществите връзката.\nМожете да откажете тази връзка и да премахнете контакта (и да опитате по -късно с нов линк).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Вашият контакт изпрати файл, който е по-голям от поддържания в момента максимален размер (%@).";

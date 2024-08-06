@@ -692,7 +692,7 @@
 /* rcv group event chat item */
 "blocked %@" = "ha bloccato %@";
 
-/* marked deleted chat item preview text */
+/* blocked chat item */
 "blocked by admin" = "bloccato dall'amministratore";
 
 /* No comment provided by engineer. */
@@ -833,6 +833,9 @@
 
 /* No comment provided by engineer. */
 "Chat database deleted" = "Database della chat eliminato";
+
+/* No comment provided by engineer. */
+"Chat database exported" = "Database della chat esportato";
 
 /* No comment provided by engineer. */
 "Chat database imported" = "Database della chat importato";
@@ -1090,9 +1093,6 @@
 "Contact is connected" = "Il contatto è connesso";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "Il contatto non è ancora connesso!";
-
-/* No comment provided by engineer. */
 "Contact name" = "Nome del contatto";
 
 /* No comment provided by engineer. */
@@ -1330,12 +1330,6 @@
 "Delete contact" = "Elimina contatto";
 
 /* No comment provided by engineer. */
-"Delete Contact" = "Elimina contatto";
-
-/* No comment provided by engineer. */
-"Delete contact?\nThis cannot be undone!" = "Eliminare il contatto?\nNon è reversibile!";
-
-/* No comment provided by engineer. */
 "Delete database" = "Elimina database";
 
 /* No comment provided by engineer. */
@@ -1388,9 +1382,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Eliminare il database vecchio?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Elimina connessione in attesa";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Eliminare la connessione in attesa?";
@@ -1829,9 +1820,6 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "Errore nell'eliminazione della connessione";
-
-/* No comment provided by engineer. */
-"Error deleting contact" = "Errore nell'eliminazione del contatto";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Errore nell'eliminazione del database";
@@ -2671,6 +2659,9 @@
 /* No comment provided by engineer. */
 "Max 30 seconds, received instantly." = "Max 30 secondi, ricevuto istantaneamente.";
 
+/* No comment provided by engineer. */
+"Media & file servers" = "Server di multimediali e file";
+
 /* blur media */
 "Medium" = "Media";
 
@@ -2736,6 +2727,9 @@
 
 /* No comment provided by engineer. */
 "Message reception" = "Ricezione messaggi";
+
+/* No comment provided by engineer. */
+"Message servers" = "Server dei messaggi";
 
 /* No comment provided by engineer. */
 "Message source remains private." = "La fonte del messaggio resta privata.";
@@ -3622,6 +3616,9 @@
 "Save and notify group members" = "Salva e avvisa i membri del gruppo";
 
 /* No comment provided by engineer. */
+"Save and reconnect" = "Salva e riconnetti";
+
+/* No comment provided by engineer. */
 "Save and update group profile" = "Salva e aggiorna il profilo del gruppo";
 
 /* No comment provided by engineer. */
@@ -3764,9 +3761,6 @@
 
 /* No comment provided by engineer. */
 "send direct message" = "invia messaggio diretto";
-
-/* No comment provided by engineer. */
-"Send direct message" = "Invia messaggio diretto";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Invia messaggio diretto per connetterti";
@@ -4069,7 +4063,13 @@
 "Soft" = "Leggera";
 
 /* No comment provided by engineer. */
+"Some file(s) were not exported:" = "Alcuni file non sono stati esportati:";
+
+/* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Si sono verificati alcuni errori non gravi durante l'importazione: vedi la console della chat per i dettagli.";
+
+/* No comment provided by engineer. */
+"Some non-fatal errors occurred during import:" = "Si sono verificati alcuni errori non fatali durante l'importazione:";
 
 /* notification title */
 "Somebody" = "Qualcuno";
@@ -4186,7 +4186,7 @@
 "Tap to scan" = "Tocca per scansionare";
 
 /* No comment provided by engineer. */
-"Tap to start a new chat" = "Tocca per iniziare una chat";
+"TCP connection" = "Connessione TCP";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "Scadenza connessione TCP";
@@ -4505,6 +4505,9 @@
 
 /* No comment provided by engineer. */
 "Update network settings?" = "Aggiornare le impostazioni di rete?";
+
+/* No comment provided by engineer. */
+"Update settings?" = "Aggiornare le impostazioni?";
 
 /* rcv group event chat item */
 "updated group profile" = "ha aggiornato il profilo del gruppo";
@@ -4912,9 +4915,6 @@
 "You have already requested connection!\nRepeat connection request?" = "Hai già richiesto la connessione!\nRipetere la richiesta di connessione?";
 
 /* No comment provided by engineer. */
-"You have no chats" = "Non hai chat";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Devi inserire la password ogni volta che si avvia l'app: non viene memorizzata sul dispositivo.";
 
 /* No comment provided by engineer. */
@@ -4928,6 +4928,12 @@
 
 /* snd group event chat item */
 "you left" = "sei uscito/a";
+
+/* No comment provided by engineer. */
+"You may migrate the exported database." = "Puoi migrare il database esportato.";
+
+/* No comment provided by engineer. */
+"You may save the exported archive." = "Puoi salvare l'archivio esportato.";
 
 /* No comment provided by engineer. */
 "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "Devi usare la versione più recente del tuo database della chat SOLO su un dispositivo, altrimenti potresti non ricevere più i messaggi da alcuni contatti.";
@@ -5003,9 +5009,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "I tuoi profili di chat";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Il tuo contatto deve essere in linea per completare la connessione.\nPuoi annullare questa connessione e rimuovere il contatto (e riprovare più tardi con un link nuovo).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Il tuo contatto ha inviato un file più grande della dimensione massima attualmente supportata (%@).";

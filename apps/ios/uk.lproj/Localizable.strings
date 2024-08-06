@@ -997,9 +997,6 @@
 "Contact is connected" = "Контакт підключений";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "Контакт ще не підключено!";
-
-/* No comment provided by engineer. */
 "Contact name" = "Ім'я контактної особи";
 
 /* No comment provided by engineer. */
@@ -1216,12 +1213,6 @@
 "Delete contact" = "Видалити контакт";
 
 /* No comment provided by engineer. */
-"Delete Contact" = "Видалити контакт";
-
-/* No comment provided by engineer. */
-"Delete contact?\nThis cannot be undone!" = "Видалити контакт?\nЦе не можна скасувати!";
-
-/* No comment provided by engineer. */
 "Delete database" = "Видалити базу даних";
 
 /* No comment provided by engineer. */
@@ -1274,9 +1265,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Видалити стару базу даних?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Видалити очікуване з'єднання";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Видалити очікуване з'єднання?";
@@ -1676,9 +1664,6 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "Помилка видалення з'єднання";
-
-/* No comment provided by engineer. */
-"Error deleting contact" = "Помилка видалення контакту";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Помилка видалення бази даних";
@@ -3421,9 +3406,6 @@
 "send direct message" = "надіслати пряме повідомлення";
 
 /* No comment provided by engineer. */
-"Send direct message" = "Надішліть пряме повідомлення";
-
-/* No comment provided by engineer. */
 "Send direct message to connect" = "Надішліть пряме повідомлення, щоб підключитися";
 
 /* No comment provided by engineer. */
@@ -3764,9 +3746,6 @@
 
 /* No comment provided by engineer. */
 "Tap to scan" = "Натисніть, щоб сканувати";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "Натисніть, щоб почати новий чат";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "Тайм-аут TCP-з'єднання";
@@ -4441,9 +4420,6 @@
 "You have already requested connection!\nRepeat connection request?" = "Ви вже надіслали запит на підключення!\nПовторити запит на підключення?";
 
 /* No comment provided by engineer. */
-"You have no chats" = "У вас немає чатів";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Вам доведеться вводити парольну фразу щоразу під час запуску програми - вона не зберігається на пристрої.";
 
 /* No comment provided by engineer. */
@@ -4532,9 +4508,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Ваші профілі чату";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Для завершення з'єднання ваш контакт має бути онлайн.\nВи можете скасувати це з'єднання і видалити контакт (і спробувати пізніше з новим посиланням).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ваш контакт надіслав файл, розмір якого перевищує підтримуваний на цей момент максимальний розмір (%@).";
