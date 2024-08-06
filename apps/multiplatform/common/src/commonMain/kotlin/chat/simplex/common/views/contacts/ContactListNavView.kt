@@ -5,7 +5,6 @@ import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
@@ -29,7 +28,6 @@ fun onRequestAccepted(chat: Chat) {
 
 @Composable
 fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDeletedChatIcon: Boolean) {
-    val oneHandUI = remember { appPrefs.oneHandUI.state }
     val showMenu = remember { mutableStateOf(false) }
     val rhId = chat.remoteHostId
     val disabled = chatModel.chatRunning.value == false || chatModel.deletedChats.value.contains(rhId to chat.chatInfo.id)
