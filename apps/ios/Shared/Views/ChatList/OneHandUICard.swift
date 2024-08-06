@@ -7,18 +7,19 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct OneHandUICard: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
-    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = true
+    @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
     @State private var showOneHandUIAlert = false
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Toggle chat list:").font(.title2)
+                Text("Toggle chat list:").font(.title3)
                 Toggle("Reachable chat toolbar", isOn: $oneHandUI)
             }
             Image(systemName: "multiply")
@@ -29,15 +30,17 @@ struct OneHandUICard: View {
         }
         .padding()
         .background(theme.appColors.sentMessage)
-        .cornerRadius(18)
+        .cornerRadius(12)
         .frame(height: dynamicSize(userFont).rowHeight)
-        .padding(.vertical)
+        .padding(.vertical, 12)
         .alert(isPresented: $showOneHandUIAlert) {
             Alert(
                 title: Text("Reachable chat toolbar"),
-                message: Text("You can change it in Appearance settings"),
+                message: Text("You can change it in Appearance settings."),
                 dismissButton: .default(Text("Ok")) {
-                    oneHandUICardShown = true
+                    withAnimation {
+                        oneHandUICardShown = true
+                    }
                 }
             )
         }

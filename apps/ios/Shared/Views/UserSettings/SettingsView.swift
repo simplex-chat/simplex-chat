@@ -47,7 +47,6 @@ let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen" // deprecated, only used for
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue" // deprecated, only used for migration
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle" // deprecated, only used for migration
 let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
-let DEFAULT_ONE_HAND_UI = "oneHandUI"
 let DEFAULT_ONE_HAND_UI_CARD_SHOWN = "oneHandUICardShown"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
@@ -98,7 +97,6 @@ let appDefaults: [String: Any] = [
     DEFAULT_DEVELOPER_TOOLS: false,
     DEFAULT_ENCRYPTION_STARTED: false,
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
-    DEFAULT_ONE_HAND_UI: true,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN: false,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,

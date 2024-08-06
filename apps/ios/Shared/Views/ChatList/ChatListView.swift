@@ -22,7 +22,7 @@ struct ChatListView: View {
     @State private var showConnectDesktop = false
 
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
-    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = true
+    @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
 
     var body: some View {
@@ -213,9 +213,9 @@ struct ChatListView: View {
             .onChange(of: chatModel.currentUser?.userId) { _ in
                 stopAudioPlayer()
             }
-            .onAppear {
-                oneHandUICardShown = false
-            }
+//            .onAppear {
+//                oneHandUICardShown = false
+//            }
             if cs.isEmpty && !chatModel.chats.isEmpty {
                 Text("No filtered chats")
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
