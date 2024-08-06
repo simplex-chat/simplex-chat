@@ -53,8 +53,8 @@ struct SwipeLabel: View {
             imageView.frame = CGRect(
                 x: 18,
                 y: 0,
-                width: 28,
-                height: 28
+                width: 24,
+                height: 24
             )
             label.frame = CGRect(
                 x: 0,
