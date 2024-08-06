@@ -63,6 +63,10 @@ struct AppearanceSettings: View {
                     }
                 }
 
+                Section("Chat list") {
+                    Toggle("Reachable chat toolbar", isOn: $oneHandUI)
+                }
+                
                 Section {
                     ThemeDestinationPicker(themeUserDestination: $themeUserDestination, themeUserDest: themeUserDestination?.0, customizeThemeIsOpen: $customizeThemeIsOpen)
 

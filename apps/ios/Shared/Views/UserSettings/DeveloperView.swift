@@ -49,9 +49,6 @@ struct DeveloperView: View {
                         settingsRow("internaldrive", color: theme.colors.secondary) {
                             Toggle("Confirm database upgrades", isOn: $confirmDatabaseUpgrades)
                         }
-                        settingsRow("hand.wave", color: theme.colors.secondary) {
-                            Toggle("One-hand UI", isOn: $oneHandUI)
-                        }
                     } header: {
                         Text("Developer options")
                     }

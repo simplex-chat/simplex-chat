@@ -213,9 +213,9 @@ struct ChatListView: View {
             .onChange(of: chatModel.currentUser?.userId) { _ in
                 stopAudioPlayer()
             }
-//            .onAppear {
-//                oneHandUICardShown = false
-//            }
+            .onAppear {
+                oneHandUICardShown = false
+            }
             if cs.isEmpty && !chatModel.chats.isEmpty {
                 Text("No filtered chats")
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
