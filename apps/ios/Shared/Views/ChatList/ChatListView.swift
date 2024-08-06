@@ -101,7 +101,7 @@ struct ChatListView: View {
                     } else {
                         topToolbar
                     }
-                    }
+                }
         } else {
             content().toolbar { topToolbar }
         }
