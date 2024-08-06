@@ -104,10 +104,12 @@ struct ChatListView: View {
 
     }
     
+    /// Used to always return full height search bar height
+    /// to avoid changing safe are insets during scrolling
+    private static var searchBarHeight: Double = .zero
+
     @ViewBuilder
     var searchBar: some View {
-        // TODO: Preserve height, without hardcoding it. Remove `.font(.system(size: 18))` after done.
-        let height: Double = 56
         let isVisible = isSearchExpanded || searchFocussed
         VStack(spacing: 0) {
             if oneHandUI { Divider() }
@@ -119,12 +121,18 @@ struct ChatListView: View {
                 searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
             )
             .padding(8)
-            .frame(height: isVisible ? height : 0)
+            .overlay {
+                GeometryReader { proxy in
+                    Self.searchBarHeight = proxy.size.height
+                    return Color.clear
+                }
+            }
+            .frame(height: isVisible ? Self.searchBarHeight : 0)
             .opacity(isVisible ? 1 : 0)
             if !oneHandUI { Divider() }
         }
         .background(Material.thin)
-        .padding(oneHandUI ? .top : .bottom, isVisible ? 0 : height)
+        .frame(height: Self.searchBarHeight, alignment: oneHandUI ? .bottom : .top)
     }
 
     @ViewBuilder
@@ -414,7 +422,6 @@ struct ChatListSearchBar: View {
             HStack(spacing: 4) {
                 Image(systemName: "magnifyingglass")
                 TextField("Search or paste SimpleX link", text: $searchText)
-                    .font(.system(size: 18))
                     .foregroundColor(searchShowingSimplexLink ? theme.colors.secondary : theme.colors.onBackground)
                     .disabled(searchShowingSimplexLink)
                     .focused($searchFocussed)
