@@ -773,7 +773,6 @@
     <string name="old_database_archive">أرشيف قاعدة البيانات القديمة</string>
     <string name="feature_off">غير مفعّل</string>
     <string name="one_time_link">رابط دعوة لمرة واحدة</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">سوف تكون مضيفات البصل مطلوبة للاتصال.</string>
     <string name="group_member_role_observer">المراقب</string>
     <string name="item_info_no_text">لا يوجد نص</string>
     <string name="new_member_role">دور عضو جديد</string>
@@ -789,8 +788,6 @@
     <string name="network_use_onion_hosts_no">لا</string>
     <string name="network_use_onion_hosts_required_desc">سوف تكون مضيفات البصل مطلوبة للاتصال.
 \nيُرجى ملاحظة: أنك لن تتمكن من الاتصال بالخوادم بدون عنوان onion.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">سيتم استخدام مضيفات البصل عند توفرها.</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">لن يتم استخدام مضيفات البصل.</string>
     <string name="self_destruct_new_display_name">اسم عرض جديد:</string>
     <string name="new_passphrase">عبارة مرور جديدة…</string>
     <string name="icon_descr_server_status_pending">قيد الانتظار</string>
@@ -892,7 +889,6 @@
     <string name="info_row_updated_at">حٌديثت السجل في</string>
     <string name="share_text_updated_at">حٌديثت السجل في: %s</string>
     <string name="restore_database_alert_confirm">استعادة</string>
-    <string name="network_options_revert">إرجاع</string>
     <string name="v4_4_live_messages_desc">يرى المستلمون التحديثات أثناء كتابتها.</string>
     <string name="feature_received_prohibited">استلمت، ممنوع</string>
     <string name="save_servers_button">حفظ</string>
@@ -1165,7 +1161,6 @@
     <string name="your_chat_profiles">ملفات تعريف الدردشة الخاصة بك</string>
     <string name="your_simplex_contact_address">عنوان SimpleX الخاص بك</string>
     <string name="your_SMP_servers">خوادم SMP الخاصة بك</string>
-    <string name="update_onion_hosts_settings_question">هل تريد تحديث إعداد مضيفي onion.؟</string>
     <string name="onboarding_notifications_mode_off">عندما يكون التطبيق قيد التشغيل</string>
     <string name="call_connection_via_relay">عبر المُرحل</string>
     <string name="you_joined_this_group">لقد انضممت إلى هذه المجموعة</string>

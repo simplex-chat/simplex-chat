@@ -137,8 +137,8 @@ func apiGetActiveUser(ctrl: chat_ctrl? = nil) throws -> User? {
     }
 }
 
-func apiCreateActiveUser(_ p: Profile?, sameServers: Bool = false, pastTimestamp: Bool = false, ctrl: chat_ctrl? = nil) throws -> User {
-    let r = chatSendCmdSync(.createActiveUser(profile: p, sameServers: sameServers, pastTimestamp: pastTimestamp), ctrl)
+func apiCreateActiveUser(_ p: Profile?, pastTimestamp: Bool = false, ctrl: chat_ctrl? = nil) throws -> User {
+    let r = chatSendCmdSync(.createActiveUser(profile: p, pastTimestamp: pastTimestamp), ctrl)
     if case let .activeUser(user) = r { return user }
     throw r
 }

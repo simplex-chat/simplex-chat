@@ -142,8 +142,8 @@ class AppPreferences {
     },
     set = fun(mode: TransportSessionMode) { _networkSessionMode.set(mode.name) }
   )
-  val networkSMPProxyMode = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_MODE, SMPProxyMode.Never.name)
-  val networkSMPProxyFallback = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_FALLBACK, SMPProxyFallback.Allow.name)
+  val networkSMPProxyMode = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_MODE, NetCfg.defaults.smpProxyMode.name)
+  val networkSMPProxyFallback = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_FALLBACK, NetCfg.defaults.smpProxyFallback.name)
   val networkHostMode = mkStrPreference(SHARED_PREFS_NETWORK_HOST_MODE, HostMode.OnionViaSocks.name)
   val networkRequiredHostMode = mkBoolPreference(SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE, false)
   val networkTCPConnectTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT, NetCfg.defaults.tcpConnectTimeout, NetCfg.proxyDefaults.tcpConnectTimeout)
@@ -657,8 +657,8 @@ object ChatController {
     return null
   }
 
-  suspend fun apiCreateActiveUser(rh: Long?, p: Profile?, sameServers: Boolean = false, pastTimestamp: Boolean = false, ctrl: ChatCtrl? = null): User? {
-    val r = sendCmd(rh, CC.CreateActiveUser(p, sameServers = sameServers, pastTimestamp = pastTimestamp), ctrl)
+  suspend fun apiCreateActiveUser(rh: Long?, p: Profile?, pastTimestamp: Boolean = false, ctrl: ChatCtrl? = null): User? {
+    val r = sendCmd(rh, CC.CreateActiveUser(p, pastTimestamp = pastTimestamp), ctrl)
     if (r is CR.ActiveUser) return r.user.updateRemoteHostId(rh)
     else if (
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.DuplicateName ||
@@ -2824,7 +2824,7 @@ class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
 sealed class CC {
   class Console(val cmd: String): CC()
   class ShowActiveUser: CC()
-  class CreateActiveUser(val profile: Profile?, val sameServers: Boolean, val pastTimestamp: Boolean): CC()
+  class CreateActiveUser(val profile: Profile?, val pastTimestamp: Boolean): CC()
   class ListUsers: CC()
   class ApiSetActiveUser(val userId: Long, val viewPwd: String?): CC()
   class SetAllContactReceipts(val enable: Boolean): CC()
@@ -2962,7 +2962,7 @@ sealed class CC {
     is Console -> cmd
     is ShowActiveUser -> "/u"
     is CreateActiveUser -> {
-      val user = NewUser(profile, sameServers = sameServers, pastTimestamp = pastTimestamp)
+      val user = NewUser(profile, pastTimestamp = pastTimestamp)
       "/_create user ${json.encodeToString(user)}"
     }
     is ListUsers -> "/users"
@@ -3293,7 +3293,6 @@ fun onOff(b: Boolean): String = if (b) "on" else "off"
 @Serializable
 data class NewUser(
   val profile: Profile?,
-  val sameServers: Boolean,
   val pastTimestamp: Boolean
 )
 
@@ -3589,10 +3588,6 @@ enum class SMPProxyMode {
   @SerialName("unknown") Unknown,
   @SerialName("unprotected") Unprotected,
   @SerialName("never") Never;
-
-  companion object {
-    val default = Never
-  }
 }
 
 @Serializable
@@ -3600,10 +3595,6 @@ enum class SMPProxyFallback {
   @SerialName("allow") Allow,
   @SerialName("allowProtected") AllowProtected,
   @SerialName("prohibit") Prohibit;
-
-  companion object {
-    val default = Allow
-  }
 }
 
 @Serializable
