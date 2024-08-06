@@ -510,7 +510,6 @@ private fun MutableState<MigrationFromState>.uploadArchive(archivePath: String) 
 
 }
 
-
 suspend fun initTemporaryDatabase(tempDatabaseFile: File, netCfg: NetCfg): Pair<ChatCtrl, User>? {
   val (status, ctrl) = chatInitTemporaryDatabase(tempDatabaseFile.absolutePath)
   showErrorOnMigrationIfNeeded(status)
