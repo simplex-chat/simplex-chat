@@ -6295,7 +6295,7 @@ data class AppSettings(
           uiDarkColorScheme = def.systemDarkTheme.get() ?: DefaultTheme.SIMPLEX.themeName,
           uiCurrentThemeIds = def.currentThemeIds.get(),
           uiThemes = def.themeOverrides.get(),
-          oneHandUI = if (appPlatform.isAndroid) def.oneHandUI.get() else false
+          oneHandUI = def.oneHandUI.get()
         )
     }
   }
