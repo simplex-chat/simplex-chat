@@ -38,7 +38,7 @@ struct SwipeLabel: View {
         private let fontSize: CGFloat
 
         init(systemName: String, text: String) {
-            fontSize = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .body).pointSize
+            fontSize = UIFontDescriptor.preferredFontDescriptor(withTextStyle: .subheadline).pointSize
             super.init(frame: CGRect(x: 0, y: 0, width: 64, height: 32 + fontSize))
             imageView.image = UIImage(systemName: systemName)
             imageView.contentMode = .scaleAspectFit
