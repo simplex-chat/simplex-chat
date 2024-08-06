@@ -51,7 +51,7 @@ struct SwipeLabel: View {
 
         override func layoutSubviews() {
             imageView.frame = CGRect(
-                x: 18,
+                x: 20,
                 y: 0,
                 width: 24,
                 height: 24
