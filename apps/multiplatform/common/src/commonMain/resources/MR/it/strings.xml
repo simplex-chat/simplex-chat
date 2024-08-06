@@ -2027,4 +2027,12 @@
     <string name="info_view_connect_button">connetti</string>
     <string name="contact_deleted">Contatto eliminato!</string>
     <string name="confirm_delete_contact_question">Confermare l\'eliminazione del contatto?</string>
+    <string name="compose_message_placeholder">Messaggio</string>
+    <string name="selected_chat_items_nothing_selected">Nessuna selezione</string>
+    <string name="select_verb">Seleziona</string>
+    <string name="selected_chat_items_selected_n">Selezionato %d</string>
+    <string name="moderate_messages_will_be_deleted_warning">I messaggi verranno eliminati per tutti i membri.</string>
+    <string name="moderate_messages_will_be_marked_warning">I messaggi verranno contrassegnati come moderati per tutti i membri.</string>
+    <string name="delete_members_messages__question">Eliminare %d messaggi dei membri?</string>
+    <string name="delete_messages_mark_deleted_warning">I messaggi saranno contrassegnati per l\'eliminazione. Il/I destinatario/i sarà/saranno in grado di rivelare questi messaggi.</string>
 </resources>
