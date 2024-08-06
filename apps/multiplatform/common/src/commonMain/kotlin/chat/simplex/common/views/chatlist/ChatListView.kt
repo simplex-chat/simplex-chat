@@ -359,8 +359,12 @@ fun SubscriptionStatusIndicator(click: (() -> Unit)) {
     }
   }
 
-  SimpleButtonFrame(click = click) {
-    SubscriptionStatusIndicatorView(subs = subs, hasSess = hasSess)
+  if (subs.total == 0 && !hasSess) {
+    Box {}
+  } else {
+    SimpleButtonFrame(click = click) {
+      SubscriptionStatusIndicatorView(subs = subs, hasSess = hasSess)
+    }
   }
 }
 
