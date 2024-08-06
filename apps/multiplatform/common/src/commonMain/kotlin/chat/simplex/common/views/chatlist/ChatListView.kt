@@ -24,6 +24,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.*
 import chat.simplex.common.SettingsViewState
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -60,7 +61,7 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
 
 @Composable
 fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
-  val oneHandUI = remember { chatModel.controller.appPrefs.oneHandUI }
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
 
   LaunchedEffect(Unit) {
     if (shouldShowWhatsNew(chatModel)) {
@@ -84,27 +85,25 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   val (userPickerState, scaffoldState ) = settingsState
   Scaffold(
     topBar = {
-      if (!oneHandUI.state.value) {
+      if (!oneHandUI.value) {
         Column(Modifier.padding(end = endPadding)) {
           ChatListToolbar(
             scaffoldState.drawerState,
             userPickerState,
             stopped,
-            oneHandUI
           )
           Divider()
         }
       }
     },
     bottomBar = {
-      if (oneHandUI.state.value) {
+      if (oneHandUI.value) {
         Column(Modifier.padding(end = endPadding)) {
           Divider()
           ChatListToolbar(
             scaffoldState.drawerState,
             userPickerState,
             stopped,
-            oneHandUI
           )
         }
       }
@@ -120,11 +119,11 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
     drawerGesturesEnabled = appPlatform.isAndroid,
     floatingActionButton = {
-      if (!oneHandUI.state.value && searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
+      if (!oneHandUI.value && searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
         FloatingActionButton(
           onClick = {
             if (!stopped) {
-              showNewChatSheet(oneHandUI.state)
+              showNewChatSheet(oneHandUI)
             }
           },
           Modifier
@@ -150,7 +149,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
           .fillMaxSize()
       ) {
         if (!chatModel.desktopNoUserNoRemote) {
-          ChatList(chatModel, searchText = searchText, oneHandUI = oneHandUI)
+          ChatList(chatModel, searchText = searchText)
         }
         if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
           Text(stringResource(
@@ -172,7 +171,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       UserPicker(
         chatModel = chatModel,
         userPickerState = userPickerState,
-        contentAlignment = if (oneHandUI.state.value) Alignment.BottomStart else Alignment.TopStart
+        contentAlignment = if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart
       ) {
         scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
         userPickerState.value = AnimatedViewState.GONE
@@ -198,19 +197,20 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean, oneHandUI: SharedPreference<Boolean>) {
+private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean) {
   val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val updatingProgress = remember { chatModel.updatingProgress }.value
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
 
-  if (oneHandUI.state.value) {
+  if (oneHandUI.value) {
     val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
 
     if (!stopped) {
       barButtons.add {
         IconButton(
           onClick = {
-            showNewChatSheet(oneHandUI.state)
+            showNewChatSheet(oneHandUI)
           },
         ) {
           Box(
@@ -533,12 +533,13 @@ enum class ScrollDirection {
 }
 
 @Composable
-private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>, oneHandUI: SharedPreference<Boolean>) {
+private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>) {
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   var scrollDirection by remember { mutableStateOf(ScrollDirection.Idle) }
   var previousIndex by remember { mutableStateOf(0) }
   var previousScrollOffset by remember { mutableStateOf(0) }
   val keyboardState by getKeyboardState()
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
     val currentIndex = listState.firstVisibleItemIndex
@@ -572,16 +573,16 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
   LazyColumnWithScrollBar(
     Modifier.fillMaxSize(),
     listState,
-    reverseLayout = oneHandUI.state.value
+    reverseLayout = oneHandUI.value
   ) {
     stickyHeader {
       Column(
         Modifier
           .offset {
             val y = if (searchText.value.text.isEmpty()) {
-              val offsetMultiplier = if (oneHandUI.state.value) 1 else -1
+              val offsetMultiplier = if (oneHandUI.value) 1 else -1
               if (
-                (oneHandUI.state.value && scrollDirection == ScrollDirection.Up) ||
+                (oneHandUI.value && scrollDirection == ScrollDirection.Up) ||
                 (appPlatform.isAndroid && keyboardState == KeyboardState.Opened)
               ) {
                 0
@@ -593,11 +594,11 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
           }
           .background(MaterialTheme.colors.background),
         ) {
-        if (oneHandUI.state.value) {
+        if (oneHandUI.value) {
           Divider()
         }
         ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
-        if (!oneHandUI.state.value) {
+        if (!oneHandUI.value) {
           Divider()
         }
       }
