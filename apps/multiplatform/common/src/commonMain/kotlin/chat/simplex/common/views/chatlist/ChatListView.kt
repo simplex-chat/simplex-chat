@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.font.FontStyle
@@ -35,6 +36,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.newchat.*
+import chat.simplex.common.views.usersettings.SettingsPreferenceItem
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,9 +73,41 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
 }
 
 @Composable
+fun ToggleChatListCard() {
+  Column(
+    modifier = Modifier
+      .padding(8.dp)
+      .clip(RoundedCornerShape(8.dp))
+  ) {
+    Column(
+      modifier = Modifier
+        .background(MaterialTheme.appColors.sentMessage)
+    ) {
+      Row(
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF),
+      ) {
+        Text("Toggle chat list:")
+        IconButton(onClick = { appPrefs.showOneHandUINotice.set(false) }) {
+          Icon(
+            painterResource(MR.images.ic_close), stringResource(MR.strings.back), tint = MaterialTheme.colors.secondary
+          )
+        }
+      }
+      Row {
+        SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), appPrefs.oneHandUI) {
+          val c = CurrentColors.value.colors
+          platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+        }
+      }
+    }
+  }
+}
+
+@Composable
 fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-
   LaunchedEffect(Unit) {
     if (shouldShowWhatsNew(chatModel)) {
       delay(1000L)
@@ -547,6 +581,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
   var previousScrollOffset by remember { mutableStateOf(0) }
   val keyboardState by getKeyboardState()
   val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val showOneHandUINotice = remember { appPrefs.showOneHandUINotice.state }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
     val currentIndex = listState.firstVisibleItemIndex
@@ -608,6 +643,11 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
         if (!oneHandUI.value) {
           Divider()
         }
+      }
+    }
+    if (appPlatform.isAndroid && showOneHandUINotice.value) {
+      item {
+        ToggleChatListCard()
       }
     }
     itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->
