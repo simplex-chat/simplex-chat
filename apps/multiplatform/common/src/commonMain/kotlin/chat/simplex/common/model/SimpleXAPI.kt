@@ -6262,7 +6262,7 @@ data class AppSettings(
         uiDarkColorScheme = DefaultTheme.SIMPLEX.themeName,
         uiCurrentThemeIds = null,
         uiThemes = null,
-        oneHandUI = appPlatform.isAndroid
+        oneHandUI = true
       )
 
     val current: AppSettings
