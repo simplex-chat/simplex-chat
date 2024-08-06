@@ -19,13 +19,17 @@ struct SwipeLabel: View {
         self.inverted = inverted
     }
 
-    var body: Image {
-        Image(
-            uiImage: SwipeActionView(
-                systemName: systemImage,
-                text: text
-            ).snapshot(inverted: inverted)
-        )
+    var body: some View {
+        if inverted {
+            Image(
+                uiImage: SwipeActionView(
+                    systemName: systemImage,
+                    text: text
+                ).snapshot(inverted: inverted)
+            )
+        } else {
+            Label(text, systemImage: systemImage)
+        }
     }
 
     private class SwipeActionView: UIView {
