@@ -835,6 +835,9 @@
 "Chat database deleted" = "Csevegési adatbázis törölve";
 
 /* No comment provided by engineer. */
+"Chat database exported" = "Csevegési adatbázis exportálva";
+
+/* No comment provided by engineer. */
 "Chat database imported" = "Csevegési adatbázis importálva";
 
 /* No comment provided by engineer. */
@@ -1090,9 +1093,6 @@
 "Contact is connected" = "Ismerőse kapcsolódott";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "Az ismerőse még nem kapcsolódott!";
-
-/* No comment provided by engineer. */
 "Contact name" = "Ismerős neve";
 
 /* No comment provided by engineer. */
@@ -1330,12 +1330,6 @@
 "Delete contact" = "Ismerős törlése";
 
 /* No comment provided by engineer. */
-"Delete Contact" = "Ismerős törlése";
-
-/* No comment provided by engineer. */
-"Delete contact?\nThis cannot be undone!" = "Ismerős törlése?\nEz a művelet nem vonható vissza!";
-
-/* No comment provided by engineer. */
 "Delete database" = "Adatbázis törlése";
 
 /* No comment provided by engineer. */
@@ -1388,9 +1382,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Régi adatbázis törlése?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Függőben lévő kapcsolat törlése";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Függő kapcsolatfelvételi kérések törlése?";
@@ -1829,9 +1820,6 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "Hiba a kapcsolat törlésekor";
-
-/* No comment provided by engineer. */
-"Error deleting contact" = "Hiba az ismerős törlésekor";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Hiba az adatbázis törlésekor";
@@ -2671,6 +2659,9 @@
 /* No comment provided by engineer. */
 "Max 30 seconds, received instantly." = "Max. 30 másodperc, azonnal érkezett.";
 
+/* No comment provided by engineer. */
+"Media & file servers" = "Média és fájlkiszolgálók";
+
 /* blur media */
 "Medium" = "Közepes";
 
@@ -2736,6 +2727,9 @@
 
 /* No comment provided by engineer. */
 "Message reception" = "Üzenetjelentés";
+
+/* No comment provided by engineer. */
+"Message servers" = "Üzenetkiszolgálók";
 
 /* No comment provided by engineer. */
 "Message source remains private." = "Az üzenet forrása titokban marad.";
@@ -3622,6 +3616,9 @@
 "Save and notify group members" = "Mentés és a csoporttagok értesítése";
 
 /* No comment provided by engineer. */
+"Save and reconnect" = "Mentés és újrakapcsolódás";
+
+/* No comment provided by engineer. */
 "Save and update group profile" = "Mentés és csoportprofil frissítése";
 
 /* No comment provided by engineer. */
@@ -3764,9 +3761,6 @@
 
 /* No comment provided by engineer. */
 "send direct message" = "közvetlen üzenet küldése";
-
-/* No comment provided by engineer. */
-"Send direct message" = "Közvetlen üzenet küldése";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Közvetlen üzenet küldése a kapcsolódáshoz";
@@ -4069,7 +4063,13 @@
 "Soft" = "Enyhe";
 
 /* No comment provided by engineer. */
+"Some file(s) were not exported:" = "Néhány fájl nem került exportálásra:";
+
+/* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Néhány nem végzetes hiba történt az importálás során – további részletekért a csevegési konzolban olvashat.";
+
+/* No comment provided by engineer. */
+"Some non-fatal errors occurred during import:" = "Néhány nem végzetes hiba történt az importálás során:";
 
 /* notification title */
 "Somebody" = "Valaki";
@@ -4186,7 +4186,7 @@
 "Tap to scan" = "Koppintson a beolvasáshoz";
 
 /* No comment provided by engineer. */
-"Tap to start a new chat" = "Koppintson az új csevegés indításához";
+"TCP connection" = "TCP kapcsolat";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "TCP kapcsolat időtúllépés";
@@ -4505,6 +4505,9 @@
 
 /* No comment provided by engineer. */
 "Update network settings?" = "Hálózati beállítások megváltoztatása?";
+
+/* No comment provided by engineer. */
+"Update settings?" = "Beállítások frissítése?";
 
 /* rcv group event chat item */
 "updated group profile" = "frissítette a csoport profilját";
@@ -4912,9 +4915,6 @@
 "You have already requested connection!\nRepeat connection request?" = "Már kért egy kapcsolódási kérelmet!\nKapcsolódási kérés megismétlése?";
 
 /* No comment provided by engineer. */
-"You have no chats" = "Nincsenek csevegési üzenetek";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "A jelmondatot minden alkalommal meg kell adnia, amikor az alkalmazás elindul - nem az eszközön kerül tárolásra.";
 
 /* No comment provided by engineer. */
@@ -4928,6 +4928,12 @@
 
 /* snd group event chat item */
 "you left" = "elhagyta a csoportot";
+
+/* No comment provided by engineer. */
+"You may migrate the exported database." = "Az exportált adatbázist átköltöztetheti.";
+
+/* No comment provided by engineer. */
+"You may save the exported archive." = "Az exportált archívumot elmentheti.";
 
 /* No comment provided by engineer. */
 "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "A csevegési adatbázis legfrissebb verzióját CSAK egy eszközön kell használnia, ellenkező esetben előfordulhat, hogy az üzeneteket nem fogja megkapni valamennyi ismerőstől.";
@@ -5003,9 +5009,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Csevegési profilok";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Az ismerősének online kell lennie ahhoz, hogy a kapcsolat létrejöjjön.\nVisszavonhatja ezt a kapcsolatfelvételt és törölheti az ismerőst (ezt később ismét megpróbálhatja egy új hivatkozással).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ismerőse olyan fájlt küldött, amely meghaladja a jelenleg támogatott maximális méretet (%@).";

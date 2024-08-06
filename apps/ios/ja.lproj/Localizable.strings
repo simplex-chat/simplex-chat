@@ -841,9 +841,6 @@
 "Contact is connected" = "連絡先は接続中";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "連絡先がまだ繋がってません！";
-
-/* No comment provided by engineer. */
 "Contact name" = "連絡先の名前";
 
 /* No comment provided by engineer. */
@@ -1027,9 +1024,6 @@
 "Delete contact" = "連絡先を削除";
 
 /* No comment provided by engineer. */
-"Delete Contact" = "連絡先を削除";
-
-/* No comment provided by engineer. */
 "Delete database" = "データベースを削除";
 
 /* server test step */
@@ -1079,9 +1073,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "古いデータベースを削除しますか？";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "確認待ちの接続を削除";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "接続待ちの接続を削除しますか？";
@@ -1406,9 +1397,6 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "接続の削除エラー";
-
-/* No comment provided by engineer. */
-"Error deleting contact" = "連絡先の削除にエラー発生";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "データベースの削除にエラー発生";
@@ -2764,9 +2752,6 @@
 "Send a live message - it will update for the recipient(s) as you type it" = "ライブメッセージを送信 (入力しながら宛先の画面で更新される)";
 
 /* No comment provided by engineer. */
-"Send direct message" = "ダイレクトメッセージを送信";
-
-/* No comment provided by engineer. */
 "Send direct message to connect" = "ダイレクトメッセージを送信して接続する";
 
 /* No comment provided by engineer. */
@@ -3011,9 +2996,6 @@
 
 /* No comment provided by engineer. */
 "Tap to join incognito" = "タップしてシークレットモードで参加";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "タップして新しいチャットを始める";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "TCP接続タイムアウト";
@@ -3472,9 +3454,6 @@
 "You could not be verified; please try again." = "確認できませんでした。 もう一度お試しください。";
 
 /* No comment provided by engineer. */
-"You have no chats" = "あなたはチャットがありません";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "アプリ起動時にパスフレーズを入力しなければなりません。端末に保存されてません。";
 
 /* No comment provided by engineer. */
@@ -3554,9 +3533,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "あなたのチャットプロフィール";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "接続を完了するには、連絡相手がオンラインになる必要があります。\nこの接続をキャンセルして、連絡先を削除をすることもできます (後でやり直すこともできます)。";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "連絡先が現在サポートされている最大サイズ (%@) より大きいファイルを送信しました。";

@@ -997,9 +997,6 @@
 "Contact is connected" = "Соединение с контактом установлено";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "Соединение еще не установлено!";
-
-/* No comment provided by engineer. */
 "Contact name" = "Имена контактов";
 
 /* No comment provided by engineer. */
@@ -1213,12 +1210,6 @@
 "Delete contact" = "Удалить контакт";
 
 /* No comment provided by engineer. */
-"Delete Contact" = "Удалить контакт";
-
-/* No comment provided by engineer. */
-"Delete contact?\nThis cannot be undone!" = "Удалить контакт?\nЭто не может быть отменено!";
-
-/* No comment provided by engineer. */
 "Delete database" = "Удалить данные чата";
 
 /* No comment provided by engineer. */
@@ -1271,9 +1262,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Удалить предыдущую версию данных?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Удалить соединение";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Удалить ожидаемое соединение?";
@@ -1673,9 +1661,6 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "Ошибка при удалении соединения";
-
-/* No comment provided by engineer. */
-"Error deleting contact" = "Ошибка при удалении контакта";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Ошибка при удалении данных чата";
@@ -3415,9 +3400,6 @@
 "send direct message" = "отправьте сообщение";
 
 /* No comment provided by engineer. */
-"Send direct message" = "Отправить сообщение";
-
-/* No comment provided by engineer. */
 "Send direct message to connect" = "Отправьте сообщение чтобы соединиться";
 
 /* No comment provided by engineer. */
@@ -3755,9 +3737,6 @@
 
 /* No comment provided by engineer. */
 "Tap to scan" = "Нажмите, чтобы сканировать";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "Нажмите, чтобы начать чат";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "Таймаут TCP соединения";
@@ -4432,9 +4411,6 @@
 "You have already requested connection!\nRepeat connection request?" = "Вы уже запросили соединение!\nПовторить запрос?";
 
 /* No comment provided by engineer. */
-"You have no chats" = "У Вас нет чатов";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Пароль не сохранен на устройстве — Вы будете должны ввести его при каждом запуске чата.";
 
 /* No comment provided by engineer. */
@@ -4523,9 +4499,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Ваши профили чата";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Ваш контакт должен быть в сети чтобы установить соединение.\nВы можете отменить соединение и удалить контакт (и попробовать позже с другой ссылкой).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ваш контакт отправил файл, размер которого превышает максимальный размер (%@).";

@@ -835,6 +835,9 @@
 "Chat database deleted" = "Chat database verwijderd";
 
 /* No comment provided by engineer. */
+"Chat database exported" = "Chat database geëxporteerd";
+
+/* No comment provided by engineer. */
 "Chat database imported" = "Chat database geïmporteerd";
 
 /* No comment provided by engineer. */
@@ -1090,9 +1093,6 @@
 "Contact is connected" = "Contact is verbonden";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "Contact is nog niet verbonden!";
-
-/* No comment provided by engineer. */
 "Contact name" = "Contact naam";
 
 /* No comment provided by engineer. */
@@ -1330,12 +1330,6 @@
 "Delete contact" = "Verwijder contact";
 
 /* No comment provided by engineer. */
-"Delete Contact" = "Verwijder contact";
-
-/* No comment provided by engineer. */
-"Delete contact?\nThis cannot be undone!" = "Verwijder contact?\nDit kan niet ongedaan gemaakt worden!";
-
-/* No comment provided by engineer. */
 "Delete database" = "Database verwijderen";
 
 /* No comment provided by engineer. */
@@ -1388,9 +1382,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Oude database verwijderen?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Wachtende verbinding verwijderen";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Wachtende verbinding verwijderen?";
@@ -1829,9 +1820,6 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "Fout bij verwijderen van verbinding";
-
-/* No comment provided by engineer. */
-"Error deleting contact" = "Fout bij het verwijderen van contact";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Fout bij het verwijderen van de database";
@@ -2671,6 +2659,9 @@
 /* No comment provided by engineer. */
 "Max 30 seconds, received instantly." = "Max 30 seconden, direct ontvangen.";
 
+/* No comment provided by engineer. */
+"Media & file servers" = "Media- en bestandsservers";
+
 /* blur media */
 "Medium" = "Medium";
 
@@ -2736,6 +2727,9 @@
 
 /* No comment provided by engineer. */
 "Message reception" = "Bericht ontvangst";
+
+/* No comment provided by engineer. */
+"Message servers" = "Berichtservers";
 
 /* No comment provided by engineer. */
 "Message source remains private." = "Berichtbron blijft privé.";
@@ -3622,6 +3616,9 @@
 "Save and notify group members" = "Opslaan en groep leden melden";
 
 /* No comment provided by engineer. */
+"Save and reconnect" = "Opslaan en opnieuw verbinden";
+
+/* No comment provided by engineer. */
 "Save and update group profile" = "Groep profiel opslaan en bijwerken";
 
 /* No comment provided by engineer. */
@@ -3764,9 +3761,6 @@
 
 /* No comment provided by engineer. */
 "send direct message" = "stuur een direct bericht";
-
-/* No comment provided by engineer. */
-"Send direct message" = "Direct bericht sturen";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Stuur een direct bericht om verbinding te maken";
@@ -4069,7 +4063,13 @@
 "Soft" = "Soft";
 
 /* No comment provided by engineer. */
+"Some file(s) were not exported:" = "Sommige bestanden zijn niet geëxporteerd:";
+
+/* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Er zijn enkele niet-fatale fouten opgetreden tijdens het importeren - u kunt de Chat console raadplegen voor meer details.";
+
+/* No comment provided by engineer. */
+"Some non-fatal errors occurred during import:" = "Er zijn enkele niet-fatale fouten opgetreden tijdens het importeren:";
 
 /* notification title */
 "Somebody" = "Iemand";
@@ -4186,7 +4186,7 @@
 "Tap to scan" = "Tik om te scannen";
 
 /* No comment provided by engineer. */
-"Tap to start a new chat" = "Tik om een nieuw gesprek te starten";
+"TCP connection" = "TCP verbinding";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "Timeout van TCP-verbinding";
@@ -4505,6 +4505,9 @@
 
 /* No comment provided by engineer. */
 "Update network settings?" = "Netwerk instellingen bijwerken?";
+
+/* No comment provided by engineer. */
+"Update settings?" = "Instellingen actualiseren?";
 
 /* rcv group event chat item */
 "updated group profile" = "bijgewerkt groep profiel";
@@ -4912,9 +4915,6 @@
 "You have already requested connection!\nRepeat connection request?" = "Je hebt al verbinding aangevraagd!\nVerbindingsverzoek herhalen?";
 
 /* No comment provided by engineer. */
-"You have no chats" = "Je hebt geen gesprekken";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "U moet elke keer dat de app start het wachtwoord invoeren, deze wordt niet op het apparaat opgeslagen.";
 
 /* No comment provided by engineer. */
@@ -4928,6 +4928,12 @@
 
 /* snd group event chat item */
 "you left" = "jij bent vertrokken";
+
+/* No comment provided by engineer. */
+"You may migrate the exported database." = "U kunt de geëxporteerde database migreren.";
+
+/* No comment provided by engineer. */
+"You may save the exported archive." = "U kunt het geëxporteerde archief opslaan.";
 
 /* No comment provided by engineer. */
 "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "U mag ALLEEN de meest recente versie van uw chat database op één apparaat gebruiken, anders ontvangt u mogelijk geen berichten meer van sommige contacten.";
@@ -5003,9 +5009,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Uw chat profielen";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Uw contact moet online zijn om de verbinding te voltooien.\nU kunt deze verbinding verbreken en het contact verwijderen en later proberen met een nieuwe link.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Uw contact heeft een bestand verzonden dat groter is dan de momenteel ondersteunde maximale grootte (%@).";

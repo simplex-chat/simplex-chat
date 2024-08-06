@@ -83,13 +83,25 @@
 "Selected chat preferences prohibit this message." = "Le preferenze della chat selezionata vietano questo messaggio.";
 
 /* No comment provided by engineer. */
+"Sending a message takes longer than expected." = "L'invio di un messaggio richiede più tempo del previsto.";
+
+/* No comment provided by engineer. */
+"Sending message…" = "Invio messaggio…";
+
+/* No comment provided by engineer. */
 "Share" = "Condividi";
+
+/* No comment provided by engineer. */
+"Slow network?" = "Rete lenta?";
 
 /* No comment provided by engineer. */
 "Unknown database error: %@" = "Errore del database sconosciuto: %@";
 
 /* No comment provided by engineer. */
 "Unsupported format" = "Formato non supportato";
+
+/* No comment provided by engineer. */
+"Wait" = "Attendi";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Password del database sbagliata";

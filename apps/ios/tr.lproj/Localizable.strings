@@ -997,9 +997,6 @@
 "Contact is connected" = "Kişi bağlandı";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "Kişi şuan bağlanmadı!";
-
-/* No comment provided by engineer. */
 "Contact name" = "Kişi adı";
 
 /* No comment provided by engineer. */
@@ -1216,12 +1213,6 @@
 "Delete contact" = "Kişiyi sil";
 
 /* No comment provided by engineer. */
-"Delete Contact" = "Kişiyi sil";
-
-/* No comment provided by engineer. */
-"Delete contact?\nThis cannot be undone!" = "Kişi silinsin mi?\nBu geri alınamaz!";
-
-/* No comment provided by engineer. */
 "Delete database" = "Veritabanını sil";
 
 /* No comment provided by engineer. */
@@ -1274,9 +1265,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Eski veritabanı silinsin mi?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Bekleyen bağlantıyı sil";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Bekleyen bağlantı silinsin mi?";
@@ -1676,9 +1664,6 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "Bağlantı silinirken hata oluştu";
-
-/* No comment provided by engineer. */
-"Error deleting contact" = "Kişi silinirken hata oluştu";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Veritabanı silinirken hata oluştu";
@@ -3421,9 +3406,6 @@
 "send direct message" = "doğrudan mesaj gönder";
 
 /* No comment provided by engineer. */
-"Send direct message" = "Doğrudan mesaj gönder";
-
-/* No comment provided by engineer. */
 "Send direct message to connect" = "Bağlanmak için doğrudan mesaj gönder";
 
 /* No comment provided by engineer. */
@@ -3764,9 +3746,6 @@
 
 /* No comment provided by engineer. */
 "Tap to scan" = "Taramak için tıkla";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "Yeni bir sohbet başlatmak için tıkla";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "TCP bağlantı zaman aşımı";
@@ -4441,9 +4420,6 @@
 "You have already requested connection!\nRepeat connection request?" = "Zaten bağlantı isteğinde bulundunuz!\nBağlantı isteği tekrarlansın mı?";
 
 /* No comment provided by engineer. */
-"You have no chats" = "Hiç sohbetiniz yok";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Uygulama her başladığında parola girmeniz gerekir - parola cihazınızda saklanmaz.";
 
 /* No comment provided by engineer. */
@@ -4532,9 +4508,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Sohbet profillerin";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Bağlantının tamamlanması için kişinizin çevrimiçi olması gerekir.\nBu bağlantıyı iptal edebilir ve kişiyi kaldırabilirsiniz (ve daha sonra yeni bir bağlantıyla deneyebilirsiniz).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Kişiniz şu anda desteklenen maksimum boyuttan (%@) daha büyük bir dosya gönderdi.";
