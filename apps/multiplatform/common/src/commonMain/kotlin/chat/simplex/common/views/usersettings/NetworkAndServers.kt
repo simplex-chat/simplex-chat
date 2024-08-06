@@ -108,10 +108,7 @@ fun NetworkAndServersView() {
   toggleSocksProxy: (Boolean) -> Unit,
 ) {
   val m = chatModel
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-    verticalArrangement = Arrangement.spacedBy(8.dp)
-  ) {
+  ColumnWithScrollBar(Modifier.fillMaxWidth()) {
     val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.start.showModal(content = it) }
     val showCustomModal = { it: @Composable (close: () -> Unit) -> Unit -> ModalManager.start.showCustomModal { close -> it(close) }}
 
@@ -132,11 +129,13 @@ fun NetworkAndServersView() {
                 Text(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
               }
             }
+            SectionDividerSpaced(maxTopPadding = true)
+          } else {
+            SectionDividerSpaced()
           }
         }
       }
     }
-    Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 24.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
 
     SectionView(generalGetString(MR.strings.settings_section_title_calls)) {
       SettingsActionItem(painterResource(MR.images.ic_electrical_services), stringResource(MR.strings.webrtc_ice_servers), { ModalManager.start.showModal { RTCServersView(m) } })

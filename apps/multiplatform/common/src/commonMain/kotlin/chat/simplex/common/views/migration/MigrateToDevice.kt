@@ -487,10 +487,11 @@ private suspend fun MutableState<MigrationToState?>.checkUserLink(link: String) 
     val data = MigrationFileLinkData.readFromLink(link)
     val hasOnionConfigured = data?.networkConfig?.hasOnionConfigured() ?: false
     val networkConfig = data?.networkConfig?.transformToPlatformSupported()
+    val my = getNetCfg().withOnionHosts(OnionHosts.REQUIRED).withHostPort("localhost:9050")
     // If any of iOS or Android had onion enabled, show onion screen
-    if (hasOnionConfigured && networkConfig?.hostMode != null && networkConfig.requiredHostMode != null) {
-      state = MigrationToState.Onion(link.trim(), networkConfig.socksProxy, networkConfig.hostMode, networkConfig.requiredHostMode)
-      MigrationToDeviceState.save(MigrationToDeviceState.Onion(link.trim(), networkConfig.socksProxy, networkConfig.hostMode, networkConfig.requiredHostMode))
+    if (true/*hasOnionConfigured && networkConfig?.hostMode != null && networkConfig.requiredHostMode != null*/) {
+      state = MigrationToState.Onion(link.trim(), my.socksProxy, my.hostMode, my.requiredHostMode)
+      MigrationToDeviceState.save(MigrationToDeviceState.Onion(link.trim(), my.socksProxy, my.hostMode, my.requiredHostMode))
     } else {
       val current = getNetCfg()
       state = MigrationToState.DatabaseInit(link.trim(), current.copy(

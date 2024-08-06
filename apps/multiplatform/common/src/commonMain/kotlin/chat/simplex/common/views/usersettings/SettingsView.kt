@@ -112,7 +112,7 @@ fun SettingsLayout(
       Modifier
         .fillMaxSize()
         .themedBackground(theme.value.base)
-        .padding(top = if (appPlatform.isAndroid) DEFAULT_PADDING else DEFAULT_PADDING * 3)
+        .padding(top = if (appPlatform.isAndroid) DEFAULT_PADDING else DEFAULT_PADDING * 2.8f)
     ) {
       AppBarTitle(stringResource(MR.strings.your_settings))
 

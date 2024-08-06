@@ -226,7 +226,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
       SectionCustomFooter {
         Text(stringResource(MR.strings.private_routing_explanation))
       }
-      Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 32.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
+      SectionDividerSpaced(maxTopPadding = true)
     }
 
     if (currentRemoteHost == null && networkUseSocksProxy.value) {
@@ -238,7 +238,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
           }
         }
       }
-      Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 32.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
+      SectionDividerSpaced(maxTopPadding = true)
     }
 
     if (currentRemoteHost == null && developerTools) {
