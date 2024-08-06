@@ -7,7 +7,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -15,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.SettingsViewState
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
@@ -25,7 +25,7 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
   var searchInList by rememberSaveable { mutableStateOf("") }
   val (userPickerState, scaffoldState) = settingsState
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
-  val oneHandUI = remember { chatModel.controller.appPrefs.oneHandUI }
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
 
   Scaffold(
     Modifier.padding(end = endPadding),
@@ -33,7 +33,7 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
     drawerContentColor = LocalContentColor.current,
     scaffoldState = scaffoldState,
     topBar = {
-      if (!oneHandUI.state.value) {
+      if (!oneHandUI.value) {
         Column {
           ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() }
           Divider()
@@ -41,7 +41,7 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
       }
     },
     bottomBar = {
-      if (oneHandUI.state.value) {
+      if (oneHandUI.value) {
         Column {
           Divider()
           ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() }
@@ -74,15 +74,9 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
       }
       null -> {}
     }
-    var modifier = Modifier.fillMaxSize()
-
-    if (oneHandUI.state.value) {
-      modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
-    }
-
     Box(Modifier.padding(it)) {
       Column(
-        modifier = modifier
+        modifier = Modifier.fillMaxSize()
       ) {
         if (chatModel.chats.value.isNotEmpty()) {
           ShareList(
@@ -91,10 +85,9 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
             isMediaOrFileAttachment = isMediaOrFileAttachment,
             isVoice = isVoice,
             hasSimplexLink = hasSimplexLink,
-            oneHandUI = oneHandUI.state
           )
         } else {
-          EmptyList(oneHandUI = oneHandUI.state)
+          EmptyList()
         }
       }
     }
@@ -115,14 +108,8 @@ private fun hasSimplexLink(msg: String): Boolean {
 }
 
 @Composable
-private fun EmptyList(oneHandUI: State<Boolean>) {
-  var modifier = Modifier.fillMaxSize()
-
-  if (oneHandUI.value) {
-    modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
-  }
-
-  Box(modifier, contentAlignment = Alignment.Center) {
+private fun EmptyList() {
+  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
     Text(stringResource(MR.strings.you_have_no_chats), color = MaterialTheme.colors.secondary)
   }
 }
@@ -212,8 +199,8 @@ private fun ShareList(
   isMediaOrFileAttachment: Boolean,
   isVoice: Boolean,
   hasSimplexLink: Boolean,
-  oneHandUI: State<Boolean>
 ) {
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
   val chats by remember(search) {
     derivedStateOf {
       val sorted = chatModel.chats.value.toList().sortedByDescending { it.chatInfo is ChatInfo.Local }
@@ -225,7 +212,8 @@ private fun ShareList(
     }
   }
   LazyColumnWithScrollBar(
-    modifier = Modifier.fillMaxWidth()
+    modifier = Modifier.fillMaxSize(),
+    reverseLayout = oneHandUI.value
   ) {
     items(chats) { chat ->
       ShareListNavLinkView(
@@ -234,7 +222,6 @@ private fun ShareList(
         isMediaOrFileAttachment = isMediaOrFileAttachment,
         isVoice = isVoice,
         hasSimplexLink = hasSimplexLink,
-        oneHandUI = oneHandUI
       )
     }
   }

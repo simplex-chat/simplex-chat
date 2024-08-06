@@ -12,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.font.FontStyle
@@ -145,12 +144,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       }
     }
   ) {
-    var modifier = Modifier.padding(it).padding(end = endPadding)
-    if (oneHandUI.state.value) {
-      modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
-    }
-
-    Box(modifier) {
+    Box(Modifier.padding(it).padding(end = endPadding)) {
       Box(
         modifier = Modifier
           .fillMaxSize()
@@ -159,14 +153,8 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
           ChatList(chatModel, searchText = searchText, oneHandUI = oneHandUI)
         }
         if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
-          var textModifier = Modifier.align(Alignment.Center)
-
-          if (oneHandUI.state.value) {
-            textModifier = textModifier.scale(scaleX = 1f, scaleY = -1f)
-          }
-
           Text(stringResource(
-            if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), textModifier, color = MaterialTheme.colors.secondary)
+            if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
         }
       }
     }
@@ -445,14 +433,8 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
 }
 
 @Composable
-private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<String?>, oneHandUI: SharedPreference<Boolean>) {
-  var modifier = Modifier.fillMaxWidth();
-
-  if (oneHandUI.state.value) {
-    modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
-  }
-
-  Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
+private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<String?>) {
+  Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
     val focusRequester = remember { FocusRequester() }
     var focused by remember { mutableStateOf(false) }
     Icon(
@@ -588,46 +570,47 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
   val chats = filteredChats(showUnreadAndFavorites, searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList())
   LazyColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-    listState
+    Modifier.fillMaxSize(),
+    listState,
+    reverseLayout = oneHandUI.state.value
   ) {
     stickyHeader {
       Column(
         Modifier
           .offset {
             val y = if (searchText.value.text.isEmpty()) {
+              val offsetMultiplier = if (oneHandUI.state.value) 1 else -1
               if (
                 (oneHandUI.state.value && scrollDirection == ScrollDirection.Up) ||
                 (appPlatform.isAndroid && keyboardState == KeyboardState.Opened)
               ) {
                 0
-              } else if (listState.firstVisibleItemIndex == 0) -listState.firstVisibleItemScrollOffset else -1000
+              } else if (listState.firstVisibleItemIndex == 0) offsetMultiplier*listState.firstVisibleItemScrollOffset else offsetMultiplier*1000
             } else {
               0
             }
             IntOffset(0, y)
           }
-          .background(MaterialTheme.colors.background)
-      ) {
-        ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, oneHandUI)
-        Divider()
+          .background(MaterialTheme.colors.background),
+        ) {
+        if (oneHandUI.state.value) {
+          Divider()
+        }
+        ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
+        if (!oneHandUI.state.value) {
+          Divider()
+        }
       }
     }
     itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->
       val nextChatSelected = remember(chat.id, chats) { derivedStateOf {
         chatModel.chatId.value != null && chats.getOrNull(index + 1)?.id == chatModel.chatId.value
       } }
-      ChatListNavLinkView(chat, nextChatSelected, oneHandUI.state)
+      ChatListNavLinkView(chat, nextChatSelected)
     }
   }
   if (chats.isEmpty() && chatModel.chats.value.isNotEmpty()) {
-    var modifier = Modifier.fillMaxSize();
-
-    if (oneHandUI.state.value) {
-      modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
-    }
-
-    Box(modifier, contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
       Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary)
     }
   }
