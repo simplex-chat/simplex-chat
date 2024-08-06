@@ -281,7 +281,7 @@ fun SocksProxySettings(
           click = { if (appPrefs.networkUseSocksProxy.get() && !migration) showUpdateNetworkSettingsDialog { save() } else save() },
           disabled = saveDisabled
         ) {
-          Text(stringResource(MR.strings.network_options_save), color = if (saveDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+          Text(stringResource(if (appPrefs.networkUseSocksProxy.get() && !migration) MR.strings.network_options_save_and_reconnect else MR.strings.network_options_save), color = if (saveDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
         }
       }
       SectionBottomSpacer()
