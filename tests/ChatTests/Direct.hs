@@ -1441,14 +1441,14 @@ testMultipleUserAddresses =
       cLinkAlisa <- getContactLink alice True
       bob ##> ("/c " <> cLinkAlisa)
       alice <#? bob
-      alice #$> ("/_get chats 2 pcc=on", chats, [("<@bob", ""), ("@SimpleX-Status", ""), ("@SimpleX Chat team", ""), ("*", "")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("<@bob", ""), ("@SimpleX Chat team", ""), ("@SimpleX-Status", ""), ("*", "")])
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alisa: contact is connected")
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", lastChatFeature), ("@SimpleX-Status", ""), ("@SimpleX Chat team", ""), ("*", "")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", lastChatFeature), ("@SimpleX Chat team", ""), ("@SimpleX-Status", ""), ("*", "")])
       alice <##> bob
 
       bob #> "@alice hey alice"
@@ -1479,7 +1479,7 @@ testMultipleUserAddresses =
         (cath <## "alisa: contact is connected")
         (alice <## "cath (Catherine): contact is connected")
       threadDelay 100000
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", lastChatFeature), ("@bob", "hey"), ("@SimpleX-Status", ""), ("@SimpleX Chat team", ""), ("*", "")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", lastChatFeature), ("@bob", "hey"), ("@SimpleX Chat team", ""), ("@SimpleX-Status", ""), ("*", "")])
       alice <##> cath
 
       -- first user doesn't have cath as contact

@@ -667,7 +667,6 @@
     <string name="feature_off">关闭</string>
     <string name="network_use_onion_hosts_required_desc">连接需要 Onion 主机。
 \n请注意：如果没有 .onion 地址，您将无法连接到服务器。</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion 主机将在可用时使用。</string>
     <string name="chat_item_ttl_none">从不</string>
     <string name="feature_offered_item">已提供 %s</string>
     <string name="feature_offered_item_with_param">已提供 %s：%2s</string>
@@ -686,8 +685,6 @@
     <string name="no_contacts_to_add">没有联系人可添加</string>
     <string name="network_status">网络状态</string>
     <string name="chat_preferences_off">关闭</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">将不会使用 Onion 主机。</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">连接需要 Onion 主机。</string>
     <string name="no_received_app_files">没有收到或发送的文件</string>
     <string name="sender_cancelled_file_transfer">发送人已取消文件传输。</string>
     <string name="share_verb">分享</string>
@@ -744,7 +741,6 @@
     <string name="to_start_a_new_chat_help_header">开始新的聊天</string>
     <string name="to_verify_compare">要与您的联系人验证端到端加密，请比较（或扫描）您设备上的代码。</string>
     <string name="unmute_chat">取消静音</string>
-    <string name="update_onion_hosts_settings_question">更新 .onion 主机设置？</string>
     <string name="update_network_session_mode_question">更新传输隔离模式？</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">（从剪贴板扫描或粘贴）</string>
     <string name="smp_server_test_secure_queue">保护队列</string>
@@ -829,7 +825,6 @@
     <string name="group_member_status_removed">已删除</string>
     <string name="role_in_group">角色</string>
     <string name="network_option_seconds_label">秒</string>
-    <string name="network_options_revert">恢复</string>
     <string name="reset_color">重置颜色</string>
     <string name="v4_5_reduced_battery_usage">减少电池使用量</string>
     <string name="v4_5_private_filenames_descr">为了保护时区，图像/语音文件使用 UTC。</string>

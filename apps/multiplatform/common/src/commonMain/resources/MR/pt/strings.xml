@@ -578,7 +578,6 @@
     <string name="settings_notification_preview_title">Pré-visualização de notificação</string>
     <string name="message_delivery_error_desc">Muito provavelmente este contato eliminou a conexão consigo.</string>
     <string name="this_text_is_available_in_settings">Este texto está disponível nas definições</string>
-    <string name="update_onion_hosts_settings_question">Atualizar definições de servidores .onion\?</string>
     <string name="onboarding_notifications_mode_subtitle">Pode ser alterado mais tarde através das definições.</string>
     <string name="settings_section_title_help">AJUDA</string>
     <string name="settings_section_title_support">SUPORTE SIMPLEX CHAT</string>
@@ -613,7 +612,6 @@
     <string name="enter_passphrase_notification_desc">Para receber notificações, por favor, digite a senha da base de dados</string>
     <string name="network_use_onion_hosts_no_desc">Hosts Onion não serão usados.</string>
     <string name="network_use_onion_hosts_prefer_desc">Hosts Onion serão usados quando disponíveis.</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Hosts Onion serão necessários para a conexão.</string>
     <string name="video_call_no_encryption">chamada de vídeo (sem encriptação ponta a ponta)</string>
     <string name="audio_call_no_encryption">chamada de áudio (não encriptada ponta a ponta)</string>
     <string name="encrypted_audio_call">chamada de áudio encriptada ponta a ponta</string>
@@ -623,7 +621,6 @@
     <string name="feature_offered_item">oferecido %s</string>
     <string name="old_database_archive">Arquivo de base de dados antigo</string>
     <string name="network_use_onion_hosts_required_desc">Hosts Onion serão necessários para a conexão.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Hosts Onion serão usados quando disponíveis.</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Pode acontecer quando você ou sua conexão usaram o backup de base de dados antigo.</string>
     <string name="status_e2e_encrypted">encriptado ponta a ponta</string>
     <string name="feature_off">desligado</string>
@@ -644,7 +641,6 @@
     <string name="to_verify_compare">Para verificar a encriptação de ponta a ponta com o seu contato, compare (ou leia) o código nos seus dispositivos.</string>
     <string name="scan_code_from_contacts_app">Ler o código de segurança a partir da aplicação do seu contacto.</string>
     <string name="smp_servers_scan_qr">Ler o código QR do servidor</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Hosts Onion não serão usados.</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Apenas dispositivos cliente armazenam perfis de utilizador, contatos, grupos e mensagens enviadas com <b>encriptação de ponta a ponta de 2 camadas</b>.]]></string>
     <string name="status_contact_has_e2e_encryption">o contacto tem encriptação ponta a ponta</string>
     <string name="status_no_e2e_encryption">sem encriptação ponta a ponta</string>

@@ -348,14 +348,11 @@
     <string name="network_use_onion_hosts_no">Nie</string>
     <string name="network_use_onion_hosts_required_desc">Hosty onion będą wymagane do połączenia.
 \nUwaga: nie będziesz mógł połączyć się z serwerami bez adresu .onion.</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Hosty onion będą wymagane do połączenia.</string>
     <string name="network_use_onion_hosts_prefer_desc">Hosty onion będą używane, gdy będą dostępne.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Hosty onion będą używane, gdy będą dostępne.</string>
     <string name="network_use_onion_hosts_no_desc">Hosty onion nie będą używane.</string>
     <string name="network_use_onion_hosts_required">Wymagane</string>
     <string name="save_servers_button">Zapisz</string>
     <string name="network_session_mode_transport_isolation">Izolacja transportu</string>
-    <string name="update_onion_hosts_settings_question">Zaktualizować ustawienie hostów .onion\?</string>
     <string name="update_network_session_mode_question">Zaktualizować tryb izolacji transportu\?</string>
     <string name="network_disable_socks">Użyć bezpośredniego połączenia z Internetem\?</string>
     <string name="network_use_onion_hosts">Użyj hostów .onion</string>
@@ -758,7 +755,6 @@
     <string name="users_delete_with_connections">Profil i połączenia z serwerem</string>
     <string name="network_option_protocol_timeout">Limit czasu protokołu</string>
     <string name="network_options_reset_to_defaults">Przywróć wartości domyślne</string>
-    <string name="network_options_revert">Przywrócić</string>
     <string name="network_options_save">Zapisz</string>
     <string name="network_option_seconds_label">sek</string>
     <string name="tap_to_activate_profile">Dotknij, aby aktywować profil.</string>
@@ -953,7 +949,6 @@
     <string name="gallery_video_button">Wideo</string>
     <string name="feature_offered_item_with_param">zaproponował %s: %2s</string>
     <string name="only_group_owners_can_enable_voice">Tylko właściciele grup mogą włączyć wiadomości głosowe.</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Hosty onion nie będą używane.</string>
     <string name="only_your_contact_can_delete">Tylko Twój kontakt może nieodwracalnie usunąć wiadomości (możesz oznaczyć je do usunięcia). (24 godziny)</string>
     <string name="restore_passphrase_not_found_desc">Hasło nie zostało znalezione w Keystore, wprowadź je ręcznie. Może się tak zdarzyć, gdy przywrócisz dane aplikacji za pomocą narzędzia do kopii zapasowych. Jeśli tak nie jest, skontaktuj się z programistami.</string>
     <string name="group_members_can_send_disappearing">Członkowie grupy mogą wysyłać znikające wiadomości.</string>

@@ -394,7 +394,6 @@
     <string name="network_enable_socks_info">Соединяться с серверами через SOCKS прокси через порт %d? Прокси должен быть запущен до включения этой опции.</string>
     <string name="network_disable_socks">Использовать прямое соединение с Интернет?</string>
     <string name="network_disable_socks_info">Если Вы подтвердите, серверы смогут видеть Ваш IP адрес, а провайдер - с какими серверами Вы соединяетесь.</string>
-    <string name="update_onion_hosts_settings_question">Обновить настройки .onion хостов?</string>
     <string name="network_use_onion_hosts">Использовать .onion хосты</string>
     <string name="network_use_onion_hosts_prefer">Когда возможно</string>
     <string name="network_use_onion_hosts_no">Нет</string>
@@ -403,9 +402,6 @@
     <string name="network_use_onion_hosts_no_desc">Onion хосты не используются.</string>
     <string name="network_use_onion_hosts_required_desc">Подключаться только к onion хостам.
 \nОбратите внимание: Вы не сможете соединиться с серверами, у которых нет .onion адреса.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion хосты используются, если возможно.</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Onion хосты не используются.</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Подключаться только к onion хостам.</string>
     <string name="appearance_settings">Интерфейс</string>
     <!-- Address Items - UserAddressView.kt -->
     <string name="create_address">Создать адрес</string>
@@ -831,7 +827,6 @@
     <string name="network_option_protocol_timeout">Таймаут протокола</string>
     <string name="network_option_ping_interval">Интервал PING</string>
     <string name="network_option_enable_tcp_keep_alive">Включить TCP keep-alive</string>
-    <string name="network_options_revert">Отменить изменения</string>
     <string name="network_options_save">Сохранить</string>
     <string name="update_network_settings_question">Обновить настройки сети?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Обновление настроек приведет к переподключению клиента ко всем серверам.</string>

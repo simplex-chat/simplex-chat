@@ -623,7 +623,6 @@
     <string name="text_field_set_contact_placeholder">Aseta kontaktin nimi…</string>
     <string name="save_passphrase_in_keychain">Tallenna salasana Keystoreen</string>
     <string name="only_your_contact_can_send_disappearing">Vain kontaktisi voi lähettää katoavia viestejä.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion-isäntiä käytetään, kun niitä on saatavilla.</string>
     <string name="port_verb">Portti</string>
     <string name="network_proxy_port">portti %d</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[Aseta <i>Use .onion hosts</i> arvoon Ei, jos SOCKS-välityspalvelin ei tue niitä.]]></string>
@@ -661,7 +660,6 @@
     <string name="network_option_tcp_connection_timeout">TCP-yhteyden aikakatkaisu</string>
     <string name="network_option_ping_count">PING-määrä</string>
     <string name="network_option_ping_interval">PING-väli</string>
-    <string name="network_options_revert">Palauta</string>
     <string name="users_delete_with_connections">Profiili- ja palvelinyhteydet</string>
     <string name="set_group_preferences">Aseta ryhmän asetukset</string>
     <string name="many_people_asked_how_can_it_deliver"><![CDATA[Monet ovat kysyneet: <i>jos SimpleX ei sisällä käyttäjätunnuksia, kuinka se voi toimittaa viestejä\?</i>]]></string>
@@ -916,8 +914,6 @@
     <string name="thank_you_for_installing_simplex">Kiitos SimpleX Chatin asentamisesta!</string>
     <string name="icon_descr_settings">Asetukset</string>
     <string name="icon_descr_more_button">Lisää</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Onion-isäntiä ei käytetä.</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Yhteyden muodostamiseen tarvitaan Onion-isäntiä.</string>
     <string name="onboarding_notifications_mode_title">Yksityiset ilmoitukset</string>
     <string name="icon_descr_speaker_off">Kaiutin pois päältä</string>
     <string name="icon_descr_speaker_on">Kaiutin päällä</string>
@@ -1156,7 +1152,6 @@
 \nkontakteillesi</string>
     <string name="your_ICE_servers">ICE-palvelimesi</string>
     <string name="network_use_onion_hosts_prefer">Kun saatavilla</string>
-    <string name="update_onion_hosts_settings_question">Päivitä .onion-isäntien asetus\?</string>
     <string name="network_use_onion_hosts">Käytä .onion-isäntiä</string>
     <string name="your_calls">Puhelusi</string>
     <string name="alert_message_no_group">Tätä ryhmää ei enää ole olemassa.</string>

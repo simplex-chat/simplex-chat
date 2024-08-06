@@ -237,7 +237,6 @@ private fun ModalData.OnionView(link: String, socksProxy: String?, hostMode: Hos
     proxy
   }
   }
-  val proxyPort = remember { derivedStateOf { networkProxyHostPort.value?.split(":")?.lastOrNull()?.toIntOrNull() ?: 9050 } }
 
   val netCfg = rememberSaveable(stateSaver = serializableSaver()) {
     mutableStateOf(getNetCfg().withOnionHosts(onionHosts.value).copy(socksProxy = socksProxy, sessionMode = sessionMode.value))
@@ -275,7 +274,6 @@ private fun ModalData.OnionView(link: String, socksProxy: String?, hostMode: Hos
       onionHosts,
       sessionMode,
       networkProxyHostPortPref,
-      proxyPort,
       toggleSocksProxy = { enable ->
         networkUseSocksProxy.value = enable
       },
@@ -599,10 +597,7 @@ private fun MutableState<MigrationToState?>.importArchive(archivePath: String, n
         val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
         val archiveErrors = controller.apiImportArchive(config)
         if (archiveErrors.isNotEmpty()) {
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.chat_database_imported),
-            generalGetString(MR.strings.non_fatal_errors_occured_during_import)
-          )
+          showArchiveImportedWithErrorsAlert(archiveErrors)
         }
         state = MigrationToState.Passphrase("", netCfg)
         MigrationToDeviceState.save(MigrationToDeviceState.Passphrase(netCfg))

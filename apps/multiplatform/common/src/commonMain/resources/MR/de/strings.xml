@@ -396,7 +396,6 @@
     <string name="network_enable_socks_info">Zugriff auf die Server über SOCKS-Proxy auf Port %d? Der Proxy muss gestartet werden, bevor diese Option aktiviert wird.</string>
     <string name="network_disable_socks">Direkte Internetverbindung verwenden?</string>
     <string name="network_disable_socks_info">Wenn Sie dies bestätigen, können die Messaging-Server Ihre IP-Adresse sowie Ihren Provider sehen und mit welchen Servern Sie sich verbinden.</string>
-    <string name="update_onion_hosts_settings_question">Einstellung für .onion-Hosts aktualisieren?</string>
     <string name="network_use_onion_hosts">Verwende .onion-Hosts</string>
     <string name="network_use_onion_hosts_prefer">Wenn verfügbar</string>
     <string name="network_use_onion_hosts_no">Nein</string>
@@ -405,9 +404,6 @@
     <string name="network_use_onion_hosts_no_desc">Onion-Hosts werden nicht verwendet.</string>
     <string name="network_use_onion_hosts_required_desc">Für die Verbindung werden Onion-Hosts benötigt.
 \nBitte beachten Sie: Ohne .onion-Adresse können Sie keine Verbindung mit den Servern herstellen.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Wenn Onion-Hosts verfügbar sind, werden sie verwendet.</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Onion-Hosts werden nicht verwendet.</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Für die Verbindung werden Onion-Hosts benötigt.</string>
     <string name="appearance_settings">Erscheinungsbild</string>
     <!-- Address Items - UserAddressView.kt -->
     <string name="create_address">Adresse erstellen</string>
@@ -826,7 +822,6 @@
     <string name="network_option_protocol_timeout">Protokollzeitüberschreitung</string>
     <string name="network_option_ping_interval">PING-Intervall</string>
     <string name="network_option_enable_tcp_keep_alive">TCP-Keep-Alive aktivieren</string>
-    <string name="network_options_revert">Zurücksetzen</string>
     <string name="network_options_save">Speichern</string>
     <string name="update_network_settings_question">Netzwerkeinstellungen aktualisieren?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Die Aktualisierung der Einstellungen wird den Client wieder mit allen Servern verbinden.</string>
