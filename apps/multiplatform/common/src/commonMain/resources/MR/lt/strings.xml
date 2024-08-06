@@ -130,7 +130,6 @@
     <string name="snd_group_event_group_profile_updated">grupės profilis atnaujintas</string>
     <string name="info_row_group">Grupė</string>
     <string name="users_delete_question">Ištrinti pokalbio profilį\?</string>
-    <string name="network_options_revert">Sugrąžinti</string>
     <string name="network_options_save">Įrašyti</string>
     <string name="feature_enabled">įjungta</string>
     <string name="delete_after">Ištrinti po</string>
@@ -1373,7 +1372,6 @@
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(nuskanuokite ar įklijuokite iš iškarpinės)</string>
     <string name="you_accepted_connection">Priėmėte prisijungimą</string>
     <string name="you_invited_a_contact">Jūs pakvietėte kontaktą</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Onion serveriai bus reikalingi ryšiui.</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion serveriai bus naudojami, kai tik bus.</string>
     <string name="exit_without_saving">Išeiti neišsaugant</string>
     <string name="you_control_your_chat">Jūs kontroliuojate savo pokalbį!</string>
@@ -1565,7 +1563,6 @@
     <string name="your_simplex_contact_address">Jūsų SimpleX adresas</string>
     <string name="smp_servers_scan_qr">Nuskanuoti serverio QR kodą</string>
     <string name="network_use_onion_hosts_required">Reikalingi</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion serveriai bus naudojami, kai tik bus.</string>
     <string name="network_use_onion_hosts_no_desc">Onion serveriai nebus naudojami.</string>
     <string name="self_destruct">Savaiminis susinaikinimas</string>
     <string name="old_database_archive">Senas duomenų bazės archyvas</string>
@@ -1628,8 +1625,6 @@
     <string name="moderate_verb">Moderuoti</string>
     <string name="contact_wants_to_connect_with_you">nori prisijungti prie jūsų!</string>
     <string name="image_descr_link_preview">nuorodos peržiūros nuotrauka</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Onion serveriai nebus naudojami.</string>
-    <string name="update_onion_hosts_settings_question">Atnaujinti .onion serverių nustatymą?</string>
     <string name="onboarding_notifications_mode_off">Kai programėlė yra paleista</string>
     <string name="lock_mode">Užrakto režimas</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Galite paleisti pokalbius per programėlės nustatymus/ duomenų bazę arba paleisdami programėlę iš naujo.</string>
