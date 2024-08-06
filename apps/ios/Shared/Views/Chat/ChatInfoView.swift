@@ -147,13 +147,14 @@ struct ChatInfoView: View {
                 }
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
+                .padding(.bottom, 18)
                 
                 GeometryReader { g in
                     HStack(alignment: .center, spacing: 8) {
                         let buttonWidth = g.size.width / 4
                         searchButton(width: buttonWidth)
-                        AudioCallButton(chat: chat, contact: contact, showAlert: { alert = .someAlert(alert: $0) }, width: buttonWidth)
-                        VideoButton(chat: chat, contact: contact, showAlert: { alert = .someAlert(alert: $0) }, width: buttonWidth)
+                        AudioCallButton(chat: chat, contact: contact, width: buttonWidth) { alert = .someAlert(alert: $0) }
+                        VideoButton(chat: chat, contact: contact, width: buttonWidth) { alert = .someAlert(alert: $0) }
                         muteButton(width: buttonWidth)
                     }
                 }
@@ -328,11 +329,10 @@ struct ChatInfoView: View {
     }
     
     private func contactInfoHeader() -> some View {
-        VStack {
+        VStack(spacing: 8) {
             let cInfo = chat.chatInfo
             ChatInfoImage(chat: chat, size: 192, color: Color(uiColor: .tertiarySystemFill))
-                .padding(.top, 12)
-                .padding()
+                .padding(.vertical, 12)
             if contact.verified {
                 (
                     Text(Image(systemName: "checkmark.shield"))
@@ -394,21 +394,19 @@ struct ChatInfoView: View {
     }
 
     private func searchButton(width: CGFloat) -> some View {
-        InfoViewActionButtonLayout(image: "magnifyingglass", title: "search", width: width)
-            .onTapGesture {
-                dismiss()
-                onSearch()
-            }
-            .disabled(!contact.ready || chat.chatItems.isEmpty)
+        InfoViewButton(image: "magnifyingglass", title: "search", width: width) {
+            dismiss()
+            onSearch()
+        }
+        .disabled(!contact.ready || chat.chatItems.isEmpty)
     }
 
     private func muteButton(width: CGFloat) -> some View {
-        InfoViewActionButtonLayout(
+        InfoViewButton(
             image: chat.chatInfo.ntfsEnabled ? "speaker.slash.fill" : "speaker.wave.2.fill",
             title: chat.chatInfo.ntfsEnabled ? "mute" : "unmute",
             width: width
-        )
-        .onTapGesture {
+        ) {
             toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
         }
         .disabled(!contact.ready || !contact.active)
@@ -623,8 +621,8 @@ struct ChatInfoView: View {
 struct AudioCallButton: View {
     var chat: Chat
     var contact: Contact
+    var width: CGFloat
     var showAlert: (SomeAlert) -> Void
-    var width: CGFloat = infoViewActionButtonWidth
 
     var body: some View {
         CallButton(
@@ -633,8 +631,8 @@ struct AudioCallButton: View {
             image: "phone.fill",
             title: "call",
             mediaType: .audio,
-            showAlert: showAlert,
-            width: width
+            width: width,
+            showAlert: showAlert
         )
     }
 }
@@ -642,8 +640,8 @@ struct AudioCallButton: View {
 struct VideoButton: View {
     var chat: Chat
     var contact: Contact
+    var width: CGFloat
     var showAlert: (SomeAlert) -> Void
-    var width: CGFloat = infoViewActionButtonWidth
 
     var body: some View {
         CallButton(
@@ -652,8 +650,8 @@ struct VideoButton: View {
             image: "video.fill",
             title: "video",
             mediaType: .video,
-            showAlert: showAlert,
-            width: width
+            width: width,
+            showAlert: showAlert
         )
     }
 }
@@ -664,91 +662,89 @@ private struct CallButton: View {
     var image: String
     var title: LocalizedStringKey
     var mediaType: CallMediaType
+    var width: CGFloat
     var showAlert: (SomeAlert) -> Void
-    var width: CGFloat = infoViewActionButtonWidth
 
     var body: some View {
         let canCall = contact.ready && contact.active && chat.chatInfo.featureEnabled(.calls) && ChatModel.shared.activeCall == nil
 
-        InfoViewActionButtonLayout(image: image, title: title, disabledLook: !canCall, width: width)
-            .onTapGesture {
-                if canCall {
-                    CallController.shared.startCall(contact, mediaType)
-                } else if contact.nextSendGrpInv {
+        InfoViewButton(image: image, title: title, disabledLook: !canCall, width: width) {
+            if canCall {
+                CallController.shared.startCall(contact, mediaType)
+            } else if contact.nextSendGrpInv {
+                showAlert(SomeAlert(
+                    alert: mkAlert(
+                        title: "Can't call contact",
+                        message: "Send message to enable calls."
+                    ),
+                    id: "can't call contact, send message"
+                ))
+            } else if !contact.active {
+                showAlert(SomeAlert(
+                    alert: mkAlert(
+                        title: "Can't call contact",
+                        message: "Contact is deleted."
+                    ),
+                    id: "can't call contact, contact deleted"
+                ))
+            } else if !contact.ready {
+                showAlert(SomeAlert(
+                    alert: mkAlert(
+                        title: "Can't call contact",
+                        message: "Connecting to contact, please wait or check later!"
+                    ),
+                    id: "can't call contact, contact not ready"
+                ))
+            } else if !chat.chatInfo.featureEnabled(.calls) {
+                switch chat.chatInfo.showEnableCallsAlert {
+                case .userEnable:
+                    showAlert(SomeAlert(
+                        alert: Alert(
+                            title: Text("Allow calls?"),
+                            message: Text("You need to allow your contact to call to be able to call them."),
+                            primaryButton: .default(Text("Allow")) {
+                                allowFeatureToContact(contact, .calls)
+                            },
+                            secondaryButton: .cancel()
+                        ),
+                        id: "allow calls"
+                    ))
+                case .askContact:
                     showAlert(SomeAlert(
                         alert: mkAlert(
-                            title: "Can't call contact",
-                            message: "Send message to enable calls."
+                            title: "Calls prohibited!",
+                            message: "Please ask your contact to enable calls."
                         ),
-                        id: "can't call contact, send message"
+                        id: "calls prohibited, ask contact"
                     ))
-                } else if !contact.active {
+                case .other:
                     showAlert(SomeAlert(
                         alert: mkAlert(
-                            title: "Can't call contact",
-                            message: "Contact is deleted."
-                        ),
-                        id: "can't call contact, contact deleted"
-                    ))
-                } else if !contact.ready {
-                    showAlert(SomeAlert(
-                        alert: mkAlert(
-                            title: "Can't call contact",
-                            message: "Connecting to contact, please wait or check later!"
-                        ),
-                        id: "can't call contact, contact not ready"
-                    ))
-                } else if !chat.chatInfo.featureEnabled(.calls) {
-                    switch chat.chatInfo.showEnableCallsAlert {
-                    case .userEnable:
-                        showAlert(SomeAlert(
-                            alert: Alert(
-                                title: Text("Allow calls?"),
-                                message: Text("You need to allow your contact to call to be able to call them."),
-                                primaryButton: .default(Text("Allow")) {
-                                    allowFeatureToContact(contact, .calls)
-                                },
-                                secondaryButton: .cancel()
-                            ),
-                            id: "allow calls"
-                        ))
-                    case .askContact:
-                        showAlert(SomeAlert(
-                            alert: mkAlert(
-                                title: "Calls prohibited!",
-                                message: "Please ask your contact to enable calls."
-                            ),
-                            id: "calls prohibited, ask contact"
-                        ))
-                    case .other:
-                        showAlert(SomeAlert(
-                            alert: mkAlert(
-                                title: "Calls prohibited!",
-                                message: "Please check yours and your contact preferences."
-                            )
-                            , id: "calls prohibited, other"
-                        ))
-                    }
-                } else {
-                    showAlert(SomeAlert(
-                        alert: mkAlert(title: "Can't call contact"),
-                        id: "can't call contact"
+                            title: "Calls prohibited!",
+                            message: "Please check yours and your contact preferences."
+                        )
+                        , id: "calls prohibited, other"
                     ))
                 }
+            } else {
+                showAlert(SomeAlert(
+                    alert: mkAlert(title: "Can't call contact"),
+                    id: "can't call contact"
+                ))
             }
-            .disabled(ChatModel.shared.activeCall != nil)
+        }
+        .disabled(ChatModel.shared.activeCall != nil)
     }
 }
 
-let infoViewActionButtonWidth: CGFloat = 83
-
 let infoViewActionButtonHeight: CGFloat = 60
 
-struct InfoViewActionButtonLayout: View {
+struct InfoViewButton: View {
     var image: String
     var title: LocalizedStringKey
     var disabledLook: Bool = false
-    var width: CGFloat = infoViewActionButtonWidth
+    var width: CGFloat
+    var action: () -> Void
 
     var body: some View {
         VStack(spacing: 4) {
@@ -765,6 +761,7 @@ struct InfoViewActionButtonLayout: View {
         .cornerRadius(10.0)
         .frame(width: width, height: infoViewActionButtonHeight)
         .disabled(disabledLook)
+        .onTapGesture(perform: action)
     }
 }
 

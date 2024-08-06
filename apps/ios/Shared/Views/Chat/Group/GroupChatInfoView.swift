@@ -70,6 +70,7 @@ struct GroupChatInfoView: View {
             List {
                 groupInfoHeader()
                     .listRowBackground(Color.clear)
+                    .padding(.bottom, 18)
 
                 infoActionButtons()
                     .padding(.horizontal)
@@ -209,31 +210,33 @@ struct GroupChatInfoView: View {
     }
 
     func infoActionButtons() -> some View {
-        HStack(alignment: .center, spacing: 8) {
-            searchButton()
-            if groupInfo.canAddMembers {
-                addMembersActionButton()
+        GeometryReader { g in
+            let buttonWidth = g.size.width / 4
+            HStack(alignment: .center, spacing: 8) {
+                searchButton(width: buttonWidth)
+                if groupInfo.canAddMembers {
+                    addMembersActionButton(width: buttonWidth)
+                }
+                muteButton(width: buttonWidth)
             }
-            muteButton()
+            .frame(maxWidth: .infinity, alignment: .center)
         }
     }
 
-    private func searchButton() -> some View {
-        InfoViewActionButtonLayout(image: "magnifyingglass", title: "search")
-            .onTapGesture {
-                dismiss()
-                onSearch()
-            }
-            .disabled(!groupInfo.ready || chat.chatItems.isEmpty)
+    private func searchButton(width: CGFloat) -> some View {
+        InfoViewButton(image: "magnifyingglass", title: "search", width: width) {
+            dismiss()
+            onSearch()
+        }
+        .disabled(!groupInfo.ready || chat.chatItems.isEmpty)
     }
 
-    @ViewBuilder private func addMembersActionButton() -> some View {
+    @ViewBuilder private func addMembersActionButton(width: CGFloat) -> some View {
         if chat.chatInfo.incognito {
             ZStack {
-                InfoViewActionButtonLayout(image: "link.badge.plus", title: "invite")
-                    .onTapGesture {
-                        groupLinkNavLinkActive = true
-                    }
+                InfoViewButton(image: "link.badge.plus", title: "invite", width: width) {
+                    groupLinkNavLinkActive = true
+                }
 
                 NavigationLink(isActive: $groupLinkNavLinkActive) {
                     groupLinkDestinationView()
@@ -246,10 +249,9 @@ struct GroupChatInfoView: View {
             .disabled(!groupInfo.ready)
         } else {
             ZStack {
-                InfoViewActionButtonLayout(image: "person.fill.badge.plus", title: "invite")
-                    .onTapGesture {
-                        addMembersNavLinkActive = true
-                    }
+                InfoViewButton(image: "person.fill.badge.plus", title: "invite", width: width) {
+                    addMembersNavLinkActive = true
+                }
 
                 NavigationLink(isActive: $addMembersNavLinkActive) {
                     addMembersDestinationView()
@@ -263,12 +265,12 @@ struct GroupChatInfoView: View {
         }
     }
 
-    private func muteButton() -> some View {
-        InfoViewActionButtonLayout(
+    private func muteButton(width: CGFloat) -> some View {
+        InfoViewButton(
             image: chat.chatInfo.ntfsEnabled ? "speaker.slash.fill" : "speaker.wave.2.fill",
-            title: chat.chatInfo.ntfsEnabled ? "mute" : "unmute"
-        )
-        .onTapGesture {
+            title: chat.chatInfo.ntfsEnabled ? "mute" : "unmute",
+            width: width
+        ) {
             toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
         }
         .disabled(!groupInfo.ready)
