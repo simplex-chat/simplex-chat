@@ -2027,4 +2027,12 @@
     <string name="calls_prohibited_alert_title">通话被禁止！</string>
     <string name="toolbar_settings">设置</string>
     <string name="info_view_video_button">视频</string>
+    <string name="delete_messages_mark_deleted_warning">消息将被标记为删除。收信人将可以揭示这些消息。</string>
+    <string name="delete_members_messages__question">删除成员的 %d 条消息吗？</string>
+    <string name="select_verb">选择</string>
+    <string name="compose_message_placeholder">写消息</string>
+    <string name="selected_chat_items_nothing_selected">什么也没选中</string>
+    <string name="selected_chat_items_selected_n">已选中 %d</string>
+    <string name="moderate_messages_will_be_deleted_warning">将对所有成员删除这些消息。</string>
+    <string name="moderate_messages_will_be_marked_warning">这些消息将对所有成员标记为受管制。</string>
 </resources>
