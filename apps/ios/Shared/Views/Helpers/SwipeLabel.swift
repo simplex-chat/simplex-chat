@@ -38,6 +38,7 @@ struct SwipeLabel: View {
             imageView.contentMode = .scaleAspectFit
             label.text = NSLocalizedString(text, comment: "swipe action")
             label.textAlignment = .center
+            label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
             addSubview(imageView)
             addSubview(label)
         }
