@@ -237,7 +237,6 @@ private fun ModalData.OnionView(link: String, socksProxy: String?, hostMode: Hos
     proxy
   }
   }
-  val proxyPort = remember { derivedStateOf { networkProxyHostPort.value?.split(":")?.lastOrNull()?.toIntOrNull() ?: 9050 } }
 
   val netCfg = rememberSaveable(stateSaver = serializableSaver()) {
     mutableStateOf(getNetCfg().withOnionHosts(onionHosts.value).copy(socksProxy = socksProxy, sessionMode = sessionMode.value))
@@ -275,7 +274,6 @@ private fun ModalData.OnionView(link: String, socksProxy: String?, hostMode: Hos
       onionHosts,
       sessionMode,
       networkProxyHostPortPref,
-      proxyPort,
       toggleSocksProxy = { enable ->
         networkUseSocksProxy.value = enable
       },

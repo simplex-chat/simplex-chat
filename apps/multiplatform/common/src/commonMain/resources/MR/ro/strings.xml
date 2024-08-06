@@ -193,7 +193,6 @@
     <string name="reject">Respinge</string>
     <string name="save_passphrase_in_settings">Salvează fraza de acces în setări</string>
     <string name="save_and_update_group_profile">Salvează și actualizează profilul grupului</string>
-    <string name="network_options_revert">Revenire</string>
     <string name="connect_plan_repeat_join_request">Repetă cererea de alăturare?</string>
     <string name="restart_chat_button">Repornește conversația</string>
     <string name="saved_description">salvat</string>

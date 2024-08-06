@@ -70,7 +70,7 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
 }
 
 @Composable
-fun AppBarTitle(title: String, hostDevice: Pair<Long?, String>? = null,  withPadding: Boolean = true, bottomPadding: Dp = DEFAULT_PADDING * 1.5f) {
+fun AppBarTitle(title: String, hostDevice: Pair<Long?, String>? = null,  withPadding: Boolean = true, bottomPadding: Dp = DEFAULT_PADDING * 1.5f + 8.dp) {
   val theme = CurrentColors.collectAsState()
   val titleColor = MaterialTheme.appColors.title
   val brush = if (theme.value.base == DefaultTheme.SIMPLEX)

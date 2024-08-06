@@ -707,6 +707,7 @@
   <string name="send_us_an_email">Send us email</string>
   <string name="chat_lock">SimpleX Lock</string>
   <string name="chat_console">Chat console</string>
+  <string name="message_servers">Message servers</string>
   <string name="smp_servers">SMP servers</string>
   <string name="smp_servers_configured">Configured SMP servers</string>
   <string name="smp_servers_other">Other SMP servers</string>
@@ -731,6 +732,8 @@
   <string name="smp_servers_delete_server">Delete server</string>
   <string name="smp_servers_per_user">The servers for new connections of your current chat profile</string>
   <string name="smp_save_servers_question">Save servers?</string>
+  <string name="update_network_settings_question">Update network settings?</string>
+  <string name="media_and_file_servers">Media &amp; file servers</string>
   <string name="xftp_servers">XFTP servers</string>
   <string name="xftp_servers_configured">Configured XFTP servers</string>
   <string name="xftp_servers_other">Other XFTP servers</string>
@@ -754,7 +757,8 @@
   <string name="save_servers_button">Save</string>
   <string name="network_and_servers">Network &amp; servers</string>
   <string name="network_settings">Advanced network settings</string>
-  <string name="network_settings_title">Network settings</string>
+  <string name="network_settings_title">Advanced settings</string>
+  <string name="network_socks_proxy">SOCKS proxy</string>
   <string name="network_socks_proxy_settings">SOCKS proxy settings</string>
   <string name="network_socks_toggle_use_socks_proxy">Use SOCKS proxy</string>
   <string name="network_proxy_port">port %d</string>
@@ -764,7 +768,6 @@
   <string name="network_enable_socks_info">Access the servers via SOCKS proxy on port %d? Proxy must be started before enabling this option.</string>
   <string name="network_disable_socks">Use direct Internet connection?</string>
   <string name="network_disable_socks_info">If you confirm, the messaging servers will be able to see your IP address, and your provider - which servers you are connecting to.</string>
-  <string name="update_onion_hosts_settings_question">Update .onion hosts setting?</string>
   <string name="network_use_onion_hosts">Use .onion hosts</string>
   <string name="network_use_onion_hosts_prefer">When available</string>
   <string name="network_use_onion_hosts_no">No</string>
@@ -772,9 +775,6 @@
   <string name="network_use_onion_hosts_prefer_desc">Onion hosts will be used when available.</string>
   <string name="network_use_onion_hosts_no_desc">Onion hosts will not be used.</string>
   <string name="network_use_onion_hosts_required_desc">Onion hosts will be required for connection.\nPlease note: you will not be able to connect to the servers without .onion address.</string>
-  <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion hosts will be used when available.</string>
-  <string name="network_use_onion_hosts_no_desc_in_alert">Onion hosts will not be used.</string>
-  <string name="network_use_onion_hosts_required_desc_in_alert">Onion hosts will be required for connection.</string>
   <string name="network_session_mode_transport_isolation">Transport isolation</string>
   <string name="network_session_mode_user">Chat profile</string>
   <string name="network_session_mode_entity">Connection</string>
@@ -785,7 +785,7 @@
   <string name="socks_proxy_setting_limitations"><![CDATA[<b>Please note</b>: message and file relays are connected via SOCKS proxy. Calls and sending link previews use direct connection.]]></string>
   <string name="network_smp_proxy_mode_private_routing">Private routing</string>
   <string name="network_smp_proxy_mode_always">Always</string>
-  <string name="network_smp_proxy_mode_unknown">Unknown relays</string>
+  <string name="network_smp_proxy_mode_unknown">Unknown servers</string>
   <string name="network_smp_proxy_mode_unprotected">Unprotected</string>
   <string name="network_smp_proxy_mode_never">Never</string>
   <string name="network_smp_proxy_mode_always_description">Always use private routing.</string>
@@ -1607,6 +1607,7 @@
   <string name="error_saving_group_profile">Error saving group profile</string>
 
   <!-- AdvancedNetworkSettings.kt -->
+  <string name="network_option_tcp_connection">TCP connection</string>
   <string name="network_options_reset_to_defaults">Reset to defaults</string>
   <string name="network_option_seconds_label">sec</string>
   <string name="network_option_tcp_connection_timeout">TCP connection timeout</string>
@@ -1616,8 +1617,8 @@
   <string name="network_option_ping_interval">PING interval</string>
   <string name="network_option_ping_count">PING count</string>
   <string name="network_option_enable_tcp_keep_alive">Enable TCP keep-alive</string>
-  <string name="network_options_revert">Revert</string>
   <string name="network_options_save">Save</string>
+  <string name="network_options_save_and_reconnect">Save and reconnect</string>
   <string name="update_network_settings_question">Update network settings?</string>
   <string name="updating_settings_will_reconnect_client_to_all_servers">Updating settings will re-connect the client to all servers.</string>
   <string name="update_network_settings_confirmation">Update</string>
