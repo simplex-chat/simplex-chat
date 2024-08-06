@@ -204,7 +204,6 @@
     <string name="display_name_connection_established">接続済み</string>
     <string name="connect_via_link">リンク経由で繋がる。</string>
     <string name="connection_error">接続エラー</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">接続にオニオンのホストが必要となります。</string>
     <string name="group_member_status_introduced">接続待ち (紹介済み)</string>
     <string name="connection_error_auth">接続エラー (AUTH)</string>
     <string name="connection_timeout">接続タイムアウト</string>
@@ -222,7 +221,6 @@
     <string name="icon_descr_context">追加情報アイコン</string>
     <string name="network_use_onion_hosts_prefer_desc">オニオンのホストが利用可能時に使われます。</string>
     <string name="network_use_onion_hosts_no_desc">オニオンのホストが使われません。</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">オニオンのホストが利用可能時に使われます。</string>
     <string name="images_limit_desc">画像を1回で最大10枚を送信できます。</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[<b>2層エンドツーエンド暗号化</b>で送信されたプロフィール、連絡先、グループ、メッセージは、クライント端末にしか保存されません。]]></string>
     <string name="only_group_owners_can_change_prefs">グループ設定を変えられるのはグループのオーナーだけです。</string>
@@ -315,7 +313,6 @@
     <string name="enter_one_ICE_server_per_line">ICEサーバ (1行に1サーバ)</string>
     <string name="network_and_servers">ネットワークとサーバ</string>
     <string name="network_settings_title">ネットワーク設定</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">オニオンのホストが使われません。</string>
     <string name="delete_address">アドレスを削除</string>
     <string name="exit_without_saving">保存せずに閉じる</string>
     <string name="display_name_cannot_contain_whitespace">表示の名前には空白が使用できません。</string>
@@ -735,7 +732,6 @@
     <string name="your_ICE_servers">あなたのICEサーバ</string>
     <string name="network_disable_socks">直接にインタネットに繋がりますか？</string>
     <string name="network_enable_socks">SOCKSプロキシを使いますか？</string>
-    <string name="update_onion_hosts_settings_question">.onionのホスト設定を更新しますか？</string>
     <string name="network_use_onion_hosts">.onionホストを使う</string>
     <string name="network_use_onion_hosts_prefer">利用可能時に</string>
     <string name="network_session_mode_transport_isolation">トランスポート隔離</string>
@@ -883,7 +879,6 @@
     <string name="you_have_to_enter_passphrase_every_time">アプリ起動時にパスフレーズを入力しなければなりません。端末に保存されてません。</string>
     <string name="database_backup_can_be_restored">データベースのパスフレーズ変更が完了してません。</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">リンク、またはQRコードを共有できます。誰でもグループに参加できます。後で削除しても、グループのメンバーがそのままのこります。</string>
-    <string name="network_options_revert">元に戻す</string>
     <string name="update_network_settings_confirmation">更新</string>
     <string name="accept_feature_set_1_day">1日に設定</string>
     <string name="v4_4_disappearing_messages_desc">一定時間が経ったら送信されたメッセージが削除されます。</string>

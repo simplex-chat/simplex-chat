@@ -546,7 +546,6 @@
     <string name="one_time_link">Eenmalige uitnodiging link</string>
     <string name="paste_button">Plakken</string>
     <string name="smp_servers_preset_address">Vooraf ingesteld server adres</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Onion hosts worden niet gebruikt.</string>
     <string name="onboarding_notifications_mode_title">Privé meldingen</string>
     <string name="paste_the_link_you_received">Plak de link die je hebt ontvangen</string>
     <string name="onboarding_notifications_mode_periodic">Periodiek</string>
@@ -573,7 +572,6 @@
     <string name="enter_passphrase_notification_title">Wachtwoord is nodig</string>
     <string name="feature_off">uit</string>
     <string name="add_contact">Eenmalige uitnodiging link</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Onion hosts zijn vereist voor verbinding.</string>
     <string name="only_group_owners_can_change_prefs">Alleen groep eigenaren kunnen groep voorkeuren wijzigen.</string>
     <string name="only_stored_on_members_devices">(alleen opgeslagen door groepsleden)</string>
     <string name="smp_servers_preset_server">Vooraf ingestelde server</string>
@@ -584,7 +582,6 @@
     <string name="ok">OK</string>
     <string name="network_use_onion_hosts_required_desc">Onion hosts zijn vereist voor verbinding.</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion hosts worden gebruikt indien beschikbaar.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion hosts worden gebruikt indien beschikbaar.</string>
     <string name="network_use_onion_hosts_no_desc">Onion hosts worden niet gebruikt.</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">Open-source protocol en code. Iedereen kan de servers draaien.</string>
     <string name="people_can_connect_only_via_links_you_share">Mensen kunnen alleen verbinding met u maken via de links die u deelt.</string>
@@ -808,7 +805,6 @@
     <string name="network_options_reset_to_defaults">Resetten naar standaardwaarden</string>
     <string name="switch_receiving_address">Ontvangst adres wijzigen</string>
     <string name="network_option_protocol_timeout">Protocol timeout</string>
-    <string name="network_options_revert">Terugdraaien</string>
     <string name="network_options_save">Opslaan</string>
     <string name="network_option_seconds_label">sec</string>
     <string name="incognito_info_share">Wanneer je een incognito profiel met iemand deelt, wordt dit profiel gebruikt voor de groepen waarvoor ze je uitnodigen.</string>
@@ -904,7 +900,6 @@
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[U kunt <font color="#0088ff">verbinding maken met SimpleX Chat ontwikkelaars om vragen te stellen en updates te ontvangen</font>.]]></string>
     <string name="connection_error_auth_desc">Tenzij uw contact de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.
 \nOm verbinding te maken, vraagt u uw contact om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.</string>
-    <string name="update_onion_hosts_settings_question">.onion hosts-instelling updaten\?</string>
     <string name="use_simplex_chat_servers__question">SimpleX Chat servers gebruiken\?</string>
     <string name="voice_messages_are_prohibited">Spraak berichten zijn verboden in deze groep.</string>
     <string name="personal_welcome">Welkom %1$s!</string>

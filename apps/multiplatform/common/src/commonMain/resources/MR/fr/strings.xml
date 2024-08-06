@@ -321,8 +321,6 @@
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Assurez-vous que les adresses des serveurs WebRTC ICE sont au bon format et ne sont pas dupliquées, un par ligne.</string>
     <string name="network_enable_socks_info">Accéder aux serveurs via un proxy SOCKS sur le port %d \? Le proxy doit être démarré avant d\'activer cette option.</string>
     <string name="network_use_onion_hosts">Utiliser les hôtes .onions</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Les hôtes .onion seront utilisés lorsqu\'ils sont disponibles.</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Les hôtes .onion seront nécessaires pour la connexion.</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Vous contrôlez par quel·s serveur·s vous pouvez <b>transmettre</b> ainsi que par quel·s serveur·s vous pouvez <b>recevoir</b> les messages de vos contacts.]]></string>
     <string name="your_settings">Vos paramètres</string>
     <string name="chat_lock">SimpleX Lock</string>
@@ -414,12 +412,10 @@
     <string name="how_to">Comment faire</string>
     <string name="enter_one_ICE_server_per_line">Serveurs ICE (un par ligne)</string>
     <string name="error_saving_ICE_servers">Erreur lors de la sauvegarde des serveurs ICE</string>
-    <string name="update_onion_hosts_settings_question">Mettre à jour le paramètre des hôtes .onion \?</string>
     <string name="network_use_onion_hosts_prefer">Quand disponible</string>
     <string name="network_use_onion_hosts_no_desc">Les hôtes .onion ne seront pas utilisés.</string>
     <string name="network_use_onion_hosts_required_desc">Les hôtes .onion seront nécessaires pour la connexion.
 \nAttention : vous ne pourrez pas vous connecter aux serveurs sans adresse .onion.</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Les hôtes .onion ne seront pas utilisés.</string>
     <string name="delete_address__question">Supprimer l\'adresse \?</string>
     <string name="all_your_contacts_will_remain_connected">Tous vos contacts resteront connectés.</string>
     <string name="share_link">Partager le lien</string>
@@ -833,7 +829,6 @@
     <string name="conn_level_desc_direct">directe</string>
     <string name="group_is_decentralized">Entièrement décentralisé – visible que par ses membres.</string>
     <string name="group_members_can_send_disappearing">Les membres du groupes peuvent envoyer des messages éphémères.</string>
-    <string name="network_options_revert">Revenir en arrière</string>
     <string name="prohibit_sending_disappearing_messages">Interdire l’envoi de messages éphémères.</string>
     <string name="incognito_info_protects">Le mode incognito protège votre vie privée en utilisant un nouveau profil aléatoire pour chaque contact.</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">La mise à jour des ces paramètres reconnectera le client à tous les serveurs.</string>

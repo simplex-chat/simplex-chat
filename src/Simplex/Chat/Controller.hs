@@ -174,8 +174,10 @@ defaultChatHooks =
 
 data DefaultAgentServers = DefaultAgentServers
   { smp :: NonEmpty (ServerCfg 'PSMP),
+    useSMP :: Int,
     ntf :: [NtfServer],
     xftp :: NonEmpty (ServerCfg 'PXFTP),
+    useXFTP :: Int,
     netCfg :: NetworkConfig
   }
 

@@ -47,13 +47,24 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
   ModalManager.start.closeModals()
   ModalManager.end.closeModals()
   chatModel.newChatSheetVisible.value = true
-  ModalManager.start.showModalCloseable(
-    closeOnTop = !oneHandUI.value,
-  ) { close ->
-    NewChatSheet(rh = chatModel.currentRemoteHost.value, close)
-    DisposableEffect(Unit) {
-      onDispose {
-        chatModel.newChatSheetVisible.value = false
+  ModalManager.start.showCustomModal { close ->
+    val close = {
+      // It will set it faster than in onDispose. It's important to catch the actual state before
+      // closing modal for reacting with status bar changes in [App]
+      chatModel.newChatSheetVisible.value = false
+      close()
+    }
+    ModalView(close, closeOnTop = !oneHandUI.value) {
+      if (appPlatform.isAndroid) {
+        BackHandler {
+          close()
+        }
+      }
+      NewChatSheet(rh = chatModel.currentRemoteHost.value, close)
+      DisposableEffect(Unit) {
+        onDispose {
+          chatModel.newChatSheetVisible.value = false
+        }
       }
     }
   }

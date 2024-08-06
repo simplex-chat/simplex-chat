@@ -740,9 +740,7 @@
     <string name="new_member_role">Új tag szerepköre</string>
     <string name="la_mode_off">Kikapcsolva</string>
     <string name="invalid_contact_link">Érvénytelen hivatkozás!</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">A kapcsolódáshoz Onion kiszolgálókra lesz szükség.</string>
     <string name="new_in_version">Változások a %s verzióban</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion kiszolgálók használata, ha azok rendelkezésre állnak.</string>
     <string name="smp_servers_invalid_address">Érvénytelen kiszolgálócím!</string>
     <string name="thousand_abbreviation">k</string>
     <string name="chat_item_ttl_none">soha</string>
@@ -765,7 +763,6 @@
     <string name="chat_preferences_on">bekapcsolva</string>
     <string name="v5_1_japanese_portuguese_interface">Japán és portugál kezelőfelület</string>
     <string name="message_deletion_prohibited_in_chat">Az üzenetek végleges törlése le van tiltva ebben a csoportban.</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Onion kiszolgálók nem lesznek használva.</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[A(z) <b>%s</b> eszközzel megszakadt a kapcsolat]]></string>
     <string name="custom_time_unit_months">hónap</string>
     <string name="privacy_message_draft">Üzenetvázlat</string>
@@ -1098,7 +1095,6 @@
     <string name="your_calls">Hívások</string>
     <string name="icon_descr_sent_msg_status_send_failed">nem sikerült elküldeni</string>
     <string name="theme_colors_section_title">KEZELŐFELÜLET SZÍNEI</string>
-    <string name="network_options_revert">Visszaállítás</string>
     <string name="restore_database_alert_desc">Előző jelszó megadása az adatbázis biztonsági mentésének visszaállítása után. Ez a művelet nem vonható vissza.</string>
     <string name="color_secondary">Másodlagos</string>
     <string name="settings_section_title_socks">SOCKS PROXY</string>
@@ -1432,7 +1428,6 @@
     <string name="unknown_database_error_with_info">Ismeretlen adatbázis hiba: %s</string>
     <string name="you_can_hide_or_mute_user_profile">Elrejtheti vagy lenémíthatja a felhasználó profiljait - koppintson (vagy asztali alkalmazásban kattintson) hosszan a profilra a felugró menühöz.</string>
     <string name="v5_3_simpler_incognito_mode_descr">Inkognító mód kapcsolódáskor.</string>
-    <string name="update_onion_hosts_settings_question">Tor .onion kiszolgálók beállításainak frissítése?</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Megoszthat egy hivatkozást vagy QR-kódot - így bárki csatlakozhat a csoporthoz. Ha a csoport később törlésre kerül, akkor nem fogja elveszíteni annak tagjait.</string>
     <string name="you_joined_this_group">Csatlakozott ehhez a csoporthoz</string>
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Ez a hivatkozása a(z) <b>%1$s</b> csoporthoz!]]></string>
