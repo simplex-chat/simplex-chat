@@ -13,7 +13,6 @@ struct DeveloperView: View {
     @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(GROUP_DEFAULT_CONFIRM_DB_UPGRADES, store: groupDefaults) private var confirmDatabaseUpgrades = false
-    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = false
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
@@ -48,9 +47,6 @@ struct DeveloperView: View {
                     Section {
                         settingsRow("internaldrive", color: theme.colors.secondary) {
                             Toggle("Confirm database upgrades", isOn: $confirmDatabaseUpgrades)
-                        }
-                        settingsRow("hand.wave", color: theme.colors.secondary) {
-                            Toggle("One-hand UI", isOn: $oneHandUI)
                         }
                     } header: {
                         Text("Developer options")

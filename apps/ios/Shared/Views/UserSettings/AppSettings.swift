@@ -28,7 +28,10 @@ extension AppSettings {
             privacyAcceptImagesGroupDefault.set(val)
             def.setValue(val, forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES)
         }
-        if let val = privacyLinkPreviews { def.setValue(val, forKey: DEFAULT_PRIVACY_LINK_PREVIEWS) }
+        if let val = privacyLinkPreviews {
+            privacyLinkPreviewsGroupDefault.set(val)
+            def.setValue(val, forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
+        }
         if let val = privacyShowChatPreviews { def.setValue(val, forKey: DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) }
         if let val = privacySaveLastDraft { def.setValue(val, forKey: DEFAULT_PRIVACY_SAVE_LAST_DRAFT) }
         if let val = privacyProtectScreen { def.setValue(val, forKey: DEFAULT_PRIVACY_PROTECT_SCREEN) }
@@ -45,12 +48,15 @@ extension AppSettings {
         if let val = androidCallOnLockScreen { def.setValue(val.rawValue, forKey: ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN) }
         if let val = iosCallKitEnabled { callKitEnabledGroupDefault.set(val) }
         if let val = iosCallKitCallsInRecents { def.setValue(val, forKey: DEFAULT_CALL_KIT_CALLS_IN_RECENTS) }
-        if let val = uiProfileImageCornerRadius { def.setValue(val, forKey: DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) }
+        if let val = uiProfileImageCornerRadius {
+            profileImageCornerRadiusGroupDefault.set(val)
+            def.setValue(val, forKey: DEFAULT_PROFILE_IMAGE_CORNER_RADIUS)
+        }
         if let val = uiColorScheme { def.setValue(val, forKey: DEFAULT_CURRENT_THEME) }
         if let val = uiDarkColorScheme { def.setValue(val, forKey: DEFAULT_SYSTEM_DARK_THEME) }
         if let val = uiCurrentThemeIds { def.setValue(val, forKey: DEFAULT_CURRENT_THEME_IDS) }
         if let val = uiThemes { def.setValue(val.skipDuplicates(), forKey: DEFAULT_THEME_OVERRIDES) }
-        if let val = oneHandUI { def.setValue(val, forKey: DEFAULT_ONE_HAND_UI) }
+        if let val = oneHandUI { groupDefaults.setValue(val, forKey: GROUP_DEFAULT_ONE_HAND_UI) }
     }
 
     public static var current: AppSettings {
@@ -82,7 +88,7 @@ extension AppSettings {
         c.uiDarkColorScheme = systemDarkThemeDefault.get()
         c.uiCurrentThemeIds = currentThemeIdsDefault.get()
         c.uiThemes = themeOverridesDefault.get()
-        c.oneHandUI = def.bool(forKey: DEFAULT_ONE_HAND_UI)
+        c.oneHandUI = groupDefaults.bool(forKey: GROUP_DEFAULT_ONE_HAND_UI)
         return c
     }
 }
