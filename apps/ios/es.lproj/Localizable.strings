@@ -1081,9 +1081,6 @@
 "Contact is connected" = "El contacto está en línea";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "¡El contacto aun no se ha conectado!";
-
-/* No comment provided by engineer. */
 "Contact name" = "Contacto";
 
 /* No comment provided by engineer. */
@@ -1318,12 +1315,6 @@
 "Delete contact" = "Eliminar contacto";
 
 /* No comment provided by engineer. */
-"Delete Contact" = "Eliminar contacto";
-
-/* No comment provided by engineer. */
-"Delete contact?\nThis cannot be undone!" = "¿Eliminar contacto?\n¡No podrá deshacerse!";
-
-/* No comment provided by engineer. */
 "Delete database" = "Eliminar base de datos";
 
 /* No comment provided by engineer. */
@@ -1376,9 +1367,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "¿Eliminar base de datos antigua?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Eliminar conexión pendiente";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "¿Eliminar conexión pendiente?";
@@ -1802,9 +1790,6 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "Error al eliminar conexión";
-
-/* No comment provided by engineer. */
-"Error deleting contact" = "Error al eliminar contacto";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Error al eliminar base de datos";
@@ -3721,9 +3706,6 @@
 "send direct message" = "Enviar mensaje directo";
 
 /* No comment provided by engineer. */
-"Send direct message" = "Enviar mensaje directo";
-
-/* No comment provided by engineer. */
 "Send direct message to connect" = "Envia un mensaje para conectar";
 
 /* No comment provided by engineer. */
@@ -4130,9 +4112,6 @@
 
 /* No comment provided by engineer. */
 "Tap to scan" = "Pulsa para escanear";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "Pulsa para iniciar chat nuevo";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "Timeout de la conexión TCP";
@@ -4852,9 +4831,6 @@
 "You have already requested connection!\nRepeat connection request?" = "Ya has solicitado la conexión\n¿Repetir solicitud?";
 
 /* No comment provided by engineer. */
-"You have no chats" = "No tienes chats";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "La contraseña no se almacena en el dispositivo, tienes que introducirla cada vez que inicies la aplicación.";
 
 /* No comment provided by engineer. */
@@ -4943,9 +4919,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Mis perfiles";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "El contacto debe estar en línea para completar la conexión.\nPuedes cancelarla y eliminar el contacto (e intentarlo más tarde con un enlace nuevo).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "El contacto ha enviado un archivo mayor al máximo admitido (%@).";

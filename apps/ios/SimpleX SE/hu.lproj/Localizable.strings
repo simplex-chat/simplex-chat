@@ -83,13 +83,25 @@
 "Selected chat preferences prohibit this message." = "A kiválasztott csevegési beállítások tiltják ezt az üzenetet.";
 
 /* No comment provided by engineer. */
+"Sending a message takes longer than expected." = "Az üzenet elküldése a vártnál tovább tart.";
+
+/* No comment provided by engineer. */
+"Sending message…" = "Üzenet küldése…";
+
+/* No comment provided by engineer. */
 "Share" = "Megosztás";
+
+/* No comment provided by engineer. */
+"Slow network?" = "Lassú internetkapcsolat?";
 
 /* No comment provided by engineer. */
 "Unknown database error: %@" = "Ismeretlen adatbázis hiba: %@";
 
 /* No comment provided by engineer. */
 "Unsupported format" = "Nem támogatott formátum";
+
+/* No comment provided by engineer. */
+"Wait" = "Várjon";
 
 /* No comment provided by engineer. */
 "Wrong database passphrase" = "Hibás adatbázis jelmondat";

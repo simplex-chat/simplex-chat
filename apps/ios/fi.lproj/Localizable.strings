@@ -769,9 +769,6 @@
 "Contact is connected" = "Kontakti on yhdistetty";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "Kontaktia ei ole vielä yhdistetty!";
-
-/* No comment provided by engineer. */
 "Contact name" = "Kontaktin nimi";
 
 /* No comment provided by engineer. */
@@ -955,9 +952,6 @@
 "Delete contact" = "Poista kontakti";
 
 /* No comment provided by engineer. */
-"Delete Contact" = "Poista kontakti";
-
-/* No comment provided by engineer. */
 "Delete database" = "Poista tietokanta";
 
 /* server test step */
@@ -1007,9 +1001,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Poista vanha tietokanta?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Poista vireillä oleva yhteys";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Poistetaanko odottava yhteys?";
@@ -1328,9 +1319,6 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "Virhe yhteyden poistamisessa";
-
-/* No comment provided by engineer. */
-"Error deleting contact" = "Virhe kontaktin poistamisessa";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "Virhe tietokannan poistamisessa";
@@ -2692,9 +2680,6 @@
 "Send delivery receipts to" = "Lähetä toimituskuittaukset vastaanottajalle";
 
 /* No comment provided by engineer. */
-"Send direct message" = "Lähetä yksityisviesti";
-
-/* No comment provided by engineer. */
 "Send disappearing message" = "Lähetä katoava viesti";
 
 /* No comment provided by engineer. */
@@ -2954,9 +2939,6 @@
 
 /* No comment provided by engineer. */
 "Tap to join incognito" = "Napauta liittyäksesi incognito-tilassa";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "Aloita uusi keskustelu napauttamalla";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "TCP-yhteyden aikakatkaisu";
@@ -3418,9 +3400,6 @@
 "You could not be verified; please try again." = "Sinua ei voitu todentaa; yritä uudelleen.";
 
 /* No comment provided by engineer. */
-"You have no chats" = "Sinulla ei ole keskusteluja";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Sinun on annettava tunnuslause aina, kun sovellus käynnistyy - sitä ei tallenneta laitteeseen.";
 
 /* No comment provided by engineer. */
@@ -3500,9 +3479,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Keskusteluprofiilisi";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Kontaktin tulee olla online-tilassa, jotta yhteys voidaan muodostaa.\nVoit peruuttaa tämän yhteyden ja poistaa kontaktin (ja yrittää myöhemmin uudella linkillä).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Yhteyshenkilösi lähetti tiedoston, joka on suurempi kuin tällä hetkellä tuettu enimmäiskoko (%@).";

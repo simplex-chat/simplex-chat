@@ -18,7 +18,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -115,7 +115,9 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
       AppBarTitle(String.format(generalGetString(MR.strings.new_in_version), v.version), bottomPadding = DEFAULT_PADDING)
 
       v.features.forEach { feature ->
-        featureDescription(painterResource(feature.icon), feature.titleId, feature.descrId, feature.link)
+        if (feature.show) {
+          featureDescription(painterResource(feature.icon), feature.titleId, feature.descrId, feature.link)
+        }
       }
 
       if (v.post != null) {
@@ -158,7 +160,8 @@ private data class FeatureDescription(
   val icon: ImageResource,
   val titleId: StringResource,
   val descrId: StringResource,
-  val link: String? = null
+  val link: String? = null,
+  val show: Boolean = true
 )
 
 private data class VersionDescription(
@@ -587,6 +590,43 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       )
     )
   ),
+  VersionDescription(
+    version = "v6.0",
+    post = "https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html",
+    features = listOf(
+      FeatureDescription(
+        icon = MR.images.ic_settings_ethernet,
+        titleId = MR.strings.v5_8_private_routing,
+        descrId = MR.strings.v6_0_private_routing_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_id_card,
+        titleId = MR.strings.v6_0_your_contacts,
+        descrId = MR.strings.v6_0_your_contacts_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_toast,
+        titleId = MR.strings.v6_0_reachable_chat_toolbar,
+        descrId = MR.strings.v6_0_reachable_chat_toolbar_descr,
+        show = appPlatform.isAndroid
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_link,
+        titleId = MR.strings.v6_0_connect_faster,
+        descrId = MR.strings.v6_0_connect_faster_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_delete,
+        titleId = MR.strings.v6_0_delete_many_messages,
+        descrId = MR.strings.v6_0_delete_many_messages_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_wifi_tethering,
+        titleId = MR.strings.v6_0_connection_servers_status,
+        descrId = MR.strings.v6_0_connection_servers_status_descr
+      )
+    ),
+  )
 )
 
 private val lastVersion = versionDescriptions.last().version

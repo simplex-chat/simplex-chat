@@ -925,9 +925,6 @@
 "Contact is connected" = "联系已连接";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "联系人尚未连接！";
-
-/* No comment provided by engineer. */
 "Contact name" = "联系人姓名";
 
 /* No comment provided by engineer. */
@@ -1132,9 +1129,6 @@
 "Delete contact" = "删除联系人";
 
 /* No comment provided by engineer. */
-"Delete Contact" = "删除联系人";
-
-/* No comment provided by engineer. */
 "Delete database" = "删除数据库";
 
 /* No comment provided by engineer. */
@@ -1187,9 +1181,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "删除旧数据库吗？";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "删除挂起连接";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "删除待定连接？";
@@ -1568,9 +1559,6 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "删除连接错误";
-
-/* No comment provided by engineer. */
-"Error deleting contact" = "删除联系人错误";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "删除数据库错误";
@@ -3214,9 +3202,6 @@
 "send direct message" = "发送私信";
 
 /* No comment provided by engineer. */
-"Send direct message" = "发送私信";
-
-/* No comment provided by engineer. */
 "Send direct message to connect" = "发送私信来连接";
 
 /* No comment provided by engineer. */
@@ -3536,9 +3521,6 @@
 
 /* No comment provided by engineer. */
 "Tap to scan" = "轻按扫描";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "点击开始一个新聊天";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "TCP 连接超时";
@@ -4141,9 +4123,6 @@
 "You have already requested connection via this address!" = "你已经请求通过此地址进行连接！";
 
 /* No comment provided by engineer. */
-"You have no chats" = "您没有聊天记录";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "您必须在每次应用程序启动时输入密码——它不存储在设备上。";
 
 /* No comment provided by engineer. */
@@ -4226,9 +4205,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "您的聊天资料";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "您的联系人需要在线才能完成连接。\n您可以取消此连接并删除联系人（然后尝试使用新链接）。";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "您的联系人发送的文件大于当前支持的最大大小 (%@)。";

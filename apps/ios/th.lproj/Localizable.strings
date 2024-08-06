@@ -739,9 +739,6 @@
 "Contact is connected" = "เชื่อมต่อกับผู้ติดต่อแล้ว";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "ผู้ติดต่อยังไม่ได้เชื่อมต่อ!";
-
-/* No comment provided by engineer. */
 "Contact name" = "ชื่อผู้ติดต่อ";
 
 /* No comment provided by engineer. */
@@ -922,9 +919,6 @@
 "Delete contact" = "ลบผู้ติดต่อ";
 
 /* No comment provided by engineer. */
-"Delete Contact" = "ลบผู้ติดต่อ";
-
-/* No comment provided by engineer. */
 "Delete database" = "ลบฐานข้อมูล";
 
 /* server test step */
@@ -974,9 +968,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "ลบฐานข้อมูลเก่า?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "ลบการเชื่อมต่อที่รอดำเนินการ";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "ลบการเชื่อมต่อที่รอดำเนินการหรือไม่?";
@@ -1280,9 +1271,6 @@
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "เกิดข้อผิดพลาดในการลบการเชื่อมต่อ";
-
-/* No comment provided by engineer. */
-"Error deleting contact" = "เกิดข้อผิดพลาดในการลบผู้ติดต่อ";
 
 /* No comment provided by engineer. */
 "Error deleting database" = "เกิดข้อผิดพลาดในการลบฐานข้อมูล";
@@ -2623,9 +2611,6 @@
 "Send delivery receipts to" = "ส่งใบเสร็จรับการจัดส่งข้อความไปที่";
 
 /* No comment provided by engineer. */
-"Send direct message" = "ส่งข้อความโดยตรง";
-
-/* No comment provided by engineer. */
 "Send disappearing message" = "ส่งข้อความแบบที่หายไป";
 
 /* No comment provided by engineer. */
@@ -2873,9 +2858,6 @@
 
 /* No comment provided by engineer. */
 "Tap to join incognito" = "แตะเพื่อเข้าร่วมโหมดไม่ระบุตัวตน";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "แตะเพื่อเริ่มแชทใหม่";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "หมดเวลาการเชื่อมต่อ TCP";
@@ -3325,9 +3307,6 @@
 "You could not be verified; please try again." = "เราไม่สามารถตรวจสอบคุณได้ กรุณาลองอีกครั้ง.";
 
 /* No comment provided by engineer. */
-"You have no chats" = "คุณไม่มีการแชท";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "คุณต้องใส่รหัสผ่านทุกครั้งที่เริ่มแอป - รหัสผ่านไม่ได้จัดเก็บไว้ในอุปกรณ์";
 
 /* No comment provided by engineer. */
@@ -3404,9 +3383,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "โปรไฟล์แชทของคุณ";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "ผู้ติดต่อของคุณจะต้องออนไลน์เพื่อให้การเชื่อมต่อเสร็จสมบูรณ์\nคุณสามารถยกเลิกการเชื่อมต่อนี้และลบผู้ติดต่อออก (และลองใหม่ในภายหลังด้วยลิงก์ใหม่)";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "ผู้ติดต่อของคุณส่งไฟล์ที่ใหญ่กว่าขนาดสูงสุดที่รองรับในปัจจุบัน (%@)";
