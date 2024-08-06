@@ -152,10 +152,7 @@ struct ChatListView: View {
     @ViewBuilder
     var principalToolbarItem: some View {
         HStack(spacing: 4) {
-            Text("Chats")
-                .font(.headline)
-                // TODO: For testing, remove after oneHandUI is implemented
-                .contentShape(Rectangle()).onTapGesture { oneHandUI.toggle() }
+            Text("Chats").font(.headline)
             SubsStatusIndicator()
         }
         .frame(maxWidth: .infinity, alignment: .center)
