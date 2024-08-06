@@ -1,6 +1,7 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
+import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemWithValue
@@ -123,8 +124,15 @@ fun NetworkAndServersView() {
 
         if (currentRemoteHost == null) {
           UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
-          SettingsActionItem(painterResource(MR.images.ic_manufacturing), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxyHostPort, false, it) }})
+          SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxyHostPort, false, it) }})
           SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), { ModalManager.start.showCustomModal { AdvancedNetworkSettingsView(showModal, it) } })
+          if (networkUseSocksProxy.value) {
+            SectionCustomFooter {
+              Column {
+                Text(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
+              }
+            }
+          }
         }
       }
     }
@@ -160,7 +168,7 @@ fun NetworkAndServersView() {
   val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.fullscreen.showModal(content = it) }
   val showCustomModal = { it: @Composable (close: () -> Unit) -> Unit -> ModalManager.fullscreen.showCustomModal { close -> it(close) }}
   UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
-  SettingsActionItem(painterResource(MR.images.ic_manufacturing), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, networkProxyHostPort, true, it) } })
+  SettingsActionItem(painterResource(MR.images.ic_settings_ethernet), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, networkProxyHostPort, true, it) } })
   UseOnionHosts(onionHosts, networkUseSocksProxy, showModal, useOnion)
   if (developerTools) {
     SessionModePicker(sessionMode, showModal, updateSessionMode)

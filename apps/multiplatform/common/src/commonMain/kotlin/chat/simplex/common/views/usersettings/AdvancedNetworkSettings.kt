@@ -235,8 +235,6 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
         SectionCustomFooter {
           Column {
             Text(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
-            Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-            Text(annotatedStringResource(MR.strings.socks_proxy_setting_limitations))
           }
         }
       }
