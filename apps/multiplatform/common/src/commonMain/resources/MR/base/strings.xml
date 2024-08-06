@@ -467,7 +467,7 @@
   <string name="delete_without_notification">Delete without notification</string>
   <string name="button_delete_contact">Delete contact</string>
   <string name="conversation_deleted">Conversation deleted!</string>
-  <string name="you_can_still_send_messages_to_contact">You can still send messages to %1$s from the Deleted chats.</string>
+  <string name="you_can_still_send_messages_to_contact">You can send messages to %1$s from Archived contacts.</string>
   <string name="contact_deleted">Contact deleted!</string>
   <string name="you_can_still_view_conversation_with_contact">You can still view conversation with %1$s in the list of chats.</string>
   <string name="text_field_set_contact_placeholder">Set contact name…</string>
@@ -676,7 +676,7 @@
   <string name="invalid_qr_code">Invalid QR code</string>
   <string name="code_you_scanned_is_not_simplex_link_qr_code">The code you scanned is not a SimpleX link QR code.</string>
 
-  <string name="deleted_chats">Deleted chats</string>
+  <string name="deleted_chats">Archived contacts</string>
   <string name="no_filtered_contacts">No filtered contacts</string>
   <string name="contact_list_header_title">Your contacts</string>
 
@@ -1974,6 +1974,17 @@
   <string name="v5_8_message_delivery">Improved message delivery</string>
   <string name="v5_8_message_delivery_descr">With reduced battery usage.</string>
   <string name="v5_8_persian_ui">Persian UI</string>
+  <string name="v6_0_private_routing_descr">It protects your IP address and connections.</string>
+  <string name="v6_0_your_contacts">Your contacts your way</string>
+  <string name="v6_0_your_contacts_descr">- Search contacts when starting chat.\n- Archive contacts to chat later.</string>
+  <string name="v6_0_reachable_chat_toolbar">Reachable chat toolbar 👋</string>
+  <string name="v6_0_reachable_chat_toolbar_descr">Use the app with one hand.</string>
+  <string name="v6_0_connect_faster">Connect to your friends faster</string>
+  <string name="v6_0_connect_faster_descr">Even when they are offline.</string>
+  <string name="v6_0_delete_many_messages">Moderate like a pro ✋</string>
+  <string name="v6_0_delete_many_messages_descr">Delete up to 20 messages at once.</string>
+  <string name="v6_0_connection_servers_status">Control your network</string>
+  <string name="v6_0_connection_servers_status_descr">Connection and servers status.</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>
