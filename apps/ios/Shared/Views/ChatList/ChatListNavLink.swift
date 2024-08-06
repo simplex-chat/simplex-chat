@@ -56,6 +56,8 @@ struct ChatListNavLink: View {
     @State private var inProgress = false
     @State private var progressByTimeout = false
 
+    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = false
+
     var dynamicRowHeight: CGFloat { dynamicSizes[userFont]?.rowHeight ?? 80 }
 
     var body: some View {
@@ -102,7 +104,7 @@ struct ChatListNavLink: View {
                                 showSheetContent: { sheet = $0 }
                             )
                         } label: {
-                            Label("Delete", systemImage: "trash")
+                            deleteLabel
                         }
                         .tint(.red)
                     }
@@ -120,7 +122,7 @@ struct ChatListNavLink: View {
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     markReadButton()
                     toggleFavoriteButton()
-                    ToggleNtfsButton(chat: chat)
+                    toggleNtfsButton(chat: chat)
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     if !chat.chatItems.isEmpty {
@@ -136,7 +138,7 @@ struct ChatListNavLink: View {
                             showSheetContent: { sheet = $0 }
                         )
                     } label: {
-                        Label("Delete", systemImage: "trash")
+                        deleteLabel
                     }
                     .tint(.red)
                 }
@@ -202,7 +204,7 @@ struct ChatListNavLink: View {
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
                 markReadButton()
                 toggleFavoriteButton()
-                ToggleNtfsButton(chat: chat)
+                toggleNtfsButton(chat: chat)
             }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 if !chat.chatItems.isEmpty {
@@ -243,7 +245,7 @@ struct ChatListNavLink: View {
                 await MainActor.run { inProgress = false }
             }
         } label: {
-            Label("Join", systemImage: chat.chatInfo.incognito ? "theatermasks" : "ipad.and.arrow.forward")
+            SwipeLabel("Join", systemImage: chat.chatInfo.incognito ? "theatermasks" : "ipad.and.arrow.forward", inverted: oneHandUI)
         }
         .tint(chat.chatInfo.incognito ? .indigo : theme.colors.primary)
     }
@@ -253,14 +255,14 @@ struct ChatListNavLink: View {
             Button {
                 Task { await markChatRead(chat) }
             } label: {
-                Label("Read", systemImage: "checkmark")
+                SwipeLabel("Read", systemImage: "checkmark", inverted: oneHandUI)
             }
             .tint(theme.colors.primary)
         } else {
             Button {
                 Task { await markChatUnread(chat) }
             } label: {
-                Label("Unread", systemImage: "circlebadge.fill")
+                SwipeLabel("Unread", systemImage: "circlebadge.fill", inverted: oneHandUI)
             }
             .tint(theme.colors.primary)
         }
@@ -272,16 +274,28 @@ struct ChatListNavLink: View {
             Button {
                 toggleChatFavorite(chat, favorite: false)
             } label: {
-                Label("Unfav.", systemImage: "star.slash")
+                SwipeLabel("Unfav.", systemImage: "star.slash.fill", inverted: oneHandUI)
             }
             .tint(.green)
         } else {
             Button {
                 toggleChatFavorite(chat, favorite: true)
             } label: {
-                Label("Favorite", systemImage: "star.fill")
+                SwipeLabel("Favorite", systemImage: "star.fill", inverted: oneHandUI)
             }
             .tint(.green)
+        }
+    }
+
+    @ViewBuilder private func toggleNtfsButton(chat: Chat) -> some View {
+        Button {
+            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
+        } label: {
+            if chat.chatInfo.ntfsEnabled {
+                SwipeLabel("Mute", systemImage: "speaker.slash.fill", inverted: oneHandUI)
+            } else {
+                SwipeLabel("Unmute", systemImage: "speaker.wave.2.fill", inverted: oneHandUI)
+            }
         }
     }
 
@@ -289,7 +303,7 @@ struct ChatListNavLink: View {
         Button {
             AlertManager.shared.showAlert(clearChatAlert())
         } label: {
-            Label("Clear", systemImage: "gobackward")
+            SwipeLabel("Clear", systemImage: "gobackward", inverted: oneHandUI)
         }
         .tint(Color.orange)
     }
@@ -298,7 +312,7 @@ struct ChatListNavLink: View {
         Button {
             AlertManager.shared.showAlert(clearNoteFolderAlert())
         } label: {
-            Label("Clear", systemImage: "gobackward")
+            SwipeLabel("Clear", systemImage: "gobackward", inverted: oneHandUI)
         }
         .tint(Color.orange)
     }
@@ -307,7 +321,7 @@ struct ChatListNavLink: View {
         Button {
             AlertManager.shared.showAlert(leaveGroupAlert(groupInfo))
         } label: {
-            Label("Leave", systemImage: "rectangle.portrait.and.arrow.right")
+            SwipeLabel("Leave", systemImage: "rectangle.portrait.and.arrow.right.fill", inverted: oneHandUI)
         }
         .tint(Color.yellow)
     }
@@ -316,7 +330,7 @@ struct ChatListNavLink: View {
         Button {
             AlertManager.shared.showAlert(deleteGroupAlert(groupInfo))
         } label: {
-            Label("Delete", systemImage: "trash")
+            deleteLabel
         }
         .tint(.red)
     }
@@ -326,18 +340,18 @@ struct ChatListNavLink: View {
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
                 Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) }
-            } label: { Label("Accept", systemImage: "checkmark") }
+            } label: { SwipeLabel("Accept", systemImage: "checkmark", inverted: oneHandUI) }
                 .tint(theme.colors.primary)
             Button {
                 Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) }
             } label: {
-                Label("Accept incognito", systemImage: "theatermasks")
+                SwipeLabel("Accept incognito", systemImage: "theatermasks.fill", inverted: oneHandUI)
             }
             .tint(.indigo)
             Button {
                 AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequest))
             } label: {
-                Label("Reject", systemImage: "multiply")
+                SwipeLabel("Reject", systemImage: "multiply.fill", inverted: oneHandUI)
             }
             .tint(.red)
         }
@@ -358,14 +372,14 @@ struct ChatListNavLink: View {
                     AlertManager.shared.showAlertMsg(title: a.title, message: a.message)
                 })
             } label: {
-                Label("Delete", systemImage: "trash")
+                deleteLabel
             }
             .tint(.red)
 
             Button {
                 showContactConnectionInfo = true
             } label: {
-                Label("Name", systemImage: "pencil")
+                SwipeLabel("Name", systemImage: "pencil", inverted: oneHandUI)
             }
             .tint(theme.colors.primary)
         }
@@ -382,6 +396,10 @@ struct ChatListNavLink: View {
         .onTapGesture {
             showContactConnectionInfo = true
         }
+    }
+
+    private var deleteLabel: some View {
+        SwipeLabel("Delete", systemImage: "trash.fill", inverted: oneHandUI)
     }
 
     private func deleteGroupAlert(_ groupInfo: GroupInfo) -> Alert {
