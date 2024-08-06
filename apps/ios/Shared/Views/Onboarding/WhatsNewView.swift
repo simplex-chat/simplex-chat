@@ -435,7 +435,7 @@ private let versionDescriptions: [VersionDescription] = [
             FeatureDescription(
                 icon: "arrow.forward",
                 title: "Private message routing 🚀",
-                description: "Protects your IP address and connections."
+                description: "It protects your IP address and connections."
             ),
             FeatureDescription(
                 icon: "person.text.rectangle",
@@ -454,13 +454,13 @@ private let versionDescriptions: [VersionDescription] = [
             ),
             FeatureDescription(
                 icon: "trash",
-                title: "Delete many messages",
-                description: "Select up to 20 messages at once."
+                title: "Moderate like a pro ✋",
+                description: "Delete up to 20 messages at once."
             ),
             FeatureDescription(
                 icon: "network",
-                title: "Connection and servers status",
-                description: "Stay in control of your network."
+                title: "Control your network",
+                description: "Connection and servers status."
             )
         ]
     ),

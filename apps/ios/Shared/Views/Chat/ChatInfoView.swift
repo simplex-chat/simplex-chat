@@ -1041,7 +1041,7 @@ private func deleteContactMaybeErrorAlert(
 private func deleteConversationNotice(_ contact: Contact) -> Alert {
     return Alert(
         title: Text("Conversation deleted!"),
-        message: Text("You can still send messages to \(contact.displayName) from the Deleted chats."),
+        message: Text("You can send messages to \(contact.displayName) from Archived contacts."),
         primaryButton: .default(Text("Don't show again")) {
             showDeleteConversationNoticeDefault.set(false)
         },

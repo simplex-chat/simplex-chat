@@ -121,7 +121,7 @@ struct NewChatSheet: View {
                         NavigationLink {
                             DeletedChats()
                         } label: {
-                            newChatActionButton("archivebox", color: theme.colors.secondary) { Text("Deleted chats") }
+                            newChatActionButton("archivebox", color: theme.colors.secondary) { Text("Archived contacts") }
                         }
                     }
                 }
