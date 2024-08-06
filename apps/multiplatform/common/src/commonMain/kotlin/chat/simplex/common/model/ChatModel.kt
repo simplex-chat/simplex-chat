@@ -671,6 +671,7 @@ object ChatModel {
       showingInvitation.value = null
       chatModel.chatItems.clear()
       chatModel.chatId.value = withId
+      ModalManager.start.closeModals()
       ModalManager.end.closeModals()
     }
   }
@@ -681,6 +682,7 @@ object ChatModel {
       chatModel.chatItems.clear()
       chatModel.chatId.value = null
       // Close NewChatView
+      ModalManager.start.closeModals()
       ModalManager.center.closeModals()
       ModalManager.end.closeModals()
     }
