@@ -585,7 +585,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
                 (appPlatform.isAndroid && keyboardState == KeyboardState.Opened)
               ) {
                 0
-              } else if (listState.firstVisibleItemIndex == 0) offsetMultiplier*listState.firstVisibleItemScrollOffset else offsetMultiplier*1000
+              } else if (listState.firstVisibleItemIndex == 0) offsetMultiplier * listState.firstVisibleItemScrollOffset else offsetMultiplier * 1000
             } else {
               0
             }
