@@ -122,7 +122,7 @@ struct ChatListNavLink: View {
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     markReadButton()
                     toggleFavoriteButton()
-                    ToggleNtfsButton(chat: chat)
+                    toggleNtfsButton(chat: chat)
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     if !chat.chatItems.isEmpty {
