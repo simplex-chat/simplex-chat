@@ -267,9 +267,7 @@ struct SubsStatusIndicator: View {
 
     var body: some View {
         ZStack {
-            if subs.total == 0 && !hasSess {
-                EmptyView()
-            } else {
+            if subs.total > 0 || hasSess || ChatModel.shared.chats.contains(where: { chatHasConnection($0) }) {
                 Button {
                     showServersSummary = true
                 } label: {
@@ -280,6 +278,8 @@ struct SubsStatusIndicator: View {
                         }
                     }
                 }
+            } else {
+                EmptyView()
             }
         }
         .onAppear {
@@ -291,6 +291,17 @@ struct SubsStatusIndicator: View {
         .appSheet(isPresented: $showServersSummary) {
             ServersSummaryView()
                 .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
+        }
+    }
+
+    private func chatHasConnection(_ chat: Chat) -> Bool {
+        switch chat.chatInfo {
+        case let .direct(contact): contact.sndReady
+        case let .group(groupInfo): groupInfo.ready
+        case .local: false
+        case .contactRequest: true
+        case .contactConnection: true
+        case .invalidJSON: false
         }
     }
 
