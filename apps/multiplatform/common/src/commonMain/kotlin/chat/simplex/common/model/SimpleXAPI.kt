@@ -6262,7 +6262,7 @@ data class AppSettings(
         uiDarkColorScheme = DefaultTheme.SIMPLEX.themeName,
         uiCurrentThemeIds = null,
         uiThemes = null,
-        oneHandUI = false
+        oneHandUI = appPlatform.isAndroid
       )
 
     val current: AppSettings
@@ -6295,7 +6295,7 @@ data class AppSettings(
           uiDarkColorScheme = def.systemDarkTheme.get() ?: DefaultTheme.SIMPLEX.themeName,
           uiCurrentThemeIds = def.currentThemeIds.get(),
           uiThemes = def.themeOverrides.get(),
-          oneHandUI = def.oneHandUI.get()
+          oneHandUI = if (appPlatform.isAndroid) def.oneHandUI.get() else false
         )
     }
   }
