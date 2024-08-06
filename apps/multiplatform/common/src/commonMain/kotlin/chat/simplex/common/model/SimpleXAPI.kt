@@ -225,7 +225,7 @@ class AppPreferences {
   val iosCallKitEnabled = mkBoolPreference(SHARED_PREFS_IOS_CALL_KIT_ENABLED, true)
   val iosCallKitCallsInRecents = mkBoolPreference(SHARED_PREFS_IOS_CALL_KIT_CALLS_IN_RECENTS, false)
 
-  val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, false)
+  val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, if (appPlatform.isAndroid) true else false)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
