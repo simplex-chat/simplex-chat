@@ -116,12 +116,14 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
     }
   }
 
-  fun saveCfg(cfg: NetCfg) {
+  fun saveCfg(cfg: NetCfg, close: (() -> Unit)? = null) {
     withBGApi {
-      chatModel.controller.apiSetNetworkConfig(cfg)
-      currentCfg.value = cfg
-      savedCfg.value = cfg
-      chatModel.controller.setNetCfg(cfg)
+      if (chatModel.controller.apiSetNetworkConfig(cfg)) {
+        currentCfg.value = cfg
+        savedCfg.value = cfg
+        chatModel.controller.setNetCfg(cfg)
+        close?.invoke()
+      }
     }
   }
 
@@ -139,8 +141,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
         close()
       } else {
         showUnsavedChangesAlert({
-          saveCfg(buildCfg())
-          close()
+          saveCfg(buildCfg(), close)
         }, close)
       }
     },
