@@ -448,19 +448,23 @@ func subscriptionStatusColorAndPercentage(_ online: Bool, _ onionHosts: OnionHos
     let noConnColorAndPercent: (Color, Double, Double, Double) = (Color(uiColor: .tertiaryLabel), 1, 1, 0)
     let activeSubsRounded = roundedToQuarter(subs.shareOfActive)
 
-    return online && subs.total > 0
-    ? (
-        subs.ssActive == 0
-        ? (
-            hasSess ? (activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive) : noConnColorAndPercent
+    return !online
+    ? noConnColorAndPercent
+    : (
+        subs.total == 0 && !hasSess
+        ? (activeColor, 0, 0.33, 0) // On freshly installed app (without chats) and on app start
+        : (
+            subs.ssActive == 0
+            ? (
+                hasSess ? (activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive) : noConnColorAndPercent
+            )
+            : ( // ssActive > 0
+                hasSess
+                ? (activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
+                : (.orange, activeSubsRounded, subs.shareOfActive, subs.shareOfActive) // This would mean implementation error
+              )
         )
-        : ( // ssActive > 0
-            hasSess
-            ? (activeColor, activeSubsRounded, subs.shareOfActive, subs.shareOfActive)
-            : (.orange, activeSubsRounded, subs.shareOfActive, subs.shareOfActive) // This would mean implementation error
-          )
     )
-    : noConnColorAndPercent
 }
 
 struct SMPServerSummaryView: View {

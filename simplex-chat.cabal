@@ -593,6 +593,7 @@ test-suite simplex-chat-test
       MessageBatching
       MobileTests
       ProtocolTests
+      RandomServers
       RemoteTests
       SchemaDump
       ValidNames
