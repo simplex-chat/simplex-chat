@@ -13,7 +13,6 @@ struct DeveloperView: View {
     @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(GROUP_DEFAULT_CONFIRM_DB_UPGRADES, store: groupDefaults) private var confirmDatabaseUpgrades = false
-    @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
