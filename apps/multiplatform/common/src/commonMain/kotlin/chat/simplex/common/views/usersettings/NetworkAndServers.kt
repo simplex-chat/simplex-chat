@@ -123,7 +123,7 @@ fun NetworkAndServersView() {
 
         if (currentRemoteHost == null) {
           UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
-          SettingsActionItem(painterResource(MR.images.ic_manufacturing), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(appPrefs.networkProxyHostPort, false, it) }})
+          SettingsActionItem(painterResource(MR.images.ic_manufacturing), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, appPrefs.networkProxyHostPort, false, it) }})
           SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), { ModalManager.start.showCustomModal { AdvancedNetworkSettingsView(showModal, it) } })
         }
       }
@@ -160,7 +160,7 @@ fun NetworkAndServersView() {
   val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.fullscreen.showModal(content = it) }
   val showCustomModal = { it: @Composable (close: () -> Unit) -> Unit -> ModalManager.fullscreen.showCustomModal { close -> it(close) }}
   UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
-  SettingsActionItem(painterResource(MR.images.ic_manufacturing), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkProxyHostPort, true, it) } })
+  SettingsActionItem(painterResource(MR.images.ic_manufacturing), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkUseSocksProxy.value, networkProxyHostPort, true, it) } })
   UseOnionHosts(onionHosts, networkUseSocksProxy, showModal, useOnion)
   if (developerTools) {
     SessionModePicker(sessionMode, showModal, updateSessionMode)
@@ -198,6 +198,7 @@ fun UseSocksProxySwitch(
 
 @Composable
 fun SocksProxySettings(
+  networkUseSocksProxy: Boolean,
   networkProxyHostPort: SharedPreference<String?> = appPrefs.networkProxyHostPort,
   migration: Boolean,
   close: () -> Unit
@@ -211,10 +212,26 @@ fun SocksProxySettings(
     mutableStateOf(TextFieldValue(hostPortSaved?.split(":")?.lastOrNull() ?: "9050"))
   }
   val save = {
+    val oldValue = networkProxyHostPort.get()
     networkProxyHostPort.set(hostUnsaved.value.text + ":" + portUnsaved.value.text)
-    if (appPrefs.networkUseSocksProxy.get() && !migration) {
+    if (networkUseSocksProxy && !migration) {
       withBGApi {
-        controller.apiSetNetworkConfig(controller.getNetCfg())
+        if (!controller.apiSetNetworkConfig(controller.getNetCfg())) {
+          networkProxyHostPort.set(oldValue)
+        }
+      }
+    }
+  }
+  val saveAndClose = {
+    val oldValue = networkProxyHostPort.get()
+    networkProxyHostPort.set(hostUnsaved.value.text + ":" + portUnsaved.value.text)
+    if (networkUseSocksProxy && !migration) {
+      withBGApi {
+        if (controller.apiSetNetworkConfig(controller.getNetCfg())) {
+          close()
+        } else {
+          networkProxyHostPort.set(oldValue)
+        }
       }
     }
   }
@@ -228,11 +245,8 @@ fun SocksProxySettings(
         close()
       } else {
         showUnsavedSocksHostPortAlert(
-          confirmText = generalGetString(if (appPrefs.networkUseSocksProxy.get() && !migration) MR.strings.network_options_save_and_reconnect else MR.strings.network_options_save),
-          save = {
-            save()
-            close()
-          },
+          confirmText = generalGetString(if (networkUseSocksProxy && !migration) MR.strings.network_options_save_and_reconnect else MR.strings.network_options_save),
+          save = saveAndClose,
           close = close
         )
       }
@@ -278,10 +292,10 @@ fun SocksProxySettings(
           Text(stringResource(MR.strings.network_options_reset_to_defaults), color = if (resetDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
         }
         SectionItemView(
-          click = { if (appPrefs.networkUseSocksProxy.get() && !migration) showUpdateNetworkSettingsDialog { save() } else save() },
+          click = { if (networkUseSocksProxy && !migration) showUpdateNetworkSettingsDialog { save() } else save() },
           disabled = saveDisabled
         ) {
-          Text(stringResource(if (appPrefs.networkUseSocksProxy.get() && !migration) MR.strings.network_options_save_and_reconnect else MR.strings.network_options_save), color = if (saveDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+          Text(stringResource(if (networkUseSocksProxy && !migration) MR.strings.network_options_save_and_reconnect else MR.strings.network_options_save), color = if (saveDisabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
         }
       }
       SectionBottomSpacer()
