@@ -1938,7 +1938,7 @@
     <string name="chat_theme_apply_to_mode">Применить к</string>
     <string name="cannot_share_message_alert_title">Не удается отправить сообщение</string>
     <string name="app_check_for_updates_beta">Бета</string>
-    <string name="servers_info_sessions_connected">Соеденино</string>
+    <string name="servers_info_sessions_connected">Соединeно</string>
     <string name="attempts_label">попытки</string>
     <string name="completed">Готово</string>
     <string name="confirm_delete_contact_question">Потвердить удаление контакта?</string>
@@ -1953,5 +1953,5 @@
     <string name="cant_call_contact_alert_title">Не удается позвонить контакту</string>
     <string name="cant_send_message_to_member_alert_title">Не удается написать члену группы</string>
     <string name="app_check_for_updates">Проверка на наличиее обновлений</string>
-    <string name="info_view_connect_button">соедениться</string>
+    <string name="info_view_connect_button">соединиться</string>
 </resources>
