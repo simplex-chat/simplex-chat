@@ -54,9 +54,6 @@ struct ChatListView: View {
                 userPickerVisible: $userPickerVisible
             )
         }
-        .safeAreaInset(edge: .top) {
-            if oneHandUI { Divider().background(Material.ultraThin) }
-        }
         .sheet(isPresented: $showConnectDesktop) {
             ConnectDesktopView()
         }
@@ -88,6 +85,9 @@ struct ChatListView: View {
         .background(theme.colors.background)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(searchMode || oneHandUI)
+        .safeAreaInset(edge: .top) {
+            if oneHandUI { Divider().background(Material.ultraThin) }
+        }
     }
 
     @ViewBuilder
