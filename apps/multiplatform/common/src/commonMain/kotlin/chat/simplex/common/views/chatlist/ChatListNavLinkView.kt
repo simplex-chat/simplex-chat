@@ -35,7 +35,7 @@ import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 
 @Composable
-fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI: State<Boolean>) {
+fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   val showMenu = remember { mutableStateOf(false) }
   val showMarkRead = remember(chat.chatStats.unreadCount, chat.chatStats.unreadChat) {
     chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
@@ -81,7 +81,6 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI:
         disabled,
         selectedChat,
         nextChatSelected,
-        oneHandUI
       )
     }
     is ChatInfo.Group ->
@@ -101,7 +100,6 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI:
         disabled,
         selectedChat,
         nextChatSelected,
-        oneHandUI
       )
     is ChatInfo.Local -> {
       ChatListNavLinkLayout(
@@ -120,7 +118,6 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI:
         disabled,
         selectedChat,
         nextChatSelected,
-        oneHandUI
       )
     }
     is ChatInfo.ContactRequest ->
@@ -140,7 +137,6 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI:
         disabled,
         selectedChat,
         nextChatSelected,
-        oneHandUI
       )
     is ChatInfo.ContactConnection ->
       ChatListNavLinkLayout(
@@ -161,7 +157,6 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI:
         disabled,
         selectedChat,
         nextChatSelected,
-        oneHandUI
       )
     is ChatInfo.InvalidJSON ->
       ChatListNavLinkLayout(
@@ -178,7 +173,6 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, oneHandUI:
         disabled,
         selectedChat,
         nextChatSelected,
-        oneHandUI
       )
   }
 }
@@ -879,7 +873,6 @@ expect fun ChatListNavLinkLayout(
   disabled: Boolean,
   selectedChat: State<Boolean>,
   nextChatSelected: State<Boolean>,
-  oneHandUI: State<Boolean>
 )
 
 @Preview/*(
@@ -923,7 +916,6 @@ fun PreviewChatListNavLinkDirect() {
       disabled = false,
       selectedChat = remember { mutableStateOf(false) },
       nextChatSelected = remember { mutableStateOf(false) },
-      oneHandUI = remember { mutableStateOf(false) }
     )
   }
 }
@@ -969,7 +961,6 @@ fun PreviewChatListNavLinkGroup() {
       disabled = false,
       selectedChat = remember { mutableStateOf(false) },
       nextChatSelected = remember { mutableStateOf(false) },
-      oneHandUI = remember { mutableStateOf(false) }
     )
   }
 }
@@ -992,7 +983,6 @@ fun PreviewChatListNavLinkContactRequest() {
       disabled = false,
       selectedChat = remember { mutableStateOf(false) },
       nextChatSelected = remember { mutableStateOf(false) },
-      oneHandUI = remember { mutableStateOf(false) }
     )
   }
 }

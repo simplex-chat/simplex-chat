@@ -1196,7 +1196,7 @@
   <string name="error_importing_database">Error importing chat database</string>
   <string name="chat_database_imported">Chat database imported</string>
   <string name="restart_the_app_to_use_imported_chat_database">Restart the app to use imported chat database.</string>
-  <string name="non_fatal_errors_occured_during_import">Some non-fatal errors occurred during import - you may see Chat console for more details.</string>
+  <string name="non_fatal_errors_occured_during_import">Some non-fatal errors occurred during import:</string>
   <string name="delete_chat_profile_question">Delete chat profile?</string>
   <string name="delete_chat_profile_action_cannot_be_undone_warning">This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</string>
   <string name="chat_database_deleted">Chat database deleted</string>
@@ -1222,6 +1222,11 @@
   <string name="enable_automatic_deletion_message">This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes.</string>
   <string name="delete_messages">Delete messages</string>
   <string name="error_changing_message_deletion">Error changing setting</string>
+  <string name="chat_database_exported_title">Chat database exported</string>
+  <string name="chat_database_exported_save">You may save the exported archive.</string>
+  <string name="chat_database_exported_migrate">You may migrate the exported database.</string>
+  <string name="chat_database_exported_not_all_files">Some file(s) were not exported</string>
+  <string name="chat_database_exported_continue">Continue</string>
 
   <!-- DatabaseEncryptionView.kt -->
   <string name="save_passphrase_in_keychain">Save passphrase in Keystore</string>
@@ -1288,7 +1293,7 @@
   <string name="database_downgrade">Database downgrade</string>
   <string name="incompatible_database_version">Incompatible database version</string>
   <string name="confirm_database_upgrades">Confirm database upgrades</string>
-  <string name="one_hand_ui">One-hand UI</string>
+  <string name="one_hand_ui">Reachable chat toolbar</string>
   <string name="terminal_always_visible">Show console in new window</string>
   <string name="chat_list_always_visible">Show chat list in new window</string>
   <string name="invalid_migration_confirmation">Invalid migration confirmation</string>
