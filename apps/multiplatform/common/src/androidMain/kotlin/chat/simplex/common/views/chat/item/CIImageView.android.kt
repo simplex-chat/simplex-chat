@@ -43,7 +43,7 @@ actual fun SimpleAndAnimatedImageView(
           DisposableEffect(Unit) {
             onDispose {
               val c = CurrentColors.value.colors
-              platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.chatToolbarOnBottom.get(), appPrefs.chatToolbarOnBottom.get())
+              platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.reachableChatToolbar.get(), appPrefs.reachableChatToolbar.get())
             }
           }
         }

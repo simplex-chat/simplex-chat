@@ -106,25 +106,10 @@ fun AppearanceScope.AppearanceLayout(
         }
       }
       //      }
-
-      val toolbarPositions = mapOf(
-        true to generalGetString(MR.strings.chat_toolbar_position_bottom),
-        false to generalGetString(MR.strings.chat_toolbar_position_top)
-      )
-
-      val toolbarPositionValues by remember(appPrefs.chatToolbarOnBottom.state.value) { mutableStateOf(toolbarPositions.map { it.key to it.value }) }
-      ExposedDropDownSettingRow(
-        generalGetString(MR.strings.chat_toolbar_position),
-        toolbarPositionValues,
-        appPrefs.chatToolbarOnBottom.state,
-        icon = null,
-        enabled = remember { mutableStateOf(true) },
-        onSelected = {
-          appPrefs.chatToolbarOnBottom.set(it)
-          val c = CurrentColors.value.colors
-          platform.androidSetStatusAndNavBarColors(c.isLight, c.background, false, false)
-        }
-      )
+      SettingsPreferenceItem(icon = null, stringResource(MR.strings.reachable_chat_toolbar), ChatModel.controller.appPrefs.reachableChatToolbar) {
+        val c = CurrentColors.value.colors
+        platform.androidSetStatusAndNavBarColors(c.isLight, c.background, false, false)
+      }
     }
 
     SectionDividerSpaced(maxTopPadding = true)

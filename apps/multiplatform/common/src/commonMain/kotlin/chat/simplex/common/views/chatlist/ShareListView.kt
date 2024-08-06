@@ -25,7 +25,7 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
   var searchInList by rememberSaveable { mutableStateOf("") }
   val (userPickerState, scaffoldState) = settingsState
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
-  val chatToolbarOnBottom = remember { chatModel.controller.appPrefs.chatToolbarOnBottom }
+  val reachableChatToolbar = remember { chatModel.controller.appPrefs.reachableChatToolbar }
 
   Scaffold(
     Modifier.padding(end = endPadding),
@@ -33,7 +33,7 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
     drawerContentColor = LocalContentColor.current,
     scaffoldState = scaffoldState,
     topBar = {
-      if (!chatToolbarOnBottom.state.value) {
+      if (!reachableChatToolbar.state.value) {
         Column {
           ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() }
           Divider()
@@ -41,7 +41,7 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
       }
     },
     bottomBar = {
-      if (chatToolbarOnBottom.state.value) {
+      if (reachableChatToolbar.state.value) {
         Column {
           Divider()
           ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() }
@@ -76,7 +76,7 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
     }
     var modifier = Modifier.fillMaxSize()
 
-    if (chatToolbarOnBottom.state.value) {
+    if (reachableChatToolbar.state.value) {
       modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
     }
 
@@ -91,10 +91,10 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
             isMediaOrFileAttachment = isMediaOrFileAttachment,
             isVoice = isVoice,
             hasSimplexLink = hasSimplexLink,
-            chatToolbarOnBottom = chatToolbarOnBottom.state
+            reachableChatToolbar = reachableChatToolbar.state
           )
         } else {
-          EmptyList(chatToolbarOnBottom = chatToolbarOnBottom.state)
+          EmptyList(reachableChatToolbar = reachableChatToolbar.state)
         }
       }
     }
@@ -115,10 +115,10 @@ private fun hasSimplexLink(msg: String): Boolean {
 }
 
 @Composable
-private fun EmptyList(chatToolbarOnBottom: State<Boolean>) {
+private fun EmptyList(reachableChatToolbar: State<Boolean>) {
   var modifier = Modifier.fillMaxSize()
 
-  if (chatToolbarOnBottom.value) {
+  if (reachableChatToolbar.value) {
     modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
   }
 
@@ -212,7 +212,7 @@ private fun ShareList(
   isMediaOrFileAttachment: Boolean,
   isVoice: Boolean,
   hasSimplexLink: Boolean,
-  chatToolbarOnBottom: State<Boolean>
+  reachableChatToolbar: State<Boolean>
 ) {
   val chats by remember(search) {
     derivedStateOf {
@@ -234,7 +234,7 @@ private fun ShareList(
         isMediaOrFileAttachment = isMediaOrFileAttachment,
         isVoice = isVoice,
         hasSimplexLink = hasSimplexLink,
-        chatToolbarOnBottom = chatToolbarOnBottom
+        reachableChatToolbar = reachableChatToolbar
       )
     }
   }

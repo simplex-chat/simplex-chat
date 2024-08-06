@@ -260,7 +260,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
           .distinctUntilChanged()
           .collect {
             if (it == null) {
-              platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, !appPrefs.chatToolbarOnBottom.get(), appPrefs.chatToolbarOnBottom.get())
+              platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, !appPrefs.reachableChatToolbar.get(), appPrefs.reachableChatToolbar.get())
               onComposed(null)
             }
             currentChatId.value = it
@@ -274,7 +274,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
           if (modalBackground && !chatModel.newChatSheetVisible.value) {
             platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, false, false)
           } else {
-            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, !appPrefs.chatToolbarOnBottom.get(), appPrefs.chatToolbarOnBottom.get())
+            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, !appPrefs.reachableChatToolbar.get(), appPrefs.reachableChatToolbar.get())
           }
         }
     }
