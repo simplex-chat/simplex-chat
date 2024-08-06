@@ -546,8 +546,8 @@ processChatCommand' vr = \case
       createPresetContactCards :: User -> CM ()
       createPresetContactCards user =
         withFastStore $ \db -> do
-          createContact db user simplexTeamContactProfile
           createContact db user simplexStatusContactProfile
+          createContact db user simplexTeamContactProfile
       chooseServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> CM (NonEmpty (ServerCfg p), [ServerCfg p])
       chooseServers protocol
         | sameServers =

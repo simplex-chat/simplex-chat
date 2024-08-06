@@ -28,7 +28,7 @@ fun onRequestAccepted(chat: Chat) {
 }
 
 @Composable
-fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
+fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDeletedChatIcon: Boolean) {
     val oneHandUI = remember { appPrefs.oneHandUI.state }
     val showMenu = remember { mutableStateOf(false) }
     val rhId = chat.remoteHostId
@@ -48,7 +48,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
             ChatListNavLinkLayout(
                 chatLinkPreview = {
                     tryOrShowError("${chat.id}ContactListNavLink", error = { ErrorChatListItem() }) {
-                        ContactPreviewView(chat, disabled)
+                        ContactPreviewView(chat, disabled, showDeletedChatIcon)
                     }
                 },
                 click = {
@@ -97,7 +97,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
             ChatListNavLinkLayout(
                 chatLinkPreview = {
                     tryOrShowError("${chat.id}ContactListNavLink", error = { ErrorChatListItem() }) {
-                        ContactPreviewView(chat, disabled)
+                        ContactPreviewView(chat, disabled, showDeletedChatIcon)
                     }
                 },
                 click = {

@@ -47,14 +47,13 @@ struct AddGroupMembersViewCommon: View {
 
     var body: some View {
         if creatingGroup {
-            NavigationView {
-                addGroupMembersView()
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button ("Skip") { addedMembersCb(selectedContacts) }
-                        }
+            addGroupMembersView()
+                .navigationBarBackButtonHidden()
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button ("Skip") { addedMembersCb(selectedContacts) }
                     }
-            }
+                }
         } else {
             addGroupMembersView()
         }

@@ -50,6 +50,7 @@ extension AppSettings {
         if let val = uiDarkColorScheme { def.setValue(val, forKey: DEFAULT_SYSTEM_DARK_THEME) }
         if let val = uiCurrentThemeIds { def.setValue(val, forKey: DEFAULT_CURRENT_THEME_IDS) }
         if let val = uiThemes { def.setValue(val.skipDuplicates(), forKey: DEFAULT_THEME_OVERRIDES) }
+        if let val = oneHandUI { def.setValue(val, forKey: DEFAULT_ONE_HAND_UI) }
     }
 
     public static var current: AppSettings {
@@ -81,6 +82,7 @@ extension AppSettings {
         c.uiDarkColorScheme = systemDarkThemeDefault.get()
         c.uiCurrentThemeIds = currentThemeIdsDefault.get()
         c.uiThemes = themeOverridesDefault.get()
+        c.oneHandUI = def.bool(forKey: DEFAULT_ONE_HAND_UI)
         return c
     }
 }

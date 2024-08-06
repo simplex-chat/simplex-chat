@@ -21,6 +21,7 @@ import chat.simplex.res.MR
 fun ContactPreviewView(
     chat: Chat,
     disabled: Boolean,
+    showDeletedChatIcon: Boolean
 ) {
     val cInfo = chat.chatInfo
     val contactType = chatContactType(chat)
@@ -104,10 +105,21 @@ fun ContactPreviewView(
             )
         }
 
-        if (chat.chatInfo.chatSettings?.favorite == true) {
+        if (showDeletedChatIcon && chat.chatInfo.chatDeleted) {
+            Icon(
+                painterResource(MR.images.ic_inventory_2),
+                contentDescription = null,
+                tint = MaterialTheme.colors.secondary,
+                modifier = Modifier
+                    .size(17.dp)
+            )
+            if (chat.chatInfo.incognito) {
+                Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
+            }
+        } else if (chat.chatInfo.chatSettings?.favorite == true) {
             Icon(
                 painterResource(MR.images.ic_star_filled),
-                contentDescription = generalGetString(MR.strings.favorite_chat),
+                contentDescription = null,
                 tint = MaterialTheme.colors.secondary,
                 modifier = Modifier
                     .size(17.dp)
