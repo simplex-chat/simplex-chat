@@ -33,7 +33,7 @@ struct ChatListView: View {
     }
 
     private var viewBody: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack(alignment: oneHandUI ? .bottomLeading : .topLeading) {
             NavStackCompat(
                 isActive: Binding(
                     get: { chatModel.chatId != nil },
@@ -62,6 +62,9 @@ struct ChatListView: View {
     private var chatListView: some View {
         withToolbar {
             chatList
+                .background(theme.colors.background)
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarHidden(searchMode || oneHandUI)
         }
         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .onDisappear() { withAnimation { userPickerVisible = false } }
@@ -81,10 +84,6 @@ struct ChatListView: View {
                 secondaryButton: .cancel()
             ))
         }
-        .listStyle(.plain)
-        .background(theme.colors.background)
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarHidden(searchMode || oneHandUI)
         .safeAreaInset(edge: .top) {
             if oneHandUI { Divider().background(Material.ultraThin) }
         }
@@ -196,6 +195,7 @@ struct ChatListView: View {
                 }
                 .offset(x: -8)
             }
+            .listStyle(.plain)
             .onChange(of: chatModel.chatId) { chId in
                 if chId == nil, let chatId = chatModel.chatToTop {
                     chatModel.chatToTop = nil
