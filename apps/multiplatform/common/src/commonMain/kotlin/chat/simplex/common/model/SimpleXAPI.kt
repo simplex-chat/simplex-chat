@@ -6230,7 +6230,7 @@ data class AppSettings(
     uiDarkColorScheme?.let { def.systemDarkTheme.set(it) }
     uiCurrentThemeIds?.let { def.currentThemeIds.set(it) }
     uiThemes?.let { def.themeOverrides.set(it.skipDuplicates()) }
-    oneHandUI?.let { def.oneHandUI.set(it) }
+    oneHandUI?.let { def.oneHandUI.set(if (appPlatform.isAndroid) it else false) }
   }
 
   companion object {
