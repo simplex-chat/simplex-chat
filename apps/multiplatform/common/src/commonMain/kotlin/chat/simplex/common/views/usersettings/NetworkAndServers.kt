@@ -123,7 +123,7 @@ fun NetworkAndServersView() {
 
         if (currentRemoteHost == null) {
           UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
-          SocksProxyHostPort(showCustomModal, appPrefs.networkProxyHostPort, false)
+          SettingsActionItem(painterResource(MR.images.ic_manufacturing), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(appPrefs.networkProxyHostPort, false, it) }})
           SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), { ModalManager.start.showCustomModal { AdvancedNetworkSettingsView(showModal, it) } })
         }
       }
@@ -160,7 +160,7 @@ fun NetworkAndServersView() {
   val showModal = { it: @Composable ModalData.() -> Unit ->  ModalManager.fullscreen.showModal(content = it) }
   val showCustomModal = { it: @Composable (close: () -> Unit) -> Unit -> ModalManager.fullscreen.showCustomModal { close -> it(close) }}
   UseSocksProxySwitch(networkUseSocksProxy, toggleSocksProxy)
-  SocksProxyHostPort(showCustomModal, networkProxyHostPort, true)
+  SettingsActionItem(painterResource(MR.images.ic_manufacturing), stringResource(MR.strings.network_socks_proxy_settings), { showCustomModal { SocksProxySettings(networkProxyHostPort, true, it) } })
   UseOnionHosts(onionHosts, networkUseSocksProxy, showModal, useOnion)
   if (developerTools) {
     SessionModePicker(sessionMode, showModal, updateSessionMode)
@@ -193,17 +193,6 @@ fun UseSocksProxySwitch(
       checked = networkUseSocksProxy.value,
       onCheckedChange = toggleSocksProxy,
     )
-  }
-}
-
-@Composable
-fun SocksProxyHostPort(
-  showCustomModal: (@Composable (close: () -> Unit) -> Unit) -> Unit,
-  networkProxyHostPort: SharedPreference<String?> = appPrefs.networkProxyHostPort,
-  migration: Boolean = false
-) {
-  SectionItemView({ showCustomModal { SocksProxySettings(networkProxyHostPort, migration, it) } }) {
-    Text(stringResource(MR.strings.network_socks_proxy_settings))
   }
 }
 
