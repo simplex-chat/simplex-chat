@@ -90,43 +90,54 @@ struct ChatListView: View {
         }
     }
 
-    @ViewBuilder
-    func withToolbar(content: () -> some View) -> some View {
+    @ViewBuilder func withToolbar(content: () -> some View) -> some View {
         if #available(iOS 16.0, *) {
-            content()
-                .toolbarBackground(.visible, for: oneHandUI ? .bottomBar : .navigationBar)
-                .toolbar {
-                    if oneHandUI {
-                        bottomToolbar
-                    } else {
-                        topToolbar
-                    }
-                }
+            if oneHandUI {
+                content()
+                    .toolbarBackground(.visible, for: .bottomBar)
+                    .toolbar { bottomToolbar }
+            } else {
+                content()
+                    .toolbarBackground(.automatic, for: .navigationBar)
+                    .toolbar { topToolbar }
+            }
         } else {
-            content().toolbar { topToolbar }
+            if oneHandUI {
+                content().toolbar { bottomToolbar }
+            } else {
+                content().toolbar { topToolbar }
+            }
         }
     }
 
-    @ToolbarContentBuilder
-    var topToolbar: some ToolbarContent {
+    @ToolbarContentBuilder var topToolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) { leadingToolbarItem }
         ToolbarItem(placement: .principal) { principalToolbarItem }
         ToolbarItem(placement: .topBarTrailing) { trailingToolbarItem }
     }
 
-    @ToolbarContentBuilder
-    var bottomToolbar: some ToolbarContent {
+    @ToolbarContentBuilder var bottomToolbar: some ToolbarContent {
         ToolbarItem(placement: .bottomBar) {
-            HStack {
+            let v = HStack {
                 leadingToolbarItem
                 principalToolbarItem
                 trailingToolbarItem
             }
+            if #available(iOS 16.0, *) {
+                v
+            } else {
+                VStack(spacing: 0) {
+                    Divider()
+                    v
+                        .padding(.vertical)
+                        .frame(maxWidth: .infinity)
+                        .background(Material.ultraThin)
+                }
+            }
         }
     }
 
-    @ViewBuilder
-    var leadingToolbarItem: some View {
+    @ViewBuilder var leadingToolbarItem: some View {
         let user = chatModel.currentUser ?? User.sampleData
         ZStack(alignment: .topTrailing) {
             ProfileImage(imageStr: user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
@@ -149,8 +160,7 @@ struct ChatListView: View {
         }
     }
 
-    @ViewBuilder
-    var principalToolbarItem: some View {
+    @ViewBuilder var principalToolbarItem: some View {
         HStack(spacing: 4) {
             Text("Chats").font(.headline)
             SubsStatusIndicator()
@@ -158,8 +168,7 @@ struct ChatListView: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    @ViewBuilder
-    var trailingToolbarItem: some View {
+    @ViewBuilder var trailingToolbarItem: some View {
         switch chatModel.chatRunning {
         case .some(true): NewChatMenuButton()
         case .some(false): chatStoppedIcon()
@@ -183,6 +192,7 @@ struct ChatListView: View {
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
                     .frame(maxWidth: .infinity)
+                    .padding(.top, oneHandUI ? 8 : 0)
                 }
                 if !oneHandUICardShown {
                     OneHandUICard()
@@ -389,7 +399,6 @@ struct ChatListSearchBar: View {
                     toggleFilterButton()
                 }
             }
-            Divider()
         }
         .onChange(of: searchFocussed) { sf in
             withAnimation { searchMode = sf }
