@@ -89,9 +89,18 @@ struct ChatListView: View {
             if oneHandUI { Divider().background(Material.ultraThin) }
         }
         .safeAreaInset(edge: .bottom) {
-            if oneHandUI { Divider().background(Material.ultraThin) }
+            if oneHandUI {
+                Divider().padding(.bottom, Self.hasHomeIndicator ? 0 : 16).background(Material.ultraThin)
+            }
         }
     }
+
+    static var hasHomeIndicator: Bool = {
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first {
+            window.safeAreaInsets.bottom > 0
+        } else { false }
+    }()
 
     @ViewBuilder func withToolbar(content: () -> some View) -> some View {
         if #available(iOS 16.0, *) {
@@ -115,17 +124,18 @@ struct ChatListView: View {
 
     @ToolbarContentBuilder var topToolbar: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) { leadingToolbarItem }
-        ToolbarItem(placement: .principal) { principalToolbarItem }
+        ToolbarItem(placement: .principal) { SubsStatusIndicator() }
         ToolbarItem(placement: .topBarTrailing) { trailingToolbarItem }
     }
 
     @ToolbarContentBuilder var bottomToolbar: some ToolbarContent {
+        let padding: Double = Self.hasHomeIndicator ? 0 : 32
         ToolbarItemGroup(placement: .bottomBar) {
-            leadingToolbarItem
+            leadingToolbarItem.padding(.bottom, padding)
             Spacer()
-            principalToolbarItem
+            SubsStatusIndicator().padding(.bottom, padding)
             Spacer()
-            trailingToolbarItem
+            trailingToolbarItem.padding(.bottom, padding)
         }
     }
 
@@ -150,14 +160,6 @@ struct ChatListView: View {
                 showSettings = true
             }
         }
-    }
-
-    @ViewBuilder var principalToolbarItem: some View {
-        HStack(spacing: 4) {
-            Text("Chats").fixedSize().font(.headline)
-            SubsStatusIndicator()
-        }
-        .frame(maxWidth: .infinity, alignment: .center)
     }
 
     @ViewBuilder var trailingToolbarItem: some View {
@@ -305,6 +307,7 @@ struct SubsStatusIndicator: View {
             showServersSummary = true
         } label: {
             HStack(spacing: 4) {
+                Text("Chats").foregroundStyle(Color.primary).fixedSize().font(.headline)
                 SubscriptionStatusIndicatorView(subs: subs, hasSess: hasSess)
                 if showSubscriptionPercentage {
                     SubscriptionStatusPercentageView(subs: subs, hasSess: hasSess)
