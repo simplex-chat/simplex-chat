@@ -83,7 +83,7 @@
     <string name="database_passphrase_will_be_updated">La contraseña de cifrado de la base de datos será actualizada.</string>
     <string name="info_row_database_id">ID base de datos</string>
     <string name="direct_messages_are_prohibited_in_chat">Los mensajes directos entre miembros del grupo no están permitidos.</string>
-    <string name="passphrase_is_different">La contraseña es distinta a la almacenada en Keystore</string>
+    <string name="passphrase_is_different">La contraseña de la base de datos es distinta a la almacenada en Keystore.</string>
     <string name="database_will_be_encrypted_and_passphrase_stored">La base de datos será cifrada y la contraseña se guardará en Keystore.</string>
     <string name="delete_contact_question">¿Eliminar contacto\?</string>
     <string name="delete_message__question">¿Eliminar mensaje\?</string>
@@ -114,8 +114,8 @@
     <string name="delete_messages">Eliminar mensaje</string>
     <string name="database_encrypted">¡Base de datos cifrada!</string>
     <string name="encrypted_with_random_passphrase">La base de datos está cifrada con una contraseña aleatoria, puedes cambiarla.</string>
-    <string name="database_error">Error base de datos</string>
-    <string name="database_passphrase_is_required">Para abrir la aplicación se requiere la contraseña de la base de datos</string>
+    <string name="database_error">Error en base de datos</string>
+    <string name="database_passphrase_is_required">Se requiere la contraseña de la base de datos para abrir la aplicación.</string>
     <string name="rcv_group_event_member_connected">conectado</string>
     <string name="button_create_group_link">Crear enlace</string>
     <string name="delete_link_question">¿Eliminar enlace\?</string>
@@ -540,7 +540,7 @@
     <string name="new_passphrase">Contraseña nueva…</string>
     <string name="join_group_question">¿Unirte al grupo?</string>
     <string name="joining_group">Entrando al grupo</string>
-    <string name="keychain_error">Error Keystore</string>
+    <string name="keychain_error">Error en Keystore</string>
     <string name="icon_descr_add_members">Invitar miembros</string>
     <string name="group_member_role_observer">observador</string>
     <string name="group_member_role_member">miembro</string>
@@ -788,7 +788,7 @@
     <string name="v4_5_private_filenames_descr">Para proteger la zona horaria, los archivos de imagen/voz usan la hora UTC.</string>
     <string name="v4_5_transport_isolation">Aislamiento de transporte</string>
     <string name="to_share_with_your_contact">(para compartir con tu contacto)</string>
-    <string name="unmute_chat">Activar audio</string>
+    <string name="unmute_chat">Activar sonido</string>
     <string name="is_verified">%s está verificado</string>
     <string name="is_not_verified">%s no está verificado</string>
     <string name="smp_servers_test_server">Probar servidor</string>
@@ -824,7 +824,7 @@
     <string name="share_message">Compartir mensaje…</string>
     <string name="share_image">Compartir medios…</string>
     <string name="show_call_on_lock_screen">Mostrar</string>
-    <string name="unknown_database_error_with_info">Error desconocido base de datos: %s</string>
+    <string name="unknown_database_error_with_info">Error desconocido en la base de datos: %s</string>
     <string name="database_backup_can_be_restored">El intento de cambiar la contraseña de la base de datos no se ha completado.</string>
     <string name="chat_help_tap_button">Pulsa el botón</string>
     <string name="to_start_a_new_chat_help_header">Para iniciar un chat nuevo</string>
@@ -841,7 +841,7 @@
     <string name="voice_message_send_text">Mensaje de voz…</string>
     <string name="icon_descr_video_off">Desactivar vídeo</string>
     <string name="icon_descr_video_on">Activar vídeo</string>
-    <string name="wrong_passphrase">Contraseña de base de datos incorrecta</string>
+    <string name="wrong_passphrase">Contraseña incorrecta de la base de datos</string>
     <string name="wrong_passphrase_title">¡Contraseña incorrecta!</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Te has unido a este grupo. Conectando con el emisor de la invitacíon.</string>
     <string name="alert_title_cant_invite_contacts_descr">Estás usando un perfil incógnito en este grupo. Para evitar descubrir tu perfil principal no se permite invitar contactos</string>
@@ -986,7 +986,7 @@
     <string name="v4_6_reduced_battery_usage_descr">¡Más mejoras en camino!</string>
     <string name="hidden_profile_password">Contraseña del perfil oculto</string>
     <string name="save_welcome_message_question">¿Guardar mensaje de bienvenida\?</string>
-    <string name="user_unmute">Activar audio</string>
+    <string name="user_unmute">Activar sonido</string>
     <string name="you_can_hide_or_mute_user_profile">Puedes ocultar o silenciar un perfil. Mantenlo pulsado para abrir el menú.</string>
     <string name="you_will_still_receive_calls_and_ntfs">Seguirás recibiendo llamadas y notificaciones de los perfiles silenciados cuando estén activos.</string>
     <string name="v4_6_group_moderation_descr">Ahora los administradores pueden:
@@ -1241,7 +1241,7 @@
     <string name="whats_new_read_more">Conoce más</string>
     <string name="v5_1_japanese_portuguese_interface">Interfaz en japonés y portugués</string>
     <string name="item_info_no_text">sin texto</string>
-    <string name="non_fatal_errors_occured_during_import">Algunos errores no críticos ocurrieron durante la importación:</string>
+    <string name="non_fatal_errors_occured_during_import">Han ocurrido algunos errores no críticos durante la importación:</string>
     <string name="shutdown_alert_question">¿Cerrar\?</string>
     <string name="settings_section_title_app">Aplicación</string>
     <string name="settings_restart_app">Reiniciar</string>
@@ -1519,7 +1519,7 @@
     <string name="verify_connection">Verificar conexión</string>
     <string name="no_connected_mobile">Ningún móvil conectado</string>
     <string name="app_was_crashed">Error aplicación</string>
-    <string name="error_showing_content">error mostrando contenido</string>
+    <string name="error_showing_content">error al mostrar el contenido</string>
     <string name="error_showing_message">error al mostrar mensaje</string>
     <string name="you_can_make_address_visible_via_settings">Puedes hacerlo visible para tus contactos de SimpleX en Configuración.</string>
     <string name="recent_history_is_not_sent_to_new_members">El historial no se envía a miembros nuevos.</string>
@@ -1899,7 +1899,7 @@
     <string name="servers_info_detailed_statistics">Estadísticas detalladas</string>
     <string name="servers_info_details">Detalles</string>
     <string name="uploaded_files">Archivos subidos</string>
-    <string name="upload_errors">Errores en subida</string>
+    <string name="upload_errors">Errores de subida</string>
     <string name="attempts_label">intentos</string>
     <string name="completed">Completado</string>
     <string name="connections">Conexiones</string>
@@ -1962,11 +1962,11 @@
     <string name="servers_info_detailed_statistics_sent_messages_header">Mensajes enviados</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">Total enviado</string>
     <string name="downloaded_files">Archivos descargados</string>
-    <string name="download_errors">Errores en la descarga</string>
+    <string name="download_errors">Errores de descarga</string>
     <string name="duplicates_label">duplicados</string>
     <string name="expired_label">expirado</string>
     <string name="open_server_settings_button">Abrir configuración del servidor</string>
-    <string name="other_label">otro</string>
+    <string name="other_label">otros</string>
     <string name="other_errors">otros errores</string>
     <string name="proxied">Con proxy</string>
     <string name="reconnect">Reconectar</string>
@@ -1977,8 +1977,8 @@
     <string name="server_address">Dirección del servidor</string>
     <string name="size">Tamaño</string>
     <string name="servers_info_subscriptions_connections_subscribed">Conexiones activas</string>
-    <string name="servers_info_starting_from">Iniciado desde %s.</string>
-    <string name="servers_info_private_data_disclaimer">Iniciado desde %s
+    <string name="servers_info_starting_from">Iniciado el %s.</string>
+    <string name="servers_info_private_data_disclaimer">Iniciado el %s
 \nTodos los datos son privados a tu dispositivo</string>
     <string name="chunks_deleted">Bloques eliminados</string>
     <string name="chunks_downloaded">Bloques descargados</string>
@@ -1989,7 +1989,7 @@
     <string name="v6_0_connection_servers_status_descr">Estado de conexión y servidores.</string>
     <string name="v6_0_connect_faster">Conecta más rápido con tus amigos</string>
     <string name="v6_0_connection_servers_status">Controla tu red</string>
-    <string name="v6_0_private_routing_descr">Protege tu dirección IP y conexiones.</string>
+    <string name="v6_0_private_routing_descr">Protege tu dirección IP y tus conexiones.</string>
     <string name="allow_calls_question">¿Permitir llamadas?</string>
     <string name="privacy_media_blur_radius">Difuminar multimedia</string>
     <string name="calls_prohibited_alert_title">¡Llamadas no permitidas!</string>
@@ -2025,7 +2025,7 @@
     <string name="network_socks_proxy">SOCKS proxy</string>
     <string name="privacy_media_blur_radius_off">No</string>
     <string name="chat_database_exported_continue">Continuar</string>
-    <string name="chat_database_exported_not_all_files">Algunos ficheros no fueron exportados</string>
+    <string name="chat_database_exported_not_all_files">Algunos archivos no han sido exportados</string>
     <string name="cant_call_contact_alert_title">No se puede llamar al contacto</string>
     <string name="cant_call_member_alert_title">No se puede llamar al miembro del grupo</string>
     <string name="cant_send_message_to_member_alert_title">No se pueden enviar mensajes al miembro del grupo</string>
@@ -2052,7 +2052,7 @@
     <string name="proxy_destination_error_broker_host">La dirección del servidor de destino de %1$s es incompatible con la configuración del servidor de reenvío %2$s.</string>
     <string name="proxy_destination_error_broker_version">La versión del servidor de destino de %1$s es incompatible con el servidor de reenvío %2$s.</string>
     <string name="contact_list_header_title">Tus contactos</string>
-    <string name="you_need_to_allow_calls">Debes permitir que tus contacto llamen para poder llamarles.</string>
+    <string name="you_need_to_allow_calls">Necesitas permitir que tus contacto llamen para poder llamarles.</string>
     <string name="smp_proxy_error_connecting">Error al conectar con el servidor de reenvío %1$s. Por favor, inténtalo más tarde.</string>
     <string name="smp_proxy_error_broker_host">La dirección del servidor de reenvío es incompatible con la configuración de red: %1$s.</string>
     <string name="proxy_destination_error_failed_to_connect">El servidor de reenvío %1$s no ha podido conectarse al servidor de destino %2$s. Por favor, intentalo más tarde.</string>
