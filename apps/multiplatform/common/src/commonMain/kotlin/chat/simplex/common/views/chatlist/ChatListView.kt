@@ -86,7 +86,15 @@ fun ToggleChatListCard() {
         modifier = Modifier.fillMaxWidth().matchParentSize().padding(5.dp),
         contentAlignment = Alignment.TopEnd
       ) {
-        IconButton(onClick = { appPrefs.showOneHandUINotice.set(false) }) {
+        IconButton(
+          onClick = {
+            appPrefs.showOneHandUINotice.set(false)
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(MR.strings.one_hand_ui),
+              text = generalGetString(MR.strings.one_hand_ui_change_instruction),
+            )
+          }
+        ) {
           Icon(
             painterResource(MR.images.ic_close), stringResource(MR.strings.back), tint = MaterialTheme.colors.secondary
           )
