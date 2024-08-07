@@ -88,13 +88,16 @@ struct ChatListView: View {
         .safeAreaInset(edge: .top) {
             if oneHandUI { Divider().background(Material.ultraThin) }
         }
+        .safeAreaInset(edge: .bottom) {
+            if oneHandUI { Divider().background(Material.ultraThin) }
+        }
     }
 
     @ViewBuilder func withToolbar(content: () -> some View) -> some View {
         if #available(iOS 16.0, *) {
             if oneHandUI {
                 content()
-                    .toolbarBackground(.visible, for: .bottomBar)
+                    .toolbarBackground(.hidden, for: .bottomBar)
                     .toolbar { bottomToolbar }
             } else {
                 content()
@@ -117,23 +120,12 @@ struct ChatListView: View {
     }
 
     @ToolbarContentBuilder var bottomToolbar: some ToolbarContent {
-        ToolbarItem(placement: .bottomBar) {
-            let v = HStack {
-                leadingToolbarItem
-                principalToolbarItem
-                trailingToolbarItem
-            }
-            if #available(iOS 16.0, *) {
-                v
-            } else {
-                VStack(spacing: 0) {
-                    Divider()
-                    v
-                        .padding(.vertical)
-                        .frame(maxWidth: .infinity)
-                        .background(Material.ultraThin)
-                }
-            }
+        ToolbarItemGroup(placement: .bottomBar) {
+            leadingToolbarItem
+            Spacer()
+            principalToolbarItem
+            Spacer()
+            trailingToolbarItem
         }
     }
 
@@ -162,7 +154,7 @@ struct ChatListView: View {
 
     @ViewBuilder var principalToolbarItem: some View {
         HStack(spacing: 4) {
-            Text("Chats").font(.headline)
+            Text("Chats").fixedSize().font(.headline)
             SubsStatusIndicator()
         }
         .frame(maxWidth: .infinity, alignment: .center)
