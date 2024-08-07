@@ -515,7 +515,9 @@ private fun MutableState<MigrationToState?>.prepareDatabase(
   withLongRunningApi {
     val ctrlAndUser = initTemporaryDatabase(tempDatabaseFile, netCfg)
     if (ctrlAndUser == null) {
-      state = MigrationToState.DownloadFailed(0, link, archivePath(), netCfg)
+      // Probably, something wrong with network config or database initialization, let's start from scratch
+      state = MigrationToState.PasteOrScanLink
+      MigrationToDeviceState.save(null)
       return@withLongRunningApi
     }
 
