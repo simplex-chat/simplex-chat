@@ -2033,7 +2033,7 @@
     <string name="v6_0_connection_servers_status_descr">Kapcsolat és kiszolgálók állapotának megjelenítése.</string>
     <string name="v6_0_connect_faster">Kapcsolódjon gyorsabban az ismerőseihez</string>
     <string name="chat_database_exported_continue">Folytatás</string>
-    <string name="v6_0_connection_servers_status">Irányítsa hálózatát</string>
+    <string name="v6_0_connection_servers_status">Vegye kézbe a hálózatát</string>
     <string name="media_and_file_servers">Média és fájlkiszolgálók</string>
     <string name="v6_0_delete_many_messages_descr">Legfeljebb 20 üzenet törlése egyszerre.</string>
     <string name="v6_0_connect_faster_descr">Még akkor is, ha offline vannak.</string>
