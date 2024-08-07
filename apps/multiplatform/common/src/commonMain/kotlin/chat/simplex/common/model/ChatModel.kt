@@ -421,53 +421,6 @@ object ChatModel {
       }
     }
 
-    init {
-      val start = System.currentTimeMillis()
-      println("LALAL TESTING EMIT ${System.currentTimeMillis() - start}")
-      val subject = MutableSharedFlow<Int>()
-      withLongRunningApi {
-        launch {
-          subject
-            .throttleLatest(2000)
-            .collect {
-              println("LALAL GOT VALUE $it ${System.currentTimeMillis() - start}")
-            }
-        }
-        subject.emit(0)
-        delay(100)
-        subject.emit(1)
-        delay(1000)
-        subject.emit(2)
-        subject.emit(3)
-        delay(1000)
-        subject.emit(4)
-        subject.emit(5)
-        delay(2000)
-        subject.emit(6)
-        subject.emit(7)
-        delay(100)
-        subject.emit(8)
-        delay(100)
-        subject.emit(9)
-        delay(1900)
-        subject.emit(10)
-        delay(3000)
-        subject.emit(11)
-        delay(4000)
-        subject.emit(12)
-        /*
-         LALAL TESTING EMIT 0
-         LALAL GOT VALUE 1 238
-         LALAL GOT VALUE 5 2247
-         LALAL GOT VALUE 7 4252
-         LALAL GOT VALUE 9 6253
-         LALAL GOT VALUE 10 8254
-         LALAL GOT VALUE 11 10255
-         LALAL GOT VALUE 12 13342
-        * */
-      }
-    }
-
     private val popChatCollector = PopChatCollector()
 
     class PopChatCollector {
