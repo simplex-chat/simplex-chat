@@ -25,10 +25,11 @@ void haskell_init(void) {
 }
 
 void haskell_init_nse(void) {
-    int argc = 7;
+    int argc = 8;
     char *argv[] = {
         "simplex",
         "+RTS", // requires `hs_init_with_rtsopts`
+        "-maxN2", // limit to 2 cores
         "-A1m", // chunk size for new allocations
         "-H1m", // initial heap size
         "-F0.5", // heap growth triggering GC
