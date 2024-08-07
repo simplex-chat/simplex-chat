@@ -336,23 +336,23 @@ fun ChatLockItem(
     unchangedHints.value = true
   }, disabled = unchangedHints.value) {
     Icon(
-      painter = painterResource(MR.images.ic_github),
+      painter = painterResource(MR.images.ic_lightbulb),
       contentDescription = "Lightbulb",
       tint = MaterialTheme.colors.secondary,
     )
     TextIconSpaced()
-    Text(generalGetString(MR.strings.reset_all_hints), color = MaterialTheme.colors.primary)
+    Text(generalGetString(MR.strings.reset_all_hints), color = if (unchangedHints.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
   }
 }
 
 fun resetHintPreferences() {
-  for (pref in appPreferences.hintPreferences) {
-    pref.set(pref.default)
+  for ((pref, def) in appPreferences.hintPreferences) {
+    pref.set(def)
   }
 }
 
-fun unchangedHintPreferences(): Boolean = appPreferences.hintPreferences.all { pref ->
-  pref.state.value == pref.default
+fun unchangedHintPreferences(): Boolean = appPreferences.hintPreferences.all { (pref, def) ->
+  pref.state.value == def
 }
 
 @Composable

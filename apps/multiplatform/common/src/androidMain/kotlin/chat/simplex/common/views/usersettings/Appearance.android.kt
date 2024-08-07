@@ -162,8 +162,8 @@ fun PreviewAppearanceSettings() {
   SimpleXTheme {
     AppearanceScope.AppearanceLayout(
       icon = remember { mutableStateOf(AppIcon.DARK_BLUE) },
-      languagePref = SharedPreference({ null }, {}, null),
-      systemDarkTheme = SharedPreference({ null }, {}, null),
+      languagePref = SharedPreference({ null }, {}),
+      systemDarkTheme = SharedPreference({ null }, {}),
       changeIcon = {},
     )
   }

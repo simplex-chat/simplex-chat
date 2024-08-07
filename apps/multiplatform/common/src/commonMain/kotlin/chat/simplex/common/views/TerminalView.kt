@@ -87,7 +87,7 @@ fun TerminalLayout(
               showVoiceRecordIcon = false,
               recState = remember { mutableStateOf(RecordingState.NotStarted) },
               isDirectChat = false,
-              liveMessageAlertShown = SharedPreference(get = { false }, set = {}, false),
+              liveMessageAlertShown = SharedPreference(get = { false }, set = {}),
               sendMsgEnabled = true,
               sendButtonEnabled = true,
               nextSendGrpInv = false,
