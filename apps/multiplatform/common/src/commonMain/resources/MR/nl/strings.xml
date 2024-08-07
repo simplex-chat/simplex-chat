@@ -425,7 +425,7 @@
     <string name="how_to_use_simplex_chat">Hoe te gebruiken</string>
     <string name="markdown_help">Markdown hulp</string>
     <string name="markdown_in_messages">Markdown in berichten</string>
-    <string name="network_settings_title">Netwerk instellingen</string>
+    <string name="network_settings_title">Geavanceerde instellingen</string>
     <string name="how_to_use_markdown">Markdown gebruiken</string>
     <string name="italic_text">cursief</string>
     <string name="how_it_works">Hoe het werkt</string>
@@ -646,7 +646,7 @@
     <string name="icon_descr_sent_msg_status_sent">verstuurd</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">ongeoorloofd verzenden</string>
     <string name="icon_descr_received_msg_status_unread">Ongelezen</string>
-    <string name="tap_to_start_new_chat">Tik om een nieuw gesprek te starten</string>
+    <string name="tap_to_start_new_chat">Tik hier om een nieuw gesprek te starten</string>
     <string name="this_text_is_available_in_settings">Deze tekst is beschikbaar in instellingen</string>
     <string name="welcome">Welkom!</string>
     <string name="group_preview_you_are_invited">je bent uitgenodigd voor de groep</string>
@@ -786,8 +786,8 @@
     <string name="unknown_error">Onbekende fout</string>
     <string name="wrong_passphrase_title">Verkeerd wachtwoord!</string>
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">U bent uitgenodigd voor de groep. Word lid om in contact te komen met de groepsleden.</string>
-    <string name="group_invitation_tap_to_join">Tik om lid te worden</string>
-    <string name="group_invitation_tap_to_join_incognito">Tik om incognito lid te worden</string>
+    <string name="group_invitation_tap_to_join">Tik hier om lid te worden</string>
+    <string name="group_invitation_tap_to_join_incognito">Tik hier om incognito lid te worden</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Je bent lid geworden van deze groep. Verbinding maken met uitnodigend lid.</string>
     <string name="you_sent_group_invitation">Je hebt een groep uitnodiging verzonden</string>
     <string name="snd_group_event_user_left">jij bent vertrokken</string>
@@ -981,7 +981,7 @@
     <string name="v4_6_group_welcome_message_descr">Stel het getoonde bericht in voor nieuwe leden!</string>
     <string name="save_welcome_message_question">Welkom bericht opslaan?</string>
     <string name="v4_6_audio_video_calls_descr">Ondersteuning voor bluetooth en andere verbeteringen.</string>
-    <string name="tap_to_activate_profile">Tik om profiel te activeren.</string>
+    <string name="tap_to_activate_profile">Tik hier om profiel te activeren.</string>
     <string name="v4_6_chinese_spanish_interface_descr">Dank aan de gebruikers – draag bij via Weblate!</string>
     <string name="you_can_hide_or_mute_user_profile">U kunt een gebruikers profiel verbergen of dempen - houd het vast voor het menu.</string>
     <string name="user_unhide">zichtbaar maken</string>
@@ -1237,7 +1237,7 @@
 \n- aangepaste tijd om te verdwijnen.
 \n- bewerkingsgeschiedenis.</string>
     <string name="item_info_no_text">geen tekst</string>
-    <string name="non_fatal_errors_occured_during_import">Er zijn enkele niet-fatale fouten opgetreden tijdens het importeren - mogelijk ziet u Chatconsole voor meer informatie.</string>
+    <string name="non_fatal_errors_occured_during_import">Er zijn enkele niet-fatale fouten opgetreden tijdens het importeren:</string>
     <string name="shutdown_alert_question">Afsluiten\?</string>
     <string name="settings_section_title_app">APP</string>
     <string name="settings_restart_app">Herstarten</string>
@@ -1409,7 +1409,7 @@
     <string name="group_members_n">%s, %s en %d leden</string>
     <string name="moderated_items_description">%1$d berichten gemodereerd door %2$s</string>
     <string name="connect_plan_connect_to_yourself">Verbinding maken met jezelf?</string>
-    <string name="contact_tap_to_connect">Tik om verbinding te maken</string>
+    <string name="contact_tap_to_connect">Tik hier om verbinding te maken</string>
     <string name="correct_name_to">Juiste naam voor %s?</string>
     <string name="delete_messages__question">%d berichten verwijderen?</string>
     <string name="connect_with_contact_name_question">Verbinding maken met %1$s?</string>
@@ -1542,9 +1542,9 @@
     <string name="or_scan_qr_code">Of scan de QR-code</string>
     <string name="invalid_qr_code">Ongeldige QR-code</string>
     <string name="add_contact_tab">Contact toevoegen</string>
-    <string name="tap_to_scan">Tik om te scannen</string>
+    <string name="tap_to_scan">Tik hier om te scannen</string>
     <string name="keep_invitation_link">Bewaar</string>
-    <string name="tap_to_paste_link">Tik om de link te plakken</string>
+    <string name="tap_to_paste_link">Tik hier om de link te plakken</string>
     <string name="search_or_paste_simplex_link">Zoeken of plak een SimpleX link</string>
     <string name="chat_is_stopped_you_should_transfer_database">De chat is gestopt. Als u deze database al op een ander apparaat heeft gebruikt, moet u deze terugzetten voordat u met chatten begint.</string>
     <string name="start_chat_question">Begin chat?</string>
@@ -1775,7 +1775,7 @@
     <string name="snd_error_auth">Verkeerde sleutel of onbekende verbinding - hoogstwaarschijnlijk is deze verbinding verwijderd.</string>
     <string name="network_smp_proxy_mode_always">Altijd</string>
     <string name="network_smp_proxy_mode_private_routing">Privéroutering</string>
-    <string name="network_smp_proxy_mode_unknown">Onbekende relays</string>
+    <string name="network_smp_proxy_mode_unknown">Onbekende servers</string>
     <string name="network_smp_proxy_mode_never">Nooit</string>
     <string name="network_smp_proxy_mode_unprotected">Onbeschermd</string>
     <string name="network_smp_proxy_mode_always_description">Gebruik altijd privéroutering.</string>
@@ -2001,7 +2001,7 @@
     <string name="confirm_delete_contact_question">Contact verwijderen bevestigen?</string>
     <string name="conversation_deleted">Gesprek verwijderd!</string>
     <string name="delete_without_notification">Verwijderen zonder melding</string>
-    <string name="deleted_chats">Verwijderde chats</string>
+    <string name="deleted_chats">Gearchiveerde contacten</string>
     <string name="cant_call_contact_deleted_alert_text">Contact is verwijderd.</string>
     <string name="cant_call_contact_connecting_wait_alert_text">Er wordt verbinding gemaakt met het contact. Even geduld of controleer het later!</string>
     <string name="cant_send_message_to_member_alert_title">Kan geen bericht sturen naar groepslid</string>
@@ -2018,14 +2018,14 @@
     <string name="info_view_open_button">open</string>
     <string name="paste_link">Plak de link</string>
     <string name="action_button_add_members">Uitnodiging</string>
-    <string name="one_hand_ui">Gebruikersinterface met één hand</string>
+    <string name="one_hand_ui">Bereikbare chat werkbalk</string>
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Vraag uw contactpersoon om oproepen in te schakelen.</string>
     <string name="no_filtered_contacts">Geen gefilterde contacten</string>
     <string name="select_verb">Selecteer</string>
     <string name="selected_chat_items_selected_n">Geselecteerd %d</string>
     <string name="cant_call_member_send_message_alert_text">Stuur een bericht om oproepen mogelijk te maken.</string>
     <string name="info_view_search_button">zoekopdracht</string>
-    <string name="you_can_still_send_messages_to_contact">Je kunt nog steeds berichten sturen naar %1$s vanuit de Verwijderde chats.</string>
+    <string name="you_can_still_send_messages_to_contact">U kunt berichten naar %1$s sturen vanuit gearchiveerde contacten.</string>
     <string name="toolbar_settings">Instellingen</string>
     <string name="moderate_messages_will_be_deleted_warning">De berichten worden voor alle leden verwijderd.</string>
     <string name="moderate_messages_will_be_marked_warning">De berichten worden voor alle leden als gemodereerd gemarkeerd.</string>
@@ -2033,4 +2033,26 @@
     <string name="you_can_still_view_conversation_with_contact">Je kunt nog steeds het gesprek met %1$s bekijken in de lijst met chats.</string>
     <string name="you_need_to_allow_calls">U moet uw contactpersoon toestemming geven om te bellen, zodat hij/zij je kan bellen.</string>
     <string name="contact_list_header_title">Jouw contacten</string>
+    <string name="message_servers">Berichtservers</string>
+    <string name="media_and_file_servers">Media- en bestandsservers</string>
+    <string name="chat_database_exported_title">Chat database geëxporteerd</string>
+    <string name="chat_database_exported_continue">Doorgaan</string>
+    <string name="network_socks_proxy">SOCKS proxy</string>
+    <string name="chat_database_exported_migrate">U kunt de geëxporteerde database migreren.</string>
+    <string name="chat_database_exported_save">U kunt het geëxporteerde archief opslaan.</string>
+    <string name="network_options_save_and_reconnect">Opslaan en opnieuw verbinden</string>
+    <string name="network_option_tcp_connection">TCP verbinding</string>
+    <string name="v6_0_private_routing_descr">Het beschermt uw IP-adres en verbindingen.</string>
+    <string name="v6_0_reachable_chat_toolbar">Bereikbare chat werkbalk 👋</string>
+    <string name="v6_0_reachable_chat_toolbar_descr">Gebruik de app met één hand.</string>
+    <string name="v6_0_your_contacts">Uw contacten op uw manier</string>
+    <string name="v6_0_connection_servers_status">Beheer uw netwerk</string>
+    <string name="v6_0_delete_many_messages">Moderate als een pro ✋</string>
+    <string name="v6_0_connect_faster">Maak sneller verbinding met je vrienden</string>
+    <string name="v6_0_your_contacts_descr">- Zoek contacten bij het starten van een chat.
+\n- Archiveer contacten om later te chatten.</string>
+    <string name="v6_0_connection_servers_status_descr">Verbindings- en serverstatus.</string>
+    <string name="v6_0_delete_many_messages_descr">Verwijder maximaal 20 berichten tegelijk.</string>
+    <string name="v6_0_connect_faster_descr">Zelfs als ze offline zijn.</string>
+    <string name="chat_database_exported_not_all_files">Sommige bestanden zijn niet geëxporteerd</string>
 </resources>
