@@ -392,9 +392,11 @@
         <target>, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- Search contacts when starting chat.&#10;- Archive contacts to chat later." xml:space="preserve">
+      <trans-unit id="- Search contacts when starting chat.&#10;- Archive contacts to chat later." xml:space="preserve" approved="no">
         <source>- Search contacts when starting chat.
 - Archive contacts to chat later.</source>
+        <target state="translated">- Ismerősök keresése a csevegés indításakor.
+- Ismerősök archiválása a későbbi csevegéshez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!&#10;- delivery receipts (up to 20 members).&#10;- faster and more stable." xml:space="preserve">
@@ -753,8 +755,9 @@
         <target>A hívások kezdeményezése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow calls?" xml:space="preserve">
+      <trans-unit id="Allow calls?" xml:space="preserve" approved="no">
         <source>Allow calls?</source>
+        <target state="translated">Hívások engedélyezése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve">
@@ -947,8 +950,9 @@
         <target>Archiválás és feltöltés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archived contacts" xml:space="preserve">
+      <trans-unit id="Archived contacts" xml:space="preserve" approved="no">
         <source>Archived contacts</source>
+        <target state="translated">Archivált ismerősök</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archiving database" xml:space="preserve">
@@ -1141,8 +1145,9 @@
         <target>Hívások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Calls prohibited!" xml:space="preserve">
+      <trans-unit id="Calls prohibited!" xml:space="preserve" approved="no">
         <source>Calls prohibited!</source>
+        <target state="translated">A hívások le vannak tiltva!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Camera not available" xml:space="preserve">
@@ -1150,12 +1155,14 @@
         <target>A kamera nem elérhető</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't call contact" xml:space="preserve">
+      <trans-unit id="Can't call contact" xml:space="preserve" approved="no">
         <source>Can't call contact</source>
+        <target state="translated">Nem lehet felhívni az ismerőst</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't call member" xml:space="preserve">
+      <trans-unit id="Can't call member" xml:space="preserve" approved="no">
         <source>Can't call member</source>
+        <target state="translated">Nem lehet felhívni a tagot</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Can't invite contact!" xml:space="preserve">
@@ -1168,8 +1175,9 @@
         <target>Ismerősök meghívása nem lehetséges!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Can't message member" xml:space="preserve">
+      <trans-unit id="Can't message member" xml:space="preserve" approved="no">
         <source>Can't message member</source>
+        <target state="translated">Nem lehet üzenetet küldeni a tagnak</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Cancel" xml:space="preserve">
@@ -1433,8 +1441,9 @@
         <target>Jelkód megerősítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm contact deletion?" xml:space="preserve">
+      <trans-unit id="Confirm contact deletion?" xml:space="preserve" approved="no">
         <source>Confirm contact deletion?</source>
+        <target state="translated">Biztosan törli az ismerőst?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm database upgrades" xml:space="preserve">
@@ -1492,8 +1501,9 @@
         <target>Kapcsolódás számítógéphez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect to your friends faster" xml:space="preserve">
+      <trans-unit id="Connect to your friends faster" xml:space="preserve" approved="no">
         <source>Connect to your friends faster</source>
+        <target state="translated">Kapcsolódjon gyorsabban az ismerőseihez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to yourself?" xml:space="preserve">
@@ -1570,8 +1580,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Kapcsolódás a kiszolgálóhoz... (hiba: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connecting to contact, please wait or check later!" xml:space="preserve">
+      <trans-unit id="Connecting to contact, please wait or check later!" xml:space="preserve" approved="no">
         <source>Connecting to contact, please wait or check later!</source>
+        <target state="translated">Kapcsolódás az ismerőshöz, várjon vagy ellenőrizze később!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting to desktop" xml:space="preserve">
@@ -1584,8 +1595,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Kapcsolat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection and servers status." xml:space="preserve">
+      <trans-unit id="Connection and servers status." xml:space="preserve" approved="no">
         <source>Connection and servers status.</source>
+        <target state="translated">Kapcsolat és kiszolgálók állapotának megjelenítése.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
@@ -1638,8 +1650,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Létező ismerős</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact deleted!" xml:space="preserve">
+      <trans-unit id="Contact deleted!" xml:space="preserve" approved="no">
         <source>Contact deleted!</source>
+        <target state="translated">Ismerős törölve!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact hidden:" xml:space="preserve">
@@ -1652,8 +1665,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Ismerőse kapcsolódott</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Contact is deleted." xml:space="preserve">
+      <trans-unit id="Contact is deleted." xml:space="preserve" approved="no">
         <source>Contact is deleted.</source>
+        <target state="translated">Törölt ismerős.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact name" xml:space="preserve">
@@ -1666,8 +1680,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Ismerős beállításai</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Contact will be deleted - this cannot be undone!</source>
+        <target state="translated">Az ismerős törlésre fog kerülni - ez a művelet nem vonható vissza!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contacts" xml:space="preserve">
@@ -1685,12 +1700,14 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Folytatás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Control your network" xml:space="preserve">
+      <trans-unit id="Control your network" xml:space="preserve" approved="no">
         <source>Control your network</source>
+        <target state="translated">Vegye kézbe a hálózatát</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conversation deleted!" xml:space="preserve">
+      <trans-unit id="Conversation deleted!" xml:space="preserve" approved="no">
         <source>Conversation deleted!</source>
+        <target state="translated">Beszélgetés törölve!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Copy" xml:space="preserve">
@@ -2031,8 +2048,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Ismerős törlése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete contact?" xml:space="preserve">
+      <trans-unit id="Delete contact?" xml:space="preserve" approved="no">
         <source>Delete contact?</source>
+        <target state="translated">Ismerős törlése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete database" xml:space="preserve">
@@ -2140,8 +2158,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Várólista törlése</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Delete up to 20 messages at once." xml:space="preserve">
+      <trans-unit id="Delete up to 20 messages at once." xml:space="preserve" approved="no">
         <source>Delete up to 20 messages at once.</source>
+        <target state="translated">Legfeljebb 20 üzenet törlése egyszerre.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete user profile?" xml:space="preserve">
@@ -2149,8 +2168,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Felhasználói profil törlése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete without notification" xml:space="preserve">
+      <trans-unit id="Delete without notification" xml:space="preserve" approved="no">
         <source>Delete without notification</source>
+        <target state="translated">Törlés értesítés nélkül</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Deleted" xml:space="preserve">
@@ -2168,8 +2188,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Törölve ekkor: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Deleted chats" xml:space="preserve">
+      <trans-unit id="Deleted chats" xml:space="preserve" approved="no">
         <source>Deleted chats</source>
+        <target state="translated">Törölt csevegések</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Deletion errors" xml:space="preserve">
@@ -2242,8 +2263,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Fejlesztés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Developer options" xml:space="preserve">
+      <trans-unit id="Developer options" xml:space="preserve" approved="no">
         <source>Developer options</source>
+        <target state="translated">Fejlesztői beállítások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Developer tools" xml:space="preserve">
@@ -2992,8 +3014,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Akkor is, ha le van tiltva a beszélgetésben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Even when they are offline." xml:space="preserve">
+      <trans-unit id="Even when they are offline." xml:space="preserve" approved="no">
         <source>Even when they are offline.</source>
+        <target state="translated">Még akkor is, ha offline vannak.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Exit without saving" xml:space="preserve">
@@ -3808,8 +3831,9 @@ Hiba: %2$@</target>
 3. A kapcsolat sérült.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="It protects your IP address and connections." xml:space="preserve">
+      <trans-unit id="It protects your IP address and connections." xml:space="preserve" approved="no">
         <source>It protects your IP address and connections.</source>
+        <target state="translated">Védi az IP-címét és a kapcsolatokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="It seems like you are already connected via this link. If it is not the case, there was an error (%@)." xml:space="preserve">
@@ -3874,8 +3898,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Megtart</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Keep conversation" xml:space="preserve">
+      <trans-unit id="Keep conversation" xml:space="preserve" approved="no">
         <source>Keep conversation</source>
+        <target state="translated">Beszélgetés megtartása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keep the app open to use it from desktop" xml:space="preserve">
@@ -4278,8 +4303,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Moderálás</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Moderate like a pro ✋" xml:space="preserve">
+      <trans-unit id="Moderate like a pro ✋" xml:space="preserve" approved="no">
         <source>Moderate like a pro ✋</source>
+        <target state="translated">Moderáljon úgy, mint egy profi ✋</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Moderated at" xml:space="preserve">
@@ -4312,9 +4338,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Több csevegőprofil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Mute" xml:space="preserve">
+      <trans-unit id="Mute" xml:space="preserve" approved="no">
         <source>Mute</source>
-        <target>Elnémítás</target>
+        <target state="translated">Némítás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Muted when inactive!" xml:space="preserve">
@@ -4357,8 +4383,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Hálózat állapota</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New Chat" xml:space="preserve">
+      <trans-unit id="New Chat" xml:space="preserve" approved="no">
         <source>New Chat</source>
+        <target state="translated">Új csevegés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New Passcode" xml:space="preserve">
@@ -4540,8 +4567,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Régi adatbázis archívum</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="One-hand UI" xml:space="preserve">
+      <trans-unit id="One-hand UI" xml:space="preserve" approved="no">
         <source>One-hand UI</source>
+        <target state="translated">Egykezes UI</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve">
@@ -4573,8 +4601,9 @@ VPN engedélyezése szükséges.</target>
         <target>Csak a klienseszközök tárolják a felhasználói profilokat, névjegyeket, csoportokat és a **2 rétegű végponttól-végpontig titkosítással** küldött üzeneteket.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only delete conversation" xml:space="preserve">
+      <trans-unit id="Only delete conversation" xml:space="preserve" approved="no">
         <source>Only delete conversation</source>
+        <target state="translated">Csak a beszélgetés törlése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
@@ -4812,8 +4841,9 @@ VPN engedélyezése szükséges.</target>
         <target>Kép a képben hívások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please ask your contact to enable calls." xml:space="preserve">
+      <trans-unit id="Please ask your contact to enable calls." xml:space="preserve" approved="no">
         <source>Please ask your contact to enable calls.</source>
+        <target state="translated">Kérje meg az ismerősét, hogy engedélyezze a hívásokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable sending voice messages." xml:space="preserve">
@@ -5117,8 +5147,9 @@ Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.<
         <target>Értékelje az alkalmazást</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reachable chat toolbar 👋" xml:space="preserve">
+      <trans-unit id="Reachable chat toolbar 👋" xml:space="preserve" approved="no">
         <source>Reachable chat toolbar 👋</source>
+        <target state="translated">Elérhető csevegő eszköztár 👋</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="React…" xml:space="preserve">
@@ -5756,8 +5787,9 @@ Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.<
         <target>Élő üzenet küldése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send message to enable calls." xml:space="preserve">
+      <trans-unit id="Send message to enable calls." xml:space="preserve" approved="no">
         <source>Send message to enable calls.</source>
+        <target state="translated">Üzenet küldése a hívások engedélyezéséhez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send messages directly when IP address is protected and your or destination server does not support private routing." xml:space="preserve">
@@ -7026,8 +7058,9 @@ A kapcsolódáshoz kérje meg ismerősét, hogy hozzon létre egy másik kapcsol
         <target>Használja az alkalmazást hívás közben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use the app with one hand." xml:space="preserve">
+      <trans-unit id="Use the app with one hand." xml:space="preserve" approved="no">
         <source>Use the app with one hand.</source>
+        <target state="translated">Használja az alkalmazást egy kézzel.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="User profile" xml:space="preserve">
@@ -7422,8 +7455,9 @@ Csatlakozási kérés megismétlése?</target>
         <target>Mostantól küldhet üzeneteket %@ számára</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="You can send messages to %@ from Archived contacts." xml:space="preserve">
+      <trans-unit id="You can send messages to %@ from Archived contacts." xml:space="preserve" approved="no">
         <source>You can send messages to %@ from Archived contacts.</source>
+        <target state="translated">Az „Archivált ismerősökből” továbbra is küldhet üzeneteket neki: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve">
@@ -7451,8 +7485,9 @@ Csatlakozási kérés megismétlése?</target>
         <target>A csevegést az alkalmazás Beállítások / Adatbázis menü segítségével vagy az alkalmazás újraindításával indíthatja el</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can still view conversation with %@ in the list of chats." xml:space="preserve">
+      <trans-unit id="You can still view conversation with %@ in the list of chats." xml:space="preserve" approved="no">
         <source>You can still view conversation with %@ in the list of chats.</source>
+        <target state="translated">A(z) %@ nevű ismerősével folytatott beszélgetéseit továbbra is megtekintheti a csevegések listájában.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve">
@@ -7532,8 +7567,9 @@ Kapcsolódási kérés megismétlése?</target>
         <target>A csevegési adatbázis legfrissebb verzióját CSAK egy eszközön kell használnia, ellenkező esetben előfordulhat, hogy az üzeneteket nem fogja megkapni valamennyi ismerőstől.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You need to allow your contact to call to be able to call them." xml:space="preserve">
+      <trans-unit id="You need to allow your contact to call to be able to call them." xml:space="preserve" approved="no">
         <source>You need to allow your contact to call to be able to call them.</source>
+        <target state="translated">Engedélyeznie kell a hívásokat az ismerőse számára, hogy fel tudják hívni egymást.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You need to allow your contact to send voice messages to be able to send them." xml:space="preserve">
@@ -7666,8 +7702,9 @@ Kapcsolódási kérés megismétlése?</target>
         <target>Az ismerősei továbbra is kapcsolódva maradnak.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contacts your way" xml:space="preserve">
+      <trans-unit id="Your contacts your way" xml:space="preserve" approved="no">
         <source>Your contacts your way</source>
+        <target state="translated">Az ön ismerősei az ön szabályai</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve">
@@ -7847,8 +7884,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>félkövér</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="call" xml:space="preserve">
+      <trans-unit id="call" xml:space="preserve" approved="no">
         <source>call</source>
+        <target state="translated">hívás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="call error" xml:space="preserve">
@@ -8221,8 +8259,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>meghívás a(z) %@ csoportba</target>
         <note>group name</note>
       </trans-unit>
-      <trans-unit id="invite" xml:space="preserve">
+      <trans-unit id="invite" xml:space="preserve" approved="no">
         <source>invite</source>
+        <target state="translated">meghívás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="invited" xml:space="preserve">
@@ -8280,8 +8319,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>kapcsolódott</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="message" xml:space="preserve">
+      <trans-unit id="message" xml:space="preserve" approved="no">
         <source>message</source>
+        <target state="translated">üzenet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="message received" xml:space="preserve">
@@ -8314,8 +8354,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>hónap</target>
         <note>time unit</note>
       </trans-unit>
-      <trans-unit id="mute" xml:space="preserve">
+      <trans-unit id="mute" xml:space="preserve" approved="no">
         <source>mute</source>
+        <target state="translated">némítás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="never" xml:space="preserve">
@@ -8450,8 +8491,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>mentve innen: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="search" xml:space="preserve">
+      <trans-unit id="search" xml:space="preserve" approved="no">
         <source>search</source>
+        <target state="translated">keresés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="sec" xml:space="preserve">
@@ -8538,8 +8580,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>ismeretlen státusz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="unmute" xml:space="preserve">
+      <trans-unit id="unmute" xml:space="preserve" approved="no">
         <source>unmute</source>
+        <target state="translated">némítás feloldása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="unprotected" xml:space="preserve">
@@ -8587,8 +8630,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>átjátszón keresztül</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="video" xml:space="preserve">
+      <trans-unit id="video" xml:space="preserve" approved="no">
         <source>video</source>
+        <target state="translated">videó</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="video call (not e2e encrypted)" xml:space="preserve">
