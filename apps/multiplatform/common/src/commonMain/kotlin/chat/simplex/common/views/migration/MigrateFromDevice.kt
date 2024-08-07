@@ -516,8 +516,11 @@ suspend fun initTemporaryDatabase(tempDatabaseFile: File, netCfg: NetCfg): Pair<
   try {
     if (ctrl != null) {
       val user = startChatWithTemporaryDatabase(ctrl, netCfg)
-      return if (user != null) ctrl to user else null
+      if (user != null) return ctrl to user
+      chatCloseStore(ctrl)
     }
+    File(tempDatabaseFile.absolutePath + "_chat.db").delete()
+    File(tempDatabaseFile.absolutePath + "_agent.db").delete()
   } catch (e: Throwable) {
     Log.e(TAG, "Error while starting chat in temporary database: ${e.stackTraceToString()}")
   }
