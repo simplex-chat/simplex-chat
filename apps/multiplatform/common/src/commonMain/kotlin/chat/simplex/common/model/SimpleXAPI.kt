@@ -5762,7 +5762,7 @@ sealed class DatabaseError {
 @Serializable
 sealed class SQLiteError {
   @Serializable @SerialName("errorNotADatabase") object ErrorNotADatabase: SQLiteError()
-  @Serializable @SerialName("error") class Error(val data: String): SQLiteError()
+  @Serializable @SerialName("error") class Error(val dbError: String): SQLiteError()
 }
 
 @Serializable
