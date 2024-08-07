@@ -31,8 +31,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
@@ -545,20 +544,29 @@ fun ChatInfoLayout(
 
     SectionSpacer()
 
-    Row(
-      Modifier
-        .fillMaxWidth()
-        .padding(horizontal = DEFAULT_PADDING),
-      horizontalArrangement = Arrangement.Center,
-      verticalAlignment = Alignment.CenterVertically
+    BoxWithConstraints(
+      modifier = Modifier.fillMaxWidth()
     ) {
-      SearchButton(chat, contact, close, onSearchClicked)
-      Spacer(Modifier.weight(1f))
-      AudioCallButton(chat, contact)
-      Spacer(Modifier.weight(1f))
-      VideoButton(chat, contact)
-      Spacer(Modifier.weight(1f))
-      MuteButton(chat, contact)
+      val computedPadding = (maxWidth - INFO_VIEW_BUTTON_SIZE * 4) / 5
+      val padding = min(computedPadding, INFO_VIEW_BUTTONS_MAX_PADDING)
+
+      Row(
+        Modifier
+          .fillMaxWidth()
+          .padding(horizontal = DEFAULT_PADDING),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        Spacer(Modifier.weight(1f))
+        SearchButton(chat, contact, close, onSearchClicked)
+        Spacer(Modifier.width(padding))
+        AudioCallButton(chat, contact)
+        Spacer(Modifier.width(padding))
+        VideoButton(chat, contact)
+        Spacer(Modifier.width(padding))
+        MuteButton(chat, contact)
+        Spacer(Modifier.weight(1f))
+      }
     }
 
     SectionSpacer()
@@ -907,9 +915,8 @@ private fun showCallsProhibitedAlert() {
   )
 }
 
-// for ChatInfoView (it has most buttons - 4) we use Spacer(Modifier.weight(1f)) to fit,
-// for GroupChat And GroupMemberInfoViews (2 to 3 buttons) we use this as approximately equal to spacing in ChatInfoView
-val INFO_VIEW_BUTTONS_PADDING = 36.dp
+val INFO_VIEW_BUTTONS_MAX_PADDING = 36.dp
+val INFO_VIEW_BUTTON_SIZE = 56.dp
 
 @Composable
 fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, disabledLook: Boolean, onClick: () -> Unit) {
@@ -923,11 +930,12 @@ fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, disabl
     ) {
       Box(
         modifier = Modifier
+          .size(INFO_VIEW_BUTTON_SIZE)
           .background(
             if (disabledLook) MaterialTheme.colors.secondaryVariant else MaterialTheme.colors.primary,
             shape = CircleShape
-          )
-          .padding(16.dp)
+          ),
+        contentAlignment = Alignment.Center
       ) {
         Icon(
           icon,
@@ -939,7 +947,7 @@ fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, disabl
     }
     Text(
       title.capitalize(Locale.current),
-      style = MaterialTheme.typography.subtitle2.copy(fontWeight = FontWeight.Normal),
+      style = MaterialTheme.typography.subtitle2.copy(fontWeight = FontWeight.Normal, fontSize = 13.sp),
       color = MaterialTheme.colors.secondary,
       modifier = Modifier.padding(top = DEFAULT_SPACE_AFTER_ICON)
     )

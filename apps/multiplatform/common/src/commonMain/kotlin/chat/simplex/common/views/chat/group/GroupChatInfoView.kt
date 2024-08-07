@@ -23,8 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
@@ -278,20 +277,29 @@ fun GroupChatInfoLayout(
       }
       SectionSpacer()
 
-      Row(
-        Modifier
-          .fillMaxWidth()
-          .padding(horizontal = DEFAULT_PADDING),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
+      BoxWithConstraints(
+        modifier = Modifier.fillMaxWidth()
       ) {
-        SearchButton(chat, groupInfo, close, onSearchClicked)
-        if (groupInfo.canAddMembers) {
-          Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
-          AddGroupMembersButton(chat, groupInfo)
+        val computedPadding = (maxWidth - INFO_VIEW_BUTTON_SIZE * 4) / 5
+        val padding = min(computedPadding, INFO_VIEW_BUTTONS_MAX_PADDING)
+
+        Row(
+          Modifier
+            .fillMaxWidth()
+            .padding(horizontal = DEFAULT_PADDING),
+          horizontalArrangement = Arrangement.Center,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Spacer(Modifier.weight(1f))
+          SearchButton(chat, groupInfo, close, onSearchClicked)
+          if (groupInfo.canAddMembers) {
+            Spacer(Modifier.width(padding))
+            AddGroupMembersButton(chat, groupInfo)
+          }
+          Spacer(Modifier.width(padding))
+          MuteButton(chat, groupInfo)
+          Spacer(Modifier.weight(1f))
         }
-        Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
-        MuteButton(chat, groupInfo)
       }
 
       SectionSpacer()
