@@ -228,6 +228,16 @@ class AppPreferences {
 
   val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, appPlatform.isAndroid)
 
+  val hintPreferences: List<Pair<SharedPreference<Boolean>, Boolean>> = listOf(
+    laNoticeShown to false,
+    //      SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN to false,
+    liveMessageAlertShown to false,
+    showHiddenProfilesNotice to true,
+    showMuteProfileAlert to true,
+    showDeleteConversationNotice to true,
+    showDeleteContactNotice to true,
+  )
+
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
       get = fun() = settings.getInt(prefName, default),
@@ -521,7 +531,10 @@ object ChatController {
   suspend fun startChatWithTemporaryDatabase(ctrl: ChatCtrl, netCfg: NetCfg): User? {
     Log.d(TAG, "startChatWithTemporaryDatabase")
     val migrationActiveUser = apiGetActiveUser(null, ctrl) ?: apiCreateActiveUser(null, Profile(displayName = "Temp", fullName = ""), ctrl = ctrl)
-    apiSetNetworkConfig(netCfg, ctrl)
+    if (!apiSetNetworkConfig(netCfg, ctrl)) {
+      Log.e(TAG, "Error setting network config, stopping migration")
+      return null
+    }
     apiSetAppFilePaths(
       getMigrationTempFilesDirectory().absolutePath,
       getMigrationTempFilesDirectory().absolutePath,
@@ -5761,7 +5774,7 @@ sealed class DatabaseError {
 @Serializable
 sealed class SQLiteError {
   @Serializable @SerialName("errorNotADatabase") object ErrorNotADatabase: SQLiteError()
-  @Serializable @SerialName("error") class Error(val error: String): SQLiteError()
+  @Serializable @SerialName("error") class Error(val dbError: String): SQLiteError()
 }
 
 @Serializable
