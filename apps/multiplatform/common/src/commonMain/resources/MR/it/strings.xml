@@ -2057,4 +2057,5 @@
     <string name="v6_0_connection_servers_status_descr">Stato di connessione e server.</string>
     <string name="v6_0_private_routing_descr">Protegge il tuo indirizzo IP e le connessioni.</string>
     <string name="network_options_save_and_reconnect">Salva e riconnetti</string>
+    <string name="reset_all_hints">Ripristina tutti i suggerimenti</string>
 </resources>
