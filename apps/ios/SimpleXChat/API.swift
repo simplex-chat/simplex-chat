@@ -314,6 +314,7 @@ public enum MigrationConfirmation: String {
     case yesUp
     case yesUpDown
     case error
+    case skip
 }
 
 public func defaultMigrationConfirmation() -> MigrationConfirmation {
