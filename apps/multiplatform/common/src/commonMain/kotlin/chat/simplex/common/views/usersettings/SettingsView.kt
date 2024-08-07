@@ -330,6 +330,31 @@ fun ChatLockItem(
   }
 }
 
+@Composable fun ResetHintsItem(unchangedHints: MutableState<Boolean>) {
+  SectionItemView({
+    resetHintPreferences()
+    unchangedHints.value = true
+  }, disabled = unchangedHints.value) {
+    Icon(
+      painter = painterResource(MR.images.ic_lightbulb),
+      contentDescription = "Lightbulb",
+      tint = MaterialTheme.colors.secondary,
+    )
+    TextIconSpaced()
+    Text(generalGetString(MR.strings.reset_all_hints), color = if (unchangedHints.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+  }
+}
+
+private fun resetHintPreferences() {
+  for ((pref, def) in appPreferences.hintPreferences) {
+    pref.set(def)
+  }
+}
+
+fun unchangedHintPreferences(): Boolean = appPreferences.hintPreferences.all { (pref, def) ->
+  pref.state.value == def
+}
+
 @Composable
 fun AppVersionItem(showVersion: () -> Unit) {
   SectionItemViewWithIcon(showVersion) { AppVersionText() }

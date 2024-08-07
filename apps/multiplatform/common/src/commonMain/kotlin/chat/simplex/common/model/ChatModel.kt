@@ -19,6 +19,8 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.internal.ChannelFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.*
@@ -301,9 +303,7 @@ object ChatModel {
           else
             chat.chatStats
         )
-        if (i > 0) {
-          chats.add(index = 0, chats.removeAt(i))
-        }
+        popChatCollector.addChat(chat.remoteHostId, chat.id)
       } else {
         addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
       }
@@ -418,6 +418,32 @@ object ChatModel {
       if (chatId.value == cInfo.id) {
         chatItemStatuses.clear()
         chatItems.clear()
+      }
+    }
+
+    private val popChatCollector = PopChatCollector()
+
+    class PopChatCollector {
+      private val subject = MutableSharedFlow<Unit>()
+
+      init {
+        withLongRunningApi {
+          subject
+            .throttleLatest(2000)
+            .collect {
+              withChats {
+                chats.replaceAll(chats.value.sortedByDescending { it.popTs })
+              }
+            }
+        }
+      }
+
+      suspend fun addChat(remoteHostId: Long?, chatId: ChatId) {
+        val index = getChatIndex(remoteHostId, chatId)
+        if (index >= 0) {
+          chats.value[index].popTs = Clock.System.now()
+          subject.emit(Unit)
+        }
       }
     }
 
@@ -847,6 +873,9 @@ data class Chat(
   val chatItems: List<ChatItem>,
   val chatStats: ChatStats = ChatStats()
 ) {
+  @Transient
+  var popTs: Instant? = null
+
   val nextSendGrpInv: Boolean
     get() = when (chatInfo) {
       is ChatInfo.Direct -> chatInfo.contact.nextSendGrpInv

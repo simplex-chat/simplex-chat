@@ -1933,7 +1933,7 @@ public enum DatabaseError: Decodable, Hashable {
 
 public enum SQLiteError: Decodable, Hashable {
     case errorNotADatabase
-    case error(String)
+    case error(dbError: String)
 }
 
 public enum AgentErrorType: Decodable, Hashable {
