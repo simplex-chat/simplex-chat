@@ -392,9 +392,11 @@
         <target>, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- Search contacts when starting chat.&#10;- Archive contacts to chat later." xml:space="preserve">
+      <trans-unit id="- Search contacts when starting chat.&#10;- Archive contacts to chat later." xml:space="preserve" approved="no">
         <source>- Search contacts when starting chat.
 - Archive contacts to chat later.</source>
+        <target state="translated">- Поиск среди контактов при создании чата.
+- Архивируйте контакты чтобы продолжить переписку.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!&#10;- delivery receipts (up to 20 members).&#10;- faster and more stable." xml:space="preserve">
@@ -557,8 +559,9 @@
         <target>Об адресе SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Accent" xml:space="preserve">
+      <trans-unit id="Accent" xml:space="preserve" approved="no">
         <source>Accent</source>
+        <target state="translated">Акцент</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept" xml:space="preserve">
@@ -582,16 +585,19 @@
         <target>Принять инкогнито</target>
         <note>accept contact request via notification</note>
       </trans-unit>
-      <trans-unit id="Acknowledged" xml:space="preserve">
+      <trans-unit id="Acknowledged" xml:space="preserve" approved="no">
         <source>Acknowledged</source>
+        <target state="translated">Подтверждено</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Acknowledgement errors" xml:space="preserve">
+      <trans-unit id="Acknowledgement errors" xml:space="preserve" approved="no">
         <source>Acknowledgement errors</source>
+        <target state="translated">Ошибки подтверждения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Active connections" xml:space="preserve">
+      <trans-unit id="Active connections" xml:space="preserve" approved="no">
         <source>Active connections</source>
+        <target state="translated">Активные соединения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve">
@@ -634,16 +640,19 @@
         <target>Добавить приветственное сообщение</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Additional accent" xml:space="preserve">
+      <trans-unit id="Additional accent" xml:space="preserve" approved="no">
         <source>Additional accent</source>
+        <target state="translated">Дополнительный акцент</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Additional accent 2" xml:space="preserve">
+      <trans-unit id="Additional accent 2" xml:space="preserve" approved="no">
         <source>Additional accent 2</source>
+        <target state="translated">Дополнительный акцент 2</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Additional secondary" xml:space="preserve">
+      <trans-unit id="Additional secondary" xml:space="preserve" approved="no">
         <source>Additional secondary</source>
+        <target state="translated">Вторичный 2</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Address" xml:space="preserve">
@@ -671,8 +680,9 @@
         <target>Настройки сети</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Advanced settings" xml:space="preserve">
+      <trans-unit id="Advanced settings" xml:space="preserve" approved="no">
         <source>Advanced settings</source>
+        <target state="translated">Расширенные настройки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All app data is deleted." xml:space="preserve">
