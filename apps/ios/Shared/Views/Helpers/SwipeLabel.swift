@@ -28,7 +28,7 @@ struct SwipeLabel: View {
                 ).snapshot(inverted: inverted)
             )
         } else {
-            Label(text, systemImage: systemImage)
+            Label(LocalizedStringKey(text), systemImage: systemImage)
         }
     }
 
