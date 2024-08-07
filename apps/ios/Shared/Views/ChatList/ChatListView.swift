@@ -20,6 +20,7 @@ struct ChatListView: View {
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
+    @State private var scrollToSearchBar = false
 
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
@@ -115,7 +116,7 @@ struct ChatListView: View {
             }
         } else {
             if oneHandUI {
-                content().toolbar { bottomToolbar }
+                content().toolbar { bottomToolbarGroup }
             } else {
                 content().toolbar { topToolbar }
             }
@@ -129,6 +130,21 @@ struct ChatListView: View {
     }
 
     @ToolbarContentBuilder var bottomToolbar: some ToolbarContent {
+        let padding: Double = Self.hasHomeIndicator ? 0 : 14
+        ToolbarItem(placement: .bottomBar) {
+            HStack {
+                leadingToolbarItem.padding(.bottom, padding)
+                Spacer()
+                SubsStatusIndicator().padding(.bottom, padding)
+                Spacer()
+                trailingToolbarItem.padding(.bottom, padding)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { scrollToSearchBar = true }
+        }
+    }
+
+    @ToolbarContentBuilder var bottomToolbarGroup: some ToolbarContent {
         let padding: Double = Self.hasHomeIndicator ? 0 : 14
         ToolbarItemGroup(placement: .bottomBar) {
             leadingToolbarItem.padding(.bottom, padding)
@@ -173,50 +189,56 @@ struct ChatListView: View {
     @ViewBuilder private var chatList: some View {
         let cs = filteredChats()
         ZStack {
-            List {
-                if !chatModel.chats.isEmpty {
-                    ChatListSearchBar(
-                        searchMode: $searchMode,
-                        searchFocussed: $searchFocussed,
-                        searchText: $searchText,
-                        searchShowingSimplexLink: $searchShowingSimplexLink,
-                        searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
-                    )
-                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, oneHandUI ? 8 : 0)
-                }
-                if !oneHandUICardShown {
-                    OneHandUICard()
+            ScrollViewReader { scrollProxy in
+                List {
+                    if !chatModel.chats.isEmpty {
+                        ChatListSearchBar(
+                            searchMode: $searchMode,
+                            searchFocussed: $searchFocussed,
+                            searchText: $searchText,
+                            searchShowingSimplexLink: $searchShowingSimplexLink,
+                            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
+                        )
                         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, oneHandUI ? 8 : 0)
+                        .id("searchBar")
+                    }
+                    if !oneHandUICardShown {
+                        OneHandUICard()
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                    }
+                    ForEach(cs, id: \.viewId) { chat in
+                        ChatListNavLink(chat: chat)
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                            .padding(.trailing, -16)
+                            .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
+                            .listRowBackground(Color.clear)
+                    }
+                    .offset(x: -8)
                 }
-                ForEach(cs, id: \.viewId) { chat in
-                    ChatListNavLink(chat: chat)
-                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                        .padding(.trailing, -16)
-                        .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
-                        .listRowBackground(Color.clear)
+                .listStyle(.plain)
+                .onChange(of: chatModel.chatId) { chId in
+                    if chId == nil, let chatId = chatModel.chatToTop {
+                        chatModel.chatToTop = nil
+                        chatModel.popChat(chatId)
+                    }
+                    stopAudioPlayer()
                 }
-                .offset(x: -8)
-            }
-            .listStyle(.plain)
-            .onChange(of: chatModel.chatId) { chId in
-                if chId == nil, let chatId = chatModel.chatToTop {
-                    chatModel.chatToTop = nil
-                    chatModel.popChat(chatId)
+                .onChange(of: chatModel.currentUser?.userId) { _ in
+                    stopAudioPlayer()
                 }
-                stopAudioPlayer()
+                .onChange(of: scrollToSearchBar) { scrollToSearchBar in
+                    if scrollToSearchBar {
+                        Task { self.scrollToSearchBar = false }
+                        withAnimation { scrollProxy.scrollTo("searchBar") }
+                    }
+                }
             }
-            .onChange(of: chatModel.currentUser?.userId) { _ in
-                stopAudioPlayer()
-            }
-//            .onAppear {
-//                oneHandUICardShown = false
-//            }
             if cs.isEmpty && !chatModel.chats.isEmpty {
                 Text("No filtered chats")
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
