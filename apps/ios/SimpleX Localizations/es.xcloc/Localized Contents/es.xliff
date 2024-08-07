@@ -3081,9 +3081,9 @@ This is your own one-time link!</source>
         <target>El archivo se recibirá cuando el contacto termine de subirlo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="File will be received when your contact is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>File will be received when your contact is online, please wait or check later!</source>
-        <target>El archivo se recibirá cuando el contacto esté en línea, ¡por favor espera o compruébalo más tarde!</target>
+        <target state="translated">El archivo se recibirá cuando el contacto esté en línea, ¡por favor espera o revisa más tarde!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="File: %@" xml:space="preserve">
@@ -3527,9 +3527,9 @@ Error: %2$@</target>
         <target>La imagen se recibirá cuando el contacto termine de subirla.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Image will be received when your contact is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="Image will be received when your contact is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>Image will be received when your contact is online, please wait or check later!</source>
-        <target>La imagen se recibirá cuando el contacto esté en línea, ¡por favor espera o compruébalo más tarde!</target>
+        <target state="translated">La imagen se recibirá cuando el contacto esté en línea, ¡por favor espera o revisa más tarde!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Immediately" xml:space="preserve">
@@ -7072,9 +7072,9 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>El video se recibirá cuando el contacto termine de subirlo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>Video will be received when your contact is online, please wait or check later!</source>
-        <target>El vídeo se recibirá cuando el contacto esté en línea, por favor espera o compruébalo más tarde.</target>
+        <target state="translated">El vídeo se recibirá cuando el contacto esté en línea, por favor espera o revisa más tarde.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Videos and files up to 1gb" xml:space="preserve">
@@ -7521,24 +7521,24 @@ Repeat connection request?</source>
         <target>Has enviado una invitación de grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will be connected to group when the group host's device is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="You will be connected to group when the group host's device is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>You will be connected to group when the group host's device is online, please wait or check later!</source>
-        <target>Te conectarás al grupo cuando el dispositivo del anfitrión esté en línea, por favor espera o compruébalo más tarde.</target>
+        <target state="translated">Te conectarás al grupo cuando el dispositivo del anfitrión esté en línea, por favor espera o revisa más tarde.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will be connected when group link host's device is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="You will be connected when group link host's device is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>You will be connected when group link host's device is online, please wait or check later!</source>
-        <target>Te conectarás cuando el dispositivo propietario del grupo esté en línea, por favor espera o compruébalo más tarde.</target>
+        <target state="translated">Te conectarás cuando el dispositivo propietario del grupo esté en línea, por favor espera o revisa más tarde.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will be connected when your connection request is accepted, please wait or check later!" xml:space="preserve">
+      <trans-unit id="You will be connected when your connection request is accepted, please wait or check later!" xml:space="preserve" approved="no">
         <source>You will be connected when your connection request is accepted, please wait or check later!</source>
-        <target>Te conectarás cuando tu solicitud se acepte, por favor espera o compruébalo más tarde.</target>
+        <target state="translated">Te conectarás cuando tu solicitud se acepte, por favor espera o revisa más tarde.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will be connected when your contact's device is online, please wait or check later!" xml:space="preserve">
+      <trans-unit id="You will be connected when your contact's device is online, please wait or check later!" xml:space="preserve" approved="no">
         <source>You will be connected when your contact's device is online, please wait or check later!</source>
-        <target>Te conectarás cuando el dispositivo del contacto esté en línea, por favor espera o compruébalo más tarde.</target>
+        <target state="translated">Te conectarás cuando el dispositivo del contacto esté en línea, por favor espera o revisa más tarde.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be required to authenticate when you start or resume the app after 30 seconds in background." xml:space="preserve">
