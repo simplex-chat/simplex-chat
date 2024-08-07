@@ -116,7 +116,7 @@ struct ChatListView: View {
             }
         } else {
             if oneHandUI {
-                content().toolbar { bottomToolbar }
+                content().toolbar { bottomToolbarGroup }
             } else {
                 content().toolbar { topToolbar }
             }
@@ -131,7 +131,7 @@ struct ChatListView: View {
 
     @ToolbarContentBuilder var bottomToolbar: some ToolbarContent {
         let padding: Double = Self.hasHomeIndicator ? 0 : 14
-        ToolbarItemGroup(placement: .bottomBar) {
+        ToolbarItem(placement: .bottomBar) {
             HStack {
                 leadingToolbarItem.padding(.bottom, padding)
                 Spacer()
@@ -141,6 +141,17 @@ struct ChatListView: View {
             }
             .contentShape(Rectangle())
             .onTapGesture { scrollToSearchBar = true }
+        }
+    }
+
+    @ToolbarContentBuilder var bottomToolbarGroup: some ToolbarContent {
+        let padding: Double = Self.hasHomeIndicator ? 0 : 14
+        ToolbarItemGroup(placement: .bottomBar) {
+            leadingToolbarItem.padding(.bottom, padding)
+            Spacer()
+            SubsStatusIndicator().padding(.bottom, padding)
+            Spacer()
+            trailingToolbarItem.padding(.bottom, padding)
         }
     }
 
