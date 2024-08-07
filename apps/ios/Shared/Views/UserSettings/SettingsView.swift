@@ -120,6 +120,18 @@ let appDefaults: [String: Any] = [
     DEFAULT_CURRENT_THEME_IDS: "{}"
 ]
 
+// only Bool defaults can be used here,
+// or hintDefaultsUnchanged and resetHintDefaults need to be changed
+let hintDefaults = [
+    DEFAULT_LA_NOTICE_SHOWN,
+    DEFAULT_ONE_HAND_UI_CARD_SHOWN,
+    DEFAULT_LIVE_MESSAGE_ALERT_SHOWN,
+    DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE,
+    DEFAULT_SHOW_MUTE_PROFILE_ALERT,
+    DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE,
+    DEFAULT_SHOW_DELETE_CONTACT_NOTICE
+]
+
 // not used anymore
 enum ConnectViaLinkTab: String {
     case scan

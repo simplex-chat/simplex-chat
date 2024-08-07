@@ -227,6 +227,16 @@ class AppPreferences {
 
   val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, appPlatform.isAndroid)
 
+  val hintPreferences: List<Pair<SharedPreference<Boolean>, Boolean>> = listOf(
+    laNoticeShown to false,
+    //      SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN to false,
+    liveMessageAlertShown to false,
+    showHiddenProfilesNotice to true,
+    showMuteProfileAlert to true,
+    showDeleteConversationNotice to true,
+    showDeleteContactNotice to true,
+  )
+
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
       get = fun() = settings.getInt(prefName, default),
