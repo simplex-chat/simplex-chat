@@ -64,47 +64,51 @@ struct ChatView: View {
 
     private var viewBody: some View {
         let cInfo = chat.chatInfo
-        return VStack(spacing: 0) {
+        return ZStack(alignment: .bottomTrailing) {
+            let wallpaperImage = theme.wallpaper.type.image
+            let wallpaperType = theme.wallpaper.type
+            let backgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(theme.base, theme.colors.background)
+            let tintColor = theme.wallpaper.tint ?? wallpaperType.defaultTintColor(theme.base)
+            chatItemsList()
+                .if(wallpaperImage != nil) { view in
+                    view.modifier(
+                        ChatViewBackground(image: wallpaperImage!, imageType: wallpaperType, background: backgroundColor, tint: tintColor)
+                    )
+                }
+            floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
+        }
+        .safeAreaInset(edge: .top) {
             if searchMode {
                 searchToolbar()
                 Divider()
             }
-            ZStack(alignment: .bottomTrailing) {
-                let wallpaperImage = theme.wallpaper.type.image
-                let wallpaperType = theme.wallpaper.type
-                let backgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(theme.base, theme.colors.background)
-                let tintColor = theme.wallpaper.tint ?? wallpaperType.defaultTintColor(theme.base)
-                chatItemsList()
-                    .if(wallpaperImage != nil) { view in
-                        view.modifier(
-                            ChatViewBackground(image: wallpaperImage!, imageType: wallpaperType, background: backgroundColor, tint: tintColor)
-                        )
-                }
-                floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
-            }
-            connectingText()
-            if selectedChatItems == nil {
-                ComposeView(
-                    chat: chat,
-                    composeState: $composeState,
-                    keyboardVisible: $keyboardVisible
-                )
-                .disabled(!cInfo.sendMsgEnabled)
-            } else {
-                SelectedItemsBottomToolbar(
-                    chatItems: ItemsModel.shared.reversedChatItems,
-                    selectedChatItems: $selectedChatItems,
-                    chatInfo: chat.chatInfo,
-                    deleteItems: { forAll in
-                        allowToDeleteSelectedMessagesForAll = forAll
-                        showDeleteSelectedMessages = true
-                    },
-                    moderateItems: {
-                        if case let .group(groupInfo) = chat.chatInfo {
-                            showModerateSelectedMessagesAlert(groupInfo)
+        }
+        .safeAreaInset(edge: .bottom) {
+            VStack(spacing: 0) {
+                connectingText()
+                if selectedChatItems == nil {
+                    ComposeView(
+                        chat: chat,
+                        composeState: $composeState,
+                        keyboardVisible: $keyboardVisible
+                    )
+                    .disabled(!cInfo.sendMsgEnabled)
+                } else {
+                    SelectedItemsBottomToolbar(
+                        chatItems: ItemsModel.shared.reversedChatItems,
+                        selectedChatItems: $selectedChatItems,
+                        chatInfo: chat.chatInfo,
+                        deleteItems: { forAll in
+                            allowToDeleteSelectedMessagesForAll = forAll
+                            showDeleteSelectedMessages = true
+                        },
+                        moderateItems: {
+                            if case let .group(groupInfo) = chat.chatInfo {
+                                showModerateSelectedMessagesAlert(groupInfo)
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         }
         .navigationTitle(cInfo.chatViewName)
@@ -397,20 +401,22 @@ struct ChatView: View {
             } loadPage: {
                 loadChatItems(cInfo)
             }
-                .onTapGesture { hideKeyboard() }
-                .onChange(of: searchText) { _ in
-                    loadChat(chat: chat, search: searchText)
+            // TODO: Needs manual keyboard handling??
+            .ignoresSafeArea(.all)
+            .onTapGesture { hideKeyboard() }
+            .onChange(of: searchText) { _ in
+                loadChat(chat: chat, search: searchText)
+            }
+            .onChange(of: chatModel.chatId) { chatId in
+                if let chatId, let c = chatModel.getChat(chatId) {
+                    chat = c
+                    showChatInfoSheet = false
+                    loadChat(chat: c)
                 }
-                .onChange(of: chatModel.chatId) { chatId in
-                    if let chatId, let c = chatModel.getChat(chatId) {
-                        chat = c
-                        showChatInfoSheet = false
-                        loadChat(chat: c)
-                    }
-                }
-                .onChange(of: im.reversedChatItems) { _ in
-                    floatingButtonModel.chatItemsChanged()
-                }
+            }
+            .onChange(of: im.reversedChatItems) { _ in
+                floatingButtonModel.chatItemsChanged()
+            }
         }
     }
 

@@ -80,7 +80,7 @@ struct ChatViewBackground: ViewModifier {
                     }
                 case WallpaperType.empty: ()
                 }
-            }
+            }.ignoresSafeArea(.all)
         )
     }
 }
