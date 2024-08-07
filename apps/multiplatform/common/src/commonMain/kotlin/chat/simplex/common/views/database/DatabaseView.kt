@@ -796,7 +796,7 @@ fun PreviewDatabaseLayout() {
       useKeyChain = false,
       chatDbEncrypted = false,
       passphraseSaved = false,
-      initialRandomDBPassphrase = SharedPreference({ true }, {}),
+      initialRandomDBPassphrase = SharedPreference({ true }, {}, true),
       importArchiveLauncher = rememberFileChooserLauncher(true) {},
       chatArchiveName = remember { mutableStateOf("dummy_archive") },
       chatArchiveTime = remember { mutableStateOf(Clock.System.now()) },

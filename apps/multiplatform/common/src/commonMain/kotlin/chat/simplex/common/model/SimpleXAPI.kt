@@ -89,7 +89,8 @@ class AppPreferences {
         CallOnLockScreen.default
       }
     },
-    set = fun(action: CallOnLockScreen) { _callOnLockScreen.set(action.name) }
+    set = fun(action: CallOnLockScreen) { _callOnLockScreen.set(action.name) },
+    default = CallOnLockScreen.default
   )
   val performLA = mkBoolPreference(SHARED_PREFS_PERFORM_LA, false)
   val laMode = mkEnumPreference(SHARED_PREFS_LA_MODE, LAMode.default) { LAMode.values().firstOrNull { it.name == this } }
@@ -109,7 +110,8 @@ class AppPreferences {
         SimplexLinkMode.default
       }
     },
-    set = fun(mode: SimplexLinkMode) { _simplexLinkMode.set(mode.name) }
+    set = fun(mode: SimplexLinkMode) { _simplexLinkMode.set(mode.name) },
+    default = SimplexLinkMode.default
   )
   val privacyShowChatPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS, true)
   val privacySaveLastDraft = mkBoolPreference(SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT, true)
@@ -140,7 +142,8 @@ class AppPreferences {
         TransportSessionMode.default
       }
     },
-    set = fun(mode: TransportSessionMode) { _networkSessionMode.set(mode.name) }
+    set = fun(mode: TransportSessionMode) { _networkSessionMode.set(mode.name) },
+    default = TransportSessionMode.default
   )
   val networkSMPProxyMode = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_MODE, NetCfg.defaults.smpProxyMode.name)
   val networkSMPProxyFallback = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_FALLBACK, NetCfg.defaults.smpProxyFallback.name)
@@ -227,36 +230,51 @@ class AppPreferences {
 
   val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, appPlatform.isAndroid)
 
+  val hintPreferences: List<SharedPreference<Boolean>> = listOf(
+    laNoticeShown,
+    //      SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN to false,
+    liveMessageAlertShown,
+    showHiddenProfilesNotice,
+    showMuteProfileAlert,
+    showDeleteConversationNotice,
+    showDeleteContactNotice,
+  )
+
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
       get = fun() = settings.getInt(prefName, default),
-      set = fun(value) = settings.putInt(prefName, value)
+      set = fun(value) = settings.putInt(prefName, value),
+      default = default
     )
 
   private fun mkLongPreference(prefName: String, default: Long) =
     SharedPreference(
       get = fun() = settings.getLong(prefName, default),
-      set = fun(value) = settings.putLong(prefName, value)
+      set = fun(value) = settings.putLong(prefName, value),
+      default = default
     )
 
   private fun mkFloatPreference(prefName: String, default: Float) =
     SharedPreference(
       get = fun() = settings.getFloat(prefName, default),
-      set = fun(value) = settings.putFloat(prefName, value)
+      set = fun(value) = settings.putFloat(prefName, value),
+      default = default
     )
 
   private fun mkTimeoutPreference(prefName: String, default: Long, proxyDefault: Long): SharedPreference<Long> {
     val d = if (networkUseSocksProxy.get()) proxyDefault else default
     return SharedPreference(
       get = fun() = settings.getLong(prefName, d),
-      set = fun(value) = settings.putLong(prefName, value)
+      set = fun(value) = settings.putLong(prefName, value),
+      default = default
     )
   }
 
   private fun mkBoolPreference(prefName: String, default: Boolean) =
     SharedPreference(
       get = fun() = settings.getBoolean(prefName, default),
-      set = fun(value) = settings.putBoolean(prefName, value)
+      set = fun(value) = settings.putBoolean(prefName, value),
+      default = default
     )
 
   private fun mkStrPreference(prefName: String, default: String?): SharedPreference<String?> =
@@ -270,13 +288,15 @@ class AppPreferences {
           null
         }
       },
-      set = fun(value) = if (value != null) settings.putString(prefName, value) else settings.remove(prefName)
+      set = fun(value) = if (value != null) settings.putString(prefName, value) else settings.remove(prefName),
+      default = default
     )
 
   private fun <T> mkEnumPreference(prefName: String, default: T, construct: String.() -> T?): SharedPreference<T> =
     SharedPreference(
       get = fun() = settings.getString(prefName, default.toString()).construct() ?: default,
-      set = fun(value) = settings.putString(prefName, value.toString())
+      set = fun(value) = settings.putString(prefName, value.toString()),
+      default = default
     )
 
   // LALAL
@@ -291,19 +311,22 @@ class AppPreferences {
           null
         }
       },
-      set = fun(value) = if (value?.toEpochMilliseconds() != null) settings.putString(prefName, value.toEpochMilliseconds().toString()) else settings.remove(prefName)
+      set = fun(value) = if (value?.toEpochMilliseconds() != null) settings.putString(prefName, value.toEpochMilliseconds().toString()) else settings.remove(prefName),
+      default = default
     )
 
   private fun <K, V> mkMapPreference(prefName: String, default: Map<K, V>, encode: (Map<K, V>) -> String, decode: (String) -> Map<K, V>, prefs: Settings = settings): SharedPreference<Map<K,V>> =
     SharedPreference(
       get = fun() = decode(prefs.getString(prefName, encode(default))),
-      set = fun(value) = prefs.putString(prefName, encode(value))
+      set = fun(value) = prefs.putString(prefName, encode(value)),
+      default = default
     )
 
   private fun mkThemeOverridesPreference(): SharedPreference<List<ThemeOverrides>> =
     SharedPreference(
       get = fun() = themeOverridesStore ?: (readThemeOverrides()).also { themeOverridesStore = it },
-      set = fun(value) { if (writeThemeOverrides(value)) { themeOverridesStore = value } }
+      set = fun(value) { if (writeThemeOverrides(value)) { themeOverridesStore = value } },
+      default = listOf()
     )
 
   companion object {
@@ -2807,16 +2830,18 @@ object ChatController {
   }
 }
 
-class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
+class SharedPreference<T>(val get: () -> T, set: (T) -> Unit, default: T) {
   val set: (T) -> Unit
   private val _state: MutableState<T> = mutableStateOf(get())
   val state: State<T> = _state
+  val default: T
 
   init {
     this.set = { value ->
       set(value)
       _state.value = value
     }
+    this.default = default
   }
 }
 

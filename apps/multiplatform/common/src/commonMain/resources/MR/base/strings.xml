@@ -739,6 +739,7 @@
   <string name="xftp_servers_other">Other XFTP servers</string>
   <string name="subscription_percentage">Show percentage</string>
   <string name="install_simplex_chat_for_terminal">Install SimpleX Chat for terminal</string>
+  <string name="reset_all_hints">Reset all hints</string>
   <string name="star_on_github">Star on GitHub</string>
   <string name="contribute">Contribute</string>
   <string name="rate_the_app">Rate the app</string>

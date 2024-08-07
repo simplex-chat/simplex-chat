@@ -266,7 +266,7 @@ private fun ModalData.OnionView(link: String, socksProxy: String?, hostMode: Hos
 
   val networkProxyHostPortPref = SharedPreference(get = { networkProxyHostPort.value }, set = {
     networkProxyHostPort.value = it
-  })
+  }, default = null)
   SectionView(stringResource(MR.strings.network_settings_title).uppercase()) {
     OnionRelatedLayout(
       appPreferences.developerTools.get(),

@@ -179,7 +179,7 @@ fun PreviewAddGroupLayout() {
   SimpleXTheme {
     AddGroupLayout(
       createGroup = { _, _ -> },
-      incognitoPref = SharedPreference({ false }, {}),
+      incognitoPref = SharedPreference({ false }, {}, false),
       close = {},
       rhId = null,
     )
