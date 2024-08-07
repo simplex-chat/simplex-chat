@@ -340,7 +340,7 @@ struct ContactsListSearchBar: View {
             }
             .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
             .foregroundColor(theme.colors.secondary)
-            .background(theme.colors.isLight ? theme.colors.background : theme.colors.secondaryVariant)
+            .background(theme.colors.background)
             .cornerRadius(10.0)
 
             if searchFocussed {
