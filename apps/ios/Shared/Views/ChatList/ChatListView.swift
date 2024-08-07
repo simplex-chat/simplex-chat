@@ -90,7 +90,7 @@ struct ChatListView: View {
         }
         .safeAreaInset(edge: .bottom) {
             if oneHandUI {
-                Divider().padding(.bottom, Self.hasHomeIndicator ? 0 : 16).background(Material.ultraThin)
+                Divider().padding(.bottom, Self.hasHomeIndicator ? 0 : 8).background(Material.ultraThin)
             }
         }
     }
@@ -129,7 +129,7 @@ struct ChatListView: View {
     }
 
     @ToolbarContentBuilder var bottomToolbar: some ToolbarContent {
-        let padding: Double = Self.hasHomeIndicator ? 0 : 32
+        let padding: Double = Self.hasHomeIndicator ? 0 : 14
         ToolbarItemGroup(placement: .bottomBar) {
             leadingToolbarItem.padding(.bottom, padding)
             Spacer()
