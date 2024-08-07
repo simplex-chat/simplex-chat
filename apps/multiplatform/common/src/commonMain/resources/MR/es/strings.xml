@@ -1241,7 +1241,7 @@
     <string name="whats_new_read_more">Conoce más</string>
     <string name="v5_1_japanese_portuguese_interface">Interfaz en japonés y portugués</string>
     <string name="item_info_no_text">sin texto</string>
-    <string name="non_fatal_errors_occured_during_import">Algunos errores no críticos ocurrieron durante la importación - para más detalles puedes ver la consola de Chat.</string>
+    <string name="non_fatal_errors_occured_during_import">Algunos errores no críticos ocurrieron durante la importación:</string>
     <string name="shutdown_alert_question">¿Cerrar\?</string>
     <string name="settings_section_title_app">Aplicación</string>
     <string name="settings_restart_app">Reiniciar</string>
@@ -1774,7 +1774,7 @@
     <string name="snd_error_expired">Problema en la red - el mensaje ha expirado tras muchos intentos de envío.</string>
     <string name="srv_error_version">La versión del servidor es incompatible con la configuración de la red.</string>
     <string name="network_smp_proxy_mode_private_routing">Enrutamiento privado</string>
-    <string name="network_smp_proxy_mode_unknown">Con servidores desconocidos</string>
+    <string name="network_smp_proxy_mode_unknown">Servidores desconocidos</string>
     <string name="network_smp_proxy_mode_never_description">NO usar enrutamiento privado.</string>
     <string name="update_network_smp_proxy_fallback_question">Enrutamiento de mensajes alternativo</string>
     <string name="update_network_smp_proxy_mode_question">Modo de enrutamiento de mensajes</string>
@@ -2019,7 +2019,7 @@
     <string name="only_delete_conversation">Sólo borrar la conversación</string>
     <string name="keep_conversation">Conservar conversación</string>
     <string name="info_view_search_button">buscar</string>
-    <string name="deleted_chats">Contactos archivos</string>
+    <string name="deleted_chats">Contactos archivados</string>
     <string name="message_servers">Servidores de mensajes</string>
     <string name="media_and_file_servers">Servidores de archivos y multimedia</string>
     <string name="network_socks_proxy">SOCKS proxy</string>
@@ -2039,4 +2039,14 @@
     <string name="v6_0_reachable_chat_toolbar">Barra de herramientas accesible 👋</string>
     <string name="v6_0_your_contacts_descr">- Buscar contactos al iniciar el chat.
 \n- Archivar contactos para charlar más tarde.</string>
+    <string name="chat_database_exported_save">Puedes guardar el archivo exportado.</string>
+    <string name="privacy_media_blur_radius_strong">Fuerte</string>
+    <string name="moderate_messages_will_be_deleted_warning">Los mensajes serán eliminados para todos los miembros.</string>
+    <string name="moderate_messages_will_be_marked_warning">Los mensajes serán marcados como moderados para todos los miembros.</string>
+    <string name="info_view_video_button">video</string>
+    <string name="you_can_still_send_messages_to_contact">Puedes enviar mensajes a %1$s desde Contactos archivados</string>
+    <string name="you_can_still_view_conversation_with_contact">Aún puedes ver la conversación con %1$s en la lista de chats.</string>
+    <string name="chat_database_exported_migrate">Puedes migrar la base de datos exportada.</string>
+    <string name="network_option_tcp_connection">Conexión TCP</string>
+    <string name="v6_0_reachable_chat_toolbar_descr">Usa la aplicación con una mano.</string>
 </resources>
