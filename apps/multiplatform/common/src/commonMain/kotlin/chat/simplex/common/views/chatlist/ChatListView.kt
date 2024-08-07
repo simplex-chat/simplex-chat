@@ -76,7 +76,7 @@ fun ToggleChatListCard() {
   Column(
     modifier = Modifier
       .padding(16.dp)
-      .clip(RoundedCornerShape(8.dp))
+      .clip(RoundedCornerShape(18.dp))
   ) {
     Box(
       modifier = Modifier
@@ -88,7 +88,7 @@ fun ToggleChatListCard() {
       ) {
         IconButton(
           onClick = {
-            appPrefs.showOneHandUINotice.set(false)
+            appPrefs.oneHandUICardShown.set(true)
             AlertManager.shared.showAlertMsg(
               title = generalGetString(MR.strings.one_hand_ui),
               text = generalGetString(MR.strings.one_hand_ui_change_instruction),
@@ -113,13 +113,10 @@ fun ToggleChatListCard() {
           Text(stringResource(MR.strings.one_hand_ui_card_title), style = MaterialTheme.typography.h3)
         }
         Row(
-          Modifier.fillMaxWidth().padding(vertical = 13.dp),
+          Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 12.dp),
           verticalAlignment = Alignment.CenterVertically
         ) {
-          Text(
-            stringResource(MR.strings.one_hand_ui),
-            Modifier.weight(10f)
-          )
+          Text(stringResource(MR.strings.one_hand_ui), Modifier.weight(10f), style = MaterialTheme.typography.body1)
 
           Spacer(Modifier.fillMaxWidth().weight(1f))
 
@@ -613,7 +610,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
   var previousScrollOffset by remember { mutableStateOf(0) }
   val keyboardState by getKeyboardState()
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  val showOneHandUINotice = remember { appPrefs.showOneHandUINotice.state }
+  val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
     val currentIndex = listState.firstVisibleItemIndex
@@ -677,7 +674,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
         }
       }
     }
-    if (appPlatform.isAndroid && showOneHandUINotice.value) {
+    if (appPlatform.isAndroid && !oneHandUICardShown.value) {
       item {
         ToggleChatListCard()
       }
