@@ -823,7 +823,7 @@
     <!-- AdvancedNetworkSettings.kt -->
     <string name="network_options_reset_to_defaults">Сбросить настройки</string>
     <string name="network_option_seconds_label">сек</string>
-    <string name="network_option_tcp_connection_timeout">Таймаут TCP соединения</string>
+    <string name="network_option_tcp_connection_timeout">Таймаут TCP-соединения</string>
     <string name="network_option_protocol_timeout">Таймаут протокола</string>
     <string name="network_option_ping_interval">Интервал PING</string>
     <string name="network_option_enable_tcp_keep_alive">Включить TCP keep-alive</string>
@@ -1942,7 +1942,7 @@
     <string name="attempts_label">попытки</string>
     <string name="completed">Готово</string>
     <string name="confirm_delete_contact_question">Потвердить удаление контакта?</string>
-    <string name="privacy_media_blur_radius">Размытие изображения</string>
+    <string name="privacy_media_blur_radius">Размытие медиа</string>
     <string name="all_users">Все профили</string>
     <string name="app_check_for_updates_notice_title">Проверка на наличиее обновлений</string>
     <string name="allow_calls_question">Разрешить звонки?</string>
@@ -2097,7 +2097,7 @@
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Попросите Вашего контакта разрешить звонки.</string>
     <string name="network_options_save_and_reconnect">Сохранить и переподключиться</string>
     <string name="cant_call_member_send_message_alert_text">Отправьте сообщение, чтобы включить звонки.</string>
-    <string name="network_option_tcp_connection">TCP соединение</string>
+    <string name="network_option_tcp_connection">TCP-соединение</string>
     <string name="you_need_to_allow_calls">Чтобы включить звонки, разрешите их Вашему контакту.</string>
     <string name="appearance_zoom">Масштабирование</string>
     <string name="remote_ctrl_connection_stopped_identity_desc">Эта ссылка была использована на другом мобильном, пожалуйста, создайте новую ссылку на компьютере.</string>
@@ -2124,7 +2124,7 @@
     <string name="sent_directly">Отправлено напрямую</string>
     <string name="sent_via_proxy">Отправлено через прокси</string>
     <string name="servers_info_transport_sessions_section_header">Транспортные сессии</string>
-    <string name="v6_0_your_contacts">Ваши контакты по вашим правилам</string>
+    <string name="v6_0_your_contacts">Ваши контакты по Вашим правилам</string>
     <string name="v6_0_connection_servers_status_descr">Состояние соединения и серверов.</string>
     <string name="v6_0_delete_many_messages_descr">Удаляйте до 20 сообщений одновременно.</string>
     <string name="app_check_for_updates_download_started">Загрузка обновления, не закрывайте приложение.</string>
