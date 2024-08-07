@@ -700,7 +700,7 @@
     <string name="markdown_help">Markdown segítség</string>
     <string name="notification_preview_new_message">új üzenet</string>
     <string name="old_database_archive">Régi adatbázis archívum</string>
-    <string name="network_settings_title">Hálózati beállítások</string>
+    <string name="network_settings_title">Haladó beállítások</string>
     <string name="no_info_on_delivery">Nincs kézbesítési információ</string>
     <string name="moderated_description">moderált</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">A tag eltávolítása a csoportból - ez a művelet nem vonható vissza!</string>
@@ -1995,7 +1995,7 @@
     <string name="info_view_open_button">megnyitás</string>
     <string name="conversation_deleted">Beszélgetés törölve!</string>
     <string name="contact_deleted">Ismerős törölve!</string>
-    <string name="deleted_chats">Törölt csevegések</string>
+    <string name="deleted_chats">Archivált ismerősök</string>
     <string name="no_filtered_contacts">Nincsenek szűrt ismerősök</string>
     <string name="paste_link">Hivatkozás beillesztése</string>
     <string name="calls_prohibited_alert_title">A hívások le vannak tiltva!</string>
