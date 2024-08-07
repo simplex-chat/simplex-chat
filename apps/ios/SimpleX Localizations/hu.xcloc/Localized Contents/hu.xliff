@@ -1597,7 +1597,7 @@ Ez az egyszer használatos hivatkozása!</target>
       </trans-unit>
       <trans-unit id="Connection and servers status." xml:space="preserve" approved="no">
         <source>Connection and servers status.</source>
-        <target state="translated">Kapcsolat és kiszolgálók állapotának megjelenítése.</target>
+        <target state="translated">Kapcsolatok- és kiszolgálók állapotának megjelenítése.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
@@ -1702,7 +1702,7 @@ Ez az egyszer használatos hivatkozása!</target>
       </trans-unit>
       <trans-unit id="Control your network" xml:space="preserve" approved="no">
         <source>Control your network</source>
-        <target state="translated">Vegye kézbe a hálózatát</target>
+        <target state="translated">Ellenőrízze a hálózatát</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Conversation deleted!" xml:space="preserve" approved="no">
@@ -5149,7 +5149,7 @@ Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.<
       </trans-unit>
       <trans-unit id="Reachable chat toolbar 👋" xml:space="preserve" approved="no">
         <source>Reachable chat toolbar 👋</source>
-        <target state="translated">Elérhető csevegő eszköztár 👋</target>
+        <target state="translated">Könnyen elérhető eszköztár 👋</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="React…" xml:space="preserve">
@@ -7704,7 +7704,7 @@ Kapcsolódási kérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="Your contacts your way" xml:space="preserve" approved="no">
         <source>Your contacts your way</source>
-        <target state="translated">Az ön ismerősei az ön szabályai</target>
+        <target state="translated">Ismerősök kezelése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your current chat database will be DELETED and REPLACED with the imported one." xml:space="preserve">
