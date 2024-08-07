@@ -1295,6 +1295,8 @@
   <string name="incompatible_database_version">Incompatible database version</string>
   <string name="confirm_database_upgrades">Confirm database upgrades</string>
   <string name="one_hand_ui">Reachable chat toolbar</string>
+  <string name="one_hand_ui_card_title">Toggle chat list:</string>
+  <string name="one_hand_ui_change_instruction">You can change it in Appearance settings.</string>
   <string name="terminal_always_visible">Show console in new window</string>
   <string name="chat_list_always_visible">Show chat list in new window</string>
   <string name="invalid_migration_confirmation">Invalid migration confirmation</string>
