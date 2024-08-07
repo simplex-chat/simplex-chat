@@ -345,7 +345,7 @@ fun ChatLockItem(
   }
 }
 
-fun resetHintPreferences() {
+private fun resetHintPreferences() {
   for ((pref, def) in appPreferences.hintPreferences) {
     pref.set(def)
   }
