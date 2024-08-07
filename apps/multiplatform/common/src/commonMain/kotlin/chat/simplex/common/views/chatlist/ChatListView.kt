@@ -31,12 +31,11 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.WhatsNewView
 import chat.simplex.common.views.onboarding.shouldShowWhatsNew
-import chat.simplex.common.views.usersettings.SettingsView
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.newchat.*
-import chat.simplex.common.views.usersettings.SettingsPreferenceItem
+import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -76,29 +75,47 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
 fun ToggleChatListCard() {
   Column(
     modifier = Modifier
-      .padding(8.dp)
+      .padding(16.dp)
       .clip(RoundedCornerShape(8.dp))
   ) {
-    Column(
+    Box(
       modifier = Modifier
         .background(MaterialTheme.appColors.sentMessage)
     ) {
-      Row(
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF),
+      Box(
+        modifier = Modifier.fillMaxWidth().matchParentSize().padding(5.dp),
+        contentAlignment = Alignment.TopEnd
       ) {
-        Text("Toggle chat list:")
         IconButton(onClick = { appPrefs.showOneHandUINotice.set(false) }) {
           Icon(
             painterResource(MR.images.ic_close), stringResource(MR.strings.back), tint = MaterialTheme.colors.secondary
           )
         }
       }
-      Row {
-        SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), appPrefs.oneHandUI) {
-          val c = CurrentColors.value.colors
-          platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+      Column(
+        modifier = Modifier.padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING, end = DEFAULT_PADDING)
+      ) {
+        Row(
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically,
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Text(stringResource(MR.strings.one_hand_ui_card_title), style = MaterialTheme.typography.h3,)
+        }
+        Row(
+          horizontalArrangement = Arrangement.SpaceBetween,
+          verticalAlignment = Alignment.CenterVertically,
+          modifier = Modifier.fillMaxWidth().padding(vertical = 13.dp),
+        ) {
+          Text(stringResource(MR.strings.one_hand_ui))
+          SharedPreferenceToggle(
+            appPrefs.oneHandUI,
+            enabled = true,
+            onChange = {
+              val c = CurrentColors.value.colors
+              platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+            }
+          )
         }
       }
     }
