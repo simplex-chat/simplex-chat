@@ -2055,4 +2055,5 @@
     <string name="v6_0_delete_many_messages_descr">Verwijder maximaal 20 berichten tegelijk.</string>
     <string name="v6_0_connect_faster_descr">Zelfs als ze offline zijn.</string>
     <string name="chat_database_exported_not_all_files">Sommige bestanden zijn niet geëxporteerd</string>
+    <string name="reset_all_hints">Alle hints resetten</string>
 </resources>
