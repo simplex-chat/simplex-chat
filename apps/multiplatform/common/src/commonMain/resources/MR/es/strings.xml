@@ -2015,7 +2015,7 @@
     <string name="contact_deleted">¡Contacto eliminado!</string>
     <string name="delete_contact_cannot_undo_warning">El contacto será eliminado. ¡No podrá deshacerse!</string>
     <string name="conversation_deleted">¡Conversación eliminada!</string>
-    <string name="delete_without_notification">Eliminar sin notificar</string>
+    <string name="delete_without_notification">Elimina sin notificar</string>
     <string name="only_delete_conversation">Sólo borrar la conversación</string>
     <string name="keep_conversation">Conservar conversación</string>
     <string name="info_view_search_button">buscar</string>
@@ -2033,11 +2033,11 @@
     <string name="action_button_add_members">Invitar</string>
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Por favor, pide a tu contacto que active las llamadas.</string>
     <string name="cant_call_member_send_message_alert_text">Enviar mensaje para activar llamadas.</string>
-    <string name="v6_0_delete_many_messages_descr">Eliminar hasta 20 mensajes a la vez.</string>
+    <string name="v6_0_delete_many_messages_descr">Elimina hasta 20 mensajes a la vez.</string>
     <string name="v6_0_connect_faster_descr">Incluso cuando estén fuera de línea.</string>
     <string name="v6_0_delete_many_messages">Modera como un profesional ✋</string>
     <string name="v6_0_reachable_chat_toolbar">Barra de herramientas accesible 👋</string>
-    <string name="v6_0_your_contacts_descr">- Buscar contactos al iniciar el chat.
+    <string name="v6_0_your_contacts_descr">- Buscar contactos al iniciar chat.
 \n- Archivar contactos para charlar más tarde.</string>
     <string name="chat_database_exported_save">Puedes guardar el archivo exportado.</string>
     <string name="privacy_media_blur_radius_strong">Fuerte</string>
@@ -2053,4 +2053,10 @@
     <string name="proxy_destination_error_broker_version">La versión del servidor de destino de %1$s es incompatible con el servidor de reenvío %2$s.</string>
     <string name="contact_list_header_title">Tus contactos</string>
     <string name="you_need_to_allow_calls">Debes permitir que tus contacto llamen para poder llamarles.</string>
+    <string name="smp_proxy_error_connecting">Error al conectar con el servidor de reenvío %1$s. Por favor, inténtalo más tarde.</string>
+    <string name="smp_proxy_error_broker_host">La dirección del servidor de reenvío es incompatible con la configuración de red: %1$s.</string>
+    <string name="proxy_destination_error_failed_to_connect">El servidor de reenvío %1$s no ha podido conectarse al servidor de destino %2$s. Por favor, intentalo más tarde.</string>
+    <string name="smp_proxy_error_broker_version">La versión del servidor de reenvío es incompatible con la configuración de red: %1$s.</string>
+    <string name="no_filtered_contacts">Ningún contacto filtrado</string>
+    <string name="v6_0_your_contacts">Tus contactos a tu manera</string>
 </resources>
