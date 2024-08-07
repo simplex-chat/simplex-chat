@@ -101,21 +101,28 @@ fun ToggleChatListCard() {
         }
       }
       Column(
-        modifier = Modifier.padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING, end = DEFAULT_PADDING)
+        modifier = Modifier
+          .padding(horizontal = DEFAULT_PADDING)
+          .padding(top = DEFAULT_PADDING)
       ) {
         Row(
-          horizontalArrangement = Arrangement.SpaceBetween,
+          horizontalArrangement = Arrangement.Start,
           verticalAlignment = Alignment.CenterVertically,
           modifier = Modifier.fillMaxWidth()
         ) {
-          Text(stringResource(MR.strings.one_hand_ui_card_title), style = MaterialTheme.typography.h3,)
+          Text(stringResource(MR.strings.one_hand_ui_card_title), style = MaterialTheme.typography.h3)
         }
         Row(
-          horizontalArrangement = Arrangement.SpaceBetween,
-          verticalAlignment = Alignment.CenterVertically,
-          modifier = Modifier.fillMaxWidth().padding(vertical = 13.dp),
+          Modifier.fillMaxWidth().padding(vertical = 13.dp),
+          verticalAlignment = Alignment.CenterVertically
         ) {
-          Text(stringResource(MR.strings.one_hand_ui))
+          Text(
+            stringResource(MR.strings.one_hand_ui),
+            Modifier.weight(10f)
+          )
+
+          Spacer(Modifier.fillMaxWidth().weight(1f))
+
           SharedPreferenceToggle(
             appPrefs.oneHandUI,
             enabled = true,

@@ -230,7 +230,7 @@ class AppPreferences {
 
   val hintPreferences: List<Pair<SharedPreference<Boolean>, Boolean>> = listOf(
     laNoticeShown to false,
-    //      SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN to false,
+    showOneHandUINotice to true,
     liveMessageAlertShown to false,
     showHiddenProfilesNotice to true,
     showMuteProfileAlert to true,
