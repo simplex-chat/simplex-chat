@@ -2031,7 +2031,7 @@
     <string name="moderate_messages_will_be_deleted_warning">Az üzenetek minden tag számára törlésre kerülnek.</string>
     <string name="chat_database_exported_title">Csevegési adatbázis exportálva</string>
     <string name="v6_0_connection_servers_status_descr">Kapcsolat és kiszolgálók állapotának megjelenítése.</string>
-    <string name="v6_0_connect_faster">Kapcsolódjon gyorsabban barátaihoz</string>
+    <string name="v6_0_connect_faster">Kapcsolódjon gyorsabban az ismerőseihez</string>
     <string name="chat_database_exported_continue">Folytatás</string>
     <string name="v6_0_connection_servers_status">Irányítsa hálózatát</string>
 </resources>
