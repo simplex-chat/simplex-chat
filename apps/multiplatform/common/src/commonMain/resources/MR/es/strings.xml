@@ -2049,4 +2049,8 @@
     <string name="chat_database_exported_migrate">Puedes migrar la base de datos exportada.</string>
     <string name="network_option_tcp_connection">Conexión TCP</string>
     <string name="v6_0_reachable_chat_toolbar_descr">Usa la aplicación con una mano.</string>
+    <string name="proxy_destination_error_broker_host">La dirección del servidor de destino de %1$s es incompatible con la configuración del servidor de reenvío %2$s.</string>
+    <string name="proxy_destination_error_broker_version">La versión del servidor de destino de %1$s es incompatible con el servidor de reenvío %2$s.</string>
+    <string name="contact_list_header_title">Tus contactos</string>
+    <string name="you_need_to_allow_calls">Debes permitir que tus contacto llamen para poder llamarles.</string>
 </resources>
