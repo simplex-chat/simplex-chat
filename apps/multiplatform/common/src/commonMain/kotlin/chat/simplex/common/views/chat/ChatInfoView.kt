@@ -558,6 +558,7 @@ fun ChatInfoLayout(
         verticalAlignment = Alignment.CenterVertically
       ) {
         Spacer(Modifier.weight(1f))
+
         SearchButton(chat, contact, close, onSearchClicked)
         Spacer(Modifier.width(padding))
         AudioCallButton(chat, contact)
@@ -565,6 +566,7 @@ fun ChatInfoLayout(
         VideoButton(chat, contact)
         Spacer(Modifier.width(padding))
         MuteButton(chat, contact)
+
         Spacer(Modifier.weight(1f))
       }
     }

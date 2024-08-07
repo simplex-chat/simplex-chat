@@ -291,6 +291,7 @@ fun GroupChatInfoLayout(
           verticalAlignment = Alignment.CenterVertically
         ) {
           Spacer(Modifier.weight(1f))
+
           SearchButton(chat, groupInfo, close, onSearchClicked)
           if (groupInfo.canAddMembers) {
             Spacer(Modifier.width(padding))
@@ -298,6 +299,7 @@ fun GroupChatInfoLayout(
           }
           Spacer(Modifier.width(padding))
           MuteButton(chat, groupInfo)
+
           Spacer(Modifier.weight(1f))
         }
       }
