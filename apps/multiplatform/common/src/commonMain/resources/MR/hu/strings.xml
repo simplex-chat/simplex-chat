@@ -801,7 +801,7 @@
     <string name="message_delivery_error_title">Üzenetkézbesítési hiba</string>
     <string name="v4_5_multiple_chat_profiles">Több csevegőprofil</string>
     <string name="marked_deleted_description">töröltnek jelölve</string>
-    <string name="user_mute">Elnémítás</string>
+    <string name="user_mute">Némítás</string>
     <string name="link_a_mobile">Egy mobil összekapcsolása</string>
     <string name="settings_notifications_mode_title">Értesítési szolgáltatás</string>
     <string name="only_group_owners_can_enable_voice">Csak a csoporttulajdonosok engedélyezhetik a hangüzenetek küldését.</string>
@@ -1465,7 +1465,7 @@
     <string name="group_invitation_tap_to_join_incognito">Koppintson az inkognitóban való kapcsolódáshoz</string>
     <string name="set_password_to_export">Jelmondat beállítása az exportáláshoz</string>
     <string name="receipts_groups_override_disabled">Kézbesítési jelentések le vannak tiltva a(z) %d csoportban</string>
-    <string name="non_fatal_errors_occured_during_import">Néhány nem végzetes hiba történt az importálás során – további részletekért a csevegési konzolban olvashat.</string>
+    <string name="non_fatal_errors_occured_during_import">Néhány nem végzetes hiba történt az importálás során:</string>
     <string name="v4_5_italian_interface_descr">Köszönet a felhasználóknak - hozzájárulás a Weblaten!</string>
     <string name="relay_server_if_necessary">Az átjátszó kiszolgáló csak szükség esetén kerül használatra. Egy másik fél megfigyelheti az IP-címet.</string>
     <string name="v5_0_app_passcode_descr">Rendszerhitelesítés helyetti beállítás.</string>
@@ -1538,7 +1538,7 @@
     <string name="enable_camera_access">Kamera hozzáférés engedélyezése</string>
     <string name="keep_unused_invitation_question">Fel nem használt meghívó megtartása?</string>
     <string name="share_this_1_time_link">Egyszer használatos meghívó hivatkozás megosztása</string>
-    <string name="new_chat">Új beszélgetés</string>
+    <string name="new_chat">Új csevegés</string>
     <string name="loading_chats">Csevegések betöltése…</string>
     <string name="creating_link">Hivatkozás létrehozása…</string>
     <string name="or_scan_qr_code">Vagy QR-kód beolvasása</string>
@@ -1771,7 +1771,7 @@
     <string name="message_delivery_warning_title">Üzenet kézbesítési figyelmeztetés</string>
     <string name="srv_error_host">A kiszolgáló címe nem kompatibilis a hálózati beállításokkal.</string>
     <string name="network_smp_proxy_mode_never">Soha</string>
-    <string name="network_smp_proxy_mode_unknown">Ismeretlen átjátszók</string>
+    <string name="network_smp_proxy_mode_unknown">Ismeretlen kiszolgálók</string>
     <string name="network_smp_proxy_fallback_allow_protected">Ha az IP-cím rejtett</string>
     <string name="private_routing_show_message_status">Üzenet állapot megjelenítése</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">Visszafejlesztés engedélyezése</string>
@@ -2010,12 +2010,12 @@
     <string name="keep_conversation">Beszélgetés megtartása</string>
     <string name="confirm_delete_contact_question">Biztosan törli az ismerőst?</string>
     <string name="info_view_connect_button">kapcsolódás</string>
-    <string name="one_hand_ui">Egykezes UI</string>
+    <string name="one_hand_ui">Elérhető csevegő eszköztár</string>
     <string name="delete_without_notification">Törlés értesítés nélkül</string>
     <string name="toolbar_settings">Beállítások</string>
     <string name="info_view_search_button">keresés</string>
     <string name="info_view_video_button">videó</string>
-    <string name="you_can_still_send_messages_to_contact">A „Törölt csevegésekből” továbbra is küldhet üzeneteket neki: %1$s.</string>
+    <string name="you_can_still_send_messages_to_contact">Az „Archivált ismerősökből” továbbra is küldhet üzeneteket neki: %1$s.</string>
     <string name="contact_list_header_title">Ismerősök</string>
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Kérje meg az ismerősét, hogy engedélyezze a hívásokat.</string>
     <string name="cant_call_member_send_message_alert_text">Üzenet küldése a hívások engedélyezéséhez.</string>
@@ -2034,8 +2034,10 @@
     <string name="v6_0_connect_faster">Kapcsolódjon gyorsabban az ismerőseihez</string>
     <string name="chat_database_exported_continue">Folytatás</string>
     <string name="v6_0_connection_servers_status">Vegye kézbe a hálózatát</string>
-    <string name="media_and_file_servers">Média és fájlkiszolgálók</string>
+    <string name="media_and_file_servers">Média- és fájlkiszolgálók</string>
     <string name="v6_0_delete_many_messages_descr">Legfeljebb 20 üzenet törlése egyszerre.</string>
     <string name="v6_0_connect_faster_descr">Még akkor is, ha offline vannak.</string>
     <string name="v6_0_private_routing_descr">Védi az IP-címét és a kapcsolatokat.</string>
+    <string name="v6_0_your_contacts">Az ön ismerősei az ön szabályai</string>
+    <string name="v6_0_reachable_chat_toolbar">Elérhető csevegő eszköztár 👋</string>
 </resources>
