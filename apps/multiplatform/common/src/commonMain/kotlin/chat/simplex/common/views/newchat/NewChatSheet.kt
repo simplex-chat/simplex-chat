@@ -250,7 +250,6 @@ private fun NewChatSheetLayout(
                 icon = it.first,
                 text = it.second,
                 click = it.third,
-                extraPadding = true,
               )
             }
           }
@@ -283,7 +282,7 @@ private fun NewChatSheetLayout(
                   contentDescription = stringResource(MR.strings.deleted_chats),
                   tint = MaterialTheme.colors.secondary,
                 )
-                TextIconSpaced(extraPadding = true)
+                TextIconSpaced(false)
                 Text(text = stringResource(MR.strings.deleted_chats), color = MaterialTheme.colors.onBackground)
               }
             }
@@ -330,14 +329,13 @@ private fun NewChatButton(
   text: String,
   click: () -> Unit,
   textColor: Color = Color.Unspecified,
-  iconColor: Color = MaterialTheme.colors.secondary,
-  disabled: Boolean = false,
-  extraPadding: Boolean = false,
+  iconColor: Color = MaterialTheme.colors.primary,
+  disabled: Boolean = false
 ) {
   SectionItemView(click, disabled = disabled) {
     Row {
       Icon(icon, text, tint = if (disabled) MaterialTheme.colors.secondary else iconColor)
-      TextIconSpaced(extraPadding)
+      TextIconSpaced(false)
       Text(text, color = if (disabled) MaterialTheme.colors.secondary else textColor)
     }
   }
