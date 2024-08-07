@@ -529,7 +529,10 @@ object ChatController {
   suspend fun startChatWithTemporaryDatabase(ctrl: ChatCtrl, netCfg: NetCfg): User? {
     Log.d(TAG, "startChatWithTemporaryDatabase")
     val migrationActiveUser = apiGetActiveUser(null, ctrl) ?: apiCreateActiveUser(null, Profile(displayName = "Temp", fullName = ""), ctrl = ctrl)
-    apiSetNetworkConfig(netCfg, ctrl)
+    if (!apiSetNetworkConfig(netCfg, ctrl)) {
+      Log.e(TAG, "Error setting network config, stopping migration")
+      return null
+    }
     apiSetAppFilePaths(
       getMigrationTempFilesDirectory().absolutePath,
       getMigrationTempFilesDirectory().absolutePath,
