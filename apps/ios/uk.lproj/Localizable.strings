@@ -335,7 +335,8 @@
 "above, then choose:" = "вище, а потім обирайте:";
 
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "Прийняти";
 
 /* No comment provided by engineer. */
@@ -344,7 +345,8 @@
 /* notification body */
 "Accept contact request from %@?" = "Прийняти запит на контакт від %@?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "Прийняти інкогніто";
 
 /* call status */
@@ -816,7 +818,7 @@
 /* No comment provided by engineer. */
 "Choose from library" = "Виберіть з бібліотеки";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "Чисто";
 
 /* No comment provided by engineer. */
@@ -1173,7 +1175,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "за замовчуванням (так)";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "Видалити";
 
 /* No comment provided by engineer. */
@@ -1825,7 +1828,7 @@
 /* No comment provided by engineer. */
 "Faster joining and more reliable messages." = "Швидше приєднання та надійніші повідомлення.";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "Улюблений";
 
 /* No comment provided by engineer. */
@@ -2302,7 +2305,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "Японський інтерфейс";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "Приєднуйтесь";
 
 /* No comment provided by engineer. */
@@ -2353,7 +2356,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "Дізнайтеся більше";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "Залишити";
 
 /* No comment provided by engineer. */
@@ -2587,13 +2590,13 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Кілька профілів чату";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Mute" = "Вимкнути звук";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "Вимкнено, коли неактивний!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "Ім'я";
 
 /* No comment provided by engineer. */
@@ -3063,7 +3066,7 @@
 /* chat item menu */
 "React…" = "Реагуй…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "Читати";
 
 /* No comment provided by engineer. */
@@ -3138,7 +3141,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Зменшення використання акумулятора";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "Відхилити";
 
 /* No comment provided by engineer. */
@@ -3966,7 +3970,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Неочікуваний стан міграції";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "Нелюб.";
 
 /* No comment provided by engineer. */
@@ -4020,13 +4024,13 @@
 /* authentication reason */
 "Unlock app" = "Розблокувати додаток";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unmute" = "Увімкнути звук";
 
 /* No comment provided by engineer. */
 "unprotected" = "незахищені";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "Непрочитане";
 
 /* No comment provided by engineer. */

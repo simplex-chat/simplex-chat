@@ -23,8 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
@@ -184,10 +183,17 @@ private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMembe
 }
 
 @Composable
-fun SearchButton(chat: Chat, group: GroupInfo, close: () -> Unit, onSearchClicked: () -> Unit) {
+fun SearchButton(
+  modifier: Modifier,
+  chat: Chat,
+  group: GroupInfo,
+  close: () -> Unit,
+  onSearchClicked: () -> Unit
+) {
   val disabled = !group.ready || chat.chatItems.isEmpty()
 
   InfoViewActionButton(
+    modifier = modifier,
     icon = painterResource(MR.images.ic_search),
     title = generalGetString(MR.strings.info_view_search_button),
     disabled = disabled,
@@ -202,10 +208,15 @@ fun SearchButton(chat: Chat, group: GroupInfo, close: () -> Unit, onSearchClicke
 }
 
 @Composable
-fun MuteButton(chat: Chat, groupInfo: GroupInfo) {
+fun MuteButton(
+  modifier: Modifier,
+  chat: Chat,
+  groupInfo: GroupInfo
+) {
   val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
 
   InfoViewActionButton(
+    modifier = modifier,
     icon =  if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
     title = if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
     disabled = !groupInfo.ready,
@@ -217,8 +228,13 @@ fun MuteButton(chat: Chat, groupInfo: GroupInfo) {
 }
 
 @Composable
-fun AddGroupMembersButton(chat: Chat, groupInfo: GroupInfo) {
+fun AddGroupMembersButton(
+  modifier: Modifier,
+  chat: Chat,
+  groupInfo: GroupInfo
+) {
   InfoViewActionButton(
+    modifier = modifier,
     icon =  if (groupInfo.incognito) painterResource(MR.images.ic_add_link) else painterResource(MR.images.ic_person_add_500),
     title = stringResource(MR.strings.action_button_add_members),
     disabled = !groupInfo.ready,
@@ -278,20 +294,26 @@ fun GroupChatInfoLayout(
       }
       SectionSpacer()
 
-      Row(
-        Modifier
-          .fillMaxWidth()
-          .padding(horizontal = DEFAULT_PADDING),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
+      Box(
+        Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
       ) {
-        SearchButton(chat, groupInfo, close, onSearchClicked)
-        if (groupInfo.canAddMembers) {
-          Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
-          AddGroupMembersButton(chat, groupInfo)
+        Row(
+          Modifier
+            .widthIn(max = if (groupInfo.canAddMembers) 320.dp else 230.dp)
+            .padding(horizontal = DEFAULT_PADDING),
+          horizontalArrangement = Arrangement.SpaceEvenly,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          if (groupInfo.canAddMembers) {
+            SearchButton(modifier = Modifier.fillMaxWidth(0.33f), chat, groupInfo, close, onSearchClicked)
+            AddGroupMembersButton(modifier = Modifier.fillMaxWidth(0.5f), chat, groupInfo)
+            MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, groupInfo)
+          } else {
+            SearchButton(modifier = Modifier.fillMaxWidth(0.5f), chat, groupInfo, close, onSearchClicked)
+            MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, groupInfo)
+          }
         }
-        Spacer(Modifier.width(INFO_VIEW_BUTTONS_PADDING))
-        MuteButton(chat, groupInfo)
       }
 
       SectionSpacer()

@@ -257,13 +257,15 @@
 "above, then choose:" = "ด้านบน จากนั้นเลือก:";
 
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "รับ";
 
 /* notification body */
 "Accept contact request from %@?" = "รับการขอติดต่อจาก %@?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "ยอมรับโหมดไม่ระบุตัวตน";
 
 /* call status */
@@ -618,7 +620,7 @@
 /* No comment provided by engineer. */
 "Choose from library" = "เลือกจากอัลบั้ม";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "ลบ";
 
 /* No comment provided by engineer. */
@@ -885,7 +887,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "ค่าเริ่มต้น (ใช่)";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "ลบ";
 
 /* No comment provided by engineer. */
@@ -1399,7 +1402,7 @@
 /* No comment provided by engineer. */
 "Fast and no wait until the sender is online!" = "รวดเร็วและไม่ต้องรอจนกว่าผู้ส่งจะออนไลน์!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "ที่ชอบ";
 
 /* No comment provided by engineer. */
@@ -1777,7 +1780,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "อินเทอร์เฟซภาษาญี่ปุ่น";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "เข้าร่วม";
 
 /* No comment provided by engineer. */
@@ -1807,7 +1810,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "ศึกษาเพิ่มเติม";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "ออกจาก";
 
 /* No comment provided by engineer. */
@@ -1981,13 +1984,13 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "โปรไฟล์การแชทหลายรายการ";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Mute" = "ปิดเสียง";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "ปิดเสียงเมื่อไม่ได้ใช้งาน!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "ชื่อ";
 
 /* No comment provided by engineer. */
@@ -2340,7 +2343,7 @@
 /* chat item menu */
 "React…" = "ตอบสนอง…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "อ่าน";
 
 /* No comment provided by engineer. */
@@ -2403,7 +2406,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "ลดการใช้แบตเตอรี่";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "ปฏิเสธ";
 
 /* No comment provided by engineer. */
@@ -3015,7 +3019,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "สถานะการย้ายข้อมูลที่ไม่คาดคิด";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "เลิกชอบ";
 
 /* No comment provided by engineer. */
@@ -3054,10 +3058,10 @@
 /* authentication reason */
 "Unlock app" = "ปลดล็อคแอป";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unmute" = "เปิดเสียง";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "เปลี่ยนเป็นยังไม่ได้อ่าน";
 
 /* No comment provided by engineer. */

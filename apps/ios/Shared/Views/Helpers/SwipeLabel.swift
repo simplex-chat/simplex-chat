@@ -28,7 +28,7 @@ struct SwipeLabel: View {
                 ).snapshot(inverted: inverted)
             )
         } else {
-            Label(LocalizedStringKey(text), systemImage: systemImage)
+            Label(text, systemImage: systemImage)
         }
     }
 
@@ -42,7 +42,7 @@ struct SwipeLabel: View {
             super.init(frame: CGRect(x: 0, y: 0, width: 64, height: 32 + fontSize))
             imageView.image = UIImage(systemName: systemName)
             imageView.contentMode = .scaleAspectFit
-            label.text = NSLocalizedString(text, comment: "swipe action")
+            label.text = text
             label.textAlignment = .center
             label.font = UIFont.systemFont(ofSize: fontSize, weight: .medium)
             addSubview(imageView)

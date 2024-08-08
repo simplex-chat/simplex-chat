@@ -278,7 +278,8 @@
 "above, then choose:" = "edellä, valitse sitten:";
 
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "Hyväksy";
 
 /* No comment provided by engineer. */
@@ -287,7 +288,8 @@
 /* notification body */
 "Accept contact request from %@?" = "Hyväksy kontaktipyyntö %@:ltä?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "Hyväksy tuntematon";
 
 /* call status */
@@ -642,7 +644,7 @@
 /* No comment provided by engineer. */
 "Choose from library" = "Valitse kirjastosta";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "Tyhjennä";
 
 /* No comment provided by engineer. */
@@ -918,7 +920,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "oletusarvo (kyllä)";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "Poista";
 
 /* No comment provided by engineer. */
@@ -1450,7 +1453,7 @@
 /* No comment provided by engineer. */
 "Fast and no wait until the sender is online!" = "Nopea ja ei odotusta, kunnes lähettäjä on online-tilassa!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "Suosikki";
 
 /* No comment provided by engineer. */
@@ -1834,7 +1837,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "Japanilainen käyttöliittymä";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "Liity";
 
 /* No comment provided by engineer. */
@@ -1864,7 +1867,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "Lue lisää";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "Poistu";
 
 /* No comment provided by engineer. */
@@ -2041,13 +2044,13 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Useita keskusteluprofiileja";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Mute" = "Mykistä";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "Mykistetty ei-aktiivisena!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "Nimi";
 
 /* No comment provided by engineer. */
@@ -2403,7 +2406,7 @@
 /* chat item menu */
 "React…" = "Reagoi…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "Lue";
 
 /* No comment provided by engineer. */
@@ -2469,7 +2472,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Pienempi akun käyttö";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "Hylkää";
 
 /* No comment provided by engineer. */
@@ -3102,7 +3106,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Odottamaton siirtotila";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "Epäsuotuisa.";
 
 /* No comment provided by engineer. */
@@ -3141,10 +3145,10 @@
 /* authentication reason */
 "Unlock app" = "Avaa sovellus";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unmute" = "Poista mykistys";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "Lukematon";
 
 /* No comment provided by engineer. */

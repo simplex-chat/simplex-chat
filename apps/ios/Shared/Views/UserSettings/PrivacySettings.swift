@@ -117,7 +117,7 @@ struct PrivacySettings: View {
                                 privacyAcceptImagesGroupDefault.set($0)
                             }
                     }
-                    settingsRow("circle.rectangle.filled.pattern.diagonalline", color: theme.colors.secondary) {
+                    settingsRow("circle.filled.pattern.diagonalline.rectangle", color: theme.colors.secondary) {
                         Picker("Blur media", selection: $privacyMediaBlurRadius) {
                             let values = [0, 12, 24, 48] + ([0, 12, 24, 48].contains(privacyMediaBlurRadius) ? [] : [privacyMediaBlurRadius])
                             ForEach(values, id: \.self) { radius in
@@ -470,7 +470,7 @@ struct SimplexLockView: View {
             }
         }
         .onChange(of: performLA) { performLAToggle in
-            performLAGroupDefault.set(performLAToggle)
+            appLocalAuthEnabledGroupDefault.set(performLAToggle)
             prefLANoticeShown = true
             if performLAToggleReset {
                 performLAToggleReset = false

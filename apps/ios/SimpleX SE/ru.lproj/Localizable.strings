@@ -1,3 +1,111 @@
 /* No comment provided by engineer. */
+"%@" = "%@";
+
+/* No comment provided by engineer. */
+"App is locked!" = "Приложение заблокировано!";
+
+/* No comment provided by engineer. */
+"Cancel" = "Отменить";
+
+/* No comment provided by engineer. */
+"Cannot access keychain to save database password" = "Невозможно сохранить пароль в keychain";
+
+/* No comment provided by engineer. */
+"Cannot forward message" = "Невозможно переслать сообщение";
+
+/* No comment provided by engineer. */
+"Comment" = "Комментарий";
+
+/* No comment provided by engineer. */
+"Currently maximum supported file size is %@." = "В настоящее время максимальный поддерживаемый размер файла составляет %@.";
+
+/* No comment provided by engineer. */
+"Database downgrade required" = "Требуется откат базы данных";
+
+/* No comment provided by engineer. */
+"Database encrypted!" = "База данных зашифрована!";
+
+/* No comment provided by engineer. */
+"Database error" = "Ошибка базы данных";
+
+/* No comment provided by engineer. */
+"Database passphrase is different from saved in the keychain." = "Пароль базы данных отличается от сохраненного в keychain.";
+
+/* No comment provided by engineer. */
+"Database passphrase is required to open chat." = "Введите пароль базы данных, чтобы открыть чат.";
+
+/* No comment provided by engineer. */
+"Database upgrade required" = "Требуется обновление базы данных";
+
+/* No comment provided by engineer. */
+"Error preparing file" = "Ошибка подготовки файла";
+
+/* No comment provided by engineer. */
+"Error preparing message" = "Ошибка подготовки сообщения";
+
+/* No comment provided by engineer. */
+"Error: %@" = "Ошибка: %@";
+
+/* No comment provided by engineer. */
+"File error" = "Ошибка файла";
+
+/* No comment provided by engineer. */
+"Incompatible database version" = "Несовместимая версия базы данных";
+
+/* No comment provided by engineer. */
+"Invalid migration confirmation" = "Ошибка подтверждения миграции";
+
+/* No comment provided by engineer. */
+"Keychain error" = "Ошибка keychain";
+
+/* No comment provided by engineer. */
+"Large file!" = "Большой файл!";
+
+/* No comment provided by engineer. */
+"No active profile" = "Нет активного профиля";
+
+/* No comment provided by engineer. */
+"Ok" = "Ок";
+
+/* No comment provided by engineer. */
+"Open the app to downgrade the database." = "Откройте приложение, чтобы откатить базу данных.";
+
+/* No comment provided by engineer. */
+"Open the app to upgrade the database." = "Откройте приложение, чтобы обновить базу данных.";
+
+/* No comment provided by engineer. */
+"Passphrase" = "Пароль";
+
+/* No comment provided by engineer. */
+"Please create a profile in the SimpleX app" = "Пожалуйста, создайте профиль в приложении SimpleX.";
+
+/* No comment provided by engineer. */
+"Selected chat preferences prohibit this message." = "Выбранные настройки чата запрещают это сообщение.";
+
+/* No comment provided by engineer. */
+"Sending a message takes longer than expected." = "Отправка сообщения занимает дольше ожиданного.";
+
+/* No comment provided by engineer. */
+"Sending message…" = "Отправка сообщения…";
+
+/* No comment provided by engineer. */
 "Share" = "Поделиться";
+
+/* No comment provided by engineer. */
+"Slow network?" = "Медленная сеть?";
+
+/* No comment provided by engineer. */
+"Unknown database error: %@" = "Неизвестная ошибка базы данных: %@";
+
+/* No comment provided by engineer. */
+"Unsupported format" = "Неподдерживаемый формат";
+
+/* No comment provided by engineer. */
+"Wait" = "Подождать";
+
+/* No comment provided by engineer. */
+"Wrong database passphrase" = "Неправильный пароль базы данных";
+
+/* No comment provided by engineer. */
+"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "Вы можете разрешить функцию Поделиться в настройках Конфиденциальности / Блокировка SimpleX.";
 

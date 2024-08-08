@@ -1087,7 +1087,7 @@
     <string name="use_chat">שימוש בצ׳אט</string>
     <string name="update_database">עדכן</string>
     <string name="unknown_database_error_with_info">שגיאת מסד נתונים לא ידועה: %s</string>
-    <string name="rcv_group_event_updated_group_profile">פרופיל קבוצה עודכן</string>
+    <string name="rcv_group_event_updated_group_profile">עידכן את פרופיל הקבוצה</string>
     <string name="update_network_settings_confirmation">עדכן</string>
     <string name="unhide_chat_profile">בטל הסתרת פרופיל צ׳אט</string>
     <string name="unhide_profile">בטל הסתרת פרופיל</string>
@@ -1871,7 +1871,7 @@
     <string name="servers_info_sessions_errors">שגיאות</string>
     <string name="servers_info_subscriptions_section_header">מקבל ההודעות</string>
     <string name="servers_info_proxied_servers_section_header">שרתי פרוקסי</string>
-    <string name="servers_info_reconnect_all_servers_button">חבר מחדש את לכל השרתים</string>
+    <string name="servers_info_reconnect_all_servers_button">התחבר מחדש לכל השרתים</string>
     <string name="servers_info_reconnect_server_title">להתחבר מחדש לשרת?</string>
     <string name="servers_info_reconnect_servers_title">להתחבר מחדש לשרתים?</string>
     <string name="servers_info_statistics_section_header">סטטיסטיקות</string>
@@ -1927,4 +1927,6 @@
     <string name="servers_info_detailed_statistics_sent_messages_total">נשלח בסה\"כ</string>
     <string name="smp_server">שרת SMP</string>
     <string name="xftp_server">שרת XFTP</string>
+    <string name="privacy_media_blur_radius_soft">חלש</string>
+    <string name="deleted_chats">אנשי קשר בארכיון</string>
 </resources>

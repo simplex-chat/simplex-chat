@@ -48,6 +48,7 @@ let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue" // deprecated, only used for m
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle" // deprecated, only used for migration
 let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
 let DEFAULT_ONE_HAND_UI_CARD_SHOWN = "oneHandUICardShown"
+let DEFAULT_TOOLBAR_MATERIAL = "toolbarMaterial"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
 let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
@@ -98,6 +99,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_ENCRYPTION_STARTED: false,
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN: false,
+    DEFAULT_TOOLBAR_MATERIAL: ToolbarMaterial.bar.rawValue,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
@@ -186,7 +188,7 @@ let themeOverridesDefault: CodableDefault<[ThemeOverrides]> = CodableDefault(def
 
 func setGroupDefaults() {
     privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))
-    performLAGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA))
+    appLocalAuthEnabledGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA))
     privacyLinkPreviewsGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS))
     profileImageCornerRadiusGroupDefault.set(UserDefaults.standard.double(forKey: DEFAULT_PROFILE_IMAGE_CORNER_RADIUS))
 }

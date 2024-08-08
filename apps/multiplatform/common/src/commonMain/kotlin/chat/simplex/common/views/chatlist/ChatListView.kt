@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.font.FontStyle
@@ -30,11 +31,11 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.WhatsNewView
 import chat.simplex.common.views.onboarding.shouldShowWhatsNew
-import chat.simplex.common.views.usersettings.SettingsView
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.newchat.*
+import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,9 +72,71 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
 }
 
 @Composable
+fun ToggleChatListCard() {
+  Column(
+    modifier = Modifier
+      .padding(16.dp)
+      .clip(RoundedCornerShape(18.dp))
+  ) {
+    Box(
+      modifier = Modifier
+        .background(MaterialTheme.appColors.sentMessage)
+    ) {
+      Box(
+        modifier = Modifier.fillMaxWidth().matchParentSize().padding(5.dp),
+        contentAlignment = Alignment.TopEnd
+      ) {
+        IconButton(
+          onClick = {
+            appPrefs.oneHandUICardShown.set(true)
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(MR.strings.one_hand_ui),
+              text = generalGetString(MR.strings.one_hand_ui_change_instruction),
+            )
+          }
+        ) {
+          Icon(
+            painterResource(MR.images.ic_close), stringResource(MR.strings.back), tint = MaterialTheme.colors.secondary
+          )
+        }
+      }
+      Column(
+        modifier = Modifier
+          .padding(horizontal = DEFAULT_PADDING)
+          .padding(top = DEFAULT_PADDING)
+      ) {
+        Row(
+          horizontalArrangement = Arrangement.Start,
+          verticalAlignment = Alignment.CenterVertically,
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Text(stringResource(MR.strings.one_hand_ui_card_title), style = MaterialTheme.typography.h3)
+        }
+        Row(
+          Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 12.dp),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Text(stringResource(MR.strings.one_hand_ui), Modifier.weight(10f), style = MaterialTheme.typography.body1)
+
+          Spacer(Modifier.fillMaxWidth().weight(1f))
+
+          SharedPreferenceToggle(
+            appPrefs.oneHandUI,
+            enabled = true,
+            onChange = {
+              val c = CurrentColors.value.colors
+              platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+            }
+          )
+        }
+      }
+    }
+  }
+}
+
+@Composable
 fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-
   LaunchedEffect(Unit) {
     if (shouldShowWhatsNew(chatModel)) {
       delay(1000L)
@@ -337,7 +400,7 @@ fun SubscriptionStatusIndicator(click: (() -> Unit)) {
   val scope = rememberCoroutineScope()
 
   suspend fun setSubsTotal() {
-    if (chatModel.currentUser.value != null) {
+    if (chatModel.currentUser.value != null && chatModel.controller.hasChatCtrl() && chatModel.chatRunning.value == true) {
       val r = chatModel.controller.getAgentSubsTotal(chatModel.remoteHostId())
       if (r != null) {
         subs = r.first
@@ -547,6 +610,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
   var previousScrollOffset by remember { mutableStateOf(0) }
   val keyboardState by getKeyboardState()
   val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
     val currentIndex = listState.firstVisibleItemIndex
@@ -608,6 +672,11 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
         if (!oneHandUI.value) {
           Divider()
         }
+      }
+    }
+    if (appPlatform.isAndroid && !oneHandUICardShown.value) {
+      item {
+        ToggleChatListCard()
       }
     }
     itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->

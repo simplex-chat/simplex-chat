@@ -606,7 +606,7 @@
     <string name="install_simplex_chat_for_terminal">Installa SimpleX Chat per terminale</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Assicurati che gli indirizzi dei server WebRTC ICE siano nel formato corretto, uno per riga e non doppi.</string>
     <string name="network_and_servers">Rete e server</string>
-    <string name="network_settings_title">Impostazioni di rete</string>
+    <string name="network_settings_title">Impostazioni avanzate</string>
     <string name="network_use_onion_hosts_no">No</string>
     <string name="network_use_onion_hosts_required_desc">Gli host Onion saranno necessari per la connessione.
 \nNota bene: non potrai connetterti ai server senza indirizzo .onion .</string>
@@ -1240,7 +1240,7 @@
     <string name="info_row_disappears_at">Scompare il</string>
     <string name="share_text_disappears_at">Scompare il: %s</string>
     <string name="item_info_no_text">nessun testo</string>
-    <string name="non_fatal_errors_occured_during_import">Si sono verificati alcuni errori non gravi durante l\'importazione: vedi la console della chat per i dettagli.</string>
+    <string name="non_fatal_errors_occured_during_import">Si sono verificati alcuni errori non fatali durante l\'importazione:</string>
     <string name="settings_restart_app">Riavvia</string>
     <string name="settings_section_title_app">APP</string>
     <string name="shutdown_alert_desc">Le notifiche smetteranno di funzionare fino a quando non riavvierai l\'app</string>
@@ -1777,7 +1777,7 @@
     <string name="message_delivery_warning_title">Avviso di consegna del messaggio</string>
     <string name="network_smp_proxy_mode_private_routing">Instradamento privato</string>
     <string name="network_smp_proxy_mode_never">Mai</string>
-    <string name="network_smp_proxy_mode_unknown">Relay sconosciuti</string>
+    <string name="network_smp_proxy_mode_unknown">Server sconosciuti</string>
     <string name="network_smp_proxy_mode_unknown_description">Usa l\'instradamento privato con server sconosciuti.</string>
     <string name="update_network_smp_proxy_mode_question">Modalità instradamento messaggio</string>
     <string name="network_smp_proxy_mode_unprotected_description">Usa l\'instradamento privato con server sconosciuti quando l\'indirizzo IP non è protetto.</string>
@@ -2003,12 +2003,12 @@
     <string name="delete_without_notification">Elimina senza avvisare</string>
     <string name="keep_conversation">Tieni la conversazione</string>
     <string name="only_delete_conversation">Elimina solo la conversazione</string>
-    <string name="you_can_still_send_messages_to_contact">Puoi ancora inviare messaggi a %1$s dalle chat eliminate.</string>
-    <string name="deleted_chats">Chat eliminate</string>
+    <string name="you_can_still_send_messages_to_contact">Puoi inviare messaggi a %1$s dai contatti archiviati.</string>
+    <string name="deleted_chats">Contatti archiviati</string>
     <string name="no_filtered_contacts">Nessun contatto filtrato</string>
     <string name="paste_link">Incolla link</string>
     <string name="contact_list_header_title">I tuoi contatti</string>
-    <string name="one_hand_ui">Interfaccia a una mano</string>
+    <string name="one_hand_ui">Barra degli strumenti di chat accessibile</string>
     <string name="action_button_add_members">Invita</string>
     <string name="allow_calls_question">Consentire le chiamate?</string>
     <string name="calls_prohibited_alert_title">Chiamate proibite!</string>
@@ -2035,4 +2035,25 @@
     <string name="moderate_messages_will_be_marked_warning">I messaggi verranno contrassegnati come moderati per tutti i membri.</string>
     <string name="delete_members_messages__question">Eliminare %d messaggi dei membri?</string>
     <string name="delete_messages_mark_deleted_warning">I messaggi saranno contrassegnati per l\'eliminazione. Il/I destinatario/i sarà/saranno in grado di rivelare questi messaggi.</string>
+    <string name="chat_database_exported_title">Database della chat esportato</string>
+    <string name="chat_database_exported_continue">Continua</string>
+    <string name="media_and_file_servers">Server di multimediali e file</string>
+    <string name="message_servers">Server dei messaggi</string>
+    <string name="network_socks_proxy">Proxy SOCKS</string>
+    <string name="chat_database_exported_not_all_files">Alcuni file non sono stati esportati</string>
+    <string name="chat_database_exported_migrate">Puoi migrare il database esportato.</string>
+    <string name="chat_database_exported_save">Puoi salvare l\'archivio esportato.</string>
+    <string name="network_option_tcp_connection">Connessione TCP</string>
+    <string name="v6_0_connect_faster_descr">Connettiti più velocemente ai tuoi amici</string>
+    <string name="v6_0_connection_servers_status">Prendi il controllo della tua rete</string>
+    <string name="v6_0_delete_many_messages_descr">Elimina fino a 20 messaggi contemporaneamente.</string>
+    <string name="v6_0_reachable_chat_toolbar">Barra degli strumenti di chat accessibile 👋</string>
+    <string name="v6_0_your_contacts_descr">Archivia contatti per chattare più tardi.</string>
+    <string name="v6_0_reachable_chat_toolbar_descr">Usa l\'app con una mano sola.</string>
+    <string name="v6_0_connection_servers_status_descr">Stato di connessione e server.</string>
+    <string name="v6_0_private_routing_descr">Protegge il tuo indirizzo IP e le connessioni.</string>
+    <string name="network_options_save_and_reconnect">Salva e riconnetti</string>
+    <string name="reset_all_hints">Ripristina tutti i suggerimenti</string>
+    <string name="one_hand_ui_card_title">Cambia elenco chat:</string>
+    <string name="one_hand_ui_change_instruction">Puoi cambiarlo nelle impostazioni dell\'aspetto.</string>
 </resources>

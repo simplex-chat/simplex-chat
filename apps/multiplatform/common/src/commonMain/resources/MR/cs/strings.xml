@@ -1849,4 +1849,16 @@
     <string name="network_smp_proxy_fallback_allow">Ano</string>
     <string name="color_wallpaper_tint">Zbarvení tapety</string>
     <string name="color_wallpaper_background">Pozadí tapety</string>
+    <string name="app_check_for_updates_beta">Beta</string>
+    <string name="info_view_call_button">volání</string>
+    <string name="privacy_media_blur_radius">Rozmazat media</string>
+    <string name="cant_call_contact_alert_title">Kontaktu nelze volat</string>
+    <string name="all_users">Všechny profily</string>
+    <string name="attempts_label">pokusy</string>
+    <string name="app_check_for_updates_download_completed_title">Aktualizace aplikace je stažena</string>
+    <string name="servers_info_subscriptions_connections_subscribed">Aktivní spojení</string>
+    <string name="allow_calls_question">Povolit volání?</string>
+    <string name="calls_prohibited_alert_title">Volání zakázáno!</string>
+    <string name="cant_call_member_alert_title">Nelze zavolat člena skupiny</string>
+    <string name="deleted_chats">Archivované kontakty</string>
 </resources>
