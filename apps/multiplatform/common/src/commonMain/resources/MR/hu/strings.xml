@@ -100,7 +100,7 @@
     <string name="allow_message_reactions">Az üzenetreakciók küldése engedélyezve van.</string>
     <string name="icon_descr_cancel_file_preview">Fájl előnézet visszavonása</string>
     <string name="all_group_members_will_remain_connected">Minden csoporttag kapcsolatban marad.</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Több akkumulátort használ</b>! A háttérszolgáltatás mindig fut - az értesítések megjelennek, amint az üzenetek elérhetővé válnak.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Több akkumulátort használ</b>! A háttérszolgáltatás mindig fut - az értesítések megjelennek, amint az üzenetek elérhetővé válnak.</string>
     <string name="block_member_confirmation">Letiltás</string>
     <string name="group_member_role_admin">admin</string>
     <string name="icon_descr_cancel_image_preview">Fénykép előnézet visszavonása</string>
@@ -133,7 +133,7 @@
     <string name="turning_off_service_and_periodic">Az akkumulátor optimalizálása aktív, mely kikapcsolja a háttérszolgáltatást és az új üzenetek rendszeres kérését. A beállításokon keresztül újra engedélyezhetők.</string>
     <string name="block_member_question">Biztosan letiltja?</string>
     <string name="callstatus_ended">%1$s hívása befejeződött</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Jó akkumulátoridő</b>. A háttérszolgáltatás 10 percenként ellenőrzi az új üzeneteket. Előfordulhat, hogy hívásokról, vagy a sürgős üzenetekről marad le.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Jó akkumulátoridő</b>. A háttérszolgáltatás 10 percenként ellenőrzi az új üzeneteket. Előfordulhat, hogy hívásokról, vagy a sürgős üzenetekről marad le.</string>
     <string name="group_member_role_author">szerző</string>
     <string name="allow_your_contacts_irreversibly_delete">Az elküldött üzenetek végleges törlése engedélyezve van az ismerősei számára. (24 óra)</string>
     <string name="cancel_verb">Mégse</string>
