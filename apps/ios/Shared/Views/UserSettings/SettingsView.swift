@@ -188,7 +188,7 @@ let themeOverridesDefault: CodableDefault<[ThemeOverrides]> = CodableDefault(def
 
 func setGroupDefaults() {
     privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))
-    performLAGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA))
+    appLocalAuthEnabledGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA))
     privacyLinkPreviewsGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS))
     profileImageCornerRadiusGroupDefault.set(UserDefaults.standard.double(forKey: DEFAULT_PROFILE_IMAGE_CORNER_RADIUS))
 }
