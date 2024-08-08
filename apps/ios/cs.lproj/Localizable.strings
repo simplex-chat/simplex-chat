@@ -287,7 +287,8 @@
 "above, then choose:" = "výše, pak vyberte:";
 
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "Přijmout";
 
 /* No comment provided by engineer. */
@@ -296,7 +297,8 @@
 /* notification body */
 "Accept contact request from %@?" = "Přijmout žádost o kontakt od %@?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "Přijmout inkognito";
 
 /* call status */
@@ -657,7 +659,7 @@
 /* No comment provided by engineer. */
 "Choose from library" = "Vybrat z knihovny";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "Vyčistit";
 
 /* No comment provided by engineer. */
@@ -936,7 +938,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "výchozí (ano)";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "Smazat";
 
 /* No comment provided by engineer. */
@@ -1474,7 +1477,7 @@
 /* No comment provided by engineer. */
 "Fast and no wait until the sender is online!" = "Rychle a bez čekání, než bude odesílatel online!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "Oblíbené";
 
 /* No comment provided by engineer. */
@@ -1858,7 +1861,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "Japonské rozhraní";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "Připojte se na";
 
 /* No comment provided by engineer. */
@@ -1888,7 +1891,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "Zjistit více";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "Opustit";
 
 /* No comment provided by engineer. */
@@ -2065,13 +2068,13 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Více chatovacích profilů";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Mute" = "Ztlumit";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "Ztlumit při neaktivitě!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "Jméno";
 
 /* No comment provided by engineer. */
@@ -2433,7 +2436,7 @@
 /* chat item menu */
 "React…" = "Reagovat…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "Číst";
 
 /* No comment provided by engineer. */
@@ -2499,7 +2502,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Snížení spotřeby baterie";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "Odmítnout";
 
 /* No comment provided by engineer. */
@@ -3144,7 +3148,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Neočekávaný stav přenášení";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "Odobl.";
 
 /* No comment provided by engineer. */
@@ -3183,10 +3187,10 @@
 /* authentication reason */
 "Unlock app" = "Odemknout aplikaci";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unmute" = "Zrušit ztlumení";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "Nepřečtený";
 
 /* No comment provided by engineer. */

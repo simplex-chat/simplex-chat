@@ -329,7 +329,8 @@
 "above, then choose:" = "上で選んでください：";
 
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "承諾";
 
 /* No comment provided by engineer. */
@@ -338,7 +339,8 @@
 /* notification body */
 "Accept contact request from %@?" = "%@ からの連絡要求を受け入れますか?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "シークレットモードで承諾";
 
 /* call status */
@@ -714,7 +716,7 @@
 /* No comment provided by engineer. */
 "Choose from library" = "ライブラリから選択";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "消す";
 
 /* No comment provided by engineer. */
@@ -990,7 +992,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "デフォルト（はい）";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "削除";
 
 /* No comment provided by engineer. */
@@ -1525,7 +1528,7 @@
 /* No comment provided by engineer. */
 "Fast and no wait until the sender is online!" = "送信者がオンラインになるまでの待ち時間がなく、速い！";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "お気に入り";
 
 /* No comment provided by engineer. */
@@ -1909,7 +1912,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "日本語UI";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "参加";
 
 /* No comment provided by engineer. */
@@ -1939,7 +1942,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "さらに詳しく";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "脱退";
 
 /* No comment provided by engineer. */
@@ -2113,13 +2116,13 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "複数チャットのプロフィール";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Mute" = "ミュート";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "非アクティブ時はミュート！";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "名前";
 
 /* No comment provided by engineer. */
@@ -2481,7 +2484,7 @@
 /* chat item menu */
 "React…" = "反応する…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "読む";
 
 /* No comment provided by engineer. */
@@ -2544,7 +2547,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "電池使用量低減";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "拒否";
 
 /* No comment provided by engineer. */
@@ -3156,7 +3160,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "予期しない移行状態";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "お気に入りを取り消す。";
 
 /* No comment provided by engineer. */
@@ -3195,10 +3199,10 @@
 /* authentication reason */
 "Unlock app" = "アプリのロック解除";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unmute" = "ミュート解除";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "未読";
 
 /* No comment provided by engineer. */
