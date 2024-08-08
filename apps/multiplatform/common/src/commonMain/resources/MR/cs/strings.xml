@@ -679,8 +679,8 @@
     <string name="onboarding_notifications_mode_off">Když aplikace běží</string>
     <string name="onboarding_notifications_mode_service">Okamžité</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Nejlepší pro baterii</b>. Budete přijímat oznámení pouze když aplikace běží (žádná služba na pozadí).]]></string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Dobré pro baterii</b>. Služba na pozadí bude kontrolovat každých 10 minut. Můžete zmeškat hovory nebo naléhavé zprávy.]]></string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Využívá více baterie</b>! Služba na pozadí je spuštěna vždy - oznámení se zobrazí, jakmile jsou zprávy k dispozici.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Dobré pro baterii</b>. Služba na pozadí bude kontrolovat každých 10 minut. Můžete zmeškat hovory nebo naléhavé zprávy.</string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Využívá více baterie</b>! Služba na pozadí je spuštěna vždy - oznámení se zobrazí, jakmile jsou zprávy k dispozici.</string>
     <string name="paste_the_link_you_received">Vložte přijatý odkaz</string>
     <string name="incoming_video_call">Příchozí videohovor</string>
     <string name="incoming_audio_call">Příchozí zvukový hovor</string>
