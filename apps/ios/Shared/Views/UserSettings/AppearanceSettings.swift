@@ -32,8 +32,10 @@ struct AppearanceSettings: View {
         if currentThemeDefault.get() == DefaultTheme.SYSTEM_THEME_NAME { nil as DefaultThemeMode? } else { CurrentColors.base.mode }
     }()
     @State private var darkModeTheme: String = UserDefaults.standard.string(forKey: DEFAULT_SYSTEM_DARK_THEME) ?? DefaultTheme.DARK.themeName
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileImageCornerRadius = defaultProfileImageCorner
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
+    @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.bar.rawValue
 
     @State var themeUserDestination: (Int64, ThemeModeOverrides?)? = {
         if let currentUser = ChatModel.shared.currentUser, let uiThemes = currentUser.uiThemes, uiThemes.preferredMode(!CurrentColors.colors.isLight) != nil {
@@ -65,6 +67,14 @@ struct AppearanceSettings: View {
 
                 Section("Chat list") {
                     Toggle("Reachable chat toolbar", isOn: $oneHandUI)
+                    if developerTools {
+                        Picker("Toolbar opacity", selection: $toolbarMaterial) {
+                            ForEach(ToolbarMaterial.allCases, id: \.rawValue) { tm in
+                                Text(tm.text).tag(tm.rawValue)
+                            }
+                        }
+                        .frame(height: 36)
+                    }
                 }
                 
                 Section {
@@ -293,6 +303,37 @@ struct AppearanceSettings: View {
             ._onButtonGesture { tapped.wrappedValue = $0 } perform: {}
             .overlay(tapped.wrappedValue ? Color.secondary : Color.clear)
             .cornerRadius(13.5)
+    }
+}
+
+enum ToolbarMaterial: String, CaseIterable {
+    case bar
+    case ultraThin
+    case thin
+    case regular
+    case thick
+    case ultraThick
+
+    var material: Material {
+        switch self {
+        case .bar: .bar
+        case .ultraThin: .ultraThin
+        case .thin: .thin
+        case .regular: .regular
+        case .thick: .thick
+        case .ultraThick: .ultraThick
+        }
+    }
+    
+    var text: String {
+        switch self {
+        case .bar: "System"
+        case .ultraThin: "Ultra thin"
+        case .thin: "Thin"
+        case .regular: "Regular"
+        case .thick: "Thick"
+        case .ultraThick: "Ultra thick"
+        }
     }
 }
 

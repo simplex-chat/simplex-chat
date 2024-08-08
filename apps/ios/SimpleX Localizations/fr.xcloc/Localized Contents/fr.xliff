@@ -6750,6 +6750,10 @@ Vous serez invité à confirmer l'authentification avant que cette fonction ne s
         <target>Basculer en mode incognito lors de la connexion.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Toolbar opacity" xml:space="preserve">
+        <source>Toolbar opacity</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Total" xml:space="preserve">
         <source>Total</source>
         <target>Total</target>

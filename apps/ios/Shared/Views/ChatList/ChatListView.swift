@@ -25,6 +25,7 @@ struct ChatListView: View {
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
+    @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.bar.rawValue
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -62,7 +63,8 @@ struct ChatListView: View {
     }
 
     private var chatListView: some View {
-        withToolbar {
+        let tm = ToolbarMaterial(rawValue: toolbarMaterial)?.material ?? Material.bar
+        return withToolbar {
             chatList
                 .background(theme.colors.background)
                 .navigationBarTitleDisplayMode(.inline)
@@ -87,11 +89,11 @@ struct ChatListView: View {
             ))
         }
         .safeAreaInset(edge: .top) {
-            if oneHandUI { Divider().background(Material.ultraThin) }
+            if oneHandUI { Divider().background(tm) }
         }
         .safeAreaInset(edge: .bottom) {
             if oneHandUI {
-                Divider().padding(.bottom, Self.hasHomeIndicator ? 0 : 8).background(Material.ultraThin)
+                Divider().padding(.bottom, Self.hasHomeIndicator ? 0 : 8).background(tm)
             }
         }
     }
