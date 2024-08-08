@@ -463,7 +463,7 @@
     <string name="callstate_connected">соединено</string>
     <string name="callstate_ended">завершен</string>
     <!-- SimpleXInfo -->
-    <string name="next_generation_of_private_messaging">Новое поколение приватных сообщений</string>
+    <string name="next_generation_of_private_messaging">Новое поколение\nприватных сообщений</string>
     <string name="privacy_redefined">Более конфиденциальный</string>
     <string name="first_platform_without_user_ids">Без идентификаторов пользователей.</string>
     <string name="immune_to_spam_and_abuse">Защищен от спама</string>

@@ -57,7 +57,7 @@ fun SimpleXInfoLayout(
   ColumnWithScrollBar(
     Modifier
       .fillMaxSize()
-      .padding(horizontal = DEFAULT_PADDING),
+      .padding(horizontal = 16.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     Box(Modifier.widthIn(max = if (appPlatform.isAndroid) 250.dp else 500.dp).padding(top = DEFAULT_PADDING + 8.dp), contentAlignment = Alignment.Center) {
@@ -75,7 +75,7 @@ fun SimpleXInfoLayout(
 
     Spacer(Modifier.weight(1f))
 
-    Column {
+    Column(Modifier.fillMaxWidth()) {
       InfoRow(painterResource(MR.images.privacy), MR.strings.privacy_redefined, MR.strings.first_platform_without_user_ids, width = 60.dp)
       InfoRow(painterResource(MR.images.shield), MR.strings.immune_to_spam_and_abuse, MR.strings.people_can_connect_only_via_links_you_share, width = 46.dp)
       InfoRow(painterResource(if (isInDarkTheme()) MR.images.decentralized_light else MR.images.decentralized), MR.strings.decentralized, MR.strings.opensource_protocol_and_code_anybody_can_run_servers)

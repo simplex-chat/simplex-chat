@@ -958,10 +958,10 @@
   <string name="error_initializing_web_view">Error initializing WebView. Update your system to the new version. Please contact developers.\nError: %s</string>
 
   <!-- SimpleXInfo -->
-  <string name="next_generation_of_private_messaging">The next generation of private messaging</string>
+  <string name="next_generation_of_private_messaging">The next generation\nof private messaging</string>
   <string name="privacy_redefined">Privacy redefined</string>
   <string name="first_platform_without_user_ids">No user identifiers.</string>
-  <string name="immune_to_spam_and_abuse">Immune to spam and abuse</string>
+  <string name="immune_to_spam_and_abuse">Immune to spam</string>
   <string name="people_can_connect_only_via_links_you_share">You decide who can connect.</string>
   <string name="decentralized">Decentralized</string>
   <string name="opensource_protocol_and_code_anybody_can_run_servers">Anybody can host servers.</string>
@@ -987,8 +987,8 @@
   <string name="onboarding_notifications_mode_periodic">Periodic</string>
   <string name="onboarding_notifications_mode_service">Instant</string>
   <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Best for battery</b>. You will receive notifications only when the app is running (NO background service).]]></string>
-  <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Good for battery</b>. Background service checks messages every 10 minutes. You may miss calls or urgent messages.]]></string>
-  <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Uses more battery</b>! Background service always runs – notifications are shown as soon as messages are available.]]></string>
+  <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Good for battery</b>. App checks messages every 10 minutes. You may miss calls or urgent messages.]]></string>
+  <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Uses more battery</b>! App always runs in background – notifications are shown instantly.]]></string>
 
   <!-- SetupDatabasePassphrase.kt -->
   <string name="setup_database_passphrase">Setup database passphrase</string>
