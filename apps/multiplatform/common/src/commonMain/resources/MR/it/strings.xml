@@ -2058,4 +2058,6 @@
     <string name="v6_0_private_routing_descr">Protegge il tuo indirizzo IP e le connessioni.</string>
     <string name="network_options_save_and_reconnect">Salva e riconnetti</string>
     <string name="reset_all_hints">Ripristina tutti i suggerimenti</string>
+    <string name="one_hand_ui_card_title">Cambia elenco chat:</string>
+    <string name="one_hand_ui_change_instruction">Puoi cambiarlo nelle impostazioni dell\'aspetto.</string>
 </resources>
