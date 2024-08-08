@@ -327,41 +327,46 @@ fun GroupMemberInfoLayout(
 
     val contactId = member.memberContactId
 
-    Row(
-      Modifier
-        .fillMaxWidth()
-        .padding(horizontal = DEFAULT_PADDING),
-      horizontalArrangement = Arrangement.SpaceEvenly,
-      verticalAlignment = Alignment.CenterVertically
+    Box(
+      Modifier.fillMaxWidth(),
+      contentAlignment = Alignment.Center
     ) {
-      val knownChat = if (contactId != null) knownDirectChat(contactId) else null
-      if (knownChat != null) {
-        val (chat, contact) = knownChat
-        OpenChatButton(modifier = Modifier.fillMaxWidth(0.33f), onClick = { openDirectChat(contact.contactId) })
-        AudioCallButton(modifier = Modifier.fillMaxWidth(0.5f), chat, contact)
-        VideoButton(modifier = Modifier.fillMaxWidth(1f), chat, contact)
-      } else if (groupInfo.fullGroupPreferences.directMessages.on(groupInfo.membership)) {
-        if (contactId != null) {
-          OpenChatButton(modifier = Modifier.fillMaxWidth(0.33f), onClick = { openDirectChat(contactId) }) // legacy - only relevant for direct contacts created when joining group
-        } else {
-          OpenChatButton(modifier = Modifier.fillMaxWidth(0.33f), onClick = { createMemberContact() })
+      Row(
+        Modifier
+          .widthIn(max = 320.dp)
+          .padding(horizontal = DEFAULT_PADDING),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        val knownChat = if (contactId != null) knownDirectChat(contactId) else null
+        if (knownChat != null) {
+          val (chat, contact) = knownChat
+          OpenChatButton(modifier = Modifier.fillMaxWidth(0.33f), onClick = { openDirectChat(contact.contactId) })
+          AudioCallButton(modifier = Modifier.fillMaxWidth(0.5f), chat, contact)
+          VideoButton(modifier = Modifier.fillMaxWidth(1f), chat, contact)
+        } else if (groupInfo.fullGroupPreferences.directMessages.on(groupInfo.membership)) {
+          if (contactId != null) {
+            OpenChatButton(modifier = Modifier.fillMaxWidth(0.33f), onClick = { openDirectChat(contactId) }) // legacy - only relevant for direct contacts created when joining group
+          } else {
+            OpenChatButton(modifier = Modifier.fillMaxWidth(0.33f), onClick = { createMemberContact() })
+          }
+          InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.5f), painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, onClick = {
+            showSendMessageToEnableCallsAlert()
+          })
+          InfoViewActionButton(modifier = Modifier.fillMaxWidth(1f), painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = false, disabledLook = true, onClick = {
+            showSendMessageToEnableCallsAlert()
+          })
+        } else { // no known contact chat && directMessages are off
+          InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.33f), painterResource(MR.images.ic_chat_bubble), generalGetString(MR.strings.info_view_message_button), disabled = false, disabledLook = true, onClick = {
+            showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_send_message_to_member_alert_title))
+          })
+          InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.5f), painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, onClick = {
+            showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title))
+          })
+          InfoViewActionButton(modifier = Modifier.fillMaxWidth(1f), painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = false, disabledLook = true, onClick = {
+            showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title))
+          })
         }
-        InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.5f), painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, onClick = {
-          showSendMessageToEnableCallsAlert()
-        })
-        InfoViewActionButton(modifier = Modifier.fillMaxWidth(1f), painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = false, disabledLook = true, onClick = {
-          showSendMessageToEnableCallsAlert()
-        })
-      } else { // no known contact chat && directMessages are off
-        InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.33f), painterResource(MR.images.ic_chat_bubble), generalGetString(MR.strings.info_view_message_button), disabled = false, disabledLook = true, onClick = {
-          showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_send_message_to_member_alert_title))
-        })
-        InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.5f), painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, onClick = {
-          showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title))
-        })
-        InfoViewActionButton(modifier = Modifier.fillMaxWidth(1f), painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = false, disabledLook = true, onClick = {
-          showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title))
-        })
       }
     }
 

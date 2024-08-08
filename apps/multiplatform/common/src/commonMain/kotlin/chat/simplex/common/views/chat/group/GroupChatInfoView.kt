@@ -294,20 +294,25 @@ fun GroupChatInfoLayout(
       }
       SectionSpacer()
 
-      Row(
-        Modifier
-          .fillMaxWidth()
-          .padding(horizontal = DEFAULT_PADDING),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
+      Box(
+        Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
       ) {
-        if (groupInfo.canAddMembers) {
-          SearchButton(modifier = Modifier.fillMaxWidth(0.33f), chat, groupInfo, close, onSearchClicked)
-          AddGroupMembersButton(modifier = Modifier.fillMaxWidth(0.5f), chat, groupInfo)
-          MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, groupInfo)
-        } else {
-          SearchButton(modifier = Modifier.fillMaxWidth(0.5f), chat, groupInfo, close, onSearchClicked)
-          MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, groupInfo)
+        Row(
+          Modifier
+            .widthIn(max = if (groupInfo.canAddMembers) 320.dp else 230.dp)
+            .padding(horizontal = DEFAULT_PADDING),
+          horizontalArrangement = Arrangement.SpaceEvenly,
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          if (groupInfo.canAddMembers) {
+            SearchButton(modifier = Modifier.fillMaxWidth(0.33f), chat, groupInfo, close, onSearchClicked)
+            AddGroupMembersButton(modifier = Modifier.fillMaxWidth(0.5f), chat, groupInfo)
+            MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, groupInfo)
+          } else {
+            SearchButton(modifier = Modifier.fillMaxWidth(0.5f), chat, groupInfo, close, onSearchClicked)
+            MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, groupInfo)
+          }
         }
       }
 

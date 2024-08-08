@@ -544,17 +544,22 @@ fun ChatInfoLayout(
 
     SectionSpacer()
 
-    Row(
-      Modifier
-        .fillMaxWidth()
-        .padding(horizontal = DEFAULT_PADDING),
-      horizontalArrangement = Arrangement.SpaceEvenly,
-      verticalAlignment = Alignment.CenterVertically
+    Box(
+      Modifier.fillMaxWidth(),
+      contentAlignment = Alignment.Center
     ) {
-      SearchButton(modifier = Modifier.fillMaxWidth(0.25f), chat, contact, close, onSearchClicked)
-      AudioCallButton(modifier = Modifier.fillMaxWidth(0.33f), chat, contact)
-      VideoButton(modifier = Modifier.fillMaxWidth(0.5f), chat, contact)
-      MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, contact)
+      Row(
+        Modifier
+          .widthIn(max = 460.dp)
+          .padding(horizontal = DEFAULT_PADDING),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        SearchButton(modifier = Modifier.fillMaxWidth(0.25f), chat, contact, close, onSearchClicked)
+        AudioCallButton(modifier = Modifier.fillMaxWidth(0.33f), chat, contact)
+        VideoButton(modifier = Modifier.fillMaxWidth(0.5f), chat, contact)
+        MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, contact)
+      }
     }
 
     SectionSpacer()
