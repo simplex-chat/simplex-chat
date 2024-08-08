@@ -13,35 +13,19 @@ class AppSheetState: ObservableObject {
     @Published var scenePhaseActive: Bool = false
 }
 
-// The code works but needs to be tested on different versions of iOS
-//struct PrivacySensitive: ViewModifier {
-//    @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
-//    @Environment(\.scenePhase) var scenePhase
-//    @ObservedObject var appSheetState: AppSheetState = AppSheetState.shared
-//
-//    func body(content: Content) -> some View {
-//        if !protectScreen {
-//            content
-//        } else {
-//            content.privacySensitive(!appSheetState.scenePhaseActive).redacted(reason: .privacy)
-//        }
-//    }
-//}
-
-struct PrivacySensitive: ViewModifier {
+private struct PrivacySensitive: ViewModifier {
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @Environment(\.scenePhase) var scenePhase
     @ObservedObject var appSheetState: AppSheetState = AppSheetState.shared
 
     func body(content: Content) -> some View {
-        if !protectScreen || appSheetState.scenePhaseActive {
+        if !protectScreen {
             content
         } else {
-            content.privacySensitive(true).redacted(reason: .privacy)
+            content.privacySensitive(!appSheetState.scenePhaseActive).redacted(reason: .privacy)
         }
     }
 }
-
 
 extension View {
     func appSheet<Content>(
