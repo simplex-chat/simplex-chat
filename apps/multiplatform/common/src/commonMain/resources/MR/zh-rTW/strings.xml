@@ -21,8 +21,8 @@
     <string name="allow_verb">允許</string>
     <string name="display_name__field">顯示名稱：</string>
     <string name="full_name__field">全名：</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>使用更多電量</b>！通知服務長期在背景中運行 – 有效的訊息就會即時顯示在通知內。]]></string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>對電量友善</b>。通知服務於每十分鐘檢查一次訊息。你可能會錯過通話和迫切的訊息。]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>使用更多電量</b>！通知服務長期在背景中運行 – 有效的訊息就會即時顯示在通知內。</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>對電量友善</b>。通知服務於每十分鐘檢查一次訊息。你可能會錯過通話和迫切的訊息。</string>
     <string name="answer_call">回應通話請求</string>
     <string name="clear_contacts_selection_button">清除</string>
     <string name="allow_direct_messages">允許向群組內的成員傳送私訊。</string>
