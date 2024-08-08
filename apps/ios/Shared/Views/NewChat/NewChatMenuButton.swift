@@ -27,7 +27,7 @@ struct NewChatMenuButton: View {
                 .scaledToFit()
                 .frame(width: 24, height: 24)
         }
-        .appSheet(isPresented: $showNewChatSheet) {
+        .sheet(isPresented: $showNewChatSheet) {
             NewChatSheet(alert: $alert)
                 .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
                 .alert(item: $alert) { a in
@@ -83,6 +83,7 @@ struct NewChatSheet: View {
                     searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
                 )
                 .frame(maxWidth: .infinity)
+                .modifier(PrivacySensitive())
             }
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
@@ -137,6 +138,7 @@ struct NewChatSheet: View {
                 searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
                 showDeletedChatIcon: true
             )
+            .modifier(PrivacySensitive())
         }
     }
     
@@ -440,7 +442,8 @@ struct DeletedChats: View {
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
             .frame(maxWidth: .infinity)
-            
+            .modifier(PrivacySensitive())
+
             ContactsList(
                 baseContactTypes: $baseContactTypes,
                 searchMode: $searchMode,
@@ -450,6 +453,7 @@ struct DeletedChats: View {
                 searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
                 showDeletedChatIcon: false
             )
+            .modifier(PrivacySensitive())
         }
         .navigationTitle("Archived contacts")
         .navigationBarTitleDisplayMode(.large)
