@@ -112,7 +112,7 @@ struct NewChatSheet: View {
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        Label("Create group", systemImage: "person.2")
+                        Label("Create group", systemImage: "person.2.circle.fill")
                     }
                 }
                 
@@ -142,7 +142,10 @@ struct NewChatSheet: View {
     
     func newChatActionButton<Content : View>(_ icon: String, color: Color/* = .secondary*/, content: @escaping () -> Content) -> some View {
         ZStack(alignment: .leading) {
-            Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+            Image(systemName: icon)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
                 .symbolRenderingMode(.monochrome)
                 .foregroundColor(color)
             content().foregroundColor(theme.colors.onBackground).padding(.leading, indent)
@@ -340,7 +343,7 @@ struct ContactsListSearchBar: View {
             }
             .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
             .foregroundColor(theme.colors.secondary)
-            .background(theme.colors.isLight ? theme.colors.background : theme.colors.secondaryVariant)
+            .background(Color(uiColor: .secondarySystemGroupedBackground))
             .cornerRadius(10.0)
 
             if searchFocussed {
@@ -354,6 +357,7 @@ struct ContactsListSearchBar: View {
                 toggleFilterButton()
             }
         }
+        .padding(.top, 24)
         .onChange(of: searchFocussed) { sf in
             withAnimation { searchMode = sf }
         }
@@ -447,8 +451,8 @@ struct DeletedChats: View {
                 showDeletedChatIcon: false
             )
         }
-        .navigationTitle("Deleted chats")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Archived contacts")
+        .navigationBarTitleDisplayMode(.large)
         .navigationBarHidden(searchMode)
         .modifier(ThemedBackground(grouped: true))
 
