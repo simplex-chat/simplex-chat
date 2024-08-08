@@ -26,7 +26,7 @@
     <string name="users_delete_all_chats_deleted">全チャットとメッセージが削除されます(※元に戻せません※)！</string>
     <string name="allow_your_contacts_to_send_voice_messages">送信相手からの音声メッセージを許可する。</string>
     <string name="both_you_and_your_contact_can_send_voice">あなたと連絡相手が音声メッセージを送信できます。</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>電池省エネに良い</b>：バックグラウンド機能で10分毎に新着メッセージを確認します。通話と緊急メッセージを見逃す可能性があります。]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>電池省エネに良い</b>：バックグラウンド機能で10分毎に新着メッセージを確認します。通話と緊急メッセージを見逃す可能性があります。</string>
     <string name="icon_descr_audio_off">音声オフ</string>
     <string name="attach">添付する</string>
     <string name="app_version_code">アプリ・ビルド番号： %s</string>
@@ -159,7 +159,7 @@
     <string name="many_people_asked_how_can_it_deliver"><![CDATA[よく聞かれるのは、 <i>if SimpleX にユーザIDがなければ、メッセージをどうやって届けるのでしょうかと。</i>]]></string>
     <string name="how_simplex_works">SimpleX の仕様</string>
     <string name="icon_descr_call_progress">通話中</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>電池消費がより高い</b>！非アクティブ時でもバックグラウンドのサービスが常に稼働します（着信次第に通知がすぐに出ます）。]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>電池消費がより高い</b>！非アクティブ時でもバックグラウンドのサービスが常に稼働します（着信次第に通知がすぐに出ます）。</string>
     <string name="callstatus_calling">発信中</string>
     <string name="callstatus_ended">通話終了 %1$s</string>
     <string name="icon_descr_call_ended">通話が終了しました。</string>
