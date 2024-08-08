@@ -46,7 +46,7 @@ fun SetNotificationsMode(m: ChatModel) {
       }
     }
     Spacer(Modifier.fillMaxHeight().weight(1f))
-    Box(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), contentAlignment = Alignment.Center) {
+    Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
       OnboardingActionButton(
         modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier,
         labelId = MR.strings.use_chat,
@@ -55,8 +55,9 @@ fun SetNotificationsMode(m: ChatModel) {
           changeNotificationsMode(currentMode.value, m)
         }
       )
+      // Reserve space
+      TextButtonBelowOnboardingButton("", null)
     }
-    Spacer(Modifier.height(DEFAULT_PADDING * 2))
   }
   SetNotificationsModeAdditions()
 }

@@ -1,5 +1,6 @@
 package chat.simplex.common.views.onboarding
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -32,7 +33,7 @@ fun SimpleXInfo(chatModel: ChatModel, onboarding: Boolean = true) {
   if (onboarding) {
     ModalView({}, showClose = false, endButtons = {
       IconButton({ ModalManager.fullscreen.showModal { HowItWorks(chatModel.currentUser.value, null) }}) {
-        Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.primary)
+        Icon(painterResource(MR.images.ic_info), null, Modifier.size(28.dp), tint = MaterialTheme.colors.primary)
       }
     }) {
       SimpleXInfoLayout(
@@ -56,20 +57,23 @@ fun SimpleXInfoLayout(
   ColumnWithScrollBar(
     Modifier
       .fillMaxSize()
-      .padding(start = DEFAULT_PADDING * 2, end = DEFAULT_PADDING * 2),
+      .padding(horizontal = DEFAULT_PADDING),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
-    Box(Modifier.widthIn(max = if (appPlatform.isAndroid) 250.dp else 500.dp).padding(top = DEFAULT_PADDING + 8.dp, bottom = 30.dp), contentAlignment = Alignment.Center) {
+    Box(Modifier.widthIn(max = if (appPlatform.isAndroid) 250.dp else 500.dp).padding(top = DEFAULT_PADDING + 8.dp), contentAlignment = Alignment.Center) {
       SimpleXLogo()
     }
+
+    Spacer(Modifier.weight(1f))
 
     Text(
       stringResource(MR.strings.next_generation_of_private_messaging),
       style = MaterialTheme.typography.h3,
       color = MaterialTheme.colors.secondary,
-      modifier = Modifier.padding(bottom = 68.dp),
       textAlign = TextAlign.Center
     )
+
+    Spacer(Modifier.weight(1f))
 
     Column {
       InfoRow(painterResource(MR.images.privacy), MR.strings.privacy_redefined, MR.strings.first_platform_without_user_ids, width = 60.dp)
@@ -80,7 +84,7 @@ fun SimpleXInfoLayout(
     Spacer(Modifier.fillMaxHeight().weight(1f))
 
     if (onboardingStage != null) {
-      Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+      Column(Modifier.padding(horizontal = DEFAULT_PADDING).widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
         OnboardingActionButton(user, onboardingStage)
         TextButtonBelowOnboardingButton(stringResource(MR.strings.migrate_from_another_device)) {
           chatModel.migrationState.value = MigrationToState.PasteOrScanLink
@@ -88,7 +92,6 @@ fun SimpleXInfoLayout(
         }
       }
     }
-    Spacer(Modifier.height(DEFAULT_PADDING))
   }
   LaunchedEffect(Unit) {
     if (chatModel.migrationState.value != null && !ModalManager.fullscreen.hasModalsOpen()) {
@@ -159,14 +162,22 @@ fun OnboardingActionButton(
 
 @Composable
 fun TextButtonBelowOnboardingButton(text: String, onClick: (() -> Unit)?) {
-  TextButton({ onClick?.invoke() }, Modifier.padding(top = DEFAULT_PADDING_HALF).clip(CircleShape), enabled = onClick != null) {
-    Text(
-      text,
-      Modifier.padding(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING_HALF, bottom = 5.dp),
-      color = MaterialTheme.colors.primary,
-      fontWeight = FontWeight.Medium,
-      textAlign = TextAlign.Center
-    )
+  val state = getKeyboardState()
+  val topPadding by animateDpAsState(if (appPlatform.isAndroid && state.value == KeyboardState.Opened) 0.dp else DEFAULT_PADDING)
+  val bottomPadding by animateDpAsState(if (appPlatform.isAndroid && state.value == KeyboardState.Opened) 0.dp else DEFAULT_PADDING * 2)
+  if ((appPlatform.isAndroid && state.value == KeyboardState.Closed) || topPadding > 0.dp) {
+    TextButton({ onClick?.invoke() }, Modifier.padding(top = topPadding, bottom = bottomPadding).clip(CircleShape), enabled = onClick != null) {
+      Text(
+        text,
+        Modifier.padding(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING_HALF, bottom = 5.dp),
+        color = MaterialTheme.colors.primary,
+        fontWeight = FontWeight.Medium,
+        textAlign = TextAlign.Center
+      )
+    }
+  } else {
+    // Hide from view when keyboard is open and move the view down
+    Spacer(Modifier.height(DEFAULT_PADDING * 2))
   }
 }
 

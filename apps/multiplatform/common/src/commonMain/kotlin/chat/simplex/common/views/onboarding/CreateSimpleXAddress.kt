@@ -103,7 +103,7 @@ private fun CreateSimpleXAddressLayout(
           onboarding = null,
           onclick = nextStep
         )
-        // Just to keep the onboarding button on the same place in layout
+        // Reserve space
         TextButtonBelowOnboardingButton("", null)
       }
     } else {
@@ -114,8 +114,8 @@ private fun CreateSimpleXAddressLayout(
       Spacer(Modifier.weight(1f))
       Text(stringResource(MR.strings.create_simplex_address), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Bold)
       TextBelowButton(stringResource(MR.strings.you_can_make_address_visible_via_settings))
-      Spacer(Modifier.weight(1f))
       Spacer(Modifier.height(DEFAULT_PADDING))
+      Spacer(Modifier.weight(1f))
 
       Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
         OnboardingActionButton(
@@ -127,7 +127,6 @@ private fun CreateSimpleXAddressLayout(
         TextButtonBelowOnboardingButton(stringResource(MR.strings.dont_create_address), nextStep)
       }
     }
-    Spacer(Modifier.height(DEFAULT_PADDING))
   }
 }
 

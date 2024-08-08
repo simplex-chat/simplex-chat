@@ -1,11 +1,8 @@
 package chat.simplex.common.views.onboarding
 
-import SectionBottomSpacer
 import SectionTextFooter
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -111,12 +108,7 @@ private fun SetupDatabasePassphraseLayout(
     Modifier.fillMaxSize().padding(bottom = DEFAULT_PADDING * 2),
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
-    CloseSheetBar(close = {
-      appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
-    })
-    BackHandler(onBack = {
-      appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
-    })
+    CloseSheetBar(showClose = false, close = {})
     AppBarTitle(stringResource(MR.strings.setup_database_passphrase))
 
     Spacer(Modifier.weight(1f))
@@ -214,7 +206,8 @@ private fun SkipButton(disabled: Boolean, onClick: () -> Unit) {
     stringResource(MR.strings.you_can_change_it_later),
     Modifier
       .fillMaxWidth()
-      .padding(horizontal = DEFAULT_PADDING * 3),
+      .padding(horizontal = DEFAULT_PADDING * 3)
+      .padding(top = DEFAULT_PADDING, bottom = DEFAULT_PADDING - 5.dp),
     style = MaterialTheme.typography.subtitle1,
     color = MaterialTheme.colors.secondary,
     textAlign = TextAlign.Center,
