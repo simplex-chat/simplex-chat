@@ -80,7 +80,7 @@
     <string name="turning_off_service_and_periodic">Активована оптимізація батареї, вимикається фоновий сервіс і періодичні запити нових повідомлень. Ви можете знову увімкнути їх у налаштуваннях.</string>
     <string name="back">Назад</string>
     <string name="bold_text">жирний</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Добре для акумулятора</b>. Сервіс фонового запуску перевіряє повідомлення кожні 10 хвилин. Ви можете пропустити виклики чи важливі повідомлення.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Добре для акумулятора</b>. Сервіс фонового запуску перевіряє повідомлення кожні 10 хвилин. Ви можете пропустити виклики чи важливі повідомлення.</string>
     <string name="settings_audio_video_calls">Аудіо та відеовиклики</string>
     <string name="icon_descr_audio_off">Аудіо вимкнено</string>
     <string name="auth_unavailable">Аутентифікація недоступна</string>
@@ -659,7 +659,7 @@
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Ви контролюєте, через які сервери <b>отримувати</b> повідомлення, ваші контакти – сервери, які ви використовуєте для надсилання повідомлень їм.]]></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Тільки пристрої клієнта зберігають профілі користувачів, контакти, групи та повідомлення, відправлені за допомогою <b>шифрування на двох рівнях</b>.]]></string>
     <string name="onboarding_notifications_mode_title">Приватні сповіщення</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Споживає більше заряду акумулятора</b>! Фоновий сервіс завжди працює – сповіщення відображаються, як тільки повідомлення доступні.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Споживає більше заряду акумулятора</b>! Фоновий сервіс завжди працює – сповіщення відображаються, як тільки повідомлення доступні.</string>
     <string name="paste_the_link_you_received">Вставте отримане посилання</string>
     <string name="icon_descr_video_off">Відео вимкнено</string>
     <string name="icon_descr_call_ended">Завершено виклик</string>
