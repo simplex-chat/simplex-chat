@@ -125,8 +125,6 @@ final class ChatModel: ObservableObject {
     @Published var pasteboardHasStrings: Bool = UIPasteboard.general.hasStrings
     @Published var networkInfo = UserNetworkInfo(networkType: .other, online: true)
 
-    @Published var scenePhaseActive = false
-
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
     var filesToDelete: Set<URL> = []
