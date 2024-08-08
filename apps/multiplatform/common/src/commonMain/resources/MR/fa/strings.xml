@@ -885,7 +885,7 @@
     <string name="settings_section_title_icon">آیکون برنامه</string>
     <string name="chat_database_section">پایگاه داده گپ</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">بن‌سازه پیام‌رسانی و کاربردی که از حریم خصوصی و امنیت شما محافظت می‌کند.</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>گزینه خوب برای باتری</b>. سرویس پس‌زمینه هر ۱۰ دقیقه پیام‌ها را بررسی می‌کند. ممکن است تماس‌ها یا پیام‌های ضروری را از دست دهید.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>گزینه خوب برای باتری</b>. سرویس پس‌زمینه هر ۱۰ دقیقه پیام‌ها را بررسی می‌کند. ممکن است تماس‌ها یا پیام‌های ضروری را از دست دهید.</string>
     <string name="alert_title_skipped_messages">پیام‌ها از قلم افتادند</string>
     <string name="unable_to_open_browser_desc">مرورگر وب پیش‌فرض برای تماس‌ها لازم است. لطفا مرورگر پیش‌فرض را در سیستم تنظیم کنید، و اطلاعات بیشتر را با توسعه‌دهندگان به اشتراک بگذارید.</string>
     <string name="relay_server_if_necessary">سرور واسط فقط در زمان نیاز مورد استفاده قرار می‌گیرد. طرف دیگری قادر به مشاهده نشانی IP شما خواهد بود.</string>
@@ -931,7 +931,7 @@
     <string name="permissions_grant">اعطای اجازه‌ها برای برقراری تماس‌ها</string>
     <string name="privacy_redefined">حریم خصوصی باز تعریف شده</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">برای حفاظت از حریم خصوصی، به جای شناسه‌های کاربری مورد استفاده در بن‌سازه‌های دیگر، SimpleX شناسه‌هایی برای صفوف پیام دارد، جدا برای هر کدام از مخاطبان شما.</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>از باتری بیشتر استفاده می‌کند</b>! سرویس پس‌زمینه همیشه در حال اجراست - اعلان‌ها به محض موجود شدن، نمایش داده می‌شوند.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>از باتری بیشتر استفاده می‌کند</b>! سرویس پس‌زمینه همیشه در حال اجراست - اعلان‌ها به محض موجود شدن، نمایش داده می‌شوند.</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">وقتی می‌تواند اتفاق بیفتد که:
 \n۱. پیام‌ها در کلاینت فرستنده بعد از ۲ روز یا روی سرور بعد از ۳۰ روز منقضی شده باشند.
 \n۲. رمزگشایی پیام ناموفق بود، چون شما یا مخاطبتان از پشتیبان پایگاه داده قدیمی استفاده استفاده کردید.
