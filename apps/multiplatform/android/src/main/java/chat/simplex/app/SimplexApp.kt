@@ -276,12 +276,12 @@ class SimplexApp: Application(), LifecycleEventObserver {
         @Suppress("DEPRECATION")
         val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
 
-        val statusBar = (if (hasTop) {
+        val statusBar = (if (hasTop && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
           backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
         } else {
           backgroundColor
         }).toArgb()
-        val navBar = (if (hasBottom) {
+        val navBar = (if (hasBottom && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
           backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
         } else {
           backgroundColor
