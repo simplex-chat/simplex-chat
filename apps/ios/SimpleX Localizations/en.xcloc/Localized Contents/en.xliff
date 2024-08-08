@@ -568,7 +568,8 @@
         <source>Accept</source>
         <target>Accept</target>
         <note>accept contact request via notification
-   accept incoming call via notification</note>
+   accept incoming call via notification
+   swipe action</note>
       </trans-unit>
       <trans-unit id="Accept connection request?" xml:space="preserve">
         <source>Accept connection request?</source>
@@ -583,7 +584,8 @@
       <trans-unit id="Accept incognito" xml:space="preserve">
         <source>Accept incognito</source>
         <target>Accept incognito</target>
-        <note>accept contact request via notification</note>
+        <note>accept contact request via notification
+   swipe action</note>
       </trans-unit>
       <trans-unit id="Acknowledged" xml:space="preserve">
         <source>Acknowledged</source>
@@ -1316,6 +1318,11 @@
         <target>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Chat list" xml:space="preserve">
+        <source>Chat list</source>
+        <target>Chat list</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat migrated!" xml:space="preserve">
         <source>Chat migrated!</source>
         <target>Chat migrated!</target>
@@ -1379,7 +1386,7 @@
       <trans-unit id="Clear" xml:space="preserve">
         <source>Clear</source>
         <target>Clear</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Clear conversation" xml:space="preserve">
         <source>Clear conversation</source>
@@ -1981,7 +1988,8 @@ This is your own one-time link!</target>
       <trans-unit id="Delete" xml:space="preserve">
         <source>Delete</source>
         <target>Delete</target>
-        <note>chat item action</note>
+        <note>chat item action
+   swipe action</note>
       </trans-unit>
       <trans-unit id="Delete %lld messages of members?" xml:space="preserve">
         <source>Delete %lld messages of members?</source>
@@ -2187,11 +2195,6 @@ This is your own one-time link!</target>
         <source>Deleted at: %@</source>
         <target>Deleted at: %@</target>
         <note>copied message info</note>
-      </trans-unit>
-      <trans-unit id="Deleted chats" xml:space="preserve">
-        <source>Deleted chats</source>
-        <target>Deleted chats</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Deletion errors" xml:space="preserve">
         <source>Deletion errors</source>
@@ -3077,7 +3080,7 @@ This is your own one-time link!</target>
       <trans-unit id="Favorite" xml:space="preserve">
         <source>Favorite</source>
         <target>Favorite</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="File error" xml:space="preserve">
         <source>File error</source>
@@ -3854,7 +3857,7 @@ Error: %2$@</target>
       <trans-unit id="Join" xml:space="preserve">
         <source>Join</source>
         <target>Join</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
         <source>Join group</source>
@@ -3946,7 +3949,7 @@ This is your link for group %@!</target>
       <trans-unit id="Leave" xml:space="preserve">
         <source>Leave</source>
         <target>Leave</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Leave group" xml:space="preserve">
         <source>Leave group</source>
@@ -4341,7 +4344,7 @@ This is your link for group %@!</target>
       <trans-unit id="Mute" xml:space="preserve">
         <source>Mute</source>
         <target>Mute</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Muted when inactive!" xml:space="preserve">
         <source>Muted when inactive!</source>
@@ -4351,7 +4354,7 @@ This is your link for group %@!</target>
       <trans-unit id="Name" xml:space="preserve">
         <source>Name</source>
         <target>Name</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
         <source>Network &amp; servers</source>
@@ -4565,11 +4568,6 @@ This is your link for group %@!</target>
       <trans-unit id="Old database archive" xml:space="preserve">
         <source>Old database archive</source>
         <target>Old database archive</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="One-hand UI" xml:space="preserve">
-        <source>One-hand UI</source>
-        <target>One-hand UI</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve">
@@ -5147,6 +5145,11 @@ Enable in *Network &amp; servers* settings.</target>
         <target>Rate the app</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Reachable chat toolbar" xml:space="preserve">
+        <source>Reachable chat toolbar</source>
+        <target>Reachable chat toolbar</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Reachable chat toolbar 👋" xml:space="preserve">
         <source>Reachable chat toolbar 👋</source>
         <target>Reachable chat toolbar 👋</target>
@@ -5160,7 +5163,7 @@ Enable in *Network &amp; servers* settings.</target>
       <trans-unit id="Read" xml:space="preserve">
         <source>Read</source>
         <target>Read</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Read more" xml:space="preserve">
         <source>Read more</source>
@@ -5320,7 +5323,8 @@ Enable in *Network &amp; servers* settings.</target>
       <trans-unit id="Reject" xml:space="preserve">
         <source>Reject</source>
         <target>Reject</target>
-        <note>reject incoming call via notification</note>
+        <note>reject incoming call via notification
+   swipe action</note>
       </trans-unit>
       <trans-unit id="Reject (sender NOT notified)" xml:space="preserve">
         <source>Reject (sender NOT notified)</source>
@@ -5420,6 +5424,11 @@ Enable in *Network &amp; servers* settings.</target>
       <trans-unit id="Reset" xml:space="preserve">
         <source>Reset</source>
         <target>Reset</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Reset all hints" xml:space="preserve">
+        <source>Reset all hints</source>
+        <target>Reset all hints</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reset all statistics" xml:space="preserve">
@@ -6761,6 +6770,11 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Toggle chat list:" xml:space="preserve">
+        <source>Toggle chat list:</source>
+        <target>Toggle chat list:</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
         <source>Toggle incognito when connecting.</source>
         <target>Toggle incognito when connecting.</target>
@@ -6844,7 +6858,7 @@ You will be prompted to complete authentication before this feature is enabled.<
       <trans-unit id="Unfav." xml:space="preserve">
         <source>Unfav.</source>
         <target>Unfav.</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Unhide" xml:space="preserve">
         <source>Unhide</source>
@@ -6921,12 +6935,12 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Unmute" xml:space="preserve">
         <source>Unmute</source>
         <target>Unmute</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Unread" xml:space="preserve">
         <source>Unread</source>
         <target>Unread</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
         <source>Up to 100 last messages are sent to new members.</source>
@@ -7418,6 +7432,11 @@ Repeat join request?</target>
       <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve">
         <source>You can accept calls from lock screen, without device and app authentication.</source>
         <target>You can accept calls from lock screen, without device and app authentication.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can change it in Appearance settings." xml:space="preserve">
+        <source>You can change it in Appearance settings.</source>
+        <target>You can change it in Appearance settings.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">

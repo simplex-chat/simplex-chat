@@ -1977,15 +1977,19 @@
   <string name="v5_8_message_delivery">Improved message delivery</string>
   <string name="v5_8_message_delivery_descr">With reduced battery usage.</string>
   <string name="v5_8_persian_ui">Persian UI</string>
+  <string name="v6_0_new_chat_experience">New chat experience 🎉</string>
+  <string name="v6_0_new_media_options">New media options</string>
   <string name="v6_0_private_routing_descr">It protects your IP address and connections.</string>
-  <string name="v6_0_your_contacts">Your contacts your way</string>
-  <string name="v6_0_your_contacts_descr">- Search contacts when starting chat.\n- Archive contacts to chat later.</string>
-  <string name="v6_0_reachable_chat_toolbar">Reachable chat toolbar 👋</string>
+  <string name="v6_0_your_contacts_descr">Archive contacts to chat later.</string>
+  <string name="v6_0_reachable_chat_toolbar">Reachable chat toolbar</string>
   <string name="v6_0_reachable_chat_toolbar_descr">Use the app with one hand.</string>
-  <string name="v6_0_connect_faster">Connect to your friends faster</string>
-  <string name="v6_0_connect_faster_descr">Even when they are offline.</string>
-  <string name="v6_0_delete_many_messages">Moderate like a pro ✋</string>
+  <string name="v6_0_connect_faster_descr">Connect to your friends faster.</string>
   <string name="v6_0_delete_many_messages_descr">Delete up to 20 messages at once.</string>
+  <string name="v6_0_chat_list_media">Play from the chat list.</string>
+  <string name="v6_0_privacy_blur">Blur for better privacy.</string>
+  <string name="v6_0_increase_font_size">Increase font size.</string>
+  <string name="v6_0_upgrade_app">Upgrade app automatically</string>
+  <string name="v6_0_upgrade_app_descr">Download new versions from GitHub.</string>
   <string name="v6_0_connection_servers_status">Control your network</string>
   <string name="v6_0_connection_servers_status_descr">Connection and servers status.</string>
 

@@ -566,7 +566,8 @@
         <source>Accept</source>
         <target>Akceptuj</target>
         <note>accept contact request via notification
-   accept incoming call via notification</note>
+   accept incoming call via notification
+   swipe action</note>
       </trans-unit>
       <trans-unit id="Accept connection request?" xml:space="preserve">
         <source>Accept connection request?</source>
@@ -581,7 +582,8 @@
       <trans-unit id="Accept incognito" xml:space="preserve">
         <source>Accept incognito</source>
         <target>Akceptuj incognito</target>
-        <note>accept contact request via notification</note>
+        <note>accept contact request via notification
+   swipe action</note>
       </trans-unit>
       <trans-unit id="Acknowledged" xml:space="preserve">
         <source>Acknowledged</source>
@@ -1305,6 +1307,10 @@
         <target>Czat został zatrzymany. Jeśli korzystałeś już z tej bazy danych na innym urządzeniu, powinieneś przenieść ją z powrotem przed rozpoczęciem czatu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Chat list" xml:space="preserve">
+        <source>Chat list</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat migrated!" xml:space="preserve">
         <source>Chat migrated!</source>
         <target>Czat zmigrowany!</target>
@@ -1368,7 +1374,7 @@
       <trans-unit id="Clear" xml:space="preserve">
         <source>Clear</source>
         <target>Wyczyść</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Clear conversation" xml:space="preserve">
         <source>Clear conversation</source>
@@ -1960,7 +1966,8 @@ To jest twój jednorazowy link!</target>
       <trans-unit id="Delete" xml:space="preserve">
         <source>Delete</source>
         <target>Usuń</target>
-        <note>chat item action</note>
+        <note>chat item action
+   swipe action</note>
       </trans-unit>
       <trans-unit id="Delete %lld messages of members?" xml:space="preserve">
         <source>Delete %lld messages of members?</source>
@@ -2162,10 +2169,6 @@ To jest twój jednorazowy link!</target>
         <source>Deleted at: %@</source>
         <target>Usunięto o: %@</target>
         <note>copied message info</note>
-      </trans-unit>
-      <trans-unit id="Deleted chats" xml:space="preserve">
-        <source>Deleted chats</source>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Deletion errors" xml:space="preserve">
         <source>Deletion errors</source>
@@ -3044,7 +3047,7 @@ To jest twój jednorazowy link!</target>
       <trans-unit id="Favorite" xml:space="preserve">
         <source>Favorite</source>
         <target>Ulubione</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="File error" xml:space="preserve">
         <source>File error</source>
@@ -3817,7 +3820,7 @@ Błąd: %2$@</target>
       <trans-unit id="Join" xml:space="preserve">
         <source>Join</source>
         <target>Dołącz</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Join group" xml:space="preserve">
         <source>Join group</source>
@@ -3908,7 +3911,7 @@ To jest twój link do grupy %@!</target>
       <trans-unit id="Leave" xml:space="preserve">
         <source>Leave</source>
         <target>Opuść</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Leave group" xml:space="preserve">
         <source>Leave group</source>
@@ -4299,7 +4302,7 @@ To jest twój link do grupy %@!</target>
       <trans-unit id="Mute" xml:space="preserve">
         <source>Mute</source>
         <target>Wycisz</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Muted when inactive!" xml:space="preserve">
         <source>Muted when inactive!</source>
@@ -4309,7 +4312,7 @@ To jest twój link do grupy %@!</target>
       <trans-unit id="Name" xml:space="preserve">
         <source>Name</source>
         <target>Nazwa</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Network &amp; servers" xml:space="preserve">
         <source>Network &amp; servers</source>
@@ -4521,10 +4524,6 @@ To jest twój link do grupy %@!</target>
       <trans-unit id="Old database archive" xml:space="preserve">
         <source>Old database archive</source>
         <target>Stare archiwum bazy danych</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="One-hand UI" xml:space="preserve">
-        <source>One-hand UI</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="One-time invitation link" xml:space="preserve">
@@ -5100,6 +5099,10 @@ Włącz w ustawianiach *Sieć i serwery* .</target>
         <target>Oceń aplikację</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Reachable chat toolbar" xml:space="preserve">
+        <source>Reachable chat toolbar</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Reachable chat toolbar 👋" xml:space="preserve">
         <source>Reachable chat toolbar 👋</source>
         <note>No comment provided by engineer.</note>
@@ -5112,7 +5115,7 @@ Włącz w ustawianiach *Sieć i serwery* .</target>
       <trans-unit id="Read" xml:space="preserve">
         <source>Read</source>
         <target>Czytaj</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Read more" xml:space="preserve">
         <source>Read more</source>
@@ -5272,7 +5275,8 @@ Włącz w ustawianiach *Sieć i serwery* .</target>
       <trans-unit id="Reject" xml:space="preserve">
         <source>Reject</source>
         <target>Odrzuć</target>
-        <note>reject incoming call via notification</note>
+        <note>reject incoming call via notification
+   swipe action</note>
       </trans-unit>
       <trans-unit id="Reject (sender NOT notified)" xml:space="preserve">
         <source>Reject (sender NOT notified)</source>
@@ -5372,6 +5376,10 @@ Włącz w ustawianiach *Sieć i serwery* .</target>
       <trans-unit id="Reset" xml:space="preserve">
         <source>Reset</source>
         <target>Resetuj</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Reset all hints" xml:space="preserve">
+        <source>Reset all hints</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reset all statistics" xml:space="preserve">
@@ -6702,6 +6710,10 @@ Przed włączeniem tej funkcji zostanie wyświetlony monit uwierzytelniania.</ta
         <target>Aby zweryfikować szyfrowanie end-to-end z Twoim kontaktem porównaj (lub zeskanuj) kod na waszych urządzeniach.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Toggle chat list:" xml:space="preserve">
+        <source>Toggle chat list:</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
         <source>Toggle incognito when connecting.</source>
         <target>Przełącz incognito przy połączeniu.</target>
@@ -6785,7 +6797,7 @@ Przed włączeniem tej funkcji zostanie wyświetlony monit uwierzytelniania.</ta
       <trans-unit id="Unfav." xml:space="preserve">
         <source>Unfav.</source>
         <target>Nie ulub.</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Unhide" xml:space="preserve">
         <source>Unhide</source>
@@ -6862,12 +6874,12 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
       <trans-unit id="Unmute" xml:space="preserve">
         <source>Unmute</source>
         <target>Wyłącz wyciszenie</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Unread" xml:space="preserve">
         <source>Unread</source>
         <target>Nieprzeczytane</target>
-        <note>No comment provided by engineer.</note>
+        <note>swipe action</note>
       </trans-unit>
       <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
         <source>Up to 100 last messages are sent to new members.</source>
@@ -7357,6 +7369,10 @@ Powtórzyć prośbę dołączenia?</target>
       <trans-unit id="You can accept calls from lock screen, without device and app authentication." xml:space="preserve">
         <source>You can accept calls from lock screen, without device and app authentication.</source>
         <target>Możesz przyjmować połączenia z ekranu blokady, bez uwierzytelniania urządzenia i aplikacji.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can change it in Appearance settings." xml:space="preserve">
+        <source>You can change it in Appearance settings.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">
