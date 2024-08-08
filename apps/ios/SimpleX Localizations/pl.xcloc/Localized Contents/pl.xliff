@@ -6730,6 +6730,10 @@ Przed włączeniem tej funkcji zostanie wyświetlony monit uwierzytelniania.</ta
         <target>Przełącz incognito przy połączeniu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Toolbar opacity" xml:space="preserve">
+        <source>Toolbar opacity</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Total" xml:space="preserve">
         <source>Total</source>
         <target>Łącznie</target>

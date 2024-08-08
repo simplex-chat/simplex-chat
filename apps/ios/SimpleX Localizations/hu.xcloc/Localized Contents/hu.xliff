@@ -6781,6 +6781,10 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target>Inkognitó mód kapcsolódáskor.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Toolbar opacity" xml:space="preserve">
+        <source>Toolbar opacity</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Total" xml:space="preserve">
         <source>Total</source>
         <target>Összesen</target>

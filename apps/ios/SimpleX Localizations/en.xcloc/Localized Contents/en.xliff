@@ -6793,6 +6793,11 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Toggle incognito when connecting.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Toolbar opacity" xml:space="preserve">
+        <source>Toolbar opacity</source>
+        <target>Toolbar opacity</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Total" xml:space="preserve">
         <source>Total</source>
         <target>Total</target>

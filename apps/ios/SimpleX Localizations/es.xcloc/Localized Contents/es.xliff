@@ -6781,6 +6781,10 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
         <target>Activa incógnito al conectar.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Toolbar opacity" xml:space="preserve">
+        <source>Toolbar opacity</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Total" xml:space="preserve">
         <source>Total</source>
         <target>Total</target>
