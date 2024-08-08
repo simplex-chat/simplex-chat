@@ -2051,4 +2051,7 @@
 \n- Ismerősök archiválása a későbbi csevegéshez.</string>
     <string name="network_option_tcp_connection">TCP kapcsolat</string>
     <string name="chat_database_exported_save">Az exportált archívumot elmentheti.</string>
+    <string name="reset_all_hints">Tippek alaphelyzetbe állítása</string>
+    <string name="one_hand_ui_card_title">Csevegőlista átváltása:</string>
+    <string name="one_hand_ui_change_instruction">Ezt a Megjelenés menüben módosíthatja.</string>
 </resources>
