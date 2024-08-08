@@ -439,17 +439,21 @@ private let versionDescriptions: [VersionDescription] = [
                 description: nil,
                 subfeatures: [
                     ("link.badge.plus", "Connect to your friends faster."),
-                    ("square.and.arrow.up", "Share media from other apps."),
-                    ("play.circle", "Play media from the chat list."),
                     ("archivebox", "Archive contacts to chat later."),
                     ("trash", "Delete up to 20 messages at once."),
-                    ("platter.filled.bottom.and.arrow.down.iphone", "Reachable chat toolbar."),
+                    ("platter.filled.bottom.and.arrow.down.iphone", "Use the app with one hand."),
+                    ("paintpalette", "Color chats with the new themes."),
                 ]
             ),
             FeatureDescription(
-                icon: "paintpalette",
-                title: "New chat themes",
-                description: "Make your chats look different!"
+                icon: nil,
+                title: "New media options",
+                description: nil,
+                subfeatures: [
+                    ("square.and.arrow.up", "Share from other apps."),
+                    ("play.circle", "Play from the chat list."),
+                    ("circle.filled.pattern.diagonalline.rectangle", "Blur for better privacy.")
+                ]
             ),
             FeatureDescription(
                 icon: "arrow.forward",
@@ -495,7 +499,7 @@ struct WhatsNewView: View {
                                 .foregroundColor(theme.colors.secondary)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical)
-                            ForEach(v.features, id: \.icon) { f in
+                            ForEach(v.features, id: \.title) { f in
                                 featureDescription(f)
                                     .padding(.bottom, 8)
                             }
