@@ -314,6 +314,10 @@ enum ToolbarMaterial: String, CaseIterable {
     case thick
     case ultraThick
 
+    static func material(_ s: String) -> Material {
+        ToolbarMaterial(rawValue: s)?.material ?? Material.bar
+    }
+
     var material: Material {
         switch self {
         case .bar: .bar

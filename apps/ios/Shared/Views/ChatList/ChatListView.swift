@@ -63,8 +63,8 @@ struct ChatListView: View {
     }
 
     private var chatListView: some View {
-        let tm = ToolbarMaterial(rawValue: toolbarMaterial)?.material ?? Material.bar
-        return withToolbar {
+        let tm = ToolbarMaterial.material(toolbarMaterial)
+        return withToolbar(tm) {
             chatList
                 .background(theme.colors.background)
                 .navigationBarTitleDisplayMode(.inline)
@@ -105,7 +105,7 @@ struct ChatListView: View {
         } else { false }
     }()
 
-    @ViewBuilder func withToolbar(content: () -> some View) -> some View {
+    @ViewBuilder func withToolbar(_ material: Material, content: () -> some View) -> some View {
         if #available(iOS 16.0, *) {
             if oneHandUI {
                 content()
@@ -114,6 +114,7 @@ struct ChatListView: View {
             } else {
                 content()
                     .toolbarBackground(.automatic, for: .navigationBar)
+                    .toolbarBackground(material)
                     .toolbar { topToolbar }
             }
         } else {
