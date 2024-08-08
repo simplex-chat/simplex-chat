@@ -463,13 +463,13 @@
     <string name="callstate_connected">соединено</string>
     <string name="callstate_ended">завершен</string>
     <!-- SimpleXInfo -->
-    <string name="next_generation_of_private_messaging">Новое поколение приватных сообщений</string>
+    <string name="next_generation_of_private_messaging">Новое поколение\nприватных сообщений</string>
     <string name="privacy_redefined">Более конфиденциальный</string>
-    <string name="first_platform_without_user_ids">Первая в мире платформа без идентификаторов пользователей.</string>
+    <string name="first_platform_without_user_ids">Без идентификаторов пользователей.</string>
     <string name="immune_to_spam_and_abuse">Защищен от спама</string>
-    <string name="people_can_connect_only_via_links_you_share">С Вами можно соединиться только через созданные Вами ссылки.</string>
+    <string name="people_can_connect_only_via_links_you_share">Вы определяете, кто может соединиться.</string>
     <string name="decentralized">Децентрализованный</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Открытый протокол и код - кто угодно может запустить сервер.</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">Кто угодно может запустить сервер.</string>
     <string name="create_your_profile">Создать профиль</string>
     <string name="make_private_connection">Добавьте контакт</string>
     <string name="how_it_works">Как это работает</string>
