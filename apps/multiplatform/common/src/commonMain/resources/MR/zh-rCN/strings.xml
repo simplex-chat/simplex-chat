@@ -655,7 +655,7 @@
     <string name="ttl_min">%d 分钟</string>
     <string name="ttl_months">%d 月</string>
     <string name="network_and_servers">网络和服务器</string>
-    <string name="network_settings_title">网络设置</string>
+    <string name="network_settings_title">高级设置</string>
     <string name="moderated_description">已被管理员移除</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion 主机将在可用时使用。</string>
     <string name="network_use_onion_hosts_no_desc">将不会使用 Onion 主机。</string>
@@ -1239,7 +1239,7 @@
     <string name="v5_1_better_messages_descr">- 语音消息最长5分钟。
 \n- 自定义限时消息。
 \n- 编辑消息历史。</string>
-    <string name="non_fatal_errors_occured_during_import">导入过程中发生了一些非致命错误——您可以查看聊天控制台了解更多详细信息。</string>
+    <string name="non_fatal_errors_occured_during_import">导入过程中发生了一些非致命错误：</string>
     <string name="settings_section_title_app">应用程序</string>
     <string name="settings_restart_app">重启</string>
     <string name="shutdown_alert_desc">通知将停止工作直到您重启应用程序</string>
@@ -1773,7 +1773,7 @@
     <string name="snd_error_auth">密钥错误或连接未知 — 连接被删除的可能性最大。</string>
     <string name="network_smp_proxy_mode_always">始终</string>
     <string name="network_smp_proxy_mode_never">从不</string>
-    <string name="network_smp_proxy_mode_unknown">未知中继</string>
+    <string name="network_smp_proxy_mode_unknown">未知服务器</string>
     <string name="network_smp_proxy_mode_always_description">始终使用私密路由。</string>
     <string name="network_smp_proxy_mode_never_description">不使用私密路由。</string>
     <string name="network_smp_proxy_mode_unknown_description">在未知服务器上使用私密路由。</string>
@@ -2021,8 +2021,8 @@
     <string name="info_view_open_button">打开</string>
     <string name="info_view_search_button">搜索</string>
     <string name="cant_call_member_send_message_alert_text">发送消息来开启通话。</string>
-    <string name="you_can_still_send_messages_to_contact">你仍可以从已删除的聊天给 %1$s 发送消息。</string>
-    <string name="deleted_chats">已删除的聊天</string>
+    <string name="you_can_still_send_messages_to_contact">你可以发消息给来自已存档联系人的 %1$s。</string>
+    <string name="deleted_chats">已存档的联系人</string>
     <string name="allow_calls_question">允许通话？</string>
     <string name="calls_prohibited_alert_title">通话被禁止！</string>
     <string name="toolbar_settings">设置</string>
@@ -2035,4 +2035,29 @@
     <string name="selected_chat_items_selected_n">已选中 %d</string>
     <string name="moderate_messages_will_be_deleted_warning">将对所有成员删除这些消息。</string>
     <string name="moderate_messages_will_be_marked_warning">这些消息将对所有成员标记为受管制。</string>
+    <string name="v6_0_connect_faster">更快地连接到你的好友</string>
+    <string name="v6_0_connection_servers_status_descr">连接和服务器状态。</string>
+    <string name="v6_0_delete_many_messages_descr">最多同时删除 20 条消息</string>
+    <string name="v6_0_connect_faster_descr">即使在这些人离线时。</string>
+    <string name="v6_0_private_routing_descr">它保护你的 IP 地址和连接。</string>
+    <string name="one_hand_ui_card_title">切换聊天列表：</string>
+    <string name="one_hand_ui_change_instruction">你可以在“外观”设置中更改它。</string>
+    <string name="network_options_save_and_reconnect">保存并重新连接</string>
+    <string name="network_option_tcp_connection">TCP 连接</string>
+    <string name="v6_0_connection_servers_status">控制你的网络</string>
+    <string name="v6_0_delete_many_messages">向专业人士一样管理</string>
+    <string name="v6_0_reachable_chat_toolbar">单手聊天工具栏</string>
+    <string name="v6_0_your_contacts_descr">- 启动聊天时搜索联系人。
+\n- 存档之后要聊天的联系人。</string>
+    <string name="v6_0_reachable_chat_toolbar_descr">用一只手使用本应用。</string>
+    <string name="v6_0_your_contacts">你的联系人，你的方式</string>
+    <string name="chat_database_exported_title">已导出聊天数据库</string>
+    <string name="chat_database_exported_continue">继续</string>
+    <string name="media_and_file_servers">媒体和文件服务器</string>
+    <string name="message_servers">消息服务器</string>
+    <string name="network_socks_proxy">SOCKS 代理</string>
+    <string name="chat_database_exported_not_all_files">某些文件未导出</string>
+    <string name="chat_database_exported_migrate">你可以迁移导出的数据库。</string>
+    <string name="chat_database_exported_save">你可以保存导出的存档。</string>
+    <string name="reset_all_hints">重置所有提示</string>
 </resources>
