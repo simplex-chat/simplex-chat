@@ -20,6 +20,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.database.*
@@ -107,9 +108,15 @@ private fun SetupDatabasePassphraseLayout(
   nextStep: () -> Unit,
 ) {
   ColumnWithScrollBar(
-    Modifier.fillMaxSize().padding(top = DEFAULT_PADDING),
+    Modifier.fillMaxSize().padding(bottom = DEFAULT_PADDING * 2),
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
+    CloseSheetBar(close = {
+      appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+    })
+    BackHandler(onBack = {
+      appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+    })
     AppBarTitle(stringResource(MR.strings.setup_database_passphrase))
 
     Spacer(Modifier.weight(1f))
@@ -184,8 +191,6 @@ private fun SetupDatabasePassphraseLayout(
       chatModel.desktopOnboardingRandomPassword.value = true
       nextStep()
     }
-
-    SectionBottomSpacer()
   }
 }
 

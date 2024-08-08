@@ -2,8 +2,8 @@ package chat.simplex.common.views
 
 import SectionTextFooter
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.material.MaterialTheme.colors
@@ -17,11 +17,12 @@ import androidx.compose.ui.graphics.SolidColor
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -115,7 +116,6 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
     Box(
       modifier = Modifier
         .fillMaxSize()
-        .padding(top = 20.dp)
     ) {
       val displayName = rememberSaveable { mutableStateOf("") }
       val focusRequester = remember { FocusRequester() }
@@ -123,36 +123,35 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
       ColumnWithScrollBar(
         modifier = Modifier.fillMaxSize()
       ) {
-        /*CloseSheetBar(close = {
-          if (chatModel.users.isEmpty()) {
-            chatModel.onboardingStage.value = OnboardingStage.Step1_SimpleXInfo
+        CloseSheetBar(close = {
+          if (chatModel.users.none { !it.user.hidden }) {
+            appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
           } else {
             close()
           }
-        })*/
+        })
+        BackHandler(onBack = {
+          appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+        })
         Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
           AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING)
-          ReadableText(MR.strings.your_profile_is_stored_on_your_device, TextAlign.Center, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
-          ReadableText(MR.strings.profile_is_only_shared_with_your_contacts, TextAlign.Center, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+          ProfileNameField(displayName, stringResource(MR.strings.display_name), { it.trim() == mkValidName(it) }, focusRequester)
           Spacer(Modifier.height(DEFAULT_PADDING))
-          Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(
-              stringResource(MR.strings.display_name),
-              fontSize = 16.sp
-            )
-            val name = displayName.value.trim()
-            val validName = mkValidName(name)
-            Spacer(Modifier.height(20.dp))
-            if (name != validName) {
-              IconButton({ showInvalidNameAlert(mkValidName(displayName.value), displayName) }, Modifier.size(20.dp)) {
-                Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
-              }
-            }
-          }
-          ProfileNameField(displayName, "", { it.trim() == mkValidName(it) }, focusRequester)
+          ReadableText(MR.strings.your_profile_is_stored_on_your_device, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+          ReadableText(MR.strings.profile_is_only_shared_with_your_contacts, TextAlign.Start, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
         }
         Spacer(Modifier.fillMaxHeight().weight(1f))
-        OnboardingButtons(displayName, close)
+        Box(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), contentAlignment = Alignment.Center) {
+          OnboardingActionButton(
+            if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+            labelId = MR.strings.create_profile_button,
+            onboarding = null,
+            enabled = canCreateProfile(displayName.value),
+            onclick = { createProfileOnboarding(chat.simplex.common.platform.chatModel, displayName.value, close) }
+          )
+        }
+
+        Spacer(Modifier.height(DEFAULT_PADDING * 2))
 
         LaunchedEffect(Unit) {
           delay(300)
@@ -231,28 +230,6 @@ fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: ()
 }
 
 @Composable
-fun OnboardingButtons(displayName: MutableState<String>, close: () -> Unit) {
-  Row {
-    SimpleButtonDecorated(
-      text = stringResource(MR.strings.about_simplex),
-      icon = painterResource(MR.images.ic_arrow_back_ios_new),
-      textDecoration = TextDecoration.None,
-      fontWeight = FontWeight.Medium
-    ) { chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo) }
-    Spacer(Modifier.fillMaxWidth().weight(1f))
-    val enabled = canCreateProfile(displayName.value)
-    val createModifier: Modifier = Modifier.clickable(enabled) {  createProfileOnboarding(chatModel, displayName.value, close) }.padding(8.dp)
-    val createColor: Color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
-    Surface(shape = RoundedCornerShape(20.dp), color = Color.Transparent, contentColor = LocalContentColor.current) {
-      Row(verticalAlignment = Alignment.CenterVertically, modifier = createModifier) {
-        Text(stringResource(MR.strings.create_profile_button), style = MaterialTheme.typography.caption, color = createColor, fontWeight = FontWeight.Medium)
-        Icon(painterResource(MR.images.ic_arrow_forward_ios), stringResource(MR.strings.create_profile_button), tint = createColor)
-      }
-    }
-  }
-}
-
-@Composable
 fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isValid: (String) -> Boolean = { true }, focusRequester: FocusRequester? = null) {
   var valid by rememberSaveable { mutableStateOf(true) }
   var focused by rememberSaveable { mutableStateOf(false) }
@@ -269,15 +246,13 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
   }
   val modifier = Modifier
     .fillMaxWidth()
-    .padding(horizontal = DEFAULT_PADDING)
+    .heightIn(min = 50.dp)
     .navigationBarsWithImePadding()
     .onFocusChanged { focused = it.isFocused }
-  Box(
+  Column(
     Modifier
-      .fillMaxWidth()
-      .height(52.dp)
-      .border(border = BorderStroke(1.dp, strokeColor), shape = RoundedCornerShape(50)),
-    contentAlignment = Alignment.Center
+      .fillMaxWidth(),
+    horizontalAlignment = Alignment.CenterHorizontally
   ) {
     BasicTextField(
       value = name.value,
@@ -285,8 +260,31 @@ fun ProfileNameField(name: MutableState<String>, placeholder: String = "", isVal
       modifier = if (focusRequester == null) modifier else modifier.focusRequester(focusRequester),
       textStyle = TextStyle(fontSize = 18.sp, color = colors.onBackground),
       singleLine = true,
-      cursorBrush = SolidColor(MaterialTheme.colors.secondary)
+      cursorBrush = SolidColor(MaterialTheme.colors.secondary),
+      decorationBox = @Composable { innerTextField ->
+        TextFieldDefaults.TextFieldDecorationBox(
+          value = name.value,
+          innerTextField = innerTextField,
+          placeholder = if (placeholder != "") {{ Text(placeholder, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary, lineHeight = 22.sp)) }} else null,
+          contentPadding = PaddingValues(),
+          label = null,
+          visualTransformation = VisualTransformation.None,
+          leadingIcon = null,
+          trailingIcon = if (!valid) {
+            {
+              IconButton({ showInvalidNameAlert(mkValidName(name.value), name) }, Modifier.size(20.dp)) {
+                Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
+              }
+            }
+          } else null,
+          singleLine = true,
+          enabled = true,
+          isError = false,
+          interactionSource = remember { MutableInteractionSource() },
+        )
+      }
     )
+    Divider(color = strokeColor)
   }
   LaunchedEffect(Unit) {
     snapshotFlow { name.value }

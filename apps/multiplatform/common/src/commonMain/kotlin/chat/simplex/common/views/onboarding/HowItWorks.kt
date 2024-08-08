@@ -24,8 +24,7 @@ import dev.icerock.moko.resources.StringResource
 @Composable
 fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? = null) {
   ColumnWithScrollBar(Modifier
-    .fillMaxWidth()
-    .padding(horizontal = DEFAULT_PADDING),
+    .fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.how_simplex_works), withPadding = false)
     ReadableText(MR.strings.many_people_asked_how_can_it_deliver)
@@ -46,6 +45,7 @@ fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? 
       }
       Spacer(Modifier.fillMaxHeight().weight(1f))
     }
+    Spacer(Modifier.height(DEFAULT_PADDING))
   }
 }
 
