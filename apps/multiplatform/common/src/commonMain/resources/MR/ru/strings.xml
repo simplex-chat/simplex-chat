@@ -2111,20 +2111,16 @@
     <string name="servers_info_reset_stats">Сбросить всю статистику</string>
     <string name="servers_info_statistics_section_header">Статистика</string>
     <string name="servers_info_proxied_servers_section_footer">Вы не подключены к этим серверам. Для доставки сообщений на них используется конфиденциальная доставка.</string>
-    <string name="v6_0_connect_faster">Соединяйтесь с друзьями быстрее</string>
+    <string name="v6_0_connect_faster_descr">Соединяйтесь с друзьями быстрее</string>
     <string name="v6_0_connection_servers_status">Управляйте своей сетью</string>
-    <string name="v6_0_connect_faster_descr">Даже когда они не в сети.</string>
     <string name="v6_0_private_routing_descr">Защищает ваш IP адрес и соединения.</string>
-    <string name="v6_0_delete_many_messages">Модерируйте как профессионал ✋</string>
     <string name="open_server_settings_button">Открыть настройки серверов</string>
     <string name="servers_info_detailed_statistics_received_messages_header">Полученные сообщения</string>
     <string name="servers_info_detailed_statistics_receive_errors">Ошибки приема</string>
-    <string name="v6_0_your_contacts_descr">- Поиск среди контактов при создании чата.
-\n- Архивируйте контакты чтобы продолжить переписку.</string>
+    <string name="v6_0_your_contacts_descr">Архивируйте контакты чтобы продолжить переписку.</string>
     <string name="sent_directly">Отправлено напрямую</string>
     <string name="sent_via_proxy">Отправлено через прокси</string>
     <string name="servers_info_transport_sessions_section_header">Транспортные сессии</string>
-    <string name="v6_0_your_contacts">Ваши контакты по Вашим правилам</string>
     <string name="v6_0_connection_servers_status_descr">Состояние соединения и серверов.</string>
     <string name="v6_0_delete_many_messages_descr">Удаляйте до 20 сообщений одновременно.</string>
     <string name="app_check_for_updates_download_started">Загрузка обновления, не закрывайте приложение.</string>

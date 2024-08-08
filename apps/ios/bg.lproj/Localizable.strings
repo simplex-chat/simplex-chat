@@ -335,7 +335,8 @@
 "above, then choose:" = "по-горе, след това избери:";
 
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "Приеми";
 
 /* No comment provided by engineer. */
@@ -344,7 +345,8 @@
 /* notification body */
 "Accept contact request from %@?" = "Приемане на заявка за контакт от %@?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "Приеми инкогнито";
 
 /* call status */
@@ -807,7 +809,7 @@
 /* No comment provided by engineer. */
 "Choose from library" = "Избери от библиотеката";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "Изчисти";
 
 /* No comment provided by engineer. */
@@ -1158,7 +1160,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "по подразбиране (да)";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "Изтрий";
 
 /* No comment provided by engineer. */
@@ -1801,7 +1804,7 @@
 /* No comment provided by engineer. */
 "Faster joining and more reliable messages." = "По-бързо присъединяване и по-надеждни съобщения.";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "Любим";
 
 /* No comment provided by engineer. */
@@ -2269,7 +2272,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "Японски интерфейс";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "Присъединяване";
 
 /* No comment provided by engineer. */
@@ -2320,7 +2323,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "Научете повече";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "Напусни";
 
 /* No comment provided by engineer. */
@@ -2548,13 +2551,13 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Множество профили за чат";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Mute" = "Без звук";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "Без звук при неактивност!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "Име";
 
 /* No comment provided by engineer. */
@@ -3006,7 +3009,7 @@
 /* chat item menu */
 "React…" = "Реагирай…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "Прочетено";
 
 /* No comment provided by engineer. */
@@ -3081,7 +3084,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Намалена консумация на батерията";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "Отхвърляне";
 
 /* No comment provided by engineer. */
@@ -3879,7 +3883,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Неочаквано състояние на миграция";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "Премахни от любимите";
 
 /* No comment provided by engineer. */
@@ -3927,10 +3931,10 @@
 /* authentication reason */
 "Unlock app" = "Отключи приложението";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unmute" = "Уведомявай";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "Непрочетено";
 
 /* No comment provided by engineer. */

@@ -2031,14 +2031,12 @@
     <string name="moderate_messages_will_be_deleted_warning">Az üzenetek minden tag számára törlésre kerülnek.</string>
     <string name="chat_database_exported_title">Csevegési adatbázis exportálva</string>
     <string name="v6_0_connection_servers_status_descr">Kapcsolatok- és kiszolgálók állapotának megjelenítése.</string>
-    <string name="v6_0_connect_faster">Kapcsolódjon gyorsabban az ismerőseihez</string>
+    <string name="v6_0_connect_faster_descr">Kapcsolódjon gyorsabban az ismerőseihez</string>
     <string name="chat_database_exported_continue">Folytatás</string>
     <string name="v6_0_connection_servers_status">Ellenőrízze a hálózatát</string>
     <string name="media_and_file_servers">Média- és fájlkiszolgálók</string>
     <string name="v6_0_delete_many_messages_descr">Legfeljebb 20 üzenet törlése egyszerre.</string>
-    <string name="v6_0_connect_faster_descr">Még akkor is, ha offline vannak.</string>
     <string name="v6_0_private_routing_descr">Védi az IP-címét és a kapcsolatokat.</string>
-    <string name="v6_0_your_contacts">Ismerősök kezelése</string>
     <string name="v6_0_reachable_chat_toolbar">Könnyen elérhető eszköztár 👋</string>
     <string name="message_servers">Üzenetkiszolgálók</string>
     <string name="network_socks_proxy">SOCKS proxy</string>
@@ -2046,9 +2044,7 @@
     <string name="chat_database_exported_migrate">Az exportált adatbázist átköltöztetheti.</string>
     <string name="network_options_save_and_reconnect">Mentés és újrakapcsolódás</string>
     <string name="v6_0_reachable_chat_toolbar_descr">Használja az alkalmazást egy kézzel.</string>
-    <string name="v6_0_delete_many_messages">Moderáljon úgy, mint egy profi ✋</string>
-    <string name="v6_0_your_contacts_descr">- Ismerősök keresése a csevegés indításakor.
-\n- Ismerősök archiválása a későbbi csevegéshez.</string>
+    <string name="v6_0_your_contacts_descr">Ismerősök archiválása a későbbi csevegéshez.</string>
     <string name="network_option_tcp_connection">TCP kapcsolat</string>
     <string name="chat_database_exported_save">Az exportált archívumot elmentheti.</string>
     <string name="reset_all_hints">Tippek alaphelyzetbe állítása</string>

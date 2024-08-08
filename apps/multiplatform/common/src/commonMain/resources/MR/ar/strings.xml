@@ -2040,18 +2040,14 @@
     <string name="chat_database_exported_migrate">يمكنك ترحيل قاعدة البيانات المُصدرة.</string>
     <string name="chat_database_exported_save">يمكنك حفظ الأرشيف المُصدر.</string>
     <string name="v6_0_connection_servers_status_descr">حالة الاتصال والخوادم.</string>
-    <string name="v6_0_connect_faster">تواصل مع أصدقائك بشكل أسرع</string>
-    <string name="v6_0_delete_many_messages">إشراف مثل المحترفين ✋</string>
+    <string name="v6_0_connect_faster_descr">تواصل مع أصدقائك بشكل أسرع</string>
     <string name="v6_0_reachable_chat_toolbar">شريط أدوات الدردشة يمكن الوصول إليه 👋</string>
-    <string name="v6_0_your_contacts_descr">- البحث عن جهات الاتصال عند بدء الدردشة.
-\n- أرشفة جهات الاتصال للدردشة لاحقًا.</string>
+    <string name="v6_0_your_contacts_descr">أرشفة جهات الاتصال للدردشة لاحقًا.</string>
     <string name="v6_0_reachable_chat_toolbar_descr">استخدم التطبيق بيد واحدة.</string>
-    <string name="v6_0_your_contacts">جهات اتصالك على طريقتك</string>
     <string name="chat_database_exported_title">صُدرت قاعدة بيانات الدردشة</string>
     <string name="v6_0_connection_servers_status">التحكم في شبكتك</string>
     <string name="v6_0_delete_many_messages_descr">حذف ما يصل إلى 20 رسالة في وقت واحد.</string>
     <string name="chat_database_exported_not_all_files">لم يتم تصدير بعض الملفات</string>
-    <string name="v6_0_connect_faster_descr">حتى عندما يكونون غير متصلين بالإنترنت.</string>
     <string name="v6_0_private_routing_descr">يحمي عنوان IP الخاص بك واتصالاتك.</string>
     <string name="network_option_tcp_connection">اتصال TCP</string>
     <string name="network_options_save_and_reconnect">حفظ وإعادة الاتصال</string>

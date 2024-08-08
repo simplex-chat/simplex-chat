@@ -2035,22 +2035,18 @@
     <string name="selected_chat_items_selected_n">已选中 %d</string>
     <string name="moderate_messages_will_be_deleted_warning">将对所有成员删除这些消息。</string>
     <string name="moderate_messages_will_be_marked_warning">这些消息将对所有成员标记为受管制。</string>
-    <string name="v6_0_connect_faster">更快地连接到你的好友</string>
+    <string name="v6_0_connect_faster_descr">更快地连接到你的好友</string>
     <string name="v6_0_connection_servers_status_descr">连接和服务器状态。</string>
     <string name="v6_0_delete_many_messages_descr">最多同时删除 20 条消息</string>
-    <string name="v6_0_connect_faster_descr">即使在这些人离线时。</string>
     <string name="v6_0_private_routing_descr">它保护你的 IP 地址和连接。</string>
     <string name="one_hand_ui_card_title">切换聊天列表：</string>
     <string name="one_hand_ui_change_instruction">你可以在“外观”设置中更改它。</string>
     <string name="network_options_save_and_reconnect">保存并重新连接</string>
     <string name="network_option_tcp_connection">TCP 连接</string>
     <string name="v6_0_connection_servers_status">控制你的网络</string>
-    <string name="v6_0_delete_many_messages">向专业人士一样管理</string>
     <string name="v6_0_reachable_chat_toolbar">单手聊天工具栏</string>
-    <string name="v6_0_your_contacts_descr">- 启动聊天时搜索联系人。
-\n- 存档之后要聊天的联系人。</string>
+    <string name="v6_0_your_contacts_descr">存档之后要聊天的联系人。</string>
     <string name="v6_0_reachable_chat_toolbar_descr">用一只手使用本应用。</string>
-    <string name="v6_0_your_contacts">你的联系人，你的方式</string>
     <string name="chat_database_exported_title">已导出聊天数据库</string>
     <string name="chat_database_exported_continue">继续</string>
     <string name="media_and_file_servers">媒体和文件服务器</string>

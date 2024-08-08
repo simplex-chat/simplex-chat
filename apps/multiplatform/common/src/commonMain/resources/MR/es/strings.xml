@@ -1987,7 +1987,7 @@
     <string name="acknowledgement_errors">Errores de reconocimiento</string>
     <string name="cant_call_contact_connecting_wait_alert_text">Conectando con el contacto, por favor espera o revisa más tarde.</string>
     <string name="v6_0_connection_servers_status_descr">Estado de conexión y servidores.</string>
-    <string name="v6_0_connect_faster">Conecta más rápido con tus amigos</string>
+    <string name="v6_0_connect_faster_descr">Conecta más rápido con tus amigos</string>
     <string name="v6_0_connection_servers_status">Controla tu red</string>
     <string name="v6_0_private_routing_descr">Protege tu dirección IP y tus conexiones.</string>
     <string name="allow_calls_question">¿Permitir llamadas?</string>
@@ -2034,11 +2034,8 @@
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Por favor, pide a tu contacto que active las llamadas.</string>
     <string name="cant_call_member_send_message_alert_text">Enviar mensaje para activar llamadas.</string>
     <string name="v6_0_delete_many_messages_descr">Elimina hasta 20 mensajes a la vez.</string>
-    <string name="v6_0_connect_faster_descr">Incluso cuando estén fuera de línea.</string>
-    <string name="v6_0_delete_many_messages">Modera como un profesional ✋</string>
     <string name="v6_0_reachable_chat_toolbar">Barra de herramientas accesible 👋</string>
-    <string name="v6_0_your_contacts_descr">- Buscar contactos al iniciar chat.
-\n- Archivar contactos para charlar más tarde.</string>
+    <string name="v6_0_your_contacts_descr">Archivar contactos para charlar más tarde.</string>
     <string name="chat_database_exported_save">Puedes guardar el archivo exportado.</string>
     <string name="privacy_media_blur_radius_strong">Fuerte</string>
     <string name="moderate_messages_will_be_deleted_warning">Los mensajes serán eliminados para todos los miembros.</string>
@@ -2058,5 +2055,4 @@
     <string name="proxy_destination_error_failed_to_connect">El servidor de reenvío %1$s no ha podido conectarse al servidor de destino %2$s. Por favor, intentalo más tarde.</string>
     <string name="smp_proxy_error_broker_version">La versión del servidor de reenvío es incompatible con la configuración de red: %1$s.</string>
     <string name="no_filtered_contacts">Ningún contacto filtrado</string>
-    <string name="v6_0_your_contacts">Tus contactos a tu manera</string>
 </resources>

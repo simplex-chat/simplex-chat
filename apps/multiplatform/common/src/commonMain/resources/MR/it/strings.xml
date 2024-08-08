@@ -2044,16 +2044,12 @@
     <string name="chat_database_exported_migrate">Puoi migrare il database esportato.</string>
     <string name="chat_database_exported_save">Puoi salvare l\'archivio esportato.</string>
     <string name="network_option_tcp_connection">Connessione TCP</string>
-    <string name="v6_0_connect_faster">Connettiti più velocemente ai tuoi amici</string>
+    <string name="v6_0_connect_faster_descr">Connettiti più velocemente ai tuoi amici</string>
     <string name="v6_0_connection_servers_status">Prendi il controllo della tua rete</string>
     <string name="v6_0_delete_many_messages_descr">Elimina fino a 20 messaggi contemporaneamente.</string>
-    <string name="v6_0_connect_faster_descr">Anche quando sono offline.</string>
-    <string name="v6_0_delete_many_messages">Modera come un pro ✋</string>
     <string name="v6_0_reachable_chat_toolbar">Barra degli strumenti di chat accessibile 👋</string>
-    <string name="v6_0_your_contacts_descr">- Cerca contatti quando inizi una chat.
-\n- Archivia contatti per chattare più tardi.</string>
+    <string name="v6_0_your_contacts_descr">Archivia contatti per chattare più tardi.</string>
     <string name="v6_0_reachable_chat_toolbar_descr">Usa l\'app con una mano sola.</string>
-    <string name="v6_0_your_contacts">I tuoi contatti, le tue regole</string>
     <string name="v6_0_connection_servers_status_descr">Stato di connessione e server.</string>
     <string name="v6_0_private_routing_descr">Protegge il tuo indirizzo IP e le connessioni.</string>
     <string name="network_options_save_and_reconnect">Salva e riconnetti</string>
