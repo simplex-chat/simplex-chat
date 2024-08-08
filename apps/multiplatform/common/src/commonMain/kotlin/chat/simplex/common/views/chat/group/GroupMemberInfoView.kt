@@ -327,60 +327,44 @@ fun GroupMemberInfoLayout(
 
     val contactId = member.memberContactId
 
-    BoxWithConstraints(
-      modifier = Modifier.fillMaxWidth()
+    Row(
+      Modifier
+        .fillMaxWidth()
+        .padding(horizontal = DEFAULT_PADDING),
+      horizontalArrangement = Arrangement.SpaceEvenly,
+      verticalAlignment = Alignment.CenterVertically
     ) {
-      val computedPadding = (maxWidth - INFO_VIEW_BUTTON_SIZE * 4) / 5
-      val padding = min(computedPadding, INFO_VIEW_BUTTONS_MAX_PADDING)
-
-      Row(
-        Modifier
-          .fillMaxWidth()
-          .padding(horizontal = DEFAULT_PADDING),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
-      ) {
-        Spacer(Modifier.weight(1f))
-
-        val knownChat = if (contactId != null) knownDirectChat(contactId) else null
-        if (knownChat != null) {
-          val (chat, contact) = knownChat
-          OpenChatButton(onClick = { openDirectChat(contact.contactId) })
-          Spacer(Modifier.width(padding))
-          AudioCallButton(chat, contact)
-          Spacer(Modifier.width(padding))
-          VideoButton(chat, contact)
-        } else if (groupInfo.fullGroupPreferences.directMessages.on(groupInfo.membership)) {
-          if (contactId != null) {
-            OpenChatButton(onClick = { openDirectChat(contactId) }) // legacy - only relevant for direct contacts created when joining group
-          } else {
-            OpenChatButton(onClick = { createMemberContact() })
-          }
-          Spacer(Modifier.width(padding))
-          InfoViewActionButton(painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, onClick = {
-            showSendMessageToEnableCallsAlert()
-          })
-          Spacer(Modifier.width(padding))
-          InfoViewActionButton(painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = false, disabledLook = true, onClick = {
-            showSendMessageToEnableCallsAlert()
-          })
-        } else { // no known contact chat && directMessages are off
-          InfoViewActionButton(painterResource(MR.images.ic_chat_bubble), generalGetString(MR.strings.info_view_message_button), disabled = false, disabledLook = true, onClick = {
-            showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_send_message_to_member_alert_title))
-          })
-          Spacer(Modifier.width(padding))
-          InfoViewActionButton(painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, onClick = {
-            showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title))
-          })
-          Spacer(Modifier.width(padding))
-          InfoViewActionButton(painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = false, disabledLook = true, onClick = {
-            showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title))
-          })
+      val knownChat = if (contactId != null) knownDirectChat(contactId) else null
+      if (knownChat != null) {
+        val (chat, contact) = knownChat
+        OpenChatButton(modifier = Modifier.fillMaxWidth(0.33f), onClick = { openDirectChat(contact.contactId) })
+        AudioCallButton(modifier = Modifier.fillMaxWidth(0.5f), chat, contact)
+        VideoButton(modifier = Modifier.fillMaxWidth(1f), chat, contact)
+      } else if (groupInfo.fullGroupPreferences.directMessages.on(groupInfo.membership)) {
+        if (contactId != null) {
+          OpenChatButton(modifier = Modifier.fillMaxWidth(0.33f), onClick = { openDirectChat(contactId) }) // legacy - only relevant for direct contacts created when joining group
+        } else {
+          OpenChatButton(modifier = Modifier.fillMaxWidth(0.33f), onClick = { createMemberContact() })
         }
-
-        Spacer(Modifier.weight(1f))
+        InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.5f), painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, onClick = {
+          showSendMessageToEnableCallsAlert()
+        })
+        InfoViewActionButton(modifier = Modifier.fillMaxWidth(1f), painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = false, disabledLook = true, onClick = {
+          showSendMessageToEnableCallsAlert()
+        })
+      } else { // no known contact chat && directMessages are off
+        InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.33f), painterResource(MR.images.ic_chat_bubble), generalGetString(MR.strings.info_view_message_button), disabled = false, disabledLook = true, onClick = {
+          showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_send_message_to_member_alert_title))
+        })
+        InfoViewActionButton(modifier = Modifier.fillMaxWidth(0.5f), painterResource(MR.images.ic_call), generalGetString(MR.strings.info_view_call_button), disabled = false, disabledLook = true, onClick = {
+          showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title))
+        })
+        InfoViewActionButton(modifier = Modifier.fillMaxWidth(1f), painterResource(MR.images.ic_videocam), generalGetString(MR.strings.info_view_video_button), disabled = false, disabledLook = true, onClick = {
+          showDirectMessagesProhibitedAlert(generalGetString(MR.strings.cant_call_member_alert_title))
+        })
       }
     }
+
     SectionSpacer()
 
     if (member.memberActive) {
@@ -591,8 +575,12 @@ fun RemoveMemberButton(onClick: () -> Unit) {
 }
 
 @Composable
-fun OpenChatButton(onClick: () -> Unit) {
+fun OpenChatButton(
+  modifier: Modifier,
+  onClick: () -> Unit
+) {
   InfoViewActionButton(
+    modifier = modifier,
     icon = painterResource(MR.images.ic_chat_bubble),
     title = generalGetString(MR.strings.info_view_message_button),
     disabled = false,
