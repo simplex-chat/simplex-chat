@@ -4,7 +4,7 @@
     <string name="accept_contact_button">Aceptar</string>
     <string name="network_settings">Configuración avanzada de red</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Óptimo para la batería</b>. Recibirás notificaciones sólo cuando la aplicación esté abierta (SIN servicio en segundo plano).]]></string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Bueno para la batería</b>. El servicio en segundo plano comprueba si hay mensajes cada 10 minutos. Podrías no recibir a tiempo llamadas o mensajes urgentes.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Bueno para la batería</b>. El servicio en segundo plano comprueba si hay mensajes cada 10 minutos. Podrías no recibir a tiempo llamadas o mensajes urgentes.</string>
     <string name="accept_call_on_lock_screen">Aceptar</string>
     <string name="full_backup">Copia de seguridad de los datos de la aplicación</string>
     <string name="chat_item_ttl_day">un dia</string>
@@ -75,7 +75,7 @@
     <string name="icon_descr_asked_to_receive">Solicita recibir la imagen</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Recuerda</b>: NO podrás recuperar o cambiar la frase de contraseña si la pierdes.]]></string>
     <string name="both_you_and_your_contact_can_send_voice">Tanto tú como tu contacto podéis enviar mensajes de voz.</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>¡Consume más batería!</b> El servicio en segundo plano se ejecuta continuamente y las notificaciones se mostrarán de inmediato.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>¡Consume más batería!</b> El servicio en segundo plano se ejecuta continuamente y las notificaciones se mostrarán de inmediato.</string>
     <string name="both_you_and_your_contacts_can_delete">Tanto tú como tu contacto podéis eliminar los mensajes enviados de forma irreversible. (24 horas)</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Tanto tú como tu contacto podéis enviar mensajes temporales.</string>
     <string name="create_profile_button">Crear</string>
