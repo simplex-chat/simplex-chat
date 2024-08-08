@@ -389,7 +389,7 @@
     <string name="save_servers_button">Сохранить</string>
     <string name="network_and_servers">Сеть и серверы</string>
     <string name="network_settings">Настройки сети</string>
-    <string name="network_settings_title">Расширенные настройки</string>
+    <string name="network_settings_title">Настройки сети</string>
     <string name="network_enable_socks">Использовать SOCKS прокси?</string>
     <string name="network_enable_socks_info">Соединяться с серверами через SOCKS прокси через порт %d? Прокси должен быть запущен до включения этой опции.</string>
     <string name="network_disable_socks">Использовать прямое соединение с Интернет?</string>
@@ -1942,7 +1942,7 @@
     <string name="attempts_label">попытки</string>
     <string name="completed">Готово</string>
     <string name="confirm_delete_contact_question">Потвердить удаление контакта?</string>
-    <string name="privacy_media_blur_radius">Размытие медиа</string>
+    <string name="privacy_media_blur_radius">Размытие изображений</string>
     <string name="all_users">Все профили</string>
     <string name="app_check_for_updates_notice_title">Проверка на наличиее обновлений</string>
     <string name="allow_calls_question">Разрешить звонки?</string>
@@ -2058,7 +2058,7 @@
     <string name="delete_members_messages__question">Удалить %d сообщений членов группы?</string>
     <string name="delete_messages_mark_deleted_warning">Сообщения будут помечены на удаление. Получатель(и) смогут посмотреть эти сообщения.</string>
     <string name="select_verb">Выбрать</string>
-    <string name="moderate_messages_will_be_deleted_warning">Сообщения будут удалены для всех членов.</string>
+    <string name="moderate_messages_will_be_deleted_warning">Сообщения будут удалены для всех членов группы.</string>
     <string name="moderate_messages_will_be_marked_warning">Сообщения будут помечены как удаленные для всех членов группы.</string>
     <string name="contact_deleted">Контакт удален!</string>
     <string name="conversation_deleted">Разговор удален!</string>
@@ -2080,7 +2080,7 @@
     <string name="app_check_for_updates_stable">Стабильная версия</string>
     <string name="app_check_for_updates_canceled">Загрузка обновления отменена</string>
     <string name="share_text_file_status">Статус файла: %s</string>
-    <string name="chat_database_exported_title">База данных чата экспортирована</string>
+    <string name="chat_database_exported_title">Данные чата экспортированы</string>
     <string name="chat_database_exported_continue">Продолжить</string>
     <string name="media_and_file_servers">Серверы файлов и медиа</string>
     <string name="message_servers">Серверы сообщений</string>
@@ -2130,7 +2130,7 @@
     <string name="compose_message_placeholder">Сообщение</string>
     <string name="member_inactive_desc">Сообщение может быть доставлено позже, если член группы станет активным.</string>
     <string name="message_forwarded_title">Сообщение переслано</string>
-    <string name="v6_0_reachable_chat_toolbar">Доступная панель чата 👋</string>
+    <string name="v6_0_reachable_chat_toolbar">Доступная панель чата</string>
     <string name="servers_info_detailed_statistics_received_total">Всего получено</string>
     <string name="app_check_for_updates_button_skip">Пропустить эту версию</string>
     <string name="app_check_for_updates_notice_desc">Чтобы получать уведомления об обновлениях, включите периодическую проверку стабильных или бета-версий.</string>

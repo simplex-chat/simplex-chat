@@ -419,7 +419,7 @@
 "Advanced network settings" = "Настройки сети";
 
 /* No comment provided by engineer. */
-"Advanced settings" = "Расширенные настройки";
+"Advanced settings" = "Настройки сети";
 
 /* chat item text */
 "agreeing encryption for %@…" = "шифрование согласовывается для %@…";
@@ -497,7 +497,7 @@
 "Allow sending disappearing messages." = "Разрешить посылать исчезающие сообщения.";
 
 /* No comment provided by engineer. */
-"Allow sharing" = "Разрешить функцию Поделиться";
+"Allow sharing" = "Разрешить поделиться";
 
 /* No comment provided by engineer. */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Разрешить необратимо удалять отправленные сообщения. (24 часа)";
@@ -707,7 +707,7 @@
 "Blocked by admin" = "Заблокирован администратором";
 
 /* No comment provided by engineer. */
-"Blur media" = "Размытие медиа";
+"Blur media" = "Размытие изображений";
 
 /* No comment provided by engineer. */
 "bold" = "жирный";
@@ -858,7 +858,7 @@
 "Chat database deleted" = "Данные чата удалены";
 
 /* No comment provided by engineer. */
-"Chat database exported" = "База данных чата экспортирована";
+"Chat database exported" = "Данные чата экспортированы";
 
 /* No comment provided by engineer. */
 "Chat database imported" = "Архив чата импортирован";
@@ -4355,7 +4355,7 @@
 "The message will be marked as moderated for all members." = "Сообщение будет помечено как удаленное для всех членов группы.";
 
 /* No comment provided by engineer. */
-"The messages will be deleted for all members." = "Сообщения будут удалены для всех членов.";
+"The messages will be deleted for all members." = "Сообщения будут удалены для всех членов группы.";
 
 /* No comment provided by engineer. */
 "The messages will be marked as moderated for all members." = "Сообщения будут помечены как удаленные для всех членов группы.";
