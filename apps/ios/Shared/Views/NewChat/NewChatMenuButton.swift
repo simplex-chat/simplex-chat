@@ -27,7 +27,7 @@ struct NewChatMenuButton: View {
                 .scaledToFit()
                 .frame(width: 24, height: 24)
         }
-        .appSheet(isPresented: $showNewChatSheet) {
+        .sheet(isPresented: $showNewChatSheet) {
             NewChatSheet(alert: $alert)
                 .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
                 .alert(item: $alert) { a in
@@ -52,6 +52,7 @@ struct NewChatMenuButton: View {
 private var indent: CGFloat = 36
 
 struct NewChatSheet: View {
+    @Environment(\.scenePhase) var scenePhase
     @EnvironmentObject var theme: AppTheme
     @State private var baseContactTypes: [ContactType] = [.card, .request, .recent]
     @EnvironmentObject var chatModel: ChatModel
@@ -61,7 +62,8 @@ struct NewChatSheet: View {
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @Binding var alert: SomeAlert?
-    
+    @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
+
     var body: some View {
         NavigationView {
             viewBody()
@@ -83,6 +85,9 @@ struct NewChatSheet: View {
                     searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
                 )
                 .frame(maxWidth: .infinity)
+                .if(.active != scenePhase) { v in
+                    v.privacySensitive(protectScreen).redacted(reason: .privacy)
+                }
             }
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
@@ -115,7 +120,7 @@ struct NewChatSheet: View {
                         Label("Create group", systemImage: "person.2.circle.fill")
                     }
                 }
-                
+
                 if (!filterContactTypes(chats: chatModel.chats, contactTypes: [.chatDeleted]).isEmpty) {
                     Section {
                         NavigationLink {
@@ -126,7 +131,7 @@ struct NewChatSheet: View {
                     }
                 }
             }
-            
+
             ContactsList(
                 baseContactTypes: $baseContactTypes,
                 searchMode: $searchMode,
@@ -137,6 +142,9 @@ struct NewChatSheet: View {
                 searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
                 showDeletedChatIcon: true
             )
+            .if(.active != scenePhase) { v in
+                v.privacySensitive(protectScreen).redacted(reason: .privacy)
+            }
         }
     }
     
@@ -420,13 +428,15 @@ struct ContactsListSearchBar: View {
 
 
 struct DeletedChats: View {
+    @Environment(\.scenePhase) var scenePhase
     @State private var baseContactTypes: [ContactType] = [.chatDeleted]
     @State private var searchMode = false
     @FocusState var searchFocussed: Bool
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
-    
+    @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
+
     var body: some View {
         List {
             ContactsListSearchBar(
@@ -455,6 +465,9 @@ struct DeletedChats: View {
         .navigationBarTitleDisplayMode(.large)
         .navigationBarHidden(searchMode)
         .modifier(ThemedBackground(grouped: true))
+        .if(.active != scenePhase) { v in
+            v.privacySensitive(protectScreen).redacted(reason: .privacy)
+        }
 
     }
 }
