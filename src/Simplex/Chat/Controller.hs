@@ -1204,7 +1204,7 @@ data DatabaseError
   | DBErrorOpen {sqliteError :: SQLiteError}
   deriving (Show, Exception)
 
-data SQLiteError = SQLiteErrorNotADatabase | SQLiteError String
+data SQLiteError = SQLiteErrorNotADatabase | SQLiteError {dbError :: String}
   deriving (Show, Exception)
 
 throwDBError :: DatabaseError -> CM ()

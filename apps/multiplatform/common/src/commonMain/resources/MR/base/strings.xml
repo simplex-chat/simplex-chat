@@ -739,6 +739,7 @@
   <string name="xftp_servers_other">Other XFTP servers</string>
   <string name="subscription_percentage">Show percentage</string>
   <string name="install_simplex_chat_for_terminal">Install SimpleX Chat for terminal</string>
+  <string name="reset_all_hints">Reset all hints</string>
   <string name="star_on_github">Star on GitHub</string>
   <string name="contribute">Contribute</string>
   <string name="rate_the_app">Rate the app</string>
@@ -1294,6 +1295,8 @@
   <string name="incompatible_database_version">Incompatible database version</string>
   <string name="confirm_database_upgrades">Confirm database upgrades</string>
   <string name="one_hand_ui">Reachable chat toolbar</string>
+  <string name="one_hand_ui_card_title">Toggle chat list:</string>
+  <string name="one_hand_ui_change_instruction">You can change it in Appearance settings.</string>
   <string name="terminal_always_visible">Show console in new window</string>
   <string name="chat_list_always_visible">Show chat list in new window</string>
   <string name="invalid_migration_confirmation">Invalid migration confirmation</string>
@@ -1974,15 +1977,19 @@
   <string name="v5_8_message_delivery">Improved message delivery</string>
   <string name="v5_8_message_delivery_descr">With reduced battery usage.</string>
   <string name="v5_8_persian_ui">Persian UI</string>
+  <string name="v6_0_new_chat_experience">New chat experience 🎉</string>
+  <string name="v6_0_new_media_options">New media options</string>
   <string name="v6_0_private_routing_descr">It protects your IP address and connections.</string>
-  <string name="v6_0_your_contacts">Your contacts your way</string>
-  <string name="v6_0_your_contacts_descr">- Search contacts when starting chat.\n- Archive contacts to chat later.</string>
-  <string name="v6_0_reachable_chat_toolbar">Reachable chat toolbar 👋</string>
+  <string name="v6_0_your_contacts_descr">Archive contacts to chat later.</string>
+  <string name="v6_0_reachable_chat_toolbar">Reachable chat toolbar</string>
   <string name="v6_0_reachable_chat_toolbar_descr">Use the app with one hand.</string>
-  <string name="v6_0_connect_faster">Connect to your friends faster</string>
-  <string name="v6_0_connect_faster_descr">Even when they are offline.</string>
-  <string name="v6_0_delete_many_messages">Moderate like a pro ✋</string>
+  <string name="v6_0_connect_faster_descr">Connect to your friends faster.</string>
   <string name="v6_0_delete_many_messages_descr">Delete up to 20 messages at once.</string>
+  <string name="v6_0_chat_list_media">Play from the chat list.</string>
+  <string name="v6_0_privacy_blur">Blur for better privacy.</string>
+  <string name="v6_0_increase_font_size">Increase font size.</string>
+  <string name="v6_0_upgrade_app">Upgrade app automatically</string>
+  <string name="v6_0_upgrade_app_descr">Download new versions from GitHub.</string>
   <string name="v6_0_connection_servers_status">Control your network</string>
   <string name="v6_0_connection_servers_status_descr">Connection and servers status.</string>
 

@@ -55,6 +55,7 @@ public let GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE = "initialRandomDBPassphra
 public let GROUP_DEFAULT_CONFIRM_DB_UPGRADES = "confirmDBUpgrades"
 public let GROUP_DEFAULT_CALL_KIT_ENABLED = "callKitEnabled"
 public let GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED = "pqExperimentalEnabled" // no longer used
+public let GROUP_DEFAULT_ONE_HAND_UI = "oneHandUI"
 
 public let APP_GROUP_NAME = "group.chat.simplex.app"
 
@@ -81,7 +82,7 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_INCOGNITO: false,
         GROUP_DEFAULT_STORE_DB_PASSPHRASE: true,
         GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE: false,
-        GROUP_DEFAULT_PERFORM_LA: true,
+        GROUP_DEFAULT_PERFORM_LA: false,
         GROUP_DEFAULT_ALLOW_SHARE_EXTENSION: false,
         GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS: false,
         GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
@@ -92,6 +93,7 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_CONFIRM_DB_UPGRADES: false,
         GROUP_DEFAULT_CALL_KIT_ENABLED: true,
         GROUP_DEFAULT_PQ_EXPERIMENTAL_ENABLED: false,
+        GROUP_DEFAULT_ONE_HAND_UI: true
     ])
 }
 
