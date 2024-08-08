@@ -248,8 +248,8 @@
     <string name="v5_1_custom_themes">Mukautetut teemat</string>
     <string name="v5_1_better_messages">Parempia viestejä</string>
     <string name="v5_1_custom_themes_descr">Mukauta ja jaa väriteemoja.</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Hyvä akulle</b>. Taustapalvelu tarkistaa viestit 10 minuutin välein. Saatat jättää vastaamatta puheluihin tai kiireellisiin viesteihin.]]></string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Käyttää enemmän akkua</b>! Taustapalvelu toimii aina – ilmoitukset näytetään heti, kun viestejä on saatavilla.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Hyvä akulle</b>. Taustapalvelu tarkistaa viestit 10 minuutin välein. Saatat jättää vastaamatta puheluihin tai kiireellisiin viesteihin.</string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Käyttää enemmän akkua</b>! Taustapalvelu toimii aina – ilmoitukset näytetään heti, kun viestejä on saatavilla.</string>
     <string name="decryption_error">Salauksen purkuvirhe</string>
     <string name="for_me_only">Poista minulle</string>
     <string name="button_delete_contact">Poista kontakti</string>
