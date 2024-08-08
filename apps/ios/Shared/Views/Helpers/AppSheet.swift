@@ -37,7 +37,7 @@ struct PrivacySensitive: ViewModifier {
         if !protectScreen || appSheetState.scenePhaseActive {
             content
         } else {
-            content.privacySensitive().redacted(reason: .privacy)
+            content.privacySensitive(true).redacted(reason: .privacy)
         }
     }
 }
