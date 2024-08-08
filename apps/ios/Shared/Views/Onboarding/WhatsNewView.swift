@@ -435,7 +435,7 @@ private let versionDescriptions: [VersionDescription] = [
         features: [
             FeatureDescription(
                 icon: nil,
-                title: "New chat experience",
+                title: "New chat experience 🎉",
                 description: nil,
                 subfeatures: [
                     ("link.badge.plus", "Connect to your friends faster."),
