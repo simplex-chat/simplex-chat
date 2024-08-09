@@ -180,11 +180,10 @@ fun SettingsLayout(
         .height(AppBarHeight * fontSizeSqrtMultiplier)
         .background(MaterialTheme.colors.background)
         .background(if (isInDarkTheme()) ToolbarDark else ToolbarLight)
-        .padding(start = 4.dp, top = 8.dp),
+        .padding(start = 4.dp),
         contentAlignment = Alignment.CenterStart
       ) {
-        val sp24 = with(LocalDensity.current) { 24.sp.toDp() }
-        NavigationButtonBack(closeSettings, height = sp24)
+        NavigationButtonBack(closeSettings, height = 24.sp.toDp())
       }
     }
   }

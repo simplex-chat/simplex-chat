@@ -57,7 +57,7 @@ fun SimpleXInfoLayout(
   ColumnWithScrollBar(
     Modifier
       .fillMaxSize()
-      .padding(horizontal = 16.dp),
+      .padding(horizontal = DEFAULT_PADDING),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     Box(Modifier.widthIn(max = if (appPlatform.isAndroid) 250.dp else 500.dp).padding(top = DEFAULT_PADDING + 8.dp), contentAlignment = Alignment.Center) {
@@ -75,7 +75,7 @@ fun SimpleXInfoLayout(
 
     Spacer(Modifier.weight(1f))
 
-    Column(Modifier.fillMaxWidth()) {
+    Column {
       InfoRow(painterResource(MR.images.privacy), MR.strings.privacy_redefined, MR.strings.first_platform_without_user_ids, width = 60.dp)
       InfoRow(painterResource(MR.images.shield), MR.strings.immune_to_spam_and_abuse, MR.strings.people_can_connect_only_via_links_you_share, width = 46.dp)
       InfoRow(painterResource(if (isInDarkTheme()) MR.images.decentralized_light else MR.images.decentralized), MR.strings.decentralized, MR.strings.opensource_protocol_and_code_anybody_can_run_servers)
@@ -115,10 +115,10 @@ fun SimpleXLogo() {
 @Composable
 private fun InfoRow(icon: Painter, titleId: StringResource, textId: StringResource, width: Dp = 58.dp) {
   Row(Modifier.padding(bottom = 27.dp), verticalAlignment = Alignment.Top) {
-    Spacer(Modifier.width((18.dp + 58.dp - width) / 2))
+    Spacer(Modifier.width((4.dp + 58.dp - width) / 2))
     Image(icon, contentDescription = null, modifier = Modifier
       .width(width))
-    Spacer(Modifier.width((18.dp + 58.dp - width) / 2 + DEFAULT_PADDING_HALF))
+    Spacer(Modifier.width((4.dp + 58.dp - width) / 2 + DEFAULT_PADDING_HALF + 7.dp))
     Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(DEFAULT_PADDING_HALF)) {
       Text(stringResource(titleId), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.h3, lineHeight = 24.sp)
       Text(stringResource(textId), lineHeight = 24.sp, style = MaterialTheme.typography.body1, color = MaterialTheme.colors.secondary)
