@@ -15,6 +15,7 @@ class AppSheetState: ObservableObject {
 
 private struct PrivacySensitive: ViewModifier {
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
+    // Screen protection doesn't work for appSheet on iOS 16 if @Environment(\.scenePhase) is used instead of global state
     @ObservedObject var appSheetState: AppSheetState = AppSheetState.shared
 
     func body(content: Content) -> some View {
