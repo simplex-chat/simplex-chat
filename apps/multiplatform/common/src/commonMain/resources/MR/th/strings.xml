@@ -107,7 +107,7 @@
     <string name="settings_section_title_calls">โทร</string>
     <string name="turning_off_service_and_periodic">การเพิ่มประสิทธิภาพแบตเตอรี่ทํางานอยู่ บริการพื้นหลังและคําขอข้อความใหม่เป็นระยะจะถูกปิด คุณสามารถเปิดใช้งานอีกครั้งผ่านการตั้งค่า</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b> ดีที่สุดสําหรับแบตเตอรี่ </b> คุณจะได้รับการแจ้งเตือนเฉพาะเมื่อแอปกําลังทํางานอยู่ (ไม่มีบริการพื้นหลัง)]]></string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b> ดีสำหรับแบตเตอรี่ </b> บริการพื้นหลังจะตรวจสอบข้อความทุกๆ 10 นาที คุณอาจไม่ได้รับสายหรือข้อความด่วน</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b> ดีสำหรับแบตเตอรี่ </b> บริการพื้นหลังจะตรวจสอบข้อความทุกๆ 10 นาที คุณอาจไม่ได้รับสายหรือข้อความด่วน]]></string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b> สามารถปิดใช้งานผ่านการตั้งค่า </b> - การแจ้งเตือนจะยังคงปรากฏขึ้นในขณะที่แอปกําลังทํางานอยู่]]></string>
     <string name="both_you_and_your_contact_can_add_message_reactions">ทั้งคุณและผู้ติดต่อของคุณสามารถเพิ่มปฏิกิริยาต่อข้อความได้</string>
     <string name="both_you_and_your_contacts_can_delete">ทั้งคุณและผู้ติดต่อของคุณสามารถลบข้อความที่ส่งแล้วอย่างถาวรได้</string>
@@ -116,7 +116,7 @@
     <string name="bold_text">ตัวหนา</string>
     <string name="callstatus_calling">กำลังโทร…</string>
     <string name="callstatus_in_progress">กําลังโทร</string>
-    <string name="onboarding_notifications_mode_service_desc"><b> ใช้แบตเตอรี่มากขึ้น </b>! บริการพื้นหลังจะทํางานเสมอ - การแจ้งเตือนจะปรากฏขึ้นทันทีที่มีข้อความ</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b> ใช้แบตเตอรี่มากขึ้น </b>! บริการพื้นหลังจะทํางานเสมอ - การแจ้งเตือนจะปรากฏขึ้นทันทีที่มีข้อความ]]></string>
     <string name="call_already_ended">สิ้นสุดการโทรแล้ว!</string>
     <string name="call_on_lock_screen">โทรบนหน้าจอล็อค:</string>
     <string name="icon_descr_call_ended">สิ้นสุดการโทร</string>

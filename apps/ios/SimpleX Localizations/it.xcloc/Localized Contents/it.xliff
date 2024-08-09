@@ -945,9 +945,9 @@
         <target>Archivia e carica</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive contacts to chat later." xml:space="preserve" approved="no">
+      <trans-unit id="Archive contacts to chat later." xml:space="preserve">
         <source>Archive contacts to chat later.</source>
-        <target state="translated">Archivia contatti per chattare più tardi.</target>
+        <target>Archivia contatti per chattare più tardi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archived contacts" xml:space="preserve">
@@ -1055,9 +1055,9 @@
         <target>Messaggi migliorati</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better networking" xml:space="preserve" approved="no">
+      <trans-unit id="Better networking" xml:space="preserve">
         <source>Better networking</source>
-        <target state="translated">Rete migliorata</target>
+        <target>Rete migliorata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
@@ -1100,9 +1100,9 @@
         <target>Bloccato dall'amministratore</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Blur for better privacy." xml:space="preserve" approved="no">
+      <trans-unit id="Blur for better privacy." xml:space="preserve">
         <source>Blur for better privacy.</source>
-        <target state="translated">Sfoca per una privacy maggiore.</target>
+        <target>Sfoca per una privacy maggiore.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Blur media" xml:space="preserve">
@@ -1326,9 +1326,9 @@
         <target>La chat è ferma. Se hai già usato questo database su un altro dispositivo, dovresti trasferirlo prima di avviare la chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat list" xml:space="preserve" approved="no">
+      <trans-unit id="Chat list" xml:space="preserve">
         <source>Chat list</source>
-        <target state="translated">Elenco delle chat</target>
+        <target>Elenco delle chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat migrated!" xml:space="preserve">
@@ -1416,9 +1416,9 @@
         <target>Annulla la verifica</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Color chats with the new themes." xml:space="preserve" approved="no">
+      <trans-unit id="Color chats with the new themes." xml:space="preserve">
         <source>Color chats with the new themes.</source>
-        <target state="translated">Colora le chat con i nuovi temi.</target>
+        <target>Colora le chat con i nuovi temi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Color mode" xml:space="preserve">
@@ -1521,9 +1521,9 @@
         <target>Connetti al desktop</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect to your friends faster." xml:space="preserve" approved="no">
+      <trans-unit id="Connect to your friends faster." xml:space="preserve">
         <source>Connect to your friends faster.</source>
-        <target state="translated">Connettiti più velocemente ai tuoi amici.</target>
+        <target>Connettiti più velocemente ai tuoi amici.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to yourself?" xml:space="preserve">
@@ -4394,9 +4394,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Nuova chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New chat experience 🎉" xml:space="preserve" approved="no">
+      <trans-unit id="New chat experience 🎉" xml:space="preserve">
         <source>New chat experience 🎉</source>
-        <target state="translated">Una nuova esperienza di chat 🎉</target>
+        <target>Una nuova esperienza di chat 🎉</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New contact request" xml:space="preserve">
@@ -4429,9 +4429,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Novità nella %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New media options" xml:space="preserve" approved="no">
+      <trans-unit id="New media options" xml:space="preserve">
         <source>New media options</source>
-        <target state="translated">Nuove opzioni multimediali</target>
+        <target>Nuove opzioni multimediali</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New member role" xml:space="preserve">
@@ -4842,9 +4842,9 @@ Richiede l'attivazione della VPN.</target>
         <target>Chiamate picture-in-picture</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Play from the chat list." xml:space="preserve" approved="no">
+      <trans-unit id="Play from the chat list." xml:space="preserve">
         <source>Play from the chat list.</source>
-        <target state="translated">Riproduci dall'elenco delle chat.</target>
+        <target>Riproduci dall'elenco delle chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable calls." xml:space="preserve">
@@ -5429,9 +5429,9 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Ripristina</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reset all hints" xml:space="preserve" approved="no">
+      <trans-unit id="Reset all hints" xml:space="preserve">
         <source>Reset all hints</source>
-        <target state="translated">Ripristina tutti i suggerimenti</target>
+        <target>Ripristina tutti i suggerimenti</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reset all statistics" xml:space="preserve">
@@ -6089,9 +6089,9 @@ Attivalo nelle impostazioni *Rete e server*.</target>
         <target>Condividere l'indirizzo con i contatti?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share from other apps." xml:space="preserve" approved="no">
+      <trans-unit id="Share from other apps." xml:space="preserve">
         <source>Share from other apps.</source>
-        <target state="translated">Condividi da altre app.</target>
+        <target>Condividi da altre app.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share link" xml:space="preserve">
@@ -6778,9 +6778,9 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
         <target>Per verificare la crittografia end-to-end con il tuo contatto, confrontate (o scansionate) il codice sui vostri dispositivi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Toggle chat list:" xml:space="preserve" approved="no">
+      <trans-unit id="Toggle chat list:" xml:space="preserve">
         <source>Toggle chat list:</source>
-        <target state="translated">Cambia elenco chat:</target>
+        <target>Cambia elenco chat:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
@@ -6788,9 +6788,9 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
         <target>Attiva/disattiva l'incognito quando ti colleghi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Toolbar opacity" xml:space="preserve" approved="no">
+      <trans-unit id="Toolbar opacity" xml:space="preserve">
         <source>Toolbar opacity</source>
-        <target state="translated">Opacità barra degli strumenti</target>
+        <target>Opacità barra degli strumenti</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">
@@ -7447,9 +7447,9 @@ Ripetere la richiesta di ingresso?</target>
         <target>Puoi accettare chiamate dalla schermata di blocco, senza l'autenticazione del dispositivo e dell'app.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can change it in Appearance settings." xml:space="preserve" approved="no">
+      <trans-unit id="You can change it in Appearance settings." xml:space="preserve">
         <source>You can change it in Appearance settings.</source>
-        <target state="translated">Puoi cambiarlo nelle impostazioni dell'aspetto.</target>
+        <target>Puoi cambiarlo nelle impostazioni dell'aspetto.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">

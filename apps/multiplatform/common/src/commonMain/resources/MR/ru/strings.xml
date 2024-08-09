@@ -898,8 +898,8 @@
     <string name="onboarding_notifications_mode_off">Когда приложение запущено</string>
     <string name="onboarding_notifications_mode_periodic">Периодически</string>
     <string name="onboarding_notifications_mode_service">Мгновенно</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Больше расход батареи</b>! Фоновый сервис постоянно запущен - уведомления будут показаны как только есть сообщения.</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Меньше расход батареи</b>. Фоновый сервис проверяет сообщения каждые 10 минут. Вы можете пропустить звонки и срочные сообщения.</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Больше расход батареи</b>! Фоновый сервис постоянно запущен - уведомления будут показаны как только есть сообщения.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Меньше расход батареи</b>. Фоновый сервис проверяет сообщения каждые 10 минут. Вы можете пропустить звонки и срочные сообщения.]]></string>
     <string name="onboarding_notifications_mode_subtitle">Можно изменить позже в настройках.</string>
     <string name="live">LIVE</string>
     <string name="send_live_message">Отправить живое сообщение</string>

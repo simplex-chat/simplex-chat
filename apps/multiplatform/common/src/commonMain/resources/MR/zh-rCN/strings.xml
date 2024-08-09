@@ -119,13 +119,13 @@
 \n<b>请注意</b>：如果您有很多连接，您的电池和流量消耗可能会大大增加，并且某些连接可能会失败。</string>
     <string name="back">返回</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b> 最长续航 </b>。您只会在应用程序运行时收到通知（无后台服务）。]]></string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b> 较长续航 </b>。应用每 10 分钟检查一次消息。您可能会错过来电或者紧急信息。</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b> 较长续航 </b>。应用每 10 分钟检查一次消息。您可能会错过来电或者紧急信息。]]></string>
     <string name="bold_text">加粗</string>
     <string name="both_you_and_your_contacts_can_delete">您和您的联系人都可以不可逆地删除已发送的消息。（24小时）</string>
     <string name="both_you_and_your_contact_can_send_disappearing">您和您的联系人都可以发送限时消息。</string>
     <string name="both_you_and_your_contact_can_send_voice">您和您的联系人都可以发送语音消息。</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b> 可以在设置里禁用它 </b> - 应用程序运行时仍会显示通知。]]></string>
-    <string name="onboarding_notifications_mode_service_desc"><b> 使用更多电量 </b>！应用始终在后台运行——一即刻显示通知。</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b> 使用更多电量 </b>！应用始终在后台运行——一即刻显示通知。]]></string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>请注意</b>：如果您丢失密码，您将无法恢复或者更改密码。]]></string>
     <string name="call_already_ended">通话已结束！</string>
     <string name="alert_title_cant_invite_contacts">无法邀请联系人！</string>

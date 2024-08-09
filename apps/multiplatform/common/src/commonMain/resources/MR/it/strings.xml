@@ -271,7 +271,7 @@
     <string name="chat_database_deleted">Database della chat eliminato</string>
     <string name="settings_section_title_icon">ICONA APP</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Ideale per la batteria</b>. Riceverai notifiche solo quando l\'app è in esecuzione (NO servizio in secondo piano).]]></string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Consuma più batteria</b>! L\'app funziona sempre in secondo piano: le notifiche vengono mostrate istantaneamente.</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Consuma più batteria</b>! L\'app funziona sempre in secondo piano: le notifiche vengono mostrate istantaneamente.]]></string>
     <string name="callstatus_calling">chiamata…</string>
     <string name="icon_descr_cancel_link_preview">annulla anteprima link</string>
     <string name="cannot_access_keychain">Impossibile accedere al Keystore per salvare la password del database</string>
@@ -351,7 +351,7 @@
     <string name="how_to_use_markdown">Come usare il markdown</string>
     <string name="icon_descr_audio_call">chiamata audio</string>
     <string name="audio_call_no_encryption">chiamata audio (non crittografata e2e)</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Buono per la batteria</b>. L\'app cerca messaggi ogni 10 minuti. Potresti perdere chiamate o messaggi urgenti.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Buono per la batteria</b>. L\'app cerca messaggi ogni 10 minuti. Potresti perdere chiamate o messaggi urgenti.]]></string>
     <string name="call_already_ended">Chiamata già terminata!</string>
     <string name="create_your_profile">Crea il tuo profilo</string>
     <string name="decentralized">Decentralizzato</string>

@@ -596,6 +596,9 @@
 "Archive and upload" = "Archiveren en uploaden";
 
 /* No comment provided by engineer. */
+"Archive contacts to chat later." = "Archiveer contacten om later te chatten.";
+
+/* No comment provided by engineer. */
 "Archived contacts" = "Gearchiveerde contacten";
 
 /* No comment provided by engineer. */
@@ -674,6 +677,9 @@
 "Better messages" = "Betere berichten";
 
 /* No comment provided by engineer. */
+"Better networking" = "Beter netwerk";
+
+/* No comment provided by engineer. */
 "Black" = "Zwart";
 
 /* No comment provided by engineer. */
@@ -705,6 +711,9 @@
 
 /* No comment provided by engineer. */
 "Blocked by admin" = "Geblokkeerd door beheerder";
+
+/* No comment provided by engineer. */
+"Blur for better privacy." = "Vervagen voor betere privacy.";
 
 /* No comment provided by engineer. */
 "Blur media" = "Vervaag media";
@@ -873,6 +882,9 @@
 "Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." = "Chat is gestopt. Als je deze database al op een ander apparaat hebt gebruikt, moet je deze terugzetten voordat je met chatten begint.";
 
 /* No comment provided by engineer. */
+"Chat list" = "Chatlijst";
+
+/* No comment provided by engineer. */
 "Chat migrated!" = "Chat gemigreerd!";
 
 /* No comment provided by engineer. */
@@ -922,6 +934,9 @@
 
 /* No comment provided by engineer. */
 "Clear verification" = "Verwijderd verificatie";
+
+/* No comment provided by engineer. */
+"Color chats with the new themes." = "Kleurchats met de nieuwe thema's.";
 
 /* No comment provided by engineer. */
 "Color mode" = "Kleur mode";
@@ -991,6 +1006,9 @@
 
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "maak verbinding met SimpleX Chat-ontwikkelaars.";
+
+/* No comment provided by engineer. */
+"Connect to your friends faster." = "Maak sneller verbinding met je vrienden.";
 
 /* No comment provided by engineer. */
 "Connect to yourself?" = "Verbinding maken met jezelf?";
@@ -2945,7 +2963,7 @@
 "New chat" = "Nieuw gesprek";
 
 /* No comment provided by engineer. */
-"New Chat" = "Nieuw Gesprek";
+"New chat experience 🎉" = "Nieuwe chatervaring 🎉";
 
 /* notification */
 "New contact request" = "Nieuw contactverzoek";
@@ -2964,6 +2982,9 @@
 
 /* No comment provided by engineer. */
 "New in %@" = "Nieuw in %@";
+
+/* No comment provided by engineer. */
+"New media options" = "Nieuwe media-opties";
 
 /* No comment provided by engineer. */
 "New member role" = "Nieuwe leden rol";
@@ -3253,6 +3274,9 @@
 "PING interval" = "PING interval";
 
 /* No comment provided by engineer. */
+"Play from the chat list." = "Afspelen via de gesprekken lijst.";
+
+/* No comment provided by engineer. */
 "Please ask your contact to enable calls." = "Vraag uw contactpersoon om oproepen in te schakelen.";
 
 /* No comment provided by engineer. */
@@ -3436,7 +3460,7 @@
 "Rate the app" = "Beoordeel de app";
 
 /* No comment provided by engineer. */
-"Reachable chat toolbar" = "Bereikbare chat werkbalk";
+"Reachable chat toolbar" = "Toegankelijke chatwerkbalk";
 
 /* chat item menu */
 "React…" = "Reageer…";

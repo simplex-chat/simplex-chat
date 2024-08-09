@@ -64,7 +64,7 @@
     <string name="allow_your_contacts_to_send_voice_messages">Sta toe dat uw contacten spraak berichten verzenden.</string>
     <string name="all_your_contacts_will_remain_connected">Al uw contacten blijven verbonden.</string>
     <string name="allow_voice_messages_question">Spraak berichten toestaan\?</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Goed voor de batterij</b>. App controleert berichten elke 10 minuten. U kunt oproepen of urgente berichten missen.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Goed voor de batterij</b>. App controleert berichten elke 10 minuten. U kunt oproepen of urgente berichten missen.]]></string>
     <string name="integrity_msg_bad_hash">Onjuiste bericht hash</string>
     <string name="integrity_msg_bad_id">Onjuiste bericht-ID</string>
     <string name="call_already_ended">Oproep al beëindigd!</string>
@@ -101,7 +101,7 @@
     <string name="both_you_and_your_contact_can_send_disappearing">Zowel jij als je contact kunnen verdwijnende berichten sturen.</string>
     <string name="both_you_and_your_contact_can_send_voice">Zowel jij als je contact kunnen spraak berichten verzenden.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Let op</b>: u kunt het wachtwoord NIET herstellen of wijzigen als u het kwijt raakt.]]></string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Gebruikt meer batterij</b>! App draait altijd op de achtergrond – meldingen worden direct weergegeven.</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Gebruikt meer batterij</b>! App draait altijd op de achtergrond – meldingen worden direct weergegeven.]]></string>
     <string name="icon_descr_cancel_link_preview">link voorbeeld annuleren</string>
     <string name="callstatus_ended">oproep beëindigd %1$s</string>
     <string name="database_initialization_error_title">Kan de database niet initialiseren</string>

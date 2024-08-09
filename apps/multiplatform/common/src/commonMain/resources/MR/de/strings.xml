@@ -892,7 +892,7 @@
     <string name="live">LIVE</string>
     <string name="view_security_code">Schauen Sie sich den Sicherheitscode an</string>
     <string name="onboarding_notifications_mode_service">Sofort</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Gute Option für die Batterieausdauer</b>. Die App prüft alle 10 Minuten auf neue Nachrichten. Sie können eventuell Anrufe oder dringende Nachrichten verpassen.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Gute Option für die Batterieausdauer</b>. Die App prüft alle 10 Minuten auf neue Nachrichten. Sie können eventuell Anrufe oder dringende Nachrichten verpassen.]]></string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Beste Option für die Akkulaufzeit</b>. Sie empfangen Benachrichtigungen nur, solange die App läuft (kein aktiver Hintergrundservice).]]></string>
     <string name="send_verb">Senden</string>
     <string name="is_verified">%s wurde erfolgreich überprüft</string>
@@ -929,7 +929,7 @@
     <string name="failed_to_parse_chat_title">Fehler beim Laden des Chats</string>
     <string name="failed_to_parse_chats_title">Fehler beim Laden der Chats</string>
     <string name="contact_developers">Bitte aktualisieren Sie die App und nehmen Sie Kontakt mit den Entwicklern auf.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Benötigt mehr Leistung Ihrer Batterie</b>! Die App läuft permanent im Hintergrund ab. Benachrichtigungen werden Ihnen sofort angezeigt.</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Benötigt mehr Leistung Ihrer Batterie</b>! Die App läuft permanent im Hintergrund ab. Benachrichtigungen werden Ihnen sofort angezeigt.]]></string>
     <string name="create_group_link">Gruppenlink erstellen</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Erlauben Sie Ihren Kontakten das Senden von verschwindenden Nachrichten.</string>
     <string name="prohibit_sending_disappearing_messages">Das Senden von verschwindenden Nachrichten nicht erlauben.</string>
