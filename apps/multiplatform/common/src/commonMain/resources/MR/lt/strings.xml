@@ -587,7 +587,7 @@
     <string name="one_time_link_short">vienkartinė nuoroda</string>
     <string name="accept_call_on_lock_screen">Atsiliepti</string>
     <string name="auto_accept_contact">Automatiškai priimti</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Geriau baterijai</b>. Fono paslauga tikrina pranešimus kas 10 minučių. Galite praleisti skambučius arba skubius pranešimus.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Geriau baterijai</b>. Fono paslauga tikrina pranešimus kas 10 minučių. Galite praleisti skambučius arba skubius pranešimus.</string>
     <string name="callstatus_in_progress">vyksta skambutis</string>
     <string name="icon_descr_cancel_live_message">Atšaukti tiesioginę žinutę</string>
     <string name="alert_title_cant_invite_contacts">Nepavyko pakviesti kontaktų!</string>
@@ -599,7 +599,7 @@
     <string name="call_on_lock_screen">Skambučiai užrakinimo ekrane:</string>
     <string name="invite_prohibited">Nepavyko pakviesti kontakto!</string>
     <string name="v4_5_transport_isolation_descr">Pagal pokalbių profilį (numatytieji nustatymai) arba pagal ryšį (BETA).</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Naudoja daugiau baterijos</b>! Fono paslauga veikia visada - pranešimai rodomi, kai tik atsiranda žinučių.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Naudoja daugiau baterijos</b>! Fono paslauga veikia visada - pranešimai rodomi, kai tik atsiranda žinučių.</string>
     <string name="cannot_access_keychain">Negalima pasiekti \"Keystore\", kad išsaugotumėte duomenų bazės slaptažodį</string>
     <string name="icon_descr_cancel_file_preview">Atšaukti failo peržiūrą</string>
     <string name="icon_descr_cancel_image_preview">Atšaukti vaizdo peržiūrą</string>

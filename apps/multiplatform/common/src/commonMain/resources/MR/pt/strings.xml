@@ -211,11 +211,11 @@
     <string name="info_row_group">Grupo</string>
     <string name="icon_descr_audio_on">Áudio ligado</string>
     <string name="authentication_cancelled">Autenticação cancelada</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b> Bom para a bateria </b>. O serviço em segundo plano verifica se há mensagens a cada 10 minutos. Você pode perder chamadas ou mensagens urgentes.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b> Bom para a bateria </b>. O serviço em segundo plano verifica se há mensagens a cada 10 minutos. Você pode perder chamadas ou mensagens urgentes.</string>
     <string name="turning_off_service_and_periodic">A otimização da bateria está ativa, desativando o serviço em segundo plano e os pedidos periódicos de novas mensagens. Você pode reativá-los através das definições.</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Melhor para a bateria</b>. Apenas receberá notificações enquanto a app estiver em execução (SEM serviço em segundo plano)]]></string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Pode ser desativado nas definições</b> – as notificações ainda serão exibidas enquanto a aplicação estiver em execução.]]></string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Consome mais bateria</b>! O serviço em segundo plano está sempre em execução - as notificações serão exibidas assim que as mensagens estiverem disponíveis.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Consome mais bateria</b>! O serviço em segundo plano está sempre em execução - as notificações serão exibidas assim que as mensagens estiverem disponíveis.</string>
     <string name="settings_audio_video_calls">Chamadas de áudio e vídeo</string>
     <string name="icon_descr_audio_off">Áudio desligado</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b> Por favor note </b>: você NÃO será capaz de recuperar ou alterar a senha se a perder.]]></string>

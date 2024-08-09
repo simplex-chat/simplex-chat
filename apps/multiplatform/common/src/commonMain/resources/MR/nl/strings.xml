@@ -64,7 +64,7 @@
     <string name="allow_your_contacts_to_send_voice_messages">Sta toe dat uw contacten spraak berichten verzenden.</string>
     <string name="all_your_contacts_will_remain_connected">Al uw contacten blijven verbonden.</string>
     <string name="allow_voice_messages_question">Spraak berichten toestaan\?</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Goed voor de batterij</b>. Achtergrondservice controleert berichten elke 10 minuten. Mogelijk mist u oproepen of dringende berichten.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Goed voor de batterij</b>. App controleert berichten elke 10 minuten. U kunt oproepen of urgente berichten missen.</string>
     <string name="integrity_msg_bad_hash">Onjuiste bericht hash</string>
     <string name="integrity_msg_bad_id">Onjuiste bericht-ID</string>
     <string name="call_already_ended">Oproep al beëindigd!</string>
@@ -101,7 +101,7 @@
     <string name="both_you_and_your_contact_can_send_disappearing">Zowel jij als je contact kunnen verdwijnende berichten sturen.</string>
     <string name="both_you_and_your_contact_can_send_voice">Zowel jij als je contact kunnen spraak berichten verzenden.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Let op</b>: u kunt het wachtwoord NIET herstellen of wijzigen als u het kwijt raakt.]]></string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Gebruikt meer batterij</b>! Achtergrondservice wordt altijd uitgevoerd - meldingen worden weergegeven zodra berichten beschikbaar zijn.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Gebruikt meer batterij</b>! App draait altijd op de achtergrond – meldingen worden direct weergegeven.</string>
     <string name="icon_descr_cancel_link_preview">link voorbeeld annuleren</string>
     <string name="callstatus_ended">oproep beëindigd %1$s</string>
     <string name="database_initialization_error_title">Kan de database niet initialiseren</string>
@@ -513,7 +513,7 @@
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Zorg ervoor dat WebRTC ICE server adressen de juiste indeling hebben, regel gescheiden zijn en niet gedupliceerd zijn.</string>
     <string name="network_disable_socks_info">Als u bevestigt, kunnen de berichten servers en uw provider uw IP-adres zien en met welke servers u verbinding maakt.</string>
     <string name="network_use_onion_hosts_no">Nee</string>
-    <string name="immune_to_spam_and_abuse">Immuun voor spam en misbruik</string>
+    <string name="immune_to_spam_and_abuse">Immuun voor spam</string>
     <string name="make_private_connection">Maak een privéverbinding</string>
     <string name="message_deletion_prohibited">Het onomkeerbaar verwijderen van berichten is verboden in dit gesprek.</string>
     <string name="new_in_version">Nieuw in %s</string>
@@ -583,8 +583,8 @@
     <string name="network_use_onion_hosts_required_desc">Onion hosts zijn vereist voor verbinding.</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion hosts worden gebruikt indien beschikbaar.</string>
     <string name="network_use_onion_hosts_no_desc">Onion hosts worden niet gebruikt.</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Open-source protocol en code. Iedereen kan de servers draaien.</string>
-    <string name="people_can_connect_only_via_links_you_share">Mensen kunnen alleen verbinding met u maken via de links die u deelt.</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">Iedereen kan servers hosten.</string>
+    <string name="people_can_connect_only_via_links_you_share">Jij bepaalt wie er verbinding mag maken.</string>
     <string name="only_your_contact_can_delete">Alleen uw contact kan berichten onherroepelijk verwijderen (u kunt ze markeren voor verwijdering). (24 uur)</string>
     <string name="only_you_can_send_voice">Alleen jij kunt spraak berichten verzenden.</string>
     <string name="only_your_contact_can_send_voice">Alleen uw contact kan spraak berichten verzenden.</string>
@@ -719,7 +719,8 @@
     <string name="you_can_use_markdown_to_format_messages__prompt">U kunt markdown gebruiken voor opmaak in berichten:</string>
     <string name="callstatus_rejected">geweigerde oproep</string>
     <string name="secret_text">geheim</string>
-    <string name="next_generation_of_private_messaging">De volgende generatie privéberichten</string>
+    <string name="next_generation_of_private_messaging">De volgende generatie
+\nprivéberichten</string>
     <string name="callstate_waiting_for_answer">wachten op antwoord…</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Om de privacy te beschermen, heeft SimpleX in plaats van gebruikers-ID\'s die door alle andere platforms worden gebruikt, ID\'s voor berichten wachtrijen, afzonderlijk voor elk van uw contacten.</string>
     <string name="use_chat">Gebruik chat</string>
@@ -855,7 +856,7 @@
     <string name="update_network_session_mode_question">Transportisolatiemodus updaten\?</string>
     <string name="callstate_received_confirmation">bevestiging ontvangen…</string>
     <string name="callstate_waiting_for_confirmation">Wachten op bevestiging…</string>
-    <string name="first_platform_without_user_ids">Het eerste platform zonder gebruikers-ID\'s, privé door ontwerp.</string>
+    <string name="first_platform_without_user_ids">Geen gebruikers-ID\'s.</string>
     <string name="prohibit_direct_messages">Verbied het sturen van directe berichten naar leden.</string>
     <string name="prohibit_sending_voice">Verbieden het verzenden van spraak berichten.</string>
     <string name="v4_2_security_assessment_desc">De beveiliging van SimpleX Chat is gecontroleerd door Trail of Bits.</string>
@@ -2018,7 +2019,7 @@
     <string name="info_view_open_button">open</string>
     <string name="paste_link">Plak de link</string>
     <string name="action_button_add_members">Uitnodiging</string>
-    <string name="one_hand_ui">Bereikbare chat werkbalk</string>
+    <string name="one_hand_ui">Toegankelijke chatwerkbalk</string>
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Vraag uw contactpersoon om oproepen in te schakelen.</string>
     <string name="no_filtered_contacts">Geen gefilterde contacten</string>
     <string name="select_verb">Selecteer</string>
@@ -2043,7 +2044,7 @@
     <string name="network_options_save_and_reconnect">Opslaan en opnieuw verbinden</string>
     <string name="network_option_tcp_connection">TCP verbinding</string>
     <string name="v6_0_private_routing_descr">Het beschermt uw IP-adres en verbindingen.</string>
-    <string name="v6_0_reachable_chat_toolbar">Bereikbare chat werkbalk 👋</string>
+    <string name="v6_0_reachable_chat_toolbar">Toegankelijke chatwerkbalk</string>
     <string name="v6_0_reachable_chat_toolbar_descr">Gebruik de app met één hand.</string>
     <string name="v6_0_connection_servers_status">Beheer uw netwerk</string>
     <string name="v6_0_connect_faster_descr">Maak sneller verbinding met je vrienden</string>
@@ -2054,4 +2055,13 @@
     <string name="reset_all_hints">Alle hints resetten</string>
     <string name="one_hand_ui_card_title">Chatlijst wisselen:</string>
     <string name="one_hand_ui_change_instruction">U kunt dit wijzigen in de instellingen onder uiterlijk</string>
+    <string name="create_address_button">Creëren</string>
+    <string name="v6_0_privacy_blur">Vervagen voor betere privacy.</string>
+    <string name="v6_0_chat_list_media">Afspelen via de gesprekken lijst.</string>
+    <string name="v6_0_upgrade_app_descr">Download nieuwe versies van GitHub.</string>
+    <string name="v6_0_increase_font_size">Vergroot het lettertype.</string>
+    <string name="v6_0_upgrade_app">App automatisch upgraden</string>
+    <string name="v6_0_new_chat_experience">Nieuwe chatervaring 🎉</string>
+    <string name="v6_0_new_media_options">Nieuwe media-opties</string>
+    <string name="invite_friends_short">Uitnodigen</string>
 </resources>

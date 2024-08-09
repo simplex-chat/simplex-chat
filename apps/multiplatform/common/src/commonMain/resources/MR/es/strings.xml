@@ -4,7 +4,7 @@
     <string name="accept_contact_button">Aceptar</string>
     <string name="network_settings">Configuración avanzada de red</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Óptimo para la batería</b>. Recibirás notificaciones sólo cuando la aplicación esté abierta (SIN servicio en segundo plano).]]></string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Bueno para la batería</b>. El servicio en segundo plano comprueba si hay mensajes cada 10 minutos. Podrías no recibir a tiempo llamadas o mensajes urgentes.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Bueno para la batería</b>. La aplicación comprueba si hay mensajes cada 10 minutos. Podrías perderte llamadas o mensajes urgentes.</string>
     <string name="accept_call_on_lock_screen">Aceptar</string>
     <string name="full_backup">Copia de seguridad de los datos de la aplicación</string>
     <string name="chat_item_ttl_day">un dia</string>
@@ -75,7 +75,7 @@
     <string name="icon_descr_asked_to_receive">Solicita recibir la imagen</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Recuerda</b>: NO podrás recuperar o cambiar la frase de contraseña si la pierdes.]]></string>
     <string name="both_you_and_your_contact_can_send_voice">Tanto tú como tu contacto podéis enviar mensajes de voz.</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>¡Consume más batería!</b> El servicio en segundo plano se ejecuta continuamente y las notificaciones se mostrarán de inmediato.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>¡Consume más energía!</b> La aplicación está siempre en segundo plano y las notificaciones se muestran de inmediato.</string>
     <string name="both_you_and_your_contacts_can_delete">Tanto tú como tu contacto podéis eliminar los mensajes enviados de forma irreversible. (24 horas)</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Tanto tú como tu contacto podéis enviar mensajes temporales.</string>
     <string name="create_profile_button">Crear</string>
@@ -387,7 +387,7 @@
     <string name="error_saving_ICE_servers">Error al guardar servidores ICE</string>
     <string name="enter_one_ICE_server_per_line">Servidores ICE (uno por línea)</string>
     <string name="full_name__field">Nombre completo:</string>
-    <string name="people_can_connect_only_via_links_you_share">Las personas pueden conectarse contigo sólo mediante los enlaces que compartes.</string>
+    <string name="people_can_connect_only_via_links_you_share">Tu decides quién se conecta.</string>
     <string name="how_simplex_works">Cómo funciona SimpleX</string>
     <string name="icon_descr_hang_up">Colgar</string>
     <string name="files_and_media_section">Archivos y multimedia</string>
@@ -509,7 +509,7 @@
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Asegúrate de que las direcciones del servidor WebRTC ICE tienen el formato correcto, están separadas por líneas y no duplicadas.</string>
     <string name="network_use_onion_hosts_required_desc">Se requieren hosts .onion para la conexión
 \nRecuerda: no podrás conectarte a servidores que no tengan dirección .onion.</string>
-    <string name="immune_to_spam_and_abuse">Inmune a spam y abuso</string>
+    <string name="immune_to_spam_and_abuse">Inmune al spam</string>
     <string name="many_people_asked_how_can_it_deliver"><![CDATA[Muchos se preguntarán: <i>si SimpleX no tiene identificadores de usuario, ¿cómo puede entregar los mensajes\?</i>]]></string>
     <string name="incoming_video_call">Videollamada entrante</string>
     <string name="snd_group_event_user_left">has salido</string>
@@ -631,7 +631,7 @@
     <string name="reject_contact_button">Rechazar</string>
     <string name="network_use_onion_hosts_required">Obligatorio</string>
     <string name="save_and_notify_contacts">Guardar y notificar contactos</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Protocolo y código abiertos: cualquiera puede usar los servidores.</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">Cualquiera puede alojar servidores.</string>
     <string name="role_in_group">Rol</string>
     <string name="network_option_ping_interval">Intervalo PING</string>
     <string name="network_option_ping_count">Contador PING</string>
@@ -745,7 +745,8 @@
     <string name="connection_you_accepted_will_be_cancelled">¡La conexión que has aceptado se cancelará!</string>
     <string name="database_initialization_error_desc">La base de datos no funciona correctamente. Pulsa para conocer más</string>
     <string name="moderate_message_will_be_marked_warning">El mensaje será marcado como moderado para todos los miembros.</string>
-    <string name="next_generation_of_private_messaging">La nueva generación de mensajería privada</string>
+    <string name="next_generation_of_private_messaging">La nueva generación
+\nde mensajería privada</string>
     <string name="delete_files_and_media_desc">Esta acción es irreversible. Se eliminarán todos los archivos y multimedia recibidos y enviados. Las imágenes de baja resolución permanecerán.</string>
     <string name="enable_automatic_deletion_message">Esta acción es irreversible. Los mensajes enviados y recibidos anteriores a la selección serán eliminados. Podría tardar varios minutos.</string>
     <string name="messages_section_description">Esta configuración se aplica a los mensajes del perfil actual</string>
@@ -780,7 +781,7 @@
     <string name="network_use_onion_hosts">Usar hosts .onion</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">La plataforma de mensajería y aplicaciones que protege tu privacidad y seguridad.</string>
-    <string name="first_platform_without_user_ids">La primera plataforma sin identificadores de usuario: diseñada para la privacidad.</string>
+    <string name="first_platform_without_user_ids">Sin identificadores de usuario.</string>
     <string name="alert_message_no_group">Este grupo ya no existe.</string>
     <string name="accept_feature_set_1_day">Establecer 1 día</string>
     <string name="v4_4_french_interface_descr">¡Nuestro agradecimiento a todos los colaboradores! Puedes contribuir a través de Weblate.</string>
@@ -829,7 +830,7 @@
     <string name="chat_help_tap_button">Pulsa el botón</string>
     <string name="to_start_a_new_chat_help_header">Para iniciar un chat nuevo</string>
     <string name="switch_receiving_address">Cambiar servidor de recepción</string>
-    <string name="group_is_decentralized">Completamente descentralizado: sólo visible a los miembros.</string>
+    <string name="group_is_decentralized">Completamente descentralizado y sólo visible para los miembros.</string>
     <string name="to_connect_via_link_title">Para conectarte mediante enlace</string>
     <string name="smp_servers_test_failed">¡Error en prueba del servidor!</string>
     <string name="smp_servers_test_some_failed">Algunos servidores no superaron la prueba:</string>
@@ -1348,7 +1349,7 @@
     <string name="turn_off_system_restriction_button">Abrir configuración</string>
     <string name="connect__a_new_random_profile_will_be_shared">Se compartirá un perfil nuevo aleatorio.</string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">Pega el enlace recibido para conectar con tu contacto…</string>
-    <string name="connect__your_profile_will_be_shared">Tu perfil %1$s será compartido.</string>
+    <string name="connect__your_profile_will_be_shared">El perfil %1$s será compartido.</string>
     <string name="disable_notifications_button">Desactivar notificaciones</string>
     <string name="system_restricted_background_in_call_title">Sin llamadas en segundo plano.</string>
     <string name="system_restricted_background_desc">SimpleX no puede funcionar en segundo plano. Sólo recibirás notificaciones con la aplicación abierta.</string>
@@ -1426,7 +1427,7 @@
     <string name="alert_text_encryption_renegotiation_failed">Renegociación de cifrado fallida.</string>
     <string name="desktop_devices">Ordenadores</string>
     <string name="correct_name_to">¿Corregir el nombre a %s?</string>
-    <string name="delete_messages__question">Elimina %d mensajes?</string>
+    <string name="delete_messages__question">¿Eliminar %d mensajes?</string>
     <string name="link_a_mobile">Enlazar móvil</string>
     <string name="connect_with_contact_name_question">¿Conectar con %1$s?</string>
     <string name="block_member_confirmation">Bloquear</string>
@@ -1999,7 +2000,7 @@
     <string name="paste_link">Pegar enlace</string>
     <string name="privacy_media_blur_radius_medium">Medio</string>
     <string name="privacy_media_blur_radius_soft">Suave</string>
-    <string name="one_hand_ui">Barra accesible</string>
+    <string name="one_hand_ui">Barra de herramientas accesible</string>
     <string name="info_view_call_button">llamada</string>
     <string name="info_view_connect_button">conectar</string>
     <string name="delete_members_messages__question">¿Eliminar %d mensajes de miembros?</string>
@@ -2034,7 +2035,7 @@
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Por favor, pide a tu contacto que active las llamadas.</string>
     <string name="cant_call_member_send_message_alert_text">Enviar mensaje para activar llamadas.</string>
     <string name="v6_0_delete_many_messages_descr">Elimina hasta 20 mensajes a la vez.</string>
-    <string name="v6_0_reachable_chat_toolbar">Barra de herramientas accesible 👋</string>
+    <string name="v6_0_reachable_chat_toolbar">Barra de herramientas accesible</string>
     <string name="v6_0_your_contacts_descr">Archivar contactos para charlar más tarde.</string>
     <string name="chat_database_exported_save">Puedes guardar el archivo exportado.</string>
     <string name="privacy_media_blur_radius_strong">Fuerte</string>
@@ -2055,4 +2056,15 @@
     <string name="proxy_destination_error_failed_to_connect">El servidor de reenvío %1$s no ha podido conectarse al servidor de destino %2$s. Por favor, intentalo más tarde.</string>
     <string name="smp_proxy_error_broker_version">La versión del servidor de reenvío es incompatible con la configuración de red: %1$s.</string>
     <string name="no_filtered_contacts">Ningún contacto filtrado</string>
+    <string name="v6_0_privacy_blur">Difuminar para más privacidad</string>
+    <string name="create_address_button">Crear</string>
+    <string name="one_hand_ui_card_title">Alternar lista de chats:</string>
+    <string name="v6_0_increase_font_size">Aumenta el tamaño de la fuente.</string>
+    <string name="v6_0_chat_list_media">Reproduce desde la lista de chats.</string>
+    <string name="v6_0_upgrade_app">Actualizar la aplicación automáticamente</string>
+    <string name="invite_friends_short">Invitar</string>
+    <string name="v6_0_new_chat_experience">Nueva experiencia de chat 🎉</string>
+    <string name="v6_0_new_media_options">Nuevas opciones multimedia</string>
+    <string name="one_hand_ui_change_instruction">Puede cambiarlo desde el menú Apariencia.</string>
+    <string name="v6_0_upgrade_app_descr">Descarga nuevas versiones desde GitHub.</string>
 </resources>

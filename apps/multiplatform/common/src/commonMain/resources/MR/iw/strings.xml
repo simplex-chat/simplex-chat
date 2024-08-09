@@ -94,7 +94,7 @@
     <string name="authentication_cancelled">אימות בוטל</string>
     <string name="auth_unavailable">אימות לא זמין</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>הטוב ביותר לסוללה</b>. התראות יוצגו רק כאשר האפליקציה מופעלת (ללא שירות רקע).]]></string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>טוב לסוללה</b>. שירות הרקע ייבדוק הודעות כל 10 דקות. שיחות או הודעות דחופות עלולות להתפספס.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>טוב לסוללה</b>. שירות הרקע ייבדוק הודעות כל 10 דקות. שיחות או הודעות דחופות עלולות להתפספס.</string>
     <string name="both_you_and_your_contacts_can_delete">גם אתה וגם איש הקשר שלך יכולים למחוק הודעות שנשלחו באופן בלתי הפיך. (24 שעות)</string>
     <string name="both_you_and_your_contact_can_send_disappearing">גם אתם וגם איש הקשר יכולים לשלוח הודעות נעלמות.</string>
     <string name="cannot_receive_file">לא ניתן לקבל את הקובץ</string>
@@ -105,7 +105,7 @@
     <string name="icon_descr_cancel_link_preview">בטל תצוגה מקדימה של קישורים</string>
     <string name="callstatus_error">שגיאת שיחה</string>
     <string name="callstatus_in_progress">שיחה מתמשכת</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>צורך יותר סוללה</b>! שירות רקע תמיד מופעל – התראות יוצגו מיד כאשר הודעות מגיעות.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>צורך יותר סוללה</b>! שירות רקע תמיד מופעל – התראות יוצגו מיד כאשר הודעות מגיעות.</string>
     <string name="call_already_ended">השיחה כבר הסתיימה!</string>
     <string name="call_on_lock_screen">שיחות במסך הנעילה:</string>
     <string name="icon_descr_call_ended">השיחה הסתיימה</string>

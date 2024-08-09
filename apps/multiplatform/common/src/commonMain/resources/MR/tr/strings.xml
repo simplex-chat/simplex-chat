@@ -757,7 +757,7 @@
     <string name="callstatus_connecting">aramaya bağlanılıyor…</string>
     <string name="delivery_receipts_are_disabled">Gönderildi bilgisi kapalı!</string>
     <string name="v5_2_more_things">Birkaç şey daha</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Daha fazla pil kullanır</b>! Arka plan hizmeti her zaman çalışır - mesajlar gelir gelmez bildirim gönderilir.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Daha fazla pil kullanır</b>! Arka plan hizmeti her zaman çalışır - mesajlar gelir gelmez bildirim gönderilir.</string>
     <string name="in_developing_title">Çok yakında!</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Kişi ve tüm mesajlar silinecektir - bu geri alınamaz!</string>
     <string name="alert_title_contact_connection_pending">Kişi henüz bağlanmadı!</string>
@@ -825,7 +825,7 @@
     <string name="mark_read">Okundu olarak işaretle</string>
     <string name="mark_unread">Okunmadı olarak işaretle</string>
     <string name="chat_console">Sohbet konsolu</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Pil için iyi</b>. Arka plan hizmeti mesajları 10 dakikada bir kontrol eder. Aramaları veya acil mesajları kaçırabilirsiniz.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Pil için iyi</b>. Arka plan hizmeti mesajları 10 dakikada bir kontrol eder. Aramaları veya acil mesajları kaçırabilirsiniz.</string>
     <string name="v4_4_verify_connection_security_desc">Güvenlik kodlarını kişilerinizle karşılaştırın.</string>
     <string name="notifications_mode_service_desc">Arka plan hizmeti her zaman çalışır - mesajlar gelir gelmez bildirim gönderilir.</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Pil için en iyisi</b>. Sadece uygulama çalışırken bildirim alırsınız (arka plan hizmeti YOK).]]></string>

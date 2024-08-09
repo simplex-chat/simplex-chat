@@ -440,7 +440,7 @@
     <string name="use_chat">Użyj czatu</string>
     <string name="onboarding_notifications_mode_off">Gdy aplikacja jest uruchomiona</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Kontrolujesz przez który serwer(y) <b>odbierać</b> wiadomości, Twoje kontakty - serwery, których używasz do wysyłania im wiadomości.]]></string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Zużywa więcej baterii</b>! Usługa zawsze działa w tle - powiadomienia są wyświetlane, gdy tylko wiadomości są dostępne.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Zużywa więcej baterii</b>! Usługa zawsze działa w tle - powiadomienia są wyświetlane, gdy tylko wiadomości są dostępne.</string>
     <string name="incoming_audio_call">Przychodzące połączenie audio</string>
     <string name="incoming_video_call">Przychodzące połączenie wideo</string>
     <string name="paste_the_link_you_received">Wklej link, który otrzymałeś</string>
@@ -913,7 +913,7 @@
     <string name="turning_off_service_and_periodic">Optymalizacja baterii jest aktywna, wyłącza usługi w tle i okresowe żądania nowych wiadomości. Możesz je ponownie włączyć za pośrednictwem ustawień.</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Można je wyłączyć poprzez ustawienia</b> - powiadomienia nadal będą pokazywane podczas działania aplikacji.]]></string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Najlepsze dla baterii</b>. Będziesz otrzymywać powiadomienia tylko wtedy, gdy aplikacja jest uruchomiona (NIE w tle).]]></string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Dobry dla baterii</b>. Usługa w tle sprawdza wiadomości co 10 minut. Możesz przegapić połączenia lub pilne wiadomości.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Dobry dla baterii</b>. Usługa w tle sprawdza wiadomości co 10 minut. Możesz przegapić połączenia lub pilne wiadomości.</string>
     <string name="both_you_and_your_contact_can_send_voice">Zarówno Ty, jak i Twój kontakt możecie wysyłać wiadomości głosowe.</string>
     <string name="v4_5_transport_isolation_descr">Według profilu czatu (domyślnie) lub połączenia (BETA).</string>
     <string name="alert_title_cant_invite_contacts">Nie można zaprosić kontaktów!</string>

@@ -74,7 +74,7 @@
     <string name="smp_servers_check_address">Verifique o endereço do servidor e tente novamente.</string>
     <string name="network_session_mode_user_description"><![CDATA[Uma conexão TCP separada (e credencial SOCKS) será usada <b>para cada perfil de bate-papo que você tiver no aplicativo</b>.]]></string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Melhor para bateria</b>. Você receberá notificações apenas quando o aplicativo estiver em execução (SEM o serviço em segundo plano).]]></string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Consome mais bateria</b>! O serviço em segundo plano está sempre em execução - as notificações são exibidas assim que as mensagens estiverem disponíveis.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Consome mais bateria</b>! O serviço em segundo plano está sempre em execução - as notificações são exibidas assim que as mensagens estiverem disponíveis.</string>
     <string name="settings_section_title_chats">BATE-PAPOS</string>
     <string name="settings_section_title_icon">ÍCONE DO APLICATIVO</string>
     <string name="chat_database_section">BANCO DE DADOS DE BATE-PAPO</string>
@@ -91,7 +91,7 @@
     <string name="notifications_mode_service_desc">O serviço em segundo plano está sempre em execução - as notificações serão exibidas assim que as mensagens estiverem disponíveis.</string>
     <string name="network_session_mode_entity_description">Uma conexão TCP separada (e credencial SOCKS) será usada <b>para cada contato e membro do grupo</b>. 
 \n<b>Atenção</b>: se você tiver muitas conexões, o consumo de bateria e tráfego pode ser substancialmente maior e algumas conexões podem falhar.</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Bom para bateria</b>. O serviço em segundo plano procura por mensagens a cada 10 minutos. Você pode perder chamadas ou mensagens urgentes.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Bom para bateria</b>. O serviço em segundo plano procura por mensagens a cada 10 minutos. Você pode perder chamadas ou mensagens urgentes.</string>
     <string name="callstatus_ended">chamda encerrada %1$s</string>
     <string name="chat_with_developers">Converse com os desenvolvedores</string>
     <string name="create_group_link">Criar link de grupo</string>

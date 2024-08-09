@@ -99,7 +99,7 @@
     <string name="auth_unavailable">Идентификацията е недостъпна</string>
     <string name="both_you_and_your_contact_can_add_message_reactions">И вие, и вашият контакт можете да добавяте реакции към съобщението.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Моля, обърнете внимание</b>: НЯМА да можете да възстановите или промените паролата, ако я загубите.]]></string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Използва повече батерия</b>! Услугата на заден план винаги работи – известията се показват веднага щом съобщенията са налични.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Използва повече батерия</b>! Услугата на заден план винаги работи – известията се показват веднага щом съобщенията са налични.</string>
     <string name="integrity_msg_bad_hash">лош хеш на съобщението</string>
     <string name="alert_title_msg_bad_hash">Лош хеш на съобщението</string>
     <string name="no_call_on_lock_screen">Деактивиране</string>
@@ -137,7 +137,7 @@
     <string name="callstatus_missed">пропуснато повикване</string>
     <string name="callstatus_rejected">отхвърлено повикване</string>
     <string name="callstate_starting">стартиране…</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Добър за батерията</b>. Фоновата услуга проверява съобщенията на всеки 10 минути. Може да пропуснете обаждания или спешни съобщения.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Добър за батерията</b>. Фоновата услуга проверява съобщенията на всеки 10 минути. Може да пропуснете обаждания или спешни съобщения.</string>
     <string name="callstate_connected">свързан</string>
     <string name="callstate_connecting">свързване…</string>
     <string name="encrypted_audio_call">e2e криптиран аудио разговор</string>

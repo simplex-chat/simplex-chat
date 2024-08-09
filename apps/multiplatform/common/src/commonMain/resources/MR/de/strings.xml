@@ -391,7 +391,7 @@
     <string name="save_servers_button">Speichern</string>
     <string name="network_and_servers">Netzwerk &amp; Server</string>
     <string name="network_settings">Erweiterte Netzwerkeinstellungen</string>
-    <string name="network_settings_title">Netzwerkeinstellungen</string>
+    <string name="network_settings_title">Erweiterte Einstellungen</string>
     <string name="network_enable_socks">SOCKS-Proxy verwenden?</string>
     <string name="network_enable_socks_info">Zugriff auf die Server über SOCKS-Proxy auf Port %d? Der Proxy muss gestartet werden, bevor diese Option aktiviert wird.</string>
     <string name="network_disable_socks">Direkte Internetverbindung verwenden?</string>
@@ -462,13 +462,14 @@
     <string name="callstate_connected">Verbunden</string>
     <string name="callstate_ended">Beendet</string>
     <!-- SimpleXInfo -->
-    <string name="next_generation_of_private_messaging">Die nächste Generation von privatem Messaging</string>
+    <string name="next_generation_of_private_messaging">Die nächste Generation
+\ndes privaten Messagings</string>
     <string name="privacy_redefined">Datenschutz neu definiert</string>
-    <string name="first_platform_without_user_ids">Die erste Plattform ohne Benutzerkennungen – privat per Design</string>
-    <string name="immune_to_spam_and_abuse">Immun gegen Spam und Missbrauch</string>
-    <string name="people_can_connect_only_via_links_you_share">Verbindungen mit Kontakten sind nur über Links möglich, die Sie oder Ihre Kontakte untereinander teilen.</string>
+    <string name="first_platform_without_user_ids">Keine Benutzerkennungen.</string>
+    <string name="immune_to_spam_and_abuse">Immun gegen Spam</string>
+    <string name="people_can_connect_only_via_links_you_share">Sie entscheiden, wer sich mit Ihnen verbinden kann.</string>
     <string name="decentralized">Dezentral</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Open-Source-Protokoll und -Code – Jede Person kann ihre eigenen Server aufsetzen und nutzen.</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">Jeder kann seine eigenen Server aufsetzen.</string>
     <string name="create_your_profile">Erstellen Sie Ihr Profil</string>
     <string name="make_private_connection">Stellen Sie eine private Verbindung her</string>
     <string name="how_it_works">Wie es funktioniert</string>
@@ -891,7 +892,7 @@
     <string name="live">LIVE</string>
     <string name="view_security_code">Schauen Sie sich den Sicherheitscode an</string>
     <string name="onboarding_notifications_mode_service">Sofort</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Gute Option für die Batterieausdauer</b>. Der Hintergrundservice überprüft alle 10 Minuten nach Nachrichten. Sie können eventuell Anrufe oder dringende Nachrichten verpassen.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Gute Option für die Batterieausdauer</b>. Die App prüft alle 10 Minuten auf neue Nachrichten. Sie können eventuell Anrufe oder dringende Nachrichten verpassen.</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Beste Option für die Akkulaufzeit</b>. Sie empfangen Benachrichtigungen nur, solange die App läuft (kein aktiver Hintergrundservice).]]></string>
     <string name="send_verb">Senden</string>
     <string name="is_verified">%s wurde erfolgreich überprüft</string>
@@ -928,7 +929,7 @@
     <string name="failed_to_parse_chat_title">Fehler beim Laden des Chats</string>
     <string name="failed_to_parse_chats_title">Fehler beim Laden der Chats</string>
     <string name="contact_developers">Bitte aktualisieren Sie die App und nehmen Sie Kontakt mit den Entwicklern auf.</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Benötigt mehr Leistung Ihrer Batterie</b>! Der Hintergrundservice läuft permanent ab. Benachrichtigungen werden Ihnen angezeigt, sobald Sie neue Nachrichten erhalten haben.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Benötigt mehr Leistung Ihrer Batterie</b>! Die App läuft permanent im Hintergrund ab. Benachrichtigungen werden Ihnen sofort angezeigt.</string>
     <string name="create_group_link">Gruppenlink erstellen</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Erlauben Sie Ihren Kontakten das Senden von verschwindenden Nachrichten.</string>
     <string name="prohibit_sending_disappearing_messages">Das Senden von verschwindenden Nachrichten nicht erlauben.</string>
@@ -1322,7 +1323,7 @@
     <string name="edit_history">Nachrichtenverlauf bearbeiten</string>
     <string name="message_reactions_prohibited_in_this_chat">In diesem Chat sind Reaktionen auf Nachrichten nicht erlaubt.</string>
     <string name="item_info_no_text">Kein Text</string>
-    <string name="non_fatal_errors_occured_during_import">Während des Imports sind einige nicht schwerwiegende Fehler aufgetreten – weitere Details finden Sie in der Chat-Konsole.</string>
+    <string name="non_fatal_errors_occured_during_import">Während des Imports sind nicht schwerwiegende Fehler aufgetreten:</string>
     <string name="shutdown_alert_question">Herunterfahren\?</string>
     <string name="shutdown_alert_desc">Bis zum Neustart der App erhalten Sie keine Benachrichtigungen mehr</string>
     <string name="settings_section_title_app">APP</string>
@@ -1860,7 +1861,7 @@
     <string name="network_smp_proxy_mode_always">Immer</string>
     <string name="network_smp_proxy_mode_private_routing">Privates Routing</string>
     <string name="network_smp_proxy_mode_never">Nie</string>
-    <string name="network_smp_proxy_mode_unknown">Unbekannte Relais</string>
+    <string name="network_smp_proxy_mode_unknown">Unbekannte Server</string>
     <string name="network_smp_proxy_mode_unprotected">Ungeschützt</string>
     <string name="network_smp_proxy_mode_unknown_description">Sie nutzen privates Routing mit unbekannten Servern.</string>
     <string name="network_smp_proxy_mode_never_description">Sie nutzen KEIN privates Routing.</string>
@@ -2084,12 +2085,12 @@
     <string name="only_delete_conversation">Nur die Unterhaltung löschen</string>
     <string name="info_view_search_button">Suchen</string>
     <string name="info_view_video_button">Video</string>
-    <string name="you_can_still_view_conversation_with_contact">Sie können die Unterhaltung mit %1$s weiterhin in der Chatliste einsehen.</string>
+    <string name="you_can_still_view_conversation_with_contact">Sie können in der Chatliste weiterhin die Unterhaltung mit %1$s einsehen.</string>
     <string name="paste_link">Link einfügen</string>
-    <string name="deleted_chats">Gelöschte Chats</string>
+    <string name="deleted_chats">Archivierte Kontakte</string>
     <string name="no_filtered_contacts">Keine gefilterten Kontakte</string>
     <string name="contact_list_header_title">Ihre Kontakte</string>
-    <string name="one_hand_ui">Einhand-Bedienoberfläche</string>
+    <string name="one_hand_ui">Erreichbare Chat-Symbolleiste</string>
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Bitten Sie Ihren Kontakt darum, Anrufe zu aktivieren.</string>
     <string name="you_need_to_allow_calls">Sie müssen Ihrem Kontakt Anrufe zu Ihnen erlauben, bevor Sie ihn selbst anrufen können.</string>
     <string name="allow_calls_question">Anrufe erlauben?</string>
@@ -2107,7 +2108,7 @@
     <string name="action_button_add_members">Einladen</string>
     <string name="keep_conversation">Unterhaltung behalten</string>
     <string name="cant_call_member_send_message_alert_text">Nachricht senden, um Anrufe zu aktivieren.</string>
-    <string name="you_can_still_send_messages_to_contact">Sie können weiterhin Nachrichten an %1$s von den gelöschten Chats aus senden.</string>
+    <string name="you_can_still_send_messages_to_contact">Sie können aus den archivierten Kontakten heraus Nachrichten an %1$s versenden.</string>
     <string name="toolbar_settings">Einstellungen</string>
     <string name="moderate_messages_will_be_deleted_warning">Die Nachrichten werden für alle Mitglieder gelöscht.</string>
     <string name="moderate_messages_will_be_marked_warning">Die Nachrichten werden für alle Mitglieder als moderiert markiert.</string>
@@ -2117,4 +2118,34 @@
     <string name="selected_chat_items_selected_n">%d ausgewählt</string>
     <string name="selected_chat_items_nothing_selected">Es wurde Nichts ausgewählt</string>
     <string name="select_verb">Auswählen</string>
+    <string name="invite_friends_short">Einladen</string>
+    <string name="network_option_tcp_connection">TCP-Verbindung</string>
+    <string name="v6_0_increase_font_size">Schriftgröße erhöhen.</string>
+    <string name="v6_0_new_chat_experience">Neue Chat-Erfahrung 🎉</string>
+    <string name="v6_0_upgrade_app">Die App automatisch aktualisieren</string>
+    <string name="v6_0_connection_servers_status_descr">Verbindungs- und Server-Status.</string>
+    <string name="v6_0_privacy_blur">Für bessere Privatsphäre verpixeln.</string>
+    <string name="v6_0_connection_servers_status">Kontrollieren Sie Ihr Netzwerk</string>
+    <string name="v6_0_new_media_options">Neue Medien-Optionen</string>
+    <string name="network_options_save_and_reconnect">Speichern und neu verbinden</string>
+    <string name="create_address_button">Erstellen</string>
+    <string name="v6_0_upgrade_app_descr">Laden Sie neue Versionen von GitHub herunter.</string>
+    <string name="v6_0_chat_list_media">Direkt aus der Chat-Liste abspielen.</string>
+    <string name="one_hand_ui_card_title">Chat-Liste umschalten:</string>
+    <string name="one_hand_ui_change_instruction">Kann von Ihnen in den Erscheinungsbild-Einstellungen geändert werden.</string>
+    <string name="v6_0_your_contacts_descr">Kontakte für spätere Chats archivieren.</string>
+    <string name="v6_0_private_routing_descr">Ihre IP-Adresse und Verbindungen werden geschützt.</string>
+    <string name="v6_0_delete_many_messages_descr">Löschen Sie bis zu 20 Nachrichten auf einmal.</string>
+    <string name="v6_0_reachable_chat_toolbar">Erreichbare Chat-Symbolleiste</string>
+    <string name="v6_0_reachable_chat_toolbar_descr">Die App mit einer Hand nutzen.</string>
+    <string name="v6_0_connect_faster_descr">Schneller mit Ihren Freunden verbinden.</string>
+    <string name="chat_database_exported_title">Chat-Datenbank wurde exportiert</string>
+    <string name="chat_database_exported_continue">Weiter</string>
+    <string name="media_and_file_servers">Medien- und Datei-Server</string>
+    <string name="message_servers">Nachrichten-Server</string>
+    <string name="network_socks_proxy">SOCKS-Proxy</string>
+    <string name="chat_database_exported_not_all_files">Es wurden nicht alle Dateien exportiert</string>
+    <string name="chat_database_exported_migrate">Sie können die exportierte Datenbank migrieren.</string>
+    <string name="chat_database_exported_save">Sie können das exportierte Archiv speichern.</string>
+    <string name="reset_all_hints">Alle Hinweise zurücksetzen</string>
 </resources>

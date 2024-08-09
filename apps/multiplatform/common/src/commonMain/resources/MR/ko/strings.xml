@@ -68,7 +68,7 @@
     <string name="callstate_connected">연결됨</string>
     <string name="callstate_connecting">연결 중…</string>
     <string name="create_your_profile">내 프로필 생성</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>배터리에 좋음</b>. 백그라운드 서비스는 10분마다 메시지를 확인합니다. 전화나 긴급 메시지를 놓칠 수 있습니다.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>배터리에 좋음</b>. 백그라운드 서비스는 10분마다 메시지를 확인합니다. 전화나 긴급 메시지를 놓칠 수 있습니다.</string>
     <string name="call_already_ended">통화가 이미 종료되었습니다!</string>
     <string name="always_use_relay">항상 릴레이 사용</string>
     <string name="icon_descr_audio_call">음성 통화</string>
@@ -170,7 +170,7 @@
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>설정을 통해 비활성화할 수 있습니다.</b> – 앱이 실행되는 동안 알림이 표시됩니다.]]></string>
     <string name="both_you_and_your_contact_can_send_disappearing">당신과 대화 상대 모두 사라지는 메시지를 보낼 수 있습니다.</string>
     <string name="cannot_access_keychain">데이터베이스 암호를 저장하고 있는 Keystore에 접근할 수 없습니다.</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>배터리 더욱 사용</b>! 백그라운드 서비스가 항상 실행됩니다. - 메시지를 수신되는 즉시 알림이 표시됩니다.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>배터리 더욱 사용</b>! 백그라운드 서비스가 항상 실행됩니다. - 메시지를 수신되는 즉시 알림이 표시됩니다.</string>
     <string name="callstatus_ended">통화 종료됨 %1$s</string>
     <string name="callstatus_calling">전화 중…</string>
     <string name="icon_descr_call_progress">전화 연결 중</string>

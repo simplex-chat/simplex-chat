@@ -97,11 +97,11 @@
     <string name="both_you_and_your_contact_can_send_disappearing">يمكنك أنت وجهة اتصالك إرسال رسائل تختفي.</string>
     <string name="icon_descr_call_progress">مكالمتك تحت الإجراء</string>
     <string name="cannot_receive_file">لا يمكّن استلام الملف</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b> جيد للبطارية </b>. خدمة الخلفية تتحقق من الرسائل كل 10 دقائق. قد تفوتك مكالمات أو رسائل عاجلة.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b> جيد للبطارية </b>. خدمة الخلفية تتحقق من الرسائل كل 10 دقائق. قد تفوتك مكالمات أو رسائل عاجلة.</string>
     <string name="bold_text">عريض</string>
     <string name="audio_call_no_encryption">مكالمات الصوت (ليست مُعمّاة بين الطرفين)</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b> الأفضل للبطارية </b>. ستستلم إشعارات فقط عندما يكون التطبيق قيد التشغيل (لا توجد خدمة في الخلفية).]]></string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b> تستهلك المزيد من البطارية </b>! تعمل خدمة الخلفية دائمًا - تظهر الإشعارات بمجرد توفر الرسائل.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b> تستهلك المزيد من البطارية </b>! تعمل خدمة الخلفية دائمًا - تظهر الإشعارات بمجرد توفر الرسائل.</string>
     <string name="call_already_ended">انتهت المكالمة بالفعل!</string>
     <string name="alert_title_msg_bad_hash">تجزئة رسالة سيئة</string>
     <string name="integrity_msg_bad_id">معرّف رسالة سيئ</string>
