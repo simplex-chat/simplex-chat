@@ -1945,7 +1945,7 @@
     <string name="confirm_delete_contact_question">Потвердить удаление контакта?</string>
     <string name="privacy_media_blur_radius">Размытие изображений</string>
     <string name="all_users">Все профили</string>
-    <string name="app_check_for_updates_notice_title">Проверка на наличиее обновлений</string>
+    <string name="app_check_for_updates_notice_title">Проверка на наличие обновлений</string>
     <string name="allow_calls_question">Разрешить звонки?</string>
     <string name="calls_prohibited_alert_title">Звонки запрещены!</string>
     <string name="cant_call_member_alert_title">Не удается позвонить члену группы</string>
@@ -1953,7 +1953,7 @@
     <string name="info_view_call_button">звонок</string>
     <string name="cant_call_contact_alert_title">Не удается позвонить контакту</string>
     <string name="cant_send_message_to_member_alert_title">Не удается написать члену группы</string>
-    <string name="app_check_for_updates">Проверка на наличиее обновлений</string>
+    <string name="app_check_for_updates">Проверять обновления</string>
     <string name="info_view_connect_button">соединиться</string>
     <string name="proxy_destination_error_broker_host">Адрес сервера назначения %1$s несовместим с настройками пересылающего сервера %2$s.</string>
     <string name="smp_proxy_error_connecting">Ошибка подключения к пересылающему серверу %1$s. Попробуйте позже.</string>
