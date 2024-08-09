@@ -65,7 +65,7 @@ struct NewChatSheet: View {
     var body: some View {
         NavigationView {
             viewBody()
-                .navigationTitle("New Chat")
+                .navigationTitle("New message")
                 .navigationBarTitleDisplayMode(.large)
                 .navigationBarHidden(searchMode)
                 .modifier(ThemedBackground(grouped: true))

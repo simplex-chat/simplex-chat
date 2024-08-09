@@ -53,7 +53,7 @@ fun NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
             showClose = true,
             endButtons = { Spacer(Modifier.minimumInteractiveComponentSize()) },
             arrangement = Arrangement.Bottom,
-            closeBarTitle = generalGetString(MR.strings.new_chat),
+            closeBarTitle = generalGetString(MR.strings.new_message),
             barPaddingValues = PaddingValues(horizontal = 0.dp)
           )
         }
@@ -175,7 +175,7 @@ private fun NewChatSheetLayout(
         Box(contentAlignment = Alignment.Center) {
           val bottomPadding = DEFAULT_PADDING
           AppBarTitle(
-            stringResource(MR.strings.new_chat),
+            stringResource(MR.strings.new_message),
             hostDevice(rh?.remoteHostId),
             bottomPadding = bottomPadding
           )

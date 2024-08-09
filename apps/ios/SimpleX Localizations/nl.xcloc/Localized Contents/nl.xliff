@@ -4378,11 +4378,6 @@ Dit is jouw link voor groep %@!</target>
         <target>Netwerk status</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New Chat" xml:space="preserve">
-        <source>New Chat</source>
-        <target>Nieuw Gesprek</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="New Passcode" xml:space="preserve">
         <source>New Passcode</source>
         <target>Nieuwe toegangscode</target>
