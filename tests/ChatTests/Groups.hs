@@ -143,7 +143,7 @@ chatGroupTests = do
     it "multiple files" testGroupHistoryMultipleFiles
     it "cancelled files are not attached (text message is still sent)" testGroupHistoryFileCancel
     it "cancelled files without text are excluded" testGroupHistoryFileCancelNoText
-    fit "quoted messages" testGroupHistoryQuotes
+    it "quoted messages" testGroupHistoryQuotes
     it "deleted message is not included" testGroupHistoryDeletedMessage
     it "disappearing message is sent as disappearing" testGroupHistoryDisappearingMessage
     it "welcome message (group description) is sent after history" testGroupHistoryWelcomeMessage

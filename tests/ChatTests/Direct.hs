@@ -85,9 +85,9 @@ chatDirectTests = do
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
   describe "maintenance mode" $ do
-    fit "start/stop/export/import chat" testMaintenanceMode
+    it "start/stop/export/import chat" testMaintenanceMode
     it "export/import chat with files" testMaintenanceModeWithFiles
-    fit "encrypt/decrypt database" testDatabaseEncryption
+    it "encrypt/decrypt database" testDatabaseEncryption
   describe "coordination between app and NSE" $ do
     it "should not subscribe in NSE and subscribe in the app" testSubscribeAppNSE
   describe "mute/unmute messages" $ do
