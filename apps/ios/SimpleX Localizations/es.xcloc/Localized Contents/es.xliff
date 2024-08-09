@@ -580,14 +580,14 @@
         <note>accept contact request via notification
    swipe action</note>
       </trans-unit>
-      <trans-unit id="Acknowledged" xml:space="preserve">
+      <trans-unit id="Acknowledged" xml:space="preserve" approved="no">
         <source>Acknowledged</source>
-        <target>Recibido</target>
+        <target state="translated">Confirmaciones</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Acknowledgement errors" xml:space="preserve">
+      <trans-unit id="Acknowledgement errors" xml:space="preserve" approved="no">
         <source>Acknowledgement errors</source>
-        <target>Errores de reconocimiento</target>
+        <target state="translated">Errores de confirmación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Active connections" xml:space="preserve">
@@ -1436,9 +1436,9 @@
         <target>Compara los códigos de seguridad con tus contactos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Completed" xml:space="preserve">
+      <trans-unit id="Completed" xml:space="preserve" approved="no">
         <source>Completed</source>
-        <target>Completado</target>
+        <target state="translated">Completadas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Configure ICE servers" xml:space="preserve">
@@ -1565,9 +1565,9 @@ This is your own one-time link!</source>
         <target>Conectar con %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connected" xml:space="preserve">
+      <trans-unit id="Connected" xml:space="preserve" approved="no">
         <source>Connected</source>
-        <target>Conectado</target>
+        <target state="translated">Conectadas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connected desktop" xml:space="preserve">
@@ -1810,9 +1810,9 @@ This is your own one-time link!</source>
         <target>Crea tu perfil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Created" xml:space="preserve">
+      <trans-unit id="Created" xml:space="preserve" approved="no">
         <source>Created</source>
-        <target>Creado</target>
+        <target state="translated">Creadas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Created at" xml:space="preserve">
@@ -2189,9 +2189,9 @@ This is your own one-time link!</source>
         <target>Elimina sin notificar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Deleted" xml:space="preserve">
+      <trans-unit id="Deleted" xml:space="preserve" approved="no">
         <source>Deleted</source>
-        <target>Eliminado</target>
+        <target state="translated">Eliminadas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Deleted at" xml:space="preserve">
@@ -2204,9 +2204,9 @@ This is your own one-time link!</source>
         <target>Eliminado: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Deletion errors" xml:space="preserve">
+      <trans-unit id="Deletion errors" xml:space="preserve" approved="no">
         <source>Deletion errors</source>
-        <target>Errores de borrado</target>
+        <target state="translated">Errores de eliminación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delivery" xml:space="preserve">
@@ -5434,9 +5434,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Reiniciar todas las pistas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reset all statistics" xml:space="preserve">
+      <trans-unit id="Reset all statistics" xml:space="preserve" approved="no">
         <source>Reset all statistics</source>
-        <target>Restablecer estadísticas</target>
+        <target state="translated">Restablecer todas las estadísticas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reset all statistics?" xml:space="preserve">
@@ -5709,9 +5709,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Cola segura</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Secured" xml:space="preserve">
+      <trans-unit id="Secured" xml:space="preserve" approved="no">
         <source>Secured</source>
-        <target>Seguro</target>
+        <target state="translated">Aseguradas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Security assessment" xml:space="preserve">
