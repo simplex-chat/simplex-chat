@@ -64,21 +64,25 @@ struct NewChatSheet: View {
     @State private var partiallyOpened = true
     
     var body: some View {
+        let showArchive = !filterContactTypes(chats: chatModel.chats, contactTypes: [.chatDeleted]).isEmpty
         let v = NavigationView {
-            viewBody()
+            viewBody(showArchive)
                 .navigationTitle("New message")
                 .navigationBarTitleDisplayMode(.large)
                 .navigationBarHidden(searchMode)
                 .modifier(ThemedBackground(grouped: true))
         }
         if #available(iOS 16.0, *) {
-            v.presentationDetents(partiallyOpened ? [.fraction(0.7), .large] : [.large])
+            v.presentationDetents(
+                partiallyOpened
+                ? [.height(showArchive ? 575 : 500), .large]
+                : [.large])
         } else {
             v
         }
     }
     
-    @ViewBuilder private func viewBody() -> some View {
+    @ViewBuilder private func viewBody(_ showArchive: Bool) -> some View {
         List {
             HStack {
                 ContactsListSearchBar(
@@ -124,7 +128,7 @@ struct NewChatSheet: View {
                     }
                 }
                 
-                if (!filterContactTypes(chats: chatModel.chats, contactTypes: [.chatDeleted]).isEmpty) {
+                if (showArchive) {
                     Section {
                         NavigationLink {
                             DeletedChats()
@@ -151,7 +155,7 @@ struct NewChatSheet: View {
     private func fullyOpenSheet () {
         if #available(iOS 16.0, *), partiallyOpened {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
-                partiallyOpened = false
+                withAnimation { partiallyOpened = false }
             }
         }
     }
