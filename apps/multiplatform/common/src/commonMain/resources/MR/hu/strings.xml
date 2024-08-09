@@ -1382,7 +1382,7 @@
     <string name="v5_1_better_messages_descr">- hangüzenetek 5 percig.
 \n- egyedi eltűnési időhatár.
 \n- előzmény szerkesztése.</string>
-    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Válassza a <i>Használat számítógépről</i> menüpontot a mobil alkalmazásban és olvassa be a QR-kódot.]]></string>
+    <string name="open_on_mobile_and_scan_qr_code">Válassza a <i>Használat számítógépről</i> menüt a mobil alkalmazásban és olvassa be a QR-kódot.</string>
     <string name="sender_at_ts">%s ekkor: %s</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Akkor lesz kapcsolódva, amikor az ismerősének az eszköze online lesz, várjon, vagy ellenőrizze később!</string>
     <string name="v5_4_block_group_members_descr">Kéretlen üzenetek elrejtése.</string>
@@ -1402,8 +1402,8 @@
     <string name="network_disable_socks">Közvetlen internet kapcsolat használata?</string>
     <string name="you_will_still_receive_calls_and_ntfs">Továbbra is kap hívásokat és értesítéseket a némított profiloktól, ha azok aktívak.</string>
     <string name="group_main_profile_sent">A fő csevegési profilja elküldésre kerül a csoporttagok számára</string>
-    <string name="you_can_enable_delivery_receipts_later_alert">Később engedélyezheti őket az alkalmazás „Adatvédelem és biztonság” menüjében.</string>
-    <string name="to_reveal_profile_enter_password">Rejtett profilja felfedéséhez írja be a teljes jelszavát a keresőmezőbe a Csevegési profilok menüben.</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">Később engedélyezheti őket az „Adatvédelem és biztonság” menüben.</string>
+    <string name="to_reveal_profile_enter_password">Rejtett profilja felfedéséhez írja be a teljes jelszavát a keresőmezőbe a „Csevegési profilok” menüben.</string>
     <string name="upgrade_and_open_chat">Fejlesztés és a csevegés megnyitása</string>
     <string name="you_need_to_allow_to_send_voice">Hangüzeneteket küldéséhez engedélyeznie kell azok küldését az ismerősei számára.</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Beállíthatja, hogy mely kiszolgáló(ko)n keresztül <b>fogadja</b> az üzeneteket, ismerősöket – a kiszolgálók, amelyeket az üzenetküldéshez használ.]]></string>
@@ -1421,7 +1421,7 @@
     <string name="updating_settings_will_reconnect_client_to_all_servers">A beállítások frissítése a kiszolgálókhoz való újra kapcsolódással jár.</string>
     <string name="contact_wants_to_connect_with_you">kapcsolatba akar lépni veled!</string>
     <string name="snd_group_event_changed_role_for_yourself">saját szerepköre erre változott: %s</string>
-    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">A csevegési szolgáltatás elindítható a Beállítások / Adatbázis menüpontban vagy az alkalmazás újraindításával.</string>
+    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">A csevegési szolgáltatás elindítható a „Beállítások -&gt; Adatbázis” menüben vagy az alkalmazás újraindításával.</string>
     <string name="verify_code_on_mobile">Kód ellenőrzése a mobilon</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Csatlakozott ehhez a csoporthoz. Kapcsolódás a meghívó csoporttaghoz.</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Kapcsolatba léphet <font color="#0088ff">a SimpleX Chat fejlesztőivel, ahol bármiről kérdezhet és értesülhet az újdonságokról</font>.]]></string>
@@ -1516,7 +1516,7 @@
     <string name="read_more_in_github_with_link"><![CDATA[További információ a <font color="#0088ff">GitHub tárolónkban</font>.]]></string>
     <string name="error_showing_content">hiba a tartalom megjelenítése közben</string>
     <string name="error_showing_message">hiba az üzenet megjelenítésekor</string>
-    <string name="you_can_make_address_visible_via_settings">Láthatóvá teheti SimpleX-beli ismerősei számára a Beállításokban.</string>
+    <string name="you_can_make_address_visible_via_settings">Láthatóvá teheti SimpleX-beli ismerősei számára a „Beállításokban”.</string>
     <string name="recent_history_is_sent_to_new_members">Legfeljebb az utolsó 100 üzenet kerül elküldésre az új tagok számára.</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">A beolvasott kód nem egy SimpleX hivatkozás QR-kód.</string>
     <string name="the_text_you_pasted_is_not_a_link">A beillesztett szöveg nem egy SimpleX hivatkozás.</string>
@@ -1831,7 +1831,7 @@
     <string name="theme_destination_app_theme">Alkalmazás téma</string>
     <string name="v5_8_persian_ui">Perzsa kezelőfelület</string>
     <string name="v5_8_private_routing_descr">Védje IP-címét az ismerősei által kiválasztott üzenetküldő átjátszókkal szemben.
-\nEngedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.</string>
+\nEngedélyezze a „Beállítások -&gt; Hálózat és kiszolgálók” menüben.</string>
     <string name="v5_8_safe_files_descr">Ismeretlen kiszolgálókról származó fájlok jóváhagyása.</string>
     <string name="v5_8_message_delivery">Javított üzenetkézbesítés</string>
     <string name="chat_theme_reset_to_app_theme">Alkalmazás témájának visszaállítása</string>
@@ -2056,8 +2056,9 @@
     <string name="v6_0_privacy_blur">Elhomályosítás a jobb adatvédelemért</string>
     <string name="v6_0_upgrade_app">Automatikus frissítés</string>
     <string name="create_address_button">Létrehozás</string>
-    <string name="v6_0_upgrade_app_descr">Új verziók letöltése a GitHubról</string>
+    <string name="v6_0_upgrade_app_descr">Új verziók letöltése a GitHub-ról</string>
     <string name="v6_0_increase_font_size">Betűméret növelése.</string>
     <string name="invite_friends_short">Meghívás</string>
     <string name="v6_0_new_chat_experience">Új csevegési élmény 🎉</string>
+    <string name="new_message">Új üzenet</string>
 </resources>
