@@ -1302,7 +1302,7 @@
     <string name="enable_receipts_all">Activar</string>
     <string name="receipts_contacts_title_disable">¿Desactivar confirmaciones\?</string>
     <string name="receipts_contacts_title_enable">¿Activar confirmaciones\?</string>
-    <string name="receipts_section_description_1">Se pueden anular en la configuración de grupos y contactos.</string>
+    <string name="receipts_section_description_1">Se puede modificar desde la configuración particular de cada grupo o contacto.</string>
     <string name="receipts_contacts_enable_for_all">Activar para todos</string>
     <string name="receipts_contacts_enable_keep_overrides">Activar (conservar anulaciones)</string>
     <string name="receipts_contacts_disable_for_all">Desactivar para todos</string>
@@ -1804,7 +1804,7 @@
     <string name="protect_ip_address">Proteger dirección IP</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Sin Tor o VPN, tu dirección IP será visible para los servidores de archivos.</string>
     <string name="settings_section_title_files">ARCHIVOS</string>
-    <string name="app_will_ask_to_confirm_unknown_file_servers">La aplicación pedirá confirmar las descargas de servidores de archivos desconocidos (excepto .onion o cuando se active SOCKS proxy).</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">La aplicación pedirá confirmar las descargas desde servidores de archivos desconocidos (excepto .onion o cuando se active SOCKS proxy).</string>
     <string name="settings_section_title_chat_colors">Colores del chat</string>
     <string name="settings_section_title_chat_theme">Tema del chat</string>
     <string name="chat_theme_apply_to_mode">Aplicar a</string>
@@ -2067,4 +2067,5 @@
     <string name="v6_0_new_media_options">Nuevas opciones multimedia</string>
     <string name="one_hand_ui_change_instruction">Puede cambiarlo desde el menú Apariencia.</string>
     <string name="v6_0_upgrade_app_descr">Descarga nuevas versiones desde GitHub.</string>
+    <string name="new_message">Nuevo mensaje</string>
 </resources>
