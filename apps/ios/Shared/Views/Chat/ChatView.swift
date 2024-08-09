@@ -47,16 +47,13 @@ struct ChatView: View {
     @State private var showDeleteSelectedMessages: Bool = false
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
 
+    @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.bar.rawValue
+
     var body: some View {
         if #available(iOS 16.0, *) {
-            let v = viewBody
-            .scrollDismissesKeyboard(.immediately)
-            .keyboardPadding()
-            if (searchMode) {
-                v.toolbarBackground(.thinMaterial, for: .navigationBar)
-            } else {
-                v.toolbarBackground(.visible, for: .navigationBar)
-            }
+            viewBody
+                .scrollDismissesKeyboard(.immediately)
+                .keyboardPadding()
         } else {
             viewBody
         }
@@ -65,21 +62,18 @@ struct ChatView: View {
     private var viewBody: some View {
         let cInfo = chat.chatInfo
         return VStack(spacing: 0) {
-            if searchMode {
-                searchToolbar()
-                Divider()
-            }
             ZStack(alignment: .bottomTrailing) {
                 let wallpaperImage = theme.wallpaper.type.image
                 let wallpaperType = theme.wallpaper.type
                 let backgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(theme.base, theme.colors.background)
                 let tintColor = theme.wallpaper.tint ?? wallpaperType.defaultTintColor(theme.base)
-                chatItemsList()
+                Color.clear.ignoresSafeArea(.all)
                     .if(wallpaperImage != nil) { view in
                         view.modifier(
                             ChatViewBackground(image: wallpaperImage!, imageType: wallpaperType, background: backgroundColor, tint: tintColor)
                         )
                 }
+                chatItemsList()
                 floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
             }
             connectingText()
@@ -106,6 +100,13 @@ struct ChatView: View {
                     }
                 )
             }
+        }
+        .safeAreaInset(edge: .top) {
+            VStack(spacing: .zero) {
+                if searchMode { searchToolbar() }
+                Divider()
+            }
+            .background(ToolbarMaterial.material(toolbarMaterial))
         }
         .navigationTitle(cInfo.chatViewName)
         .background(theme.colors.background)
@@ -352,7 +353,6 @@ struct ChatView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
-        .background(.thinMaterial)
     }
     
     private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
@@ -396,7 +396,7 @@ struct ChatView: View {
                     .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadPage: {
                 loadChatItems(cInfo)
-            }
+            }.padding(.vertical, -100)
                 .onTapGesture { hideKeyboard() }
                 .onChange(of: searchText) { _ in
                     loadChat(chat: chat, search: searchText)
