@@ -279,7 +279,11 @@ class SimplexApp: Application(), LifecycleEventObserver {
         val statusBar = (if (hasTop && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
           backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
         } else {
-          backgroundColor
+          if (CurrentColors.value.base == DefaultTheme.SIMPLEX) {
+            backgroundColor.lighter(0.4f)
+          } else {
+            backgroundColor
+          }
         }).toArgb()
         val navBar = (if (hasBottom && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
           backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
