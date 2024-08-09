@@ -105,7 +105,7 @@ private fun SetupDatabasePassphraseLayout(
   nextStep: () -> Unit,
 ) {
   ColumnWithScrollBar(
-    Modifier.fillMaxSize().padding(bottom = DEFAULT_PADDING * 2),
+    Modifier.fillMaxSize().themedBackground().padding(bottom = DEFAULT_PADDING * 2),
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
     CloseSheetBar(showClose = false, close = {})
