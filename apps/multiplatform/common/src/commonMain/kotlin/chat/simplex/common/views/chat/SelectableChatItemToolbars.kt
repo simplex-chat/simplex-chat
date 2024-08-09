@@ -122,6 +122,7 @@ private fun recheckItems(chatInfo: ChatInfo,
       rSelectedChatItems.add(ci.id) // we are collecting new selected items here to account for any changes in chat items list
     }
   }
+  rModerateEnabled = rModerateEnabled && !rOnlyOwnGroupItems
   deleteEnabled.value = rDeleteEnabled
   deleteForEveryoneEnabled.value = rDeleteForEveryoneEnabled
   moderateEnabled.value = rModerateEnabled
