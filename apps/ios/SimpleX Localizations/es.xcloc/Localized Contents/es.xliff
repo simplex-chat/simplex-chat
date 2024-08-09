@@ -695,9 +695,9 @@
         <target>Al introducirlo todos los datos son eliminados.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All data is private to your device." xml:space="preserve">
+      <trans-unit id="All data is private to your device." xml:space="preserve" approved="no">
         <source>All data is private to your device.</source>
-        <target>Todos los datos son privados para tu dispositivo.</target>
+        <target state="translated">Todos los datos son privados y están en tu dispositivo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
@@ -5238,9 +5238,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Respuesta recibida</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Received total" xml:space="preserve">
+      <trans-unit id="Received total" xml:space="preserve" approved="no">
         <source>Received total</source>
-        <target>Total recibido</target>
+        <target state="translated">Total recibidos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving address will be changed to a different server. Address change will complete after sender comes online." xml:space="preserve">
@@ -5934,14 +5934,14 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Respuesta enviada</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent total" xml:space="preserve">
+      <trans-unit id="Sent total" xml:space="preserve" approved="no">
         <source>Sent total</source>
-        <target>Total enviado</target>
+        <target state="translated">Total enviados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent via proxy" xml:space="preserve">
+      <trans-unit id="Sent via proxy" xml:space="preserve" approved="no">
         <source>Sent via proxy</source>
-        <target>Enviado mediante proxy</target>
+        <target state="translated">Enviado vía proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server address" xml:space="preserve">
