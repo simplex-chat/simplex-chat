@@ -522,19 +522,19 @@
 **Bitte beachten Sie**: Wenn Sie viele Verbindungen haben, kann der Batterieverbrauch und die Datennutzung wesentlich höher sein und einige Verbindungen können scheitern.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort" xml:space="preserve">
+      <trans-unit id="Abort" xml:space="preserve" approved="no">
         <source>Abort</source>
-        <target>Abbrechen</target>
+        <target state="translated">Beenden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort changing address" xml:space="preserve">
+      <trans-unit id="Abort changing address" xml:space="preserve" approved="no">
         <source>Abort changing address</source>
-        <target>Wechsel der Empfängeradresse abbrechen</target>
+        <target state="translated">Wechsel der Empfängeradresse beenden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort changing address?" xml:space="preserve">
+      <trans-unit id="Abort changing address?" xml:space="preserve" approved="no">
         <source>Abort changing address?</source>
-        <target>Wechsel der Empfängeradresse abbrechen?</target>
+        <target state="translated">Wechsel der Empfängeradresse beenden?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About SimpleX" xml:space="preserve">
@@ -655,9 +655,9 @@
         <target>Adresse</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve">
+      <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve" approved="no">
         <source>Address change will be aborted. Old receiving address will be used.</source>
-        <target>Der Wechsel der Empfängeradresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.</target>
+        <target state="translated">Der Wechsel der Empfängeradresse wird beendet. Die bisherige Adresse wird weiter verwendet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can block a member for all." xml:space="preserve">
@@ -2699,9 +2699,9 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target>Fehler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error aborting address change" xml:space="preserve">
+      <trans-unit id="Error aborting address change" xml:space="preserve" approved="no">
         <source>Error aborting address change</source>
-        <target>Fehler beim Abbrechen des Adresswechsels</target>
+        <target state="translated">Fehler beim Beenden des Adresswechsels</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error accepting contact request" xml:space="preserve">
