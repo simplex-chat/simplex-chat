@@ -5429,8 +5429,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Resetten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reset all hints" xml:space="preserve">
+      <trans-unit id="Reset all hints" xml:space="preserve" approved="no">
         <source>Reset all hints</source>
+        <target state="translated">Alle hints resetten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reset all statistics" xml:space="preserve">
@@ -6088,8 +6089,9 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <target>Adres delen met contacten?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share from other apps." xml:space="preserve">
+      <trans-unit id="Share from other apps." xml:space="preserve" approved="no">
         <source>Share from other apps.</source>
+        <target state="translated">Delen vanuit andere apps.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share link" xml:space="preserve">
@@ -6776,8 +6778,9 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
         <target>Vergelijk (of scan) de code op uw apparaten om end-to-end-codering met uw contact te verifiëren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Toggle chat list:" xml:space="preserve">
+      <trans-unit id="Toggle chat list:" xml:space="preserve" approved="no">
         <source>Toggle chat list:</source>
+        <target state="translated">Chatlijst wisselen:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
@@ -6785,8 +6788,9 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
         <target>Schakel incognito in tijdens het verbinden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Toolbar opacity" xml:space="preserve">
+      <trans-unit id="Toolbar opacity" xml:space="preserve" approved="no">
         <source>Toolbar opacity</source>
+        <target state="translated">De transparantie van de werkbalk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">
@@ -7443,8 +7447,9 @@ Deelnameverzoek herhalen?</target>
         <target>U kunt oproepen van het vergrendelingsscherm accepteren, zonder apparaat- en app-verificatie.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can change it in Appearance settings." xml:space="preserve">
+      <trans-unit id="You can change it in Appearance settings." xml:space="preserve" approved="no">
         <source>You can change it in Appearance settings.</source>
+        <target state="translated">U kunt dit wijzigen in de instellingen onder uiterlijk.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">
