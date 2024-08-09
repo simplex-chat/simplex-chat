@@ -118,7 +118,7 @@ private fun recheckItems(chatInfo: ChatInfo,
       rDeleteEnabled = rDeleteEnabled && ci.canBeDeletedForSelf
       rDeleteForEveryoneEnabled = rDeleteForEveryoneEnabled && ci.meta.deletable && !ci.localNote
       rOnlyOwnGroupItems = rOnlyOwnGroupItems && ci.chatDir is CIDirection.GroupSnd
-      rModerateEnabled = rModerateEnabled && !rOnlyOwnGroupItems && ci.content.msgContent != null && ci.memberToModerate(chatInfo) != null
+      rModerateEnabled = rModerateEnabled && ci.content.msgContent != null && ci.memberToModerate(chatInfo) != null
       rSelectedChatItems.add(ci.id) // we are collecting new selected items here to account for any changes in chat items list
     }
   }
