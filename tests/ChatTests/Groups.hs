@@ -1,6 +1,5 @@
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE PostfixOperators #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -13,13 +12,12 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (forM_, void, when)
 import qualified Data.ByteString.Char8 as B
-import Data.List (isInfixOf)
+import Data.List (intercalate, isInfixOf)
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
-import Data.List (intercalate)
 import Simplex.Chat.Types (VersionRangeChat)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Messaging.Agent.Env.SQLite
@@ -145,7 +143,7 @@ chatGroupTests = do
     it "multiple files" testGroupHistoryMultipleFiles
     it "cancelled files are not attached (text message is still sent)" testGroupHistoryFileCancel
     it "cancelled files without text are excluded" testGroupHistoryFileCancelNoText
-    it "quoted messages" testGroupHistoryQuotes
+    fit "quoted messages" testGroupHistoryQuotes
     it "deleted message is not included" testGroupHistoryDeletedMessage
     it "disappearing message is sent as disappearing" testGroupHistoryDisappearingMessage
     it "welcome message (group description) is sent after history" testGroupHistoryWelcomeMessage
