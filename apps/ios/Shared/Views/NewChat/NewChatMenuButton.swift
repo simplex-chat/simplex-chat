@@ -61,14 +61,20 @@ struct NewChatSheet: View {
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @Binding var alert: SomeAlert?
+    @State private var partiallyOpened = true
     
     var body: some View {
-        NavigationView {
+        let v = NavigationView {
             viewBody()
                 .navigationTitle("New message")
                 .navigationBarTitleDisplayMode(.large)
                 .navigationBarHidden(searchMode)
                 .modifier(ThemedBackground(grouped: true))
+        }
+        if #available(iOS 16.0, *) {
+            v.presentationDetents(partiallyOpened ? [.fraction(0.7), .large] : [.large])
+        } else {
+            v
         }
     }
     
@@ -95,6 +101,7 @@ struct NewChatSheet: View {
                             .navigationTitle("New chat")
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
+                            .onAppear(perform: fullyOpenSheet)
                     } label: {
                         Label("Add contact", systemImage: "link.badge.plus")
                     }
@@ -103,6 +110,7 @@ struct NewChatSheet: View {
                             .navigationTitle("New chat")
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
+                            .onAppear(perform: fullyOpenSheet)
                     } label: {
                         Label("Scan / Paste link", systemImage: "qrcode")
                     }
@@ -137,6 +145,14 @@ struct NewChatSheet: View {
                 searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
                 showDeletedChatIcon: true
             )
+        }
+    }
+    
+    private func fullyOpenSheet () {
+        if #available(iOS 16.0, *), partiallyOpened {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
+                partiallyOpened = false
+            }
         }
     }
     
