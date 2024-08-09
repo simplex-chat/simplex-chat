@@ -1687,6 +1687,7 @@
     <string name="agent_internal_error_title">Внутренняя ошибка</string>
     <string name="clear_note_folder_question">Очистить личные заметки?</string>
     <string name="new_chat">Новый чат</string>
+    <string name="new_chat">Новое сообщение</string>
     <string name="or_scan_qr_code">Или отсканируйте QR код</string>
     <string name="you_can_view_invitation_link_again">Вы можете увидеть ссылку-приглашение снова открыв соединение.</string>
     <string name="show_slow_api_calls">Показывать медленные вызовы API</string>
@@ -1944,7 +1945,7 @@
     <string name="confirm_delete_contact_question">Потвердить удаление контакта?</string>
     <string name="privacy_media_blur_radius">Размытие изображений</string>
     <string name="all_users">Все профили</string>
-    <string name="app_check_for_updates_notice_title">Проверка на наличиее обновлений</string>
+    <string name="app_check_for_updates_notice_title">Проверка на наличие обновлений</string>
     <string name="allow_calls_question">Разрешить звонки?</string>
     <string name="calls_prohibited_alert_title">Звонки запрещены!</string>
     <string name="cant_call_member_alert_title">Не удается позвонить члену группы</string>
@@ -1952,7 +1953,7 @@
     <string name="info_view_call_button">звонок</string>
     <string name="cant_call_contact_alert_title">Не удается позвонить контакту</string>
     <string name="cant_send_message_to_member_alert_title">Не удается написать члену группы</string>
-    <string name="app_check_for_updates">Проверка на наличиее обновлений</string>
+    <string name="app_check_for_updates">Проверять обновления</string>
     <string name="info_view_connect_button">соединиться</string>
     <string name="proxy_destination_error_broker_host">Адрес сервера назначения %1$s несовместим с настройками пересылающего сервера %2$s.</string>
     <string name="smp_proxy_error_connecting">Ошибка подключения к пересылающему серверу %1$s. Попробуйте позже.</string>

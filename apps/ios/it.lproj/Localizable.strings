@@ -596,6 +596,9 @@
 "Archive and upload" = "Archivia e carica";
 
 /* No comment provided by engineer. */
+"Archive contacts to chat later." = "Archivia contatti per chattare più tardi.";
+
+/* No comment provided by engineer. */
 "Archived contacts" = "Contatti archiviati";
 
 /* No comment provided by engineer. */
@@ -674,6 +677,9 @@
 "Better messages" = "Messaggi migliorati";
 
 /* No comment provided by engineer. */
+"Better networking" = "Rete migliorata";
+
+/* No comment provided by engineer. */
 "Black" = "Nero";
 
 /* No comment provided by engineer. */
@@ -705,6 +711,9 @@
 
 /* No comment provided by engineer. */
 "Blocked by admin" = "Bloccato dall'amministratore";
+
+/* No comment provided by engineer. */
+"Blur for better privacy." = "Sfoca per una privacy maggiore.";
 
 /* No comment provided by engineer. */
 "Blur media" = "Sfocatura file multimediali";
@@ -873,6 +882,9 @@
 "Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." = "La chat è ferma. Se hai già usato questo database su un altro dispositivo, dovresti trasferirlo prima di avviare la chat.";
 
 /* No comment provided by engineer. */
+"Chat list" = "Elenco delle chat";
+
+/* No comment provided by engineer. */
 "Chat migrated!" = "Chat migrata!";
 
 /* No comment provided by engineer. */
@@ -922,6 +934,9 @@
 
 /* No comment provided by engineer. */
 "Clear verification" = "Annulla la verifica";
+
+/* No comment provided by engineer. */
+"Color chats with the new themes." = "Colora le chat con i nuovi temi.";
 
 /* No comment provided by engineer. */
 "Color mode" = "Modalità di colore";
@@ -991,6 +1006,9 @@
 
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "connettiti agli sviluppatori di SimpleX Chat.";
+
+/* No comment provided by engineer. */
+"Connect to your friends faster." = "Connettiti più velocemente ai tuoi amici.";
 
 /* No comment provided by engineer. */
 "Connect to yourself?" = "Connettersi a te stesso?";
@@ -2945,7 +2963,7 @@
 "New chat" = "Nuova chat";
 
 /* No comment provided by engineer. */
-"New Chat" = "Nuova chat";
+"New chat experience 🎉" = "Una nuova esperienza di chat 🎉";
 
 /* notification */
 "New contact request" = "Nuova richiesta di contatto";
@@ -2964,6 +2982,9 @@
 
 /* No comment provided by engineer. */
 "New in %@" = "Novità nella %@";
+
+/* No comment provided by engineer. */
+"New media options" = "Nuove opzioni multimediali";
 
 /* No comment provided by engineer. */
 "New member role" = "Nuovo ruolo del membro";
@@ -3251,6 +3272,9 @@
 
 /* No comment provided by engineer. */
 "PING interval" = "Intervallo PING";
+
+/* No comment provided by engineer. */
+"Play from the chat list." = "Riproduci dall'elenco delle chat.";
 
 /* No comment provided by engineer. */
 "Please ask your contact to enable calls." = "Chiedi al contatto di attivare le chiamate.";
@@ -3624,6 +3648,9 @@
 
 /* No comment provided by engineer. */
 "Reset" = "Ripristina";
+
+/* No comment provided by engineer. */
+"Reset all hints" = "Ripristina tutti i suggerimenti";
 
 /* No comment provided by engineer. */
 "Reset all statistics" = "Azzera tutte le statistiche";
@@ -4049,6 +4076,9 @@
 "Share address with contacts?" = "Condividere l'indirizzo con i contatti?";
 
 /* No comment provided by engineer. */
+"Share from other apps." = "Condividi da altre app.";
+
+/* No comment provided by engineer. */
 "Share link" = "Condividi link";
 
 /* No comment provided by engineer. */
@@ -4472,7 +4502,13 @@
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Per verificare la crittografia end-to-end con il tuo contatto, confrontate (o scansionate) il codice sui vostri dispositivi.";
 
 /* No comment provided by engineer. */
+"Toggle chat list:" = "Cambia elenco chat:";
+
+/* No comment provided by engineer. */
 "Toggle incognito when connecting." = "Attiva/disattiva l'incognito quando ti colleghi.";
+
+/* No comment provided by engineer. */
+"Toolbar opacity" = "Opacità barra degli strumenti";
 
 /* No comment provided by engineer. */
 "Total" = "Totale";
@@ -4941,6 +4977,9 @@
 
 /* No comment provided by engineer. */
 "You can accept calls from lock screen, without device and app authentication." = "Puoi accettare chiamate dalla schermata di blocco, senza l'autenticazione del dispositivo e dell'app.";
+
+/* No comment provided by engineer. */
+"You can change it in Appearance settings." = "Puoi cambiarlo nelle impostazioni dell'aspetto.";
 
 /* No comment provided by engineer. */
 "You can create it later" = "Puoi crearlo più tardi";

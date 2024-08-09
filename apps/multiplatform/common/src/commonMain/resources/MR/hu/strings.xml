@@ -100,7 +100,7 @@
     <string name="allow_message_reactions">Az üzenetreakciók küldése engedélyezve van.</string>
     <string name="icon_descr_cancel_file_preview">Fájl előnézet visszavonása</string>
     <string name="all_group_members_will_remain_connected">Minden csoporttag kapcsolatban marad.</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Több akkumulátort használ</b>! A háttérszolgáltatás mindig fut - az értesítések megjelennek, amint az üzenetek elérhetővé válnak.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Több akkumulátort használ</b>! Az alkalmazás mindig fut a háttérben - az értesítések azonnal megjelennek.]]></string>
     <string name="block_member_confirmation">Letiltás</string>
     <string name="group_member_role_admin">admin</string>
     <string name="icon_descr_cancel_image_preview">Fénykép előnézet visszavonása</string>
@@ -133,7 +133,7 @@
     <string name="turning_off_service_and_periodic">Az akkumulátor optimalizálása aktív, mely kikapcsolja a háttérszolgáltatást és az új üzenetek rendszeres kérését. A beállításokon keresztül újra engedélyezhetők.</string>
     <string name="block_member_question">Biztosan letiltja?</string>
     <string name="callstatus_ended">%1$s hívása befejeződött</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Jó akkumulátoridő</b>. A háttérszolgáltatás 10 percenként ellenőrzi az új üzeneteket. Előfordulhat, hogy hívásokról, vagy a sürgős üzenetekről marad le.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Jó akkumulátoridő</b>. Az alkalmazás 10 percenként ellenőrzi az új üzeneteket. Előfordulhat, hogy hívásokról, vagy a sürgős üzenetekről marad le.]]></string>
     <string name="group_member_role_author">szerző</string>
     <string name="allow_your_contacts_irreversibly_delete">Az elküldött üzenetek végleges törlése engedélyezve van az ismerősei számára. (24 óra)</string>
     <string name="cancel_verb">Mégse</string>
@@ -684,7 +684,7 @@
     <string name="desktop_devices">Számítógépek</string>
     <string name="how_to_use_markdown">A markdown használata</string>
     <string name="create_chat_profile">Csevegő profil létrehozása</string>
-    <string name="immune_to_spam_and_abuse">Spam és visszaélések elleni védelem</string>
+    <string name="immune_to_spam_and_abuse">Levélszemét elleni védelem</string>
     <string name="disconnect_remote_hosts">Mobilok leválasztása</string>
     <string name="v4_5_multiple_chat_profiles_descr">Különböző nevek, avatarok és átviteli izoláció.</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Elutasítás esetén a feladó NEM kap értesítést.</string>
@@ -897,7 +897,7 @@
     <string name="stop_file__confirm">Megállítás</string>
     <string name="smp_servers_preset_server">Előre beállított kiszolgáló</string>
     <string name="add_contact_or_create_group">Új csevegés kezdése</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Nyílt forráskódú protokoll és forráskód – bárki üzemeltethet kiszolgálókat.</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">Bárki üzemeltethet kiszolgálókat.</string>
     <string name="rcv_group_event_open_chat">Megnyitás</string>
     <string name="network_option_protocol_timeout">Protokoll időtúllépés</string>
     <string name="secret_text">titkos</string>
@@ -912,7 +912,7 @@
     <string name="your_privacy">Adatvédelem</string>
     <string name="your_simplex_contact_address">Az ön SimpleX címe</string>
     <string name="alert_text_fragment_please_report_to_developers">Jelentse a fejlesztőknek.</string>
-    <string name="people_can_connect_only_via_links_you_share">Az emberek csak az ön által megosztott hivatkozáson keresztül kapcsolódhatnak.</string>
+    <string name="people_can_connect_only_via_links_you_share">Ön dönti el, hogy kivel beszélget</string>
     <string name="prohibit_sending_disappearing">Az eltűnő üzenetek küldése le van tiltva.</string>
     <string name="only_you_can_send_voice">Csak ön tud hangüzeneteket küldeni.</string>
     <string name="update_network_settings_confirmation">Frissítés</string>
@@ -1224,7 +1224,7 @@
     <string name="snd_group_event_member_deleted">eltávolította őt: %1$s</string>
     <string name="save_passphrase_and_open_chat">Jelmondat mentése és csevegés megnyitása</string>
     <string name="save_preferences_question">Beállítások mentése?</string>
-    <string name="first_platform_without_user_ids">Az első csevegési rendszer bármiféle felhasználó azonosító nélkül - privátra lett tervezre.</string>
+    <string name="first_platform_without_user_ids">Nincsenek felhasználói azonosítók.</string>
     <string name="prohibit_direct_messages">A közvetlen üzenetek küldése a tagok között le van tiltva.</string>
     <string name="network_enable_socks">SOCKS proxy használata?</string>
     <string name="icon_descr_speaker_off">Hangszóró kikapcsolva</string>
@@ -1294,7 +1294,8 @@
     <string name="database_downgrade_warning">Figyelmeztetés: néhány adat elveszhet!</string>
     <string name="tap_to_start_new_chat">Koppintson az új csevegés indításához</string>
     <string name="waiting_for_desktop">Várakozás a számítógépre…</string>
-    <string name="next_generation_of_private_messaging">A privát üzenetküldés következő generációja</string>
+    <string name="next_generation_of_private_messaging">A privát üzenetküldés
+\nkövetkező generációja</string>
     <string name="update_network_settings_question">Hálózati beállítások megváltoztatása?</string>
     <string name="waiting_for_mobile_to_connect">Várakozás a mobiltelefon társítására:</string>
     <string name="v4_4_verify_connection_security">Kapcsolat biztonságának ellenőrzése</string>
@@ -2010,7 +2011,7 @@
     <string name="keep_conversation">Beszélgetés megtartása</string>
     <string name="confirm_delete_contact_question">Biztosan törli az ismerőst?</string>
     <string name="info_view_connect_button">kapcsolódás</string>
-    <string name="one_hand_ui">Elérhető csevegő eszköztár</string>
+    <string name="one_hand_ui">Könnyen elérhető eszköztár</string>
     <string name="delete_without_notification">Törlés értesítés nélkül</string>
     <string name="toolbar_settings">Beállítások</string>
     <string name="info_view_search_button">keresés</string>
@@ -2037,7 +2038,7 @@
     <string name="media_and_file_servers">Média- és fájlkiszolgálók</string>
     <string name="v6_0_delete_many_messages_descr">Legfeljebb 20 üzenet törlése egyszerre.</string>
     <string name="v6_0_private_routing_descr">Védi az IP-címét és a kapcsolatokat.</string>
-    <string name="v6_0_reachable_chat_toolbar">Könnyen elérhető eszköztár 👋</string>
+    <string name="v6_0_reachable_chat_toolbar">Könnyen elérhető eszköztár</string>
     <string name="message_servers">Üzenetkiszolgálók</string>
     <string name="network_socks_proxy">SOCKS proxy</string>
     <string name="chat_database_exported_not_all_files">Néhány fájl nem került exportálásra:</string>
@@ -2047,7 +2048,16 @@
     <string name="v6_0_your_contacts_descr">Ismerősök archiválása a későbbi csevegéshez.</string>
     <string name="network_option_tcp_connection">TCP kapcsolat</string>
     <string name="chat_database_exported_save">Az exportált archívumot elmentheti.</string>
-    <string name="reset_all_hints">Tippek alaphelyzetbe állítása</string>
+    <string name="reset_all_hints">Tippek visszaállítása</string>
     <string name="one_hand_ui_card_title">Csevegőlista átváltása:</string>
-    <string name="one_hand_ui_change_instruction">Ezt a Megjelenés menüben módosíthatja.</string>
+    <string name="one_hand_ui_change_instruction">Ezt a „Megjelenés” menüben módosíthatja.</string>
+    <string name="v6_0_new_media_options">Új médiabeállítások</string>
+    <string name="v6_0_chat_list_media">Lejátszás a csevegési listából</string>
+    <string name="v6_0_privacy_blur">Elhomályosítás a jobb adatvédelemért</string>
+    <string name="v6_0_upgrade_app">Automatikus frissítés</string>
+    <string name="create_address_button">Létrehozás</string>
+    <string name="v6_0_upgrade_app_descr">Új verziók letöltése a GitHubról</string>
+    <string name="v6_0_increase_font_size">Betűméret növelése.</string>
+    <string name="invite_friends_short">Meghívás</string>
+    <string name="v6_0_new_chat_experience">Új csevegési élmény 🎉</string>
 </resources>

@@ -119,13 +119,13 @@
 \n<b>请注意</b>：如果您有很多连接，您的电池和流量消耗可能会大大增加，并且某些连接可能会失败。</string>
     <string name="back">返回</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b> 最长续航 </b>。您只会在应用程序运行时收到通知（无后台服务）。]]></string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b> 较长续航 </b>。后台服务每 10 分钟检查一次消息。您可能会错过来电或者紧急信息。]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b> 较长续航 </b>。应用每 10 分钟检查一次消息。您可能会错过来电或者紧急信息。]]></string>
     <string name="bold_text">加粗</string>
     <string name="both_you_and_your_contacts_can_delete">您和您的联系人都可以不可逆地删除已发送的消息。（24小时）</string>
     <string name="both_you_and_your_contact_can_send_disappearing">您和您的联系人都可以发送限时消息。</string>
     <string name="both_you_and_your_contact_can_send_voice">您和您的联系人都可以发送语音消息。</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b> 可以在设置里禁用它 </b> - 应用程序运行时仍会显示通知。]]></string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b> 使用更多电量 </b>！后台服务始终运行——一旦收到消息，就会显示通知。]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b> 使用更多电量 </b>！应用始终在后台运行——一即刻显示通知。]]></string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>请注意</b>：如果您丢失密码，您将无法恢复或者更改密码。]]></string>
     <string name="call_already_ended">通话已结束！</string>
     <string name="alert_title_cant_invite_contacts">无法邀请联系人！</string>
@@ -708,7 +708,7 @@
     <string name="simplex_link_mode_browser_warning">在浏览器中打开链接可能会降低连接的隐私和安全性。SimpleX 上不受信任的链接将显示为红色。</string>
     <string name="restore_database_alert_desc">恢复数据库备份后请输入之前的密码。 此操作无法撤消。</string>
     <string name="contact_developers">请更新应用程序并联系开发者。</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">开源协议和代码——任何人都可以运行服务器。</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">任何人都可以托管服务器。</string>
     <string name="paste_button">粘贴</string>
     <string name="network_option_ping_count">PING 次数</string>
     <string name="prohibit_sending_voice">禁止发送语音消息。</string>
@@ -728,7 +728,7 @@
     <string name="ntf_channel_messages">SimpleX 消息</string>
     <string name="is_not_verified">%s 未验证</string>
     <string name="v4_5_italian_interface_descr">感谢用户——通过 Weblate 做出贡献！</string>
-    <string name="first_platform_without_user_ids">第一个没有任何用户标识符的平台——专为隐私保护设计。</string>
+    <string name="first_platform_without_user_ids">没有用户标识符。</string>
     <string name="group_is_decentralized">完全去中心化 - 仅对成员可见。</string>
     <string name="image_decoding_exception_desc">图像无法解码。 请尝试不同的图像或联系开发者。</string>
     <string name="theme">主题</string>
@@ -767,7 +767,7 @@
     <string name="chat_with_the_founder">发送问题和想法</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">保护您的隐私和安全的消息传递和应用程序平台。</string>
     <string name="strikethrough_text">删去</string>
-    <string name="people_can_connect_only_via_links_you_share">人们只能通过您共享的链接与您建立联系。</string>
+    <string name="people_can_connect_only_via_links_you_share">你决定谁可以连接。</string>
     <string name="next_generation_of_private_messaging">下一代私密通讯软件</string>
     <string name="paste_the_link_you_received">粘贴您收到的链接</string>
     <string name="alert_title_skipped_messages">已跳过消息</string>
@@ -2056,4 +2056,13 @@
     <string name="chat_database_exported_migrate">你可以迁移导出的数据库。</string>
     <string name="chat_database_exported_save">你可以保存导出的存档。</string>
     <string name="reset_all_hints">重置所有提示</string>
+    <string name="v6_0_privacy_blur">模糊以增强隐私。</string>
+    <string name="v6_0_new_media_options">新的媒体选项</string>
+    <string name="v6_0_chat_list_media">从聊天列表播放。</string>
+    <string name="v6_0_upgrade_app">自动升级应用</string>
+    <string name="create_address_button">创建</string>
+    <string name="v6_0_upgrade_app_descr">从 GitHub 下载新版。</string>
+    <string name="v6_0_increase_font_size">增大字体尺寸。</string>
+    <string name="invite_friends_short">邀请</string>
+    <string name="v6_0_new_chat_experience">新的聊天体验 🎉</string>
 </resources>

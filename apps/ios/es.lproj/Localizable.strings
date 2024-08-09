@@ -596,6 +596,9 @@
 "Archive and upload" = "Archivar y subir";
 
 /* No comment provided by engineer. */
+"Archive contacts to chat later." = "Archivar contactos para charlar más tarde.";
+
+/* No comment provided by engineer. */
 "Archived contacts" = "Contactos archivados";
 
 /* No comment provided by engineer. */
@@ -674,6 +677,9 @@
 "Better messages" = "Mensajes mejorados";
 
 /* No comment provided by engineer. */
+"Better networking" = "Uso de red mejorado";
+
+/* No comment provided by engineer. */
 "Black" = "Negro";
 
 /* No comment provided by engineer. */
@@ -705,6 +711,9 @@
 
 /* No comment provided by engineer. */
 "Blocked by admin" = "Bloqueado por administrador";
+
+/* No comment provided by engineer. */
+"Blur for better privacy." = "Difuminar para más privacidad.";
 
 /* No comment provided by engineer. */
 "Blur media" = "Difuminar multimedia";
@@ -873,6 +882,9 @@
 "Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." = "Chat parado. Si has usado esta base de datos en otro dispositivo, debes transferirla de vuelta antes de iniciar Chat.";
 
 /* No comment provided by engineer. */
+"Chat list" = "Lista de chats";
+
+/* No comment provided by engineer. */
 "Chat migrated!" = "¡Chat migrado!";
 
 /* No comment provided by engineer. */
@@ -922,6 +934,9 @@
 
 /* No comment provided by engineer. */
 "Clear verification" = "Eliminar verificación";
+
+/* No comment provided by engineer. */
+"Color chats with the new themes." = "Colorea los chats con los nuevos temas.";
 
 /* No comment provided by engineer. */
 "Color mode" = "Modo de color";
@@ -991,6 +1006,9 @@
 
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "contacta con los desarrolladores de SimpleX Chat.";
+
+/* No comment provided by engineer. */
+"Connect to your friends faster." = "Conecta más rápido con tus amigos.";
 
 /* No comment provided by engineer. */
 "Connect to yourself?" = "¿Conectarte a tí mismo?";
@@ -1339,7 +1357,7 @@
 "Delete %lld messages of members?" = "¿Eliminar %lld mensajes de miembros?";
 
 /* No comment provided by engineer. */
-"Delete %lld messages?" = "¿Elimina %lld mensajes?";
+"Delete %lld messages?" = "¿Eliminar %lld mensajes?";
 
 /* No comment provided by engineer. */
 "Delete address" = "Eliminar dirección";
@@ -2189,7 +2207,7 @@
 "Full name:" = "Nombre completo:";
 
 /* No comment provided by engineer. */
-"Fully decentralized – visible only to members." = "Completamente descentralizado: sólo visible a los miembros.";
+"Fully decentralized – visible only to members." = "Completamente descentralizado y sólo visible para los miembros.";
 
 /* No comment provided by engineer. */
 "Fully re-implemented - work in background!" = "Completamente reimplementado: ¡funciona en segundo plano!";
@@ -2945,7 +2963,7 @@
 "New chat" = "Nuevo chat";
 
 /* No comment provided by engineer. */
-"New Chat" = "Nuevo Chat";
+"New chat experience 🎉" = "Nueva experiencia de chat 🎉";
 
 /* notification */
 "New contact request" = "Nueva solicitud de contacto";
@@ -2964,6 +2982,9 @@
 
 /* No comment provided by engineer. */
 "New in %@" = "Nuevo en %@";
+
+/* No comment provided by engineer. */
+"New media options" = "Nuevas opciones multimedia";
 
 /* No comment provided by engineer. */
 "New member role" = "Nuevo rol de miembro";
@@ -3251,6 +3272,9 @@
 
 /* No comment provided by engineer. */
 "PING interval" = "Intervalo PING";
+
+/* No comment provided by engineer. */
+"Play from the chat list." = "Reproduce desde la lista de chats.";
 
 /* No comment provided by engineer. */
 "Please ask your contact to enable calls." = "Por favor, pide a tu contacto que active las llamadas.";
@@ -3624,6 +3648,9 @@
 
 /* No comment provided by engineer. */
 "Reset" = "Restablecer";
+
+/* No comment provided by engineer. */
+"Reset all hints" = "Reiniciar todas las pistas";
 
 /* No comment provided by engineer. */
 "Reset all statistics" = "Restablecer estadísticas";
@@ -4049,6 +4076,9 @@
 "Share address with contacts?" = "¿Compartir la dirección con los contactos?";
 
 /* No comment provided by engineer. */
+"Share from other apps." = "Comparte desde otras aplicaciones.";
+
+/* No comment provided by engineer. */
 "Share link" = "Compartir enlace";
 
 /* No comment provided by engineer. */
@@ -4472,7 +4502,13 @@
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Para verificar el cifrado de extremo a extremo con tu contacto, compara (o escanea) el código en ambos dispositivos.";
 
 /* No comment provided by engineer. */
+"Toggle chat list:" = "Alternar lista de chats:";
+
+/* No comment provided by engineer. */
 "Toggle incognito when connecting." = "Activa incógnito al conectar.";
+
+/* No comment provided by engineer. */
+"Toolbar opacity" = "Opacidad barra";
 
 /* No comment provided by engineer. */
 "Total" = "Total";
@@ -4943,6 +4979,9 @@
 "You can accept calls from lock screen, without device and app authentication." = "Puede aceptar llamadas desde la pantalla de bloqueo, sin autenticación de dispositivos y aplicaciones.";
 
 /* No comment provided by engineer. */
+"You can change it in Appearance settings." = "Puede cambiarlo desde el menú Apariencia.";
+
+/* No comment provided by engineer. */
 "You can create it later" = "Puedes crearla más tarde";
 
 /* No comment provided by engineer. */
@@ -5147,7 +5186,7 @@
 "Your profile" = "Tu perfil";
 
 /* No comment provided by engineer. */
-"Your profile **%@** will be shared." = "Tu perfil **%@** será compartido.";
+"Your profile **%@** will be shared." = "El perfil **%@** será compartido.";
 
 /* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts.\nSimpleX servers cannot see your profile." = "Tu perfil es almacenado en tu dispositivo y solamente se comparte con tus contactos.\nLos servidores SimpleX no pueden ver tu perfil.";

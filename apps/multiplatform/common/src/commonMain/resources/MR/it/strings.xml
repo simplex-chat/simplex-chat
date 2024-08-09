@@ -271,7 +271,7 @@
     <string name="chat_database_deleted">Database della chat eliminato</string>
     <string name="settings_section_title_icon">ICONA APP</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Ideale per la batteria</b>. Riceverai notifiche solo quando l\'app è in esecuzione (NO servizio in secondo piano).]]></string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Consuma più batteria</b>! Servizio in secondo piano sempre attivo: le notifiche sono mostrate non appena i messaggi sono disponibili.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Consuma più batteria</b>! L\'app funziona sempre in secondo piano: le notifiche vengono mostrate istantaneamente.]]></string>
     <string name="callstatus_calling">chiamata…</string>
     <string name="icon_descr_cancel_link_preview">annulla anteprima link</string>
     <string name="cannot_access_keychain">Impossibile accedere al Keystore per salvare la password del database</string>
@@ -351,7 +351,7 @@
     <string name="how_to_use_markdown">Come usare il markdown</string>
     <string name="icon_descr_audio_call">chiamata audio</string>
     <string name="audio_call_no_encryption">chiamata audio (non crittografata e2e)</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Buono per la batteria</b>. Il servizio in secondo piano cerca messaggi ogni 10 minuti. Potresti perdere chiamate o messaggi urgenti.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Buono per la batteria</b>. L\'app cerca messaggi ogni 10 minuti. Potresti perdere chiamate o messaggi urgenti.]]></string>
     <string name="call_already_ended">Chiamata già terminata!</string>
     <string name="create_your_profile">Crea il tuo profilo</string>
     <string name="decentralized">Decentralizzato</string>
@@ -649,7 +649,7 @@
     <string name="your_profile_is_stored_on_your_device">Il tuo profilo, i contatti e i messaggi recapitati sono memorizzati sul tuo dispositivo.</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Il tuo profilo è memorizzato sul tuo dispositivo e condiviso solo con i tuoi contatti. I server di SimpleX non possono vedere il tuo profilo.</string>
     <string name="ignore">Ignora</string>
-    <string name="immune_to_spam_and_abuse">Immune a spam e abusi</string>
+    <string name="immune_to_spam_and_abuse">Immune allo spam</string>
     <string name="incoming_audio_call">Chiamata in arrivo</string>
     <string name="incoming_video_call">Videochiamata in arrivo</string>
     <string name="onboarding_notifications_mode_service">Istantaneo</string>
@@ -657,17 +657,18 @@
     <string name="make_private_connection">Crea una connessione privata</string>
     <string name="many_people_asked_how_can_it_deliver"><![CDATA[Molte persone hanno chiesto: <i>se SimpleX non ha identificatori utente, come può recapitare i messaggi\?</i>]]></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Solo i dispositivi client memorizzano i profili utente, i contatti, i gruppi e i messaggi inviati con <b>crittografia end-to-end a 2 livelli</b>.]]></string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Protocollo e codice open source: chiunque può gestire i server.</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">Chiunque può installare i server.</string>
     <string name="paste_the_link_you_received">Incolla il link che hai ricevuto</string>
-    <string name="people_can_connect_only_via_links_you_share">Le persone possono connettersi a te solo tramite i link che condividi.</string>
+    <string name="people_can_connect_only_via_links_you_share">Sei tu a decidere chi può connettersi.</string>
     <string name="onboarding_notifications_mode_periodic">Periodico</string>
     <string name="privacy_redefined">Privacy ridefinita</string>
     <string name="onboarding_notifications_mode_title">Notifiche private</string>
     <string name="read_more_in_github_with_link"><![CDATA[Maggiori informazioni nel nostro <font color="#0088ff">repository GitHub</font>.]]></string>
     <string name="read_more_in_github">Maggiori informazioni nel nostro repository GitHub.</string>
     <string name="reject">Rifiuta</string>
-    <string name="first_platform_without_user_ids">La prima piattaforma senza alcun identificatore utente – privata by design.</string>
-    <string name="next_generation_of_private_messaging">La nuova generazione di messaggistica privata</string>
+    <string name="first_platform_without_user_ids">Nessun identificatore utente.</string>
+    <string name="next_generation_of_private_messaging">La nuova generazione
+\ndi messaggistica privata</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Per proteggere la privacy, invece degli ID utente usati da tutte le altre piattaforme, SimpleX dispone di identificatori per le code dei messaggi, separati per ciascuno dei tuoi contatti.</string>
     <string name="use_chat">Usa la chat</string>
     <string name="icon_descr_video_call">videochiamata</string>
@@ -2047,7 +2048,7 @@
     <string name="v6_0_connect_faster_descr">Connettiti più velocemente ai tuoi amici</string>
     <string name="v6_0_connection_servers_status">Prendi il controllo della tua rete</string>
     <string name="v6_0_delete_many_messages_descr">Elimina fino a 20 messaggi contemporaneamente.</string>
-    <string name="v6_0_reachable_chat_toolbar">Barra degli strumenti di chat accessibile 👋</string>
+    <string name="v6_0_reachable_chat_toolbar">Barra degli strumenti di chat accessibile</string>
     <string name="v6_0_your_contacts_descr">Archivia contatti per chattare più tardi.</string>
     <string name="v6_0_reachable_chat_toolbar_descr">Usa l\'app con una mano sola.</string>
     <string name="v6_0_connection_servers_status_descr">Stato di connessione e server.</string>
@@ -2056,4 +2057,13 @@
     <string name="reset_all_hints">Ripristina tutti i suggerimenti</string>
     <string name="one_hand_ui_card_title">Cambia elenco chat:</string>
     <string name="one_hand_ui_change_instruction">Puoi cambiarlo nelle impostazioni dell\'aspetto.</string>
+    <string name="v6_0_chat_list_media">Riproduci dall\'elenco delle chat.</string>
+    <string name="v6_0_increase_font_size">Aumenta la dimensione dei caratteri.</string>
+    <string name="v6_0_upgrade_app">Aggiorna l\'app automaticamente</string>
+    <string name="invite_friends_short">Invita</string>
+    <string name="v6_0_privacy_blur">Sfoca per una privacy maggiore.</string>
+    <string name="v6_0_new_chat_experience">Una nuova esperienza di chat 🎉</string>
+    <string name="v6_0_new_media_options">Nuove opzioni multimediali</string>
+    <string name="create_address_button">Crea</string>
+    <string name="v6_0_upgrade_app_descr">Scarica nuove versioni da GitHub.</string>
 </resources>

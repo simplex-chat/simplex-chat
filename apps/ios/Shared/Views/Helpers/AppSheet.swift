@@ -8,15 +8,21 @@
 
 import SwiftUI
 
+class AppSheetState: ObservableObject {
+    static let shared = AppSheetState()
+    @Published var scenePhaseActive: Bool = false
+}
+
 private struct PrivacySensitive: ViewModifier {
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
-    @Environment(\.scenePhase) var scenePhase
+    // Screen protection doesn't work for appSheet on iOS 16 if @Environment(\.scenePhase) is used instead of global state
+    @ObservedObject var appSheetState: AppSheetState = AppSheetState.shared
 
     func body(content: Content) -> some View {
         if !protectScreen {
             content
         } else {
-            content.privacySensitive(scenePhase != .active).redacted(reason: .privacy)
+            content.privacySensitive(!appSheetState.scenePhaseActive).redacted(reason: .privacy)
         }
     }
 }
