@@ -61,8 +61,11 @@ struct NewChatSheet: View {
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @Binding var alert: SomeAlert?
-    @State private var partiallyOpened = true
-    
+    @State private var isAddContactActive = false
+    @State private var isScanPasteLinkActive = false
+
+    @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
+
     var body: some View {
         let showArchive = !filterContactTypes(chats: chatModel.chats, contactTypes: [.chatDeleted]).isEmpty
         let v = NavigationView {
@@ -72,11 +75,18 @@ struct NewChatSheet: View {
                 .navigationBarHidden(searchMode)
                 .modifier(ThemedBackground(grouped: true))
         }
-        if #available(iOS 16.0, *) {
+        if #available(iOS 16.0, *), oneHandUI {
             v.presentationDetents(
-                partiallyOpened
-                ? [.height(showArchive ? 575 : 500), .large]
-                : [.large])
+                [.height(500), .height(575), .large],
+                selection: Binding(
+                    get: {
+                        (isAddContactActive || isScanPasteLinkActive)
+                        ? .large
+                        : .height(showArchive ? 575 : 500)
+                    },
+                    set: { _ in}
+                )
+            )
         } else {
             v
         }
@@ -100,21 +110,19 @@ struct NewChatSheet: View {
 
             if (searchText.isEmpty) {
                 Section {
-                    NavigationLink {
+                    NavigationLink(isActive: $isAddContactActive) {
                         NewChatView(selection: .invite, parentAlert: $alert)
                             .navigationTitle("New chat")
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
-                            .onAppear(perform: fullyOpenSheet)
                     } label: {
                         Label("Add contact", systemImage: "link.badge.plus")
                     }
-                    NavigationLink {
+                    NavigationLink(isActive: $isScanPasteLinkActive) {
                         NewChatView(selection: .connect, showQRCodeScanner: true, parentAlert: $alert)
                             .navigationTitle("New chat")
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
-                            .onAppear(perform: fullyOpenSheet)
                     } label: {
                         Label("Scan / Paste link", systemImage: "qrcode")
                     }
@@ -151,15 +159,7 @@ struct NewChatSheet: View {
             )
         }
     }
-    
-    private func fullyOpenSheet () {
-        if #available(iOS 16.0, *), partiallyOpened {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
-                withAnimation { partiallyOpened = false }
-            }
-        }
-    }
-    
+
     func newChatActionButton<Content : View>(_ icon: String, color: Color/* = .secondary*/, content: @escaping () -> Content) -> some View {
         ZStack(alignment: .leading) {
             Image(systemName: icon)
