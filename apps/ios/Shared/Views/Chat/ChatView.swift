@@ -47,65 +47,70 @@ struct ChatView: View {
     @State private var showDeleteSelectedMessages: Bool = false
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
 
+    @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+
     var body: some View {
         if #available(iOS 16.0, *) {
-            let v = viewBody
-            .scrollDismissesKeyboard(.immediately)
-            .keyboardPadding()
-            if (searchMode) {
-                v.toolbarBackground(.thinMaterial, for: .navigationBar)
-            } else {
-                v.toolbarBackground(.visible, for: .navigationBar)
-            }
+            viewBody
+                .scrollDismissesKeyboard(.immediately)
+                .keyboardPadding()
+                .toolbarBackground(.hidden, for: .navigationBar)
         } else {
             viewBody
         }
     }
-
+    
+    @ViewBuilder
     private var viewBody: some View {
         let cInfo = chat.chatInfo
-        return VStack(spacing: 0) {
-            if searchMode {
-                searchToolbar()
+        ZStack {
+            let wallpaperImage = theme.wallpaper.type.image
+            let wallpaperType = theme.wallpaper.type
+            let backgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(theme.base, theme.colors.background)
+            let tintColor = theme.wallpaper.tint ?? wallpaperType.defaultTintColor(theme.base)
+            Color.clear.ignoresSafeArea(.all)
+                .if(wallpaperImage != nil) { view in
+                    view.modifier(
+                        ChatViewBackground(image: wallpaperImage!, imageType: wallpaperType, background: backgroundColor, tint: tintColor)
+                    )
+            }
+            VStack(spacing: 0) {
+                ZStack(alignment: .bottomTrailing) {
+                    chatItemsList()
+                    floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
+                }
+                connectingText()
+                if selectedChatItems == nil {
+                    ComposeView(
+                        chat: chat,
+                        composeState: $composeState,
+                        keyboardVisible: $keyboardVisible
+                    )
+                    .disabled(!cInfo.sendMsgEnabled)
+                } else {
+                    SelectedItemsBottomToolbar(
+                        chatItems: ItemsModel.shared.reversedChatItems,
+                        selectedChatItems: $selectedChatItems,
+                        chatInfo: chat.chatInfo,
+                        deleteItems: { forAll in
+                            allowToDeleteSelectedMessagesForAll = forAll
+                            showDeleteSelectedMessages = true
+                        },
+                        moderateItems: {
+                            if case let .group(groupInfo) = chat.chatInfo {
+                                showModerateSelectedMessagesAlert(groupInfo)
+                            }
+                        }
+                    )
+                }
+            }
+        }
+        .safeAreaInset(edge: .top) {
+            VStack(spacing: .zero) {
+                if searchMode { searchToolbar() }
                 Divider()
             }
-            ZStack(alignment: .bottomTrailing) {
-                let wallpaperImage = theme.wallpaper.type.image
-                let wallpaperType = theme.wallpaper.type
-                let backgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(theme.base, theme.colors.background)
-                let tintColor = theme.wallpaper.tint ?? wallpaperType.defaultTintColor(theme.base)
-                chatItemsList()
-                    .if(wallpaperImage != nil) { view in
-                        view.modifier(
-                            ChatViewBackground(image: wallpaperImage!, imageType: wallpaperType, background: backgroundColor, tint: tintColor)
-                        )
-                }
-                floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
-            }
-            connectingText()
-            if selectedChatItems == nil {
-                ComposeView(
-                    chat: chat,
-                    composeState: $composeState,
-                    keyboardVisible: $keyboardVisible
-                )
-                .disabled(!cInfo.sendMsgEnabled)
-            } else {
-                SelectedItemsBottomToolbar(
-                    chatItems: ItemsModel.shared.reversedChatItems,
-                    selectedChatItems: $selectedChatItems,
-                    chatInfo: chat.chatInfo,
-                    deleteItems: { forAll in
-                        allowToDeleteSelectedMessagesForAll = forAll
-                        showDeleteSelectedMessages = true
-                    },
-                    moderateItems: {
-                        if case let .group(groupInfo) = chat.chatInfo {
-                            showModerateSelectedMessagesAlert(groupInfo)
-                        }
-                    }
-                )
-            }
+            .background(ToolbarMaterial.material(toolbarMaterial))
         }
         .navigationTitle(cInfo.chatViewName)
         .background(theme.colors.background)
@@ -352,7 +357,6 @@ struct ChatView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
-        .background(.thinMaterial)
     }
     
     private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
@@ -397,20 +401,21 @@ struct ChatView: View {
             } loadPage: {
                 loadChatItems(cInfo)
             }
-                .onTapGesture { hideKeyboard() }
-                .onChange(of: searchText) { _ in
-                    loadChat(chat: chat, search: searchText)
+            .padding(.vertical, -InvertedTableView.inset)
+            .onTapGesture { hideKeyboard() }
+            .onChange(of: searchText) { _ in
+                loadChat(chat: chat, search: searchText)
+            }
+            .onChange(of: chatModel.chatId) { chatId in
+                if let chatId, let c = chatModel.getChat(chatId) {
+                    chat = c
+                    showChatInfoSheet = false
+                    loadChat(chat: c)
                 }
-                .onChange(of: chatModel.chatId) { chatId in
-                    if let chatId, let c = chatModel.getChat(chatId) {
-                        chat = c
-                        showChatInfoSheet = false
-                        loadChat(chat: c)
-                    }
-                }
-                .onChange(of: im.reversedChatItems) { _ in
-                    floatingButtonModel.chatItemsChanged()
-                }
+            }
+            .onChange(of: im.reversedChatItems) { _ in
+                floatingButtonModel.chatItemsChanged()
+            }
         }
     }
 
