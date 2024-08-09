@@ -1687,6 +1687,7 @@
     <string name="agent_internal_error_title">Внутренняя ошибка</string>
     <string name="clear_note_folder_question">Очистить личные заметки?</string>
     <string name="new_chat">Новый чат</string>
+    <string name="new_chat">Новое сообщение</string>
     <string name="or_scan_qr_code">Или отсканируйте QR код</string>
     <string name="you_can_view_invitation_link_again">Вы можете увидеть ссылку-приглашение снова открыв соединение.</string>
     <string name="show_slow_api_calls">Показывать медленные вызовы API</string>
