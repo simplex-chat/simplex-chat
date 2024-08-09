@@ -1,5 +1,7 @@
 package chat.simplex.common
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -29,6 +31,8 @@ import chat.simplex.common.views.chat.ChatView
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.database.DatabaseErrorView
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.helpers.ModalManager.Companion.fromEndToStartTransition
+import chat.simplex.common.views.helpers.ModalManager.Companion.fromStartToEndTransition
 import chat.simplex.common.views.localauth.VerticalDivider
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
@@ -70,7 +74,7 @@ fun MainScreen() {
       !chatModel.controller.appPrefs.laNoticeShown.get()
       && showAdvertiseLAAlert
       && chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete
-      && chatModel.chats.size > 2
+      && chatModel.chats.size > 3
       && chatModel.activeCallInvitation.value == null
     ) {
       AppLock.showLANotice(ChatModel.controller.appPrefs.laNoticeShown) }
@@ -148,17 +152,30 @@ fun MainScreen() {
           }
         }
       }
-      onboarding == OnboardingStage.Step1_SimpleXInfo -> {
-        SimpleXInfo(chatModel, onboarding = true)
-        if (appPlatform.isDesktop) {
-          ModalManager.fullscreen.showInView()
+      else -> AnimatedContent(targetState = onboarding,
+        transitionSpec = {
+          if (targetState > initialState) {
+            fromEndToStartTransition()
+          } else {
+            fromStartToEndTransition()
+          }.using(SizeTransform(clip = false))
+        }
+      ) { state ->
+        when (state) {
+          OnboardingStage.OnboardingComplete -> { /* handled out of AnimatedContent block */}
+          OnboardingStage.Step1_SimpleXInfo -> {
+            SimpleXInfo(chatModel, onboarding = true)
+            if (appPlatform.isDesktop) {
+              ModalManager.fullscreen.showInView()
+            }
+          }
+          OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
+          OnboardingStage.LinkAMobile -> LinkAMobile()
+          OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
+          OnboardingStage.Step3_CreateSimpleXAddress -> CreateSimpleXAddress(chatModel, null)
+          OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
         }
       }
-      onboarding == OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
-      onboarding == OnboardingStage.LinkAMobile -> LinkAMobile()
-      onboarding == OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
-      onboarding == OnboardingStage.Step3_CreateSimpleXAddress -> CreateSimpleXAddress(chatModel, null)
-      onboarding == OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
     }
     if (appPlatform.isAndroid) {
       ModalManager.fullscreen.showInView()

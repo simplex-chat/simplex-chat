@@ -174,28 +174,6 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     block()
     atomicBoolean.set(false)
   }
-
-  @OptIn(ExperimentalAnimationApi::class)
-  private fun fromStartToEndTransition() =
-    slideInHorizontally(
-      initialOffsetX = { fullWidth -> -fullWidth },
-      animationSpec = animationSpec()
-    ) with slideOutHorizontally(
-      targetOffsetX = { fullWidth -> fullWidth },
-      animationSpec = animationSpec()
-    )
-
-  @OptIn(ExperimentalAnimationApi::class)
-  private fun fromEndToStartTransition() =
-    slideInHorizontally(
-      initialOffsetX = { fullWidth -> fullWidth },
-      animationSpec = animationSpec()
-    ) with slideOutHorizontally(
-      targetOffsetX = { fullWidth -> -fullWidth },
-      animationSpec = animationSpec()
-    )
-
-private fun <T> animationSpec() = tween<T>(durationMillis = 250, easing = FastOutSlowInEasing)
 //  private fun <T> animationSpecFromStart() = tween<T>(durationMillis = 150, easing = FastOutLinearInEasing)
 //  private fun <T> animationSpecFromEnd() = tween<T>(durationMillis = 100, easing = FastOutSlowInEasing)
 
@@ -212,5 +190,27 @@ private fun <T> animationSpec() = tween<T>(durationMillis = 250, easing = FastOu
       end.closeModals()
       fullscreen.closeModals()
     }
+
+    @OptIn(ExperimentalAnimationApi::class)
+    fun fromStartToEndTransition() =
+      slideInHorizontally(
+        initialOffsetX = { fullWidth -> -fullWidth },
+        animationSpec = animationSpec()
+      ) with slideOutHorizontally(
+        targetOffsetX = { fullWidth -> fullWidth },
+        animationSpec = animationSpec()
+      )
+
+    @OptIn(ExperimentalAnimationApi::class)
+    fun fromEndToStartTransition() =
+      slideInHorizontally(
+        initialOffsetX = { fullWidth -> fullWidth },
+        animationSpec = animationSpec()
+      ) with slideOutHorizontally(
+        targetOffsetX = { fullWidth -> -fullWidth },
+        animationSpec = animationSpec()
+      )
+
+    private fun <T> animationSpec() = tween<T>(durationMillis = 250, easing = FastOutSlowInEasing)
   }
 }

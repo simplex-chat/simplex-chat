@@ -674,7 +674,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
         }
       }
     }
-    if (appPlatform.isAndroid && !oneHandUICardShown.value) {
+    if (appPlatform.isAndroid && !oneHandUICardShown.value && chats.count() > 1) {
       item {
         ToggleChatListCard()
       }
@@ -684,6 +684,11 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
         chatModel.chatId.value != null && chats.getOrNull(index + 1)?.id == chatModel.chatId.value
       } }
       ChatListNavLinkView(chat, nextChatSelected)
+    }
+    if (appPlatform.isAndroid && !oneHandUICardShown.value && chats.count() <= 1) {
+      item {
+        ToggleChatListCard()
+      }
     }
   }
   if (chats.isEmpty() && chatModel.chats.value.isNotEmpty()) {

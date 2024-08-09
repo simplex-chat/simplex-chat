@@ -219,17 +219,16 @@
 		D741547A29AF90B00022400A /* PushKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D741547929AF90B00022400A /* PushKit.framework */; };
 		D77B92DC2952372200A5A1CC /* SwiftyGif in Frameworks */ = {isa = PBXBuildFile; productRef = D77B92DB2952372200A5A1CC /* SwiftyGif */; };
 		D7F0E33929964E7E0068AF69 /* LZString in Frameworks */ = {isa = PBXBuildFile; productRef = D7F0E33829964E7E0068AF69 /* LZString */; };
-		E50581062C3DDD9D009C3F71 /* Yams in Frameworks */ = {isa = PBXBuildFile; productRef = E50581052C3DDD9D009C3F71 /* Yams */; };
 		E51CC1E62C62085600DB91FE /* OneHandUICard.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51CC1E52C62085600DB91FE /* OneHandUICard.swift */; };
-		E51CC1F62C62BAB900DB91FE /* libHSsimplex-chat-6.0.0.4-3xUPNxPQ4Yz9H0nVfm7Usu-ghc9.6.3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E51CC1F12C62BAB900DB91FE /* libHSsimplex-chat-6.0.0.4-3xUPNxPQ4Yz9H0nVfm7Usu-ghc9.6.3.a */; };
-		E51CC1F72C62BAB900DB91FE /* libHSsimplex-chat-6.0.0.4-3xUPNxPQ4Yz9H0nVfm7Usu.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E51CC1F22C62BAB900DB91FE /* libHSsimplex-chat-6.0.0.4-3xUPNxPQ4Yz9H0nVfm7Usu.a */; };
-		E51CC1F82C62BAB900DB91FE /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E51CC1F32C62BAB900DB91FE /* libgmp.a */; };
-		E51CC1F92C62BAB900DB91FE /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E51CC1F42C62BAB900DB91FE /* libgmpxx.a */; };
-		E51CC1FA2C62BAB900DB91FE /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E51CC1F52C62BAB900DB91FE /* libffi.a */; };
 		E5DCF8DB2C56FAC1007928CC /* SimpleXChat.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; };
 		E5DCF9712C590272007928CC /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = E5DCF96F2C590272007928CC /* Localizable.strings */; };
 		E5DCF9842C5902CE007928CC /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = E5DCF9822C5902CE007928CC /* Localizable.strings */; };
 		E5DCF9982C5906FF007928CC /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = E5DCF9962C5906FF007928CC /* InfoPlist.strings */; };
+		E5E2183F2C655B410013B4C6 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E5E2183A2C655B410013B4C6 /* libgmp.a */; };
+		E5E218402C655B410013B4C6 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E5E2183B2C655B410013B4C6 /* libgmpxx.a */; };
+		E5E218412C655B410013B4C6 /* libHSsimplex-chat-6.0.0.5-LgHyBNgR6mx4TwahlxfNH8.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E5E2183C2C655B410013B4C6 /* libHSsimplex-chat-6.0.0.5-LgHyBNgR6mx4TwahlxfNH8.a */; };
+		E5E218422C655B410013B4C6 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E5E2183D2C655B410013B4C6 /* libffi.a */; };
+		E5E218432C655B410013B4C6 /* libHSsimplex-chat-6.0.0.5-LgHyBNgR6mx4TwahlxfNH8-ghc9.6.3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E5E2183E2C655B410013B4C6 /* libHSsimplex-chat-6.0.0.5-LgHyBNgR6mx4TwahlxfNH8-ghc9.6.3.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -563,11 +562,6 @@
 		D741547929AF90B00022400A /* PushKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PushKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/PushKit.framework; sourceTree = DEVELOPER_DIR; };
 		D7AA2C3429A936B400737B40 /* MediaEncryption.playground */ = {isa = PBXFileReference; lastKnownFileType = file.playground; name = MediaEncryption.playground; path = Shared/MediaEncryption.playground; sourceTree = SOURCE_ROOT; xcLanguageSpecificationIdentifier = xcode.lang.swift; };
 		E51CC1E52C62085600DB91FE /* OneHandUICard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneHandUICard.swift; sourceTree = "<group>"; };
-		E51CC1F12C62BAB900DB91FE /* libHSsimplex-chat-6.0.0.4-3xUPNxPQ4Yz9H0nVfm7Usu-ghc9.6.3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-6.0.0.4-3xUPNxPQ4Yz9H0nVfm7Usu-ghc9.6.3.a"; sourceTree = "<group>"; };
-		E51CC1F22C62BAB900DB91FE /* libHSsimplex-chat-6.0.0.4-3xUPNxPQ4Yz9H0nVfm7Usu.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-6.0.0.4-3xUPNxPQ4Yz9H0nVfm7Usu.a"; sourceTree = "<group>"; };
-		E51CC1F32C62BAB900DB91FE /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
-		E51CC1F42C62BAB900DB91FE /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
-		E51CC1F52C62BAB900DB91FE /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
 		E5DCF9702C590272007928CC /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		E5DCF9722C590274007928CC /* bg */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = bg; path = bg.lproj/Localizable.strings; sourceTree = "<group>"; };
 		E5DCF9732C590275007928CC /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
@@ -620,6 +614,11 @@
 		E5DCF9A62C590731007928CC /* th */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = th; path = th.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		E5DCF9A72C590732007928CC /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		E5DCF9A82C590732007928CC /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = uk.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		E5E2183A2C655B410013B4C6 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
+		E5E2183B2C655B410013B4C6 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
+		E5E2183C2C655B410013B4C6 /* libHSsimplex-chat-6.0.0.5-LgHyBNgR6mx4TwahlxfNH8.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-6.0.0.5-LgHyBNgR6mx4TwahlxfNH8.a"; sourceTree = "<group>"; };
+		E5E2183D2C655B410013B4C6 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
+		E5E2183E2C655B410013B4C6 /* libHSsimplex-chat-6.0.0.5-LgHyBNgR6mx4TwahlxfNH8-ghc9.6.3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-6.0.0.5-LgHyBNgR6mx4TwahlxfNH8-ghc9.6.3.a"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -658,15 +657,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E51CC1F72C62BAB900DB91FE /* libHSsimplex-chat-6.0.0.4-3xUPNxPQ4Yz9H0nVfm7Usu.a in Frameworks */,
-				E51CC1F82C62BAB900DB91FE /* libgmp.a in Frameworks */,
+				E5E218412C655B410013B4C6 /* libHSsimplex-chat-6.0.0.5-LgHyBNgR6mx4TwahlxfNH8.a in Frameworks */,
+				E5E218432C655B410013B4C6 /* libHSsimplex-chat-6.0.0.5-LgHyBNgR6mx4TwahlxfNH8-ghc9.6.3.a in Frameworks */,
+				E5E218402C655B410013B4C6 /* libgmpxx.a in Frameworks */,
 				5CE2BA93284534B000EC33A6 /* libiconv.tbd in Frameworks */,
+				E5E218422C655B410013B4C6 /* libffi.a in Frameworks */,
+				E5E2183F2C655B410013B4C6 /* libgmp.a in Frameworks */,
 				5CE2BA94284534BB00EC33A6 /* libz.tbd in Frameworks */,
-				E51CC1F92C62BAB900DB91FE /* libgmpxx.a in Frameworks */,
-				E50581062C3DDD9D009C3F71 /* Yams in Frameworks */,
 				CE38A29C2C3FCD72005ED185 /* SwiftyGif in Frameworks */,
-				E51CC1FA2C62BAB900DB91FE /* libffi.a in Frameworks */,
-				E51CC1F62C62BAB900DB91FE /* libHSsimplex-chat-6.0.0.4-3xUPNxPQ4Yz9H0nVfm7Usu-ghc9.6.3.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -743,11 +741,11 @@
 		5C764E5C279C70B7000C6508 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
-				E51CC1F52C62BAB900DB91FE /* libffi.a */,
-				E51CC1F32C62BAB900DB91FE /* libgmp.a */,
-				E51CC1F42C62BAB900DB91FE /* libgmpxx.a */,
-				E51CC1F12C62BAB900DB91FE /* libHSsimplex-chat-6.0.0.4-3xUPNxPQ4Yz9H0nVfm7Usu-ghc9.6.3.a */,
-				E51CC1F22C62BAB900DB91FE /* libHSsimplex-chat-6.0.0.4-3xUPNxPQ4Yz9H0nVfm7Usu.a */,
+				E5E2183D2C655B410013B4C6 /* libffi.a */,
+				E5E2183A2C655B410013B4C6 /* libgmp.a */,
+				E5E2183B2C655B410013B4C6 /* libgmpxx.a */,
+				E5E2183E2C655B410013B4C6 /* libHSsimplex-chat-6.0.0.5-LgHyBNgR6mx4TwahlxfNH8-ghc9.6.3.a */,
+				E5E2183C2C655B410013B4C6 /* libHSsimplex-chat-6.0.0.5-LgHyBNgR6mx4TwahlxfNH8.a */,
 			);
 			path = Libraries;
 			sourceTree = "<group>";
@@ -1215,7 +1213,6 @@
 			);
 			name = SimpleXChat;
 			packageProductDependencies = (
-				E50581052C3DDD9D009C3F71 /* Yams */,
 				CE38A29B2C3FCD72005ED185 /* SwiftyGif */,
 			);
 			productName = SimpleXChat;
@@ -1896,7 +1893,7 @@
 				CLANG_TIDY_MISC_REDUNDANT_EXPRESSION = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 230;
+				CURRENT_PROJECT_VERSION = 231;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
@@ -1945,7 +1942,7 @@
 				CLANG_TIDY_MISC_REDUNDANT_EXPRESSION = YES;
 				CODE_SIGN_ENTITLEMENTS = "SimpleX (iOS).entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 230;
+				CURRENT_PROJECT_VERSION = 231;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
@@ -1986,7 +1983,7 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 230;
+				CURRENT_PROJECT_VERSION = 231;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -2006,7 +2003,7 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 230;
+				CURRENT_PROJECT_VERSION = 231;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -2031,7 +2028,7 @@
 				CODE_SIGN_ENTITLEMENTS = "SimpleX NSE/SimpleX NSE.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 230;
+				CURRENT_PROJECT_VERSION = 231;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				GCC_OPTIMIZATION_LEVEL = s;
@@ -2068,7 +2065,7 @@
 				CODE_SIGN_ENTITLEMENTS = "SimpleX NSE/SimpleX NSE.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 230;
+				CURRENT_PROJECT_VERSION = 231;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_BITCODE = NO;
 				ENABLE_CODE_COVERAGE = NO;
@@ -2105,7 +2102,7 @@
 				CLANG_TIDY_BUGPRONE_REDUNDANT_BRANCH_CONDITION = YES;
 				CLANG_TIDY_MISC_REDUNDANT_EXPRESSION = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 230;
+				CURRENT_PROJECT_VERSION = 231;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -2156,7 +2153,7 @@
 				CLANG_TIDY_BUGPRONE_REDUNDANT_BRANCH_CONDITION = YES;
 				CLANG_TIDY_MISC_REDUNDANT_EXPRESSION = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 230;
+				CURRENT_PROJECT_VERSION = 231;
 				DEFINES_MODULE = YES;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				DYLIB_COMPATIBILITY_VERSION = 1;
@@ -2207,7 +2204,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_ENTITLEMENTS = "SimpleX SE/SimpleX SE.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 230;
+				CURRENT_PROJECT_VERSION = 231;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -2241,7 +2238,7 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_ENTITLEMENTS = "SimpleX SE/SimpleX SE.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 230;
+				CURRENT_PROJECT_VERSION = 231;
 				DEVELOPMENT_TEAM = 5NN7GUYB6T;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -2400,11 +2397,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D7F0E33729964E7D0068AF69 /* XCRemoteSwiftPackageReference "lzstring-swift" */;
 			productName = LZString;
-		};
-		E50581052C3DDD9D009C3F71 /* Yams */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8C73C1162C21E17B00892670 /* XCRemoteSwiftPackageReference "Yams" */;
-			productName = Yams;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

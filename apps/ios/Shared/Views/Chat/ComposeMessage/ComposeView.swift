@@ -281,6 +281,7 @@ struct ComposeView: View {
     @State private var stopPlayback: Bool = false
 
     @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
+    @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
     var body: some View {
         VStack(spacing: 0) {
@@ -381,7 +382,7 @@ struct ComposeView: View {
                 }
             }
         }
-        .background(.thinMaterial)
+        .background(ToolbarMaterial.material(toolbarMaterial))
         .onChange(of: composeState.message) { msg in
             if composeState.linkPreviewAllowed {
                 if msg.count > 0 {

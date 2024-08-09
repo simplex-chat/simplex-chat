@@ -470,7 +470,7 @@ struct SimplexLockView: View {
             }
         }
         .onChange(of: performLA) { performLAToggle in
-            performLAGroupDefault.set(performLAToggle)
+            appLocalAuthEnabledGroupDefault.set(performLAToggle)
             prefLANoticeShown = true
             if performLAToggleReset {
                 performLAToggleReset = false

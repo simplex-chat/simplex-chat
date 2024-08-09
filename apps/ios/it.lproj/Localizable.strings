@@ -338,7 +338,8 @@
 "Accent" = "Principale";
 
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "Accetta";
 
 /* No comment provided by engineer. */
@@ -347,7 +348,8 @@
 /* notification body */
 "Accept contact request from %@?" = "Accettare la richiesta di contatto da %@?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "Accetta in incognito";
 
 /* call status */
@@ -471,6 +473,9 @@
 "Allow calls only if your contact allows them." = "Consenti le chiamate solo se il tuo contatto le consente.";
 
 /* No comment provided by engineer. */
+"Allow calls?" = "Consentire le chiamate?";
+
+/* No comment provided by engineer. */
 "Allow disappearing messages only if your contact allows it to you." = "Consenti i messaggi a tempo solo se il contatto li consente a te.";
 
 /* No comment provided by engineer. */
@@ -591,6 +596,12 @@
 "Archive and upload" = "Archivia e carica";
 
 /* No comment provided by engineer. */
+"Archive contacts to chat later." = "Archivia contatti per chattare più tardi.";
+
+/* No comment provided by engineer. */
+"Archived contacts" = "Contatti archiviati";
+
+/* No comment provided by engineer. */
 "Archiving database" = "Archiviazione del database";
 
 /* No comment provided by engineer. */
@@ -666,6 +677,9 @@
 "Better messages" = "Messaggi migliorati";
 
 /* No comment provided by engineer. */
+"Better networking" = "Rete migliorata";
+
+/* No comment provided by engineer. */
 "Black" = "Nero";
 
 /* No comment provided by engineer. */
@@ -692,11 +706,14 @@
 /* rcv group event chat item */
 "blocked %@" = "ha bloccato %@";
 
-/* blocked chat item */
+/* marked deleted chat item preview text */
 "blocked by admin" = "bloccato dall'amministratore";
 
 /* No comment provided by engineer. */
 "Blocked by admin" = "Bloccato dall'amministratore";
+
+/* No comment provided by engineer. */
+"Blur for better privacy." = "Sfoca per una privacy maggiore.";
 
 /* No comment provided by engineer. */
 "Blur media" = "Sfocatura file multimediali";
@@ -726,6 +743,9 @@
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Per profilo di chat (predefinito) o [per connessione](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
 
 /* No comment provided by engineer. */
+"call" = "chiama";
+
+/* No comment provided by engineer. */
 "Call already ended!" = "Chiamata già terminata!";
 
 /* call status */
@@ -741,13 +761,25 @@
 "Calls" = "Chiamate";
 
 /* No comment provided by engineer. */
+"Calls prohibited!" = "Chiamate proibite!";
+
+/* No comment provided by engineer. */
 "Camera not available" = "Fotocamera non disponibile";
+
+/* No comment provided by engineer. */
+"Can't call contact" = "Impossibile chiamare il contatto";
+
+/* No comment provided by engineer. */
+"Can't call member" = "Impossibile chiamare il membro";
 
 /* No comment provided by engineer. */
 "Can't invite contact!" = "Impossibile invitare il contatto!";
 
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Impossibile invitare i contatti!";
+
+/* No comment provided by engineer. */
+"Can't message member" = "Impossibile inviare un messaggio al membro";
 
 /* No comment provided by engineer. */
 "Cancel" = "Annulla";
@@ -850,6 +882,9 @@
 "Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." = "La chat è ferma. Se hai già usato questo database su un altro dispositivo, dovresti trasferirlo prima di avviare la chat.";
 
 /* No comment provided by engineer. */
+"Chat list" = "Elenco delle chat";
+
+/* No comment provided by engineer. */
 "Chat migrated!" = "Chat migrata!";
 
 /* No comment provided by engineer. */
@@ -885,7 +920,7 @@
 /* No comment provided by engineer. */
 "Chunks uploaded" = "Blocchi inviati";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "Svuota";
 
 /* No comment provided by engineer. */
@@ -899,6 +934,9 @@
 
 /* No comment provided by engineer. */
 "Clear verification" = "Annulla la verifica";
+
+/* No comment provided by engineer. */
+"Color chats with the new themes." = "Colora le chat con i nuovi temi.";
 
 /* No comment provided by engineer. */
 "Color mode" = "Modalità di colore";
@@ -926,6 +964,9 @@
 
 /* No comment provided by engineer. */
 "Confirm" = "Conferma";
+
+/* No comment provided by engineer. */
+"Confirm contact deletion?" = "Confermare l'eliminazione del contatto?";
 
 /* No comment provided by engineer. */
 "Confirm database upgrades" = "Conferma aggiornamenti database";
@@ -965,6 +1006,9 @@
 
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "connettiti agli sviluppatori di SimpleX Chat.";
+
+/* No comment provided by engineer. */
+"Connect to your friends faster." = "Connettiti più velocemente ai tuoi amici.";
 
 /* No comment provided by engineer. */
 "Connect to yourself?" = "Connettersi a te stesso?";
@@ -1033,6 +1077,9 @@
 "Connecting server… (error: %@)" = "Connessione al server… (errore: %@)";
 
 /* No comment provided by engineer. */
+"Connecting to contact, please wait or check later!" = "In collegamento con il contatto, attendi o controlla più tardi!";
+
+/* No comment provided by engineer. */
 "Connecting to desktop" = "Connessione al desktop";
 
 /* chat list item title */
@@ -1040,6 +1087,9 @@
 
 /* No comment provided by engineer. */
 "Connection" = "Connessione";
+
+/* No comment provided by engineer. */
+"Connection and servers status." = "Stato di connessione e server.";
 
 /* No comment provided by engineer. */
 "Connection error" = "Errore di connessione";
@@ -1081,6 +1131,9 @@
 "Contact already exists" = "Il contatto esiste già";
 
 /* No comment provided by engineer. */
+"Contact deleted!" = "Contatto eliminato!";
+
+/* No comment provided by engineer. */
 "contact has e2e encryption" = "il contatto ha la crittografia e2e";
 
 /* No comment provided by engineer. */
@@ -1093,10 +1146,16 @@
 "Contact is connected" = "Il contatto è connesso";
 
 /* No comment provided by engineer. */
+"Contact is deleted." = "Il contatto è stato eliminato.";
+
+/* No comment provided by engineer. */
 "Contact name" = "Nome del contatto";
 
 /* No comment provided by engineer. */
 "Contact preferences" = "Preferenze del contatto";
+
+/* No comment provided by engineer. */
+"Contact will be deleted - this cannot be undone!" = "Il contatto verrà eliminato - non è reversibile!";
 
 /* No comment provided by engineer. */
 "Contacts" = "Contatti";
@@ -1106,6 +1165,9 @@
 
 /* No comment provided by engineer. */
 "Continue" = "Continua";
+
+/* No comment provided by engineer. */
+"Conversation deleted!" = "Conversazione eliminata!";
 
 /* No comment provided by engineer. */
 "Copy" = "Copia";
@@ -1287,7 +1349,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "predefinito (sì)";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "Elimina";
 
 /* No comment provided by engineer. */
@@ -1328,6 +1391,9 @@
 
 /* No comment provided by engineer. */
 "Delete contact" = "Elimina contatto";
+
+/* No comment provided by engineer. */
+"Delete contact?" = "Eliminare il contatto?";
 
 /* No comment provided by engineer. */
 "Delete database" = "Elimina database";
@@ -1393,7 +1459,13 @@
 "Delete queue" = "Elimina coda";
 
 /* No comment provided by engineer. */
+"Delete up to 20 messages at once." = "Elimina fino a 20 messaggi contemporaneamente.";
+
+/* No comment provided by engineer. */
 "Delete user profile?" = "Eliminare il profilo utente?";
+
+/* No comment provided by engineer. */
+"Delete without notification" = "Elimina senza avvisare";
 
 /* deleted chat item */
 "deleted" = "eliminato";
@@ -1454,6 +1526,9 @@
 
 /* No comment provided by engineer. */
 "Develop" = "Sviluppa";
+
+/* No comment provided by engineer. */
+"Developer options" = "Opzioni sviluppatore";
 
 /* No comment provided by engineer. */
 "Developer tools" = "Strumenti di sviluppo";
@@ -2002,7 +2077,7 @@
 /* No comment provided by engineer. */
 "Faster joining and more reliable messages." = "Ingresso più veloce e messaggi più affidabili.";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "Preferito";
 
 /* No comment provided by engineer. */
@@ -2462,6 +2537,9 @@
 "invitation to group %@" = "invito al gruppo %@";
 
 /* No comment provided by engineer. */
+"invite" = "invita";
+
+/* No comment provided by engineer. */
 "Invite friends" = "Invita amici";
 
 /* No comment provided by engineer. */
@@ -2507,6 +2585,9 @@
 "It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Può accadere quando:\n1. I messaggi sono scaduti sul client mittente dopo 2 giorni o sul server dopo 30 giorni.\n2. La decifrazione del messaggio è fallita, perché tu o il tuo contatto avete usato un backup del database vecchio.\n3. La connessione è stata compromessa.";
 
 /* No comment provided by engineer. */
+"It protects your IP address and connections." = "Protegge il tuo indirizzo IP e le connessioni.";
+
+/* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Sembra che tu sia già connesso tramite questo link. In caso contrario, c'è stato un errore (%@).";
 
 /* No comment provided by engineer. */
@@ -2518,7 +2599,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "Interfaccia giapponese";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "Entra";
 
 /* No comment provided by engineer. */
@@ -2549,6 +2630,9 @@
 "Keep" = "Tieni";
 
 /* No comment provided by engineer. */
+"Keep conversation" = "Tieni la conversazione";
+
+/* No comment provided by engineer. */
 "Keep the app open to use it from desktop" = "Tieni aperta l'app per usarla dal desktop";
 
 /* No comment provided by engineer. */
@@ -2569,7 +2653,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "Maggiori informazioni";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "Esci";
 
 /* No comment provided by engineer. */
@@ -2691,6 +2775,9 @@
 
 /* No comment provided by engineer. */
 "Menus" = "Menu";
+
+/* No comment provided by engineer. */
+"message" = "messaggio";
 
 /* item status text */
 "Message delivery error" = "Errore di recapito del messaggio";
@@ -2840,12 +2927,15 @@
 "Multiple chat profiles" = "Profili di chat multipli";
 
 /* No comment provided by engineer. */
+"mute" = "silenzia";
+
+/* swipe action */
 "Mute" = "Silenzia";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "Silenzioso quando inattivo!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "Nome";
 
 /* No comment provided by engineer. */
@@ -2872,6 +2962,9 @@
 /* No comment provided by engineer. */
 "New chat" = "Nuova chat";
 
+/* No comment provided by engineer. */
+"New chat experience 🎉" = "Una nuova esperienza di chat 🎉";
+
 /* notification */
 "New contact request" = "Nuova richiesta di contatto";
 
@@ -2889,6 +2982,9 @@
 
 /* No comment provided by engineer. */
 "New in %@" = "Novità nella %@";
+
+/* No comment provided by engineer. */
+"New media options" = "Nuove opzioni multimediali";
 
 /* No comment provided by engineer. */
 "New member role" = "Nuovo ruolo del membro";
@@ -3017,6 +3113,9 @@
 
 /* No comment provided by engineer. */
 "Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Solo i dispositivi client archiviano profili utente, i contatti, i gruppi e i messaggi inviati con la **crittografia end-to-end a 2 livelli**.";
+
+/* No comment provided by engineer. */
+"Only delete conversation" = "Elimina solo la conversazione";
 
 /* No comment provided by engineer. */
 "Only group owners can change group preferences." = "Solo i proprietari del gruppo possono modificarne le preferenze.";
@@ -3173,6 +3272,12 @@
 
 /* No comment provided by engineer. */
 "PING interval" = "Intervallo PING";
+
+/* No comment provided by engineer. */
+"Play from the chat list." = "Riproduci dall'elenco delle chat.";
+
+/* No comment provided by engineer. */
+"Please ask your contact to enable calls." = "Chiedi al contatto di attivare le chiamate.";
 
 /* No comment provided by engineer. */
 "Please ask your contact to enable sending voice messages." = "Chiedi al tuo contatto di attivare l'invio dei messaggi vocali.";
@@ -3354,10 +3459,13 @@
 /* No comment provided by engineer. */
 "Rate the app" = "Valuta l'app";
 
+/* No comment provided by engineer. */
+"Reachable chat toolbar" = "Barra degli strumenti di chat accessibile";
+
 /* chat item menu */
 "React…" = "Reagisci…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "Leggi";
 
 /* No comment provided by engineer. */
@@ -3459,7 +3567,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Consumo di batteria ridotto";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "Rifiuta";
 
 /* No comment provided by engineer. */
@@ -3539,6 +3648,9 @@
 
 /* No comment provided by engineer. */
 "Reset" = "Ripristina";
+
+/* No comment provided by engineer. */
+"Reset all hints" = "Ripristina tutti i suggerimenti";
 
 /* No comment provided by engineer. */
 "Reset all statistics" = "Azzera tutte le statistiche";
@@ -3694,6 +3806,9 @@
 "Scan server QR code" = "Scansiona codice QR del server";
 
 /* No comment provided by engineer. */
+"search" = "cerca";
+
+/* No comment provided by engineer. */
 "Search" = "Cerca";
 
 /* No comment provided by engineer. */
@@ -3776,6 +3891,9 @@
 
 /* No comment provided by engineer. */
 "Send live message" = "Invia messaggio in diretta";
+
+/* No comment provided by engineer. */
+"Send message to enable calls." = "Invia un messaggio per attivare le chiamate.";
 
 /* No comment provided by engineer. */
 "Send messages directly when IP address is protected and your or destination server does not support private routing." = "Invia messaggi direttamente quando l'indirizzo IP è protetto e il tuo server o quello di destinazione non supporta l'instradamento privato.";
@@ -3956,6 +4074,9 @@
 
 /* No comment provided by engineer. */
 "Share address with contacts?" = "Condividere l'indirizzo con i contatti?";
+
+/* No comment provided by engineer. */
+"Share from other apps." = "Condividi da altre app.";
 
 /* No comment provided by engineer. */
 "Share link" = "Condividi link";
@@ -4381,7 +4502,13 @@
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Per verificare la crittografia end-to-end con il tuo contatto, confrontate (o scansionate) il codice sui vostri dispositivi.";
 
 /* No comment provided by engineer. */
+"Toggle chat list:" = "Cambia elenco chat:";
+
+/* No comment provided by engineer. */
 "Toggle incognito when connecting." = "Attiva/disattiva l'incognito quando ti colleghi.";
+
+/* No comment provided by engineer. */
+"Toolbar opacity" = "Opacità barra degli strumenti";
 
 /* No comment provided by engineer. */
 "Total" = "Totale";
@@ -4431,7 +4558,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Stato di migrazione imprevisto";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "Non pref.";
 
 /* No comment provided by engineer. */
@@ -4486,12 +4613,15 @@
 "Unlock app" = "Sblocca l'app";
 
 /* No comment provided by engineer. */
+"unmute" = "riattiva notifiche";
+
+/* swipe action */
 "Unmute" = "Riattiva notifiche";
 
 /* No comment provided by engineer. */
 "unprotected" = "non protetto";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "Non letto";
 
 /* No comment provided by engineer. */
@@ -4579,6 +4709,9 @@
 "Use the app while in the call." = "Usa l'app mentre sei in chiamata.";
 
 /* No comment provided by engineer. */
+"Use the app with one hand." = "Usa l'app con una mano sola.";
+
+/* No comment provided by engineer. */
 "User profile" = "Profilo utente";
 
 /* No comment provided by engineer. */
@@ -4631,6 +4764,9 @@
 
 /* No comment provided by engineer. */
 "Via secure quantum resistant protocol." = "Tramite protocollo sicuro resistente alla quantistica.";
+
+/* No comment provided by engineer. */
+"video" = "video";
 
 /* No comment provided by engineer. */
 "Video call" = "Videochiamata";
@@ -4843,6 +4979,9 @@
 "You can accept calls from lock screen, without device and app authentication." = "Puoi accettare chiamate dalla schermata di blocco, senza l'autenticazione del dispositivo e dell'app.";
 
 /* No comment provided by engineer. */
+"You can change it in Appearance settings." = "Puoi cambiarlo nelle impostazioni dell'aspetto.";
+
+/* No comment provided by engineer. */
 "You can create it later" = "Puoi crearlo più tardi";
 
 /* No comment provided by engineer. */
@@ -4864,6 +5003,9 @@
 "You can now chat with %@" = "Ora puoi inviare messaggi a %@";
 
 /* No comment provided by engineer. */
+"You can send messages to %@ from Archived contacts." = "Puoi inviare messaggi a %@ dai contatti archiviati.";
+
+/* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "Puoi impostare l'anteprima della notifica nella schermata di blocco tramite le impostazioni.";
 
 /* No comment provided by engineer. */
@@ -4877,6 +5019,9 @@
 
 /* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "Puoi avviare la chat via Impostazioni / Database o riavviando l'app";
+
+/* No comment provided by engineer. */
+"You can still view conversation with %@ in the list of chats." = "Puoi ancora vedere la conversazione con %@ nell'elenco delle chat.";
 
 /* No comment provided by engineer. */
 "You can turn on SimpleX Lock via Settings." = "Puoi attivare SimpleX Lock tramite le impostazioni.";
@@ -4937,6 +5082,9 @@
 
 /* No comment provided by engineer. */
 "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "Devi usare la versione più recente del tuo database della chat SOLO su un dispositivo, altrimenti potresti non ricevere più i messaggi da alcuni contatti.";
+
+/* No comment provided by engineer. */
+"You need to allow your contact to call to be able to call them." = "Devi consentire le chiamate al tuo contatto per poterlo chiamare.";
 
 /* No comment provided by engineer. */
 "You need to allow your contact to send voice messages to be able to send them." = "Devi consentire al tuo contatto di inviare messaggi vocali per poterli inviare anche tu.";

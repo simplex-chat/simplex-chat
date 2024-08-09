@@ -338,7 +338,8 @@
 "Accent" = "Principale";
 
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "Accepter";
 
 /* No comment provided by engineer. */
@@ -347,7 +348,8 @@
 /* notification body */
 "Accept contact request from %@?" = "Accepter la demande de contact de %@ ?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "Accepter en incognito";
 
 /* call status */
@@ -882,7 +884,7 @@
 /* No comment provided by engineer. */
 "Chunks uploaded" = "Chunks téléversés";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "Effacer";
 
 /* No comment provided by engineer. */
@@ -1284,7 +1286,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "par défaut (oui)";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "Supprimer";
 
 /* No comment provided by engineer. */
@@ -1999,7 +2002,7 @@
 /* No comment provided by engineer. */
 "Faster joining and more reliable messages." = "Connexion plus rapide et messages plus fiables.";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "Favoris";
 
 /* No comment provided by engineer. */
@@ -2515,7 +2518,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "Interface en japonais";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "Rejoindre";
 
 /* No comment provided by engineer. */
@@ -2566,7 +2569,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "En savoir plus";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "Quitter";
 
 /* No comment provided by engineer. */
@@ -2830,13 +2833,13 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Différents profils de chat";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Mute" = "Muet";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "Mute en cas d'inactivité !";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "Nom";
 
 /* No comment provided by engineer. */
@@ -3348,7 +3351,7 @@
 /* chat item menu */
 "React…" = "Réagissez…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "Lire";
 
 /* No comment provided by engineer. */
@@ -3450,7 +3453,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Réduction de la consommation de batterie";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "Rejeter";
 
 /* No comment provided by engineer. */
@@ -4410,7 +4414,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "État de la migration inattendu";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "Unfav.";
 
 /* No comment provided by engineer. */
@@ -4464,13 +4468,13 @@
 /* authentication reason */
 "Unlock app" = "Déverrouiller l'app";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unmute" = "Démute";
 
 /* No comment provided by engineer. */
 "unprotected" = "non protégé";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "Non lu";
 
 /* No comment provided by engineer. */

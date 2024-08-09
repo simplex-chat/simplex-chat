@@ -412,7 +412,7 @@
     <string name="smp_servers_delete_server">حذف الخادم</string>
     <string name="error_updating_link_for_group">خطأ في تحديث رابط المجموعة</string>
     <string name="simplex_link_mode_description">الوصف</string>
-    <string name="icon_descr_expand_role">توسيع اختيار الدور</string>
+    <string name="icon_descr_expand_role">توسيع تحديد الدور</string>
     <string name="group_invitation_expired">انتهت صلاحية دعوة المجموعة</string>
     <string name="alert_title_no_group">المجموعة غير موجودة!</string>
     <string name="export_theme">تصدير السمة</string>
@@ -743,7 +743,7 @@
     <string name="user_mute">كتم</string>
     <string name="message_reactions_are_prohibited">ردود الفعل الرسائل ممنوعة في هذه المجموعة.</string>
     <string name="icon_descr_more_button">المزيد</string>
-    <string name="network_settings_title">إعدادات الشبكة</string>
+    <string name="network_settings_title">إعدادات متقدّمة</string>
     <string name="icon_descr_call_missed">مكالمة فائتة</string>
     <string name="v4_5_message_draft">مسودة الرسالة</string>
     <string name="v4_5_multiple_chat_profiles">ملفات تعريف دردشة متعددة</string>
@@ -977,7 +977,7 @@
     <string name="share_verb">مشاركة</string>
     <string name="send_verb">إرسال</string>
     <string name="save_passphrase_and_open_chat">حفظ كلمة المرور وفتح الدردشة</string>
-    <string name="select_contacts">اختيار جهات اتصال</string>
+    <string name="select_contacts">حدد جهات اتصال</string>
     <string name="accept_feature_set_1_day">تعيين يوم واحد</string>
     <string name="custom_time_unit_seconds">ثواني</string>
     <string name="sent_message">رسالة مرسلة</string>
@@ -997,7 +997,7 @@
     <string name="rcv_conn_event_verification_code_reset">تم تغيير رمز الأمان</string>
     <string name="send_receipts">تقارير الارسال</string>
     <string name="info_row_sent_at">تم إرساله في</string>
-    <string name="custom_time_picker_select">اختيار</string>
+    <string name="custom_time_picker_select">حدد</string>
     <string name="sending_delivery_receipts_will_be_enabled">إرسال تقارير الاستلام سيتم تفعيله لجميع جهات الاتصال.</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">سيتم تفعيل إرسال تقارير الاستلام لجميع جهات الاتصال ذات حسابات دردشة ظاهرة</string>
     <string name="smp_server_test_secure_queue">قائمة انتظار آمنة</string>
@@ -1038,7 +1038,7 @@
     <string name="skip_inviting_button">تخطي دعوة الأعضاء</string>
     <string name="stop_chat_question">إيقاف الدردشة؟</string>
     <string name="show_call_on_lock_screen">عرض</string>
-    <string name="non_fatal_errors_occured_during_import">حدثت بعض الأخطاء غير الفادحة أثناء الاستيراد - قد ترى وحدة تحكم الدردشة لمزيد من التفاصيل.</string>
+    <string name="non_fatal_errors_occured_during_import">حدثت بعض الأخطاء غير الفادحة أثناء الاستيراد:</string>
     <string name="settings_section_title_socks">وكيل SOCKS</string>
     <string name="v4_2_security_assessment_desc">تم تدقيق أمان SimpleX Chat بواسطة Trail of Bits.</string>
     <string name="stop_chat_confirmation">إيقاف</string>
@@ -1797,7 +1797,7 @@
     <string name="network_smp_proxy_mode_never">مطلقًا</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">سيطلب التطبيق تأكيد التنزيلات من خوادم ملفات غير معروفة (باستثناء .onion أو عند تفعيل وكيل SOCKS).</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">أرسل الرسائل مباشرة عندما يكون عنوان IP محميًا ولا يدعم الخادم الوجهة لديك التوجيه الخاص.</string>
-    <string name="network_smp_proxy_mode_unknown">مُرحلات غير معروفة</string>
+    <string name="network_smp_proxy_mode_unknown">خوادم غير معروفة</string>
     <string name="file_not_approved_title">خوادم غير معروفة!</string>
     <string name="file_not_approved_descr">بدون تور أو VPN، سيكون عنوان IP الخاص بك مرئيًا لمُرحلات XFTP هذه:
 \n%1$s.</string>
@@ -2007,10 +2007,10 @@
     <string name="delete_without_notification">احذف دون إشعار</string>
     <string name="keep_conversation">أبقِ المحادثة</string>
     <string name="only_delete_conversation">احذف المحادثة فقط</string>
-    <string name="you_can_still_send_messages_to_contact">لا يزال بإمكانك إرسال الرسائل إلى %1$s من الدردشات المحذوفة.</string>
+    <string name="you_can_still_send_messages_to_contact">بإمكانك إرسال رسائل إلى %1$s من جهات الاتصال المؤرشفة.</string>
     <string name="paste_link">ألصق الرابط</string>
     <string name="contact_list_header_title">جهات اتصالك</string>
-    <string name="one_hand_ui">واجهة مستخدم بيد واحدة</string>
+    <string name="one_hand_ui">شريط أدوات الدردشة القابل للوصول</string>
     <string name="cant_call_contact_deleted_alert_text">حُذفت جهة الاتصال.</string>
     <string name="allow_calls_question">السماح بالمكالمات؟</string>
     <string name="cant_call_member_send_message_alert_text">أرسل رسالة لتفعيل المكالمات.</string>
@@ -2018,11 +2018,37 @@
     <string name="cant_call_member_alert_title">لا يمكن مكالمة أحد أعضاء المجموعة</string>
     <string name="cant_send_message_to_member_alert_title">لا يمكن إرسال رسالة إلى عضو المجموعة</string>
     <string name="cant_call_contact_connecting_wait_alert_text">جارِ الاتصال بجهة الاتصال، يُرجى الانتظار أو التحقق لاحقًا!</string>
-    <string name="deleted_chats">حُذفت الدردشات</string>
+    <string name="deleted_chats">جهات الاتصال المؤرشفة</string>
     <string name="action_button_add_members">ادعُ</string>
     <string name="no_filtered_contacts">لا توجد جهات اتصال مُصفاة</string>
     <string name="cant_call_contact_alert_title">لا يمكن مكالمة جهة الاتصال</string>
     <string name="you_can_still_view_conversation_with_contact">لا يزال بإمكانك عرض المحادثة مع %1$s في قائمة الدردشات.</string>
     <string name="you_need_to_allow_calls">يجب عليك السماح لجهات اتصالك بالاتصال حتى تتمكن من الاتصال بها.</string>
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">يُرجى الطلب من جهة اتصالك تفعيل المكالمات.</string>
+    <string name="delete_members_messages__question">حذف %d رسائل الأعضاء؟</string>
+    <string name="delete_messages_mark_deleted_warning">سيتم وضع علامة على الرسائل للحذف. سيتمكن المستلم/(المستلمون) من الكشف عن هذه الرسائل.</string>
+    <string name="select_verb">حدد</string>
+    <string name="moderate_messages_will_be_deleted_warning">سيتم حذف الرسائل لجميع الأعضاء.</string>
+    <string name="moderate_messages_will_be_marked_warning">سيتم وضع علامة على الرسائل على أنها تحت الإشراف لجميع الأعضاء.</string>
+    <string name="compose_message_placeholder">الرسالة</string>
+    <string name="selected_chat_items_nothing_selected">لا شيء محدد</string>
+    <string name="selected_chat_items_selected_n">محدّد %d</string>
+    <string name="media_and_file_servers">خوادم الوسائط والملفات</string>
+    <string name="message_servers">خوادم الرسائل</string>
+    <string name="chat_database_exported_continue">متابعة</string>
+    <string name="network_socks_proxy">وكيل SOCKS</string>
+    <string name="chat_database_exported_migrate">يمكنك ترحيل قاعدة البيانات المُصدرة.</string>
+    <string name="chat_database_exported_save">يمكنك حفظ الأرشيف المُصدر.</string>
+    <string name="v6_0_connection_servers_status_descr">حالة الاتصال والخوادم.</string>
+    <string name="v6_0_connect_faster_descr">تواصل مع أصدقائك بشكل أسرع</string>
+    <string name="v6_0_reachable_chat_toolbar">شريط أدوات الدردشة يمكن الوصول إليه 👋</string>
+    <string name="v6_0_your_contacts_descr">أرشفة جهات الاتصال للدردشة لاحقًا.</string>
+    <string name="v6_0_reachable_chat_toolbar_descr">استخدم التطبيق بيد واحدة.</string>
+    <string name="chat_database_exported_title">صُدرت قاعدة بيانات الدردشة</string>
+    <string name="v6_0_connection_servers_status">التحكم في شبكتك</string>
+    <string name="v6_0_delete_many_messages_descr">حذف ما يصل إلى 20 رسالة في وقت واحد.</string>
+    <string name="chat_database_exported_not_all_files">لم يتم تصدير بعض الملفات</string>
+    <string name="v6_0_private_routing_descr">يحمي عنوان IP الخاص بك واتصالاتك.</string>
+    <string name="network_option_tcp_connection">اتصال TCP</string>
+    <string name="network_options_save_and_reconnect">حفظ وإعادة الاتصال</string>
 </resources>

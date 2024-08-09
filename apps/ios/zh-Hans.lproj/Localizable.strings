@@ -299,7 +299,8 @@
 "above, then choose:" = "上面，然后选择：";
 
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "接受";
 
 /* No comment provided by engineer. */
@@ -308,7 +309,8 @@
 /* notification body */
 "Accept contact request from %@?" = "接受来自 %@ 的联系人请求？";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "接受隐身聊天";
 
 /* call status */
@@ -762,7 +764,7 @@
 /* No comment provided by engineer. */
 "Choose from library" = "从库中选择";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "清除";
 
 /* No comment provided by engineer. */
@@ -1092,7 +1094,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "默认 (是)";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "删除";
 
 /* No comment provided by engineer. */
@@ -1714,7 +1717,7 @@
 /* No comment provided by engineer. */
 "Faster joining and more reliable messages." = "加入速度更快、信息更可靠。";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "最喜欢";
 
 /* No comment provided by engineer. */
@@ -2173,7 +2176,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "日语界面";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "加入";
 
 /* No comment provided by engineer. */
@@ -2215,7 +2218,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "了解更多";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "离开";
 
 /* No comment provided by engineer. */
@@ -2431,13 +2434,13 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "多个聊天资料";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Mute" = "静音";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "不活动时静音！";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "名称";
 
 /* No comment provided by engineer. */
@@ -2868,7 +2871,7 @@
 /* chat item menu */
 "React…" = "回应…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "已读";
 
 /* No comment provided by engineer. */
@@ -2940,7 +2943,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "减少电池使用量";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "拒绝";
 
 /* No comment provided by engineer. */
@@ -3729,7 +3733,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "未预料的迁移状态";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "取消最喜欢";
 
 /* No comment provided by engineer. */
@@ -3777,10 +3781,10 @@
 /* authentication reason */
 "Unlock app" = "解锁应用程序";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unmute" = "取消静音";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "未读";
 
 /* No comment provided by engineer. */

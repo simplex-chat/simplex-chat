@@ -23,7 +23,7 @@ let GROUP_DEFAULT_NTF_PREVIEW_MODE = "ntfPreviewMode"
 public let GROUP_DEFAULT_NTF_ENABLE_LOCAL = "ntfEnableLocal" // no longer used
 public let GROUP_DEFAULT_NTF_ENABLE_PERIODIC = "ntfEnablePeriodic" // no longer used
 // replaces DEFAULT_PERFORM_LA
-let GROUP_DEFAULT_PERFORM_LA = "performLocalAuthentication"
+let GROUP_DEFAULT_APP_LOCAL_AUTH_ENABLED = "appLocalAuthEnabled"
 public let GROUP_DEFAULT_ALLOW_SHARE_EXTENSION = "allowShareExtension"
 // replaces DEFAULT_PRIVACY_LINK_PREVIEWS
 let GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
@@ -82,7 +82,7 @@ public func registerGroupDefaults() {
         GROUP_DEFAULT_INCOGNITO: false,
         GROUP_DEFAULT_STORE_DB_PASSPHRASE: true,
         GROUP_DEFAULT_INITIAL_RANDOM_DB_PASSPHRASE: false,
-        GROUP_DEFAULT_PERFORM_LA: false,
+        GROUP_DEFAULT_APP_LOCAL_AUTH_ENABLED: true,
         GROUP_DEFAULT_ALLOW_SHARE_EXTENSION: false,
         GROUP_DEFAULT_PRIVACY_LINK_PREVIEWS: false,
         GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES: true,
@@ -205,7 +205,7 @@ public let ntfPreviewModeGroupDefault = EnumDefault<NotificationPreviewMode>(
 
 public let incognitoGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_INCOGNITO)
 
-public let performLAGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PERFORM_LA)
+public let appLocalAuthEnabledGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_APP_LOCAL_AUTH_ENABLED)
 
 public let allowShareExtensionGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_ALLOW_SHARE_EXTENSION)
 

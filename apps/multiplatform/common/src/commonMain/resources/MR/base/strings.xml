@@ -655,6 +655,7 @@
 
   <!-- NewChatView.kt -->
   <string name="new_chat">New chat</string>
+  <string name="new_message">New message</string>
   <string name="add_contact_tab">Add contact</string>
   <string name="scan_paste_link">Scan / Paste link</string>
   <string name="paste_link">Paste link</string>
@@ -732,7 +733,6 @@
   <string name="smp_servers_delete_server">Delete server</string>
   <string name="smp_servers_per_user">The servers for new connections of your current chat profile</string>
   <string name="smp_save_servers_question">Save servers?</string>
-  <string name="update_network_settings_question">Update network settings?</string>
   <string name="media_and_file_servers">Media &amp; file servers</string>
   <string name="xftp_servers">XFTP servers</string>
   <string name="xftp_servers_configured">Configured XFTP servers</string>
@@ -870,6 +870,7 @@
   <string name="dont_create_address">Don\'t create address</string>
   <string name="you_can_create_it_later">You can create it later</string>
   <string name="you_can_make_address_visible_via_settings">You can make it visible to your SimpleX contacts via Settings.</string>
+  <string name="invite_friends_short">Invite</string>
 
   <!-- User profile details - UserProfileView.kt -->
   <string name="display_name__field">Profile name:</string>
@@ -904,6 +905,7 @@
   <string name="display_name">Enter your name:</string>
   <string name="create_profile_button">Create</string>
   <string name="create_another_profile_button">Create profile</string>
+  <string name="create_address_button">Create</string>
   <string name="invalid_name">Invalid name!</string>
   <string name="correct_name_to">Correct name to %s?</string>
   <string name="about_simplex">About SimpleX</string>
@@ -956,13 +958,13 @@
   <string name="error_initializing_web_view">Error initializing WebView. Update your system to the new version. Please contact developers.\nError: %s</string>
 
   <!-- SimpleXInfo -->
-  <string name="next_generation_of_private_messaging">The next generation of private messaging</string>
+  <string name="next_generation_of_private_messaging">The next generation\nof private messaging</string>
   <string name="privacy_redefined">Privacy redefined</string>
-  <string name="first_platform_without_user_ids">The 1st platform without any user identifiers – private by design.</string>
-  <string name="immune_to_spam_and_abuse">Immune to spam and abuse</string>
-  <string name="people_can_connect_only_via_links_you_share">People can connect to you only via the links you share.</string>
+  <string name="first_platform_without_user_ids">No user identifiers.</string>
+  <string name="immune_to_spam_and_abuse">Immune to spam</string>
+  <string name="people_can_connect_only_via_links_you_share">You decide who can connect.</string>
   <string name="decentralized">Decentralized</string>
-  <string name="opensource_protocol_and_code_anybody_can_run_servers">Open-source protocol and code – anybody can run the servers.</string>
+  <string name="opensource_protocol_and_code_anybody_can_run_servers">Anybody can host servers.</string>
   <string name="create_your_profile">Create your profile</string>
   <string name="make_private_connection">Make a private connection</string>
   <string name="migrate_from_another_device">Migrate from another device</string>
@@ -985,8 +987,8 @@
   <string name="onboarding_notifications_mode_periodic">Periodic</string>
   <string name="onboarding_notifications_mode_service">Instant</string>
   <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Best for battery</b>. You will receive notifications only when the app is running (NO background service).]]></string>
-  <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Good for battery</b>. Background service checks messages every 10 minutes. You may miss calls or urgent messages.]]></string>
-  <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Uses more battery</b>! Background service always runs – notifications are shown as soon as messages are available.]]></string>
+  <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Good for battery</b>. App checks messages every 10 minutes. You may miss calls or urgent messages.]]></string>
+  <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Uses more battery</b>! App always runs in background – notifications are shown instantly.]]></string>
 
   <!-- SetupDatabasePassphrase.kt -->
   <string name="setup_database_passphrase">Setup database passphrase</string>
