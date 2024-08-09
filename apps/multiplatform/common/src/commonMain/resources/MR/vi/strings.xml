@@ -171,12 +171,12 @@
     <string name="both_you_and_your_contact_can_send_disappearing">Cả bạn và liên hệ của bạn đều có thể gửi tin nhắn tự xóa.</string>
     <string name="both_you_and_your_contact_can_add_message_reactions">Cả bạn và liên hệ của bạn đều có thể thả cảm xúc tin nhắn.</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Xin lưu ý</b>: relay tin nhắn và tệp được kết nối thông qua SOCKS proxy. Các cuộc gọi và bản xem trước liên kết sử dụng kết nối trực tiếp.]]></string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Tốt cho pin</b>. Dịch vụ nền kiểm tra tin nhắn 10 phút một lần. Bạn có thể bỏ lỡ các cuộc gọi hoặc tin nhắn khẩn cấp.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Tốt cho pin</b>. Ứng dụng kiểm tra tin nhắn 10 phút một lần. Bạn có thể bỏ lỡ các cuộc gọi hoặc tin nhắn khẩn cấp.</string>
     <string name="network_smp_proxy_mode_always">Luôn luôn</string>
     <string name="callstatus_calling">đang gọi…</string>
     <string name="v4_5_transport_isolation_descr">Theo hồ sơ trò chuyện (mặc định) hoặc theo kết nối (BETA).</string>
     <string name="callstatus_in_progress">cuộc gọi đang chờ</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Sử dụng nhiều pin hơn</b>! Dịch vụ chạy nền luôn luôn chạy - thông báo sẽ được hiển thị ngay khi nhận được tin nhắn.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Sử dụng nhiều pin hơn</b>! Ứng dụng luôn luôn chạy - thông báo sẽ được hiển thị ngay lập tức.</string>
     <string name="migrate_from_device_archive_will_be_deleted"><![CDATA[<b>Cảnh báo</b>: kho lưu trữ sẽ bị xóa.]]></string>
     <string name="icon_descr_call_progress">Cuộc gọi đang chờ</string>
     <string name="network_smp_proxy_fallback_allow_downgrade">Cho phép hạ cấp</string>
@@ -556,5 +556,15 @@
     <string name="cant_call_member_alert_title">Không thể gọi thành viên nhóm</string>
     <string name="confirm_delete_contact_question">Xác nhận xóa liên hệ?</string>
     <string name="contact_deleted">Liên hệ đã bị xóa!</string>
-    <string name="deleted_chats">Đã xóa các cuộc trò chuyện</string>
+    <string name="deleted_chats">Các liên hệ đã lưu trữ</string>
+    <string name="create_address_button">Tạo</string>
+    <string name="v6_0_privacy_blur">Mờ hình ảnh để riêng tư hơn.</string>
+    <string name="v6_0_connection_servers_status">Kiểm soát mạng của bạn</string>
+    <string name="v6_0_connection_servers_status_descr">Kết nối và trạng thái máy chủ.</string>
+    <string name="network_settings_title">Cài đặt nâng cao</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">Bất kỳ ai cũng có thể tạo máy chủ.</string>
+    <string name="chat_database_exported_continue">Tiếp tục</string>
+    <string name="v6_0_connect_faster_descr">Kết nối nhanh hơn với bạn bè.</string>
+    <string name="chat_database_exported_title">Cơ sở dữ liệu SimpleX Chat đã được xuất</string>
+    <string name="v6_0_your_contacts_descr">Lưu trữ các liên hệ để trò chuyện sau.</string>
 </resources>
