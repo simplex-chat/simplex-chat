@@ -947,6 +947,7 @@
       </trans-unit>
       <trans-unit id="Archive contacts to chat later." xml:space="preserve">
         <source>Archive contacts to chat later.</source>
+        <target>Archivia contatti per chattare più tardi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archived contacts" xml:space="preserve">
@@ -1056,6 +1057,7 @@
       </trans-unit>
       <trans-unit id="Better networking" xml:space="preserve">
         <source>Better networking</source>
+        <target>Rete migliorata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
@@ -1100,6 +1102,7 @@
       </trans-unit>
       <trans-unit id="Blur for better privacy." xml:space="preserve">
         <source>Blur for better privacy.</source>
+        <target>Sfoca per una privacy maggiore.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Blur media" xml:space="preserve">
@@ -1325,6 +1328,7 @@
       </trans-unit>
       <trans-unit id="Chat list" xml:space="preserve">
         <source>Chat list</source>
+        <target>Elenco delle chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat migrated!" xml:space="preserve">
@@ -1414,6 +1418,7 @@
       </trans-unit>
       <trans-unit id="Color chats with the new themes." xml:space="preserve">
         <source>Color chats with the new themes.</source>
+        <target>Colora le chat con i nuovi temi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Color mode" xml:space="preserve">
@@ -1518,6 +1523,7 @@
       </trans-unit>
       <trans-unit id="Connect to your friends faster." xml:space="preserve">
         <source>Connect to your friends faster.</source>
+        <target>Connettiti più velocemente ai tuoi amici.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to yourself?" xml:space="preserve">
@@ -4390,6 +4396,7 @@ Questo è il tuo link per il gruppo %@!</target>
       </trans-unit>
       <trans-unit id="New chat experience 🎉" xml:space="preserve">
         <source>New chat experience 🎉</source>
+        <target>Una nuova esperienza di chat 🎉</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New contact request" xml:space="preserve">
@@ -4424,6 +4431,7 @@ Questo è il tuo link per il gruppo %@!</target>
       </trans-unit>
       <trans-unit id="New media options" xml:space="preserve">
         <source>New media options</source>
+        <target>Nuove opzioni multimediali</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New member role" xml:space="preserve">
@@ -4836,6 +4844,7 @@ Richiede l'attivazione della VPN.</target>
       </trans-unit>
       <trans-unit id="Play from the chat list." xml:space="preserve">
         <source>Play from the chat list.</source>
+        <target>Riproduci dall'elenco delle chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable calls." xml:space="preserve">
@@ -5422,6 +5431,7 @@ Attivalo nelle impostazioni *Rete e server*.</target>
       </trans-unit>
       <trans-unit id="Reset all hints" xml:space="preserve">
         <source>Reset all hints</source>
+        <target>Ripristina tutti i suggerimenti</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reset all statistics" xml:space="preserve">
@@ -6081,6 +6091,7 @@ Attivalo nelle impostazioni *Rete e server*.</target>
       </trans-unit>
       <trans-unit id="Share from other apps." xml:space="preserve">
         <source>Share from other apps.</source>
+        <target>Condividi da altre app.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share link" xml:space="preserve">
@@ -6769,6 +6780,7 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
       </trans-unit>
       <trans-unit id="Toggle chat list:" xml:space="preserve">
         <source>Toggle chat list:</source>
+        <target>Cambia elenco chat:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
@@ -6778,6 +6790,7 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
       </trans-unit>
       <trans-unit id="Toolbar opacity" xml:space="preserve">
         <source>Toolbar opacity</source>
+        <target>Opacità barra degli strumenti</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">
@@ -7436,6 +7449,7 @@ Ripetere la richiesta di ingresso?</target>
       </trans-unit>
       <trans-unit id="You can change it in Appearance settings." xml:space="preserve">
         <source>You can change it in Appearance settings.</source>
+        <target>Puoi cambiarlo nelle impostazioni dell'aspetto.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">

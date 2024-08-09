@@ -596,6 +596,9 @@
 "Archive and upload" = "Archiválás és feltöltés";
 
 /* No comment provided by engineer. */
+"Archive contacts to chat later." = "Ismerősök archiválása a későbbi csevegéshez.";
+
+/* No comment provided by engineer. */
 "Archived contacts" = "Archivált ismerősök";
 
 /* No comment provided by engineer. */
@@ -674,6 +677,9 @@
 "Better messages" = "Jobb üzenetek";
 
 /* No comment provided by engineer. */
+"Better networking" = "Jobb hálózatkezelés";
+
+/* No comment provided by engineer. */
 "Black" = "Fekete";
 
 /* No comment provided by engineer. */
@@ -705,6 +711,9 @@
 
 /* No comment provided by engineer. */
 "Blocked by admin" = "Letiltva az admin által";
+
+/* No comment provided by engineer. */
+"Blur for better privacy." = "Elhomályosítás a jobb adatvédelemért.";
 
 /* No comment provided by engineer. */
 "Blur media" = "Média elhomályosítása";
@@ -873,6 +882,9 @@
 "Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." = "A csevegés leállt. Ha már használta ezt az adatbázist egy másik eszközön, úgy visszaállítás szükséges a csevegés megkezdése előtt.";
 
 /* No comment provided by engineer. */
+"Chat list" = "Csevegőlista";
+
+/* No comment provided by engineer. */
 "Chat migrated!" = "A csevegés átköltöztetve!";
 
 /* No comment provided by engineer. */
@@ -922,6 +934,9 @@
 
 /* No comment provided by engineer. */
 "Clear verification" = "Hitelesítés törlése";
+
+/* No comment provided by engineer. */
+"Color chats with the new themes." = "Csevegések színezése új témákkal.";
 
 /* No comment provided by engineer. */
 "Color mode" = "Színmód";
@@ -991,6 +1006,9 @@
 
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "Kapcsolódás a SimpleX Chat fejlesztőkhöz.";
+
+/* No comment provided by engineer. */
+"Connect to your friends faster." = "Kapcsolódjon gyorsabban az ismerőseihez.";
 
 /* No comment provided by engineer. */
 "Connect to yourself?" = "Kapcsolódás saját magához?";
@@ -2945,7 +2963,7 @@
 "New chat" = "Új beszélgetés";
 
 /* No comment provided by engineer. */
-"New Chat" = "Új csevegés";
+"New chat experience 🎉" = "Új csevegési élmény 🎉";
 
 /* notification */
 "New contact request" = "Új kapcsolattartási kérelem";
@@ -2964,6 +2982,9 @@
 
 /* No comment provided by engineer. */
 "New in %@" = "Újdonságok a(z) %@ verzióban";
+
+/* No comment provided by engineer. */
+"New media options" = "Új médiabeállítások";
 
 /* No comment provided by engineer. */
 "New member role" = "Új tag szerepköre";
@@ -3251,6 +3272,9 @@
 
 /* No comment provided by engineer. */
 "PING interval" = "PING időköze";
+
+/* No comment provided by engineer. */
+"Play from the chat list." = "Lejátszás a csevegési listából.";
 
 /* No comment provided by engineer. */
 "Please ask your contact to enable calls." = "Kérje meg az ismerősét, hogy engedélyezze a hívásokat.";
@@ -3624,6 +3648,9 @@
 
 /* No comment provided by engineer. */
 "Reset" = "Alaphelyzetbe állítás";
+
+/* No comment provided by engineer. */
+"Reset all hints" = "Tippek visszaállítása";
 
 /* No comment provided by engineer. */
 "Reset all statistics" = "Minden statisztika visszaállítása";
@@ -4049,6 +4076,9 @@
 "Share address with contacts?" = "Megosztja a címet az ismerőseivel?";
 
 /* No comment provided by engineer. */
+"Share from other apps." = "Megosztás más alkalmazásokból.";
+
+/* No comment provided by engineer. */
 "Share link" = "Hivatkozás megosztása";
 
 /* No comment provided by engineer. */
@@ -4472,7 +4502,13 @@
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "A végpontok közötti titkosítás ellenőrzéséhez hasonlítsa össze (vagy olvassa be a QR-kódot) az ismerőse eszközén lévő kóddal.";
 
 /* No comment provided by engineer. */
+"Toggle chat list:" = "Csevegőlista átváltása:";
+
+/* No comment provided by engineer. */
 "Toggle incognito when connecting." = "Inkognitó mód kapcsolódáskor.";
+
+/* No comment provided by engineer. */
+"Toolbar opacity" = "Eszköztár átlátszatlansága";
 
 /* No comment provided by engineer. */
 "Total" = "Összesen";
@@ -4941,6 +4977,9 @@
 
 /* No comment provided by engineer. */
 "You can accept calls from lock screen, without device and app authentication." = "Hívásokat fogadhat a lezárási képernyőről, eszköz- és alkalmazáshitelesítés nélkül.";
+
+/* No comment provided by engineer. */
+"You can change it in Appearance settings." = "Ezt a „Megjelenés” menüben módosíthatja.";
 
 /* No comment provided by engineer. */
 "You can create it later" = "Létrehozás később";

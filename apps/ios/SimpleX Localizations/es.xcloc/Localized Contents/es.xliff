@@ -947,6 +947,7 @@
       </trans-unit>
       <trans-unit id="Archive contacts to chat later." xml:space="preserve">
         <source>Archive contacts to chat later.</source>
+        <target>Archivar contactos para charlar más tarde.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archived contacts" xml:space="preserve">
@@ -1056,6 +1057,7 @@
       </trans-unit>
       <trans-unit id="Better networking" xml:space="preserve">
         <source>Better networking</source>
+        <target>Uso de red mejorado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
@@ -1100,6 +1102,7 @@
       </trans-unit>
       <trans-unit id="Blur for better privacy." xml:space="preserve">
         <source>Blur for better privacy.</source>
+        <target>Difuminar para más privacidad.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Blur media" xml:space="preserve">
@@ -1325,6 +1328,7 @@
       </trans-unit>
       <trans-unit id="Chat list" xml:space="preserve">
         <source>Chat list</source>
+        <target>Lista de chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat migrated!" xml:space="preserve">
@@ -1414,6 +1418,7 @@
       </trans-unit>
       <trans-unit id="Color chats with the new themes." xml:space="preserve">
         <source>Color chats with the new themes.</source>
+        <target>Colorea los chats con los nuevos temas.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Color mode" xml:space="preserve">
@@ -1518,6 +1523,7 @@
       </trans-unit>
       <trans-unit id="Connect to your friends faster." xml:space="preserve">
         <source>Connect to your friends faster.</source>
+        <target>Conecta más rápido con tus amigos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to yourself?" xml:space="preserve">
@@ -2000,7 +2006,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Delete %lld messages?" xml:space="preserve">
         <source>Delete %lld messages?</source>
-        <target>¿Elimina %lld mensajes?</target>
+        <target>¿Eliminar %lld mensajes?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete address" xml:space="preserve">
@@ -3290,7 +3296,7 @@ Error: %2$@</target>
       </trans-unit>
       <trans-unit id="Fully decentralized – visible only to members." xml:space="preserve">
         <source>Fully decentralized – visible only to members.</source>
-        <target>Completamente descentralizado: sólo visible a los miembros.</target>
+        <target>Completamente descentralizado y sólo visible para los miembros.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fully re-implemented - work in background!" xml:space="preserve">
@@ -4390,6 +4396,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="New chat experience 🎉" xml:space="preserve">
         <source>New chat experience 🎉</source>
+        <target>Nueva experiencia de chat 🎉</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New contact request" xml:space="preserve">
@@ -4424,6 +4431,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="New media options" xml:space="preserve">
         <source>New media options</source>
+        <target>Nuevas opciones multimedia</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New member role" xml:space="preserve">
@@ -4836,6 +4844,7 @@ Requiere activación de la VPN.</target>
       </trans-unit>
       <trans-unit id="Play from the chat list." xml:space="preserve">
         <source>Play from the chat list.</source>
+        <target>Reproduce desde la lista de chats.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please ask your contact to enable calls." xml:space="preserve">
@@ -5422,6 +5431,7 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
       </trans-unit>
       <trans-unit id="Reset all hints" xml:space="preserve">
         <source>Reset all hints</source>
+        <target>Reiniciar todas las pistas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reset all statistics" xml:space="preserve">
@@ -6081,6 +6091,7 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
       </trans-unit>
       <trans-unit id="Share from other apps." xml:space="preserve">
         <source>Share from other apps.</source>
+        <target>Comparte desde otras aplicaciones.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share link" xml:space="preserve">
@@ -6769,6 +6780,7 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
       </trans-unit>
       <trans-unit id="Toggle chat list:" xml:space="preserve">
         <source>Toggle chat list:</source>
+        <target>Alternar lista de chats:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
@@ -6778,6 +6790,7 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
       </trans-unit>
       <trans-unit id="Toolbar opacity" xml:space="preserve">
         <source>Toolbar opacity</source>
+        <target>Opacidad barra</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Total" xml:space="preserve">
@@ -7436,6 +7449,7 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You can change it in Appearance settings." xml:space="preserve">
         <source>You can change it in Appearance settings.</source>
+        <target>Puede cambiarlo desde el menú Apariencia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">
@@ -7747,7 +7761,7 @@ Repeat connection request?</source>
       </trans-unit>
       <trans-unit id="Your profile **%@** will be shared." xml:space="preserve">
         <source>Your profile **%@** will be shared.</source>
-        <target>Tu perfil **%@** será compartido.</target>
+        <target>El perfil **%@** será compartido.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts.&#10;SimpleX servers cannot see your profile." xml:space="preserve">
