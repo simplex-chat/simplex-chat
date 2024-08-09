@@ -2148,4 +2148,5 @@
     <string name="chat_database_exported_migrate">Sie können die exportierte Datenbank migrieren.</string>
     <string name="chat_database_exported_save">Sie können das exportierte Archiv speichern.</string>
     <string name="reset_all_hints">Alle Hinweise zurücksetzen</string>
+    <string name="new_message">Neue Nachricht</string>
 </resources>
