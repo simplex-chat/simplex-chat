@@ -4149,9 +4149,9 @@ This is your link for group %@!</source>
         <target>Mensaje reenviado</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Message may be delivered later if member becomes active." xml:space="preserve">
+      <trans-unit id="Message may be delivered later if member becomes active." xml:space="preserve" approved="no">
         <source>Message may be delivered later if member becomes active.</source>
-        <target>El mensaje puede ser entregado más tarde si el miembro vuelve a estar activo.</target>
+        <target state="translated">El mensaje podría ser entregado más tarde si el miembro vuelve a estar activo.</target>
         <note>item status description</note>
       </trans-unit>
       <trans-unit id="Message queue info" xml:space="preserve">
@@ -4479,9 +4479,9 @@ This is your link for group %@!</source>
         <target>¡Sin dispositivo token!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No direct connection yet, message is forwarded by admin." xml:space="preserve">
+      <trans-unit id="No direct connection yet, message is forwarded by admin." xml:space="preserve" approved="no">
         <source>No direct connection yet, message is forwarded by admin.</source>
-        <target>Aún no hay conexión directa, el mensaje es reenviado por el administrador.</target>
+        <target state="translated">Aún no hay conexión directa con este miembro, el mensaje es reenviado por el administrador.</target>
         <note>item status description</note>
       </trans-unit>
       <trans-unit id="No filtered chats" xml:space="preserve">
@@ -6139,9 +6139,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Estado del mensaje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show percentage" xml:space="preserve">
+      <trans-unit id="Show percentage" xml:space="preserve" approved="no">
         <source>Show percentage</source>
-        <target>Mostrar porcentaje</target>
+        <target state="translated">Mostrar porcentajes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -6641,9 +6641,9 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>Esta configuración afecta a tu perfil actual **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="They can be overridden in contact and group settings." xml:space="preserve">
+      <trans-unit id="They can be overridden in contact and group settings." xml:space="preserve" approved="no">
         <source>They can be overridden in contact and group settings.</source>
-        <target>Se pueden anular en la configuración de contactos.</target>
+        <target state="translated">Se puede modificar desde la configuración particular de cada grupo y contacto.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
