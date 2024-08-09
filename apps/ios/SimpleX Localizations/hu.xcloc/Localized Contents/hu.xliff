@@ -4378,11 +4378,6 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Hálózat állapota</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New Chat" xml:space="preserve">
-        <source>New Chat</source>
-        <target>Új csevegés</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="New Passcode" xml:space="preserve">
         <source>New Passcode</source>
         <target>Új jelkód</target>
