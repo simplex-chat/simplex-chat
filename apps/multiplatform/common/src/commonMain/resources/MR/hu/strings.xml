@@ -2011,7 +2011,7 @@
     <string name="keep_conversation">Beszélgetés megtartása</string>
     <string name="confirm_delete_contact_question">Biztosan törli az ismerőst?</string>
     <string name="info_view_connect_button">kapcsolódás</string>
-    <string name="one_hand_ui">Elérhető csevegő eszköztár</string>
+    <string name="one_hand_ui">Könnyen elérhető eszköztár</string>
     <string name="delete_without_notification">Törlés értesítés nélkül</string>
     <string name="toolbar_settings">Beállítások</string>
     <string name="info_view_search_button">keresés</string>
