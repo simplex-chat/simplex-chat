@@ -26,6 +26,7 @@ import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
+import chat.simplex.common.views.chatlist.statusBarColorAfterCall
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import com.jakewharton.processphoenix.ProcessPhoenix
@@ -276,7 +277,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         @Suppress("DEPRECATION")
         val windowInsetController = ViewCompat.getWindowInsetsController(window.decorView)
 
-        val statusBar = (if (hasTop && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
+        var statusBar = (if (hasTop && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
           backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
         } else {
           if (CurrentColors.value.base == DefaultTheme.SIMPLEX) {
@@ -285,6 +286,12 @@ class SimplexApp: Application(), LifecycleEventObserver {
             backgroundColor
           }
         }).toArgb()
+
+        // SimplexGreen while in call
+        if (window.statusBarColor == SimplexGreen.toArgb()) {
+          statusBarColorAfterCall.intValue = statusBar
+          statusBar = SimplexGreen.toArgb()
+        }
         val navBar = (if (hasBottom && appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
           backgroundColor.mixWith(CurrentColors.value.colors.onBackground, 0.97f)
         } else {
