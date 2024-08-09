@@ -279,7 +279,6 @@ func withConditionalAnimation<Result>(
     }
 }
 
-
 class InvertedTableView: UITableView {
     static let inset = CGFloat(100)
 

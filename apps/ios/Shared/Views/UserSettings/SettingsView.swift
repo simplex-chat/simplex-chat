@@ -99,7 +99,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_ENCRYPTION_STARTED: false,
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN: false,
-    DEFAULT_TOOLBAR_MATERIAL: ToolbarMaterial.bar.rawValue,
+    DEFAULT_TOOLBAR_MATERIAL: ToolbarMaterial.defaultMaterial,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
