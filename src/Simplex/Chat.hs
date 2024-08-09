@@ -94,7 +94,7 @@ import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, getNetworkConfig', ipAddressProtected, withLockMap)
+import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, getFastNetworkConfig, ipAddressProtected, withLockMap)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), ServerCfg (..), createAgentStore, defaultAgentConfig, enabledServerCfg, presetServerCfg)
 import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
@@ -249,25 +249,25 @@ newChatController
     eventSeq <- newTVarIO 0
     inputQ <- newTBQueueIO tbqSize
     outputQ <- newTBQueueIO tbqSize
-    connNetworkStatuses <- atomically TM.empty
+    connNetworkStatuses <- TM.emptyIO
     subscriptionMode <- newTVarIO SMSubscribe
     chatLock <- newEmptyTMVarIO
-    entityLocks <- atomically TM.empty
+    entityLocks <- TM.emptyIO
     sndFiles <- newTVarIO M.empty
     rcvFiles <- newTVarIO M.empty
-    currentCalls <- atomically TM.empty
+    currentCalls <- TM.emptyIO
     localDeviceName <- newTVarIO $ fromMaybe deviceNameForRemote deviceName
     multicastSubscribers <- newTMVarIO 0
     remoteSessionSeq <- newTVarIO 0
-    remoteHostSessions <- atomically TM.empty
+    remoteHostSessions <- TM.emptyIO
     remoteHostsFolder <- newTVarIO Nothing
     remoteCtrlSession <- newTVarIO Nothing
     filesFolder <- newTVarIO optFilesFolder
     chatStoreChanged <- newTVarIO False
-    expireCIThreads <- newTVarIO M.empty
-    expireCIFlags <- newTVarIO M.empty
+    expireCIThreads <- TM.emptyIO
+    expireCIFlags <- TM.emptyIO
     cleanupManagerAsync <- newTVarIO Nothing
-    timedItemThreads <- atomically TM.empty
+    timedItemThreads <- TM.emptyIO
     chatActivated <- newTVarIO True
     showLiveItems <- newTVarIO False
     encryptLocalFiles <- newTVarIO False
@@ -3329,7 +3329,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
       throwChatError $ CEFileNotApproved fileId unknownSrvs
 
 getNetworkConfig :: CM' NetworkConfig
-getNetworkConfig = withAgent' $ liftIO . getNetworkConfig'
+getNetworkConfig = withAgent' $ liftIO . getFastNetworkConfig
 
 resetRcvCIFileStatus :: User -> FileTransferId -> CIFileStatus 'MDRcv -> CM (Maybe AChatItem)
 resetRcvCIFileStatus user fileId ciFileStatus = do
