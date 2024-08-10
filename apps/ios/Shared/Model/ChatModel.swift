@@ -234,7 +234,7 @@ final class ChatModel: ObservableObject {
         } else {
             addChat_(chat, at: 0)
         }
-        popChatCollector.popAddedChat(chat.chatInfo.id)
+        popChatCollector.throttlePopChat(chat.chatInfo.id, currentPosition: 0)
     }
 
     func addChat_(_ chat: Chat, at position: Int = 0) {
@@ -343,7 +343,7 @@ final class ChatModel: ObservableObject {
             if case .rcvNew = cItem.meta.itemStatus {
                 unreadCollector.changeUnreadCounter(cInfo.id, by: 1)
             }
-            popChatCollector.throttlePopChat(cInfo.id)
+            popChatCollector.throttlePopChat(cInfo.id, currentPosition: i)
         } else {
             addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
         }
@@ -627,15 +627,8 @@ final class ChatModel: ObservableObject {
                 .store(in: &bag)
         }
         
-        func throttlePopChat(_ chatId: ChatId) {
-            chatsToPop[chatId] = Date.now
-            subject.send()
-        }
-
-        func popAddedChat(_ chatId: ChatId) {
-            // if chatsToPop is empty here, we don't need to account for this chat when sorting,
-            // because it is already added to the top.
-            if !chatsToPop.isEmpty {
+        func throttlePopChat(_ chatId: ChatId, currentPosition: Int) {
+            if currentPosition > 0 || !chatsToPop.isEmpty {
                 chatsToPop[chatId] = Date.now
                 subject.send()
             }
