@@ -206,7 +206,10 @@ object ChatModel {
   class ChatsContext {
     val chats = _chats
 
-    fun addChat(chat: Chat) = chats.add(index = 0, chat)
+    fun addChat(chat: Chat) {
+      chat.popTs = Clock.System.now()
+      chats.add(index = 0, chat)
+    }
 
     fun updateChatInfo(rhId: Long?, cInfo: ChatInfo) {
       val i = getChatIndex(rhId, cInfo.id)
@@ -252,8 +255,7 @@ object ChatModel {
     }
 
     fun updateChats(newChats: List<Chat>) {
-      chats.clear()
-      chats.addAll(newChats)
+      chats.replaceAll(newChats)
 
       val cId = chatId.value
       // If chat is null, it was deleted in background after apiGetChats call
@@ -268,7 +270,7 @@ object ChatModel {
         chats[i] = chat
       } else {
         // invalid state, correcting
-        chats.add(index = 0, chat)
+        addChat(chat)
       }
     }
     suspend fun addChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
