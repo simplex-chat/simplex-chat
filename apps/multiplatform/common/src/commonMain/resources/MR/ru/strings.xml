@@ -898,8 +898,8 @@
     <string name="onboarding_notifications_mode_off">Когда приложение запущено</string>
     <string name="onboarding_notifications_mode_periodic">Периодически</string>
     <string name="onboarding_notifications_mode_service">Мгновенно</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Больше расход батареи</b>! Фоновый сервис постоянно запущен - уведомления будут показаны как только есть сообщения.]]></string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Меньше расход батареи</b>. Фоновый сервис проверяет сообщения каждые 10 минут. Вы можете пропустить звонки и срочные сообщения.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Больше расход батареи</b>! Приложение постоянно запущено в фоне - уведомления будут показаны сразу же.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Меньше расход батареи</b>. Приложение проверяет сообщения каждые 10 минут. Вы можете пропустить звонки и срочные сообщения.</string>
     <string name="onboarding_notifications_mode_subtitle">Можно изменить позже в настройках.</string>
     <string name="live">LIVE</string>
     <string name="send_live_message">Отправить живое сообщение</string>
@@ -2137,4 +2137,17 @@
     <string name="app_check_for_updates_notice_desc">Чтобы получать уведомления об обновлениях, включите периодическую проверку стабильных или бета-версий.</string>
     <string name="v6_0_reachable_chat_toolbar_descr">Используйте приложение одной рукой.</string>
     <string name="servers_info_detailed_statistics_sent_messages_header">Отправленные сообщения</string>
+    <string name="v6_0_privacy_blur">Размыть для конфиденциальности.</string>
+    <string name="create_address_button">Создать</string>
+    <string name="v6_0_new_media_options">Новые медиа-опции</string>
+    <string name="invite_friends_short">Пригласить</string>
+    <string name="new_message">Новое сообщение</string>
+    <string name="one_hand_ui_card_title">Переключите список чатов:</string>
+    <string name="v6_0_upgrade_app">Автоматическое обновление приложения</string>
+    <string name="v6_0_upgrade_app_descr">Загружать новые версии из GitHub.</string>
+    <string name="v6_0_increase_font_size">Увеличить размер шрифтов.</string>
+    <string name="v6_0_new_chat_experience">Новый интерфейс 🎉</string>
+    <string name="v6_0_chat_list_media">Открыть из списка чатов.</string>
+    <string name="reset_all_hints">Сбросить все подсказки.</string>
+    <string name="one_hand_ui_change_instruction">Вы можете изменить это в настройках Интерфейса.</string>
 </resources>
