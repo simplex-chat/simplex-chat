@@ -567,4 +567,15 @@
     <string name="v6_0_connect_faster_descr">Kết nối nhanh hơn với bạn bè.</string>
     <string name="chat_database_exported_title">Cơ sở dữ liệu SimpleX Chat đã được xuất</string>
     <string name="v6_0_your_contacts_descr">Lưu trữ các liên hệ để trò chuyện sau.</string>
+    <string name="disconnect_desktop_question">Ngắt kết nối máy tính?</string>
+    <string name="v6_0_delete_many_messages_descr">Xóa tối đa 20 tin nhắn cùng một lúc.</string>
+    <string name="remote_ctrl_disconnected_with_reason">Đã ngắt kết nối với lý do:%s</string>
+    <string name="remote_host_disconnected_from">Đã ngắt kết nối khỏi thiết bị di động <b>%s</b> với lý do: %s</string>
+    <string name="disconnect_remote_hosts">Ngắt kết nối các thiết bị di động</string>
+    <string name="icon_descr_server_status_disconnected">Đã ngắt kết nối</string>
+    <string name="proxy_destination_error_broker_host">Địa chỉ máy chủ đích của %1$s không tương thích với thiết lập máy chủ chuyển tiếp %2$s.</string>
+    <string name="proxy_destination_error_broker_version">Phiên bản máy chủ đích của %1$s không tương thích với máy chủ chuyển tiếp %2$s.</string>
+    <string name="delete_without_notification">Xóa mà không thông báo</string>
+    <string name="multicast_discoverable_via_local_network">Có thể tìm thấy qua mạng cục bộ</string>
+    <string name="delete_members_messages__question">Xóa %d tin nhắn của các thành viên?</string>
 </resources>
