@@ -265,13 +265,13 @@ object ChatModel {
       }
     }
 
-    fun replaceChat(rhId: Long?, id: String, chat: Chat) {
+    suspend fun replaceChat(rhId: Long?, id: String, chat: Chat) {
       val i = getChatIndex(rhId, id)
       if (i >= 0) {
         chats[i] = chat
       } else {
         // invalid state, correcting
-        chats.add(index = 0, chat)
+        addChat(chat)
       }
     }
     suspend fun addChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
@@ -428,7 +428,7 @@ object ChatModel {
       }
     }
 
-    private val popChatCollector = PopChatCollector()
+    val popChatCollector = PopChatCollector()
 
     class PopChatCollector {
       private val subject = MutableSharedFlow<Unit>()
@@ -471,9 +471,8 @@ object ChatModel {
           }
         }
         // sort chats by pop timestamp in descending order
-        val newChats = mutableListOf<Chat>()
-        newChats.addAll(0, chs.sortedByDescending { it.popTs })
-        newChats.addAll(0, chats.value.filter { !chatsToPop.containsKey(it.chatInfo.id) } )
+        val newChats = ArrayList(chs.sortedByDescending { it.popTs })
+        newChats.addAll(chats.value.filter { !chatsToPop.containsKey(it.chatInfo.id) } )
         chatsToPop.clear()
         return newChats
       }
