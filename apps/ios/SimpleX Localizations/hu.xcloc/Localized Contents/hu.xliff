@@ -5105,7 +5105,7 @@ Hiba: %@</target>
         <source>Protect your IP address from the messaging relays chosen by your contacts.
 Enable in *Network &amp; servers* settings.</source>
         <target>Védje IP-címét az ismerősei által kiválasztott üzenetküldő átjátszókkal szemben.
-Engedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.</target>
+Engedélyezze a Beállítások / Hálózat és kiszolgálók menüben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve">
@@ -6563,7 +6563,7 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
       </trans-unit>
       <trans-unit id="The created archive is available via app Settings / Database / Old database archive." xml:space="preserve">
         <source>The created archive is available via app Settings / Database / Old database archive.</source>
-        <target>A létrehozott archívum a Beállítások / Adatbázis / Régi adatbázis-archívum menüpontban érhető el.</target>
+        <target>A létrehozott archívum a Beállítások / Adatbázis / Régi adatbázis-archívum menüben érhető el.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The encryption is working and the new encryption agreement is not required. It may result in connection errors!" xml:space="preserve">
@@ -7464,7 +7464,7 @@ Csatlakozási kérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="You can enable them later via app Privacy &amp; Security settings." xml:space="preserve">
         <source>You can enable them later via app Privacy &amp; Security settings.</source>
-        <target>Később engedélyezheti őket az alkalmazás Adatvédelem és biztonság menüpontban.</target>
+        <target>Később engedélyezheti őket az alkalmazás „Adatvédelem és biztonság” menüben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can give another try." xml:space="preserve">
@@ -7514,7 +7514,7 @@ Csatlakozási kérés megismétlése?</target>
       </trans-unit>
       <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve">
         <source>You can start chat via app Settings / Database or by restarting the app</source>
-        <target>A csevegést az alkalmazás Beállítások / Adatbázis menü segítségével vagy az alkalmazás újraindításával indíthatja el</target>
+        <target>A csevegést az alkalmazás Beállítások / Adatbázis menüben vagy az alkalmazás újraindításával indíthatja el</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can still view conversation with %@ in the list of chats." xml:space="preserve">
@@ -9042,7 +9042,7 @@ utoljára fogadott üzenet: %2$@</target>
       </trans-unit>
       <trans-unit id="You can allow sharing in Privacy &amp; Security / SimpleX Lock settings." xml:space="preserve">
         <source>You can allow sharing in Privacy &amp; Security / SimpleX Lock settings.</source>
-        <target>A megosztást az Adatvédelem és biztonság / SimpleX zár menüpontban engedélyezheti.</target>
+        <target>A megosztást az Adatvédelem és biztonság / SimpleX zár menüben engedélyezheti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>

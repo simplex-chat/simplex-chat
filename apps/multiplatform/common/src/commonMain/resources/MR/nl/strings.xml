@@ -1118,7 +1118,7 @@
     <string name="color_title">Titel</string>
     <string name="you_can_accept_or_reject_connection">Wanneer mensen vragen om verbinding te maken, kunt u dit accepteren of weigeren.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">U raakt uw contacten niet kwijt als u later uw adres verwijdert.</string>
-    <string name="simplex_address">SimpleX adres</string>
+    <string name="simplex_address">SimpleX cím</string>
     <string name="create_address_and_let_people_connect">Maak een adres aan zodat mensen contact met je kunnen opnemen.</string>
     <string name="create_simplex_address">Maak een SimpleX adres aan</string>
     <string name="share_with_contacts">Delen met contacten</string>
@@ -2064,4 +2064,5 @@
     <string name="v6_0_new_chat_experience">Nieuwe chatervaring 🎉</string>
     <string name="v6_0_new_media_options">Nieuwe media-opties</string>
     <string name="invite_friends_short">Uitnodigen</string>
+    <string name="new_message">Nieuw bericht</string>
 </resources>
