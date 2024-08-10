@@ -116,6 +116,7 @@ struct NewChatSheet: View {
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
                         Label("Add contact", systemImage: "link.badge.plus")
+                            .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 isLargeSheet = true
@@ -129,6 +130,7 @@ struct NewChatSheet: View {
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
                         Label("Scan / Paste link", systemImage: "qrcode")
+                            .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 isLargeSheet = true
