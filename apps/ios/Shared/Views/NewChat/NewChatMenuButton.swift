@@ -178,7 +178,6 @@ struct NewChatSheet: View {
             .padding(.leading, 16).padding(.vertical, 8).padding(.trailing, 32)
             .contentShape(Rectangle())
             .onTapGesture(perform: action)
-            .border(.red)
             .padding(.leading, -16).padding(.vertical, -8).padding(.trailing, -32)
     }
 
