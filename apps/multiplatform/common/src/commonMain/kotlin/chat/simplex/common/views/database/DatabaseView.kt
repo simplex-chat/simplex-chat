@@ -505,6 +505,7 @@ fun deleteChatDatabaseFilesAndState() {
   withLongRunningApi {
     withChats {
       chats.clear()
+      popChatCollector.clear()
     }
   }
   chatModel.users.clear()

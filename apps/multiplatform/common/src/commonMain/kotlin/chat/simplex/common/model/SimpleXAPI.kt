@@ -2718,6 +2718,7 @@ object ChatController {
       chatModel.chatItems.clear()
       withChats {
         chats.clear()
+        popChatCollector.clear()
       }
     }
     val statuses = apiGetNetworkStatuses(rhId)

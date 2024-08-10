@@ -225,8 +225,8 @@ struct ChatListView: View {
                     .offset(x: -8)
                 }
                 .listStyle(.plain)
-                .onChange(of: chatModel.chatId) { chId in
-                    if chId == nil, let chatId = chatModel.chatToTop {
+                .onChange(of: chatModel.chatId) { currentChatId in
+                    if let chatId = chatModel.chatToTop, currentChatId != chatId {
                         chatModel.chatToTop = nil
                         chatModel.popChat(chatId)
                     }
