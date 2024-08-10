@@ -65,7 +65,7 @@ struct NewChatSheet: View {
     // Sheet height management
     @State private var isAddContactActive = false
     @State private var isScanPasteLinkActive = false
-    @State private var :qet = false
+    @State private var isLargeSheet = false
 
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
 
