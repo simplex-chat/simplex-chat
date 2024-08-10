@@ -628,6 +628,10 @@ final class ChatModel: ObservableObject {
         }
         
         func throttlePopChat(_ chatId: ChatId, currentPosition: Int) {
+            let m = ChatModel.shared
+            if currentPosition > 0 && m.chatId == chatId {
+                m.chatToTop = chatId
+            }
             if currentPosition > 0 || !chatsToPop.isEmpty {
                 chatsToPop[chatId] = Date.now
                 subject.send()
