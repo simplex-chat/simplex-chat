@@ -6,8 +6,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/twostraws/CodeScanner",
       "state" : {
-        "revision" : "c27a66149b7483fe42e2ec6aad61d5c3fffe522d",
-        "version" : "2.1.1"
+        "revision" : "34da57fb63b47add20de8a85da58191523ccce57",
+        "version" : "2.5.0"
       }
     },
     {
@@ -23,7 +23,6 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/kirualex/SwiftyGif",
       "state" : {
-        "branch" : "master",
         "revision" : "5e8619335d394901379c9add5c4c1c2f420b3800"
       }
     },
