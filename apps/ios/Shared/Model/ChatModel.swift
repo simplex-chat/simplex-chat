@@ -309,6 +309,7 @@ final class ChatModel: ObservableObject {
             }
         }
         NtfManager.shared.setNtfBadgeCount(totalUnreadCountForAllUsers())
+        popChatCollector.clear()
     }
 
 //    func addGroup(_ group: SimpleXChat.Group) {
@@ -335,10 +336,10 @@ final class ChatModel: ObservableObject {
             if case .rcvNew = cItem.meta.itemStatus {
                 unreadCollector.changeUnreadCounter(cInfo.id, by: 1)
             }
-            popChatCollector.addChat(cInfo.id)
         } else {
             addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
         }
+        popChatCollector.throttlePopChat(cInfo.id)
         // add to current chat
         if chatId == cInfo.id {
             _ = _upsertChatItem(cInfo, cItem)
@@ -610,28 +611,54 @@ final class ChatModel: ObservableObject {
     class PopChatCollector {
         private let subject = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
+        private var chatsToPop: [ChatId: Date] = [:]
 
         init() {
             subject
                 .throttle(for: 2, scheduler: DispatchQueue.main, latest: true)
-                .sink {
-                    let m = ChatModel.shared
-                    if m.chatId == nil {
-                        withAnimation {
-                            m.chats = m.chats.sorted(using: KeyPathComparator(\.popTs, order: .reverse))
-                        }
-                    } else {
-                        m.chats = m.chats.sorted(using: KeyPathComparator(\.popTs, order: .reverse))
-                    }
-                }
+                .sink { self.popCollectedChats() }
                 .store(in: &bag)
         }
         
-        func addChat(_ chatId: ChatId) {
-            if let index = ChatModel.shared.getChatIndex(chatId) {
-                ChatModel.shared.chats[index].popTs = CFAbsoluteTimeGetCurrent()
-                subject.send()
+        func throttlePopChat(_ chatId: ChatId) {
+            chatsToPop[chatId] = Date.now
+            subject.send()
+        }
+
+        func clear() {
+            chatsToPop = [:]
+        }
+
+        func popCollectedChats() {
+            let m = ChatModel.shared
+            var ixs: IndexSet = []
+            var chs: [(Chat, Date)] = []
+            // collect chats that received updates
+            for (chatId, ts) in self.chatsToPop {
+                // Currently opened chat is excluded, removing it from the list would navigate out of it
+                // It will be popped to top later when user exits from the list.
+                if m.chatId != chatId, let i = m.getChatIndex(chatId) {
+                    ixs.insert(i)
+                    chs.append((m.chats[i], ts))
+                }
             }
+
+            // sort chats by timestamp in descending order
+            chs.sort { $0.1 > $1.1 }
+            let toPop = chs.map { $0.0 }
+
+            let removeInsert = {
+                m.chats.remove(atOffsets: ixs)
+                m.chats.insert(contentsOf: toPop, at: 0)
+            }
+
+            if m.chatId == nil {
+                withAnimation { removeInsert() }
+            } else {
+                removeInsert()
+            }
+
+            self.chatsToPop = [:]
         }
     }
 
@@ -729,6 +756,7 @@ final class ChatModel: ObservableObject {
 
     func popChat(_ id: String) {
         if let i = getChatIndex(id) {
+            // no animation here, for it not to look like it just moved when leaving the chat
             popChat_(i)
         }
     }
@@ -848,7 +876,6 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
     @Published var chatItems: [ChatItem]
     @Published var chatStats: ChatStats
     var created = Date.now
-    var popTs: CFAbsoluteTime?
 
     init(_ cData: ChatData) {
         self.chatInfo = cData.chatInfo

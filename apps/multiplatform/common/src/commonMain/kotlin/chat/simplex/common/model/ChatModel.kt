@@ -303,10 +303,10 @@ object ChatModel {
           else
             chat.chatStats
         )
-        popChatCollector.addChat(chat.remoteHostId, chat.id)
       } else {
         addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
       }
+      popChatCollector.addChat(rhId, cInfo.id)
       withContext(Dispatchers.Main) {
         // add to current chat
         if (chatId.value == cInfo.id) {
