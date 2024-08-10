@@ -1516,7 +1516,7 @@
     <string name="read_more_in_github_with_link"><![CDATA[További információ a <font color="#0088ff">GitHub tárolónkban</font>.]]></string>
     <string name="error_showing_content">hiba a tartalom megjelenítése közben</string>
     <string name="error_showing_message">hiba az üzenet megjelenítésekor</string>
-    <string name="you_can_make_address_visible_via_settings">Láthatóvá teheti SimpleX-beli ismerősei számára a „Beállításokban”.</string>
+    <string name="you_can_make_address_visible_via_settings">Láthatóvá teheti SimpleX-beli ismerősei számára a Beállításokban.</string>
     <string name="recent_history_is_sent_to_new_members">Legfeljebb az utolsó 100 üzenet kerül elküldésre az új tagok számára.</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">A beolvasott kód nem egy SimpleX hivatkozás QR-kód.</string>
     <string name="the_text_you_pasted_is_not_a_link">A beillesztett szöveg nem egy SimpleX hivatkozás.</string>
