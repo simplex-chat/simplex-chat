@@ -176,6 +176,16 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                 snapshot,
                 animatingDifferences: itemCount != 0 && abs(items.count - itemCount) == 1
             )
+            if items.count > itemCount,
+                tableView.contentOffset.y > -InvertedTableView.inset,
+                tableView.contentOffset.y < 500 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    self.tableView.setContentOffset(
+                        CGPoint(x: 0, y: -InvertedTableView.inset),
+                        animated: true
+                    )
+                }
+            }
             itemCount = items.count
         }
     }

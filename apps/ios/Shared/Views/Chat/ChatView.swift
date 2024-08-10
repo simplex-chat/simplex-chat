@@ -402,6 +402,7 @@ struct ChatView: View {
                 loadChatItems(cInfo)
             }
             .padding(.vertical, -InvertedTableView.inset)
+            .padding(.bottom, 4)
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { _ in
                 loadChat(chat: chat, search: searchText)
