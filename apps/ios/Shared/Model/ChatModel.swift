@@ -910,6 +910,12 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
             chatStats: chatStats ?? self.chatStats
         )
     }
+    
+    func copyFrom(_ c: Chat) {
+        self.chatInfo = c.chatInfo
+        self.chatItems = c.chatItems
+        self.chatStats = c.chatStats
+    }
 
     var userCanSend: Bool {
         switch chatInfo {
