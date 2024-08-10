@@ -4267,7 +4267,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 withStore' $ \db -> resetContactConnInitiated db user conn'
               forM_ viaUserContactLink $ \userContactLinkId -> do
                 ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
-                let (_, groupId_, gLinkMemRole) = ucl
+                let (UserContactLink {autoAccept}, groupId_, gLinkMemRole) = ucl
+                when (connChatVersion < batchSend2Version) $ mapM_ (sendAutoReply ct') autoAccept
                 forM_ groupId_ $ \groupId -> do
                   groupInfo <- withStore $ \db -> getGroupInfo db vr user groupId
                   subMode <- chatReadVar subscriptionMode
@@ -4330,11 +4331,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               forM_ viaUserContactLink $ \userContactLinkId -> do
                 ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
                 let (UserContactLink {autoAccept}, _, _) = ucl
-                forM_ autoAccept $ \(AutoAccept {autoReply = mc_}) ->
-                  forM_ mc_ $ \mc -> do
-                    (msg, _) <- sendDirectContactMessage user ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
-                    ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
-                    toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
+                mapM_ (sendAutoReply ct) autoAccept
         QCONT ->
           void $ continueSending connEntity conn
         MWARN msgId err -> do
@@ -4353,6 +4350,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
+      where
+        sendAutoReply ct AutoAccept {autoReply = mc_} = forM_ mc_ $ \mc -> do
+          (msg, _) <- sendDirectContactMessage user ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
+          ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
+          toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
 
     processGroupMessage :: AEvent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> CM ()
     processGroupMessage agentMsg connEntity conn@Connection {connId, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
