@@ -3430,7 +3430,7 @@
 "Protect your chat profiles with a password!" = "Csevegési profiljok védelme jelszóval!";
 
 /* No comment provided by engineer. */
-"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Védje IP-címét az ismerősei által kiválasztott üzenetküldő átjátszókkal szemben.\nEngedélyezze a beállításokban a *Hálózat és kiszolgálók* menüpontban.";
+"Protect your IP address from the messaging relays chosen by your contacts.\nEnable in *Network & servers* settings." = "Védje IP-címét az ismerősei által kiválasztott üzenetküldő átjátszókkal szemben.\nEngedélyezze a Beállítások / Hálózat és kiszolgálók menüben.";
 
 /* No comment provided by engineer. */
 "Protocol timeout" = "Protokoll időtúllépés";
@@ -4367,7 +4367,7 @@
 "The contact you shared this link with will NOT be able to connect!" = "Ismerőse, akivel megosztotta ezt a hivatkozást, NEM fog tudni kapcsolódni!";
 
 /* No comment provided by engineer. */
-"The created archive is available via app Settings / Database / Old database archive." = "A létrehozott archívum a Beállítások / Adatbázis / Régi adatbázis-archívum menüpontban érhető el.";
+"The created archive is available via app Settings / Database / Old database archive." = "A létrehozott archívum a Beállítások / Adatbázis / Régi adatbázis-archívum menüben érhető el.";
 
 /* No comment provided by engineer. */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "A titkosítás működik, és új titkosítási egyezményre nincs szükség. Ez kapcsolati hibákat eredményezhet!";
@@ -4988,7 +4988,7 @@
 "You can enable later via Settings" = "Később engedélyezheti a Beállításokban";
 
 /* No comment provided by engineer. */
-"You can enable them later via app Privacy & Security settings." = "Később engedélyezheti őket az alkalmazás Adatvédelem és biztonság menüpontban.";
+"You can enable them later via app Privacy & Security settings." = "Később engedélyezheti őket az alkalmazás „Adatvédelem és biztonság” menüben.";
 
 /* No comment provided by engineer. */
 "You can give another try." = "Megpróbálhatja még egyszer.";
@@ -5018,7 +5018,7 @@
 "You can share your address as a link or QR code - anybody can connect to you." = "Megoszthatja a címét egy hivatkozásként vagy QR-kódként – így bárki kapcsolódhat önhöz.";
 
 /* No comment provided by engineer. */
-"You can start chat via app Settings / Database or by restarting the app" = "A csevegést az alkalmazás Beállítások / Adatbázis menü segítségével vagy az alkalmazás újraindításával indíthatja el";
+"You can start chat via app Settings / Database or by restarting the app" = "A csevegést az alkalmazás Beállítások / Adatbázis menüben vagy az alkalmazás újraindításával indíthatja el";
 
 /* No comment provided by engineer. */
 "You can still view conversation with %@ in the list of chats." = "A(z) %@ nevű ismerősével folytatott beszélgetéseit továbbra is megtekintheti a csevegések listájában.";

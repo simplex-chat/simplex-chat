@@ -3650,6 +3650,9 @@
 "Reset" = "Resetten";
 
 /* No comment provided by engineer. */
+"Reset all hints" = "Alle hints resetten";
+
+/* No comment provided by engineer. */
 "Reset all statistics" = "Reset alle statistieken";
 
 /* No comment provided by engineer. */
@@ -4071,6 +4074,9 @@
 
 /* No comment provided by engineer. */
 "Share address with contacts?" = "Adres delen met contacten?";
+
+/* No comment provided by engineer. */
+"Share from other apps." = "Delen vanuit andere apps.";
 
 /* No comment provided by engineer. */
 "Share link" = "Deel link";
@@ -4496,7 +4502,13 @@
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Vergelijk (of scan) de code op uw apparaten om end-to-end-codering met uw contact te verifiëren.";
 
 /* No comment provided by engineer. */
+"Toggle chat list:" = "Chatlijst wisselen:";
+
+/* No comment provided by engineer. */
 "Toggle incognito when connecting." = "Schakel incognito in tijdens het verbinden.";
+
+/* No comment provided by engineer. */
+"Toolbar opacity" = "De transparantie van de werkbalk";
 
 /* No comment provided by engineer. */
 "Total" = "Totaal";
@@ -4965,6 +4977,9 @@
 
 /* No comment provided by engineer. */
 "You can accept calls from lock screen, without device and app authentication." = "U kunt oproepen van het vergrendelingsscherm accepteren, zonder apparaat- en app-verificatie.";
+
+/* No comment provided by engineer. */
+"You can change it in Appearance settings." = "U kunt dit wijzigen in de instellingen onder uiterlijk.";
 
 /* No comment provided by engineer. */
 "You can create it later" = "U kan het later maken";
