@@ -2065,4 +2065,5 @@
     <string name="v6_0_increase_font_size">增大字体尺寸。</string>
     <string name="invite_friends_short">邀请</string>
     <string name="v6_0_new_chat_experience">新的聊天体验 🎉</string>
+    <string name="new_message">新消息</string>
 </resources>
