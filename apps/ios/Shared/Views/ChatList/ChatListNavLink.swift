@@ -113,11 +113,9 @@ struct ChatListNavLink: View {
                         Button("Use new incognito profile") { connectContactViaAddress_(contact, true) }
                     }
             } else {
-                NavLinkPlain(
-                    tag: chat.chatInfo.id,
-                    selection: $chatModel.chatId,
-                    label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) }
-                )
+                ChatNavLink(chatId: chat.chatInfo.id, selection: $chatModel.chatId) {
+                    ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
+                }
                 .swipeActions(edge: .leading, allowsFullSwipe: true) {
                     markReadButton()
                     toggleFavoriteButton()
@@ -193,12 +191,10 @@ struct ChatListNavLink: View {
                     }
                 }
         default:
-            NavLinkPlain(
-                tag: chat.chatInfo.id,
-                selection: $chatModel.chatId,
-                label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
-                disabled: !groupInfo.ready
-            )
+            ChatNavLink(chatId: chat.chatInfo.id, selection: $chatModel.chatId) {
+                ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
+            }
+            .disabled(!groupInfo.ready)
             .frame(height: dynamicRowHeight)
             .swipeActions(edge: .leading, allowsFullSwipe: true) {
                 markReadButton()
@@ -220,12 +216,10 @@ struct ChatListNavLink: View {
     }
 
     @ViewBuilder private func noteFolderNavLink(_ noteFolder: NoteFolder) -> some View {
-        NavLinkPlain(
-            tag: chat.chatInfo.id,
-            selection: $chatModel.chatId,
-            label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
-            disabled: !noteFolder.ready
-        )
+        ChatNavLink(chatId: chat.chatInfo.id, selection: $chatModel.chatId) {
+            ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
+        }
+        .disabled(!noteFolder.ready)
         .frame(height: dynamicRowHeight)
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             markReadButton()
@@ -480,6 +474,35 @@ struct ChatListNavLink: View {
         }
     }
 }
+
+struct ChatNavLink<L: View>: View {
+    let chatId: ChatId
+    @Binding var selection: ChatId?
+    let label: () -> L
+
+    var body: some View {
+        NavigationLink(
+            isActive: Binding(
+                get: { selection == chatId },
+                set: { isActive in
+                    if isActive {
+                        selection = chatId
+                    } else if selection == chatId {
+                        selection = nil
+                    }
+                }
+            )
+        ) {
+            if let chat = ChatModel.shared.getChat(chatId) {
+                ChatView(chat: chat)
+            }
+        } label: { 
+            label().background(.red)
+        }
+    }
+}
+
+
 
 func rejectContactRequestAlert(_ contactRequest: UserContactRequest) -> Alert {
     Alert(

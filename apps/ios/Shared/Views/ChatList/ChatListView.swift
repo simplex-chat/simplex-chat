@@ -37,13 +37,7 @@ struct ChatListView: View {
 
     private var viewBody: some View {
         ZStack(alignment: oneHandUI ? .bottomLeading : .topLeading) {
-            NavStackCompat(
-                isActive: Binding(
-                    get: { chatModel.chatId != nil },
-                    set: { _ in }
-                ),
-                destination: chatView
-            ) { chatListView }
+            NavigationView { chatListView }
             if userPickerVisible {
                 Rectangle().fill(.white.opacity(0.001)).onTapGesture {
                     withAnimation {
