@@ -305,7 +305,12 @@ object ChatModel {
           else
             chat.chatStats
         )
-        popChatCollector.addChat(chat.remoteHostId, chat.id)
+        if (appPlatform.isDesktop && cItem.chatDir.sent) {
+          chat.popTs = Clock.System.now()
+          chats.add(0, chats.removeAt(i))
+        } else {
+          popChatCollector.addChat(chat.remoteHostId, chat.id)
+        }
       } else {
         addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
       }
