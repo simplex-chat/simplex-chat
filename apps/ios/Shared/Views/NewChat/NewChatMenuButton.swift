@@ -66,6 +66,7 @@ struct NewChatSheet: View {
     @State private var isAddContactActive = false
     @State private var isScanPasteLinkActive = false
     @State private var isLargeSheet = false
+    @State private var allowSmallSheet = true
 
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
 
@@ -79,10 +80,11 @@ struct NewChatSheet: View {
                 .modifier(ThemedBackground(grouped: true))
         }
         if #available(iOS 16.0, *), oneHandUI {
+            let sheetHeight: CGFloat = showArchive ? 575 : 500
             v.presentationDetents(
-                [.height(500), .height(575), .large],
+                allowSmallSheet ? [.height(sheetHeight), .large] : [.large],
                 selection: Binding(
-                    get: { isLargeSheet ? .large : .height(showArchive ? 575 : 500) },
+                    get: { isLargeSheet || !allowSmallSheet ? .large : .height(sheetHeight) },
                     set: { isLargeSheet = $0 == .large }
                 )
             )
@@ -115,14 +117,9 @@ struct NewChatSheet: View {
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        onTapWithInset(
-                            Label("Add contact", systemImage: "link.badge.plus")
-                        ) {
-                            isLargeSheet = true
-                            Task { isAddContactActive = true }
+                        navigateOnTap(Label("Add contact", systemImage: "link.badge.plus")) {
+                            isAddContactActive = true
                         }
-
-
                     }
                     NavigationLink(isActive: $isScanPasteLinkActive) {
                         NewChatView(selection: .connect, showQRCodeScanner: true, parentAlert: $alert)
@@ -130,11 +127,8 @@ struct NewChatSheet: View {
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        onTapWithInset(
-                            Label("Scan / Paste link", systemImage: "qrcode")
-                        ) {
-                            isLargeSheet = true
-                            Task { isScanPasteLinkActive = true }
+                        navigateOnTap(Label("Scan / Paste link", systemImage: "qrcode")) {
+                            isScanPasteLinkActive = true
                         }
                     }
                     NavigationLink {
@@ -172,12 +166,18 @@ struct NewChatSheet: View {
     }
     
     /// Extends label's tap area to match `.insetGrouped` list row insets
-    private func onTapWithInset<L: View>(_ label: L, action: @escaping () -> Void) -> some View {
+    private func navigateOnTap<L: View>(_ label: L, setActive: @escaping () -> Void) -> some View {
         label
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.leading, 16).padding(.vertical, 8).padding(.trailing, 32)
             .contentShape(Rectangle())
-            .onTapGesture(perform: action)
+            .onTapGesture {
+                isLargeSheet = true
+                DispatchQueue.main.async {
+                    allowSmallSheet = false
+                    setActive()
+                }
+            }
             .padding(.leading, -16).padding(.vertical, -8).padding(.trailing, -32)
     }
 
