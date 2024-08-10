@@ -1382,7 +1382,7 @@
     <string name="v5_1_better_messages_descr">- hangüzenetek 5 percig.
 \n- egyedi eltűnési időhatár.
 \n- előzmény szerkesztése.</string>
-    <string name="open_on_mobile_and_scan_qr_code">Válassza a <i>Használat számítógépről</i> menüt a mobil alkalmazásban és olvassa be a QR-kódot.</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Válassza a <i>Használat számítógépről</i> menüt a mobil alkalmazásban és olvassa be a QR-kódot.]]></string>
     <string name="sender_at_ts">%s ekkor: %s</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Akkor lesz kapcsolódva, amikor az ismerősének az eszköze online lesz, várjon, vagy ellenőrizze később!</string>
     <string name="v5_4_block_group_members_descr">Kéretlen üzenetek elrejtése.</string>
@@ -1421,7 +1421,7 @@
     <string name="updating_settings_will_reconnect_client_to_all_servers">A beállítások frissítése a kiszolgálókhoz való újra kapcsolódással jár.</string>
     <string name="contact_wants_to_connect_with_you">kapcsolatba akar lépni veled!</string>
     <string name="snd_group_event_changed_role_for_yourself">saját szerepköre erre változott: %s</string>
-    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">A csevegési szolgáltatás elindítható a „Beállítások -&gt; Adatbázis” menüben vagy az alkalmazás újraindításával.</string>
+    <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">A csevegési szolgáltatás elindítható a Beállítások / Adatbázis menüben vagy az alkalmazás újraindításával.</string>
     <string name="verify_code_on_mobile">Kód ellenőrzése a mobilon</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Csatlakozott ehhez a csoporthoz. Kapcsolódás a meghívó csoporttaghoz.</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Kapcsolatba léphet <font color="#0088ff">a SimpleX Chat fejlesztőivel, ahol bármiről kérdezhet és értesülhet az újdonságokról</font>.]]></string>

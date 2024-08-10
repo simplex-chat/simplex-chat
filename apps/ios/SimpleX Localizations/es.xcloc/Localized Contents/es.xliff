@@ -580,14 +580,14 @@
         <note>accept contact request via notification
    swipe action</note>
       </trans-unit>
-      <trans-unit id="Acknowledged" xml:space="preserve" approved="no">
+      <trans-unit id="Acknowledged" xml:space="preserve">
         <source>Acknowledged</source>
-        <target state="translated">Confirmaciones</target>
+        <target>Confirmaciones</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Acknowledgement errors" xml:space="preserve" approved="no">
+      <trans-unit id="Acknowledgement errors" xml:space="preserve">
         <source>Acknowledgement errors</source>
-        <target state="translated">Errores de confirmación</target>
+        <target>Errores de confirmación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Active connections" xml:space="preserve">
@@ -695,9 +695,9 @@
         <target>Al introducirlo todos los datos son eliminados.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All data is private to your device." xml:space="preserve" approved="no">
+      <trans-unit id="All data is private to your device." xml:space="preserve">
         <source>All data is private to your device.</source>
-        <target state="translated">Todos los datos son privados y están en tu dispositivo.</target>
+        <target>Todos los datos son privados y están en tu dispositivo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve">
@@ -1291,9 +1291,9 @@
         <target>Consola de Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat database" xml:space="preserve" approved="no">
+      <trans-unit id="Chat database" xml:space="preserve">
         <source>Chat database</source>
-        <target state="translated">Base de datos de SimpleX</target>
+        <target>Base de datos de SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat database deleted" xml:space="preserve">
@@ -1311,19 +1311,19 @@
         <target>Base de datos importada</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat is running" xml:space="preserve" approved="no">
+      <trans-unit id="Chat is running" xml:space="preserve">
         <source>Chat is running</source>
-        <target state="translated">SimpleX está en ejecución</target>
+        <target>SimpleX está en ejecución</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat is stopped" xml:space="preserve" approved="no">
+      <trans-unit id="Chat is stopped" xml:space="preserve">
         <source>Chat is stopped</source>
-        <target state="translated">SimpleX está parado</target>
+        <target>SimpleX está parado</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve" approved="no">
+      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve">
         <source>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</source>
-        <target state="translated">SimpleX está parado. Si has usado esta base de datos en otro dispositivo, debes transferirla de vuelta antes de iniciar SimpleX.</target>
+        <target>SimpleX está parado. Si has usado esta base de datos en otro dispositivo, debes transferirla de vuelta antes de iniciar SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat list" xml:space="preserve">
@@ -1436,9 +1436,9 @@
         <target>Compara los códigos de seguridad con tus contactos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Completed" xml:space="preserve" approved="no">
+      <trans-unit id="Completed" xml:space="preserve">
         <source>Completed</source>
-        <target state="translated">Completadas</target>
+        <target>Completadas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Configure ICE servers" xml:space="preserve">
@@ -1491,9 +1491,9 @@
         <target>Confirmar contraseña</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Confirm that you remember database passphrase to migrate it." xml:space="preserve" approved="no">
+      <trans-unit id="Confirm that you remember database passphrase to migrate it." xml:space="preserve">
         <source>Confirm that you remember database passphrase to migrate it.</source>
-        <target state="translated">Para migrar confirma que recuerdas la frase de contraseña de la base de datos.</target>
+        <target>Para migrar confirma que recuerdas la frase de contraseña de la base de datos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Confirm upload" xml:space="preserve">
@@ -1565,9 +1565,9 @@ This is your own one-time link!</source>
         <target>Conectar con %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connected" xml:space="preserve" approved="no">
+      <trans-unit id="Connected" xml:space="preserve">
         <source>Connected</source>
-        <target state="translated">Conectadas</target>
+        <target>Conectadas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connected desktop" xml:space="preserve">
@@ -1810,9 +1810,9 @@ This is your own one-time link!</source>
         <target>Crea tu perfil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Created" xml:space="preserve" approved="no">
+      <trans-unit id="Created" xml:space="preserve">
         <source>Created</source>
-        <target state="translated">Creadas</target>
+        <target>Creadas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Created at" xml:space="preserve">
@@ -2189,9 +2189,9 @@ This is your own one-time link!</source>
         <target>Elimina sin notificar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Deleted" xml:space="preserve" approved="no">
+      <trans-unit id="Deleted" xml:space="preserve">
         <source>Deleted</source>
-        <target state="translated">Eliminadas</target>
+        <target>Eliminadas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Deleted at" xml:space="preserve">
@@ -2204,9 +2204,9 @@ This is your own one-time link!</source>
         <target>Eliminado: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Deletion errors" xml:space="preserve" approved="no">
+      <trans-unit id="Deletion errors" xml:space="preserve">
         <source>Deletion errors</source>
-        <target state="translated">Errores de eliminación</target>
+        <target>Errores de eliminación</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delivery" xml:space="preserve">
@@ -2949,9 +2949,9 @@ This is your own one-time link!</source>
         <target>Error al iniciar Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error stopping chat" xml:space="preserve" approved="no">
+      <trans-unit id="Error stopping chat" xml:space="preserve">
         <source>Error stopping chat</source>
-        <target state="translated">Error al parar SimpleX</target>
+        <target>Error al parar SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error switching profile!" xml:space="preserve">
@@ -3629,9 +3629,9 @@ Error: %2$@</target>
         <target>Configuración del servidor mejorada</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="In order to continue, chat should be stopped." xml:space="preserve" approved="no">
+      <trans-unit id="In order to continue, chat should be stopped." xml:space="preserve">
         <source>In order to continue, chat should be stopped.</source>
-        <target state="translated">Para continuar, SimpleX debe estar parado.</target>
+        <target>Para continuar, SimpleX debe estar parado.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="In reply to" xml:space="preserve">
@@ -4149,9 +4149,9 @@ This is your link for group %@!</source>
         <target>Mensaje reenviado</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Message may be delivered later if member becomes active." xml:space="preserve" approved="no">
+      <trans-unit id="Message may be delivered later if member becomes active." xml:space="preserve">
         <source>Message may be delivered later if member becomes active.</source>
-        <target state="translated">El mensaje podría ser entregado más tarde si el miembro vuelve a estar activo.</target>
+        <target>El mensaje podría ser entregado más tarde si el miembro vuelve a estar activo.</target>
         <note>item status description</note>
       </trans-unit>
       <trans-unit id="Message queue info" xml:space="preserve">
@@ -4479,9 +4479,9 @@ This is your link for group %@!</source>
         <target>¡Sin dispositivo token!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No direct connection yet, message is forwarded by admin." xml:space="preserve" approved="no">
+      <trans-unit id="No direct connection yet, message is forwarded by admin." xml:space="preserve">
         <source>No direct connection yet, message is forwarded by admin.</source>
-        <target state="translated">Aún no hay conexión directa con este miembro, el mensaje es reenviado por el administrador.</target>
+        <target>Aún no hay conexión directa con este miembro, el mensaje es reenviado por el administrador.</target>
         <note>item status description</note>
       </trans-unit>
       <trans-unit id="No filtered chats" xml:space="preserve">
@@ -5238,9 +5238,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Respuesta recibida</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Received total" xml:space="preserve" approved="no">
+      <trans-unit id="Received total" xml:space="preserve">
         <source>Received total</source>
-        <target state="translated">Total recibidos</target>
+        <target>Total recibidos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving address will be changed to a different server. Address change will complete after sender comes online." xml:space="preserve">
@@ -5434,9 +5434,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Reiniciar todas las pistas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reset all statistics" xml:space="preserve" approved="no">
+      <trans-unit id="Reset all statistics" xml:space="preserve">
         <source>Reset all statistics</source>
-        <target state="translated">Restablecer todas las estadísticas</target>
+        <target>Restablecer todas las estadísticas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reset all statistics?" xml:space="preserve">
@@ -5524,9 +5524,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Rol</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Run chat" xml:space="preserve" approved="no">
+      <trans-unit id="Run chat" xml:space="preserve">
         <source>Run chat</source>
-        <target state="translated">Ejecutar SimpleX</target>
+        <target>Ejecutar SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SMP server" xml:space="preserve">
@@ -5709,9 +5709,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Cola segura</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Secured" xml:space="preserve" approved="no">
+      <trans-unit id="Secured" xml:space="preserve">
         <source>Secured</source>
-        <target state="translated">Aseguradas</target>
+        <target>Aseguradas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Security assessment" xml:space="preserve">
@@ -5934,14 +5934,14 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Respuesta enviada</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent total" xml:space="preserve" approved="no">
+      <trans-unit id="Sent total" xml:space="preserve">
         <source>Sent total</source>
-        <target state="translated">Total enviados</target>
+        <target>Total enviados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent via proxy" xml:space="preserve" approved="no">
+      <trans-unit id="Sent via proxy" xml:space="preserve">
         <source>Sent via proxy</source>
-        <target state="translated">Enviado vía proxy</target>
+        <target>Enviado vía proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server address" xml:space="preserve">
@@ -6139,9 +6139,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Estado del mensaje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show percentage" xml:space="preserve" approved="no">
+      <trans-unit id="Show percentage" xml:space="preserve">
         <source>Show percentage</source>
-        <target state="translated">Mostrar porcentajes</target>
+        <target>Mostrar porcentajes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
@@ -6324,19 +6324,19 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Parar SimpleX</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Stop chat" xml:space="preserve" approved="no">
+      <trans-unit id="Stop chat" xml:space="preserve">
         <source>Stop chat</source>
-        <target state="translated">Parar SimpleX</target>
+        <target>Parar SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop chat to enable database actions" xml:space="preserve" approved="no">
+      <trans-unit id="Stop chat to enable database actions" xml:space="preserve">
         <source>Stop chat to enable database actions</source>
-        <target state="translated">Para habilitar las acciones sobre la base de datos, debes parar SimpleX</target>
+        <target>Para habilitar las acciones sobre la base de datos, debes parar SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve" approved="no">
+      <trans-unit id="Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." xml:space="preserve">
         <source>Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped.</source>
-        <target state="translated">Para poder exportar, importar o eliminar la base de datos primero debes parar SimpleX. Mientras tanto no podrás recibir ni enviar mensajes.</target>
+        <target>Para poder exportar, importar o eliminar la base de datos primero debes parar SimpleX. Mientras tanto no podrás recibir ni enviar mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Stop chat?" xml:space="preserve">
@@ -6641,9 +6641,9 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>Esta configuración afecta a tu perfil actual **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="They can be overridden in contact and group settings." xml:space="preserve" approved="no">
+      <trans-unit id="They can be overridden in contact and group settings." xml:space="preserve">
         <source>They can be overridden in contact and group settings.</source>
-        <target state="translated">Se puede modificar desde la configuración particular de cada grupo y contacto.</target>
+        <target>Se puede modificar desde la configuración particular de cada grupo y contacto.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">

@@ -314,13 +314,13 @@
 "A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail." = "**Für jeden Kontakt und jedes Gruppenmitglied** wird eine separate TCP-Verbindung genutzt.\n**Bitte beachten Sie**: Wenn Sie viele Verbindungen haben, kann der Batterieverbrauch und die Datennutzung wesentlich höher sein und einige Verbindungen können scheitern.";
 
 /* No comment provided by engineer. */
-"Abort" = "Abbrechen";
+"Abort" = "Beenden";
 
 /* No comment provided by engineer. */
-"Abort changing address" = "Wechsel der Empfängeradresse abbrechen";
+"Abort changing address" = "Wechsel der Empfängeradresse beenden";
 
 /* No comment provided by engineer. */
-"Abort changing address?" = "Wechsel der Empfängeradresse abbrechen?";
+"Abort changing address?" = "Wechsel der Empfängeradresse beenden?";
 
 /* No comment provided by engineer. */
 "About SimpleX" = "Über SimpleX";
@@ -401,7 +401,7 @@
 "Address" = "Adresse";
 
 /* No comment provided by engineer. */
-"Address change will be aborted. Old receiving address will be used." = "Der Wechsel der Empfängeradresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.";
+"Address change will be aborted. Old receiving address will be used." = "Der Wechsel der Empfängeradresse wird beendet. Die bisherige Adresse wird weiter verwendet.";
 
 /* member role */
 "admin" = "Admin";
@@ -1843,7 +1843,7 @@
 "Error" = "Fehler";
 
 /* No comment provided by engineer. */
-"Error aborting address change" = "Fehler beim Abbrechen des Adresswechsels";
+"Error aborting address change" = "Fehler beim Beenden des Adresswechsels";
 
 /* No comment provided by engineer. */
 "Error accepting contact request" = "Fehler beim Annehmen der Kontaktanfrage";
