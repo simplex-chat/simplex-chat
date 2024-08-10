@@ -40,7 +40,9 @@ struct ChatListView: View {
             NavStackCompat(
                 isActive: Binding(
                     get: { chatModel.chatId != nil },
-                    set: { _ in }
+                    set: { active in
+                        if !active { chatModel.chatId = nil }
+                    }
                 ),
                 destination: chatView
             ) { chatListView }
