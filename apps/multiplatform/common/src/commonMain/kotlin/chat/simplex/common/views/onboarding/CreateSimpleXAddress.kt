@@ -78,7 +78,8 @@ private fun CreateSimpleXAddressLayout(
 ) {
   ColumnWithScrollBar(
     Modifier
-      .fillMaxSize(),
+      .fillMaxSize()
+      .themedBackground(),
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
     CloseSheetBar(showClose = false, close = {})

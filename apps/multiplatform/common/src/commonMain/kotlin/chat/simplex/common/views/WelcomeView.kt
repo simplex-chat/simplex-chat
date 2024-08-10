@@ -115,7 +115,8 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     Column(
       modifier = Modifier
-        .fillMaxSize(),
+        .fillMaxSize()
+        .themedBackground(),
       horizontalAlignment = Alignment.CenterHorizontally
     ) {
       CloseSheetBar(close = {

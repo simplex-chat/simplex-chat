@@ -104,19 +104,22 @@ struct SelectedItemsBottomToolbar: View {
         allButtonsDisabled = count == 0 || count > 20
         canModerate = possibleToModerate(chatInfo)
         if let selected = selectedItems {
-            (deleteEnabled, deleteForEveryoneEnabled, moderateEnabled, _, selectedChatItems) = chatItems.reduce((true, true, true, true, [])) { (r, ci) in
+            let me: Bool
+            let onlyOwnGroupItems: Bool
+            (deleteEnabled, deleteForEveryoneEnabled, me, onlyOwnGroupItems, selectedChatItems) = chatItems.reduce((true, true, true, true, [])) { (r, ci) in
                 if selected.contains(ci.id) {
                     var (de, dee, me, onlyOwnGroupItems, sel) = r
                     de = de && ci.canBeDeletedForSelf
                     dee = dee && ci.meta.deletable && !ci.localNote
                     onlyOwnGroupItems = onlyOwnGroupItems && ci.chatDir == .groupSnd
-                    me = me && !onlyOwnGroupItems && ci.content.msgContent != nil && ci.memberToModerate(chatInfo) != nil
+                    me = me && ci.content.msgContent != nil && ci.memberToModerate(chatInfo) != nil
                     sel.insert(ci.id) // we are collecting new selected items here to account for any changes in chat items list
                     return (de, dee, me, onlyOwnGroupItems, sel)
                 } else {
                     return r
                 }
             }
+            moderateEnabled = me && !onlyOwnGroupItems
         }
     }
 

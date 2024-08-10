@@ -25,7 +25,7 @@ struct ChatListView: View {
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
-    @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.bar.rawValue
+    @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -225,8 +225,8 @@ struct ChatListView: View {
                     .offset(x: -8)
                 }
                 .listStyle(.plain)
-                .onChange(of: chatModel.chatId) { chId in
-                    if chId == nil, let chatId = chatModel.chatToTop {
+                .onChange(of: chatModel.chatId) { currentChatId in
+                    if let chatId = chatModel.chatToTop, currentChatId != chatId {
                         chatModel.chatToTop = nil
                         chatModel.popChat(chatId)
                     }

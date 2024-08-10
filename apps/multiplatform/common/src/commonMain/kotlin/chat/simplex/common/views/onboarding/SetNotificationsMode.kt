@@ -28,6 +28,7 @@ fun SetNotificationsMode(m: ChatModel) {
   ColumnWithScrollBar(
     modifier = Modifier
       .fillMaxSize()
+      .themedBackground()
   ) {
     CloseSheetBar(showClose = false, close = {})
     AppBarTitle(stringResource(MR.strings.onboarding_notifications_mode_title))

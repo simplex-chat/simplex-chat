@@ -1329,17 +1329,17 @@
     <string name="settings_section_title_app">APP</string>
     <string name="settings_restart_app">Neustart</string>
     <string name="settings_shutdown">Herunterfahren</string>
-    <string name="error_aborting_address_change">Fehler beim Abbrechen des Adresswechsels</string>
-    <string name="abort_switch_receiving_address_confirm">Abbrechen</string>
+    <string name="error_aborting_address_change">Fehler beim Beenden des Adresswechsels</string>
+    <string name="abort_switch_receiving_address_confirm">Beenden</string>
     <string name="files_and_media">Dateien und Medien</string>
     <string name="allow_to_send_files">Das Senden von Dateien und Medien erlauben.</string>
     <string name="prohibit_sending_files">Das Senden von Dateien und Medien nicht erlauben.</string>
-    <string name="abort_switch_receiving_address">Wechsel der Empfängeradresse abbrechen</string>
-    <string name="abort_switch_receiving_address_question">Wechsel der Empfängeradresse abbrechen?</string>
+    <string name="abort_switch_receiving_address">Wechsel der Empfängeradresse beenden</string>
+    <string name="abort_switch_receiving_address_question">Wechsel der Empfängeradresse beenden?</string>
     <string name="files_and_media_prohibited">Dateien und Medien sind nicht erlaubt!</string>
     <string name="only_owners_can_enable_files_and_media">Nur Gruppenbesitzer können Dateien und Medien aktivieren.</string>
     <string name="group_members_can_send_files">Gruppenmitglieder können Dateien und Medien senden.</string>
-    <string name="abort_switch_receiving_address_desc">Der Wechsel der Empfängeradresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.</string>
+    <string name="abort_switch_receiving_address_desc">Der Wechsel der Empfängeradresse wird beendet. Die bisherige Adresse wird weiter verwendet.</string>
     <string name="files_are_prohibited_in_group">In dieser Gruppe sind Dateien und Medien nicht erlaubt.</string>
     <string name="unfavorite_chat">Favorit entfernen</string>
     <string name="favorite_chat">Favorit</string>
@@ -2148,4 +2148,5 @@
     <string name="chat_database_exported_migrate">Sie können die exportierte Datenbank migrieren.</string>
     <string name="chat_database_exported_save">Sie können das exportierte Archiv speichern.</string>
     <string name="reset_all_hints">Alle Hinweise zurücksetzen</string>
+    <string name="new_message">Neue Nachricht</string>
 </resources>

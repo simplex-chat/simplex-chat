@@ -15,6 +15,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.BackHandler
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.ui.theme.themedBackground
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.remote.AddingMobileDevice
 import chat.simplex.common.views.remote.DeviceNameField
@@ -58,7 +59,7 @@ private fun LinkAMobileLayout(
   staleQrCode: MutableState<Boolean>,
   updateDeviceName: (String) -> Unit,
 ) {
-  Column {
+  Column(Modifier.themedBackground()) {
     CloseSheetBar(close = {
       appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
     })

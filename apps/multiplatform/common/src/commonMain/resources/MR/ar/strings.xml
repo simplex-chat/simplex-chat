@@ -15,7 +15,8 @@
     <string name="delete_chat_profile_action_cannot_be_undone_warning">لا يمكن التراجع عن هذا الإجراء - سيتم فقد ملف التعريف وجهات الاتصال والرسائل والملفات الخاصة بك بشكل نهائي.</string>
     <string name="alert_message_no_group">هذه المجموعة لم تعد موجودة.</string>
     <string name="this_QR_code_is_not_a_link">رمز QR هذا ليس رابطًا!</string>
-    <string name="next_generation_of_private_messaging">الجيل القادم من الرسائل الخاصة</string>
+    <string name="next_generation_of_private_messaging">الجيل القادم من
+\nالرسائل الخاصة</string>
     <string name="delete_files_and_media_desc">لا يمكن التراجع عن هذا الإجراء - سيتم حذف جميع الملفات والوسائط المستلمة والمرسلة. ستبقى الصور منخفضة الدقة.</string>
     <string name="enable_automatic_deletion_message">لا يمكن التراجع عن هذا الإجراء - سيتم حذف الرسائل المرسلة والمستلمة قبل التحديد. قد تأخذ عدة دقائق.</string>
     <string name="messages_section_description">ينطبق هذا الإعداد على الرسائل الموجودة في ملف تعريف الدردشة الحالي الخاص بك</string>
@@ -97,11 +98,11 @@
     <string name="both_you_and_your_contact_can_send_disappearing">يمكنك أنت وجهة اتصالك إرسال رسائل تختفي.</string>
     <string name="icon_descr_call_progress">مكالمتك تحت الإجراء</string>
     <string name="cannot_receive_file">لا يمكّن استلام الملف</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b> جيد للبطارية </b>. خدمة الخلفية تتحقق من الرسائل كل 10 دقائق. قد تفوتك مكالمات أو رسائل عاجلة.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>جيد للبطارية</b>. يتحقق التطبيق من الرسائل كل 10 دقائق. قد تفوتك مكالمات أو رسائل عاجلة.]]></string>
     <string name="bold_text">عريض</string>
     <string name="audio_call_no_encryption">مكالمات الصوت (ليست مُعمّاة بين الطرفين)</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b> الأفضل للبطارية </b>. ستستلم إشعارات فقط عندما يكون التطبيق قيد التشغيل (لا توجد خدمة في الخلفية).]]></string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b> تستهلك المزيد من البطارية </b>! تعمل خدمة الخلفية دائمًا - تظهر الإشعارات بمجرد توفر الرسائل.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>يستهلك المزيد من البطارية</b>! يعمل التطبيق دائمًا في الخلفية - يتم عرض الإشعارات على الفور.]]></string>
     <string name="call_already_ended">انتهت المكالمة بالفعل!</string>
     <string name="alert_title_msg_bad_hash">تجزئة رسالة سيئة</string>
     <string name="integrity_msg_bad_id">معرّف رسالة سيئ</string>
@@ -513,7 +514,7 @@
     <string name="v4_3_improved_privacy_and_security_desc">إخفاء شاشة التطبيق في التطبيقات الحديثة.</string>
     <string name="v4_3_improved_privacy_and_security">تحسن الخصوصية والأمان</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[إذا لم تتمكن من الالتقاء شخصيًا، فيمكنك <b>مسح رمز QR في مكالمة الفيديو</b>، أو يمكن لجهة الاتصال مشاركة رابط الدعوة.]]></string>
-    <string name="immune_to_spam_and_abuse">محصن ضد البريد العشوائي وسوء المعاملة</string>
+    <string name="immune_to_spam_and_abuse">محصن ضد الإزعاج (spam)</string>
     <string name="description_via_one_time_link_incognito">التخفي عبر رابط لمرة واحدة</string>
     <string name="icon_descr_image_snd_complete">أرسلت صورة</string>
     <string name="image_descr">صورة</string>
@@ -821,10 +822,10 @@
     <string name="auth_open_chat_console">افتح وحدة تحكم الدردشة</string>
     <string name="la_lock_mode_passcode">إدخال كلمة المرور</string>
     <string name="open_simplex_chat_to_accept_call">افتح SimpleX Chat للرد على المكالمة</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">بروتوكول وكود مفتوح المصدر - يمكن لأي شخص تشغيل الخوادم.</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">يمكن لأي شخص استضافة الخوادم.</string>
     <string name="password_to_show">كلمة المرور للإظهار</string>
     <string name="call_connection_peer_to_peer">ندّ لِندّ</string>
-    <string name="people_can_connect_only_via_links_you_share">يمكن للناس التواصل معك فقط عبر الرابط الذي تقوم بمشاركته</string>
+    <string name="people_can_connect_only_via_links_you_share">أنت تقرر من يمكنه الاتصال.</string>
     <string name="icon_descr_call_pending_sent">مكالمة قيد الانتظار</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[تقوم أجهزة العميل فقط بتخزين ملفات تعريف المستخدمين وجهات الاتصال والمجموعات والرسائل المُرسلة باستخدام <b>تعمية ثنائية الطبقات من بين الطريفين</b>.]]></string>
     <string name="reset_color">صفّر الألوان</string>
@@ -1107,7 +1108,7 @@
     <string name="to_connect_via_link_title">للتواصل عبر الرابط</string>
     <string name="scan_qr_to_connect_to_contact">للاتصال، يمكن لجهة الاتصال مسح رمز QR أو استخدام الرابط في التطبيق.</string>
     <string name="smp_servers_test_servers">خوادم الاختبار</string>
-    <string name="first_platform_without_user_ids">المنصة الأولى بدون أي معرفات للمستخدم - صمّمناه ليكون خاصًا.</string>
+    <string name="first_platform_without_user_ids">لا معرّفات مُستخدم</string>
     <string name="settings_section_title_support">دعم SIMPLEX CHAT</string>
     <string name="switch_verb">تبديل</string>
     <string name="color_title">العنوان الرئيسي</string>
@@ -2041,7 +2042,7 @@
     <string name="chat_database_exported_save">يمكنك حفظ الأرشيف المُصدر.</string>
     <string name="v6_0_connection_servers_status_descr">حالة الاتصال والخوادم.</string>
     <string name="v6_0_connect_faster_descr">تواصل مع أصدقائك بشكل أسرع</string>
-    <string name="v6_0_reachable_chat_toolbar">شريط أدوات الدردشة يمكن الوصول إليه 👋</string>
+    <string name="v6_0_reachable_chat_toolbar">شريط أدوات الدردشة يمكن الوصول إليه</string>
     <string name="v6_0_your_contacts_descr">أرشفة جهات الاتصال للدردشة لاحقًا.</string>
     <string name="v6_0_reachable_chat_toolbar_descr">استخدم التطبيق بيد واحدة.</string>
     <string name="chat_database_exported_title">صُدرت قاعدة بيانات الدردشة</string>
@@ -2051,4 +2052,17 @@
     <string name="v6_0_private_routing_descr">يحمي عنوان IP الخاص بك واتصالاتك.</string>
     <string name="network_option_tcp_connection">اتصال TCP</string>
     <string name="network_options_save_and_reconnect">حفظ وإعادة الاتصال</string>
+    <string name="create_address_button">أنشِئ</string>
+    <string name="v6_0_new_chat_experience">تجربة دردشة جديدة 🎉</string>
+    <string name="v6_0_privacy_blur">تمويه من أجل خصوصية أفضل.</string>
+    <string name="v6_0_increase_font_size">كبّر حجم الخط</string>
+    <string name="new_message">رسالة جديدة</string>
+    <string name="invite_friends_short">ادعُ</string>
+    <string name="v6_0_new_media_options">خيارات الوسائط الجديدة</string>
+    <string name="v6_0_chat_list_media">شغّل من قائمة الدردشة.</string>
+    <string name="one_hand_ui_card_title">تبديل قائمة الدردشة:</string>
+    <string name="one_hand_ui_change_instruction">يمكنك تغييره في إعدادات المظهر.</string>
+    <string name="v6_0_upgrade_app_descr">نزّل الإصدارات الجديدة من GitHub.</string>
+    <string name="v6_0_upgrade_app">ترقية التطبيق تلقائيًا</string>
+    <string name="reset_all_hints">صفّر كافة التلميحات</string>
 </resources>

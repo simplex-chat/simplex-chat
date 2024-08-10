@@ -356,10 +356,10 @@
 "accepted call" = "llamada aceptada";
 
 /* No comment provided by engineer. */
-"Acknowledged" = "Recibido";
+"Acknowledged" = "Confirmaciones";
 
 /* No comment provided by engineer. */
-"Acknowledgement errors" = "Errores de reconocimiento";
+"Acknowledgement errors" = "Errores de confirmación";
 
 /* No comment provided by engineer. */
 "Active connections" = "Conexiones activas";
@@ -437,7 +437,7 @@
 "All data is erased when it is entered." = "Al introducirlo todos los datos son eliminados.";
 
 /* No comment provided by engineer. */
-"All data is private to your device." = "Todos los datos son privados para tu dispositivo.";
+"All data is private to your device." = "Todos los datos son privados y están en tu dispositivo.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Todos los miembros del grupo permanecerán conectados.";
@@ -861,7 +861,7 @@
 "Chat console" = "Consola de Chat";
 
 /* No comment provided by engineer. */
-"Chat database" = "Base de datos del chat";
+"Chat database" = "Base de datos de SimpleX";
 
 /* No comment provided by engineer. */
 "Chat database deleted" = "Base de datos eliminada";
@@ -873,13 +873,13 @@
 "Chat database imported" = "Base de datos importada";
 
 /* No comment provided by engineer. */
-"Chat is running" = "Chat está en ejecución";
+"Chat is running" = "SimpleX está en ejecución";
 
 /* No comment provided by engineer. */
-"Chat is stopped" = "Chat está parado";
+"Chat is stopped" = "SimpleX está parado";
 
 /* No comment provided by engineer. */
-"Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." = "Chat parado. Si has usado esta base de datos en otro dispositivo, debes transferirla de vuelta antes de iniciar Chat.";
+"Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." = "SimpleX está parado. Si has usado esta base de datos en otro dispositivo, debes transferirla de vuelta antes de iniciar SimpleX.";
 
 /* No comment provided by engineer. */
 "Chat list" = "Lista de chats";
@@ -954,7 +954,7 @@
 "complete" = "completado";
 
 /* No comment provided by engineer. */
-"Completed" = "Completado";
+"Completed" = "Completadas";
 
 /* No comment provided by engineer. */
 "Configure ICE servers" = "Configure servidores ICE";
@@ -987,7 +987,7 @@
 "Confirm password" = "Confirmar contraseña";
 
 /* No comment provided by engineer. */
-"Confirm that you remember database passphrase to migrate it." = "Confirma que recuerdas la frase de contraseña de la base de datos para migrarla.";
+"Confirm that you remember database passphrase to migrate it." = "Para migrar confirma que recuerdas la frase de contraseña de la base de datos.";
 
 /* No comment provided by engineer. */
 "Confirm upload" = "Confirmar subida";
@@ -1035,7 +1035,7 @@
 "connected" = "conectado";
 
 /* No comment provided by engineer. */
-"Connected" = "Conectado";
+"Connected" = "Conectadas";
 
 /* No comment provided by engineer. */
 "Connected desktop" = "Ordenador conectado";
@@ -1221,7 +1221,7 @@
 "Create your profile" = "Crea tu perfil";
 
 /* No comment provided by engineer. */
-"Created" = "Creado";
+"Created" = "Creadas";
 
 /* No comment provided by engineer. */
 "Created at" = "Creado";
@@ -1471,7 +1471,7 @@
 "deleted" = "eliminado";
 
 /* No comment provided by engineer. */
-"Deleted" = "Eliminado";
+"Deleted" = "Eliminadas";
 
 /* No comment provided by engineer. */
 "Deleted at" = "Eliminado";
@@ -1486,7 +1486,7 @@
 "deleted group" = "grupo eliminado";
 
 /* No comment provided by engineer. */
-"Deletion errors" = "Errores de borrado";
+"Deletion errors" = "Errores de eliminación";
 
 /* No comment provided by engineer. */
 "Delivery" = "Entrega";
@@ -1993,7 +1993,7 @@
 "Error starting chat" = "Error al iniciar Chat";
 
 /* No comment provided by engineer. */
-"Error stopping chat" = "Error al parar Chat";
+"Error stopping chat" = "Error al parar SimpleX";
 
 /* No comment provided by engineer. */
 "Error switching profile!" = "¡Error al cambiar perfil!";
@@ -2417,7 +2417,7 @@
 "Improved server configuration" = "Configuración del servidor mejorada";
 
 /* No comment provided by engineer. */
-"In order to continue, chat should be stopped." = "Para continuar, Chat debe estar parado.";
+"In order to continue, chat should be stopped." = "Para continuar, SimpleX debe estar parado.";
 
 /* No comment provided by engineer. */
 "In reply to" = "En respuesta a";
@@ -2795,7 +2795,7 @@
 "Message forwarded" = "Mensaje reenviado";
 
 /* item status description */
-"Message may be delivered later if member becomes active." = "El mensaje puede ser entregado más tarde si el miembro vuelve a estar activo.";
+"Message may be delivered later if member becomes active." = "El mensaje podría ser entregado más tarde si el miembro vuelve a estar activo.";
 
 /* No comment provided by engineer. */
 "Message queue info" = "Información cola de mensajes";
@@ -3023,7 +3023,7 @@
 "No device token!" = "¡Sin dispositivo token!";
 
 /* item status description */
-"No direct connection yet, message is forwarded by admin." = "Aún no hay conexión directa, el mensaje es reenviado por el administrador.";
+"No direct connection yet, message is forwarded by admin." = "Aún no hay conexión directa con este miembro, el mensaje es reenviado por el administrador.";
 
 /* No comment provided by engineer. */
 "no e2e encryption" = "sin cifrar";
@@ -3517,7 +3517,7 @@
 "Received reply" = "Respuesta recibida";
 
 /* No comment provided by engineer. */
-"Received total" = "Total recibido";
+"Received total" = "Total recibidos";
 
 /* No comment provided by engineer. */
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "La dirección de recepción pasará a otro servidor. El cambio se completará cuando el remitente esté en línea.";
@@ -3653,7 +3653,7 @@
 "Reset all hints" = "Reiniciar todas las pistas";
 
 /* No comment provided by engineer. */
-"Reset all statistics" = "Restablecer estadísticas";
+"Reset all statistics" = "Restablecer todas las estadísticas";
 
 /* No comment provided by engineer. */
 "Reset all statistics?" = "¿Restablecer todas las estadísticas?";
@@ -3707,7 +3707,7 @@
 "Role" = "Rol";
 
 /* No comment provided by engineer. */
-"Run chat" = "Ejecutar chat";
+"Run chat" = "Ejecutar SimpleX";
 
 /* No comment provided by engineer. */
 "Safely receive files" = "Recibe archivos de forma segura";
@@ -3833,7 +3833,7 @@
 "Secure queue" = "Cola segura";
 
 /* No comment provided by engineer. */
-"Secured" = "Seguro";
+"Secured" = "Aseguradas";
 
 /* No comment provided by engineer. */
 "Security assessment" = "Evaluación de la seguridad";
@@ -3974,10 +3974,10 @@
 "Sent reply" = "Respuesta enviada";
 
 /* No comment provided by engineer. */
-"Sent total" = "Total enviado";
+"Sent total" = "Total enviados";
 
 /* No comment provided by engineer. */
-"Sent via proxy" = "Enviado mediante proxy";
+"Sent via proxy" = "Enviado vía proxy";
 
 /* No comment provided by engineer. */
 "Server address" = "Dirección del servidor";
@@ -4106,7 +4106,7 @@
 "Show message status" = "Estado del mensaje";
 
 /* No comment provided by engineer. */
-"Show percentage" = "Mostrar porcentaje";
+"Show percentage" = "Mostrar porcentajes";
 
 /* No comment provided by engineer. */
 "Show preview" = "Mostrar vista previa";
@@ -4223,13 +4223,13 @@
 "Stop" = "Parar";
 
 /* No comment provided by engineer. */
-"Stop chat" = "Parar chat";
+"Stop chat" = "Parar SimpleX";
 
 /* No comment provided by engineer. */
-"Stop chat to enable database actions" = "Para habilitar las acciones sobre la base de datos, debes parar Chat";
+"Stop chat to enable database actions" = "Para habilitar las acciones sobre la base de datos, debes parar SimpleX";
 
 /* No comment provided by engineer. */
-"Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Para poder exportar, importar o eliminar la base de datos primero debes parar Chat. Mientras tanto no podrás recibir ni enviar mensajes.";
+"Stop chat to export, import or delete chat database. You will not be able to receive and send messages while the chat is stopped." = "Para poder exportar, importar o eliminar la base de datos primero debes parar SimpleX. Mientras tanto no podrás recibir ni enviar mensajes.";
 
 /* No comment provided by engineer. */
 "Stop chat?" = "¿Parar Chat?";
@@ -4418,7 +4418,7 @@
 "These settings are for your current profile **%@**." = "Esta configuración afecta a tu perfil actual **%@**.";
 
 /* No comment provided by engineer. */
-"They can be overridden in contact and group settings." = "Se pueden anular en la configuración de contactos.";
+"They can be overridden in contact and group settings." = "Se puede modificar desde la configuración particular de cada grupo y contacto.";
 
 /* No comment provided by engineer. */
 "This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Esta acción es irreversible. Se eliminarán todos los archivos y multimedia recibidos y enviados. Las imágenes de baja resolución permanecerán.";
