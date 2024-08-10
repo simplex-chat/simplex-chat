@@ -524,17 +524,17 @@
       </trans-unit>
       <trans-unit id="Abort" xml:space="preserve">
         <source>Abort</source>
-        <target>Abbrechen</target>
+        <target>Beenden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Abort changing address" xml:space="preserve">
         <source>Abort changing address</source>
-        <target>Wechsel der Empfängeradresse abbrechen</target>
+        <target>Wechsel der Empfängeradresse beenden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Abort changing address?" xml:space="preserve">
         <source>Abort changing address?</source>
-        <target>Wechsel der Empfängeradresse abbrechen?</target>
+        <target>Wechsel der Empfängeradresse beenden?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About SimpleX" xml:space="preserve">
@@ -657,7 +657,7 @@
       </trans-unit>
       <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve">
         <source>Address change will be aborted. Old receiving address will be used.</source>
-        <target>Der Wechsel der Empfängeradresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.</target>
+        <target>Der Wechsel der Empfängeradresse wird beendet. Die bisherige Adresse wird weiter verwendet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can block a member for all." xml:space="preserve">
@@ -2701,7 +2701,7 @@ Das ist Ihr eigener Einmal-Link!</target>
       </trans-unit>
       <trans-unit id="Error aborting address change" xml:space="preserve">
         <source>Error aborting address change</source>
-        <target>Fehler beim Abbrechen des Adresswechsels</target>
+        <target>Fehler beim Beenden des Adresswechsels</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error accepting contact request" xml:space="preserve">
