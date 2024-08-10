@@ -115,13 +115,14 @@ struct NewChatSheet: View {
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        Label("Add contact", systemImage: "link.badge.plus")
-                            .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                isLargeSheet = true
-                                Task { isAddContactActive = true }
-                            }
+                        onTapWithInset(
+                            Label("Add contact", systemImage: "link.badge.plus")
+                        ) {
+                            isLargeSheet = true
+                            Task { isAddContactActive = true }
+                        }
+
+
                     }
                     NavigationLink(isActive: $isScanPasteLinkActive) {
                         NewChatView(selection: .connect, showQRCodeScanner: true, parentAlert: $alert)
@@ -129,13 +130,12 @@ struct NewChatSheet: View {
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        Label("Scan / Paste link", systemImage: "qrcode")
-                            .frame(maxWidth: .infinity, minHeight: 36, alignment: .leading)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                isLargeSheet = true
-                                Task { isScanPasteLinkActive = true }
-                            }
+                        onTapWithInset(
+                            Label("Scan / Paste link", systemImage: "qrcode")
+                        ) {
+                            isLargeSheet = true
+                            Task { isScanPasteLinkActive = true }
+                        }
                     }
                     NavigationLink {
                         AddGroupView()
@@ -169,6 +169,17 @@ struct NewChatSheet: View {
                 showDeletedChatIcon: true
             )
         }
+    }
+    
+    /// Extends label's tap area to match `.insetGrouped` list row insets
+    private func onTapWithInset<L: View>(_ label: L, action: @escaping () -> Void) -> some View {
+        label
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 16).padding(.vertical, 8).padding(.trailing, 32)
+            .contentShape(Rectangle())
+            .onTapGesture(perform: action)
+            .border(.red)
+            .padding(.leading, -16).padding(.vertical, -8).padding(.trailing, -32)
     }
 
     func newChatActionButton<Content : View>(_ icon: String, color: Color/* = .secondary*/, content: @escaping () -> Content) -> some View {
