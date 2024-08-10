@@ -228,10 +228,17 @@ final class ChatModel: ObservableObject {
         chats.firstIndex(where: { $0.id == id })
     }
 
-    func addChat(_ chat: Chat, at position: Int = 0) {
-        withAnimation {
-            chats.insert(chat, at: position)
+    func addChat(_ chat: Chat) {
+        if chatId == nil {
+            withAnimation { addChat_(chat, at: 0) }
+        } else {
+            addChat_(chat, at: 0)
         }
+        popChatCollector.popAddedChat(chat.chatInfo.id)
+    }
+
+    func addChat_(_ chat: Chat, at position: Int = 0) {
+        chats.insert(chat, at: position)
     }
 
     func updateChatInfo(_ cInfo: ChatInfo) {
@@ -305,7 +312,7 @@ final class ChatModel: ObservableObject {
                     }
                 }
             } else {
-                addChat(Chat(c), at: i)
+                addChat_(Chat(c), at: i)
             }
         }
         NtfManager.shared.setNtfBadgeCount(totalUnreadCountForAllUsers())
@@ -336,10 +343,10 @@ final class ChatModel: ObservableObject {
             if case .rcvNew = cItem.meta.itemStatus {
                 unreadCollector.changeUnreadCounter(cInfo.id, by: 1)
             }
+            popChatCollector.throttlePopChat(cInfo.id)
         } else {
             addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
         }
-        popChatCollector.throttlePopChat(cInfo.id)
         // add to current chat
         if chatId == cInfo.id {
             _ = _upsertChatItem(cInfo, cItem)
@@ -625,6 +632,15 @@ final class ChatModel: ObservableObject {
             subject.send()
         }
 
+        func popAddedChat(_ chatId: ChatId) {
+            // if chatsToPop is empty here, we don't need to account for this chat when sorting,
+            // because it is already added to the top.
+            if !chatsToPop.isEmpty {
+                chatsToPop[chatId] = Date.now
+                subject.send()
+            }
+        }
+        
         func clear() {
             chatsToPop = [:]
         }
@@ -639,7 +655,7 @@ final class ChatModel: ObservableObject {
                 // It will be popped to top later when user exits from the list.
                 if m.chatId != chatId, let i = m.getChatIndex(chatId) {
                     ixs.insert(i)
-                    var ch = m.chats[i]
+                    let ch = m.chats[i]
                     ch.popTs = popTs
                     chs.append(ch)
                 }
