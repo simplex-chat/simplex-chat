@@ -619,6 +619,7 @@ final class ChatModel: ObservableObject {
         private let subject = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
         private var chatsToPop: [ChatId: Date] = [:]
+        private let popTsComparator = KeyPathComparator<Chat>(\.popTs, order: .reverse)
 
         init() {
             subject
@@ -658,12 +659,10 @@ final class ChatModel: ObservableObject {
                 }
             }
 
-            // sort chats by pop timestamp in descending order
-            chs.sort { ($0.popTs ?? .distantPast) > ($1.popTs ?? .distantPast) }
-
             let removeInsert = {
                 m.chats.remove(atOffsets: ixs)
-                m.chats.insert(contentsOf: chs, at: 0)
+                // sort chats by pop timestamp in descending order
+                m.chats.insert(contentsOf: chs.sorted(using: self.popTsComparator), at: 0)
             }
 
             if m.chatId == nil {
