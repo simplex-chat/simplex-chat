@@ -632,24 +632,25 @@ final class ChatModel: ObservableObject {
         func popCollectedChats() {
             let m = ChatModel.shared
             var ixs: IndexSet = []
-            var chs: [(Chat, Date)] = []
+            var chs: [Chat] = []
             // collect chats that received updates
-            for (chatId, ts) in self.chatsToPop {
+            for (chatId, popTs) in self.chatsToPop {
                 // Currently opened chat is excluded, removing it from the list would navigate out of it
                 // It will be popped to top later when user exits from the list.
                 if m.chatId != chatId, let i = m.getChatIndex(chatId) {
                     ixs.insert(i)
-                    chs.append((m.chats[i], ts))
+                    var ch = m.chats[i]
+                    ch.popTs = popTs
+                    chs.append(ch)
                 }
             }
 
-            // sort chats by timestamp in descending order
-            chs.sort { $0.1 > $1.1 }
-            let toPop = chs.map { $0.0 }
+            // sort chats by pop timestamp in descending order
+            chs.sort { ($0.popTs ?? .distantPast) > ($1.popTs ?? .distantPast) }
 
             let removeInsert = {
                 m.chats.remove(atOffsets: ixs)
-                m.chats.insert(contentsOf: toPop, at: 0)
+                m.chats.insert(contentsOf: chs, at: 0)
             }
 
             if m.chatId == nil {
@@ -876,6 +877,7 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
     @Published var chatItems: [ChatItem]
     @Published var chatStats: ChatStats
     var created = Date.now
+    fileprivate var popTs: Date?
 
     init(_ cData: ChatData) {
         self.chatInfo = cData.chatInfo
