@@ -61,8 +61,11 @@ struct NewChatSheet: View {
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @Binding var alert: SomeAlert?
+
+    // Sheet height management
     @State private var isAddContactActive = false
     @State private var isScanPasteLinkActive = false
+    @State private var :qet = false
 
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
 
@@ -79,19 +82,15 @@ struct NewChatSheet: View {
             v.presentationDetents(
                 [.height(500), .height(575), .large],
                 selection: Binding(
-                    get: {
-                        (isAddContactActive || isScanPasteLinkActive)
-                        ? .large
-                        : .height(showArchive ? 575 : 500)
-                    },
-                    set: { _ in}
+                    get: { isLargeSheet ? .large : .height(showArchive ? 575 : 500) },
+                    set: { isLargeSheet = $0 == .large }
                 )
             )
         } else {
             v
         }
     }
-    
+
     @ViewBuilder private func viewBody(_ showArchive: Bool) -> some View {
         List {
             HStack {
@@ -117,6 +116,11 @@ struct NewChatSheet: View {
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
                         Label("Add contact", systemImage: "link.badge.plus")
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                isLargeSheet = true
+                                Task { isAddContactActive = true }
+                            }
                     }
                     NavigationLink(isActive: $isScanPasteLinkActive) {
                         NewChatView(selection: .connect, showQRCodeScanner: true, parentAlert: $alert)
@@ -125,6 +129,11 @@ struct NewChatSheet: View {
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
                         Label("Scan / Paste link", systemImage: "qrcode")
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                isLargeSheet = true
+                                Task { isScanPasteLinkActive = true }
+                            }
                     }
                     NavigationLink {
                         AddGroupView()
