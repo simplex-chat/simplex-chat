@@ -188,7 +188,7 @@ struct ChatView: View {
                     } label: {
                         ChatInfoToolbar(chat: chat)
                     }
-                    .appSheet(isPresented: $showChatInfoSheet) {
+                    .appSheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
                         ChatInfoView(
                             chat: chat,
                             contact: contact,
