@@ -25,6 +25,7 @@ struct ChatView: View {
     @State @ObservedObject var chat: Chat
     @StateObject private var scrollModel = ReverseListScrollModel<ChatItem>()
     @StateObject private var floatingButtonModel = FloatingButtonModel()
+    @State private var previousItemCount: Int = 0
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -403,7 +404,6 @@ struct ChatView: View {
                 loadChatItems(cInfo)
             }
             .padding(.vertical, -InvertedTableView.inset)
-            .padding(.bottom, 4)
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { _ in
                 loadChat(chat: chat, search: searchText)
@@ -414,10 +414,17 @@ struct ChatView: View {
                     chat.copyFrom(c)
                     showChatInfoSheet = false
                     loadChat(chat: c)
+                    scrollModel.scrollToBottom()
                 }
             }
-            .onChange(of: im.reversedChatItems) { _ in
+            .onChange(of: im.reversedChatItems) { items in
                 floatingButtonModel.chatItemsChanged()
+                if previousItemCount < items.count {
+                    previousItemCount = items.count
+                    if floatingButtonModel.unreadChatItemCounts.isNearBottom {
+                        scrollModel.scrollToBottom()
+                    }
+                }
             }
         }
     }
