@@ -421,7 +421,7 @@ struct ChatView: View {
                 floatingButtonModel.chatItemsChanged()
                 if previousItemCount < items.count {
                     previousItemCount = items.count
-                    if floatingButtonModel.unreadChatItemCounts.isNearBottom {
+                    if floatingButtonModel.unreadChatItemCounts.isReallyNearBottom {
                         scrollModel.scrollToBottom()
                     }
                 }
@@ -458,6 +458,7 @@ struct ChatView: View {
         init() {
             unreadChatItemCounts = UnreadChatItemCounts(
                 isNearBottom: true,
+                isReallyNearBottom: true,
                 unreadBelow: 0
             )
             events
