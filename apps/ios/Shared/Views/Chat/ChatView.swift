@@ -25,7 +25,6 @@ struct ChatView: View {
     @State @ObservedObject var chat: Chat
     @StateObject private var scrollModel = ReverseListScrollModel<ChatItem>()
     @StateObject private var floatingButtonModel = FloatingButtonModel()
-    @State private var previousItemCount: Int = 0
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
@@ -417,10 +416,12 @@ struct ChatView: View {
                     scrollModel.scrollToBottom()
                 }
             }
-            .onChange(of: im.reversedChatItems) { items in
+            .onChange(of: im.reversedChatItems) { _ in
                 floatingButtonModel.chatItemsChanged()
-                if previousItemCount < items.count {
-                    previousItemCount = items.count
+            }
+            .onChange(of: im.itemAdded) { added in
+                if added {
+                    im.itemAdded = false
                     if floatingButtonModel.unreadChatItemCounts.isReallyNearBottom {
                         scrollModel.scrollToBottom()
                     }

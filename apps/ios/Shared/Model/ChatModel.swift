@@ -50,6 +50,10 @@ class ItemsModel: ObservableObject {
     var reversedChatItems: [ChatItem] = [] {
         willSet { publisher.send() }
     }
+    var itemAdded = false {
+        willSet { publisher.send() }
+    }
+    
     init() {
         publisher
             .throttle(for: 0.25, scheduler: DispatchQueue.main, latest: true)
@@ -389,6 +393,7 @@ final class ChatModel: ObservableObject {
                     ci.meta.itemStatus = status
                 }
                 im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
+                im.itemAdded = true
             }
             return true
         }
@@ -483,6 +488,7 @@ final class ChatModel: ObservableObject {
         let cItem = ChatItem.liveDummy(chatInfo.chatType)
         withAnimation {
             im.reversedChatItems.insert(cItem, at: 0)
+            im.itemAdded = true
         }
         return cItem
     }
