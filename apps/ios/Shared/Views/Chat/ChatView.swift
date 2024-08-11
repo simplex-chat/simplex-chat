@@ -21,6 +21,7 @@ struct ChatView: View {
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
+    // chat cannot be assigned, as it breaks observation in chat items
     @State @ObservedObject var chat: Chat
     @StateObject private var scrollModel = ReverseListScrollModel<ChatItem>()
     @StateObject private var floatingButtonModel = FloatingButtonModel()
@@ -141,7 +142,8 @@ struct ChatView: View {
             if let cId {
                 selectedChatItems = nil
                 if let c = chatModel.getChat(cId) {
-                    chat = c
+                    // chat cannot be assigned, as it breaks observation in chat items
+                    chat.copyFrom(c)
                 }
                 initChatView()
                 theme = buildTheme()
@@ -162,7 +164,6 @@ struct ChatView: View {
             VideoPlayerView.players.removeAll()
             stopAudioPlayer()
             if chatModel.chatId == cInfo.id && !presentationMode.wrappedValue.isPresented {
-                chatModel.chatId = nil
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     if chatModel.chatId == nil {
                         chatModel.chatItemStatuses = [:]
@@ -409,7 +410,8 @@ struct ChatView: View {
             }
             .onChange(of: chatModel.chatId) { chatId in
                 if let chatId, let c = chatModel.getChat(chatId) {
-                    chat = c
+                    // chat cannot be assigned, as it breaks observation in chat items
+                    chat.copyFrom(c)
                     showChatInfoSheet = false
                     loadChat(chat: c)
                 }
