@@ -464,14 +464,13 @@ struct ChatView: View {
             events
                 .receive(on: DispatchQueue.global(qos: .background))
                 .scan(Set<String>()) { itemsInView, event in
-                    return switch event {
-                    case let .appeared(viewId):
-                        itemsInView.union([viewId])
-                    case let .disappeared(viewId):
-                        itemsInView.subtracting([viewId])
-                    case .chatItemsChanged:
-                        itemsInView
+                    var updated = itemsInView
+                    switch event {
+                    case let .appeared(viewId): updated.insert(viewId)
+                    case let .disappeared(viewId): updated.remove(viewId)
+                    case .chatItemsChanged: ()
                     }
+                    return updated
                 }
                 .map { ChatModel.shared.unreadChatItemCounts(itemsInView: $0) }
                 .removeDuplicates()

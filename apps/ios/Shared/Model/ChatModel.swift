@@ -843,8 +843,10 @@ final class ChatModel: ObservableObject {
             i += 1
         }
         return UnreadChatItemCounts(
-            isNearBottom: totalBelow < 16,
-            isReallyNearBottom: totalBelow < 3,
+            // TODO these thresholds should account for the fact that items are still "visible" while
+            // covered by compose area, or better be reduced with the actual height in pixels below the screen.
+            isNearBottom: totalBelow < 15,
+            isReallyNearBottom: totalBelow < 2,
             unreadBelow: unreadBelow
         )
     }
