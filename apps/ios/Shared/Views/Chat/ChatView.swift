@@ -389,14 +389,22 @@ struct ChatView: View {
                                 : voiceNoFrame
                                     ? (g.size.width - 32)
                                     : (g.size.width - 32) * 0.84
-                return chatItemView(ci, maxWidth)
-                    .onAppear {
-                        floatingButtonModel.appeared(viewId: ci.viewId)
-                    }
-                    .onDisappear {
-                        floatingButtonModel.disappeared(viewId: ci.viewId)
-                    }
-                    .id(ci.id) // Required to trigger `onAppear` on iOS15
+                return ChatItemWithMenu(
+                    chat: $chat,
+                    chatItem: ci,
+                    maxWidth: maxWidth,
+                    composeState: $composeState,
+                    selectedMember: $selectedMember,
+                    revealedChatItem: $revealedChatItem,
+                    selectedChatItems: $selectedChatItems
+                )
+                .onAppear {
+                    floatingButtonModel.appeared(viewId: ci.viewId)
+                }
+                .onDisappear {
+                    floatingButtonModel.disappeared(viewId: ci.viewId)
+                }
+                .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadPage: {
                 loadChatItems(cInfo)
             }
@@ -667,22 +675,10 @@ struct ChatView: View {
         VoiceItemState.chatView = [:]
     }
 
-    @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
-        ChatItemWithMenu(
-            chat: chat,
-            chatItem: ci,
-            maxWidth: maxWidth,
-            composeState: $composeState,
-            selectedMember: $selectedMember,
-            revealedChatItem: $revealedChatItem,
-            selectedChatItems: $selectedChatItems
-        )
-    }
-
     private struct ChatItemWithMenu: View {
         @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
-        @ObservedObject var chat: Chat
+        @Binding @ObservedObject var chat: Chat
         let chatItem: ChatItem
         let maxWidth: CGFloat
         @Binding var composeState: ComposeState

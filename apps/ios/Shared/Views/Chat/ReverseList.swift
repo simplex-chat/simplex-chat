@@ -11,13 +11,12 @@ import Combine
 
 /// A List, which displays it's items in reverse order - from bottom to top
 struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIViewControllerRepresentable {
-
     let items: Array<Item>
 
     @Binding var scrollState: ReverseListScrollModel<Item>.State
 
     /// Closure, that returns user interface for a given item
-    @ViewBuilder let content: (Item) -> Content
+    let content: (Item) -> Content
 
     let loadPage: () -> Void
 
