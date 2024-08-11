@@ -578,4 +578,19 @@
     <string name="delete_without_notification">Xóa mà không thông báo</string>
     <string name="multicast_discoverable_via_local_network">Có thể tìm thấy qua mạng cục bộ</string>
     <string name="delete_members_messages__question">Xóa %d tin nhắn của các thành viên?</string>
+    <string name="ttl_months">%d tháng</string>
+    <string name="ttl_m">%dm</string>
+    <string name="network_smp_proxy_mode_never_description">KHÔNG sử dụng định tuyến riêng tư.</string>
+    <string name="v5_3_discover_join_groups">Khám phá và tham gia nhóm</string>
+    <string name="ttl_mth">%dmth</string>
+    <string name="disable_sending_recent_history">Không gửi lịch sử đến các thành viên mới.</string>
+    <string name="la_minutes">%d phút</string>
+    <string name="network_smp_proxy_fallback_prohibit_description">KHÔNG gửi tin nhắn trực tiếp, kể cả khi máy chủ của bạn hoặc máy chủ đích không hỗ trợ định tuyến riêng tư.</string>
+    <string name="ttl_month">%d tháng</string>
+    <string name="ttl_min">%d phút</string>
+    <string name="blocked_items_description">%d tin nhắn bị chặn</string>
+    <string name="blocked_by_admin_items_description">%d tin nhắn bị chặn bởi quản trị viên</string>
+    <string name="marked_deleted_items_description">%d tin nhắn được đánh dấu là đã xóa</string>
+    <string name="display_name_cannot_contain_whitespace">Tên hiển thị không thể chứa khoảng trắng.</string>
+    <string name="discover_on_network">Khám phá qua mạng cục bộ</string>
 </resources>
