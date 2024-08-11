@@ -413,10 +413,19 @@ struct ChatView: View {
                     chat.copyFrom(c)
                     showChatInfoSheet = false
                     loadChat(chat: c)
+                    scrollModel.scrollToBottom()
                 }
             }
             .onChange(of: im.reversedChatItems) { _ in
                 floatingButtonModel.chatItemsChanged()
+            }
+            .onChange(of: im.itemAdded) { added in
+                if added {
+                    im.itemAdded = false
+                    if floatingButtonModel.unreadChatItemCounts.isReallyNearBottom {
+                        scrollModel.scrollToBottom()
+                    }
+                }
             }
         }
     }
@@ -450,19 +459,19 @@ struct ChatView: View {
         init() {
             unreadChatItemCounts = UnreadChatItemCounts(
                 isNearBottom: true,
+                isReallyNearBottom: true,
                 unreadBelow: 0
             )
             events
                 .receive(on: DispatchQueue.global(qos: .background))
                 .scan(Set<String>()) { itemsInView, event in
-                    return switch event {
-                    case let .appeared(viewId):
-                        itemsInView.union([viewId])
-                    case let .disappeared(viewId):
-                        itemsInView.subtracting([viewId])
-                    case .chatItemsChanged:
-                        itemsInView
+                    var updated = itemsInView
+                    switch event {
+                    case let .appeared(viewId): updated.insert(viewId)
+                    case let .disappeared(viewId): updated.remove(viewId)
+                    case .chatItemsChanged: ()
                     }
+                    return updated
                 }
                 .map { ChatModel.shared.unreadChatItemCounts(itemsInView: $0) }
                 .removeDuplicates()
