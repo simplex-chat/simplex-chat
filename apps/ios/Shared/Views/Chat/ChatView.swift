@@ -162,7 +162,6 @@ struct ChatView: View {
             VideoPlayerView.players.removeAll()
             stopAudioPlayer()
             if chatModel.chatId == cInfo.id && !presentationMode.wrappedValue.isPresented {
-                chatModel.chatId = nil
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     if chatModel.chatId == nil {
                         chatModel.chatItemStatuses = [:]
@@ -189,7 +188,7 @@ struct ChatView: View {
                     } label: {
                         ChatInfoToolbar(chat: chat)
                     }
-                    .appSheet(isPresented: $showChatInfoSheet) {
+                    .appSheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
                         ChatInfoView(
                             chat: chat,
                             contact: contact,
@@ -390,14 +389,22 @@ struct ChatView: View {
                                 : voiceNoFrame
                                     ? (g.size.width - 32)
                                     : (g.size.width - 32) * 0.84
-                return chatItemView(ci, maxWidth)
-                    .onAppear {
-                        floatingButtonModel.appeared(viewId: ci.viewId)
-                    }
-                    .onDisappear {
-                        floatingButtonModel.disappeared(viewId: ci.viewId)
-                    }
-                    .id(ci.id) // Required to trigger `onAppear` on iOS15
+                return ChatItemWithMenu(
+                    chat: $chat,
+                    chatItem: ci,
+                    maxWidth: maxWidth,
+                    composeState: $composeState,
+                    selectedMember: $selectedMember,
+                    revealedChatItem: $revealedChatItem,
+                    selectedChatItems: $selectedChatItems
+                )
+                .onAppear {
+                    floatingButtonModel.appeared(viewId: ci.viewId)
+                }
+                .onDisappear {
+                    floatingButtonModel.disappeared(viewId: ci.viewId)
+                }
+                .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadPage: {
                 loadChatItems(cInfo)
             }
@@ -411,10 +418,19 @@ struct ChatView: View {
                     chat = c
                     showChatInfoSheet = false
                     loadChat(chat: c)
+                    scrollModel.scrollToBottom()
                 }
             }
             .onChange(of: im.reversedChatItems) { _ in
                 floatingButtonModel.chatItemsChanged()
+            }
+            .onChange(of: im.itemAdded) { added in
+                if added {
+                    im.itemAdded = false
+                    if floatingButtonModel.unreadChatItemCounts.isReallyNearBottom {
+                        scrollModel.scrollToBottom()
+                    }
+                }
             }
         }
     }
@@ -448,19 +464,19 @@ struct ChatView: View {
         init() {
             unreadChatItemCounts = UnreadChatItemCounts(
                 isNearBottom: true,
+                isReallyNearBottom: true,
                 unreadBelow: 0
             )
             events
                 .receive(on: DispatchQueue.global(qos: .background))
                 .scan(Set<String>()) { itemsInView, event in
-                    return switch event {
-                    case let .appeared(viewId):
-                        itemsInView.union([viewId])
-                    case let .disappeared(viewId):
-                        itemsInView.subtracting([viewId])
-                    case .chatItemsChanged:
-                        itemsInView
+                    var updated = itemsInView
+                    switch event {
+                    case let .appeared(viewId): updated.insert(viewId)
+                    case let .disappeared(viewId): updated.remove(viewId)
+                    case .chatItemsChanged: ()
                     }
+                    return updated
                 }
                 .map { ChatModel.shared.unreadChatItemCounts(itemsInView: $0) }
                 .removeDuplicates()
@@ -668,22 +684,10 @@ struct ChatView: View {
         VoiceItemState.chatView = [:]
     }
 
-    @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
-        ChatItemWithMenu(
-            chat: chat,
-            chatItem: ci,
-            maxWidth: maxWidth,
-            composeState: $composeState,
-            selectedMember: $selectedMember,
-            revealedChatItem: $revealedChatItem,
-            selectedChatItems: $selectedChatItems
-        )
-    }
-
     private struct ChatItemWithMenu: View {
         @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
-        @ObservedObject var chat: Chat
+        @Binding @ObservedObject var chat: Chat
         let chatItem: ChatItem
         let maxWidth: CGFloat
         @Binding var composeState: ComposeState
