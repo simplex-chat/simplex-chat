@@ -17,7 +17,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
     @Binding var scrollState: ReverseListScrollModel<Item>.State
 
     /// Closure, that returns user interface for a given item
-    let content: (Item) -> Content
+    @ViewBuilder let content: (Item) -> Content
 
     let loadPage: () -> Void
 
