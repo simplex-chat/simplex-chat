@@ -1055,9 +1055,9 @@
         <target>Verbesserungen bei Nachrichten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better networking" xml:space="preserve">
+      <trans-unit id="Better networking" xml:space="preserve" approved="no">
         <source>Better networking</source>
-        <target>Bessere Vernetzung</target>
+        <target state="translated">Kontrollieren Sie Ihr Netzwerk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
