@@ -415,9 +415,9 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRCustomChatResponse u r -> ttyUser' u $ map plain $ T.lines r
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
-    ttyUser user@User {showNtfs, activeUser} ss
-      | showNtfs || activeUser = ttyUserPrefix user ss
-      | otherwise = []
+    ttyUser user@User {showNtfs, activeUser, viewPwdHash} ss = case viewPwdHash of
+      Nothing | showNtfs || activeUser -> ttyUserPrefix user ss
+      _ -> []
     ttyUserPrefix :: User -> [StyledString] -> [StyledString]
     ttyUserPrefix _ [] = []
     ttyUserPrefix User {userId, localDisplayName = u} ss
