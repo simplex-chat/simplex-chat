@@ -10,32 +10,14 @@ import SwiftUI
 import SimpleXChat
 
 struct NavLinkPlain<Label: View>: View {
-    @State var tag: ChatId
+    let tag: ChatId
     @Binding var selection: ChatId?
     @ViewBuilder var label: () -> Label
     var disabled = false
 
     var body: some View {
         ZStack {
-            Button("") {
-                let navigationTimeout = Task {
-                    do {
-                        try await Task.sleep(nanoseconds: NSEC_PER_SEC * 1)
-                        print("task running")
-                        await MainActor.run { selection = tag }
-                    } catch {
-                        print("task cancelled")
-                    }
-                }
-                Task {
-                    if let chat = ChatModel.shared.getChat(tag) {
-                        try? await Task.sleep(nanoseconds: NSEC_PER_SEC * 5)
-                        await loadChat(chat: chat)
-                        navigationTimeout.cancel()
-                        await MainActor.run { selection = tag }
-                    }
-                }
-            }
+            Button("") { ItemsModel.shared.loadItemsAndNavigate(to: tag) }
             .disabled(disabled)
             label()
         }

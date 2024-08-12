@@ -46,7 +46,6 @@ struct ChatView: View {
     @State private var selectedChatItems: Set<Int64>? = nil
     @State private var showDeleteSelectedMessages: Bool = false
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
-    @State private var itemsVisible: Bool = true
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
@@ -79,13 +78,6 @@ struct ChatView: View {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
                     floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
-                    // TODO: DEBUG - Remove. Switches between last 5 chats
-                    Button("Next Chat") {
-                        let index = chatModel.chats.firstIndex { chatModel.chatId == $0.id }!
-                        chatModel.chatId = chatModel.chats[(index + 1) % 5].id
-                    }
-                        .padding(60)
-                        .buttonStyle(BorderedProminentButtonStyle())
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -143,7 +135,6 @@ struct ChatView: View {
             initChatView()
         }
         .onChange(of: chatModel.chatId) { cId in
-            itemsVisible = false
             showChatInfoSheet = false
             selectedChatItems = nil
             scrollModel.scrollToBottom()
@@ -151,7 +142,6 @@ struct ChatView: View {
             if let cId {
                 if let c = chatModel.getChat(cId) {
                     chat = c
-                    Task { await loadChat(chat: c) }
                 }
                 initChatView()
                 theme = buildTheme()
@@ -163,9 +153,6 @@ struct ChatView: View {
             NotificationCenter.postReverseListNeedsLayout()
         }
         .onChange(of: im.reversedChatItems) { reversedChatItems in
-            if !itemsVisible && !im.reversedChatItems.isEmpty {
-                withAnimation(.easeOut(duration: 0.1)) { itemsVisible = true }
-            }
             if reversedChatItems.count <= loadItemsPerPage && filtered(reversedChatItems).count < 10 {
                 loadChatItems(chat.chatInfo)
             }
@@ -234,75 +221,79 @@ struct ChatView: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                if selectedChatItems != nil {
-                    Button {
-                        withAnimation {
-                            selectedChatItems = nil
-                        }
-                    } label: {
-                        Text("Cancel")
-                    }
+                if im.isLoading {
+                    ProgressView().modifier(AppearAfter(seconds: 0.5))
                 } else {
-                    switch cInfo {
-                    case let .direct(contact):
-                        HStack {
-                            let callsPrefEnabled = contact.mergedPreferences.calls.enabled.forUser
-                            if callsPrefEnabled {
-                                if chatModel.activeCall == nil {
-                                    callButton(contact, .audio, imageName: "phone")
-                                        .disabled(!contact.ready || !contact.active)
-                                } else if let call = chatModel.activeCall, call.contact.id == cInfo.id {
-                                    endCallButton(call)
-                                }
+                    if selectedChatItems != nil {
+                        Button {
+                            withAnimation {
+                                selectedChatItems = nil
                             }
-                            Menu {
-                                if callsPrefEnabled && chatModel.activeCall == nil {
-                                    Button {
-                                        CallController.shared.startCall(contact, .video)
-                                    } label: {
-                                        Label("Video call", systemImage: "video")
+                        } label: {
+                            Text("Cancel")
+                        }
+                    } else {
+                        switch cInfo {
+                        case let .direct(contact):
+                            HStack {
+                                let callsPrefEnabled = contact.mergedPreferences.calls.enabled.forUser
+                                if callsPrefEnabled {
+                                    if chatModel.activeCall == nil {
+                                        callButton(contact, .audio, imageName: "phone")
+                                            .disabled(!contact.ready || !contact.active)
+                                    } else if let call = chatModel.activeCall, call.contact.id == cInfo.id {
+                                        endCallButton(call)
                                     }
-                                    .disabled(!contact.ready || !contact.active)
                                 }
-                                searchButton()
-                                ToggleNtfsButton(chat: chat)
-                                    .disabled(!contact.ready || !contact.active)
-                            } label: {
-                                Image(systemName: "ellipsis")
-                            }
-                        }
-                    case let .group(groupInfo):
-                        HStack {
-                            if groupInfo.canAddMembers {
-                                if (chat.chatInfo.incognito) {
-                                    groupLinkButton()
-                                        .appSheet(isPresented: $showGroupLinkSheet) {
-                                            GroupLinkView(
-                                                groupId: groupInfo.groupId,
-                                                groupLink: $groupLink,
-                                                groupLinkMemberRole: $groupLinkMemberRole,
-                                                showTitle: true,
-                                                creatingGroup: false
-                                            )
+                                Menu {
+                                    if callsPrefEnabled && chatModel.activeCall == nil {
+                                        Button {
+                                            CallController.shared.startCall(contact, .video)
+                                        } label: {
+                                            Label("Video call", systemImage: "video")
                                         }
-                                } else {
-                                    addMembersButton()
-                                        .appSheet(isPresented: $showAddMembersSheet) {
-                                            AddGroupMembersView(chat: chat, groupInfo: groupInfo)
-                                        }
+                                        .disabled(!contact.ready || !contact.active)
+                                    }
+                                    searchButton()
+                                    ToggleNtfsButton(chat: chat)
+                                        .disabled(!contact.ready || !contact.active)
+                                } label: {
+                                    Image(systemName: "ellipsis")
                                 }
                             }
-                            Menu {
-                                searchButton()
-                                ToggleNtfsButton(chat: chat)
-                            } label: {
-                                Image(systemName: "ellipsis")
+                        case let .group(groupInfo):
+                            HStack {
+                                if groupInfo.canAddMembers {
+                                    if (chat.chatInfo.incognito) {
+                                        groupLinkButton()
+                                            .appSheet(isPresented: $showGroupLinkSheet) {
+                                                GroupLinkView(
+                                                    groupId: groupInfo.groupId,
+                                                    groupLink: $groupLink,
+                                                    groupLinkMemberRole: $groupLinkMemberRole,
+                                                    showTitle: true,
+                                                    creatingGroup: false
+                                                )
+                                            }
+                                    } else {
+                                        addMembersButton()
+                                            .appSheet(isPresented: $showAddMembersSheet) {
+                                                AddGroupMembersView(chat: chat, groupInfo: groupInfo)
+                                            }
+                                    }
+                                }
+                                Menu {
+                                    searchButton()
+                                    ToggleNtfsButton(chat: chat)
+                                } label: {
+                                    Image(systemName: "ellipsis")
+                                }
                             }
+                        case .local:
+                            searchButton()
+                        default:
+                            EmptyView()
                         }
-                    case .local:
-                        searchButton()
-                    default:
-                        EmptyView()
                     }
                 }
             }
@@ -419,7 +410,7 @@ struct ChatView: View {
             } loadPage: {
                 loadChatItems(cInfo)
             }
-            .opacity(itemsVisible ? 1 : 0)
+            .opacity(ItemsModel.shared.isLoading ? 0 : 1)
             .padding(.vertical, -InvertedTableView.inset)
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { _ in

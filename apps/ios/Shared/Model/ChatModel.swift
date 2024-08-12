@@ -45,20 +45,44 @@ private func addTermItem(_ items: inout [TerminalItem], _ item: TerminalItem) {
 
 class ItemsModel: ObservableObject {
     static let shared = ItemsModel()
-    private let publisher = ObservableObjectPublisher()
+    private let throttledPublisher = ObservableObjectPublisher()
     private var bag = Set<AnyCancellable>()
     var reversedChatItems: [ChatItem] = [] {
-        willSet { publisher.send() }
+        willSet { throttledPublisher.send() }
     }
     var itemAdded = false {
-        willSet { publisher.send() }
+        willSet { throttledPublisher.send() }
     }
     
+    // Publishes directly to `objectWillChange` publisher,
+    // this will cause reversedChatItems to be rendered without throttling
+    @Published var isLoading = false
+
     init() {
-        publisher
+        throttledPublisher
             .throttle(for: 0.25, scheduler: DispatchQueue.main, latest: true)
             .sink { self.objectWillChange.send() }
             .store(in: &bag)
+    }
+
+    func loadItemsAndNavigate(to chatId: ChatId, willNavigate: @escaping () -> Void = {}) {
+        let navigationTimeout = Task {
+            do {
+                try await Task.sleep(nanoseconds: NSEC_PER_SEC * 1)
+                await MainActor.run { ChatModel.shared.chatId = chatId }
+            } catch { }
+        }
+        Task {
+            if let chat = ChatModel.shared.getChat(chatId) {
+                await MainActor.run { self.isLoading = true }
+                await loadChat(chat: chat)
+                navigationTimeout.cancel()
+                await MainActor.run {
+                    self.isLoading = false
+                    ChatModel.shared.chatId = chatId
+                }
+            }
+        }
     }
 }
 
