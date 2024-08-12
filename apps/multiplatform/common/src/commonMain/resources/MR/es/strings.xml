@@ -2036,7 +2036,7 @@
     <string name="cant_call_member_send_message_alert_text">Enviar mensaje para activar llamadas.</string>
     <string name="v6_0_delete_many_messages_descr">Elimina hasta 20 mensajes a la vez.</string>
     <string name="v6_0_reachable_chat_toolbar">Barra de herramientas accesible</string>
-    <string name="v6_0_your_contacts_descr">Archivar contactos para charlar más tarde.</string>
+    <string name="v6_0_your_contacts_descr">Archiva contactos para charlar más tarde.</string>
     <string name="chat_database_exported_save">Puedes guardar el archivo exportado.</string>
     <string name="privacy_media_blur_radius_strong">Fuerte</string>
     <string name="moderate_messages_will_be_deleted_warning">Los mensajes serán eliminados para todos los miembros.</string>
