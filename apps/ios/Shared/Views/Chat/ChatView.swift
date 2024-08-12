@@ -305,13 +305,14 @@ struct ChatView: View {
                 do {
                     let (stats, _) = try await apiContactInfo(chat.chatInfo.apiId)
                     await MainActor.run {
+                        var updatedContact = contact
+                        if contact.chatDeleted {
+                            updatedContact.chatDeleted = false
+                        }
                         if let s = stats {
-                            var updatedContact = contact
-                            if contact.chatDeleted {
-                                updatedContact.chatDeleted = false
-                            }
-                            
                             chatModel.updateContactConnectionStats(updatedContact, s)
+                        } else if contact.chatDeleted {
+                            chatModel.updateContact(updatedContact)
                         }
                     }
                 } catch let error {
