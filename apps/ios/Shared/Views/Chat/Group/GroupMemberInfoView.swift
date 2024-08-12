@@ -321,7 +321,6 @@ struct GroupMemberInfoView: View {
 
     func knownDirectChatButton(_ chat: Chat, width: CGFloat) -> some View {
         InfoViewButton(image: "message.fill", title: "message", width: width) {
-            dismissAllSheets(animated: true)
             ItemsModel.shared.loadItemsAndNavigate(to: chat.id) {
                 dismissAllSheets(animated: true)
             }
