@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeOverrides
 import chat.simplex.common.views.chatlist.connectIfOpenedViaUri
@@ -15,6 +16,7 @@ import chat.simplex.res.MR
 import com.charleskorn.kaml.decodeFromStream
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import kotlinx.serialization.encodeToString
 import java.io.*
 import java.net.URI
@@ -518,6 +520,28 @@ fun includeMoreFailedComposables() {
   }
   lastExecutedComposables.clear()
 }
+
+val fontSizeMultiplier: Float
+  @Composable get() = remember { appPrefs.fontScale.state }.value
+
+val fontSizeSqrtMultiplier: Float
+  @Composable get() = sqrt(remember { appPrefs.fontScale.state }.value)
+
+val desktopDensityScaleMultiplier: Float
+  @Composable get() = if (appPlatform.isDesktop) remember { appPrefs.densityScale.state }.value else 1f
+
+@Composable
+fun TextUnit.toDp(): Dp {
+  check(type == TextUnitType.Sp) { "Only Sp can convert to Px" }
+  return Dp(value * LocalDensity.current.fontScale)
+}
+
+fun <T> Flow<T>.throttleLatest(delayMillis: Long): Flow<T> = this
+  .conflate()
+  .transform {
+    emit(it)
+    delay(delayMillis)
+  }
 
 @Composable
 fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenGone: () -> Unit) {

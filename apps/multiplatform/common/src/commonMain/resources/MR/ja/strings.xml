@@ -21,7 +21,7 @@
     <string name="v4_3_improved_server_configuration_desc">QRコードでサーバを追加</string>
     <string name="smp_servers_add_to_another_device">別の端末に追加</string>
     <string name="users_add">プロフィールを追加</string>
-    <string name="smp_servers_add">サーバを追加…</string>
+    <string name="smp_servers_add">サーバを追加</string>
     <string name="network_enable_socks_info">SOCKSプロキシ(ポート%d)経由で接続しますか？(※設定する前にプロキシ起動が必要※)</string>
     <string name="users_delete_all_chats_deleted">全チャットとメッセージが削除されます(※元に戻せません※)！</string>
     <string name="allow_your_contacts_to_send_voice_messages">送信相手からの音声メッセージを許可する。</string>
@@ -204,7 +204,6 @@
     <string name="display_name_connection_established">接続済み</string>
     <string name="connect_via_link">リンク経由で繋がる。</string>
     <string name="connection_error">接続エラー</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">接続にオニオンのホストが必要となります。</string>
     <string name="group_member_status_introduced">接続待ち (紹介済み)</string>
     <string name="connection_error_auth">接続エラー (AUTH)</string>
     <string name="connection_timeout">接続タイムアウト</string>
@@ -222,7 +221,6 @@
     <string name="icon_descr_context">追加情報アイコン</string>
     <string name="network_use_onion_hosts_prefer_desc">オニオンのホストが利用可能時に使われます。</string>
     <string name="network_use_onion_hosts_no_desc">オニオンのホストが使われません。</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">オニオンのホストが利用可能時に使われます。</string>
     <string name="images_limit_desc">画像を1回で最大10枚を送信できます。</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[<b>2層エンドツーエンド暗号化</b>で送信されたプロフィール、連絡先、グループ、メッセージは、クライント端末にしか保存されません。]]></string>
     <string name="only_group_owners_can_change_prefs">グループ設定を変えられるのはグループのオーナーだけです。</string>
@@ -298,7 +296,7 @@
     <string name="error_saving_file">ファイル保存でエラー発生</string>
     <string name="icon_descr_server_status_connected">接続中</string>
     <string name="icon_descr_server_status_pending">確認待ち</string>
-    <string name="cancel_verb">中止</string>
+    <string name="cancel_verb">キャンセル</string>
     <string name="add_contact">使い捨ての招待リンク</string>
     <string name="icon_descr_record_voice_message">音声メッセージを録音</string>
     <string name="from_gallery_button">ギャラリーから</string>
@@ -315,7 +313,6 @@
     <string name="enter_one_ICE_server_per_line">ICEサーバ (1行に1サーバ)</string>
     <string name="network_and_servers">ネットワークとサーバ</string>
     <string name="network_settings_title">ネットワーク設定</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">オニオンのホストが使われません。</string>
     <string name="delete_address">アドレスを削除</string>
     <string name="exit_without_saving">保存せずに閉じる</string>
     <string name="display_name_cannot_contain_whitespace">表示の名前には空白が使用できません。</string>
@@ -735,7 +732,6 @@
     <string name="your_ICE_servers">あなたのICEサーバ</string>
     <string name="network_disable_socks">直接にインタネットに繋がりますか？</string>
     <string name="network_enable_socks">SOCKSプロキシを使いますか？</string>
-    <string name="update_onion_hosts_settings_question">.onionのホスト設定を更新しますか？</string>
     <string name="network_use_onion_hosts">.onionホストを使う</string>
     <string name="network_use_onion_hosts_prefer">利用可能時に</string>
     <string name="network_session_mode_transport_isolation">トランスポート隔離</string>
@@ -883,7 +879,6 @@
     <string name="you_have_to_enter_passphrase_every_time">アプリ起動時にパスフレーズを入力しなければなりません。端末に保存されてません。</string>
     <string name="database_backup_can_be_restored">データベースのパスフレーズ変更が完了してません。</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">リンク、またはQRコードを共有できます。誰でもグループに参加できます。後で削除しても、グループのメンバーがそのままのこります。</string>
-    <string name="network_options_revert">元に戻す</string>
     <string name="update_network_settings_confirmation">更新</string>
     <string name="accept_feature_set_1_day">1日に設定</string>
     <string name="v4_4_disappearing_messages_desc">一定時間が経ったら送信されたメッセージが削除されます。</string>
@@ -1034,7 +1029,7 @@
     <string name="delete_member_message__question">メンバーのメッセージを削除しますか？</string>
     <string name="import_theme">テーマのインポート</string>
     <string name="port_verb">ポート</string>
-    <string name="theme_colors_section_title">テーマカラー</string>
+    <string name="theme_colors_section_title">インターフェースカラー</string>
     <string name="stop_sharing">共有を停止</string>
     <string name="invite_friends">友人を招待する</string>
     <string name="you_can_create_it_later">後からでも作成できます</string>
@@ -1084,7 +1079,7 @@
     <string name="v4_6_audio_video_calls_descr">Bluetoothのサポートおよびその他の機能も改善されました。</string>
     <string name="relay_server_if_necessary">中継サーバーは必要な場合にのみ使用されます。 別の当事者があなたの IP アドレスを監視できます。</string>
     <string name="stop_sharing_address">アドレス共有の停止？</string>
-    <string name="color_sent_message">送信</string>
+    <string name="color_sent_message">送信メッセージ</string>
     <string name="color_received_message">受信したメッセージ</string>
     <string name="alert_text_msg_bad_hash">以前のメッセージとハッシュ値が異なります。</string>
     <string name="alert_text_msg_bad_id">次のメッセージの ID が正しくありません (前のメッセージより小さいか等しい)。
@@ -1594,8 +1589,8 @@
     <string name="group_member_status_unknown">ステータス不明</string>
     <string name="v5_5_private_notes">プライベートノート</string>
     <string name="v5_5_message_delivery">メッセージ配信の改善</string>
-    <string name="e2ee_info_no_pq"><![CDATA[メッセージ、ファイル、通話は、前方秘匿性、否認防止および及び侵入復元性を備えた <b>エンドツーエンドの暗号化</b>によって保護されます。]]></string>
-    <string name="e2ee_info_pq"><![CDATA[メッセージ、ファイル、通話は、前方秘匿性、否認防止および及び侵入復元性を備えた <b>耐量子E2E暗号化</b>によって保護されます。]]></string>
+    <string name="e2ee_info_no_pq"><![CDATA[メッセージ、ファイル、通話は、前方秘匿性、否認防止および侵入復元性を備えた <b>エンドツーエンドの暗号化</b>によって保護されます。]]></string>
+    <string name="e2ee_info_pq"><![CDATA[メッセージ、ファイル、通話は、前方秘匿性、否認防止および侵入復元性を備えた <b>耐量子E2E暗号化</b>によって保護されます。]]></string>
     <string name="e2ee_info_no_pq_short">このチャットはエンドツーエンド暗号化により保護されています。</string>
     <string name="e2ee_info_pq_short">このチャットは耐量子エンドツーエンド暗号化により保護されています。</string>
     <string name="note_folder_local_display_name">プライベートノート</string>
@@ -1796,4 +1791,50 @@
     <string name="color_wallpaper_background">壁紙の背景</string>
     <string name="settings_section_title_chat_colors">チャットカラー</string>
     <string name="settings_section_title_chat_theme">チャットテーマ</string>
+    <string name="file_error">ファイルエラー</string>
+    <string name="file_error_relay">ファイルサーバーエラー: %1$s</string>
+    <string name="info_row_file_status">ファイルステータス</string>
+    <string name="share_text_file_status">ファイルステータス： %s</string>
+    <string name="v5_8_persian_ui">ペルシャ語UI</string>
+    <string name="file_error_no_file">ファイルが見つかりません - 削除されたかキャンセルされた可能性があります。</string>
+    <string name="v5_8_chat_themes_descr">チャットの見た目を変更できます！</string>
+    <string name="settings_section_title_files">ファイル</string>
+    <string name="snd_error_expired">ネットワークエラー - 複数回送信が試行されましたが、メッセージが期限切れになりました</string>
+    <string name="network_smp_proxy_mode_never">無効</string>
+    <string name="info_row_message_status">メッセージステータス</string>
+    <string name="v5_8_safe_files">ファイルの安全な受け取り</string>
+    <string name="settings_section_title_user_theme">プロフィールテーマ</string>
+    <string name="share_text_message_status">メッセージステータス：%s</string>
+    <string name="reset_single_color">色のリセット</string>
+    <string name="color_received_quote">受信した返信元メッセージ</string>
+    <string name="color_sent_quote">送信した返信元メッセージ</string>
+    <string name="theme_remove_image">画像を削除</string>
+    <string name="wallpaper_scale">拡大縮小</string>
+    <string name="wallpaper_scale_fit">フィットさせる</string>
+    <string name="wallpaper_scale_fill">画像全体</string>
+    <string name="chat_theme_reset_to_app_theme">アプリのテーマをリセット</string>
+    <string name="chat_theme_reset_to_user_theme">ユーザーテーマをリセット</string>
+    <string name="chat_theme_set_default_theme">デフォルトのテーマを設定</string>
+    <string name="v5_8_private_routing">プライベートメッセージルーティング 🚀</string>
+    <string name="v5_8_safe_files_descr">不明なサーバーからのファイルを確認できます</string>
+    <string name="v5_8_message_delivery_descr">バッテリーの使用量が減少しました</string>
+    <string name="v5_8_message_delivery">メッセージ配信の改善</string>
+    <string name="file_not_approved_title">不明なサーバーです！</string>
+    <string name="network_smp_proxy_mode_never_description">プライベートルーティングを使用しない</string>
+    <string name="protect_ip_address">IPアドレス保護</string>
+    <string name="copy_error">コピーエラー</string>
+    <string name="v5_8_chat_themes">新しいチャットテーマ</string>
+    <string name="v5_8_private_routing_descr">連絡先が選択したメッセージリレーからあなたのIPアドレスを保護します。
+\n*ネットワークとサーバー*設定から有効にして下さい。</string>
+    <string name="network_smp_proxy_fallback_prohibit">いいえ</string>
+    <string name="network_smp_proxy_fallback_allow">はい</string>
+    <string name="update_network_smp_proxy_mode_question">メッセージルーティングモード</string>
+    <string name="appearance_font_size">フォントサイズ</string>
+    <string name="app_check_for_updates_beta">ベータ</string>
+    <string name="app_check_for_updates_notice_title">アップデートを確認</string>
+    <string name="app_check_for_updates">アップデートを確認</string>
+    <string name="completed">完了</string>
+    <string name="smp_servers_configured">SMPサーバーの構成</string>
+    <string name="servers_info_sessions_connected">接続中</string>
+    <string name="xftp_servers_configured">XFTPサーバーの構成</string>
 </resources>

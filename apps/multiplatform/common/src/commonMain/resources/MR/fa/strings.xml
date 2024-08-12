@@ -539,7 +539,7 @@
     <string name="chat_with_the_founder">ایده‌ها و سوالات را ارسال کنید</string>
     <string name="send_us_an_email">به ما ایمیل بفرستید</string>
     <string name="chat_lock">قفل SimpleX</string>
-    <string name="smp_servers_add">افزودن سرور…</string>
+    <string name="smp_servers_add">افزودن سرور</string>
     <string name="smp_servers_test_servers">آزمایش سرورها</string>
     <string name="smp_servers_save">ذخیره سرورها</string>
     <string name="smp_servers_test_failed">عدم موفقیت آزمایش سرور!</string>
@@ -588,7 +588,6 @@
     <string name="network_use_onion_hosts_required_desc">میزبان‌های Onion برای اتصال الزامی خواهد بود.
 \nلطفا توجه داشته باشید: شما بدون نشانی‌ onion. قادر نخواهید بود به سرورها متصل شوید.</string>
     <string name="save_servers_button">ذخیره</string>
-    <string name="update_onion_hosts_settings_question">تنظیمات میزبان‌های onion. به روز شود؟</string>
     <string name="port_verb">پورت</string>
     <string name="network_enable_socks">از پروکسی SOCKS استفاده شود؟</string>
     <string name="network_disable_socks">از اتصال مستقیم اینترنت استفاده شود؟</string>
@@ -597,7 +596,6 @@
     <string name="host_verb">هاست</string>
     <string name="network_use_onion_hosts_required">الزامی</string>
     <string name="network_use_onion_hosts_prefer_desc">از میزبان‌های Onion وقتی موجود باشند استفاده خواهد شد.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">از میزبان‌های Onion وقتی موجود باشند استفاده خواهد شد.</string>
     <string name="appearance_settings">ظاهر</string>
     <string name="app_version_name">نسخه برنامه: v%s</string>
     <string name="show_developer_options">نمایش گزینه‌های توسعه‌دهنده</string>
@@ -608,7 +606,6 @@
     <string name="network_session_mode_user_description"><![CDATA[یک اتصال جدای TCP (و اطلاعات ورود SOCKS) <b>برای هر نمایه گپی که در برنامه دارید</b> استفاده خواهد شد.]]></string>
     <string name="show_internal_errors">نمایش خطاهای داخلی</string>
     <string name="show_slow_api_calls">نمایش تماس‌های کند API</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">از میزبان‌های Onion استفاده نخواهد شد.</string>
     <string name="network_use_onion_hosts_no">خیر</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[<i>استفاده از میزبان‌های onion.</i> را روی «خیر» تنظیم کنید اگر پروکسی SOCKS از آنها پشتیبانی نمی‌کند.]]></string>
     <string name="customize_theme_title">سفارشی کردن تم</string>
@@ -630,7 +627,6 @@
     <string name="network_session_mode_entity">اتصال</string>
     <string name="app_version_code">ساختار برنامه: %s</string>
     <string name="network_settings_title">تنظیمات شبکه</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">میزبان‌های Onion برای اتصال الزامی خواهد بود.</string>
     <string name="show_dev_options">نمایش:</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>لطفا توجه داشته باشید</b>: واسطه‌های پیام و پرونده از طریق پروکسی SOCKS متصل می‌شوند. تماس‌ها و ارسال پیش‌نمایش‌های لینک از اتصال مستقیم استفاده می‌کنند.]]></string>
     <string name="developer_options_section">گزینه‌های توسعه‌دهنده</string>
@@ -716,7 +712,7 @@
     <string name="delete_files_and_media_all">حذف تمام پرونده‌ها</string>
     <string name="correct_name_to">اصلاح نام به %s؟</string>
     <string name="onboarding_notifications_mode_subtitle">بعدا از طریق تنظیمات قابل تغییر است.</string>
-    <string name="icon_descr_call_rejected">تماس بی‌پاسخ</string>
+    <string name="icon_descr_call_rejected">تماس پذیرفته نشده</string>
     <string name="alert_title_msg_bad_hash">هش پیام ناصحیح</string>
     <string name="alert_text_msg_bad_hash">هش پیام قبلی متفاوت است.</string>
     <string name="alert_title_msg_bad_id">شناسه پیام ناصحیح</string>
@@ -753,7 +749,7 @@
     <string name="icon_descr_audio_off">صدا خاموش</string>
     <string name="icon_descr_speaker_off">بلندگو خاموش</string>
     <string name="icon_descr_speaker_on">بلندگو روشن</string>
-    <string name="icon_descr_call_connecting">در حال اتصال</string>
+    <string name="icon_descr_call_connecting">در حال اتصال تماس</string>
     <string name="enable_lock">فعال کردن قفل</string>
     <string name="passcode_set">کد عبور تعیین شد!</string>
     <string name="passcode_changed">کد عبور تغییر کرد!</string>
@@ -1313,7 +1309,6 @@
     <string name="network_option_ping_interval">وقفه پینگ</string>
     <string name="network_option_ping_count">شمار پینگ</string>
     <string name="network_option_enable_tcp_keep_alive">فعال کردن زنده نگه‌داشتن TCP</string>
-    <string name="network_options_revert">برگشت</string>
     <string name="network_options_save">ذخیره</string>
     <string name="update_network_settings_question">تنظیمات شبکه به‌روزرسانی شود؟</string>
     <string name="users_add">افزودن نمایه</string>
@@ -1351,11 +1346,11 @@
     <string name="allow_to_send_files">اجازه ارسال پرونده‌ها و رسانه را می‌دهید.</string>
     <string name="group_members_can_delete">اعضای گروه می‌توانند پیام‌های ارسالی را به صورت غیرقابل برگشت حذف کنند. (۲۴ ساعت)</string>
     <string name="delete_after">حذف بعد از</string>
-    <string name="chat_preferences">تنظیمات گپ</string>
+    <string name="chat_preferences">تنظیمات گفت‌و‌گو</string>
     <string name="files_and_media">پرونده‌ها و رسانه</string>
     <string name="audio_video_calls">تماس‌های صوتی/تصویری</string>
     <string name="available_in_v51">"
-\nموجود در v5.1"</string>
+\nموجود در نسخه 5.1"</string>
     <string name="allow_your_contacts_to_send_voice_messages">به مخاطبان خود اجازه ارسال پیام‌های صوتی می‌دهید.</string>
     <string name="allow_irreversible_message_deletion_only_if">فقط زمانی اجازه حذف پیام‌ها به صورت غیرقابل برگشت را می‌دهید که مخاطب شما این اجازه را به شما بدهد. (۲۴ ساعت)</string>
     <string name="disappearing_messages_are_prohibited">پیام‌های ناپدید شونده در این گروه ممنوع هستند.</string>
@@ -1853,4 +1848,17 @@
     <string name="v5_8_private_routing_descr">از نشانی IP خود در برابر واسطه‌های پیام‌رسانی انتخاب شده توسط مخاطبانتان محافظت کنید.
 \nدر تنظیمات «شبکه و سرورها» فعال کنید.</string>
     <string name="v5_8_safe_files">دریافت امن پرونده‌ها</string>
+    <string name="file_error_no_file">پرونده یافت نشد - احتمالا حذف یا لغو شده.</string>
+    <string name="file_error_auth">کلید اشتباه یا نشانی پرونده ناشناخته - به احتمال زیاد پرونده حذف شده است.</string>
+    <string name="file_error">خطای پرونده</string>
+    <string name="temporary_file_error">خطای پرونده موقت</string>
+    <string name="info_row_file_status">وضعیت پرونده</string>
+    <string name="info_row_message_status">وضعیت پیام</string>
+    <string name="share_text_file_status">وضعیت پرونده: %s</string>
+    <string name="share_text_message_status">وضعیت پیام: %s</string>
+    <string name="copy_error">خطای کپی</string>
+    <string name="remote_ctrl_connection_stopped_desc">لطفا بررسی کنید که تلفن همراه و کامپیوتر به شبکه محلی یکسانی متصل هستند، و فایروال کامپیوتر شما اجازه اتصال را میدهد.
+\nلطفا هر مشکل دیگری را با توسعه‌دهندگان به اشتراک بگذارید.</string>
+    <string name="remote_ctrl_connection_stopped_identity_desc">این لینک توسط موبایل دیگری استفاده شده است، لطفا لینک جدیدی در کامپیوتر بسازید.</string>
+    <string name="file_error_relay">خطای سرور پرونده:%1$s</string>
 </resources>

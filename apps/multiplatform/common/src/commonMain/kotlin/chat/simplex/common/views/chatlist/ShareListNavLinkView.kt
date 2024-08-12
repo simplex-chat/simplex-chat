@@ -9,42 +9,76 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.views.helpers.ProfileImage
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.launch
 
 @Composable
-fun ShareListNavLinkView(chat: Chat, chatModel: ChatModel) {
+fun ShareListNavLinkView(
+  chat: Chat,
+  chatModel: ChatModel,
+  isMediaOrFileAttachment: Boolean,
+  isVoice: Boolean,
+  hasSimplexLink: Boolean
+) {
   val stopped = chatModel.chatRunning.value == false
+  val scope = rememberCoroutineScope()
   when (chat.chatInfo) {
-    is ChatInfo.Direct ->
+    is ChatInfo.Direct -> {
+      val voiceProhibited = isVoice && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
       ShareListNavLinkLayout(
-        chatLinkPreview = { SharePreviewView(chat) },
-        click = { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) },
+        chatLinkPreview = { SharePreviewView(chat, disabled = voiceProhibited) },
+        click = {
+          if (voiceProhibited) {
+            showForwardProhibitedByPrefAlert()
+          } else {
+            scope.launch { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) }
+          }
+        },
         stopped
       )
-    is ChatInfo.Group ->
+    }
+    is ChatInfo.Group -> {
+      val simplexLinkProhibited = hasSimplexLink && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks)
+      val fileProhibited = isMediaOrFileAttachment && !chat.groupFeatureEnabled(GroupFeature.Files)
+      val voiceProhibited = isVoice && !chat.chatInfo.featureEnabled(ChatFeature.Voice)
+      val prohibitedByPref = simplexLinkProhibited || fileProhibited || voiceProhibited
       ShareListNavLinkLayout(
-        chatLinkPreview = { SharePreviewView(chat) },
-        click = { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel) },
+        chatLinkPreview = { SharePreviewView(chat, disabled = prohibitedByPref) },
+        click = {
+          if (prohibitedByPref) {
+            showForwardProhibitedByPrefAlert()
+          } else {
+            scope.launch { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel) }
+          }
+        },
         stopped
       )
+    }
     is ChatInfo.Local ->
       ShareListNavLinkLayout(
-        chatLinkPreview = { SharePreviewView(chat) },
-        click = { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) },
+        chatLinkPreview = { SharePreviewView(chat, disabled = false) },
+        click = { scope.launch { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) } },
         stopped
       )
     is ChatInfo.ContactRequest, is ChatInfo.ContactConnection, is ChatInfo.InvalidJSON -> {}
   }
 }
 
+private fun showForwardProhibitedByPrefAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.cannot_share_message_alert_title),
+    text = generalGetString(MR.strings.cannot_share_message_alert_text),
+  )
+}
+
 @Composable
 private fun ShareListNavLinkLayout(
   chatLinkPreview: @Composable () -> Unit,
   click: () -> Unit,
-  stopped: Boolean
+  stopped: Boolean,
 ) {
   SectionItemView(minHeight = 50.dp, click = click, disabled = stopped) {
     chatLinkPreview()
@@ -53,7 +87,7 @@ private fun ShareListNavLinkLayout(
 }
 
 @Composable
-private fun SharePreviewView(chat: Chat) {
+private fun SharePreviewView(chat: Chat, disabled: Boolean) {
   Row(
     Modifier.fillMaxSize(),
     horizontalArrangement = Arrangement.SpaceBetween,
@@ -70,7 +104,7 @@ private fun SharePreviewView(chat: Chat) {
       }
       Text(
         chat.chatInfo.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
-        color = if (chat.chatInfo.incognito) Indigo else Color.Unspecified
+        color = if (disabled) MaterialTheme.colors.secondary else if (chat.chatInfo.incognito) Indigo else Color.Unspecified
       )
     }
   }

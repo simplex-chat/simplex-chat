@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct ComposeFileView: View {
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
     let fileName: String
     let cancelFile: (() -> Void)
     let cancelEnabled: Bool
@@ -32,9 +32,8 @@ struct ComposeFileView: View {
         }
         .padding(.vertical, 1)
         .padding(.trailing, 12)
-        .frame(height: 50)
-        .background(colorScheme == .light ? sentColorLight : sentColorDark)
+        .frame(height: 54)
+        .background(theme.appColors.sentMessage)
         .frame(maxWidth: .infinity)
-        .padding(.top, 8)
     }
 }

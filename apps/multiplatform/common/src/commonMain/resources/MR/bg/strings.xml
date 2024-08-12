@@ -4,7 +4,7 @@
     <string name="contact_wants_to_connect_via_call">%1$s иска да се свърже с вас чрез</string>
     <string name="send_disappearing_message_1_minute">1 минута</string>
     <string name="v4_3_improved_server_configuration_desc">Добави сървъри чрез сканиране на QR кодове.</string>
-    <string name="smp_servers_add">Добави сървър…</string>
+    <string name="smp_servers_add">Добави сървър</string>
     <string name="group_member_role_admin">админ</string>
     <string name="button_add_welcome_message">Добави съобщение при посрещане</string>
     <string name="v5_1_self_destruct_passcode_descr">Всички данни се изтриват при въвеждане.</string>
@@ -800,13 +800,11 @@
     <string name="network_settings_title">Мрежови настройки</string>
     <string name="port_verb">Порт</string>
     <string name="network_proxy_port">порт %d</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Няма се използват Onion хостове.</string>
     <string name="network_use_onion_hosts_required">Задължително</string>
     <string name="network_use_onion_hosts_no">Не</string>
     <string name="network_use_onion_hosts_required_desc">За свързване ще са необходими Onion хостове.
 \nМоля, обърнете внимание: няма да можете да се свържете със сървърите без .onion адрес.</string>
     <string name="network_use_onion_hosts_prefer_desc">Ще се използват Onion хостове, когато са налични.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Ще се използват Onion хостове, когато са налични.</string>
     <string name="network_use_onion_hosts_no_desc">Няма се използват Onion хостове.</string>
     <string name="email_invite_subject">Нека да поговорим в SimpleX Chat</string>
     <string name="password_to_show">Парола за показване</string>
@@ -878,7 +876,6 @@
     <string name="no_selected_chat">Няма избран чат</string>
     <string name="notifications">Известия</string>
     <string name="shutdown_alert_desc">Известията ще спрат да работят, докато не стартирате отново приложението</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">За свързване ще са необходими Onion хостове.</string>
     <string name="images_limit_desc">Само 10 изображения могат да бъдат изпратени едновременно</string>
     <string name="only_owners_can_enable_files_and_media">Само собствениците на групата могат да активират файлове и медията.</string>
     <string name="only_group_owners_can_enable_voice">Само собствениците на групата могат да активират гласови съобщения.</string>
@@ -1147,7 +1144,6 @@
     <string name="icon_descr_speaker_off">Високоговорителят е изключен</string>
     <string name="stop_chat_to_enable_database_actions">Спрете чата, за да активирате действията с базата данни.</string>
     <string name="role_in_group">Роля</string>
-    <string name="network_options_revert">Отмени промените</string>
     <string name="network_options_save">Запази</string>
     <string name="reset_color">Нулирай цветовете</string>
     <string name="color_secondary">Вторичен</string>
@@ -1225,7 +1221,6 @@
     <string name="your_SMP_servers">Вашите SMP сървъри</string>
     <string name="network_socks_toggle_use_socks_proxy">Използвай SOCKS прокси</string>
     <string name="network_enable_socks">Използвай SOCKS прокси\?</string>
-    <string name="update_onion_hosts_settings_question">Актуализиране на настройката за .onion хостове\?</string>
     <string name="network_disable_socks">Използване на директна интернет връзка\?</string>
     <string name="network_use_onion_hosts">Използвай .onion хостове</string>
     <string name="network_use_onion_hosts_prefer">Когато са налични</string>

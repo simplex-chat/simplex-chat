@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct ChatItemForwardingView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss
 
     var ci: ChatItem
@@ -19,6 +20,8 @@ struct ChatItemForwardingView: View {
 
     @State private var searchText: String = ""
     @FocusState private var searchFocused
+    @State private var alert: SomeAlert?
+    private let chatsToForwardTo = filterChatsToForwardTo(chats: ChatModel.shared.chats)
 
     var body: some View {
         NavigationView {
@@ -35,98 +38,74 @@ struct ChatItemForwardingView: View {
                     }
                 }
         }
+        .modifier(ThemedBackground())
+        .alert(item: $alert) { $0.alert }
     }
 
     @ViewBuilder private func forwardListView() -> some View {
         VStack(alignment: .leading) {
-            let chatsToForwardTo = filterChatsToForwardTo()
             if !chatsToForwardTo.isEmpty {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 8) {
-                        searchFieldView(text: $searchText, focussed: $searchFocused)
-                            .padding(.leading, 2)
-                        let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-                        let chats = s == "" ? chatsToForwardTo : chatsToForwardTo.filter { filterChatSearched($0, s) }
-                        ForEach(chats) { chat in
-                            Divider()
-                            forwardListNavLinkView(chat)
-                                .disabled(chatModel.deletedChats.contains(chat.chatInfo.id))
-                        }
+                List {
+                    searchFieldView(text: $searchText, focussed: $searchFocused, theme.colors.onBackground, theme.colors.secondary)
+                        .padding(.leading, 2)
+                    let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
+                    let chats = s == "" ? chatsToForwardTo : chatsToForwardTo.filter { foundChat($0, s) }
+                    ForEach(chats) { chat in
+                        forwardListChatView(chat)
+                            .disabled(chatModel.deletedChats.contains(chat.chatInfo.id))
                     }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                    .background(Color(uiColor: .systemBackground))
-                    .cornerRadius(12)
-                    .padding(.horizontal)
                 }
-                .background(Color(.systemGroupedBackground))
+                .modifier(ThemedBackground(grouped: true))
             } else {
-                emptyList()
+                ZStack {
+                    emptyList()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .modifier(ThemedBackground())
             }
-        }
-    }
-
-    private func filterChatsToForwardTo() -> [Chat] {
-        var filteredChats = chatModel.chats.filter({ canForwardToChat($0) })
-        if let index = filteredChats.firstIndex(where: { $0.chatInfo.chatType == .local }) {
-            let privateNotes = filteredChats.remove(at: index)
-            filteredChats.insert(privateNotes, at: 0)
-        }
-        return filteredChats
-    }
-
-    private func filterChatSearched(_ chat: Chat, _ searchStr: String) -> Bool {
-        let cInfo = chat.chatInfo
-        return switch cInfo {
-        case let .direct(contact):
-            viewNameContains(cInfo, searchStr) ||
-            contact.profile.displayName.localizedLowercase.contains(searchStr) ||
-            contact.fullName.localizedLowercase.contains(searchStr)
-        default:
-            viewNameContains(cInfo, searchStr)
-        }
-
-        func viewNameContains(_ cInfo: ChatInfo, _ s: String) -> Bool {
-            cInfo.chatViewName.localizedLowercase.contains(s)
-        }
-    }
-
-    private func canForwardToChat(_ chat: Chat) -> Bool {
-        switch chat.chatInfo {
-        case let .direct(contact): contact.sendMsgEnabled && !contact.nextSendGrpInv
-        case let .group(groupInfo): groupInfo.sendMsgEnabled
-        case let .local(noteFolder): noteFolder.sendMsgEnabled
-        case .contactRequest: false
-        case .contactConnection: false
-        case .invalidJSON: false
         }
     }
 
     private func emptyList() -> some View {
         Text("No filtered chats")
-            .foregroundColor(.secondary)
+            .foregroundColor(theme.colors.secondary)
             .frame(maxWidth: .infinity)
     }
 
-    @ViewBuilder private func forwardListNavLinkView(_ chat: Chat) -> some View {
+    @ViewBuilder private func forwardListChatView(_ chat: Chat) -> some View {
+        let prohibited = chat.prohibitedByPref(
+            hasSimplexLink: hasSimplexLink(ci.content.msgContent?.text),
+            isMediaOrFileAttachment: ci.content.msgContent?.isMediaOrFileAttachment ?? false,
+            isVoice: ci.content.msgContent?.isVoice ?? false
+        )
         Button {
-            dismiss()
-            if chat.id == fromChatInfo.id {
-                 composeState = ComposeState(
-                     message: composeState.message,
-                     preview: composeState.linkPreview != nil ? composeState.preview : .noPreview,
-                     contextItem: .forwardingItem(chatItem: ci, fromChatInfo: fromChatInfo)
-                 )
+            if prohibited {
+                alert = SomeAlert(
+                    alert: mkAlert(
+                        title: "Cannot forward message",
+                        message: "Selected chat preferences prohibit this message."
+                    ),
+                    id: "forward prohibited by preferences"
+                )
             } else {
-                composeState = ComposeState.init(forwardingItem: ci, fromChatInfo: fromChatInfo)
-                chatModel.chatId = chat.id
+                dismiss()
+                if chat.id == fromChatInfo.id {
+                    composeState = ComposeState(
+                        message: composeState.message,
+                        preview: composeState.linkPreview != nil ? composeState.preview : .noPreview,
+                        contextItem: .forwardingItem(chatItem: ci, fromChatInfo: fromChatInfo)
+                    )
+                } else {
+                    composeState = ComposeState.init(forwardingItem: ci, fromChatInfo: fromChatInfo)
+                    chatModel.chatId = chat.id
+                }
             }
         } label: {
             HStack {
                 ChatInfoImage(chat: chat, size: 30)
                     .padding(.trailing, 2)
                 Text(chat.chatInfo.chatViewName)
-                    .foregroundColor(.primary)
+                    .foregroundColor(prohibited ? theme.colors.secondary : theme.colors.onBackground)
                     .lineLimit(1)
                 if chat.chatInfo.incognito {
                     Spacer()
@@ -134,7 +113,7 @@ struct ChatItemForwardingView: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 22, height: 22)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -147,5 +126,6 @@ struct ChatItemForwardingView: View {
         ci: ChatItem.getSample(1, .directSnd, .now, "hello"),
         fromChatInfo: .direct(contact: Contact.sampleData),
         composeState: Binding.constant(ComposeState(message: "hello"))
-    )
+    ).environmentObject(CurrentColors.toAppTheme())
 }
+

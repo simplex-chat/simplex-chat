@@ -35,6 +35,7 @@ data AppSettings = AppSettings
     privacyShowChatPreviews :: Maybe Bool,
     privacySaveLastDraft :: Maybe Bool,
     privacyProtectScreen :: Maybe Bool,
+    privacyMediaBlurRadius :: Maybe Int,
     notificationMode :: Maybe NotificationMode,
     notificationPreviewMode :: Maybe NotificationPreviewMode,
     webrtcPolicyRelay :: Maybe Bool,
@@ -68,6 +69,7 @@ defaultAppSettings =
       privacyShowChatPreviews = Just True,
       privacySaveLastDraft = Just True,
       privacyProtectScreen = Just False,
+      privacyMediaBlurRadius = Just 0,
       notificationMode = Just NMInstant,
       notificationPreviewMode = Just NPMMessage,
       webrtcPolicyRelay = Just True,
@@ -100,6 +102,7 @@ defaultParseAppSettings =
       privacyShowChatPreviews = Nothing,
       privacySaveLastDraft = Nothing,
       privacyProtectScreen = Nothing,
+      privacyMediaBlurRadius = Nothing,
       notificationMode = Nothing,
       notificationPreviewMode = Nothing,
       webrtcPolicyRelay = Nothing,
@@ -132,6 +135,7 @@ combineAppSettings platformDefaults storedSettings =
       privacyShowChatPreviews = p privacyShowChatPreviews,
       privacySaveLastDraft = p privacySaveLastDraft,
       privacyProtectScreen = p privacyProtectScreen,
+      privacyMediaBlurRadius = p privacyMediaBlurRadius,
       notificationMode = p notificationMode,
       notificationPreviewMode = p notificationPreviewMode,
       webrtcPolicyRelay = p webrtcPolicyRelay,
@@ -176,6 +180,7 @@ instance FromJSON AppSettings where
     privacyShowChatPreviews <- p "privacyShowChatPreviews"
     privacySaveLastDraft <- p "privacySaveLastDraft"
     privacyProtectScreen <- p "privacyProtectScreen"
+    privacyMediaBlurRadius <- p "privacyMediaBlurRadius"
     notificationMode <- p "notificationMode"
     notificationPreviewMode <- p "notificationPreviewMode"
     webrtcPolicyRelay <- p "webrtcPolicyRelay"
@@ -205,6 +210,7 @@ instance FromJSON AppSettings where
           privacyShowChatPreviews,
           privacySaveLastDraft,
           privacyProtectScreen,
+          privacyMediaBlurRadius,
           notificationMode,
           notificationPreviewMode,
           webrtcPolicyRelay,

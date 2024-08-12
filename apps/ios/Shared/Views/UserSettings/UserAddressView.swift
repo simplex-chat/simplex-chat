@@ -13,6 +13,7 @@ import SimpleXChat
 struct UserAddressView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject private var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @State var viaCreateLinkView = false
     @State var shareViaProfile = false
     @State private var aas = AutoAcceptState()
@@ -29,7 +30,7 @@ struct UserAddressView: View {
         case deleteAddress
         case profileAddress(on: Bool)
         case shareOnCreate
-        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
+        case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
             switch self {
@@ -110,6 +111,7 @@ struct UserAddressView: View {
                     createAddressButton()
                 } footer: {
                     Text("Create an address to let people connect with you.")
+                        .foregroundColor(theme.colors.secondary)
                 }
 
                 Section {
@@ -183,7 +185,7 @@ struct UserAddressView: View {
                     }, secondaryButton: .cancel()
                 )
             case let .error(title, error):
-                return Alert(title: Text(title), message: Text(error))
+                return mkAlert(title: title, message: error)
             }
         }
     }
@@ -201,6 +203,7 @@ struct UserAddressView: View {
             learnMoreButton()
         } header: {
             Text("Address")
+                .foregroundColor(theme.colors.secondary)
         }
 
         if aas.enable {
@@ -211,6 +214,7 @@ struct UserAddressView: View {
             deleteAddressButton()
         } footer: {
             Text("Your contacts will remain connected.")
+                .foregroundColor(theme.colors.secondary)
         }
         .id(bottomID)
     }
@@ -251,7 +255,7 @@ struct UserAddressView: View {
         Button {
             showShareSheet(items: [simplexChatLink(userAddress.connReqContact)])
         } label: {
-            settingsRow("square.and.arrow.up") {
+            settingsRow("square.and.arrow.up", color: theme.colors.secondary) {
                 Text("Share address")
             }
         }
@@ -261,7 +265,7 @@ struct UserAddressView: View {
         Button {
             showMailView = true
         } label: {
-            settingsRow("envelope") {
+            settingsRow("envelope", color: theme.colors.secondary) {
                 Text("Invite friends")
             }
         }
@@ -288,7 +292,7 @@ struct UserAddressView: View {
     }
 
     private func autoAcceptToggle() -> some View {
-        settingsRow("checkmark") {
+        settingsRow("checkmark", color: theme.colors.secondary) {
             Toggle("Auto-accept", isOn: $aas.enable)
                 .onChange(of: aas.enable) { _ in
                     saveAAS()
@@ -300,16 +304,17 @@ struct UserAddressView: View {
         NavigationLink {
             UserAddressLearnMore()
                 .navigationTitle("SimpleX address")
+                .modifier(ThemedBackground(grouped: true))
                 .navigationBarTitleDisplayMode(.large)
         } label: {
-            settingsRow("info.circle") {
+            settingsRow("info.circle", color: theme.colors.secondary) {
                 Text("About SimpleX address")
             }
         }
     }
 
     private func shareWithContactsButton() -> some View {
-        settingsRow("person") {
+        settingsRow("person", color: theme.colors.secondary) {
             Toggle("Share with contacts", isOn: $shareViaProfile)
                 .onChange(of: shareViaProfile) { on in
                     if ignoreShareViaProfileChange {
@@ -384,13 +389,14 @@ struct UserAddressView: View {
                 .disabled(aas == savedAAS)
         } header: {
             Text("Auto-accept")
+                .foregroundColor(theme.colors.secondary)
         }
     }
 
     private func acceptIncognitoToggle() -> some View {
         settingsRow(
             aas.incognito ? "theatermasks.fill" : "theatermasks",
-            color: aas.incognito ? .indigo : .secondary
+            color: aas.incognito ? .indigo : theme.colors.secondary
         ) {
             Toggle("Accept incognito", isOn: $aas.incognito)
         }
@@ -401,7 +407,7 @@ struct UserAddressView: View {
             Group {
                 if aas.welcomeText.isEmpty {
                     TextEditor(text: Binding.constant(NSLocalizedString("Enter welcome message… (optional)", comment: "placeholder")))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                         .disabled(true)
                 }
                 TextEditor(text: $aas.welcomeText)

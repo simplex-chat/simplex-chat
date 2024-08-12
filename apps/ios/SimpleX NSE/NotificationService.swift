@@ -119,7 +119,7 @@ class NotificationService: UNNotificationServiceExtension {
     var threadId: UUID? = NSEThreads.shared.newThread()
     var notificationInfo: NtfMessages?
     var receiveEntityId: String?
-    var expectedMessages: Set<String> = []
+    var expectedMessage: String?
     // return true if the message is taken - it prevents sending it to another NotificationService instance for processing
     var shouldProcessNtf = false
     var appSubscriber: AppSubscriber?
@@ -191,7 +191,7 @@ class NotificationService: UNNotificationServiceExtension {
             let dbStatus = startChat()
             if case .ok = dbStatus,
                let ntfInfo = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {
-                logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfInfo.ntfMessages.count))")
+                logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfInfo.ntfMessage_ == nil ? 0 : 1))")
                 if let connEntity = ntfInfo.connEntity_ {
                     setBestAttemptNtf(
                         ntfInfo.ntfsEnabled
@@ -201,7 +201,7 @@ class NotificationService: UNNotificationServiceExtension {
                     if let id = connEntity.id, ntfInfo.msgTs != nil {
                         notificationInfo = ntfInfo
                         receiveEntityId = id
-                        expectedMessages = Set(ntfInfo.ntfMessages.map { $0.msgId })
+                        expectedMessage = ntfInfo.ntfMessage_.flatMap { $0.msgId }
                         shouldProcessNtf = true
                         return
                     }
@@ -224,12 +224,10 @@ class NotificationService: UNNotificationServiceExtension {
             self.setBestAttemptNtf(.empty)
         }
         if case let .msgInfo(info) = ntf {
-            let found = expectedMessages.remove(info.msgId)
-            if found != nil {
-                logger.debug("NotificationService processNtf: msgInfo, last: \(self.expectedMessages.isEmpty)")
-                if expectedMessages.isEmpty {
-                    self.deliverBestAttemptNtf()
-                }
+            if info.msgId == expectedMessage {
+                expectedMessage = nil
+                logger.debug("NotificationService processNtf: msgInfo")
+                self.deliverBestAttemptNtf()
                 return true
             } else if info.msgTs > msgTs {
                 logger.debug("NotificationService processNtf: unexpected msgInfo, let other instance to process it, stopping this one")
@@ -392,6 +390,16 @@ func appStateSubscriber(onState: @escaping (AppState) -> Void) -> AppSubscriber 
     }
 }
 
+let seSubscriber = seMessageSubscriber {
+    switch $0 {
+    case let .state(state):
+        if state == .sendingMessage && NSEChatState.shared.value.canSuspend {
+            logger.debug("NotificationService: seSubscriber app state \(state.rawValue), suspending")
+            suspendChat(fastNSESuspendSchedule.timeout)
+        }
+    }
+}
+
 var receiverStarted = false
 let startLock = DispatchSemaphore(value: 1)
 let suspendLock = DispatchSemaphore(value: 1)
@@ -439,8 +447,7 @@ func doStartChat() -> DBMigrationResult? {
         logger.debug("NotificationService active user \(String(describing: user))")
         do {
             try setNetworkConfig(networkConfig)
-            try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
-            try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
+            try apiSetAppFilePaths(filesFolder: getAppFilesDirectory().path, tempFolder: getTempFilesDirectory().path, assetsFolder: getWallpaperDirectory().deletingLastPathComponent().path)
             try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
             // prevent suspension while starting chat
             suspendLock.wait()
@@ -637,7 +644,7 @@ func apiGetActiveUser() -> User? {
 }
 
 func apiStartChat() throws -> Bool {
-    let r = sendSimpleXCmd(.startChat(mainApp: false))
+    let r = sendSimpleXCmd(.startChat(mainApp: false, enableSndFiles: false))
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -660,14 +667,8 @@ func apiSuspendChat(timeoutMicroseconds: Int) -> Bool {
     return false
 }
 
-func apiSetTempFolder(tempFolder: String) throws {
-    let r = sendSimpleXCmd(.setTempFolder(tempFolder: tempFolder))
-    if case .cmdOk = r { return }
-    throw r
-}
-
-func apiSetFilesFolder(filesFolder: String) throws {
-    let r = sendSimpleXCmd(.setFilesFolder(filesFolder: filesFolder))
+func apiSetAppFilePaths(filesFolder: String, tempFolder: String, assetsFolder: String) throws {
+    let r = sendSimpleXCmd(.apiSetAppFilePaths(filesFolder: filesFolder, tempFolder: tempFolder, assetsFolder: assetsFolder))
     if case .cmdOk = r { return }
     throw r
 }
@@ -684,9 +685,9 @@ func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
         return nil
     }
     let r = sendSimpleXCmd(.apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo))
-    if case let .ntfMessages(user, connEntity_, msgTs, ntfMessages) = r, let user = user {
-        logger.debug("apiGetNtfMessage response ntfMessages: \(ntfMessages.count)")
-        return NtfMessages(user: user, connEntity_: connEntity_, msgTs: msgTs, ntfMessages: ntfMessages)
+    if case let .ntfMessages(user, connEntity_, msgTs, ntfMessage_) = r, let user = user {
+        logger.debug("apiGetNtfMessage response ntfMessages: \(ntfMessage_ == nil ? 0 : 1)")
+        return NtfMessages(user: user, connEntity_: connEntity_, msgTs: msgTs, ntfMessage_: ntfMessage_)
     } else if case let .chatCmdError(_, error) = r {
         logger.debug("apiGetNtfMessage error response: \(String.init(describing: error))")
     } else {
@@ -733,7 +734,7 @@ struct NtfMessages {
     var user: User
     var connEntity_: ConnectionEntity?
     var msgTs: Date?
-    var ntfMessages: [NtfMsgInfo]
+    var ntfMessage_: NtfMsgInfo?
 
     var ntfsEnabled: Bool {
         user.showNotifications && (connEntity_?.ntfsEnabled ?? false)

@@ -21,6 +21,7 @@ actual fun ChatListNavLinkLayout(
   nextChatSelected: State<Boolean>,
 ) {
   var modifier = Modifier.fillMaxWidth()
+
   if (!disabled) modifier = modifier
     .combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
     .onRightClick { showMenu.value = true }

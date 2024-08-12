@@ -13,6 +13,7 @@ private let liveMsgInterval: UInt64 = 3000_000000
 
 struct SendMessageView: View {
     @Binding var composeState: ComposeState
+    @EnvironmentObject var theme: AppTheme
     var sendMessage: (Int?) -> Void
     var sendLiveMessage: (() async -> Void)? = nil
     var updateLiveMessage: (() async -> Void)? = nil
@@ -43,13 +44,14 @@ struct SendMessageView: View {
 
     var body: some View {
         ZStack {
+            let composeShape = RoundedRectangle(cornerSize: CGSize(width: 20, height: 20))
             HStack(alignment: .bottom) {
                 ZStack(alignment: .leading) {
                     if case .voicePreview = composeState.preview {
                         Text("Voice message…")
                             .font(teFont.italic())
                             .multilineTextAlignment(.leading)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(theme.colors.secondary)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 8)
                             .frame(maxWidth: .infinity)
@@ -65,7 +67,6 @@ struct SendMessageView: View {
                         .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-
                 if progressByTimeout {
                     ProgressView()
                         .scaleEffect(1.4)
@@ -83,10 +84,9 @@ struct SendMessageView: View {
                 }
             }
             .padding(.vertical, 1)
-            .overlay(
-            RoundedRectangle(cornerSize: CGSize(width: 20, height: 20))
-                .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
-            )
+            .background(theme.colors.background)
+            .clipShape(composeShape)
+            .overlay(composeShape.strokeBorder(.secondary, lineWidth: 0.5).opacity(0.7))
         }
         .onChange(of: composeState.message, perform: { text in updateFont(text) })
         .onChange(of: composeState.inProgress) { inProgress in
@@ -247,6 +247,7 @@ struct SendMessageView: View {
     }
 
     private struct RecordVoiceMessageButton: View {
+        @EnvironmentObject var theme: AppTheme
         var startVoiceMessageRecording: (() -> Void)?
         var finishVoiceMessageRecording: (() -> Void)?
         @Binding var holdingVMR: Bool
@@ -256,7 +257,10 @@ struct SendMessageView: View {
         var body: some View {
             Button(action: {}) {
                 Image(systemName: "mic.fill")
-                    .foregroundColor(.accentColor)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 20, height: 20)
+                    .foregroundColor(theme.colors.primary)
             }
             .disabled(disabled)
             .frame(width: 29, height: 29)
@@ -309,7 +313,10 @@ struct SendMessageView: View {
             }
         } label: {
             Image(systemName: "mic")
-                .foregroundColor(.secondary)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 20, height: 20)
+                .foregroundColor(theme.colors.secondary)
         }
         .disabled(composeState.inProgress)
         .frame(width: 29, height: 29)
@@ -323,7 +330,7 @@ struct SendMessageView: View {
             Image(systemName: "multiply")
                 .resizable()
                 .scaledToFit()
-                .foregroundColor(.accentColor)
+                .foregroundColor(theme.colors.primary)
                 .frame(width: 15, height: 15)
         }
         .frame(width: 29, height: 29)
@@ -340,7 +347,7 @@ struct SendMessageView: View {
             Image(systemName: "bolt.fill")
                 .resizable()
                 .scaledToFit()
-                .foregroundColor(.accentColor)
+                .foregroundColor(theme.colors.primary)
                 .frame(width: 20, height: 20)
         }
         .frame(width: 29, height: 29)
@@ -383,7 +390,7 @@ struct SendMessageView: View {
             }
             Task {
                 _ = try? await Task.sleep(nanoseconds: liveMsgInterval)
-                while composeState.liveMessage != nil {
+                while await composeState.liveMessage != nil {
                     await update()
                     _ = try? await Task.sleep(nanoseconds: liveMsgInterval)
                 }
@@ -394,7 +401,7 @@ struct SendMessageView: View {
     private func finishVoiceMessageRecordingButton() -> some View {
         Button(action: { finishVoiceMessageRecording?() }) {
             Image(systemName: "stop.fill")
-                .foregroundColor(.accentColor)
+                .foregroundColor(theme.colors.primary)
         }
         .disabled(composeState.inProgress)
         .frame(width: 29, height: 29)

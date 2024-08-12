@@ -121,9 +121,6 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ on vahvistettu";
 
-/* No comment provided by engineer. */
-"%@ servers" = "%@ palvelimet";
-
 /* notification title */
 "%@ wants to connect!" = "%@ haluaa muodostaa yhteyden!";
 
@@ -280,11 +277,9 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "edellä, valitse sitten:";
 
-/* No comment provided by engineer. */
-"Accent color" = "Korostusväri";
-
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "Hyväksy";
 
 /* No comment provided by engineer. */
@@ -293,7 +288,8 @@
 /* notification body */
 "Accept contact request from %@?" = "Hyväksy kontaktipyyntö %@:ltä?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "Hyväksy tuntematon";
 
 /* call status */
@@ -309,7 +305,7 @@
 "Add profile" = "Lisää profiili";
 
 /* No comment provided by engineer. */
-"Add server…" = "Lisää palvelin…";
+"Add server" = "Lisää palvelin";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "Lisää palvelimia skannaamalla QR-koodeja.";
@@ -648,7 +644,7 @@
 /* No comment provided by engineer. */
 "Choose from library" = "Valitse kirjastosta";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "Tyhjennä";
 
 /* No comment provided by engineer. */
@@ -662,9 +658,6 @@
 
 /* No comment provided by engineer. */
 "colored" = "värillinen";
-
-/* No comment provided by engineer. */
-"Colors" = "Värit";
 
 /* server test step */
 "Compare file" = "Vertaa tiedostoa";
@@ -778,9 +771,6 @@
 "Contact is connected" = "Kontakti on yhdistetty";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "Kontaktia ei ole vielä yhdistetty!";
-
-/* No comment provided by engineer. */
 "Contact name" = "Kontaktin nimi";
 
 /* No comment provided by engineer. */
@@ -795,7 +785,7 @@
 /* No comment provided by engineer. */
 "Continue" = "Jatka";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "Kopioi";
 
 /* No comment provided by engineer. */
@@ -930,7 +920,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "oletusarvo (kyllä)";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "Poista";
 
 /* No comment provided by engineer. */
@@ -962,9 +953,6 @@
 
 /* No comment provided by engineer. */
 "Delete contact" = "Poista kontakti";
-
-/* No comment provided by engineer. */
-"Delete Contact" = "Poista kontakti";
 
 /* No comment provided by engineer. */
 "Delete database" = "Poista tietokanta";
@@ -1016,9 +1004,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Poista vanha tietokanta?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Poista vireillä oleva yhteys";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Poistetaanko odottava yhteys?";
@@ -1339,9 +1324,6 @@
 "Error deleting connection" = "Virhe yhteyden poistamisessa";
 
 /* No comment provided by engineer. */
-"Error deleting contact" = "Virhe kontaktin poistamisessa";
-
-/* No comment provided by engineer. */
 "Error deleting database" = "Virhe tietokannan poistamisessa";
 
 /* No comment provided by engineer. */
@@ -1434,7 +1416,8 @@
 /* No comment provided by engineer. */
 "Error: " = "Virhe: ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "Virhe: %@";
 
 /* No comment provided by engineer. */
@@ -1470,7 +1453,7 @@
 /* No comment provided by engineer. */
 "Fast and no wait until the sender is online!" = "Nopea ja ei odotusta, kunnes lähettäjä on online-tilassa!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "Suosikki";
 
 /* No comment provided by engineer. */
@@ -1854,7 +1837,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "Japanilainen käyttöliittymä";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "Liity";
 
 /* No comment provided by engineer. */
@@ -1884,7 +1867,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "Lue lisää";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "Poistu";
 
 /* No comment provided by engineer. */
@@ -2061,13 +2044,13 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Useita keskusteluprofiileja";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Mute" = "Mykistä";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "Mykistetty ei-aktiivisena!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "Nimi";
 
 /* No comment provided by engineer. */
@@ -2171,7 +2154,7 @@
    time to disappear */
 "off" = "pois";
 
-/* No comment provided by engineer. */
+/* blur media */
 "Off" = "Pois";
 
 /* feature offered item */
@@ -2196,10 +2179,10 @@
 "One-time invitation link" = "Kertakutsulinkki";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "Yhteyden muodostamiseen tarvitaan Onion-isäntiä. Edellyttää VPN:n sallimista.";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "Yhteyden muodostamiseen tarvitaan Onion-isäntiä.\nEdellyttää VPN:n sallimista.";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "Onion-isäntiä käytetään, kun niitä on saatavilla. Edellyttää VPN:n sallimista.";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "Onion-isäntiä käytetään, kun niitä on saatavilla.\nEdellyttää VPN:n sallimista.";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "Onion-isäntiä ei käytetä.";
@@ -2423,7 +2406,7 @@
 /* chat item menu */
 "React…" = "Reagoi…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "Lue";
 
 /* No comment provided by engineer. */
@@ -2489,7 +2472,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Pienempi akun käyttö";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "Hylkää";
 
 /* No comment provided by engineer. */
@@ -2572,9 +2556,6 @@
 
 /* chat item action */
 "Reveal" = "Paljasta";
-
-/* No comment provided by engineer. */
-"Revert" = "Palauta";
 
 /* No comment provided by engineer. */
 "Revoke" = "Peruuta";
@@ -2678,7 +2659,7 @@
 /* chat item text */
 "security code changed" = "turvakoodi on muuttunut";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "Valitse";
 
 /* No comment provided by engineer. */
@@ -2701,9 +2682,6 @@
 
 /* No comment provided by engineer. */
 "Send delivery receipts to" = "Lähetä toimituskuittaukset vastaanottajalle";
-
-/* No comment provided by engineer. */
-"Send direct message" = "Lähetä yksityisviesti";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Lähetä katoava viesti";
@@ -2892,9 +2870,6 @@
 "Small groups (max 20)" = "Pienryhmät (max 20)";
 
 /* No comment provided by engineer. */
-"SMP servers" = "SMP-palvelimet";
-
-/* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Tuonnin aikana tapahtui joitakin ei-vakavia virheitä – saatat nähdä Chat-konsolissa lisätietoja.";
 
 /* notification title */
@@ -2968,9 +2943,6 @@
 
 /* No comment provided by engineer. */
 "Tap to join incognito" = "Napauta liittyäksesi incognito-tilassa";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "Aloita uusi keskustelu napauttamalla";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "TCP-yhteyden aikakatkaisu";
@@ -3057,9 +3029,6 @@
 "The servers for new connections of your current chat profile **%@**." = "Palvelimet nykyisen keskusteluprofiilisi uusille yhteyksille **%@**.";
 
 /* No comment provided by engineer. */
-"Theme" = "Teema";
-
-/* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Nämä asetukset koskevat nykyistä profiiliasi **%@**.";
 
 /* No comment provided by engineer. */
@@ -3137,7 +3106,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Odottamaton siirtotila";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "Epäsuotuisa.";
 
 /* No comment provided by engineer. */
@@ -3176,17 +3145,14 @@
 /* authentication reason */
 "Unlock app" = "Avaa sovellus";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unmute" = "Poista mykistys";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "Lukematon";
 
 /* No comment provided by engineer. */
 "Update" = "Päivitä";
-
-/* No comment provided by engineer. */
-"Update .onion hosts setting?" = "Päivitä .onion-isäntien asetus?";
 
 /* No comment provided by engineer. */
 "Update database passphrase" = "Päivitä tietokannan tunnuslause";
@@ -3194,17 +3160,11 @@
 /* No comment provided by engineer. */
 "Update network settings?" = "Päivitä verkkoasetukset?";
 
-/* No comment provided by engineer. */
-"Update transport isolation mode?" = "Päivitä kuljetuksen eristystila?";
-
 /* rcv group event chat item */
 "updated group profile" = "päivitetty ryhmäprofiili";
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Asetusten päivittäminen yhdistää asiakkaan uudelleen kaikkiin palvelimiin.";
-
-/* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "Tämän asetuksen päivittäminen yhdistää asiakkaan uudelleen kaikkiin palvelimiin.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Päivitä ja avaa keskustelu";
@@ -3238,9 +3198,6 @@
 
 /* No comment provided by engineer. */
 "User profile" = "Käyttäjäprofiili";
-
-/* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = ".onion-isäntien käyttäminen vaatii yhteensopivan VPN-palveluntarjoajan.";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "Käyttää SimpleX Chat -palvelimia.";
@@ -3356,9 +3313,6 @@
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Väärä tunnuslause!";
 
-/* No comment provided by engineer. */
-"XFTP servers" = "XFTP-palvelimet";
-
 /* pref value */
 "yes" = "kyllä";
 
@@ -3405,7 +3359,7 @@
 "You can hide or mute a user profile - swipe it to the right." = "Voit piilottaa tai mykistää käyttäjäprofiilin pyyhkäisemällä sitä oikealle.";
 
 /* notification body */
-"You can now send messages to %@" = "Voit nyt lähettää viestejä %@:lle";
+"You can now chat with %@" = "Voit nyt lähettää viestejä %@:lle";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "Voit määrittää lukitusnäytön ilmoituksen esikatselun asetuksista.";
@@ -3448,9 +3402,6 @@
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Sinua ei voitu todentaa; yritä uudelleen.";
-
-/* No comment provided by engineer. */
-"You have no chats" = "Sinulla ei ole keskusteluja";
 
 /* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Sinun on annettava tunnuslause aina, kun sovellus käynnistyy - sitä ei tallenneta laitteeseen.";
@@ -3532,9 +3483,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Keskusteluprofiilisi";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Kontaktin tulee olla online-tilassa, jotta yhteys voidaan muodostaa.\nVoit peruuttaa tämän yhteyden ja poistaa kontaktin (ja yrittää myöhemmin uudella linkillä).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Yhteyshenkilösi lähetti tiedoston, joka on suurempi kuin tällä hetkellä tuettu enimmäiskoko (%@).";

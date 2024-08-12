@@ -36,7 +36,7 @@ import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types
 import Simplex.FileTransfer.Description (kb, mb)
 import Simplex.FileTransfer.Server (runXFTPServerBlocking)
-import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration)
+import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration, supportedXFTPhandshakes)
 import Simplex.FileTransfer.Transport (supportedFileServerVRange)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
@@ -48,10 +48,11 @@ import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
 import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
+import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
-import Simplex.Messaging.Transport.Server (defaultTransportServerConfig)
+import Simplex.Messaging.Transport.Server (TransportServerConfig (..), defaultTransportServerConfig)
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
@@ -101,7 +102,8 @@ testCoreOpts =
       logAgent = Nothing,
       logFile = Nothing,
       tbqSize = 16,
-      highlyAvailable = False
+      highlyAvailable = False,
+      yesToUpMigrations = False
     }
 
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
@@ -134,6 +136,14 @@ testAgentCfg =
     { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000}
     }
 
+testAgentCfgSlow :: AgentConfig
+testAgentCfgSlow =
+  testAgentCfg
+    { smpClientVRange = mkVersionRange (Version 1) srvHostnamesSMPClientVersion, -- v2
+      smpAgentVRange = mkVersionRange duplexHandshakeSMPAgentVersion pqdrSMPAgentVersion, -- v5
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange batchCmdsSMPVersion sendingProxySMPVersion} -- v8
+    }
+
 testCfg :: ChatConfig
 testCfg =
   defaultChatConfig
@@ -142,6 +152,9 @@ testCfg =
       testView = True,
       tbqSize = 16
     }
+
+testCfgSlow :: ChatConfig
+testCfgSlow = testCfg {agentConfig = testAgentCfgSlow}
 
 testAgentCfgVPrev :: AgentConfig
 testAgentCfgVPrev =
@@ -211,7 +224,11 @@ testCfgCreateGroupDirect =
   mkCfgCreateGroupDirect testCfg
 
 mkCfgCreateGroupDirect :: ChatConfig -> ChatConfig
-mkCfgCreateGroupDirect cfg = cfg {chatVRange = groupCreateDirectVRange}
+mkCfgCreateGroupDirect cfg =
+  cfg
+    { chatVRange = groupCreateDirectVRange,
+      agentConfig = testAgentCfgSlow
+    }
 
 groupCreateDirectVRange :: VersionRangeChat
 groupCreateDirectVRange = mkVersionRange (VersionChat 1) (VersionChat 1)
@@ -426,11 +443,11 @@ smpServerCfg =
       serverStatsLogFile = "tests/smp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
       smpServerVRange = supportedServerSMPRelayVRange,
-      transportConfig = defaultTransportServerConfig,
+      transportConfig = defaultTransportServerConfig {alpn = Just supportedSMPHandshakes},
       smpHandshakeTimeout = 1000000,
       controlPort = Nothing,
       smpAgentCfg = defaultSMPClientAgentConfig,
-      allowSMPProxy = False,
+      allowSMPProxy = True,
       serverClientConcurrency = 16,
       information = Nothing
     }
@@ -472,7 +489,7 @@ xftpServerConfig =
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
       controlPort = Nothing,
-      transportConfig = defaultTransportServerConfig,
+      transportConfig = defaultTransportServerConfig {alpn = Just supportedXFTPhandshakes},
       responseDelay = 0
     }
 

@@ -73,6 +73,9 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, drawerSt
     withAuth = ::doWithAuth,
     drawerState = drawerState,
   )
+  KeyChangeEffect(chatModel.updatingProgress.value != null) {
+    drawerState.close()
+  }
 }
 
 val simplexTeamUri =
@@ -109,7 +112,7 @@ fun SettingsLayout(
       Modifier
         .fillMaxSize()
         .themedBackground(theme.value.base)
-        .padding(top = if (appPlatform.isAndroid) DEFAULT_PADDING else DEFAULT_PADDING * 3)
+        .padding(top = if (appPlatform.isAndroid) DEFAULT_PADDING else DEFAULT_PADDING * 2.8f)
     ) {
       AppBarTitle(stringResource(MR.strings.your_settings))
 
@@ -174,11 +177,13 @@ fun SettingsLayout(
       Box(
         Modifier
         .fillMaxWidth()
+        .height(AppBarHeight * fontSizeSqrtMultiplier)
         .background(MaterialTheme.colors.background)
         .background(if (isInDarkTheme()) ToolbarDark else ToolbarLight)
-        .padding(start = 4.dp, top = 8.dp)
+        .padding(start = 4.dp),
+        contentAlignment = Alignment.CenterStart
       ) {
-        NavigationButtonBack(closeSettings)
+        NavigationButtonBack(closeSettings, height = 24.sp.toDp())
       }
     }
   }
@@ -324,6 +329,31 @@ fun ChatLockItem(
   }
 }
 
+@Composable fun ResetHintsItem(unchangedHints: MutableState<Boolean>) {
+  SectionItemView({
+    resetHintPreferences()
+    unchangedHints.value = true
+  }, disabled = unchangedHints.value) {
+    Icon(
+      painter = painterResource(MR.images.ic_lightbulb),
+      contentDescription = "Lightbulb",
+      tint = MaterialTheme.colors.secondary,
+    )
+    TextIconSpaced()
+    Text(generalGetString(MR.strings.reset_all_hints), color = if (unchangedHints.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+  }
+}
+
+private fun resetHintPreferences() {
+  for ((pref, def) in appPreferences.hintPreferences) {
+    pref.set(def)
+  }
+}
+
+fun unchangedHintPreferences(): Boolean = appPreferences.hintPreferences.all { (pref, def) ->
+  pref.state.value == def
+}
+
 @Composable
 fun AppVersionItem(showVersion: () -> Unit) {
   SectionItemViewWithIcon(showVersion) { AppVersionText() }
@@ -413,13 +443,15 @@ fun SettingsPreferenceItem(
 @Composable
 fun PreferenceToggle(
   text: String,
+  disabled: Boolean = false,
   checked: Boolean,
   onChange: (Boolean) -> Unit = {},
 ) {
-  SettingsActionItemWithContent(null, text, extraPadding = true,) {
+  SettingsActionItemWithContent(null, text, disabled = disabled, extraPadding = true,) {
     DefaultSwitch(
       checked = checked,
       onCheckedChange = onChange,
+      enabled = !disabled
     )
   }
 }

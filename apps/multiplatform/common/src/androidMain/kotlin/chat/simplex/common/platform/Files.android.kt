@@ -29,6 +29,8 @@ actual val remoteHostsDir: File = File(tmpDir.absolutePath + File.separator + "r
 
 actual fun desktopOpenDatabaseDir() {}
 
+actual fun desktopOpenDir(dir: File) {}
+
 @Composable
 actual fun rememberFileChooserLauncher(getContent: Boolean, rememberedValue: Any?, onResult: (URI?) -> Unit): FileChooserLauncher {
   val launcher = rememberLauncherForActivityResult(

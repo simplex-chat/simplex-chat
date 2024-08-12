@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct AddGroupView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
     @State private var chat: Chat?
@@ -34,24 +35,28 @@ struct AddGroupView: View {
                     creatingGroup: true,
                     showFooterCounter: false
                 ) { _ in
-                    dismiss()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        m.chatId = groupInfo.id
+                        dismissAllSheets(animated: true) {
+                            m.chatId = groupInfo.id
+                        }
                     }
                 }
+                .navigationBarTitleDisplayMode(.inline)
             } else {
                 GroupLinkView(
                     groupId: groupInfo.groupId,
                     groupLink: $groupLink,
                     groupLinkMemberRole: $groupLinkMemberRole,
-                    showTitle: true,
+                    showTitle: false,
                     creatingGroup: true
                 ) {
-                    dismiss()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        m.chatId = groupInfo.id
+                        dismissAllSheets(animated: true) {
+                            m.chatId = groupInfo.id
+                        }
                     }
                 }
+                .navigationBarTitle("Group link")
             }
         } else {
             createGroupView().keyboardPadding()
@@ -61,16 +66,9 @@ struct AddGroupView: View {
     func createGroupView() -> some View {
         List {
             Group {
-                Text("Create secret group")
-                    .font(.largeTitle)
-                    .bold()
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.bottom, 24)
-                    .onTapGesture(perform: hideKeyboard)
-
                 ZStack(alignment: .center) {
                     ZStack(alignment: .topTrailing) {
-                        ProfileImage(imageStr: profile.image, size: 128, color: Color(uiColor: .secondarySystemGroupedBackground))
+                        ProfileImage(imageStr: profile.image, size: 128)
                         if profile.image != nil {
                             Button {
                                 profile.image = nil
@@ -95,7 +93,7 @@ struct AddGroupView: View {
             Section {
                 groupNameTextField()
                 Button(action: createGroup) {
-                    settingsRow("checkmark", color: .accentColor) { Text("Create group") }
+                    settingsRow("checkmark", color: theme.colors.primary) { Text("Create group") }
                 }
                 .disabled(!canCreateProfile())
                 IncognitoToggle(incognitoEnabled: $incognitoDefault)
@@ -104,6 +102,7 @@ struct AddGroupView: View {
                     sharedGroupProfileInfo(incognitoDefault)
                     Text("Fully decentralized – visible only to members.")
                 }
+                .foregroundColor(theme.colors.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .onTapGesture(perform: hideKeyboard)
             }
@@ -144,6 +143,7 @@ struct AddGroupView: View {
                 profile.image = nil
             }
         }
+        .modifier(ThemedBackground(grouped: true))
     }
 
     func groupNameTextField() -> some View {
@@ -156,7 +156,7 @@ struct AddGroupView: View {
                     Image(systemName: "exclamationmark.circle").foregroundColor(.red)
                 }
             } else {
-                Image(systemName: "pencil").foregroundColor(.secondary)
+                Image(systemName: "pencil").foregroundColor(theme.colors.secondary)
             }
             textField("Enter group name…", text: $profile.displayName)
                 .focused($focusDisplayName)
@@ -191,6 +191,7 @@ struct AddGroupView: View {
                 let groupMembers = await apiListMembers(gInfo.groupId)
                 await MainActor.run {
                     m.groupMembers = groupMembers.map { GMember.init($0) }
+                    m.populateGroupMembersIndexes()
                 }
             }
             let c = Chat(chatInfo: .group(groupInfo: gInfo), chatItems: [])
@@ -200,13 +201,14 @@ struct AddGroupView: View {
                 chat = c
             }
         } catch {
-            dismiss()
-            AlertManager.shared.showAlert(
-                Alert(
-                    title: Text("Error creating group"),
-                    message: Text(responseError(error))
+            dismissAllSheets(animated: true) {
+                AlertManager.shared.showAlert(
+                    Alert(
+                        title: Text("Error creating group"),
+                        message: Text(responseError(error))
+                    )
                 )
-            )
+            }
         }
     }
 

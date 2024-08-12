@@ -31,8 +31,9 @@ import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -46,14 +47,13 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (MsgBody)
-import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
+import Simplex.Messaging.Util (decodeJSON, eitherToMaybe, encodeJSON, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
 
 -- Chat version history:
@@ -64,12 +64,14 @@ import Simplex.Messaging.Version hiding (version)
 -- 5 - batch sending messages (12/23/2023)
 -- 6 - send group welcome message after history (12/29/2023)
 -- 7 - update member profiles (1/15/2024)
+-- 8 - compress messages and PQ e2e encryption (2024-03-08)
+-- 9 - batch sending in direct connections (2024-07-24)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: VersionChat
-currentChatVersion = VersionChat 8
+currentChatVersion = VersionChat 9
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRangeChat
@@ -103,6 +105,10 @@ memberProfileUpdateVersion = VersionChat 7
 -- version range that supports compressing messages and PQ e2e encryption
 pqEncryptionCompressionVersion :: VersionChat
 pqEncryptionCompressionVersion = VersionChat 8
+
+-- version range that supports batch sending in direct connections, and forwarding batched messages in groups
+batchSend2Version :: VersionChat
+batchSend2Version = VersionChat 9
 
 agentToChatVersion :: VersionSMPA -> VersionChat
 agentToChatVersion v
@@ -324,13 +330,20 @@ forwardedGroupMsg msg@ChatMessage {chatMsgEvent} = case encoding @e of
   SJson | isForwardedGroupMsg chatMsgEvent -> Just msg
   _ -> Nothing
 
--- applied after checking forwardedGroupMsg and building list of group members to forward to, see Chat
-forwardedToGroupMembers :: forall e. MsgEncodingI e => [GroupMember] -> ChatMessage e -> [GroupMember]
-forwardedToGroupMembers ms ChatMessage {chatMsgEvent} = case encoding @e of
-  SJson -> case chatMsgEvent of
-    XGrpMemRestrict mId _ -> filter (\GroupMember {memberId} -> memberId /= mId) ms
-    _ -> ms
-  _ -> []
+-- applied after checking forwardedGroupMsg and building list of group members to forward to, see Chat;
+-- this filters out members if any of forwarded events in batch is an XGrpMemRestrict event referring to them,
+-- but practically XGrpMemRestrict is not batched with other events so it wouldn't prevent forwarding of other events
+-- to these members
+forwardedToGroupMembers :: forall e. MsgEncodingI e => [GroupMember] -> NonEmpty (ChatMessage e) -> [GroupMember]
+forwardedToGroupMembers ms forwardedMsgs =
+  filter (\GroupMember {memberId} -> memberId `notElem` restrictMemberIds) ms
+  where
+    restrictMemberIds = mapMaybe restrictMemberId $ L.toList forwardedMsgs
+    restrictMemberId ChatMessage {chatMsgEvent} = case encoding @e of
+      SJson -> case chatMsgEvent of
+        XGrpMemRestrict mId _ -> Just mId
+        _ -> Nothing
+      _ -> Nothing
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show)

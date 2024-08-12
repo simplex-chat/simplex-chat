@@ -10,6 +10,7 @@ import MarkdownTests
 import MessageBatching
 import MobileTests
 import ProtocolTests
+import RandomServers
 import RemoteTests
 import SchemaDump
 import Test.Hspec hiding (it)
@@ -30,6 +31,7 @@ main = do
     around tmpBracket $ describe "WebRTC encryption" webRTCTests
     describe "Valid names" validNameTests
     describe "Message batching" batchingTests
+    describe "Random servers" randomServersTests
     around testBracket $ do
       describe "Mobile API Tests" mobileTests
       describe "SimpleX chat client" chatTests

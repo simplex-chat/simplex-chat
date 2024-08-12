@@ -15,9 +15,10 @@ private struct VersionDescription {
 }
 
 private struct FeatureDescription {
-    var icon: String
+    var icon: String?
     var title: LocalizedStringKey
-    var description: LocalizedStringKey
+    var description: LocalizedStringKey?
+    var subfeatures: [(icon: String, description: LocalizedStringKey)] = []
 }
 
 private let versionDescriptions: [VersionDescription] = [
@@ -428,6 +429,44 @@ private let versionDescriptions: [VersionDescription] = [
             )
         ]
     ),
+    VersionDescription(
+        version: "v6.0",
+        post: URL(string: "https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html"),
+        features: [
+            FeatureDescription(
+                icon: nil,
+                title: "New chat experience 🎉",
+                description: nil,
+                subfeatures: [
+                    ("link.badge.plus", "Connect to your friends faster."),
+                    ("archivebox", "Archive contacts to chat later."),
+                    ("trash", "Delete up to 20 messages at once."),
+                    ("platter.filled.bottom.and.arrow.down.iphone", "Use the app with one hand."),
+                    ("paintpalette", "Color chats with the new themes."),
+                ]
+            ),
+            FeatureDescription(
+                icon: nil,
+                title: "New media options",
+                description: nil,
+                subfeatures: [
+                    ("square.and.arrow.up", "Share from other apps."),
+                    ("play.circle", "Play from the chat list."),
+                    ("circle.filled.pattern.diagonalline.rectangle", "Blur for better privacy.")
+                ]
+            ),
+            FeatureDescription(
+                icon: "arrow.forward",
+                title: "Private message routing 🚀",
+                description: "It protects your IP address and connections."
+            ),
+            FeatureDescription(
+                icon: "network",
+                title: "Better networking",
+                description: "Connection and servers status."
+            )
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
@@ -444,6 +483,7 @@ func shouldShowWhatsNew() -> Bool {
 
 struct WhatsNewView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
+    @EnvironmentObject var theme: AppTheme
     @State var currentVersion = versionDescriptions.count - 1
     @State var currentVersionNav = versionDescriptions.count - 1
     var viaSettings = false
@@ -452,35 +492,37 @@ struct WhatsNewView: View {
         VStack {
             TabView(selection: $currentVersion) {
                 ForEach(Array(versionDescriptions.enumerated()), id: \.0) { (i, v) in
-                    VStack(alignment: .leading, spacing: 16) {
-                        Text("New in \(v.version)")
-                            .font(.title)
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical)
-                        ForEach(v.features, id: \.icon) { f in
-                            featureDescription(f.icon, f.title, f.description)
-                                .padding(.bottom, 8)
-                        }
-                        if let post = v.post {
-                            Link(destination: post) {
-                                HStack {
-                                    Text("Read more")
-                                    Image(systemName: "arrow.up.right.circle")
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("New in \(v.version)")
+                                .font(.title)
+                                .foregroundColor(theme.colors.secondary)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical)
+                            ForEach(v.features, id: \.title) { f in
+                                featureDescription(f)
+                                    .padding(.bottom, 8)
+                            }
+                            if let post = v.post {
+                                Link(destination: post) {
+                                    HStack {
+                                        Text("Read more")
+                                        Image(systemName: "arrow.up.right.circle")
+                                    }
                                 }
                             }
-                        }
-                        if !viaSettings {
-                            Spacer()
-                            Button("Ok") {
-                                dismiss()
+                            if !viaSettings {
+                                Spacer()
+                                Button("Ok") {
+                                    dismiss()
+                                }
+                                .font(.title3)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                                Spacer()
                             }
-                            .font(.title3)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            Spacer()
                         }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .tag(i)
                 }
             }
@@ -494,18 +536,37 @@ struct WhatsNewView: View {
         }
     }
 
-    private func featureDescription(_ icon: String, _ title: LocalizedStringKey, _ description: LocalizedStringKey) -> some View {
+    private func featureDescription(_ f: FeatureDescription) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack(alignment: .center, spacing: 4) {
-                Image(systemName: icon)
-                    .symbolRenderingMode(.monochrome)
-                    .foregroundColor(.secondary)
-                    .frame(minWidth: 30, alignment: .center)
-                Text(title).font(.title3).bold()
+            if let icon = f.icon {
+                HStack(alignment: .center, spacing: 4) {
+                    Image(systemName: icon)
+                        .symbolRenderingMode(.monochrome)
+                        .foregroundColor(theme.colors.secondary)
+                        .frame(minWidth: 30, alignment: .center)
+                    Text(f.title).font(.title3).bold()
+                }
+            } else {
+                Text(f.title).font(.title3).bold()
             }
-            Text(description)
-                .multilineTextAlignment(.leading)
-                .lineLimit(10)
+            if let d = f.description {
+                Text(d)
+                    .multilineTextAlignment(.leading)
+                    .lineLimit(10)
+            }
+            if f.subfeatures.count > 0 {
+                ForEach(f.subfeatures, id: \.icon) { s in
+                    HStack(alignment: .center, spacing: 4) {
+                        Image(systemName: s.icon)
+                            .symbolRenderingMode(.monochrome)
+                            .foregroundColor(theme.colors.secondary)
+                            .frame(minWidth: 30, alignment: .center)
+                        Text(s.description)
+                            .multilineTextAlignment(.leading)
+                            .lineLimit(3)
+                    }
+                }
+            }
         }
     }
 

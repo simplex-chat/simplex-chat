@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct CICallItemView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
     var status: CICallStatus
@@ -22,7 +23,7 @@ struct CICallItemView: View {
             switch status {
             case .pending:
                 if sent {
-                    Image(systemName: "phone.arrow.up.right").foregroundColor(.secondary)
+                    Image(systemName: "phone.arrow.up.right").foregroundColor(theme.colors.secondary)
                 } else {
                     acceptCallButton()
                 }
@@ -35,7 +36,7 @@ struct CICallItemView: View {
             case .error: missedCallIcon(sent).foregroundColor(.orange)
             }
 
-            CIMetaView(chat: chat, chatItem: chatItem, showStatus: false, showEdited: false)
+            CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary, showStatus: false, showEdited: false)
                 .padding(.bottom, 8)
                 .padding(.horizontal, 12)
         }
@@ -52,7 +53,7 @@ struct CICallItemView: View {
     @ViewBuilder private func endedCallIcon(_ sent: Bool) -> some View {
         HStack {
             Image(systemName: "phone.down")
-            Text(durationText(duration)).foregroundColor(.secondary)
+            Text(durationText(duration)).foregroundColor(theme.colors.secondary)
         }
     }
 
@@ -70,7 +71,7 @@ struct CICallItemView: View {
                 Label("Answer call", systemImage: "phone.arrow.down.left")
             }
         } else {
-            Image(systemName: "phone.arrow.down.left").foregroundColor(.secondary)
+            Image(systemName: "phone.arrow.down.left").foregroundColor(theme.colors.secondary)
         }
     }
 }

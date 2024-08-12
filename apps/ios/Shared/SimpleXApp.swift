@@ -39,6 +39,7 @@ struct SimpleXApp: App {
             // so that it's computed by the time view renders, and not on event after rendering
             ContentView(contentAccessAuthenticationExtended: !authenticationExpired())
                 .environmentObject(chatModel)
+                .environmentObject(AppTheme.shared)
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")
                     chatModel.appOpenUrl = url
@@ -57,6 +58,7 @@ struct SimpleXApp: App {
                 }
                 .onChange(of: scenePhase) { phase in
                     logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
+                    AppSheetState.shared.scenePhaseActive = phase == .active
                     switch (phase) {
                     case .background:
                         // --- authentication

@@ -27,6 +27,7 @@ import Numeric.Natural (Natural)
 import Options.Applicative
 import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), updateStr, versionNumber, versionString)
 import Simplex.FileTransfer.Description (mb)
+import Simplex.Messaging.Client (SocksMode (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
@@ -62,7 +63,8 @@ data CoreChatOpts = CoreChatOpts
     logAgent :: Maybe LogLevel,
     logFile :: Maybe FilePath,
     tbqSize :: Natural,
-    highlyAvailable :: Bool
+    highlyAvailable :: Bool,
+    yesToUpMigrations :: Bool
   }
 
 data ChatCmdLog = CCLAll | CCLMessages | CCLNone
@@ -129,21 +131,29 @@ coreChatOptsP appDir defaultDbFileName = do
             <> help "Use SOCKS5 proxy at `ipv4:port` or `:port`"
             <> value Nothing
         )
+  socksMode <-
+    option
+      strParse
+      ( long "socks-mode"
+          <> metavar "SOCKS_MODE"
+          <> help "Use SOCKS5 proxy: always (default), onion (with onion-only relays)"
+          <> value SMAlways
+      )
   smpProxyMode_ <-
     optional $
       option
         strParse
         ( long "smp-proxy"
             <> metavar "SMP_PROXY_MODE"
-            <> help "Use private message routing: always, unknown, unprotected, never (default)"
-        ) 
+            <> help "Use private message routing: always, unknown (default), unprotected, never"
+        )
   smpProxyFallback_ <-
     optional $
       option
         strParse
         ( long "smp-proxy-fallback"
             <> metavar "SMP_PROXY_FALLBACK_MODE"
-            <> help "Allow downgrade and connect directly: no, [when IP address is] protected, yes (default)"
+            <> help "Allow downgrade and connect directly: no, [when IP address is] protected (default), yes"
         )
   t <-
     option
@@ -204,20 +214,27 @@ coreChatOptsP appDir defaultDbFileName = do
       ( long "ha"
           <> help "Run as a highly available client (this may increase traffic in groups)"
       )
+  yesToUpMigrations <-
+    switch
+      ( long "--yes-migrate"
+          <> short 'y'
+          <> help "Automatically confirm \"up\" database migrations"
+      )
   pure
     CoreChatOpts
       { dbFilePrefix,
         dbKey,
         smpServers,
         xftpServers,
-        simpleNetCfg = SimpleNetCfg {socksProxy, smpProxyMode_, smpProxyFallback_, tcpTimeout_ = Just $ useTcpTimeout socksProxy t, logTLSErrors},
+        simpleNetCfg = SimpleNetCfg {socksProxy, socksMode, smpProxyMode_, smpProxyFallback_, tcpTimeout_ = Just $ useTcpTimeout socksProxy t, logTLSErrors},
         logLevel,
         logConnections = logConnections || logLevel <= CLLInfo,
         logServerHosts = logServerHosts || logLevel <= CLLInfo,
         logAgent = if logAgent || logLevel == CLLDebug then Just $ agentLogLevel logLevel else Nothing,
         logFile,
         tbqSize,
-        highlyAvailable
+        highlyAvailable,
+        yesToUpMigrations
       }
   where
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 7 (const 15) p

@@ -13,13 +13,16 @@ let SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
 struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
     @Binding var groupInfo: GroupInfo
+    var onSearch: () -> Void
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: String?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
-    @State private var showAddMembersSheet: Bool = false
+    @State private var groupLinkNavLinkActive: Bool = false
+    @State private var addMembersNavLinkActive: Bool = false
     @State private var connectionStats: ConnectionStats?
     @State private var connectionCode: String?
     @State private var sendReceipts = SendReceipts.userDefault(true)
@@ -39,7 +42,7 @@ struct GroupChatInfoView: View {
         case blockForAllAlert(mem: GroupMember)
         case unblockForAllAlert(mem: GroupMember)
         case removeMemberAlert(mem: GroupMember)
-        case error(title: LocalizedStringKey, error: LocalizedStringKey)
+        case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
             switch self {
@@ -67,6 +70,15 @@ struct GroupChatInfoView: View {
             List {
                 groupInfoHeader()
                     .listRowBackground(Color.clear)
+                    .padding(.bottom, 18)
+
+                infoActionButtons()
+                    .padding(.horizontal)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: infoViewActionButtonHeight)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
 
                 Section {
                     if groupInfo.canEdit {
@@ -81,13 +93,19 @@ struct GroupChatInfoView: View {
                     } else {
                         sendReceiptsOptionDisabled()
                     }
+                    NavigationLink {
+                        ChatWallpaperEditorSheet(chat: chat)
+                    } label: {
+                        Label("Chat theme", systemImage: "photo")
+                    }
                 } header: {
                     Text("")
                 } footer: {
                     Text("Only group owners can change group preferences.")
+                        .foregroundColor(theme.colors.secondary)
                 }
 
-                Section("\(members.count + 1) members") {
+                Section(header: Text("\(members.count + 1) members").foregroundColor(theme.colors.secondary)) {
                     if groupInfo.canAddMembers {
                         groupLinkButton()
                         if (chat.chatInfo.incognito) {
@@ -99,7 +117,7 @@ struct GroupChatInfoView: View {
                         }
                     }
                     if members.count > 8 {
-                        searchFieldView(text: $searchText, focussed: $searchFocussed)
+                        searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.onBackground, theme.colors.secondary)
                             .padding(.leading, 8)
                     }
                     let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
@@ -129,12 +147,13 @@ struct GroupChatInfoView: View {
                 }
 
                 if developerTools {
-                    Section(header: Text("For console")) {
+                    Section(header: Text("For console").foregroundColor(theme.colors.secondary)) {
                         infoRow("Local name", chat.chatInfo.localDisplayName)
                         infoRow("Database ID", "\(chat.chatInfo.apiId)")
                     }
                 }
             }
+            .modifier(ThemedBackground(grouped: true))
             .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -150,7 +169,7 @@ struct GroupChatInfoView: View {
             case let .blockForAllAlert(mem): return blockForAllAlert(groupInfo, mem)
             case let .unblockForAllAlert(mem): return unblockForAllAlert(groupInfo, mem)
             case let .removeMemberAlert(mem): return removeMemberAlert(mem)
-            case let .error(title, error): return Alert(title: Text(title), message: Text(error))
+            case let .error(title, error): return mkAlert(title: title, message: error)
             }
         }
         .onAppear {
@@ -190,44 +209,116 @@ struct GroupChatInfoView: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
+    func infoActionButtons() -> some View {
+        GeometryReader { g in
+            let buttonWidth = g.size.width / 4
+            HStack(alignment: .center, spacing: 8) {
+                searchButton(width: buttonWidth)
+                if groupInfo.canAddMembers {
+                    addMembersActionButton(width: buttonWidth)
+                }
+                muteButton(width: buttonWidth)
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+        }
+    }
+
+    private func searchButton(width: CGFloat) -> some View {
+        InfoViewButton(image: "magnifyingglass", title: "search", width: width) {
+            dismiss()
+            onSearch()
+        }
+        .disabled(!groupInfo.ready || chat.chatItems.isEmpty)
+    }
+
+    @ViewBuilder private func addMembersActionButton(width: CGFloat) -> some View {
+        if chat.chatInfo.incognito {
+            ZStack {
+                InfoViewButton(image: "link.badge.plus", title: "invite", width: width) {
+                    groupLinkNavLinkActive = true
+                }
+
+                NavigationLink(isActive: $groupLinkNavLinkActive) {
+                    groupLinkDestinationView()
+                } label: {
+                    EmptyView()
+                }
+                .frame(width: 1, height: 1)
+                .hidden()
+            }
+            .disabled(!groupInfo.ready)
+        } else {
+            ZStack {
+                InfoViewButton(image: "person.fill.badge.plus", title: "invite", width: width) {
+                    addMembersNavLinkActive = true
+                }
+
+                NavigationLink(isActive: $addMembersNavLinkActive) {
+                    addMembersDestinationView()
+                } label: {
+                    EmptyView()
+                }
+                .frame(width: 1, height: 1)
+                .hidden()
+            }
+            .disabled(!groupInfo.ready)
+        }
+    }
+
+    private func muteButton(width: CGFloat) -> some View {
+        InfoViewButton(
+            image: chat.chatInfo.ntfsEnabled ? "speaker.slash.fill" : "speaker.wave.2.fill",
+            title: chat.chatInfo.ntfsEnabled ? "mute" : "unmute",
+            width: width
+        ) {
+            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
+        }
+        .disabled(!groupInfo.ready)
+    }
+
     private func addMembersButton() -> some View {
         NavigationLink {
-            AddGroupMembersView(chat: chat, groupInfo: groupInfo)
-                .onAppear {
-                    searchFocussed = false
-                    Task {
-                        let groupMembers = await apiListMembers(groupInfo.groupId)
-                        await MainActor.run {
-                            chatModel.groupMembers = groupMembers.map { GMember.init($0) }
-                        }
-                    }
-                }
+            addMembersDestinationView()
         } label: {
             Label("Invite members", systemImage: "plus")
         }
     }
 
+    private func addMembersDestinationView() -> some View {
+        AddGroupMembersView(chat: chat, groupInfo: groupInfo)
+            .onAppear {
+                searchFocussed = false
+                Task {
+                    let groupMembers = await apiListMembers(groupInfo.groupId)
+                    await MainActor.run {
+                        chatModel.groupMembers = groupMembers.map { GMember.init($0) }
+                        chatModel.populateGroupMembersIndexes()
+                    }
+                }
+            }
+    }
+
     private struct MemberRowView: View {
         var groupInfo: GroupInfo
         @ObservedObject var groupMember: GMember
+        @EnvironmentObject var theme: AppTheme
         var user: Bool = false
         @Binding var alert: GroupChatInfoViewAlert?
 
         var body: some View {
             let member = groupMember.wrapped
             let v = HStack{
-                ProfileImage(imageStr: member.image, size: 38)
+                MemberProfileImage(member, size: 38)
                     .padding(.trailing, 2)
                 // TODO server connection status
                 VStack(alignment: .leading) {
-                    let t = Text(member.chatViewName).foregroundColor(member.memberIncognito ? .indigo : .primary)
+                    let t = Text(member.chatViewName).foregroundColor(member.memberIncognito ? .indigo : theme.colors.onBackground)
                     (member.verified ? memberVerifiedShield + t : t)
                         .lineLimit(1)
-                    let s = Text(member.memberStatus.shortText)
-                    (user ? Text ("you: ") + s : s)
+                    (user ? Text ("you: ") + Text(member.memberStatus.shortText) : Text(memberConnStatus(member)))
                         .lineLimit(1)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                 }
                 Spacer()
                 memberInfo(member)
@@ -257,15 +348,25 @@ struct GroupChatInfoView: View {
             }
         }
 
+        private func memberConnStatus(_ member: GroupMember) -> LocalizedStringKey {
+            if member.activeConn?.connDisabled ?? false {
+                return "disabled"
+            } else if member.activeConn?.connInactive ?? false {
+                return "inactive"
+            } else {
+                return member.memberStatus.shortText
+            }
+        }
+
         @ViewBuilder private func memberInfo(_ member: GroupMember) -> some View {
             if member.blocked {
                 Text("blocked")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             } else {
                 let role = member.memberRole
                 if [.owner, .admin, .observer].contains(role) {
                     Text(member.memberRole.text)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
         }
@@ -276,13 +377,13 @@ struct GroupChatInfoView: View {
                     Button {
                         alert = .blockMemberAlert(mem: member)
                     } label: {
-                        Label("Block member", systemImage: "hand.raised").foregroundColor(.secondary)
+                        Label("Block member", systemImage: "hand.raised").foregroundColor(theme.colors.secondary)
                     }
                 } else {
                     Button {
                         alert = .unblockMemberAlert(mem: member)
                     } label: {
-                        Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
+                        Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(theme.colors.primary)
                     }
                 }
             }
@@ -294,13 +395,13 @@ struct GroupChatInfoView: View {
                     Button {
                         alert = .unblockForAllAlert(mem: member)
                     } label: {
-                        Label("Unblock for all", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
+                        Label("Unblock for all", systemImage: "hand.raised.slash").foregroundColor(theme.colors.primary)
                     }
                 } else {
                     Button {
                         alert = .blockForAllAlert(mem: member)
                     } label: {
-                        Label("Block for all", systemImage: "hand.raised").foregroundColor(.secondary)
+                        Label("Block for all", systemImage: "hand.raised").foregroundColor(theme.colors.secondary)
                     }
                 }
             }
@@ -316,6 +417,14 @@ struct GroupChatInfoView: View {
                 }
             }
         }
+
+        private var memberVerifiedShield: Text {
+            (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+                .font(.caption)
+                .baselineOffset(2)
+                .kerning(-2)
+                .foregroundColor(theme.colors.secondary)
+        }
     }
 
     private func memberInfoView(_ groupMember: GMember) -> some View {
@@ -325,15 +434,7 @@ struct GroupChatInfoView: View {
 
     private func groupLinkButton() -> some View {
         NavigationLink {
-            GroupLinkView(
-                groupId: groupInfo.groupId,
-                groupLink: $groupLink,
-                groupLinkMemberRole: $groupLinkMemberRole,
-                showTitle: false,
-                creatingGroup: false
-            )
-            .navigationBarTitle("Group link")
-            .navigationBarTitleDisplayMode(.large)
+            groupLinkDestinationView()
         } label: {
             if groupLink == nil {
                 Label("Create group link", systemImage: "link.badge.plus")
@@ -343,6 +444,19 @@ struct GroupChatInfoView: View {
         }
     }
 
+    private func groupLinkDestinationView() -> some View {
+        GroupLinkView(
+            groupId: groupInfo.groupId,
+            groupLink: $groupLink,
+            groupLinkMemberRole: $groupLinkMemberRole,
+            showTitle: false,
+            creatingGroup: false
+        )
+        .navigationBarTitle("Group link")
+        .modifier(ThemedBackground(grouped: true))
+        .navigationBarTitleDisplayMode(.large)
+    }
+
     private func editGroupButton() -> some View {
         NavigationLink {
             GroupProfileView(
@@ -350,6 +464,7 @@ struct GroupChatInfoView: View {
                 groupProfile: groupInfo.groupProfile
             )
             .navigationBarTitle("Group profile")
+            .modifier(ThemedBackground())
             .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Edit group profile", systemImage: "pencil")
@@ -364,6 +479,7 @@ struct GroupChatInfoView: View {
                 welcomeText: groupInfo.groupProfile.description ?? ""
             )
             .navigationTitle("Welcome message")
+            .modifier(ThemedBackground(grouped: true))
             .navigationBarTitleDisplayMode(.large)
         } label: {
             groupInfo.groupProfile.description == nil
@@ -518,6 +634,7 @@ func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bo
             creatingGroup: creatingGroup
         )
         .navigationBarTitle("Group preferences")
+        .modifier(ThemedBackground(grouped: true))
         .navigationBarTitleDisplayMode(.large)
     } label: {
         if creatingGroup {
@@ -526,14 +643,6 @@ func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bo
             Label("Group preferences", systemImage: "switch.2")
         }
     }
-}
-
-private var memberVerifiedShield: Text {
-    (Text(Image(systemName: "checkmark.shield")) + Text(" "))
-        .font(.caption)
-        .baselineOffset(2)
-        .kerning(-2)
-        .foregroundColor(.secondary)
 }
 
 func cantInviteIncognitoAlert() -> Alert {
@@ -554,7 +663,8 @@ struct GroupChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
         GroupChatInfoView(
             chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []),
-            groupInfo: Binding.constant(GroupInfo.sampleData)
+            groupInfo: Binding.constant(GroupInfo.sampleData),
+            onSearch: {}
         )
     }
 }

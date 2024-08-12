@@ -55,7 +55,7 @@
     <string name="keychain_allows_to_receive_ntfs">Після перезапуску додатка або зміни ключової фрази буде використано сховище ключів Android для безпечного збереження ключової фрази - це дозволить отримувати сповіщення.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Дозвольте вашим контактам надсилати голосові повідомлення.</string>
     <string name="accept_contact_incognito_button">Прийняти інкогніто</string>
-    <string name="smp_servers_add">Додати сервер…</string>
+    <string name="smp_servers_add">Додати сервер</string>
     <string name="group_member_role_admin">адміністратор</string>
     <string name="button_add_welcome_message">Додати привітання</string>
     <string name="all_group_members_will_remain_connected">Всі члени групи залишаться підключеними.</string>
@@ -251,7 +251,6 @@
     <string name="network_settings_title">Налаштування мережі</string>
     <string name="network_enable_socks">Використовувати SOCKS-проксі?</string>
     <string name="network_disable_socks">Використовувати прямий підключення до Інтернету?</string>
-    <string name="update_onion_hosts_settings_question">Оновити налаштування .onion-хостів?</string>
     <string name="network_use_onion_hosts">Використовувати .onion-хости</string>
     <string name="network_use_onion_hosts_prefer">Якщо доступно</string>
     <string name="network_use_onion_hosts_no">Ні</string>
@@ -640,8 +639,6 @@
     <string name="error_saving_ICE_servers">Помилка збереження серверів ICE</string>
     <string name="network_use_onion_hosts_required_desc">.Onion-хости будуть обов\'язковими для підключення.
 \nЗверніть увагу: ви не зможете підключитися до серверів без адреси .onion.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Хости .onion будуть використовуватися, якщо доступні.</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Хости .onion будуть обов\'язковими для підключення.</string>
     <string name="show_developer_options">Показати параметри розробника</string>
     <string name="developer_options">Ідентифікатори бази даних та опція ізоляції транспорту.</string>
     <string name="shutdown_alert_desc">Сповіщення перестануть працювати, поки ви не перезапустите додаток</string>
@@ -953,7 +950,6 @@
     <string name="image_descr_link_preview">зображення попереднього перегляду посилання</string>
     <string name="icon_descr_cancel_link_preview">скасувати попередній перегляд посилання</string>
     <string name="icon_descr_settings">Налаштування</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Хости .onion не будуть використовуватися.</string>
     <string name="icon_descr_call_progress">Виклик у процесі</string>
     <string name="database_error">Помилка бази даних</string>
     <string name="restore_database_alert_confirm">Відновити</string>
@@ -997,7 +993,6 @@
     <string name="section_title_for_console">ДЛЯ КОНСОЛІ</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">Учасника буде вилучено з групи - цю дію неможливо скасувати!</string>
     <string name="change_role">Змінити роль</string>
-    <string name="network_options_revert">Відновити</string>
     <string name="you_will_still_receive_calls_and_ntfs">Ви все ще отримуватимете дзвінки та сповіщення від приглушених профілів, коли вони активні.</string>
     <string name="ttl_months">%d місяці</string>
     <string name="ttl_mth">%dmth</string>
@@ -1850,4 +1845,10 @@
     <string name="reset_single_color">Скинути колір</string>
     <string name="color_mode_system">Система</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Без Tor або VPN ваша IP-адреса буде видимою для файлових серверів.</string>
+    <string name="message_queue_info_none">немає</string>
+    <string name="info_row_debug_delivery">Доставка налагодження</string>
+    <string name="message_queue_info">Інформація про чергу повідомлень</string>
+    <string name="message_queue_info_server_info">інформація про чергу на сервері: %1$s
+\n
+\nостаннє отримане повідомлення: %2$s</string>
 </resources>

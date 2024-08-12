@@ -28,10 +28,14 @@ extension AppSettings {
             privacyAcceptImagesGroupDefault.set(val)
             def.setValue(val, forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES)
         }
-        if let val = privacyLinkPreviews { def.setValue(val, forKey: DEFAULT_PRIVACY_LINK_PREVIEWS) }
+        if let val = privacyLinkPreviews {
+            privacyLinkPreviewsGroupDefault.set(val)
+            def.setValue(val, forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
+        }
         if let val = privacyShowChatPreviews { def.setValue(val, forKey: DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) }
         if let val = privacySaveLastDraft { def.setValue(val, forKey: DEFAULT_PRIVACY_SAVE_LAST_DRAFT) }
         if let val = privacyProtectScreen { def.setValue(val, forKey: DEFAULT_PRIVACY_PROTECT_SCREEN) }
+        if let val = privacyMediaBlurRadius { def.setValue(val, forKey: DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS) }
         if let val = notificationMode { ChatModel.shared.notificationMode = val.toNotificationsMode() }
         if let val = notificationPreviewMode { ntfPreviewModeGroupDefault.set(val) }
         if let val = webrtcPolicyRelay { def.setValue(val, forKey: DEFAULT_WEBRTC_POLICY_RELAY) }
@@ -44,6 +48,15 @@ extension AppSettings {
         if let val = androidCallOnLockScreen { def.setValue(val.rawValue, forKey: ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN) }
         if let val = iosCallKitEnabled { callKitEnabledGroupDefault.set(val) }
         if let val = iosCallKitCallsInRecents { def.setValue(val, forKey: DEFAULT_CALL_KIT_CALLS_IN_RECENTS) }
+        if let val = uiProfileImageCornerRadius {
+            profileImageCornerRadiusGroupDefault.set(val)
+            def.setValue(val, forKey: DEFAULT_PROFILE_IMAGE_CORNER_RADIUS)
+        }
+        if let val = uiColorScheme { def.setValue(val, forKey: DEFAULT_CURRENT_THEME) }
+        if let val = uiDarkColorScheme { def.setValue(val, forKey: DEFAULT_SYSTEM_DARK_THEME) }
+        if let val = uiCurrentThemeIds { def.setValue(val, forKey: DEFAULT_CURRENT_THEME_IDS) }
+        if let val = uiThemes { def.setValue(val.skipDuplicates(), forKey: DEFAULT_THEME_OVERRIDES) }
+        if let val = oneHandUI { groupDefaults.setValue(val, forKey: GROUP_DEFAULT_ONE_HAND_UI) }
     }
 
     public static var current: AppSettings {
@@ -57,6 +70,7 @@ extension AppSettings {
         c.privacyShowChatPreviews = def.bool(forKey: DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS)
         c.privacySaveLastDraft = def.bool(forKey: DEFAULT_PRIVACY_SAVE_LAST_DRAFT)
         c.privacyProtectScreen = def.bool(forKey: DEFAULT_PRIVACY_PROTECT_SCREEN)
+        c.privacyMediaBlurRadius = def.integer(forKey: DEFAULT_PRIVACY_MEDIA_BLUR_RADIUS)
         c.notificationMode = AppSettingsNotificationMode.from(ChatModel.shared.notificationMode)
         c.notificationPreviewMode = ntfPreviewModeGroupDefault.get()
         c.webrtcPolicyRelay = def.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
@@ -69,6 +83,12 @@ extension AppSettings {
         c.androidCallOnLockScreen = AppSettingsLockScreenCalls(rawValue: def.string(forKey: ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN)!)
         c.iosCallKitEnabled = callKitEnabledGroupDefault.get()
         c.iosCallKitCallsInRecents = def.bool(forKey: DEFAULT_CALL_KIT_CALLS_IN_RECENTS)
+        c.uiProfileImageCornerRadius = def.double(forKey: DEFAULT_PROFILE_IMAGE_CORNER_RADIUS)
+        c.uiColorScheme = currentThemeDefault.get()
+        c.uiDarkColorScheme = systemDarkThemeDefault.get()
+        c.uiCurrentThemeIds = currentThemeIdsDefault.get()
+        c.uiThemes = themeOverridesDefault.get()
+        c.oneHandUI = groupDefaults.bool(forKey: GROUP_DEFAULT_ONE_HAND_UI)
         return c
     }
 }

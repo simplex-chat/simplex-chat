@@ -254,6 +254,7 @@ enum UploadContent: Equatable {
 
 struct ComposeView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
     @Binding var composeState: ComposeState
     @Binding var keyboardVisible: Bool
@@ -280,21 +281,28 @@ struct ComposeView: View {
     @State private var stopPlayback: Bool = false
 
     @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
+    @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
     var body: some View {
         VStack(spacing: 0) {
+            Divider()
             if chat.chatInfo.contact?.nextSendGrpInv ?? false {
                 ContextInvitingContactMemberView()
+                Divider()
             }
+            // preference checks should match checks in forwarding list
             let simplexLinkProhibited = hasSimplexLink && !chat.groupFeatureEnabled(.simplexLinks)
             let fileProhibited = composeState.attachmentPreview && !chat.groupFeatureEnabled(.files)
             let voiceProhibited = composeState.voicePreview && !chat.chatInfo.featureEnabled(.voice)
             if simplexLinkProhibited {
                 msgNotAllowedView("SimpleX links not allowed", icon: "link")
+                Divider()
             } else if fileProhibited {
                 msgNotAllowedView("Files and media not allowed", icon: "doc")
+                Divider()
             } else if voiceProhibited {
                 msgNotAllowedView("Voice messages not allowed", icon: "mic")
+                Divider()
             }
             contextItemView()
             switch (composeState.editing, composeState.preview) {
@@ -313,6 +321,7 @@ struct ComposeView: View {
                 .frame(width: 25, height: 25)
                 .padding(.bottom, 12)
                 .padding(.leading, 12)
+                .tint(theme.colors.primary)
                 if case let .group(g) = chat.chatInfo,
                    !g.fullGroupPreferences.files.on(for: g.membership) {
                     b.disabled(true).onTapGesture {
@@ -353,16 +362,15 @@ struct ComposeView: View {
                         keyboardVisible: $keyboardVisible,
                         sendButtonColor: chat.chatInfo.incognito
                             ? .indigo.opacity(colorScheme == .dark ? 1 : 0.7)
-                            : .accentColor
+                            : theme.colors.primary
                     )
                     .padding(.trailing, 12)
-                    .background(.background)
                     .disabled(!chat.userCanSend)
 
                     if chat.userIsObserver {
                         Text("you are observer")
                             .italic()
-                            .foregroundColor(.secondary)
+                            .foregroundColor(theme.colors.secondary)
                             .padding(.horizontal, 12)
                             .onTapGesture {
                                 AlertManager.shared.showAlertMsg(
@@ -374,6 +382,7 @@ struct ComposeView: View {
                 }
             }
         }
+        .background(ToolbarMaterial.material(toolbarMaterial))
         .onChange(of: composeState.message) { msg in
             if composeState.linkPreviewAllowed {
                 if msg.count > 0 {
@@ -622,6 +631,7 @@ struct ComposeView: View {
                 cancelPreview: cancelLinkPreview,
                 cancelEnabled: !composeState.inProgress
             )
+            Divider()
         case let .mediaPreviews(mediaPreviews: media):
             ComposeImageView(
                 images: media.map { (img, _) in img },
@@ -630,6 +640,7 @@ struct ComposeView: View {
                     chosenMedia = []
                 },
                 cancelEnabled: !composeState.editing && !composeState.inProgress)
+            Divider()
         case let .voicePreview(recordingFileName, _):
             ComposeVoiceView(
                 recordingFileName: recordingFileName,
@@ -642,6 +653,7 @@ struct ComposeView: View {
                 cancelEnabled: !composeState.editing && !composeState.inProgress,
                 stopPlayback: $stopPlayback
             )
+            Divider()
         case let .filePreview(fileName, _):
             ComposeFileView(
                 fileName: fileName,
@@ -649,19 +661,19 @@ struct ComposeView: View {
                     composeState = composeState.copy(preview: .noPreview)
                 },
                 cancelEnabled: !composeState.editing && !composeState.inProgress)
+            Divider()
         }
     }
 
     private func msgNotAllowedView(_ reason: LocalizedStringKey, icon: String) -> some View {
         HStack {
-            Image(systemName: icon).foregroundColor(.secondary)
+            Image(systemName: icon).foregroundColor(theme.colors.secondary)
             Text(reason).italic()
         }
         .padding(12)
-        .frame(minHeight: 50)
+        .frame(minHeight: 54)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(uiColor: .tertiarySystemGroupedBackground))
-        .padding(.top, 8)
+        .background(.thinMaterial)
     }
 
     @ViewBuilder private func contextItemView() -> some View {
@@ -675,6 +687,7 @@ struct ComposeView: View {
                 contextIcon: "arrowshape.turn.up.left",
                 cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) }
             )
+            Divider()
         case let .editingItem(chatItem: editingItem):
             ContextItemView(
                 chat: chat,
@@ -682,6 +695,7 @@ struct ComposeView: View {
                 contextIcon: "pencil",
                 cancelContextItem: { clearState() }
             )
+            Divider()
         case let .forwardingItem(chatItem: forwardedItem, _):
             ContextItemView(
                 chat: chat,
@@ -690,6 +704,7 @@ struct ComposeView: View {
                 cancelContextItem: { composeState = composeState.copy(contextItem: .noContextItem) },
                 showSender: false
             )
+            Divider()
         }
     }
 
@@ -846,6 +861,7 @@ struct ComposeView: View {
         func sendVideo(_ imageData: (String, UploadContent?), text: String = "", quoted: Int64? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
             let (image, data) = imageData
             if case let .video(_, url, duration) = data, let savedFile = moveTempFileFromURL(url) {
+                ChatModel.shared.filesToDelete.remove(url)
                 return await send(.video(text: text, image: image, duration: duration), quoted: quoted, file: savedFile, live: live, ttl: ttl)
             }
             return nil
@@ -1065,7 +1081,7 @@ struct ComposeView: View {
         } else {
             nil
         }
-        let simplexLink = parsedMsg.contains(where: { ft in ft.format?.isSimplexLink ?? false })
+        let simplexLink = parsedMsgHasSimplexLink(parsedMsg)
         return (url, simplexLink)
     }
 

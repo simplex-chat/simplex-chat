@@ -1,5 +1,7 @@
 package chat.simplex.common
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -18,6 +20,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.usersettings.SetDeliveryReceiptsView
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.CreateFirstProfile
@@ -28,6 +31,8 @@ import chat.simplex.common.views.chat.ChatView
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.database.DatabaseErrorView
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.helpers.ModalManager.Companion.fromEndToStartTransition
+import chat.simplex.common.views.helpers.ModalManager.Companion.fromStartToEndTransition
 import chat.simplex.common.views.localauth.VerticalDivider
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
@@ -36,6 +41,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
+import kotlin.math.sqrt
 
 data class SettingsViewState(
   val userPickerState: MutableStateFlow<AnimatedViewState>,
@@ -68,7 +74,7 @@ fun MainScreen() {
       !chatModel.controller.appPrefs.laNoticeShown.get()
       && showAdvertiseLAAlert
       && chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete
-      && chatModel.chats.size > 2
+      && chatModel.chats.size > 3
       && chatModel.activeCallInvitation.value == null
     ) {
       AppLock.showLANotice(ChatModel.controller.appPrefs.laNoticeShown) }
@@ -78,6 +84,7 @@ fun MainScreen() {
       laUnavailableInstructionAlert()
     }
   }
+  platform.desktopShowAppUpdateNotice()
   LaunchedEffect(chatModel.clearOverlays.value) {
     if (chatModel.clearOverlays.value) {
       ModalManager.closeAllModalsEverywhere()
@@ -145,17 +152,30 @@ fun MainScreen() {
           }
         }
       }
-      onboarding == OnboardingStage.Step1_SimpleXInfo -> {
-        SimpleXInfo(chatModel, onboarding = true)
-        if (appPlatform.isDesktop) {
-          ModalManager.fullscreen.showInView()
+      else -> AnimatedContent(targetState = onboarding,
+        transitionSpec = {
+          if (targetState > initialState) {
+            fromEndToStartTransition()
+          } else {
+            fromStartToEndTransition()
+          }.using(SizeTransform(clip = false))
+        }
+      ) { state ->
+        when (state) {
+          OnboardingStage.OnboardingComplete -> { /* handled out of AnimatedContent block */}
+          OnboardingStage.Step1_SimpleXInfo -> {
+            SimpleXInfo(chatModel, onboarding = true)
+            if (appPlatform.isDesktop) {
+              ModalManager.fullscreen.showInView()
+            }
+          }
+          OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
+          OnboardingStage.LinkAMobile -> LinkAMobile()
+          OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
+          OnboardingStage.Step3_CreateSimpleXAddress -> CreateSimpleXAddress(chatModel, null)
+          OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
         }
       }
-      onboarding == OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
-      onboarding == OnboardingStage.LinkAMobile -> LinkAMobile()
-      onboarding == OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
-      onboarding == OnboardingStage.Step3_CreateSimpleXAddress -> CreateSimpleXAddress(chatModel, null)
-      onboarding == OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
     }
     if (appPlatform.isAndroid) {
       ModalManager.fullscreen.showInView()
@@ -232,7 +252,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
   BoxWithConstraints {
     val call = remember { chatModel.activeCall} .value
     val showCallArea = call != null && call.callState != CallState.WaitCapabilities && call.callState != CallState.InvitationAccepted
-    var currentChatId by rememberSaveable { mutableStateOf(chatModel.chatId.value) }
+    val currentChatId = remember { mutableStateOf(chatModel.chatId.value) }
     val offset = remember { Animatable(if (chatModel.chatId.value == null) 0f else maxWidth.value) }
     Box(
       Modifier
@@ -261,21 +281,37 @@ fun AndroidScreen(settingsState: SettingsViewState) {
         snapshotFlow { chatModel.chatId.value }
           .distinctUntilChanged()
           .collect {
-            if (it == null) onComposed(null)
-            currentChatId = it
+            if (it == null) {
+              platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+              onComposed(null)
+            }
+            currentChatId.value = it
           }
       }
+    }
+    LaunchedEffect(Unit) {
+      snapshotFlow { ModalManager.center.modalCount.value > 0 }
+        .filter { chatModel.chatId.value == null }
+        .collect { modalBackground ->
+          if (chatModel.newChatSheetVisible.value) {
+            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, false, appPrefs.oneHandUI.get())
+          } else if (modalBackground) {
+            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, false, false)
+          } else {
+            platform.androidSetStatusAndNavBarColors(CurrentColors.value.colors.isLight, CurrentColors.value.colors.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+          }
+        }
     }
     Box(Modifier
       .graphicsLayer { translationX = maxWidth.toPx() - offset.value.dp.toPx() }
       .padding(top = if (showCallArea) ANDROID_CALL_TOP_PADDING else 0.dp)
     ) Box2@{
-      currentChatId?.let {
-        ChatView(it, chatModel, onComposed)
+      currentChatId.value?.let {
+        ChatView(currentChatId, onComposed)
       }
     }
     if (call != null && showCallArea) {
-      ActiveCallInteractiveArea(call, remember { MutableStateFlow(AnimatedViewState.GONE) })
+      ActiveCallInteractiveArea(call)
     }
   }
 }
@@ -295,7 +331,7 @@ fun StartPartOfScreen(settingsState: SettingsViewState) {
 
 @Composable
 fun CenterPartOfScreen() {
-  val currentChatId by remember { ChatModel.chatId }
+  val currentChatId = remember { ChatModel.chatId }
   LaunchedEffect(Unit) {
     snapshotFlow { currentChatId }
       .distinctUntilChanged()
@@ -305,7 +341,7 @@ fun CenterPartOfScreen() {
         }
       }
   }
-  when (val id = currentChatId) {
+  when (currentChatId.value) {
     null -> {
       if (!rememberUpdatedState(ModalManager.center.hasModalsOpen()).value) {
         Box(
@@ -320,7 +356,7 @@ fun CenterPartOfScreen() {
         ModalManager.center.showInView()
       }
     }
-    else -> ChatView(id, chatModel) {}
+    else -> ChatView(currentChatId) {}
   }
 }
 
@@ -333,38 +369,38 @@ fun EndPartOfScreen() {
 fun DesktopScreen(settingsState: SettingsViewState) {
   Box {
     // 56.dp is a size of unused space of settings drawer
-    Box(Modifier.width(DEFAULT_START_MODAL_WIDTH + 56.dp)) {
+    Box(Modifier.width(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier + 56.dp)) {
       StartPartOfScreen(settingsState)
     }
-    Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH)) {
+    Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)) {
       ModalManager.start.showInView()
       SwitchingUsersView()
     }
-    Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH).clipToBounds()) {
+    Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
       Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
         CenterPartOfScreen()
       }
       if (ModalManager.end.hasModalsOpen()) {
         VerticalDivider()
       }
-      Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH).clipToBounds()) {
+      Box(Modifier.widthIn(max = DEFAULT_END_MODAL_WIDTH * fontSizeSqrtMultiplier).clipToBounds()) {
         EndPartOfScreen()
       }
     }
     val (userPickerState, scaffoldState ) = settingsState
     val scope = rememberCoroutineScope()
-    if (scaffoldState.drawerState.isOpen) {
+    if (scaffoldState.drawerState.isOpen || (ModalManager.start.hasModalsOpen && !ModalManager.center.hasModalsOpen)) {
       Box(
         Modifier
           .fillMaxSize()
-          .padding(start = DEFAULT_START_MODAL_WIDTH)
+          .padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier)
           .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = {
             ModalManager.start.closeModals()
             scope.launch { settingsState.scaffoldState.drawerState.close() }
           })
       )
     }
-    VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH))
+    VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier))
     tryOrShowError("UserPicker", error = {}) {
       UserPicker(chatModel, userPickerState) {
         scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }

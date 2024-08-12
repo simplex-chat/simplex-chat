@@ -12,7 +12,6 @@ for lang in "${langs[@]}"; do
   xcodebuild -importLocalizations \
             -project ./apps/ios/SimpleX.xcodeproj \
             -localizationPath ./apps/ios/SimpleX\ Localizations/$lang.xcloc \
-            -disableAutomaticPackageResolution \
             -skipPackageUpdates
   sleep 10
 done

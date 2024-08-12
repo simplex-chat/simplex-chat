@@ -8,6 +8,7 @@ import SimpleXChat
 
 struct UserProfilesView: View {
     @EnvironmentObject private var m: ChatModel
+    @EnvironmentObject private var theme: AppTheme
     @Binding var showSettings: Bool
     @Environment(\.editMode) private var editMode
     @AppStorage(DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE) private var showHiddenProfilesNotice = true
@@ -29,7 +30,7 @@ struct UserProfilesView: View {
         case hiddenProfilesNotice
         case muteProfileAlert
         case activateUserError(error: String)
-        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
+        case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
             switch self {
@@ -100,6 +101,7 @@ struct UserProfilesView: View {
                 }
             } footer: {
                 Text("Tap to activate profile.")
+                    .foregroundColor(theme.colors.secondary)
                     .font(.body)
                     .padding(.top, 8)
 
@@ -111,6 +113,7 @@ struct UserProfilesView: View {
             }
         }
         .navigationTitle("Your chat profiles")
+        .modifier(ThemedBackground(grouped: true))
         .searchable(text: $searchTextOrPassword, placement: .navigationBarDrawer(displayMode: .always))
         .autocorrectionDisabled(true)
         .textInputAutocapitalization(.never)
@@ -169,7 +172,7 @@ struct UserProfilesView: View {
                     message: Text(err)
                 )
             case let .error(title, error):
-                return Alert(title: Text(title), message: Text(error))
+                return mkAlert(title: title, message: error)
             }
         }
     }
@@ -210,7 +213,7 @@ struct UserProfilesView: View {
                 actionHeader("Delete profile", user)
                 Section {
                     passwordField
-                    settingsRow("trash") {
+                    settingsRow("trash", color: theme.colors.secondary) {
                         Button("Delete chat profile", role: .destructive) {
                             profileAction = nil
                             Task { await removeUser(user, delSMPQueues, viewPwd: actionPassword) }
@@ -220,6 +223,7 @@ struct UserProfilesView: View {
                 } footer: {
                     if actionEnabled(user) {
                         Text("All chats and messages will be deleted - this cannot be undone!")
+                            .foregroundColor(theme.colors.secondary)
                             .font(.callout)
                     }
                 }
@@ -227,7 +231,7 @@ struct UserProfilesView: View {
                 actionHeader("Unhide profile", user)
                 Section {
                     passwordField
-                    settingsRow("lock.open") {
+                    settingsRow("lock.open", color: theme.colors.secondary) {
                         Button("Unhide chat profile") {
                             profileAction = nil
                             setUserPrivacy(user) { try await apiUnhideUser(user.userId, viewPwd: actionPassword) }
@@ -237,6 +241,7 @@ struct UserProfilesView: View {
                 }
             }
         }
+        .modifier(ThemedBackground())
     }
 
     @ViewBuilder func actionHeader(_ title: LocalizedStringKey, _ user: User) -> some View {
@@ -309,23 +314,23 @@ struct UserProfilesView: View {
             }
         } label: {
             HStack {
-                ProfileImage(imageStr: user.image, size: 44, color: Color(uiColor: .tertiarySystemFill))
+                ProfileImage(imageStr: user.image, size: 44)
                     .padding(.vertical, 4)
                     .padding(.trailing, 12)
                 Text(user.chatViewName)
                 Spacer()
                 if user.activeUser {
-                    Image(systemName: "checkmark").foregroundColor(.primary)
+                    Image(systemName: "checkmark").foregroundColor(theme.colors.onBackground)
                 } else if user.hidden {
-                    Image(systemName: "lock").foregroundColor(.secondary)
+                    Image(systemName: "lock").foregroundColor(theme.colors.secondary)
                 } else if !user.showNtfs {
-                    Image(systemName: "speaker.slash").foregroundColor(.secondary)
+                    Image(systemName: "speaker.slash").foregroundColor(theme.colors.secondary)
                 } else {
                     Image(systemName: "checkmark").foregroundColor(.clear)
                 }
             }
         }
-        .foregroundColor(.primary)
+        .foregroundColor(theme.colors.onBackground)
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             if user.hidden {
                 Button("Unhide") {
@@ -356,7 +361,7 @@ struct UserProfilesView: View {
                         }
                     }
                 }
-                .tint(.accentColor)
+                .tint(theme.colors.primary)
             }
         }
         if #available(iOS 16, *) {

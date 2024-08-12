@@ -15,7 +15,7 @@
     <string name="group_member_role_admin">管理員</string>
     <string name="above_then_preposition_continuation">然後，選按：</string>
     <string name="smp_servers_preset_add">新增預設伺服器</string>
-    <string name="smp_servers_add">新增伺服器…</string>
+    <string name="smp_servers_add">新增伺服器</string>
     <string name="accept">接受</string>
     <string name="auth_unavailable">認證無效</string>
     <string name="allow_verb">允許</string>
@@ -412,8 +412,6 @@
     <string name="enter_one_ICE_server_per_line">ICE 伺服器（每行一個）</string>
     <string name="network_use_onion_hosts">使用 .onion 主機</string>
     <string name="network_use_onion_hosts_no_desc">Onion 主機不會啟用。</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion 主機會在可用時啟用。</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Onion 主機不會啟用。</string>
     <string name="network_session_mode_entity">連接</string>
     <string name="delete_address">刪除聯絡地址</string>
     <string name="colored_text">顏色</string>
@@ -437,7 +435,6 @@
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">請確保你的 WebRTC ICE 伺服器地址是正確的格式，每行也有分隔和沒有重複。</string>
     <string name="network_disable_socks">使用直接互聯網連接？</string>
     <string name="network_disable_socks_info">如果你確定，你的訊息伺服器能夠看到你的 IP 位置，和你的網路供應商 - 你正在連接到哪些伺服器。</string>
-    <string name="update_onion_hosts_settings_question">更新 .onion 主機設定？</string>
     <string name="delete_image">刪除圖片</string>
     <string name="callstate_starting">開始中 …</string>
     <string name="callstate_waiting_for_answer">等待對方回應…</string>
@@ -496,7 +493,6 @@
     <string name="network_use_onion_hosts_no">不</string>
     <string name="network_use_onion_hosts_required">需要</string>
     <string name="network_use_onion_hosts_prefer_desc">Onion 主機會在可用時啟用。</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">連接時將需要使用 Onion 主機。</string>
     <string name="delete_address__question">刪除聯絡地址？</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">你的個人檔案只會儲存於你的裝置和只會分享給你的聯絡人。 SimpleX 伺服器並不會看到你的個人檔案。</string>
     <string name="save_and_notify_contact">儲存並通知你的聯絡人</string>
@@ -825,7 +821,6 @@
     <string name="disappearing_messages_are_prohibited">自動銷毀訊息於這個群組內是禁用的。</string>
     <string name="feature_offered_item">已提供 %s</string>
     <string name="error_saving_group_profile">儲存群組檔案時出錯</string>
-    <string name="network_options_revert">恢復</string>
     <string name="theme">主題</string>
     <string name="chat_preferences_you_allow">你允許</string>
     <string name="set_group_preferences">修改群組內的設定</string>

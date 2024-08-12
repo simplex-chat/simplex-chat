@@ -38,7 +38,7 @@
     <string name="abort_switch_receiving_address_desc">Adres değişikliği iptal edilecek. Eski alıcı adresi kullanılacaktır.</string>
     <string name="send_disappearing_message_1_minute">1 dakika</string>
     <string name="clear_chat_warning">Tüm mesajlar silinecektir. Bu, geri alınamaz! Mesajlar, YALNIZCA senin için silinecektir.</string>
-    <string name="smp_servers_add">Sunucu ekle…</string>
+    <string name="smp_servers_add">Sunucu ekle</string>
     <string name="database_passphrase_and_export">Veri tabanı ayarları</string>
     <string name="one_time_link_short">tek kullanımlık bağlantı</string>
     <string name="network_settings">Gelişmiş ağ ayarları</string>
@@ -1145,7 +1145,6 @@
     <string name="share_link">Bağlantı paylaş</string>
     <string name="icon_descr_simplex_team">SimpleX Ekibi</string>
     <string name="rcv_group_event_3_members_connected">%s, %s ve %s bağlandı</string>
-    <string name="network_options_revert">Geri al</string>
     <string name="settings_section_title_socks">SOCKS VEKİLİ</string>
     <string name="desktop_devices">Masaüstür cihazlar</string>
     <string name="smp_servers">SMP sunucuları</string>
@@ -1318,14 +1317,12 @@
     <string name="share_text_updated_at">Kayıt %s te güncellendi</string>
     <string name="v5_3_encrypt_local_files_descr">Uygulama yeni yerel dosyaları şifreler (videolar dışında).</string>
     <string name="sender_at_ts">%s , %s de</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Bağlantı için Onion ana bilgisayarları gerekli olacaktır.</string>
     <string name="receipts_contacts_title_disable">Alıcılar devre dışı bırakılsın mı?</string>
     <string name="sync_connection_force_question">Bağlantı yeniden senkronizasyonunu şifrele?</string>
     <string name="receipts_section_description_1">Grup ayarlarından ve kişilerden geçersiz kılınmış olabilirler</string>
     <string name="recent_history_is_not_sent_to_new_members">Yeni üyelere geçmiş gönderilmedi.</string>
     <string name="v4_2_security_assessment">Güvenlik değerlendirmesi</string>
     <string name="retry_verb">Yeniden dene</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion ana bilgisayarları mümkün olduğunda kullanılacaktır.</string>
     <string name="network_enable_socks_info">Sunuculara %d bağlantı noktasındaki vekil SOCKS aracılığıyla erişilsin mi? Vekil bu seçeneği etkinleştirmeden önce başlatılmak zorundadır.</string>
     <string name="v5_4_block_group_members_descr">İstenmeyen mesajları gizlemek için.</string>
     <string name="error_smp_test_failed_at_step">Test %s adımında hata yaşandı.</string>
@@ -1362,7 +1359,6 @@
     <string name="remove_passphrase_from_settings">Ayarlardaki parola silinsin mi?</string>
     <string name="receipts_contacts_title_enable">Alıcılar etkinleştirilsin mi?</string>
     <string name="tap_to_start_new_chat">Yeni bir sohbet başlatmak için tıkla</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Onion ana bilgisayarları kullanılmayacaktır.</string>
     <string name="unblock_member_button">Kişinin engelini kaldır</string>
     <string name="relay_server_if_necessary">Yönlendirici sunucusu sadece lazım ise kullanılacak. Diğer taraf IP adresini görebilir.</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[Telefon bağlantılı <b>%s</b> ın bağlantısı kesildi]]></string>
@@ -1510,7 +1506,6 @@
     <string name="connected_to_mobile">Telefona bağlandı</string>
     <string name="v5_3_simpler_incognito_mode_descr">Bağlanırken takma ada geçiş yap.</string>
     <string name="v5_2_message_delivery_receipts">Mesaj gönderildi!</string>
-    <string name="update_onion_hosts_settings_question">.onion ana bilgisayarları ayarı güncellensin mi?</string>
     <string name="smp_servers_use_server_for_new_conn">Yeni bağlantılar için kullan</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">senin için adres değiştirildi</string>
     <string name="network_enable_socks">SOCKS vekilini kullan?</string>
@@ -1853,4 +1848,10 @@
     <string name="v5_8_message_delivery_descr">Azaltılmış pil kullanımı ile.</string>
     <string name="theme_destination_app_theme">Uygulama teması</string>
     <string name="chat_theme_reset_to_app_theme">Uygulama temasına sıfırla</string>
+    <string name="info_row_debug_delivery">Hata ayıklama teslimatı</string>
+    <string name="message_queue_info">Mesaj kuyruğu bilgisi</string>
+    <string name="message_queue_info_none">hiçbiri</string>
+    <string name="message_queue_info_server_info">sunucu kuyruk bilgisi: %1$s
+\n
+\nson alınan msj: %2$s</string>
 </resources>

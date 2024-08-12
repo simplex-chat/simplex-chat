@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
@@ -40,6 +41,7 @@ fun UserPicker(
   chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,
   showSettings: Boolean = true,
+  contentAlignment: Alignment = Alignment.TopStart,
   showCancel: Boolean = false,
   cancelClicked: () -> Unit = {},
   useFromDesktopClicked: () -> Unit = {},
@@ -148,8 +150,9 @@ fun UserPicker(
     .padding(bottom = 10.dp, top = 10.dp)
     .graphicsLayer {
       alpha = animatedFloat.value
-      translationY = (animatedFloat.value - 1) * xOffset
-    }
+      translationY = (if (appPrefs.oneHandUI.state.value) -1 else 1) * (animatedFloat.value - 1) * xOffset
+    },
+    contentAlignment = contentAlignment
   ) {
     Column(
       Modifier
@@ -284,7 +287,7 @@ fun UserProfilePickerItem(
         Text(
           unreadCountStr(unreadCount),
           color = Color.White,
-          fontSize = 11.sp,
+          fontSize = 10.sp,
           modifier = Modifier
             .background(MaterialTheme.colors.primaryVariant, shape = CircleShape)
             .padding(2.dp)
@@ -309,7 +312,7 @@ fun UserProfileRow(u: User, enabled: Boolean = chatModel.chatRunning.value == tr
   ) {
     ProfileImage(
       image = u.image,
-      size = 54.dp
+      size = 54.dp * fontSizeSqrtMultiplier
     )
     Text(
       u.displayName,
@@ -354,7 +357,7 @@ fun RemoteHostRow(h: RemoteHostInfo) {
       .padding(start = 17.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Icon(painterResource(MR.images.ic_smartphone_300), h.hostDeviceName, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Icon(painterResource(MR.images.ic_smartphone_300), h.hostDeviceName, Modifier.size(20.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.onBackground)
     Text(
       h.hostDeviceName,
       modifier = Modifier.padding(start = 26.dp, end = 8.dp),
@@ -395,7 +398,7 @@ fun LocalDeviceRow(active: Boolean) {
       .padding(start = 17.dp, end = DEFAULT_PADDING),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Icon(painterResource(MR.images.ic_desktop), stringResource(MR.strings.this_device), Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Icon(painterResource(MR.images.ic_desktop), stringResource(MR.strings.this_device), Modifier.size(20.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.onBackground)
     Text(
       stringResource(MR.strings.this_device),
       modifier = Modifier.padding(start = 26.dp, end = 8.dp),
@@ -409,7 +412,7 @@ fun LocalDeviceRow(active: Boolean) {
 private fun UseFromDesktopPickerItem(onClick: () -> Unit) {
   SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
     val text = generalGetString(MR.strings.settings_section_title_use_from_desktop).lowercase().capitalize(Locale.current)
-    Icon(painterResource(MR.images.ic_desktop), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Icon(painterResource(MR.images.ic_desktop), text, Modifier.size(20.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
     Text(text, color = MenuTextColor)
   }
@@ -419,7 +422,7 @@ private fun UseFromDesktopPickerItem(onClick: () -> Unit) {
 private fun LinkAMobilePickerItem(onClick: () -> Unit) {
   SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
     val text = generalGetString(MR.strings.link_a_mobile)
-    Icon(painterResource(MR.images.ic_smartphone_300), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Icon(painterResource(MR.images.ic_smartphone_300), text, Modifier.size(20.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
     Text(text, color = MenuTextColor)
   }
@@ -429,7 +432,7 @@ private fun LinkAMobilePickerItem(onClick: () -> Unit) {
 private fun CreateInitialProfile(onClick: () -> Unit) {
   SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
     val text = generalGetString(MR.strings.create_chat_profile)
-    Icon(painterResource(MR.images.ic_manage_accounts), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Icon(painterResource(MR.images.ic_manage_accounts), text, Modifier.size(20.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
     Text(text, color = MenuTextColor)
   }
@@ -439,7 +442,7 @@ private fun CreateInitialProfile(onClick: () -> Unit) {
 private fun SettingsPickerItem(onClick: () -> Unit) {
   SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
     val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
-    Icon(painterResource(MR.images.ic_settings), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Icon(painterResource(MR.images.ic_settings), text, Modifier.size(20.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
     Text(text, color = MenuTextColor)
   }
@@ -449,7 +452,7 @@ private fun SettingsPickerItem(onClick: () -> Unit) {
 private fun CancelPickerItem(onClick: () -> Unit) {
   SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
     val text = generalGetString(MR.strings.cancel_verb)
-    Icon(painterResource(MR.images.ic_close), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Icon(painterResource(MR.images.ic_close), text, Modifier.size(20.dp * fontSizeSqrtMultiplier), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
     Text(text, color = MenuTextColor)
   }
@@ -459,7 +462,7 @@ private fun CancelPickerItem(onClick: () -> Unit) {
 fun HostDisconnectButton(onClick: (() -> Unit)?) {
   val interactionSource = remember { MutableInteractionSource() }
   val hovered = interactionSource.collectIsHoveredAsState().value
-  IconButton(onClick ?: {}, Modifier.requiredSize(20.dp), enabled = onClick != null) {
+  IconButton(onClick ?: {}, Modifier.requiredSize(20.dp * fontSizeSqrtMultiplier), enabled = onClick != null) {
     Icon(
       painterResource(if (onClick == null) MR.images.ic_desktop else if (hovered) MR.images.ic_wifi_off else MR.images.ic_wifi),
       null,

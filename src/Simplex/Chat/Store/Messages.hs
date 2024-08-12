@@ -19,7 +19,7 @@ module Simplex.Chat.Store.Messages
     -- * Message and chat item functions
     deleteContactCIs,
     getGroupFileInfo,
-    deleteGroupCIs,
+    deleteGroupChatItemsMessages,
     createNewSndMessage,
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
@@ -170,8 +170,8 @@ getGroupFileInfo db User {userId} GroupInfo {groupId} =
   map toFileInfo
     <$> DB.query db (fileInfoQuery <> " WHERE i.user_id = ? AND i.group_id = ?") (userId, groupId)
 
-deleteGroupCIs :: DB.Connection -> User -> GroupInfo -> IO ()
-deleteGroupCIs db User {userId} GroupInfo {groupId} = do
+deleteGroupChatItemsMessages :: DB.Connection -> User -> GroupInfo -> IO ()
+deleteGroupChatItemsMessages db User {userId} GroupInfo {groupId} = do
   DB.execute db "DELETE FROM messages WHERE group_id = ?" (Only groupId)
   DB.execute db "DELETE FROM chat_item_reactions WHERE group_id = ?" (Only groupId)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
@@ -1733,11 +1733,10 @@ deleteChatItemVersions_ :: DB.Connection -> ChatItemId -> IO ()
 deleteChatItemVersions_ db itemId =
   DB.execute db "DELETE FROM chat_item_versions WHERE chat_item_id = ?" (Only itemId)
 
-markDirectChatItemDeleted :: DB.Connection -> User -> Contact -> ChatItem 'CTDirect d -> MessageId -> UTCTime -> IO (ChatItem 'CTDirect d)
-markDirectChatItemDeleted db User {userId} Contact {contactId} ci@ChatItem {meta} msgId deletedTs = do
+markDirectChatItemDeleted :: DB.Connection -> User -> Contact -> ChatItem 'CTDirect d -> UTCTime -> IO (ChatItem 'CTDirect d)
+markDirectChatItemDeleted db User {userId} Contact {contactId} ci@ChatItem {meta} deletedTs = do
   currentTs <- liftIO getCurrentTime
   let itemId = chatItemId' ci
-  insertChatItemMessage_ db itemId msgId currentTs
   DB.execute
     db
     [sql|
@@ -1746,7 +1745,7 @@ markDirectChatItemDeleted db User {userId} Contact {contactId} ci@ChatItem {meta
       WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
     |]
     (DBCIDeleted, deletedTs, currentTs, userId, contactId, itemId)
-  pure ci {meta = meta {itemDeleted = Just $ CIDeleted $ Just deletedTs}}
+  pure ci {meta = meta {itemDeleted = Just $ CIDeleted $ Just deletedTs, editable = False, deletable = False}}
 
 getDirectChatItemBySharedMsgId :: DB.Connection -> User -> ContactId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTDirect)
 getDirectChatItemBySharedMsgId db user@User {userId} contactId sharedMsgId = do
@@ -1900,7 +1899,7 @@ updateGroupChatItemModerated db User {userId} GroupInfo {groupId} ci m@GroupMemb
         WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
       |]
       (deletedTs, groupMemberId, toContent, toText, currentTs, userId, groupId, itemId)
-  pure $ ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just deletedTs) m), editable = False, deletable = False}, formattedText = Nothing}
+  pure ci {content = toContent, meta = (meta ci) {itemText = toText, itemDeleted = Just (CIModerated (Just deletedTs) m), editable = False, deletable = False}, formattedText = Nothing}
 
 updateGroupCIBlockedByAdmin :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> UTCTime -> IO (ChatItem 'CTGroup d)
 updateGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci deletedTs = do
@@ -1931,14 +1930,13 @@ pattern DBCIBlocked = 2
 pattern DBCIBlockedByAdmin :: Int
 pattern DBCIBlockedByAdmin = 3
 
-markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> MessageId -> Maybe GroupMember -> UTCTime -> IO (ChatItem 'CTGroup d)
-markGroupChatItemDeleted db User {userId} GroupInfo {groupId} ci@ChatItem {meta} msgId byGroupMember_ deletedTs = do
+markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> Maybe GroupMember -> UTCTime -> IO (ChatItem 'CTGroup d)
+markGroupChatItemDeleted db User {userId} GroupInfo {groupId} ci@ChatItem {meta} byGroupMember_ deletedTs = do
   currentTs <- liftIO getCurrentTime
   let itemId = chatItemId' ci
       (deletedByGroupMemberId, itemDeleted) = case byGroupMember_ of
         Just m@GroupMember {groupMemberId} -> (Just groupMemberId, Just $ CIModerated (Just deletedTs) m)
         _ -> (Nothing, Just $ CIDeleted @'CTGroup (Just deletedTs))
-  insertChatItemMessage_ db itemId msgId currentTs
   DB.execute
     db
     [sql|
@@ -1947,7 +1945,7 @@ markGroupChatItemDeleted db User {userId} GroupInfo {groupId} ci@ChatItem {meta}
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
     (DBCIDeleted, deletedTs, deletedByGroupMemberId, currentTs, userId, groupId, itemId)
-  pure ci {meta = meta {itemDeleted}}
+  pure ci {meta = meta {itemDeleted, editable = False, deletable = False}}
 
 markGroupChatItemBlocked :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup 'MDRcv -> IO (ChatItem 'CTGroup 'MDRcv)
 markGroupChatItemBlocked db User {userId} GroupInfo {groupId} ci@ChatItem {meta} = do
@@ -1960,7 +1958,7 @@ markGroupChatItemBlocked db User {userId} GroupInfo {groupId} ci@ChatItem {meta}
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
     (DBCIBlocked, deletedTs, deletedTs, userId, groupId, chatItemId' ci)
-  pure ci {meta = meta {itemDeleted = Just $ CIBlocked $ Just deletedTs}}
+  pure ci {meta = meta {itemDeleted = Just $ CIBlocked $ Just deletedTs, editable = False, deletable = False}}
 
 markGroupCIBlockedByAdmin :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup 'MDRcv -> IO (ChatItem 'CTGroup 'MDRcv)
 markGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci@ChatItem {meta} = do
@@ -1973,7 +1971,7 @@ markGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci@ChatItem {meta
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
     (DBCIBlockedByAdmin, deletedTs, deletedTs, userId, groupId, chatItemId' ci)
-  pure ci {meta = meta {itemDeleted = Just $ CIBlockedByAdmin $ Just deletedTs}}
+  pure ci {meta = meta {itemDeleted = Just $ CIBlockedByAdmin $ Just deletedTs, editable = False, deletable = False}}
 
 getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupId -> GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupChatItemBySharedMsgId db user@User {userId} groupId groupMemberId sharedMsgId = do
@@ -2531,14 +2529,14 @@ deleteCIModeration db GroupInfo {groupId} itemMemberId (Just sharedMsgId) =
     "DELETE FROM chat_item_moderations WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?"
     (groupId, itemMemberId, sharedMsgId)
 
-createGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> CIStatus 'MDSnd -> IO ()
+createGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> GroupSndStatus -> IO ()
 createGroupSndStatus db itemId memberId status =
   DB.execute
     db
     "INSERT INTO group_snd_item_statuses (chat_item_id, group_member_id, group_snd_item_status) VALUES (?,?,?)"
     (itemId, memberId, status)
 
-getGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> ExceptT StoreError IO (CIStatus 'MDSnd)
+getGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> ExceptT StoreError IO GroupSndStatus
 getGroupSndStatus db itemId memberId =
   ExceptT . firstRow fromOnly (SENoGroupSndStatus itemId memberId) $
     DB.query
@@ -2551,7 +2549,7 @@ getGroupSndStatus db itemId memberId =
       |]
       (itemId, memberId)
 
-updateGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> CIStatus 'MDSnd -> IO ()
+updateGroupSndStatus :: DB.Connection -> ChatItemId -> GroupMemberId -> GroupSndStatus -> IO ()
 updateGroupSndStatus db itemId memberId status = do
   currentTs <- liftIO getCurrentTime
   DB.execute
@@ -2589,7 +2587,7 @@ getGroupSndStatuses db itemId =
     memStatus (groupMemberId, memberDeliveryStatus, sentViaProxy) =
       MemberDeliveryStatus {groupMemberId, memberDeliveryStatus, sentViaProxy}
 
-getGroupSndStatusCounts :: DB.Connection -> ChatItemId -> IO [(CIStatus 'MDSnd, Int)]
+getGroupSndStatusCounts :: DB.Connection -> ChatItemId -> IO [(GroupSndStatus, Int)]
 getGroupSndStatusCounts db itemId =
   DB.query
     db

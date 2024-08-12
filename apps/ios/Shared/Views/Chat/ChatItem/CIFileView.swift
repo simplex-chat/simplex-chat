@@ -11,42 +11,48 @@ import SimpleXChat
 
 struct CIFileView: View {
     @EnvironmentObject var m: ChatModel
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
     let file: CIFile?
     let edited: Bool
+    var smallViewSize: CGFloat?
 
     var body: some View {
-        let metaReserve = edited
-        ? "                           "
-        : "                       "
-        Button(action: fileAction) {
-            HStack(alignment: .bottom, spacing: 6) {
-                fileIndicator()
-                    .padding(.top, 5)
-                    .padding(.bottom, 3)
-                if let file = file {
-                    let prettyFileSize = ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(file.fileName)
-                            .lineLimit(1)
-                            .multilineTextAlignment(.leading)
-                            .foregroundColor(.primary)
-                        Text(prettyFileSize + metaReserve)
-                            .font(.caption)
-                            .lineLimit(1)
-                            .multilineTextAlignment(.leading)
-                            .foregroundColor(.secondary)
+        if smallViewSize != nil {
+            fileIndicator()
+            .onTapGesture(perform: fileAction)
+        } else {
+            let metaReserve = edited
+            ? "                           "
+            : "                       "
+            Button(action: fileAction) {
+                HStack(alignment: .bottom, spacing: 6) {
+                    fileIndicator()
+                        .padding(.top, 5)
+                        .padding(.bottom, 3)
+                    if let file = file {
+                        let prettyFileSize = ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(file.fileName)
+                                .lineLimit(1)
+                                .multilineTextAlignment(.leading)
+                                .foregroundColor(theme.colors.onBackground)
+                            Text(prettyFileSize + metaReserve)
+                                .font(.caption)
+                                .lineLimit(1)
+                                .multilineTextAlignment(.leading)
+                                .foregroundColor(theme.colors.secondary)
+                        }
+                    } else {
+                        Text(metaReserve)
                     }
-                } else {
-                    Text(metaReserve)
                 }
+                .padding(.top, 4)
+                .padding(.bottom, 6)
+                .padding(.leading, 10)
+                .padding(.trailing, 12)
             }
-            .padding(.top, 4)
-            .padding(.bottom, 6)
-            .padding(.leading, 10)
-            .padding(.trailing, 12)
+            .disabled(!itemInteractive)
         }
-        .disabled(!itemInteractive)
     }
 
     private var itemInteractive: Bool {
@@ -170,7 +176,7 @@ struct CIFileView: View {
             case .sndWarning: fileIcon("doc.fill", innerIcon: "exclamationmark.triangle.fill", innerIconSize: 10)
             case .rcvInvitation:
                 if fileSizeValid(file) {
-                    fileIcon("arrow.down.doc.fill", color: .accentColor)
+                    fileIcon("arrow.down.doc.fill", color: theme.colors.primary)
                 } else {
                     fileIcon("doc.fill", color: .orange, innerIcon: "exclamationmark", innerIconSize: 12)
                 }
@@ -182,7 +188,7 @@ struct CIFileView: View {
                     progressView()
                 }
             case .rcvAborted:
-                fileIcon("doc.fill", color: .accentColor, innerIcon: "exclamationmark.arrow.circlepath", innerIconSize: 12)
+                fileIcon("doc.fill", color: theme.colors.primary, innerIcon: "exclamationmark.arrow.circlepath", innerIconSize: 12)
             case .rcvComplete: fileIcon("doc.fill")
             case .rcvCancelled: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
             case .rcvError: fileIcon("doc.fill", innerIcon: "xmark", innerIconSize: 10)
@@ -195,21 +201,22 @@ struct CIFileView: View {
     }
 
     private func fileIcon(_ icon: String, color: Color = Color(uiColor: .tertiaryLabel), innerIcon: String? = nil, innerIconSize: CGFloat? = nil) -> some View {
-        ZStack(alignment: .center) {
+        let size = smallViewSize ?? 30
+        return ZStack(alignment: .center) {
             Image(systemName: icon)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 30, height: 30)
+                .frame(width: size, height: size)
                 .foregroundColor(color)
             if let innerIcon = innerIcon,
-               let innerIconSize = innerIconSize {
+               let innerIconSize = innerIconSize, (smallViewSize == nil || file?.showStatusIconInSmallView == true) {
                 Image(systemName: innerIcon)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxHeight: 16)
                     .frame(width: innerIconSize, height: innerIconSize)
                     .foregroundColor(.white)
-                    .padding(.top, 12)
+                    .padding(.top, size / 2.5)
             }
         }
     }

@@ -35,7 +35,7 @@ import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay)
+import Data.Time.Clock (UTCTime, diffUTCTime, nominalDay, NominalDiffTime)
 import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
@@ -364,14 +364,18 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
 
 mkCIMeta :: forall c d. ChatTypeI c => ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe Bool -> Maybe SharedMsgId -> Maybe CIForwardedFrom -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
 mkCIMeta itemId itemContent itemText itemStatus sentViaProxy itemSharedMsgId itemForwarded itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
-  let deletable = case itemContent of
-        CISndMsgContent _ ->
-          case chatTypeI @c of
-            SCTLocal -> isNothing itemDeleted
-            _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
-        _ -> False
+  let deletable = deletable' itemContent itemDeleted itemTs nominalDay currentTs
       editable = deletable && isNothing itemForwarded
    in CIMeta {itemId, itemTs, itemText, itemStatus, sentViaProxy, itemSharedMsgId, itemForwarded, itemDeleted, itemEdited, itemTimed, itemLive, deletable, editable, forwardedByMember, createdAt, updatedAt}
+
+deletable' :: forall c d. ChatTypeI c => CIContent d -> Maybe (CIDeleted c) -> UTCTime -> NominalDiffTime -> UTCTime -> Bool
+deletable' itemContent itemDeleted itemTs allowedInterval currentTs =
+  case itemContent of
+    CISndMsgContent _ ->
+      case chatTypeI @c of
+        SCTLocal -> isNothing itemDeleted
+        _ -> diffUTCTime currentTs itemTs < allowedInterval && isNothing itemDeleted
+    _ -> False
 
 dummyMeta :: ChatItemId -> UTCTime -> Text -> CIMeta c 'MDSnd
 dummyMeta itemId ts itemText =
@@ -873,7 +877,7 @@ ciCreateStatus content = case msgDirection @d of
   SMDSnd -> ciStatusNew
   SMDRcv -> if ciRequiresAttention content then ciStatusNew else CISRcvRead
 
-membersGroupItemStatus :: [(CIStatus 'MDSnd, Int)] -> CIStatus 'MDSnd
+membersGroupItemStatus :: [(GroupSndStatus, Int)] -> CIStatus 'MDSnd
 membersGroupItemStatus memStatusCounts
   | rcvdOk == total = CISSndRcvd MROk SSPComplete
   | rcvdOk + rcvdBad == total = CISSndRcvd MRBadMsgHash SSPComplete
@@ -884,9 +888,9 @@ membersGroupItemStatus memStatusCounts
   | otherwise = CISSndNew
   where
     total = sum $ map snd memStatusCounts
-    rcvdOk = fromMaybe 0 $ lookup (CISSndRcvd MROk SSPComplete) memStatusCounts
-    rcvdBad = fromMaybe 0 $ lookup (CISSndRcvd MRBadMsgHash SSPComplete) memStatusCounts
-    sent = fromMaybe 0 $ lookup (CISSndSent SSPComplete) memStatusCounts
+    rcvdOk = fromMaybe 0 $ lookup (GSSRcvd MROk) memStatusCounts
+    rcvdBad = fromMaybe 0 $ lookup (GSSRcvd MRBadMsgHash) memStatusCounts
+    sent = fromMaybe 0 $ lookup GSSSent memStatusCounts
 
 data SndCIStatusProgress
   = SSPPartial
@@ -902,6 +906,47 @@ instance StrEncoding SndCIStatusProgress where
       "partial" -> pure SSPPartial
       "complete" -> pure SSPComplete
       _ -> fail "bad SndCIStatusProgress"
+
+data GroupSndStatus
+  = GSSNew
+  | GSSForwarded
+  | GSSInactive
+  | GSSSent
+  | GSSRcvd {msgRcptStatus :: MsgReceiptStatus}
+  | GSSError {agentError :: SndError}
+  | GSSWarning {agentError :: SndError}
+  | GSSInvalid {text :: Text}
+
+deriving instance Eq GroupSndStatus
+
+deriving instance Show GroupSndStatus
+
+-- Preserve CIStatus encoding for backwards compatibility
+instance StrEncoding GroupSndStatus where
+  strEncode = \case
+    GSSNew -> "snd_new"
+    GSSForwarded -> "snd_forwarded"
+    GSSInactive -> "snd_inactive"
+    GSSSent -> "snd_sent complete"
+    GSSRcvd msgRcptStatus -> "snd_rcvd " <> strEncode msgRcptStatus <> " complete"
+    GSSError sndErr -> "snd_error " <> strEncode sndErr
+    GSSWarning sndErr -> "snd_warning " <> strEncode sndErr
+    GSSInvalid {} -> "invalid"
+  strP =
+    (statusP <* A.endOfInput) -- see ACIStatus decoding
+      <|> (GSSInvalid . safeDecodeUtf8 <$> A.takeByteString)
+    where
+      statusP =
+        A.takeTill (== ' ') >>= \case
+          "snd_new" -> pure GSSNew
+          "snd_forwarded" -> pure GSSForwarded
+          "snd_inactive" -> pure GSSInactive
+          "snd_sent" -> GSSSent <$ " complete"
+          "snd_rcvd" -> GSSRcvd <$> (_strP <* " complete")
+          "snd_error_auth" -> pure $ GSSError SndErrAuth
+          "snd_error" -> GSSError <$> (A.space *> strP)
+          "snd_warning" -> GSSWarning <$> (A.space *> strP)
+          _ -> fail "bad status"
 
 type ChatItemId = Int64
 
@@ -1176,7 +1221,7 @@ mkItemVersion ChatItem {content, meta} = version <$> ciMsgContent content
 
 data MemberDeliveryStatus = MemberDeliveryStatus
   { groupMemberId :: GroupMemberId,
-    memberDeliveryStatus :: CIStatus 'MDSnd,
+    memberDeliveryStatus :: GroupSndStatus,
     sentViaProxy :: Maybe Bool
   }
   deriving (Eq, Show)
@@ -1233,6 +1278,12 @@ instance MsgDirectionI d => ToField (CIStatus d) where toField = toField . decod
 instance (Typeable d, MsgDirectionI d) => FromField (CIStatus d) where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
 instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GSS") ''GroupSndStatus)
+
+instance ToField GroupSndStatus where toField = toField . decodeLatin1 . strEncode
+
+instance FromField GroupSndStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
 $(JQ.deriveJSON defaultJSON ''MemberDeliveryStatus)
 

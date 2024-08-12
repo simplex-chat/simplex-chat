@@ -25,6 +25,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -60,9 +61,8 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
       /** When [AddContactLearnMore] is open, we don't need to drop [ChatModel.showingInvitation].
        * Otherwise, it will be called here AFTER [AddContactLearnMore] is launched and will clear the value too soon.
        * It will be dropped automatically when connection established or when user goes away from this screen.
-       * It applies only to Android because on Desktop center space will not be overlapped by [AddContactLearnMore]
        **/
-      if (chatModel.showingInvitation.value != null && (!ModalManager.center.hasModalsOpen() || appPlatform.isDesktop)) {
+      if (chatModel.showingInvitation.value != null && ModalManager.start.openModalCount() == 1) {
         val conn = contactConnection.value
         if (chatModel.showingInvitation.value?.connChatUsed == false && conn != null) {
           AlertManager.shared.showAlertDialog(
@@ -77,7 +77,7 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
                 controller.deleteChat(Chat(remoteHostId = rh?.remoteHostId, chatInfo = chatInfo, chatItems = listOf()))
                 if (chatModel.chatId.value == chatInfo.id) {
                   chatModel.chatId.value = null
-                  ModalManager.end.closeModals()
+                  ModalManager.start.closeModals()
                 }
               }
             }
@@ -140,7 +140,7 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
       }
     }
 
-    HorizontalPager(state = pagerState, Modifier.fillMaxSize(), verticalAlignment = Alignment.Top) { index ->
+    HorizontalPager(state = pagerState, Modifier.fillMaxSize(), verticalAlignment = Alignment.Top, userScrollEnabled = appPlatform.isAndroid) { index ->
       // LALAL SCROLLBAR DOESN'T WORK
       ColumnWithScrollBar(
         Modifier
@@ -211,15 +211,16 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
   Spacer(Modifier.height(10.dp))
   val incognito = remember { mutableStateOf(controller.appPrefs.incognito.get()) }
   IncognitoToggle(controller.appPrefs.incognito, incognito) {
-    if (appPlatform.isDesktop) ModalManager.end.closeModals()
-    ModalManager.end.showModal { IncognitoView() }
+    ModalManager.start.showModal { IncognitoView() }
   }
   KeyChangeEffect(incognito.value) {
     withBGApi {
       val contactConn = contactConnection.value ?: return@withBGApi
       val conn = controller.apiSetConnectionIncognito(rhId, contactConn.pccConnId, incognito.value) ?: return@withBGApi
-      contactConnection.value = conn
-      chatModel.updateContactConnection(rhId, conn)
+      withChats {
+        contactConnection.value = conn
+        updateContactConnection(rhId, conn)
+      }
     }
     chatModel.markShowingInvitationUsed()
   }
@@ -230,11 +231,11 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
 private fun AddContactLearnMoreButton() {
   IconButton(
     {
-      if (appPlatform.isDesktop) ModalManager.end.closeModals()
-      ModalManager.end.showModalCloseable { close ->
+      ModalManager.start.showModalCloseable { close ->
         AddContactLearnMore(close)
       }
-    }
+    },
+    Modifier.size(18.dp * fontSizeSqrtMultiplier)
   ) {
     Icon(
       painterResource(MR.images.ic_info),
@@ -367,9 +368,11 @@ private fun createInvitation(
   withBGApi {
     val (r, alert) = controller.apiAddContact(rhId, incognito = controller.appPrefs.incognito.get())
     if (r != null) {
-      chatModel.updateContactConnection(rhId, r.second)
-      chatModel.showingInvitation.value = ShowingInvitation(connId = r.second.id, connReq = simplexChatLink(r.first), connChatUsed = false)
-      contactConnection.value = r.second
+      withChats {
+        updateContactConnection(rhId, r.second)
+        chatModel.showingInvitation.value = ShowingInvitation(connId = r.second.id, connReq = simplexChatLink(r.first), connChatUsed = false)
+        contactConnection.value = r.second
+      }
     } else {
       creatingConnReq.value = false
       if (alert != null) {

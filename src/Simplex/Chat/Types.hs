@@ -53,7 +53,6 @@ import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
-import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
@@ -125,7 +124,6 @@ data User = User
 
 data NewUser = NewUser
   { profile :: Maybe Profile,
-    sameServers :: Bool,
     pastTimestamp :: Bool
   }
   deriving (Show)
@@ -1378,7 +1376,7 @@ data ConnStatus
     ConnRequested
   | -- | initiating party accepted connection with agent LET command (to be renamed to ACPT) (allowConnection)
     ConnAccepted
-  | -- | connection can be sent messages to (after joining party received INFO notification)
+  | -- | connection can be sent messages to (after joining party received INFO notification, or after securing snd queue on join)
     ConnSndReady
   | -- | connection is ready for both parties to send and receive messages
     ConnReady
@@ -1589,9 +1587,9 @@ commandExpectedResponse = \case
   CFCreateConnGrpInv -> t INV_
   CFCreateConnFileInvDirect -> t INV_
   CFCreateConnFileInvGroup -> t INV_
-  CFJoinConn -> t OK_
+  CFJoinConn -> t JOINED_
   CFAllowConn -> t OK_
-  CFAcceptContact -> t OK_
+  CFAcceptContact -> t JOINED_
   CFAckMessage -> t OK_
   CFDeleteConn -> t OK_
   where
@@ -1627,14 +1625,6 @@ data NoteFolder = NoteFolder
   deriving (Eq, Show)
 
 type NoteFolderId = Int64
-
-data ServerCfg p = ServerCfg
-  { server :: ProtoServerWithAuth p,
-    preset :: Bool,
-    tested :: Maybe Bool,
-    enabled :: Bool
-  }
-  deriving (Show)
 
 data ChatVersion
 
@@ -1763,10 +1753,3 @@ $(JQ.deriveJSON defaultJSON ''Contact)
 $(JQ.deriveJSON defaultJSON ''ContactRef)
 
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
-
-instance ProtocolTypeI p => ToJSON (ServerCfg p) where
-  toEncoding = $(JQ.mkToEncoding defaultJSON ''ServerCfg)
-  toJSON = $(JQ.mkToJSON defaultJSON ''ServerCfg)
-
-instance ProtocolTypeI p => FromJSON (ServerCfg p) where
-  parseJSON = $(JQ.mkParseJSON defaultJSON ''ServerCfg)

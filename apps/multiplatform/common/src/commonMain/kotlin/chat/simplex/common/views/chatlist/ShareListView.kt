@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.SettingsViewState
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
@@ -24,20 +25,67 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
   var searchInList by rememberSaveable { mutableStateOf("") }
   val (userPickerState, scaffoldState) = settingsState
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+
   Scaffold(
     Modifier.padding(end = endPadding),
     contentColor = LocalContentColor.current,
     drawerContentColor = LocalContentColor.current,
     scaffoldState = scaffoldState,
-    topBar = { Column { ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() } } },
+    topBar = {
+      if (!oneHandUI.value) {
+        Column {
+          ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() }
+          Divider()
+        }
+      }
+    },
+    bottomBar = {
+      if (oneHandUI.value) {
+        Column {
+          Divider()
+          ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() }
+        }
+      }
+    }
   ) {
+    val sharedContent = chatModel.sharedContent.value
+    var isMediaOrFileAttachment = false
+    var isVoice = false
+    var hasSimplexLink = false
+    when (sharedContent) {
+      is SharedContent.Text ->
+        hasSimplexLink = hasSimplexLink(sharedContent.text)
+      is SharedContent.Media -> {
+        isMediaOrFileAttachment = true
+        hasSimplexLink = hasSimplexLink(sharedContent.text)
+      }
+      is SharedContent.File -> {
+        isMediaOrFileAttachment = true
+        hasSimplexLink = hasSimplexLink(sharedContent.text)
+      }
+      is SharedContent.Forward -> {
+        val mc = sharedContent.chatItem.content.msgContent
+        if (mc != null) {
+          isMediaOrFileAttachment = mc.isMediaOrFileAttachment
+          isVoice = mc.isVoice
+          hasSimplexLink = hasSimplexLink(mc.text)
+        }
+      }
+      null -> {}
+    }
     Box(Modifier.padding(it)) {
       Column(
-        modifier = Modifier
-          .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
       ) {
-        if (chatModel.chats.isNotEmpty()) {
-          ShareList(chatModel, search = searchInList)
+        if (chatModel.chats.value.isNotEmpty()) {
+          ShareList(
+            chatModel,
+            search = searchInList,
+            isMediaOrFileAttachment = isMediaOrFileAttachment,
+            isVoice = isVoice,
+            hasSimplexLink = hasSimplexLink,
+          )
         } else {
           EmptyList()
         }
@@ -52,6 +100,11 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
       })
     }
   }
+}
+
+private fun hasSimplexLink(msg: String): Boolean {
+  val parsedMsg = parseToMarkdown(msg) ?: return false
+  return parsedMsg.any { ft -> ft.format is Format.SimplexLink }
 }
 
 @Composable
@@ -91,7 +144,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
       })
     }
   }
-  if (chatModel.chats.size >= 8) {
+  if (chatModel.chats.value.size >= 8) {
     barButtons.add {
       IconButton({ showSearch = true }) {
         Icon(painterResource(MR.images.ic_search_500), stringResource(MR.strings.search_verb), tint = MaterialTheme.colors.primary)
@@ -137,14 +190,20 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
-  Divider()
 }
 
 @Composable
-private fun ShareList(chatModel: ChatModel, search: String) {
+private fun ShareList(
+  chatModel: ChatModel,
+  search: String,
+  isMediaOrFileAttachment: Boolean,
+  isVoice: Boolean,
+  hasSimplexLink: Boolean,
+) {
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
   val chats by remember(search) {
     derivedStateOf {
-      val sorted = chatModel.chats.toList().sortedByDescending { it.chatInfo is ChatInfo.Local }
+      val sorted = chatModel.chats.value.toList().sortedByDescending { it.chatInfo is ChatInfo.Local }
       if (search.isEmpty()) {
         sorted.filter { it.chatInfo.ready }
       } else {
@@ -153,10 +212,17 @@ private fun ShareList(chatModel: ChatModel, search: String) {
     }
   }
   LazyColumnWithScrollBar(
-    modifier = Modifier.fillMaxWidth()
+    modifier = Modifier.fillMaxSize(),
+    reverseLayout = oneHandUI.value
   ) {
     items(chats) { chat ->
-      ShareListNavLinkView(chat, chatModel)
+      ShareListNavLinkView(
+        chat,
+        chatModel,
+        isMediaOrFileAttachment = isMediaOrFileAttachment,
+        isVoice = isVoice,
+        hasSimplexLink = hasSimplexLink,
+      )
     }
   }
 }

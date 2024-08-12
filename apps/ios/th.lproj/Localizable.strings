@@ -109,9 +109,6 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ ได้รับการตรวจสอบแล้ว";
 
-/* No comment provided by engineer. */
-"%@ servers" = "%@ เซิร์ฟเวอร์";
-
 /* notification title */
 "%@ wants to connect!" = "%@ อยากเชื่อมต่อ!";
 
@@ -259,17 +256,16 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "ด้านบน จากนั้นเลือก:";
 
-/* No comment provided by engineer. */
-"Accent color" = "สีเน้น";
-
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "รับ";
 
 /* notification body */
 "Accept contact request from %@?" = "รับการขอติดต่อจาก %@?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "ยอมรับโหมดไม่ระบุตัวตน";
 
 /* call status */
@@ -285,7 +281,7 @@
 "Add profile" = "เพิ่มโปรไฟล์";
 
 /* No comment provided by engineer. */
-"Add server…" = "เพิ่มเซิร์ฟเวอร์…";
+"Add server" = "เพิ่มเซิร์ฟเวอร์";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "เพิ่มเซิร์ฟเวอร์โดยการสแกนรหัสคิวอาร์โค้ด";
@@ -624,7 +620,7 @@
 /* No comment provided by engineer. */
 "Choose from library" = "เลือกจากอัลบั้ม";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "ลบ";
 
 /* No comment provided by engineer. */
@@ -638,9 +634,6 @@
 
 /* No comment provided by engineer. */
 "colored" = "มีสี";
-
-/* No comment provided by engineer. */
-"Colors" = "สี";
 
 /* server test step */
 "Compare file" = "เปรียบเทียบไฟล์";
@@ -748,9 +741,6 @@
 "Contact is connected" = "เชื่อมต่อกับผู้ติดต่อแล้ว";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "ผู้ติดต่อยังไม่ได้เชื่อมต่อ!";
-
-/* No comment provided by engineer. */
 "Contact name" = "ชื่อผู้ติดต่อ";
 
 /* No comment provided by engineer. */
@@ -765,7 +755,7 @@
 /* No comment provided by engineer. */
 "Continue" = "ดำเนินการต่อ";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "คัดลอก";
 
 /* No comment provided by engineer. */
@@ -897,7 +887,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "ค่าเริ่มต้น (ใช่)";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "ลบ";
 
 /* No comment provided by engineer. */
@@ -929,9 +920,6 @@
 
 /* No comment provided by engineer. */
 "Delete contact" = "ลบผู้ติดต่อ";
-
-/* No comment provided by engineer. */
-"Delete Contact" = "ลบผู้ติดต่อ";
 
 /* No comment provided by engineer. */
 "Delete database" = "ลบฐานข้อมูล";
@@ -983,9 +971,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "ลบฐานข้อมูลเก่า?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "ลบการเชื่อมต่อที่รอดำเนินการ";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "ลบการเชื่อมต่อที่รอดำเนินการหรือไม่?";
@@ -1291,9 +1276,6 @@
 "Error deleting connection" = "เกิดข้อผิดพลาดในการลบการเชื่อมต่อ";
 
 /* No comment provided by engineer. */
-"Error deleting contact" = "เกิดข้อผิดพลาดในการลบผู้ติดต่อ";
-
-/* No comment provided by engineer. */
 "Error deleting database" = "เกิดข้อผิดพลาดในการลบฐานข้อมูล";
 
 /* No comment provided by engineer. */
@@ -1386,7 +1368,8 @@
 /* No comment provided by engineer. */
 "Error: " = "ผิดพลาด: ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "ข้อผิดพลาด: % @";
 
 /* No comment provided by engineer. */
@@ -1419,7 +1402,7 @@
 /* No comment provided by engineer. */
 "Fast and no wait until the sender is online!" = "รวดเร็วและไม่ต้องรอจนกว่าผู้ส่งจะออนไลน์!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "ที่ชอบ";
 
 /* No comment provided by engineer. */
@@ -1797,7 +1780,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "อินเทอร์เฟซภาษาญี่ปุ่น";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "เข้าร่วม";
 
 /* No comment provided by engineer. */
@@ -1827,7 +1810,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "ศึกษาเพิ่มเติม";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "ออกจาก";
 
 /* No comment provided by engineer. */
@@ -2001,13 +1984,13 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "โปรไฟล์การแชทหลายรายการ";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Mute" = "ปิดเสียง";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "ปิดเสียงเมื่อไม่ได้ใช้งาน!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "ชื่อ";
 
 /* No comment provided by engineer. */
@@ -2108,7 +2091,7 @@
    time to disappear */
 "off" = "ปิด";
 
-/* No comment provided by engineer. */
+/* blur media */
 "Off" = "ปิด";
 
 /* feature offered item */
@@ -2133,10 +2116,10 @@
 "One-time invitation link" = "ลิงก์คำเชิญแบบใช้ครั้งเดียว";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "จำเป็นต้องมีโฮสต์หัวหอมสำหรับการเชื่อมต่อ ต้องเปิดใช้งาน VPN สำหรับการเชื่อมต่อ";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "จำเป็นต้องมีโฮสต์หัวหอมสำหรับการเชื่อมต่อ ต้องเปิดใช้งาน VPN สำหรับการเชื่อมต่อ";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "จำเป็นต้องมีโฮสต์หัวหอมสำหรับการเชื่อมต่อ ต้องเปิดใช้งาน VPN สำหรับการเชื่อมต่อ";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "จำเป็นต้องมีโฮสต์หัวหอมสำหรับการเชื่อมต่อ ต้องเปิดใช้งาน VPN สำหรับการเชื่อมต่อ";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "โฮสต์หัวหอมจะไม่ถูกใช้";
@@ -2360,7 +2343,7 @@
 /* chat item menu */
 "React…" = "ตอบสนอง…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "อ่าน";
 
 /* No comment provided by engineer. */
@@ -2423,7 +2406,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "ลดการใช้แบตเตอรี่";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "ปฏิเสธ";
 
 /* No comment provided by engineer. */
@@ -2503,9 +2487,6 @@
 
 /* chat item action */
 "Reveal" = "เปิดเผย";
-
-/* No comment provided by engineer. */
-"Revert" = "เปลี่ยนกลับ";
 
 /* No comment provided by engineer. */
 "Revoke" = "ถอน";
@@ -2609,7 +2590,7 @@
 /* chat item text */
 "security code changed" = "เปลี่ยนรหัสความปลอดภัยแล้ว";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "เลือก";
 
 /* No comment provided by engineer. */
@@ -2632,9 +2613,6 @@
 
 /* No comment provided by engineer. */
 "Send delivery receipts to" = "ส่งใบเสร็จรับการจัดส่งข้อความไปที่";
-
-/* No comment provided by engineer. */
-"Send direct message" = "ส่งข้อความโดยตรง";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "ส่งข้อความแบบที่หายไป";
@@ -2811,9 +2789,6 @@
 "Skipped messages" = "ข้อความที่ข้ามไป";
 
 /* No comment provided by engineer. */
-"SMP servers" = "เซิร์ฟเวอร์ SMP";
-
-/* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "ข้อผิดพลาดที่ไม่ร้ายแรงบางอย่างเกิดขึ้นระหว่างการนำเข้า - คุณอาจดูรายละเอียดเพิ่มเติมได้ที่คอนโซล Chat";
 
 /* notification title */
@@ -2887,9 +2862,6 @@
 
 /* No comment provided by engineer. */
 "Tap to join incognito" = "แตะเพื่อเข้าร่วมโหมดไม่ระบุตัวตน";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "แตะเพื่อเริ่มแชทใหม่";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "หมดเวลาการเชื่อมต่อ TCP";
@@ -2976,9 +2948,6 @@
 "The servers for new connections of your current chat profile **%@**." = "เซิร์ฟเวอร์สำหรับการเชื่อมต่อใหม่ของโปรไฟล์การแชทปัจจุบันของคุณ **%@**";
 
 /* No comment provided by engineer. */
-"Theme" = "ธีม";
-
-/* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "การตั้งค่าเหล่านี้ใช้สำหรับโปรไฟล์ปัจจุบันของคุณ **%@**";
 
 /* No comment provided by engineer. */
@@ -3050,7 +3019,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "สถานะการย้ายข้อมูลที่ไม่คาดคิด";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "เลิกชอบ";
 
 /* No comment provided by engineer. */
@@ -3089,17 +3058,14 @@
 /* authentication reason */
 "Unlock app" = "ปลดล็อคแอป";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unmute" = "เปิดเสียง";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "เปลี่ยนเป็นยังไม่ได้อ่าน";
 
 /* No comment provided by engineer. */
 "Update" = "อัปเดต";
-
-/* No comment provided by engineer. */
-"Update .onion hosts setting?" = "อัปเดตการตั้งค่าโฮสต์ .onion ไหม?";
 
 /* No comment provided by engineer. */
 "Update database passphrase" = "อัปเดตรหัสผ่านของฐานข้อมูล";
@@ -3107,17 +3073,11 @@
 /* No comment provided by engineer. */
 "Update network settings?" = "อัปเดตการตั้งค่าเครือข่ายไหม?";
 
-/* No comment provided by engineer. */
-"Update transport isolation mode?" = "อัปเดตโหมดการแยกการขนส่งไหม?";
-
 /* rcv group event chat item */
 "updated group profile" = "อัปเดตโปรไฟล์กลุ่มแล้ว";
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "การอัปเดตการตั้งค่าจะเชื่อมต่อไคลเอนต์กับเซิร์ฟเวอร์ทั้งหมดอีกครั้ง";
-
-/* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "การอัปเดตการตั้งค่านี้จะเชื่อมต่อไคลเอนต์กับเซิร์ฟเวอร์ทั้งหมดอีกครั้ง";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "อัปเกรดและเปิดการแชท";
@@ -3145,9 +3105,6 @@
 
 /* No comment provided by engineer. */
 "User profile" = "โปรไฟล์ผู้ใช้";
-
-/* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = "การใช้โฮสต์ .onion ต้องการผู้ให้บริการ VPN ที่เข้ากันได้";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "กำลังใช้เซิร์ฟเวอร์ SimpleX Chat อยู่";
@@ -3263,9 +3220,6 @@
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "รหัสผ่านผิด!";
 
-/* No comment provided by engineer. */
-"XFTP servers" = "เซิร์ฟเวอร์ XFTP";
-
 /* pref value */
 "yes" = "ใช่";
 
@@ -3312,7 +3266,7 @@
 "You can hide or mute a user profile - swipe it to the right." = "คุณสามารถซ่อนหรือปิดเสียงโปรไฟล์ผู้ใช้ - ปัดไปทางขวา";
 
 /* notification body */
-"You can now send messages to %@" = "ตอนนี้คุณสามารถส่งข้อความถึง %@";
+"You can now chat with %@" = "ตอนนี้คุณสามารถส่งข้อความถึง %@";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "คุณสามารถตั้งค่าแสดงตัวอย่างการแจ้งเตือนบนหน้าจอล็อคผ่านการตั้งค่า";
@@ -3355,9 +3309,6 @@
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "เราไม่สามารถตรวจสอบคุณได้ กรุณาลองอีกครั้ง.";
-
-/* No comment provided by engineer. */
-"You have no chats" = "คุณไม่มีการแชท";
 
 /* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "คุณต้องใส่รหัสผ่านทุกครั้งที่เริ่มแอป - รหัสผ่านไม่ได้จัดเก็บไว้ในอุปกรณ์";
@@ -3436,9 +3387,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "โปรไฟล์แชทของคุณ";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "ผู้ติดต่อของคุณจะต้องออนไลน์เพื่อให้การเชื่อมต่อเสร็จสมบูรณ์\nคุณสามารถยกเลิกการเชื่อมต่อนี้และลบผู้ติดต่อออก (และลองใหม่ในภายหลังด้วยลิงก์ใหม่)";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "ผู้ติดต่อของคุณส่งไฟล์ที่ใหญ่กว่าขนาดสูงสุดที่รองรับในปัจจุบัน (%@)";

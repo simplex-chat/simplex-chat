@@ -54,7 +54,7 @@ runSimplexChat :: ChatOpts -> User -> ChatController -> (User -> ChatController 
 runSimplexChat ChatOpts {maintenance} u cc chat
   | maintenance = wait =<< async (chat u cc)
   | otherwise = do
-      a1 <- runReaderT (startChatController True) cc
+      a1 <- runReaderT (startChatController True True) cc
       a2 <- async $ chat u cc
       waitEither_ a1 a2
 
@@ -105,7 +105,7 @@ createActiveUser cc = do
     loop = do
       displayName <- T.pack <$> getWithPrompt "display name"
       let profile = Just Profile {displayName, fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
-      execChatCommand' (CreateActiveUser NewUser {profile, sameServers = False, pastTimestamp = False}) `runReaderT` cc >>= \case
+      execChatCommand' (CreateActiveUser NewUser {profile, pastTimestamp = False}) `runReaderT` cc >>= \case
         CRActiveUser user -> pure user
         r -> do
           ts <- getCurrentTime

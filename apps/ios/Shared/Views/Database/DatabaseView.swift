@@ -15,6 +15,7 @@ enum DatabaseAlert: Identifiable {
     case importArchive
     case archiveImported
     case archiveImportedWithErrors(archiveErrors: [ArchiveError])
+    case archiveExportedWithErrors(archivePath: URL, archiveErrors: [ArchiveError])
     case deleteChat
     case chatDeleted
     case deleteLegacyDatabase
@@ -29,6 +30,7 @@ enum DatabaseAlert: Identifiable {
         case .importArchive: return "importArchive"
         case .archiveImported: return "archiveImported"
         case .archiveImportedWithErrors: return "archiveImportedWithErrors"
+        case .archiveExportedWithErrors: return "archiveExportedWithErrors"
         case .deleteChat: return "deleteChat"
         case .chatDeleted: return "chatDeleted"
         case .deleteLegacyDatabase: return "deleteLegacyDatabase"
@@ -41,6 +43,7 @@ enum DatabaseAlert: Identifiable {
 
 struct DatabaseView: View {
     @EnvironmentObject var m: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Binding var showSettings: Bool
     @State private var runChat = false
     @State private var alert: DatabaseAlert? = nil
@@ -82,8 +85,10 @@ struct DatabaseView: View {
                 .disabled(stopped || progressIndicator)
             } header: {
                 Text("Messages")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 Text("This setting applies to messages in your current chat profile **\(m.currentUser?.displayName ?? "")**.")
+                    .foregroundColor(theme.colors.secondary)
             }
 
             Section {
@@ -105,24 +110,27 @@ struct DatabaseView: View {
                 }
             } header: {
                 Text("Run chat")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 if case .documents = dbContainer {
                     Text("Database will be migrated when the app restarts")
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
 
             Section {
                 let unencrypted = m.chatDbEncrypted == false
-                let color: Color = unencrypted ? .orange : .secondary
+                let color: Color = unencrypted ? .orange : theme.colors.secondary
                 settingsRow(unencrypted ? "lock.open" : useKeychain ? "key" : "lock", color: color) {
                     NavigationLink {
                         DatabaseEncryptionView(useKeychain: $useKeychain, migration: false)
                             .navigationTitle("Database passphrase")
+                            .modifier(ThemedBackground(grouped: true))
                     } label: {
                         Text("Database passphrase")
                     }
                 }
-                settingsRow("square.and.arrow.up") {
+                settingsRow("square.and.arrow.up", color: theme.colors.secondary) {
                     Button("Export database") {
                         if initialRandomDBPassphraseGroupDefault.get() && !unencrypted {
                             alert = .exportProhibited
@@ -131,7 +139,7 @@ struct DatabaseView: View {
                         }
                     }
                 }
-                settingsRow("square.and.arrow.down") {
+                settingsRow("square.and.arrow.down", color: theme.colors.secondary) {
                     Button("Import database", role: .destructive) {
                         showFileImporter = true
                     }
@@ -140,34 +148,37 @@ struct DatabaseView: View {
                     let title: LocalizedStringKey = chatArchiveTimeDefault.get() < chatLastStartGroupDefault.get()
                         ? "Old database archive"
                         : "New database archive"
-                    settingsRow("archivebox") {
+                    settingsRow("archivebox", color: theme.colors.secondary) {
                         NavigationLink {
                             ChatArchiveView(archiveName: archiveName)
                                 .navigationTitle(title)
+                                .modifier(ThemedBackground(grouped: true))
                         } label: {
                             Text(title)
                         }
                     }
                 }
-                settingsRow("trash.slash") {
+                settingsRow("trash.slash", color: theme.colors.secondary) {
                     Button("Delete database", role: .destructive) {
                         alert = .deleteChat
                     }
                 }
             } header: {
                 Text("Chat database")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 Text(
                     stopped
                      ? "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts."
                      : "Stop chat to enable database actions"
                 )
+                .foregroundColor(theme.colors.secondary)
             }
             .disabled(!stopped)
 
             if case .group = dbContainer, legacyDatabase {
-                Section("Old database") {
-                    settingsRow("trash") {
+                Section(header: Text("Old database").foregroundColor(theme.colors.secondary)) {
+                    settingsRow("trash", color: theme.colors.secondary) {
                         Button("Delete old database") {
                             alert = .deleteLegacyDatabase
                         }
@@ -182,12 +193,15 @@ struct DatabaseView: View {
                 .disabled(!stopped || appFilesCountAndSize?.0 == 0)
             } header: {
                 Text("Files & media")
+                    .foregroundColor(theme.colors.secondary)
             } footer: {
                 if let (fileCount, size) = appFilesCountAndSize {
                     if fileCount == 0 {
                         Text("No received or sent files")
+                            .foregroundColor(theme.colors.secondary)
                     } else {
                         Text("\(fileCount) file(s) with total size of \(ByteCountFormatter.string(fromByteCount: Int64(size), countStyle: .binary))")
+                            .foregroundColor(theme.colors.secondary)
                     }
                 }
             }
@@ -253,10 +267,18 @@ struct DatabaseView: View {
                 title: Text("Chat database imported"),
                 message: Text("Restart the app to use imported chat database")
             )
-        case .archiveImportedWithErrors:
+        case let .archiveImportedWithErrors(errs):
             return Alert(
                 title: Text("Chat database imported"),
-                message: Text("Restart the app to use imported chat database") + Text("\n") + Text("Some non-fatal errors occurred during import - you may see Chat console for more details.")
+                message: Text("Restart the app to use imported chat database") + Text(verbatim: "\n\n") + Text("Some non-fatal errors occurred during import:") + archiveErrorsText(errs)
+            )
+        case let .archiveExportedWithErrors(archivePath, errs):
+            return Alert(
+                title: Text("Chat database exported"),
+                message: Text("You may save the exported archive.") + Text(verbatim: "\n\n") + Text("Some file(s) were not exported:") + archiveErrorsText(errs),
+                dismissButton: .default(Text("Continue")) {
+                    showShareSheet(items: [archivePath])
+                }
             )
         case .deleteChat:
             return Alert(
@@ -337,9 +359,16 @@ struct DatabaseView: View {
         progressIndicator = true
         Task {
             do {
-                let archivePath = try await exportChatArchive()
-                showShareSheet(items: [archivePath])
-                await MainActor.run { progressIndicator = false }
+                let (archivePath, archiveErrors) = try await exportChatArchive()
+                if archiveErrors.isEmpty {
+                    showShareSheet(items: [archivePath])
+                    await MainActor.run { progressIndicator = false }
+                } else {
+                    await MainActor.run {
+                        alert = .archiveExportedWithErrors(archivePath: archivePath, archiveErrors: archiveErrors)
+                        progressIndicator = false
+                    }
+                }
             } catch let error {
                 await MainActor.run {
                     alert = .error(title: "Error exporting chat database", error: responseError(error))
@@ -355,6 +384,7 @@ struct DatabaseView: View {
             Task {
                 do {
                     try await apiDeleteStorage()
+                    try? FileManager.default.createDirectory(at: getWallpaperDirectory(), withIntermediateDirectories: true)
                     do {
                         let config = ArchiveConfig(archivePath: archivePath.path)
                         let archiveErrors = try await apiImportArchive(config: config)
@@ -470,6 +500,17 @@ struct DatabaseView: View {
     private func deleteFiles() {
         deleteAppFiles()
         appFilesCountAndSize = directoryFileCountAndSize(getAppFilesDirectory())
+    }
+}
+
+func archiveErrorsText(_ errs: [ArchiveError]) -> Text {
+    return Text("\n" + errs.map(showArchiveError).joined(separator: "\n"))
+    
+    func showArchiveError(_ err: ArchiveError) -> String {
+        switch err {
+        case let .import(importError): importError
+        case let .fileError(file, fileError): "\(file): \(fileError)"
+        }
     }
 }
 

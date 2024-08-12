@@ -43,7 +43,7 @@
     <string name="connection_request_sent">연결 요청이 전송되었습니다!</string>
     <string name="connect_via_link">링크로 연결</string>
     <string name="smp_servers_preset_add">프리셋 서버 추가</string>
-    <string name="smp_servers_add">서버 추가…</string>
+    <string name="smp_servers_add">서버 추가</string>
     <string name="chat_console">채팅 콘솔</string>
     <string name="smp_servers_check_address">서버 주소를 확인 후 다시 시도해 주세요.</string>
     <string name="configure_ICE_servers">ICE 서버 설정</string>
@@ -635,7 +635,6 @@
     <string name="messages_section_description">이 설정은 현재 내 프로필의 메시지에 적용되어요.</string>
     <string name="member_info_section_title_member">멤버</string>
     <string name="member_role_will_be_changed_with_invitation">역할이 \"%s\"(으)로 변경되고, 회원은 새로운 초대를 받게 될 거예요.</string>
-    <string name="network_options_revert">되돌리기</string>
     <string name="message_deletion_prohibited">이 채팅에서는 메시지 영구 삭제가 허용되지 않았어요.</string>
     <string name="leave_group_button">나가기</string>
     <string name="large_file">큰 파일!</string>
@@ -667,9 +666,6 @@
     <string name="network_use_onion_hosts_prefer_desc">사용 가능한 경우 Onion 호스트가 사용될 거예요.</string>
     <string name="network_use_onion_hosts_no_desc">Onion 호스트가 사용되지 않을 거예요.</string>
     <string name="network_session_mode_transport_isolation">전송 격리</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Onion 호스트가 사용되지 않을 거예요.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">사용 가능한 경우 Onion 호스트가 사용될 거예요.</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">연결하려면 Onion 호스트가 필요해요.</string>
     <string name="next_generation_of_private_messaging">차세대 사생활 보호 메시징</string>
     <string name="new_passphrase">새 비밀번호…</string>
     <string name="network_option_enable_tcp_keep_alive">TCP 연결 유지 활성화</string>
@@ -938,4 +934,33 @@
     <string name="waiting_for_image">이미지 기다리는 중</string>
     <string name="voice_message">음성 메시지</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d개의 메시지의 해독에 실패했습니다.</string>
+    <string name="color_primary_variant2">추가 강조 색상 2</string>
+    <string name="v5_2_fix_encryption_descr">백업 복원 후 암호화 수정.</string>
+    <string name="v5_2_favourites_filter">채팅 더 빠르게 찾기</string>
+    <string name="v4_2_group_links">그룹 링크</string>
+    <string name="v5_2_favourites_filter_descr">읽지 않은 채팅과 즐겨찾기 채팅 필터링.</string>
+    <string name="wallpaper_advanced_settings">고급 설정</string>
+    <string name="v5_2_fix_encryption">연결 유지하기</string>
+    <string name="feature_roles_owners">소유자</string>
+    <string name="moderated_items_description">%1$d개의 메시지가 %2$s에 의해 삭제되었습니다</string>
+    <string name="v5_3_new_interface_languages">6개의 새로운 인터페이스 언어</string>
+    <string name="add_contact_tab">연락처 추가</string>
+    <string name="feature_roles_admins">관리자</string>
+    <string name="v5_6_safer_groups_descr">관리자는 모든 멤버를 위해 특정 멤버를 차단할 수 있습니다.</string>
+    <string name="v5_2_message_delivery_receipts">메시지 전달 확인서!</string>
+    <string name="v5_2_message_delivery_receipts_descr">우리가 놓친 두 번째 체크! ✅</string>
+    <string name="abort_switch_receiving_address">주소 변경 중지</string>
+    <string name="v5_1_better_messages_descr">- 최대 5분의 음성 메시지.
+\n- 사용자 정의 소멸 시간.
+\n- 편집 기록.</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">사용자 여러분께 감사드립니다 – Weblate를 통해 기여하세요!</string>
+    <string name="abort_switch_receiving_address_desc">주소 변경이 중지됩니다. 이전 수신 주소가 사용됩니다.</string>
+    <string name="v5_1_japanese_portuguese_interface">일본어 및 포르투갈어 UI</string>
+    <string name="abort_switch_receiving_address_question">주소 변경을 중지하시겠습니까?</string>
+    <string name="feature_roles_all_members">모든 멤버</string>
+    <string name="feature_enabled_for">위해 활성화됨</string>
+    <string name="whats_new">새로운 기능</string>
+    <string name="whats_new_read_more">더 보기</string>
+    <string name="v4_2_security_assessment">보안 평가</string>
+    <string name="v4_2_security_assessment_desc">SimpleX Chat 보안은 Trail of Bits에 의해 감사되었습니다.</string>
 </resources>

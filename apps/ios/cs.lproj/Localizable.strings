@@ -130,9 +130,6 @@
 /* No comment provided by engineer. */
 "%@ is verified" = "%@ je ověřený";
 
-/* No comment provided by engineer. */
-"%@ servers" = "%@ servery";
-
 /* notification title */
 "%@ wants to connect!" = "%@ se chce připojit!";
 
@@ -289,11 +286,9 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "výše, pak vyberte:";
 
-/* No comment provided by engineer. */
-"Accent color" = "Zbarvení";
-
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "Přijmout";
 
 /* No comment provided by engineer. */
@@ -302,7 +297,8 @@
 /* notification body */
 "Accept contact request from %@?" = "Přijmout žádost o kontakt od %@?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "Přijmout inkognito";
 
 /* call status */
@@ -318,7 +314,7 @@
 "Add profile" = "Přidat profil";
 
 /* No comment provided by engineer. */
-"Add server…" = "Přidat server…";
+"Add server" = "Přidat server";
 
 /* No comment provided by engineer. */
 "Add servers by scanning QR codes." = "Přidejte servery skenováním QR kódů.";
@@ -663,7 +659,7 @@
 /* No comment provided by engineer. */
 "Choose from library" = "Vybrat z knihovny";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "Vyčistit";
 
 /* No comment provided by engineer. */
@@ -677,9 +673,6 @@
 
 /* No comment provided by engineer. */
 "colored" = "barevné";
-
-/* No comment provided by engineer. */
-"Colors" = "Barvy";
 
 /* server test step */
 "Compare file" = "Porovnat soubor";
@@ -796,9 +789,6 @@
 "Contact is connected" = "Kontakt je připojen";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "Kontakt ještě není připojen!";
-
-/* No comment provided by engineer. */
 "Contact name" = "Jméno kontaktu";
 
 /* No comment provided by engineer. */
@@ -813,7 +803,7 @@
 /* No comment provided by engineer. */
 "Continue" = "Pokračovat";
 
-/* chat item action */
+/* No comment provided by engineer. */
 "Copy" = "Kopírovat";
 
 /* No comment provided by engineer. */
@@ -948,7 +938,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "výchozí (ano)";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "Smazat";
 
 /* No comment provided by engineer. */
@@ -980,9 +971,6 @@
 
 /* No comment provided by engineer. */
 "Delete contact" = "Smazat kontakt";
-
-/* No comment provided by engineer. */
-"Delete Contact" = "Smazat kontakt";
 
 /* No comment provided by engineer. */
 "Delete database" = "Odstranění databáze";
@@ -1034,9 +1022,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Smazat starou databázi?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Smazat čekající připojení";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Smazat čekající připojení?";
@@ -1363,9 +1348,6 @@
 "Error deleting connection" = "Chyba při mazání připojení";
 
 /* No comment provided by engineer. */
-"Error deleting contact" = "Chyba mazání kontaktu";
-
-/* No comment provided by engineer. */
 "Error deleting database" = "Chyba při mazání databáze";
 
 /* No comment provided by engineer. */
@@ -1461,7 +1443,8 @@
 /* No comment provided by engineer. */
 "Error: " = "Chyba: ";
 
-/* snd error text */
+/* file error text
+   snd error text */
 "Error: %@" = "Chyba: %@";
 
 /* No comment provided by engineer. */
@@ -1494,7 +1477,7 @@
 /* No comment provided by engineer. */
 "Fast and no wait until the sender is online!" = "Rychle a bez čekání, než bude odesílatel online!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "Oblíbené";
 
 /* No comment provided by engineer. */
@@ -1878,7 +1861,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "Japonské rozhraní";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "Připojte se na";
 
 /* No comment provided by engineer. */
@@ -1908,7 +1891,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "Zjistit více";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "Opustit";
 
 /* No comment provided by engineer. */
@@ -2085,13 +2068,13 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Více chatovacích profilů";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Mute" = "Ztlumit";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "Ztlumit při neaktivitě!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "Jméno";
 
 /* No comment provided by engineer. */
@@ -2198,7 +2181,7 @@
    time to disappear */
 "off" = "vypnuto";
 
-/* No comment provided by engineer. */
+/* blur media */
 "Off" = "Vypnout";
 
 /* feature offered item */
@@ -2223,10 +2206,10 @@
 "One-time invitation link" = "Jednorázový zvací odkaz";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "Pro připojení budou vyžadováni Onion hostitelé. Vyžaduje povolení sítě VPN.";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "Pro připojení budou vyžadováni Onion hostitelé.\nVyžaduje povolení sítě VPN.";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "Onion hostitelé budou použiti, pokud jsou k dispozici. Vyžaduje povolení sítě VPN.";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "Onion hostitelé budou použiti, pokud jsou k dispozici.\nVyžaduje povolení sítě VPN.";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "Onion hostitelé nebudou použiti.";
@@ -2453,7 +2436,7 @@
 /* chat item menu */
 "React…" = "Reagovat…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "Číst";
 
 /* No comment provided by engineer. */
@@ -2519,7 +2502,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Snížení spotřeby baterie";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "Odmítnout";
 
 /* No comment provided by engineer. */
@@ -2602,9 +2586,6 @@
 
 /* chat item action */
 "Reveal" = "Odhalit";
-
-/* No comment provided by engineer. */
-"Revert" = "Vrátit";
 
 /* No comment provided by engineer. */
 "Revoke" = "Odvolat";
@@ -2708,7 +2689,7 @@
 /* chat item text */
 "security code changed" = "bezpečnostní kód změněn";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "Vybrat";
 
 /* No comment provided by engineer. */
@@ -2734,9 +2715,6 @@
 
 /* No comment provided by engineer. */
 "send direct message" = "odeslat přímou zprávu";
-
-/* No comment provided by engineer. */
-"Send direct message" = "Odeslat přímou zprávu";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Odeslat přímou zprávu pro připojení";
@@ -2931,9 +2909,6 @@
 "Small groups (max 20)" = "Malé skupiny (max. 20)";
 
 /* No comment provided by engineer. */
-"SMP servers" = "SMP servery";
-
-/* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Během importu došlo k nezávažným chybám - podrobnosti naleznete v chat konzoli.";
 
 /* notification title */
@@ -3007,9 +2982,6 @@
 
 /* No comment provided by engineer. */
 "Tap to join incognito" = "Klepnutím se připojíte inkognito";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "Klepnutím na zahájíte nový chat";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "Časový limit připojení TCP";
@@ -3096,9 +3068,6 @@
 "The servers for new connections of your current chat profile **%@**." = "Servery pro nová připojení vašeho aktuálního chat profilu **%@**.";
 
 /* No comment provided by engineer. */
-"Theme" = "Téma";
-
-/* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Toto nastavení je pro váš aktuální profil **%@**.";
 
 /* No comment provided by engineer. */
@@ -3179,7 +3148,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Neočekávaný stav přenášení";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "Odobl.";
 
 /* No comment provided by engineer. */
@@ -3218,17 +3187,14 @@
 /* authentication reason */
 "Unlock app" = "Odemknout aplikaci";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unmute" = "Zrušit ztlumení";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "Nepřečtený";
 
 /* No comment provided by engineer. */
 "Update" = "Aktualizovat";
-
-/* No comment provided by engineer. */
-"Update .onion hosts setting?" = "Aktualizovat nastavení hostitelů .onion?";
 
 /* No comment provided by engineer. */
 "Update database passphrase" = "Aktualizovat přístupovou frázi databáze";
@@ -3236,17 +3202,11 @@
 /* No comment provided by engineer. */
 "Update network settings?" = "Aktualizovat nastavení sítě?";
 
-/* No comment provided by engineer. */
-"Update transport isolation mode?" = "Aktualizovat režim dopravní izolace?";
-
 /* rcv group event chat item */
 "updated group profile" = "aktualizoval profil skupiny";
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Aktualizací nastavení se klient znovu připojí ke všem serverům.";
-
-/* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "Aktualizace tohoto nastavení znovu připojí klienta ke všem serverům.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Zvýšit a otevřít chat";
@@ -3280,9 +3240,6 @@
 
 /* No comment provided by engineer. */
 "User profile" = "Profil uživatele";
-
-/* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = "Použití hostitelů .onion vyžaduje kompatibilního poskytovatele VPN.";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "Používat servery SimpleX Chat.";
@@ -3398,9 +3355,6 @@
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Špatná přístupová fráze!";
 
-/* No comment provided by engineer. */
-"XFTP servers" = "XFTP servery";
-
 /* pref value */
 "yes" = "ano";
 
@@ -3447,7 +3401,7 @@
 "You can hide or mute a user profile - swipe it to the right." = "Profil uživatele můžete skrýt nebo ztlumit - přejeďte prstem doprava.";
 
 /* notification body */
-"You can now send messages to %@" = "Nyní můžete posílat zprávy %@";
+"You can now chat with %@" = "Nyní můžete posílat zprávy %@";
 
 /* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "Náhled oznámení na zamykací obrazovce můžete změnit v nastavení.";
@@ -3490,9 +3444,6 @@
 
 /* No comment provided by engineer. */
 "You could not be verified; please try again." = "Nemohli jste být ověřeni; Zkuste to prosím znovu.";
-
-/* No comment provided by engineer. */
-"You have no chats" = "Nemáte žádné konverzace";
 
 /* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Musíte zadat přístupovou frázi při každém spuštění aplikace - není uložena v zařízení.";
@@ -3574,9 +3525,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Vaše chat profily";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "K dokončení připojení, musí být váš kontakt online.\nToto připojení můžete zrušit a kontakt odebrat (a zkusit to později s novým odkazem).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Kontakt odeslal soubor, který je větší než aktuálně podporovaná maximální velikost (%@).";

@@ -109,7 +109,7 @@
     <string name="back">തിരികെ</string>
     <string name="mute_chat">നിശബ്ദമാക്കുക</string>
     <string name="icon_descr_help">സഹായം</string>
-    <string name="smp_servers_add">സെർവർ ചേർക്കുക…</string>
+    <string name="smp_servers_add">സെർവർ ചേർക്കുക</string>
     <string name="smp_servers_add_to_another_device">മറ്റൊരു ഉപകരണത്തിലേക്ക് ചേർക്കുക</string>
     <string name="auto_accept_contact">സ്വയമേവ സ്വീകരിക്കുക</string>
     <string name="callstate_waiting_for_confirmation">സ്ഥിരീകരണത്തിനായി കാത്തിരിക്കുന്നു…</string>
@@ -320,7 +320,6 @@
     <string name="switch_receiving_address">സ്വീകരിക്കുന്ന വിലാസം മാറുക</string>
     <string name="conn_stats_section_title_servers">സെർവറുകൾ</string>
     <string name="network_options_save">സംരക്ഷിക്കുക</string>
-    <string name="network_options_revert">പഴയപടിയാക്കുക</string>
     <string name="theme_system">സംവിധാനം</string>
     <string name="language_system">സംവിധാനം</string>
     <string name="color_title">ശീർഷകം</string>
