@@ -333,23 +333,29 @@ func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, sear
 }
 
 func loadChat(chat: Chat, search: String = "") {
-    do {
-        let cInfo = chat.chatInfo
-        let m = ChatModel.shared
-        let im = ItemsModel.shared
-        m.chatItemStatuses = [:]
-        im.reversedChatItems = []
-        let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
-        if case let .direct(contact) = chat.chatInfo, !cInfo.chatDeleted, chat.chatInfo.chatDeleted {
-            var updatedContact = contact
-            updatedContact.chatDeleted = false
-            m.updateContact(updatedContact)
-        } else {
-            m.updateChatInfo(chat.chatInfo)
+    let cInfo = chat.chatInfo
+    let m = ChatModel.shared
+    let im = ItemsModel.shared
+    m.chatItemStatuses = [:]
+    Task {
+        do {
+            let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
+            if case let .direct(contact) = chat.chatInfo, !cInfo.chatDeleted, chat.chatInfo.chatDeleted {
+                var updatedContact = contact
+                updatedContact.chatDeleted = false
+                await MainActor.run {
+                    im.reversedChatItems = chat.chatItems.reversed()
+                    m.updateContact(contact)
+                }
+            } else {
+                await MainActor.run {
+                    im.reversedChatItems = chat.chatItems.reversed()
+                    m.updateChatInfo(chat.chatInfo)
+                }
+            }
+        } catch {
+            logger.error("loadChat error: \(responseError(error))")
         }
-        im.reversedChatItems = chat.chatItems.reversed()
-    } catch let error {
-        logger.error("loadChat error: \(responseError(error))")
     }
 }
 

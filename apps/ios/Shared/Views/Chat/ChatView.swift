@@ -46,6 +46,7 @@ struct ChatView: View {
     @State private var selectedChatItems: Set<Int64>? = nil
     @State private var showDeleteSelectedMessages: Bool = false
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
+    @State private var itemsVisible: Bool = false
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
@@ -60,6 +61,12 @@ struct ChatView: View {
         }
     }
     
+    // TODO: Remove. Switches between last 5 chats
+    private func selectNextChat() {
+        let index = chatModel.chats.firstIndex { chatModel.chatId == $0.id }!
+        chatModel.chatId = chatModel.chats[(index + 1) % 5].id
+    }
+
     @ViewBuilder
     private var viewBody: some View {
         let cInfo = chat.chatInfo
@@ -78,6 +85,9 @@ struct ChatView: View {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
                     floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
+                    Button("Next Chat") { selectNextChat() }
+                        .padding()
+                        .buttonStyle(BorderedProminentButtonStyle())
                 }
                 connectingText()
                 if selectedChatItems == nil {
@@ -131,17 +141,20 @@ struct ChatView: View {
             }
         }
         .onAppear {
+            selectedChatItems = nil
             loadChat(chat: chat)
             initChatView()
-            selectedChatItems = nil
         }
         .onChange(of: chatModel.chatId) { cId in
+            itemsVisible = false
             showChatInfoSheet = false
+            selectedChatItems = nil
             stopAudioPlayer()
             if let cId {
-                selectedChatItems = nil
                 if let c = chatModel.getChat(cId) {
                     chat = c
+                    loadChat(chat: c)
+                    scrollModel.scrollToBottom()
                 }
                 initChatView()
                 theme = buildTheme()
@@ -153,6 +166,7 @@ struct ChatView: View {
             NotificationCenter.postReverseListNeedsLayout()
         }
         .onChange(of: im.reversedChatItems) { reversedChatItems in
+            if !itemsVisible { withAnimation(.easeOut(duration: 0.1)) { itemsVisible = true } }
             if reversedChatItems.count <= loadItemsPerPage && filtered(reversedChatItems).count < 10 {
                 loadChatItems(chat.chatInfo)
             }
@@ -408,18 +422,12 @@ struct ChatView: View {
             } loadPage: {
                 loadChatItems(cInfo)
             }
+            .opacity(itemsVisible ? 1 : 0)
             .padding(.vertical, -InvertedTableView.inset)
+            .padding(.bottom, 8)
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { _ in
                 loadChat(chat: chat, search: searchText)
-            }
-            .onChange(of: chatModel.chatId) { chatId in
-                if let chatId, let c = chatModel.getChat(chatId) {
-                    chat = c
-                    showChatInfoSheet = false
-                    loadChat(chat: c)
-                    scrollModel.scrollToBottom()
-                }
             }
             .onChange(of: im.reversedChatItems) { _ in
                 floatingButtonModel.chatItemsChanged()
