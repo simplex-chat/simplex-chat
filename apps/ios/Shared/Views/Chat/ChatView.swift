@@ -60,12 +60,6 @@ struct ChatView: View {
             viewBody
         }
     }
-    
-    // TODO: Remove. Switches between last 5 chats
-    private func selectNextChat() {
-        let index = chatModel.chats.firstIndex { chatModel.chatId == $0.id }!
-        chatModel.chatId = chatModel.chats[(index + 1) % 5].id
-    }
 
     @ViewBuilder
     private var viewBody: some View {
@@ -85,7 +79,11 @@ struct ChatView: View {
                 ZStack(alignment: .bottomTrailing) {
                     chatItemsList()
                     floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
-                    Button("Next Chat") { selectNextChat() }
+                    // TODO: DEBUG - Remove. Switches between last 5 chats
+                    Button("Next Chat") {
+                        let index = chatModel.chats.firstIndex { chatModel.chatId == $0.id }!
+                        chatModel.chatId = chatModel.chats[(index + 1) % 5].id
+                    }
                         .padding()
                         .buttonStyle(BorderedProminentButtonStyle())
                 }
@@ -424,7 +422,6 @@ struct ChatView: View {
             }
             .opacity(itemsVisible ? 1 : 0)
             .padding(.vertical, -InvertedTableView.inset)
-            .padding(.bottom, 8)
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { _ in
                 loadChat(chat: chat, search: searchText)
