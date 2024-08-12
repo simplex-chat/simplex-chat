@@ -46,7 +46,7 @@ struct ChatView: View {
     @State private var selectedChatItems: Set<Int64>? = nil
     @State private var showDeleteSelectedMessages: Bool = false
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
-    @State private var itemsVisible: Bool = false
+    @State private var itemsVisible: Bool = true
 
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
@@ -140,19 +140,18 @@ struct ChatView: View {
         }
         .onAppear {
             selectedChatItems = nil
-            loadChat(chat: chat)
             initChatView()
         }
         .onChange(of: chatModel.chatId) { cId in
             itemsVisible = false
             showChatInfoSheet = false
             selectedChatItems = nil
+            scrollModel.scrollToBottom()
             stopAudioPlayer()
             if let cId {
                 if let c = chatModel.getChat(cId) {
                     chat = c
-                    loadChat(chat: c)
-                    scrollModel.scrollToBottom()
+                    Task { await loadChat(chat: c) }
                 }
                 initChatView()
                 theme = buildTheme()
@@ -164,7 +163,7 @@ struct ChatView: View {
             NotificationCenter.postReverseListNeedsLayout()
         }
         .onChange(of: im.reversedChatItems) { reversedChatItems in
-            if !itemsVisible { withAnimation(.easeOut(duration: 0.1)) { itemsVisible = true } }
+            itemsVisible = true
             if reversedChatItems.count <= loadItemsPerPage && filtered(reversedChatItems).count < 10 {
                 loadChatItems(chat.chatInfo)
             }
@@ -361,9 +360,7 @@ struct ChatView: View {
                 searchText = ""
                 searchMode = false
                 searchFocussed = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                    loadChat(chat: chat)
-                }
+                Task { await loadChat(chat: chat) }
             }
         }
         .padding(.horizontal)
@@ -424,7 +421,7 @@ struct ChatView: View {
             .padding(.vertical, -InvertedTableView.inset)
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { _ in
-                loadChat(chat: chat, search: searchText)
+                Task { await loadChat(chat: chat, search: searchText) }
             }
             .onChange(of: im.reversedChatItems) { _ in
                 floatingButtonModel.chatItemsChanged()

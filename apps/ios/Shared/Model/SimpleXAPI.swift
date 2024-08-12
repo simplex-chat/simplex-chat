@@ -332,30 +332,28 @@ func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, sear
     throw r
 }
 
-func loadChat(chat: Chat, search: String = "") {
+func loadChat(chat: Chat, search: String = "") async {
     let cInfo = chat.chatInfo
     let m = ChatModel.shared
     let im = ItemsModel.shared
-    m.chatItemStatuses = [:]
-    Task {
-        do {
-            let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
-            if case let .direct(contact) = chat.chatInfo, !cInfo.chatDeleted, chat.chatInfo.chatDeleted {
-                var updatedContact = contact
-                updatedContact.chatDeleted = false
-                await MainActor.run {
-                    im.reversedChatItems = chat.chatItems.reversed()
-                    m.updateContact(contact)
-                }
-            } else {
-                await MainActor.run {
-                    im.reversedChatItems = chat.chatItems.reversed()
-                    m.updateChatInfo(chat.chatInfo)
-                }
+    await MainActor.run { im.reversedChatItems = [] }
+    do {
+        let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
+        if case let .direct(contact) = chat.chatInfo, !cInfo.chatDeleted, chat.chatInfo.chatDeleted {
+            var updatedContact = contact
+            updatedContact.chatDeleted = false
+            await MainActor.run {
+                im.reversedChatItems = chat.chatItems.reversed()
+                m.updateContact(contact)
             }
-        } catch {
-            logger.error("loadChat error: \(responseError(error))")
+        } else {
+            await MainActor.run {
+                im.reversedChatItems = chat.chatItems.reversed()
+                m.updateChatInfo(chat.chatInfo)
+            }
         }
+    } catch {
+        logger.error("loadChat error: \(responseError(error))")
     }
 }
 
