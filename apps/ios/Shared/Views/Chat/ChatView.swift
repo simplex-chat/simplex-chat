@@ -84,7 +84,7 @@ struct ChatView: View {
                         let index = chatModel.chats.firstIndex { chatModel.chatId == $0.id }!
                         chatModel.chatId = chatModel.chats[(index + 1) % 5].id
                     }
-                        .padding()
+                        .padding(60)
                         .buttonStyle(BorderedProminentButtonStyle())
                 }
                 connectingText()
@@ -163,7 +163,9 @@ struct ChatView: View {
             NotificationCenter.postReverseListNeedsLayout()
         }
         .onChange(of: im.reversedChatItems) { reversedChatItems in
-            itemsVisible = true
+            if !itemsVisible && !im.reversedChatItems.isEmpty {
+                withAnimation(.easeOut(duration: 0.1)) { itemsVisible = true }
+            }
             if reversedChatItems.count <= loadItemsPerPage && filtered(reversedChatItems).count < 10 {
                 loadChatItems(chat.chatInfo)
             }
