@@ -895,11 +895,6 @@ struct ComposeView: View {
                     ttl: ttl
                 ) {
                 await MainActor.run {
-                    if case let .direct(contact) = chat.chatInfo, contact.chatDeleted {
-                        var updatedContact = contact
-                        updatedContact.chatDeleted = false
-                        chatModel.updateContact(updatedContact)
-                    }
                     chatModel.removeLiveDummy(animated: false)
                     chatModel.addChatItem(chat.chatInfo, chatItem)
                 }
@@ -921,11 +916,6 @@ struct ComposeView: View {
                 ttl: ttl
             ) {
                 await MainActor.run {
-                    if case let .direct(contact) = chat.chatInfo, contact.chatDeleted {
-                        var updatedContact = contact
-                        updatedContact.chatDeleted = false
-                        chatModel.updateContact(updatedContact)
-                    }
                     chatModel.addChatItem(chat.chatInfo, chatItem)
                 }
                 return chatItem

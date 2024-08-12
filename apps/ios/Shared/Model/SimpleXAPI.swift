@@ -1772,11 +1772,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
         let cItem = aChatItem.chatItem
         await MainActor.run {
             if active(user) {
-                if case let .direct(contact) = cInfo, contact.chatDeleted {
-                    var updatedContact = contact
-                    updatedContact.chatDeleted = false
-                    m.updateContact(updatedContact)
-                }
                 m.addChatItem(cInfo, cItem)
             } else if cItem.isRcvNew && cInfo.ntfsEnabled {
                 m.increaseUnreadCounter(user: user)
