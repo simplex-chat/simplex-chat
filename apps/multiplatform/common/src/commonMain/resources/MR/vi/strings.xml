@@ -593,4 +593,16 @@
     <string name="marked_deleted_items_description">%d tin nhắn được đánh dấu là đã xóa</string>
     <string name="display_name_cannot_contain_whitespace">Tên hiển thị không thể chứa khoảng trắng.</string>
     <string name="discover_on_network">Khám phá qua mạng cục bộ</string>
+    <string name="migrate_to_device_download_failed">Tải về không thành công</string>
+    <string name="dont_create_address">Không tạo địa chỉ</string>
+    <string name="dont_show_again">Không hiển thị lại</string>
+    <string name="smp_server_test_download_file">Tải về tệp tin</string>
+    <string name="migrate_to_device_downloading_archive">Đang tải về kho lưu trữ</string>
+    <string name="downgrade_and_open_chat">Hạ cấp và mở SimpleX Chat</string>
+    <string name="download_file">Tải về</string>
+    <string name="dont_enable_receipts">Không bật</string>
+    <string name="servers_info_downloaded">Đã tải về</string>
+    <string name="app_check_for_updates_download_started">Đang tải về bản cập nhật ứng dụng, đừng đóng ứng dụng</string>
+    <string name="downloaded_files">Các tập tin đã tải về</string>
+    <string name="download_errors">Lỗi tải về</string>
 </resources>
