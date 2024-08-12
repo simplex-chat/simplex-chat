@@ -69,7 +69,10 @@ class ItemsModel: ObservableObject {
         let navigationTimeout = Task {
             do {
                 try await Task.sleep(nanoseconds: NSEC_PER_SEC * 1)
-                await MainActor.run { ChatModel.shared.chatId = chatId }
+                await MainActor.run {
+                    willNavigate()
+                    ChatModel.shared.chatId = chatId
+                }
             } catch { }
         }
         Task {
@@ -79,6 +82,7 @@ class ItemsModel: ObservableObject {
                 navigationTimeout.cancel()
                 await MainActor.run {
                     self.isLoading = false
+                    willNavigate()
                     ChatModel.shared.chatId = chatId
                 }
             }
