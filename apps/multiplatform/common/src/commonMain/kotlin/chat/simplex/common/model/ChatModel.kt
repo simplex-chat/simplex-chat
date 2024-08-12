@@ -275,6 +275,11 @@ object ChatModel {
       }
     }
     suspend fun addChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
+      // mark chat non deleted
+      if (cInfo is ChatInfo.Direct && cInfo.chatDeleted) {
+        val updatedContact = cInfo.contact.copy(chatDeleted = false)
+        updateContact(rhId, updatedContact)
+      }
       // update previews
       val i = getChatIndex(rhId, cInfo.id)
       val chat: Chat

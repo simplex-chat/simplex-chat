@@ -82,9 +82,6 @@ struct ContactListNavLink: View {
         Button {
             Task {
                 await MainActor.run {
-                    var updatedContact = contact
-                    updatedContact.chatDeleted = false
-                    ChatModel.shared.updateContact(updatedContact)
                     dismissAllSheets(animated: true) {
                         ChatModel.shared.chatId = contact.id
                     }
