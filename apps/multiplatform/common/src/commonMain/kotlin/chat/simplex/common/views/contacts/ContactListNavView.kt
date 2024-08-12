@@ -61,9 +61,6 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
                         ContactType.CHAT_DELETED -> {
                             withApi {
                                 openChat(rhId, chat.chatInfo, chatModel)
-                                withChats {
-                                    updateContact(rhId, chat.chatInfo.contact.copy(chatDeleted = false))
-                                }
                                 ModalManager.start.closeModals()
                             }
                         }
