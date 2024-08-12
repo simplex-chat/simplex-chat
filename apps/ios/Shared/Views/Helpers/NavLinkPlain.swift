@@ -18,7 +18,7 @@ struct NavLinkPlain<Label: View>: View {
     var body: some View {
         ZStack {
             Button("") { ItemsModel.shared.loadItemsAndNavigate(to: tag) }
-            .disabled(disabled)
+                .disabled(disabled)
             label()
         }
     }
