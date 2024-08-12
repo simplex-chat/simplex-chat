@@ -340,13 +340,7 @@ func loadChat(chat: Chat, search: String = "") {
         m.chatItemStatuses = [:]
         im.reversedChatItems = []
         let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
-        if case let .direct(contact) = chat.chatInfo, !cInfo.chatDeleted, chat.chatInfo.chatDeleted {
-            var updatedContact = contact
-            updatedContact.chatDeleted = false
-            m.updateContact(updatedContact)
-        } else {
-            m.updateChatInfo(chat.chatInfo)
-        }
+        m.updateChatInfo(chat.chatInfo)
         im.reversedChatItems = chat.chatItems.reversed()
     } catch let error {
         logger.error("loadChat error: \(responseError(error))")
