@@ -340,13 +340,7 @@ func loadChat(chat: Chat, search: String = "") {
         m.chatItemStatuses = [:]
         im.reversedChatItems = []
         let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
-        if case let .direct(contact) = chat.chatInfo, !cInfo.chatDeleted, chat.chatInfo.chatDeleted {
-            var updatedContact = contact
-            updatedContact.chatDeleted = false
-            m.updateContact(updatedContact)
-        } else {
-            m.updateChatInfo(chat.chatInfo)
-        }
+        m.updateChatInfo(chat.chatInfo)
         im.reversedChatItems = chat.chatItems.reversed()
     } catch let error {
         logger.error("loadChat error: \(responseError(error))")
@@ -1778,11 +1772,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
         let cItem = aChatItem.chatItem
         await MainActor.run {
             if active(user) {
-                if case let .direct(contact) = cInfo, contact.chatDeleted {
-                    var updatedContact = contact
-                    updatedContact.chatDeleted = false
-                    m.updateContact(updatedContact)
-                }
                 m.addChatItem(cInfo, cItem)
             } else if cItem.isRcvNew && cInfo.ntfsEnabled {
                 m.increaseUnreadCounter(user: user)
