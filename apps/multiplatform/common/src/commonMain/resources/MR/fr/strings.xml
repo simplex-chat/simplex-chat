@@ -1444,7 +1444,7 @@
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Vous avez déjà demandé une connexion via cette adresse !</string>
     <string name="terminal_always_visible">Afficher la console dans une nouvelle fenêtre</string>
     <string name="block_member_desc">Tous les nouveaux messages provenant de %s seront cachés !</string>
-    <string name="blocked_item_description">blocké</string>
+    <string name="blocked_item_description">bloqué</string>
     <string name="encryption_renegotiation_error">Erreur lors de la renégociation du chiffrement</string>
     <string name="alert_text_encryption_renegotiation_failed">La renégociation du chiffrement a échoué.</string>
     <string name="v5_4_block_group_members">Bloquer des membres d\'un groupe</string>
