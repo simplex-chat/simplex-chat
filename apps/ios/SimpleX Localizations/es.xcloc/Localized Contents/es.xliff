@@ -1100,9 +1100,9 @@
         <target>Bloqueado por administrador</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Blur for better privacy." xml:space="preserve">
+      <trans-unit id="Blur for better privacy." xml:space="preserve" approved="no">
         <source>Blur for better privacy.</source>
-        <target>Difuminar para más privacidad.</target>
+        <target state="translated">Difumina para mayor privacidad.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Blur media" xml:space="preserve">
@@ -1615,9 +1615,9 @@ This is your own one-time link!</source>
         <target>Conexión</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection and servers status." xml:space="preserve">
+      <trans-unit id="Connection and servers status." xml:space="preserve" approved="no">
         <source>Connection and servers status.</source>
-        <target>Estado de conexión y servidores.</target>
+        <target state="translated">Estado de tu conexión y servidores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">
@@ -4817,9 +4817,9 @@ Requiere activación de la VPN.</target>
         <target>Pega el enlace recibido</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Pending" xml:space="preserve">
+      <trans-unit id="Pending" xml:space="preserve" approved="no">
         <source>Pending</source>
-        <target>Pendiente</target>
+        <target state="translated">Pendientes</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="People can connect to you only via the links you share." xml:space="preserve">
@@ -5123,9 +5123,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Timeout protocolo por KB</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Proxied" xml:space="preserve">
+      <trans-unit id="Proxied" xml:space="preserve" approved="no">
         <source>Proxied</source>
-        <target>Con proxy</target>
+        <target state="translated">Como proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Proxied servers" xml:space="preserve">
@@ -5904,9 +5904,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Enviado: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Sent directly" xml:space="preserve">
+      <trans-unit id="Sent directly" xml:space="preserve" approved="no">
         <source>Sent directly</source>
-        <target>Enviado directamente</target>
+        <target state="translated">Directamente</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sent file event" xml:space="preserve">
@@ -5939,9 +5939,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Total enviados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent via proxy" xml:space="preserve">
+      <trans-unit id="Sent via proxy" xml:space="preserve" approved="no">
         <source>Sent via proxy</source>
-        <target>Enviado vía proxy</target>
+        <target state="translated">Mediante proxy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server address" xml:space="preserve">
@@ -6536,9 +6536,9 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>La aplicación puede notificarte cuando recibas mensajes o solicitudes de contacto: por favor, abre la configuración para activarlo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The app will ask to confirm downloads from unknown file servers (except .onion)." xml:space="preserve">
+      <trans-unit id="The app will ask to confirm downloads from unknown file servers (except .onion)." xml:space="preserve" approved="no">
         <source>The app will ask to confirm downloads from unknown file servers (except .onion).</source>
-        <target>La aplicación pedirá que confirmes las descargas desde servidores de archivos desconocidos (excepto .onion).</target>
+        <target state="translated">La aplicación pedirá que confirmes las descargas desde servidores de archivos desconocidos (excepto si son .onion).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The attempt to change database passphrase was not completed." xml:space="preserve">
@@ -7085,9 +7085,9 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>Usar la aplicación durante la llamada.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use the app with one hand." xml:space="preserve">
+      <trans-unit id="Use the app with one hand." xml:space="preserve" approved="no">
         <source>Use the app with one hand.</source>
-        <target>Usa la aplicación con una mano.</target>
+        <target state="translated">Usa la aplicación con una sola mano.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="User profile" xml:space="preserve">
@@ -8206,9 +8206,9 @@ Los servidores SimpleX no pueden ver tu perfil.</target>
         <target>evento ocurrido</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="expired" xml:space="preserve">
+      <trans-unit id="expired" xml:space="preserve" approved="no">
         <source>expired</source>
-        <target>expirado</target>
+        <target state="translated">expirados</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="forwarded" xml:space="preserve">
