@@ -330,15 +330,17 @@ struct GroupMemberInfoView: View {
 
     func newDirectChatButton(_ contactId: Int64, width: CGFloat) -> some View {
         InfoViewButton(image: "message.fill", title: "message", width: width) {
-            do {
-                let chat = try apiGetChat(type: .direct, id: contactId)
-                chatModel.addChat(chat)
-                dismissAllSheets(animated: true)
-                DispatchQueue.main.async {
-                    chatModel.chatId = chat.id
+            Task {
+                do {
+                    let chat = try await apiGetChat(type: .direct, id: contactId)
+                    chatModel.addChat(chat)
+                    dismissAllSheets(animated: true)
+                    await MainActor.run {
+                        chatModel.chatId = chat.id
+                    }
+                } catch let error {
+                    logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
                 }
-            } catch let error {
-                logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
             }
         }
     }

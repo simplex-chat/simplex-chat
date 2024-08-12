@@ -19,11 +19,17 @@ struct NavLinkPlain<Label: View>: View {
         ZStack {
             Button("") {
                 let navigationTimeout = Task {
-                    try? await Task.sleep(nanoseconds: NSEC_PER_SEC / 2)
-                    await MainActor.run { selection = tag }
+                    do {
+                        try await Task.sleep(nanoseconds: NSEC_PER_SEC * 1)
+                        print("task running")
+                        await MainActor.run { selection = tag }
+                    } catch {
+                        print("task cancelled")
+                    }
                 }
                 Task {
                     if let chat = ChatModel.shared.getChat(tag) {
+                        try? await Task.sleep(nanoseconds: NSEC_PER_SEC * 5)
                         await loadChat(chat: chat)
                         navigationTimeout.cancel()
                         await MainActor.run { selection = tag }
