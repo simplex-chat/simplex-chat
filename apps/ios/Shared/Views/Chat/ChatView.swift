@@ -306,12 +306,7 @@ struct ChatView: View {
                     let (stats, _) = try await apiContactInfo(chat.chatInfo.apiId)
                     await MainActor.run {
                         if let s = stats {
-                            var updatedContact = contact
-                            if contact.chatDeleted {
-                                updatedContact.chatDeleted = false
-                            }
-                            
-                            chatModel.updateContactConnectionStats(updatedContact, s)
+                            chatModel.updateContactConnectionStats(contact, s)
                         }
                     }
                 } catch let error {
