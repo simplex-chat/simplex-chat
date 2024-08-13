@@ -355,7 +355,7 @@ struct GroupMemberInfoView: View {
                         ItemsModel.shared.loadOpenChat(memberContact.id) {
                             dismissAllSheets(animated: true)
                         }
-                        chatModel.setContactNetworkStatus(memberContact, .connected)
+                        NetworkModel.shared.setContactNetworkStatus(memberContact, .connected)
                     }
                 } catch let error {
                     logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")

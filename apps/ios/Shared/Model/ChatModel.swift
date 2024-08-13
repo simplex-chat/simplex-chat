@@ -100,6 +100,29 @@ class ItemsModel: ObservableObject {
     }
 }
 
+class NetworkModel: ObservableObject {
+    // map of connections network statuses, key is agent connection id
+    @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
+
+    static let shared = NetworkModel()
+
+    private init() { }
+
+    func setContactNetworkStatus(_ contact: Contact, _ status: NetworkStatus) {
+        if let conn = contact.activeConn {
+            networkStatuses[conn.agentConnId] = status
+        }
+    }
+
+    func contactNetworkStatus(_ contact: Contact) -> NetworkStatus {
+        if let conn = contact.activeConn {
+            networkStatuses[conn.agentConnId] ?? .unknown
+        } else {
+            .unknown
+        }
+    }
+}
+
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
@@ -122,8 +145,6 @@ final class ChatModel: ObservableObject {
     // list of chat "previews"
     @Published var chats: [Chat] = []
     @Published var deletedChats: Set<String> = []
-    // map of connections network statuses, key is agent connection id
-    @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
     // current chat
     @Published var chatId: String?
     var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
@@ -908,20 +929,6 @@ final class ChatModel: ObservableObject {
         while i < maxIx && !inView(i) { i += 1 }
         while i < maxIx && inView(i) { i += 1 }
         return im.reversedChatItems[min(i - 1, maxIx)]
-    }
-
-    func setContactNetworkStatus(_ contact: Contact, _ status: NetworkStatus) {
-        if let conn = contact.activeConn {
-            networkStatuses[conn.agentConnId] = status
-        }
-    }
-
-    func contactNetworkStatus(_ contact: Contact) -> NetworkStatus {
-        if let conn = contact.activeConn {
-            networkStatuses[conn.agentConnId] ?? .unknown
-        } else {
-            .unknown
-        }
     }
 }
 

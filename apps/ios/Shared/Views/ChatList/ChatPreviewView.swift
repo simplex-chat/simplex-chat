@@ -13,6 +13,7 @@ struct ChatPreviewView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
+    @ObservedObject var networkModel = NetworkModel.shared
     @ObservedObject var chat: Chat
     @Binding var progressByTimeout: Bool
     @State var deleting: Bool = false
@@ -376,7 +377,7 @@ struct ChatPreviewView: View {
         switch chat.chatInfo {
         case let .direct(contact):
             if contact.active && contact.activeConn != nil {
-                switch (chatModel.contactNetworkStatus(contact)) {
+                switch (networkModel.contactNetworkStatus(contact)) {
                 case .connected: incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
                 case .error:
                     Image(systemName: "exclamationmark.circle")
