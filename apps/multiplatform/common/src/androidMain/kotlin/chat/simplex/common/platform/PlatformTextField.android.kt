@@ -15,13 +15,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.drawable.DrawableCompat
@@ -52,6 +53,7 @@ actual fun PlatformTextField(
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
   placeholder: String,
+  showVoiceButton: Boolean,
   onMessageChange: (String) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
@@ -83,6 +85,7 @@ actual fun PlatformTextField(
     }
   }
 
+  val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
   AndroidView(modifier = Modifier, factory = {
     val editText = @SuppressLint("AppCompatCustomView") object: EditText(it) {
       override fun setOnReceiveContentListener(
@@ -113,7 +116,8 @@ actual fun PlatformTextField(
     editText.setTextColor(textColor.toArgb())
     editText.textSize = textStyle.value.fontSize.value * appPrefs.fontScale.get()
     editText.background = ColorDrawable(Color.Transparent.toArgb())
-    editText.setPadding(paddingStart, paddingTop, paddingEnd, paddingBottom)
+    editText.textDirection = if (isRtl) EditText.TEXT_DIRECTION_LOCALE else EditText.TEXT_DIRECTION_ANY_RTL
+    editText.setPaddingRelative(paddingStart, paddingTop, paddingEnd, paddingBottom)
     editText.setText(cs.message)
     editText.hint = placeholder
     editText.setHintTextColor(hintColor.toArgb())

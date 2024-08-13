@@ -47,6 +47,7 @@ actual fun PlatformTextField(
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
   placeholder: String,
+  showVoiceButton: Boolean,
   onMessageChange: (String) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
@@ -56,7 +57,6 @@ actual fun PlatformTextField(
   val focusRequester = remember { FocusRequester() }
   val focusManager = LocalFocusManager.current
   val keyboard = LocalSoftwareKeyboardController.current
-  val padding = PaddingValues(0.dp, 12.dp, 50.dp, 0.dp)
   LaunchedEffect(cs.contextItem) {
     if (cs.contextItem !is ComposeContextItem.QuotedItem) return@LaunchedEffect
     // In replying state
@@ -71,7 +71,20 @@ actual fun PlatformTextField(
       keyboard?.hide()
     }
   }
-  val isRtl = remember(cs.message) { isRtl(cs.message.subSequence(0, min(50, cs.message.length))) }
+  val lastTimeWasRtlByCharacters = remember { mutableStateOf(isRtl(cs.message.subSequence(0, min(50, cs.message.length)))) }
+  val isRtlByCharacters = remember(cs.message) {
+    if (cs.message.isNotEmpty()) isRtl(cs.message.subSequence(0, min(50, cs.message.length))) else lastTimeWasRtlByCharacters.value
+  }
+  LaunchedEffect(isRtlByCharacters) {
+    lastTimeWasRtlByCharacters.value = isRtlByCharacters
+  }
+  val isLtrGlobally = LocalLayoutDirection.current == LayoutDirection.Ltr
+  // Different padding here is for a text that is considered RTL with non-RTL locale set globally.
+  // In this case padding from right side should be bigger
+  val startEndPadding = if (cs.message.isEmpty() && showVoiceButton && isRtlByCharacters && isLtrGlobally) 95.dp else 50.dp
+  val startPadding = if (isRtlByCharacters && isLtrGlobally) startEndPadding else 0.dp
+  val endPadding = if (isRtlByCharacters && isLtrGlobally) 0.dp else startEndPadding
+  val padding = PaddingValues(startPadding, 12.dp, endPadding, 0.dp)
   var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = cs.message)) }
   val textFieldValue = textFieldValueState.copy(text = cs.message)
   val clipboard = LocalClipboardManager.current
@@ -165,9 +178,9 @@ actual fun PlatformTextField(
     decorationBox = { innerTextField ->
       Row(verticalAlignment = Alignment.Bottom) {
         CompositionLocalProvider(
-          LocalLayoutDirection provides if (isRtl) LayoutDirection.Rtl else LocalLayoutDirection.current
+          LocalLayoutDirection provides if (isRtlByCharacters) LayoutDirection.Rtl else LocalLayoutDirection.current
         ) {
-          Column(Modifier.weight(1f).padding(start = 0.dp, end = 50.dp)) {
+          Column(Modifier.weight(1f).padding(start = startPadding, end = endPadding)) {
             Spacer(Modifier.height(8.dp))
             TextFieldDefaults.TextFieldDecorationBox(
               value = textFieldValue.text,
@@ -186,7 +199,6 @@ actual fun PlatformTextField(
         }
       }
     },
-
   )
   showDeleteTextButton.value = cs.message.split("\n").size >= 4 && !cs.inProgress
   if (composeState.value.preview is ComposePreview.VoicePreview) {
