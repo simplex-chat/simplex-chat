@@ -45,13 +45,13 @@ private func addTermItem(_ items: inout [TerminalItem], _ item: TerminalItem) {
 
 class ItemsModel: ObservableObject {
     static let shared = ItemsModel()
-    private let throttledPublisher = ObservableObjectPublisher()
+    private let publisher = ObservableObjectPublisher()
     private var bag = Set<AnyCancellable>()
     var reversedChatItems: [ChatItem] = [] {
-        willSet { throttledPublisher.send() }
+        willSet { publisher.send() }
     }
     var itemAdded = false {
-        willSet { throttledPublisher.send() }
+        willSet { publisher.send() }
     }
     
     // Publishes directly to `objectWillChange` publisher,
@@ -60,7 +60,7 @@ class ItemsModel: ObservableObject {
     @Published var showLoadingProgress = false
 
     init() {
-        throttledPublisher
+        publisher
             .throttle(for: 0.25, scheduler: DispatchQueue.main, latest: true)
             .sink { self.objectWillChange.send() }
             .store(in: &bag)
