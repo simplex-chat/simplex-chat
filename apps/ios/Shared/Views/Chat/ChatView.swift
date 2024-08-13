@@ -428,6 +428,7 @@ struct ChatView: View {
                 if added {
                     im.itemAdded = false
                     if floatingButtonModel.unreadChatItemCounts.isReallyNearBottom {
+                        print("🔴")
                         scrollModel.scrollToBottom()
                     }
                 }

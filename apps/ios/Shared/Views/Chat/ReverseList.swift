@@ -32,7 +32,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             case let .item(id):
                 controller.scroll(to: items.firstIndex(where: { $0.id == id }), position: .bottom)
             case .bottom:
-                controller.scroll(to: nil, position: .top)
+                controller.scroll(to: 0, position: .top)
             }
         } else {
             controller.update(items: items)
@@ -156,7 +156,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             if #available(iOS 16.0, *) {
                 animated = true
             }
-            if let index {
+            if let index, tableView.numberOfRows(inSection: 0) != 0 {
                 tableView.scrollToRow(
                     at: IndexPath(row: index, section: 0),
                     at: position,
