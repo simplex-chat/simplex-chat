@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -52,6 +51,7 @@ actual fun PlatformTextField(
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
   placeholder: String,
+  showVoiceButton: Boolean,
   onMessageChange: (String) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
@@ -113,7 +113,8 @@ actual fun PlatformTextField(
     editText.setTextColor(textColor.toArgb())
     editText.textSize = textStyle.value.fontSize.value * appPrefs.fontScale.get()
     editText.background = ColorDrawable(Color.Transparent.toArgb())
-    editText.setPadding(paddingStart, paddingTop, paddingEnd, paddingBottom)
+    editText.textDirection = EditText.TEXT_DIRECTION_LOCALE
+    editText.setPaddingRelative(paddingStart, paddingTop, paddingEnd, paddingBottom)
     editText.setText(cs.message)
     editText.hint = placeholder
     editText.setHintTextColor(hintColor.toArgb())
