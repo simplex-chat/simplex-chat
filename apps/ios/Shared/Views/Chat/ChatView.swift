@@ -221,9 +221,7 @@ struct ChatView: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-//                if im.isLoading && shouldShowProgress {
-//                    ProgressView()
-//                } else {
+                let isLoading = im.isLoading && im.showLoadingProgress
                 if selectedChatItems != nil {
                     Button {
                         withAnimation {
@@ -246,19 +244,23 @@ struct ChatView: View {
                                 }
                             }
                             Menu {
-                                if callsPrefEnabled && chatModel.activeCall == nil {
-                                    Button {
-                                        CallController.shared.startCall(contact, .video)
-                                    } label: {
-                                        Label("Video call", systemImage: "video")
+                                if !isLoading {
+                                    if callsPrefEnabled && chatModel.activeCall == nil {
+                                        Button {
+                                            CallController.shared.startCall(contact, .video)
+                                        } label: {
+                                            Label("Video call", systemImage: "video")
+                                        }
+                                        .disabled(!contact.ready || !contact.active)
                                     }
-                                    .disabled(!contact.ready || !contact.active)
+                                    searchButton()
+                                    ToggleNtfsButton(chat: chat)
+                                        .disabled(!contact.ready || !contact.active)
                                 }
-                                searchButton()
-                                ToggleNtfsButton(chat: chat)
-                                    .disabled(!contact.ready || !contact.active)
                             } label: {
                                 Image(systemName: "ellipsis")
+                                    .tint(isLoading ? Color.clear : nil)
+                                    .overlay { if isLoading { ProgressView() } }
                             }
                         }
                     case let .group(groupInfo):
@@ -282,15 +284,15 @@ struct ChatView: View {
                                         }
                                 }
                             }
-                            if im.isLoading && im.showLoadingProgress {
-                                ProgressView()
-                            } else {
-                                Menu {
+                            Menu {
+                                if !isLoading {
                                     searchButton()
                                     ToggleNtfsButton(chat: chat)
-                                } label: {
-                                    Image(systemName: "ellipsis")
                                 }
+                            } label: {
+                                Image(systemName: "ellipsis")
+                                    .tint(isLoading ? Color.clear : nil)
+                                    .overlay { if isLoading { ProgressView() } }
                             }
                         }
                     case .local:
