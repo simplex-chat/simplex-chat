@@ -221,67 +221,70 @@ struct ChatView: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                if im.isLoading {
-                    ProgressView().modifier(AppearAfter(seconds: 0.5))
+//                if im.isLoading && shouldShowProgress {
+//                    ProgressView()
+//                } else {
+                if selectedChatItems != nil {
+                    Button {
+                        withAnimation {
+                            selectedChatItems = nil
+                        }
+                    } label: {
+                        Text("Cancel")
+                    }
                 } else {
-                    if selectedChatItems != nil {
-                        Button {
-                            withAnimation {
-                                selectedChatItems = nil
-                            }
-                        } label: {
-                            Text("Cancel")
-                        }
-                    } else {
-                        switch cInfo {
-                        case let .direct(contact):
-                            HStack {
-                                let callsPrefEnabled = contact.mergedPreferences.calls.enabled.forUser
-                                if callsPrefEnabled {
-                                    if chatModel.activeCall == nil {
-                                        callButton(contact, .audio, imageName: "phone")
-                                            .disabled(!contact.ready || !contact.active)
-                                    } else if let call = chatModel.activeCall, call.contact.id == cInfo.id {
-                                        endCallButton(call)
-                                    }
+                    switch cInfo {
+                    case let .direct(contact):
+                        HStack {
+                            let callsPrefEnabled = contact.mergedPreferences.calls.enabled.forUser
+                            if callsPrefEnabled {
+                                if chatModel.activeCall == nil {
+                                    callButton(contact, .audio, imageName: "phone")
+                                        .disabled(!contact.ready || !contact.active)
+                                } else if let call = chatModel.activeCall, call.contact.id == cInfo.id {
+                                    endCallButton(call)
                                 }
-                                Menu {
-                                    if callsPrefEnabled && chatModel.activeCall == nil {
-                                        Button {
-                                            CallController.shared.startCall(contact, .video)
-                                        } label: {
-                                            Label("Video call", systemImage: "video")
+                            }
+                            Menu {
+                                if callsPrefEnabled && chatModel.activeCall == nil {
+                                    Button {
+                                        CallController.shared.startCall(contact, .video)
+                                    } label: {
+                                        Label("Video call", systemImage: "video")
+                                    }
+                                    .disabled(!contact.ready || !contact.active)
+                                }
+                                searchButton()
+                                ToggleNtfsButton(chat: chat)
+                                    .disabled(!contact.ready || !contact.active)
+                            } label: {
+                                Image(systemName: "ellipsis")
+                            }
+                        }
+                    case let .group(groupInfo):
+                        HStack {
+                            if groupInfo.canAddMembers {
+                                if (chat.chatInfo.incognito) {
+                                    groupLinkButton()
+                                        .appSheet(isPresented: $showGroupLinkSheet) {
+                                            GroupLinkView(
+                                                groupId: groupInfo.groupId,
+                                                groupLink: $groupLink,
+                                                groupLinkMemberRole: $groupLinkMemberRole,
+                                                showTitle: true,
+                                                creatingGroup: false
+                                            )
                                         }
-                                        .disabled(!contact.ready || !contact.active)
-                                    }
-                                    searchButton()
-                                    ToggleNtfsButton(chat: chat)
-                                        .disabled(!contact.ready || !contact.active)
-                                } label: {
-                                    Image(systemName: "ellipsis")
+                                } else {
+                                    addMembersButton()
+                                        .appSheet(isPresented: $showAddMembersSheet) {
+                                            AddGroupMembersView(chat: chat, groupInfo: groupInfo)
+                                        }
                                 }
                             }
-                        case let .group(groupInfo):
-                            HStack {
-                                if groupInfo.canAddMembers {
-                                    if (chat.chatInfo.incognito) {
-                                        groupLinkButton()
-                                            .appSheet(isPresented: $showGroupLinkSheet) {
-                                                GroupLinkView(
-                                                    groupId: groupInfo.groupId,
-                                                    groupLink: $groupLink,
-                                                    groupLinkMemberRole: $groupLinkMemberRole,
-                                                    showTitle: true,
-                                                    creatingGroup: false
-                                                )
-                                            }
-                                    } else {
-                                        addMembersButton()
-                                            .appSheet(isPresented: $showAddMembersSheet) {
-                                                AddGroupMembersView(chat: chat, groupInfo: groupInfo)
-                                            }
-                                    }
-                                }
+                            if im.isLoading && im.showLoadingProgress {
+                                ProgressView()
+                            } else {
                                 Menu {
                                     searchButton()
                                     ToggleNtfsButton(chat: chat)
@@ -289,11 +292,11 @@ struct ChatView: View {
                                     Image(systemName: "ellipsis")
                                 }
                             }
-                        case .local:
-                            searchButton()
-                        default:
-                            EmptyView()
                         }
+                    case .local:
+                        searchButton()
+                    default:
+                        EmptyView()
                     }
                 }
             }
