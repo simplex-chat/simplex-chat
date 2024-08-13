@@ -241,10 +241,15 @@ private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int,
 }
 
 actual fun getFileName(uri: URI): String? {
-  return androidAppContext.contentResolver.query(uri.toUri(), null, null, null, null)?.use { cursor ->
-    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-    cursor.moveToFirst()
-    cursor.getString(nameIndex)
+  return try {
+    androidAppContext.contentResolver.query(uri.toUri(), null, null, null, null)?.use { cursor ->
+      val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+      cursor.moveToFirst()
+      // Can make an exception
+      cursor.getString(nameIndex)
+    }
+  } catch (e: Exception) {
+    null
   }
 }
 

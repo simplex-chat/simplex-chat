@@ -13,6 +13,8 @@
   <string name="you_will_join_group">You will connect to all group members.</string>
   <string name="connect_via_link_verb">Connect</string>
   <string name="connect_via_link_incognito">Connect incognito</string>
+  <string name="error_parsing_uri_title">Error parsing link</string>
+  <string name="error_parsing_uri_desc">Make sure the link is correct and can be opened in the app</string>
 
   <!-- MainActivity.kt -->
   <string name="opening_database">Opening database…</string>
