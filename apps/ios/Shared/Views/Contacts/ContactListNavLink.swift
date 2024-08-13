@@ -56,7 +56,7 @@ struct ContactListNavLink: View {
     func recentContactNavLink(_ contact: Contact) -> some View {
         Button {
             dismissAllSheets(animated: true) {
-                ChatModel.shared.chatId = contact.id
+                ItemsModel.shared.loadOpenChat(contact.id)
             }
         } label: {
             contactPreview(contact, titleColor: theme.colors.onBackground)
@@ -83,7 +83,7 @@ struct ContactListNavLink: View {
             Task {
                 await MainActor.run {
                     dismissAllSheets(animated: true) {
-                        ChatModel.shared.chatId = contact.id
+                        ItemsModel.shared.loadOpenChat(contact.id)
                     }
                 }
             }
@@ -188,9 +188,7 @@ struct ContactListNavLink: View {
         Task {
             let ok = await connectContactViaAddress(contact.contactId, incognito, showAlert: { alert = SomeAlert(alert: $0, id: "ContactListNavLink connectContactViaAddress") })
             if ok {
-                await MainActor.run {
-                    ChatModel.shared.chatId = contact.id
-                }
+                ItemsModel.shared.loadOpenChat(contact.id)
                 DispatchQueue.main.async {
                     dismissAllSheets(animated: true) {
                         AlertManager.shared.showAlert(connReqSentAlert(.contact))

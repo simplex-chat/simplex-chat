@@ -352,8 +352,9 @@ struct GroupMemberInfoView: View {
                     await MainActor.run {
                         progressIndicator = false
                         chatModel.addChat(Chat(chatInfo: .direct(contact: memberContact)))
-                        dismissAllSheets(animated: true)
-                        chatModel.chatId = memberContact.id
+                        ItemsModel.shared.loadOpenChat(memberContact.id) {
+                            dismissAllSheets(animated: true)
+                        }
                         chatModel.setContactNetworkStatus(memberContact, .connected)
                     }
                 } catch let error {

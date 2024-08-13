@@ -125,7 +125,7 @@ final class ChatModel: ObservableObject {
     // map of connections network statuses, key is agent connection id
     @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
     // current chat
-    @Published var chatId: String?
+    @Published fileprivate(set) var chatId: String?
     var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
     @Published var chatToTop: String?
     @Published var groupMembers: [GMember] = []

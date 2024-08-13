@@ -703,7 +703,7 @@ func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, Pendi
         return ((.contact, connection), nil)
     case let .contactAlreadyExists(_, contact):
         if let c = m.getContactChat(contact.contactId) {
-            await MainActor.run { m.chatId = c.id }
+            ItemsModel.shared.loadOpenChat(c.id)
         }
         let alert = contactAlreadyExistsAlert(contact)
         return (nil, alert)
@@ -1172,7 +1172,7 @@ func acceptContactRequest(incognito: Bool, contactRequest: UserContactRequest) a
         if contact.sndReady {
             DispatchQueue.main.async {
                 dismissAllSheets(animated: true) {
-                    ChatModel.shared.chatId = chat.id
+                    ItemsModel.shared.loadOpenChat(chat.id)
                 }
             }
         }
@@ -1738,7 +1738,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         if active(user) && m.hasChat(mergedContact.id) {
             await MainActor.run {
                 if m.chatId == mergedContact.id {
-                    m.chatId = intoContact.id
+                    ItemsModel.shared.loadOpenChat(mergedContact.id)
                 }
                 m.removeChat(mergedContact.id)
             }
