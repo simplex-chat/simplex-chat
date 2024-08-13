@@ -174,8 +174,10 @@ defaultChatHooks =
 
 data DefaultAgentServers = DefaultAgentServers
   { smp :: NonEmpty (ServerCfg 'PSMP),
+    useSMP :: Int,
     ntf :: [NtfServer],
     xftp :: NonEmpty (ServerCfg 'PXFTP),
+    useXFTP :: Int,
     netCfg :: NetworkConfig
   }
 
@@ -1202,7 +1204,7 @@ data DatabaseError
   | DBErrorOpen {sqliteError :: SQLiteError}
   deriving (Show, Exception)
 
-data SQLiteError = SQLiteErrorNotADatabase | SQLiteError String
+data SQLiteError = SQLiteErrorNotADatabase | SQLiteError {dbError :: String}
   deriving (Show, Exception)
 
 throwDBError :: DatabaseError -> CM ()

@@ -61,18 +61,39 @@ struct NewChatSheet: View {
     @State private var searchShowingSimplexLink = false
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @Binding var alert: SomeAlert?
-    
+
+    // Sheet height management
+    @State private var isAddContactActive = false
+    @State private var isScanPasteLinkActive = false
+    @State private var isLargeSheet = false
+    @State private var allowSmallSheet = true
+
+    @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
+
     var body: some View {
-        NavigationView {
-            viewBody()
-                .navigationTitle("New Chat")
+        let showArchive = !filterContactTypes(chats: chatModel.chats, contactTypes: [.chatDeleted]).isEmpty
+        let v = NavigationView {
+            viewBody(showArchive)
+                .navigationTitle("New message")
                 .navigationBarTitleDisplayMode(.large)
                 .navigationBarHidden(searchMode)
                 .modifier(ThemedBackground(grouped: true))
         }
+        if #available(iOS 16.0, *), oneHandUI {
+            let sheetHeight: CGFloat = showArchive ? 575 : 500
+            v.presentationDetents(
+                allowSmallSheet ? [.height(sheetHeight), .large] : [.large],
+                selection: Binding(
+                    get: { isLargeSheet || !allowSmallSheet ? .large : .height(sheetHeight) },
+                    set: { isLargeSheet = $0 == .large }
+                )
+            )
+        } else {
+            v
+        }
     }
-    
-    @ViewBuilder private func viewBody() -> some View {
+
+    @ViewBuilder private func viewBody(_ showArchive: Bool) -> some View {
         List {
             HStack {
                 ContactsListSearchBar(
@@ -90,21 +111,25 @@ struct NewChatSheet: View {
 
             if (searchText.isEmpty) {
                 Section {
-                    NavigationLink {
+                    NavigationLink(isActive: $isAddContactActive) {
                         NewChatView(selection: .invite, parentAlert: $alert)
                             .navigationTitle("New chat")
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        Label("Add contact", systemImage: "link.badge.plus")
+                        navigateOnTap(Label("Add contact", systemImage: "link.badge.plus")) {
+                            isAddContactActive = true
+                        }
                     }
-                    NavigationLink {
+                    NavigationLink(isActive: $isScanPasteLinkActive) {
                         NewChatView(selection: .connect, showQRCodeScanner: true, parentAlert: $alert)
                             .navigationTitle("New chat")
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        Label("Scan / Paste link", systemImage: "qrcode")
+                        navigateOnTap(Label("Scan / Paste link", systemImage: "qrcode")) {
+                            isScanPasteLinkActive = true
+                        }
                     }
                     NavigationLink {
                         AddGroupView()
@@ -112,16 +137,16 @@ struct NewChatSheet: View {
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
                     } label: {
-                        Label("Create group", systemImage: "person.2")
+                        Label("Create group", systemImage: "person.2.circle.fill")
                     }
                 }
                 
-                if (!filterContactTypes(chats: chatModel.chats, contactTypes: [.chatDeleted]).isEmpty) {
+                if (showArchive) {
                     Section {
                         NavigationLink {
                             DeletedChats()
                         } label: {
-                            newChatActionButton("archivebox", color: theme.colors.secondary) { Text("Deleted chats") }
+                            newChatActionButton("archivebox", color: theme.colors.secondary) { Text("Archived contacts") }
                         }
                     }
                 }
@@ -140,9 +165,28 @@ struct NewChatSheet: View {
         }
     }
     
+    /// Extends label's tap area to match `.insetGrouped` list row insets
+    private func navigateOnTap<L: View>(_ label: L, setActive: @escaping () -> Void) -> some View {
+        label
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.leading, 16).padding(.vertical, 8).padding(.trailing, 32)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                isLargeSheet = true
+                DispatchQueue.main.async {
+                    allowSmallSheet = false
+                    setActive()
+                }
+            }
+            .padding(.leading, -16).padding(.vertical, -8).padding(.trailing, -32)
+    }
+
     func newChatActionButton<Content : View>(_ icon: String, color: Color/* = .secondary*/, content: @escaping () -> Content) -> some View {
         ZStack(alignment: .leading) {
-            Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+            Image(systemName: icon)
+                .resizable()
+                .scaledToFit()
+                .frame(maxWidth: 24, maxHeight: 24, alignment: .center)
                 .symbolRenderingMode(.monochrome)
                 .foregroundColor(color)
             content().foregroundColor(theme.colors.onBackground).padding(.leading, indent)
@@ -340,7 +384,7 @@ struct ContactsListSearchBar: View {
             }
             .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
             .foregroundColor(theme.colors.secondary)
-            .background(theme.colors.isLight ? theme.colors.background : theme.colors.secondaryVariant)
+            .background(Color(uiColor: .secondarySystemGroupedBackground))
             .cornerRadius(10.0)
 
             if searchFocussed {
@@ -354,6 +398,7 @@ struct ContactsListSearchBar: View {
                 toggleFilterButton()
             }
         }
+        .padding(.top, 24)
         .onChange(of: searchFocussed) { sf in
             withAnimation { searchMode = sf }
         }
@@ -447,8 +492,8 @@ struct DeletedChats: View {
                 showDeletedChatIcon: false
             )
         }
-        .navigationTitle("Deleted chats")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Archived contacts")
+        .navigationBarTitleDisplayMode(.large)
         .navigationBarHidden(searchMode)
         .modifier(ThemedBackground(grouped: true))
 

@@ -20,10 +20,13 @@ struct ChatListView: View {
     @State private var searchChatFilteredBySimplexLink: String? = nil
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
+    @State private var scrollToSearchBar = false
 
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
-    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = false
-    
+    @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
+    @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
+    @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+
     var body: some View {
         if #available(iOS 16.0, *) {
             viewBody.scrollDismissesKeyboard(.immediately)
@@ -33,18 +36,16 @@ struct ChatListView: View {
     }
 
     private var viewBody: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack(alignment: oneHandUI ? .bottomLeading : .topLeading) {
             NavStackCompat(
                 isActive: Binding(
                     get: { chatModel.chatId != nil },
-                    set: { _ in }
+                    set: { active in
+                        if !active { chatModel.chatId = nil }
+                    }
                 ),
                 destination: chatView
-            ) {
-                VStack {
-                    chatListView
-                }
-            }
+            ) { chatListView }
             if userPickerVisible {
                 Rectangle().fill(.white.opacity(0.001)).onTapGesture {
                     withAnimation {
@@ -64,9 +65,12 @@ struct ChatListView: View {
     }
 
     private var chatListView: some View {
-        VStack {
+        let tm = ToolbarMaterial.material(toolbarMaterial)
+        return withToolbar(tm) {
             chatList
-            toolbar
+                .background(theme.colors.background)
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationBarHidden(searchMode || oneHandUI)
         }
         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .onDisappear() { withAnimation { userPickerVisible = false } }
@@ -86,66 +90,111 @@ struct ChatListView: View {
                 secondaryButton: .cancel()
             ))
         }
-        .listStyle(.plain)
-        .background(theme.colors.background)
-        .navigationBarTitleDisplayMode(.inline)
-        .navigationBarHidden(searchMode)
-    }
-    
-    @ViewBuilder private var toolbar: some View {
-        let t = VStack{}.toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                let user = chatModel.currentUser ?? User.sampleData
-                ZStack(alignment: .topTrailing) {
-                    ProfileImage(imageStr: user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
-                        .padding(.trailing, 4)
-                    let allRead = chatModel.users
-                        .filter { u in !u.user.activeUser && !u.user.hidden }
-                        .allSatisfy { u in u.unreadCount == 0 }
-                    if !allRead {
-                        unreadBadge(size: 12)
-                    }
-                }
-                .onTapGesture {
-                    if chatModel.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
-                        withAnimation {
-                            userPickerVisible.toggle()
-                        }
-                    } else {
-                        showSettings = true
-                    }
-                }
-            }
-            ToolbarItem(placement: .principal) {
-                HStack(spacing: 4) {
-                    Text("Chats")
-                        .font(.headline)
-                    SubsStatusIndicator()
-                }
-                .frame(maxWidth: .infinity, alignment: .center)
-            }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                switch chatModel.chatRunning {
-                case .some(true): NewChatMenuButton()
-                case .some(false): chatStoppedIcon()
-                case .none: EmptyView()
-                }
+        .safeAreaInset(edge: .top) {
+            if oneHandUI { Divider().background(tm) }
+        }
+        .safeAreaInset(edge: .bottom) {
+            if oneHandUI {
+                Divider().padding(.bottom, Self.hasHomeIndicator ? 0 : 8).background(tm)
             }
         }
-        
-        if #unavailable(iOS 16) {
-            t
-        } else if oneHandUI {
-            t.toolbarBackground(.visible, for: .navigationBar)
+    }
+
+    static var hasHomeIndicator: Bool = {
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let window = windowScene.windows.first {
+            window.safeAreaInsets.bottom > 0
+        } else { false }
+    }()
+
+    @ViewBuilder func withToolbar(_ material: Material, content: () -> some View) -> some View {
+        if #available(iOS 16.0, *) {
+            if oneHandUI {
+                content()
+                    .toolbarBackground(.hidden, for: .bottomBar)
+                    .toolbar { bottomToolbar }
+            } else {
+                content()
+                    .toolbarBackground(.automatic, for: .navigationBar)
+                    .toolbarBackground(material)
+                    .toolbar { topToolbar }
+            }
         } else {
-            t.toolbarBackground(.visible, for: .bottomBar)
+            if oneHandUI {
+                content().toolbar { bottomToolbarGroup }
+            } else {
+                content().toolbar { topToolbar }
+            }
+        }
+    }
+
+    @ToolbarContentBuilder var topToolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) { leadingToolbarItem }
+        ToolbarItem(placement: .principal) { SubsStatusIndicator() }
+        ToolbarItem(placement: .topBarTrailing) { trailingToolbarItem }
+    }
+
+    @ToolbarContentBuilder var bottomToolbar: some ToolbarContent {
+        let padding: Double = Self.hasHomeIndicator ? 0 : 14
+        ToolbarItem(placement: .bottomBar) {
+            HStack {
+                leadingToolbarItem.padding(.bottom, padding)
+                Spacer()
+                SubsStatusIndicator().padding(.bottom, padding)
+                Spacer()
+                trailingToolbarItem.padding(.bottom, padding)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture { scrollToSearchBar = true }
+        }
+    }
+
+    @ToolbarContentBuilder var bottomToolbarGroup: some ToolbarContent {
+        let padding: Double = Self.hasHomeIndicator ? 0 : 14
+        ToolbarItemGroup(placement: .bottomBar) {
+            leadingToolbarItem.padding(.bottom, padding)
+            Spacer()
+            SubsStatusIndicator().padding(.bottom, padding)
+            Spacer()
+            trailingToolbarItem.padding(.bottom, padding)
+        }
+    }
+
+    @ViewBuilder var leadingToolbarItem: some View {
+        let user = chatModel.currentUser ?? User.sampleData
+        ZStack(alignment: .topTrailing) {
+            ProfileImage(imageStr: user.image, size: 32, color: Color(uiColor: .quaternaryLabel))
+                .padding(.trailing, 4)
+            let allRead = chatModel.users
+                .filter { u in !u.user.activeUser && !u.user.hidden }
+                .allSatisfy { u in u.unreadCount == 0 }
+            if !allRead {
+                unreadBadge(size: 12)
+            }
+        }
+        .onTapGesture {
+            if chatModel.users.filter({ u in u.user.activeUser || !u.user.hidden }).count > 1 {
+                withAnimation {
+                    userPickerVisible.toggle()
+                }
+            } else {
+                showSettings = true
+            }
+        }
+    }
+
+    @ViewBuilder var trailingToolbarItem: some View {
+        switch chatModel.chatRunning {
+        case .some(true): NewChatMenuButton()
+        case .some(false): chatStoppedIcon()
+        case .none: EmptyView()
         }
     }
 
     @ViewBuilder private var chatList: some View {
         let cs = filteredChats()
         ZStack {
-            VStack {
+            ScrollViewReader { scrollProxy in
                 List {
                     if !chatModel.chats.isEmpty {
                         ChatListSearchBar(
@@ -159,6 +208,14 @@ struct ChatListView: View {
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                         .frame(maxWidth: .infinity)
+                        .padding(.top, oneHandUI ? 8 : 0)
+                        .id("searchBar")
+                    }
+                    if !oneHandUICardShown {
+                        OneHandUICard()
+                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
                     }
                     ForEach(cs, id: \.viewId) { chat in
                         ChatListNavLink(chat: chat)
@@ -169,16 +226,23 @@ struct ChatListView: View {
                     }
                     .offset(x: -8)
                 }
-            }
-            .onChange(of: chatModel.chatId) { chId in
-                if chId == nil, let chatId = chatModel.chatToTop {
-                    chatModel.chatToTop = nil
-                    chatModel.popChat(chatId)
+                .listStyle(.plain)
+                .onChange(of: chatModel.chatId) { currentChatId in
+                    if let chatId = chatModel.chatToTop, currentChatId != chatId {
+                        chatModel.chatToTop = nil
+                        chatModel.popChat(chatId)
+                    }
+                    stopAudioPlayer()
                 }
-                stopAudioPlayer()
-            }
-            .onChange(of: chatModel.currentUser?.userId) { _ in
-                stopAudioPlayer()
+                .onChange(of: chatModel.currentUser?.userId) { _ in
+                    stopAudioPlayer()
+                }
+                .onChange(of: scrollToSearchBar) { scrollToSearchBar in
+                    if scrollToSearchBar {
+                        Task { self.scrollToSearchBar = false }
+                        withAnimation { scrollProxy.scrollTo("searchBar") }
+                    }
+                }
             }
             if cs.isEmpty && !chatModel.chats.isEmpty {
                 Text("No filtered chats")
@@ -266,19 +330,14 @@ struct SubsStatusIndicator: View {
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
 
     var body: some View {
-        ZStack {
-            if subs.total == 0 && !hasSess {
-                EmptyView()
-            } else {
-                Button {
-                    showServersSummary = true
-                } label: {
-                    HStack(spacing: 4) {
-                        SubscriptionStatusIndicatorView(subs: subs, hasSess: hasSess)
-                        if showSubscriptionPercentage {
-                            SubscriptionStatusPercentageView(subs: subs, hasSess: hasSess)
-                        }
-                    }
+        Button {
+            showServersSummary = true
+        } label: {
+            HStack(spacing: 4) {
+                Text("Chats").foregroundStyle(Color.primary).fixedSize().font(.headline)
+                SubscriptionStatusIndicatorView(subs: subs, hasSess: hasSess)
+                if showSubscriptionPercentage {
+                    SubscriptionStatusPercentageView(subs: subs, hasSess: hasSess)
                 }
             }
         }
@@ -362,7 +421,6 @@ struct ChatListSearchBar: View {
                     toggleFilterButton()
                 }
             }
-            Divider()
         }
         .onChange(of: searchFocussed) { sf in
             withAnimation { searchMode = sf }

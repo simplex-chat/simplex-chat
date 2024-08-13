@@ -137,8 +137,8 @@ func apiGetActiveUser(ctrl: chat_ctrl? = nil) throws -> User? {
     }
 }
 
-func apiCreateActiveUser(_ p: Profile?, sameServers: Bool = false, pastTimestamp: Bool = false, ctrl: chat_ctrl? = nil) throws -> User {
-    let r = chatSendCmdSync(.createActiveUser(profile: p, sameServers: sameServers, pastTimestamp: pastTimestamp), ctrl)
+func apiCreateActiveUser(_ p: Profile?, pastTimestamp: Bool = false, ctrl: chat_ctrl? = nil) throws -> User {
+    let r = chatSendCmdSync(.createActiveUser(profile: p, pastTimestamp: pastTimestamp), ctrl)
     if case let .activeUser(user) = r { return user }
     throw r
 }
@@ -340,13 +340,7 @@ func loadChat(chat: Chat, search: String = "") {
         m.chatItemStatuses = [:]
         im.reversedChatItems = []
         let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
-        if case let .direct(contact) = chat.chatInfo, !cInfo.chatDeleted, chat.chatInfo.chatDeleted {
-            var updatedContact = contact
-            updatedContact.chatDeleted = false
-            m.updateContact(updatedContact)
-        } else {
-            m.updateChatInfo(chat.chatInfo)
-        }
+        m.updateChatInfo(chat.chatInfo)
         im.reversedChatItems = chat.chatItems.reversed()
     } catch let error {
         logger.error("loadChat error: \(responseError(error))")
@@ -1594,6 +1588,7 @@ func getUserChatData() throws {
     m.chatItemTTL = try getChatItemTTL()
     let chats = try apiGetChats()
     m.chats = chats.map { Chat.init($0) }
+    m.popChatCollector.clear()
 }
 
 private func getUserChatDataAsync() async throws {
@@ -1606,11 +1601,13 @@ private func getUserChatDataAsync() async throws {
             m.userAddress = userAddress
             m.chatItemTTL = chatItemTTL
             m.chats = chats.map { Chat.init($0) }
+            m.popChatCollector.clear()
         }
     } else {
         await MainActor.run {
             m.userAddress = nil
             m.chats = []
+            m.popChatCollector.clear()
         }
     }
 }
@@ -1775,11 +1772,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
         let cItem = aChatItem.chatItem
         await MainActor.run {
             if active(user) {
-                if case let .direct(contact) = cInfo, contact.chatDeleted {
-                    var updatedContact = contact
-                    updatedContact.chatDeleted = false
-                    m.updateContact(updatedContact)
-                }
                 m.addChatItem(cInfo, cItem)
             } else if cItem.isRcvNew && cInfo.ntfsEnabled {
                 m.increaseUnreadCounter(user: user)

@@ -480,12 +480,13 @@ private fun MutableState<MigrationFromState>.exportArchive() {
   withLongRunningApi {
     try {
       getMigrationTempFilesDirectory().mkdir()
-      val archivePath = exportChatArchive(chatModel, getMigrationTempFilesDirectory(), mutableStateOf(""), mutableStateOf(Instant.DISTANT_PAST), mutableStateOf(""))
-      val totalBytes = File(archivePath).length()
-      if (totalBytes > 0L) {
-        state = MigrationFromState.DatabaseInit(totalBytes, archivePath)
+      val (archivePath, archiveErrors) = exportChatArchive(chatModel, getMigrationTempFilesDirectory(), mutableStateOf(""), mutableStateOf(Instant.DISTANT_PAST), mutableStateOf(""))
+      if (archiveErrors.isEmpty()) {
+        uploadArchive(archivePath)
       } else {
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.migrate_from_device_exported_file_doesnt_exist))
+        showArchiveExportedWithErrorsAlert(generalGetString(MR.strings.chat_database_exported_migrate), archiveErrors) {
+          uploadArchive(archivePath)
+        }
         state = MigrationFromState.UploadConfirmation
       }
     } catch (e: Exception) {
@@ -498,14 +499,28 @@ private fun MutableState<MigrationFromState>.exportArchive() {
   }
 }
 
+private fun MutableState<MigrationFromState>.uploadArchive(archivePath: String) {
+  val totalBytes = File(archivePath).length()
+  if (totalBytes > 0L) {
+    state = MigrationFromState.DatabaseInit(totalBytes, archivePath)
+  } else {
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.migrate_from_device_exported_file_doesnt_exist))
+    state = MigrationFromState.UploadConfirmation
+  }
+
+}
+
 suspend fun initTemporaryDatabase(tempDatabaseFile: File, netCfg: NetCfg): Pair<ChatCtrl, User>? {
   val (status, ctrl) = chatInitTemporaryDatabase(tempDatabaseFile.absolutePath)
   showErrorOnMigrationIfNeeded(status)
   try {
     if (ctrl != null) {
       val user = startChatWithTemporaryDatabase(ctrl, netCfg)
-      return if (user != null) ctrl to user else null
+      if (user != null) return ctrl to user
+      chatCloseStore(ctrl)
     }
+    File(tempDatabaseFile.absolutePath + "_chat.db").delete()
+    File(tempDatabaseFile.absolutePath + "_agent.db").delete()
   } catch (e: Throwable) {
     Log.e(TAG, "Error while starting chat in temporary database: ${e.stackTraceToString()}")
   }

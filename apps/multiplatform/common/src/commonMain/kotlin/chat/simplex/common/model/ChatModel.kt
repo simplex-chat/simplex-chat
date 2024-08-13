@@ -19,6 +19,8 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.internal.ChannelFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.*
@@ -204,7 +206,10 @@ object ChatModel {
   class ChatsContext {
     val chats = _chats
 
-    fun addChat(chat: Chat) = chats.add(index = 0, chat)
+    suspend fun addChat(chat: Chat) {
+      chats.add(index = 0, chat)
+      popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = 0)
+    }
 
     fun updateChatInfo(rhId: Long?, cInfo: ChatInfo) {
       val i = getChatIndex(rhId, cInfo.id)
@@ -229,19 +234,19 @@ object ChatModel {
       }
     }
 
-    fun updateContactConnection(rhId: Long?, contactConnection: PendingContactConnection) = updateChat(rhId, ChatInfo.ContactConnection(contactConnection))
+    suspend fun updateContactConnection(rhId: Long?, contactConnection: PendingContactConnection) = updateChat(rhId, ChatInfo.ContactConnection(contactConnection))
 
-    fun updateContact(rhId: Long?, contact: Contact) = updateChat(rhId, ChatInfo.Direct(contact), addMissing = contact.directOrUsed)
+    suspend fun updateContact(rhId: Long?, contact: Contact) = updateChat(rhId, ChatInfo.Direct(contact), addMissing = contact.directOrUsed)
 
-    fun updateContactConnectionStats(rhId: Long?, contact: Contact, connectionStats: ConnectionStats) {
+    suspend fun updateContactConnectionStats(rhId: Long?, contact: Contact, connectionStats: ConnectionStats) {
       val updatedConn = contact.activeConn?.copy(connectionStats = connectionStats)
       val updatedContact = contact.copy(activeConn = updatedConn)
       updateContact(rhId, updatedContact)
     }
 
-    fun updateGroup(rhId: Long?, groupInfo: GroupInfo) = updateChat(rhId, ChatInfo.Group(groupInfo))
+    suspend fun updateGroup(rhId: Long?, groupInfo: GroupInfo) = updateChat(rhId, ChatInfo.Group(groupInfo))
 
-    private fun updateChat(rhId: Long?, cInfo: ChatInfo, addMissing: Boolean = true) {
+    private suspend fun updateChat(rhId: Long?, cInfo: ChatInfo, addMissing: Boolean = true) {
       if (hasChat(rhId, cInfo.id)) {
         updateChatInfo(rhId, cInfo)
       } else if (addMissing) {
@@ -250,8 +255,8 @@ object ChatModel {
     }
 
     fun updateChats(newChats: List<Chat>) {
-      chats.clear()
-      chats.addAll(newChats)
+      chats.replaceAll(newChats)
+      popChatCollector.clear()
 
       val cId = chatId.value
       // If chat is null, it was deleted in background after apiGetChats call
@@ -260,16 +265,21 @@ object ChatModel {
       }
     }
 
-    fun replaceChat(rhId: Long?, id: String, chat: Chat) {
+    suspend fun replaceChat(rhId: Long?, id: String, chat: Chat) {
       val i = getChatIndex(rhId, id)
       if (i >= 0) {
         chats[i] = chat
       } else {
         // invalid state, correcting
-        chats.add(index = 0, chat)
+        addChat(chat)
       }
     }
     suspend fun addChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
+      // mark chat non deleted
+      if (cInfo is ChatInfo.Direct && cInfo.chatDeleted) {
+        val updatedContact = cInfo.contact.copy(chatDeleted = false)
+        updateContact(rhId, updatedContact)
+      }
       // update previews
       val i = getChatIndex(rhId, cInfo.id)
       val chat: Chat
@@ -301,8 +311,10 @@ object ChatModel {
           else
             chat.chatStats
         )
-        if (i > 0) {
-          chats.add(index = 0, chats.removeAt(i))
+        if (appPlatform.isDesktop && cItem.chatDir.sent) {
+          addChat(chats.removeAt(i))
+        } else {
+          popChatCollector.throttlePopChat(chat.remoteHostId, chat.id, currentPosition = i)
         }
       } else {
         addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = arrayListOf(cItem)))
@@ -421,6 +433,56 @@ object ChatModel {
       }
     }
 
+    val popChatCollector = PopChatCollector()
+
+    class PopChatCollector {
+      private val subject = MutableSharedFlow<Unit>()
+      private var remoteHostId: Long? = null
+      private val chatsToPop = mutableMapOf<ChatId, Instant>()
+
+      init {
+        withLongRunningApi {
+          subject
+            .throttleLatest(2000)
+            .collect {
+              withChats {
+                chats.replaceAll(popCollectedChats())
+              }
+            }
+        }
+      }
+
+      suspend fun throttlePopChat(rhId: Long?, chatId: ChatId, currentPosition: Int) {
+        if (rhId != remoteHostId) {
+          chatsToPop.clear()
+          remoteHostId = rhId
+        }
+        if (currentPosition > 0 || chatsToPop.isNotEmpty()) {
+          chatsToPop[chatId] = Clock.System.now()
+          subject.emit(Unit)
+        }
+      }
+
+      fun clear() = chatsToPop.clear()
+
+      private fun popCollectedChats(): List<Chat> {
+        val chs = mutableListOf<Chat>()
+        // collect chats that received updates
+        for ((chatId, popTs) in chatsToPop.entries) {
+          val ch = getChat(chatId)
+          if (ch != null) {
+            ch.popTs = popTs
+            chs.add(ch)
+          }
+        }
+        // sort chats by pop timestamp in descending order
+        val newChats = ArrayList(chs.sortedByDescending { it.popTs })
+        newChats.addAll(chats.value.filter { !chatsToPop.containsKey(it.chatInfo.id) } )
+        chatsToPop.clear()
+        return newChats
+      }
+    }
+
     fun markChatItemsRead(remoteHostId: Long?, chatInfo: ChatInfo, range: CC.ItemRange? = null, unreadCountAfter: Int? = null) {
       val cInfo = chatInfo
       val markedRead = markItemsReadInCurrentChat(chatInfo, range)
@@ -461,7 +523,7 @@ object ChatModel {
       chats.removeAll { it.id == id && it.remoteHostId == rhId }
     }
 
-    fun upsertGroupMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember): Boolean {
+    suspend fun upsertGroupMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember): Boolean {
       // user member was updated
       if (groupInfo.membership.groupMemberId == member.groupMemberId) {
         updateGroup(rhId, groupInfo)
@@ -498,7 +560,7 @@ object ChatModel {
       }
     }
 
-    fun updateGroupMemberConnectionStats(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, connectionStats: ConnectionStats) {
+    suspend fun updateGroupMemberConnectionStats(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, connectionStats: ConnectionStats) {
       val memberConn = member.activeConn
       if (memberConn != null) {
         val updatedConn = memberConn.copy(connectionStats = connectionStats)
@@ -671,6 +733,7 @@ object ChatModel {
       showingInvitation.value = null
       chatModel.chatItems.clear()
       chatModel.chatId.value = withId
+      ModalManager.start.closeModals()
       ModalManager.end.closeModals()
     }
   }
@@ -681,6 +744,7 @@ object ChatModel {
       chatModel.chatItems.clear()
       chatModel.chatId.value = null
       // Close NewChatView
+      ModalManager.start.closeModals()
       ModalManager.center.closeModals()
       ModalManager.end.closeModals()
     }
@@ -845,6 +909,9 @@ data class Chat(
   val chatItems: List<ChatItem>,
   val chatStats: ChatStats = ChatStats()
 ) {
+  @Transient
+  var popTs: Instant? = null
+
   val nextSendGrpInv: Boolean
     get() = when (chatInfo) {
       is ChatInfo.Direct -> chatInfo.contact.nextSendGrpInv

@@ -329,7 +329,8 @@
 "above, then choose:" = "上で選んでください：";
 
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "承諾";
 
 /* No comment provided by engineer. */
@@ -338,7 +339,8 @@
 /* notification body */
 "Accept contact request from %@?" = "%@ からの連絡要求を受け入れますか?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "シークレットモードで承諾";
 
 /* call status */
@@ -714,7 +716,7 @@
 /* No comment provided by engineer. */
 "Choose from library" = "ライブラリから選択";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "消す";
 
 /* No comment provided by engineer. */
@@ -839,9 +841,6 @@
 
 /* notification */
 "Contact is connected" = "連絡先は接続中";
-
-/* No comment provided by engineer. */
-"Contact is not connected yet!" = "連絡先がまだ繋がってません！";
 
 /* No comment provided by engineer. */
 "Contact name" = "連絡先の名前";
@@ -993,7 +992,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "デフォルト（はい）";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "削除";
 
 /* No comment provided by engineer. */
@@ -1025,9 +1025,6 @@
 
 /* No comment provided by engineer. */
 "Delete contact" = "連絡先を削除";
-
-/* No comment provided by engineer. */
-"Delete Contact" = "連絡先を削除";
 
 /* No comment provided by engineer. */
 "Delete database" = "データベースを削除";
@@ -1079,9 +1076,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "古いデータベースを削除しますか？";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "確認待ちの接続を削除";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "接続待ちの接続を削除しますか？";
@@ -1408,9 +1402,6 @@
 "Error deleting connection" = "接続の削除エラー";
 
 /* No comment provided by engineer. */
-"Error deleting contact" = "連絡先の削除にエラー発生";
-
-/* No comment provided by engineer. */
 "Error deleting database" = "データベースの削除にエラー発生";
 
 /* No comment provided by engineer. */
@@ -1537,7 +1528,7 @@
 /* No comment provided by engineer. */
 "Fast and no wait until the sender is online!" = "送信者がオンラインになるまでの待ち時間がなく、速い！";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "お気に入り";
 
 /* No comment provided by engineer. */
@@ -1921,7 +1912,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "日本語UI";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "参加";
 
 /* No comment provided by engineer. */
@@ -1951,7 +1942,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "さらに詳しく";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "脱退";
 
 /* No comment provided by engineer. */
@@ -2125,13 +2116,13 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "複数チャットのプロフィール";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Mute" = "ミュート";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "非アクティブ時はミュート！";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "名前";
 
 /* No comment provided by engineer. */
@@ -2493,7 +2484,7 @@
 /* chat item menu */
 "React…" = "反応する…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "読む";
 
 /* No comment provided by engineer. */
@@ -2556,7 +2547,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "電池使用量低減";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "拒否";
 
 /* No comment provided by engineer. */
@@ -2762,9 +2754,6 @@
 
 /* No comment provided by engineer. */
 "Send a live message - it will update for the recipient(s) as you type it" = "ライブメッセージを送信 (入力しながら宛先の画面で更新される)";
-
-/* No comment provided by engineer. */
-"Send direct message" = "ダイレクトメッセージを送信";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "ダイレクトメッセージを送信して接続する";
@@ -3013,9 +3002,6 @@
 "Tap to join incognito" = "タップしてシークレットモードで参加";
 
 /* No comment provided by engineer. */
-"Tap to start a new chat" = "タップして新しいチャットを始める";
-
-/* No comment provided by engineer. */
 "TCP connection timeout" = "TCP接続タイムアウト";
 
 /* No comment provided by engineer. */
@@ -3174,7 +3160,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "予期しない移行状態";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "お気に入りを取り消す。";
 
 /* No comment provided by engineer. */
@@ -3213,10 +3199,10 @@
 /* authentication reason */
 "Unlock app" = "アプリのロック解除";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unmute" = "ミュート解除";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "未読";
 
 /* No comment provided by engineer. */
@@ -3472,9 +3458,6 @@
 "You could not be verified; please try again." = "確認できませんでした。 もう一度お試しください。";
 
 /* No comment provided by engineer. */
-"You have no chats" = "あなたはチャットがありません";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "アプリ起動時にパスフレーズを入力しなければなりません。端末に保存されてません。";
 
 /* No comment provided by engineer. */
@@ -3554,9 +3537,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "あなたのチャットプロフィール";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "接続を完了するには、連絡相手がオンラインになる必要があります。\nこの接続をキャンセルして、連絡先を削除をすることもできます (後でやり直すこともできます)。";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "連絡先が現在サポートされている最大サイズ (%@) より大きいファイルを送信しました。";

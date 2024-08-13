@@ -47,65 +47,70 @@ struct ChatView: View {
     @State private var showDeleteSelectedMessages: Bool = false
     @State private var allowToDeleteSelectedMessagesForAll: Bool = false
 
+    @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
+
     var body: some View {
         if #available(iOS 16.0, *) {
-            let v = viewBody
-            .scrollDismissesKeyboard(.immediately)
-            .keyboardPadding()
-            if (searchMode) {
-                v.toolbarBackground(.thinMaterial, for: .navigationBar)
-            } else {
-                v.toolbarBackground(.visible, for: .navigationBar)
-            }
+            viewBody
+                .scrollDismissesKeyboard(.immediately)
+                .keyboardPadding()
+                .toolbarBackground(.hidden, for: .navigationBar)
         } else {
             viewBody
         }
     }
-
+    
+    @ViewBuilder
     private var viewBody: some View {
         let cInfo = chat.chatInfo
-        return VStack(spacing: 0) {
-            if searchMode {
-                searchToolbar()
+        ZStack {
+            let wallpaperImage = theme.wallpaper.type.image
+            let wallpaperType = theme.wallpaper.type
+            let backgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(theme.base, theme.colors.background)
+            let tintColor = theme.wallpaper.tint ?? wallpaperType.defaultTintColor(theme.base)
+            Color.clear.ignoresSafeArea(.all)
+                .if(wallpaperImage != nil) { view in
+                    view.modifier(
+                        ChatViewBackground(image: wallpaperImage!, imageType: wallpaperType, background: backgroundColor, tint: tintColor)
+                    )
+            }
+            VStack(spacing: 0) {
+                ZStack(alignment: .bottomTrailing) {
+                    chatItemsList()
+                    floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
+                }
+                connectingText()
+                if selectedChatItems == nil {
+                    ComposeView(
+                        chat: chat,
+                        composeState: $composeState,
+                        keyboardVisible: $keyboardVisible
+                    )
+                    .disabled(!cInfo.sendMsgEnabled)
+                } else {
+                    SelectedItemsBottomToolbar(
+                        chatItems: ItemsModel.shared.reversedChatItems,
+                        selectedChatItems: $selectedChatItems,
+                        chatInfo: chat.chatInfo,
+                        deleteItems: { forAll in
+                            allowToDeleteSelectedMessagesForAll = forAll
+                            showDeleteSelectedMessages = true
+                        },
+                        moderateItems: {
+                            if case let .group(groupInfo) = chat.chatInfo {
+                                showModerateSelectedMessagesAlert(groupInfo)
+                            }
+                        }
+                    )
+                }
+            }
+        }
+        .safeAreaInset(edge: .top) {
+            VStack(spacing: .zero) {
+                if searchMode { searchToolbar() }
                 Divider()
             }
-            ZStack(alignment: .bottomTrailing) {
-                let wallpaperImage = theme.wallpaper.type.image
-                let wallpaperType = theme.wallpaper.type
-                let backgroundColor = theme.wallpaper.background ?? wallpaperType.defaultBackgroundColor(theme.base, theme.colors.background)
-                let tintColor = theme.wallpaper.tint ?? wallpaperType.defaultTintColor(theme.base)
-                chatItemsList()
-                    .if(wallpaperImage != nil) { view in
-                        view.modifier(
-                            ChatViewBackground(image: wallpaperImage!, imageType: wallpaperType, background: backgroundColor, tint: tintColor)
-                        )
-                }
-                floatingButtons(counts: floatingButtonModel.unreadChatItemCounts)
-            }
-            connectingText()
-            if selectedChatItems == nil {
-                ComposeView(
-                    chat: chat,
-                    composeState: $composeState,
-                    keyboardVisible: $keyboardVisible
-                )
-                .disabled(!cInfo.sendMsgEnabled)
-            } else {
-                SelectedItemsBottomToolbar(
-                    chatItems: ItemsModel.shared.reversedChatItems,
-                    selectedChatItems: $selectedChatItems,
-                    chatInfo: chat.chatInfo,
-                    deleteItems: { forAll in
-                        allowToDeleteSelectedMessagesForAll = forAll
-                        showDeleteSelectedMessages = true
-                    },
-                    moderateItems: {
-                        if case let .group(groupInfo) = chat.chatInfo {
-                            showModerateSelectedMessagesAlert(groupInfo)
-                        }
-                    }
-                )
-            }
+            .background(ToolbarMaterial.material(toolbarMaterial))
         }
         .navigationTitle(cInfo.chatViewName)
         .background(theme.colors.background)
@@ -157,7 +162,6 @@ struct ChatView: View {
             VideoPlayerView.players.removeAll()
             stopAudioPlayer()
             if chatModel.chatId == cInfo.id && !presentationMode.wrappedValue.isPresented {
-                chatModel.chatId = nil
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     if chatModel.chatId == nil {
                         chatModel.chatItemStatuses = [:]
@@ -184,7 +188,7 @@ struct ChatView: View {
                     } label: {
                         ChatInfoToolbar(chat: chat)
                     }
-                    .appSheet(isPresented: $showChatInfoSheet) {
+                    .appSheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
                         ChatInfoView(
                             chat: chat,
                             contact: contact,
@@ -352,7 +356,6 @@ struct ChatView: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
-        .background(.thinMaterial)
     }
     
     private func voiceWithoutFrame(_ ci: ChatItem) -> Bool {
@@ -386,31 +389,49 @@ struct ChatView: View {
                                 : voiceNoFrame
                                     ? (g.size.width - 32)
                                     : (g.size.width - 32) * 0.84
-                return chatItemView(ci, maxWidth)
-                    .onAppear {
-                        floatingButtonModel.appeared(viewId: ci.viewId)
-                    }
-                    .onDisappear {
-                        floatingButtonModel.disappeared(viewId: ci.viewId)
-                    }
-                    .id(ci.id) // Required to trigger `onAppear` on iOS15
+                return ChatItemWithMenu(
+                    chat: $chat,
+                    chatItem: ci,
+                    maxWidth: maxWidth,
+                    composeState: $composeState,
+                    selectedMember: $selectedMember,
+                    revealedChatItem: $revealedChatItem,
+                    selectedChatItems: $selectedChatItems
+                )
+                .onAppear {
+                    floatingButtonModel.appeared(viewId: ci.viewId)
+                }
+                .onDisappear {
+                    floatingButtonModel.disappeared(viewId: ci.viewId)
+                }
+                .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadPage: {
                 loadChatItems(cInfo)
             }
-                .onTapGesture { hideKeyboard() }
-                .onChange(of: searchText) { _ in
-                    loadChat(chat: chat, search: searchText)
+            .padding(.vertical, -InvertedTableView.inset)
+            .onTapGesture { hideKeyboard() }
+            .onChange(of: searchText) { _ in
+                loadChat(chat: chat, search: searchText)
+            }
+            .onChange(of: chatModel.chatId) { chatId in
+                if let chatId, let c = chatModel.getChat(chatId) {
+                    chat = c
+                    showChatInfoSheet = false
+                    loadChat(chat: c)
+                    scrollModel.scrollToBottom()
                 }
-                .onChange(of: chatModel.chatId) { chatId in
-                    if let chatId, let c = chatModel.getChat(chatId) {
-                        chat = c
-                        showChatInfoSheet = false
-                        loadChat(chat: c)
+            }
+            .onChange(of: im.reversedChatItems) { _ in
+                floatingButtonModel.chatItemsChanged()
+            }
+            .onChange(of: im.itemAdded) { added in
+                if added {
+                    im.itemAdded = false
+                    if floatingButtonModel.unreadChatItemCounts.isReallyNearBottom {
+                        scrollModel.scrollToBottom()
                     }
                 }
-                .onChange(of: im.reversedChatItems) { _ in
-                    floatingButtonModel.chatItemsChanged()
-                }
+            }
         }
     }
 
@@ -443,19 +464,19 @@ struct ChatView: View {
         init() {
             unreadChatItemCounts = UnreadChatItemCounts(
                 isNearBottom: true,
+                isReallyNearBottom: true,
                 unreadBelow: 0
             )
             events
                 .receive(on: DispatchQueue.global(qos: .background))
                 .scan(Set<String>()) { itemsInView, event in
-                    return switch event {
-                    case let .appeared(viewId):
-                        itemsInView.union([viewId])
-                    case let .disappeared(viewId):
-                        itemsInView.subtracting([viewId])
-                    case .chatItemsChanged:
-                        itemsInView
+                    var updated = itemsInView
+                    switch event {
+                    case let .appeared(viewId): updated.insert(viewId)
+                    case let .disappeared(viewId): updated.remove(viewId)
+                    case .chatItemsChanged: ()
                     }
+                    return updated
                 }
                 .map { ChatModel.shared.unreadChatItemCounts(itemsInView: $0) }
                 .removeDuplicates()
@@ -663,22 +684,10 @@ struct ChatView: View {
         VoiceItemState.chatView = [:]
     }
 
-    @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
-        ChatItemWithMenu(
-            chat: chat,
-            chatItem: ci,
-            maxWidth: maxWidth,
-            composeState: $composeState,
-            selectedMember: $selectedMember,
-            revealedChatItem: $revealedChatItem,
-            selectedChatItems: $selectedChatItems
-        )
-    }
-
     private struct ChatItemWithMenu: View {
         @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
-        @ObservedObject var chat: Chat
+        @Binding @ObservedObject var chat: Chat
         let chatItem: ChatItem
         let maxWidth: CGFloat
         @Binding var composeState: ComposeState

@@ -335,7 +335,8 @@
 "above, then choose:" = "yukarı çıkın, ardından seçin:";
 
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "Kabul et";
 
 /* No comment provided by engineer. */
@@ -344,7 +345,8 @@
 /* notification body */
 "Accept contact request from %@?" = "%@ 'den gelen iletişim isteği kabul edilsin mi?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "Takma adla kabul et";
 
 /* call status */
@@ -816,7 +818,7 @@
 /* No comment provided by engineer. */
 "Choose from library" = "Kütüphaneden seç";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "Temizle";
 
 /* No comment provided by engineer. */
@@ -997,9 +999,6 @@
 "Contact is connected" = "Kişi bağlandı";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "Kişi şuan bağlanmadı!";
-
-/* No comment provided by engineer. */
 "Contact name" = "Kişi adı";
 
 /* No comment provided by engineer. */
@@ -1176,7 +1175,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "varsayılan (evet)";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "Sil";
 
 /* No comment provided by engineer. */
@@ -1214,12 +1214,6 @@
 
 /* No comment provided by engineer. */
 "Delete contact" = "Kişiyi sil";
-
-/* No comment provided by engineer. */
-"Delete Contact" = "Kişiyi sil";
-
-/* No comment provided by engineer. */
-"Delete contact?\nThis cannot be undone!" = "Kişi silinsin mi?\nBu geri alınamaz!";
 
 /* No comment provided by engineer. */
 "Delete database" = "Veritabanını sil";
@@ -1274,9 +1268,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Eski veritabanı silinsin mi?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Bekleyen bağlantıyı sil";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Bekleyen bağlantı silinsin mi?";
@@ -1678,9 +1669,6 @@
 "Error deleting connection" = "Bağlantı silinirken hata oluştu";
 
 /* No comment provided by engineer. */
-"Error deleting contact" = "Kişi silinirken hata oluştu";
-
-/* No comment provided by engineer. */
 "Error deleting database" = "Veritabanı silinirken hata oluştu";
 
 /* No comment provided by engineer. */
@@ -1840,7 +1828,7 @@
 /* No comment provided by engineer. */
 "Faster joining and more reliable messages." = "Daha hızlı katılma ve daha güvenilir mesajlar.";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "Favori";
 
 /* No comment provided by engineer. */
@@ -2317,7 +2305,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "Japonca arayüz";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "Katıl";
 
 /* No comment provided by engineer. */
@@ -2368,7 +2356,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "Daha fazlası";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "Ayrıl";
 
 /* No comment provided by engineer. */
@@ -2602,13 +2590,13 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Çoklu sohbet profili";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Mute" = "Sustur";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "Aktif değilken susturuldu!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "İsim";
 
 /* No comment provided by engineer. */
@@ -3078,7 +3066,7 @@
 /* chat item menu */
 "React…" = "Tepki ver…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "Oku";
 
 /* No comment provided by engineer. */
@@ -3153,7 +3141,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Azaltılmış pil kullanımı";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "Reddet";
 
 /* No comment provided by engineer. */
@@ -3419,9 +3408,6 @@
 
 /* No comment provided by engineer. */
 "send direct message" = "doğrudan mesaj gönder";
-
-/* No comment provided by engineer. */
-"Send direct message" = "Doğrudan mesaj gönder";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Bağlanmak için doğrudan mesaj gönder";
@@ -3766,9 +3752,6 @@
 "Tap to scan" = "Taramak için tıkla";
 
 /* No comment provided by engineer. */
-"Tap to start a new chat" = "Yeni bir sohbet başlatmak için tıkla";
-
-/* No comment provided by engineer. */
 "TCP connection timeout" = "TCP bağlantı zaman aşımı";
 
 /* No comment provided by engineer. */
@@ -3987,7 +3970,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Beklenmeyen geçiş durumu";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "Favorilerden çık.";
 
 /* No comment provided by engineer. */
@@ -4041,13 +4024,13 @@
 /* authentication reason */
 "Unlock app" = "Uygulama kilidini aç";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unmute" = "Susturmayı kaldır";
 
 /* No comment provided by engineer. */
 "unprotected" = "korumasız";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "Okunmamış";
 
 /* No comment provided by engineer. */
@@ -4441,9 +4424,6 @@
 "You have already requested connection!\nRepeat connection request?" = "Zaten bağlantı isteğinde bulundunuz!\nBağlantı isteği tekrarlansın mı?";
 
 /* No comment provided by engineer. */
-"You have no chats" = "Hiç sohbetiniz yok";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Uygulama her başladığında parola girmeniz gerekir - parola cihazınızda saklanmaz.";
 
 /* No comment provided by engineer. */
@@ -4532,9 +4512,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Sohbet profillerin";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Bağlantının tamamlanması için kişinizin çevrimiçi olması gerekir.\nBu bağlantıyı iptal edebilir ve kişiyi kaldırabilirsiniz (ve daha sonra yeni bir bağlantıyla deneyebilirsiniz).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Kişiniz şu anda desteklenen maksimum boyuttan (%@) daha büyük bir dosya gönderdi.";

@@ -13,7 +13,8 @@ struct DeveloperView: View {
     @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(GROUP_DEFAULT_CONFIRM_DB_UPGRADES, store: groupDefaults) private var confirmDatabaseUpgrades = false
-    @AppStorage(DEFAULT_ONE_HAND_UI) private var oneHandUI = false
+    @State private var hintsUnchanged = hintDefaultsUnchanged()
+
     @Environment(\.colorScheme) var colorScheme
 
     var body: some View {
@@ -34,6 +35,10 @@ struct DeveloperView: View {
                     } label: {
                         settingsRow("terminal", color: theme.colors.secondary) { Text("Chat console") }
                     }
+                    settingsRow("lightbulb.max", color: theme.colors.secondary) {
+                        Button("Reset all hints", action: resetHintDefaults)
+                        .disabled(hintsUnchanged)
+                    }
                     settingsRow("chevron.left.forwardslash.chevron.right", color: theme.colors.secondary) {
                         Toggle("Show developer options", isOn: $developerTools)
                     }
@@ -49,15 +54,27 @@ struct DeveloperView: View {
                         settingsRow("internaldrive", color: theme.colors.secondary) {
                             Toggle("Confirm database upgrades", isOn: $confirmDatabaseUpgrades)
                         }
-                        settingsRow("hand.wave", color: theme.colors.secondary) {
-                            Toggle("One-hand UI", isOn: $oneHandUI)
-                        }
                     } header: {
                         Text("Developer options")
                     }
                 }
             }
         }
+    }
+    
+    private func resetHintDefaults() {
+        for def in hintDefaults {
+            if let val = appDefaults[def] as? Bool {
+                UserDefaults.standard.set(val, forKey: def)
+            }
+        }
+        hintsUnchanged = true
+    }
+}
+
+private func hintDefaultsUnchanged() -> Bool {
+    hintDefaults.allSatisfy { def in
+        appDefaults[def] as? Bool == UserDefaults.standard.bool(forKey: def)
     }
 }
 

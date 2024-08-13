@@ -257,13 +257,15 @@
 "above, then choose:" = "ด้านบน จากนั้นเลือก:";
 
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "รับ";
 
 /* notification body */
 "Accept contact request from %@?" = "รับการขอติดต่อจาก %@?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "ยอมรับโหมดไม่ระบุตัวตน";
 
 /* call status */
@@ -618,7 +620,7 @@
 /* No comment provided by engineer. */
 "Choose from library" = "เลือกจากอัลบั้ม";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "ลบ";
 
 /* No comment provided by engineer. */
@@ -737,9 +739,6 @@
 
 /* notification */
 "Contact is connected" = "เชื่อมต่อกับผู้ติดต่อแล้ว";
-
-/* No comment provided by engineer. */
-"Contact is not connected yet!" = "ผู้ติดต่อยังไม่ได้เชื่อมต่อ!";
 
 /* No comment provided by engineer. */
 "Contact name" = "ชื่อผู้ติดต่อ";
@@ -888,7 +887,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "ค่าเริ่มต้น (ใช่)";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "ลบ";
 
 /* No comment provided by engineer. */
@@ -920,9 +920,6 @@
 
 /* No comment provided by engineer. */
 "Delete contact" = "ลบผู้ติดต่อ";
-
-/* No comment provided by engineer. */
-"Delete Contact" = "ลบผู้ติดต่อ";
 
 /* No comment provided by engineer. */
 "Delete database" = "ลบฐานข้อมูล";
@@ -974,9 +971,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "ลบฐานข้อมูลเก่า?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "ลบการเชื่อมต่อที่รอดำเนินการ";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "ลบการเชื่อมต่อที่รอดำเนินการหรือไม่?";
@@ -1282,9 +1276,6 @@
 "Error deleting connection" = "เกิดข้อผิดพลาดในการลบการเชื่อมต่อ";
 
 /* No comment provided by engineer. */
-"Error deleting contact" = "เกิดข้อผิดพลาดในการลบผู้ติดต่อ";
-
-/* No comment provided by engineer. */
 "Error deleting database" = "เกิดข้อผิดพลาดในการลบฐานข้อมูล";
 
 /* No comment provided by engineer. */
@@ -1411,7 +1402,7 @@
 /* No comment provided by engineer. */
 "Fast and no wait until the sender is online!" = "รวดเร็วและไม่ต้องรอจนกว่าผู้ส่งจะออนไลน์!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "ที่ชอบ";
 
 /* No comment provided by engineer. */
@@ -1789,7 +1780,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "อินเทอร์เฟซภาษาญี่ปุ่น";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "เข้าร่วม";
 
 /* No comment provided by engineer. */
@@ -1819,7 +1810,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "ศึกษาเพิ่มเติม";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "ออกจาก";
 
 /* No comment provided by engineer. */
@@ -1993,13 +1984,13 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "โปรไฟล์การแชทหลายรายการ";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Mute" = "ปิดเสียง";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "ปิดเสียงเมื่อไม่ได้ใช้งาน!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "ชื่อ";
 
 /* No comment provided by engineer. */
@@ -2352,7 +2343,7 @@
 /* chat item menu */
 "React…" = "ตอบสนอง…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "อ่าน";
 
 /* No comment provided by engineer. */
@@ -2415,7 +2406,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "ลดการใช้แบตเตอรี่";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "ปฏิเสธ";
 
 /* No comment provided by engineer. */
@@ -2621,9 +2613,6 @@
 
 /* No comment provided by engineer. */
 "Send delivery receipts to" = "ส่งใบเสร็จรับการจัดส่งข้อความไปที่";
-
-/* No comment provided by engineer. */
-"Send direct message" = "ส่งข้อความโดยตรง";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "ส่งข้อความแบบที่หายไป";
@@ -2875,9 +2864,6 @@
 "Tap to join incognito" = "แตะเพื่อเข้าร่วมโหมดไม่ระบุตัวตน";
 
 /* No comment provided by engineer. */
-"Tap to start a new chat" = "แตะเพื่อเริ่มแชทใหม่";
-
-/* No comment provided by engineer. */
 "TCP connection timeout" = "หมดเวลาการเชื่อมต่อ TCP";
 
 /* No comment provided by engineer. */
@@ -3033,7 +3019,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "สถานะการย้ายข้อมูลที่ไม่คาดคิด";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "เลิกชอบ";
 
 /* No comment provided by engineer. */
@@ -3072,10 +3058,10 @@
 /* authentication reason */
 "Unlock app" = "ปลดล็อคแอป";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unmute" = "เปิดเสียง";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "เปลี่ยนเป็นยังไม่ได้อ่าน";
 
 /* No comment provided by engineer. */
@@ -3325,9 +3311,6 @@
 "You could not be verified; please try again." = "เราไม่สามารถตรวจสอบคุณได้ กรุณาลองอีกครั้ง.";
 
 /* No comment provided by engineer. */
-"You have no chats" = "คุณไม่มีการแชท";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "คุณต้องใส่รหัสผ่านทุกครั้งที่เริ่มแอป - รหัสผ่านไม่ได้จัดเก็บไว้ในอุปกรณ์";
 
 /* No comment provided by engineer. */
@@ -3404,9 +3387,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "โปรไฟล์แชทของคุณ";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "ผู้ติดต่อของคุณจะต้องออนไลน์เพื่อให้การเชื่อมต่อเสร็จสมบูรณ์\nคุณสามารถยกเลิกการเชื่อมต่อนี้และลบผู้ติดต่อออก (และลองใหม่ในภายหลังด้วยลิงก์ใหม่)";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "ผู้ติดต่อของคุณส่งไฟล์ที่ใหญ่กว่าขนาดสูงสุดที่รองรับในปัจจุบัน (%@)";

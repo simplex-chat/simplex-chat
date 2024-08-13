@@ -142,8 +142,8 @@ class AppPreferences {
     },
     set = fun(mode: TransportSessionMode) { _networkSessionMode.set(mode.name) }
   )
-  val networkSMPProxyMode = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_MODE, SMPProxyMode.Never.name)
-  val networkSMPProxyFallback = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_FALLBACK, SMPProxyFallback.Allow.name)
+  val networkSMPProxyMode = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_MODE, NetCfg.defaults.smpProxyMode.name)
+  val networkSMPProxyFallback = mkStrPreference(SHARED_PREFS_NETWORK_SMP_PROXY_FALLBACK, NetCfg.defaults.smpProxyFallback.name)
   val networkHostMode = mkStrPreference(SHARED_PREFS_NETWORK_HOST_MODE, HostMode.OnionViaSocks.name)
   val networkRequiredHostMode = mkBoolPreference(SHARED_PREFS_NETWORK_REQUIRED_HOST_MODE, false)
   val networkTCPConnectTimeout = mkTimeoutPreference(SHARED_PREFS_NETWORK_TCP_CONNECT_TIMEOUT, NetCfg.defaults.tcpConnectTimeout, NetCfg.proxyDefaults.tcpConnectTimeout)
@@ -159,6 +159,7 @@ class AppPreferences {
   val incognito = mkBoolPreference(SHARED_PREFS_INCOGNITO, false)
   val liveMessageAlertShown = mkBoolPreference(SHARED_PREFS_LIVE_MESSAGE_ALERT_SHOWN, false)
   val showHiddenProfilesNotice = mkBoolPreference(SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE, true)
+  val oneHandUICardShown = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN, false)
   val showMuteProfileAlert = mkBoolPreference(SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT, true)
   val appLanguage = mkStrPreference(SHARED_PREFS_APP_LANGUAGE, null)
   val appUpdateChannel = mkEnumPreference(SHARED_PREFS_APP_UPDATE_CHANNEL, AppUpdatesChannel.DISABLED) { AppUpdatesChannel.entries.firstOrNull { it.name == this } }
@@ -225,7 +226,17 @@ class AppPreferences {
   val iosCallKitEnabled = mkBoolPreference(SHARED_PREFS_IOS_CALL_KIT_ENABLED, true)
   val iosCallKitCallsInRecents = mkBoolPreference(SHARED_PREFS_IOS_CALL_KIT_CALLS_IN_RECENTS, false)
 
-  val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, false)
+  val oneHandUI = mkBoolPreference(SHARED_PREFS_ONE_HAND_UI, appPlatform.isAndroid)
+
+  val hintPreferences: List<Pair<SharedPreference<Boolean>, Boolean>> = listOf(
+    laNoticeShown to false,
+    oneHandUICardShown to false,
+    liveMessageAlertShown to false,
+    showHiddenProfilesNotice to true,
+    showMuteProfileAlert to true,
+    showDeleteConversationNotice to true,
+    showDeleteContactNotice to true,
+  )
 
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
@@ -372,6 +383,7 @@ class AppPreferences {
     private const val SHARED_PREFS_INCOGNITO = "Incognito"
     private const val SHARED_PREFS_LIVE_MESSAGE_ALERT_SHOWN = "LiveMessageAlertShown"
     private const val SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE = "ShowHiddenProfilesNotice"
+    private const val SHARED_PREFS_ONE_HAND_UI_CARD_SHOWN = "OneHandUICardShown"
     private const val SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT = "ShowMuteProfileAlert"
     private const val SHARED_PREFS_STORE_DB_PASSPHRASE = "StoreDBPassphrase"
     private const val SHARED_PREFS_INITIAL_RANDOM_DB_PASSPHRASE = "InitialRandomDBPassphrase"
@@ -519,7 +531,10 @@ object ChatController {
   suspend fun startChatWithTemporaryDatabase(ctrl: ChatCtrl, netCfg: NetCfg): User? {
     Log.d(TAG, "startChatWithTemporaryDatabase")
     val migrationActiveUser = apiGetActiveUser(null, ctrl) ?: apiCreateActiveUser(null, Profile(displayName = "Temp", fullName = ""), ctrl = ctrl)
-    apiSetNetworkConfig(netCfg, ctrl)
+    if (!apiSetNetworkConfig(netCfg, ctrl)) {
+      Log.e(TAG, "Error setting network config, stopping migration")
+      return null
+    }
     apiSetAppFilePaths(
       getMigrationTempFilesDirectory().absolutePath,
       getMigrationTempFilesDirectory().absolutePath,
@@ -657,8 +672,8 @@ object ChatController {
     return null
   }
 
-  suspend fun apiCreateActiveUser(rh: Long?, p: Profile?, sameServers: Boolean = false, pastTimestamp: Boolean = false, ctrl: ChatCtrl? = null): User? {
-    val r = sendCmd(rh, CC.CreateActiveUser(p, sameServers = sameServers, pastTimestamp = pastTimestamp), ctrl)
+  suspend fun apiCreateActiveUser(rh: Long?, p: Profile?, pastTimestamp: Boolean = false, ctrl: ChatCtrl? = null): User? {
+    val r = sendCmd(rh, CC.CreateActiveUser(p, pastTimestamp = pastTimestamp), ctrl)
     if (r is CR.ActiveUser) return r.user.updateRemoteHostId(rh)
     else if (
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.DuplicateName ||
@@ -2121,12 +2136,6 @@ object ChatController {
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         if (active(r.user)) {
-          if (cInfo is ChatInfo.Direct && cInfo.chatDeleted) {
-            val updatedContact = cInfo.contact.copy(chatDeleted = false)
-            withChats {
-              updateContact(rhId, updatedContact)
-            }
-          }
           withChats {
             addChatItem(rhId, cInfo, cItem)
           }
@@ -2703,6 +2712,7 @@ object ChatController {
       chatModel.chatItems.clear()
       withChats {
         chats.clear()
+        popChatCollector.clear()
       }
     }
     val statuses = apiGetNetworkStatuses(rhId)
@@ -2824,7 +2834,7 @@ class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
 sealed class CC {
   class Console(val cmd: String): CC()
   class ShowActiveUser: CC()
-  class CreateActiveUser(val profile: Profile?, val sameServers: Boolean, val pastTimestamp: Boolean): CC()
+  class CreateActiveUser(val profile: Profile?, val pastTimestamp: Boolean): CC()
   class ListUsers: CC()
   class ApiSetActiveUser(val userId: Long, val viewPwd: String?): CC()
   class SetAllContactReceipts(val enable: Boolean): CC()
@@ -2962,7 +2972,7 @@ sealed class CC {
     is Console -> cmd
     is ShowActiveUser -> "/u"
     is CreateActiveUser -> {
-      val user = NewUser(profile, sameServers = sameServers, pastTimestamp = pastTimestamp)
+      val user = NewUser(profile, pastTimestamp = pastTimestamp)
       "/_create user ${json.encodeToString(user)}"
     }
     is ListUsers -> "/users"
@@ -3293,7 +3303,6 @@ fun onOff(b: Boolean): String = if (b) "on" else "off"
 @Serializable
 data class NewUser(
   val profile: Profile?,
-  val sameServers: Boolean,
   val pastTimestamp: Boolean
 )
 
@@ -3589,10 +3598,6 @@ enum class SMPProxyMode {
   @SerialName("unknown") Unknown,
   @SerialName("unprotected") Unprotected,
   @SerialName("never") Never;
-
-  companion object {
-    val default = Never
-  }
 }
 
 @Serializable
@@ -3600,10 +3605,6 @@ enum class SMPProxyFallback {
   @SerialName("allow") Allow,
   @SerialName("allowProtected") AllowProtected,
   @SerialName("prohibit") Prohibit;
-
-  companion object {
-    val default = Allow
-  }
 }
 
 @Serializable
@@ -5768,7 +5769,7 @@ sealed class DatabaseError {
 @Serializable
 sealed class SQLiteError {
   @Serializable @SerialName("errorNotADatabase") object ErrorNotADatabase: SQLiteError()
-  @Serializable @SerialName("error") class Error(val error: String): SQLiteError()
+  @Serializable @SerialName("error") class Error(val dbError: String): SQLiteError()
 }
 
 @Serializable
@@ -6230,7 +6231,7 @@ data class AppSettings(
     uiDarkColorScheme?.let { def.systemDarkTheme.set(it) }
     uiCurrentThemeIds?.let { def.currentThemeIds.set(it) }
     uiThemes?.let { def.themeOverrides.set(it.skipDuplicates()) }
-    oneHandUI?.let { def.oneHandUI.set(it) }
+    oneHandUI?.let { def.oneHandUI.set(if (appPlatform.isAndroid) it else false) }
   }
 
   companion object {
@@ -6262,7 +6263,7 @@ data class AppSettings(
         uiDarkColorScheme = DefaultTheme.SIMPLEX.themeName,
         uiCurrentThemeIds = null,
         uiThemes = null,
-        oneHandUI = false
+        oneHandUI = true
       )
 
     val current: AppSettings

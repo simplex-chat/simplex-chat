@@ -31,8 +31,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
@@ -545,20 +544,22 @@ fun ChatInfoLayout(
 
     SectionSpacer()
 
-    Row(
-      Modifier
-        .fillMaxWidth()
-        .padding(horizontal = DEFAULT_PADDING),
-      horizontalArrangement = Arrangement.Center,
-      verticalAlignment = Alignment.CenterVertically
+    Box(
+      Modifier.fillMaxWidth(),
+      contentAlignment = Alignment.Center
     ) {
-      SearchButton(chat, contact, close, onSearchClicked)
-      Spacer(Modifier.weight(1f))
-      AudioCallButton(chat, contact)
-      Spacer(Modifier.weight(1f))
-      VideoButton(chat, contact)
-      Spacer(Modifier.weight(1f))
-      MuteButton(chat, contact)
+      Row(
+        Modifier
+          .widthIn(max = 460.dp)
+          .padding(horizontal = DEFAULT_PADDING),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        SearchButton(modifier = Modifier.fillMaxWidth(0.25f), chat, contact, close, onSearchClicked)
+        AudioCallButton(modifier = Modifier.fillMaxWidth(0.33f), chat, contact)
+        VideoButton(modifier = Modifier.fillMaxWidth(0.5f), chat, contact)
+        MuteButton(modifier = Modifier.fillMaxWidth(1f), chat, contact)
+      }
     }
 
     SectionSpacer()
@@ -779,9 +780,16 @@ fun LocalAliasEditor(
 }
 
 @Composable
-fun SearchButton(chat: Chat, contact: Contact, close: () -> Unit, onSearchClicked: () -> Unit) {
+fun SearchButton(
+  modifier: Modifier,
+  chat: Chat,
+  contact: Contact,
+  close: () -> Unit,
+  onSearchClicked: () -> Unit
+) {
   val disabled = !contact.ready || chat.chatItems.isEmpty()
   InfoViewActionButton(
+    modifier = modifier,
     icon = painterResource(MR.images.ic_search),
     title = generalGetString(MR.strings.info_view_search_button),
     disabled = disabled,
@@ -796,11 +804,16 @@ fun SearchButton(chat: Chat, contact: Contact, close: () -> Unit, onSearchClicke
 }
 
 @Composable
-fun MuteButton(chat: Chat, contact: Contact) {
+fun MuteButton(
+  modifier: Modifier,
+  chat: Chat,
+  contact: Contact
+) {
   val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
   val disabled = !contact.ready || !contact.active
 
   InfoViewActionButton(
+    modifier = modifier,
     icon =  if (ntfsEnabled.value) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
     title = if (ntfsEnabled.value) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
     disabled = disabled,
@@ -812,8 +825,13 @@ fun MuteButton(chat: Chat, contact: Contact) {
 }
 
 @Composable
-fun AudioCallButton(chat: Chat, contact: Contact) {
+fun AudioCallButton(
+  modifier: Modifier,
+  chat: Chat,
+  contact: Contact
+) {
   CallButton(
+    modifier = modifier,
     chat,
     contact,
     icon = painterResource(MR.images.ic_call),
@@ -823,8 +841,13 @@ fun AudioCallButton(chat: Chat, contact: Contact) {
 }
 
 @Composable
-fun VideoButton(chat: Chat, contact: Contact) {
+fun VideoButton(
+  modifier: Modifier,
+  chat: Chat,
+  contact: Contact
+) {
   CallButton(
+    modifier = modifier,
     chat,
     contact,
     icon = painterResource(MR.images.ic_videocam),
@@ -834,7 +857,14 @@ fun VideoButton(chat: Chat, contact: Contact) {
 }
 
 @Composable
-fun CallButton(chat: Chat, contact: Contact, icon: Painter, title: String, mediaType: CallMediaType) {
+fun CallButton(
+  modifier: Modifier,
+  chat: Chat,
+  contact: Contact,
+  icon: Painter,
+  title: String,
+  mediaType: CallMediaType
+) {
   val canCall = contact.ready && contact.active && contact.mergedPreferences.calls.enabled.forUser && chatModel.activeCall.value == null
   val needToAllowCallsToContact = remember(chat.chatInfo) {
     chat.chatInfo is ChatInfo.Direct && with(chat.chatInfo.contact.mergedPreferences.calls) {
@@ -845,6 +875,7 @@ fun CallButton(chat: Chat, contact: Contact, icon: Painter, title: String, media
   val allowedCallsByPrefs = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.Calls) }
 
   InfoViewActionButton(
+    modifier = modifier,
     icon = icon,
     title = title,
     disabled = chatModel.activeCall.value != null,
@@ -907,42 +938,52 @@ private fun showCallsProhibitedAlert() {
   )
 }
 
-// for ChatInfoView (it has most buttons - 4) we use Spacer(Modifier.weight(1f)) to fit,
-// for GroupChat And GroupMemberInfoViews (2 to 3 buttons) we use this as approximately equal to spacing in ChatInfoView
-val INFO_VIEW_BUTTONS_PADDING = 36.dp
-
 @Composable
-fun InfoViewActionButton(icon: Painter, title: String, disabled: Boolean, disabledLook: Boolean, onClick: () -> Unit) {
-  Column(
-    horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = Arrangement.Center
-  ) {
-    IconButton(
-      onClick = onClick,
-      enabled = !disabled
+fun InfoViewActionButton(
+  modifier: Modifier,
+  icon: Painter,
+  title: String,
+  disabled: Boolean,
+  disabledLook: Boolean,
+  onClick: () -> Unit
+) {
+  Box(modifier) {
+    Column(
+      Modifier
+        .fillMaxWidth()
+        .padding(8.dp),
+      horizontalAlignment = Alignment.CenterHorizontally
     ) {
-      Box(
-        modifier = Modifier
-          .background(
-            if (disabledLook) MaterialTheme.colors.secondaryVariant else MaterialTheme.colors.primary,
-            shape = CircleShape
-          )
-          .padding(16.dp)
+      IconButton(
+        onClick = onClick,
+        enabled = !disabled
       ) {
-        Icon(
-          icon,
-          contentDescription = null,
-          Modifier.size(24.dp * fontSizeSqrtMultiplier),
-          tint = if (disabledLook) MaterialTheme.colors.secondary else MaterialTheme.colors.onPrimary
-        )
+        Box(
+          Modifier
+            .size(56.dp)
+            .background(
+              if (disabledLook) MaterialTheme.colors.secondaryVariant else MaterialTheme.colors.primary,
+              shape = CircleShape
+            ),
+          contentAlignment = Alignment.Center
+        ) {
+          Icon(
+            icon,
+            contentDescription = null,
+            Modifier.size(24.dp * fontSizeSqrtMultiplier),
+            tint = if (disabledLook) MaterialTheme.colors.secondary else MaterialTheme.colors.onPrimary
+          )
+        }
       }
+      Text(
+        title.capitalize(Locale.current),
+        Modifier.padding(top = DEFAULT_SPACE_AFTER_ICON),
+        style = MaterialTheme.typography.subtitle2.copy(fontWeight = FontWeight.Normal, fontSize = 12.sp),
+        color = MaterialTheme.colors.secondary,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+      )
     }
-    Text(
-      title.capitalize(Locale.current),
-      style = MaterialTheme.typography.subtitle2.copy(fontWeight = FontWeight.Normal),
-      color = MaterialTheme.colors.secondary,
-      modifier = Modifier.padding(top = DEFAULT_SPACE_AFTER_ICON)
-    )
   }
 }
 

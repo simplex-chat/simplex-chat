@@ -338,7 +338,8 @@
 "Accent" = "Akcent";
 
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "Akceptuj";
 
 /* No comment provided by engineer. */
@@ -347,7 +348,8 @@
 /* notification body */
 "Accept contact request from %@?" = "Zaakceptuj prośbę o kontakt od %@?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "Akceptuj incognito";
 
 /* call status */
@@ -876,7 +878,7 @@
 /* No comment provided by engineer. */
 "Chunks uploaded" = "Fragmenty przesłane";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "Wyczyść";
 
 /* No comment provided by engineer. */
@@ -1081,9 +1083,6 @@
 "Contact is connected" = "Kontakt jest połączony";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "Kontakt nie jest jeszcze połączony!";
-
-/* No comment provided by engineer. */
 "Contact name" = "Nazwa kontaktu";
 
 /* No comment provided by engineer. */
@@ -1278,7 +1277,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "domyślnie (tak)";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "Usuń";
 
 /* No comment provided by engineer. */
@@ -1316,12 +1316,6 @@
 
 /* No comment provided by engineer. */
 "Delete contact" = "Usuń kontakt";
-
-/* No comment provided by engineer. */
-"Delete Contact" = "Usuń Kontakt";
-
-/* No comment provided by engineer. */
-"Delete contact?\nThis cannot be undone!" = "Usunąć kontakt?\nTo nie może być cofnięte!";
 
 /* No comment provided by engineer. */
 "Delete database" = "Usuń bazę danych";
@@ -1376,9 +1370,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Usunąć starą bazę danych?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Usuń oczekujące połączenie";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Usunąć oczekujące połączenie?";
@@ -1804,9 +1795,6 @@
 "Error deleting connection" = "Błąd usuwania połączenia";
 
 /* No comment provided by engineer. */
-"Error deleting contact" = "Błąd usuwania kontaktu";
-
-/* No comment provided by engineer. */
 "Error deleting database" = "Błąd usuwania bazy danych";
 
 /* No comment provided by engineer. */
@@ -1987,7 +1975,7 @@
 /* No comment provided by engineer. */
 "Faster joining and more reliable messages." = "Szybsze dołączenie i bardziej niezawodne wiadomości.";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "Ulubione";
 
 /* No comment provided by engineer. */
@@ -2494,7 +2482,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "Japoński interfejs";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "Dołącz";
 
 /* No comment provided by engineer. */
@@ -2545,7 +2533,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "Dowiedz się więcej";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "Opuść";
 
 /* No comment provided by engineer. */
@@ -2806,13 +2794,13 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Wiele profili czatu";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Mute" = "Wycisz";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "Wyciszony, gdy jest nieaktywny!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "Nazwa";
 
 /* No comment provided by engineer. */
@@ -3321,7 +3309,7 @@
 /* chat item menu */
 "React…" = "Reaguj…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "Czytaj";
 
 /* No comment provided by engineer. */
@@ -3423,7 +3411,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Zmniejszone zużycie baterii";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "Odrzuć";
 
 /* No comment provided by engineer. */
@@ -3719,9 +3708,6 @@
 
 /* No comment provided by engineer. */
 "send direct message" = "wyślij wiadomość bezpośrednią";
-
-/* No comment provided by engineer. */
-"Send direct message" = "Wyślij wiadomość bezpośrednią";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Wyślij wiadomość bezpośrednią aby połączyć";
@@ -4132,9 +4118,6 @@
 "Tap to scan" = "Dotknij, aby zeskanować";
 
 /* No comment provided by engineer. */
-"Tap to start a new chat" = "Dotknij, aby rozpocząć nowy czat";
-
-/* No comment provided by engineer. */
 "TCP connection timeout" = "Limit czasu połączenia TCP";
 
 /* No comment provided by engineer. */
@@ -4371,7 +4354,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Nieoczekiwany stan migracji";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "Nie ulub.";
 
 /* No comment provided by engineer. */
@@ -4425,13 +4408,13 @@
 /* authentication reason */
 "Unlock app" = "Odblokuj aplikację";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unmute" = "Wyłącz wyciszenie";
 
 /* No comment provided by engineer. */
 "unprotected" = "niezabezpieczony";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "Nieprzeczytane";
 
 /* No comment provided by engineer. */
@@ -4852,9 +4835,6 @@
 "You have already requested connection!\nRepeat connection request?" = "Już prosiłeś o połączenie!\nPowtórzyć prośbę połączenia?";
 
 /* No comment provided by engineer. */
-"You have no chats" = "Nie masz czatów";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Musisz wprowadzić hasło przy każdym uruchomieniu aplikacji - nie jest one przechowywane na urządzeniu.";
 
 /* No comment provided by engineer. */
@@ -4943,9 +4923,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Twoje profile czatu";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Twój kontakt musi być online, aby połączenie zostało zakończone.\nMożesz anulować to połączenie i usunąć kontakt (i spróbować później z nowym linkiem).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Twój kontakt wysłał plik, który jest większy niż obecnie obsługiwany maksymalny rozmiar (%@).";

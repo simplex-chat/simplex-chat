@@ -12,7 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.font.FontStyle
@@ -25,16 +25,17 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.*
 import chat.simplex.common.SettingsViewState
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.WhatsNewView
 import chat.simplex.common.views.onboarding.shouldShowWhatsNew
-import chat.simplex.common.views.usersettings.SettingsView
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.Call
 import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.newchat.*
+import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,13 +48,87 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
   ModalManager.start.closeModals()
   ModalManager.end.closeModals()
   chatModel.newChatSheetVisible.value = true
-  ModalManager.start.showModalCloseable(
-    closeOnTop = !oneHandUI.value,
-  ) { close ->
-    NewChatSheet(rh = chatModel.currentRemoteHost.value, close)
-    DisposableEffect(Unit) {
-      onDispose {
-        chatModel.newChatSheetVisible.value = false
+  ModalManager.start.showCustomModal { close ->
+    val close = {
+      // It will set it faster than in onDispose. It's important to catch the actual state before
+      // closing modal for reacting with status bar changes in [App]
+      chatModel.newChatSheetVisible.value = false
+      close()
+    }
+    ModalView(close, closeOnTop = !oneHandUI.value) {
+      if (appPlatform.isAndroid) {
+        BackHandler {
+          close()
+        }
+      }
+      NewChatSheet(rh = chatModel.currentRemoteHost.value, close)
+      DisposableEffect(Unit) {
+        onDispose {
+          chatModel.newChatSheetVisible.value = false
+        }
+      }
+    }
+  }
+}
+
+@Composable
+fun ToggleChatListCard() {
+  Column(
+    modifier = Modifier
+      .padding(16.dp)
+      .clip(RoundedCornerShape(18.dp))
+  ) {
+    Box(
+      modifier = Modifier
+        .background(MaterialTheme.appColors.sentMessage)
+    ) {
+      Box(
+        modifier = Modifier.fillMaxWidth().matchParentSize().padding(5.dp),
+        contentAlignment = Alignment.TopEnd
+      ) {
+        IconButton(
+          onClick = {
+            appPrefs.oneHandUICardShown.set(true)
+            AlertManager.shared.showAlertMsg(
+              title = generalGetString(MR.strings.one_hand_ui),
+              text = generalGetString(MR.strings.one_hand_ui_change_instruction),
+            )
+          }
+        ) {
+          Icon(
+            painterResource(MR.images.ic_close), stringResource(MR.strings.back), tint = MaterialTheme.colors.secondary
+          )
+        }
+      }
+      Column(
+        modifier = Modifier
+          .padding(horizontal = DEFAULT_PADDING)
+          .padding(top = DEFAULT_PADDING)
+      ) {
+        Row(
+          horizontalArrangement = Arrangement.Start,
+          verticalAlignment = Alignment.CenterVertically,
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Text(stringResource(MR.strings.one_hand_ui_card_title), style = MaterialTheme.typography.h3)
+        }
+        Row(
+          Modifier.fillMaxWidth().padding(top = 6.dp, bottom = 12.dp),
+          verticalAlignment = Alignment.CenterVertically
+        ) {
+          Text(stringResource(MR.strings.one_hand_ui), Modifier.weight(10f), style = MaterialTheme.typography.body1)
+
+          Spacer(Modifier.fillMaxWidth().weight(1f))
+
+          SharedPreferenceToggle(
+            appPrefs.oneHandUI,
+            enabled = true,
+            onChange = {
+              val c = CurrentColors.value.colors
+              platform.androidSetStatusAndNavBarColors(c.isLight, c.background, !appPrefs.oneHandUI.get(), appPrefs.oneHandUI.get())
+            }
+          )
+        }
       }
     }
   }
@@ -61,8 +136,7 @@ private fun showNewChatSheet(oneHandUI: State<Boolean>) {
 
 @Composable
 fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
-  val oneHandUI = remember { chatModel.controller.appPrefs.oneHandUI }
-
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
   LaunchedEffect(Unit) {
     if (shouldShowWhatsNew(chatModel)) {
       delay(1000L)
@@ -85,27 +159,25 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   val (userPickerState, scaffoldState ) = settingsState
   Scaffold(
     topBar = {
-      if (!oneHandUI.state.value) {
+      if (!oneHandUI.value) {
         Column(Modifier.padding(end = endPadding)) {
           ChatListToolbar(
             scaffoldState.drawerState,
             userPickerState,
             stopped,
-            oneHandUI
           )
           Divider()
         }
       }
     },
     bottomBar = {
-      if (oneHandUI.state.value) {
+      if (oneHandUI.value) {
         Column(Modifier.padding(end = endPadding)) {
           Divider()
           ChatListToolbar(
             scaffoldState.drawerState,
             userPickerState,
             stopped,
-            oneHandUI
           )
         }
       }
@@ -121,11 +193,11 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
     drawerGesturesEnabled = appPlatform.isAndroid,
     floatingActionButton = {
-      if (!oneHandUI.state.value && searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
+      if (!oneHandUI.value && searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
         FloatingActionButton(
           onClick = {
             if (!stopped) {
-              showNewChatSheet(oneHandUI.state)
+              showNewChatSheet(oneHandUI)
             }
           },
           Modifier
@@ -145,28 +217,17 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       }
     }
   ) {
-    var modifier = Modifier.padding(it).padding(end = endPadding)
-    if (oneHandUI.state.value) {
-      modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
-    }
-
-    Box(modifier) {
+    Box(Modifier.padding(it).padding(end = endPadding)) {
       Box(
         modifier = Modifier
           .fillMaxSize()
       ) {
         if (!chatModel.desktopNoUserNoRemote) {
-          ChatList(chatModel, searchText = searchText, oneHandUI = oneHandUI)
+          ChatList(chatModel, searchText = searchText)
         }
         if (chatModel.chats.value.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
-          var textModifier = Modifier.align(Alignment.Center)
-
-          if (oneHandUI.state.value) {
-            textModifier = textModifier.scale(scaleX = 1f, scaleY = -1f)
-          }
-
           Text(stringResource(
-            if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), textModifier, color = MaterialTheme.colors.secondary)
+            if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
         }
       }
     }
@@ -184,7 +245,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       UserPicker(
         chatModel = chatModel,
         userPickerState = userPickerState,
-        contentAlignment = if (oneHandUI.state.value) Alignment.BottomStart else Alignment.TopStart
+        contentAlignment = if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart
       ) {
         scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
         userPickerState.value = AnimatedViewState.GONE
@@ -210,19 +271,20 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean, oneHandUI: SharedPreference<Boolean>) {
+private fun ChatListToolbar(drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean) {
   val serversSummary: MutableState<PresentedServersSummary?> = remember { mutableStateOf(null) }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val updatingProgress = remember { chatModel.updatingProgress }.value
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
 
-  if (oneHandUI.state.value) {
+  if (oneHandUI.value) {
     val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
 
     if (!stopped) {
       barButtons.add {
         IconButton(
           onClick = {
-            showNewChatSheet(oneHandUI.state)
+            showNewChatSheet(oneHandUI)
           },
         ) {
           Box(
@@ -338,7 +400,7 @@ fun SubscriptionStatusIndicator(click: (() -> Unit)) {
   val scope = rememberCoroutineScope()
 
   suspend fun setSubsTotal() {
-    if (chatModel.currentUser.value != null) {
+    if (chatModel.currentUser.value != null && chatModel.controller.hasChatCtrl() && chatModel.chatRunning.value == true) {
       val r = chatModel.controller.getAgentSubsTotal(chatModel.remoteHostId())
       if (r != null) {
         subs = r.first
@@ -359,12 +421,8 @@ fun SubscriptionStatusIndicator(click: (() -> Unit)) {
     }
   }
 
-  if (subs.total == 0 && !hasSess) {
-    Box {}
-  } else {
-    SimpleButtonFrame(click = click) {
-      SubscriptionStatusIndicatorView(subs = subs, hasSess = hasSess)
-    }
+  SimpleButtonFrame(click = click) {
+    SubscriptionStatusIndicatorView(subs = subs, hasSess = hasSess)
   }
 }
 
@@ -445,14 +503,8 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
 }
 
 @Composable
-private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<String?>, oneHandUI: SharedPreference<Boolean>) {
-  var modifier = Modifier.fillMaxWidth();
-
-  if (oneHandUI.state.value) {
-    modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
-  }
-
-  Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
+private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<String?>) {
+  Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
     val focusRequester = remember { FocusRequester() }
     var focused by remember { mutableStateOf(false) }
     Icon(
@@ -551,12 +603,14 @@ enum class ScrollDirection {
 }
 
 @Composable
-private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>, oneHandUI: SharedPreference<Boolean>) {
+private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldValue>) {
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   var scrollDirection by remember { mutableStateOf(ScrollDirection.Idle) }
   var previousIndex by remember { mutableStateOf(0) }
   var previousScrollOffset by remember { mutableStateOf(0) }
   val keyboardState by getKeyboardState()
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+  val oneHandUICardShown = remember { appPrefs.oneHandUICardShown.state }
 
   LaunchedEffect(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) {
     val currentIndex = listState.firstVisibleItemIndex
@@ -588,46 +642,57 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
   val chats = filteredChats(showUnreadAndFavorites, searchShowingSimplexLink, searchChatFilteredBySimplexLink, searchText.value.text, allChats.value.toList())
   LazyColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-    listState
+    Modifier.fillMaxSize(),
+    listState,
+    reverseLayout = oneHandUI.value
   ) {
     stickyHeader {
       Column(
         Modifier
           .offset {
             val y = if (searchText.value.text.isEmpty()) {
+              val offsetMultiplier = if (oneHandUI.value) 1 else -1
               if (
-                (oneHandUI.state.value && scrollDirection == ScrollDirection.Up) ||
+                (oneHandUI.value && scrollDirection == ScrollDirection.Up) ||
                 (appPlatform.isAndroid && keyboardState == KeyboardState.Opened)
               ) {
                 0
-              } else if (listState.firstVisibleItemIndex == 0) -listState.firstVisibleItemScrollOffset else -1000
+              } else if (listState.firstVisibleItemIndex == 0) offsetMultiplier * listState.firstVisibleItemScrollOffset else offsetMultiplier * 1000
             } else {
               0
             }
             IntOffset(0, y)
           }
-          .background(MaterialTheme.colors.background)
-      ) {
-        ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink, oneHandUI)
-        Divider()
+          .background(MaterialTheme.colors.background),
+        ) {
+        if (oneHandUI.value) {
+          Divider()
+        }
+        ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
+        if (!oneHandUI.value) {
+          Divider()
+        }
+      }
+    }
+    if (appPlatform.isAndroid && !oneHandUICardShown.value && chats.count() > 1) {
+      item {
+        ToggleChatListCard()
       }
     }
     itemsIndexed(chats, key = { _, chat -> chat.remoteHostId to chat.id }) { index, chat ->
       val nextChatSelected = remember(chat.id, chats) { derivedStateOf {
         chatModel.chatId.value != null && chats.getOrNull(index + 1)?.id == chatModel.chatId.value
       } }
-      ChatListNavLinkView(chat, nextChatSelected, oneHandUI.state)
+      ChatListNavLinkView(chat, nextChatSelected)
+    }
+    if (appPlatform.isAndroid && !oneHandUICardShown.value && chats.count() <= 1) {
+      item {
+        ToggleChatListCard()
+      }
     }
   }
   if (chats.isEmpty() && chatModel.chats.value.isNotEmpty()) {
-    var modifier = Modifier.fillMaxSize();
-
-    if (oneHandUI.state.value) {
-      modifier = modifier.scale(scaleX = 1f, scaleY = -1f)
-    }
-
-    Box(modifier, contentAlignment = Alignment.Center) {
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
       Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary)
     }
   }

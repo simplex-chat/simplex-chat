@@ -47,7 +47,8 @@ let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen" // deprecated, only used for
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue" // deprecated, only used for migration
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle" // deprecated, only used for migration
 let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
-let DEFAULT_ONE_HAND_UI = "oneHandUI"
+let DEFAULT_ONE_HAND_UI_CARD_SHOWN = "oneHandUICardShown"
+let DEFAULT_TOOLBAR_MATERIAL = "toolbarMaterial"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
 let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
@@ -97,7 +98,8 @@ let appDefaults: [String: Any] = [
     DEFAULT_DEVELOPER_TOOLS: false,
     DEFAULT_ENCRYPTION_STARTED: false,
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
-    DEFAULT_ONE_HAND_UI: false,
+    DEFAULT_ONE_HAND_UI_CARD_SHOWN: false,
+    DEFAULT_TOOLBAR_MATERIAL: ToolbarMaterial.defaultMaterial,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
@@ -118,6 +120,18 @@ let appDefaults: [String: Any] = [
     DEFAULT_CURRENT_THEME: DefaultTheme.SYSTEM_THEME_NAME,
     DEFAULT_SYSTEM_DARK_THEME: DefaultTheme.DARK.themeName,
     DEFAULT_CURRENT_THEME_IDS: "{}"
+]
+
+// only Bool defaults can be used here,
+// or hintDefaultsUnchanged and resetHintDefaults need to be changed
+let hintDefaults = [
+    DEFAULT_LA_NOTICE_SHOWN,
+    DEFAULT_ONE_HAND_UI_CARD_SHOWN,
+    DEFAULT_LIVE_MESSAGE_ALERT_SHOWN,
+    DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE,
+    DEFAULT_SHOW_MUTE_PROFILE_ALERT,
+    DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE,
+    DEFAULT_SHOW_DELETE_CONTACT_NOTICE
 ]
 
 // not used anymore
@@ -174,7 +188,7 @@ let themeOverridesDefault: CodableDefault<[ThemeOverrides]> = CodableDefault(def
 
 func setGroupDefaults() {
     privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))
-    performLAGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA))
+    appLocalAuthEnabledGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA))
     privacyLinkPreviewsGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS))
     profileImageCornerRadiusGroupDefault.set(UserDefaults.standard.double(forKey: DEFAULT_PROFILE_IMAGE_CORNER_RADIUS))
 }

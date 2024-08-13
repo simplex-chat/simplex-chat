@@ -278,7 +278,8 @@
 "above, then choose:" = "edellä, valitse sitten:";
 
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "Hyväksy";
 
 /* No comment provided by engineer. */
@@ -287,7 +288,8 @@
 /* notification body */
 "Accept contact request from %@?" = "Hyväksy kontaktipyyntö %@:ltä?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "Hyväksy tuntematon";
 
 /* call status */
@@ -642,7 +644,7 @@
 /* No comment provided by engineer. */
 "Choose from library" = "Valitse kirjastosta";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "Tyhjennä";
 
 /* No comment provided by engineer. */
@@ -767,9 +769,6 @@
 
 /* notification */
 "Contact is connected" = "Kontakti on yhdistetty";
-
-/* No comment provided by engineer. */
-"Contact is not connected yet!" = "Kontaktia ei ole vielä yhdistetty!";
 
 /* No comment provided by engineer. */
 "Contact name" = "Kontaktin nimi";
@@ -921,7 +920,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "oletusarvo (kyllä)";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "Poista";
 
 /* No comment provided by engineer. */
@@ -953,9 +953,6 @@
 
 /* No comment provided by engineer. */
 "Delete contact" = "Poista kontakti";
-
-/* No comment provided by engineer. */
-"Delete Contact" = "Poista kontakti";
 
 /* No comment provided by engineer. */
 "Delete database" = "Poista tietokanta";
@@ -1007,9 +1004,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Poista vanha tietokanta?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Poista vireillä oleva yhteys";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Poistetaanko odottava yhteys?";
@@ -1330,9 +1324,6 @@
 "Error deleting connection" = "Virhe yhteyden poistamisessa";
 
 /* No comment provided by engineer. */
-"Error deleting contact" = "Virhe kontaktin poistamisessa";
-
-/* No comment provided by engineer. */
 "Error deleting database" = "Virhe tietokannan poistamisessa";
 
 /* No comment provided by engineer. */
@@ -1462,7 +1453,7 @@
 /* No comment provided by engineer. */
 "Fast and no wait until the sender is online!" = "Nopea ja ei odotusta, kunnes lähettäjä on online-tilassa!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "Suosikki";
 
 /* No comment provided by engineer. */
@@ -1846,7 +1837,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "Japanilainen käyttöliittymä";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "Liity";
 
 /* No comment provided by engineer. */
@@ -1876,7 +1867,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "Lue lisää";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "Poistu";
 
 /* No comment provided by engineer. */
@@ -2053,13 +2044,13 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Useita keskusteluprofiileja";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Mute" = "Mykistä";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "Mykistetty ei-aktiivisena!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "Nimi";
 
 /* No comment provided by engineer. */
@@ -2415,7 +2406,7 @@
 /* chat item menu */
 "React…" = "Reagoi…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "Lue";
 
 /* No comment provided by engineer. */
@@ -2481,7 +2472,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Pienempi akun käyttö";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "Hylkää";
 
 /* No comment provided by engineer. */
@@ -2690,9 +2682,6 @@
 
 /* No comment provided by engineer. */
 "Send delivery receipts to" = "Lähetä toimituskuittaukset vastaanottajalle";
-
-/* No comment provided by engineer. */
-"Send direct message" = "Lähetä yksityisviesti";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Lähetä katoava viesti";
@@ -2956,9 +2945,6 @@
 "Tap to join incognito" = "Napauta liittyäksesi incognito-tilassa";
 
 /* No comment provided by engineer. */
-"Tap to start a new chat" = "Aloita uusi keskustelu napauttamalla";
-
-/* No comment provided by engineer. */
 "TCP connection timeout" = "TCP-yhteyden aikakatkaisu";
 
 /* No comment provided by engineer. */
@@ -3120,7 +3106,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Odottamaton siirtotila";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "Epäsuotuisa.";
 
 /* No comment provided by engineer. */
@@ -3159,10 +3145,10 @@
 /* authentication reason */
 "Unlock app" = "Avaa sovellus";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unmute" = "Poista mykistys";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "Lukematon";
 
 /* No comment provided by engineer. */
@@ -3418,9 +3404,6 @@
 "You could not be verified; please try again." = "Sinua ei voitu todentaa; yritä uudelleen.";
 
 /* No comment provided by engineer. */
-"You have no chats" = "Sinulla ei ole keskusteluja";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Sinun on annettava tunnuslause aina, kun sovellus käynnistyy - sitä ei tallenneta laitteeseen.";
 
 /* No comment provided by engineer. */
@@ -3500,9 +3483,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Keskusteluprofiilisi";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Kontaktin tulee olla online-tilassa, jotta yhteys voidaan muodostaa.\nVoit peruuttaa tämän yhteyden ja poistaa kontaktin (ja yrittää myöhemmin uudella linkillä).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Yhteyshenkilösi lähetti tiedoston, joka on suurempi kuin tällä hetkellä tuettu enimmäiskoko (%@).";

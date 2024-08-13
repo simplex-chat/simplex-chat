@@ -10,9 +10,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.platform.BackHandler
 import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.ui.theme.themedBackground
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.remote.AddingMobileDevice
 import chat.simplex.common.views.remote.DeviceNameField
@@ -56,7 +59,13 @@ private fun LinkAMobileLayout(
   staleQrCode: MutableState<Boolean>,
   updateDeviceName: (String) -> Unit,
 ) {
-  Column(Modifier.padding(top = 20.dp)) {
+  Column(Modifier.themedBackground()) {
+    CloseSheetBar(close = {
+      appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+    })
+    BackHandler(onBack = {
+      appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+    })
     AppBarTitle(stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles))
     Row(Modifier.weight(1f).padding(horizontal = DEFAULT_PADDING * 2), verticalAlignment = Alignment.CenterVertically) {
       Column(
@@ -82,11 +91,5 @@ private fun LinkAMobileLayout(
         }
       }
     }
-    SimpleButtonDecorated(
-      text = stringResource(MR.strings.about_simplex),
-      icon = painterResource(MR.images.ic_arrow_back_ios_new),
-      textDecoration = TextDecoration.None,
-      fontWeight = FontWeight.Medium
-    ) { chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo) }
   }
 }

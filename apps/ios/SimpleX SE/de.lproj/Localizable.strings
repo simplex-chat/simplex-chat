@@ -83,7 +83,16 @@
 "Selected chat preferences prohibit this message." = "Diese Nachricht ist wegen der gewählten Chat-Einstellungen nicht erlaubt.";
 
 /* No comment provided by engineer. */
+"Sending a message takes longer than expected." = "Das Senden einer Nachricht dauert länger als erwartet.";
+
+/* No comment provided by engineer. */
+"Sending message…" = "Nachricht wird gesendet…";
+
+/* No comment provided by engineer. */
 "Share" = "Teilen";
+
+/* No comment provided by engineer. */
+"Slow network?" = "Langsames Netzwerk?";
 
 /* No comment provided by engineer. */
 "Unknown database error: %@" = "Unbekannter Datenbankfehler: %@";
@@ -92,8 +101,11 @@
 "Unsupported format" = "Nicht unterstütztes Format";
 
 /* No comment provided by engineer. */
+"Wait" = "Warten";
+
+/* No comment provided by engineer. */
 "Wrong database passphrase" = "Falsches Datenbank-Passwort";
 
 /* No comment provided by engineer. */
-"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "Du kannst das Teilen in den Einstellungen zu Datenschutz & Sicherheit bzw. SimpleX-Sperre erlauben.";
+"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "Du kannst das Teilen in den Einstellungen zu Datenschutz & Sicherheit - SimpleX-Sperre erlauben.";
 

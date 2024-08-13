@@ -11,7 +11,6 @@ import Combine
 
 /// A List, which displays it's items in reverse order - from bottom to top
 struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIViewControllerRepresentable {
-
     let items: Array<Item>
 
     @Binding var scrollState: ReverseListScrollModel<Item>.State
@@ -53,6 +52,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             super.init(style: .plain)
 
             // 1. Style
+            tableView = InvertedTableView()
             tableView.separatorStyle = .none
             tableView.transform = .verticalFlip
             tableView.backgroundColor = .clear
@@ -130,6 +130,11 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                     for: nil
                 )
             NotificationCenter.default.post(name: .chatViewWillBeginScrolling, object: nil)
+        }
+
+        override func viewDidAppear(_ animated: Bool) {
+            tableView.clipsToBounds = false
+            parent?.viewIfLoaded?.clipsToBounds = false
         }
 
         /// Scrolls up
@@ -270,5 +275,30 @@ func withConditionalAnimation<Result>(
         try withAnimation(animation, body)
     } else {
         try body()
+    }
+}
+
+class InvertedTableView: UITableView {
+    static let inset = CGFloat(100)
+
+    static let insets = UIEdgeInsets(
+        top: inset,
+        left: .zero,
+        bottom: inset,
+        right: .zero
+    )
+
+    override var contentInsetAdjustmentBehavior: UIScrollView.ContentInsetAdjustmentBehavior {
+        get { .never }
+        set { }
+    }
+
+    override var contentInset: UIEdgeInsets {
+        get { Self.insets }
+        set { }
+    }
+
+    override var adjustedContentInset: UIEdgeInsets {
+        Self.insets
     }
 }
