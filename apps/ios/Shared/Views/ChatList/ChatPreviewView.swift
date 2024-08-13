@@ -13,7 +13,6 @@ struct ChatPreviewView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
-    @ObservedObject var networkModel = NetworkModel.shared
     @ObservedObject var chat: Chat
     @Binding var progressByTimeout: Bool
     @State var deleting: Bool = false
@@ -377,17 +376,7 @@ struct ChatPreviewView: View {
         switch chat.chatInfo {
         case let .direct(contact):
             if contact.active && contact.activeConn != nil {
-                switch (networkModel.contactNetworkStatus(contact)) {
-                case .connected: incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
-                case .error:
-                    Image(systemName: "exclamationmark.circle")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: dynamicChatInfoSize, height: dynamicChatInfoSize)
-                        .foregroundColor(theme.colors.secondary)
-                default:
-                    ProgressView()
-                }
+                NetworkStatusView(chat: chat, contact: contact, size: size)
             } else {
                 incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
             }
@@ -399,6 +388,31 @@ struct ChatPreviewView: View {
             }
         default:
             incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
+        }
+    }
+
+    struct NetworkStatusView: View {
+        @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
+        @EnvironmentObject var theme: AppTheme
+        @ObservedObject var networkModel = NetworkModel.shared
+        @ObservedObject var chat: Chat
+
+        let contact: Contact
+        let size: CGFloat
+
+        var body: some View {
+            let dynamicChatInfoSize = dynamicSize(userFont).chatInfoSize
+            switch (networkModel.contactNetworkStatus(contact)) {
+            case .connected: incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
+            case .error:
+                Image(systemName: "exclamationmark.circle")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: dynamicChatInfoSize, height: dynamicChatInfoSize)
+                    .foregroundColor(theme.colors.secondary)
+            default:
+                ProgressView()
+            }
         }
     }
 }
