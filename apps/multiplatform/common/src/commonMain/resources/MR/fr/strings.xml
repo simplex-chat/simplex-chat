@@ -342,7 +342,7 @@
     <string name="your_ICE_servers">Vos serveurs ICE</string>
     <string name="configure_ICE_servers">Configurer les serveurs ICE</string>
     <string name="network_settings">Paramètres réseau avancés</string>
-    <string name="network_settings_title">Paramètres réseau</string>
+    <string name="network_settings_title">Paramètres avancés</string>
     <string name="network_enable_socks">Utiliser un proxy SOCKS \?</string>
     <string name="network_disable_socks">Utiliser une connexion Internet directe \?</string>
     <string name="network_disable_socks_info">Si vous confirmez, les serveurs de messagerie seront en mesure de voir votre adresse IP, votre fournisseur ainsi que les serveurs auxquels vous vous connectez.</string>
@@ -370,7 +370,7 @@
     <string name="callstate_received_answer">réponse reçu…</string>
     <string name="callstate_received_confirmation">confimation reçu…</string>
     <string name="callstate_connecting">connexion…</string>
-    <string name="opensource_protocol_and_code_anybody_can_run_servers">Protocole et code open-source – n\'importe qui peut heberger un serveur.</string>
+    <string name="opensource_protocol_and_code_anybody_can_run_servers">N\'importe qui peut heberger un serveur.</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Pour protéger votre vie privée, au lieu d\'IDs utilisés par toutes les autres plateformes, SimpleX possède des IDs pour les queues de messages, distinctes pour chacun de vos contacts.</string>
     <string name="read_more_in_github">Plus d\'informations sur notre GitHub.</string>
     <string name="paste_the_link_you_received">Collez le lien que vous avez reçu</string>
@@ -2027,4 +2027,5 @@
     <string name="action_button_add_members">Inviter</string>
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Veuillez demander à votre contact d\'autoriser les appels.</string>
     <string name="cant_call_member_send_message_alert_text">Envoyer un message pour activer les appels.</string>
+    <string name="v6_0_your_contacts_descr">Archiver les contacts pour discuter plus tard.</string>
 </resources>
