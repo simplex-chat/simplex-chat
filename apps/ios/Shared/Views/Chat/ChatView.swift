@@ -130,6 +130,13 @@ struct ChatView: View {
                 }
             }
         }
+        .appSheet(item: $selectedMember) { member in
+            Group {
+                if case let .group(groupInfo) = chat.chatInfo {
+                    GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
+                }
+            }
+        }
         .onAppear {
             selectedChatItems = nil
             initChatView()
@@ -817,8 +824,8 @@ struct ChatView: View {
                             HStack(alignment: .top, spacing: 8) {
                                 MemberProfileImage(member, size: memberImageSize, backgroundColor: theme.colors.background)
                                     .onTapGesture {
-                                        if m.membersLoaded {
-                                            selectedMember = m.getGroupMember(member.groupMemberId)
+                                        if let member =  m.getGroupMember(member.groupMemberId) {
+                                            selectedMember = member
                                         } else {
                                             Task {
                                                 await m.loadGroupMembers(groupInfo) {
@@ -826,9 +833,6 @@ struct ChatView: View {
                                                 }
                                             }
                                         }
-                                    }
-                                    .appSheet(item: $selectedMember) { member in
-                                        GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
                                     }
                                 chatItemWithMenu(ci, range, maxWidth)
                             }
