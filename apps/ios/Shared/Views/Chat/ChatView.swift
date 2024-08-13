@@ -152,8 +152,10 @@ struct ChatView: View {
         .onChange(of: revealedChatItem) { _ in
             NotificationCenter.postReverseListNeedsLayout()
         }
-        .onChange(of: im.reversedChatItems) { reversedChatItems in
-            if reversedChatItems.count <= loadItemsPerPage && filtered(reversedChatItems).count < 10 {
+        .onChange(of: im.isLoading) { isLoading in
+            if !isLoading,
+               im.reversedChatItems.count <= loadItemsPerPage,
+               filtered(im.reversedChatItems).count < 10 {
                 loadChatItems(chat.chatInfo)
             }
         }
