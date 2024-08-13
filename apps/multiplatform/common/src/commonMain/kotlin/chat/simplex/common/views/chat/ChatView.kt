@@ -472,7 +472,10 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
             markRead = { range, unreadCountAfter ->
               withBGApi {
                 withChats {
-                  markChatItemsRead(chatRh, chatInfo, range, unreadCountAfter)
+                  // It's important to call it on Main thread. Otherwise, composable crash occurs from time-to-time without useful stacktrace
+                  withContext(Dispatchers.Main) {
+                    markChatItemsRead(chatRh, chatInfo, range, unreadCountAfter)
+                  }
                   ntfManager.cancelNotificationsForChat(chatInfo.id)
                   chatModel.controller.apiChatRead(
                     chatRh,
