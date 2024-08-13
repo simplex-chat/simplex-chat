@@ -2061,4 +2061,6 @@
     <string name="invite_friends_short">Meghívás</string>
     <string name="v6_0_new_chat_experience">Új csevegési élmény 🎉</string>
     <string name="new_message">Új üzenet</string>
+    <string name="error_parsing_uri_title">Érvénytelen hivatkozás</string>
+    <string name="error_parsing_uri_desc">Ellenőrizze, hogy a SimpleX hivatkozás helyes-e.</string>
 </resources>
