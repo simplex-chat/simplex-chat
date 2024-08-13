@@ -453,8 +453,8 @@
     <string name="many_people_asked_how_can_it_deliver"><![CDATA[Beaucoup se demandent : <i>si SimpleX n\'a pas d\'identifiant d\'utilisateur, comment peut-il transmettre des messages \?</i>]]></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Seuls les appareils clients stockent les profils des utilisateurs, les contacts, les groupes et les messages envoyés avec un <b>chiffrement de bout en bout à deux couches</b>.]]></string>
     <string name="read_more_in_github_with_link"><![CDATA[Pour en savoir plus, consultez notre <font color="#0088ff">GitHub repository</font>.]]></string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Batterie peu utilisée</b>. Le service de fond vérifie les messages toutes les 10 minutes. Vous risquez de manquer des appels ou des messages urgents.]]></string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Batterie plus utilisée </b> ! Le service de fond est toujours en cours d\'exécution - les notifications s\'affichent dès que les messages sont disponibles.]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Batterie peu utilisée</b>. L\'app vérifie les messages toutes les 10 minutes. Vous risquez de manquer des appels ou des messages urgents.</string>
+    <string name="onboarding_notifications_mode_service_desc"><b>Consomme davantage de batterie </b> L\'app fonctionne toujours en arrière-plan - les notifications s\'affichent instantanément.</string>
     <string name="integrity_msg_skipped">%1$d message(s) manqué(s)</string>
     <string name="integrity_msg_bad_id">ID de message incorrecte</string>
     <string name="settings_section_title_settings">PARAMÈTRES</string>
@@ -2008,7 +2008,7 @@
     <string name="info_view_video_button">vidéo</string>
     <string name="contact_deleted">Contact supprimé !</string>
     <string name="you_can_still_send_messages_to_contact">Vous pouvez toujours envoyer des messages à %1$s à partir des chats supprimés.</string>
-    <string name="deleted_chats">Discussions supprimées</string>
+    <string name="deleted_chats">Contacts archivés</string>
     <string name="no_filtered_contacts">Pas de contacts filtrés</string>
     <string name="paste_link">Coller le lien</string>
     <string name="contact_list_header_title">Vos contacts</string>
@@ -2028,4 +2028,9 @@
     <string name="calls_prohibited_ask_to_enable_calls_alert_text">Veuillez demander à votre contact d\'autoriser les appels.</string>
     <string name="cant_call_member_send_message_alert_text">Envoyer un message pour activer les appels.</string>
     <string name="v6_0_your_contacts_descr">Archiver les contacts pour discuter plus tard.</string>
+    <string name="v6_0_privacy_blur">Rendez les images floues et protégez-les contre les regards indiscrets.</string>
+    <string name="v6_0_connect_faster_descr">Connectez-vous à vos amis plus rapidement.</string>
+    <string name="v6_0_connection_servers_status_descr">État de la connexion et des serveurs.</string>
+    <string name="chat_database_exported_title">Exportation de la base de données des discussions</string>
+    <string name="chat_database_exported_continue">Poursuivre</string>
 </resources>
