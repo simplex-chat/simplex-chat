@@ -421,7 +421,10 @@ fun SubscriptionStatusIndicator(click: (() -> Unit)) {
     }
   }
 
-  SimpleButtonFrame(click = click) {
+  SimpleButtonFrame(
+    click = click,
+    disabled = chatModel.chatRunning.value != true
+  ) {
     SubscriptionStatusIndicatorView(subs = subs, hasSess = hasSess)
   }
 }
