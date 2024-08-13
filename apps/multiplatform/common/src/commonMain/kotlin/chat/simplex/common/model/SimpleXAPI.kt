@@ -2524,9 +2524,7 @@ object ChatController {
           fun showAlert(chatError: ChatError) {
             when {
               r.rcStopReason is RemoteCtrlStopReason.Disconnected ->
-                AlertManager.shared.showAlertMsg(
-                  title = generalGetString(MR.strings.remote_ctrl_was_disconnected_title)
-                )
+                {}
               r.rcStopReason is RemoteCtrlStopReason.ConnectionFailed
                   && r.rcStopReason.chatError is ChatError.ChatErrorAgent
                   && r.rcStopReason.chatError.agentError is AgentErrorType.RCP
