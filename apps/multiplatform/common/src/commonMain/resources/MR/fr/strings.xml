@@ -443,7 +443,7 @@
     <string name="next_generation_of_private_messaging">La nouvelle génération de messagerie privée</string>
     <string name="privacy_redefined">La vie privée redéfinie</string>
     <string name="first_platform_without_user_ids">La 1ère plateforme sans aucun identifiant d\'utilisateur – privée par design.</string>
-    <string name="immune_to_spam_and_abuse">Protégé du spam et des abus</string>
+    <string name="immune_to_spam_and_abuse">Protégé du spam</string>
     <string name="people_can_connect_only_via_links_you_share">On ne peut se connecter à vous qu’avec les liens que vous partagez.</string>
     <string name="decentralized">Décentralisé</string>
     <string name="create_your_profile">Créez votre profil</string>
@@ -2033,4 +2033,21 @@
     <string name="v6_0_connection_servers_status_descr">État de la connexion et des serveurs.</string>
     <string name="chat_database_exported_title">Exportation de la base de données des discussions</string>
     <string name="chat_database_exported_continue">Poursuivre</string>
+    <string name="delete_messages_mark_deleted_warning">Les messages seront marqués comme étant à supprimer. Le(s) destinataire(s) pourra(ont) révéler ces messages.</string>
+    <string name="delete_members_messages__question">Supprimer %d messages de membres ?</string>
+    <string name="compose_message_placeholder">Message</string>
+    <string name="v6_0_increase_font_size">Augmenter la taille de la police.</string>
+    <string name="create_address_button">Créer</string>
+    <string name="selected_chat_items_nothing_selected">Rien n\'est sélectionné</string>
+    <string name="error_parsing_uri_title">Lien invalide</string>
+    <string name="new_message">Nouveau message</string>
+    <string name="v6_0_new_media_options">Nouvelles options de médias</string>
+    <string name="invite_friends_short">Inviter</string>
+    <string name="v6_0_new_chat_experience">Nouvelle expérience de discussion 🎉</string>
+    <string name="v6_0_upgrade_app_descr">Téléchargez les nouvelles versions depuis GitHub.</string>
+    <string name="v6_0_private_routing_descr">Il protège votre adresse IP et vos connexions.</string>
+    <string name="v6_0_connection_servers_status">Maîtrisez votre réseau</string>
+    <string name="v6_0_delete_many_messages_descr">Supprimez jusqu\'à 20 messages à la fois.</string>
+    <string name="media_and_file_servers">Serveurs de fichiers et de médias</string>
+    <string name="message_servers">Serveurs de messages</string>
 </resources>
