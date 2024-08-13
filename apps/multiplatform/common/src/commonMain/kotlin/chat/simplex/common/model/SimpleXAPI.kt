@@ -2523,6 +2523,8 @@ object ChatController {
           ModalManager.fullscreen.closeModals()
           fun showAlert(chatError: ChatError) {
             when {
+              r.rcStopReason is RemoteCtrlStopReason.Disconnected ->
+                {}
               r.rcStopReason is RemoteCtrlStopReason.ConnectionFailed
                   && r.rcStopReason.chatError is ChatError.ChatErrorAgent
                   && r.rcStopReason.chatError.agentError is AgentErrorType.RCP
