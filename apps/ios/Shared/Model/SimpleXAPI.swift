@@ -2086,6 +2086,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.remoteCtrlSession = nil
                 dismissAllSheets() {
                     switch rcStopReason {
+                    case .disconnected:
+                        AlertManager.shared.showAlertMsg(title: "Connection with desktop stopped")
                     case .connectionFailed(.errorAgent(.RCP(.identity))):
                         AlertManager.shared.showAlertMsg(
                             title: "Connection with desktop stopped",
