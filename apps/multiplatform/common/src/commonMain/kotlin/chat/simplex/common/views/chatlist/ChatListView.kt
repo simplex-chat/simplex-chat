@@ -701,7 +701,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
   }
 }
 
-private fun filteredChats(
+fun filteredChats(
   showUnreadAndFavorites: Boolean,
   searchShowingSimplexLink: State<Boolean>,
   searchChatFilteredBySimplexLink: State<String?>,
@@ -722,18 +722,16 @@ private fun filteredChats(
             if (s.isEmpty()) {
               chat.id == chatModel.chatId.value || filtered(chat)
             } else {
-              (viewNameContains(cInfo, s) ||
-                      cInfo.contact.profile.displayName.lowercase().contains(s) ||
-                      cInfo.contact.fullName.lowercase().contains(s))
+              cInfo.anyNameContains(s)
             })
           is ChatInfo.Group -> if (s.isEmpty()) {
             chat.id == chatModel.chatId.value || filtered(chat) || cInfo.groupInfo.membership.memberStatus == GroupMemberStatus.MemInvited
           } else {
-            viewNameContains(cInfo, s)
+            cInfo.anyNameContains(s)
           }
-          is ChatInfo.Local -> s.isEmpty() || viewNameContains(cInfo, s)
-          is ChatInfo.ContactRequest -> s.isEmpty() || viewNameContains(cInfo, s)
-          is ChatInfo.ContactConnection -> (s.isNotEmpty() && cInfo.contactConnection.localAlias.lowercase().contains(s)) || (s.isEmpty() && chat.id == chatModel.chatId.value)
+          is ChatInfo.Local -> s.isEmpty() || cInfo.anyNameContains(s)
+          is ChatInfo.ContactRequest -> s.isEmpty() || cInfo.anyNameContains(s)
+          is ChatInfo.ContactConnection -> (s.isNotEmpty() && cInfo.anyNameContains(s)) || (s.isEmpty() && chat.id == chatModel.chatId.value)
           is ChatInfo.InvalidJSON -> chat.id == chatModel.chatId.value
         }
       }
@@ -745,6 +743,3 @@ private fun filtered(chat: Chat): Boolean =
   (chat.chatInfo.chatSettings?.favorite ?: false) ||
       chat.chatStats.unreadChat ||
       (chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0)
-
-private fun viewNameContains(cInfo: ChatInfo, s: String): Boolean =
-  cInfo.chatViewName.lowercase().contains(s.lowercase())
