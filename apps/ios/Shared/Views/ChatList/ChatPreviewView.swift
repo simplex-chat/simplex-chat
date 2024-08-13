@@ -376,7 +376,7 @@ struct ChatPreviewView: View {
         switch chat.chatInfo {
         case let .direct(contact):
             if contact.active && contact.activeConn != nil {
-                NetworkStatusView(chat: chat, contact: contact, size: size)
+                NetworkStatusView(contact: contact, size: size)
             } else {
                 incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
             }
@@ -395,7 +395,6 @@ struct ChatPreviewView: View {
         @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
         @EnvironmentObject var theme: AppTheme
         @ObservedObject var networkModel = NetworkModel.shared
-        @ObservedObject var chat: Chat
 
         let contact: Contact
         let size: CGFloat
@@ -403,7 +402,7 @@ struct ChatPreviewView: View {
         var body: some View {
             let dynamicChatInfoSize = dynamicSize(userFont).chatInfoSize
             switch (networkModel.contactNetworkStatus(contact)) {
-            case .connected: incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
+            case .connected: incognitoIcon(contact.contactConnIncognito, theme.colors.secondary, size: size)
             case .error:
                 Image(systemName: "exclamationmark.circle")
                     .resizable()
