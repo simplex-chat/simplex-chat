@@ -10,14 +10,14 @@ import SwiftUI
 import SimpleXChat
 
 struct NavLinkPlain<Label: View>: View {
-    let tag: ChatId
+    let chatId: ChatId
     @Binding var selection: ChatId?
     @ViewBuilder var label: () -> Label
     var disabled = false
 
     var body: some View {
         ZStack {
-            Button("") { ItemsModel.shared.loadItemsAndNavigate(to: tag) }
+            Button("") { ItemsModel.shared.loadOpenChat(chatId) }
                 .disabled(disabled)
             label()
         }

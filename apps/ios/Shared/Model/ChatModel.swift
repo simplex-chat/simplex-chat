@@ -66,7 +66,7 @@ class ItemsModel: ObservableObject {
             .store(in: &bag)
     }
 
-    func loadItemsAndNavigate(to chatId: ChatId, willNavigate: @escaping () -> Void = {}) {
+    func loadOpenChat(_ chatId: ChatId, willNavigate: @escaping () -> Void = {}) {
         let navigationTimeout = Task {
             do {
                 try await Task.sleep(nanoseconds: 250_000000)
