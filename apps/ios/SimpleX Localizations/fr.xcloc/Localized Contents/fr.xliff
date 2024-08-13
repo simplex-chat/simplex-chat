@@ -940,9 +940,9 @@
         <target>Appliquer à</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Archive and upload" xml:space="preserve">
+      <trans-unit id="Archive and upload" xml:space="preserve" approved="no">
         <source>Archive and upload</source>
-        <target>Archiver et transférer</target>
+        <target state="translated">Archiver et téléverser</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Archive contacts to chat later." xml:space="preserve" approved="no">
@@ -1436,9 +1436,9 @@
         <target>Comparez les codes de sécurité avec vos contacts.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Completed" xml:space="preserve">
+      <trans-unit id="Completed" xml:space="preserve" approved="no">
         <source>Completed</source>
-        <target>Complété</target>
+        <target state="translated">Complétées</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Configure ICE servers" xml:space="preserve">
@@ -1810,9 +1810,9 @@ Il s'agit de votre propre lien unique !</target>
         <target>Créez votre profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Created" xml:space="preserve">
+      <trans-unit id="Created" xml:space="preserve" approved="no">
         <source>Created</source>
-        <target>Créé</target>
+        <target state="translated">Créées</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Created at" xml:space="preserve">
@@ -2189,9 +2189,9 @@ Il s'agit de votre propre lien unique !</target>
         <target state="translated">Supprimer sans notification</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Deleted" xml:space="preserve">
+      <trans-unit id="Deleted" xml:space="preserve" approved="no">
         <source>Deleted</source>
-        <target>Supprimé</target>
+        <target state="translated">Supprimées</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Deleted at" xml:space="preserve">
@@ -5709,9 +5709,9 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
         <target>File d'attente sécurisée</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Secured" xml:space="preserve">
+      <trans-unit id="Secured" xml:space="preserve" approved="no">
         <source>Secured</source>
-        <target>Sécurisé</target>
+        <target state="translated">Sécurisées</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Security assessment" xml:space="preserve">
@@ -5789,9 +5789,9 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
         <target>Erreurs d'envoi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send link previews" xml:space="preserve">
+      <trans-unit id="Send link previews" xml:space="preserve" approved="no">
         <source>Send link previews</source>
-        <target>Envoi d'aperçus de liens</target>
+        <target state="translated">Aperçu des liens</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send live message" xml:space="preserve">
@@ -5964,9 +5964,9 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
         <target>Le serveur requiert une autorisation pour créer des files d'attente, vérifiez le mot de passe</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to upload, check password" xml:space="preserve">
+      <trans-unit id="Server requires authorization to upload, check password" xml:space="preserve" approved="no">
         <source>Server requires authorization to upload, check password</source>
-        <target>Le serveur requiert une autorisation pour uploader, vérifiez le mot de passe</target>
+        <target state="translated">Le serveur requiert une autorisation pour téléverser, vérifiez le mot de passe</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
@@ -6129,9 +6129,9 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
         <target>Afficher les options pour les développeurs</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show last messages" xml:space="preserve">
+      <trans-unit id="Show last messages" xml:space="preserve" approved="no">
         <source>Show last messages</source>
-        <target>Voir les derniers messages</target>
+        <target state="translated">Aperçu des derniers messages</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show message status" xml:space="preserve">
@@ -6144,9 +6144,9 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
         <target>Afficher le pourcentage</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show preview" xml:space="preserve">
+      <trans-unit id="Show preview" xml:space="preserve" approved="no">
         <source>Show preview</source>
-        <target>Afficher l'aperçu</target>
+        <target state="translated">Aperçu affiché</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show → on messages sent via private routing." xml:space="preserve">
@@ -6384,9 +6384,9 @@ Activez-le dans les paramètres *Réseau et serveurs*.</target>
         <target>Soumettre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Subscribed" xml:space="preserve">
+      <trans-unit id="Subscribed" xml:space="preserve" approved="no">
         <source>Subscribed</source>
-        <target>Inscrit</target>
+        <target state="translated">Inscriptions</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Subscription errors" xml:space="preserve">
@@ -7000,9 +7000,9 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Échec de l'envoi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Upload file" xml:space="preserve">
+      <trans-unit id="Upload file" xml:space="preserve" approved="no">
         <source>Upload file</source>
-        <target>Transférer le fichier</target>
+        <target state="translated">Téléverser le fichier</target>
         <note>server test step</note>
       </trans-unit>
       <trans-unit id="Uploaded" xml:space="preserve">
@@ -7155,9 +7155,9 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Appel vidéo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve">
+      <trans-unit id="Video will be received when your contact completes uploading it." xml:space="preserve" approved="no">
         <source>Video will be received when your contact completes uploading it.</source>
-        <target>La vidéo ne sera reçue que lorsque votre contact aura fini de la transférer.</target>
+        <target state="translated">La vidéo ne sera reçue que lorsque votre contact aura fini la mettre en ligne.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Video will be received when your contact is online, please wait or check later!" xml:space="preserve">
