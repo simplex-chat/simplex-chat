@@ -59,7 +59,7 @@ struct ChatView: View {
             viewBody
         }
     }
-    
+
     @ViewBuilder
     private var viewBody: some View {
         let cInfo = chat.chatInfo
@@ -130,16 +130,23 @@ struct ChatView: View {
                 }
             }
         }
+        .appSheet(item: $selectedMember) { member in
+            Group {
+                if case let .group(groupInfo) = chat.chatInfo {
+                    GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
+                }
+            }
+        }
         .onAppear {
-            loadChat(chat: chat)
-            initChatView()
             selectedChatItems = nil
+            initChatView()
         }
         .onChange(of: chatModel.chatId) { cId in
             showChatInfoSheet = false
+            selectedChatItems = nil
+            scrollModel.scrollToBottom()
             stopAudioPlayer()
             if let cId {
-                selectedChatItems = nil
                 if let c = chatModel.getChat(cId) {
                     chat = c
                 }
@@ -152,8 +159,10 @@ struct ChatView: View {
         .onChange(of: revealedChatItem) { _ in
             NotificationCenter.postReverseListNeedsLayout()
         }
-        .onChange(of: im.reversedChatItems) { reversedChatItems in
-            if reversedChatItems.count <= loadItemsPerPage && filtered(reversedChatItems).count < 10 {
+        .onChange(of: im.isLoading) { isLoading in
+            if !isLoading,
+               im.reversedChatItems.count <= loadItemsPerPage,
+               filtered(im.reversedChatItems).count < 10 {
                 loadChatItems(chat.chatInfo)
             }
         }
@@ -221,6 +230,7 @@ struct ChatView: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
+                let isLoading = im.isLoading && im.showLoadingProgress
                 if selectedChatItems != nil {
                     Button {
                         withAnimation {
@@ -243,19 +253,23 @@ struct ChatView: View {
                                 }
                             }
                             Menu {
-                                if callsPrefEnabled && chatModel.activeCall == nil {
-                                    Button {
-                                        CallController.shared.startCall(contact, .video)
-                                    } label: {
-                                        Label("Video call", systemImage: "video")
+                                if !isLoading {
+                                    if callsPrefEnabled && chatModel.activeCall == nil {
+                                        Button {
+                                            CallController.shared.startCall(contact, .video)
+                                        } label: {
+                                            Label("Video call", systemImage: "video")
+                                        }
+                                        .disabled(!contact.ready || !contact.active)
                                     }
-                                    .disabled(!contact.ready || !contact.active)
+                                    searchButton()
+                                    ToggleNtfsButton(chat: chat)
+                                        .disabled(!contact.ready || !contact.active)
                                 }
-                                searchButton()
-                                ToggleNtfsButton(chat: chat)
-                                    .disabled(!contact.ready || !contact.active)
                             } label: {
                                 Image(systemName: "ellipsis")
+                                    .tint(isLoading ? Color.clear : nil)
+                                    .overlay { if isLoading { ProgressView() } }
                             }
                         }
                     case let .group(groupInfo):
@@ -280,10 +294,14 @@ struct ChatView: View {
                                 }
                             }
                             Menu {
-                                searchButton()
-                                ToggleNtfsButton(chat: chat)
+                                if !isLoading {
+                                    searchButton()
+                                    ToggleNtfsButton(chat: chat)
+                                }
                             } label: {
                                 Image(systemName: "ellipsis")
+                                    .tint(isLoading ? Color.clear : nil)
+                                    .overlay { if isLoading { ProgressView() } }
                             }
                         }
                     case .local:
@@ -349,9 +367,7 @@ struct ChatView: View {
                 searchText = ""
                 searchMode = false
                 searchFocussed = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                    loadChat(chat: chat)
-                }
+                Task { await loadChat(chat: chat) }
             }
         }
         .padding(.horizontal)
@@ -408,18 +424,11 @@ struct ChatView: View {
             } loadPage: {
                 loadChatItems(cInfo)
             }
+            .opacity(ItemsModel.shared.isLoading ? 0 : 1)
             .padding(.vertical, -InvertedTableView.inset)
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { _ in
-                loadChat(chat: chat, search: searchText)
-            }
-            .onChange(of: chatModel.chatId) { chatId in
-                if let chatId, let c = chatModel.getChat(chatId) {
-                    chat = c
-                    showChatInfoSheet = false
-                    loadChat(chat: c)
-                    scrollModel.scrollToBottom()
-                }
+                Task { await loadChat(chat: chat, search: searchText) }
             }
             .onChange(of: im.reversedChatItems) { _ in
                 floatingButtonModel.chatItemsChanged()
@@ -815,8 +824,8 @@ struct ChatView: View {
                             HStack(alignment: .top, spacing: 8) {
                                 MemberProfileImage(member, size: memberImageSize, backgroundColor: theme.colors.background)
                                     .onTapGesture {
-                                        if m.membersLoaded {
-                                            selectedMember = m.getGroupMember(member.groupMemberId)
+                                        if let member =  m.getGroupMember(member.groupMemberId) {
+                                            selectedMember = member
                                         } else {
                                             Task {
                                                 await m.loadGroupMembers(groupInfo) {
@@ -824,9 +833,6 @@ struct ChatView: View {
                                                 }
                                             }
                                         }
-                                    }
-                                    .appSheet(item: $selectedMember) { member in
-                                        GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
                                     }
                                 chatItemWithMenu(ci, range, maxWidth)
                             }

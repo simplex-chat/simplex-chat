@@ -152,18 +152,23 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
         /// Scrolls to Item at index path
         /// - Parameter indexPath: Item to scroll to - will scroll to beginning of the list, if `nil`
         func scroll(to index: Int?, position: UITableView.ScrollPosition) {
-            if let index {
-                var animated = false
-                if #available(iOS 16.0, *) {
-                    animated = true
-                }
+            var animated = false
+            if #available(iOS 16.0, *) {
+                animated = true
+            }
+            if let index, tableView.numberOfRows(inSection: 0) != 0 {
                 tableView.scrollToRow(
                     at: IndexPath(row: index, section: 0),
                     at: position,
                     animated: animated
                 )
-                Task { representer.scrollState = .atDestination }
+            } else {
+                tableView.setContentOffset(
+                    CGPoint(x: .zero, y: -InvertedTableView.inset),
+                    animated: animated
+                )
             }
+            Task { representer.scrollState = .atDestination }
         }
 
         func update(items: Array<Item>) {

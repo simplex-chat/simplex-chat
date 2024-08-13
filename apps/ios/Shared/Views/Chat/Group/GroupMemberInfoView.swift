@@ -321,24 +321,24 @@ struct GroupMemberInfoView: View {
 
     func knownDirectChatButton(_ chat: Chat, width: CGFloat) -> some View {
         InfoViewButton(image: "message.fill", title: "message", width: width) {
-            dismissAllSheets(animated: true)
-            DispatchQueue.main.async {
-                chatModel.chatId = chat.id
+            ItemsModel.shared.loadOpenChat(chat.id) {
+                dismissAllSheets(animated: true)
             }
         }
     }
 
     func newDirectChatButton(_ contactId: Int64, width: CGFloat) -> some View {
         InfoViewButton(image: "message.fill", title: "message", width: width) {
-            do {
-                let chat = try apiGetChat(type: .direct, id: contactId)
-                chatModel.addChat(chat)
-                dismissAllSheets(animated: true)
-                DispatchQueue.main.async {
-                    chatModel.chatId = chat.id
+            Task {
+                do {
+                    let chat = try await apiGetChat(type: .direct, id: contactId)
+                    chatModel.addChat(chat)
+                    ItemsModel.shared.loadOpenChat(chat.id) {
+                        dismissAllSheets(animated: true)
+                    }
+                } catch let error {
+                    logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
                 }
-            } catch let error {
-                logger.error("openDirectChatButton apiGetChat error: \(responseError(error))")
             }
         }
     }
@@ -352,8 +352,9 @@ struct GroupMemberInfoView: View {
                     await MainActor.run {
                         progressIndicator = false
                         chatModel.addChat(Chat(chatInfo: .direct(contact: memberContact)))
-                        dismissAllSheets(animated: true)
-                        chatModel.chatId = memberContact.id
+                        ItemsModel.shared.loadOpenChat(memberContact.id) {
+                            dismissAllSheets(animated: true)
+                        }
                         chatModel.setContactNetworkStatus(memberContact, .connected)
                     }
                 } catch let error {

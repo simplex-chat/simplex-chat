@@ -54,11 +54,49 @@ class ItemsModel: ObservableObject {
         willSet { publisher.send() }
     }
     
+    // Publishes directly to `objectWillChange` publisher,
+    // this will cause reversedChatItems to be rendered without throttling
+    @Published var isLoading = false
+    @Published var showLoadingProgress = false
+
     init() {
         publisher
             .throttle(for: 0.25, scheduler: DispatchQueue.main, latest: true)
             .sink { self.objectWillChange.send() }
             .store(in: &bag)
+    }
+
+    func loadOpenChat(_ chatId: ChatId, willNavigate: @escaping () -> Void = {}) {
+        let navigationTimeout = Task {
+            do {
+                try await Task.sleep(nanoseconds: 250_000000)
+                await MainActor.run {
+                    willNavigate()
+                    ChatModel.shared.chatId = chatId
+                }
+            } catch {}
+        }
+        let progressTimeout = Task {
+            do {
+                try await Task.sleep(nanoseconds: 1500_000000)
+                await MainActor.run { showLoadingProgress = true }
+            } catch {}
+        }
+        Task {
+            if let chat = ChatModel.shared.getChat(chatId) {
+                await MainActor.run { self.isLoading = true }
+//                try? await Task.sleep(nanoseconds: 5000_000000)
+                await loadChat(chat: chat)
+                navigationTimeout.cancel()
+                progressTimeout.cancel()
+                await MainActor.run {
+                    self.isLoading = false
+                    self.showLoadingProgress = false
+                    willNavigate()
+                    ChatModel.shared.chatId = chatId
+                }
+            }
+        }
     }
 }
 

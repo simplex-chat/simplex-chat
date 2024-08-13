@@ -320,8 +320,8 @@ private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
 
 let loadItemsPerPage = 50
 
-func apiGetChat(type: ChatType, id: Int64, search: String = "") throws -> Chat {
-    let r = chatSendCmdSync(.apiGetChat(type: type, id: id, pagination: .last(count: loadItemsPerPage), search: search))
+func apiGetChat(type: ChatType, id: Int64, search: String = "") async throws -> Chat {
+    let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: .last(count: loadItemsPerPage), search: search))
     if case let .apiChat(_, chat) = r { return Chat.init(chat) }
     throw r
 }
@@ -332,16 +332,18 @@ func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, sear
     throw r
 }
 
-func loadChat(chat: Chat, search: String = "") {
+func loadChat(chat: Chat, search: String = "") async {
     do {
         let cInfo = chat.chatInfo
         let m = ChatModel.shared
         let im = ItemsModel.shared
         m.chatItemStatuses = [:]
-        im.reversedChatItems = []
-        let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
-        m.updateChatInfo(chat.chatInfo)
-        im.reversedChatItems = chat.chatItems.reversed()
+        await MainActor.run { im.reversedChatItems = [] }
+        let chat = try await apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
+        await MainActor.run {
+            im.reversedChatItems = chat.chatItems.reversed()
+            m.updateChatInfo(chat.chatInfo)
+        }
     } catch let error {
         logger.error("loadChat error: \(responseError(error))")
     }
@@ -701,7 +703,7 @@ func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, Pendi
         return ((.contact, connection), nil)
     case let .contactAlreadyExists(_, contact):
         if let c = m.getContactChat(contact.contactId) {
-            await MainActor.run { m.chatId = c.id }
+            ItemsModel.shared.loadOpenChat(c.id)
         }
         let alert = contactAlreadyExistsAlert(contact)
         return (nil, alert)
@@ -1170,7 +1172,7 @@ func acceptContactRequest(incognito: Bool, contactRequest: UserContactRequest) a
         if contact.sndReady {
             DispatchQueue.main.async {
                 dismissAllSheets(animated: true) {
-                    ChatModel.shared.chatId = chat.id
+                    ItemsModel.shared.loadOpenChat(chat.id)
                 }
             }
         }
@@ -1736,7 +1738,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         if active(user) && m.hasChat(mergedContact.id) {
             await MainActor.run {
                 if m.chatId == mergedContact.id {
-                    m.chatId = intoContact.id
+                    ItemsModel.shared.loadOpenChat(mergedContact.id)
                 }
                 m.removeChat(mergedContact.id)
             }
