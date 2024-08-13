@@ -281,7 +281,7 @@ fun GroupChatInfoLayout(
   val filteredMembers = remember(members) {
     derivedStateOf {
       val s = searchText.value.text.trim().lowercase()
-      members.filter { m -> m.anyNameContains(s) }
+      if (s.isEmpty()) members else members.filter { m -> m.anyNameContains(s) }
     }
   }
   // LALAL strange scrolling
