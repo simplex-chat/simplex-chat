@@ -64,6 +64,7 @@ fun SearchTextField(
     }
     KeyChangeEffect(chatModel.chatId.value) {
       if (chatModel.chatId.value != null) {
+        // Delay is needed here because when ChatView is being opened and keyboard is hiding, bottom sheet (to choose attachment) is visible on a screen
         delay(300)
         keyboard?.hide()
       }
