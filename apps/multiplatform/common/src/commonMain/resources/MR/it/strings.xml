@@ -2067,4 +2067,6 @@
     <string name="create_address_button">Crea</string>
     <string name="v6_0_upgrade_app_descr">Scarica nuove versioni da GitHub.</string>
     <string name="new_message">Nuovo messaggio</string>
+    <string name="error_parsing_uri_title">Link non valido</string>
+    <string name="error_parsing_uri_desc">Controlla che il link SimpleX sia corretto.</string>
 </resources>
