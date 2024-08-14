@@ -8,22 +8,14 @@
 
 import SwiftUI
 
-struct DetermineWidth: View {
-    typealias Key = MaximumWidthPreferenceKey
+struct DetermineWidth<K: PreferenceKey>: View where K.Value == CGFloat {
     var body: some View {
         GeometryReader { proxy in
             Color.clear
                 .preference(
-                    key: MaximumWidthPreferenceKey.self,
+                    key: K.self,
                     value: proxy.size.width
                 )
         }
-    }
-}
-
-struct MaximumWidthPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
     }
 }

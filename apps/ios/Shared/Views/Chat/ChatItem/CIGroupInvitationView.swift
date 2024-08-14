@@ -10,6 +10,13 @@ import SwiftUI
 import SimpleXChat
 
 struct CIGroupInvitationView: View {
+    private struct SeparatorWidthKey: PreferenceKey {
+        static var defaultValue: CGFloat = 0
+        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+            value = max(value, nextValue())
+        }
+    }
+
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
@@ -17,7 +24,7 @@ struct CIGroupInvitationView: View {
     var groupInvitation: CIGroupInvitation
     var memberRole: GroupMemberRole
     var chatIncognito: Bool = false
-    @State private var frameWidth: CGFloat = 0
+    @State private var separatorWidth: CGFloat = 0
     @State private var inProgress = false
     @State private var progressByTimeout = false
 
@@ -33,7 +40,7 @@ struct CIGroupInvitationView: View {
                         .padding(.top, 8)
                         .padding(.bottom, 6)
 
-                    Divider().frame(width: frameWidth)
+                    Divider().frame(width: separatorWidth)
 
                     if action {
                         VStack(alignment: .leading, spacing: 2) {
@@ -63,11 +70,12 @@ struct CIGroupInvitationView: View {
 
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary, showStatus: false, showEdited: false)
         }
+        .overlay(DetermineWidth<SeparatorWidthKey>())
+        .onPreferenceChange(SeparatorWidthKey.self) { separatorWidth = $0 }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(chatItemFrameColor(chatItem, theme))
         .textSelection(.disabled)
-        .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
         .onChange(of: inProgress) { inProgress in
             if inProgress {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) {

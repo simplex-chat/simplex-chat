@@ -7,6 +7,13 @@ import SwiftUI
 import SimpleXChat
 
 struct UserPicker: View {
+    private struct ChatViewNameWidthKey: PreferenceKey {
+        static var defaultValue: CGFloat = 0
+        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+            value = max(value, nextValue())
+        }
+    }
+
     @EnvironmentObject var m: ChatModel
     @Environment(\.scenePhase) var scenePhase
     @EnvironmentObject var theme: AppTheme
@@ -80,7 +87,7 @@ struct UserPicker: View {
                 .cornerRadius(16)
                 .shadow(color: .black.opacity(0.12), radius: 24, x: 0, y: 0)
         )
-        .onPreferenceChange(DetermineWidth.Key.self) { chatViewNameWidth = $0 }
+        .onPreferenceChange(ChatViewNameWidthKey.self) { chatViewNameWidth = $0 }
         .frame(maxWidth: chatViewNameWidth > 0 ? min(300, chatViewNameWidth + 130) : 300)
         .padding(8)
         .opacity(userPickerVisible ? 1.0 : 0.0)
@@ -126,7 +133,7 @@ struct UserPicker: View {
                 Text(user.chatViewName)
                     .fontWeight(user.activeUser ? .medium : .regular)
                     .foregroundColor(theme.colors.onBackground)
-                    .overlay(DetermineWidth())
+                    .overlay(DetermineWidth<ChatViewNameWidthKey>())
                 Spacer()
                 if user.activeUser {
                     Image(systemName: "checkmark")
@@ -146,7 +153,7 @@ struct UserPicker: View {
         Button(action: action) {
             HStack(spacing: 0) {
                 Text(title)
-                    .overlay(DetermineWidth())
+                    .overlay(DetermineWidth<ChatViewNameWidthKey>())
                 Spacer()
                 Image(systemName: icon)
                     .symbolRenderingMode(.monochrome)
