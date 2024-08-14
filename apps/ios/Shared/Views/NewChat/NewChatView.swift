@@ -217,6 +217,7 @@ private struct InviteView: View {
     @Binding var contactConnection: PendingContactConnection?
     var connReqInvitation: String
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
+    @State private var selectedLinkUserId: Int64?
 
     var body: some View {
         List {
@@ -226,13 +227,18 @@ private struct InviteView: View {
             .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
 
             qrCodeView()
-
+            
             Section {
-                IncognitoToggle(incognitoEnabled: $incognitoDefault)
+                LinkUserPicker(selectedLinkUserId: $selectedLinkUserId, incognitoEnabled: $incognitoDefault)
             } footer: {
-                sharedProfileInfo(incognitoDefault)
+                var selectedUser = chatModel.users.first { $0.user.userId == selectedLinkUserId }
+    
+                sharedProfileInfo(incognitoDefault, selectedUser?.user)
                     .foregroundColor(theme.colors.secondary)
             }
+        }
+        .onAppear {
+            selectedLinkUserId = chatModel.currentUser?.userId
         }
         .onChange(of: incognitoDefault) { incognito in
             Task {
@@ -495,6 +501,41 @@ func strHasSingleSimplexLink(_ str: String) -> FormattedText? {
     }
 }
 
+struct LinkUserPicker: View {
+    @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
+    @Binding var selectedLinkUserId: Int64?
+    @State private var selectedProfile: Int64?
+    @Binding var incognitoEnabled: Bool
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            let users = chatModel.users
+                .map { $0.user }
+                .filter({ u in u.activeUser || !u.hidden })
+                .sorted { u, _ in u.activeUser }
+        
+            Picker("Profile to use", selection: $selectedProfile) {
+                Text("Incognito").tag(nil as Int64?)
+                ForEach(users) { u in
+                    Text(u.displayName).tag(u.userId as Int64?)
+                }
+            }
+        }
+        .onAppear {
+            selectedProfile = selectedLinkUserId
+        }
+        .onChange(of: $selectedProfile.wrappedValue) { sp in
+            if (sp != nil) {
+                selectedLinkUserId = sp
+                incognitoEnabled = false
+            } else {
+                incognitoEnabled = true
+            }
+        }
+    }
+}
+
 struct IncognitoToggle: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var incognitoEnabled: Bool
@@ -525,8 +566,8 @@ struct IncognitoToggle: View {
     }
 }
 
-func sharedProfileInfo(_ incognito: Bool) -> Text {
-    let name = ChatModel.shared.currentUser?.displayName ?? ""
+func sharedProfileInfo(_ incognito: Bool, _ user: User? = ChatModel.shared.currentUser) -> Text {
+    let name = user?.displayName ?? ""
     return Text(
         incognito
         ? "A new random profile will be shared."
