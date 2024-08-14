@@ -332,7 +332,7 @@ func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, sear
     throw r
 }
 
-func loadChat(chat: Chat, search: String = "") async {
+func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
     do {
         let cInfo = chat.chatInfo
         let m = ChatModel.shared
