@@ -7,6 +7,177 @@
         <description>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</description>
         <language>en</language>
             <item>
+                <title>SimpleX network: the investment from Jack Dorsey and Asymmetric, v6.0 released with the new user experience and private message routing.</title>
+                <link>https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html</link>
+                <description>&lt;h1 id=&quot;simplex-network-the-investment-from-jack-dorsey-and-asymmetric-v60-released-with-the-new-user-experience-and-private-message-routing&quot; tabindex=&quot;-1&quot;&gt;SimpleX network: the investment from Jack Dorsey and Asymmetric, v6.0 released with the new user experience and private message routing.&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Aug 14, 2024&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html#simplex-chat-vision-and-funding-20&quot;&gt;SimpleX Chat: vision and funding 2.0&lt;/a&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html#the-past-investment-from-village-global&quot;&gt;The past&lt;/a&gt;: investment from Village Global.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html#the-present-announcing-the-investment-from-jack-dorsey-and-asymmetric&quot;&gt;The present&lt;/a&gt;: announcing the investment from Jack Dorsey and Asymmetric Capital Partners.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html#the-future-faster-development-and-transition-to-non-profit-governance&quot;&gt;The future&lt;/a&gt;: faster development and the path to non-profit governance.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html#whats-new-in-v60&quot;&gt;What&#39;s new in v6.0&lt;/a&gt;:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Private message routing — now enabled by default.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html#new-chat-experience&quot;&gt;New chat experience&lt;/a&gt;:
+&lt;ul&gt;
+&lt;li&gt;connect to your friends faster.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html#new-reachable-interface&quot;&gt;new reachable interface&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;archive contacts to chat later.&lt;/li&gt;
+&lt;li&gt;new way to start chat.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html#moderate-like-a-pro&quot;&gt;moderate like a pro&lt;/a&gt;: delete many messages at once.&lt;/li&gt;
+&lt;li&gt;new chat themes&lt;sup&gt;*&lt;/sup&gt;&lt;/li&gt;
+&lt;li&gt;increase font size&lt;sup&gt;**&lt;/sup&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html#new-media-options&quot;&gt;New media options&lt;/a&gt;:
+&lt;ul&gt;
+&lt;li&gt;play from the chat list.&lt;/li&gt;
+&lt;li&gt;blur for better privacy.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html#share-from-other-apps&quot;&gt;share from other apps&lt;/a&gt;&lt;sup&gt;*&lt;/sup&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html#improved-networking-and-reduced-battery-usage&quot;&gt;Improved networking and reduced battery usage&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;* New for iOS app.&lt;/p&gt;
+&lt;p&gt;** Android and desktop apps.&lt;/p&gt;
+&lt;h2 id=&quot;simplex-chat-vision-and-funding-20&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat: vision and funding 2.0&lt;/h2&gt;
+&lt;h3 id=&quot;the-past-investment-from-village-global&quot; tabindex=&quot;-1&quot;&gt;The past: investment from Village Global&lt;/h3&gt;
+&lt;p&gt;Last year &lt;a href=&quot;https://simplex.chat/blog/20230422-simplex-chat-vision-funding-v5-videos-files-passcode.html#how-is-it-funded-and-what-is-the-business-model&quot;&gt;we announced&lt;/a&gt; pre-seed funding from several angel investors and Village Global. Some of our users were very excited that we have funds to continue developing SimpleX network. But as some of Village Global LPs (Limited Partners) are &lt;a href=&quot;https://www.villageglobal.vc/&quot;&gt;the founders of very large technology companies&lt;/a&gt;, some of our users were worried about any negative influence this investment might have on the project.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.villageglobal.vc/team/ben-casnocha&quot;&gt;Ben Casnocha&lt;/a&gt;, the founder and general partner of Village Global, commented on their investment:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;I believe in SimpleX Chat vision and team’s ability to execute it. The growing number of Internet users who demand privacy of their data and contacts will make SimpleX Chat profitable, which is critically important for any sustainable organization.&lt;/p&gt;
+&lt;p&gt;We are fortunate to have LPs who founded many iconic Internet ventures. But they don’t have any influence on the 400+ companies we invested in. They are financial investors in our fund and exert no control or influence on any of the underlying portfolio companies.&lt;/p&gt;
+&lt;p&gt;What&#39;s more, we believe that founders should lead their ventures, as it yields better results – our investment in SimpleX Chat has no control provisions. We are happy to help, but we don’t control any decisions nor have a board seat. Evgeny runs the company independently.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Ben, thank you for believing in our vision – without it SimpleX Chat would simply not exist, as most other investors at the time did not believe that privacy could ever escape the niche of privacy enthusiasts – and we already see the first signs of it happening.&lt;/p&gt;
+&lt;h3 id=&quot;the-present-announcing-the-investment-from-jack-dorsey-and-asymmetric&quot; tabindex=&quot;-1&quot;&gt;The present: announcing the investment from Jack Dorsey and Asymmetric&lt;/h3&gt;
+&lt;p&gt;The Android app recently hit &lt;a href=&quot;https://play.google.com/store/apps/details?id=chat.simplex.app&quot;&gt;100,000 downloads on Google Play Store&lt;/a&gt;, and our users naturally ask for improved reliability, privacy, security, better user experience and design – all at the same time, and as soon as possible. This requires more funding.&lt;/p&gt;
+&lt;p&gt;We are very happy to announce that we now have funds to move faster – we raised a $1.3 million pre-seed round led by &lt;a href=&quot;https://en.wikipedia.org/wiki/Jack_Dorsey&quot;&gt;Jack Dorsey&lt;/a&gt;, with participation of &lt;a href=&quot;https://www.acp.vc/&quot;&gt;Asymmetric Capital Partners&lt;/a&gt; (ACP) VC fund.&lt;/p&gt;
+&lt;p&gt;When Jack discovered SimpleX Chat last year, he &lt;a href=&quot;https://x.com/jack/status/1661681076983529479&quot;&gt;posted on Twitter&lt;/a&gt;:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Better than Signal? Looks promising.&lt;br /&gt;
+A few bugs and UX issues but great foundation. Love that it’s public domain.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;And &lt;a href=&quot;https://primal.net/e/note1txz9xmmc456kwcg7zrsrtqrhn7as29ptuz0qulu452k8n85hsshqq6uh6q&quot;&gt;on Nostr&lt;/a&gt;:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;A full day with @SimpleX Chat. Solid overall. TestFlight is not recommended. There are some scaling issues today. And not the most intuitive onboarding for everyone. Name still reminds everyone of herpes. All fixable. It’s fast and doesn’t require a phone number or email and I do believe people will eventually see the value of that. Finally, some competition for Signal, and in a permissionless way. And def a solid path so apps don’t have to build their own DM experiences.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;Jack, we are super lucky to have your support and investment – thank you for believing in our ability to build a better messaging network! It is a hard work, and we’ve made a lot of progress since your note was written, and a lot of work is ongoing!&lt;/p&gt;
+&lt;p&gt;The ACP investment is strategically important – it is a fund that only invests in B2B startups, and SimpleX Chat currently is mostly used by individual users. Making a private communication network sustainable requires its adoption by businesses, and we already see a growing usage by the small teams.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.acp.vc/team/rob-biederman&quot;&gt;Rob Biederman&lt;/a&gt; and &lt;a href=&quot;https://www.acp.vc/team/sam&quot;&gt;Sam Clayman&lt;/a&gt;, the partners of ACP, commented:&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;We believe that SimpleX Chat network can grow into a de facto Internet standard for private and secure communications for both businesses and individual users, unifying instant and email-like messaging into a single product.&lt;/p&gt;
+&lt;p&gt;Emails no longer provide privacy and security that businesses require, particularly given the emerging threat of AI-led phishing and social engineering attacks. We look forward to SimpleX network providing a secure alternative.&lt;/p&gt;
+&lt;/blockquote&gt;
+&lt;p&gt;I was lucky to have met Rob, Sam and the ACP team when I was presenting SimpleX Chat in London – thank you all for your support and believing that the future of communication requires a single product, both for businesses and individual users.&lt;/p&gt;
+&lt;h3 id=&quot;the-future-faster-development-and-the-path-to-non-profit-governance&quot; tabindex=&quot;-1&quot;&gt;The future: faster development and the path to non-profit governance&lt;/h3&gt;
+&lt;p&gt;Jack Dorsey and ACP support enable us to make huge product improvements, thanks to a bigger team, and provide us with medium-term funding to get to the next stage of product and business evolution. Like with Village Global, this is a financial investment, without control or board seat provisions – so the users can be certain that SimpleX remains true to our vision of privacy first communication network.&lt;/p&gt;
+&lt;p&gt;We already added two great engineers to the team and are about to hire a UX/UI designer.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://www.trailofbits.com/about/&quot;&gt;Trail of Bits&lt;/a&gt; has just completed the protocols design security review and will be doing implementation security review in the end of the year. We will publish the first report soon.&lt;/p&gt;
+&lt;p&gt;This year we will launch group improvements that we presented in the &lt;a href=&quot;https://www.youtube.com/watch?v=7yjQFmhAftE&quot;&gt;live-stream last year&lt;/a&gt;. While the main problem explained in this video was solved with the current design, the issue of group scalability remains – to send a message to a group your client needs to send it to each member, creating substantial traffic.&lt;/p&gt;
+&lt;p&gt;We will also launch long-form email-like messaging over SimpleX network this year, together with optional short public addresses that show profile you are connecting to before the connection – this is important for any public users and businesses.&lt;/p&gt;
+&lt;p&gt;The last but not the least, we started the work with &lt;a href=&quot;https://www.techlawpartners.com/heather&quot;&gt;Heather Meeker&lt;/a&gt;, a great legal expert on intellectual property matters and one of the earliest advocates of the open-source software development in businesses, to setup open-source governance model, to some extent similar to how Matrix did it. We believe, and our investors agree, that it would both increase the company value and also create more value for the users community.&lt;/p&gt;
+&lt;h2 id=&quot;whats-new-in-v60&quot; tabindex=&quot;-1&quot;&gt;What&#39;s new in v6.0&lt;/h2&gt;
+&lt;p&gt;v6.0 is one of our biggest releases ever, with a lot of focus on UX and stability improvements, and the new features the users asked for.&lt;/p&gt;
+&lt;p&gt;The private message routing &lt;a href=&quot;https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.html&quot;&gt;we announced before&lt;/a&gt; is now enabled for all users by default – it protects users IP addresses and sessions from the destination servers.&lt;/p&gt;
+&lt;h3 id=&quot;new-chat-experience&quot; tabindex=&quot;-1&quot;&gt;New chat experience&lt;/h3&gt;
+&lt;h4 id=&quot;connect-to-your-friends-faster&quot; tabindex=&quot;-1&quot;&gt;Connect to your friends faster&lt;/h4&gt;
+&lt;p&gt;This version includes messaging protocol improvements that reduce twice the number of messages required for two users to connect. Not only it means connecting faster and using less traffic, this change allows to start sending messages sooner, so you would see &amp;quot;connecting&amp;quot; in the list of the chats for a much shorter time than before.&lt;/p&gt;
+&lt;p&gt;It will be improved further in the next version: you will be able to send messages straight after using the invitation link, without waiting for your contact to be online.&lt;/p&gt;
+&lt;h4 id=&quot;new-reachable-interface&quot; tabindex=&quot;-1&quot;&gt;New reachable interface&lt;/h4&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20240814-reachable.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt;
+&lt;p&gt;Like with the most innovative mobile browsers (e.g., Safari and Firefox), SimpleX Chat users now can use the app with one hand by moving the toolbar and search bar to the bottom of the screen, and ordering the chats with the most recent conversations in the bottom too, where they can be more easily reached on a mobile screen.&lt;/p&gt;
+&lt;p&gt;This layout is enabled by default, and you can disable it right from the list of chats when you install the new version if you prefer to use conventional UI.&lt;/p&gt;
+&lt;p&gt;Give it a try – our experience is that that after less than a day of using it, it starts feeling as the only right way. You can always toggle it in the Appearance settings.&lt;/p&gt;
+&lt;h4 id=&quot;archive-contacts-to-chat-later&quot; tabindex=&quot;-1&quot;&gt;Archive contacts to chat later&lt;/h4&gt;
+&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20240814-delete-contact-2.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt;   &lt;img src=&quot;https://simplex.chat/blog/images/20240814-delete-contact-1.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;Now you have two new options when deleting a conversation:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;only delete conversation, and archive contact. We will add archiving conversation without clearing it in the next version, as some users of our beta version asked.&lt;/li&gt;
+&lt;li&gt;delete contact but keep the conversation.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Also, deleting a contact now requires double confirmation, so you are less likely to delete the contact accidentally. This deletion is irreversible, and the only way to re-connect would be using a new link.&lt;/p&gt;
+&lt;h4 id=&quot;new-way-to-start-chat&quot; tabindex=&quot;-1&quot;&gt;New way to start chat&lt;/h4&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20240814-new-message.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt;
+&lt;p&gt;When you tap pencil button, you will see a large &lt;em&gt;New message&lt;/em&gt; sheet, that adds new functions to the options you had before.&lt;/p&gt;
+&lt;p&gt;Old options:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;em&gt;Add contact&lt;/em&gt; to create a new 1-time invitation link,&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;Scan / paste link&lt;/em&gt;: to use the link you received. It can be 1-time invitation, a public SimpleX address, or a link to join the group.&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;Create group&lt;/em&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;New options:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Open archived chats.&lt;/li&gt;
+&lt;li&gt;Accept pending contact requests.&lt;/li&gt;
+&lt;li&gt;Connect to preset public addresses (we will add an option to add your own addresses here too).&lt;/li&gt;
+&lt;li&gt;Search for your contacts.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id=&quot;new-chat-themes&quot; tabindex=&quot;-1&quot;&gt;New chat themes&lt;/h4&gt;
+&lt;p&gt;We released the new themes &lt;a href=&quot;https://simplex.chat/blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.html&quot;&gt;for Android and desktop apps&lt;/a&gt; in the previous version, and now they are available for iOS too.&lt;/p&gt;
+&lt;p&gt;You can set different themes for different chat profiles you have, and for different conversations – it can help avoid mistakes about which conversation you are in.&lt;/p&gt;
+&lt;p&gt;Also, these themes are compatible between platforms, so you can import the theme created on Android into iOS app and vice versa.&lt;/p&gt;
+&lt;h4 id=&quot;moderate-like-a-pro&quot; tabindex=&quot;-1&quot;&gt;Moderate like a pro&lt;/h4&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20240814-delete-messages.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt;
+&lt;p&gt;As much as we disagree with the attacks on the freedom of speech on the society level – all people must be able to express their opinions – we also believe that the small community owners should have full control over which content is allowed and which is not. But as communities grow, bad actors begin to join in order to disrupt, subvert and troll the conversations. So, the moderation tools are critical for small public communities to thrive.&lt;/p&gt;
+&lt;p&gt;SimpleX Chat already has several moderation tools available for community owners:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Moderate individual messages.&lt;/li&gt;
+&lt;li&gt;Set the default role of the new members to &amp;quot;observer&amp;quot; — they won&#39;t be able to send messages until you allow it. In addition to that, by enabling default messages for admins and owners only you can reach out to the new members and ask some questions before allowing to send messages.&lt;/li&gt;
+&lt;li&gt;Block messages of a member for yourself only.&lt;/li&gt;
+&lt;li&gt;Block a member for all other members — only admins and group owners can do that.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;With this version you can now select multiple messages at once and delete or moderate them, depending on your role in the community. The current version limits the number of messages that can be deleted to 20 — this limit will be increased to 200 messages in the next version.&lt;/p&gt;
+&lt;p&gt;Also, this version makes profile images of the blocked members blurred, to prevent the abuse via inappropriate profile images.&lt;/p&gt;
+&lt;h4 id=&quot;increase-font-size&quot; tabindex=&quot;-1&quot;&gt;Increase font size&lt;/h4&gt;
+&lt;p&gt;Android and desktop apps now allow to increase font size inside the app, without changing the system settings. Desktop app also allows to zoom the whole screen — it can be helpful on some systems with a limited support of high density displays.&lt;/p&gt;
+&lt;p&gt;These settings can be changed via Appearance settings.&lt;/p&gt;
+&lt;h3 id=&quot;new-media-options&quot; tabindex=&quot;-1&quot;&gt;New media options&lt;/h3&gt;
+&lt;h4 id=&quot;play-from-the-chat-list&quot; tabindex=&quot;-1&quot;&gt;Play from the chat list&lt;/h4&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20240814-play.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt;
+&lt;p&gt;Now you can interact with the media directly from the list of the chats.&lt;/p&gt;
+&lt;p&gt;This is very convenient – when somebody sends you a voice message or a video, they can be played directly from the list of chats, without opening a conversation. Similarly, an image can be opened, a file can be saved, and the link with preview can be opened in the browser.&lt;/p&gt;
+&lt;p&gt;And, in some circumstances, this is also more private, as you can interact with the media, without opening the whole conversation.&lt;/p&gt;
+&lt;p&gt;We will add the option to return missed calls from the chat list in the next version.&lt;/p&gt;
+&lt;h4 id=&quot;blur-for-better-privacy&quot; tabindex=&quot;-1&quot;&gt;Blur for better privacy&lt;/h4&gt;
+&lt;p&gt;You can set all images and videos to blur in your app, and unblur them on tap (or on hover in desktop app). The blur level can be set in Privacy and security settings.&lt;/p&gt;
+&lt;h4 id=&quot;share-from-other-apps&quot; tabindex=&quot;-1&quot;&gt;Share from other apps&lt;/h4&gt;
+&lt;img src=&quot;https://simplex.chat/blog/images/20240814-share.png&quot; width=&quot;288&quot; class=&quot;float-to-right&quot; /&gt;
+&lt;p&gt;Not much to brag about, as most iOS messaging apps allow it, and users expected it to be possible since the beginning.&lt;/p&gt;
+&lt;p&gt;But iOS makes it much harder to develop the capability to share into the app than Android, so it&#39;s only in this version you can share images, videos, files and links into SimpleX Chat from other apps.&lt;/p&gt;
+&lt;h3 id=&quot;improved-networking-and-reduced-battery-usage&quot; tabindex=&quot;-1&quot;&gt;Improved networking and reduced battery usage&lt;/h3&gt;
+&lt;p&gt;This version includes the statistics of how your app communicates with all servers when sending and receiving messages and files. This information also includes the status of connection to all servers from which you receive messages — whether the connection is authorized to push messages from server to your device, and the share of these active connections.&lt;/p&gt;
+&lt;p&gt;Please note, that when you send a message to a group, your app has to send it to each member separately, so sent message statistics account for that — it may seem to be quite a large number if you actively participate in some large groups. Also, message counts not only include visible messages you receive and send, but also any service messages, reactions, message updates, message deletions, etc. — this is the correct reflection of how much traffic your app uses.&lt;/p&gt;
+&lt;p&gt;This information is only available to your device, we do NOT collect this information, even in the aggregate form.&lt;/p&gt;
+&lt;p&gt;While the main reason we added this information is to reduce traffic and battery usage, to be able to identify any cases of high traffic, this version already reduced a lot battery and traffic usage, as reported by several beta-version users.&lt;/p&gt;
+&lt;h2 id=&quot;simplex-network&quot; tabindex=&quot;-1&quot;&gt;SimpleX network&lt;/h2&gt;
+&lt;p&gt;Some links to answer the most common questions:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers&quot;&gt;How can SimpleX deliver messages without user identifiers&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#why-having-users-identifiers-is-bad-for-the-users&quot;&gt;What are the risks to have identifiers assigned to the users&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations&quot;&gt;Technical details and limitations&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/faq/index.html&quot;&gt;Frequently asked questions&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Please also see our &lt;a href=&quot;https://simplex.chat/&quot;&gt;website&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;please-support-us-with-your-donations&quot; tabindex=&quot;-1&quot;&gt;Please support us with your donations&lt;/h2&gt;
+&lt;p&gt;Huge thank you to everybody who donated to SimpleX Chat!&lt;/p&gt;
+&lt;p&gt;You might ask: &lt;em&gt;Why do you need donations if you&#39;ve just raised the investment?&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;Prioritizing users privacy and security, and also raising the investment, would have been impossible without your support and donations.&lt;/p&gt;
+&lt;p&gt;Also, funding the work to transition the protocols to non-profit governance model would not have been possible without the donations we received from the users.&lt;/p&gt;
+&lt;p&gt;Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.&lt;/p&gt;
+&lt;p&gt;Your donations help us raise more funds — any amount, even the price of the cup of coffee, makes a big difference for us.&lt;/p&gt;
+&lt;p&gt;See &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations&quot;&gt;this section&lt;/a&gt; for the ways to donate.&lt;/p&gt;
+&lt;p&gt;Thank you,&lt;/p&gt;
+&lt;p&gt;Evgeny&lt;/p&gt;
+&lt;p&gt;SimpleX Chat founder&lt;/p&gt;
+</description>
+                
+                <pubDate>Wed, 14 Aug 2024 00:00:00 +0000</pubDate>
+                
+                <dc:creator>SimpleX Chat</dc:creator>
+                <guid>https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html</guid>
+            </item>
+            <item>
                 <title>The Future of Privacy: Enforcing Privacy Standards</title>
                 <link>https://simplex.chat/blog/20240704-future-of-privacy-enforcing-privacy-standards.html</link>
                 <description>&lt;h1 id=&quot;the-future-of-privacy-enforcing-privacy-standards&quot; tabindex=&quot;-1&quot;&gt;The Future of Privacy: Enforcing Privacy Standards&lt;/h1&gt;
@@ -1168,7 +1339,10 @@
 &lt;p&gt;While SimpleX Chat Ltd is a commercial company, SimpleX Chat software is and will remain open-source. We believe that this way we will create much more value both for the end users, and also for the shareholders and the employees of the company.&lt;/p&gt;
 &lt;p&gt;Many large tech companies prioritizing value extraction over value creation earned a bad reputation for all businesses, particularly in the communities that value decentralization and privacy. But commercial objectives do not have to result in exploitation. Our goal is to build a new kind of communication network, and also an application platform, that is private by design, fully decentralized and not owned by any single entity, where SimpleX Chat Ltd is one of many organizations that operate the network. I shared my thoughts about how the Internet and privacy might evolve in the interview in &lt;a href=&quot;https://optoutpod.com/episodes/s3e02-simplexchat/&quot;&gt;Opt Out Podcast&lt;/a&gt;.&lt;/p&gt;
 &lt;h3 id=&quot;how-is-it-funded-and-what-is-the-business-model&quot; tabindex=&quot;-1&quot;&gt;How is it funded and what is the business model?&lt;/h3&gt;
-&lt;p&gt;We started working full-time on the project in 2021 when &lt;a href=&quot;https://www.linkedin.com/in/portmanwills/&quot;&gt;Portman Wills&lt;/a&gt; and &lt;a href=&quot;https://www.linkedin.com/in/peterbriffett/&quot;&gt;Peter Briffett&lt;/a&gt; (the founders of &lt;a href=&quot;https://wagestream.com/en/&quot;&gt;Wagestream&lt;/a&gt; where I led the engineering team) supported the company very early on, and several other angel investors joined later. In July 2022 SimpleX Chat raised a pre-seed funding from the VC fund &lt;a href=&quot;https://www.villageglobal.vc/&quot;&gt;Village Global&lt;/a&gt; - its co-founder &lt;a href=&quot;https://casnocha.com/&quot;&gt;Ben Casnocha&lt;/a&gt; was very excited about our vision of privacy-first fully decentralized messaging and community platform, both for the individual users and for the companies, independent of any crypto-currencies, that might grow to replace large centralized platforms, such as WhatsApp, Telegram and Signal.&lt;/p&gt;
+&lt;p&gt;We started working full-time on the project in 2021 when &lt;a href=&quot;https://www.linkedin.com/in/portmanwills/&quot;&gt;Portman Wills&lt;/a&gt; and &lt;a href=&quot;https://www.linkedin.com/in/peterbriffett/&quot;&gt;Peter Briffett&lt;/a&gt; (the founders of &lt;a href=&quot;https://wagestream.com/en/&quot;&gt;Wagestream&lt;/a&gt; where I led the engineering team) supported the company very early on, and several other angel investors joined later. In July 2022 SimpleX Chat raised a pre-seed funding from the VC fund &lt;a href=&quot;https://www.villageglobal.vc/&quot;&gt;Village Global&lt;/a&gt; - its co-founder &lt;a href=&quot;https://www.villageglobal.vc/team/ben-casnocha&quot;&gt;Ben Casnocha&lt;/a&gt; was very excited about our vision of privacy-first fully decentralized messaging and community platform, both for the individual users and for the companies, independent of any crypto-currencies, that might grow to replace large centralized platforms, such as WhatsApp, Telegram and Signal.&lt;/p&gt;
+&lt;blockquote&gt;
+&lt;p&gt;Edit: please see the comment from Ben Casnocha about this investment in &lt;a href=&quot;https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html&quot;&gt;our post from August 14, 2024&lt;/a&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
 &lt;p&gt;Overall we raised from our investors approximately $370,000 for a small share of the company to allow the project team working full time for almost two years, funding product design and development, infrastructure, and also &lt;a href=&quot;https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html&quot;&gt;the security assessment by Trail of Bits&lt;/a&gt;. A large part of this money is not spent yet.&lt;/p&gt;
 &lt;p&gt;The project was hugely supported by the users as well - collectively, &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#help-us-with-donations&quot;&gt;you donated&lt;/a&gt; over $25,000. Without these donations the investment we raised would not be possible, because we believe that voluntary user donations can sustain the project in the long term – it already covers all infrastructure costs. There are only two ways an Internet service can exist - either users are paying for it, or the users data becomes the product for the real customers, as happened with many large Internet companies. In the latter case the users are losing much more money than they are saving by giving away their privacy and the rights to the content they create on the centralized platforms.&lt;/p&gt;
 &lt;p&gt;Going forward we plan to keep the basic usage of the platform free, and at the same time we will be providing the benefits to the project sponsors. For example, there will be additional app icons and user profile badges. There also will be higher file transfer limits – currently we don&#39;t limit it at all, only limiting the file size, but it&#39;s unlikely to be sustainable. In any case, the app will remain highly usable for everyone for free, and fully open-source. Several other apps are already being developed based on our app core, leading to a fully decentralized network.&lt;/p&gt;
