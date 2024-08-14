@@ -132,7 +132,7 @@ struct ShareView: View {
         switch content {
         case let .image(preview, _): imagePreview(preview)
         case let .movie(preview, _, _): imagePreview(preview)
-        case let .url(linkPreview): imagePreview(linkPreview.image)
+        case let .url(preview): linkPreview(preview)
         case let .data(cryptoFile):
             previewArea {
                 Image(systemName: "doc.fill")
@@ -157,6 +157,29 @@ struct ShareView: View {
             }
         } else {
             EmptyView()
+        }
+    }
+
+    @ViewBuilder private func linkPreview(_ linkPreview: LinkPreview) -> some View {
+        previewArea {
+            HStack(alignment: .center, spacing: 8) {
+                if let uiImage = UIImage(base64Encoded: linkPreview.image) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: 80, maxHeight: 60)
+                }
+                VStack(alignment: .center, spacing: 4) {
+                    Text(linkPreview.title)
+                        .lineLimit(1)
+                    Text(linkPreview.uri.absoluteString)
+                        .font(.caption)
+                        .lineLimit(1)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.vertical, 5)
+                .frame(maxWidth: .infinity, minHeight: 60)
+            }
         }
     }
 
