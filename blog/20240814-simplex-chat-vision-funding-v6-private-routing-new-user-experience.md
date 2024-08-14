@@ -2,10 +2,8 @@
 layout: layouts/article.html
 title: "SimpleX Chat: vision and funding, v6.0 released with the new user experience and private message routing."
 date: 2024-08-14
-# image: images/20230422-video.png
-# imageBottom: true
-# previewBody: blog_previews/20230422.html
-draft: true
+image: images/20240814-reachable.png
+previewBody: blog_previews/20240814.html
 permalink: "/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html"
 ---
 
@@ -20,18 +18,18 @@ permalink: "/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-us
 
 [What's new in v6.0](#whats-new-in-v60):
 - [Private message routing](#private-message-routing) - now enabled by default
-- [New chat experience](#new-chat-experience)
-  - [Connect to your friends faster](#connect-to-your-friends-faster).
-  - [Archive contacts to chat later](#archive-contacts-to-chat-later).
-  - [New way to start chat](#new-way-to-start-chat).
-  - [Reachable chat toolbar](#reachable-chat-toolbar).
-  - [Moderate like a pro](#moderate-like-a-pro).
-  - [New chat themes](#new-chat-themes)<sup>*</sup>
-  - [Increase font size](#increase-font-size)<sup>**</sup>.
-- [New media options](#new-media-options)
-  - [Play from the chat list](#play-from-the-chat-list).
-  - [Blur for better privacy](#blur-for-better-privacy).
-  - [Share from other apps](#share-from-other-apps)<sup>*</sup>.
+- [New chat experience](#new-chat-experience):
+  - connect to your friends faster.
+  - [new reachable interface](#new-reachable-interface).
+  - archive contacts to chat later.
+  - new way to start chat.
+  - [moderate like a pro](#moderate-like-a-pro): delete many messages at once.
+  - new chat themes<sup>*</sup>
+  - increase font size<sup>**</sup>.
+- [New media options](#new-media-options):
+  - play from the chat list.
+  - blur for better privacy.
+  - [share from other apps](#share-from-other-apps)<sup>*</sup>.
 - [Improved networking and reduced battery usage](#improved-networking-and-reduced-battery-usage)
 
 \* New for iOS app.
@@ -42,15 +40,15 @@ permalink: "/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-us
 
 ### The past
 
-...
+TODO
 
 ### The present
 
-...
+TODO
 
 ### The future
 
-...
+TODO
 
 ## What's new in v6.0
 
@@ -68,42 +66,42 @@ This version includes messaging protocol improvements that reduce twice the numb
 
 It will be improved further in the next version - you will be able to send messages straight after using the link, without waiting for your contact to be online.
 
+#### New reachable interface
+
+<img src="./images/20240814-reachable.png" width="288" class="float-to-right">
+
+Like with the most innovative mobile browsers (e.g., Safari and Firefox), SimpleX Chat users now can use the app with one hand by moving the toolbar and search bar to the bottom of the screen, and ordering the chat with the most recent conversations in the bottom too, where they can be more easily reached on a mobile screen. 
+
+This layout is enabled by default, and you can disable it right from the list of chats when you install the new version if you prefer to use conventional UI.
+
+But give it a try – our experience is that that after less than a day of using it, it starts feeling as the only right way. You can always toggle it in the Appearance settings.
+
 #### Archive contacts to chat later
 
-TODO image
+<img src="./images/20240814-delete-contact-2.png" width="288" class="float-to-right"> &nbsp; <img src="./images/20240814-delete-contact-1.png" width="288" class="float-to-right">
 
 Now you have two new options when deleting a conversation:
 - only delete conversation, and archive contact - we will add archiving conversation without clearing it in the next version, as some users of our beta version asked.
 - delete contact but keep the conversation.
 
-Also, deleting a contact now requires double confirmation, so you are less likely to delete the contact accidentally.
+Also, deleting a contact now requires double confirmation, so you are less likely to delete the contact accidentally – this deletion is irreversible, and the only way to re-connect would be using a new link.
 
 #### New way to start chat
 
-TODO image
+<img src="./images/20240814-new-message.png" width="288" class="float-to-right">
 
-Now when you tap pencil button, you will see a large New message sheet, that adds to the options you had before some new functions.
+Now when you tap pencil button, you will see a large *New message* sheet, that adds to the options you had before some new functions.
 
 Old options:
 - *Add contact* to create a new 1-time invitation link,
-- *Scan / paste link*: to use the link you received, it can be 1-time invitation, a public SimpleX address, or a link to join the group.
+- *Scan / paste link*: to use the link you received &mdash; it can be 1-time invitation, a public SimpleX address, or a link to join the group.
 - *Create group*
 
 New options:
 - Open archived chats.
 - Accept pending contact requests.
-- Connect to preset public addresses (we will add an option to add your own addresses there).
+- Connect to preset public addresses (we will add an option to add your own addresses here too).
 - Search for your contacts.
-
-#### Reachable chat toolbar
-
-TODO image
-
-Like with the most innovative mobile browsers (e.g., Safari and Firefox), SimpleX Chat users now can use the app with one hand by moving the toolbar and search bar to the bottom of the screen, and the chat list ordered with the most recent conversation in the bottom. 
-
-This layout is enabled by default, and you can disable it right from the list of chats when you install the new version if you prefer to use conventional UI.
-
-But give it a try – our experience is that that after a day of using it, it seems to be the only right way. You can always toggle it in the Appearance settings.
 
 #### New chat themes
 
@@ -111,19 +109,19 @@ We released the new themes [for Android and desktop apps](./20240604-simplex-cha
 
 You can set different themes for different chat profiles you have, and for different conversations – it can help avoid mistakes about which conversation you are in.
 
-Also, these themes are compatible between platforms, so you can import the theme created on Android into iOS app.
+Also, these themes are compatible between platforms, so you can import the theme created on Android into iOS app and vice versa.
 
 #### Moderate like a pro
 
-TODO image
+<img src="./images/20240814-delete-messages.png" width="288" class="float-to-right">
 
-As much as we disagree with attacks on the freedom of speech on the society level – various groups must be able to express their opinions, be they far left, far right, or anybody in between – we also believe that in the small communities, community owners have full discretion to decide which content is allowed and which is not. But as communities grow, bad actors begin to join in order to disrupt, subvert and troll the conversations. So, the moderation tools are critical for small public communities to thrive. 
+As much as we disagree with the attacks on the freedom of speech on the society level – all people must be able to express their opinions – we also believe that the small community owners should have full control over which content is allowed and which is not. But as communities grow, bad actors begin to join in order to disrupt, subvert and troll the conversations. So, the moderation tools are critical for small public communities to thrive.
 
-SimpleX Chat already has quite a few moderation tools available for community owners:
+SimpleX Chat already has several moderation tools available for community owners:
 - Moderate individual messages.
-- Set the default role of the new members to "observer" - they won't be able to send messages until you allow it. In addition to that, by enabling default messages for admins and owners only you can reach out to the new members and ask them some questions before allowing them to send messages.
+- Set the default role of the new members to "observer" - they won't be able to send messages until you allow it. In addition to that, by enabling default messages for admins and owners only you can reach out to the new members and ask some questions before allowing to send messages.
 - Block messages of a member for yourself only.
-- Block members for all other members - only admins and group owners can do that.
+- Block a member for all other members - only admins and group owners can do that.
 
 With this version you can now select multiple messages at once and delete or moderate them, depending on your role in the community. The current version limits the number of messages that can be deleted to 20 - this limit will be increased to 200 messages in the next version.
 
@@ -131,15 +129,15 @@ Also, this version makes profile images of the blocked members blurred, to preve
 
 #### Increase font size
 
-Android and desktop apps now allow to increast font size inside the app, without changing the system settings. Desktop in addition to that allows to zoom the whole screen - it can be helpful on some systems with a limited support of high density displays.
+Android and desktop apps now allow to increase font size inside the app, without changing the system settings. Desktop app also allows to zoom the whole screen - it can be helpful on some systems with a limited support of high density displays.
 
-These settings can be changed via appearance settings.
+These settings can be changed via Appearance settings.
 
 ### New media options
 
 #### Play from the chat list
 
-TODO image
+<img src="./images/20240814-play.png" width="288" class="float-to-right">
 
 Now you can interact with the media in the last message directly from the list of the chats.
 
@@ -155,9 +153,9 @@ You can set all images and videos to blur in your app, and unblur them on tap (o
 
 #### Share from other apps
 
-TODO image
+<img src="./images/20240814-share.png" width="288" class="float-to-right">
 
-Not much to brag about, as most iOS apps have it, and users expect it to be possible.
+Not much to brag about, as most iOS messaging apps allow it, and users expected it to be possible since the beginning.
 
 But iOS makes it much harder to develop the capability to share into the app than Android, so it's only in this version you can share images, videos, files and links into SimpleX Chat from other apps.
 

@@ -233,6 +233,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent and important updates:
 
+[Aug 14, 2024. SimpleX network: vision and funding, v6.0 released with the new user experience and private message routing](./blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md)
+
 [Jun 4, 2024. SimpleX network: private message routing, v5.8 released with IP address protection and chat themes](./blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md)
 
 [Apr 26, 2024. SimpleX network: legally binding transparency, v5.7 released with better calls and messages.](./blog/20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md)

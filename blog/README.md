@@ -1,5 +1,31 @@
 # Blog
 
+Aug 4, 2024 [SimpleX network: private message routing, v5.8 released with IP address protection and chat themes](./20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md)
+
+[SimpleX Chat: vision and funding 2.0](#simplex-chat-vision-and-funding-20): the past, the present, the future.
+
+What's new in v6.0:
+- Private message routing - now enabled by default
+- New chat experience:
+  - connect to your friends faster.
+  - new reachable interface.
+  - archive contacts to chat later and a new way to start chat.
+  - moderate like a pro: delete many messages at once.
+  - and more!
+- New media options:
+  - play from the chat list.
+  - blur for better privacy.
+  - share from other apps.
+- Improved networking and reduced battery usage
+
+---
+
+Jul 4, 2024 [The Future of Privacy: Enforcing Privacy Standards](./20240704-future-of-privacy-enforcing-privacy-standards.md)
+
+It's time we shift the focus: privacy should be a non-negotiable duty of technology providers, not just a right users must fight to protect, and not something that users can be asked to consent away as a condition of access to a service.
+
+---
+
 Jun 4, 2024 [SimpleX network: private message routing, v5.8 released with IP address protection and chat themes](./20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md)
 
 What's new in v5.8:
