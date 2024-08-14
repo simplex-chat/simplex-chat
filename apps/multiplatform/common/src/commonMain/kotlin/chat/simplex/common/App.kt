@@ -333,7 +333,7 @@ fun StartPartOfScreen(settingsState: SettingsViewState) {
 fun CenterPartOfScreen() {
   val currentChatId = remember { ChatModel.chatId }
   LaunchedEffect(Unit) {
-    snapshotFlow { currentChatId }
+    snapshotFlow { currentChatId.value }
       .distinctUntilChanged()
       .collect {
         if (it != null) {
