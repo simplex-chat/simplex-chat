@@ -726,7 +726,7 @@ struct ChatView: View {
             Group {
                 if revealed, let range = range {
                     let items = Array(zip(Array(range), im.reversedChatItems[range]))
-                    ForEach(items, id: \.1.viewId) { (i, ci) in
+                    ForEach(items.reversed(), id: \.1.viewId) { (i, ci) in
                         let prev = i == prevHidden ? prevItem : im.reversedChatItems[i + 1]
                         chatItemView(ci, nil, prev)
                         .overlay {
