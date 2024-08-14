@@ -18,7 +18,7 @@
 2. ↔️ [Connect to the team](#connect-to-the-team), [join user groups](#join-user-groups) and [follow our updates](#follow-our-updates).
 3. 🤝 [Make a private connection](#make-a-private-connection) with a friend.
 4. 🔤 [Help translating SimpleX Chat](#help-translating-simplex-chat).
-5. ⚡️ [Contribute](#contribute) and [help us with donations](#help-us-with-donations).
+5. ⚡️ [Contribute](#contribute) and [support us with donations](#please-support-us-with-your-donations).
 
 [Learn more about SimpleX Chat](#contents).
 
@@ -150,7 +150,7 @@ We would love to have you join the development! You can help us with:
 - contributing to SimpleX Chat knowledge-base.
 - developing features - please connect to us via chat so we can help you get started.
 
-## Help us with donations
+## Please support us with your donations
 
 Huge thank you to everybody who donated to SimpleX Chat!
 
@@ -232,6 +232,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 ## News and updates
 
 Recent and important updates:
+
+[Aug 14, 2024. SimpleX network: the investment from Jack Dorsey and Asymmetric, v6.0 released with the new user experience and private message routing](./blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md)
 
 [Jun 4, 2024. SimpleX network: private message routing, v5.8 released with IP address protection and chat themes](./blog/20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md)
 
