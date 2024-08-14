@@ -38,6 +38,31 @@
   </description>
 
   <releases>
+    <release version="6.0.0" date="2024-08-12">
+      <url type="details">https://github.com/simplex-chat/simplex-chat/releases/tag/v6.0.0</url>
+      <description>
+        <p>New chat experience:</p>
+        <ol>
+          <li>connect to your friends faster.</li>
+          <li>archive contacts to chat later.</li>
+          <li>delete up to 20 messages at once.</li>
+          <li>increase font size.</li>
+        </ol>
+        <p>New media options:</p>
+        <ol>
+          <li>play from the chat list.</li>
+          <li>blur for better privacy.</li>
+        </ol>
+        <p>Private routing:</p>
+        <ol>
+          <li>it protects your IP address and connections and is now enabled by default.</li>
+        </ol>
+        <p>Connection and servers information:</p>
+        <ol>
+          <li>to control your network status and usage.</li>
+        </ol>
+      </description>
+    </release>
     <release version="5.8.2" date="2024-07-02">
       <url type="details">https://github.com/simplex-chat/simplex-chat/releases/tag/v5.8.2</url>
       <description>

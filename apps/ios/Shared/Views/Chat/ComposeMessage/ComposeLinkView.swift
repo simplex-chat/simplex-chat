@@ -55,7 +55,7 @@ struct ComposeLinkView: View {
                     .foregroundColor(theme.colors.secondary)
             }
             .padding(.vertical, 5)
-            .frame(maxWidth: .infinity, minHeight: 60, maxHeight: 60)
+            .frame(maxWidth: .infinity, minHeight: 60)
         }
     }
 }

@@ -114,7 +114,7 @@ struct ChatListNavLink: View {
                     }
             } else {
                 NavLinkPlain(
-                    tag: chat.chatInfo.id,
+                    chatId: chat.chatInfo.id,
                     selection: $chatModel.chatId,
                     label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) }
                 )
@@ -194,7 +194,7 @@ struct ChatListNavLink: View {
                 }
         default:
             NavLinkPlain(
-                tag: chat.chatInfo.id,
+                chatId: chat.chatInfo.id,
                 selection: $chatModel.chatId,
                 label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
                 disabled: !groupInfo.ready
@@ -221,7 +221,7 @@ struct ChatListNavLink: View {
 
     @ViewBuilder private func noteFolderNavLink(_ noteFolder: NoteFolder) -> some View {
         NavLinkPlain(
-            tag: chat.chatInfo.id,
+            chatId: chat.chatInfo.id,
             selection: $chatModel.chatId,
             label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
             disabled: !noteFolder.ready
@@ -472,9 +472,7 @@ struct ChatListNavLink: View {
         Task {
             let ok = await connectContactViaAddress(contact.contactId, incognito, showAlert: { AlertManager.shared.showAlert($0) })
             if ok {
-                await MainActor.run {
-                    chatModel.chatId = contact.id
-                }
+                ItemsModel.shared.loadOpenChat(contact.id)
                 AlertManager.shared.showAlert(connReqSentAlert(.contact))
             }
         }

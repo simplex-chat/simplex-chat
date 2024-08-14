@@ -341,6 +341,7 @@ struct SubsStatusIndicator: View {
                 }
             }
         }
+        .disabled(ChatModel.shared.chatRunning != true)
         .onAppear {
             startTimer()
         }

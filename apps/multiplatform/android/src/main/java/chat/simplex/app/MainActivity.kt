@@ -19,6 +19,7 @@ import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.platform.*
+import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import java.lang.ref.WeakReference
 
@@ -149,7 +150,12 @@ fun processIntent(intent: Intent?) {
     "android.intent.action.VIEW" -> {
       val uri = intent.data
       if (uri != null) {
-        chatModel.appOpenUrl.value = null to uri.toURI()
+        val transformedUri = uri.toURIOrNull()
+        if (transformedUri != null) {
+          chatModel.appOpenUrl.value = null to transformedUri
+        } else {
+          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_parsing_uri_title), generalGetString(MR.strings.error_parsing_uri_desc))
+        }
       }
     }
   }

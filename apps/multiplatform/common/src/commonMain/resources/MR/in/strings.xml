@@ -99,4 +99,5 @@
     <string name="completed">Selesai</string>
     <string name="connected_mobile">Ponsel yang terhubung</string>
     <string name="multicast_connect_automatically">Hubungkan secara otomatis</string>
+    <string name="callstate_connecting">menyambungkan…</string>
 </resources>

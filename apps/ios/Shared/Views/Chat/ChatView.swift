@@ -21,7 +21,6 @@ struct ChatView: View {
     @Environment(\.colorScheme) var colorScheme
     @Environment(\.presentationMode) var presentationMode
     @Environment(\.scenePhase) var scenePhase
-    // chat cannot be assigned, as it breaks observation in chat items
     @State @ObservedObject var chat: Chat
     @StateObject private var scrollModel = ReverseListScrollModel<ChatItem>()
     @StateObject private var floatingButtonModel = FloatingButtonModel()
@@ -60,7 +59,7 @@ struct ChatView: View {
             viewBody
         }
     }
-    
+
     @ViewBuilder
     private var viewBody: some View {
         let cInfo = chat.chatInfo
@@ -131,19 +130,25 @@ struct ChatView: View {
                 }
             }
         }
+        .appSheet(item: $selectedMember) { member in
+            Group {
+                if case let .group(groupInfo) = chat.chatInfo {
+                    GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
+                }
+            }
+        }
         .onAppear {
-            loadChat(chat: chat)
-            initChatView()
             selectedChatItems = nil
+            initChatView()
         }
         .onChange(of: chatModel.chatId) { cId in
             showChatInfoSheet = false
+            selectedChatItems = nil
+            scrollModel.scrollToBottom()
             stopAudioPlayer()
             if let cId {
-                selectedChatItems = nil
                 if let c = chatModel.getChat(cId) {
-                    // chat cannot be assigned, as it breaks observation in chat items
-                    chat.copyFrom(c)
+                    chat = c
                 }
                 initChatView()
                 theme = buildTheme()
@@ -154,8 +159,10 @@ struct ChatView: View {
         .onChange(of: revealedChatItem) { _ in
             NotificationCenter.postReverseListNeedsLayout()
         }
-        .onChange(of: im.reversedChatItems) { reversedChatItems in
-            if reversedChatItems.count <= loadItemsPerPage && filtered(reversedChatItems).count < 10 {
+        .onChange(of: im.isLoading) { isLoading in
+            if !isLoading,
+               im.reversedChatItems.count <= loadItemsPerPage,
+               filtered(im.reversedChatItems).count < 10 {
                 loadChatItems(chat.chatInfo)
             }
         }
@@ -190,7 +197,7 @@ struct ChatView: View {
                     } label: {
                         ChatInfoToolbar(chat: chat)
                     }
-                    .appSheet(isPresented: $showChatInfoSheet) {
+                    .appSheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
                         ChatInfoView(
                             chat: chat,
                             contact: contact,
@@ -223,6 +230,7 @@ struct ChatView: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
+                let isLoading = im.isLoading && im.showLoadingProgress
                 if selectedChatItems != nil {
                     Button {
                         withAnimation {
@@ -245,19 +253,23 @@ struct ChatView: View {
                                 }
                             }
                             Menu {
-                                if callsPrefEnabled && chatModel.activeCall == nil {
-                                    Button {
-                                        CallController.shared.startCall(contact, .video)
-                                    } label: {
-                                        Label("Video call", systemImage: "video")
+                                if !isLoading {
+                                    if callsPrefEnabled && chatModel.activeCall == nil {
+                                        Button {
+                                            CallController.shared.startCall(contact, .video)
+                                        } label: {
+                                            Label("Video call", systemImage: "video")
+                                        }
+                                        .disabled(!contact.ready || !contact.active)
                                     }
-                                    .disabled(!contact.ready || !contact.active)
+                                    searchButton()
+                                    ToggleNtfsButton(chat: chat)
+                                        .disabled(!contact.ready || !contact.active)
                                 }
-                                searchButton()
-                                ToggleNtfsButton(chat: chat)
-                                    .disabled(!contact.ready || !contact.active)
                             } label: {
                                 Image(systemName: "ellipsis")
+                                    .tint(isLoading ? Color.clear : nil)
+                                    .overlay { if isLoading { ProgressView() } }
                             }
                         }
                     case let .group(groupInfo):
@@ -282,10 +294,14 @@ struct ChatView: View {
                                 }
                             }
                             Menu {
-                                searchButton()
-                                ToggleNtfsButton(chat: chat)
+                                if !isLoading {
+                                    searchButton()
+                                    ToggleNtfsButton(chat: chat)
+                                }
                             } label: {
                                 Image(systemName: "ellipsis")
+                                    .tint(isLoading ? Color.clear : nil)
+                                    .overlay { if isLoading { ProgressView() } }
                             }
                         }
                     case .local:
@@ -351,9 +367,7 @@ struct ChatView: View {
                 searchText = ""
                 searchMode = false
                 searchFocussed = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                    loadChat(chat: chat)
-                }
+                Task { await loadChat(chat: chat) }
             }
         }
         .padding(.horizontal)
@@ -391,32 +405,41 @@ struct ChatView: View {
                                 : voiceNoFrame
                                     ? (g.size.width - 32)
                                     : (g.size.width - 32) * 0.84
-                return chatItemView(ci, maxWidth)
-                    .onAppear {
-                        floatingButtonModel.appeared(viewId: ci.viewId)
-                    }
-                    .onDisappear {
-                        floatingButtonModel.disappeared(viewId: ci.viewId)
-                    }
-                    .id(ci.id) // Required to trigger `onAppear` on iOS15
+                return ChatItemWithMenu(
+                    chat: $chat,
+                    chatItem: ci,
+                    maxWidth: maxWidth,
+                    composeState: $composeState,
+                    selectedMember: $selectedMember,
+                    revealedChatItem: $revealedChatItem,
+                    selectedChatItems: $selectedChatItems
+                )
+                .onAppear {
+                    floatingButtonModel.appeared(viewId: ci.viewId)
+                }
+                .onDisappear {
+                    floatingButtonModel.disappeared(viewId: ci.viewId)
+                }
+                .id(ci.id) // Required to trigger `onAppear` on iOS15
             } loadPage: {
                 loadChatItems(cInfo)
             }
+            .opacity(ItemsModel.shared.isLoading ? 0 : 1)
             .padding(.vertical, -InvertedTableView.inset)
             .onTapGesture { hideKeyboard() }
             .onChange(of: searchText) { _ in
-                loadChat(chat: chat, search: searchText)
-            }
-            .onChange(of: chatModel.chatId) { chatId in
-                if let chatId, let c = chatModel.getChat(chatId) {
-                    // chat cannot be assigned, as it breaks observation in chat items
-                    chat.copyFrom(c)
-                    showChatInfoSheet = false
-                    loadChat(chat: c)
-                }
+                Task { await loadChat(chat: chat, search: searchText) }
             }
             .onChange(of: im.reversedChatItems) { _ in
                 floatingButtonModel.chatItemsChanged()
+            }
+            .onChange(of: im.itemAdded) { added in
+                if added {
+                    im.itemAdded = false
+                    if floatingButtonModel.unreadChatItemCounts.isReallyNearBottom {
+                        scrollModel.scrollToBottom()
+                    }
+                }
             }
         }
     }
@@ -450,19 +473,19 @@ struct ChatView: View {
         init() {
             unreadChatItemCounts = UnreadChatItemCounts(
                 isNearBottom: true,
+                isReallyNearBottom: true,
                 unreadBelow: 0
             )
             events
                 .receive(on: DispatchQueue.global(qos: .background))
                 .scan(Set<String>()) { itemsInView, event in
-                    return switch event {
-                    case let .appeared(viewId):
-                        itemsInView.union([viewId])
-                    case let .disappeared(viewId):
-                        itemsInView.subtracting([viewId])
-                    case .chatItemsChanged:
-                        itemsInView
+                    var updated = itemsInView
+                    switch event {
+                    case let .appeared(viewId): updated.insert(viewId)
+                    case let .disappeared(viewId): updated.remove(viewId)
+                    case .chatItemsChanged: ()
                     }
+                    return updated
                 }
                 .map { ChatModel.shared.unreadChatItemCounts(itemsInView: $0) }
                 .removeDuplicates()
@@ -670,22 +693,10 @@ struct ChatView: View {
         VoiceItemState.chatView = [:]
     }
 
-    @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
-        ChatItemWithMenu(
-            chat: chat,
-            chatItem: ci,
-            maxWidth: maxWidth,
-            composeState: $composeState,
-            selectedMember: $selectedMember,
-            revealedChatItem: $revealedChatItem,
-            selectedChatItems: $selectedChatItems
-        )
-    }
-
     private struct ChatItemWithMenu: View {
         @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
-        @ObservedObject var chat: Chat
+        @Binding @ObservedObject var chat: Chat
         let chatItem: ChatItem
         let maxWidth: CGFloat
         @Binding var composeState: ComposeState
@@ -715,7 +726,7 @@ struct ChatView: View {
             Group {
                 if revealed, let range = range {
                     let items = Array(zip(Array(range), im.reversedChatItems[range]))
-                    ForEach(items, id: \.1.viewId) { (i, ci) in
+                    ForEach(items.reversed(), id: \.1.viewId) { (i, ci) in
                         let prev = i == prevHidden ? prevItem : im.reversedChatItems[i + 1]
                         chatItemView(ci, nil, prev)
                         .overlay {
@@ -813,8 +824,8 @@ struct ChatView: View {
                             HStack(alignment: .top, spacing: 8) {
                                 MemberProfileImage(member, size: memberImageSize, backgroundColor: theme.colors.background)
                                     .onTapGesture {
-                                        if m.membersLoaded {
-                                            selectedMember = m.getGroupMember(member.groupMemberId)
+                                        if let member =  m.getGroupMember(member.groupMemberId) {
+                                            selectedMember = member
                                         } else {
                                             Task {
                                                 await m.loadGroupMembers(groupInfo) {
@@ -822,9 +833,6 @@ struct ChatView: View {
                                                 }
                                             }
                                         }
-                                    }
-                                    .appSheet(item: $selectedMember) { member in
-                                        GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
                                     }
                                 chatItemWithMenu(ci, range, maxWidth)
                             }

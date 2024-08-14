@@ -50,11 +50,76 @@ class ItemsModel: ObservableObject {
     var reversedChatItems: [ChatItem] = [] {
         willSet { publisher.send() }
     }
+    var itemAdded = false {
+        willSet { publisher.send() }
+    }
+    
+    // Publishes directly to `objectWillChange` publisher,
+    // this will cause reversedChatItems to be rendered without throttling
+    @Published var isLoading = false
+    @Published var showLoadingProgress = false
+
     init() {
         publisher
             .throttle(for: 0.25, scheduler: DispatchQueue.main, latest: true)
             .sink { self.objectWillChange.send() }
             .store(in: &bag)
+    }
+
+    func loadOpenChat(_ chatId: ChatId, willNavigate: @escaping () -> Void = {}) {
+        let navigationTimeout = Task {
+            do {
+                try await Task.sleep(nanoseconds: 250_000000)
+                await MainActor.run {
+                    willNavigate()
+                    ChatModel.shared.chatId = chatId
+                }
+            } catch {}
+        }
+        let progressTimeout = Task {
+            do {
+                try await Task.sleep(nanoseconds: 1500_000000)
+                await MainActor.run { showLoadingProgress = true }
+            } catch {}
+        }
+        Task {
+            if let chat = ChatModel.shared.getChat(chatId) {
+                await MainActor.run { self.isLoading = true }
+//                try? await Task.sleep(nanoseconds: 5000_000000)
+                await loadChat(chat: chat)
+                navigationTimeout.cancel()
+                progressTimeout.cancel()
+                await MainActor.run {
+                    self.isLoading = false
+                    self.showLoadingProgress = false
+                    willNavigate()
+                    ChatModel.shared.chatId = chatId
+                }
+            }
+        }
+    }
+}
+
+class NetworkModel: ObservableObject {
+    // map of connections network statuses, key is agent connection id
+    @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
+
+    static let shared = NetworkModel()
+
+    private init() { }
+
+    func setContactNetworkStatus(_ contact: Contact, _ status: NetworkStatus) {
+        if let conn = contact.activeConn {
+            networkStatuses[conn.agentConnId] = status
+        }
+    }
+
+    func contactNetworkStatus(_ contact: Contact) -> NetworkStatus {
+        if let conn = contact.activeConn {
+            networkStatuses[conn.agentConnId] ?? .unknown
+        } else {
+            .unknown
+        }
     }
 }
 
@@ -80,8 +145,6 @@ final class ChatModel: ObservableObject {
     // list of chat "previews"
     @Published var chats: [Chat] = []
     @Published var deletedChats: Set<String> = []
-    // map of connections network statuses, key is agent connection id
-    @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
     // current chat
     @Published var chatId: String?
     var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
@@ -324,6 +387,12 @@ final class ChatModel: ObservableObject {
 //    }
 
     func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+        // mark chat non deleted
+        if case let .direct(contact) = cInfo, contact.chatDeleted {
+            var updatedContact = contact
+            updatedContact.chatDeleted = false
+            updateContact(updatedContact)
+        }
         // update previews
         if let i = getChatIndex(cInfo.id) {
             chats[i].chatItems = switch cInfo {
@@ -389,6 +458,7 @@ final class ChatModel: ObservableObject {
                     ci.meta.itemStatus = status
                 }
                 im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
+                im.itemAdded = true
             }
             return true
         }
@@ -483,6 +553,7 @@ final class ChatModel: ObservableObject {
         let cItem = ChatItem.liveDummy(chatInfo.chatType)
         withAnimation {
             im.reversedChatItems.insert(cItem, at: 0)
+            im.itemAdded = true
         }
         return cItem
     }
@@ -842,7 +913,13 @@ final class ChatModel: ObservableObject {
             }
             i += 1
         }
-        return UnreadChatItemCounts(isNearBottom: totalBelow < 16, unreadBelow: unreadBelow)
+        return UnreadChatItemCounts(
+            // TODO these thresholds account for the fact that items are still "visible" while
+            // covered by compose area, they should be replaced with the actual height in pixels below the screen.
+            isNearBottom: totalBelow < 15,
+            isReallyNearBottom: totalBelow < 2,
+            unreadBelow: unreadBelow
+        )
     }
 
     func topItemInView(itemsInView: Set<String>) -> ChatItem? {
@@ -852,20 +929,6 @@ final class ChatModel: ObservableObject {
         while i < maxIx && !inView(i) { i += 1 }
         while i < maxIx && inView(i) { i += 1 }
         return im.reversedChatItems[min(i - 1, maxIx)]
-    }
-
-    func setContactNetworkStatus(_ contact: Contact, _ status: NetworkStatus) {
-        if let conn = contact.activeConn {
-            networkStatuses[conn.agentConnId] = status
-        }
-    }
-
-    func contactNetworkStatus(_ contact: Contact) -> NetworkStatus {
-        if let conn = contact.activeConn {
-            networkStatuses[conn.agentConnId] ?? .unknown
-        } else {
-            .unknown
-        }
     }
 }
 
@@ -881,6 +944,7 @@ struct NTFContactRequest {
 
 struct UnreadChatItemCounts: Equatable {
     var isNearBottom: Bool
+    var isReallyNearBottom: Bool
     var unreadBelow: Int
 }
 
@@ -909,12 +973,6 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
             chatItems: chatItems ?? self.chatItems,
             chatStats: chatStats ?? self.chatStats
         )
-    }
-    
-    func copyFrom(_ c: Chat) {
-        self.chatInfo = c.chatInfo
-        self.chatItems = c.chatItems
-        self.chatStats = c.chatStats
     }
 
     var userCanSend: Bool {
