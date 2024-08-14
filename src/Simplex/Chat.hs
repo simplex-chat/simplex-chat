@@ -84,7 +84,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.Util (encryptFile, liftIOEither, shuffle)
+import Simplex.Chat.Util (encryptFile, liftIOEither, safeLast, shuffle)
 import qualified Simplex.Chat.Util as U
 import Simplex.FileTransfer.Client.Main (maxFileSize, maxFileSizeHard)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
@@ -156,7 +156,7 @@ defaultChatConfig =
           },
       tbqSize = 1024,
       fileChunkSize = 15780, -- do not change
-      xftpDescrPartSize = 14000,
+      xftpDescrPartSize = 14000, -- TODO reduce to maxCompressedMsgLength = 13388?
       inlineFiles = defaultInlineFilesConfig,
       autoAcceptFileSize = 0,
       showReactions = False,
@@ -3902,15 +3902,23 @@ processAgentMsgSndFile _corrId aFileId msg = do
                   case (rfds, sfts, d, cInfo) of
                     (rfd : extraRFDs, sft : _, SMDSnd, DirectChat ct) -> do
                       withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
-                      msgDeliveryId <- sendFileDescription sft rfd sharedMsgId $ sendDirectContactMessage user ct
-                      withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
+                      conn@Connection {connId} <- liftEither $ contactSendConn_ ct
+                      sendFileDescriptions (ConnectionId connId) ((conn, sft, fileDescrText rfd) :| []) sharedMsgId >>= \case
+                        [r] -> case r of
+                          Right (deliveryIds, _) -> case safeLast deliveryIds of
+                            Just msgDeliveryId ->
+                              withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
+                            Nothing -> toView $ CRChatError (Just user) $ ChatError $ CEInternalError "processAgentMsgSndFile: expected at least 1 delivery id"
+                          Left e -> toView $ CRChatError (Just user) e
+                        rs -> toView $ CRChatError (Just user) $ ChatError $ CEInternalError $ "processAgentMsgSndFile: expected 1 result, got " <> show (length rs)
                       lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
                     (_, _, SMDSnd, GroupChat g@GroupInfo {groupId}) -> do
                       ms <- withStore' $ \db -> getGroupMembers db vr user g
-                      let rfdsMemberFTs = zip rfds $ memberFTs ms
+                      let rfdsMemberFTs = zipWith (\rfd (conn, sft) -> (conn, sft, fileDescrText rfd)) rfds (memberFTs ms)
                           extraRFDs = drop (length rfdsMemberFTs) rfds
                       withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
-                      forM_ rfdsMemberFTs $ \mt -> sendToMember mt `catchChatError` (toView . CRChatError (Just user))
+                      forM_ (L.nonEmpty rfdsMemberFTs) $ \rfdsMemberFTs' ->
+                        sendFileDescriptions (GroupId groupId) rfdsMemberFTs' sharedMsgId
                       ci' <- withStore $ \db -> do
                         liftIO $ updateCIFileStatus db user fileId CIFSSndComplete
                         getChatItemByFileId db vr user fileId
@@ -3926,11 +3934,6 @@ processAgentMsgSndFile _corrId aFileId msg = do
                               | (connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn) = Just (groupMemberId, conn)
                               | otherwise = Nothing
                             useMember _ = Nothing
-                        sendToMember :: (ValidFileDescription 'FRecipient, (Connection, SndFileTransfer)) -> CM ()
-                        sendToMember (rfd, (conn, sft)) =
-                          void $ sendFileDescription sft rfd sharedMsgId $ \msg' -> do
-                            (sndMsg, msgDeliveryId, _) <- sendDirectMemberMessage conn msg' groupId
-                            pure (sndMsg, msgDeliveryId)
                     _ -> pure ()
                 _ -> pure () -- TODO error?
         SFWARN e -> do
@@ -3945,20 +3948,28 @@ processAgentMsgSndFile _corrId aFileId msg = do
       where
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
         fileDescrText = safeDecodeUtf8 . strEncode
-        sendFileDescription :: SndFileTransfer -> ValidFileDescription 'FRecipient -> SharedMsgId -> (ChatMsgEvent 'Json -> CM (SndMessage, Int64)) -> CM Int64
-        sendFileDescription sft rfd msgId sendMsg = do
-          let rfdText = fileDescrText rfd
-          withStore' $ \db -> updateSndFTDescrXFTP db user sft rfdText
-          parts <- splitFileDescr rfdText
-          loopSend parts
+        sendFileDescriptions :: ConnOrGroupId -> NonEmpty (Connection, SndFileTransfer, RcvFileDescrText) -> SharedMsgId -> CM [Either ChatError ([Int64], PQEncryption)]
+        sendFileDescriptions connOrGroupId connsTransfersDescrs sharedMsgId = do
+          lift . void . withStoreBatch' $ \db -> L.map (\(_, sft, rfdText) -> updateSndFTDescrXFTP db user sft rfdText) connsTransfersDescrs
+          partSize <- asks $ xftpDescrPartSize . config
+          let connsIdsEvts = L.map (\(conn, evt) -> (connOrGroupId, conn, evt)) (connDescrEvents partSize)
+          (errs, connsMsgs) <- lift $ partitionEithers . L.toList <$> createConnSndMessages connsIdsEvts
+          let msgReqs = map toMsgReq connsMsgs
+          delivered <- maybe (pure []) (fmap L.toList . deliverMessages) $ L.nonEmpty msgReqs
+          let errs' = lefts delivered
+              errors = errs <> errs'
+          unless (null errors) $ toView $ CRChatErrors (Just user) errors
+          pure delivered
           where
-            -- returns msgDeliveryId of the last file description message
-            loopSend :: NonEmpty FileDescr -> CM Int64
-            loopSend (fileDescr :| fds) = do
-              (_, msgDeliveryId) <- sendMsg $ XMsgFileDescr {msgId, fileDescr}
-              case L.nonEmpty fds of
-                Just fds' -> loopSend fds'
-                Nothing -> pure msgDeliveryId
+            connDescrEvents :: Int -> NonEmpty (Connection, ChatMsgEvent 'Json)
+            connDescrEvents partSize = L.fromList $ concatMap splitText (L.toList connsTransfersDescrs)
+              where
+                splitText :: (Connection, SndFileTransfer, RcvFileDescrText) -> [(Connection, ChatMsgEvent 'Json)]
+                splitText (conn, _, rfdText) =
+                  map (\fd -> (conn, XMsgFileDescr {msgId = sharedMsgId, fileDescr = fd})) (L.toList $ splitFileDescr partSize rfdText)
+            toMsgReq :: (Connection, SndMessage) -> ChatMsgReq
+            toMsgReq (conn, SndMessage {msgId, msgBody}) =
+              (conn, MsgFlags {notification = hasNotification XMsgFileDescr_}, msgBody, [msgId])
         sendFileError :: FileError -> Text -> VersionRangeChat -> FileTransferMeta -> CM ()
         sendFileError ferr err vr ft = do
           logError $ "Sent file error: " <> err
@@ -3980,18 +3991,16 @@ agentFileError = \case
       SMP.TRANSPORT TEVersion -> srvErr SrvErrVersion
       e -> srvErr . SrvErrOther $ tshow e
 
-splitFileDescr :: RcvFileDescrText -> CM (NonEmpty FileDescr)
-splitFileDescr rfdText = do
-  partSize <- asks $ xftpDescrPartSize . config
-  pure $ splitParts 1 partSize rfdText
+splitFileDescr :: Int -> RcvFileDescrText -> NonEmpty FileDescr
+splitFileDescr partSize rfdText = splitParts 1 rfdText
   where
-    splitParts partNo partSize remText =
+    splitParts partNo remText =
       let (part, rest) = T.splitAt partSize remText
           complete = T.null rest
           fileDescr = FileDescr {fileDescrText = part, fileDescrPartNo = partNo, fileDescrComplete = complete}
        in if complete
             then fileDescr :| []
-            else fileDescr <| splitParts (partNo + 1) partSize rest
+            else fileDescr <| splitParts (partNo + 1) rest
 
 processAgentMsgRcvFile :: ACorrId -> RcvFileId -> AEvent 'AERcvFile -> CM ()
 processAgentMsgRcvFile _corrId aFileId msg = do
@@ -4573,7 +4582,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                             xMsgNewChatMsg = ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent = XMsgNew msgContainer}
                         fileDescrEvents <- case (snd <$> fInvDescr_, itemSharedMsgId) of
                           (Just fileDescrText, Just msgId) -> do
-                            parts <- splitFileDescr fileDescrText
+                            partSize <- asks $ xftpDescrPartSize . config
+                            let parts = splitFileDescr partSize fileDescrText
                             pure . toList $ L.map (XMsgFileDescr msgId) parts
                           _ -> pure []
                         let fileDescrChatMsgs = map (ChatMessage senderVRange Nothing) fileDescrEvents
@@ -6830,6 +6840,21 @@ createSndMessages idsEvents = do
     createMsg :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> (ConnOrGroupId, ChatMsgEvent e) -> IO (Either ChatError SndMessage)
     createMsg db g vr (connOrGroupId, evnt) = runExceptT $ do
       withExceptT ChatErrorStore $ createNewSndMessage db g connOrGroupId evnt encodeMessage
+      where
+        encodeMessage sharedMsgId =
+          encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt}
+
+-- Use instead of createSndMessages when creating an undetermined number of messages per connection
+createConnSndMessages :: forall e t. (MsgEncodingI e, Traversable t) => t (ConnOrGroupId, Connection, ChatMsgEvent e) -> CM' (t (Either ChatError (Connection, SndMessage)))
+createConnSndMessages connsIdsEvents = do
+  g <- asks random
+  vr <- chatVersionRange'
+  withStoreBatch $ \db -> fmap (createMsg db g vr) connsIdsEvents
+  where
+    createMsg :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> (ConnOrGroupId, Connection, ChatMsgEvent e) -> IO (Either ChatError (Connection, SndMessage))
+    createMsg db g vr (connOrGroupId, conn, evnt) = runExceptT $ do
+      sndMsg <- withExceptT ChatErrorStore $ createNewSndMessage db g connOrGroupId evnt encodeMessage
+      pure (conn, sndMsg)
       where
         encodeMessage sharedMsgId =
           encodeChatMessage maxEncodedMsgLength ChatMessage {chatVRange = vr, msgId = Just sharedMsgId, chatMsgEvent = evnt}
