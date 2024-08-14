@@ -1378,7 +1378,7 @@
     <string name="rcv_group_event_open_chat">Abrir</string>
     <string name="v5_3_encrypt_local_files">Cifra archivos almacenados y multimedia</string>
     <string name="error_creating_member_contact">Error al establecer contacto con el miembro</string>
-    <string name="socks_proxy_setting_limitations"><b>Recuerda</b>: los servidores están conectados mediante proxy SOCKS, pero las llamadas y las previsualizaciones de enlaces usan conexión directa.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Recuerda</b>: los servidores están conectados mediante proxy SOCKS, pero las llamadas y las previsualizaciones de enlaces usan conexión directa.]]></string>
     <string name="encrypt_local_files">Cifra archivos locales</string>
     <string name="v5_3_new_desktop_app">Nueva aplicación para ordenador!</string>
     <string name="v5_3_new_interface_languages">6 idiomas nuevos para el interfaz</string>

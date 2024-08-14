@@ -570,7 +570,7 @@
     <string name="disconnect_desktop_question">Ngắt kết nối máy tính?</string>
     <string name="v6_0_delete_many_messages_descr">Xóa tối đa 20 tin nhắn cùng một lúc.</string>
     <string name="remote_ctrl_disconnected_with_reason">Đã ngắt kết nối với lý do:%s</string>
-    <string name="remote_host_disconnected_from">Đã ngắt kết nối khỏi thiết bị di động <b>%s</b> với lý do: %s</string>
+    <string name="remote_host_disconnected_from"><![CDATA[Đã ngắt kết nối khỏi thiết bị di động <b>%s</b> với lý do: %s]]></string>
     <string name="disconnect_remote_hosts">Ngắt kết nối các thiết bị di động</string>
     <string name="icon_descr_server_status_disconnected">Đã ngắt kết nối</string>
     <string name="proxy_destination_error_broker_host">Địa chỉ máy chủ đích của %1$s không tương thích với thiết lập máy chủ chuyển tiếp %2$s.</string>

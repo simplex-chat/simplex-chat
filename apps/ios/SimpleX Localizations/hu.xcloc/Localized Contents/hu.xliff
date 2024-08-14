@@ -217,14 +217,14 @@
         <target>%lld tag</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages blocked" xml:space="preserve" approved="no">
+      <trans-unit id="%lld messages blocked" xml:space="preserve">
         <source>%lld messages blocked</source>
-        <target state="translated">%lld üzenet letiltva</target>
+        <target>%lld üzenet letiltva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages blocked by admin" xml:space="preserve" approved="no">
+      <trans-unit id="%lld messages blocked by admin" xml:space="preserve">
         <source>%lld messages blocked by admin</source>
-        <target state="translated">%lld üzenet letiltva az admin által</target>
+        <target>%lld üzenet letiltva az admin által</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld messages marked deleted" xml:space="preserve">
@@ -1065,9 +1065,9 @@
         <target>Fekete</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block" xml:space="preserve" approved="no">
+      <trans-unit id="Block" xml:space="preserve">
         <source>Block</source>
-        <target state="translated">Letiltás</target>
+        <target>Letiltás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block for all" xml:space="preserve">
@@ -1075,14 +1075,14 @@
         <target>Letiltás mindenki számára</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block group members" xml:space="preserve" approved="no">
+      <trans-unit id="Block group members" xml:space="preserve">
         <source>Block group members</source>
-        <target state="translated">Csoporttagok letiltása</target>
+        <target>Csoporttagok letiltása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block member" xml:space="preserve" approved="no">
+      <trans-unit id="Block member" xml:space="preserve">
         <source>Block member</source>
-        <target state="translated">Tag letiltása</target>
+        <target>Tag letiltása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block member for all?" xml:space="preserve">
@@ -1090,9 +1090,9 @@
         <target>Mindenki számára letiltja ezt a tagot?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block member?" xml:space="preserve" approved="no">
+      <trans-unit id="Block member?" xml:space="preserve">
         <source>Block member?</source>
-        <target state="translated">Tag letiltása?</target>
+        <target>Tag letiltása?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Blocked by admin" xml:space="preserve">
@@ -2959,9 +2959,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Hiba a profil váltásakor!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error synchronizing connection" xml:space="preserve" approved="no">
+      <trans-unit id="Error synchronizing connection" xml:space="preserve">
         <source>Error synchronizing connection</source>
-        <target state="translated">Hiba a kapcsolat szinkronizálása közben</target>
+        <target>Hiba a kapcsolat szinkronizálása közben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error updating group link" xml:space="preserve">
@@ -3539,9 +3539,9 @@ Hiba: %2$@</target>
         <target>ICE-kiszolgálók (soronként egy)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you can't meet in person, show QR code in a video call, or share the link." xml:space="preserve" approved="no">
+      <trans-unit id="If you can't meet in person, show QR code in a video call, or share the link." xml:space="preserve">
         <source>If you can't meet in person, show QR code in a video call, or share the link.</source>
-        <target state="translated">Ha nem tud személyesen találkozni, mutassa meg a QR-kódot egy videohívás közben, vagy ossza meg a hivatkozást.</target>
+        <target>Ha nem tud személyesen találkozni, mutassa meg a QR-kódot egy videohívás közben, vagy ossza meg a hivatkozást.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="If you enter this passcode when opening the app, all app data will be irreversibly removed!" xml:space="preserve">
@@ -5969,9 +5969,9 @@ Engedélyezze a Beállítások / Hálózat és kiszolgálók menüben.</target>
         <target>A kiszolgálónak engedélyre van szüksége a várólisták feltöltéséhez, ellenőrizze jelszavát</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Server test failed!" xml:space="preserve" approved="no">
+      <trans-unit id="Server test failed!" xml:space="preserve">
         <source>Server test failed!</source>
-        <target state="translated">Sikertelen kiszolgáló teszt!</target>
+        <target>Sikertelen kiszolgáló teszt!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Server type" xml:space="preserve">
@@ -6269,14 +6269,14 @@ Engedélyezze a Beállítások / Hálózat és kiszolgálók menüben.</target>
         <target>Néhány fájl nem került exportálásra:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve" approved="no">
+      <trans-unit id="Some non-fatal errors occurred during import - you may see Chat console for more details." xml:space="preserve">
         <source>Some non-fatal errors occurred during import - you may see Chat console for more details.</source>
-        <target state="translated">Néhány nem végzetes hiba történt az importálás közben – további részletekért a csevegési konzolban olvashat.</target>
+        <target>Néhány nem végzetes hiba történt az importálás közben – további részletekért a csevegési konzolban olvashat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Some non-fatal errors occurred during import:" xml:space="preserve" approved="no">
+      <trans-unit id="Some non-fatal errors occurred during import:" xml:space="preserve">
         <source>Some non-fatal errors occurred during import:</source>
-        <target state="translated">Néhány nem végzetes hiba történt az importálás közben:</target>
+        <target>Néhány nem végzetes hiba történt az importálás közben:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Somebody" xml:space="preserve">
@@ -6601,9 +6601,9 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>A privát üzenetküldés következő generációja</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The old database was not removed during the migration, it can be deleted." xml:space="preserve" approved="no">
+      <trans-unit id="The old database was not removed during the migration, it can be deleted." xml:space="preserve">
         <source>The old database was not removed during the migration, it can be deleted.</source>
-        <target state="translated">A régi adatbázis nem került eltávolításra az átköltöztetés közben, így törölhető.</target>
+        <target>A régi adatbázis nem került eltávolításra az átköltöztetés közben, így törölhető.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The profile is only shared with your contacts." xml:space="preserve">
@@ -7891,14 +7891,14 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>téves üzenet hash</target>
         <note>integrity error chat item</note>
       </trans-unit>
-      <trans-unit id="blocked" xml:space="preserve" approved="no">
+      <trans-unit id="blocked" xml:space="preserve">
         <source>blocked</source>
-        <target state="translated">letiltva</target>
+        <target>letiltva</target>
         <note>marked deleted chat item preview text</note>
       </trans-unit>
-      <trans-unit id="blocked %@" xml:space="preserve" approved="no">
+      <trans-unit id="blocked %@" xml:space="preserve">
         <source>blocked %@</source>
-        <target state="translated">letiltotta %@-t</target>
+        <target>letiltotta %@-t</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="blocked by admin" xml:space="preserve">
@@ -8587,9 +8587,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>ez az ismerős</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="unblocked %@" xml:space="preserve" approved="no">
+      <trans-unit id="unblocked %@" xml:space="preserve">
         <source>unblocked %@</source>
-        <target state="translated">feloldotta %@ letiltását</target>
+        <target>feloldotta %@ letiltását</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="unknown" xml:space="preserve">
@@ -8712,9 +8712,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>megfigyelő szerep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="you blocked %@" xml:space="preserve" approved="no">
+      <trans-unit id="you blocked %@" xml:space="preserve">
         <source>you blocked %@</source>
-        <target state="translated">ön letiltotta %@-t</target>
+        <target>ön letiltotta %@-t</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you changed address" xml:space="preserve">
@@ -8757,9 +8757,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>egyszer használatos hivatkozást osztott meg inkognitóban</target>
         <note>chat list item description</note>
       </trans-unit>
-      <trans-unit id="you unblocked %@" xml:space="preserve" approved="no">
+      <trans-unit id="you unblocked %@" xml:space="preserve">
         <source>you unblocked %@</source>
-        <target state="translated">ön feloldotta %@ letiltását</target>
+        <target>ön feloldotta %@ letiltását</target>
         <note>snd group event chat item</note>
       </trans-unit>
       <trans-unit id="you: " xml:space="preserve">

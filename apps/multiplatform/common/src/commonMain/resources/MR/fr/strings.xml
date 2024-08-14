@@ -454,8 +454,8 @@
     <string name="many_people_asked_how_can_it_deliver"><![CDATA[Beaucoup se demandent : <i>si SimpleX n\'a pas d\'identifiant d\'utilisateur, comment peut-il transmettre des messages \?</i>]]></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Seuls les appareils clients stockent les profils des utilisateurs, les contacts, les groupes et les messages envoyés avec un <b>chiffrement de bout en bout à deux couches</b>.]]></string>
     <string name="read_more_in_github_with_link"><![CDATA[Pour en savoir plus, consultez notre <font color="#0088ff">GitHub repository</font>.]]></string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Batterie peu utilisée</b>. L\'app vérifie les messages toutes les 10 minutes. Vous risquez de manquer des appels ou des messages urgents.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Consomme davantage de batterie </b> L\'app fonctionne toujours en arrière-plan - les notifications s\'affichent instantanément.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Batterie peu utilisée</b>. L\'app vérifie les messages toutes les 10 minutes. Vous risquez de manquer des appels ou des messages urgents.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Consomme davantage de batterie </b> L\'app fonctionne toujours en arrière-plan - les notifications s\'affichent instantanément.]]></string>
     <string name="integrity_msg_skipped">%1$d message(s) manqué(s)</string>
     <string name="integrity_msg_bad_id">ID de message incorrecte</string>
     <string name="settings_section_title_settings">PARAMÈTRES</string>
