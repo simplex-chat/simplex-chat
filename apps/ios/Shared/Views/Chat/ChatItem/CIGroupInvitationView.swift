@@ -32,14 +32,12 @@ struct CIGroupInvitationView: View {
                         .padding(.horizontal, 2)
                         .padding(.top, 8)
                         .padding(.bottom, 6)
-                        .overlay(DetermineWidth())
 
                     Divider().frame(width: frameWidth)
 
                     if action {
                         VStack(alignment: .leading, spacing: 2) {
                             groupInvitationText()
-                                .overlay(DetermineWidth())
                             (
                                 Text(chatIncognito ? "Tap to join incognito" : "Tap to join")
                                     .foregroundColor(inProgress ? theme.colors.secondary : chatIncognito ? .indigo : theme.colors.primary)
@@ -47,7 +45,6 @@ struct CIGroupInvitationView: View {
                                 + Text("   ")
                                 + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy)
                             )
-                            .overlay(DetermineWidth())
                         }
                     } else {
                         (
@@ -55,7 +52,6 @@ struct CIGroupInvitationView: View {
                             + Text("   ")
                             + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy)
                         )
-                        .overlay(DetermineWidth())
                     }
                 }
                 .padding(.bottom, 2)

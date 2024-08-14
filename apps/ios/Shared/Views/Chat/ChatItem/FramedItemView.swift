@@ -18,7 +18,7 @@ struct FramedItemView: View {
     var preview: UIImage?
     @Binding var revealed: Bool
     var maxWidth: CGFloat = .infinity
-    @State var msgWidth: CGFloat = 0
+    var msgWidth: CGFloat = 0
     var imgWidth: CGFloat? = nil
     var videoWidth: CGFloat? = nil
     @State private var useWhiteMetaColor: Bool = false
@@ -61,19 +61,16 @@ struct FramedItemView: View {
 
                 ChatItemContentView(chat: chat, chatItem: chatItem, revealed: $revealed, msgContentView: framedMsgContentView)
                     .padding(chatItem.content.msgContent != nil ? 0 : 4)
-                    .overlay(DetermineWidth())
             }
 
             if chatItem.content.msgContent != nil {
                 CIMetaView(chat: chat, chatItem: chatItem, metaColor: useWhiteMetaColor ? Color.white : theme.colors.secondary)
                     .padding(.horizontal, 12)
                     .padding(.bottom, 6)
-                    .overlay(DetermineWidth())
                     .accessibilityLabel("")
             }
         }
             .background(chatItemFrameColorMaybeImageOrVideo(chatItem, theme))
-            .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
         if let (title, text) = chatItem.meta.itemStatus.statusInfo {
             v.onTapGesture {
@@ -97,14 +94,12 @@ struct FramedItemView: View {
             }
             .padding(.vertical, 6)
             .padding(.horizontal, 12)
-            .overlay(DetermineWidth())
             .frame(minWidth: msgWidth, alignment: .center)
             .padding(.bottom, 2)
         } else {
             switch (chatItem.content.msgContent) {
             case let .image(text, _):
                 CIImageView(chatItem: chatItem, preview: preview, maxWidth: maxWidth, imgWidth: imgWidth, showFullScreenImage: $showFullscreenGallery)
-                    .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
                         .frame(width: 0, height: 0)
@@ -119,7 +114,6 @@ struct FramedItemView: View {
                 }
             case let .video(text, _, duration):
                 CIVideoView(chatItem: chatItem, preview: preview, duration: duration, maxWidth: maxWidth, videoWidth: videoWidth, showFullscreenPlayer: $showFullscreenGallery)
-                .overlay(DetermineWidth())
                 if text == "" && !chatItem.meta.isLive {
                     Color.clear
                     .frame(width: 0, height: 0)
@@ -134,7 +128,6 @@ struct FramedItemView: View {
                 }
             case let .voice(text, duration):
                 FramedCIVoiceView(chat: chat, chatItem: chatItem, recordingFile: chatItem.file, duration: duration, allowMenu: $allowMenu)
-                    .overlay(DetermineWidth())
                 if text != "" {
                     ciMsgContentView(chatItem)
                 }
@@ -171,7 +164,6 @@ struct FramedItemView: View {
         .padding(.horizontal, 12)
         .padding(.top, 6)
         .padding(.bottom, pad || (chatItem.quotedItem == nil && chatItem.meta.itemForwarded == nil) ? 6 : 0)
-        .overlay(DetermineWidth())
         .frame(minWidth: msgWidth, alignment: .leading)
         .background(chatItemFrameContextColor(chatItem, theme))
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
@@ -220,8 +212,6 @@ struct FramedItemView: View {
                 ciQuotedMsgView(qi)
             }
         }
-            // if enable this always, size of the framed voice message item will be incorrect after end of playback
-            .overlay { if case .voice = chatItem.content.msgContent {} else { DetermineWidth() } }
             .frame(minWidth: msgWidth, alignment: .leading)
             .background(chatItemFrameContextColor(chatItem, theme))
 
@@ -292,7 +282,6 @@ struct FramedItemView: View {
         .multilineTextAlignment(rtl ? .trailing : .leading)
         .padding(.vertical, 6)
         .padding(.horizontal, 12)
-        .overlay(DetermineWidth())
         .frame(minWidth: 0, alignment: .leading)
         .textSelection(.enabled)
 
@@ -305,7 +294,6 @@ struct FramedItemView: View {
 
     @ViewBuilder private func ciFileView(_ ci: ChatItem, _ text: String) -> some View {
         CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited)
-            .overlay(DetermineWidth())
         if text != "" || ci.meta.isLive {
             ciMsgContentView (chatItem)
         }

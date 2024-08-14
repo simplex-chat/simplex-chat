@@ -73,7 +73,8 @@ struct ChatItemView: View {
             chatItem: chatItem,
             preview: preview,
             revealed: $revealed,
-            maxWidth: maxWidth,
+            maxWidth: adjustedMaxWidth,
+            msgWidth: adjustedMaxWidth,
             imgWidth: adjustedMaxWidth,
             videoWidth: adjustedMaxWidth,
             allowMenu: $allowMenu
