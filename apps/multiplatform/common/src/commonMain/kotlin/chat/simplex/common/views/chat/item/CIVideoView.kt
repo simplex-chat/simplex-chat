@@ -57,7 +57,9 @@ fun CIVideoView(
     }
     val f = filePath.value
     if (file != null && f != null) {
+      val view = LocalMultiplatformView()
       val openFullscreen = {
+        hideKeyboard(view)
         ModalManager.fullscreen.showCustomModal(animated = false) { close ->
           ImageFullScreenView(imageProvider, close)
         }

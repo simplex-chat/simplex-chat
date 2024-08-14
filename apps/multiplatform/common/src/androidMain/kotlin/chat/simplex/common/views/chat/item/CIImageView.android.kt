@@ -33,7 +33,9 @@ actual fun SimpleAndAnimatedImageView(
     placeholder = BitmapPainter(imageBitmap), // show original image while it's still loading by coil
     imageLoader = imageLoader
   )
+  val view = LocalMultiplatformView()
   ImageView(imagePainter) {
+    hideKeyboard(view)
     if (getLoadedFilePath(file) != null) {
       ModalManager.fullscreen.showCustomModal(animated = false) { close ->
         ImageFullScreenView(imageProvider, close)
