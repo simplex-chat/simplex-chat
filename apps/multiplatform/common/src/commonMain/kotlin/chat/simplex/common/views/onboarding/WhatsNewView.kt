@@ -17,6 +17,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -654,7 +655,9 @@ private val versionDescriptions: List<VersionDescription> = listOf(
 private val lastVersion = versionDescriptions.last().version
 
 fun setLastVersionDefault(m: ChatModel) {
-  m.controller.appPrefs.whatsNewVersion.set(lastVersion)
+  if (appPrefs.whatsNewVersion.get() != lastVersion) {
+    appPrefs.whatsNewVersion.set(lastVersion)
+  }
 }
 
 fun shouldShowWhatsNew(m: ChatModel): Boolean {

@@ -101,7 +101,9 @@ object ThemeManager {
   }
 
   fun applyTheme(theme: String) {
-    appPrefs.currentTheme.set(theme)
+    if (appPrefs.currentTheme.get() != theme) {
+      appPrefs.currentTheme.set(theme)
+    }
     CurrentColors.value = currentColors(null, null, chatModel.currentUser.value?.uiThemes, appPrefs.themeOverrides.get())
     platform.androidSetNightModeIfSupported()
     val c = CurrentColors.value.colors
