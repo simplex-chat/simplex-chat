@@ -338,7 +338,9 @@ func loadChat(chat: Chat, search: String = "") async {
         let m = ChatModel.shared
         let im = ItemsModel.shared
         m.chatItemStatuses = [:]
-        await MainActor.run { im.reversedChatItems = [] }
+        if clearItems {
+            await MainActor.run { im.reversedChatItems = [] }
+        }
         let chat = try await apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
         await MainActor.run {
             im.reversedChatItems = chat.chatItems.reversed()
