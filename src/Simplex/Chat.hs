@@ -3903,14 +3903,13 @@ processAgentMsgSndFile _corrId aFileId msg = do
                     (rfd : extraRFDs, sft : _, SMDSnd, DirectChat ct) -> do
                       withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
                       conn@Connection {connId} <- liftEither $ contactSendConn_ ct
-                      sendFileDescriptions (ConnectionId connId) ((conn, sft, fileDescrText rfd) :| []) sharedMsgId >>= \case
-                        [r] -> case r of
-                          Right (deliveryIds, _) -> case safeLast deliveryIds of
-                            Just msgDeliveryId ->
-                              withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
-                            Nothing -> toView $ CRChatError (Just user) $ ChatError $ CEInternalError "processAgentMsgSndFile: expected at least 1 delivery id"
-                          Left e -> toView $ CRChatError (Just user) e
-                        rs -> toView $ CRChatError (Just user) $ ChatError $ CEInternalError $ "processAgentMsgSndFile: expected 1 result, got " <> show (length rs)
+                      rs <- sendFileDescriptions (ConnectionId connId) ((conn, sft, fileDescrText rfd) :| []) sharedMsgId
+                      case safeLast rs of
+                        Just (Right ([msgDeliveryId], _)) ->
+                          withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
+                        Just (Right (deliveryIds, _)) -> toView $ CRChatError (Just user) $ ChatError $ CEInternalError $ "SFDONE, sendFileDescriptions: expected 1 delivery id, got " <> show (length deliveryIds)
+                        Just (Left e) -> toView $ CRChatError (Just user) e
+                        Nothing -> toView $ CRChatError (Just user) $ ChatError $ CEInternalError "SFDONE, sendFileDescriptions: expected at least 1 result"
                       lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
                     (_, _, SMDSnd, GroupChat g@GroupInfo {groupId}) -> do
                       ms <- withStore' $ \db -> getGroupMembers db vr user g
