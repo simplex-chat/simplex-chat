@@ -25,10 +25,13 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun SearchTextField(
   modifier: Modifier,
@@ -48,6 +51,21 @@ fun SearchTextField(
       focusRequester.requestFocus()
       delay(200)
       keyboard?.show()
+    }
+  }
+  if (appPlatform.isAndroid) {
+    LaunchedEffect(Unit) {
+      val modalCountOnOpen = ModalManager.start.modalCount.value
+      launch {
+        snapshotFlow { ModalManager.start.modalCount.value }
+          .filter { it > modalCountOnOpen }
+          .collect {
+            keyboard?.hide()
+          }
+      }
+    }
+    KeyChangeEffect(chatModel.chatId.value) {
+      keyboard?.hide()
     }
   }
 
