@@ -13,6 +13,8 @@
   <string name="you_will_join_group">You will connect to all group members.</string>
   <string name="connect_via_link_verb">Connect</string>
   <string name="connect_via_link_incognito">Connect incognito</string>
+  <string name="error_parsing_uri_title">Invalid link</string>
+  <string name="error_parsing_uri_desc">Please check that SimpleX link is correct.</string>
 
   <!-- MainActivity.kt -->
   <string name="opening_database">Opening database…</string>

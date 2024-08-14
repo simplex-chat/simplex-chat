@@ -97,7 +97,7 @@ struct ChatItemForwardingView: View {
                     )
                 } else {
                     composeState = ComposeState.init(forwardingItem: ci, fromChatInfo: fromChatInfo)
-                    chatModel.chatId = chat.id
+                    ItemsModel.shared.loadOpenChat(chat.id)
                 }
             }
         } label: {

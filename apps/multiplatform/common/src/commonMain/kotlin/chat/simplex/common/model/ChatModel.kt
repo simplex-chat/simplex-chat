@@ -275,6 +275,11 @@ object ChatModel {
       }
     }
     suspend fun addChatItem(rhId: Long?, cInfo: ChatInfo, cItem: ChatItem) {
+      // mark chat non deleted
+      if (cInfo is ChatInfo.Direct && cInfo.chatDeleted) {
+        val updatedContact = cInfo.contact.copy(chatDeleted = false)
+        updateContact(rhId, updatedContact)
+      }
       // update previews
       val i = getChatIndex(rhId, cInfo.id)
       val chat: Chat
@@ -879,6 +884,11 @@ interface NamedChat {
   val localAlias: String
   val chatViewName: String
     get() = localAlias.ifEmpty { displayName + (if (fullName == "" || fullName == displayName) "" else " / $fullName") }
+
+  fun anyNameContains(searchAnyCase: String): Boolean {
+    val s = searchAnyCase.trim().lowercase()
+    return chatViewName.lowercase().contains(s) || displayName.lowercase().contains(s) || fullName.lowercase().contains(s)
+  }
 }
 
 interface SomeChat {
@@ -1482,21 +1492,23 @@ data class GroupMember (
   val memberContactId: Long? = null,
   val memberContactProfileId: Long,
   var activeConn: Connection? = null
-) {
+): NamedChat {
   val id: String get() = "#$groupId @$groupMemberId"
-  val displayName: String
+  override val displayName: String
     get() {
       val p = memberProfile
       val name = p.localAlias.ifEmpty { p.displayName }
       return pastMember(name)
     }
-  val fullName: String get() = memberProfile.fullName
-  val image: String? get() = memberProfile.image
+  override val fullName: String get() = memberProfile.fullName
+  override val image: String? get() = memberProfile.image
   val contactLink: String? = memberProfile.contactLink
   val verified get() = activeConn?.connectionCode != null
   val blocked get() = blockedByAdmin || !memberSettings.showMessages
 
-  val chatViewName: String
+  override val localAlias: String = memberProfile.localAlias
+
+  override val chatViewName: String
     get() {
       val p = memberProfile
       val name = p.localAlias.ifEmpty { p.displayName + (if (p.fullName == "" || p.fullName == p.displayName) "" else " / ${p.fullName}") }

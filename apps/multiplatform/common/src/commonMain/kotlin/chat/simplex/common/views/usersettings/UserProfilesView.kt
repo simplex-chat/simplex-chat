@@ -307,7 +307,7 @@ private fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<User
   val s = searchTextOrPassword.trim()
   val lower = s.lowercase()
   return m.users.filter { u ->
-    if ((u.user.activeUser || !u.user.hidden) && (s == "" || u.user.chatViewName.lowercase().contains(lower))) {
+    if ((u.user.activeUser || !u.user.hidden) && (s == "" || u.user.anyNameContains(lower))) {
       true
     } else {
       correctPassword(u.user, s)

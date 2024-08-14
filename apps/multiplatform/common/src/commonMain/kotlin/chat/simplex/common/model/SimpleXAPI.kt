@@ -2136,12 +2136,6 @@ object ChatController {
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         if (active(r.user)) {
-          if (cInfo is ChatInfo.Direct && cInfo.chatDeleted) {
-            val updatedContact = cInfo.contact.copy(chatDeleted = false)
-            withChats {
-              updateContact(rhId, updatedContact)
-            }
-          }
           withChats {
             addChatItem(rhId, cInfo, cItem)
           }
@@ -2529,6 +2523,8 @@ object ChatController {
           ModalManager.fullscreen.closeModals()
           fun showAlert(chatError: ChatError) {
             when {
+              r.rcStopReason is RemoteCtrlStopReason.Disconnected ->
+                {}
               r.rcStopReason is RemoteCtrlStopReason.ConnectionFailed
                   && r.rcStopReason.chatError is ChatError.ChatErrorAgent
                   && r.rcStopReason.chatError.agentError is AgentErrorType.RCP
