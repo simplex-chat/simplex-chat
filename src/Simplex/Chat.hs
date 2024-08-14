@@ -1655,6 +1655,11 @@ processChatCommand' vr = \case
     case conn'_ of
       Just conn' -> pure $ CRConnectionIncognitoUpdated user conn'
       Nothing -> throwChatError CEConnectionIncognitoChangeProhibited
+  APISetConnectionUserId connId oldUserId -> withUser $ \user@User {userId} -> do
+    conn' <- withFastStore $ \db -> do
+      conn <- getPendingContactConnection db oldUserId connId
+      liftIO $ updatePendingContactConnectionUserId db userId oldUserId conn
+    pure $ CRConnectionUserIdUpdated user conn'
   APIConnectPlan userId cReqUri -> withUserId userId $ \user ->
     CRConnectionPlan user <$> connectPlan user cReqUri
   APIConnect userId incognito (Just (ACR SCMInvitation cReq)) -> withUserId userId $ \user -> withInvitationLock "connect" (strEncode cReq) . procCmd $ do
@@ -7780,6 +7785,7 @@ chatCommandP =
       "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
       "/_connect " *> (APIAddContact <$> A.decimal <*> incognitoOnOffP),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
+      "/_set user :" *> (APISetConnectionUserId  <$> A.decimal <* A.space <*> A.decimal),
       ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       ForwardMessage <$> chatNameP <* " <- @" <*> displayName <* A.space <*> msgTextP,

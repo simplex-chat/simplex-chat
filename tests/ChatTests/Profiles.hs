@@ -63,6 +63,10 @@ chatProfileTests = do
   describe "contact aliases" $ do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
+  describe "pending connection users" $ do
+    it "change user id for pending connection" testUpdatePendingConnectionUserId
+    it "change user id for pending connection multiple times" testUpdatePendingConnectionUserIdMulti
+    it "can't change user id for non pending connections" testCantUpdateNonPendingConnectionUserId
   describe "preferences" $ do
     it "set contact preferences" testSetContactPrefs
     it "feature offers" testFeatureOffers
@@ -1556,6 +1560,68 @@ testSetAlias = testChat2 aliceProfile bobProfile $
     alice #$> ("/_set alias @2", id, "contact bob alias removed")
     alice ##> "/contacts"
     alice <## "bob (Bob)"
+
+testUpdatePendingConnectionUserId :: HasCallStack => FilePath -> IO ()
+testUpdatePendingConnectionUserId = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    -- Create a new invite
+    alice ##> "/connect"
+    inv <- getInvitation alice
+    -- Create and set new user as active
+    alice ##> "/create user alisa"
+    showActiveUser alice "alisa"
+    -- Change connection to newly created user
+    alice ##> "/_set user :1 1"
+    alice <## "connection 1 changed to user alisa"
+    -- Connect
+    bob ##> ("/connect " <> inv)
+    bob <## "confirmation sent!"
+    concurrently_
+      (alice <## "bob (Bob): contact is connected")
+      (bob <## "alisa: contact is connected")
+
+testUpdatePendingConnectionUserIdMulti :: HasCallStack => FilePath -> IO ()
+testUpdatePendingConnectionUserIdMulti = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    -- Create a new invite
+    alice ##> "/connect"
+    inv <- getInvitation alice
+    -- Create and set new user as active
+    alice ##> "/create user alisa"
+    showActiveUser alice "alisa"
+    -- Change connection to newly created user
+    alice ##> "/_set user :1 1"
+    alice <## "connection 1 changed to user alisa"
+    -- Set back to initial user
+    alice ##> "/user alice"
+    showActiveUser alice "alice (Alice)"
+    -- Change connection back to initial user
+    alice ##> "/_set user :1 2"
+    alice <## "connection 1 changed to user alice"
+    -- Connect
+    bob ##> ("/connect " <> inv)
+    bob <## "confirmation sent!"
+    concurrently_
+      (alice <## "bob (Bob): contact is connected")
+      (bob <## "alice (Alice): contact is connected")
+
+testCantUpdateNonPendingConnectionUserId :: HasCallStack => FilePath -> IO ()
+testCantUpdateNonPendingConnectionUserId = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    -- Create a new invite and accept
+    alice ##> "/connect"
+    inv <- getInvitation alice
+    bob ##> ("/connect " <> inv)
+    bob <## "confirmation sent!"
+    concurrently_
+      (alice <## "bob (Bob): contact is connected")
+      (bob <## "alice (Alice): contact is connected")
+    -- Create and set new user as active
+    alice ##> "/create user alisa"
+    showActiveUser alice "alisa"
+    -- Try to change connection to newly created user
+    alice ##> "/_set user :1 1"
+    alice <## "chat db error: SEPendingConnectionNotFound {connId = 1}"
 
 testSetConnectionAlias :: HasCallStack => FilePath -> IO ()
 testSetConnectionAlias = testChat2 aliceProfile bobProfile $

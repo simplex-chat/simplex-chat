@@ -64,6 +64,7 @@ module Simplex.Chat.Store.Direct
     createAcceptedContact,
     getUserByContactRequestId,
     getPendingContactConnections,
+    updatePendingContactConnectionUserId,
     getContactConnections,
     getConnectionById,
     getConnectionsContacts,
@@ -423,6 +424,19 @@ updatePCCIncognito db User {userId} conn customUserProfileId = do
     |]
     (customUserProfileId, updatedAt, userId, pccConnId conn)
   pure (conn :: PendingContactConnection) {customUserProfileId, updatedAt}
+
+updatePendingContactConnectionUserId :: DB.Connection -> UserId -> UserId -> PendingContactConnection -> IO PendingContactConnection
+updatePendingContactConnectionUserId db userId oldUserId conn = do
+  updatedAt <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE connections
+      SET user_id = ?, updated_at = ?
+      WHERE user_id = ? AND connection_id = ?
+    |]
+    (userId, updatedAt, oldUserId, pccConnId conn)
+  pure (conn :: PendingContactConnection) {updatedAt}
 
 deletePCCIncognitoProfile :: DB.Connection -> User -> ProfileId -> IO ()
 deletePCCIncognitoProfile db User {userId} profileId =
