@@ -10,7 +10,6 @@ import androidx.compose.material.TextFieldDefaults.indicatorLine
 import androidx.compose.material.TextFieldDefaults.textFieldWithLabelPadding
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -29,7 +28,6 @@ import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 
 @Composable
