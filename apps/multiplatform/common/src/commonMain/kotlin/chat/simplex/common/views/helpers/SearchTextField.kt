@@ -63,7 +63,10 @@ fun SearchTextField(
       }
     }
     KeyChangeEffect(chatModel.chatId.value) {
-      keyboard?.hide()
+      if (chatModel.chatId.value != null) {
+        delay(300)
+        keyboard?.hide()
+      }
     }
   }
 
