@@ -191,7 +191,6 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                 ModalManager.end.closeModals()
                 return@ChatLayout
               }
-              hideKeyboard(view)
               withBGApi {
                 // The idea is to preload information before showing a modal because large groups can take time to load all members
                 var preloadedContactInfo: Pair<ConnectionStats?, Profile?>? = null
@@ -238,7 +237,6 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
               }
             },
             showMemberInfo = { groupInfo: GroupInfo, member: GroupMember ->
-              hideKeyboard(view)
               withBGApi {
                 val r = chatModel.controller.apiGroupMemberInfo(chatRh, groupInfo.groupId, member.groupMemberId)
                 val stats = r?.second
@@ -456,8 +454,8 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                 }
               }
             },
-            addMembers = { groupInfo -> addGroupMembers(view = view, groupInfo = groupInfo, rhId = chatRh, close = { ModalManager.end.closeModals() }) },
-            openGroupLink = { groupInfo -> openGroupLink(view = view, groupInfo = groupInfo, rhId = chatRh, close = { ModalManager.end.closeModals() }) },
+            addMembers = { groupInfo -> addGroupMembers(groupInfo = groupInfo, rhId = chatRh, close = { ModalManager.end.closeModals() }) },
+            openGroupLink = { groupInfo -> openGroupLink(groupInfo = groupInfo, rhId = chatRh, close = { ModalManager.end.closeModals() }) },
             markRead = { range, unreadCountAfter ->
               withBGApi {
                 withChats {
@@ -1403,8 +1401,7 @@ private fun TopEndFloatingButton(
 
 val chatViewScrollState = MutableStateFlow(false)
 
-fun addGroupMembers(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (() -> Unit)? = null) {
-  hideKeyboard(view)
+fun addGroupMembers(groupInfo: GroupInfo, rhId: Long?, close: (() -> Unit)? = null) {
   withBGApi {
     setGroupMembers(rhId, groupInfo, chatModel)
     close?.invoke()
@@ -1414,8 +1411,7 @@ fun addGroupMembers(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close:
   }
 }
 
-fun openGroupLink(groupInfo: GroupInfo, rhId: Long?, view: Any? = null, close: (() -> Unit)? = null) {
-  hideKeyboard(view)
+fun openGroupLink(groupInfo: GroupInfo, rhId: Long?, close: (() -> Unit)? = null) {
   withBGApi {
     val link = chatModel.controller.apiGetGroupLink(rhId, groupInfo.groupId)
     close?.invoke()
