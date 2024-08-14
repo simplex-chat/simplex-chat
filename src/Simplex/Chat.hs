@@ -3930,8 +3930,12 @@ processAgentMsgSndFile _corrId aFileId msg = do
                           where
                             mConns' = mapMaybe useMember ms
                             sfts' = mapMaybe (\sft@SndFileTransfer {groupMemberId} -> (,sft) <$> groupMemberId) sfts
+                            -- Should match memberSendAction logic
                             useMember GroupMember {groupMemberId, activeConn = Just conn@Connection {connStatus}}
-                              | (connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn) = Just (groupMemberId, conn)
+                              | (connStatus == ConnReady || connStatus == ConnSndReady)
+                                  && not (connDisabled conn)
+                                  && not (connInactive conn) =
+                                  Just (groupMemberId, conn)
                               | otherwise = Nothing
                             useMember _ = Nothing
                     _ -> pure ()
