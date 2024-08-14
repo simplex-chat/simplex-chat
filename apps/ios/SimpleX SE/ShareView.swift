@@ -178,7 +178,7 @@ struct ShareView: View {
                         .foregroundColor(.secondary)
                 }
                 .padding(.vertical, 5)
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, minHeight: 60)
             }
         }
     }
