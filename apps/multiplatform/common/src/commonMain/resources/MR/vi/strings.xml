@@ -619,4 +619,21 @@
     <string name="encrypted_audio_call">cuộc gọi thoại mã hóa đầu cuối</string>
     <string name="duplicates_label">các bản sao</string>
     <string name="app_check_for_updates_button_download">Tải xuống %s (%s)</string>
+    <string name="feature_enabled_for_contact">đã bật cho liên hệ</string>
+    <string name="audio_device_earpiece">Tai nghe</string>
+    <string name="receipts_groups_enable_for_all">Bật cho tất cả các nhóm</string>
+    <string name="edit_image">Chỉnh sửa hình ảnh</string>
+    <string name="icon_descr_edited">đã chỉnh sửa</string>
+    <string name="receipts_contacts_enable_for_all">Bật cho tất cả</string>
+    <string name="feature_enabled">đã bật</string>
+    <string name="feature_enabled_for_you">đã bật cho bạn</string>
+    <string name="feature_enabled_for">Đã bật cho</string>
+    <string name="enable_camera_access">Cho phép truy cập camera</string>
+    <string name="encrypted_video_call">cuộc gọi video mã hóa đầu cuối</string>
+    <string name="allow_accepting_calls_from_lock_screen">Cho phép nhận cuộc gọi từ màn hình khóa thông qua Cài đặt.</string>
+    <string name="enable_receipts_all">Cho phép</string>
+    <string name="button_edit_group_profile">Chỉnh sửa hồ sơ nhóm</string>
+    <string name="enable_automatic_deletion_question">Cho phép xóa tin nhắn tự động?</string>
+    <string name="edit_verb">Chỉnh sửa</string>
+    <string name="icon_descr_email">Thư điện tử</string>
 </resources>
