@@ -4908,7 +4908,7 @@ testGroupHistoryLargeFile =
 
       createGroup2 "team" alice bob
 
-      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile\", \"msgContent\": {\"text\":\"hello\",\"type\":\"file\"}}"
+      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile\", \"msgContent\": {\"text\":\"hello\",\"type\":\"file\"}}]"
       bob <# "#team hello"
       bob <# "/f #team ./tests/tmp/testfile"
       bob <## "use /fc 1 to cancel sending"
@@ -4969,7 +4969,7 @@ testGroupHistoryMultipleFiles =
 
       threadDelay 1000000
 
-      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}"
+      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}]"
       bob <# "#team hi alice"
       bob <# "/f #team ./tests/tmp/testfile_bob"
       bob <## "use /fc 1 to cancel sending"
@@ -4981,7 +4981,7 @@ testGroupHistoryMultipleFiles =
 
       threadDelay 1000000
 
-      alice ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}"
+      alice ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}]"
       alice <# "#team hey bob"
       alice <# "/f #team ./tests/tmp/testfile_alice"
       alice <## "use /fc 2 to cancel sending"
@@ -5047,7 +5047,7 @@ testGroupHistoryFileCancel =
 
       createGroup2 "team" alice bob
 
-      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}"
+      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}]"
       bob <# "#team hi alice"
       bob <# "/f #team ./tests/tmp/testfile_bob"
       bob <## "use /fc 1 to cancel sending"
@@ -5063,7 +5063,7 @@ testGroupHistoryFileCancel =
 
       threadDelay 1000000
 
-      alice ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}"
+      alice ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}]"
       alice <# "#team hey bob"
       alice <# "/f #team ./tests/tmp/testfile_alice"
       alice <## "use /fc 2 to cancel sending"

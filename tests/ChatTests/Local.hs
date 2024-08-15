@@ -120,7 +120,7 @@ testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   let source = "./tests/fixtures/test.jpg"
   let stored = files </> "test.jpg"
   copyFile source stored
-  alice ##> "/_create *1 json {\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"hi myself\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+  alice ##> "/_create *1 json [{\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"hi myself\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]"
   alice <# "* hi myself"
   alice <# "* file 1 (test.jpg)"
 
@@ -141,7 +141,7 @@ testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   -- one more file
   let stored2 = files </> "another_test.jpg"
   copyFile source stored2
-  alice ##> "/_create *1 json {\"filePath\": \"another_test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+  alice ##> "/_create *1 json [{\"filePath\": \"another_test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]"
   alice <# "* file 2 (another_test.jpg)"
 
   alice ##> "/_delete item *1 2 internal"
