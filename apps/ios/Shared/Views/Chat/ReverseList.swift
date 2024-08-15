@@ -177,7 +177,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             snapshot.appendItems(items)
             dataSource.defaultRowAnimation = items.count > itemCount
             ? .top  // Added items slide in from the bottom (top reversed)
-            : .none // Replacing or removing rows is not animated
+            : .none // Replaced or removed rows are not animated
             let countChange = abs(items.count - itemCount)
             dataSource.apply(snapshot, animatingDifferences:
                 countChange > 0 && // Avoid animating initial load
