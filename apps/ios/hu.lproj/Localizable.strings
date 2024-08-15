@@ -209,10 +209,10 @@
 "%lld members" = "%lld tag";
 
 /* No comment provided by engineer. */
-"%lld messages blocked" = "%lld üzenet blokkolva";
+"%lld messages blocked" = "%lld üzenet letiltva";
 
 /* No comment provided by engineer. */
-"%lld messages blocked by admin" = "%lld üzenet blokkolva az admin által";
+"%lld messages blocked by admin" = "%lld üzenet letiltva az admin által";
 
 /* No comment provided by engineer. */
 "%lld messages marked deleted" = "%lld törlésre megjelölt üzenet";
@@ -683,28 +683,28 @@
 "Black" = "Fekete";
 
 /* No comment provided by engineer. */
-"Block" = "Blokkolás";
+"Block" = "Letiltás";
 
 /* No comment provided by engineer. */
 "Block for all" = "Letiltás mindenki számára";
 
 /* No comment provided by engineer. */
-"Block group members" = "Csoporttagok blokkolása";
+"Block group members" = "Csoporttagok letiltása";
 
 /* No comment provided by engineer. */
-"Block member" = "Tag blokkolása";
+"Block member" = "Tag letiltása";
 
 /* No comment provided by engineer. */
 "Block member for all?" = "Mindenki számára letiltja ezt a tagot?";
 
 /* No comment provided by engineer. */
-"Block member?" = "Tag blokkolása?";
+"Block member?" = "Tag letiltása?";
 
 /* marked deleted chat item preview text */
-"blocked" = "blokkolva";
+"blocked" = "letiltva";
 
 /* rcv group event chat item */
-"blocked %@" = "letiltotta őt: %@";
+"blocked %@" = "letiltotta %@-t";
 
 /* marked deleted chat item preview text */
 "blocked by admin" = "letiltva az admin által";
@@ -1999,7 +1999,7 @@
 "Error switching profile!" = "Hiba a profil váltásakor!";
 
 /* No comment provided by engineer. */
-"Error synchronizing connection" = "Hiba a kapcsolat szinkronizálása során";
+"Error synchronizing connection" = "Hiba a kapcsolat szinkronizálása közben";
 
 /* No comment provided by engineer. */
 "Error updating group link" = "Hiba a csoport hivatkozás frissítésekor";
@@ -2363,7 +2363,7 @@
 "ICE servers (one per line)" = "ICE-kiszolgálók (soronként egy)";
 
 /* No comment provided by engineer. */
-"If you can't meet in person, show QR code in a video call, or share the link." = "Ha nem tud személyesen találkozni, mutassa meg a QR-kódot egy videohívás során, vagy ossza meg a hivatkozást.";
+"If you can't meet in person, show QR code in a video call, or share the link." = "Ha nem tud személyesen találkozni, mutassa meg a QR-kódot egy videohívás közben, vagy ossza meg a hivatkozást.";
 
 /* No comment provided by engineer. */
 "If you enter this passcode when opening the app, all app data will be irreversibly removed!" = "Ha az alkalmazás megnyitásakor megadja ezt a jelkódot, az összes alkalmazásadat véglegesen törlődik!";
@@ -3998,7 +3998,7 @@
 "Server requires authorization to upload, check password" = "A kiszolgálónak engedélyre van szüksége a várólisták feltöltéséhez, ellenőrizze jelszavát";
 
 /* No comment provided by engineer. */
-"Server test failed!" = "Sikertelen kiszolgáló-teszt!";
+"Server test failed!" = "Sikertelen kiszolgáló teszt!";
 
 /* No comment provided by engineer. */
 "Server type" = "Kiszolgáló típusa";
@@ -4187,10 +4187,10 @@
 "Some file(s) were not exported:" = "Néhány fájl nem került exportálásra:";
 
 /* No comment provided by engineer. */
-"Some non-fatal errors occurred during import - you may see Chat console for more details." = "Néhány nem végzetes hiba történt az importálás során – további részletekért a csevegési konzolban olvashat.";
+"Some non-fatal errors occurred during import - you may see Chat console for more details." = "Néhány nem végzetes hiba történt az importálás közben – további részletekért a csevegési konzolban olvashat.";
 
 /* No comment provided by engineer. */
-"Some non-fatal errors occurred during import:" = "Néhány nem végzetes hiba történt az importálás során:";
+"Some non-fatal errors occurred during import:" = "Néhány nem végzetes hiba történt az importálás közben:";
 
 /* notification title */
 "Somebody" = "Valaki";
@@ -4394,7 +4394,7 @@
 "The next generation of private messaging" = "A privát üzenetküldés következő generációja";
 
 /* No comment provided by engineer. */
-"The old database was not removed during the migration, it can be deleted." = "A régi adatbázis nem került eltávolításra az átköltöztetés során, így törölhető.";
+"The old database was not removed during the migration, it can be deleted." = "A régi adatbázis nem került eltávolításra az átköltöztetés közben, így törölhető.";
 
 /* No comment provided by engineer. */
 "The profile is only shared with your contacts." = "Profilja csak az ismerőseivel kerül megosztásra.";
@@ -4553,7 +4553,7 @@
 "Unblock member?" = "Tag feloldása?";
 
 /* rcv group event chat item */
-"unblocked %@" = "%@ feloldva";
+"unblocked %@" = "feloldotta %@ letiltását";
 
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Váratlan átköltöztetési állapot";
@@ -4973,7 +4973,7 @@
 "you are observer" = "megfigyelő szerep";
 
 /* snd group event chat item */
-"you blocked %@" = "blokkolta őt: %@";
+"you blocked %@" = "ön letiltotta %@-t";
 
 /* No comment provided by engineer. */
 "You can accept calls from lock screen, without device and app authentication." = "Hívásokat fogadhat a lezárási képernyőről, eszköz- és alkalmazáshitelesítés nélkül.";
@@ -5105,7 +5105,7 @@
 "you shared one-time link incognito" = "egyszer használatos hivatkozást osztott meg inkognitóban";
 
 /* snd group event chat item */
-"you unblocked %@" = "feloldotta %@ blokkolását";
+"you unblocked %@" = "ön feloldotta %@ letiltását";
 
 /* No comment provided by engineer. */
 "You will be connected to group when the group host's device is online, please wait or check later!" = "Akkor lesz kapcsolódva a csoporthoz, amikor a csoport tulajdonosának eszköze online lesz, várjon, vagy ellenőrizze később!";
