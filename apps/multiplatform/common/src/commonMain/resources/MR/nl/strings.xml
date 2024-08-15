@@ -2013,7 +2013,7 @@
     <string name="info_view_connect_button">verbinden</string>
     <string name="contact_deleted">Contact verwijderd!</string>
     <string name="delete_contact_cannot_undo_warning">Het contact wordt verwijderd. Dit kan niet ongedaan worden gemaakt!</string>
-    <string name="keep_conversation">Blijf in gesprek</string>
+    <string name="keep_conversation">Behoud het gesprek</string>
     <string name="info_view_message_button">bericht</string>
     <string name="only_delete_conversation">Alleen conversatie verwijderen</string>
     <string name="info_view_open_button">open</string>
@@ -2065,4 +2065,6 @@
     <string name="v6_0_new_media_options">Nieuwe media-opties</string>
     <string name="invite_friends_short">Uitnodigen</string>
     <string name="new_message">Nieuw bericht</string>
+    <string name="error_parsing_uri_title">Ongeldige link</string>
+    <string name="error_parsing_uri_desc">Controleer of de SimpleX-link correct is.</string>
 </resources>
