@@ -156,7 +156,7 @@ defaultChatConfig =
           },
       tbqSize = 1024,
       fileChunkSize = 15780, -- do not change
-      xftpDescrPartSize = 14000, -- TODO reduce to maxCompressedMsgLength = 13388?
+      xftpDescrPartSize = 14000,
       inlineFiles = defaultInlineFilesConfig,
       autoAcceptFileSize = 0,
       showReactions = False,
