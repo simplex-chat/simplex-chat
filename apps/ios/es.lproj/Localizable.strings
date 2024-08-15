@@ -596,7 +596,7 @@
 "Archive and upload" = "Archivar y subir";
 
 /* No comment provided by engineer. */
-"Archive contacts to chat later." = "Archivar contactos para charlar más tarde.";
+"Archive contacts to chat later." = "Archiva contactos para charlar más tarde.";
 
 /* No comment provided by engineer. */
 "Archived contacts" = "Contactos archivados";
@@ -713,7 +713,7 @@
 "Blocked by admin" = "Bloqueado por administrador";
 
 /* No comment provided by engineer. */
-"Blur for better privacy." = "Difuminar para más privacidad.";
+"Blur for better privacy." = "Difumina para mayor privacidad.";
 
 /* No comment provided by engineer. */
 "Blur media" = "Difuminar multimedia";
@@ -1089,7 +1089,7 @@
 "Connection" = "Conexión";
 
 /* No comment provided by engineer. */
-"Connection and servers status." = "Estado de conexión y servidores.";
+"Connection and servers status." = "Estado de tu conexión y servidores.";
 
 /* No comment provided by engineer. */
 "Connection error" = "Error conexión";
@@ -2048,7 +2048,7 @@
 "Expand" = "Expandir";
 
 /* No comment provided by engineer. */
-"expired" = "expirado";
+"expired" = "expirados";
 
 /* No comment provided by engineer. */
 "Export database" = "Exportar base de datos";
@@ -3253,7 +3253,7 @@
 "peer-to-peer" = "p2p";
 
 /* No comment provided by engineer. */
-"Pending" = "Pendiente";
+"Pending" = "Pendientes";
 
 /* No comment provided by engineer. */
 "People can connect to you only via the links you share." = "Las personas pueden conectarse contigo solo mediante los enlaces que compartes.";
@@ -3439,7 +3439,7 @@
 "Protocol timeout per KB" = "Timeout protocolo por KB";
 
 /* No comment provided by engineer. */
-"Proxied" = "Con proxy";
+"Proxied" = "Como proxy";
 
 /* No comment provided by engineer. */
 "Proxied servers" = "Servidores con proxy";
@@ -3956,7 +3956,7 @@
 "Sent at: %@" = "Enviado: %@";
 
 /* No comment provided by engineer. */
-"Sent directly" = "Enviado directamente";
+"Sent directly" = "Directamente";
 
 /* notification */
 "Sent file event" = "Evento de archivo enviado";
@@ -3977,7 +3977,7 @@
 "Sent total" = "Total enviados";
 
 /* No comment provided by engineer. */
-"Sent via proxy" = "Enviado vía proxy";
+"Sent via proxy" = "Mediante proxy";
 
 /* No comment provided by engineer. */
 "Server address" = "Dirección del servidor";
@@ -4352,7 +4352,7 @@
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "La aplicación puede notificarte cuando recibas mensajes o solicitudes de contacto: por favor, abre la configuración para activarlo.";
 
 /* No comment provided by engineer. */
-"The app will ask to confirm downloads from unknown file servers (except .onion)." = "La aplicación pedirá que confirmes las descargas desde servidores de archivos desconocidos (excepto .onion).";
+"The app will ask to confirm downloads from unknown file servers (except .onion)." = "La aplicación pedirá que confirmes las descargas desde servidores de archivos desconocidos (excepto si son .onion).";
 
 /* No comment provided by engineer. */
 "The attempt to change database passphrase was not completed." = "El intento de cambiar la contraseña de la base de datos no se ha completado.";
@@ -4709,7 +4709,7 @@
 "Use the app while in the call." = "Usar la aplicación durante la llamada.";
 
 /* No comment provided by engineer. */
-"Use the app with one hand." = "Usa la aplicación con una mano.";
+"Use the app with one hand." = "Usa la aplicación con una sola mano.";
 
 /* No comment provided by engineer. */
 "User profile" = "Perfil de usuario";
