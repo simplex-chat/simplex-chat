@@ -3904,9 +3904,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Bewaar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Keep conversation" xml:space="preserve">
+      <trans-unit id="Keep conversation" xml:space="preserve" approved="no">
         <source>Keep conversation</source>
-        <target>Blijf in gesprek</target>
+        <target state="translated">Behoud het gesprek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keep the app open to use it from desktop" xml:space="preserve">
