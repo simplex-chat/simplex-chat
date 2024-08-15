@@ -100,9 +100,13 @@ fun SettingsLayout(
 ) {
   val scope = rememberCoroutineScope()
   val closeSettings: () -> Unit = { scope.launch { drawerState.close() } }
+  val view = LocalMultiplatformView()
   if (drawerState.isOpen) {
     BackHandler {
       closeSettings()
+    }
+    LaunchedEffect(Unit) {
+      hideKeyboard(view)
     }
   }
   val theme = CurrentColors.collectAsState()

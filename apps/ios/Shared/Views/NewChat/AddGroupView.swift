@@ -37,7 +37,7 @@ struct AddGroupView: View {
                 ) { _ in
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         dismissAllSheets(animated: true) {
-                            m.chatId = groupInfo.id
+                            ItemsModel.shared.loadOpenChat(groupInfo.id)
                         }
                     }
                 }
@@ -52,7 +52,7 @@ struct AddGroupView: View {
                 ) {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         dismissAllSheets(animated: true) {
-                            m.chatId = groupInfo.id
+                            ItemsModel.shared.loadOpenChat(groupInfo.id)
                         }
                     }
                 }

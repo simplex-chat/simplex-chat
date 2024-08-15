@@ -203,12 +203,8 @@ private fun ShareList(
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val chats by remember(search) {
     derivedStateOf {
-      val sorted = chatModel.chats.value.toList().sortedByDescending { it.chatInfo is ChatInfo.Local }
-      if (search.isEmpty()) {
-        sorted.filter { it.chatInfo.ready }
-      } else {
-        sorted.filter { it.chatInfo.ready && it.chatInfo.chatViewName.lowercase().contains(search.lowercase()) }
-      }
+      val sorted = chatModel.chats.value.toList().filter { it.chatInfo.ready }.sortedByDescending { it.chatInfo is ChatInfo.Local }
+      filteredChats(false, mutableStateOf(false), mutableStateOf(null), search, sorted)
     }
   }
   LazyColumnWithScrollBar(

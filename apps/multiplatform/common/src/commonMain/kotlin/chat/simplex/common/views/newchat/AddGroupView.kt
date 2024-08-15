@@ -35,8 +35,10 @@ import java.net.URI
 @Composable
 fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, closeAll: () -> Unit) {
   val rhId = rh?.remoteHostId
+  val view = LocalMultiplatformView()
   AddGroupLayout(
     createGroup = { incognito, groupProfile ->
+      hideKeyboard(view)
       withBGApi {
         val groupInfo = chatModel.controller.apiNewGroup(rhId, incognito, groupProfile)
         if (groupInfo != null) {

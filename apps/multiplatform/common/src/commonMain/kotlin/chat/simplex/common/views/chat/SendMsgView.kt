@@ -88,6 +88,7 @@ fun SendMsgView(
       showDeleteTextButton,
       userIsObserver,
       if (clicksOnTextFieldDisabled) "" else placeholder,
+      showVoiceButton,
       onMessageChange,
       editPrevMessage,
       onFilesPasted

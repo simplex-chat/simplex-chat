@@ -2066,4 +2066,6 @@
     <string name="invite_friends_short">邀请</string>
     <string name="v6_0_new_chat_experience">新的聊天体验 🎉</string>
     <string name="new_message">新消息</string>
+    <string name="error_parsing_uri_desc">请检查 Simple X 链接是否正确。</string>
+    <string name="error_parsing_uri_title">无效链接</string>
 </resources>

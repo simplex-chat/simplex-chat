@@ -2032,6 +2032,8 @@ testUserPrivacy =
       bob <# "alisa> hello"
       bob #> "@alisa hey"
       alice <# "bob> hey"
+      bob #> "@alice hey"
+      (alice, "[user: alice] ") ^<# "bob> hey"
       -- hide user profile
       alice ##> "/hide user my_password"
       userHidden alice "current "

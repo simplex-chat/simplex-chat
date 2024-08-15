@@ -898,11 +898,11 @@ func openKnownContact(_ contact: Contact, dismiss: Bool, showAlreadyExistsAlert:
             DispatchQueue.main.async {
                 if dismiss {
                     dismissAllSheets(animated: true) {
-                        m.chatId = c.id
+                        ItemsModel.shared.loadOpenChat(c.id)
                         showAlreadyExistsAlert?()
                     }
                 } else {
-                    m.chatId = c.id
+                    ItemsModel.shared.loadOpenChat(c.id)
                     showAlreadyExistsAlert?()
                 }
             }
@@ -917,11 +917,11 @@ func openKnownGroup(_ groupInfo: GroupInfo, dismiss: Bool, showAlreadyExistsAler
             DispatchQueue.main.async {
                 if dismiss {
                     dismissAllSheets(animated: true) {
-                        m.chatId = g.id
+                        ItemsModel.shared.loadOpenChat(g.id)
                         showAlreadyExistsAlert?()
                     }
                 } else {
-                    m.chatId = g.id
+                    ItemsModel.shared.loadOpenChat(g.id)
                     showAlreadyExistsAlert?()
                 }
             }

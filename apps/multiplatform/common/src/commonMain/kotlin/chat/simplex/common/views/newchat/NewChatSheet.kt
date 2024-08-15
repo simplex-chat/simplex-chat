@@ -491,9 +491,7 @@ private fun filterChat(chat: Chat, searchText: String, showUnreadAndFavorites: B
   val cInfo = chat.chatInfo
 
   if (searchText.isNotEmpty()) {
-    meetsPredicate = viewNameContains(cInfo, s) ||
-        if (cInfo is ChatInfo.Direct) (cInfo.contact.profile.displayName.lowercase().contains(s) ||
-            cInfo.contact.fullName.lowercase().contains(s)) else false
+    meetsPredicate = cInfo.anyNameContains(s)
   }
 
   if (showUnreadAndFavorites) {
@@ -502,9 +500,6 @@ private fun filterChat(chat: Chat, searchText: String, showUnreadAndFavorites: B
 
   return meetsPredicate
 }
-
-private fun viewNameContains(cInfo: ChatInfo, s: String): Boolean =
-  cInfo.chatViewName.lowercase().contains(s.lowercase())
 
 private val chatsByTypeComparator = Comparator<Chat> { chat1, chat2 ->
   val chat1Type = chatContactType(chat1)

@@ -278,7 +278,12 @@ fun GroupChatInfoLayout(
     scope.launch { listState.scrollToItem(0) }
   }
   val searchText = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
-  val filteredMembers = remember(members) { derivedStateOf { members.filter { it.chatViewName.lowercase().contains(searchText.value.text.trim().lowercase()) } } }
+  val filteredMembers = remember(members) {
+    derivedStateOf {
+      val s = searchText.value.text.trim().lowercase()
+      if (s.isEmpty()) members else members.filter { m -> m.anyNameContains(s) }
+    }
+  }
   // LALAL strange scrolling
   LazyColumnWithScrollBar(
     Modifier

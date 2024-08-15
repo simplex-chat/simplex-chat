@@ -614,7 +614,7 @@
     <string name="error_with_info">Hiba: %s</string>
     <string name="v4_4_disappearing_messages">Eltűnő üzenetek</string>
     <string name="auth_enable_simplex_lock">SimpleX zár bekapcsolása</string>
-    <string name="error_synchronizing_connection">Hiba a kapcsolat szinkronizálása során</string>
+    <string name="error_synchronizing_connection">Hiba a kapcsolat szinkronizálása közben</string>
     <string name="error_creating_address">Hiba a cím létrehozásakor</string>
     <string name="feature_enabled">engedélyezve</string>
     <string name="error_loading_details">Hiba a részletek betöltésekor</string>
@@ -673,7 +673,7 @@
     <string name="enter_one_ICE_server_per_line">ICE-kiszolgálók (soronként egy)</string>
     <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Ha nem tud személyesen találkozni, <b>beolvashatja a QR-kódot a videohívásban</b>, vagy az ismerőse megoszthat egy meghívó hivatkozást.]]></string>
     <string name="if_you_enter_passcode_data_removed">Ha az alkalmazás megnyitásakor megadja ezt a jelkódot, az összes alkalmazásadat véglegesen törlődik!</string>
-    <string name="if_you_cant_meet_in_person">Ha nem tud személyesen találkozni, mutassa meg a QR-kódot egy videohívás során, vagy ossza meg a hivatkozást.</string>
+    <string name="if_you_cant_meet_in_person">Ha nem tud személyesen találkozni, mutassa meg a QR-kódot egy videohívás közben, vagy ossza meg a hivatkozást.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Ha nem tud személyesen találkozni, <b>mutassa meg a QR-kódot a videohívásban</b>, vagy ossza meg a hivatkozást.]]></string>
     <string name="network_disable_socks_info">Megerősítés esetén az üzenetküldő kiszolgálók látni fogják az IP-címét és a szolgáltatóját – azt, hogy mely kiszolgálókhoz kapcsolódik.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">A kép akkor érkezik meg, amikor a küldője befejezte annak feltöltését.</string>
@@ -912,7 +912,7 @@
     <string name="your_privacy">Adatvédelem</string>
     <string name="your_simplex_contact_address">Az ön SimpleX címe</string>
     <string name="alert_text_fragment_please_report_to_developers">Jelentse a fejlesztőknek.</string>
-    <string name="people_can_connect_only_via_links_you_share">Ön dönti el, hogy kivel beszélget</string>
+    <string name="people_can_connect_only_via_links_you_share">Ön dönti el, hogy kivel beszélget.</string>
     <string name="prohibit_sending_disappearing">Az eltűnő üzenetek küldése le van tiltva.</string>
     <string name="only_you_can_send_voice">Csak ön tud hangüzeneteket küldeni.</string>
     <string name="update_network_settings_confirmation">Frissítés</string>
@@ -1270,7 +1270,7 @@
     <string name="your_settings">Beállítások</string>
     <string name="your_chat_database">Csevegési adatbázis</string>
     <string name="rcv_group_event_member_deleted">%1$s eltávolítva</string>
-    <string name="smp_servers_test_failed">Sikertelen kiszolgáló-teszt!</string>
+    <string name="smp_servers_test_failed">Sikertelen kiszolgáló teszt!</string>
     <string name="verify_connection">Kapcsolat ellenőrzése</string>
     <string name="whats_new_read_more">Tudjon meg többet</string>
     <string name="sender_cancelled_file_transfer">A fájl küldője visszavonta az átvitelt.</string>
@@ -1466,7 +1466,7 @@
     <string name="group_invitation_tap_to_join_incognito">Koppintson az inkognitóban való kapcsolódáshoz</string>
     <string name="set_password_to_export">Jelmondat beállítása az exportáláshoz</string>
     <string name="receipts_groups_override_disabled">Kézbesítési jelentések le vannak tiltva a(z) %d csoportban</string>
-    <string name="non_fatal_errors_occured_during_import">Néhány nem végzetes hiba történt az importálás során:</string>
+    <string name="non_fatal_errors_occured_during_import">Néhány nem végzetes hiba történt az importálás közben:</string>
     <string name="v4_5_italian_interface_descr">Köszönet a felhasználóknak - hozzájárulás a Weblaten!</string>
     <string name="relay_server_if_necessary">Az átjátszó kiszolgáló csak szükség esetén kerül használatra. Egy másik fél megfigyelheti az IP-címet.</string>
     <string name="v5_0_app_passcode_descr">Rendszerhitelesítés helyetti beállítás.</string>
@@ -1607,19 +1607,19 @@
     <string name="v5_5_message_delivery_descr">Csökkentett akkumulátorhasználattal.</string>
     <string name="v5_5_new_interface_languages">Magyar és török felhasználói felület</string>
     <string name="v5_5_join_group_conversation_descr">A közelmúlt eseményei és továbbfejlesztett jegyzék bot.</string>
-    <string name="rcv_group_event_member_unblocked">%s letiltása feloldva</string>
-    <string name="snd_group_event_member_unblocked">%s letiltását visszavonta</string>
+    <string name="rcv_group_event_member_unblocked">feloldotta %s letiltását</string>
+    <string name="snd_group_event_member_unblocked">ön feloldotta %s letiltását</string>
     <string name="member_info_member_blocked">letiltva</string>
     <string name="blocked_by_admin_item_description">letiltva az admin által</string>
     <string name="member_blocked_by_admin">Letiltva az admin által</string>
-    <string name="rcv_group_event_member_blocked">letiltotta őt: %s</string>
+    <string name="rcv_group_event_member_blocked">letiltotta %s-t</string>
     <string name="block_for_all">Letiltás mindenki számára</string>
     <string name="block_for_all_question">Mindenki számára letiltja ezt a tagot?</string>
     <string name="blocked_by_admin_items_description">%d üzenet letiltva az admin által</string>
     <string name="unblock_for_all">Letiltás feloldása mindenki számára</string>
     <string name="unblock_for_all_question">Mindenki számára feloldja a tag letiltását?</string>
-    <string name="snd_group_event_member_blocked">letiltotta %s-t</string>
-    <string name="error_blocking_member_for_all">Hiba a tag mindenki számára való letiltása során</string>
+    <string name="snd_group_event_member_blocked">ön letiltotta %s-t</string>
+    <string name="error_blocking_member_for_all">Hiba a tag mindenki számára való letiltása közben</string>
     <string name="message_too_large">Az üzenet túl nagy</string>
     <string name="welcome_message_is_too_long">Az üdvözlő üzenet túl hosszú</string>
     <string name="database_migration_in_progress">Az adatbázis átköltöztetése folyamatban van.
@@ -2061,4 +2061,6 @@
     <string name="invite_friends_short">Meghívás</string>
     <string name="v6_0_new_chat_experience">Új csevegési élmény 🎉</string>
     <string name="new_message">Új üzenet</string>
+    <string name="error_parsing_uri_title">Érvénytelen hivatkozás</string>
+    <string name="error_parsing_uri_desc">Ellenőrizze, hogy a SimpleX hivatkozás helyes-e.</string>
 </resources>
