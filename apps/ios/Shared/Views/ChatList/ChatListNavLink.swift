@@ -392,6 +392,7 @@ struct ChatListNavLink: View {
                 }
             }
         }
+        .contentShape(Rectangle())
         .onTapGesture {
             showContactConnectionInfo = true
         }
