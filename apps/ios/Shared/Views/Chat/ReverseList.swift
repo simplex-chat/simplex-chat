@@ -45,6 +45,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
         private let representer: ReverseList
         private var dataSource: UITableViewDiffableDataSource<Section, Item>!
         private var itemCount: Int = 0
+        private var lastUpdate: TimeInterval = 0
         private var bag = Set<AnyCancellable>()
 
         init(representer: ReverseList) {
@@ -176,10 +177,13 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             snapshot.appendSections([.main])
             snapshot.appendItems(items)
             dataSource.defaultRowAnimation = .none
+            let now = Date.timeIntervalSinceReferenceDate
+            let shouldAnimate = now - lastUpdate > 0.25
             dataSource.apply(
                 snapshot,
-                animatingDifferences: itemCount != 0 && abs(items.count - itemCount) == 1
+                animatingDifferences: shouldAnimate && itemCount != 0 && abs(items.count - itemCount) == 1
             )
+            lastUpdate = now
             itemCount = items.count
         }
     }
