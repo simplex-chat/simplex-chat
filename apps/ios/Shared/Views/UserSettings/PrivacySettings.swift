@@ -70,6 +70,9 @@ struct PrivacySettings: View {
                 Section {
                     settingsRow("network", color: theme.colors.secondary) {
                         Toggle("Send link previews", isOn: $useLinkPreviews)
+                            .onChange(of: useLinkPreviews) { linkPreviews in
+                                privacyLinkPreviewsGroupDefault.set(linkPreviews)
+                            }
                     }
                     settingsRow("message", color: theme.colors.secondary) {
                         Toggle("Show last messages", isOn: $showChatPreviews)
@@ -114,7 +117,7 @@ struct PrivacySettings: View {
                                 privacyAcceptImagesGroupDefault.set($0)
                             }
                     }
-                    settingsRow("circle.rectangle.filled.pattern.diagonalline", color: theme.colors.secondary) {
+                    settingsRow("circle.filled.pattern.diagonalline.rectangle", color: theme.colors.secondary) {
                         Picker("Blur media", selection: $privacyMediaBlurRadius) {
                             let values = [0, 12, 24, 48] + ([0, 12, 24, 48].contains(privacyMediaBlurRadius) ? [] : [privacyMediaBlurRadius])
                             ForEach(values, id: \.self) { radius in
@@ -365,6 +368,7 @@ struct SimplexLockView: View {
     @State private var selfDestruct: Bool = UserDefaults.standard.bool(forKey: DEFAULT_LA_SELF_DESTRUCT)
     @State private var currentSelfDestruct: Bool = UserDefaults.standard.bool(forKey: DEFAULT_LA_SELF_DESTRUCT)
     @AppStorage(DEFAULT_LA_SELF_DESTRUCT_DISPLAY_NAME) private var selfDestructDisplayName = ""
+    @AppStorage(GROUP_DEFAULT_ALLOW_SHARE_EXTENSION, store: groupDefaults) private var allowShareExtension = false
     @State private var performLAToggleReset = false
     @State private var performLAModeReset = false
     @State private var performLASelfDestructReset = false
@@ -436,6 +440,12 @@ struct SimplexLockView: View {
                     }
                 }
 
+                if performLA {
+                    Section("Share to SimpleX") {
+                        Toggle("Allow sharing", isOn: $allowShareExtension)
+                    }
+                }
+                
                 if performLA && laMode == .passcode {
                     Section(header: Text("Self-destruct passcode").foregroundColor(theme.colors.secondary)) {
                         Toggle(isOn: $selfDestruct) {
@@ -460,6 +470,7 @@ struct SimplexLockView: View {
             }
         }
         .onChange(of: performLA) { performLAToggle in
+            appLocalAuthEnabledGroupDefault.set(performLAToggle)
             prefLANoticeShown = true
             if performLAToggleReset {
                 performLAToggleReset = false

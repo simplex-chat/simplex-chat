@@ -1,11 +1,8 @@
 package chat.simplex.common.views.onboarding
 
-import SectionBottomSpacer
 import SectionTextFooter
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -20,6 +17,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.database.*
@@ -107,9 +105,10 @@ private fun SetupDatabasePassphraseLayout(
   nextStep: () -> Unit,
 ) {
   ColumnWithScrollBar(
-    Modifier.fillMaxSize().padding(top = DEFAULT_PADDING),
+    Modifier.fillMaxSize().themedBackground().padding(bottom = DEFAULT_PADDING * 2),
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
+    CloseSheetBar(showClose = false, close = {})
     AppBarTitle(stringResource(MR.strings.setup_database_passphrase))
 
     Spacer(Modifier.weight(1f))
@@ -184,8 +183,6 @@ private fun SetupDatabasePassphraseLayout(
       chatModel.desktopOnboardingRandomPassword.value = true
       nextStep()
     }
-
-    SectionBottomSpacer()
   }
 }
 
@@ -209,7 +206,8 @@ private fun SkipButton(disabled: Boolean, onClick: () -> Unit) {
     stringResource(MR.strings.you_can_change_it_later),
     Modifier
       .fillMaxWidth()
-      .padding(horizontal = DEFAULT_PADDING * 3),
+      .padding(horizontal = DEFAULT_PADDING * 3)
+      .padding(top = DEFAULT_PADDING, bottom = DEFAULT_PADDING - 5.dp),
     style = MaterialTheme.typography.subtitle1,
     color = MaterialTheme.colors.secondary,
     textAlign = TextAlign.Center,

@@ -32,6 +32,7 @@ private enum MigrateFromDeviceViewAlert: Identifiable {
     case keychainError(_ title: LocalizedStringKey = "Keychain error")
     case databaseError(_ title: LocalizedStringKey = "Database error", message: String)
     case unknownError(_ title: LocalizedStringKey = "Unknown error", message: String)
+    case archiveExportedWithErrors(archivePath: URL, archiveErrors: [ArchiveError])
 
     case error(title: LocalizedStringKey, error: String = "")
 
@@ -45,6 +46,7 @@ private enum MigrateFromDeviceViewAlert: Identifiable {
         case .keychainError: return "keychainError"
         case let .databaseError(title, message): return "\(title) \(message)"
         case let .unknownError(title, message): return "\(title) \(message)"
+        case let .archiveExportedWithErrors(path, _): return "archiveExportedWithErrors \(path)"
 
         case let .error(title, _): return "error \(title)"
         }
@@ -166,6 +168,14 @@ struct MigrateFromDevice: View {
                 return Alert(title: Text(title), message: Text(message))
             case let .unknownError(title, message):
                 return Alert(title: Text(title), message: Text(message))
+            case let .archiveExportedWithErrors(archivePath, errs):
+                return Alert(
+                    title: Text("Chat database exported"),
+                    message: Text("You may migrate the exported database.") + Text(verbatim: "\n\n") + Text("Some file(s) were not exported:") + archiveErrorsText(errs),
+                    dismissButton: .default(Text("Continue")) {
+                        Task { await uploadArchive(path: archivePath) }
+                    }
+                )
             case let .error(title, error):
                 return Alert(title: Text(title), message: Text(error))
             }
@@ -449,15 +459,12 @@ struct MigrateFromDevice: View {
         Task {
             do {
                 try? FileManager.default.createDirectory(at: getMigrationTempFilesDirectory(), withIntermediateDirectories: true)
-                let archivePath = try await exportChatArchive(getMigrationTempFilesDirectory())
-                if let attrs = try? FileManager.default.attributesOfItem(atPath: archivePath.path),
-                    let totalBytes = attrs[.size] as? Int64 {
-                    await MainActor.run {
-                        migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: totalBytes, fileId: 0, archivePath: archivePath, ctrl: nil)
-                    }
+                let (archivePath, errs) = try await exportChatArchive(getMigrationTempFilesDirectory())
+                if errs.isEmpty {
+                    await uploadArchive(path: archivePath)
                 } else {
                     await MainActor.run {
-                        alert = .error(title: "Exported file doesn't exist")
+                        alert = .archiveExportedWithErrors(archivePath: archivePath, archiveErrors: errs)
                         migrationState = .uploadConfirmation
                     }
                 }
@@ -466,6 +473,20 @@ struct MigrateFromDevice: View {
                     alert = .error(title: "Error exporting chat database", error: responseError(error))
                     migrationState = .uploadConfirmation
                 }
+            }
+        }
+    }
+    
+    private func uploadArchive(path archivePath: URL) async {
+        if let attrs = try? FileManager.default.attributesOfItem(atPath: archivePath.path),
+            let totalBytes = attrs[.size] as? Int64 {
+            await MainActor.run {
+                migrationState = .uploadProgress(uploadedBytes: 0, totalBytes: totalBytes, fileId: 0, archivePath: archivePath, ctrl: nil)
+            }
+        } else {
+            await MainActor.run {
+                alert = .error(title: "Exported file doesn't exist")
+                migrationState = .uploadConfirmation
             }
         }
     }

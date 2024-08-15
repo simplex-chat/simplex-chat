@@ -8,14 +8,13 @@
 
 import Foundation
 import SwiftUI
-import Yams
 
 public let jsonDecoder = getJSONDecoder()
 public let jsonEncoder = getJSONEncoder()
 
 public enum ChatCommand {
     case showActiveUser
-    case createActiveUser(profile: Profile?, sameServers: Bool, pastTimestamp: Bool)
+    case createActiveUser(profile: Profile?, pastTimestamp: Bool)
     case listUsers
     case apiSetActiveUser(userId: Int64, viewPwd: String?)
     case setAllContactReceipts(enable: Bool)
@@ -101,7 +100,7 @@ public enum ChatCommand {
     case apiConnectPlan(userId: Int64, connReq: String)
     case apiConnect(userId: Int64, incognito: Bool, connReq: String)
     case apiConnectContactViaAddress(userId: Int64, incognito: Bool, contactId: Int64)
-    case apiDeleteChat(type: ChatType, id: Int64, notify: Bool?)
+    case apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode)
     case apiClearChat(type: ChatType, id: Int64)
     case apiListContacts(userId: Int64)
     case apiUpdateProfile(userId: Int64, profile: Profile)
@@ -156,8 +155,8 @@ public enum ChatCommand {
         get {
             switch self {
             case .showActiveUser: return "/u"
-            case let .createActiveUser(profile, sameServers, pastTimestamp):
-                let user = NewUser(profile: profile, sameServers: sameServers, pastTimestamp: pastTimestamp)
+            case let .createActiveUser(profile, pastTimestamp):
+                let user = NewUser(profile: profile, pastTimestamp: pastTimestamp)
                 return "/_create user \(encodeJSON(user))"
             case .listUsers: return "/users"
             case let .apiSetActiveUser(userId, viewPwd): return "/_user \(userId)\(maybePwd(viewPwd))"
@@ -266,11 +265,7 @@ public enum ChatCommand {
             case let .apiConnectPlan(userId, connReq): return "/_connect plan \(userId) \(connReq)"
             case let .apiConnect(userId, incognito, connReq): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connReq)"
             case let .apiConnectContactViaAddress(userId, incognito, contactId): return "/_connect contact \(userId) incognito=\(onOff(incognito)) \(contactId)"
-            case let .apiDeleteChat(type, id, notify): if let notify = notify {
-                return "/_delete \(ref(type, id)) notify=\(onOff(notify))"
-            } else {
-                return "/_delete \(ref(type, id))"
-            }
+            case let .apiDeleteChat(type, id, chatDeleteMode): return "/_delete \(ref(type, id)) \(chatDeleteMode.cmdString)"
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
             case let .apiListContacts(userId): return "/_contacts \(userId)"
             case let .apiUpdateProfile(userId, profile): return "/_profile \(userId) \(encodeJSON(profile))"
@@ -505,10 +500,6 @@ public enum ChatCommand {
         return nil
     }
 
-    private func onOff(_ b: Bool) -> String {
-        b ? "on" : "off"
-    }
-
     private func onOffParam(_ param: String, _ b: Bool?) -> String {
         if let b = b {
             return " \(param)=\(onOff(b))"
@@ -519,6 +510,10 @@ public enum ChatCommand {
     private func maybePwd(_ pwd: String?) -> String {
         pwd == "" || pwd == nil ? "" : " " + encodeJSON(pwd)
     }
+}
+
+private func onOff(_ b: Bool) -> String {
+    b ? "on" : "off"
 }
 
 public struct APIResponse: Decodable {
@@ -689,6 +684,7 @@ public enum ChatResponse: Decodable, Error {
     case agentSubsSummary(user: UserRef, subsSummary: SMPServerSubs)
     case chatCmdError(user_: UserRef?, chatError: ChatError)
     case chatError(user_: UserRef?, chatError: ChatError)
+    case archiveExported(archiveErrors: [ArchiveError])
     case archiveImported(archiveErrors: [ArchiveError])
     case appSettings(appSettings: AppSettings)
 
@@ -851,6 +847,7 @@ public enum ChatResponse: Decodable, Error {
             case .agentSubsSummary: return "agentSubsSummary"
             case .chatCmdError: return "chatCmdError"
             case .chatError: return "chatError"
+            case .archiveExported: return "archiveExported"
             case .archiveImported: return "archiveImported"
             case .appSettings: return "appSettings"
             }
@@ -1021,6 +1018,7 @@ public enum ChatResponse: Decodable, Error {
             case let .agentSubsSummary(u, subsSummary): return withUser(u, String(describing: subsSummary))
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
             case let .chatError(u, chatError): return withUser(u, String(describing: chatError))
+            case let .archiveExported(archiveErrors): return String(describing: archiveErrors)
             case let .archiveImported(archiveErrors): return String(describing: archiveErrors)
             case let .appSettings(appSettings): return String(describing: appSettings)
             }
@@ -1042,6 +1040,27 @@ public func chatError(_ chatResponse: ChatResponse) -> ChatErrorType? {
     case let .chatCmdError(_, .error(error)): return error
     case let .chatError(_, .error(error)): return error
     default: return nil
+    }
+}
+
+public enum ChatDeleteMode: Codable {
+    case full(notify: Bool)
+    case entity(notify: Bool)
+    case messages
+
+    var cmdString: String {
+        switch self {
+        case let .full(notify): "full notify=\(onOff(notify))"
+        case let .entity(notify): "entity notify=\(onOff(notify))"
+        case .messages: "messages"
+        }
+    }
+
+    public var isEntity: Bool {
+        switch self {
+        case .entity: return true
+        default: return false
+        }
     }
 }
 
@@ -1077,7 +1096,6 @@ public enum GroupLinkPlan: Decodable, Hashable {
 
 struct NewUser: Encodable, Hashable {
     var profile: Profile?
-    var sameServers: Bool
     var pastTimestamp: Bool
 }
 
@@ -1322,13 +1340,31 @@ public struct NetCfg: Codable, Equatable, Hashable {
         smpPingInterval: 1200_000_000
     )
 
-    public static let proxyDefaults: NetCfg = NetCfg(
+    static let proxyDefaults: NetCfg = NetCfg(
         tcpConnectTimeout: 35_000_000,
         tcpTimeout: 20_000_000,
         tcpTimeoutPerKb: 15_000,
         rcvConcurrency: 8,
         smpPingInterval: 1200_000_000
     )
+    
+    public var withProxyTimeouts: NetCfg {
+        var cfg = self
+        cfg.tcpConnectTimeout = NetCfg.proxyDefaults.tcpConnectTimeout
+        cfg.tcpTimeout = NetCfg.proxyDefaults.tcpTimeout
+        cfg.tcpTimeoutPerKb = NetCfg.proxyDefaults.tcpTimeoutPerKb
+        cfg.rcvConcurrency = NetCfg.proxyDefaults.rcvConcurrency
+        cfg.smpPingInterval = NetCfg.proxyDefaults.smpPingInterval
+        return cfg
+    }
+    
+    public var hasProxyTimeouts: Bool {
+        tcpConnectTimeout == NetCfg.proxyDefaults.tcpConnectTimeout &&
+        tcpTimeout == NetCfg.proxyDefaults.tcpTimeout &&
+        tcpTimeoutPerKb == NetCfg.proxyDefaults.tcpTimeoutPerKb &&
+        rcvConcurrency == NetCfg.proxyDefaults.rcvConcurrency &&
+        smpPingInterval == NetCfg.proxyDefaults.smpPingInterval
+    }
 
     public var enableKeepAlive: Bool { tcpKeepAlive != nil }
 }
@@ -1344,16 +1380,16 @@ public enum SocksMode: String, Codable, Hashable {
     case onion = "onion"
 }
 
-public enum SMPProxyMode: String, Codable, Hashable {
+public enum SMPProxyMode: String, Codable, Hashable, SelectableItem {
     case always = "always"
     case unknown = "unknown"
     case unprotected = "unprotected"
     case never = "never"
 
-    public var text: LocalizedStringKey {
+    public var label: LocalizedStringKey {
         switch self {
         case .always: return "always"
-        case .unknown: return "unknown relays"
+        case .unknown: return "unknown servers"
         case .unprotected: return "unprotected"
         case .never: return "never"
         }
@@ -1364,12 +1400,12 @@ public enum SMPProxyMode: String, Codable, Hashable {
     public static let values: [SMPProxyMode] = [.always, .unknown, .unprotected, .never]
 }
 
-public enum SMPProxyFallback: String, Codable, Hashable {
+public enum SMPProxyFallback: String, Codable, Hashable, SelectableItem {
     case allow = "allow"
     case allowProtected = "allowProtected"
     case prohibit = "prohibit"
 
-    public var text: LocalizedStringKey {
+    public var label: LocalizedStringKey {
         switch self {
         case .allow: return "yes"
         case .allowProtected: return "when IP hidden"
@@ -1896,7 +1932,7 @@ public enum DatabaseError: Decodable, Hashable {
 
 public enum SQLiteError: Decodable, Hashable {
     case errorNotADatabase
-    case error(String)
+    case error(dbError: String)
 }
 
 public enum AgentErrorType: Decodable, Hashable {
@@ -2036,8 +2072,8 @@ public enum SMPAgentError: Decodable, Hashable {
 }
 
 public enum ArchiveError: Decodable, Hashable {
-    case `import`(chatError: ChatError)
-    case importFile(file: String, chatError: ChatError)
+    case `import`(importError: String)
+    case fileError(file: String, fileError: String)
 }
 
 public enum RemoteCtrlError: Decodable, Hashable {
@@ -2115,12 +2151,13 @@ public struct AppSettings: Codable, Equatable, Hashable {
     public var androidCallOnLockScreen: AppSettingsLockScreenCalls? = nil
     public var iosCallKitEnabled: Bool? = nil
     public var iosCallKitCallsInRecents: Bool? = nil
-    public var uiProfileImageCornerRadius: Float? = nil
+    public var uiProfileImageCornerRadius: Double? = nil
     public var uiColorScheme: String? = nil
     public var uiDarkColorScheme: String? = nil
     public var uiCurrentThemeIds: [String: String]? = nil
     public var uiThemes: [ThemeOverrides]? = nil
-
+    public var oneHandUI: Bool? = nil
+    
     public func prepareForExport() -> AppSettings {
         var empty = AppSettings()
         let def = AppSettings.defaults
@@ -2150,6 +2187,7 @@ public struct AppSettings: Codable, Equatable, Hashable {
         if uiDarkColorScheme != def.uiDarkColorScheme { empty.uiDarkColorScheme = uiDarkColorScheme }
         if uiCurrentThemeIds != def.uiCurrentThemeIds { empty.uiCurrentThemeIds = uiCurrentThemeIds }
         if uiThemes != def.uiThemes { empty.uiThemes = uiThemes }
+        if oneHandUI != def.oneHandUI { empty.oneHandUI = oneHandUI }
         return empty
     }
 
@@ -2180,7 +2218,8 @@ public struct AppSettings: Codable, Equatable, Hashable {
             uiColorScheme: DefaultTheme.SYSTEM_THEME_NAME,
             uiDarkColorScheme: DefaultTheme.SIMPLEX.themeName,
             uiCurrentThemeIds: nil as [String: String]?,
-            uiThemes: nil as [ThemeOverrides]?
+            uiThemes: nil as [ThemeOverrides]?,
+            oneHandUI: false
         )
     }
 }

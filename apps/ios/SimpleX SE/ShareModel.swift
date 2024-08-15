@@ -19,14 +19,17 @@ private let MAX_DOWNSAMPLE_SIZE: Int64 = 2000
 
 class ShareModel: ObservableObject {
     @Published var sharedContent: SharedContent?
-    @Published var chats = Array<ChatData>()
-    @Published var profileImages = Dictionary<ChatInfo.ID, UIImage>()
-    @Published var search = String()
-    @Published var comment = String()
+    @Published var chats: [ChatData] = []
+    @Published var profileImages: [ChatInfo.ID: UIImage] = [:]
+    @Published var search = ""
+    @Published var comment = ""
     @Published var selected: ChatData?
     @Published var isLoaded = false
     @Published var bottomBar: BottomBar = .loadingSpinner
     @Published var errorAlert: ErrorAlert?
+    @Published var hasSimplexLink = false
+    @Published var alertRequiresPassword = false
+    var networkTimeout = CFAbsoluteTimeGetCurrent()
 
     enum BottomBar {
         case sendButton
@@ -48,9 +51,22 @@ class ShareModel: ObservableObject {
     
     private var itemProvider: NSItemProvider?
 
-    var isSendDisbled: Bool { sharedContent == nil || selected == nil }
+    var isSendDisbled: Bool { sharedContent == nil || selected == nil || isProhibited(selected) }
+    
+    var isLinkPreview: Bool {
+        switch sharedContent {
+        case .url: true
+        default: false
+        }
+    }
 
-    var filteredChats: Array<ChatData> {
+    func isProhibited(_ chat: ChatData?) -> Bool {
+        if let chat, let sharedContent {
+            sharedContent.prohibited(in: chat, hasSimplexLink: hasSimplexLink)
+        } else { false }
+    }
+
+    var filteredChats: [ChatData] {
         search.isEmpty
         ? filterChatsToForwardTo(chats: chats)
         : filterChatsToForwardTo(chats: chats)
@@ -58,6 +74,10 @@ class ShareModel: ObservableObject {
     }
 
     func setup(context: NSExtensionContext) {
+        if appLocalAuthEnabledGroupDefault.get() && !allowShareExtensionGroupDefault.get() {
+            errorAlert = ErrorAlert(title: "App is locked!", message: "You can allow sharing in Privacy & Security / SimpleX Lock settings.")
+            return
+        }
         if let item = context.inputItems.first as? NSExtensionItem,
            let itemProvider = item.attachments?.first {
             self.itemProvider = itemProvider
@@ -67,43 +87,47 @@ class ShareModel: ObservableObject {
                     apiSuspendChat(expired: $0)
                 }
             }
-            // Init Chat
-            Task {
-                if let e = initChat() {
-                    await MainActor.run { errorAlert = e }
-                } else {
-                    // Load Chats
-                    Task {
-                        switch fetchChats() {
-                        case let .success(chats):
-                            // Decode base64 images on background thread
-                            let profileImages = chats.reduce(into: Dictionary<ChatInfo.ID, UIImage>()) { dict, chatData in
-                                if let profileImage = chatData.chatInfo.image,
-                                   let uiImage = UIImage(base64Encoded: profileImage) {
-                                    dict[chatData.id] = uiImage
-                                }
+            setup()
+        }
+    }
+
+    func setup(with dbKey: String? = nil) {
+        // Init Chat
+        Task {
+            if let e = initChat(with: dbKey) {
+                await MainActor.run { errorAlert = e }
+            } else {
+                // Load Chats
+                Task {
+                    switch fetchChats() {
+                    case let .success(chats):
+                        // Decode base64 images on background thread
+                        let profileImages = chats.reduce(into: Dictionary<ChatInfo.ID, UIImage>()) { dict, chatData in
+                            if let profileImage = chatData.chatInfo.image,
+                               let uiImage = UIImage(base64Encoded: profileImage) {
+                                dict[chatData.id] = uiImage
                             }
-                            await MainActor.run {
-                                self.chats = chats
-                                self.profileImages = profileImages
-                                withAnimation { isLoaded = true }
-                            }
-                        case let .failure(error):
-                            await MainActor.run { errorAlert = error }
                         }
+                        await MainActor.run {
+                            self.chats = chats
+                            self.profileImages = profileImages
+                            withAnimation { isLoaded = true }
+                        }
+                    case let .failure(error):
+                        await MainActor.run { errorAlert = error }
                     }
-                    // Process Attachment
-                    Task {
-                        switch await self.itemProvider!.sharedContent() {
-                        case let .success(chatItemContent):
-                            await MainActor.run {
-                                self.sharedContent = chatItemContent
-                                self.bottomBar = .sendButton
-                                if case let .text(string) = chatItemContent { comment = string }
-                            }
-                        case let .failure(errorAlert):
-                            await MainActor.run { self.errorAlert = errorAlert }
+                }
+                // Process Attachment
+                Task {
+                    switch await getSharedContent(self.itemProvider!) {
+                    case let .success(chatItemContent):
+                        await MainActor.run {
+                            self.sharedContent = chatItemContent
+                            self.bottomBar = .sendButton
+                            if case let .text(string) = chatItemContent { comment = string }
                         }
+                    case let .failure(errorAlert):
+                        await MainActor.run { self.errorAlert = errorAlert }
                     }
                 }
             }
@@ -125,7 +149,7 @@ class ShareModel: ObservableObject {
                     if selected.chatInfo.chatType == .local {
                         completion()
                     } else {
-                        await MainActor.run { self.bottomBar = .loadingBar(progress: .zero) }
+                        await MainActor.run { self.bottomBar = .loadingBar(progress: 0) }
                         if let e = await handleEvents(
                             isGroupChat: ci.chatInfo.chatType == .group,
                             isWithoutFile: sharedContent.cryptoFile == nil,
@@ -145,14 +169,15 @@ class ShareModel: ObservableObject {
         }
     }
 
-    private func initChat() -> ErrorAlert? {
+    private func initChat(with dbKey: String? = nil) -> ErrorAlert? {
         do {
-            if hasChatCtrl() {
+            if hasChatCtrl() && dbKey == nil {
                 try apiActivateChat()
             } else {
+                resetChatCtrl() // Clears retained migration result
                 registerGroupDefaults()
                 haskell_init_se()
-                let (_, result) = chatMigrateInit(confirmMigrations: defaultMigrationConfirmation())
+                let (_, result) = chatMigrateInit(dbKey, confirmMigrations: defaultMigrationConfirmation())
                 if let e = migrationError(result) { return e }
                 try apiSetAppFilePaths(
                     filesFolder: getAppFilesDirectory().path,
@@ -171,8 +196,9 @@ class ShareModel: ObservableObject {
     private func migrationError(_ r: DBMigrationResult) -> ErrorAlert? {
         let useKeychain = storeDBPassphraseGroupDefault.get()
         let storedDBKey = kcDatabasePassword.get()
-        // This switch duplicates DatabaseErrorView.
-        // TODO allow entering passphrase and make messages the same as in DatabaseErrorView.
+        if case .errorNotADatabase = r {
+            Task { await MainActor.run { self.alertRequiresPassword = true } }
+        }
         return switch r {
         case .errorNotADatabase:
             if useKeychain && storedDBKey != nil && storedDBKey != "" {
@@ -182,8 +208,8 @@ class ShareModel: ObservableObject {
                 )
             } else {
                 ErrorAlert(
-                    title: "Encrypted database",
-                    message: "Sharing is not supported when passphrase is not stored in KeyChain."
+                    title: "Database encrypted!",
+                    message: "Database passphrase is required to open chat."
                 )
             }
         case let .errorMigration(_, migrationError):
@@ -265,14 +291,13 @@ class ShareModel: ObservableObject {
         CompletionHandler.isEventLoopEnabled = true
         let ch = CompletionHandler()
         if isWithoutFile { await ch.completeFile() }
-        var networkTimeout = CFAbsoluteTimeGetCurrent()
+        networkTimeout = CFAbsoluteTimeGetCurrent()
         while await ch.isRunning {
             if CFAbsoluteTimeGetCurrent() - networkTimeout > 30 {
-                networkTimeout = CFAbsoluteTimeGetCurrent()
                 await MainActor.run {
-                    self.errorAlert = ErrorAlert(title: "No network connection") {
-                        Button("Keep Trying", role: .cancel) {  }
-                        Button("Dismiss Sheet", role: .destructive) { self.completion() }
+                    self.errorAlert = ErrorAlert(title: "Slow network?", message: "Sending a message takes longer than expected.") {
+                        Button("Wait", role: .cancel) { self.networkTimeout = CFAbsoluteTimeGetCurrent() }
+                        Button("Cancel", role: .destructive) { self.completion() }
                     }
                 }
             }
@@ -363,100 +388,104 @@ enum SharedContent {
         switch self {
         case let .image(preview, _): .image(text: comment, image: preview)
         case let .movie(preview, duration, _): .video(text: comment, image: preview, duration: duration)
-        case let .url(preview): .link(text: comment, preview: preview)
+        case let .url(preview): .link(text: preview.uri.absoluteString + (comment == "" ? "" : "\n" + comment), preview: preview)
         case .text: .text(comment)
         case .data: .file(comment)
         }
     }
+
+    func prohibited(in chatData: ChatData, hasSimplexLink: Bool) -> Bool {
+        chatData.prohibitedByPref(
+            hasSimplexLink: hasSimplexLink,
+            isMediaOrFileAttachment: cryptoFile != nil,
+            isVoice: false
+        )
+    }
 }
 
-extension NSItemProvider {
-    fileprivate func sharedContent() async -> Result<SharedContent, ErrorAlert> {
-        if let type = firstMatching(of: [.image, .movie, .fileURL, .url, .text]) {
-            switch type {
-                // Prepare Image message
-            case .image:
-
-                // Animated
-                return if hasItemConformingToTypeIdentifier(UTType.gif.identifier) {
-                    if let url = try? await inPlaceUrl(type: type),
-                       let data = try? Data(contentsOf: url),
-                       let image = UIImage(data: data),
-                       let cryptoFile = saveFile(data, generateNewFileName("IMG", "gif"), encrypted: privacyEncryptLocalFilesGroupDefault.get()),
-                       let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
-                        .success(.image(preview: preview, cryptoFile: cryptoFile))
-                    } else { .failure(ErrorAlert("Error preparing message")) }
-
-                // Static
-                } else {
-                    if let url = try? await inPlaceUrl(type: type),
-                       let image = downsampleImage(at: url, to: MAX_DOWNSAMPLE_SIZE),
-                       let cryptoFile = saveImage(image),
-                       let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
-                        .success(.image(preview: preview, cryptoFile: cryptoFile))
-                    } else { .failure(ErrorAlert("Error preparing message")) }
-                }
-
-            // Prepare Movie message
-            case .movie:
+fileprivate func getSharedContent(_ ip: NSItemProvider) async -> Result<SharedContent, ErrorAlert> {
+    if let type = firstMatching(of: [.image, .movie, .fileURL, .url, .text]) {
+        switch type {
+            // Prepare Image message
+        case .image:
+            // Animated
+            return if ip.hasItemConformingToTypeIdentifier(UTType.gif.identifier) {
                 if let url = try? await inPlaceUrl(type: type),
-                   let trancodedUrl = await transcodeVideo(from: url),
-                   let (image, duration) = AVAsset(url: trancodedUrl).generatePreview(),
-                   let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE),
-                   let cryptoFile = moveTempFileFromURL(trancodedUrl) {
-                    try? FileManager.default.removeItem(at: trancodedUrl)
-                    return .success(.movie(preview: preview, duration: duration, cryptoFile: cryptoFile))
-                } else { return .failure(ErrorAlert("Error preparing message")) }
-
-            // Prepare Data message
-            case .fileURL:
-                if let url = try? await inPlaceUrl(type: .data) {
-                    if isFileTooLarge(for: url) {
-                        let sizeString = ByteCountFormatter.string(
-                            fromByteCount: Int64(getMaxFileSize(.xftp)),
-                            countStyle: .binary
-                        )
-                        return .failure(
-                            ErrorAlert(
-                                title: "Large file!",
-                                message: "Currently maximum supported file size is \(sizeString)."
-                            )
-                        )
-                    }
-                    if let file = saveFileFromURL(url) {
-                        return .success(.data(cryptoFile: file))
-                    }
-                }
-                return .failure(ErrorAlert("Error preparing file"))
-
-            // Prepare Link message
-            case .url:
-                if let url = try? await loadItem(forTypeIdentifier: type.identifier) as? URL {
-                    let content: SharedContent =
-//                        Option to disable previews needs to be taken into account
-//                        if let linkPreview = await getLinkPreview(for: url) {
-//                            .url(preview: linkPreview)
-//                        } else {
-                            .text(string: url.absoluteString)
-//                        }
-                    return .success(content)
-                } else { return .failure(ErrorAlert("Error preparing message")) }
-
-            // Prepare Text message
-            case .text:
-                return if let text = try? await loadItem(forTypeIdentifier: type.identifier) as? String {
-                    .success(.text(string: text))
+                   let data = try? Data(contentsOf: url),
+                   let image = UIImage(data: data),
+                   let cryptoFile = saveFile(data, generateNewFileName("IMG", "gif"), encrypted: privacyEncryptLocalFilesGroupDefault.get()),
+                   let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
+                    .success(.image(preview: preview, cryptoFile: cryptoFile))
                 } else { .failure(ErrorAlert("Error preparing message")) }
-            default: return .failure(ErrorAlert("Unsupported format"))
+
+            // Static
+            } else {
+                if let image = await staticImage(),
+                   let cryptoFile = saveImage(image),
+                   let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE) {
+                    .success(.image(preview: preview, cryptoFile: cryptoFile))
+                } else { .failure(ErrorAlert("Error preparing message")) }
             }
-        } else {
-            return .failure(ErrorAlert("Unsupported format"))
+
+        // Prepare Movie message
+        case .movie:
+            if let url = try? await inPlaceUrl(type: type),
+               let trancodedUrl = await transcodeVideo(from: url),
+               let (image, duration) = AVAsset(url: trancodedUrl).generatePreview(),
+               let preview = resizeImageToStrSize(image, maxDataSize: MAX_DATA_SIZE),
+               let cryptoFile = moveTempFileFromURL(trancodedUrl) {
+                try? FileManager.default.removeItem(at: trancodedUrl)
+                return .success(.movie(preview: preview, duration: duration, cryptoFile: cryptoFile))
+            } else { return .failure(ErrorAlert("Error preparing message")) }
+
+        // Prepare Data message
+        case .fileURL:
+            if let url = try? await inPlaceUrl(type: .data) {
+                if isFileTooLarge(for: url) {
+                    let sizeString = ByteCountFormatter.string(
+                        fromByteCount: Int64(getMaxFileSize(.xftp)),
+                        countStyle: .binary
+                    )
+                    return .failure(
+                        ErrorAlert(
+                            title: "Large file!",
+                            message: "Currently maximum supported file size is \(sizeString)."
+                        )
+                    )
+                }
+                if let file = saveFileFromURL(url) {
+                    return .success(.data(cryptoFile: file))
+                }
+            }
+            return .failure(ErrorAlert("Error preparing file"))
+
+        // Prepare Link message
+        case .url:
+            if let url = try? await ip.loadItem(forTypeIdentifier: type.identifier) as? URL {
+                let content: SharedContent =
+                    if privacyLinkPreviewsGroupDefault.get(), let linkPreview = await getLinkPreview(for: url) {
+                        .url(preview: linkPreview)
+                    } else {
+                        .text(string: url.absoluteString)
+                    }
+                return .success(content)
+            } else { return .failure(ErrorAlert("Error preparing message")) }
+
+        // Prepare Text message
+        case .text:
+            return if let text = try? await ip.loadItem(forTypeIdentifier: type.identifier) as? String {
+                .success(.text(string: text))
+            } else { .failure(ErrorAlert("Error preparing message")) }
+        default: return .failure(ErrorAlert("Unsupported format"))
         }
+    } else {
+        return .failure(ErrorAlert("Unsupported format"))
     }
 
-    private func inPlaceUrl(type: UTType) async throws -> URL {
+
+    func inPlaceUrl(type: UTType) async throws -> URL {
         try await withCheckedThrowingContinuation { cont in
-            let _ = loadInPlaceFileRepresentation(forTypeIdentifier: type.identifier) { url, bool, error in
+            let _ = ip.loadInPlaceFileRepresentation(forTypeIdentifier: type.identifier) { url, bool, error in
                 if let url = url {
                     cont.resume(returning: url)
                 } else if let error = error {
@@ -468,11 +497,22 @@ extension NSItemProvider {
         }
     }
 
-    private func firstMatching(of types: Array<UTType>) -> UTType? {
+    func firstMatching(of types: Array<UTType>) -> UTType? {
         for type in types {
-            if hasItemConformingToTypeIdentifier(type.identifier) { return type }
+            if ip.hasItemConformingToTypeIdentifier(type.identifier) { return type }
         }
         return nil
+    }
+
+    func staticImage() async -> UIImage? {
+        if let url = try? await inPlaceUrl(type: .image),
+           let downsampledImage = downsampleImage(at: url, to: MAX_DOWNSAMPLE_SIZE) {
+            downsampledImage
+        } else {
+            /// Fallback to loading image directly from `ItemProvider`
+            /// in case loading from disk is not possible. Required for sharing screenshots.
+            try? await ip.loadItem(forTypeIdentifier: UTType.image.identifier) as? UIImage
+        }
     }
 }
 

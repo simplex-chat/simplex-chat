@@ -275,7 +275,7 @@ struct ChatPreviewView: View {
         } else {
             switch (chat.chatInfo) {
             case let .direct(contact):
-                if contact.activeConn == nil && contact.profile.contactLink != nil {
+                if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
                     chatPreviewInfoText("Tap to Connect")
                         .foregroundColor(theme.colors.primary)
                 } else if !contact.sndReady && contact.activeConn != nil {
@@ -376,17 +376,7 @@ struct ChatPreviewView: View {
         switch chat.chatInfo {
         case let .direct(contact):
             if contact.active && contact.activeConn != nil {
-                switch (chatModel.contactNetworkStatus(contact)) {
-                case .connected: incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
-                case .error:
-                    Image(systemName: "exclamationmark.circle")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: dynamicChatInfoSize, height: dynamicChatInfoSize)
-                        .foregroundColor(theme.colors.secondary)
-                default:
-                    ProgressView()
-                }
+                NetworkStatusView(contact: contact, size: size)
             } else {
                 incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
             }
@@ -398,6 +388,30 @@ struct ChatPreviewView: View {
             }
         default:
             incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
+        }
+    }
+
+    struct NetworkStatusView: View {
+        @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
+        @EnvironmentObject var theme: AppTheme
+        @ObservedObject var networkModel = NetworkModel.shared
+
+        let contact: Contact
+        let size: CGFloat
+
+        var body: some View {
+            let dynamicChatInfoSize = dynamicSize(userFont).chatInfoSize
+            switch (networkModel.contactNetworkStatus(contact)) {
+            case .connected: incognitoIcon(contact.contactConnIncognito, theme.colors.secondary, size: size)
+            case .error:
+                Image(systemName: "exclamationmark.circle")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: dynamicChatInfoSize, height: dynamicChatInfoSize)
+                    .foregroundColor(theme.colors.secondary)
+            default:
+                ProgressView()
+            }
         }
     }
 }

@@ -30,7 +30,7 @@ struct AddContactLearnMore: View {
             }
             .listRowBackground(Color.clear)
         }
-        .modifier(ThemedBackground())
+        .modifier(ThemedBackground(grouped: true))
     }
 }
 

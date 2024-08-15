@@ -34,14 +34,13 @@ struct GroupLinkView: View {
 
     var body: some View {
         if creatingGroup {
-            NavigationView {
-                groupLinkView()
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button ("Continue") { linkCreatedCb?() }
-                        }
+            groupLinkView()
+                .navigationBarBackButtonHidden()
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button ("Continue") { linkCreatedCb?() }
                     }
-            }
+                }
         } else {
             groupLinkView()
         }

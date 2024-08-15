@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.ChatInfoToolbarTitle
 import chat.simplex.common.views.helpers.*
@@ -58,7 +59,9 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
         for (contactId in selectedContacts) {
           val member = chatModel.controller.apiAddMember(rhId, groupInfo.groupId, contactId, selectedRole.value)
           if (member != null) {
-            chatModel.upsertGroupMember(rhId, groupInfo, member)
+            withChats {
+              upsertGroupMember(rhId, groupInfo, member)
+            }
           } else {
             break
           }
@@ -81,12 +84,13 @@ fun getContactsToAdd(chatModel: ChatModel, search: String): List<Contact> {
   val memberContactIds = chatModel.groupMembers
     .filter { it.memberCurrent }
     .mapNotNull { it.memberContactId }
-  return chatModel.chats
+  return chatModel.chats.value
     .asSequence()
     .map { it.chatInfo }
     .filterIsInstance<ChatInfo.Direct>()
     .map { it.contact }
-    .filter { c -> c.sendMsgEnabled && !c.nextSendGrpInv && c.contactId !in memberContactIds && c.chatViewName.lowercase().contains(s) }
+    .filter { c -> c.sendMsgEnabled && !c.nextSendGrpInv && c.contactId !in memberContactIds && c.anyNameContains(s)
+    }
     .sortedBy { it.displayName.lowercase() }
     .toList()
 }

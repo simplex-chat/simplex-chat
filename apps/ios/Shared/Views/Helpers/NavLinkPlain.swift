@@ -7,16 +7,17 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
-struct NavLinkPlain<V: Hashable, Label: View>: View {
-    @State var tag: V
-    @Binding var selection: V?
+struct NavLinkPlain<Label: View>: View {
+    let chatId: ChatId
+    @Binding var selection: ChatId?
     @ViewBuilder var label: () -> Label
     var disabled = false
 
     var body: some View {
         ZStack {
-            Button("") { DispatchQueue.main.async { selection = tag } }
+            Button("") { ItemsModel.shared.loadOpenChat(chatId) }
                 .disabled(disabled)
             label()
         }

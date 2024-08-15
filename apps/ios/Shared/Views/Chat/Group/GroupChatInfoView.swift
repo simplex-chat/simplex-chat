@@ -17,10 +17,12 @@ struct GroupChatInfoView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
     @Binding var groupInfo: GroupInfo
+    var onSearch: () -> Void
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: String?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
-    @State private var showAddMembersSheet: Bool = false
+    @State private var groupLinkNavLinkActive: Bool = false
+    @State private var addMembersNavLinkActive: Bool = false
     @State private var connectionStats: ConnectionStats?
     @State private var connectionCode: String?
     @State private var sendReceipts = SendReceipts.userDefault(true)
@@ -68,6 +70,15 @@ struct GroupChatInfoView: View {
             List {
                 groupInfoHeader()
                     .listRowBackground(Color.clear)
+                    .padding(.bottom, 18)
+
+                infoActionButtons()
+                    .padding(.horizontal)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: infoViewActionButtonHeight)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
 
                 Section {
                     if groupInfo.canEdit {
@@ -198,22 +209,93 @@ struct GroupChatInfoView: View {
         .frame(maxWidth: .infinity, alignment: .center)
     }
 
+    func infoActionButtons() -> some View {
+        GeometryReader { g in
+            let buttonWidth = g.size.width / 4
+            HStack(alignment: .center, spacing: 8) {
+                searchButton(width: buttonWidth)
+                if groupInfo.canAddMembers {
+                    addMembersActionButton(width: buttonWidth)
+                }
+                muteButton(width: buttonWidth)
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+        }
+    }
+
+    private func searchButton(width: CGFloat) -> some View {
+        InfoViewButton(image: "magnifyingglass", title: "search", width: width) {
+            dismiss()
+            onSearch()
+        }
+        .disabled(!groupInfo.ready || chat.chatItems.isEmpty)
+    }
+
+    @ViewBuilder private func addMembersActionButton(width: CGFloat) -> some View {
+        if chat.chatInfo.incognito {
+            ZStack {
+                InfoViewButton(image: "link.badge.plus", title: "invite", width: width) {
+                    groupLinkNavLinkActive = true
+                }
+
+                NavigationLink(isActive: $groupLinkNavLinkActive) {
+                    groupLinkDestinationView()
+                } label: {
+                    EmptyView()
+                }
+                .frame(width: 1, height: 1)
+                .hidden()
+            }
+            .disabled(!groupInfo.ready)
+        } else {
+            ZStack {
+                InfoViewButton(image: "person.fill.badge.plus", title: "invite", width: width) {
+                    addMembersNavLinkActive = true
+                }
+
+                NavigationLink(isActive: $addMembersNavLinkActive) {
+                    addMembersDestinationView()
+                } label: {
+                    EmptyView()
+                }
+                .frame(width: 1, height: 1)
+                .hidden()
+            }
+            .disabled(!groupInfo.ready)
+        }
+    }
+
+    private func muteButton(width: CGFloat) -> some View {
+        InfoViewButton(
+            image: chat.chatInfo.ntfsEnabled ? "speaker.slash.fill" : "speaker.wave.2.fill",
+            title: chat.chatInfo.ntfsEnabled ? "mute" : "unmute",
+            width: width
+        ) {
+            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
+        }
+        .disabled(!groupInfo.ready)
+    }
+
     private func addMembersButton() -> some View {
         NavigationLink {
-            AddGroupMembersView(chat: chat, groupInfo: groupInfo)
-                .onAppear {
-                    searchFocussed = false
-                    Task {
-                        let groupMembers = await apiListMembers(groupInfo.groupId)
-                        await MainActor.run {
-                            chatModel.groupMembers = groupMembers.map { GMember.init($0) }
-                            chatModel.populateGroupMembersIndexes()
-                        }
-                    }
-                }
+            addMembersDestinationView()
         } label: {
             Label("Invite members", systemImage: "plus")
         }
+    }
+
+    private func addMembersDestinationView() -> some View {
+        AddGroupMembersView(chat: chat, groupInfo: groupInfo)
+            .onAppear {
+                searchFocussed = false
+                Task {
+                    let groupMembers = await apiListMembers(groupInfo.groupId)
+                    await MainActor.run {
+                        chatModel.groupMembers = groupMembers.map { GMember.init($0) }
+                        chatModel.populateGroupMembersIndexes()
+                    }
+                }
+            }
     }
 
     private struct MemberRowView: View {
@@ -226,7 +308,7 @@ struct GroupChatInfoView: View {
         var body: some View {
             let member = groupMember.wrapped
             let v = HStack{
-                ProfileImage(imageStr: member.image, size: 38)
+                MemberProfileImage(member, size: 38)
                     .padding(.trailing, 2)
                 // TODO server connection status
                 VStack(alignment: .leading) {
@@ -352,16 +434,7 @@ struct GroupChatInfoView: View {
 
     private func groupLinkButton() -> some View {
         NavigationLink {
-            GroupLinkView(
-                groupId: groupInfo.groupId,
-                groupLink: $groupLink,
-                groupLinkMemberRole: $groupLinkMemberRole,
-                showTitle: false,
-                creatingGroup: false
-            )
-            .navigationBarTitle("Group link")
-            .modifier(ThemedBackground(grouped: true))
-            .navigationBarTitleDisplayMode(.large)
+            groupLinkDestinationView()
         } label: {
             if groupLink == nil {
                 Label("Create group link", systemImage: "link.badge.plus")
@@ -369,6 +442,19 @@ struct GroupChatInfoView: View {
                 Label("Group link", systemImage: "link")
             }
         }
+    }
+
+    private func groupLinkDestinationView() -> some View {
+        GroupLinkView(
+            groupId: groupInfo.groupId,
+            groupLink: $groupLink,
+            groupLinkMemberRole: $groupLinkMemberRole,
+            showTitle: false,
+            creatingGroup: false
+        )
+        .navigationBarTitle("Group link")
+        .modifier(ThemedBackground(grouped: true))
+        .navigationBarTitleDisplayMode(.large)
     }
 
     private func editGroupButton() -> some View {
@@ -577,7 +663,8 @@ struct GroupChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
         GroupChatInfoView(
             chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []),
-            groupInfo: Binding.constant(GroupInfo.sampleData)
+            groupInfo: Binding.constant(GroupInfo.sampleData),
+            onSearch: {}
         )
     }
 }

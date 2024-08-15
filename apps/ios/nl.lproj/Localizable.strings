@@ -334,8 +334,12 @@
 /* No comment provided by engineer. */
 "above, then choose:" = "hier boven, kies dan:";
 
+/* No comment provided by engineer. */
+"Accent" = "Accent";
+
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "Accepteer";
 
 /* No comment provided by engineer. */
@@ -344,11 +348,21 @@
 /* notification body */
 "Accept contact request from %@?" = "Accepteer contactverzoek van %@?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "Accepteer incognito";
 
 /* call status */
 "accepted call" = "geaccepteerde oproep";
+
+/* No comment provided by engineer. */
+"Acknowledged" = "Erkend";
+
+/* No comment provided by engineer. */
+"Acknowledgement errors" = "Bevestigingsfouten";
+
+/* No comment provided by engineer. */
+"Active connections" = "Actieve verbindingen";
 
 /* No comment provided by engineer. */
 "Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "Voeg een adres toe aan uw profiel, zodat uw contacten het met andere mensen kunnen delen. Profiel update wordt naar uw contacten verzonden.";
@@ -372,7 +386,16 @@
 "Add to another device" = "Toevoegen aan een ander apparaat";
 
 /* No comment provided by engineer. */
-"Add welcome message" = "Welkomst bericht toevoegen";
+"Add welcome message" = "Welkom bericht toevoegen";
+
+/* No comment provided by engineer. */
+"Additional accent" = "Extra accent";
+
+/* No comment provided by engineer. */
+"Additional accent 2" = "Extra accent 2";
+
+/* No comment provided by engineer. */
+"Additional secondary" = "Extra secundair";
 
 /* No comment provided by engineer. */
 "Address" = "Adres";
@@ -395,6 +418,9 @@
 /* No comment provided by engineer. */
 "Advanced network settings" = "Geavanceerde netwerk instellingen";
 
+/* No comment provided by engineer. */
+"Advanced settings" = "Geavanceerde instellingen";
+
 /* chat item text */
 "agreeing encryption for %@…" = "versleuteling overeenkomen voor %@…";
 
@@ -409,6 +435,9 @@
 
 /* No comment provided by engineer. */
 "All data is erased when it is entered." = "Alle gegevens worden bij het invoeren gewist.";
+
+/* No comment provided by engineer. */
+"All data is private to your device." = "Alle gegevens zijn privé op uw apparaat.";
 
 /* No comment provided by engineer. */
 "All group members will remain connected." = "Alle groepsleden blijven verbonden.";
@@ -426,6 +455,9 @@
 "All new messages from %@ will be hidden!" = "Alle nieuwe berichten van %@ worden verborgen!";
 
 /* No comment provided by engineer. */
+"All profiles" = "Alle profielen";
+
+/* No comment provided by engineer. */
 "All your contacts will remain connected." = "Al uw contacten blijven verbonden.";
 
 /* No comment provided by engineer. */
@@ -441,6 +473,9 @@
 "Allow calls only if your contact allows them." = "Sta oproepen alleen toe als uw contact dit toestaat.";
 
 /* No comment provided by engineer. */
+"Allow calls?" = "Oproepen toestaan?";
+
+/* No comment provided by engineer. */
 "Allow disappearing messages only if your contact allows it to you." = "Sta verdwijnende berichten alleen toe als uw contact dit toestaat.";
 
 /* No comment provided by engineer. */
@@ -450,16 +485,19 @@
 "Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Sta het onomkeerbaar verwijderen van berichten alleen toe als uw contact dit toestaat. (24 uur)";
 
 /* No comment provided by engineer. */
-"Allow message reactions only if your contact allows them." = "Sta berichtreacties alleen toe als uw contact dit toestaat.";
+"Allow message reactions only if your contact allows them." = "Sta bericht reacties alleen toe als uw contact dit toestaat.";
 
 /* No comment provided by engineer. */
-"Allow message reactions." = "Sta berichtreacties toe.";
+"Allow message reactions." = "Sta bericht reacties toe.";
 
 /* No comment provided by engineer. */
 "Allow sending direct messages to members." = "Sta het verzenden van directe berichten naar leden toe.";
 
 /* No comment provided by engineer. */
 "Allow sending disappearing messages." = "Toestaan dat verdwijnende berichten worden verzonden.";
+
+/* No comment provided by engineer. */
+"Allow sharing" = "Delen toestaan";
 
 /* No comment provided by engineer. */
 "Allow to irreversibly delete sent messages. (24 hours)" = "Sta toe om verzonden berichten onomkeerbaar te verwijderen. (24 uur)";
@@ -480,7 +518,7 @@
 "Allow voice messages?" = "Spraak berichten toestaan?";
 
 /* No comment provided by engineer. */
-"Allow your contacts adding message reactions." = "Sta uw contactpersonen toe om berichtreacties toe te voegen.";
+"Allow your contacts adding message reactions." = "Sta uw contactpersonen toe om bericht reacties toe te voegen.";
 
 /* No comment provided by engineer. */
 "Allow your contacts to call you." = "Sta toe dat uw contacten u bellen.";
@@ -552,13 +590,25 @@
 "Apply" = "Toepassen";
 
 /* No comment provided by engineer. */
+"Apply to" = "Toepassen op";
+
+/* No comment provided by engineer. */
 "Archive and upload" = "Archiveren en uploaden";
+
+/* No comment provided by engineer. */
+"Archive contacts to chat later." = "Archiveer contacten om later te chatten.";
+
+/* No comment provided by engineer. */
+"Archived contacts" = "Gearchiveerde contacten";
 
 /* No comment provided by engineer. */
 "Archiving database" = "Database archiveren";
 
 /* No comment provided by engineer. */
 "Attach" = "Bijvoegen";
+
+/* No comment provided by engineer. */
+"attempts" = "pogingen";
 
 /* No comment provided by engineer. */
 "Audio & video calls" = "Audio en video gesprekken";
@@ -603,6 +653,9 @@
 "Back" = "Terug";
 
 /* No comment provided by engineer. */
+"Background" = "Achtergrond";
+
+/* No comment provided by engineer. */
 "Bad desktop address" = "Onjuist desktopadres";
 
 /* integrity error chat item */
@@ -622,6 +675,12 @@
 
 /* No comment provided by engineer. */
 "Better messages" = "Betere berichten";
+
+/* No comment provided by engineer. */
+"Better networking" = "Beter netwerk";
+
+/* No comment provided by engineer. */
+"Black" = "Zwart";
 
 /* No comment provided by engineer. */
 "Block" = "Blokkeren";
@@ -654,10 +713,16 @@
 "Blocked by admin" = "Geblokkeerd door beheerder";
 
 /* No comment provided by engineer. */
+"Blur for better privacy." = "Vervagen voor betere privacy.";
+
+/* No comment provided by engineer. */
+"Blur media" = "Vervaag media";
+
+/* No comment provided by engineer. */
 "bold" = "vetgedrukt";
 
 /* No comment provided by engineer. */
-"Both you and your contact can add message reactions." = "Zowel u als uw contact kunnen berichtreacties toevoegen.";
+"Both you and your contact can add message reactions." = "Zowel u als uw contact kunnen bericht reacties toevoegen.";
 
 /* No comment provided by engineer. */
 "Both you and your contact can irreversibly delete sent messages. (24 hours)" = "Zowel jij als je contact kunnen verzonden berichten onherroepelijk verwijderen. (24 uur)";
@@ -678,6 +743,9 @@
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Via chat profiel (standaard) of [via verbinding](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
 
 /* No comment provided by engineer. */
+"call" = "bellen";
+
+/* No comment provided by engineer. */
 "Call already ended!" = "Oproep al beëindigd!";
 
 /* call status */
@@ -693,13 +761,25 @@
 "Calls" = "Oproepen";
 
 /* No comment provided by engineer. */
+"Calls prohibited!" = "Bellen verboden!";
+
+/* No comment provided by engineer. */
 "Camera not available" = "Camera niet beschikbaar";
+
+/* No comment provided by engineer. */
+"Can't call contact" = "Kan contact niet bellen";
+
+/* No comment provided by engineer. */
+"Can't call member" = "Kan lid niet bellen";
 
 /* No comment provided by engineer. */
 "Can't invite contact!" = "Kan contact niet uitnodigen!";
 
 /* No comment provided by engineer. */
 "Can't invite contacts!" = "Kan geen contacten uitnodigen!";
+
+/* No comment provided by engineer. */
+"Can't message member" = "Kan geen bericht sturen naar lid";
 
 /* No comment provided by engineer. */
 "Cancel" = "Annuleren";
@@ -712,6 +792,9 @@
 
 /* No comment provided by engineer. */
 "Cannot access keychain to save database password" = "Geen toegang tot de keychain om database wachtwoord op te slaan";
+
+/* No comment provided by engineer. */
+"Cannot forward message" = "Kan bericht niet doorsturen";
 
 /* No comment provided by engineer. */
 "Cannot receive file" = "Kan bestand niet ontvangen";
@@ -772,6 +855,9 @@
 "Chat archive" = "Gesprek archief";
 
 /* No comment provided by engineer. */
+"Chat colors" = "Chat kleuren";
+
+/* No comment provided by engineer. */
 "Chat console" = "Chat console";
 
 /* No comment provided by engineer. */
@@ -779,6 +865,9 @@
 
 /* No comment provided by engineer. */
 "Chat database deleted" = "Chat database verwijderd";
+
+/* No comment provided by engineer. */
+"Chat database exported" = "Chat database geëxporteerd";
 
 /* No comment provided by engineer. */
 "Chat database imported" = "Chat database geïmporteerd";
@@ -793,10 +882,16 @@
 "Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." = "Chat is gestopt. Als je deze database al op een ander apparaat hebt gebruikt, moet je deze terugzetten voordat je met chatten begint.";
 
 /* No comment provided by engineer. */
+"Chat list" = "Chatlijst";
+
+/* No comment provided by engineer. */
 "Chat migrated!" = "Chat gemigreerd!";
 
 /* No comment provided by engineer. */
 "Chat preferences" = "Gesprek voorkeuren";
+
+/* No comment provided by engineer. */
+"Chat theme" = "Chat thema";
 
 /* No comment provided by engineer. */
 "Chats" = "Gesprekken";
@@ -817,6 +912,15 @@
 "Choose from library" = "Kies uit bibliotheek";
 
 /* No comment provided by engineer. */
+"Chunks deleted" = "Stukken verwijderd";
+
+/* No comment provided by engineer. */
+"Chunks downloaded" = "Stukken gedownload";
+
+/* No comment provided by engineer. */
+"Chunks uploaded" = "Stukken geüpload";
+
+/* swipe action */
 "Clear" = "Wissen";
 
 /* No comment provided by engineer. */
@@ -832,6 +936,12 @@
 "Clear verification" = "Verwijderd verificatie";
 
 /* No comment provided by engineer. */
+"Color chats with the new themes." = "Kleurchats met de nieuwe thema's.";
+
+/* No comment provided by engineer. */
+"Color mode" = "Kleur mode";
+
+/* No comment provided by engineer. */
 "colored" = "gekleurd";
 
 /* server test step */
@@ -844,10 +954,19 @@
 "complete" = "compleet";
 
 /* No comment provided by engineer. */
+"Completed" = "voltooid";
+
+/* No comment provided by engineer. */
 "Configure ICE servers" = "ICE servers configureren";
 
 /* No comment provided by engineer. */
+"Configured %@ servers" = "%@ servers geconfigureerd";
+
+/* No comment provided by engineer. */
 "Confirm" = "Bevestigen";
+
+/* No comment provided by engineer. */
+"Confirm contact deletion?" = "Contact verwijderen bevestigen?";
 
 /* No comment provided by engineer. */
 "Confirm database upgrades" = "Bevestig database upgrades";
@@ -889,6 +1008,9 @@
 "connect to SimpleX Chat developers." = "maak verbinding met SimpleX Chat-ontwikkelaars.";
 
 /* No comment provided by engineer. */
+"Connect to your friends faster." = "Maak sneller verbinding met je vrienden.";
+
+/* No comment provided by engineer. */
 "Connect to yourself?" = "Verbinding maken met jezelf?";
 
 /* No comment provided by engineer. */
@@ -913,16 +1035,25 @@
 "connected" = "verbonden";
 
 /* No comment provided by engineer. */
+"Connected" = "Verbonden";
+
+/* No comment provided by engineer. */
 "Connected desktop" = "Verbonden desktop";
 
 /* rcv group event chat item */
 "connected directly" = "direct verbonden";
 
 /* No comment provided by engineer. */
+"Connected servers" = "Verbonden servers";
+
+/* No comment provided by engineer. */
 "Connected to desktop" = "Verbonden met desktop";
 
 /* No comment provided by engineer. */
 "connecting" = "Verbinden";
+
+/* No comment provided by engineer. */
+"Connecting" = "Verbinden";
 
 /* No comment provided by engineer. */
 "connecting (accepted)" = "verbinden (geaccepteerd)";
@@ -946,6 +1077,9 @@
 "Connecting server… (error: %@)" = "Verbinden met server... (fout: %@)";
 
 /* No comment provided by engineer. */
+"Connecting to contact, please wait or check later!" = "Er wordt verbinding gemaakt met het contact. Even geduld of controleer het later!";
+
+/* No comment provided by engineer. */
 "Connecting to desktop" = "Verbinding maken met desktop";
 
 /* chat list item title */
@@ -953,6 +1087,9 @@
 
 /* No comment provided by engineer. */
 "Connection" = "Verbinding";
+
+/* No comment provided by engineer. */
+"Connection and servers status." = "Verbindings- en serverstatus.";
 
 /* No comment provided by engineer. */
 "Connection error" = "Verbindingsfout";
@@ -964,6 +1101,9 @@
 "connection established" = "verbinding gemaakt";
 
 /* No comment provided by engineer. */
+"Connection notifications" = "Verbindingsmeldingen";
+
+/* No comment provided by engineer. */
 "Connection request sent!" = "Verbindingsverzoek verzonden!";
 
 /* No comment provided by engineer. */
@@ -972,8 +1112,14 @@
 /* No comment provided by engineer. */
 "Connection timeout" = "Timeout verbinding";
 
+/* No comment provided by engineer. */
+"Connection with desktop stopped" = "Verbinding met desktop is gestopt";
+
 /* connection information */
 "connection:%@" = "verbinding:%@";
+
+/* No comment provided by engineer. */
+"Connections" = "Verbindingen";
 
 /* profile update event chat item */
 "contact %@ changed to %@" = "contactpersoon %1$@ gewijzigd in %2$@";
@@ -983,6 +1129,9 @@
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Contact bestaat al";
+
+/* No comment provided by engineer. */
+"Contact deleted!" = "Contact verwijderd!";
 
 /* No comment provided by engineer. */
 "contact has e2e encryption" = "contact heeft e2e-codering";
@@ -997,13 +1146,16 @@
 "Contact is connected" = "Contact is verbonden";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "Contact is nog niet verbonden!";
+"Contact is deleted." = "Contact is verwijderd.";
 
 /* No comment provided by engineer. */
 "Contact name" = "Contact naam";
 
 /* No comment provided by engineer. */
 "Contact preferences" = "Contact voorkeuren";
+
+/* No comment provided by engineer. */
+"Contact will be deleted - this cannot be undone!" = "Het contact wordt verwijderd. Dit kan niet ongedaan worden gemaakt!";
 
 /* No comment provided by engineer. */
 "Contacts" = "Contacten";
@@ -1015,7 +1167,13 @@
 "Continue" = "Doorgaan";
 
 /* No comment provided by engineer. */
+"Conversation deleted!" = "Gesprek verwijderd!";
+
+/* No comment provided by engineer. */
 "Copy" = "Kopiëren";
+
+/* No comment provided by engineer. */
+"Copy error" = "Kopieerfout";
 
 /* No comment provided by engineer. */
 "Core version: v%@" = "Core versie: v% @";
@@ -1063,6 +1221,9 @@
 "Create your profile" = "Maak je profiel aan";
 
 /* No comment provided by engineer. */
+"Created" = "Gemaakt";
+
+/* No comment provided by engineer. */
 "Created at" = "Gemaakt op";
 
 /* copied message info */
@@ -1087,6 +1248,9 @@
 "Current passphrase…" = "Huidige wachtwoord…";
 
 /* No comment provided by engineer. */
+"Current profile" = "Huidig profiel";
+
+/* No comment provided by engineer. */
 "Currently maximum supported file size is %@." = "De momenteel maximaal ondersteunde bestandsgrootte is %@.";
 
 /* dropdown time picker choice */
@@ -1096,7 +1260,13 @@
 "Custom time" = "Aangepaste tijd";
 
 /* No comment provided by engineer. */
+"Customize theme" = "Thema aanpassen";
+
+/* No comment provided by engineer. */
 "Dark" = "Donker";
+
+/* No comment provided by engineer. */
+"Dark mode colors" = "Kleuren in donkere modus";
 
 /* No comment provided by engineer. */
 "Database downgrade" = "Database downgraden";
@@ -1167,6 +1337,9 @@
 /* message decrypt error item */
 "Decryption error" = "Decodering fout";
 
+/* No comment provided by engineer. */
+"decryption errors" = "decoderingsfouten";
+
 /* pref value */
 "default (%@)" = "standaard (%@)";
 
@@ -1176,8 +1349,12 @@
 /* No comment provided by engineer. */
 "default (yes)" = "standaard (ja)";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "Verwijderen";
+
+/* No comment provided by engineer. */
+"Delete %lld messages of members?" = "%lld berichten van leden verwijderen?";
 
 /* No comment provided by engineer. */
 "Delete %lld messages?" = "%lld berichten verwijderen?";
@@ -1216,10 +1393,7 @@
 "Delete contact" = "Verwijder contact";
 
 /* No comment provided by engineer. */
-"Delete Contact" = "Verwijder contact";
-
-/* No comment provided by engineer. */
-"Delete contact?\nThis cannot be undone!" = "Verwijder contact?\nDit kan niet ongedaan gemaakt worden!";
+"Delete contact?" = "Verwijder contact?";
 
 /* No comment provided by engineer. */
 "Delete database" = "Database verwijderen";
@@ -1276,9 +1450,6 @@
 "Delete old database?" = "Oude database verwijderen?";
 
 /* No comment provided by engineer. */
-"Delete pending connection" = "Wachtende verbinding verwijderen";
-
-/* No comment provided by engineer. */
 "Delete pending connection?" = "Wachtende verbinding verwijderen?";
 
 /* No comment provided by engineer. */
@@ -1288,10 +1459,19 @@
 "Delete queue" = "Wachtrij verwijderen";
 
 /* No comment provided by engineer. */
+"Delete up to 20 messages at once." = "Verwijder maximaal 20 berichten tegelijk.";
+
+/* No comment provided by engineer. */
 "Delete user profile?" = "Gebruikers profiel verwijderen?";
+
+/* No comment provided by engineer. */
+"Delete without notification" = "Verwijderen zonder melding";
 
 /* deleted chat item */
 "deleted" = "verwijderd";
+
+/* No comment provided by engineer. */
+"Deleted" = "Verwijderd";
 
 /* No comment provided by engineer. */
 "Deleted at" = "Verwijderd om";
@@ -1304,6 +1484,9 @@
 
 /* rcv group event chat item */
 "deleted group" = "verwijderde groep";
+
+/* No comment provided by engineer. */
+"Deletion errors" = "Verwijderingsfouten";
 
 /* No comment provided by engineer. */
 "Delivery" = "Bezorging";
@@ -1326,11 +1509,26 @@
 /* No comment provided by engineer. */
 "Desktop devices" = "Desktop apparaten";
 
+/* No comment provided by engineer. */
+"Destination server address of %@ is incompatible with forwarding server %@ settings." = "Het bestemmingsserveradres van %@ is niet compatibel met de doorstuurserverinstellingen %@.";
+
 /* snd error text */
 "Destination server error: %@" = "Bestemmingsserverfout: %@";
 
 /* No comment provided by engineer. */
+"Destination server version of %@ is incompatible with forwarding server %@." = "De versie van de bestemmingsserver %@ is niet compatibel met de doorstuurserver %@.";
+
+/* No comment provided by engineer. */
+"Detailed statistics" = "Gedetailleerde statistieken";
+
+/* No comment provided by engineer. */
+"Details" = "Details";
+
+/* No comment provided by engineer. */
 "Develop" = "Ontwikkelen";
+
+/* No comment provided by engineer. */
+"Developer options" = "Ontwikkelaars opties";
 
 /* No comment provided by engineer. */
 "Developer tools" = "Ontwikkel gereedschap";
@@ -1370,6 +1568,9 @@
 
 /* No comment provided by engineer. */
 "disabled" = "uitgeschakeld";
+
+/* No comment provided by engineer. */
+"Disabled" = "Uitgeschakeld";
 
 /* No comment provided by engineer. */
 "Disappearing message" = "Verdwijnend bericht";
@@ -1432,10 +1633,19 @@
 "Download" = "Downloaden";
 
 /* No comment provided by engineer. */
+"Download errors" = "Downloadfouten";
+
+/* No comment provided by engineer. */
 "Download failed" = "Download mislukt";
 
 /* server test step */
 "Download file" = "Download bestand";
+
+/* No comment provided by engineer. */
+"Downloaded" = "Gedownload";
+
+/* No comment provided by engineer. */
+"Downloaded files" = "Gedownloade bestanden";
 
 /* No comment provided by engineer. */
 "Downloading archive" = "Archief downloaden";
@@ -1448,6 +1658,9 @@
 
 /* integrity error chat item */
 "duplicate message" = "dubbel bericht";
+
+/* No comment provided by engineer. */
+"duplicates" = "duplicaten";
 
 /* No comment provided by engineer. */
 "Duration" = "Duur";
@@ -1505,6 +1718,9 @@
 
 /* enabled status */
 "enabled" = "ingeschakeld";
+
+/* No comment provided by engineer. */
+"Enabled" = "Ingeschakeld";
 
 /* No comment provided by engineer. */
 "Enabled for" = "Ingeschakeld voor";
@@ -1612,10 +1828,10 @@
 "Enter this device name…" = "Voer deze apparaatnaam in…";
 
 /* placeholder */
-"Enter welcome message…" = "Welkomst bericht invoeren…";
+"Enter welcome message…" = "Welkom bericht invoeren…";
 
 /* placeholder */
-"Enter welcome message… (optional)" = "Voer welkomst bericht in... (optioneel)";
+"Enter welcome message… (optional)" = "Voer welkom bericht in... (optioneel)";
 
 /* No comment provided by engineer. */
 "Enter your name…" = "Vul uw naam in…";
@@ -1648,6 +1864,9 @@
 "Error changing setting" = "Fout bij wijzigen van instelling";
 
 /* No comment provided by engineer. */
+"Error connecting to forwarding server %@. Please try later." = "Fout bij het verbinden met doorstuurserver %@. Probeer het later opnieuw.";
+
+/* No comment provided by engineer. */
 "Error creating address" = "Fout bij aanmaken van adres";
 
 /* No comment provided by engineer. */
@@ -1678,9 +1897,6 @@
 "Error deleting connection" = "Fout bij verwijderen van verbinding";
 
 /* No comment provided by engineer. */
-"Error deleting contact" = "Fout bij het verwijderen van contact";
-
-/* No comment provided by engineer. */
 "Error deleting database" = "Fout bij het verwijderen van de database";
 
 /* No comment provided by engineer. */
@@ -1708,6 +1924,9 @@
 "Error exporting chat database" = "Fout bij het exporteren van de chat database";
 
 /* No comment provided by engineer. */
+"Error exporting theme: %@" = "Fout bij exporteren van thema: %@";
+
+/* No comment provided by engineer. */
 "Error importing chat database" = "Fout bij het importeren van de chat database";
 
 /* No comment provided by engineer. */
@@ -1723,7 +1942,16 @@
 "Error receiving file" = "Fout bij ontvangen van bestand";
 
 /* No comment provided by engineer. */
+"Error reconnecting server" = "Fout bij opnieuw verbinding maken met de server";
+
+/* No comment provided by engineer. */
+"Error reconnecting servers" = "Fout bij opnieuw verbinden van servers";
+
+/* No comment provided by engineer. */
 "Error removing member" = "Fout bij verwijderen van lid";
+
+/* No comment provided by engineer. */
+"Error resetting statistics" = "Fout bij het resetten van statistieken";
 
 /* No comment provided by engineer. */
 "Error saving %@ servers" = "Fout bij opslaan van %@ servers";
@@ -1805,6 +2033,9 @@
 "Error: URL is invalid" = "Fout: URL is ongeldig";
 
 /* No comment provided by engineer. */
+"Errors" = "Fouten";
+
+/* No comment provided by engineer. */
 "Even when disabled in the conversation." = "Zelfs wanneer uitgeschakeld in het gesprek.";
 
 /* No comment provided by engineer. */
@@ -1817,10 +2048,16 @@
 "Expand" = "Uitklappen";
 
 /* No comment provided by engineer. */
+"expired" = "verlopen";
+
+/* No comment provided by engineer. */
 "Export database" = "Database exporteren";
 
 /* No comment provided by engineer. */
 "Export error:" = "Exportfout:";
+
+/* No comment provided by engineer. */
+"Export theme" = "Exporteer thema";
 
 /* No comment provided by engineer. */
 "Exported database archive." = "Geëxporteerd database archief.";
@@ -1840,8 +2077,23 @@
 /* No comment provided by engineer. */
 "Faster joining and more reliable messages." = "Snellere deelname en betrouwbaardere berichten.";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "Favoriet";
+
+/* No comment provided by engineer. */
+"File error" = "Bestandsfout";
+
+/* file error text */
+"File not found - most likely file was deleted or cancelled." = "Bestand niet gevonden - hoogstwaarschijnlijk is het bestand verwijderd of geannuleerd.";
+
+/* file error text */
+"File server error: %@" = "Bestandsserverfout: %@";
+
+/* No comment provided by engineer. */
+"File status" = "Bestandsstatus";
+
+/* copied message info */
+"File status: %@" = "Bestandsstatus: %@";
 
 /* No comment provided by engineer. */
 "File will be deleted from servers." = "Het bestand wordt van de servers verwijderd.";
@@ -1924,6 +2176,15 @@
 /* No comment provided by engineer. */
 "Forwarded from" = "Doorgestuurd vanuit";
 
+/* No comment provided by engineer. */
+"Forwarding server %@ failed to connect to destination server %@. Please try later." = "De doorstuurserver %@ kon geen verbinding maken met de bestemmingsserver %@. Probeer het later opnieuw.";
+
+/* No comment provided by engineer. */
+"Forwarding server address is incompatible with network settings: %@." = "Het adres van de doorstuurserver is niet compatibel met de netwerkinstellingen: %@.";
+
+/* No comment provided by engineer. */
+"Forwarding server version is incompatible with network settings: %@." = "De doorstuurserverversie is niet compatibel met de netwerkinstellingen: %@.";
+
 /* snd error text */
 "Forwarding server: %@\nDestination server error: %@" = "Doorstuurserver: %1$@\nBestemmingsserverfout: %2$@";
 
@@ -1956,6 +2217,12 @@
 
 /* No comment provided by engineer. */
 "GIFs and stickers" = "GIF's en stickers";
+
+/* message preview */
+"Good afternoon!" = "Goedemiddag!";
+
+/* message preview */
+"Good morning!" = "Goedemorgen!";
 
 /* No comment provided by engineer. */
 "Group" = "Groep";
@@ -1994,7 +2261,7 @@
 "Group links" = "Groep links";
 
 /* No comment provided by engineer. */
-"Group members can add message reactions." = "Groepsleden kunnen berichtreacties toevoegen.";
+"Group members can add message reactions." = "Groepsleden kunnen bericht reacties toevoegen.";
 
 /* No comment provided by engineer. */
 "Group members can irreversibly delete sent messages. (24 hours)" = "Groepsleden kunnen verzonden berichten onherroepelijk verwijderen. (24 uur)";
@@ -2033,7 +2300,7 @@
 "group profile updated" = "groep profiel bijgewerkt";
 
 /* No comment provided by engineer. */
-"Group welcome message" = "Groep welkomst bericht";
+"Group welcome message" = "Groep welkom bericht";
 
 /* No comment provided by engineer. */
 "Group will be deleted for all members - this cannot be undone!" = "Groep wordt verwijderd voor alle leden, dit kan niet ongedaan worden gemaakt!";
@@ -2135,6 +2402,9 @@
 "Import failed" = "Importeren is mislukt";
 
 /* No comment provided by engineer. */
+"Import theme" = "Thema importeren";
+
+/* No comment provided by engineer. */
 "Importing archive" = "Archief importeren";
 
 /* No comment provided by engineer. */
@@ -2154,6 +2424,9 @@
 
 /* No comment provided by engineer. */
 "In-call sounds" = "Geluiden tijdens het bellen";
+
+/* No comment provided by engineer. */
+"inactive" = "inactief";
 
 /* No comment provided by engineer. */
 "Incognito" = "Incognito";
@@ -2218,6 +2491,9 @@
 /* No comment provided by engineer. */
 "Interface" = "Interface";
 
+/* No comment provided by engineer. */
+"Interface colors" = "Interface kleuren";
+
 /* invalid chat data */
 "invalid chat" = "ongeldige gesprek";
 
@@ -2259,6 +2535,9 @@
 
 /* group name */
 "invitation to group %@" = "uitnodiging voor groep %@";
+
+/* No comment provided by engineer. */
+"invite" = "uitnodiging";
 
 /* No comment provided by engineer. */
 "Invite friends" = "Nodig vrienden uit";
@@ -2306,6 +2585,9 @@
 "It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Het kan gebeuren wanneer:\n1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 30 dagen op de server.\n2. Decodering van het bericht is mislukt, omdat u of uw contact een oude database back-up heeft gebruikt.\n3. De verbinding is verbroken.";
 
 /* No comment provided by engineer. */
+"It protects your IP address and connections." = "Het beschermt uw IP-adres en verbindingen.";
+
+/* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Het lijkt erop dat u al bent verbonden via deze link. Als dit niet het geval is, is er een fout opgetreden (%@).";
 
 /* No comment provided by engineer. */
@@ -2317,7 +2599,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "Japanse interface";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "Word lid van";
 
 /* No comment provided by engineer. */
@@ -2348,6 +2630,9 @@
 "Keep" = "Bewaar";
 
 /* No comment provided by engineer. */
+"Keep conversation" = "Blijf in gesprek";
+
+/* No comment provided by engineer. */
 "Keep the app open to use it from desktop" = "Houd de app geopend om deze vanaf de desktop te gebruiken";
 
 /* No comment provided by engineer. */
@@ -2368,7 +2653,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "Kom meer te weten";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "Verlaten";
 
 /* No comment provided by engineer. */
@@ -2458,6 +2743,12 @@
 /* No comment provided by engineer. */
 "Max 30 seconds, received instantly." = "Max 30 seconden, direct ontvangen.";
 
+/* No comment provided by engineer. */
+"Media & file servers" = "Media- en bestandsservers";
+
+/* blur media */
+"Medium" = "Medium";
+
 /* member role */
 "member" = "lid";
 
@@ -2470,6 +2761,9 @@
 /* rcv group event chat item */
 "member connected" = "is toegetreden";
 
+/* item status text */
+"Member inactive" = "Lid inactief";
+
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". All group members will be notified." = "De rol van lid wordt gewijzigd in \"%@\". Alle groepsleden worden op de hoogte gebracht.";
 
@@ -2478,6 +2772,12 @@
 
 /* No comment provided by engineer. */
 "Member will be removed from group - this cannot be undone!" = "Lid wordt uit de groep verwijderd, dit kan niet ongedaan worden gemaakt!";
+
+/* No comment provided by engineer. */
+"Menus" = "Menu's";
+
+/* No comment provided by engineer. */
+"message" = "bericht";
 
 /* item status text */
 "Message delivery error" = "Fout bij bezorging van bericht";
@@ -2490,6 +2790,12 @@
 
 /* No comment provided by engineer. */
 "Message draft" = "Concept bericht";
+
+/* item status text */
+"Message forwarded" = "Bericht doorgestuurd";
+
+/* item status description */
+"Message may be delivered later if member becomes active." = "Het bericht kan later worden bezorgd als het lid actief wordt.";
 
 /* No comment provided by engineer. */
 "Message queue info" = "Informatie over berichtenwachtrij";
@@ -2507,13 +2813,19 @@
 "message received" = "bericht ontvangen";
 
 /* No comment provided by engineer. */
-"Message routing fallback" = "Terugval op berichtroutering";
+"Message reception" = "Bericht ontvangst";
 
 /* No comment provided by engineer. */
-"Message routing mode" = "Berichtrouteringsmodus";
+"Message servers" = "Berichtservers";
 
 /* No comment provided by engineer. */
 "Message source remains private." = "Berichtbron blijft privé.";
+
+/* No comment provided by engineer. */
+"Message status" = "Berichtstatus";
+
+/* copied message info */
+"Message status: %@" = "Berichtstatus: %@";
 
 /* No comment provided by engineer. */
 "Message text" = "Bericht tekst";
@@ -2529,6 +2841,12 @@
 
 /* No comment provided by engineer. */
 "Messages from %@ will be shown!" = "Berichten van %@ worden getoond!";
+
+/* No comment provided by engineer. */
+"Messages received" = "Berichten ontvangen";
+
+/* No comment provided by engineer. */
+"Messages sent" = "Berichten verzonden";
 
 /* No comment provided by engineer. */
 "Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery." = "Berichten, bestanden en oproepen worden beschermd door **end-to-end codering** met perfecte voorwaartse geheimhouding, afwijzing en inbraakherstel.";
@@ -2564,7 +2882,7 @@
 "Migration error:" = "Migratiefout:";
 
 /* No comment provided by engineer. */
-"Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat)." = "Migratie mislukt. Tik hieronder op **Overslaan** om de huidige database te blijven gebruiken. Meld het probleem aan de app-ontwikkelaars via chat of e-mail [chat@simplex.chat](mailto:chat@simplex.chat).";
+"Migration failed. Tap **Skip** below to continue using the current database. Please report the issue to the app developers via chat or email [chat@simplex.chat](mailto:chat@simplex.chat)." = "Migratie mislukt. Tik hier onder op **Overslaan** om de huidige database te blijven gebruiken. Meld het probleem aan de app-ontwikkelaars via chat of e-mail [chat@simplex.chat](mailto:chat@simplex.chat).";
 
 /* No comment provided by engineer. */
 "Migration is completed" = "Migratie is voltooid";
@@ -2609,12 +2927,15 @@
 "Multiple chat profiles" = "Meerdere chat profielen";
 
 /* No comment provided by engineer. */
+"mute" = "dempen";
+
+/* swipe action */
 "Mute" = "Dempen";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "Gedempt wanneer inactief!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "Naam";
 
 /* No comment provided by engineer. */
@@ -2641,6 +2962,9 @@
 /* No comment provided by engineer. */
 "New chat" = "Nieuw gesprek";
 
+/* No comment provided by engineer. */
+"New chat experience 🎉" = "Nieuwe chatervaring 🎉";
+
 /* notification */
 "New contact request" = "Nieuw contactverzoek";
 
@@ -2658,6 +2982,9 @@
 
 /* No comment provided by engineer. */
 "New in %@" = "Nieuw in %@";
+
+/* No comment provided by engineer. */
+"New media options" = "Nieuwe media-opties";
 
 /* No comment provided by engineer. */
 "New member role" = "Nieuwe leden rol";
@@ -2695,6 +3022,9 @@
 /* No comment provided by engineer. */
 "No device token!" = "Geen apparaattoken!";
 
+/* item status description */
+"No direct connection yet, message is forwarded by admin." = "Nog geen directe verbinding, bericht wordt doorgestuurd door beheerder.";
+
 /* No comment provided by engineer. */
 "no e2e encryption" = "geen e2e versleuteling";
 
@@ -2706,6 +3036,9 @@
 
 /* No comment provided by engineer. */
 "No history" = "Geen geschiedenis";
+
+/* No comment provided by engineer. */
+"No info, try to reload" = "Geen info, probeer opnieuw te laden";
 
 /* No comment provided by engineer. */
 "No network connection" = "Geen netwerkverbinding";
@@ -2721,6 +3054,9 @@
 
 /* No comment provided by engineer. */
 "Not compatible!" = "Niet compatibel!";
+
+/* No comment provided by engineer. */
+"Nothing selected" = "Niets geselecteerd";
 
 /* No comment provided by engineer. */
 "Notifications" = "Meldingen";
@@ -2739,7 +3075,7 @@
    time to disappear */
 "off" = "uit";
 
-/* No comment provided by engineer. */
+/* blur media */
 "Off" = "Uit";
 
 /* feature offered item */
@@ -2767,16 +3103,19 @@
 "One-time invitation link" = "Eenmalige uitnodiging link";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "Onion hosts zullen nodig zijn voor verbinding. Vereist het inschakelen van VPN.";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "Onion hosts zullen nodig zijn voor verbinding.\nVereist het inschakelen van VPN.";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "Onion hosts worden gebruikt indien beschikbaar. Vereist het inschakelen van VPN.";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "Onion hosts worden gebruikt indien beschikbaar.\nVereist het inschakelen van VPN.";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "Onion hosts worden niet gebruikt.";
 
 /* No comment provided by engineer. */
 "Only client devices store user profiles, contacts, groups, and messages sent with **2-layer end-to-end encryption**." = "Alleen client apparaten slaan gebruikers profielen, contacten, groepen en berichten op die zijn verzonden met **2-laags end-to-end-codering**.";
+
+/* No comment provided by engineer. */
+"Only delete conversation" = "Alleen conversatie verwijderen";
 
 /* No comment provided by engineer. */
 "Only group owners can change group preferences." = "Alleen groep eigenaren kunnen groep voorkeuren wijzigen.";
@@ -2788,7 +3127,7 @@
 "Only group owners can enable voice messages." = "Alleen groep eigenaren kunnen spraak berichten inschakelen.";
 
 /* No comment provided by engineer. */
-"Only you can add message reactions." = "Alleen jij kunt berichtreacties toevoegen.";
+"Only you can add message reactions." = "Alleen jij kunt bericht reacties toevoegen.";
 
 /* No comment provided by engineer. */
 "Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" = "Alleen jij kunt berichten onomkeerbaar verwijderen (je contact kan ze markeren voor verwijdering). (24 uur)";
@@ -2803,7 +3142,7 @@
 "Only you can send voice messages." = "Alleen jij kunt spraak berichten verzenden.";
 
 /* No comment provided by engineer. */
-"Only your contact can add message reactions." = "Alleen uw contact kan berichtreacties toevoegen.";
+"Only your contact can add message reactions." = "Alleen uw contact kan bericht reacties toevoegen.";
 
 /* No comment provided by engineer. */
 "Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" = "Alleen uw contact kan berichten onherroepelijk verwijderen (u kunt ze markeren voor verwijdering). (24 uur)";
@@ -2833,6 +3172,9 @@
 "Open migration to another device" = "Open de migratie naar een ander apparaat";
 
 /* No comment provided by engineer. */
+"Open server settings" = "Server instellingen openen";
+
+/* No comment provided by engineer. */
 "Open Settings" = "Open instellingen";
 
 /* authentication reason */
@@ -2857,7 +3199,16 @@
 "Or show this code" = "Of laat deze code zien";
 
 /* No comment provided by engineer. */
+"other" = "overig";
+
+/* No comment provided by engineer. */
 "Other" = "Ander";
+
+/* No comment provided by engineer. */
+"Other %@ servers" = "Andere %@ servers";
+
+/* No comment provided by engineer. */
+"other errors" = "overige fouten";
 
 /* member role */
 "owner" = "Eigenaar";
@@ -2902,6 +3253,9 @@
 "peer-to-peer" = "peer-to-peer";
 
 /* No comment provided by engineer. */
+"Pending" = "in behandeling";
+
+/* No comment provided by engineer. */
 "People can connect to you only via the links you share." = "Mensen kunnen alleen verbinding met u maken via de links die u deelt.";
 
 /* No comment provided by engineer. */
@@ -2920,7 +3274,16 @@
 "PING interval" = "PING interval";
 
 /* No comment provided by engineer. */
+"Play from the chat list." = "Afspelen via de gesprekken lijst.";
+
+/* No comment provided by engineer. */
+"Please ask your contact to enable calls." = "Vraag uw contactpersoon om oproepen in te schakelen.";
+
+/* No comment provided by engineer. */
 "Please ask your contact to enable sending voice messages." = "Vraag uw contact om het verzenden van spraak berichten in te schakelen.";
+
+/* No comment provided by engineer. */
+"Please check that mobile and desktop are connected to the same local network, and that desktop firewall allows the connection.\nPlease share any other issues with the developers." = "Controleer of mobiel en desktop met hetzelfde lokale netwerk zijn verbonden en of de desktopfirewall de verbinding toestaat.\nDeel eventuele andere problemen met de ontwikkelaars.";
 
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Controleer of u de juiste link heeft gebruikt of vraag uw contact om u een andere te sturen.";
@@ -2980,6 +3343,9 @@
 "Preview" = "Voorbeeld";
 
 /* No comment provided by engineer. */
+"Previously connected servers" = "Eerder verbonden servers";
+
+/* No comment provided by engineer. */
 "Privacy & security" = "Privacy en beveiliging";
 
 /* No comment provided by engineer. */
@@ -3001,6 +3367,9 @@
 "Private routing" = "Privéroutering";
 
 /* No comment provided by engineer. */
+"Private routing error" = "Fout in privéroutering";
+
+/* No comment provided by engineer. */
 "Profile and server connections" = "Profiel- en serververbindingen";
 
 /* No comment provided by engineer. */
@@ -3019,6 +3388,9 @@
 "Profile password" = "Profiel wachtwoord";
 
 /* No comment provided by engineer. */
+"Profile theme" = "Profiel thema";
+
+/* No comment provided by engineer. */
 "Profile update will be sent to your contacts." = "Profiel update wordt naar uw contacten verzonden.";
 
 /* No comment provided by engineer. */
@@ -3028,7 +3400,7 @@
 "Prohibit irreversible message deletion." = "Verbied het onomkeerbaar verwijderen van berichten.";
 
 /* No comment provided by engineer. */
-"Prohibit message reactions." = "Berichtreacties verbieden.";
+"Prohibit message reactions." = "Bericht reacties verbieden.";
 
 /* No comment provided by engineer. */
 "Prohibit messages reactions." = "Berichten reacties verbieden.";
@@ -3067,6 +3439,12 @@
 "Protocol timeout per KB" = "Protocol timeout per KB";
 
 /* No comment provided by engineer. */
+"Proxied" = "Proxied";
+
+/* No comment provided by engineer. */
+"Proxied servers" = "Proxied servers";
+
+/* No comment provided by engineer. */
 "Push notifications" = "Push meldingen";
 
 /* No comment provided by engineer. */
@@ -3081,10 +3459,13 @@
 /* No comment provided by engineer. */
 "Rate the app" = "Beoordeel de app";
 
+/* No comment provided by engineer. */
+"Reachable chat toolbar" = "Toegankelijke chatwerkbalk";
+
 /* chat item menu */
 "React…" = "Reageer…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "Lees";
 
 /* No comment provided by engineer. */
@@ -3109,6 +3490,9 @@
 "Receipts are disabled" = "Bevestigingen zijn uitgeschakeld";
 
 /* No comment provided by engineer. */
+"Receive errors" = "Fouten ontvangen";
+
+/* No comment provided by engineer. */
 "received answer…" = "antwoord gekregen…";
 
 /* No comment provided by engineer. */
@@ -3125,6 +3509,15 @@
 
 /* message info title */
 "Received message" = "Ontvangen bericht";
+
+/* No comment provided by engineer. */
+"Received messages" = "Ontvangen berichten";
+
+/* No comment provided by engineer. */
+"Received reply" = "Antwoord ontvangen";
+
+/* No comment provided by engineer. */
+"Received total" = "Totaal ontvangen";
 
 /* No comment provided by engineer. */
 "Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Het ontvangstadres wordt gewijzigd naar een andere server. Adres wijziging wordt voltooid nadat de afzender online is.";
@@ -3145,7 +3538,22 @@
 "Recipients see updates as you type them." = "Ontvangers zien updates terwijl u ze typt.";
 
 /* No comment provided by engineer. */
+"Reconnect" = "opnieuw verbinden";
+
+/* No comment provided by engineer. */
 "Reconnect all connected servers to force message delivery. It uses additional traffic." = "Verbind alle verbonden servers opnieuw om de bezorging van berichten af te dwingen. Het maakt gebruik van extra data.";
+
+/* No comment provided by engineer. */
+"Reconnect all servers" = "Maak opnieuw verbinding met alle servers";
+
+/* No comment provided by engineer. */
+"Reconnect all servers?" = "Alle servers opnieuw verbinden?";
+
+/* No comment provided by engineer. */
+"Reconnect server to force message delivery. It uses additional traffic." = "Maak opnieuw verbinding met de server om de bezorging van berichten te forceren. Er wordt gebruik gemaakt van extra verkeer.Maak opnieuw verbinding met de server om de bezorging van berichten te forceren. Er wordt gebruik gemaakt van extra data.";
+
+/* No comment provided by engineer. */
+"Reconnect server?" = "Server opnieuw verbinden?";
 
 /* No comment provided by engineer. */
 "Reconnect servers?" = "Servers opnieuw verbinden?";
@@ -3159,7 +3567,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Verminderd batterijgebruik";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "Afwijzen";
 
 /* No comment provided by engineer. */
@@ -3179,6 +3588,9 @@
 
 /* No comment provided by engineer. */
 "Remove" = "Verwijderen";
+
+/* No comment provided by engineer. */
+"Remove image" = "Verwijder afbeelding";
 
 /* No comment provided by engineer. */
 "Remove member" = "Lid verwijderen";
@@ -3238,10 +3650,25 @@
 "Reset" = "Resetten";
 
 /* No comment provided by engineer. */
+"Reset all hints" = "Alle hints resetten";
+
+/* No comment provided by engineer. */
+"Reset all statistics" = "Reset alle statistieken";
+
+/* No comment provided by engineer. */
+"Reset all statistics?" = "Alle statistieken resetten?";
+
+/* No comment provided by engineer. */
 "Reset colors" = "Kleuren resetten";
 
 /* No comment provided by engineer. */
+"Reset to app theme" = "Terugzetten naar app thema";
+
+/* No comment provided by engineer. */
 "Reset to defaults" = "Resetten naar standaardwaarden";
+
+/* No comment provided by engineer. */
+"Reset to user theme" = "Terugzetten naar gebruikersthema";
 
 /* No comment provided by engineer. */
 "Restart the app to create a new chat profile" = "Start de app opnieuw om een nieuw chat profiel aan te maken";
@@ -3266,9 +3693,6 @@
 
 /* chat item action */
 "Reveal" = "Onthullen";
-
-/* No comment provided by engineer. */
-"Revert" = "Terugdraaien";
 
 /* No comment provided by engineer. */
 "Revoke" = "Intrekken";
@@ -3304,6 +3728,9 @@
 "Save and notify group members" = "Opslaan en groep leden melden";
 
 /* No comment provided by engineer. */
+"Save and reconnect" = "Opslaan en opnieuw verbinden";
+
+/* No comment provided by engineer. */
 "Save and update group profile" = "Groep profiel opslaan en bijwerken";
 
 /* No comment provided by engineer. */
@@ -3337,7 +3764,7 @@
 "Save settings?" = "Instellingen opslaan?";
 
 /* No comment provided by engineer. */
-"Save welcome message?" = "Welkomst bericht opslaan?";
+"Save welcome message?" = "Welkom bericht opslaan?";
 
 /* No comment provided by engineer. */
 "saved" = "opgeslagen";
@@ -3358,6 +3785,12 @@
 "Saved WebRTC ICE servers will be removed" = "Opgeslagen WebRTC ICE servers worden verwijderd";
 
 /* No comment provided by engineer. */
+"Scale" = "Schaal";
+
+/* No comment provided by engineer. */
+"Scan / Paste link" = "Link scannen/plakken";
+
+/* No comment provided by engineer. */
 "Scan code" = "Code scannen";
 
 /* No comment provided by engineer. */
@@ -3373,6 +3806,9 @@
 "Scan server QR code" = "Scan server QR-code";
 
 /* No comment provided by engineer. */
+"search" = "zoekopdracht";
+
+/* No comment provided by engineer. */
 "Search" = "Zoeken";
 
 /* No comment provided by engineer. */
@@ -3384,6 +3820,9 @@
 /* network option */
 "sec" = "sec";
 
+/* No comment provided by engineer. */
+"Secondary" = "Secundair";
+
 /* time unit */
 "seconds" = "seconden";
 
@@ -3394,6 +3833,9 @@
 "Secure queue" = "Veilige wachtrij";
 
 /* No comment provided by engineer. */
+"Secured" = "Beveiligd";
+
+/* No comment provided by engineer. */
 "Security assessment" = "Beveiligingsbeoordeling";
 
 /* No comment provided by engineer. */
@@ -3402,8 +3844,14 @@
 /* chat item text */
 "security code changed" = "beveiligingscode gewijzigd";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "Selecteer";
+
+/* No comment provided by engineer. */
+"Selected %lld" = "%lld geselecteerd";
+
+/* No comment provided by engineer. */
+"Selected chat preferences prohibit this message." = "Geselecteerde chat voorkeuren verbieden dit bericht.";
 
 /* No comment provided by engineer. */
 "Self-destruct" = "Zelfvernietiging";
@@ -3430,19 +3878,22 @@
 "send direct message" = "stuur een direct bericht";
 
 /* No comment provided by engineer. */
-"Send direct message" = "Direct bericht sturen";
-
-/* No comment provided by engineer. */
 "Send direct message to connect" = "Stuur een direct bericht om verbinding te maken";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Stuur een verdwijnend bericht";
 
 /* No comment provided by engineer. */
+"Send errors" = "Verzend fouten";
+
+/* No comment provided by engineer. */
 "Send link previews" = "Link voorbeelden verzenden";
 
 /* No comment provided by engineer. */
 "Send live message" = "Stuur een livebericht";
+
+/* No comment provided by engineer. */
+"Send message to enable calls." = "Stuur een bericht om oproepen mogelijk te maken.";
 
 /* No comment provided by engineer. */
 "Send messages directly when IP address is protected and your or destination server does not support private routing." = "Stuur berichten rechtstreeks als het IP-adres beschermd is en uw of bestemmingsserver geen privéroutering ondersteunt.";
@@ -3504,6 +3955,9 @@
 /* copied message info */
 "Sent at: %@" = "Verzonden op: %@";
 
+/* No comment provided by engineer. */
+"Sent directly" = "Direct verzonden";
+
 /* notification */
 "Sent file event" = "Verzonden bestandsgebeurtenis";
 
@@ -3511,7 +3965,25 @@
 "Sent message" = "Verzonden bericht";
 
 /* No comment provided by engineer. */
+"Sent messages" = "Verzonden berichten";
+
+/* No comment provided by engineer. */
 "Sent messages will be deleted after set time." = "Verzonden berichten worden na ingestelde tijd verwijderd.";
+
+/* No comment provided by engineer. */
+"Sent reply" = "Antwoord verzonden";
+
+/* No comment provided by engineer. */
+"Sent total" = "Totaal verzonden";
+
+/* No comment provided by engineer. */
+"Sent via proxy" = "Verzonden via proxy";
+
+/* No comment provided by engineer. */
+"Server address" = "Server adres";
+
+/* No comment provided by engineer. */
+"Server address is incompatible with network settings: %@." = "Serveradres is incompatibel met netwerkinstellingen: %@.";
 
 /* srv error text. */
 "Server address is incompatible with network settings." = "Serveradres is niet compatibel met netwerkinstellingen.";
@@ -3528,11 +4000,23 @@
 /* No comment provided by engineer. */
 "Server test failed!" = "Servertest mislukt!";
 
+/* No comment provided by engineer. */
+"Server type" = "Server type";
+
 /* srv error text */
 "Server version is incompatible with network settings." = "Serverversie is incompatibel met netwerkinstellingen.";
 
 /* No comment provided by engineer. */
+"Server version is incompatible with your app: %@." = "Serverversie is incompatibel met uw app: %@.";
+
+/* No comment provided by engineer. */
 "Servers" = "Servers";
+
+/* No comment provided by engineer. */
+"Servers info" = "Server informatie";
+
+/* No comment provided by engineer. */
+"Servers statistics will be reset - this cannot be undone!" = "Serverstatistieken worden gereset - dit kan niet ongedaan worden gemaakt!";
 
 /* No comment provided by engineer. */
 "Session code" = "Sessie code";
@@ -3542,6 +4026,9 @@
 
 /* No comment provided by engineer. */
 "Set contact name…" = "Contactnaam instellen…";
+
+/* No comment provided by engineer. */
+"Set default theme" = "Stel het standaard thema in";
 
 /* No comment provided by engineer. */
 "Set group preferences" = "Groep voorkeuren instellen";
@@ -3589,10 +4076,16 @@
 "Share address with contacts?" = "Adres delen met contacten?";
 
 /* No comment provided by engineer. */
+"Share from other apps." = "Delen vanuit andere apps.";
+
+/* No comment provided by engineer. */
 "Share link" = "Deel link";
 
 /* No comment provided by engineer. */
 "Share this 1-time invite link" = "Deel deze eenmalige uitnodigingslink";
+
+/* No comment provided by engineer. */
+"Share to SimpleX" = "Delen op SimpleX";
 
 /* No comment provided by engineer. */
 "Share with contacts" = "Delen met contacten";
@@ -3613,6 +4106,9 @@
 "Show message status" = "Toon berichtstatus";
 
 /* No comment provided by engineer. */
+"Show percentage" = "Percentage weergeven";
+
+/* No comment provided by engineer. */
 "Show preview" = "Toon voorbeeld";
 
 /* No comment provided by engineer. */
@@ -3620,6 +4116,9 @@
 
 /* No comment provided by engineer. */
 "Show:" = "Toon:";
+
+/* No comment provided by engineer. */
+"SimpleX" = "SimpleX";
 
 /* No comment provided by engineer. */
 "SimpleX address" = "SimpleX adres";
@@ -3667,6 +4166,9 @@
 "Simplified incognito mode" = "Vereenvoudigde incognitomodus";
 
 /* No comment provided by engineer. */
+"Size" = "Maat";
+
+/* No comment provided by engineer. */
 "Skip" = "Overslaan";
 
 /* No comment provided by engineer. */
@@ -3676,10 +4178,19 @@
 "Small groups (max 20)" = "Kleine groepen (max 20)";
 
 /* No comment provided by engineer. */
-"SMP servers" = "SMP servers";
+"SMP server" = "SMP server";
+
+/* blur media */
+"Soft" = "Soft";
+
+/* No comment provided by engineer. */
+"Some file(s) were not exported:" = "Sommige bestanden zijn niet geëxporteerd:";
 
 /* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Er zijn enkele niet-fatale fouten opgetreden tijdens het importeren - u kunt de Chat console raadplegen voor meer details.";
+
+/* No comment provided by engineer. */
+"Some non-fatal errors occurred during import:" = "Er zijn enkele niet-fatale fouten opgetreden tijdens het importeren:";
 
 /* notification title */
 "Somebody" = "Iemand";
@@ -3700,7 +4211,13 @@
 "Start migration" = "Start migratie";
 
 /* No comment provided by engineer. */
+"Starting from %@." = "Beginnend vanaf %@.";
+
+/* No comment provided by engineer. */
 "starting…" = "beginnen…";
+
+/* No comment provided by engineer. */
+"Statistics" = "Statistieken";
 
 /* No comment provided by engineer. */
 "Stop" = "Stop";
@@ -3741,8 +4258,20 @@
 /* No comment provided by engineer. */
 "strike" = "staking";
 
+/* blur media */
+"Strong" = "Krachtig";
+
 /* No comment provided by engineer. */
 "Submit" = "Indienen";
+
+/* No comment provided by engineer. */
+"Subscribed" = "Ingeschreven";
+
+/* No comment provided by engineer. */
+"Subscription errors" = "Inschrijving fouten";
+
+/* No comment provided by engineer. */
+"Subscriptions ignored" = "Inschrijvingen genegeerd";
 
 /* No comment provided by engineer. */
 "Support SimpleX Chat" = "Ondersteuning van SimpleX Chat";
@@ -3760,25 +4289,25 @@
 "Tap button " = "Tik op de knop ";
 
 /* No comment provided by engineer. */
-"Tap to activate profile." = "Tik om profiel te activeren.";
+"Tap to activate profile." = "Tik hier om profiel te activeren.";
 
 /* No comment provided by engineer. */
-"Tap to Connect" = "Tik om verbinding te maken";
+"Tap to Connect" = "Tik hier om verbinding te maken";
 
 /* No comment provided by engineer. */
-"Tap to join" = "Tik om lid te worden";
+"Tap to join" = "Tik hier om lid te worden";
 
 /* No comment provided by engineer. */
-"Tap to join incognito" = "Tik om incognito lid te worden";
+"Tap to join incognito" = "Tik hier om incognito lid te worden";
 
 /* No comment provided by engineer. */
-"Tap to paste link" = "Tik om de link te plakken";
+"Tap to paste link" = "Tik hier om de link te plakken";
 
 /* No comment provided by engineer. */
-"Tap to scan" = "Tik om te scannen";
+"Tap to scan" = "Tik hier om te scannen";
 
 /* No comment provided by engineer. */
-"Tap to start a new chat" = "Tik om een nieuw gesprek te starten";
+"TCP connection" = "TCP verbinding";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "Timeout van TCP-verbinding";
@@ -3791,6 +4320,9 @@
 
 /* No comment provided by engineer. */
 "TCP_KEEPINTVL" = "TCP_KEEPINTVL";
+
+/* No comment provided by engineer. */
+"Temporary file error" = "Tijdelijke bestandsfout";
 
 /* server test failure */
 "Test failed at step %@." = "Test mislukt bij stap %@.";
@@ -3853,6 +4385,12 @@
 "The message will be marked as moderated for all members." = "Het bericht wordt gemarkeerd als gemodereerd voor alle leden.";
 
 /* No comment provided by engineer. */
+"The messages will be deleted for all members." = "De berichten worden voor alle leden verwijderd.";
+
+/* No comment provided by engineer. */
+"The messages will be marked as moderated for all members." = "De berichten worden voor alle leden als gemodereerd gemarkeerd.";
+
+/* No comment provided by engineer. */
 "The next generation of private messaging" = "De volgende generatie privéberichten";
 
 /* No comment provided by engineer. */
@@ -3872,6 +4410,9 @@
 
 /* No comment provided by engineer. */
 "The text you pasted is not a SimpleX link." = "De tekst die u hebt geplakt is geen SimpleX link.";
+
+/* No comment provided by engineer. */
+"Themes" = "Thema's";
 
 /* No comment provided by engineer. */
 "These settings are for your current profile **%@**." = "Deze instellingen zijn voor uw huidige profiel **%@**.";
@@ -3916,7 +4457,13 @@
 "This is your own SimpleX address!" = "Dit is uw eigen SimpleX adres!";
 
 /* No comment provided by engineer. */
+"This link was used with another mobile device, please create a new link on the desktop." = "Deze link is gebruikt met een ander mobiel apparaat. Maak een nieuwe link op de desktop.";
+
+/* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Deze instelling is van toepassing op berichten in je huidige chat profiel **%@**.";
+
+/* No comment provided by engineer. */
+"Title" = "Titel";
 
 /* No comment provided by engineer. */
 "To ask any questions and to receive updates:" = "Om vragen te stellen en updates te ontvangen:";
@@ -3955,10 +4502,22 @@
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "Vergelijk (of scan) de code op uw apparaten om end-to-end-codering met uw contact te verifiëren.";
 
 /* No comment provided by engineer. */
+"Toggle chat list:" = "Chatlijst wisselen:";
+
+/* No comment provided by engineer. */
 "Toggle incognito when connecting." = "Schakel incognito in tijdens het verbinden.";
 
 /* No comment provided by engineer. */
+"Toolbar opacity" = "De transparantie van de werkbalk";
+
+/* No comment provided by engineer. */
+"Total" = "Totaal";
+
+/* No comment provided by engineer. */
 "Transport isolation" = "Transport isolation";
+
+/* No comment provided by engineer. */
+"Transport sessions" = "Transportsessies";
 
 /* No comment provided by engineer. */
 "Trying to connect to the server used to receive messages from this contact (error: %@)." = "Proberen verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen (fout: %@).";
@@ -3999,7 +4558,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Onverwachte migratiestatus";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "Niet fav.";
 
 /* No comment provided by engineer. */
@@ -4027,7 +4586,7 @@
 "Unknown error" = "Onbekende fout";
 
 /* No comment provided by engineer. */
-"unknown relays" = "onbekende relays";
+"unknown servers" = "onbekende relays";
 
 /* No comment provided by engineer. */
 "Unknown servers!" = "Onbekende servers!";
@@ -4054,12 +4613,15 @@
 "Unlock app" = "Ontgrendel app";
 
 /* No comment provided by engineer. */
+"unmute" = "dempen opheffen";
+
+/* swipe action */
 "Unmute" = "Dempen opheffen";
 
 /* No comment provided by engineer. */
 "unprotected" = "onbeschermd";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "Ongelezen";
 
 /* No comment provided by engineer. */
@@ -4069,16 +4631,13 @@
 "Update" = "Update";
 
 /* No comment provided by engineer. */
-"Update .onion hosts setting?" = ".onion hosts-instelling updaten?";
-
-/* No comment provided by engineer. */
 "Update database passphrase" = "Database wachtwoord bijwerken";
 
 /* No comment provided by engineer. */
 "Update network settings?" = "Netwerk instellingen bijwerken?";
 
 /* No comment provided by engineer. */
-"Update transport isolation mode?" = "Transportisolatiemodus updaten?";
+"Update settings?" = "Instellingen actualiseren?";
 
 /* rcv group event chat item */
 "updated group profile" = "bijgewerkt groep profiel";
@@ -4090,16 +4649,22 @@
 "Updating settings will re-connect the client to all servers." = "Door de instellingen bij te werken, wordt de client opnieuw verbonden met alle servers.";
 
 /* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "Als u deze instelling bijwerkt, wordt de client opnieuw verbonden met alle servers.";
+"Upgrade and open chat" = "Upgrade en open chat";
 
 /* No comment provided by engineer. */
-"Upgrade and open chat" = "Upgrade en open chat";
+"Upload errors" = "Upload fouten";
 
 /* No comment provided by engineer. */
 "Upload failed" = "Upload mislukt";
 
 /* server test step */
 "Upload file" = "Upload bestand";
+
+/* No comment provided by engineer. */
+"Uploaded" = "Geüpload";
+
+/* No comment provided by engineer. */
+"Uploaded files" = "Geüploade bestanden";
 
 /* No comment provided by engineer. */
 "Uploading archive" = "Archief uploaden";
@@ -4144,10 +4709,13 @@
 "Use the app while in the call." = "Gebruik de app tijdens het gesprek.";
 
 /* No comment provided by engineer. */
+"Use the app with one hand." = "Gebruik de app met één hand.";
+
+/* No comment provided by engineer. */
 "User profile" = "Gebruikers profiel";
 
 /* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = "Het gebruik van .onion-hosts vereist een compatibele VPN-provider.";
+"User selection" = "Gebruikersselectie";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "SimpleX Chat servers gebruiken.";
@@ -4196,6 +4764,9 @@
 
 /* No comment provided by engineer. */
 "Via secure quantum resistant protocol." = "Via een beveiligd kwantumbestendig protocol.";
+
+/* No comment provided by engineer. */
+"video" = "video";
 
 /* No comment provided by engineer. */
 "Video call" = "video oproep";
@@ -4255,6 +4826,12 @@
 "Waiting for video" = "Wachten op video";
 
 /* No comment provided by engineer. */
+"Wallpaper accent" = "Achtergrond accent";
+
+/* No comment provided by engineer. */
+"Wallpaper background" = "Wallpaper achtergrond";
+
+/* No comment provided by engineer. */
 "wants to connect to you!" = "wil met je in contact komen!";
 
 /* No comment provided by engineer. */
@@ -4273,10 +4850,10 @@
 "Welcome %@!" = "Welkom %@!";
 
 /* No comment provided by engineer. */
-"Welcome message" = "Welkomst bericht";
+"Welcome message" = "Welkom bericht";
 
 /* No comment provided by engineer. */
-"Welcome message is too long" = "Welkomstbericht is te lang";
+"Welcome message is too long" = "Welkom bericht is te lang";
 
 /* No comment provided by engineer. */
 "What's new" = "Wat is er nieuw";
@@ -4309,7 +4886,7 @@
 "With encrypted files and media." = "‐Met versleutelde bestanden en media.";
 
 /* No comment provided by engineer. */
-"With optional welcome message." = "Met optioneel welkomst bericht.";
+"With optional welcome message." = "Met optioneel welkom bericht.";
 
 /* No comment provided by engineer. */
 "With reduced battery usage." = "Met verminderd batterijgebruik.";
@@ -4326,11 +4903,14 @@
 /* snd error text */
 "Wrong key or unknown connection - most likely this connection is deleted." = "Verkeerde sleutel of onbekende verbinding - hoogstwaarschijnlijk is deze verbinding verwijderd.";
 
+/* file error text */
+"Wrong key or unknown file chunk address - most likely file is deleted." = "Verkeerde sleutel of onbekend bestanddeeladres - hoogstwaarschijnlijk is het bestand verwijderd.";
+
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Verkeerd wachtwoord!";
 
 /* No comment provided by engineer. */
-"XFTP servers" = "XFTP servers";
+"XFTP server" = "XFTP server";
 
 /* pref value */
 "yes" = "Ja";
@@ -4387,6 +4967,9 @@
 "You are invited to group" = "Je bent uitgenodigd voor de groep";
 
 /* No comment provided by engineer. */
+"You are not connected to these servers. Private routing is used to deliver messages to them." = "U bent niet verbonden met deze servers. Privéroutering wordt gebruikt om berichten bij hen af te leveren.";
+
+/* No comment provided by engineer. */
 "you are observer" = "jij bent waarnemer";
 
 /* snd group event chat item */
@@ -4394,6 +4977,9 @@
 
 /* No comment provided by engineer. */
 "You can accept calls from lock screen, without device and app authentication." = "U kunt oproepen van het vergrendelingsscherm accepteren, zonder apparaat- en app-verificatie.";
+
+/* No comment provided by engineer. */
+"You can change it in Appearance settings." = "U kunt dit wijzigen in de instellingen onder uiterlijk.";
 
 /* No comment provided by engineer. */
 "You can create it later" = "U kan het later maken";
@@ -4417,6 +5003,9 @@
 "You can now chat with %@" = "Je kunt nu berichten sturen naar %@";
 
 /* No comment provided by engineer. */
+"You can send messages to %@ from Archived contacts." = "U kunt berichten naar %@ sturen vanuit gearchiveerde contacten.";
+
+/* No comment provided by engineer. */
 "You can set lock screen notification preview via settings." = "U kunt een voorbeeld van een melding op het vergrendeld scherm instellen via instellingen.";
 
 /* No comment provided by engineer. */
@@ -4430,6 +5019,9 @@
 
 /* No comment provided by engineer. */
 "You can start chat via app Settings / Database or by restarting the app" = "U kunt de chat starten via app Instellingen / Database of door de app opnieuw op te starten";
+
+/* No comment provided by engineer. */
+"You can still view conversation with %@ in the list of chats." = "Je kunt het gesprek met %@ nog steeds bekijken in de lijst met chats.";
 
 /* No comment provided by engineer. */
 "You can turn on SimpleX Lock via Settings." = "Je kunt SimpleX Vergrendeling aanzetten via Instellingen.";
@@ -4468,9 +5060,6 @@
 "You have already requested connection!\nRepeat connection request?" = "Je hebt al verbinding aangevraagd!\nVerbindingsverzoek herhalen?";
 
 /* No comment provided by engineer. */
-"You have no chats" = "Je hebt geen gesprekken";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "U moet elke keer dat de app start het wachtwoord invoeren, deze wordt niet op het apparaat opgeslagen.";
 
 /* No comment provided by engineer. */
@@ -4486,7 +5075,16 @@
 "you left" = "jij bent vertrokken";
 
 /* No comment provided by engineer. */
+"You may migrate the exported database." = "U kunt de geëxporteerde database migreren.";
+
+/* No comment provided by engineer. */
+"You may save the exported archive." = "U kunt het geëxporteerde archief opslaan.";
+
+/* No comment provided by engineer. */
 "You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." = "U mag ALLEEN de meest recente versie van uw chat database op één apparaat gebruiken, anders ontvangt u mogelijk geen berichten meer van sommige contacten.";
+
+/* No comment provided by engineer. */
+"You need to allow your contact to call to be able to call them." = "U moet uw contactpersoon toestemming geven om te bellen, zodat hij/zij je kan bellen.";
 
 /* No comment provided by engineer. */
 "You need to allow your contact to send voice messages to be able to send them." = "U moet uw contact toestemming geven om spraak berichten te verzenden om ze te kunnen verzenden.";
@@ -4559,9 +5157,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Uw chat profielen";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Uw contact moet online zijn om de verbinding te voltooien.\nU kunt deze verbinding verbreken en het contact verwijderen en later proberen met een nieuwe link.";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Uw contact heeft een bestand verzonden dat groter is dan de momenteel ondersteunde maximale grootte (%@).";

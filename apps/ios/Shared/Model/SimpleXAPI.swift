@@ -137,8 +137,8 @@ func apiGetActiveUser(ctrl: chat_ctrl? = nil) throws -> User? {
     }
 }
 
-func apiCreateActiveUser(_ p: Profile?, sameServers: Bool = false, pastTimestamp: Bool = false, ctrl: chat_ctrl? = nil) throws -> User {
-    let r = chatSendCmdSync(.createActiveUser(profile: p, sameServers: sameServers, pastTimestamp: pastTimestamp), ctrl)
+func apiCreateActiveUser(_ p: Profile?, pastTimestamp: Bool = false, ctrl: chat_ctrl? = nil) throws -> User {
+    let r = chatSendCmdSync(.createActiveUser(profile: p, pastTimestamp: pastTimestamp), ctrl)
     if case let .activeUser(user) = r { return user }
     throw r
 }
@@ -279,8 +279,10 @@ func apiGetAppSettings(settings: AppSettings) throws -> AppSettings {
     throw r
 }
 
-func apiExportArchive(config: ArchiveConfig) async throws {
-    try await sendCommandOkResp(.apiExportArchive(config: config))
+func apiExportArchive(config: ArchiveConfig) async throws -> [ArchiveError] {
+    let r = await chatSendCmd(.apiExportArchive(config: config))
+    if case let .archiveExported(archiveErrors) = r { return archiveErrors }
+    throw r
 }
 
 func apiImportArchive(config: ArchiveConfig) async throws -> [ArchiveError] {
@@ -318,8 +320,8 @@ private func apiChatsResponse(_ r: ChatResponse) throws -> [ChatData] {
 
 let loadItemsPerPage = 50
 
-func apiGetChat(type: ChatType, id: Int64, search: String = "") throws -> Chat {
-    let r = chatSendCmdSync(.apiGetChat(type: type, id: id, pagination: .last(count: loadItemsPerPage), search: search))
+func apiGetChat(type: ChatType, id: Int64, search: String = "") async throws -> Chat {
+    let r = await chatSendCmd(.apiGetChat(type: type, id: id, pagination: .last(count: loadItemsPerPage), search: search))
     if case let .apiChat(_, chat) = r { return Chat.init(chat) }
     throw r
 }
@@ -330,16 +332,20 @@ func apiGetChatItems(type: ChatType, id: Int64, pagination: ChatPagination, sear
     throw r
 }
 
-func loadChat(chat: Chat, search: String = "") {
+func loadChat(chat: Chat, search: String = "", clearItems: Bool = true) async {
     do {
         let cInfo = chat.chatInfo
         let m = ChatModel.shared
         let im = ItemsModel.shared
         m.chatItemStatuses = [:]
-        im.reversedChatItems = []
-        let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
-        m.updateChatInfo(chat.chatInfo)
-        im.reversedChatItems = chat.chatItems.reversed()
+        if clearItems {
+            await MainActor.run { im.reversedChatItems = [] }
+        }
+        let chat = try await apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
+        await MainActor.run {
+            im.reversedChatItems = chat.chatItems.reversed()
+            m.updateChatInfo(chat.chatInfo)
+        }
     } catch let error {
         logger.error("loadChat error: \(responseError(error))")
     }
@@ -699,7 +705,7 @@ func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, Pendi
         return ((.contact, connection), nil)
     case let .contactAlreadyExists(_, contact):
         if let c = m.getContactChat(contact.contactId) {
-            await MainActor.run { m.chatId = c.id }
+            ItemsModel.shared.loadOpenChat(c.id)
         }
         let alert = contactAlreadyExistsAlert(contact)
         return (nil, alert)
@@ -759,22 +765,38 @@ func apiConnectContactViaAddress(incognito: Bool, contactId: Int64) async -> (Co
     return (nil, alert)
 }
 
-func apiDeleteChat(type: ChatType, id: Int64, notify: Bool? = nil) async throws {
+func apiDeleteChat(type: ChatType, id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async throws {
     let chatId = type.rawValue + id.description
     DispatchQueue.main.async { ChatModel.shared.deletedChats.insert(chatId) }
     defer { DispatchQueue.main.async { ChatModel.shared.deletedChats.remove(chatId) } }
-    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id, notify: notify), bgTask: false)
+    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id, chatDeleteMode: chatDeleteMode), bgTask: false)
     if case .direct = type, case .contactDeleted = r { return }
     if case .contactConnection = type, case .contactConnectionDeleted = r { return }
     if case .group = type, case .groupDeletedUser = r { return }
     throw r
 }
 
-func deleteChat(_ chat: Chat, notify: Bool? = nil) async {
+func apiDeleteContact(id: Int64, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async throws -> Contact {
+    let type: ChatType = .direct
+    let chatId = type.rawValue + id.description
+    if case .full = chatDeleteMode {
+        DispatchQueue.main.async { ChatModel.shared.deletedChats.insert(chatId) }
+    }
+    defer {
+        if case .full = chatDeleteMode {
+            DispatchQueue.main.async { ChatModel.shared.deletedChats.remove(chatId) }
+        }
+    }
+    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id, chatDeleteMode: chatDeleteMode), bgTask: false)
+    if case let .contactDeleted(_, contact) = r { return contact }
+    throw r
+}
+
+func deleteChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async {
     do {
         let cInfo = chat.chatInfo
-        try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId, notify: notify)
-        DispatchQueue.main.async { ChatModel.shared.removeChat(cInfo.id) }
+        try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId, chatDeleteMode: chatDeleteMode)
+        await MainActor.run { ChatModel.shared.removeChat(cInfo.id) }
     } catch let error {
         logger.error("deleteChat apiDeleteChat error: \(responseError(error))")
         AlertManager.shared.showAlertMsg(
@@ -783,6 +805,39 @@ func deleteChat(_ chat: Chat, notify: Bool? = nil) async {
         )
     }
 }
+
+func deleteContactChat(_ chat: Chat, chatDeleteMode: ChatDeleteMode = .full(notify: true)) async -> Alert? {
+    do {
+        let cInfo = chat.chatInfo
+        let ct = try await apiDeleteContact(id: cInfo.apiId, chatDeleteMode: chatDeleteMode)
+        await MainActor.run {
+            switch chatDeleteMode {
+            case .full:
+                ChatModel.shared.removeChat(cInfo.id)
+            case .entity:
+                ChatModel.shared.removeChat(cInfo.id)
+                ChatModel.shared.addChat(Chat(
+                    chatInfo: .direct(contact: ct),
+                    chatItems: chat.chatItems
+                ))
+            case .messages:
+                ChatModel.shared.removeChat(cInfo.id)
+                ChatModel.shared.addChat(Chat(
+                    chatInfo: .direct(contact: ct),
+                    chatItems: []
+                ))
+            }
+        }
+    } catch let error {
+        logger.error("deleteContactChat apiDeleteContact error: \(responseError(error))")
+        return mkAlert(
+            title: "Error deleting chat!",
+            message: "Error: \(responseError(error))"
+        )
+    }
+    return nil
+}
+
 
 func apiClearChat(type: ChatType, id: Int64) async throws -> ChatInfo {
     let r = await chatSendCmd(.apiClearChat(type: type, id: id), bgTask: false)
@@ -1112,9 +1167,16 @@ func networkErrorAlert(_ r: ChatResponse) -> Alert? {
 func acceptContactRequest(incognito: Bool, contactRequest: UserContactRequest) async {
     if let contact = await apiAcceptContactRequest(incognito: incognito, contactReqId: contactRequest.apiId) {
         let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
-        DispatchQueue.main.async {
+        await MainActor.run {
             ChatModel.shared.replaceChat(contactRequest.id, chat)
-            ChatModel.shared.setContactNetworkStatus(contact, .connected)
+            NetworkModel.shared.setContactNetworkStatus(contact, .connected)
+        }
+        if contact.sndReady {
+            DispatchQueue.main.async {
+                dismissAllSheets(animated: true) {
+                    ItemsModel.shared.loadOpenChat(chat.id)
+                }
+            }
         }
     }
 }
@@ -1530,6 +1592,7 @@ func getUserChatData() throws {
     m.chatItemTTL = try getChatItemTTL()
     let chats = try apiGetChats()
     m.chats = chats.map { Chat.init($0) }
+    m.popChatCollector.clear()
 }
 
 private func getUserChatDataAsync() async throws {
@@ -1542,11 +1605,13 @@ private func getUserChatDataAsync() async throws {
             m.userAddress = userAddress
             m.chatItemTTL = chatItemTTL
             m.chats = chats.map { Chat.init($0) }
+            m.popChatCollector.clear()
         }
     } else {
         await MainActor.run {
             m.userAddress = nil
             m.chats = []
+            m.popChatCollector.clear()
         }
     }
 }
@@ -1596,6 +1661,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         await TerminalItems.shared.add(.resp(.now, res))
     }
     let m = ChatModel.shared
+    let n = NetworkModel.shared
     logger.debug("processReceivedMsg: \(res.responseType)")
     switch res {
     case let .contactDeletedByContact(user, contact):
@@ -1618,7 +1684,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
             NtfManager.shared.notifyContactConnected(user, contact)
         }
         await MainActor.run {
-            m.setContactNetworkStatus(contact, .connected)
+            n.setContactNetworkStatus(contact, .connected)
         }
     case let .contactConnecting(user, contact):
         if active(user) && contact.directOrUsed {
@@ -1641,7 +1707,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
             }
         }
         await MainActor.run {
-            m.setContactNetworkStatus(contact, .connected)
+            n.setContactNetworkStatus(contact, .connected)
         }
     case let .receivedContactRequest(user, contactRequest):
         if active(user) {
@@ -1675,7 +1741,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         if active(user) && m.hasChat(mergedContact.id) {
             await MainActor.run {
                 if m.chatId == mergedContact.id {
-                    m.chatId = intoContact.id
+                    ItemsModel.shared.loadOpenChat(mergedContact.id)
                 }
                 m.removeChat(mergedContact.id)
             }
@@ -1683,27 +1749,27 @@ func processReceivedMsg(_ res: ChatResponse) async {
     case let .networkStatus(status, connections):
         // dispatch queue to synchronize access
         networkStatusesLock.sync {
-            var ns = m.networkStatuses
+            var ns = n.networkStatuses
             // slow loop is on the background thread
             for cId in connections {
                 ns[cId] = status
             }
             // fast model update is on the main thread
             DispatchQueue.main.sync {
-                m.networkStatuses = ns
+                n.networkStatuses = ns
             }
         }
     case let .networkStatuses(_, statuses): ()
         // dispatch queue to synchronize access
         networkStatusesLock.sync {
-            var ns = m.networkStatuses
+            var ns = n.networkStatuses
             // slow loop is on the background thread
             for s in statuses {
                 ns[s.agentConnId] = s.networkStatus
             }
             // fast model update is on the main thread
             DispatchQueue.main.sync {
-                m.networkStatuses = ns
+                n.networkStatuses = ns
             }
         }
     case let .newChatItem(user, aChatItem):
@@ -1844,7 +1910,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
         if let contact = memberContact {
             await MainActor.run {
-                m.setContactNetworkStatus(contact, .connected)
+                n.setContactNetworkStatus(contact, .connected)
             }
         }
     case let .groupUpdated(user, toGroup):
@@ -2025,6 +2091,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.remoteCtrlSession = nil
                 dismissAllSheets() {
                     switch rcStopReason {
+                    case .disconnected:
+                        ()
                     case .connectionFailed(.errorAgent(.RCP(.identity))):
                         AlertManager.shared.showAlertMsg(
                             title: "Connection with desktop stopped",
@@ -2067,12 +2135,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
 
 func switchToLocalSession() {
     let m = ChatModel.shared
+    let n = NetworkModel.shared
     m.remoteCtrlSession = nil
     do {
         m.users = try listUsers()
         try getUserChatData()
         let statuses = (try apiGetNetworkStatuses()).map { s in (s.agentConnId, s.networkStatus) }
-        m.networkStatuses = Dictionary(uniqueKeysWithValues: statuses)
+        n.networkStatuses = Dictionary(uniqueKeysWithValues: statuses)
     } catch let error {
         logger.debug("error updating chat data: \(responseError(error))")
     }

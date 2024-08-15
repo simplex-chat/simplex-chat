@@ -174,8 +174,10 @@ defaultChatHooks =
 
 data DefaultAgentServers = DefaultAgentServers
   { smp :: NonEmpty (ServerCfg 'PSMP),
+    useSMP :: Int,
     ntf :: [NtfServer],
     xftp :: NonEmpty (ServerCfg 'PXFTP),
+    useXFTP :: Int,
     netCfg :: NetworkConfig
   }
 
@@ -776,6 +778,7 @@ data ChatResponse
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatErrors {user_ :: Maybe User, chatErrors :: [ChatError]}
+  | CRArchiveExported {archiveErrors :: [ArchiveError]}
   | CRArchiveImported {archiveErrors :: [ArchiveError]}
   | CRAppSettings {appSettings :: AppSettings}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
@@ -1202,7 +1205,7 @@ data DatabaseError
   | DBErrorOpen {sqliteError :: SQLiteError}
   deriving (Show, Exception)
 
-data SQLiteError = SQLiteErrorNotADatabase | SQLiteError String
+data SQLiteError = SQLiteErrorNotADatabase | SQLiteError {dbError :: String}
   deriving (Show, Exception)
 
 throwDBError :: DatabaseError -> CM ()
@@ -1251,8 +1254,8 @@ data RemoteCtrlStopReason
   deriving (Show, Exception)
 
 data ArchiveError
-  = AEImport {chatError :: ChatError}
-  | AEImportFile {file :: String, chatError :: ChatError}
+  = AEImport {importError :: String}
+  | AEFileError {file :: String, fileError :: String}
   deriving (Show, Exception)
 
 -- | Host (mobile) side of transport to process remote commands and forward notifications

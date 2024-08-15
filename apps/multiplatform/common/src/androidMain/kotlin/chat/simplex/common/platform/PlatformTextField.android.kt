@@ -2,6 +2,7 @@ package chat.simplex.common.platform
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.text.InputType
 import android.util.Log
@@ -10,16 +11,18 @@ import android.view.ViewGroup
 import android.view.inputmethod.*
 import android.widget.EditText
 import android.widget.TextView
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.drawable.DrawableCompat
@@ -33,11 +36,12 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.views.chat.*
-import chat.simplex.common.views.helpers.SharedContent
-import chat.simplex.common.views.helpers.generalGetString
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
 import java.lang.reflect.Field
 import java.net.URI
 
@@ -49,6 +53,8 @@ actual fun PlatformTextField(
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
+  placeholder: String,
+  showVoiceButton: Boolean,
   onMessageChange: (String) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
@@ -56,11 +62,11 @@ actual fun PlatformTextField(
 ) {
   val cs = composeState.value
   val textColor = MaterialTheme.colors.onBackground
-  val tintColor = MaterialTheme.colors.secondaryVariant
-  val padding = PaddingValues(12.dp, 7.dp, 45.dp, 0.dp)
-  val paddingStart = with(LocalDensity.current) { 12.dp.roundToPx() }
+  val hintColor = MaterialTheme.colors.secondary
+  val padding = PaddingValues(0.dp, 7.dp, 50.dp, 0.dp)
+  val paddingStart = 0
   val paddingTop = with(LocalDensity.current) { 7.dp.roundToPx() }
-  val paddingEnd = with(LocalDensity.current) { 45.dp.roundToPx() }
+  val paddingEnd = with(LocalDensity.current) { 50.dp.roundToPx() }
   val paddingBottom = with(LocalDensity.current) { 7.dp.roundToPx() }
   var showKeyboard by remember { mutableStateOf(false) }
   var freeFocus by remember { mutableStateOf(false) }
@@ -79,7 +85,15 @@ actual fun PlatformTextField(
       freeFocus = true
     }
   }
+  LaunchedEffect(Unit) {
+    snapshotFlow { ModalManager.start.modalCount.value }
+      .filter { it > 0 }
+      .collect {
+        freeFocus = true
+      }
+  }
 
+  val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
   AndroidView(modifier = Modifier, factory = {
     val editText = @SuppressLint("AppCompatCustomView") object: EditText(it) {
       override fun setOnReceiveContentListener(
@@ -109,11 +123,12 @@ actual fun PlatformTextField(
     editText.inputType = InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or editText.inputType
     editText.setTextColor(textColor.toArgb())
     editText.textSize = textStyle.value.fontSize.value * appPrefs.fontScale.get()
-    val drawable = androidAppContext.getDrawable(R.drawable.send_msg_view_background)!!
-    DrawableCompat.setTint(drawable, tintColor.toArgb())
-    editText.background = drawable
-    editText.setPadding(paddingStart, paddingTop, paddingEnd, paddingBottom)
+    editText.background = ColorDrawable(Color.Transparent.toArgb())
+    editText.textDirection = if (isRtl) EditText.TEXT_DIRECTION_LOCALE else EditText.TEXT_DIRECTION_ANY_RTL
+    editText.setPaddingRelative(paddingStart, paddingTop, paddingEnd, paddingBottom)
     editText.setText(cs.message)
+    editText.hint = placeholder
+    editText.setHintTextColor(hintColor.toArgb())
     if (Build.VERSION.SDK_INT >= 29) {
       editText.textCursorDrawable?.let { DrawableCompat.setTint(it, CurrentColors.value.colors.secondary.toArgb()) }
     } else {
@@ -136,8 +151,9 @@ actual fun PlatformTextField(
     editText
   }) {
     it.setTextColor(textColor.toArgb())
+    it.setHintTextColor(hintColor.toArgb())
+    it.hint = placeholder
     it.textSize = textStyle.value.fontSize.value * appPrefs.fontScale.get()
-    DrawableCompat.setTint(it.background, tintColor.toArgb())
     it.isFocusable = composeState.value.preview !is ComposePreview.VoicePreview
     it.isFocusableInTouchMode = it.isFocusable
     if (cs.message != it.text.toString()) {

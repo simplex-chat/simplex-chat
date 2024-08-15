@@ -78,7 +78,7 @@ private fun showForwardProhibitedByPrefAlert() {
 private fun ShareListNavLinkLayout(
   chatLinkPreview: @Composable () -> Unit,
   click: () -> Unit,
-  stopped: Boolean
+  stopped: Boolean,
 ) {
   SectionItemView(minHeight = 50.dp, click = click, disabled = stopped) {
     chatLinkPreview()

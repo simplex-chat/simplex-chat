@@ -209,7 +209,7 @@ fun CIImageView(
     val loaded = res.value
     if (loaded != null && file != null) {
       val (imageBitmap, data, _) = loaded
-      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, @Composable { painter, onClick -> ImageView(painter, image, file.fileSource, onClick) })
+      SimpleAndAnimatedImageView(data, imageBitmap, file, imageProvider, smallView, @Composable { painter, onClick -> ImageView(painter, image, file.fileSource, onClick) })
     } else {
       imageView(base64ToBitmap(image), onClick = {
         if (file != null) {
@@ -269,7 +269,7 @@ fun CIImageView(
     if (!smallView && (!showDownloadButton(file?.fileStatus) || !blurred.value)) {
       loadingIndicator()
     } else if (smallView && file?.showStatusIconInSmallView == true) {
-      Box(Modifier.align(Alignment.Center)) {
+      Box(Modifier.matchParentSize(), contentAlignment = Alignment.Center) {
         loadingIndicator()
       }
     }
@@ -285,5 +285,6 @@ expect fun SimpleAndAnimatedImageView(
   imageBitmap: ImageBitmap,
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
+  smallView: Boolean,
   ImageView: @Composable (painter: Painter, onClick: () -> Unit) -> Unit
 )

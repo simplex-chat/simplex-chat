@@ -36,7 +36,7 @@ private val CALL_BOTTOM_ICON_OFFSET = (-15).dp
 private val CALL_BOTTOM_ICON_HEIGHT = CALL_INTERACTIVE_AREA_HEIGHT + CALL_BOTTOM_ICON_OFFSET
 
 @Composable
-actual fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableStateFlow<AnimatedViewState>) {
+actual fun ActiveCallInteractiveArea(call: Call) {
   val onClick = { platform.androidStartCallActivity(false) }
   Box(Modifier.offset(y = CALL_TOP_OFFSET).height(CALL_INTERACTIVE_AREA_HEIGHT)) {
     val source = remember { MutableInteractionSource() }
@@ -64,6 +64,9 @@ actual fun ActiveCallInteractiveArea(call: Call, newChatSheetState: MutableState
   }
 }
 
+// Temporary solution for storing a color that needs to be applied after call ends
+var statusBarColorAfterCall = mutableIntStateOf(CurrentColors.value.colors.background.toArgb())
+
 @Composable
 private fun GreenLine(call: Call) {
   Row(
@@ -81,9 +84,10 @@ private fun GreenLine(call: Call) {
   }
   val window = (LocalContext.current as Activity).window
   DisposableEffect(Unit) {
+    statusBarColorAfterCall.intValue = window.statusBarColor
     window.statusBarColor = SimplexGreen.toArgb()
     onDispose {
-      window.statusBarColor = Color.Black.toArgb()
+      window.statusBarColor = statusBarColorAfterCall.intValue
     }
   }
 }

@@ -335,7 +335,8 @@
 "above, then choose:" = "по-горе, след това избери:";
 
 /* accept contact request via notification
-   accept incoming call via notification */
+   accept incoming call via notification
+   swipe action */
 "Accept" = "Приеми";
 
 /* No comment provided by engineer. */
@@ -344,7 +345,8 @@
 /* notification body */
 "Accept contact request from %@?" = "Приемане на заявка за контакт от %@?";
 
-/* accept contact request via notification */
+/* accept contact request via notification
+   swipe action */
 "Accept incognito" = "Приеми инкогнито";
 
 /* call status */
@@ -807,7 +809,7 @@
 /* No comment provided by engineer. */
 "Choose from library" = "Избери от библиотеката";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Clear" = "Изчисти";
 
 /* No comment provided by engineer. */
@@ -985,9 +987,6 @@
 "Contact is connected" = "Контактът е свързан";
 
 /* No comment provided by engineer. */
-"Contact is not connected yet!" = "Контактът все още не е свързан!";
-
-/* No comment provided by engineer. */
 "Contact name" = "Име на контакт";
 
 /* No comment provided by engineer. */
@@ -1161,7 +1160,8 @@
 /* No comment provided by engineer. */
 "default (yes)" = "по подразбиране (да)";
 
-/* chat item action */
+/* chat item action
+   swipe action */
 "Delete" = "Изтрий";
 
 /* No comment provided by engineer. */
@@ -1199,12 +1199,6 @@
 
 /* No comment provided by engineer. */
 "Delete contact" = "Изтрий контакт";
-
-/* No comment provided by engineer. */
-"Delete Contact" = "Изтрий контакт";
-
-/* No comment provided by engineer. */
-"Delete contact?\nThis cannot be undone!" = "Изтрий контакт?\nТова не може да бъде отменено!";
 
 /* No comment provided by engineer. */
 "Delete database" = "Изтрий базата данни";
@@ -1259,9 +1253,6 @@
 
 /* No comment provided by engineer. */
 "Delete old database?" = "Изтрий старата база данни?";
-
-/* No comment provided by engineer. */
-"Delete pending connection" = "Изтрий предстоящата връзка";
 
 /* No comment provided by engineer. */
 "Delete pending connection?" = "Изтрий предстоящата връзка?";
@@ -1654,9 +1645,6 @@
 "Error deleting connection" = "Грешка при изтриване на връзката";
 
 /* No comment provided by engineer. */
-"Error deleting contact" = "Грешка при изтриване на контакт";
-
-/* No comment provided by engineer. */
 "Error deleting database" = "Грешка при изтриване на базата данни";
 
 /* No comment provided by engineer. */
@@ -1816,7 +1804,7 @@
 /* No comment provided by engineer. */
 "Faster joining and more reliable messages." = "По-бързо присъединяване и по-надеждни съобщения.";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Favorite" = "Любим";
 
 /* No comment provided by engineer. */
@@ -2284,7 +2272,7 @@
 /* No comment provided by engineer. */
 "Japanese interface" = "Японски интерфейс";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Join" = "Присъединяване";
 
 /* No comment provided by engineer. */
@@ -2335,7 +2323,7 @@
 /* No comment provided by engineer. */
 "Learn more" = "Научете повече";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Leave" = "Напусни";
 
 /* No comment provided by engineer. */
@@ -2563,13 +2551,13 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "Множество профили за чат";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Mute" = "Без звук";
 
 /* No comment provided by engineer. */
 "Muted when inactive!" = "Без звук при неактивност!";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Name" = "Име";
 
 /* No comment provided by engineer. */
@@ -2691,7 +2679,7 @@
    time to disappear */
 "off" = "изключено";
 
-/* No comment provided by engineer. */
+/* blur media */
 "Off" = "Изключено";
 
 /* feature offered item */
@@ -2719,10 +2707,10 @@
 "One-time invitation link" = "Линк за еднократна покана";
 
 /* No comment provided by engineer. */
-"Onion hosts will be required for connection. Requires enabling VPN." = "За свързване ще са необходими Onion хостове. Изисква се активиране на VPN.";
+"Onion hosts will be **required** for connection.\nRequires compatible VPN." = "За свързване ще са **необходими** Onion хостове.\nИзисква се активиране на VPN.";
 
 /* No comment provided by engineer. */
-"Onion hosts will be used when available. Requires enabling VPN." = "Ще се използват Onion хостове, когато са налични. Изисква се активиране на VPN.";
+"Onion hosts will be used when available.\nRequires compatible VPN." = "Ще се използват Onion хостове, когато са налични.\nИзисква се активиране на VPN.";
 
 /* No comment provided by engineer. */
 "Onion hosts will not be used." = "Няма се използват Onion хостове.";
@@ -3021,7 +3009,7 @@
 /* chat item menu */
 "React…" = "Реагирай…";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Read" = "Прочетено";
 
 /* No comment provided by engineer. */
@@ -3096,7 +3084,8 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Намалена консумация на батерията";
 
-/* reject incoming call via notification */
+/* reject incoming call via notification
+   swipe action */
 "Reject" = "Отхвърляне";
 
 /* No comment provided by engineer. */
@@ -3203,9 +3192,6 @@
 
 /* chat item action */
 "Reveal" = "Покажи";
-
-/* No comment provided by engineer. */
-"Revert" = "Отмени промените";
 
 /* No comment provided by engineer. */
 "Revoke" = "Отзови";
@@ -3336,7 +3322,7 @@
 /* chat item text */
 "security code changed" = "кодът за сигурност е променен";
 
-/* No comment provided by engineer. */
+/* chat item action */
 "Select" = "Избери";
 
 /* No comment provided by engineer. */
@@ -3362,9 +3348,6 @@
 
 /* No comment provided by engineer. */
 "send direct message" = "изпрати лично съобщение";
-
-/* No comment provided by engineer. */
-"Send direct message" = "Изпрати лично съобщение";
 
 /* No comment provided by engineer. */
 "Send direct message to connect" = "Изпрати лично съобщение за свързване";
@@ -3589,9 +3572,6 @@
 "Small groups (max 20)" = "Малки групи (максимум 20)";
 
 /* No comment provided by engineer. */
-"SMP servers" = "SMP сървъри";
-
-/* No comment provided by engineer. */
 "Some non-fatal errors occurred during import - you may see Chat console for more details." = "Някои не-фатални грешки са възникнали по време на импортиране - може да видите конзолата за повече подробности.";
 
 /* notification title */
@@ -3689,9 +3669,6 @@
 
 /* No comment provided by engineer. */
 "Tap to scan" = "Докосни за сканиране";
-
-/* No comment provided by engineer. */
-"Tap to start a new chat" = "Докосни за започване на нов чат";
 
 /* No comment provided by engineer. */
 "TCP connection timeout" = "Времето на изчакване за установяване на TCP връзка";
@@ -3906,7 +3883,7 @@
 /* No comment provided by engineer. */
 "Unexpected migration state" = "Неочаквано състояние на миграция";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unfav." = "Премахни от любимите";
 
 /* No comment provided by engineer. */
@@ -3954,10 +3931,10 @@
 /* authentication reason */
 "Unlock app" = "Отключи приложението";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unmute" = "Уведомявай";
 
-/* No comment provided by engineer. */
+/* swipe action */
 "Unread" = "Непрочетено";
 
 /* No comment provided by engineer. */
@@ -3967,16 +3944,10 @@
 "Update" = "Актуализация";
 
 /* No comment provided by engineer. */
-"Update .onion hosts setting?" = "Актуализиране на настройката за .onion хостове?";
-
-/* No comment provided by engineer. */
 "Update database passphrase" = "Актуализирай паролата на базата данни";
 
 /* No comment provided by engineer. */
 "Update network settings?" = "Актуализиране на мрежовите настройки?";
-
-/* No comment provided by engineer. */
-"Update transport isolation mode?" = "Актуализиране на режима на изолация на транспорта?";
 
 /* rcv group event chat item */
 "updated group profile" = "актуализиран профил на групата";
@@ -3986,9 +3957,6 @@
 
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Актуализирането на настройките ще свърже отново клиента към всички сървъри.";
-
-/* No comment provided by engineer. */
-"Updating this setting will re-connect the client to all servers." = "Актуализирането на тази настройка ще свърже повторно клиента към всички сървъри.";
 
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Актуализирай и отвори чата";
@@ -4037,9 +4005,6 @@
 
 /* No comment provided by engineer. */
 "User profile" = "Потребителски профил";
-
-/* No comment provided by engineer. */
-"Using .onion hosts requires compatible VPN provider." = "Използването на .onion хостове изисква съвместим VPN доставчик.";
 
 /* No comment provided by engineer. */
 "Using SimpleX Chat servers." = "Използват се сървърите на SimpleX Chat.";
@@ -4209,9 +4174,6 @@
 /* No comment provided by engineer. */
 "Wrong passphrase!" = "Грешна парола!";
 
-/* No comment provided by engineer. */
-"XFTP servers" = "XFTP сървъри";
-
 /* pref value */
 "yes" = "да";
 
@@ -4348,9 +4310,6 @@
 "You have already requested connection!\nRepeat connection request?" = "Вече сте направили заявката за връзка!\nИзпрати отново заявката за свързване?";
 
 /* No comment provided by engineer. */
-"You have no chats" = "Нямате чатове";
-
-/* No comment provided by engineer. */
 "You have to enter passphrase every time the app starts - it is not stored on the device." = "Трябва да въвеждате парола при всяко стартиране на приложението - тя не се съхранява на устройството.";
 
 /* No comment provided by engineer. */
@@ -4439,9 +4398,6 @@
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Вашите чат профили";
-
-/* No comment provided by engineer. */
-"Your contact needs to be online for the connection to complete.\nYou can cancel this connection and remove the contact (and try later with a new link)." = "Вашият контакт трябва да бъде онлайн, за да осъществите връзката.\nМожете да откажете тази връзка и да премахнете контакта (и да опитате по -късно с нов линк).";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Вашият контакт изпрати файл, който е по-голям от поддържания в момента максимален размер (%@).";

@@ -18,7 +18,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -30,7 +30,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
   val currentVersion = remember { mutableStateOf(versionDescriptions.lastIndex) }
 
   @Composable
-  fun featureDescription(icon: Painter, titleId: StringResource, descrId: StringResource, link: String?) {
+  fun featureDescription(icon: ImageResource?, titleId: StringResource, descrId: StringResource?, link: String?, subfeatures: List<Pair<ImageResource, StringResource>>) {
     @Composable
     fun linkButton(link: String) {
       val uriHandler = LocalUriHandler.current
@@ -47,7 +47,7 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.padding(bottom = 4.dp)
       ) {
-        Icon(icon, stringResource(titleId), tint = MaterialTheme.colors.secondary)
+        if (icon != null)  Icon(painterResource(icon), stringResource(titleId), tint = MaterialTheme.colors.secondary)
         Text(
           generalGetString(titleId),
           maxLines = 2,
@@ -59,7 +59,17 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
           linkButton(link)
         }
       }
-      Text(generalGetString(descrId), fontSize = 15.sp)
+      if (descrId != null) Text(generalGetString(descrId), fontSize = 15.sp)
+      for ((si, sd) in subfeatures) {
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
+          modifier = Modifier.padding(bottom = 4.dp)
+        ) {
+          Icon(painterResource(si), stringResource(sd), tint = MaterialTheme.colors.secondary)
+          Text(generalGetString(sd), fontSize = 15.sp)
+        }
+      }
     }
   }
 
@@ -115,7 +125,9 @@ fun WhatsNewView(viaSettings: Boolean = false, close: () -> Unit) {
       AppBarTitle(String.format(generalGetString(MR.strings.new_in_version), v.version), bottomPadding = DEFAULT_PADDING)
 
       v.features.forEach { feature ->
-        featureDescription(painterResource(feature.icon), feature.titleId, feature.descrId, feature.link)
+        if (feature.show) {
+          featureDescription(feature.icon, feature.titleId, feature.descrId, feature.link, feature.subfeatures)
+        }
       }
 
       if (v.post != null) {
@@ -155,10 +167,12 @@ fun ReadMoreButton(url: String) {
 }
 
 private data class FeatureDescription(
-  val icon: ImageResource,
+  val icon: ImageResource?,
   val titleId: StringResource,
-  val descrId: StringResource,
-  val link: String? = null
+  val descrId: StringResource?,
+  var subfeatures: List<Pair<ImageResource, StringResource>> = listOf(),
+  val link: String? = null,
+  val show: Boolean = true
 )
 
 private data class VersionDescription(
@@ -587,6 +601,54 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       )
     )
   ),
+  VersionDescription(
+    version = "v6.0",
+    post = "https://simplex.chat/blog/20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.html",
+    features = listOf(
+      FeatureDescription(
+        icon = null,
+        titleId = MR.strings.v6_0_new_chat_experience,
+        descrId = null,
+        subfeatures = listOf(
+          MR.images.ic_add_link to MR.strings.v6_0_connect_faster_descr,
+          MR.images.ic_inventory_2 to MR.strings.v6_0_your_contacts_descr,
+          MR.images.ic_delete to MR.strings.v6_0_delete_many_messages_descr,
+          MR.images.ic_match_case to MR.strings.v6_0_increase_font_size
+        )
+      ),
+      FeatureDescription(
+        icon = null,
+        titleId = MR.strings.v6_0_new_media_options,
+        descrId = null,
+        subfeatures = listOf(
+          MR.images.ic_play_arrow_filled to MR.strings.v6_0_chat_list_media,
+          MR.images.ic_blur_on to MR.strings.v6_0_privacy_blur,
+        )
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_toast,
+        titleId = MR.strings.v6_0_reachable_chat_toolbar,
+        descrId = MR.strings.v6_0_reachable_chat_toolbar_descr,
+        show = appPlatform.isAndroid
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_settings_ethernet,
+        titleId = MR.strings.v5_8_private_routing,
+        descrId = MR.strings.v6_0_private_routing_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_wifi_tethering,
+        titleId = MR.strings.v6_0_connection_servers_status,
+        descrId = MR.strings.v6_0_connection_servers_status_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_upgrade,
+        titleId = MR.strings.v6_0_upgrade_app,
+        descrId = MR.strings.v6_0_upgrade_app_descr,
+        show = appPlatform.isDesktop
+      ),
+    ),
+  )
 )
 
 private val lastVersion = versionDescriptions.last().version

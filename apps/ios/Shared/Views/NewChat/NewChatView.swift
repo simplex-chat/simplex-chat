@@ -17,10 +17,19 @@ struct SomeAlert: Identifiable {
     var id: String
 }
 
+struct SomeActionSheet: Identifiable {
+    var actionSheet: ActionSheet
+    var id: String
+}
+
+struct SomeSheet<Content: View>: Identifiable {
+    @ViewBuilder var content: Content
+    var id: String
+}
+
 private enum NewChatViewAlert: Identifiable {
     case planAndConnectAlert(alert: PlanAndConnectAlert)
     case newChatSomeAlert(alert: SomeAlert)
-
     var id: String {
         switch self {
         case let .planAndConnectAlert(alert): return "planAndConnectAlert \(alert.id)"
@@ -47,22 +56,10 @@ struct NewChatView: View {
     @State private var creatingConnReq = false
     @State private var pastedLink: String = ""
     @State private var alert: NewChatViewAlert?
+    @Binding var parentAlert: SomeAlert?
 
     var body: some View {
         VStack(alignment: .leading) {
-            HStack {
-                Text("New chat")
-                    .font(.largeTitle)
-                    .bold()
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer()
-                InfoSheetButton {
-                    AddContactLearnMore(showTitle: true)
-                }
-            }
-            .padding()
-            .padding(.top)
-
             Picker("New chat", selection: $selection) {
                 Label("Add contact", systemImage: "link")
                     .tag(NewChatOption.invite)
@@ -88,6 +85,7 @@ struct NewChatView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .modifier(ThemedBackground(grouped: true))
             .background(
                 // Rectangle is needed for swipe gesture to work on mostly empty views (creatingLinkProgressView and retryButton)
                 Rectangle()
@@ -110,6 +108,13 @@ struct NewChatView: View {
                 }
             )
         }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                InfoSheetButton {
+                    AddContactLearnMore(showTitle: true)
+                }
+            }
+        }
         .modifier(ThemedBackground(grouped: true))
         .onChange(of: invitationUsed) { used in
             if used && !(m.showingInvitation?.connChatUsed ?? true) {
@@ -119,19 +124,22 @@ struct NewChatView: View {
         .onDisappear {
             if !(m.showingInvitation?.connChatUsed ?? true),
                let conn = contactConnection {
-                AlertManager.shared.showAlert(Alert(
-                    title: Text("Keep unused invitation?"),
-                    message: Text("You can view invitation link again in connection details."),
-                    primaryButton: .default(Text("Keep")) {},
-                    secondaryButton: .destructive(Text("Delete")) {
-                        Task {
-                            await deleteChat(Chat(
-                                chatInfo: .contactConnection(contactConnection: conn),
-                                chatItems: []
-                            ))
+                parentAlert = SomeAlert(
+                    alert: Alert(
+                        title: Text("Keep unused invitation?"),
+                        message: Text("You can view invitation link again in connection details."),
+                        primaryButton: .default(Text("Keep")) {},
+                        secondaryButton: .destructive(Text("Delete")) {
+                            Task {
+                                await deleteChat(Chat(
+                                    chatInfo: .contactConnection(contactConnection: conn),
+                                    chatItems: []
+                                ))
+                            }
                         }
-                    }
-                ))
+                    ),
+                    id: "keepUnusedInvitation"
+                )
             }
             m.showingInvitation = nil
         }
@@ -837,7 +845,10 @@ private func connectContactViaAddress_(_ contact: Contact, dismiss: Bool, incogn
                 dismissAllSheets(animated: true)
             }
         }
-        _ = await connectContactViaAddress(contact.contactId, incognito)
+        let ok = await connectContactViaAddress(contact.contactId, incognito, showAlert: { AlertManager.shared.showAlert($0) })
+        if ok {
+            AlertManager.shared.showAlert(connReqSentAlert(.contact))
+        }
         cleanup?()
     }
 }
@@ -887,11 +898,11 @@ func openKnownContact(_ contact: Contact, dismiss: Bool, showAlreadyExistsAlert:
             DispatchQueue.main.async {
                 if dismiss {
                     dismissAllSheets(animated: true) {
-                        m.chatId = c.id
+                        ItemsModel.shared.loadOpenChat(c.id)
                         showAlreadyExistsAlert?()
                     }
                 } else {
-                    m.chatId = c.id
+                    ItemsModel.shared.loadOpenChat(c.id)
                     showAlreadyExistsAlert?()
                 }
             }
@@ -906,11 +917,11 @@ func openKnownGroup(_ groupInfo: GroupInfo, dismiss: Bool, showAlreadyExistsAler
             DispatchQueue.main.async {
                 if dismiss {
                     dismissAllSheets(animated: true) {
-                        m.chatId = g.id
+                        ItemsModel.shared.loadOpenChat(g.id)
                         showAlreadyExistsAlert?()
                     }
                 } else {
-                    m.chatId = g.id
+                    ItemsModel.shared.loadOpenChat(g.id)
                     showAlreadyExistsAlert?()
                 }
             }
@@ -961,8 +972,13 @@ func connReqSentAlert(_ type: ConnReqType) -> Alert {
     )
 }
 
-#Preview {
-    NewChatView(
-        selection: .invite
-    )
+struct NewChatView_Previews: PreviewProvider {
+    static var previews: some View {
+        @State var parentAlert: SomeAlert?
+
+        NewChatView(
+            selection: .invite,
+            parentAlert: $parentAlert
+        )
+    }
 }

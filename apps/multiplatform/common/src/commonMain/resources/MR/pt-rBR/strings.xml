@@ -482,7 +482,6 @@
     <string name="old_database_archive">Arquivo de banco de dados antigo</string>
     <string name="button_add_members">Convidar membros</string>
     <string name="no_contacts_selected">Nenhum contato selecionado</string>
-    <string name="network_options_revert">Reverter</string>
     <string name="network_options_save">Salvar</string>
     <string name="reset_color">Redefinir cores</string>
     <string name="v4_5_italian_interface">interface italiana</string>
@@ -647,7 +646,6 @@
     <string name="network_use_onion_hosts_no_desc">Onion hosts não serão usados.</string>
     <string name="network_use_onion_hosts_required_desc">Os hosts Onion serão necessários para a conexão.
 \nAtenção: você não será capaz de se conectar aos servidores sem um endereço .onion</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Os hosts Onion serão necessários para a conexão.</string>
     <string name="core_version">Versão principal: v%s</string>
     <string name="read_more_in_github_with_link"><![CDATA[Leia mais no nosso <font color="#0088ff">repositório do GitHub</font>.]]></string>
     <string name="onboarding_notifications_mode_subtitle">Pode ser mudado mais tarde via configurações.</string>
@@ -761,9 +759,7 @@
     <string name="v4_6_hidden_chat_profiles_descr">Proteja seus perfis de bate-papo com uma senha!</string>
     <string name="this_text_is_available_in_settings">Este texto está disponível nas configurações</string>
     <string name="scan_code">Escanear código</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Hosts Onion não serão usados.</string>
     <string name="network_use_onion_hosts_prefer_desc">Os hosts Onion serão usados quando disponíveis.</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Os hosts Onion serão usados quando disponíveis.</string>
     <string name="your_current_profile">Seu perfil atual</string>
     <string name="privacy_redefined">Privacidade redefinida</string>
     <string name="onboarding_notifications_mode_title">Notificações privadas</string>
@@ -963,7 +959,6 @@
     <string name="share_message">Compartilhar mensagem…</string>
     <string name="personal_welcome">Bem-vindo(a) %1$s!</string>
     <string name="group_preview_you_are_invited">você está convidado para o grupo</string>
-    <string name="update_onion_hosts_settings_question">Atualizar configuração de hosts .onion\?</string>
     <string name="use_chat">Usar bate-papo</string>
     <string name="voice_prohibited_in_this_chat">Mensagens de voz são proibidas neste chat.</string>
     <string name="video_descr">Vídeo</string>
@@ -1658,4 +1653,10 @@
     <string name="allow_to_send_simplex_links">Permitir o envio de links do SimpleX.</string>
     <string name="feature_roles_all_members">Todos os membros</string>
     <string name="wallpaper_advanced_settings">Configurações avançadas</string>
+    <string name="app_check_for_updates_notice_title">Verificar atualizações</string>
+    <string name="completed">Completado</string>
+    <string name="smp_servers_configured">Servidores SMP configurados</string>
+    <string name="xftp_servers_configured">Servidores XFTP configurados</string>
+    <string name="migrate_from_device_check_connection_and_try_again">Verifique sua conexão de internet e tente novamente</string>
+    <string name="app_check_for_updates">Verificar atualizações</string>
 </resources>

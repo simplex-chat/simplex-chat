@@ -1,0 +1,111 @@
+/* No comment provided by engineer. */
+"%@" = "%@";
+
+/* No comment provided by engineer. */
+"App is locked!" = "App is vergrendeld!";
+
+/* No comment provided by engineer. */
+"Cancel" = "Annuleren";
+
+/* No comment provided by engineer. */
+"Cannot access keychain to save database password" = "Kan geen toegang krijgen tot de keychain om het database wachtwoord op te slaan";
+
+/* No comment provided by engineer. */
+"Cannot forward message" = "Kan bericht niet doorsturen";
+
+/* No comment provided by engineer. */
+"Comment" = "Opmerking";
+
+/* No comment provided by engineer. */
+"Currently maximum supported file size is %@." = "De momenteel maximaal ondersteunde bestandsgrootte is %@.";
+
+/* No comment provided by engineer. */
+"Database downgrade required" = "Database downgrade vereist";
+
+/* No comment provided by engineer. */
+"Database encrypted!" = "Database versleuteld!";
+
+/* No comment provided by engineer. */
+"Database error" = "Database fout";
+
+/* No comment provided by engineer. */
+"Database passphrase is different from saved in the keychain." = "Het wachtwoord van de database verschilt van het wachtwoord die in de keychain is opgeslagen.";
+
+/* No comment provided by engineer. */
+"Database passphrase is required to open chat." = "Database wachtwoord is vereist om je gesprekken te openen.";
+
+/* No comment provided by engineer. */
+"Database upgrade required" = "Database upgrade vereist";
+
+/* No comment provided by engineer. */
+"Error preparing file" = "Fout bij voorbereiden bestand";
+
+/* No comment provided by engineer. */
+"Error preparing message" = "Fout bij het voorbereiden van bericht";
+
+/* No comment provided by engineer. */
+"Error: %@" = "Fout: %@";
+
+/* No comment provided by engineer. */
+"File error" = "Bestandsfout";
+
+/* No comment provided by engineer. */
+"Incompatible database version" = "Incompatibele database versie";
+
+/* No comment provided by engineer. */
+"Invalid migration confirmation" = "Ongeldige migratie bevestiging";
+
+/* No comment provided by engineer. */
+"Keychain error" = "Keychain fout";
+
+/* No comment provided by engineer. */
+"Large file!" = "Groot bestand!";
+
+/* No comment provided by engineer. */
+"No active profile" = "Geen actief profiel";
+
+/* No comment provided by engineer. */
+"Ok" = "Ok";
+
+/* No comment provided by engineer. */
+"Open the app to downgrade the database." = "Open de app om de database te downgraden.";
+
+/* No comment provided by engineer. */
+"Open the app to upgrade the database." = "Open de app om de database te upgraden.";
+
+/* No comment provided by engineer. */
+"Passphrase" = "Wachtwoord";
+
+/* No comment provided by engineer. */
+"Please create a profile in the SimpleX app" = "Maak een profiel aan in de SimpleX app";
+
+/* No comment provided by engineer. */
+"Selected chat preferences prohibit this message." = "Geselecteerde chat voorkeuren verbieden dit bericht.";
+
+/* No comment provided by engineer. */
+"Sending a message takes longer than expected." = "Het verzenden van een bericht duurt langer dan verwacht.";
+
+/* No comment provided by engineer. */
+"Sending message…" = "Bericht versturen…";
+
+/* No comment provided by engineer. */
+"Share" = "Deel";
+
+/* No comment provided by engineer. */
+"Slow network?" = "Traag netwerk?";
+
+/* No comment provided by engineer. */
+"Unknown database error: %@" = "Onbekende database fout: %@";
+
+/* No comment provided by engineer. */
+"Unsupported format" = "Niet ondersteund formaat";
+
+/* No comment provided by engineer. */
+"Wait" = "wachten";
+
+/* No comment provided by engineer. */
+"Wrong database passphrase" = "Verkeerde database wachtwoord";
+
+/* No comment provided by engineer. */
+"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "U kunt delen toestaan in de instellingen voor Privacy en beveiliging / SimpleX Lock.";
+

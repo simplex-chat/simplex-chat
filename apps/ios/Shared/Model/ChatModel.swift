@@ -50,11 +50,76 @@ class ItemsModel: ObservableObject {
     var reversedChatItems: [ChatItem] = [] {
         willSet { publisher.send() }
     }
+    var itemAdded = false {
+        willSet { publisher.send() }
+    }
+    
+    // Publishes directly to `objectWillChange` publisher,
+    // this will cause reversedChatItems to be rendered without throttling
+    @Published var isLoading = false
+    @Published var showLoadingProgress = false
+
     init() {
         publisher
             .throttle(for: 0.25, scheduler: DispatchQueue.main, latest: true)
             .sink { self.objectWillChange.send() }
             .store(in: &bag)
+    }
+
+    func loadOpenChat(_ chatId: ChatId, willNavigate: @escaping () -> Void = {}) {
+        let navigationTimeout = Task {
+            do {
+                try await Task.sleep(nanoseconds: 250_000000)
+                await MainActor.run {
+                    willNavigate()
+                    ChatModel.shared.chatId = chatId
+                }
+            } catch {}
+        }
+        let progressTimeout = Task {
+            do {
+                try await Task.sleep(nanoseconds: 1500_000000)
+                await MainActor.run { showLoadingProgress = true }
+            } catch {}
+        }
+        Task {
+            if let chat = ChatModel.shared.getChat(chatId) {
+                await MainActor.run { self.isLoading = true }
+//                try? await Task.sleep(nanoseconds: 5000_000000)
+                await loadChat(chat: chat)
+                navigationTimeout.cancel()
+                progressTimeout.cancel()
+                await MainActor.run {
+                    self.isLoading = false
+                    self.showLoadingProgress = false
+                    willNavigate()
+                    ChatModel.shared.chatId = chatId
+                }
+            }
+        }
+    }
+}
+
+class NetworkModel: ObservableObject {
+    // map of connections network statuses, key is agent connection id
+    @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
+
+    static let shared = NetworkModel()
+
+    private init() { }
+
+    func setContactNetworkStatus(_ contact: Contact, _ status: NetworkStatus) {
+        if let conn = contact.activeConn {
+            networkStatuses[conn.agentConnId] = status
+        }
+    }
+
+    func contactNetworkStatus(_ contact: Contact) -> NetworkStatus {
+        if let conn = contact.activeConn {
+            networkStatuses[conn.agentConnId] ?? .unknown
+        } else {
+            .unknown
+        }
     }
 }
 
@@ -80,8 +145,6 @@ final class ChatModel: ObservableObject {
     // list of chat "previews"
     @Published var chats: [Chat] = []
     @Published var deletedChats: Set<String> = []
-    // map of connections network statuses, key is agent connection id
-    @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
     // current chat
     @Published var chatId: String?
     var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
@@ -228,10 +291,17 @@ final class ChatModel: ObservableObject {
         chats.firstIndex(where: { $0.id == id })
     }
 
-    func addChat(_ chat: Chat, at position: Int = 0) {
-        withAnimation {
-            chats.insert(chat, at: position)
+    func addChat(_ chat: Chat) {
+        if chatId == nil {
+            withAnimation { addChat_(chat, at: 0) }
+        } else {
+            addChat_(chat, at: 0)
         }
+        popChatCollector.throttlePopChat(chat.chatInfo.id, currentPosition: 0)
+    }
+
+    func addChat_(_ chat: Chat, at position: Int = 0) {
+        chats.insert(chat, at: position)
     }
 
     func updateChatInfo(_ cInfo: ChatInfo) {
@@ -305,10 +375,11 @@ final class ChatModel: ObservableObject {
                     }
                 }
             } else {
-                addChat(Chat(c), at: i)
+                addChat_(Chat(c), at: i)
             }
         }
         NtfManager.shared.setNtfBadgeCount(totalUnreadCountForAllUsers())
+        popChatCollector.clear()
     }
 
 //    func addGroup(_ group: SimpleXChat.Group) {
@@ -316,6 +387,12 @@ final class ChatModel: ObservableObject {
 //    }
 
     func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+        // mark chat non deleted
+        if case let .direct(contact) = cInfo, contact.chatDeleted {
+            var updatedContact = contact
+            updatedContact.chatDeleted = false
+            updateContact(updatedContact)
+        }
         // update previews
         if let i = getChatIndex(cInfo.id) {
             chats[i].chatItems = switch cInfo {
@@ -333,18 +410,9 @@ final class ChatModel: ObservableObject {
                 [cItem]
             }
             if case .rcvNew = cItem.meta.itemStatus {
-                chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount + 1
-                increaseUnreadCounter(user: currentUser!)
+                unreadCollector.changeUnreadCounter(cInfo.id, by: 1)
             }
-            if i > 0 {
-                if chatId == nil {
-                    withAnimation { popChat_(i) }
-                } else if chatId == cInfo.id  {
-                    chatToTop = cInfo.id
-                } else {
-                    popChat_(i)
-                }
-            }
+            popChatCollector.throttlePopChat(cInfo.id, currentPosition: i)
         } else {
             addChat(Chat(chatInfo: cInfo, chatItems: [cItem]))
         }
@@ -390,6 +458,7 @@ final class ChatModel: ObservableObject {
                     ci.meta.itemStatus = status
                 }
                 im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
+                im.itemAdded = true
             }
             return true
         }
@@ -422,8 +491,8 @@ final class ChatModel: ObservableObject {
     }
 
     func removeChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
-        if cItem.isRcvNew, let chatIndex = getChatIndex(cInfo.id) {
-            decreaseUnreadCounter(chatIndex)
+        if cItem.isRcvNew {
+            unreadCollector.changeUnreadCounter(cInfo.id, by: -1)
         }
         // update previews
         if let chat = getChat(cInfo.id) {
@@ -484,6 +553,7 @@ final class ChatModel: ObservableObject {
         let cItem = ChatItem.liveDummy(chatInfo.chatType)
         withAnimation {
             im.reversedChatItems.insert(cItem, at: 0)
+            im.itemAdded = true
         }
         return cItem
     }
@@ -572,14 +642,13 @@ final class ChatModel: ObservableObject {
     func markChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
         if chatId == cInfo.id,
            let itemIndex = getChatItemIndex(cItem),
-           let chatIndex = getChatIndex(cInfo.id),
            im.reversedChatItems[itemIndex].isRcvNew {
             await MainActor.run {
                 withTransaction(Transaction()) {
                     // update current chat
                     markChatItemRead_(itemIndex)
                     // update preview
-                    unreadCollector.decreaseUnreadCounter(chatIndex)
+                    unreadCollector.changeUnreadCounter(cInfo.id, by: -1)
                 }
             }
         }
@@ -588,26 +657,92 @@ final class ChatModel: ObservableObject {
     private let unreadCollector = UnreadCollector()
 
     class UnreadCollector {
-        private let subject = PassthroughSubject<Int, Never>()
+        private let subject = PassthroughSubject<Void, Never>()
         private var bag = Set<AnyCancellable>()
-        private var dictionary = Dictionary<Int, Int>()
+        private var unreadCounts: [ChatId: Int] = [:]
 
         init() {
             subject
                 .debounce(for: 1, scheduler: DispatchQueue.main)
-                .sink { _ in
-                    self.dictionary.forEach { key, value in
-                        ChatModel.shared.decreaseUnreadCounter(key, by: value)
+                .sink {
+                    let m = ChatModel.shared
+                    for (chatId, count) in self.unreadCounts {
+                        if let i = m.getChatIndex(chatId) {
+                            m.changeUnreadCounter(i, by: count)
+                        }
                     }
-                    self.dictionary = Dictionary<Int, Int>()
+                    self.unreadCounts = [:]
                 }
                 .store(in: &bag)
         }
+
+        func changeUnreadCounter(_ chatId: ChatId, by count: Int) {
+            DispatchQueue.main.async {
+                self.unreadCounts[chatId] = (self.unreadCounts[chatId] ?? 0) + count
+            }
+            subject.send()
+        }
+    }
+
+    let popChatCollector = PopChatCollector()
+    
+    class PopChatCollector {
+        private let subject = PassthroughSubject<Void, Never>()
+        private var bag = Set<AnyCancellable>()
+        private var chatsToPop: [ChatId: Date] = [:]
+        private let popTsComparator = KeyPathComparator<Chat>(\.popTs, order: .reverse)
+
+        init() {
+            subject
+                .throttle(for: 2, scheduler: DispatchQueue.main, latest: true)
+                .sink { self.popCollectedChats() }
+                .store(in: &bag)
+        }
         
-        // Only call from main thread
-        func decreaseUnreadCounter(_ chatIndex: Int) {
-            dictionary[chatIndex] = (dictionary[chatIndex] ?? 0) + 1
-            subject.send(chatIndex)
+        func throttlePopChat(_ chatId: ChatId, currentPosition: Int) {
+            let m = ChatModel.shared
+            if currentPosition > 0 && m.chatId == chatId {
+                m.chatToTop = chatId
+            }
+            if currentPosition > 0 || !chatsToPop.isEmpty {
+                chatsToPop[chatId] = Date.now
+                subject.send()
+            }
+        }
+        
+        func clear() {
+            chatsToPop = [:]
+        }
+
+        func popCollectedChats() {
+            let m = ChatModel.shared
+            var ixs: IndexSet = []
+            var chs: [Chat] = []
+            // collect chats that received updates
+            for (chatId, popTs) in self.chatsToPop {
+                // Currently opened chat is excluded, removing it from the list would navigate out of it
+                // It will be popped to top later when user exits from the list.
+                if m.chatId != chatId, let i = m.getChatIndex(chatId) {
+                    ixs.insert(i)
+                    let ch = m.chats[i]
+                    ch.popTs = popTs
+                    chs.append(ch)
+                }
+            }
+
+            let removeInsert = {
+                m.chats.remove(atOffsets: ixs)
+                // sort chats by pop timestamp in descending order
+                m.chats.insert(contentsOf: chs.sorted(using: self.popTsComparator), at: 0)
+            }
+
+            if m.chatId == nil {
+                withAnimation { removeInsert() }
+            } else {
+                removeInsert()
+            }
+
+            self.chatsToPop = [:]
         }
     }
 
@@ -622,25 +757,24 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func decreaseUnreadCounter(_ chatIndex: Int, by count: Int = 1) {
-        chats[chatIndex].chatStats.unreadCount = chats[chatIndex].chatStats.unreadCount - count
-        decreaseUnreadCounter(user: currentUser!, by: count)
+    func changeUnreadCounter(_ chatIndex: Int, by count: Int) {
+        chats[chatIndex].chatStats.unreadCount = chats[chatIndex].chatStats.unreadCount + count
+        changeUnreadCounter(user: currentUser!, by: count)
     }
 
     func increaseUnreadCounter(user: any UserLike) {
         changeUnreadCounter(user: user, by: 1)
-        NtfManager.shared.incNtfBadgeCount()
     }
 
     func decreaseUnreadCounter(user: any UserLike, by: Int = 1) {
         changeUnreadCounter(user: user, by: -by)
-        NtfManager.shared.decNtfBadgeCount(by: by)
     }
 
     private func changeUnreadCounter(user: any UserLike, by: Int) {
         if let i = users.firstIndex(where: { $0.user.userId == user.userId }) {
             users[i].unreadCount += by
         }
+        NtfManager.shared.changeNtfBadgeCount(by: by)
     }
 
     func totalUnreadCountForAllUsers() -> Int {
@@ -706,6 +840,7 @@ final class ChatModel: ObservableObject {
 
     func popChat(_ id: String) {
         if let i = getChatIndex(id) {
+            // no animation here, for it not to look like it just moved when leaving the chat
             popChat_(i)
         }
     }
@@ -778,7 +913,13 @@ final class ChatModel: ObservableObject {
             }
             i += 1
         }
-        return UnreadChatItemCounts(isNearBottom: totalBelow < 16, unreadBelow: unreadBelow)
+        return UnreadChatItemCounts(
+            // TODO these thresholds account for the fact that items are still "visible" while
+            // covered by compose area, they should be replaced with the actual height in pixels below the screen.
+            isNearBottom: totalBelow < 15,
+            isReallyNearBottom: totalBelow < 2,
+            unreadBelow: unreadBelow
+        )
     }
 
     func topItemInView(itemsInView: Set<String>) -> ChatItem? {
@@ -788,20 +929,6 @@ final class ChatModel: ObservableObject {
         while i < maxIx && !inView(i) { i += 1 }
         while i < maxIx && inView(i) { i += 1 }
         return im.reversedChatItems[min(i - 1, maxIx)]
-    }
-
-    func setContactNetworkStatus(_ contact: Contact, _ status: NetworkStatus) {
-        if let conn = contact.activeConn {
-            networkStatuses[conn.agentConnId] = status
-        }
-    }
-
-    func contactNetworkStatus(_ contact: Contact) -> NetworkStatus {
-        if let conn = contact.activeConn {
-            networkStatuses[conn.agentConnId] ?? .unknown
-        } else {
-            .unknown
-        }
     }
 }
 
@@ -817,6 +944,7 @@ struct NTFContactRequest {
 
 struct UnreadChatItemCounts: Equatable {
     var isNearBottom: Bool
+    var isReallyNearBottom: Bool
     var unreadBelow: Int
 }
 
@@ -825,6 +953,7 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
     @Published var chatItems: [ChatItem]
     @Published var chatStats: ChatStats
     var created = Date.now
+    fileprivate var popTs: Date?
 
     init(_ cData: ChatData) {
         self.chatInfo = cData.chatInfo
@@ -870,24 +999,6 @@ final class Chat: ObservableObject, Identifiable, ChatLike {
     var id: ChatId { get { chatInfo.id } }
 
     var viewId: String { get { "\(chatInfo.id) \(created.timeIntervalSince1970)" } }
-
-    func groupFeatureEnabled(_ feature: GroupFeature) -> Bool {
-        if case let .group(groupInfo) = self.chatInfo {
-            let p = groupInfo.fullGroupPreferences
-            return switch feature {
-            case .timedMessages: p.timedMessages.on
-            case .directMessages: p.directMessages.on(for: groupInfo.membership)
-            case .fullDelete: p.fullDelete.on
-            case .reactions: p.reactions.on
-            case .voice: p.voice.on(for: groupInfo.membership)
-            case .files: p.files.on(for: groupInfo.membership)
-            case .simplexLinks: p.simplexLinks.on(for: groupInfo.membership)
-            case .history: p.history.on
-            }
-        } else {
-            return true
-        }
-    }
 
     public static var sampleData: Chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
 }

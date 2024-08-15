@@ -174,7 +174,7 @@ public func downsampleImage(at url: URL, to size: Int64) -> UIImage? {
         if let source = CGImageSourceCreateWithURL(url as CFURL, nil) {
             CGImageSourceCreateThumbnailAtIndex(
                     source,
-                    Int.zero,
+                    0,
                     [
                         kCGImageSourceCreateThumbnailFromImageAlways: true,
                         kCGImageSourceShouldCacheImmediately: true,
@@ -426,5 +426,32 @@ public func getLinkPreview(url: URL, cb: @escaping (LinkPreview?) -> Void) {
 public func getLinkPreview(for url: URL) async -> LinkPreview? {
     await withCheckedContinuation { cont in
         getLinkPreview(url: url) { cont.resume(returning: $0) }
+    }
+}
+
+private let squareToCircleRatio = 0.935
+
+private let radiusFactor = (1 - squareToCircleRatio) / 50
+
+@ViewBuilder public func clipProfileImage(_ img: Image, size: CGFloat, radius: Double, blurred: Bool = false) -> some View {
+    if radius >= 50 {
+        blurredFrame(img, size, blurred).clipShape(Circle())
+    } else if radius <= 0 {
+        let sz = size * squareToCircleRatio
+        blurredFrame(img, sz, blurred).padding((size - sz) / 2)
+    } else {
+        let sz = size * (squareToCircleRatio + radius * radiusFactor)
+        blurredFrame(img, sz, blurred)
+        .clipShape(RoundedRectangle(cornerRadius: sz * radius / 100, style: .continuous))
+        .padding((size - sz) / 2)
+    }
+}
+
+@ViewBuilder private func blurredFrame(_ img: Image, _ size: CGFloat, _ blurred: Bool) -> some View {
+    let v = img.resizable().frame(width: size, height: size)
+    if blurred {
+        v.blur(radius: size / 4)
+    } else {
+        v
     }
 }

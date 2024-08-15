@@ -66,6 +66,7 @@ struct LocalAuthView: View {
                 m.chatId = nil
                 ItemsModel.shared.reversedChatItems = []
                 m.chats = []
+                m.popChatCollector.clear()
                 m.users = []
                 _ = kcAppPassword.set(password)
                 _ = kcSelfDestructPassword.remove()

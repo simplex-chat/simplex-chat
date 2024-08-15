@@ -17,6 +17,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.PreferenceToggleWithIcon
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -43,8 +44,10 @@ fun GroupPreferencesView(m: ChatModel, rhId: Long?, chatId: String, close: () ->
       val gp = gInfo.groupProfile.copy(groupPreferences = preferences.toGroupPreferences())
       val g = m.controller.apiUpdateGroup(rhId, gInfo.groupId, gp)
       if (g != null) {
-        m.updateGroup(rhId, g)
-        currentPreferences = preferences
+        withChats {
+          updateGroup(rhId, g)
+          currentPreferences = preferences
+        }
       }
       afterSave()
     }

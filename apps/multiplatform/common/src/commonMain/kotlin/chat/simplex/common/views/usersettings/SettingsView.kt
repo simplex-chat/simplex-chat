@@ -100,9 +100,13 @@ fun SettingsLayout(
 ) {
   val scope = rememberCoroutineScope()
   val closeSettings: () -> Unit = { scope.launch { drawerState.close() } }
+  val view = LocalMultiplatformView()
   if (drawerState.isOpen) {
     BackHandler {
       closeSettings()
+    }
+    LaunchedEffect(Unit) {
+      hideKeyboard(view)
     }
   }
   val theme = CurrentColors.collectAsState()
@@ -112,7 +116,7 @@ fun SettingsLayout(
       Modifier
         .fillMaxSize()
         .themedBackground(theme.value.base)
-        .padding(top = if (appPlatform.isAndroid) DEFAULT_PADDING else DEFAULT_PADDING * 3)
+        .padding(top = if (appPlatform.isAndroid) DEFAULT_PADDING else DEFAULT_PADDING * 2.8f)
     ) {
       AppBarTitle(stringResource(MR.strings.your_settings))
 
@@ -180,11 +184,10 @@ fun SettingsLayout(
         .height(AppBarHeight * fontSizeSqrtMultiplier)
         .background(MaterialTheme.colors.background)
         .background(if (isInDarkTheme()) ToolbarDark else ToolbarLight)
-        .padding(start = 4.dp, top = 8.dp),
+        .padding(start = 4.dp),
         contentAlignment = Alignment.CenterStart
       ) {
-        val sp24 = with(LocalDensity.current) { 24.sp.toDp() }
-        NavigationButtonBack(closeSettings, height = sp24)
+        NavigationButtonBack(closeSettings, height = 24.sp.toDp())
       }
     }
   }
@@ -328,6 +331,31 @@ fun ChatLockItem(
     TextIconSpaced()
     Text(generalGetString(MR.strings.install_simplex_chat_for_terminal), color = MaterialTheme.colors.primary)
   }
+}
+
+@Composable fun ResetHintsItem(unchangedHints: MutableState<Boolean>) {
+  SectionItemView({
+    resetHintPreferences()
+    unchangedHints.value = true
+  }, disabled = unchangedHints.value) {
+    Icon(
+      painter = painterResource(MR.images.ic_lightbulb),
+      contentDescription = "Lightbulb",
+      tint = MaterialTheme.colors.secondary,
+    )
+    TextIconSpaced()
+    Text(generalGetString(MR.strings.reset_all_hints), color = if (unchangedHints.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+  }
+}
+
+private fun resetHintPreferences() {
+  for ((pref, def) in appPreferences.hintPreferences) {
+    pref.set(def)
+  }
+}
+
+fun unchangedHintPreferences(): Boolean = appPreferences.hintPreferences.all { (pref, def) ->
+  pref.state.value == def
 }
 
 @Composable

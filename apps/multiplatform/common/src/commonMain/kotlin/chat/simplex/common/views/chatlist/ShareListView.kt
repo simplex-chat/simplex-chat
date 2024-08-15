@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.SettingsViewState
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
@@ -24,12 +25,29 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
   var searchInList by rememberSaveable { mutableStateOf("") }
   val (userPickerState, scaffoldState) = settingsState
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
+
   Scaffold(
     Modifier.padding(end = endPadding),
     contentColor = LocalContentColor.current,
     drawerContentColor = LocalContentColor.current,
     scaffoldState = scaffoldState,
-    topBar = { Column { ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() } } },
+    topBar = {
+      if (!oneHandUI.value) {
+        Column {
+          ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() }
+          Divider()
+        }
+      }
+    },
+    bottomBar = {
+      if (oneHandUI.value) {
+        Column {
+          Divider()
+          ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() }
+        }
+      }
+    }
   ) {
     val sharedContent = chatModel.sharedContent.value
     var isMediaOrFileAttachment = false
@@ -58,16 +76,15 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
     }
     Box(Modifier.padding(it)) {
       Column(
-        modifier = Modifier
-          .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
       ) {
-        if (chatModel.chats.isNotEmpty()) {
+        if (chatModel.chats.value.isNotEmpty()) {
           ShareList(
             chatModel,
             search = searchInList,
             isMediaOrFileAttachment = isMediaOrFileAttachment,
             isVoice = isVoice,
-            hasSimplexLink = hasSimplexLink
+            hasSimplexLink = hasSimplexLink,
           )
         } else {
           EmptyList()
@@ -127,7 +144,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
       })
     }
   }
-  if (chatModel.chats.size >= 8) {
+  if (chatModel.chats.value.size >= 8) {
     barButtons.add {
       IconButton({ showSearch = true }) {
         Icon(painterResource(MR.images.ic_search_500), stringResource(MR.strings.search_verb), tint = MaterialTheme.colors.primary)
@@ -173,7 +190,6 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
     onSearchValueChanged = onSearchValueChanged,
     buttons = barButtons
   )
-  Divider()
 }
 
 @Composable
@@ -182,20 +198,18 @@ private fun ShareList(
   search: String,
   isMediaOrFileAttachment: Boolean,
   isVoice: Boolean,
-  hasSimplexLink: Boolean
+  hasSimplexLink: Boolean,
 ) {
+  val oneHandUI = remember { appPrefs.oneHandUI.state }
   val chats by remember(search) {
     derivedStateOf {
-      val sorted = chatModel.chats.toList().sortedByDescending { it.chatInfo is ChatInfo.Local }
-      if (search.isEmpty()) {
-        sorted.filter { it.chatInfo.ready }
-      } else {
-        sorted.filter { it.chatInfo.ready && it.chatInfo.chatViewName.lowercase().contains(search.lowercase()) }
-      }
+      val sorted = chatModel.chats.value.toList().filter { it.chatInfo.ready }.sortedByDescending { it.chatInfo is ChatInfo.Local }
+      filteredChats(false, mutableStateOf(false), mutableStateOf(null), search, sorted)
     }
   }
   LazyColumnWithScrollBar(
-    modifier = Modifier.fillMaxWidth()
+    modifier = Modifier.fillMaxSize(),
+    reverseLayout = oneHandUI.value
   ) {
     items(chats) { chat ->
       ShareListNavLinkView(
@@ -203,7 +217,7 @@ private fun ShareList(
         chatModel,
         isMediaOrFileAttachment = isMediaOrFileAttachment,
         isVoice = isVoice,
-        hasSimplexLink = hasSimplexLink
+        hasSimplexLink = hasSimplexLink,
       )
     }
   }

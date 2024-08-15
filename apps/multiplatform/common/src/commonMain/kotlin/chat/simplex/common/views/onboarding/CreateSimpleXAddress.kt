@@ -1,15 +1,16 @@
 package chat.simplex.common.views.onboarding
 
-import SectionBottomSpacer
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.font.FontWeight
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -76,68 +77,84 @@ private fun CreateSimpleXAddressLayout(
   nextStep: () -> Unit,
 ) {
   ColumnWithScrollBar(
-    Modifier.fillMaxSize().padding(top = DEFAULT_PADDING),
+    Modifier
+      .fillMaxSize()
+      .themedBackground(),
     horizontalAlignment = Alignment.CenterHorizontally,
   ) {
+    CloseSheetBar(showClose = false, close = {})
     AppBarTitle(stringResource(MR.strings.simplex_address))
 
     Spacer(Modifier.weight(1f))
 
     if (userAddress != null) {
       SimpleXLinkQRCode(userAddress.connReqContact)
-      ShareAddressButton { share(simplexChatLink(userAddress.connReqContact)) }
+      Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+      Row {
+        ShareAddressButton { share(simplexChatLink(userAddress.connReqContact)) }
+        Spacer(Modifier.width(DEFAULT_PADDING * 2))
+        ShareViaEmailButton { sendEmail(userAddress) }
+      }
+      Spacer(Modifier.height(DEFAULT_PADDING))
       Spacer(Modifier.weight(1f))
-      ShareViaEmailButton { sendEmail(userAddress) }
-      Spacer(Modifier.weight(1f))
-      ContinueButton(nextStep)
+      Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+        OnboardingActionButton(
+          modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+          labelId = MR.strings.continue_to_next_step,
+          onboarding = null,
+          onclick = nextStep
+        )
+        // Reserve space
+        TextButtonBelowOnboardingButton("", null)
+      }
     } else {
-      CreateAddressButton(createAddress)
-      TextBelowButton(stringResource(MR.strings.you_can_make_address_visible_via_settings))
+      Button(createAddress, Modifier, shape = CircleShape, contentPadding = PaddingValues()) {
+        Icon(painterResource(MR.images.ic_mail_filled), null, Modifier.size(100.dp).background(MaterialTheme.colors.primary, CircleShape).padding(25.dp), tint = Color.White)
+      }
+      Spacer(Modifier.height(DEFAULT_PADDING))
       Spacer(Modifier.weight(1f))
-      SkipButton(nextStep)
-    }
-    SectionBottomSpacer()
-  }
-}
+      Text(stringResource(MR.strings.create_simplex_address), style = MaterialTheme.typography.h3, fontWeight = FontWeight.Bold)
+      TextBelowButton(stringResource(MR.strings.you_can_make_address_visible_via_settings))
+      Spacer(Modifier.height(DEFAULT_PADDING))
+      Spacer(Modifier.weight(1f))
 
-@Composable
-private fun CreateAddressButton(onClick: () -> Unit) {
-  TextButton(onClick) {
-    Text(stringResource(MR.strings.create_simplex_address), style = MaterialTheme.typography.h2, color = MaterialTheme.colors.primary)
+      Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+        OnboardingActionButton(
+          modifier = if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+          labelId = MR.strings.create_address_button,
+          onboarding = null,
+          onclick = createAddress
+        )
+        TextButtonBelowOnboardingButton(stringResource(MR.strings.dont_create_address), nextStep)
+      }
+    }
   }
 }
 
 @Composable
 fun ShareAddressButton(onClick: () -> Unit) {
-  SimpleButtonFrame(onClick) {
-    Icon(
-      painterResource(MR.images.ic_share_filled), generalGetString(MR.strings.share_verb), tint = MaterialTheme.colors.primary,
-      modifier = Modifier.padding(end = 8.dp).size(18.dp)
-    )
-    Text(stringResource(MR.strings.share_verb), style = MaterialTheme.typography.caption, color = MaterialTheme.colors.primary)
+  Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    IconButton(onClick, Modifier.padding(bottom = DEFAULT_PADDING_HALF).border(1.dp, MaterialTheme.colors.secondary.copy(0.1f), CircleShape)) {
+      Icon(
+        painterResource(MR.images.ic_share_filled), generalGetString(MR.strings.share_verb), tint = MaterialTheme.colors.primary,
+        modifier = Modifier.size(50.dp).padding(DEFAULT_PADDING_HALF)
+      )
+    }
+    Text(stringResource(MR.strings.share_verb))
   }
 }
 
 @Composable
 fun ShareViaEmailButton(onClick: () -> Unit) {
-  SimpleButtonFrame(onClick) {
-    Icon(
-      painterResource(MR.images.ic_mail), generalGetString(MR.strings.share_verb), tint = MaterialTheme.colors.primary,
-      modifier = Modifier.padding(end = 8.dp).size(30.dp)
-    )
-    Text(stringResource(MR.strings.invite_friends), style = MaterialTheme.typography.h6, color = MaterialTheme.colors.primary)
+  Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    IconButton(onClick, Modifier.padding(bottom = DEFAULT_PADDING_HALF).border(1.dp, MaterialTheme.colors.secondary.copy(0.1f), CircleShape)) {
+      Icon(
+        painterResource(MR.images.ic_mail), generalGetString(MR.strings.share_verb), tint = MaterialTheme.colors.primary,
+        modifier = Modifier.size(50.dp).padding(DEFAULT_PADDING_HALF)
+      )
+    }
+    Text(stringResource(MR.strings.invite_friends_short))
   }
-}
-
-@Composable
-private fun ContinueButton(onClick: () -> Unit) {
-  SimpleButtonIconEnded(stringResource(MR.strings.continue_to_next_step), painterResource(MR.images.ic_chevron_right), click = onClick)
-}
-
-@Composable
-private fun SkipButton(onClick: () -> Unit) {
-  SimpleButtonIconEnded(stringResource(MR.strings.dont_create_address), painterResource(MR.images.ic_chevron_right), click = onClick)
-  TextBelowButton(stringResource(MR.strings.you_can_create_it_later))
 }
 
 @Composable
@@ -146,8 +163,9 @@ private fun TextBelowButton(text: String) {
     text,
     Modifier
       .fillMaxWidth()
-      .padding(horizontal = DEFAULT_PADDING * 3),
+      .padding(horizontal = DEFAULT_PADDING * 3, vertical = DEFAULT_PADDING_HALF),
     style = MaterialTheme.typography.subtitle1,
+    color = MaterialTheme.colors.secondary,
     textAlign = TextAlign.Center,
   )
 }

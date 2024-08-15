@@ -1745,7 +1745,7 @@ markDirectChatItemDeleted db User {userId} Contact {contactId} ci@ChatItem {meta
       WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
     |]
     (DBCIDeleted, deletedTs, currentTs, userId, contactId, itemId)
-  pure ci {meta = meta {itemDeleted = Just $ CIDeleted $ Just deletedTs}}
+  pure ci {meta = meta {itemDeleted = Just $ CIDeleted $ Just deletedTs, editable = False, deletable = False}}
 
 getDirectChatItemBySharedMsgId :: DB.Connection -> User -> ContactId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTDirect)
 getDirectChatItemBySharedMsgId db user@User {userId} contactId sharedMsgId = do
@@ -1945,7 +1945,7 @@ markGroupChatItemDeleted db User {userId} GroupInfo {groupId} ci@ChatItem {meta}
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
     (DBCIDeleted, deletedTs, deletedByGroupMemberId, currentTs, userId, groupId, itemId)
-  pure ci {meta = meta {itemDeleted}}
+  pure ci {meta = meta {itemDeleted, editable = False, deletable = False}}
 
 markGroupChatItemBlocked :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup 'MDRcv -> IO (ChatItem 'CTGroup 'MDRcv)
 markGroupChatItemBlocked db User {userId} GroupInfo {groupId} ci@ChatItem {meta} = do
@@ -1958,7 +1958,7 @@ markGroupChatItemBlocked db User {userId} GroupInfo {groupId} ci@ChatItem {meta}
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
     (DBCIBlocked, deletedTs, deletedTs, userId, groupId, chatItemId' ci)
-  pure ci {meta = meta {itemDeleted = Just $ CIBlocked $ Just deletedTs}}
+  pure ci {meta = meta {itemDeleted = Just $ CIBlocked $ Just deletedTs, editable = False, deletable = False}}
 
 markGroupCIBlockedByAdmin :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup 'MDRcv -> IO (ChatItem 'CTGroup 'MDRcv)
 markGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci@ChatItem {meta} = do
@@ -1971,7 +1971,7 @@ markGroupCIBlockedByAdmin db User {userId} GroupInfo {groupId} ci@ChatItem {meta
       WHERE user_id = ? AND group_id = ? AND chat_item_id = ?
     |]
     (DBCIBlockedByAdmin, deletedTs, deletedTs, userId, groupId, chatItemId' ci)
-  pure ci {meta = meta {itemDeleted = Just $ CIBlockedByAdmin $ Just deletedTs}}
+  pure ci {meta = meta {itemDeleted = Just $ CIBlockedByAdmin $ Just deletedTs, editable = False, deletable = False}}
 
 getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupId -> GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
 getGroupChatItemBySharedMsgId db user@User {userId} groupId groupMemberId sharedMsgId = do

@@ -248,7 +248,7 @@
     "signing-key-fingerprint": "Otisk podpisového klíče (SHA-256)",
     "f-droid-org-repo": "F-Droid.org repozitář",
     "stable-versions-built-by-f-droid-org": "Stabilní verze vytvořené F-Droid.org",
-    "releases-to-this-repo-are-done-1-2-days-later": "Vydání v tomto repozitáři se provádí o 1-2 dny později",
+    "releases-to-this-repo-are-done-1-2-days-later": "Vydání v tomto repozitáři se provádí o několik dní později",
     "jobs": "Připojit k týmu",
     "hero-overlay-card-3-p-2": "Trail of Bits přezkoumala kryptografii a síťové komponenty SimpleX platformy v listopadu 2022.",
     "hero-overlay-card-3-p-3": "Přečtěte si více v <a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">ohlášení</a>.",

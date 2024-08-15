@@ -11,13 +11,22 @@ import SwiftUI
 import SimpleXChat
 
 struct ChatViewBackground: ViewModifier {
-    @EnvironmentObject var theme: AppTheme
+    @Environment(\.colorScheme) var colorScheme
     var image: Image
     var imageType: WallpaperType
     var background: Color
     var tint: Color
 
     func body(content: Content) -> some View {
+        // Workaround a problem (SwiftUI bug?) when wallpaper is not updated when user changes global theme in iOS settings from dark to light and vice versa
+        if colorScheme == .light {
+            back(content)
+        } else {
+            back(content)
+        }
+    }
+
+    func back(_ content: Content) -> some View {
         content.background(
             Canvas { context, size in
                 var image = context.resolve(image)
@@ -81,7 +90,7 @@ struct ChatViewBackground: ViewModifier {
                 case WallpaperType.empty: ()
                 }
             }
-        )
+        ).ignoresSafeArea(.all)
     }
 }
 

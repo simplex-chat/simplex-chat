@@ -18,7 +18,7 @@ let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion")  as? 
 
 let DEFAULT_SHOW_LA_NOTICE = "showLocalAuthenticationNotice"
 let DEFAULT_LA_NOTICE_SHOWN = "localAuthenticationNoticeShown"
-let DEFAULT_PERFORM_LA = "performLocalAuthentication"
+let DEFAULT_PERFORM_LA = "performLocalAuthentication" // deprecated, moved to app group
 let DEFAULT_LA_MODE = "localAuthenticationMode"
 let DEFAULT_LA_LOCK_DELAY = "localAuthenticationLockDelay"
 let DEFAULT_LA_SELF_DESTRUCT = "localAuthenticationSelfDestruct"
@@ -28,7 +28,7 @@ let DEFAULT_WEBRTC_POLICY_RELAY = "webrtcPolicyRelay"
 let DEFAULT_WEBRTC_ICE_SERVERS = "webrtcICEServers"
 let DEFAULT_CALL_KIT_CALLS_IN_RECENTS = "callKitCallsInRecents"
 let DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages" // unused. Use GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES instead
-let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews"
+let DEFAULT_PRIVACY_LINK_PREVIEWS = "privacyLinkPreviews" // deprecated, moved to app group
 let DEFAULT_PRIVACY_SIMPLEX_LINK_MODE = "privacySimplexLinkMode"
 let DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS = "privacyShowChatPreviews"
 let DEFAULT_PRIVACY_SAVE_LAST_DRAFT = "privacySaveLastDraft"
@@ -47,6 +47,8 @@ let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen" // deprecated, only used for
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue" // deprecated, only used for migration
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle" // deprecated, only used for migration
 let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
+let DEFAULT_ONE_HAND_UI_CARD_SHOWN = "oneHandUICardShown"
+let DEFAULT_TOOLBAR_MATERIAL = "toolbarMaterial"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
 let DEFAULT_LIVE_MESSAGE_ALERT_SHOWN = "liveMessageAlertShown"
 let DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE = "showHiddenProfilesNotice"
@@ -61,6 +63,8 @@ let DEFAULT_DEVICE_NAME_FOR_REMOTE_ACCESS = "deviceNameForRemoteAccess"
 let DEFAULT_CONFIRM_REMOTE_SESSIONS = "confirmRemoteSessions"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST = "connectRemoteViaMulticast"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "connectRemoteViaMulticastAuto"
+let DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE = "showDeleteConversationNotice"
+let DEFAULT_SHOW_DELETE_CONTACT_NOTICE = "showDeleteContactNotice"
 let DEFAULT_SHOW_SENT_VIA_RPOXY = "showSentViaProxy"
 let DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE = "showSubscriptionPercentage"
 
@@ -94,6 +98,8 @@ let appDefaults: [String: Any] = [
     DEFAULT_DEVELOPER_TOOLS: false,
     DEFAULT_ENCRYPTION_STARTED: false,
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
+    DEFAULT_ONE_HAND_UI_CARD_SHOWN: false,
+    DEFAULT_TOOLBAR_MATERIAL: ToolbarMaterial.defaultMaterial,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,
     DEFAULT_LIVE_MESSAGE_ALERT_SHOWN: false,
     DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE: true,
@@ -104,6 +110,8 @@ let appDefaults: [String: Any] = [
     DEFAULT_CONFIRM_REMOTE_SESSIONS: false,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST: true,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO: true,
+    DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE: true,
+    DEFAULT_SHOW_DELETE_CONTACT_NOTICE: true,
     DEFAULT_SHOW_SENT_VIA_RPOXY: false,
     DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE: false,
     ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN: AppSettingsLockScreenCalls.show.rawValue,
@@ -112,6 +120,18 @@ let appDefaults: [String: Any] = [
     DEFAULT_CURRENT_THEME: DefaultTheme.SYSTEM_THEME_NAME,
     DEFAULT_SYSTEM_DARK_THEME: DefaultTheme.DARK.themeName,
     DEFAULT_CURRENT_THEME_IDS: "{}"
+]
+
+// only Bool defaults can be used here,
+// or hintDefaultsUnchanged and resetHintDefaults need to be changed
+let hintDefaults = [
+    DEFAULT_LA_NOTICE_SHOWN,
+    DEFAULT_ONE_HAND_UI_CARD_SHOWN,
+    DEFAULT_LIVE_MESSAGE_ALERT_SHOWN,
+    DEFAULT_SHOW_HIDDEN_PROFILES_NOTICE,
+    DEFAULT_SHOW_MUTE_PROFILE_ALERT,
+    DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE,
+    DEFAULT_SHOW_DELETE_CONTACT_NOTICE
 ]
 
 // not used anymore
@@ -158,6 +178,9 @@ let onboardingStageDefault = EnumDefault<OnboardingStage>(defaults: UserDefaults
 
 let customDisappearingMessageTimeDefault = IntDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME)
 
+let showDeleteConversationNoticeDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOW_DELETE_CONVERSATION_NOTICE)
+let showDeleteContactNoticeDefault = BoolDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SHOW_DELETE_CONTACT_NOTICE)
+
 let currentThemeDefault = StringDefault(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME, withDefault: DefaultTheme.SYSTEM_THEME_NAME)
 let systemDarkThemeDefault = StringDefault(defaults: UserDefaults.standard, forKey: DEFAULT_SYSTEM_DARK_THEME, withDefault: DefaultTheme.DARK.themeName)
 let currentThemeIdsDefault = CodableDefault<[String: String]>(defaults: UserDefaults.standard, forKey: DEFAULT_CURRENT_THEME_IDS, withDefault: [:] )
@@ -165,6 +188,9 @@ let themeOverridesDefault: CodableDefault<[ThemeOverrides]> = CodableDefault(def
 
 func setGroupDefaults() {
     privacyAcceptImagesGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_ACCEPT_IMAGES))
+    appLocalAuthEnabledGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA))
+    privacyLinkPreviewsGroupDefault.set(UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS))
+    profileImageCornerRadiusGroupDefault.set(UserDefaults.standard.double(forKey: DEFAULT_PROFILE_IMAGE_CORNER_RADIUS))
 }
 
 public class StringDefault {

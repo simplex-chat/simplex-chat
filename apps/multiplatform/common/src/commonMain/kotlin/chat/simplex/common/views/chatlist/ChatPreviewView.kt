@@ -207,7 +207,7 @@ fun ChatPreviewView(
     } else {
       when (cInfo) {
         is ChatInfo.Direct ->
-          if (cInfo.contact.activeConn == null && cInfo.contact.profile.contactLink != null) {
+          if (cInfo.contact.activeConn == null && cInfo.contact.profile.contactLink != null && cInfo.contact.active) {
             Text(stringResource(MR.strings.contact_tap_to_connect), color = MaterialTheme.colors.primary)
           } else if (!cInfo.contact.sndReady && cInfo.contact.activeConn != null) {
             if (cInfo.contact.nextSendGrpInv) {
@@ -341,10 +341,12 @@ fun ChatPreviewView(
           val chat = activeVoicePreview.value?.chat ?: chat
           val ci = activeVoicePreview.value?.ci ?: chat.chatItems.lastOrNull()
           val mc = ci?.content?.msgContent
-          if ((showChatPreviews && chatModelDraftChatId != chat.id) || activeVoicePreview.value != null) {
+          val deleted = ci?.isDeletedContent == true || ci?.meta?.itemDeleted != null
+          val showContentPreview = (showChatPreviews && chatModelDraftChatId != chat.id && !deleted) || activeVoicePreview.value != null
+          if (ci != null && showContentPreview) {
             chatItemContentPreview(chat, ci)
           }
-          if (mc !is MsgContent.MCVoice || mc.text.isNotEmpty() || chatModelDraftChatId == chat.id) {
+          if (mc !is MsgContent.MCVoice || !showContentPreview || mc.text.isNotEmpty() || chatModelDraftChatId == chat.id) {
             Box(Modifier.offset(x = if (mc is MsgContent.MCFile) -15.sp.toDp() else 0.dp)) {
               chatPreviewText()
             }
@@ -359,6 +361,13 @@ fun ChatPreviewView(
               else -> if (playing.fileSource.filePath != ci?.file?.fileSource?.filePath) {
                 activeVoicePreview.value = null
               }
+            }
+          }
+          LaunchedEffect(chatModel.deletedChats.value) {
+            val voicePreview = activeVoicePreview.value
+            // Stop voice when deleting the chat
+            if (chatModel.deletedChats.value.contains(chatModel.remoteHostId() to chat.id) && voicePreview?.ci != null) {
+              AudioPlayer.stop(voicePreview.ci)
             }
           }
         }

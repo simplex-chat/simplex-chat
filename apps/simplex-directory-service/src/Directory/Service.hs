@@ -65,7 +65,7 @@ data ServiceState = ServiceState
 
 newServiceState :: IO ServiceState
 newServiceState = do
-  searchRequests <- atomically TM.empty
+  searchRequests <- TM.emptyIO
   pure ServiceState {searchRequests}
 
 welcomeGetOpts :: IO DirectoryOpts

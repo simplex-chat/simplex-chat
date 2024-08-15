@@ -11,7 +11,6 @@ import Combine
 
 /// A List, which displays it's items in reverse order - from bottom to top
 struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIViewControllerRepresentable {
-
     let items: Array<Item>
 
     @Binding var scrollState: ReverseListScrollModel<Item>.State
@@ -33,7 +32,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             case let .item(id):
                 controller.scroll(to: items.firstIndex(where: { $0.id == id }), position: .bottom)
             case .bottom:
-                controller.scroll(to: .zero, position: .top)
+                controller.scroll(to: 0, position: .top)
             }
         } else {
             controller.update(items: items)
@@ -45,7 +44,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
         private enum Section { case main }
         private let representer: ReverseList
         private var dataSource: UITableViewDiffableDataSource<Section, Item>!
-        private var itemCount: Int = .zero
+        private var itemCount: Int = 0
         private var bag = Set<AnyCancellable>()
 
         init(representer: ReverseList) {
@@ -53,6 +52,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             super.init(style: .plain)
 
             // 1. Style
+            tableView = InvertedTableView()
             tableView.separatorStyle = .none
             tableView.transform = .verticalFlip
             tableView.backgroundColor = .clear
@@ -80,7 +80,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                 let cell = tableView.dequeueReusableCell(withIdentifier: cellReuseId, for: indexPath)
                 if #available(iOS 16.0, *) {
                     cell.contentConfiguration = UIHostingConfiguration { self.representer.content(item) }
-                        .margins(.all, .zero)
+                        .margins(.all, 0)
                         .minSize(height: 1) // Passing zero will result in system default of 44 points being used
                 } else {
                     if let cell = cell as? HostingCell<Content> {
@@ -132,6 +132,11 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             NotificationCenter.default.post(name: .chatViewWillBeginScrolling, object: nil)
         }
 
+        override func viewDidAppear(_ animated: Bool) {
+            tableView.clipsToBounds = false
+            parent?.viewIfLoaded?.clipsToBounds = false
+        }
+
         /// Scrolls up
         func scrollToNextPage() {
             tableView.setContentOffset(
@@ -147,18 +152,23 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
         /// Scrolls to Item at index path
         /// - Parameter indexPath: Item to scroll to - will scroll to beginning of the list, if `nil`
         func scroll(to index: Int?, position: UITableView.ScrollPosition) {
-            if let index {
-                var animated = false
-                if #available(iOS 16.0, *) {
-                    animated = true
-                }
+            var animated = false
+            if #available(iOS 16.0, *) {
+                animated = true
+            }
+            if let index, tableView.numberOfRows(inSection: 0) != 0 {
                 tableView.scrollToRow(
-                    at: IndexPath(row: index, section: .zero),
+                    at: IndexPath(row: index, section: 0),
                     at: position,
                     animated: animated
                 )
-                Task { representer.scrollState = .atDestination }
+            } else {
+                tableView.setContentOffset(
+                    CGPoint(x: .zero, y: -InvertedTableView.inset),
+                    animated: animated
+                )
             }
+            Task { representer.scrollState = .atDestination }
         }
 
         func update(items: Array<Item>) {
@@ -168,7 +178,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             dataSource.defaultRowAnimation = .none
             dataSource.apply(
                 snapshot,
-                animatingDifferences: itemCount != .zero && abs(items.count - itemCount) == 1
+                animatingDifferences: itemCount != 0 && abs(items.count - itemCount) == 1
             )
             itemCount = items.count
         }
@@ -270,5 +280,30 @@ func withConditionalAnimation<Result>(
         try withAnimation(animation, body)
     } else {
         try body()
+    }
+}
+
+class InvertedTableView: UITableView {
+    static let inset = CGFloat(100)
+
+    static let insets = UIEdgeInsets(
+        top: inset,
+        left: .zero,
+        bottom: inset,
+        right: .zero
+    )
+
+    override var contentInsetAdjustmentBehavior: UIScrollView.ContentInsetAdjustmentBehavior {
+        get { .never }
+        set { }
+    }
+
+    override var contentInset: UIEdgeInsets {
+        get { Self.insets }
+        set { }
+    }
+
+    override var adjustedContentInset: UIEdgeInsets {
+        Self.insets
     }
 }

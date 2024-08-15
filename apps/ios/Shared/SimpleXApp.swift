@@ -58,6 +58,7 @@ struct SimpleXApp: App {
                 }
                 .onChange(of: scenePhase) { phase in
                     logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
+                    AppSheetState.shared.scenePhaseActive = phase == .active
                     switch (phase) {
                     case .background:
                         // --- authentication
@@ -135,7 +136,7 @@ struct SimpleXApp: App {
             chatModel.updateChats(with: chats)
             if let id = chatModel.chatId,
                let chat = chatModel.getChat(id) {
-                loadChat(chat: chat)
+                Task { await loadChat(chat: chat, clearItems: false) }
             }
             if let ncr = chatModel.ntfContactRequest {
                 chatModel.ntfContactRequest = nil
