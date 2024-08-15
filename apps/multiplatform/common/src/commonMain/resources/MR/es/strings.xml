@@ -2068,4 +2068,6 @@
     <string name="one_hand_ui_change_instruction">Puede cambiarlo desde el menú Apariencia.</string>
     <string name="v6_0_upgrade_app_descr">Descarga nuevas versiones desde GitHub.</string>
     <string name="new_message">Nuevo mensaje</string>
+    <string name="error_parsing_uri_title">Enlace no válido</string>
+    <string name="error_parsing_uri_desc">Por favor, comprueba que el enlace SimpleX es correcto.</string>
 </resources>
