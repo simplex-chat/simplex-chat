@@ -53,7 +53,6 @@ struct ChatView: View {
         if #available(iOS 16.0, *) {
             viewBody
                 .scrollDismissesKeyboard(.immediately)
-                .keyboardPadding()
                 .toolbarBackground(.hidden, for: .navigationBar)
         } else {
             viewBody

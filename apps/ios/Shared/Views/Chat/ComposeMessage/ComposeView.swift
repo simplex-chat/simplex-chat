@@ -382,7 +382,11 @@ struct ComposeView: View {
                 }
             }
         }
-        .background(ToolbarMaterial.material(toolbarMaterial))
+        .background {
+            Color.clear
+                .overlay(ToolbarMaterial.material(toolbarMaterial))
+                .ignoresSafeArea(.all, edges: .bottom)
+        }
         .onChange(of: composeState.message) { msg in
             if composeState.linkPreviewAllowed {
                 if msg.count > 0 {
