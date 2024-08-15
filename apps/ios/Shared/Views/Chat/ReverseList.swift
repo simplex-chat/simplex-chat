@@ -175,10 +175,13 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
             snapshot.appendSections([.main])
             snapshot.appendItems(items)
-            dataSource.defaultRowAnimation = .none
-            dataSource.apply(
-                snapshot,
-                animatingDifferences: itemCount != 0 && abs(items.count - itemCount) == 1
+            dataSource.defaultRowAnimation = items.count > itemCount
+            ? .top  // Added items slide in from the bottom (top reversed)
+            : .none // Replacing or removing rows is not animated
+            let countChange = abs(items.count - itemCount)
+            dataSource.apply(snapshot, animatingDifferences:
+                countChange > 0 && // Avoid animating initial load
+                countChange < 5    // Avoid animating page loads
             )
             itemCount = items.count
         }
