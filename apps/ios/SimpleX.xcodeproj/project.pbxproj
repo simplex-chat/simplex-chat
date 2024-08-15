@@ -2320,7 +2320,7 @@
 			repositoryURL = "https://github.com/twostraws/CodeScanner";
 			requirement = {
 				kind = exactVersion;
-				version = 2.1.1;
+				version = 2.5.0;
 			};
 		};
 		8C73C1162C21E17B00892670 /* XCRemoteSwiftPackageReference "Yams" */ = {
