@@ -3902,15 +3902,22 @@ processAgentMsgSndFile _corrId aFileId msg = do
                   case (rfds, sfts, d, cInfo) of
                     (rfd : extraRFDs, sft : _, SMDSnd, DirectChat ct) -> do
                       withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
-                      msgDeliveryId <- sendFileDescription sft rfd sharedMsgId $ sendDirectContactMessage user ct
-                      withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
+                      conn@Connection {connId} <- liftEither $ contactSendConn_ ct
+                      sendFileDescriptions (ConnectionId connId) ((conn, sft, fileDescrText rfd) :| []) sharedMsgId >>= \case
+                        Just rs -> case L.last rs of
+                          Right ([msgDeliveryId], _) ->
+                            withStore' $ \db -> updateSndFTDeliveryXFTP db sft msgDeliveryId
+                          Right (deliveryIds, _) -> toView $ CRChatError (Just user) $ ChatError $ CEInternalError $ "SFDONE, sendFileDescriptions: expected 1 delivery id, got " <> show (length deliveryIds)
+                          Left e -> toView $ CRChatError (Just user) e
+                        Nothing -> toView $ CRChatError (Just user) $ ChatError $ CEInternalError "SFDONE, sendFileDescriptions: expected at least 1 result"
                       lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
                     (_, _, SMDSnd, GroupChat g@GroupInfo {groupId}) -> do
                       ms <- withStore' $ \db -> getGroupMembers db vr user g
-                      let rfdsMemberFTs = zip rfds $ memberFTs ms
+                      let rfdsMemberFTs = zipWith (\rfd (conn, sft) -> (conn, sft, fileDescrText rfd)) rfds (memberFTs ms)
                           extraRFDs = drop (length rfdsMemberFTs) rfds
                       withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
-                      forM_ rfdsMemberFTs $ \mt -> sendToMember mt `catchChatError` (toView . CRChatError (Just user))
+                      forM_ (L.nonEmpty rfdsMemberFTs) $ \rfdsMemberFTs' ->
+                        sendFileDescriptions (GroupId groupId) rfdsMemberFTs' sharedMsgId
                       ci' <- withStore $ \db -> do
                         liftIO $ updateCIFileStatus db user fileId CIFSSndComplete
                         getChatItemByFileId db vr user fileId
@@ -3922,15 +3929,12 @@ processAgentMsgSndFile _corrId aFileId msg = do
                           where
                             mConns' = mapMaybe useMember ms
                             sfts' = mapMaybe (\sft@SndFileTransfer {groupMemberId} -> (,sft) <$> groupMemberId) sfts
+                            -- Should match memberSendAction logic
                             useMember GroupMember {groupMemberId, activeConn = Just conn@Connection {connStatus}}
-                              | (connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn) = Just (groupMemberId, conn)
+                              | (connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn) && not (connInactive conn) =
+                                  Just (groupMemberId, conn)
                               | otherwise = Nothing
                             useMember _ = Nothing
-                        sendToMember :: (ValidFileDescription 'FRecipient, (Connection, SndFileTransfer)) -> CM ()
-                        sendToMember (rfd, (conn, sft)) =
-                          void $ sendFileDescription sft rfd sharedMsgId $ \msg' -> do
-                            (sndMsg, msgDeliveryId, _) <- sendDirectMemberMessage conn msg' groupId
-                            pure (sndMsg, msgDeliveryId)
                     _ -> pure ()
                 _ -> pure () -- TODO error?
         SFWARN e -> do
@@ -3945,20 +3949,27 @@ processAgentMsgSndFile _corrId aFileId msg = do
       where
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
         fileDescrText = safeDecodeUtf8 . strEncode
-        sendFileDescription :: SndFileTransfer -> ValidFileDescription 'FRecipient -> SharedMsgId -> (ChatMsgEvent 'Json -> CM (SndMessage, Int64)) -> CM Int64
-        sendFileDescription sft rfd msgId sendMsg = do
-          let rfdText = fileDescrText rfd
-          withStore' $ \db -> updateSndFTDescrXFTP db user sft rfdText
-          parts <- splitFileDescr rfdText
-          loopSend parts
+        sendFileDescriptions :: ConnOrGroupId -> NonEmpty (Connection, SndFileTransfer, RcvFileDescrText) -> SharedMsgId -> CM (Maybe (NonEmpty (Either ChatError ([Int64], PQEncryption))))
+        sendFileDescriptions connOrGroupId connsTransfersDescrs sharedMsgId = do
+          lift . void . withStoreBatch' $ \db -> L.map (\(_, sft, rfdText) -> updateSndFTDescrXFTP db user sft rfdText) connsTransfersDescrs
+          partSize <- asks $ xftpDescrPartSize . config
+          let connsIdsEvts = connDescrEvents partSize
+          sndMsgs_ <- lift $ createSndMessages $ L.map snd connsIdsEvts
+          let (errs, msgReqs) = partitionEithers . L.toList $ L.zipWith (fmap . toMsgReq) connsIdsEvts sndMsgs_
+          delivered <- mapM deliverMessages (L.nonEmpty msgReqs)
+          let errs' = errs <> maybe [] (lefts . L.toList) delivered
+          unless (null errs') $ toView $ CRChatErrors (Just user) errs'
+          pure delivered
           where
-            -- returns msgDeliveryId of the last file description message
-            loopSend :: NonEmpty FileDescr -> CM Int64
-            loopSend (fileDescr :| fds) = do
-              (_, msgDeliveryId) <- sendMsg $ XMsgFileDescr {msgId, fileDescr}
-              case L.nonEmpty fds of
-                Just fds' -> loopSend fds'
-                Nothing -> pure msgDeliveryId
+            connDescrEvents :: Int -> NonEmpty (Connection, (ConnOrGroupId, ChatMsgEvent 'Json))
+            connDescrEvents partSize = L.fromList $ concatMap splitText (L.toList connsTransfersDescrs)
+              where
+                splitText :: (Connection, SndFileTransfer, RcvFileDescrText) -> [(Connection, (ConnOrGroupId, ChatMsgEvent 'Json))]
+                splitText (conn, _, rfdText) =
+                  map (\fileDescr -> (conn, (connOrGroupId, XMsgFileDescr {msgId = sharedMsgId, fileDescr}))) (L.toList $ splitFileDescr partSize rfdText)
+            toMsgReq :: (Connection, (ConnOrGroupId, ChatMsgEvent 'Json)) -> SndMessage -> ChatMsgReq
+            toMsgReq (conn, _) SndMessage {msgId, msgBody} =
+              (conn, MsgFlags {notification = hasNotification XMsgFileDescr_}, msgBody, [msgId])
         sendFileError :: FileError -> Text -> VersionRangeChat -> FileTransferMeta -> CM ()
         sendFileError ferr err vr ft = do
           logError $ "Sent file error: " <> err
@@ -3980,18 +3991,16 @@ agentFileError = \case
       SMP.TRANSPORT TEVersion -> srvErr SrvErrVersion
       e -> srvErr . SrvErrOther $ tshow e
 
-splitFileDescr :: RcvFileDescrText -> CM (NonEmpty FileDescr)
-splitFileDescr rfdText = do
-  partSize <- asks $ xftpDescrPartSize . config
-  pure $ splitParts 1 partSize rfdText
+splitFileDescr :: Int -> RcvFileDescrText -> NonEmpty FileDescr
+splitFileDescr partSize rfdText = splitParts 1 rfdText
   where
-    splitParts partNo partSize remText =
+    splitParts partNo remText =
       let (part, rest) = T.splitAt partSize remText
           complete = T.null rest
           fileDescr = FileDescr {fileDescrText = part, fileDescrPartNo = partNo, fileDescrComplete = complete}
        in if complete
             then fileDescr :| []
-            else fileDescr <| splitParts (partNo + 1) partSize rest
+            else fileDescr <| splitParts (partNo + 1) rest
 
 processAgentMsgRcvFile :: ACorrId -> RcvFileId -> AEvent 'AERcvFile -> CM ()
 processAgentMsgRcvFile _corrId aFileId msg = do
@@ -4573,7 +4582,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                             xMsgNewChatMsg = ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent = XMsgNew msgContainer}
                         fileDescrEvents <- case (snd <$> fInvDescr_, itemSharedMsgId) of
                           (Just fileDescrText, Just msgId) -> do
-                            parts <- splitFileDescr fileDescrText
+                            partSize <- asks $ xftpDescrPartSize . config
+                            let parts = splitFileDescr partSize fileDescrText
                             pure . toList $ L.map (XMsgFileDescr msgId) parts
                           _ -> pure []
                         let fileDescrChatMsgs = map (ChatMessage senderVRange Nothing) fileDescrEvents
