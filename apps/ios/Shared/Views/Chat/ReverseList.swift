@@ -178,7 +178,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             let itemsAdded = items.count - itemCount
             if itemsAdded > 0, itemCount != 0 {
                 updateInProgress = true
-                _update(items: Array(items[1...]), animated: false) {
+                _update(items: Array(items[itemsAdded...]), animated: false) {
                     DispatchQueue.main.async {
                         self._update(items: items, animated: true) {
                             self.updateInProgress = false
