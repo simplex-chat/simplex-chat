@@ -1250,7 +1250,7 @@
     <string name="wallpaper_advanced_settings">進階設定</string>
     <string name="v5_4_block_group_members">封鎖群組成員</string>
     <string name="servers_info_subscriptions_connections_subscribed">活躍連接</string>
-    <string name="abort_switch_receiving_address_confirm">停止</string>
+    <string name="abort_switch_receiving_address_confirm">中止</string>
     <string name="rcv_group_and_other_events">和其他 %d 事件</string>
     <string name="block_member_question">封鎖成員？</string>
     <string name="v5_3_new_interface_languages">6種全新的介面語言</string>
@@ -1270,7 +1270,7 @@
     <string name="cannot_share_message_alert_title">無法傳送訊息</string>
     <string name="block_for_all_question">為所有成員封鎖此成員？</string>
     <string name="theme_black">黑</string>
-    <string name="abort_switch_receiving_address_question">停止地址更改？</string>
+    <string name="abort_switch_receiving_address_question">中止更改地址？</string>
     <string name="cant_send_message_to_member_alert_title">無法傳送訊息給群組成員</string>
     <string name="chat_theme_apply_to_all_modes">所有顏色模式</string>
     <string name="chat_theme_apply_to_mode">應用到</string>
@@ -1306,7 +1306,7 @@
     <string name="allow_to_send_simplex_links">允許傳送 SimpleX 連結</string>
     <string name="v5_2_more_things">其他</string>
     <string name="connect_plan_already_connecting">已連接！</string>
-    <string name="abort_switch_receiving_address">停止地址更改</string>
+    <string name="abort_switch_receiving_address">中止更改地址</string>
     <string name="connect__a_new_random_profile_will_be_shared">將分享新的隨機個人檔案</string>
     <string name="block_member_desc">所有來自 %s 的新訊息都將被隱藏！</string>
     <string name="rcv_group_event_member_blocked">已封鎖 %s</string>
