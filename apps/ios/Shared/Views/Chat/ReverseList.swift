@@ -171,19 +171,27 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             Task { representer.scrollState = .atDestination }
         }
 
-        var updateInProgress = false
         var itemId: Item.ID?
+        var retainedItems: [Item]?
+        var updateInProgress = false
 
         func update(items: [Item]) {
-            if updateInProgress { return }
-            if let itemId, 
+            if updateInProgress {
+                retainedItems = items
+                return
+            }
+            if let itemId,
                let i = items.firstIndex(where: { $0.id == itemId }),
                i > 0 {
                 updateInProgress = true
+                // Update existing items without animation
                 _update(items: Array(items[i...]), animated: false) {
                     DispatchQueue.main.async {
+                        // Added items animated by sliding from bottom (.top)
                         self._update(items: items, animated: true) {
                             self.updateInProgress = false
+                            // Process update, which might have arrived before completion
+                            if let items = self.retainedItems { self.update(items: items) }
                         }
                     }
                 }

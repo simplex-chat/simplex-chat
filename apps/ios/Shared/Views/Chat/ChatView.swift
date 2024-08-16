@@ -432,14 +432,14 @@ struct ChatView: View {
             .onChange(of: im.reversedChatItems) { _ in
                 floatingButtonModel.chatItemsChanged()
             }
-            .onChange(of: im.itemAdded) { added in
-                if added {
-                    im.itemAdded = false
-                    if floatingButtonModel.unreadChatItemCounts.isReallyNearBottom {
-                        scrollModel.scrollToBottom()
-                    }
-                }
-            }
+//            .onChange(of: im.itemAdded) { added in
+//                if added {
+//                    im.itemAdded = false
+//                    if floatingButtonModel.unreadChatItemCounts.isReallyNearBottom {
+//                        scrollModel.scrollToBottom()
+//                    }
+//                }
+//            }
         }
     }
 
