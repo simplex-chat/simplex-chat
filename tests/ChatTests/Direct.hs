@@ -2410,7 +2410,7 @@ setupDesynchronizedRatchet tmp alice = do
     (bob </)
     bob ##> "/tail @alice 1"
     bob <# "alice> decryption error, possibly due to the device change (header, 3 messages)"
-    bob ##> "@alice 1"
+    bob `send` "@alice 1"
     bob <## "error: command is prohibited, sendMessagesB: send prohibited"
     (alice </)
   where

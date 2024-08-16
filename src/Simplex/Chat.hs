@@ -2887,7 +2887,7 @@ processChatCommand' vr = \case
                 quoteData ChatItem {content = CIRcvMsgContent qmc} = pure (qmc, CIQDirectRcv, False)
                 quoteData _ = throwChatError CEInvalidQuote
             prepareSndItemsData ::
-              NonEmpty (Either ChatError SndMessage) ->
+              [(Either ChatError SndMessage)] ->
               NonEmpty ComposedMessage ->
               NonEmpty (Maybe (CIFile 'MDSnd)) ->
               NonEmpty (Maybe (CIQuote 'CTDirect)) ->
@@ -2895,7 +2895,7 @@ processChatCommand' vr = \case
             prepareSndItemsData msgs_ cms' ciFiles_ quotedItems_ =
               [ NewSndChatItemData msg (CISndMsgContent msgContent) f q
                 | (Right msg, ComposedMessage {msgContent}, f, q) <-
-                    zipWith4 (,,,) (L.toList msgs_) (L.toList cms') (L.toList ciFiles_) (L.toList quotedItems_)
+                    zipWith4 (,,,) msgs_ (L.toList cms') (L.toList ciFiles_) (L.toList quotedItems_)
               ]
     sendGroupContentMessages :: User -> GroupId -> Bool -> Maybe Int -> NonEmpty ComposedMessage -> Maybe CIForwardedFrom -> CM ChatResponse
     sendGroupContentMessages user groupId live itemTTL ((ComposedMessage file_ quotedItemId_ mc) :| _) itemForwarded = do
@@ -6812,26 +6812,25 @@ deleteOrUpdateMemberRecord user@User {userId} member =
       Just _ -> updateGroupMemberStatus db userId member GSMemRemoved
       Nothing -> deleteGroupMember db user member
 
-sendDirectContactMessages :: MsgEncodingI e => User -> Contact -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage))
+sendDirectContactMessages :: MsgEncodingI e => User -> Contact -> NonEmpty (ChatMsgEvent e) -> CM [Either ChatError SndMessage]
 sendDirectContactMessages user ct events = do
   Connection {connChatVersion = v} <- liftEither $ contactSendConn_ ct
   if v >= batchSend2Version
     then sendDirectContactMessages' user ct events
-    else forM events $ \evt ->
+    else forM (L.toList events) $ \evt ->
       (Right . fst <$> sendDirectContactMessage user ct evt) `catchChatError` \e -> pure (Left e)
 
-sendDirectContactMessages' :: MsgEncodingI e => User -> Contact -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage))
+sendDirectContactMessages' :: MsgEncodingI e => User -> Contact -> NonEmpty (ChatMsgEvent e) -> CM [Either ChatError SndMessage]
 sendDirectContactMessages' user ct events = do
   conn@Connection {connId} <- liftEither $ contactSendConn_ ct
   let idsEvts = L.map (ConnectionId connId,) events
       msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
   sndMsgs_ <- lift $ createSndMessages idsEvts
-  let errs = lefts $ L.toList sndMsgs_
-      msgs = rights $ L.toList sndMsgs_
+  (sndMsgs', pqEnc_) <- batchSendConnMessagesB user conn msgFlags sndMsgs_
+  let errs = lefts sndMsgs'
   unless (null errs) $ toView $ CRChatErrors (Just user) errs
-  mapM_ (batchSendConnMessages user conn msgFlags) (L.nonEmpty msgs)
-  -- TODO createContactPQSndItem based on last result
-  pure sndMsgs_
+  forM_ pqEnc_ $ \pqEnc' -> void $ createContactPQSndItem user ct conn pqEnc'
+  pure sndMsgs'
 
 sendDirectContactMessage :: MsgEncodingI e => User -> Contact -> ChatMsgEvent e -> CM (SndMessage, Int64)
 sendDirectContactMessage user ct chatMsgEvent = do
@@ -6891,17 +6890,30 @@ sendGroupMemberMessages user conn events groupId = do
   forM_ (L.nonEmpty msgs) $ \msgs' ->
     batchSendConnMessages user conn MsgFlags {notification = True} msgs'
 
-batchSendConnMessages :: User -> Connection -> MsgFlags -> NonEmpty SndMessage -> CM ()
-batchSendConnMessages user conn msgFlags msgs = do
-  let batched = batchSndMessagesJSON msgs
-  let (errs', msgBatches) = partitionEithers batched
-  -- shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
-  unless (null errs') $ toView $ CRChatErrors (Just user) errs'
-  forM_ (L.nonEmpty msgBatches) $ \msgBatches' -> do
-    let msgReq = L.map (msgBatchReq conn msgFlags) msgBatches'
-    void $ deliverMessages msgReq
+batchSendConnMessages :: User -> Connection -> MsgFlags -> NonEmpty SndMessage -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
+batchSendConnMessages user conn msgFlags msgs =
+  batchSendConnMessagesB user conn msgFlags $ L.map Right msgs
 
-batchSndMessagesJSON :: NonEmpty SndMessage -> [Either ChatError MsgBatch]
+batchSendConnMessagesB :: User -> Connection -> MsgFlags -> NonEmpty (Either ChatError SndMessage) -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
+batchSendConnMessagesB _user conn msgFlags msgs_ = do
+  let batched_ = batchSndMessagesJSON msgs_
+  case L.nonEmpty batched_ of
+    Just batched' -> do
+      let msgReqs = L.map (fmap (msgBatchReq conn msgFlags)) batched'
+      delivered <- deliverMessagesB msgReqs
+      let msgs' = concat $ L.zipWith flattenMsgs batched' delivered
+          pqEnc = findLastPQEnc delivered
+      pure (msgs', pqEnc)
+    Nothing -> pure ([], Nothing)
+  where
+    flattenMsgs :: Either ChatError MsgBatch -> Either ChatError ([Int64], PQEncryption) -> [Either ChatError SndMessage]
+    flattenMsgs (Right (MsgBatch _ sndMsgs)) (Right _) = map Right sndMsgs
+    flattenMsgs (Left ce) _ = [Left ce] -- restore original ChatError
+    flattenMsgs _ (Left ce) = [Left ce]
+    findLastPQEnc :: NonEmpty (Either ChatError ([Int64], PQEncryption)) -> Maybe PQEncryption
+    findLastPQEnc = foldr (\x acc -> case x of Right (_, pqEnc) -> Just pqEnc; Left _ -> acc) Nothing
+
+batchSndMessagesJSON :: NonEmpty (Either ChatError SndMessage) -> [Either ChatError MsgBatch]
 batchSndMessagesJSON = batchMessages maxEncodedMsgLength . L.toList
 
 msgBatchReq :: Connection -> MsgFlags -> MsgBatch -> ChatMsgReq
@@ -6953,7 +6965,7 @@ deliverMessagesB msgReqs = do
   lift . withStoreBatch $ \db -> L.map (bindRight $ createDelivery db) sent
   where
     compressBodies =
-      forME msgReqs $ \mr@(conn@Connection {pqSupport, connChatVersion = v}, msgFlags, msgBody, msgId) ->
+      forME msgReqs $ \mr@(conn@Connection {pqSupport, connChatVersion = v}, msgFlags, msgBody, msgIds) ->
         runExceptT $ case pqSupport of
           -- we only compress messages when:
           -- 1) PQ support is enabled
@@ -6962,7 +6974,7 @@ deliverMessagesB msgReqs = do
           PQSupportOn | v >= pqEncryptionCompressionVersion && B.length msgBody > maxCompressedMsgLength -> do
             let msgBody' = compressedBatchMsgBody_ msgBody
             when (B.length msgBody' > maxCompressedMsgLength) $ throwError $ ChatError $ CEException "large compressed message"
-            pure (conn, msgFlags, msgBody', msgId)
+            pure (conn, msgFlags, msgBody', msgIds)
           _ -> pure mr
     toAgent prev = \case
       Right (conn@Connection {connId, pqEncryption}, msgFlags, msgBody, _msgIds) ->
@@ -7086,7 +7098,7 @@ sendGroupMessages_ user gInfo@GroupInfo {groupId} members events = do
     prepareMsgReqs :: MsgFlags -> NonEmpty SndMessage -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> [ChatMsgReq]
     prepareMsgReqs msgFlags msgs toSendSeparate toSendBatched = do
       let msgReqsSeparate = foldr (\(_, conn) reqs -> foldr (\msg -> (sndMessageReq conn msg :)) reqs msgs) [] toSendSeparate
-          batched = batchSndMessagesJSON msgs
+          batched = batchSndMessagesJSON (L.map Right msgs)
           -- _errs shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
           (_errs, msgBatches) = partitionEithers batched
       case L.nonEmpty msgBatches of
@@ -7159,7 +7171,7 @@ sendPendingGroupMessages user GroupMember {groupMemberId} conn = do
   pgms <- withStore' $ \db -> getPendingGroupMessages db groupMemberId
   forM_ (L.nonEmpty pgms) $ \pgms' -> do
     let msgs = L.map (\(sndMsg, _, _) -> sndMsg) pgms'
-    batchSendConnMessages user conn MsgFlags {notification = True} msgs
+    void $ batchSendConnMessages user conn MsgFlags {notification = True} msgs
     lift . void . withStoreBatch' $ \db -> L.map (\SndMessage {msgId} -> deletePendingGroupMessage db groupMemberId msgId) msgs
     lift . void . withStoreBatch' $ \db -> L.map (\(_, tag, introId_) -> updateIntro_ db tag introId_) pgms'
   where
