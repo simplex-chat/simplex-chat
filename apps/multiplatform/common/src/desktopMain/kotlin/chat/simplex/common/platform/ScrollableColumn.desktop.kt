@@ -13,16 +13,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.views.helpers.detectCursorMove
-import chat.simplex.common.views.helpers.mixWith
+import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.*
 
 @Composable
 actual fun LazyColumnWithScrollBar(
   modifier: Modifier,
-  state: LazyListState,
+  state: LazyListState?,
   contentPadding: PaddingValues,
   reverseLayout: Boolean,
   verticalArrangement: Arrangement.Vertical,
@@ -31,33 +31,31 @@ actual fun LazyColumnWithScrollBar(
   userScrollEnabled: Boolean,
   content: LazyListScope.() -> Unit
 ) {
-  if (appPlatform.isAndroid) {
-    LazyColumn(modifier, state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
-  } else {
-    val scope = rememberCoroutineScope()
-    val scrollBarAlpha = remember { Animatable(0f) }
-    val scrollJob: MutableState<Job> = remember { mutableStateOf(Job()) }
-    val scrollModifier = remember {
-      Modifier
-        .pointerInput(Unit) {
-          detectCursorMove {
-            scope.launch {
-              scrollBarAlpha.animateTo(1f)
-            }
-            scrollJob.value.cancel()
-            scrollJob.value = scope.launch {
-              delay(1000L)
-              scrollBarAlpha.animateTo(0f)
-            }
+  val scope = rememberCoroutineScope()
+  val scrollBarAlpha = remember { Animatable(0f) }
+  val scrollJob: MutableState<Job> = remember { mutableStateOf(Job()) }
+  val scrollModifier = remember {
+    Modifier
+      .pointerInput(Unit) {
+        detectCursorMove {
+          scope.launch {
+            scrollBarAlpha.animateTo(1f)
+          }
+          scrollJob.value.cancel()
+          scrollJob.value = scope.launch {
+            delay(1000L)
+            scrollBarAlpha.animateTo(0f)
           }
         }
-    }
-    Box {
-      LazyColumn(modifier.then(if (appPlatform.isDesktop) scrollModifier else Modifier), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
-      Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
-        DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, reverseLayout)
       }
-    }
+  }
+  val state = state ?: LocalAppBarHandler.current?.listState ?: rememberLazyListState()
+  val connection = LocalAppBarHandler.current?.connection
+  Box(if (connection != null) Modifier.nestedScroll(connection) else Modifier) {
+    LazyColumn(modifier.then(scrollModifier), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
+  }
+  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+    DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, reverseLayout)
   }
 }
 
@@ -66,7 +64,7 @@ actual fun ColumnWithScrollBar(
   modifier: Modifier,
   verticalArrangement: Arrangement.Vertical,
   horizontalAlignment: Alignment.Horizontal,
-  state: ScrollState,
+  state: ScrollState?,
   content: @Composable ColumnScope.() -> Unit
 ) {
   val scope = rememberCoroutineScope()
@@ -87,7 +85,11 @@ actual fun ColumnWithScrollBar(
         }
       }
   }
-  Column(modifier.verticalScroll(state).then(scrollModifier), verticalArrangement, horizontalAlignment, content)
+  val state = state ?: LocalAppBarHandler.current?.scrollState ?: rememberScrollState()
+  val connection = LocalAppBarHandler.current?.connection
+  Box(if (connection != null) Modifier.nestedScroll(connection) else Modifier) {
+    Column(modifier.verticalScroll(state).then(scrollModifier), verticalArrangement, horizontalAlignment, content)
+  }
   Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
     DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, false)
   }

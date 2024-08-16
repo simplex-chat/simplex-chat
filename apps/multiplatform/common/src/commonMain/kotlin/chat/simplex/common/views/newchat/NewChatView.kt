@@ -5,6 +5,7 @@ import SectionItemView
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -96,16 +97,8 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
     }
   }
 
-  Column(
-    Modifier.fillMaxSize(),
-  ) {
-    Box(contentAlignment = Alignment.Center) {
-      val bottomPadding = DEFAULT_PADDING
-      AppBarTitle(stringResource(MR.strings.new_chat), hostDevice(rh?.remoteHostId), bottomPadding = bottomPadding)
-      Column(Modifier.align(Alignment.CenterEnd).padding(bottom = bottomPadding, end = DEFAULT_PADDING)) {
-        AddContactLearnMoreButton()
-      }
-    }
+  ColumnWithScrollBar {
+    AppBarTitle(stringResource(MR.strings.new_chat), hostDevice(rh?.remoteHostId), bottomPadding = DEFAULT_PADDING)
     val scope = rememberCoroutineScope()
     val pagerState = rememberPagerState(
       initialPage = selection.value.ordinal,
@@ -140,18 +133,26 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
       }
     }
 
-    HorizontalPager(state = pagerState, Modifier.fillMaxSize(), verticalAlignment = Alignment.Top, userScrollEnabled = appPlatform.isAndroid) { index ->
-      // LALAL SCROLLBAR DOESN'T WORK
-      ColumnWithScrollBar(
+    HorizontalPager(state = pagerState, Modifier, pageNestedScrollConnection = LocalAppBarHandler.current!!.connection, verticalAlignment = Alignment.Top, userScrollEnabled = appPlatform.isAndroid) { index ->
+      Column(
         Modifier
           .fillMaxSize(),
-        verticalArrangement = if (index == NewChatOption.INVITE.ordinal && connReqInvitation.isEmpty()) Arrangement.Center else Arrangement.Top) {
+        verticalArrangement = if (index == NewChatOption.INVITE.ordinal && connReqInvitation.isEmpty()) Arrangement.Center else Arrangement.Top
+      ) {
         Spacer(Modifier.height(DEFAULT_PADDING))
         when (index) {
           NewChatOption.INVITE.ordinal -> {
             PrepareAndInviteView(rh?.remoteHostId, contactConnection, connReqInvitation, creatingConnReq)
           }
           NewChatOption.CONNECT.ordinal -> {
+            val scrollState = LocalAppBarHandler.current?.scrollState
+            val connection = LocalAppBarHandler.current?.connection
+            // Workaround a problem when longer first page switches to shorter second page, which makes appBarOffset
+            // bigger than it needs to be with such a small page
+            LaunchedEffect(pagerState.currentPage) {
+              scrollState?.scrollTo(0)
+              connection?.appBarOffset = 0f
+            }
             ConnectView(rh?.remoteHostId, showQRCodeScanner, pastedLink, close)
           }
         }
@@ -228,18 +229,18 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
 }
 
 @Composable
-private fun AddContactLearnMoreButton() {
+fun AddContactLearnMoreButton() {
   IconButton(
     {
       ModalManager.start.showModalCloseable { close ->
         AddContactLearnMore(close)
       }
-    },
-    Modifier.size(18.dp * fontSizeSqrtMultiplier)
+    }
   ) {
     Icon(
       painterResource(MR.images.ic_info),
       stringResource(MR.strings.learn_more),
+      tint = MaterialTheme.colors.primary
     )
   }
 }

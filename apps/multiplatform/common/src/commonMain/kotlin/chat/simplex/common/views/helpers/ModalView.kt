@@ -2,11 +2,12 @@ package chat.simplex.common.views.helpers
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import chat.simplex.common.model.ChatController.appPrefs
@@ -48,13 +49,15 @@ enum class ModalPlacement {
   START, CENTER, END, FULLSCREEN
 }
 
-class ModalData {
+class ModalData() {
   private val state = mutableMapOf<String, MutableState<Any?>>()
   fun <T> stateGetOrPut (key: String, default: () -> T): MutableState<T> =
     state.getOrPut(key) { mutableStateOf(default() as Any) } as MutableState<T>
 
   fun <T> stateGetOrPutNullable (key: String, default: () -> T?): MutableState<T?> =
     state.getOrPut(key) { mutableStateOf(default() as Any?) } as MutableState<T?>
+
+  val appBarHandler = AppBarHandler()
 }
 
 class ModalManager(private val placement: ModalPlacement? = null) {
@@ -139,7 +142,13 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   fun showInView() {
     // Without animation
     if (modalCount.value > 0 && modalViews.lastOrNull()?.first == false) {
-      modalViews.lastOrNull()?.let { it.third(it.second, ::closeModal) }
+      modalViews.lastOrNull()?.let {
+        CompositionLocalProvider(
+          LocalAppBarHandler provides it.second.appBarHandler
+        ) {
+          it.third(it.second, ::closeModal)
+        }
+      }
       return
     }
     AnimatedContent(targetState = modalCount.value,
@@ -151,7 +160,13 @@ class ModalManager(private val placement: ModalPlacement? = null) {
         }.using(SizeTransform(clip = false))
       }
     ) {
-      modalViews.getOrNull(it - 1)?.let { it.third(it.second, ::closeModal) }
+      modalViews.getOrNull(it - 1)?.let {
+        CompositionLocalProvider(
+          LocalAppBarHandler provides it.second.appBarHandler
+        ) {
+          it.third(it.second, ::closeModal)
+        }
+      }
       // This is needed because if we delete from modalViews immediately on request, animation will be bad
       if (toRemove.isNotEmpty() && it == modalCount.value && transition.currentState == EnterExitState.Visible && !transition.isRunning) {
         runAtomically { toRemove.removeIf { elem -> modalViews.removeAt(elem); true } }

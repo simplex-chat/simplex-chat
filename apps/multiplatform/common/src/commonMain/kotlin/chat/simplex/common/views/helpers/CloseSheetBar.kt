@@ -6,15 +6,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.*
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -40,7 +41,6 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
       content = {
         Row(
           rowModifier,
-          horizontalArrangement = Arrangement.SpaceBetween,
           verticalAlignment = Alignment.CenterVertically
         ) {
           if (showClose)  {
@@ -48,17 +48,39 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
           } else {
             Spacer(Modifier)
           }
+          val handler = LocalAppBarHandler.current
+          val connection = LocalAppBarHandler.current?.connection
+          val title = remember(handler?.title?.value) { handler?.title ?: mutableStateOf("") }
           if (!closeBarTitle.isNullOrEmpty()) {
             Row(
+              Modifier.weight(1f),
               horizontalArrangement = Arrangement.Center,
               verticalAlignment = Alignment.CenterVertically
             ) {
               Text(
                 closeBarTitle,
-                color = MaterialTheme.colors.onBackground,
                 fontWeight = FontWeight.SemiBold,
+                maxLines = 1
               )
             }
+          } else if (title.value.isNotEmpty() && connection != null) {
+            Row(
+              Modifier.height(IntrinsicSize.Max)
+                .weight(1f) // hides the title if something wants full width (eg, search field in chat profiles screen)
+                .graphicsLayer {
+                  alpha = (-connection.appBarOffset * 2f / AppBarHandler.appBarMaxHeightPx).coerceAtMost(1f)
+                }
+                .padding(start = 4.dp),
+              verticalAlignment = Alignment.CenterVertically
+            ) {
+              Text(
+                title.value,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1
+              )
+            }
+          } else {
+            Spacer(Modifier.weight(1f))
           }
           Row {
             endButtons()
@@ -71,6 +93,11 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
 
 @Composable
 fun AppBarTitle(title: String, hostDevice: Pair<Long?, String>? = null,  withPadding: Boolean = true, bottomPadding: Dp = DEFAULT_PADDING * 1.5f + 8.dp) {
+  val handler = LocalAppBarHandler.current
+  val connection = handler?.connection
+  LaunchedEffect(title) {
+    handler?.title?.value = title
+  }
   val theme = CurrentColors.collectAsState()
   val titleColor = MaterialTheme.appColors.title
   val brush = if (theme.value.base == DefaultTheme.SIMPLEX)
@@ -80,13 +107,24 @@ fun AppBarTitle(title: String, hostDevice: Pair<Long?, String>? = null,  withPad
   Column {
     Text(
       title,
-      Modifier
-        .fillMaxWidth()
-        .padding(start = if (withPadding) DEFAULT_PADDING else 0.dp, end = if (withPadding) DEFAULT_PADDING else 0.dp,),
+      if (appPlatform.isDesktop) {
+        Modifier
+          .fillMaxWidth()
+          .padding(start = if (withPadding) DEFAULT_PADDING else 0.dp, end = if (withPadding) DEFAULT_PADDING else 0.dp,)
+          .graphicsLayer {
+            alpha = (AppBarHandler.appBarMaxHeightPx + (connection?.appBarOffset ?: 0f) * 2).coerceAtLeast(0f) / AppBarHandler.appBarMaxHeightPx
+          }
+      } else {
+        Modifier
+          .padding(start = if (withPadding) DEFAULT_PADDING else 0.dp, end = if (withPadding) DEFAULT_PADDING else 0.dp,)
+          .graphicsLayer {
+            alpha = (AppBarHandler.appBarMaxHeightPx + (connection?.appBarOffset ?: 0f) * 2).coerceAtLeast(0f) / AppBarHandler.appBarMaxHeightPx
+          }
+      },
       overflow = TextOverflow.Ellipsis,
       style = MaterialTheme.typography.h1.copy(brush = brush),
       color = MaterialTheme.colors.primaryVariant,
-      textAlign = TextAlign.Center
+      textAlign = if (appPlatform.isDesktop) TextAlign.Center else TextAlign.Start
     )
     if (hostDevice != null) {
       HostDeviceTitle(hostDevice)

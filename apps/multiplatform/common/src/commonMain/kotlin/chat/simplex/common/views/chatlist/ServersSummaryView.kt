@@ -615,14 +615,12 @@ fun ModalData.SMPServerSummaryView(
     ColumnWithScrollBar(
       Modifier.fillMaxSize(),
     ) {
-      Box(contentAlignment = Alignment.Center) {
-        val bottomPadding = DEFAULT_PADDING
-        AppBarTitle(
-          stringResource(MR.strings.smp_server),
-          hostDevice(rh?.remoteHostId),
-          bottomPadding = bottomPadding
-        )
-      }
+      val bottomPadding = DEFAULT_PADDING
+      AppBarTitle(
+        stringResource(MR.strings.smp_server),
+        hostDevice(rh?.remoteHostId),
+        bottomPadding = bottomPadding
+      )
       SMPServerSummaryLayout(summary, statsStartedAt, rh)
     }
   }
@@ -709,7 +707,7 @@ fun ModalData.XFTPServerSummaryView(
 
 @Composable
 fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableState<PresentedServersSummary?>) {
-  Column(
+  ColumnWithScrollBar(
     Modifier.fillMaxSize(),
   ) {
     var showUserSelection by remember { mutableStateOf(false) }
@@ -760,14 +758,12 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
     Column(
       Modifier.fillMaxSize(),
     ) {
-      Box(contentAlignment = Alignment.Center) {
-        val bottomPadding = DEFAULT_PADDING
-        AppBarTitle(
-          stringResource(MR.strings.servers_info),
-          hostDevice(rh?.remoteHostId),
-          bottomPadding = bottomPadding
-        )
-      }
+      val bottomPadding = DEFAULT_PADDING
+      AppBarTitle(
+        stringResource(MR.strings.servers_info),
+        hostDevice(rh?.remoteHostId),
+        bottomPadding = bottomPadding
+      )
       if (serversSummary.value == null) {
         Box(
           modifier = Modifier
@@ -827,7 +823,7 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
           verticalAlignment = Alignment.Top,
           userScrollEnabled = appPlatform.isAndroid
         ) { index ->
-          ColumnWithScrollBar(
+          Column(
             Modifier
               .fillMaxSize(),
             verticalArrangement = Arrangement.Top
@@ -845,6 +841,14 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
                 }
               )
               SectionDividerSpaced()
+            }
+            val scrollState = LocalAppBarHandler.current?.scrollState
+            val connection = LocalAppBarHandler.current?.connection
+            // Workaround a problem when longer first page switches to shorter second page, which makes appBarOffset
+            // bigger than it needs to be with such a small page
+            LaunchedEffect(serverTypePagerState.currentPage) {
+              scrollState?.scrollTo(0)
+              connection?.appBarOffset = 0f
             }
             when (index) {
               PresentedServerType.SMP.ordinal -> {
