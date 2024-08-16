@@ -61,7 +61,7 @@ class ItemsModel: ObservableObject {
 
     init() {
         publisher
-            .throttle(for: 1, scheduler: DispatchQueue.main, latest: true)
+            .throttle(for: 0.25, scheduler: DispatchQueue.main, latest: true)
             .sink { self.objectWillChange.send() }
             .store(in: &bag)
     }
