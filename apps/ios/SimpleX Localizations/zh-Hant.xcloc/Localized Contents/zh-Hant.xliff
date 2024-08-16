@@ -5908,7 +5908,7 @@ It can happen because of some bug or when the connection is compromised.</source
       </trans-unit>
       <trans-unit id="Abort" xml:space="preserve" approved="no">
         <source>Abort</source>
-        <target state="translated">停止</target>
+        <target state="translated">中止</target>
       </trans-unit>
       <trans-unit id="**Create group**: to create a new group." xml:space="preserve" approved="no">
         <source>**Create group**: to create a new group.</source>
@@ -5916,7 +5916,7 @@ It can happen because of some bug or when the connection is compromised.</source
       </trans-unit>
       <trans-unit id="Abort changing address" xml:space="preserve" approved="no">
         <source>Abort changing address</source>
-        <target state="translated">取消更改地址</target>
+        <target state="translated">中止更改地址</target>
       </trans-unit>
       <trans-unit id="Accept connection request?" xml:space="preserve" approved="no">
         <source>Accept connection request?</source>
@@ -6112,7 +6112,7 @@ It can happen because of some bug or when the connection is compromised.</source
       </trans-unit>
       <trans-unit id="Abort changing address?" xml:space="preserve" approved="no">
         <source>Abort changing address?</source>
-        <target state="translated">取消更改地址？</target>
+        <target state="translated">中止更改地址？</target>
       </trans-unit>
       <trans-unit id="Allow to send SimpleX links." xml:space="preserve" approved="no">
         <source>Allow to send SimpleX links.</source>
