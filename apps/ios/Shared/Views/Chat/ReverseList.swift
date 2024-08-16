@@ -172,13 +172,15 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
         }
 
         var updateInProgress = false
+        var itemId: Item.ID?
 
         func update(items: [Item]) {
             if updateInProgress { return }
-            let itemsAdded = items.count - itemCount
-            if itemsAdded > 0, itemCount != 0 {
+            if let itemId, 
+               let i = items.firstIndex(where: { $0.id == itemId }),
+               i > 0 {
                 updateInProgress = true
-                _update(items: Array(items[itemsAdded...]), animated: false) {
+                _update(items: Array(items[i...]), animated: false) {
                     DispatchQueue.main.async {
                         self._update(items: items, animated: true) {
                             self.updateInProgress = false
@@ -188,6 +190,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             } else {
                _update(items: items, animated: false)
             }
+            itemId = items.first?.id
             itemCount = items.count
         }
 
