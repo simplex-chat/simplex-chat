@@ -50,9 +50,6 @@ class ItemsModel: ObservableObject {
     var reversedChatItems: [ChatItem] = [] {
         willSet { publisher.send() }
     }
-    var itemAdded = false {
-        willSet { publisher.send() }
-    }
     
     // Publishes directly to `objectWillChange` publisher,
     // this will cause reversedChatItems to be rendered without throttling
@@ -456,7 +453,6 @@ final class ChatModel: ObservableObject {
                     ci.meta.itemStatus = status
                 }
                 im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
-                im.itemAdded = true
             }
             return true
         }
@@ -551,7 +547,6 @@ final class ChatModel: ObservableObject {
         let cItem = ChatItem.liveDummy(chatInfo.chatType)
         withAnimation {
             im.reversedChatItems.insert(cItem, at: 0)
-            im.itemAdded = true
         }
         return cItem
     }
@@ -915,7 +910,6 @@ final class ChatModel: ObservableObject {
             // TODO these thresholds account for the fact that items are still "visible" while
             // covered by compose area, they should be replaced with the actual height in pixels below the screen.
             isNearBottom: totalBelow < 15,
-            isReallyNearBottom: totalBelow < 2,
             unreadBelow: unreadBelow
         )
     }
@@ -942,7 +936,6 @@ struct NTFContactRequest {
 
 struct UnreadChatItemCounts: Equatable {
     var isNearBottom: Bool
-    var isReallyNearBottom: Bool
     var unreadBelow: Int
 }
 

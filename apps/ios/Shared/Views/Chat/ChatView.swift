@@ -472,7 +472,6 @@ struct ChatView: View {
         init() {
             unreadChatItemCounts = UnreadChatItemCounts(
                 isNearBottom: true,
-                isReallyNearBottom: true,
                 unreadBelow: 0
             )
             events

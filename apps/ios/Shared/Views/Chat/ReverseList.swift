@@ -163,17 +163,31 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                     animated: animated
                 )
             } else {
-                tableView.setContentOffset(
-                    CGPoint(x: .zero, y: -InvertedTableView.inset),
-                    animated: animated
-                )
+                scrollToBottom(animated: animated)
             }
             Task { representer.scrollState = .atDestination }
         }
 
-        var itemId: Item.ID?
-        var retainedItems: [Item]?
-        var updateInProgress = false
+        private func scrollToBottom(animated: Bool) {
+            tableView.setContentOffset(
+                CGPoint(x: .zero, y: -InvertedTableView.inset),
+                animated: animated
+            )
+        }
+
+        private var isNearBottom: Bool {
+            let adjustedOffset = tableView.contentOffset.y + InvertedTableView.inset
+            return adjustedOffset > 0 && adjustedOffset < 500
+        }
+
+        private var isFarFromBottom: Bool {
+            let adjustedOffset = tableView.contentOffset.y + InvertedTableView.inset
+            return adjustedOffset > 1000
+        }
+
+        private var itemId: Item.ID?
+        private var retainedItems: [Item]?
+        private var updateInProgress = false
 
         func update(items: [Item]) {
             if updateInProgress {
@@ -190,6 +204,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                         // Added items animated by sliding from bottom (.top)
                         self._update(items: items, animated: true) {
                             self.updateInProgress = false
+                            if self.isNearBottom { self.scrollToBottom(animated: true) }
                             // Process update, which might have arrived before completion
                             if let items = self.retainedItems { self.update(items: items) }
                         }
