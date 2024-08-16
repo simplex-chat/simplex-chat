@@ -395,7 +395,11 @@ struct ChatView: View {
         let cInfo = chat.chatInfo
         let mergedItems = filtered(im.reversedChatItems)
         return GeometryReader { g in
-            ReverseList(items: mergedItems, scrollState: $scrollModel.state) { ci in
+            ReverseList(
+                items: mergedItems,
+                scrollState: $scrollModel.state,
+                isFarFromBottom: $scrollModel.isFarFromBottom
+            ) { ci in
                 let voiceNoFrame = voiceWithoutFrame(ci)
                 let maxWidth = cInfo.chatType == .group
                                 ? voiceNoFrame
@@ -470,10 +474,7 @@ struct ChatView: View {
         private var bag = Set<AnyCancellable>()
 
         init() {
-            unreadChatItemCounts = UnreadChatItemCounts(
-                isNearBottom: true,
-                unreadBelow: 0
-            )
+            unreadChatItemCounts = UnreadChatItemCounts(unreadBelow: 0)
             events
                 .receive(on: DispatchQueue.global(qos: .background))
                 .scan(Set<String>()) { itemsInView, event in
@@ -537,7 +538,7 @@ struct ChatView: View {
                 .onTapGesture {
                     scrollModel.scrollToBottom()
                 }
-            } else if !counts.isNearBottom {
+            } else if scrollModel.isFarFromBottom {
                 circleButton {
                     Image(systemName: "chevron.down")
                         .foregroundColor(theme.colors.primary)

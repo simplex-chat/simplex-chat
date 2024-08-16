@@ -897,21 +897,14 @@ final class ChatModel: ObservableObject {
 
     func unreadChatItemCounts(itemsInView: Set<String>) -> UnreadChatItemCounts {
         var i = 0
-        var totalBelow = 0
         var unreadBelow = 0
         while i < im.reversedChatItems.count - 1 && !itemsInView.contains(im.reversedChatItems[i].viewId) {
-            totalBelow += 1
             if im.reversedChatItems[i].isRcvNew {
                 unreadBelow += 1
             }
             i += 1
         }
-        return UnreadChatItemCounts(
-            // TODO these thresholds account for the fact that items are still "visible" while
-            // covered by compose area, they should be replaced with the actual height in pixels below the screen.
-            isNearBottom: totalBelow < 15,
-            unreadBelow: unreadBelow
-        )
+        return UnreadChatItemCounts(unreadBelow: unreadBelow)
     }
 
     func topItemInView(itemsInView: Set<String>) -> ChatItem? {
@@ -935,7 +928,6 @@ struct NTFContactRequest {
 }
 
 struct UnreadChatItemCounts: Equatable {
-    var isNearBottom: Bool
     var unreadBelow: Int
 }
 

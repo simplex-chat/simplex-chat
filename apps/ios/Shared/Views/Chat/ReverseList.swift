@@ -14,6 +14,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
     let items: Array<Item>
 
     @Binding var scrollState: ReverseListScrollModel<Item>.State
+    @Binding var isFarFromBottom: Bool
 
     /// Closure, that returns user interface for a given item
     let content: (Item) -> Content
@@ -175,14 +176,20 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             )
         }
 
+        override func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            let adjustedOffset = tableView.contentOffset.y + InvertedTableView.inset
+            if representer.isFarFromBottom {
+                if adjustedOffset < 800 {
+                    DispatchQueue.main.async { self.representer.isFarFromBottom = false }
+                }
+            } else if adjustedOffset > 1000 {
+                DispatchQueue.main.async { self.representer.isFarFromBottom = true }
+            }
+        }
+
         private var isNearBottom: Bool {
             let adjustedOffset = tableView.contentOffset.y + InvertedTableView.inset
             return adjustedOffset > 0 && adjustedOffset < 500
-        }
-
-        private var isFarFromBottom: Bool {
-            let adjustedOffset = tableView.contentOffset.y + InvertedTableView.inset
-            return adjustedOffset > 1000
         }
 
         private var itemId: Item.ID?
@@ -217,7 +224,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             itemCount = items.count
         }
 
-        func _update(items: Array<Item>, animated: Bool, completion: (() -> Void)? = nil) {
+        private func _update(items: [Item], animated: Bool, completion: (() -> Void)? = nil) {
             var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
             snapshot.appendSections([.main])
             snapshot.appendItems(items)
@@ -281,6 +288,7 @@ class ReverseListScrollModel<Item: Identifiable>: ObservableObject {
     }
 
     @Published var state: State = .atDestination
+    @Published var isFarFromBottom: Bool = false
 
     func scrollToNextPage() {
         state = .scrollingTo(.nextPage)
