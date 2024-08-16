@@ -171,17 +171,32 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             Task { representer.scrollState = .atDestination }
         }
 
-        func update(items: Array<Item>) {
+        var updateInProgress = false
+
+        func update(items: [Item]) {
+            if updateInProgress { return }
+            let itemsAdded = items.count - itemCount
+            if itemsAdded > 0, itemCount != 0 {
+                updateInProgress = true
+                _update(items: Array(items[1...]), animated: false) {
+                    DispatchQueue.main.async {
+                        self._update(items: items, animated: true) {
+                            self.updateInProgress = false
+                        }
+                    }
+                }
+            } else {
+               _update(items: items, animated: false)
+            }
+            itemCount = items.count
+        }
+
+        func _update(items: Array<Item>, animated: Bool, completion: (() -> Void)? = nil) {
             var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
             snapshot.appendSections([.main])
             snapshot.appendItems(items)
-            dataSource.defaultRowAnimation = .none
-            let countChange = abs(items.count - itemCount)
-            dataSource.apply(snapshot, animatingDifferences:
-                countChange > 0 && // Avoid animating initial load
-                countChange < 5    // Avoid animating page loads
-            )
-            itemCount = items.count
+            dataSource.defaultRowAnimation = animated ? .top : .none
+            dataSource.apply(snapshot, animatingDifferences: animated, completion: completion)
         }
     }
 

@@ -450,13 +450,14 @@ final class ChatModel: ObservableObject {
             }
             return false
         } else {
-            var ci = cItem
-            if let status = chatItemStatuses.removeValue(forKey: ci.id), case .sndNew = ci.meta.itemStatus {
-                ci.meta.itemStatus = status
+            withConditionalAnimation(itemAnimation()) {
+                var ci = cItem
+                if let status = chatItemStatuses.removeValue(forKey: ci.id), case .sndNew = ci.meta.itemStatus {
+                    ci.meta.itemStatus = status
+                }
+                im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
+                im.itemAdded = true
             }
-            if itemAnimation() != nil { FadeInChatItem.items.insert(ci.id) }
-            im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
-            im.itemAdded = true
             return true
         }
 
