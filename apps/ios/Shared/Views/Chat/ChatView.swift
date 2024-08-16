@@ -1567,7 +1567,7 @@ struct FadeInChatItem: ViewModifier {
             .onAppear {
                 if !isVisible {
                     Self.items.remove(chatItemId)
-                    withAnimation { isVisible = true }
+                    withAnimation(.easeInOut(duration: 0.5)) { isVisible = true }
                 }
             }
     }
