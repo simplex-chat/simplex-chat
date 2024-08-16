@@ -414,6 +414,7 @@ struct ChatView: View {
                     revealedChatItem: $revealedChatItem,
                     selectedChatItems: $selectedChatItems
                 )
+                .modifier(FadeInChatItem(id: ci.id))
                 .onAppear {
                     floatingButtonModel.appeared(viewId: ci.viewId)
                 }
@@ -1548,6 +1549,28 @@ private func buildTheme() -> AppTheme {
         return AppTheme(name: theme.name, base: theme.base, colors: theme.colors, appColors: theme.appColors, wallpaper: theme.wallpaper)
     } else {
         return AppTheme.shared
+    }
+}
+
+struct FadeInChatItem: ViewModifier {
+    static var items = Set<ChatItem.ID>()
+    private let chatItemId: ChatItem.ID
+    @State private var isVisible: Bool
+
+    init(id: ChatItem.ID) {
+        chatItemId = id
+        isVisible = !Self.items.contains(chatItemId)
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(isVisible ? 1 : 0)
+            .onAppear {
+                if !isVisible {
+                    Self.items.remove(chatItemId)
+                    withAnimation { isVisible = true }
+                }
+            }
     }
 }
 

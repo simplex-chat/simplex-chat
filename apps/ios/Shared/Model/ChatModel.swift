@@ -61,7 +61,7 @@ class ItemsModel: ObservableObject {
 
     init() {
         publisher
-            .throttle(for: 0.25, scheduler: DispatchQueue.main, latest: true)
+            .throttle(for: 1, scheduler: DispatchQueue.main, latest: true)
             .sink { self.objectWillChange.send() }
             .store(in: &bag)
     }
@@ -452,14 +452,13 @@ final class ChatModel: ObservableObject {
             }
             return false
         } else {
-            withConditionalAnimation(itemAnimation()) {
-                var ci = cItem
-                if let status = chatItemStatuses.removeValue(forKey: ci.id), case .sndNew = ci.meta.itemStatus {
-                    ci.meta.itemStatus = status
-                }
-                im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
-                im.itemAdded = true
+            var ci = cItem
+            if let status = chatItemStatuses.removeValue(forKey: ci.id), case .sndNew = ci.meta.itemStatus {
+                ci.meta.itemStatus = status
             }
+            if itemAnimation() != nil { FadeInChatItem.items.insert(ci.id) }
+            im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
+            im.itemAdded = true
             return true
         }
 
