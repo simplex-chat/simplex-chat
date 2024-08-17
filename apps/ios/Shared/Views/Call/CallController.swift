@@ -186,29 +186,27 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         logger.debug("CallController: started chat")
         self.shouldSuspendChat = true
         // There are no invitations in the model, as it was processed by NSE
-        _ = try? justRefreshCallInvitations()
-        logger.debug("CallController: updated call invitations chat")
-        // logger.debug("CallController justRefreshCallInvitations: \(String(describing: m.callInvitations))")
-        // Extract the call information from the push notification payload
-        let m = ChatModel.shared
-        if let contactId = payload.dictionaryPayload["contactId"] as? String,
-           let invitation = m.callInvitations[contactId] {
-            let update = self.cxCallUpdate(invitation: invitation)
-            if let uuid = invitation.callkitUUID {
-                logger.debug("CallController: report pushkit call via CallKit")
+        Task {
+            _ = try? await justRefreshCallInvitations()
+            logger.debug("CallController: updated call invitations chat")
+            // logger.debug("CallController justRefreshCallInvitations: \(String(describing: m.callInvitations))")
+            // Extract the call information from the push notification payload
+            let m = ChatModel.shared
+            if let contactId = payload.dictionaryPayload["contactId"] as? String,
+               let invitation = m.callInvitations[contactId] {
                 let update = self.cxCallUpdate(invitation: invitation)
-                self.provider.reportNewIncomingCall(with: uuid, update: update) { error in
-                    if error != nil {
-                        m.callInvitations.removeValue(forKey: contactId)
-                    }
-                    // Tell PushKit that the notification is handled.
+                if let uuid = invitation.callkitUUID {
+                    logger.debug("CallController: report pushkit call via CallKit")
+                    let update = self.cxCallUpdate(invitation: invitation)
+                    do { try await self.provider.reportNewIncomingCall(with: uuid, update: update) }
+                    catch { m.callInvitations.removeValue(forKey: contactId) }
                     completion()
+                } else {
+                    self.reportExpiredCall(update: update, completion)
                 }
             } else {
-                self.reportExpiredCall(update: update, completion)
+                self.reportExpiredCall(payload: payload, completion)
             }
-        } else {
-            self.reportExpiredCall(payload: payload, completion)
         }
     }
 

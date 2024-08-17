@@ -1218,8 +1218,8 @@ func apiEndCall(_ contact: Contact) async throws {
     try await sendCommandOkResp(.apiEndCall(contact: contact))
 }
 
-func apiGetCallInvitations() throws -> [RcvCallInvitation] {
-    let r = chatSendCmdSync(.apiGetCallInvitations)
+func apiGetCallInvitations() async throws -> [RcvCallInvitation] {
+    let r = await chatSendCmd(.apiGetCallInvitations)
     if case let .callInvitations(invs) = r { return invs }
     throw r
 }
@@ -1517,7 +1517,7 @@ func startChat(refreshInvitations: Bool = true) throws {
         try getUserChatData()
         NtfManager.shared.setNtfBadgeCount(m.totalUnreadCountForAllUsers())
         if (refreshInvitations) {
-            try refreshCallInvitations()
+            Task { try await refreshCallInvitations() }
         }
         (m.savedToken, m.tokenStatus, m.notificationMode, m.notificationServer) = apiGetNtfToken()
         _ = try apiStartChat()
@@ -2164,9 +2164,9 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     }
 }
 
-func refreshCallInvitations() throws {
+func refreshCallInvitations() async throws {
     let m = ChatModel.shared
-    let callInvitations = try justRefreshCallInvitations()
+    let callInvitations = try await justRefreshCallInvitations()
     if let (chatId, ntfAction) = m.ntfCallInvitationAction,
        let invitation = m.callInvitations.removeValue(forKey: chatId) {
         m.ntfCallInvitationAction = nil
@@ -2176,10 +2176,13 @@ func refreshCallInvitations() throws {
     }
 }
 
-func justRefreshCallInvitations() throws -> [RcvCallInvitation] {
+func justRefreshCallInvitations() async throws -> [RcvCallInvitation] {
     let m = ChatModel.shared
-    let callInvitations = try apiGetCallInvitations()
-    m.callInvitations = callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
+    let callInvitations = try await apiGetCallInvitations()
+    await MainActor.run {
+        m.callInvitations = callInvitations
+            .reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
+    }
     return callInvitations
 }
 

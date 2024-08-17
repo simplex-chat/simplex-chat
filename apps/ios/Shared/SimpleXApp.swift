@@ -150,10 +150,12 @@ struct SimpleXApp: App {
     }
 
     private func updateCallInvitations() {
-        do {
-            try refreshCallInvitations()
-        } catch let error {
-            logger.error("apiGetCallInvitations: cannot update call invitations \(responseError(error))")
+        Task {
+            do {
+                try await refreshCallInvitations()
+            } catch let error {
+                logger.error("apiGetCallInvitations: cannot update call invitations \(responseError(error))")
+            }
         }
     }
 }
