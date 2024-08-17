@@ -74,9 +74,9 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
       case connType of
         ConnMember -> uncurry (RcvGroupMsgConnection c) <$> getGroupAndMember_ entId c
         ConnContact -> RcvDirectMsgConnection c . Just <$> getContactRec_ entId c
-        ConnSndFile -> SndFileConnection c <$> getConnSndFileTransfer_ entId c
+        ConnSndFile -> SndFileConnection c <$> getConnSndFileTransfer_ db user entId c
         ConnRcvFile -> RcvFileConnection c <$> getRcvFileTransfer db user entId
-        ConnUserContact -> UserContactConnection c <$> getUserContact_ entId
+        ConnUserContact -> UserContactConnection c <$> getUserContact_ db user entId
   where
     getContactRec_ :: Int64 -> Connection -> ExceptT StoreError IO Contact
     getContactRec_ contactId c = ExceptT $ do
@@ -133,41 +133,44 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
       let groupInfo = toGroupInfo vr userContactId groupInfoRow
           member = toGroupMember userContactId memberRow
        in (groupInfo, (member :: GroupMember) {activeConn = Just c})
-    getConnSndFileTransfer_ :: Int64 -> Connection -> ExceptT StoreError IO SndFileTransfer
-    getConnSndFileTransfer_ fileId Connection {connId} =
-      ExceptT $
-        firstRow' (sndFileTransfer_ fileId connId) (SESndFileNotFound fileId) $
-          DB.query
-            db
-            [sql|
-              SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_descr_id, s.file_inline, s.group_member_id, cs.local_display_name, m.local_display_name
-              FROM snd_files s
-              JOIN files f USING (file_id)
-              LEFT JOIN contacts cs USING (contact_id)
-              LEFT JOIN group_members m USING (group_member_id)
-              WHERE f.user_id = ? AND f.file_id = ? AND s.connection_id = ?
-            |]
-            (userId, fileId, connId)
-    sndFileTransfer_ :: Int64 -> Int64 -> (FileStatus, String, Integer, Integer, FilePath, Maybe Int64, Maybe InlineFileMode, Maybe Int64, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
-    sndFileTransfer_ fileId connId (fileStatus, fileName, fileSize, chunkSize, filePath, fileDescrId, fileInline, groupMemberId, contactName_, memberName_) =
+
+getConnSndFileTransfer_ :: DB.Connection -> User -> Int64 -> Connection -> ExceptT StoreError IO SndFileTransfer
+getConnSndFileTransfer_ db User {userId} fileId Connection {connId, agentConnId} =
+  ExceptT $
+    firstRow' sndFileTransfer_ (SESndFileNotFound fileId) $
+      DB.query
+        db
+        [sql|
+          SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_descr_id, s.file_inline, s.group_member_id, cs.local_display_name, m.local_display_name
+          FROM snd_files s
+          JOIN files f USING (file_id)
+          LEFT JOIN contacts cs USING (contact_id)
+          LEFT JOIN group_members m USING (group_member_id)
+          WHERE f.user_id = ? AND f.file_id = ? AND s.connection_id = ?
+        |]
+        (userId, fileId, connId)
+  where
+    sndFileTransfer_ :: (FileStatus, String, Integer, Integer, FilePath, Maybe Int64, Maybe InlineFileMode, Maybe Int64, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
+    sndFileTransfer_ (fileStatus, fileName, fileSize, chunkSize, filePath, fileDescrId, fileInline, groupMemberId, contactName_, memberName_) =
       case contactName_ <|> memberName_ of
         Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileDescrId, fileInline, recipientDisplayName, connId, agentConnId, groupMemberId}
         Nothing -> Left $ SESndFileInvalid fileId
-    getUserContact_ :: Int64 -> ExceptT StoreError IO UserContact
-    getUserContact_ userContactLinkId = ExceptT $ do
-      userContact_
-        <$> DB.query
-          db
-          [sql|
-            SELECT conn_req_contact, group_id
-            FROM user_contact_links
-            WHERE user_id = ? AND user_contact_link_id = ?
-          |]
-          (userId, userContactLinkId)
-      where
-        userContact_ :: [(ConnReqContact, Maybe GroupId)] -> Either StoreError UserContact
-        userContact_ [(cReq, groupId)] = Right UserContact {userContactLinkId, connReqContact = cReq, groupId}
-        userContact_ _ = Left SEUserContactLinkNotFound
+
+getUserContact_ :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO UserContact
+getUserContact_ db User {userId} userContactLinkId = ExceptT $ do
+  userContact_
+    <$> DB.query
+      db
+      [sql|
+        SELECT conn_req_contact, group_id
+        FROM user_contact_links
+        WHERE user_id = ? AND user_contact_link_id = ?
+      |]
+      (userId, userContactLinkId)
+  where
+    userContact_ :: [(ConnReqContact, Maybe GroupId)] -> Either StoreError UserContact
+    userContact_ [(cReq, groupId)] = Right UserContact {userContactLinkId, connReqContact = cReq, groupId}
+    userContact_ _ = Left SEUserContactLinkNotFound
 
 getConnection_ :: DB.Connection -> VersionRangeChat -> User -> AgentConnId -> ExceptT StoreError IO Connection
 getConnection_ db vr User {userId} agentConnId = ExceptT $ do
@@ -194,11 +197,11 @@ getConnectionEntityRef db vr user@User {userId, userContactId} agentConnId = do
         else throwError $ SEInternalError $ "connection " <> show connType <> " without entity"
     Just entId ->
       case connType of
-        ConnMember -> uncurry (RcvGroupMsgConnectionRef c) <$> getGroupAndMember_ entId c
+        ConnMember -> uncurry (RcvGroupMsgConnectionRef c) <$> getGroupAndMemberRefs_ entId c
         ConnContact -> RcvDirectMsgConnectionRef c . Just <$> getContactRefRec_ entId c
-        ConnSndFile -> SndFileConnectionRef c <$> getConnSndFileTransfer_ entId c
+        ConnSndFile -> SndFileConnectionRef c <$> getConnSndFileTransfer_ db user entId c
         ConnRcvFile -> RcvFileConnectionRef c <$> getRcvFileTransfer db user entId
-        ConnUserContact -> UserContactConnectionRef c <$> getUserContact_ entId
+        ConnUserContact -> UserContactConnectionRef c <$> getUserContact_ db user entId
   where
     -- getConnectionRef_ :: ExceptT StoreError IO ConnectionRef
     -- getConnectionRef_ = ExceptT $ do
@@ -219,75 +222,30 @@ getConnectionEntityRef db vr user@User {userId, userContactId} agentConnId = do
         firstRow (toContactRef' contactId c) (SEInternalError "referenced contact not found") $
           DB.query db "SELECT c.local_display_name FROM contacts WHERE user_id = ? AND contact_id = ? AND deleted = 0" (userId, contactId)
     toContactRef' :: ContactId -> Connection -> Only ContactName -> ContactRef
-    toContactRef' contactId Connection {connId, agentConnId} (Only localDisplayName) = ContactRef {contactId, connId, agentConnId, localDisplayName}
-    getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
-    getGroupAndMember_ groupMemberId c = ExceptT $ do
-      firstRow (toGroupAndMember c) (SEInternalError "referenced group member not found") $
+    toContactRef' contactId Connection {connId} (Only localDisplayName) = ContactRef {contactId, connId, agentConnId, localDisplayName}
+    getGroupAndMemberRefs_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfoRef, GroupMemberNameRef)
+    getGroupAndMemberRefs_ groupMemberId c = ExceptT $ do
+      firstRow (toGroupAndMemberRefs c) (SEInternalError "referenced group member not found") $
         DB.query
           db
           [sql|
             SELECT
-              -- GroupInfo
-              g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image,
-              g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences,
-              g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at, g.ui_themes, g.custom_data,
-              -- GroupInfo {membership}
-              mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-              mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
-              -- GroupInfo {membership = GroupMember {memberProfile}}
-              pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
-              -- from GroupMember
-              m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-              m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences
+              -- GroupInfoRef
+              g.group_id, g.local_display_name, mu.member_status, mu.contact_profile_id, pu.contact_profile_id
+              -- GroupMemberNameRef
+              m.group_member_id, m.local_display_name
             FROM group_members m
-            JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
             JOIN groups g ON g.group_id = m.group_id
-            JOIN group_profiles gp USING (group_profile_id)
-            JOIN group_members mu ON g.group_id = mu.group_id
+            JOIN group_members mu ON mu.group_id = g.group_id
             JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
             WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
           |]
           (groupMemberId, userId, userContactId)
-    toGroupAndMember :: Connection -> GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupMember)
-    toGroupAndMember c (groupInfoRow :. memberRow) =
-      let groupInfo = toGroupInfo vr userContactId groupInfoRow
-          member = toGroupMember userContactId memberRow
-       in (groupInfo, (member :: GroupMember) {activeConn = Just c})
-    getConnSndFileTransfer_ :: Int64 -> Connection -> ExceptT StoreError IO SndFileTransfer
-    getConnSndFileTransfer_ fileId Connection {connId} =
-      ExceptT $
-        firstRow' (sndFileTransfer_ fileId connId) (SESndFileNotFound fileId) $
-          DB.query
-            db
-            [sql|
-              SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_descr_id, s.file_inline, s.group_member_id, cs.local_display_name, m.local_display_name
-              FROM snd_files s
-              JOIN files f USING (file_id)
-              LEFT JOIN contacts cs USING (contact_id)
-              LEFT JOIN group_members m USING (group_member_id)
-              WHERE f.user_id = ? AND f.file_id = ? AND s.connection_id = ?
-            |]
-            (userId, fileId, connId)
-    sndFileTransfer_ :: Int64 -> Int64 -> (FileStatus, String, Integer, Integer, FilePath, Maybe Int64, Maybe InlineFileMode, Maybe Int64, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
-    sndFileTransfer_ fileId connId (fileStatus, fileName, fileSize, chunkSize, filePath, fileDescrId, fileInline, groupMemberId, contactName_, memberName_) =
-      case contactName_ <|> memberName_ of
-        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileDescrId, fileInline, recipientDisplayName, connId, agentConnId, groupMemberId}
-        Nothing -> Left $ SESndFileInvalid fileId
-    getUserContact_ :: Int64 -> ExceptT StoreError IO UserContact
-    getUserContact_ userContactLinkId = ExceptT $ do
-      userContact_
-        <$> DB.query
-          db
-          [sql|
-            SELECT conn_req_contact, group_id
-            FROM user_contact_links
-            WHERE user_id = ? AND user_contact_link_id = ?
-          |]
-          (userId, userContactLinkId)
-      where
-        userContact_ :: [(ConnReqContact, Maybe GroupId)] -> Either StoreError UserContact
-        userContact_ [(cReq, groupId)] = Right UserContact {userContactLinkId, connReqContact = cReq, groupId}
-        userContact_ _ = Left SEUserContactLinkNotFound
+    toGroupAndMemberRefs :: Connection -> (GroupId, GroupName, GroupMemberStatus, Int64, Int64) :. (GroupMemberId, ContactName) -> (GroupInfoRef, GroupMemberNameRef)
+    toGroupAndMemberRefs Connection {connId, agentConnId = AgentConnId acId} (groupInfoRefRow@(gId, _, _, _, _) :. (gmId, mName)) =
+      let groupInfoRef = toGroupInfoRef groupInfoRefRow
+          memberRef = toGroupMemberRef (gmId, gId, connId, acId, mName)
+       in (groupInfoRef, memberRef)
 
 getConnectionEntityByConnReq :: DB.Connection -> VersionRangeChat -> User -> (ConnReqInvitation, ConnReqInvitation) -> IO (Maybe ConnectionEntity)
 getConnectionEntityByConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2) = do

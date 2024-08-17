@@ -125,7 +125,7 @@ data ConnectionEntity
 
 data ConnectionEntityRef
   = RcvDirectMsgConnectionRef {entityConnection_ :: Connection, contact :: Maybe ContactRef}
-  | RcvGroupMsgConnectionRef {entityConnection_ :: Connection, groupInfo :: GroupInfo, groupMember :: GroupMember}
+  | RcvGroupMsgConnectionRef {entityConnection_ :: Connection, groupInfo :: GroupInfoRef, groupMember :: GroupMemberNameRef}
   | SndFileConnectionRef {entityConnection_ :: Connection, sndFileTransfer :: SndFileTransfer}
   | RcvFileConnectionRef {entityConnection_ :: Connection, rcvFileTransfer :: RcvFileTransfer}
   | UserContactConnectionRef {entityConnection_ :: Connection, userContact :: UserContact}

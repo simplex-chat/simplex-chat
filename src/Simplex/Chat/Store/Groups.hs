@@ -18,6 +18,8 @@ module Simplex.Chat.Store.Groups
     MaybeGroupMemberRow,
     toGroupInfo,
     toGroupMember,
+    toGroupInfoRef,
+    toGroupMemberRef,
     toMaybeGroupMember,
 
     -- * Group functions
@@ -51,7 +53,7 @@ module Simplex.Chat.Store.Groups
     deleteGroupConnectionsAndFiles,
     deleteGroupItemsAndMembers,
     deleteGroup,
-    getUserGroups,
+    getUserGroupRefs,
     getUserGroupDetails,
     getUserGroupsWithSummary,
     getGroupSummary,
@@ -167,6 +169,10 @@ toGroupInfo vr userContactId ((groupId, localDisplayName, displayName, fullName,
       groupProfile = GroupProfile {displayName, fullName, description, image, groupPreferences}
    in GroupInfo {groupId, localDisplayName, groupProfile, fullGroupPreferences, membership, hostConnCustomUserProfileId, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, uiThemes, customData}
 
+toGroupInfoRef :: (GroupId, GroupName, GroupMemberStatus, Int64, Int64) -> GroupInfoRef
+toGroupInfoRef (groupId, gName, membershipStatus, membershipProfileId, membershipContactProfileId) =
+  GroupInfoRef {groupId, localDisplayName = gName, membershipStatus, membershipIncognito = membershipProfileId /= membershipContactProfileId}
+
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
 toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId, profileId, displayName, fullName, image, contactLink, localAlias, preferences)) =
   let memberProfile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
@@ -176,6 +182,10 @@ toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, 
       activeConn = Nothing
       memberChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
    in GroupMember {..}
+
+toGroupMemberRef :: (GroupMemberId, GroupId, Int64, ConnId, ContactName) -> GroupMemberNameRef
+toGroupMemberRef (groupMemberId, groupId, connId, acId, localDisplayName) =
+  GroupMemberNameRef {groupMemberId, groupId, connId, agentConnId = AgentConnId acId, localDisplayName}
 
 toMaybeGroupMember :: Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
 toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked) :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId, Just profileId, Just displayName, Just fullName, image, contactLink, Just localAlias, contactPreferences)) =
@@ -574,6 +584,12 @@ getGroup db vr user groupId = do
   members <- liftIO $ getGroupMembers db vr user gInfo
   pure $ Group gInfo members
 
+getGroupRef :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO GroupRef
+getGroupRef db user groupId = do
+  gInfo <- getGroupInfoRef db user groupId
+  members <- liftIO $ getActiveGroupMemberRefs db user gInfo
+  pure $ GroupRef gInfo members
+
 deleteGroupConnectionsAndFiles :: DB.Connection -> User -> GroupInfo -> [GroupMember] -> IO ()
 deleteGroupConnectionsAndFiles db User {userId} GroupInfo {groupId} members = do
   forM_ members $ \m -> DB.execute db "DELETE FROM connections WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId' m)
@@ -623,10 +639,10 @@ deleteGroupProfile_ db userId groupId =
     |]
     (userId, groupId)
 
-getUserGroups :: DB.Connection -> VersionRangeChat -> User -> IO [Group]
-getUserGroups db vr user@User {userId} = do
+getUserGroupRefs :: DB.Connection -> User -> IO [GroupRef]
+getUserGroupRefs db user@User {userId} = do
   groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
-  rights <$> mapM (runExceptT . getGroup db vr user) groupIds
+  rights <$> mapM (runExceptT . getGroupRef db user) groupIds
 
 getUserGroupDetails :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
 getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ =
@@ -747,6 +763,25 @@ getGroupMembers db vr user@User {userId, userContactId} GroupInfo {groupId} = do
       db
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)")
       (userId, groupId, userId, userContactId)
+
+getActiveGroupMemberRefs :: DB.Connection -> User -> GroupInfoRef -> IO [GroupMemberNameRef]
+getActiveGroupMemberRefs db User {userId, userContactId} GroupInfoRef {groupId} = do
+  map toGroupMemberRef
+    <$> DB.query
+      db
+      [sql|
+        SELECT m.group_member_id, m.group_id, c.connection_id, c.agent_conn_id, m.local_display_name
+        FROM group_members m
+        JOIN connections c ON c.connection_id = (
+          SELECT max(cc.connection_id)
+          FROM connections cc
+          WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
+        )
+        WHERE m.group_id = ? AND m.user_id = ?
+              AND (m.contact_id IS NULL OR m.contact_id != ?)
+              AND m.member_status NOT IN (?, ?, ?)
+      |]
+      (userId, groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted) -- consistent with memberRemoved
 
 getGroupMembersForExpiration :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
 getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {groupId} = do
@@ -1418,6 +1453,20 @@ getGroupInfo db vr User {userId, userContactId} groupId =
           pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences
         FROM groups g
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+        JOIN group_members mu ON mu.group_id = g.group_id
+        JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+        WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
+      |]
+      (groupId, userId, userContactId)
+
+getGroupInfoRef :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO GroupInfoRef
+getGroupInfoRef db User {userId, userContactId} groupId =
+  ExceptT . firstRow toGroupInfoRef (SEGroupNotFound groupId) $
+    DB.query
+      db
+      [sql|
+        SELECT g.group_id, g.local_display_name, mu.member_status, mu.contact_profile_id, pu.contact_profile_id
+        FROM groups g
         JOIN group_members mu ON mu.group_id = g.group_id
         JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
         WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?

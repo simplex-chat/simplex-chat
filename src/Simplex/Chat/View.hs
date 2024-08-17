@@ -256,7 +256,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
       (groupLinkErrors, groupLinksSubscribed) = partition (isJust . userContactError) groupLinks
   CRNetworkStatus status conns -> if testView then [plain $ show (length conns) <> " connections " <> netStatusStr status] else []
   CRNetworkStatuses u statuses -> if testView then ttyUser' u $ viewNetworkStatuses statuses else []
-  CRGroupInvitation u g -> ttyUser u [groupInvitation' g]
+  CRGroupInvitation u g -> ttyUser u [groupInvitationRef g]
   CRReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CRUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
   CRJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
@@ -271,8 +271,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRDeletedMemberUser u g by -> ttyUser u $ [ttyGroup' g <> ": " <> ttyMember by <> " removed you from the group"] <> groupPreserved g
   CRDeletedMember u g by m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group"]
   CRLeftMember u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " left the group"]
-  CRGroupEmpty u g -> ttyUser u [ttyFullGroup g <> ": group is empty"]
-  CRGroupRemoved u g -> ttyUser u [ttyFullGroup g <> ": you are no longer a member or group deleted"]
+  CRGroupEmpty u g -> ttyUser u [ttyGroupRef g <> ": group is empty"]
+  CRGroupRemoved u g -> ttyUser u [ttyGroupRef g <> ": you are no longer a member or group deleted"]
   CRGroupDeleted u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " deleted the group", "use " <> highlight ("/d #" <> viewGroupName g) <> " to delete the local copy of the group"]
   CRGroupUpdated u g g' m -> ttyUser u $ viewGroupUpdated g g' m
   CRGroupProfile u g -> ttyUser u $ viewGroupProfile g
@@ -287,7 +287,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRNewMemberContactSentInv u _ct g m -> ttyUser u ["sent invitation to connect directly to member " <> ttyGroup' g <> " " <> ttyMember m]
   CRNewMemberContactReceivedInv u ct g m -> ttyUser u [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
   CRContactAndMemberAssociated u ct g m ct' -> ttyUser u $ viewContactAndMemberAssociated ct g m ct'
-  CRMemberSubError u g m e -> ttyUser u [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
+  CRMemberSubError u g m e -> ttyUser u [ttyGroupRef g <> " member " <> ttyMemberRef m <> " error: " <> sShow e]
   CRMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
   CRGroupSubscribed u g -> ttyUser u $ viewGroupSubscribed g
   CRPendingSubSummary u _ -> ttyUser u []
@@ -532,8 +532,8 @@ viewUsersList us =
             <> ["muted" | not showNtfs]
             <> [plain ("unread: " <> show count) | count /= 0]
 
-viewGroupSubscribed :: GroupInfo -> [StyledString]
-viewGroupSubscribed g = [membershipIncognito g <> ttyFullGroup g <> ": connected to server(s)"]
+viewGroupSubscribed :: GroupInfoRef -> [StyledString]
+viewGroupSubscribed g = [(if membershipIncognito g then incognitoPrefix else "") <> ttyGroupRef g <> ": connected to server(s)"]
 
 showSMPServer :: SMPServer -> String
 showSMPServer ProtocolServer {host} = B.unpack $ strEncode host
@@ -1119,7 +1119,7 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
     groupSS (g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}}, GroupSummary {currentMembers}) =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
-        s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s
+        s -> membershipIncognito' g <> ttyFullGroup g <> viewMemberStatus s
       where
         viewMemberStatus = \case
           GSMemRemoved -> delete "you are removed"
@@ -1137,6 +1137,10 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
 
 groupInvitation' :: GroupInfo -> StyledString
 groupInvitation' g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfile {fullName}} =
+  groupInvitation_ ldn fullName (incognitoMembershipProfile g)
+
+groupInvitation_ :: GroupName -> Text -> Maybe LocalProfile -> StyledString
+groupInvitation_ ldn fullName incognitoProfile =
   highlight ("#" <> viewName ldn)
     <> optFullName ldn fullName
     <> " - you are invited ("
@@ -1145,9 +1149,12 @@ groupInvitation' g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfil
     <> highlight ("/d #" <> viewName ldn)
     <> " to delete invitation)"
   where
-    joinText = case incognitoMembershipProfile g of
+    joinText = case incognitoProfile of
       Just mp -> " to join as " <> incognitoProfile' (fromLocalProfile mp) <> ", "
       Nothing -> " to join, "
+
+groupInvitationRef :: GroupInfoRef -> StyledString
+groupInvitationRef GroupInfoRef {localDisplayName = ldn} = groupInvitation_ ldn "" Nothing
 
 viewContactsMerged :: Contact -> Contact -> Contact -> [StyledString]
 viewContactsMerged c1 c2 ct' =
@@ -2143,6 +2150,9 @@ ttyFullContact Contact {localDisplayName, profile = LocalProfile {fullName}} =
 ttyMember :: GroupMember -> StyledString
 ttyMember GroupMember {localDisplayName} = ttyContact localDisplayName
 
+ttyMemberRef :: GroupMemberNameRef -> StyledString
+ttyMemberRef GroupMemberNameRef {localDisplayName} = ttyContact localDisplayName
+
 ttyFullMember :: GroupMember -> StyledString
 ttyFullMember GroupMember {localDisplayName, memberProfile = LocalProfile {fullName}} =
   ttyFullName localDisplayName fullName
@@ -2182,6 +2192,9 @@ ttyGroup g = styled (colored Blue) $ "#" <> viewName g
 ttyGroup' :: GroupInfo -> StyledString
 ttyGroup' = ttyGroup . groupName'
 
+ttyGroupRef :: GroupInfoRef -> StyledString
+ttyGroupRef GroupInfoRef {localDisplayName} = ttyGroup localDisplayName
+
 viewContactName :: Contact -> Text
 viewContactName = viewName . localDisplayName'
 
@@ -2201,14 +2214,14 @@ ttyFullGroup GroupInfo {localDisplayName = g, groupProfile = GroupProfile {fullN
   ttyGroup g <> optFullName g fullName
 
 ttyFromGroup :: GroupInfo -> GroupMember -> StyledString
-ttyFromGroup g m = membershipIncognito g <> ttyFrom (fromGroup_ g m)
+ttyFromGroup g m = membershipIncognito' g <> ttyFrom (fromGroup_ g m)
 
 ttyFromGroupEdited :: GroupInfo -> GroupMember -> StyledString
-ttyFromGroupEdited g m = membershipIncognito g <> ttyFrom (fromGroup_ g m <> "[edited] ")
+ttyFromGroupEdited g m = membershipIncognito' g <> ttyFrom (fromGroup_ g m <> "[edited] ")
 
 ttyFromGroupDeleted :: GroupInfo -> GroupMember -> Maybe Text -> StyledString
 ttyFromGroupDeleted g m deletedText_ =
-  membershipIncognito g <> ttyFrom (fromGroup_ g m <> maybe "" (\t -> "[" <> t <> "] ") deletedText_)
+  membershipIncognito' g <> ttyFrom (fromGroup_ g m <> maybe "" (\t -> "[" <> t <> "] ") deletedText_)
 
 fromGroup_ :: GroupInfo -> GroupMember -> Text
 fromGroup_ g m = "#" <> viewGroupName g <> " " <> viewMemberName m <> "> "
@@ -2220,10 +2233,10 @@ ttyTo :: Text -> StyledString
 ttyTo = styled $ colored Cyan
 
 ttyToGroup :: GroupInfo -> StyledString
-ttyToGroup g = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " ")
+ttyToGroup g = membershipIncognito' g <> ttyTo ("#" <> viewGroupName g <> " ")
 
 ttyToGroupEdited :: GroupInfo -> StyledString
-ttyToGroupEdited g = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " [edited] ")
+ttyToGroupEdited g = membershipIncognito' g <> ttyTo ("#" <> viewGroupName g <> " [edited] ")
 
 viewName :: Text -> Text
 viewName s = if T.any isSpace s then "'" <> s <> "'" else s
@@ -2237,8 +2250,8 @@ optFullName localDisplayName fullName = plain $ optionalFullName localDisplayNam
 ctIncognito :: Contact -> StyledString
 ctIncognito ct = if contactConnIncognito ct then incognitoPrefix else ""
 
-membershipIncognito :: GroupInfo -> StyledString
-membershipIncognito = memIncognito . membership
+membershipIncognito' :: GroupInfo -> StyledString
+membershipIncognito' = memIncognito . membership
 
 memIncognito :: GroupMember -> StyledString
 memIncognito m = if memberIncognito m then incognitoPrefix else ""

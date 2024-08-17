@@ -3553,17 +3553,17 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
     getContactConns :: CM ([ConnId], Map ConnId ContactRef)
     getContactConns = do
       cts <- withStore_ getUserContactRefs
-      let acIds = map (\ContactRef {agentConnId = AgentConnId connId} -> connId) cts
+      let acIds = map (\ContactRef {agentConnId = AgentConnId acId} -> acId) cts
       pure (acIds, M.fromList $ zip acIds cts)
     getUserContactLinkConns :: CM ([ConnId], Map ConnId UserContact)
     getUserContactLinkConns = do
       (cs, ucs) <- unzip <$> withStore_ (`getUserContactLinks` vr)
       let connIds = map aConnId cs
       pure (connIds, M.fromList $ zip connIds ucs)
-    getGroupMemberConns :: CM ([Group], [ConnId], Map ConnId GroupMember)
+    getGroupMemberConns :: CM ([GroupRef], [ConnId], Map ConnId GroupMemberNameRef)
     getGroupMemberConns = do
-      gs <- withStore_ (`getUserGroups` vr)
-      let mPairs = concatMap (\(Group _ ms) -> mapMaybe (\m -> (,m) <$> memberConnId m) (filter (not . memberRemoved) ms)) gs
+      gs <- withStore_ getUserGroupRefs
+      let mPairs = concatMap (\(GroupRef _ ms) -> map (\m@GroupMemberNameRef {agentConnId = AgentConnId acId} -> (acId, m)) ms) gs
       pure (gs, map fst mPairs, M.fromList mPairs)
     getSndFileTransferConns :: CM ([ConnId], Map ConnId SndFileTransfer)
     getSndFileTransferConns = do
@@ -3607,28 +3607,28 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
     -- TODO possibly below could be replaced with less noisy events for API
     contactLinkSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId UserContact -> CM ()
     contactLinkSubsToView rs = toView . CRUserContactSubSummary user . map (uncurry UserContactSubStatus) . resultsFor rs
-    groupSubsToView :: Map ConnId (Either AgentErrorType ()) -> [Group] -> Map ConnId GroupMember -> Bool -> CM ()
+    groupSubsToView :: Map ConnId (Either AgentErrorType ()) -> [GroupRef] -> Map ConnId GroupMemberNameRef -> Bool -> CM ()
     groupSubsToView rs gs ms ce = do
       mapM_ groupSub $
-        sortOn (\(Group GroupInfo {localDisplayName = g} _) -> g) gs
+        sortOn (\(GroupRef GroupInfoRef {localDisplayName = g} _) -> g) gs
       toView . CRMemberSubSummary user $ map (uncurry MemberSubStatus) mRs
       where
         mRs = resultsFor rs ms
-        groupSub :: Group -> CM ()
-        groupSub (Group g@GroupInfo {membership, groupId = gId} members) = do
+        groupSub :: GroupRef -> CM ()
+        groupSub (GroupRef g@GroupInfoRef {membershipStatus, groupId = gId} members) = do
           when ce $ mapM_ (toView . uncurry (CRMemberSubError user g)) mErrors
           toView groupEvent
           where
-            mErrors :: [(GroupMember, ChatError)]
+            mErrors :: [(GroupMemberNameRef, ChatError)]
             mErrors =
-              sortOn (\(GroupMember {localDisplayName = n}, _) -> n)
+              sortOn (\(GroupMemberNameRef {localDisplayName = n}, _) -> n)
                 . filterErrors
-                $ filter (\(GroupMember {groupId}, _) -> groupId == gId) mRs
+                $ filter (\(GroupMemberNameRef {groupId}, _) -> groupId == gId) mRs
             groupEvent :: ChatResponse
             groupEvent
-              | memberStatus membership == GSMemInvited = CRGroupInvitation user g
-              | all (\GroupMember {activeConn} -> isNothing activeConn) members =
-                  if memberActive membership
+              | membershipStatus == GSMemInvited = CRGroupInvitation user g
+              | null members =
+                  if memberStatusActive membershipStatus
                     then CRGroupEmpty user g
                     else CRGroupRemoved user g
               | otherwise = CRGroupSubscribed user g

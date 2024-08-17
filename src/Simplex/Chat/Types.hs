@@ -363,6 +363,9 @@ optionalFullName displayName fullName
 data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
   deriving (Eq, Show)
 
+data GroupRef = GroupRef {groupInfo :: GroupInfoRef, members :: [GroupMemberNameRef]}
+  deriving (Eq, Show)
+
 type GroupId = Int64
 
 data GroupInfo = GroupInfo
@@ -379,6 +382,14 @@ data GroupInfo = GroupInfo
     userMemberProfileSentAt :: Maybe UTCTime,
     uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData
+  }
+  deriving (Eq, Show)
+
+data GroupInfoRef = GroupInfoRef
+  { groupId :: GroupId,
+    localDisplayName :: GroupName,
+    membershipStatus :: GroupMemberStatus,
+    membershipIncognito :: Bool
   }
   deriving (Eq, Show)
 
@@ -721,6 +732,15 @@ data GroupMember = GroupMember
   }
   deriving (Eq, Show)
 
+data GroupMemberNameRef = GroupMemberNameRef
+  { groupMemberId :: GroupMemberId,
+    groupId :: GroupId,
+    connId :: Int64,
+    agentConnId :: AgentConnId,
+    localDisplayName :: ContactName
+  }
+  deriving (Eq, Show)
+
 data GroupMemberRef = GroupMemberRef {groupMemberId :: Int64, profile :: Profile}
   deriving (Eq, Show)
 
@@ -905,7 +925,10 @@ instance ToJSON GroupMemberStatus where
   toEncoding = JE.text . textEncode
 
 memberActive :: GroupMember -> Bool
-memberActive m = case memberStatus m of
+memberActive = memberStatusActive . memberStatus
+
+memberStatusActive :: GroupMemberStatus -> Bool
+memberStatusActive = \case
   GSMemRemoved -> False
   GSMemLeft -> False
   GSMemGroupDeleted -> False
@@ -938,6 +961,7 @@ memberCurrent' = \case
   GSMemComplete -> True
   GSMemCreator -> True
 
+-- consistent with getActiveGroupMemberRefs
 memberRemoved :: GroupMember -> Bool
 memberRemoved m = case memberStatus m of
   GSMemRemoved -> True
@@ -1698,6 +1722,8 @@ $(JQ.deriveJSON defaultJSON ''ChatSettings)
 
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 
+$(JQ.deriveJSON defaultJSON ''GroupInfoRef)
+
 $(JQ.deriveJSON defaultJSON ''Group)
 
 $(JQ.deriveJSON defaultJSON ''GroupSummary)
@@ -1721,6 +1747,8 @@ $(JQ.deriveJSON defaultJSON ''MemberInfo)
 $(JQ.deriveJSON defaultJSON ''MemberRestrictions)
 
 $(JQ.deriveJSON defaultJSON ''GroupMemberRef)
+
+$(JQ.deriveJSON defaultJSON ''GroupMemberNameRef)
 
 $(JQ.deriveJSON defaultJSON ''FileDescr)
 
