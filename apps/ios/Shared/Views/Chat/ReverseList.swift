@@ -213,7 +213,10 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                             self.updateInProgress = false
                             if self.isNearBottom { self.scrollToBottom(animated: true) }
                             // Process update, which might have arrived before completion
-                            if let items = self.retainedItems { self.update(items: items) }
+                            if let items = self.retainedItems {
+                                self.retainedItems = nil
+                                self.update(items: items)
+                            }
                         }
                     }
                 }
