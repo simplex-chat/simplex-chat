@@ -360,7 +360,6 @@ struct SubsStatusIndicator: View {
                 if AppChatState.shared.value == .active {
                     do {
                         let (subs, hasSess) = try await getAgentSubsTotal()
-                        print("subs: \(subs), hasSess: \(hasSess)")
                         await MainActor.run {
                             self.subs = subs
                             self.hasSess = hasSess
