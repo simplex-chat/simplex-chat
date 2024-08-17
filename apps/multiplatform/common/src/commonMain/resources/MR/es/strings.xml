@@ -2065,7 +2065,7 @@
     <string name="invite_friends_short">Invitar</string>
     <string name="v6_0_new_chat_experience">Nueva experiencia de chat 🎉</string>
     <string name="v6_0_new_media_options">Nuevas opciones multimedia</string>
-    <string name="one_hand_ui_change_instruction">Puede cambiarlo desde el menú Apariencia.</string>
+    <string name="one_hand_ui_change_instruction">Puedes cambiar la posición de la barra desde el menú Apariencia.</string>
     <string name="v6_0_upgrade_app_descr">Descarga nuevas versiones desde GitHub.</string>
     <string name="new_message">Nuevo mensaje</string>
     <string name="error_parsing_uri_title">Enlace no válido</string>
