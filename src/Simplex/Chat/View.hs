@@ -172,7 +172,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRVersionInfo info _ _ -> viewVersionInfo logLevel info
   CRInvitation u cReq _ -> ttyUser u $ viewConnReqInvitation cReq
   CRConnectionIncognitoUpdated u c -> ttyUser u $ viewConnectionIncognitoUpdated c
-  CRConnectionUserIdUpdated u c -> ttyUser u $ viewConnectionUserIdUpdated u c
+  CRConnectionUserIdUpdated u c nu -> ttyUser u $ viewConnectionUserIdUpdated u c nu
   CRConnectionPlan u connectionPlan -> ttyUser u $ viewConnectionPlan connectionPlan
   CRSentConfirmation u _ -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u _ customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
@@ -1499,8 +1499,8 @@ viewConnectionIncognitoUpdated PendingContactConnection {pccConnId, customUserPr
   | isJust customUserProfileId = ["connection " <> sShow pccConnId <> " changed to incognito"]
   | otherwise = ["connection " <> sShow pccConnId <> " changed to non incognito"]
 
-viewConnectionUserIdUpdated :: User -> PendingContactConnection -> [StyledString]
-viewConnectionUserIdUpdated User {localDisplayName} PendingContactConnection {pccConnId} = ["connection " <> sShow pccConnId <> " changed to user " <> plain localDisplayName]
+viewConnectionUserIdUpdated :: User -> PendingContactConnection -> User -> [StyledString]
+viewConnectionUserIdUpdated User {localDisplayName = oldUserDisplayName} PendingContactConnection {pccConnId} User {localDisplayName = newUserDisplayName} = ["connection " <> sShow pccConnId <> " changed from user " <> plain oldUserDisplayName <> " to user " <> plain newUserDisplayName]
 
 viewConnectionPlan :: ConnectionPlan -> [StyledString]
 viewConnectionPlan = \case

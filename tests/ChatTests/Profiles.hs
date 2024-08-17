@@ -64,9 +64,12 @@ chatProfileTests = do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
   describe "pending connection users" $ do
-    it "change user id for pending connection" testUpdatePendingConnectionUserId
-    it "change user id for pending connection multiple times" testUpdatePendingConnectionUserIdMulti
-    it "can't change user id for non pending connections" testCantUpdateNonPendingConnectionUserId
+    it "change user id for pending connection" testUpdatePCCUserId
+    it "change user id for pending connection multiple times" testUpdatePCCUserIdMulti
+    it "can't change user id for non pending connections" testCantUpdateNonPCCUserId
+    it "change from incognito profile connects as new user" testUpdatePCCFromIncognito
+    it "change user id for pending connection and later set incognito connects as incognito in changed profile" testUpdatePCCAndThenIncognito
+    it "change from new users to incognito and back to original user connects as original user" testUpdatePCCAndSwapIncognito
   describe "preferences" $ do
     it "set contact preferences" testSetContactPrefs
     it "feature offers" testFeatureOffers
@@ -1561,18 +1564,22 @@ testSetAlias = testChat2 aliceProfile bobProfile $
     alice ##> "/contacts"
     alice <## "bob (Bob)"
 
-testUpdatePendingConnectionUserId :: HasCallStack => FilePath -> IO ()
-testUpdatePendingConnectionUserId = testChat2 aliceProfile bobProfile $
+testUpdatePCCUserId :: HasCallStack => FilePath -> IO ()
+testUpdatePCCUserId = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- Create a new invite
     alice ##> "/connect"
     inv <- getInvitation alice
-    -- Create and set new user as active
+    -- Create new user and go back to original user
     alice ##> "/create user alisa"
     showActiveUser alice "alisa"
+    alice ##> "/user alice"
+    showActiveUser alice "alice (Alice)"
     -- Change connection to newly created user
-    alice ##> "/_set user :1 1"
-    alice <## "connection 1 changed to user alisa"
+    alice ##> "/_set user :1 2"
+    alice <## "connection 1 changed from user alice to user alisa"
+    alice ##> "/user alisa"
+    showActiveUser alice "alisa"
     -- Connect
     bob ##> ("/connect " <> inv)
     bob <## "confirmation sent!"
@@ -1580,24 +1587,27 @@ testUpdatePendingConnectionUserId = testChat2 aliceProfile bobProfile $
       (alice <## "bob (Bob): contact is connected")
       (bob <## "alisa: contact is connected")
 
-testUpdatePendingConnectionUserIdMulti :: HasCallStack => FilePath -> IO ()
-testUpdatePendingConnectionUserIdMulti = testChat2 aliceProfile bobProfile $
+testUpdatePCCUserIdMulti :: HasCallStack => FilePath -> IO ()
+testUpdatePCCUserIdMulti = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- Create a new invite
     alice ##> "/connect"
     inv <- getInvitation alice
-    -- Create and set new user as active
+    -- Create new user and go back to original user
     alice ##> "/create user alisa"
     showActiveUser alice "alisa"
-    -- Change connection to newly created user
-    alice ##> "/_set user :1 1"
-    alice <## "connection 1 changed to user alisa"
-    -- Set back to initial user
     alice ##> "/user alice"
     showActiveUser alice "alice (Alice)"
-    -- Change connection back to initial user
+    -- Change connection to newly created user
     alice ##> "/_set user :1 2"
-    alice <## "connection 1 changed to user alice"
+    alice <## "connection 1 changed from user alice to user alisa"
+    alice ##> "/user alisa"
+    showActiveUser alice "alisa"
+    -- Change connection back to initial user
+    alice ##> "/_set user :1 1"
+    alice <## "connection 1 changed from user alisa to user alice"
+    alice ##> "/user alice"
+    showActiveUser alice "alice (Alice)"
     -- Connect
     bob ##> ("/connect " <> inv)
     bob <## "confirmation sent!"
@@ -1605,8 +1615,8 @@ testUpdatePendingConnectionUserIdMulti = testChat2 aliceProfile bobProfile $
       (alice <## "bob (Bob): contact is connected")
       (bob <## "alice (Alice): contact is connected")
 
-testCantUpdateNonPendingConnectionUserId :: HasCallStack => FilePath -> IO ()
-testCantUpdateNonPendingConnectionUserId = testChat2 aliceProfile bobProfile $
+testCantUpdateNonPCCUserId :: HasCallStack => FilePath -> IO ()
+testCantUpdateNonPCCUserId = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- Create a new invite and accept
     alice ##> "/connect"
@@ -1616,12 +1626,106 @@ testCantUpdateNonPendingConnectionUserId = testChat2 aliceProfile bobProfile $
     concurrently_
       (alice <## "bob (Bob): contact is connected")
       (bob <## "alice (Alice): contact is connected")
-    -- Create and set new user as active
+    -- Create new user and go back to original user
     alice ##> "/create user alisa"
     showActiveUser alice "alisa"
+    alice ##> "/user alice"
+    showActiveUser alice "alice (Alice)"
     -- Try to change connection to newly created user
-    alice ##> "/_set user :1 1"
+    alice ##> "/_set user :1 2"
     alice <## "chat db error: SEPendingConnectionNotFound {connId = 1}"
+
+testUpdatePCCFromIncognito :: HasCallStack => FilePath -> IO ()
+testUpdatePCCFromIncognito = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    -- Create a new invite and set as incognito
+    alice ##> "/connect"
+    inv <- getInvitation alice
+    alice ##> "/_set incognito :1 on"
+    alice <## "connection 1 changed to incognito"
+    -- Create new user and go back to original user
+    alice ##> "/create user alisa"
+    showActiveUser alice "alisa"
+    alice ##> "/user alice"
+    showActiveUser alice "alice (Alice)"
+    -- Change connection to newly created user
+    alice ##> "/_set user :1 2"
+    alice <## "connection 1 changed from user alice to user alisa"
+    alice ##> "/user alisa"
+    showActiveUser alice "alisa"
+    -- Change connection back to initial user
+    alice ##> "/_set user :1 1"
+    alice <## "connection 1 changed from user alisa to user alice"
+    alice ##> "/user alice"
+    showActiveUser alice "alice (Alice)"
+    -- Connect
+    bob ##> ("/connect " <> inv)
+    bob <## "confirmation sent!"
+    concurrently_
+      (alice <## "bob (Bob): contact is connected")
+      (bob <## "alice (Alice): contact is connected")
+
+testUpdatePCCAndThenIncognito :: HasCallStack => FilePath -> IO ()
+testUpdatePCCAndThenIncognito = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    -- Create a new invite and set as incognito
+    alice ##> "/connect"
+    inv <- getInvitation alice
+    -- Create new user and go back to original user
+    alice ##> "/create user alisa"
+    showActiveUser alice "alisa"
+    alice ##> "/user alice"
+    showActiveUser alice "alice (Alice)"
+    -- Change connection to newly created user
+    alice ##> "/_set user :1 2"
+    alice <## "connection 1 changed from user alice to user alisa"
+    alice ##> "/user alisa"
+    showActiveUser alice "alisa"
+    -- Change connection to incognito and make sure it's attached to the newly created user profile
+    alice ##> "/_set incognito :1 on"
+    alice <## "connection 1 changed to incognito"
+    bob ##> ("/connect " <> inv)
+    bob <## "confirmation sent!"
+    alisaIncognito <- getTermLine alice
+    concurrentlyN_
+      [ bob <## (alisaIncognito <> ": contact is connected"),
+        do
+          alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> alisaIncognito)
+          alice <## ("use /i bob to print out this incognito profile again")
+      ]
+
+testUpdatePCCAndSwapIncognito :: HasCallStack => FilePath -> IO ()
+testUpdatePCCAndSwapIncognito = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    -- Create a new invite and set as incognito
+    alice ##> "/connect"
+    inv <- getInvitation alice
+    alice ##> "/_set incognito :1 on"
+    alice <## "connection 1 changed to incognito"
+    -- Create new user and go back to original user
+    alice ##> "/create user alisa"
+    showActiveUser alice "alisa"
+    alice ##> "/user alice"
+    showActiveUser alice "alice (Alice)"
+    -- Change connection to newly created user
+    alice ##> "/_set user :1 2"
+    alice <## "connection 1 changed from user alice to user alisa"
+    alice ##> "/user alisa"
+    showActiveUser alice "alisa"
+    -- Set connection as incognito again
+    alice ##> "/_set incognito :1 on"
+    alice <## "connection 1 changed to incognito"
+    -- Change connection back to initial user
+    alice ##> "/_set user :1 1"
+    alice <## "connection 1 changed from user alisa to user alice"
+    alice ##> "/user alice"
+    showActiveUser alice "alice (Alice)"
+    -- Connect
+    bob ##> ("/connect " <> inv)
+    bob <## "confirmation sent!"
+    concurrently_
+      (alice <## "bob (Bob): contact is connected")
+      (bob <## "alice (Alice): contact is connected")
 
 testSetConnectionAlias :: HasCallStack => FilePath -> IO ()
 testSetConnectionAlias = testChat2 aliceProfile bobProfile $

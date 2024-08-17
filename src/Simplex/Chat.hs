@@ -1655,11 +1655,14 @@ processChatCommand' vr = \case
     case conn'_ of
       Just conn' -> pure $ CRConnectionIncognitoUpdated user conn'
       Nothing -> throwChatError CEConnectionIncognitoChangeProhibited
-  APISetConnectionUserId connId oldUserId -> withUser $ \user@User {userId} -> do
+  APISetConnectionUserId connId newUserId -> withUser $ \user@User {userId} -> do
     conn' <- withFastStore $ \db -> do
-      conn <- getPendingContactConnection db oldUserId connId
-      liftIO $ updatePendingContactConnectionUserId db userId oldUserId conn
-    pure $ CRConnectionUserIdUpdated user conn'
+      conn <- getPendingContactConnection db userId connId
+      liftIO $ updatePCCUserId db userId conn newUserId
+    newUser' <- withFastStore $ \db -> do
+      newUser <- getUser db newUserId
+      pure newUser
+    pure $ CRConnectionUserIdUpdated user conn' newUser'
   APIConnectPlan userId cReqUri -> withUserId userId $ \user ->
     CRConnectionPlan user <$> connectPlan user cReqUri
   APIConnect userId incognito (Just (ACR SCMInvitation cReq)) -> withUserId userId $ \user -> withInvitationLock "connect" (strEncode cReq) . procCmd $ do
