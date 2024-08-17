@@ -86,12 +86,8 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
           .collect { chatId ->
             markUnreadChatAsRead(chatId)
             showSearch.value = false
+            selectedChatItems.value = null
           }
-      }
-    }
-    KeyChangeEffect(chatModel.chatId.value) {
-      if (chatModel.chatId.value != null) {
-        selectedChatItems.value = null
       }
     }
     val view = LocalMultiplatformView()
@@ -100,7 +96,7 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
     // Having activeChat reloaded on every change in it is inefficient (UI lags)
     val unreadCount = remember {
       derivedStateOf {
-        chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == chatModel.chatId.value }?.chatStats?.unreadCount ?: 0
+        chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == activeChatInfo.value?.id }?.chatStats?.unreadCount ?: 0
       }
     }
     val clipboard = LocalClipboardManager.current
@@ -257,9 +253,9 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
                 }
               }
             },
-            loadPrevMessages = {
-              val c = chatModel.getChat(chatInfo.id)
-              if (chatModel.chatId.value != chatInfo.id) return@ChatLayout
+            loadPrevMessages = { chatId ->
+              val c = chatModel.getChat(chatId)
+              if (chatModel.chatId.value != chatId) return@ChatLayout
               val firstId = chatModel.chatItems.value.firstOrNull()?.id
               if (c != null && firstId != null) {
                 withBGApi {
@@ -561,7 +557,7 @@ fun ChatLayout(
   back: () -> Unit,
   info: () -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  loadPrevMessages: () -> Unit,
+  loadPrevMessages: (ChatId) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -593,12 +589,11 @@ fun ChatLayout(
 ) {
   val scope = rememberCoroutineScope()
   val attachmentDisabled = remember { derivedStateOf { composeState.value.attachmentDisabled } }
-
   Box(
     Modifier
       .fillMaxWidth()
       .desktopOnExternalDrag(
-        enabled = !attachmentDisabled.value && rememberUpdatedState(chatInfo.value).value?.userCanSend == true,
+        enabled = remember(attachmentDisabled.value, chatInfo.value?.userCanSend) { mutableStateOf(!attachmentDisabled.value && chatInfo.value?.userCanSend == true) }.value,
         onFiles = { paths -> composeState.onFilesAttached(paths.map { it.toURI() }) },
         onImage = {
           // TODO: file is not saved anywhere?!
@@ -924,7 +919,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   linkMode: SimplexLinkMode,
   selectedChatItems: MutableState<Set<Long>?>,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  loadPrevMessages: () -> Unit,
+  loadPrevMessages: (ChatId) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -964,7 +959,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
     }
   }
 
-  PreloadItems(listState, ChatPagination.UNTIL_PRELOAD_COUNT, loadPrevMessages)
+  PreloadItems(chatInfo.id, listState, ChatPagination.UNTIL_PRELOAD_COUNT, loadPrevMessages)
 
   Spacer(Modifier.size(8.dp))
   val reversedChatItems by remember { derivedStateOf { chatModel.chatItems.asReversed() } }
@@ -975,6 +970,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
       scope.launch { listState.animateScrollToItem(kotlin.math.min(reversedChatItems.lastIndex, index + 1), -maxHeightRounded) }
     }
   }
+  // TODO: Having this block on desktop makes ChatItemsList() to recompose twice on chatModel.chatId update instead of once
   LaunchedEffect(chatInfo.id) {
     var stopListening = false
     snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastIndex }
@@ -1327,14 +1323,17 @@ fun BoxWithConstraintsScope.FloatingButtons(
 
 @Composable
 fun PreloadItems(
+  chatId: String,
   listState: LazyListState,
   remaining: Int = 10,
-  onLoadMore: () -> Unit,
+  onLoadMore: (ChatId) -> Unit,
 ) {
   // Prevent situation when initial load and load more happens one after another after selecting a chat with long scroll position from previous selection
   val allowLoad = remember { mutableStateOf(false) }
+  val chatId = rememberUpdatedState(chatId)
+  val onLoadMore = rememberUpdatedState(onLoadMore)
   LaunchedEffect(Unit) {
-    snapshotFlow { chatModel.chatId.value }
+    snapshotFlow { chatId.value }
       .filterNotNull()
       .collect {
         allowLoad.value = listState.layoutInfo.totalItemsCount == listState.layoutInfo.visibleItemsInfo.size
@@ -1354,7 +1353,7 @@ fun PreloadItems(
     }
       .filter { it > 0 }
       .collect {
-        onLoadMore()
+        onLoadMore.value(chatId.value)
       }
   }
 }

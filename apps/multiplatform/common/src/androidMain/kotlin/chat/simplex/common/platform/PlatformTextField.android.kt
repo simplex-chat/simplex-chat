@@ -36,11 +36,12 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.views.chat.*
-import chat.simplex.common.views.helpers.SharedContent
-import chat.simplex.common.views.helpers.generalGetString
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.filter
 import java.lang.reflect.Field
 import java.net.URI
 
@@ -83,6 +84,13 @@ actual fun PlatformTextField(
     if (!sendMsgEnabled) {
       freeFocus = true
     }
+  }
+  LaunchedEffect(Unit) {
+    snapshotFlow { ModalManager.start.modalCount.value }
+      .filter { it > 0 }
+      .collect {
+        freeFocus = true
+      }
   }
 
   val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl

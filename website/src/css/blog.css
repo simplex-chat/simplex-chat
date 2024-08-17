@@ -233,3 +233,9 @@ h6 {
 #article ol>li::marker {
   font-weight: 500;
 }
+
+#article blockquote {
+  padding-left: 1em;
+  border-left: 2px solid #c0c0c0;
+  font-style: italic;
+}

@@ -59,7 +59,7 @@ struct AddGroupView: View {
                 .navigationBarTitle("Group link")
             }
         } else {
-            createGroupView().keyboardPadding()
+            createGroupView()
         }
     }
 

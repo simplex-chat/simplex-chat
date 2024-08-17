@@ -294,7 +294,6 @@ struct FramedItemView: View {
         .padding(.horizontal, 12)
         .overlay(DetermineWidth())
         .frame(minWidth: 0, alignment: .leading)
-        .textSelection(.enabled)
 
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
             v.frame(maxWidth: mediaWidth, alignment: .leading)

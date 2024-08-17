@@ -2065,4 +2065,6 @@
     <string name="v6_0_upgrade_app_descr">نزّل الإصدارات الجديدة من GitHub.</string>
     <string name="v6_0_upgrade_app">ترقية التطبيق تلقائيًا</string>
     <string name="reset_all_hints">صفّر كافة التلميحات</string>
+    <string name="error_parsing_uri_desc">يُرجى التأكد من أن رابط SimpleX صحيح.</string>
+    <string name="error_parsing_uri_title">الرابط غير صالح</string>
 </resources>

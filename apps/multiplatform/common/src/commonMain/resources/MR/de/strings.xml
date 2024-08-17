@@ -2149,4 +2149,6 @@
     <string name="chat_database_exported_save">Sie können das exportierte Archiv speichern.</string>
     <string name="reset_all_hints">Alle Hinweise zurücksetzen</string>
     <string name="new_message">Neue Nachricht</string>
+    <string name="error_parsing_uri_desc">Bitte überprüfen Sie, ob der SimpleX-Link korrekt ist.</string>
+    <string name="error_parsing_uri_title">Ungültiger Link</string>
 </resources>
