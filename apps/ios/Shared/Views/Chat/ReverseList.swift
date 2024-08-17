@@ -207,12 +207,16 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                i > 0 {
                 updateInProgress = true
                 // Update existing items without animation
-                _update(items: Array(items[i...]), animated: false) {
+                _update(items: Array(items[i...])) {
                     DispatchQueue.main.async {
                         // Added items animated by sliding from bottom (.top)
-                        self._update(items: items, animated: self.isAtBottom) {
+                        self._update(
+                            items: items,
+                            animated: self.isAtBottom,
+                            rowAnimation: self.isAtBottom ? .top : .none
+                        ) {
                             self.updateInProgress = false
-                            if self.isNearBottom { self.scrollToBottom(animated: true) }
+                            if self.isNearBottom { self.scrollToBottom(animated: false) }
                             // Process update, which might have arrived before completion
                             if let items = self.retainedItems {
                                 self.retainedItems = nil
@@ -222,17 +226,27 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                     }
                 }
             } else {
-               _update(items: items, animated: false)
+                let wasItemsRemoved = !items.isEmpty && items.count < itemCount
+                _update(
+                    items: items,
+                    animated: wasItemsRemoved,
+                    rowAnimation: wasItemsRemoved ? .fade : .none
+                )
             }
             itemId = items.first?.id
             itemCount = items.count
         }
 
-        private func _update(items: [Item], animated: Bool, completion: (() -> Void)? = nil) {
+        private func _update(
+            items: [Item],
+            animated: Bool = false,
+            rowAnimation: UITableView.RowAnimation = .none,
+            completion: (() -> Void)? = nil
+        ) {
             var snapshot = NSDiffableDataSourceSnapshot<Section, Item>()
             snapshot.appendSections([.main])
             snapshot.appendItems(items)
-            dataSource.defaultRowAnimation = animated ? .top : .none
+            dataSource.defaultRowAnimation = rowAnimation
             dataSource.apply(snapshot, animatingDifferences: animated, completion: completion)
         }
     }
