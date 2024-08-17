@@ -74,13 +74,13 @@ sendComposedMessage' cc ctId quotedItemId msgContent = do
 
 deleteMessage :: ChatController -> Contact -> ChatItemId -> IO ()
 deleteMessage cc ct chatItemId = do
-  let cmd = APIDeleteChatItem (contactRef ct) [chatItemId] CIDMInternal
+  let cmd = APIDeleteChatItem (contactChatRef ct) [chatItemId] CIDMInternal
   sendChatCmd cc cmd >>= \case
     CRChatItemsDeleted {} -> printLog cc CLLInfo $ "deleted message(s) from " <> contactInfo ct
     r -> putStrLn $ "unexpected delete message response: " <> show r
 
-contactRef :: Contact -> ChatRef
-contactRef = ChatRef CTDirect . contactId'
+contactChatRef :: Contact -> ChatRef
+contactChatRef = ChatRef CTDirect . contactId'
 
 textMsgContent :: String -> MsgContent
 textMsgContent = MCText . T.pack

@@ -152,16 +152,16 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Util (eitherToMaybe)
 import UnliftIO.STM
 
-deleteContactCIs :: DB.Connection -> User -> Contact -> IO ()
-deleteContactCIs db user@User {userId} ct@Contact {contactId} = do
-  connIds <- getContactConnIds_ db user ct
+deleteContactCIs :: DB.Connection -> User -> ContactId -> IO ()
+deleteContactCIs db user@User {userId} contactId = do
+  connIds <- getContactConnIds_ db user contactId
   forM_ connIds $ \connId ->
     DB.execute db "DELETE FROM messages WHERE connection_id = ?" (Only connId)
   DB.execute db "DELETE FROM chat_item_reactions WHERE contact_id = ?" (Only contactId)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
 
-getContactConnIds_ :: DB.Connection -> User -> Contact -> IO [Int64]
-getContactConnIds_ db User {userId} Contact {contactId} =
+getContactConnIds_ :: DB.Connection -> User -> ContactId -> IO [Int64]
+getContactConnIds_ db User {userId} contactId =
   map fromOnly
     <$> DB.query db "SELECT connection_id FROM connections WHERE user_id = ? AND contact_id = ?" (userId, contactId)
 
@@ -2459,17 +2459,17 @@ setChatItemTTL db User {userId} chatItemTTL = do
         "INSERT INTO settings (user_id, chat_item_ttl, created_at, updated_at) VALUES (?,?,?,?)"
         (userId, chatItemTTL, currentTs, currentTs)
 
-getContactExpiredFileInfo :: DB.Connection -> User -> Contact -> UTCTime -> IO [CIFileInfo]
-getContactExpiredFileInfo db User {userId} Contact {contactId} expirationDate =
+getContactExpiredFileInfo :: DB.Connection -> User -> ContactRef -> UTCTime -> IO [CIFileInfo]
+getContactExpiredFileInfo db User {userId} ContactRef {contactId} expirationDate =
   map toFileInfo
     <$> DB.query
       db
       (fileInfoQuery <> " WHERE i.user_id = ? AND i.contact_id = ? AND i.created_at <= ?")
       (userId, contactId, expirationDate)
 
-deleteContactExpiredCIs :: DB.Connection -> User -> Contact -> UTCTime -> IO ()
-deleteContactExpiredCIs db user@User {userId} ct@Contact {contactId} expirationDate = do
-  connIds <- getContactConnIds_ db user ct
+deleteContactExpiredCIs :: DB.Connection -> User -> ContactRef -> UTCTime -> IO ()
+deleteContactExpiredCIs db user@User {userId} ContactRef {contactId} expirationDate = do
+  connIds <- getContactConnIds_ db user contactId
   forM_ connIds $ \connId ->
     DB.execute db "DELETE FROM messages WHERE connection_id = ? AND created_at <= ?" (connId, expirationDate)
   DB.execute db "DELETE FROM chat_item_reactions WHERE contact_id = ? AND created_at <= ?" (contactId, expirationDate)

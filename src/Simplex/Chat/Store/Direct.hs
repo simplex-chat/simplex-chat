@@ -56,6 +56,7 @@ module Simplex.Chat.Store.Direct
     incQuotaErrCounter,
     setQuotaErrCounter,
     getUserContacts,
+    getUserContactRefs,
     createOrUpdateContactRequest,
     getContactRequest',
     getContactRequest,
@@ -574,6 +575,11 @@ getUserContacts db vr user@User {userId} = do
   contacts <- rights <$> mapM (runExceptT . getContact db vr user) contactIds
   pure $ filter (\Contact {activeConn} -> isJust activeConn) contacts
 
+getUserContactRefs :: DB.Connection -> User -> IO [ContactRef]
+getUserContactRefs db user@User {userId} = do
+  contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = ? AND contact_status = ?" (userId, False, CSActive)
+  rights <$> mapM (runExceptT . getActiveContactRef db user) contactIds
+
 createOrUpdateContactRequest :: DB.Connection -> VersionRangeChat -> User -> Int64 -> InvitationId -> VersionRangeChat -> Profile -> Maybe XContactId -> PQSupport -> ExceptT StoreError IO ContactOrRequest
 createOrUpdateContactRequest db vr user@User {userId} userContactLinkId invId (VersionRange minV maxV) Profile {displayName, fullName, image, contactLink, preferences} xContactId_ pqSup =
   liftIO (maybeM getContact' xContactId_) >>= \case
@@ -834,6 +840,33 @@ getContact_ db vr user@User {userId} contactId deleted =
       |]
       (userId, contactId, deleted, ConnReady, ConnSndReady)
 
+getActiveContactRef :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO ContactRef
+getActiveContactRef db User {userId} contactId =
+  ExceptT . firstRow toContactRef (SEContactNotFound contactId) $
+    DB.query
+      db
+      [sql|
+        SELECT ct.contact_id, c.connection_id, c.agent_conn_id, ct.local_display_name
+        FROM contacts ct
+        JOIN connections c ON c.contact_id = ct.contact_id
+        WHERE ct.user_id = ? AND ct.contact_id = ?
+          AND (
+            c.connection_id = (
+              SELECT cc_connection_id FROM (
+                SELECT
+                  cc.connection_id AS cc_connection_id,
+                  (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
+                FROM connections cc
+                WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
+                ORDER BY cc_conn_status_ord DESC, cc.created_at DESC
+                LIMIT 1
+              )
+            )
+            OR c.connection_id IS NULL
+          )
+      |]
+      (userId, contactId, ConnReady, ConnSndReady)
+
 getUserByContactRequestId :: DB.Connection -> Int64 -> ExceptT StoreError IO User
 getUserByContactRequestId db contactRequestId =
   ExceptT . firstRow toUser (SEUserNotFoundByContactRequestId contactRequestId) $
@@ -908,9 +941,9 @@ getConnectionsContacts db agentConnIds = do
         (Only ConnContact)
   DB.execute_ db "DROP TABLE temp.conn_ids"
   pure conns
-  where
-    toContactRef :: (ContactId, Int64, ConnId, ContactName) -> ContactRef
-    toContactRef (contactId, connId, acId, localDisplayName) = ContactRef {contactId, connId, agentConnId = AgentConnId acId, localDisplayName}
+
+toContactRef :: (ContactId, Int64, ConnId, ContactName) -> ContactRef
+toContactRef (contactId, connId, acId, localDisplayName) = ContactRef {contactId, connId, agentConnId = AgentConnId acId, localDisplayName}
 
 updateConnectionStatus :: DB.Connection -> Connection -> ConnStatus -> IO ()
 updateConnectionStatus db Connection {connId} connStatus = do

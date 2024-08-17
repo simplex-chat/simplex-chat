@@ -123,6 +123,14 @@ data ConnectionEntity
   | UserContactConnection {entityConnection :: Connection, userContact :: UserContact}
   deriving (Eq, Show)
 
+data ConnectionEntityRef
+  = RcvDirectMsgConnectionRef {entityConnection_ :: Connection, contact :: Maybe ContactRef}
+  | RcvGroupMsgConnectionRef {entityConnection_ :: Connection, groupInfo :: GroupInfo, groupMember :: GroupMember}
+  | SndFileConnectionRef {entityConnection_ :: Connection, sndFileTransfer :: SndFileTransfer}
+  | RcvFileConnectionRef {entityConnection_ :: Connection, rcvFileTransfer :: RcvFileTransfer}
+  | UserContactConnectionRef {entityConnection_ :: Connection, userContact :: UserContact}
+  deriving (Eq, Show)
+
 $(JQ.deriveJSON (sumTypeJSON fstToLower) ''ConnectionEntity)
 
 updateEntityConnStatus :: ConnectionEntity -> ConnStatus -> ConnectionEntity

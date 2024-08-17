@@ -684,7 +684,7 @@ data ChatResponse
   | CRSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
   | CRContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
   | CRContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
-  | CRContactSubError {user :: User, contact :: Contact, chatError :: ChatError}
+  | CRContactSubError {user :: User, contactRef :: ContactRef, chatError :: ChatError}
   | CRContactSubSummary {user :: User, contactSubscriptions :: [ContactSubStatus]}
   | CRUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]}
   | CRNetworkStatus {networkStatus :: NetworkStatus, connections :: [AgentConnId]}
@@ -985,7 +985,7 @@ defaultSimpleNetCfg :: SimpleNetCfg
 defaultSimpleNetCfg = SimpleNetCfg Nothing SMAlways Nothing Nothing Nothing False
 
 data ContactSubStatus = ContactSubStatus
-  { contact :: Contact,
+  { contactRef :: ContactRef,
     contactError :: Maybe ChatError
   }
   deriving (Show)

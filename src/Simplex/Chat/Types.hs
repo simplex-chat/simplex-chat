@@ -1307,6 +1307,12 @@ data Connection = Connection
   }
   deriving (Eq, Show)
 
+-- data ConnectionRef = ConnectionRef
+--   { connId :: Int64,
+--     agentConnId :: AgentConnId,
+--     connType :: ConnType
+--   }
+
 connReady :: Connection -> Bool
 connReady Connection {connStatus} = connStatus == ConnReady || connStatus == ConnSndReady
 

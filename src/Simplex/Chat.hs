@@ -1212,11 +1212,11 @@ processChatCommand' vr = \case
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
-      ct <- withFastStore $ \db -> getContact db vr user chatId
+      ct@Contact {contactId} <- withFastStore $ \db -> getContact db vr user chatId
       filesInfo <- withFastStore' $ \db -> getContactFileInfo db user ct
       cancelFilesInProgress user filesInfo
       deleteFilesLocally filesInfo
-      withFastStore' $ \db -> deleteContactCIs db user ct
+      withFastStore' $ \db -> deleteContactCIs db user contactId
       pure $ CRChatCleared user (AChatInfo SCTDirect $ DirectChat ct)
     CTGroup -> do
       gInfo <- withFastStore $ \db -> getGroupInfo db vr user chatId
@@ -3528,12 +3528,12 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
   pendingConnSubsToView rs pcs
   where
     addEntity (cts, ucs, ms, sfts, rfts, pcs) = \case
-      RcvDirectMsgConnection c (Just ct) -> let cts' = addConn c ct cts in (cts', ucs, ms, sfts, rfts, pcs)
-      RcvDirectMsgConnection c Nothing -> let pcs' = addConn c (toPCC c) pcs in (cts, ucs, ms, sfts, rfts, pcs')
-      RcvGroupMsgConnection c _g m -> let ms' = addConn c m ms in (cts, ucs, ms', sfts, rfts, pcs)
-      SndFileConnection c sft -> let sfts' = addConn c sft sfts in (cts, ucs, ms, sfts', rfts, pcs)
-      RcvFileConnection c rft -> let rfts' = addConn c rft rfts in (cts, ucs, ms, sfts, rfts', pcs)
-      UserContactConnection c uc -> let ucs' = addConn c uc ucs in (cts, ucs', ms, sfts, rfts, pcs)
+      RcvDirectMsgConnectionRef c (Just ct) -> let cts' = addConn c ct cts in (cts', ucs, ms, sfts, rfts, pcs)
+      RcvDirectMsgConnectionRef c Nothing -> let pcs' = addConn c (toPCC c) pcs in (cts, ucs, ms, sfts, rfts, pcs')
+      RcvGroupMsgConnectionRef c _g m -> let ms' = addConn c m ms in (cts, ucs, ms', sfts, rfts, pcs)
+      SndFileConnectionRef c sft -> let sfts' = addConn c sft sfts in (cts, ucs, ms, sfts', rfts, pcs)
+      RcvFileConnectionRef c rft -> let rfts' = addConn c rft rfts in (cts, ucs, ms, sfts, rfts', pcs)
+      UserContactConnectionRef c uc -> let ucs' = addConn c uc ucs in (cts, ucs', ms, sfts, rfts, pcs)
     addConn :: Connection -> a -> Map ConnId a -> Map ConnId a
     addConn = M.insert . aConnId
     toPCC Connection {connId, agentConnId, connStatus, viaUserContactLink, groupLinkId, customUserProfileId, localAlias, createdAt} =
@@ -3550,11 +3550,11 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
           createdAt,
           updatedAt = createdAt
         }
-    getContactConns :: CM ([ConnId], Map ConnId Contact)
+    getContactConns :: CM ([ConnId], Map ConnId ContactRef)
     getContactConns = do
-      cts <- withStore_ (`getUserContacts` vr)
-      let cts' = mapMaybe (\ct -> (,ct) <$> contactConnId ct) $ filter contactActive cts
-      pure (map fst cts', M.fromList cts')
+      cts <- withStore_ getUserContactRefs
+      let acIds = map (\ContactRef {agentConnId = AgentConnId connId} -> connId) cts
+      pure (acIds, M.fromList $ zip acIds cts)
     getUserContactLinkConns :: CM ([ConnId], Map ConnId UserContact)
     getUserContactLinkConns = do
       (cs, ucs) <- unzip <$> withStore_ (`getUserContactLinks` vr)
@@ -3580,22 +3580,21 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
       pcs <- withStore_ getPendingContactConnections
       let connIds = map aConnId' pcs
       pure (connIds, M.fromList $ zip connIds pcs)
-    contactSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId Contact -> Bool -> CM ()
+    contactSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId ContactRef -> Bool -> CM ()
     contactSubsToView rs cts ce = do
       chatModifyVar connNetworkStatuses $ M.union (M.fromList statuses)
       ifM (asks $ coreApi . config) (notifyAPI statuses) notifyCLI
       where
         notifyCLI = do
           let cRs = resultsFor rs cts
-              cErrors = sortOn (\(Contact {localDisplayName = n}, _) -> n) $ filterErrors cRs
+              cErrors = sortOn (\(ContactRef {localDisplayName = n}, _) -> n) $ filterErrors cRs
           toView . CRContactSubSummary user $ map (uncurry ContactSubStatus) cRs
           when ce $ mapM_ (toView . uncurry (CRContactSubError user)) cErrors
         notifyAPI = toView . CRNetworkStatuses (Just user) . map (uncurry ConnNetworkStatus)
         statuses = M.foldrWithKey' addStatus [] cts
           where
-            addStatus :: ConnId -> Contact -> [(AgentConnId, NetworkStatus)] -> [(AgentConnId, NetworkStatus)]
-            addStatus _ Contact {activeConn = Nothing} nss = nss
-            addStatus connId Contact {activeConn = Just Connection {agentConnId}} nss =
+            addStatus :: ConnId -> ContactRef -> [(AgentConnId, NetworkStatus)] -> [(AgentConnId, NetworkStatus)]
+            addStatus connId ContactRef {agentConnId} nss =
               let ns = (agentConnId, netStatus $ resultErr connId rs)
                in ns : nss
             netStatus :: Maybe ChatError -> NetworkStatus
@@ -3764,7 +3763,7 @@ expireChatItems user@User {userId} ttl sync = do
       -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
       createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
   lift waitChatStartedAndActivated
-  contacts <- withStore' $ \db -> getUserContacts db vr user
+  contacts <- withStore' $ \db -> getUserContactRefs db user
   loop contacts $ processContact expirationDate
   lift waitChatStartedAndActivated
   groups <- withStore' $ \db -> getUserGroupDetails db vr user Nothing Nothing
@@ -3783,7 +3782,7 @@ expireChatItems user@User {userId} ttl sync = do
           expireFlags <- asks expireCIFlags
           expire <- atomically $ TM.lookup userId expireFlags
           when (expire == Just True) $ threadDelay 100000 >> a
-    processContact :: UTCTime -> Contact -> CM ()
+    processContact :: UTCTime -> ContactRef -> CM ()
     processContact expirationDate ct = do
       lift waitChatStartedAndActivated
       filesInfo <- withStore' $ \db -> getContactExpiredFileInfo db user ct expirationDate
