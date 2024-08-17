@@ -1420,9 +1420,9 @@ func apiGetVersion() throws -> CoreVersionInfo {
     throw r
 }
 
-func getAgentSubsTotal() throws -> (SMPServerSubs, Bool) {
+func getAgentSubsTotal() async throws -> (SMPServerSubs, Bool) {
     let userId = try currentUserId("getAgentSubsTotal")
-    let r = chatSendCmdSync(.getAgentSubsTotal(userId: userId), log: false)
+    let r = await chatSendCmd(.getAgentSubsTotal(userId: userId))
     if case let .agentSubsTotal(_, subsTotal, hasSession) = r { return (subsTotal, hasSession) }
     logger.error("getAgentSubsTotal error: \(String(describing: r))")
     throw r

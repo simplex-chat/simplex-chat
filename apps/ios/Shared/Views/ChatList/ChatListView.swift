@@ -324,7 +324,7 @@ struct ChatListView: View {
 struct SubsStatusIndicator: View {
     @State private var subs: SMPServerSubs = SMPServerSubs.newSMPServerSubs
     @State private var hasSess: Bool = false
-    @State private var timer: Timer? = nil
+    @State private var task: Task<Void, Never>?
     @State private var showServersSummary = false
 
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
@@ -343,10 +343,10 @@ struct SubsStatusIndicator: View {
         }
         .disabled(ChatModel.shared.chatRunning != true)
         .onAppear {
-            startTimer()
+            startTask()
         }
         .onDisappear {
-            stopTimer()
+            stopTask()
         }
         .appSheet(isPresented: $showServersSummary) {
             ServersSummaryView()
@@ -354,25 +354,29 @@ struct SubsStatusIndicator: View {
         }
     }
 
-    private func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            if AppChatState.shared.value == .active {
-                getSubsTotal()
+    private func startTask() {
+        task = Task {
+            while !Task.isCancelled {
+                if AppChatState.shared.value == .active {
+                    do {
+                        let (subs, hasSess) = try await getAgentSubsTotal()
+                        print("subs: \(subs), hasSess: \(hasSess)")
+                        await MainActor.run {
+                            self.subs = subs
+                            self.hasSess = hasSess
+                        }
+                    } catch let error {
+                        logger.error("getSubsTotal error: \(responseError(error))")
+                    }
+                }
+                try? await Task.sleep(nanoseconds: 1_000_000_000) // Sleep for 1 second
             }
         }
     }
 
-    func stopTimer() {
-        timer?.invalidate()
-        timer = nil
-    }
-
-    private func getSubsTotal() {
-        do {
-            (subs, hasSess) = try getAgentSubsTotal()
-        } catch let error {
-            logger.error("getSubsTotal error: \(responseError(error))")
-        }
+    func stopTask() {
+        task?.cancel()
+        task = nil
     }
 }
 
