@@ -7447,9 +7447,9 @@ Repeat join request?</source>
         <target>Puede aceptar llamadas desde la pantalla de bloqueo, sin autenticación de dispositivos y aplicaciones.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can change it in Appearance settings." xml:space="preserve">
+      <trans-unit id="You can change it in Appearance settings." xml:space="preserve" approved="no">
         <source>You can change it in Appearance settings.</source>
-        <target>Puede cambiarlo desde el menú Apariencia.</target>
+        <target state="translated">Puedes cambiar la posición de la barra desde el menú Apariencia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">
