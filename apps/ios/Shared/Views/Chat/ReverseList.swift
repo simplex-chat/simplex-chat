@@ -187,10 +187,11 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
             }
         }
 
-        private var isNearBottom: Bool {
-            let adjustedOffset = tableView.contentOffset.y + InvertedTableView.inset
-            return adjustedOffset > 0 && adjustedOffset < 500
-        }
+        private var isNearBottom: Bool { scrollOffset > 0 && scrollOffset < 500 }
+
+        private var isAtBottom: Bool { scrollOffset == 0 }
+
+        private var scrollOffset: CGFloat { tableView.contentOffset.y + InvertedTableView.inset }
 
         private var itemId: Item.ID?
         private var retainedItems: [Item]?
@@ -209,7 +210,7 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                 _update(items: Array(items[i...]), animated: false) {
                     DispatchQueue.main.async {
                         // Added items animated by sliding from bottom (.top)
-                        self._update(items: items, animated: true) {
+                        self._update(items: items, animated: self.isAtBottom) {
                             self.updateInProgress = false
                             if self.isNearBottom { self.scrollToBottom(animated: true) }
                             // Process update, which might have arrived before completion
