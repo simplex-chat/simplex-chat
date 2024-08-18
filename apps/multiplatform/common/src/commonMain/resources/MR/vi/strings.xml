@@ -680,4 +680,18 @@
     <string name="display_name">Nhập tên của bạn:</string>
     <string name="enable_lock">Bật khóa</string>
     <string name="servers_info_modal_error_title">Lỗi</string>
+    <string name="failed_to_create_user_title">Lỗi tạo hồ sơ!</string>
+    <string name="error_changing_message_deletion">Lỗi thay đổi cài đặt</string>
+    <string name="error_blocking_member_for_all">Lỗi chặn thành viên cho tất cả</string>
+    <string name="error_adding_members">Lỗi thêm thành viên</string>
+    <string name="error_creating_message">Lỗi tạo tin nhắn</string>
+    <string name="error_creating_address">Lỗi tạo địa chỉ</string>
+    <string name="error_accepting_contact_request">Lỗi chấp nhận yêu cầu kết nối</string>
+    <string name="error_changing_address">Lỗi thay đổi địa chỉ</string>
+    <string name="error_deleting_database">Lỗi xóa cơ sở dữ liệu trò chuyện</string>
+    <string name="error_creating_member_contact">Lỗi tạo liên hệ thành viên</string>
+    <string name="error_aborting_address_change">Lỗi hủy bỏ thay đổi địa chỉ</string>
+    <string name="error_creating_link_for_group">Lỗi tạo liên kết nhóm</string>
+    <string name="error_changing_role">Lỗi thay đổi quyền hạn</string>
+    <string name="smp_proxy_error_connecting">Lỗi kết nối đến máy chủ chuyển tiếp %1$s. Vui lòng thử lại sau.</string>
 </resources>
