@@ -77,7 +77,6 @@ struct CreateProfile: View {
                 focusDisplayName = true
             }
         }
-        .keyboardPadding()
     }
 }
 
@@ -128,7 +127,6 @@ struct CreateFirstProfile: View {
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .keyboardPadding()
     }
 
     func onboardingButtons() -> some View {

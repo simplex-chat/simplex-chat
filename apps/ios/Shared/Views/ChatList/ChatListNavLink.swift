@@ -355,6 +355,7 @@ struct ChatListNavLink: View {
             .tint(.red)
         }
         .frame(height: dynamicRowHeight)
+        .contentShape(Rectangle())
         .onTapGesture { showContactRequestDialog = true }
         .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
             Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) } }
@@ -392,6 +393,7 @@ struct ChatListNavLink: View {
                 }
             }
         }
+        .contentShape(Rectangle())
         .onTapGesture {
             showContactConnectionInfo = true
         }
