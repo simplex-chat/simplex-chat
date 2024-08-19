@@ -106,22 +106,23 @@ fun AppBarTitle(title: String, hostDevice: Pair<Long?, String>? = null,  withPad
   else // color is not updated when changing themes if I pass null here
     Brush.linearGradient(listOf(titleColor, titleColor), Offset(0f, Float.POSITIVE_INFINITY), Offset(Float.POSITIVE_INFINITY, 0f))
   Column {
+    val modifier = if (appPlatform.isDesktop) {
+      Modifier
+        .fillMaxWidth()
+        .padding(start = if (withPadding) DEFAULT_PADDING else 0.dp, top = DEFAULT_PADDING_HALF, end = if (withPadding) DEFAULT_PADDING else 0.dp,)
+        .graphicsLayer {
+          alpha = (AppBarHandler.appBarMaxHeightPx + (connection?.appBarOffset ?: 0f) * 2).coerceAtLeast(0f) / AppBarHandler.appBarMaxHeightPx
+        }
+    } else {
+      Modifier
+        .padding(start = if (withPadding) DEFAULT_PADDING else 0.dp, top = DEFAULT_PADDING_HALF, end = if (withPadding) DEFAULT_PADDING else 0.dp,)
+        .graphicsLayer {
+          alpha = (AppBarHandler.appBarMaxHeightPx + (connection?.appBarOffset ?: 0f) * 2).coerceAtLeast(0f) / AppBarHandler.appBarMaxHeightPx
+        }
+    }
     Text(
       title,
-      if (appPlatform.isDesktop) {
-        Modifier
-          .fillMaxWidth()
-          .padding(start = if (withPadding) DEFAULT_PADDING else 0.dp, end = if (withPadding) DEFAULT_PADDING else 0.dp,)
-          .graphicsLayer {
-            alpha = (AppBarHandler.appBarMaxHeightPx + (connection?.appBarOffset ?: 0f) * 2).coerceAtLeast(0f) / AppBarHandler.appBarMaxHeightPx
-          }
-      } else {
-        Modifier
-          .padding(start = if (withPadding) DEFAULT_PADDING else 0.dp, end = if (withPadding) DEFAULT_PADDING else 0.dp,)
-          .graphicsLayer {
-            alpha = (AppBarHandler.appBarMaxHeightPx + (connection?.appBarOffset ?: 0f) * 2).coerceAtLeast(0f) / AppBarHandler.appBarMaxHeightPx
-          }
-      },
+      modifier,
       overflow = TextOverflow.Ellipsis,
       style = MaterialTheme.typography.h1.copy(brush = brush),
       color = MaterialTheme.colors.primaryVariant,

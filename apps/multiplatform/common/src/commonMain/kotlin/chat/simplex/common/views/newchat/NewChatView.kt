@@ -97,58 +97,61 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
     }
   }
 
-  ColumnWithScrollBar {
-    AppBarTitle(stringResource(MR.strings.new_chat), hostDevice(rh?.remoteHostId), bottomPadding = DEFAULT_PADDING)
-    val scope = rememberCoroutineScope()
-    val pagerState = rememberPagerState(
-      initialPage = selection.value.ordinal,
-      initialPageOffsetFraction = 0f
-    ) { NewChatOption.values().size }
-    KeyChangeEffect(pagerState.currentPage) {
-      selection.value = NewChatOption.values()[pagerState.currentPage]
-    }
-    TabRow(
-      selectedTabIndex = pagerState.currentPage,
-      backgroundColor = Color.Transparent,
-      contentColor = MaterialTheme.colors.primary,
-    ) {
-      tabTitles.forEachIndexed { index, it ->
-        LeadingIconTab(
-          selected = pagerState.currentPage == index,
-          onClick = {
-            scope.launch {
-              pagerState.animateScrollToPage(index)
-            }
-          },
-          text = { Text(it, fontSize = 13.sp) },
-          icon = {
-            Icon(
-              if (NewChatOption.INVITE.ordinal == index) painterResource(MR.images.ic_repeat_one) else painterResource(MR.images.ic_qr_code),
-              it
-            )
-          },
-          selectedContentColor = MaterialTheme.colors.primary,
-          unselectedContentColor = MaterialTheme.colors.secondary,
-        )
+  BoxWithConstraints {
+    ColumnWithScrollBar {
+      AppBarTitle(stringResource(MR.strings.new_chat), hostDevice(rh?.remoteHostId), bottomPadding = DEFAULT_PADDING)
+      val scope = rememberCoroutineScope()
+      val pagerState = rememberPagerState(
+        initialPage = selection.value.ordinal,
+        initialPageOffsetFraction = 0f
+      ) { NewChatOption.values().size }
+      KeyChangeEffect(pagerState.currentPage) {
+        selection.value = NewChatOption.values()[pagerState.currentPage]
       }
-    }
-
-    HorizontalPager(state = pagerState, Modifier, pageNestedScrollConnection = LocalAppBarHandler.current!!.connection, verticalAlignment = Alignment.Top, userScrollEnabled = appPlatform.isAndroid) { index ->
-      Column(
-        Modifier
-          .fillMaxSize(),
-        verticalArrangement = if (index == NewChatOption.INVITE.ordinal && connReqInvitation.isEmpty()) Arrangement.Center else Arrangement.Top
+      TabRow(
+        selectedTabIndex = pagerState.currentPage,
+        backgroundColor = Color.Transparent,
+        contentColor = MaterialTheme.colors.primary,
       ) {
-        Spacer(Modifier.height(DEFAULT_PADDING))
-        when (index) {
-          NewChatOption.INVITE.ordinal -> {
-            PrepareAndInviteView(rh?.remoteHostId, contactConnection, connReqInvitation, creatingConnReq)
-          }
-          NewChatOption.CONNECT.ordinal -> {
-            ConnectView(rh?.remoteHostId, showQRCodeScanner, pastedLink, close)
-          }
+        tabTitles.forEachIndexed { index, it ->
+          LeadingIconTab(
+            selected = pagerState.currentPage == index,
+            onClick = {
+              scope.launch {
+                pagerState.animateScrollToPage(index)
+              }
+            },
+            text = { Text(it, fontSize = 13.sp) },
+            icon = {
+              Icon(
+                if (NewChatOption.INVITE.ordinal == index) painterResource(MR.images.ic_repeat_one) else painterResource(MR.images.ic_qr_code),
+                it
+              )
+            },
+            selectedContentColor = MaterialTheme.colors.primary,
+            unselectedContentColor = MaterialTheme.colors.secondary,
+          )
         }
-        SectionBottomSpacer()
+      }
+
+      HorizontalPager(state = pagerState, Modifier, pageNestedScrollConnection = LocalAppBarHandler.current!!.connection, verticalAlignment = Alignment.Top, userScrollEnabled = appPlatform.isAndroid) { index ->
+        Column(
+          Modifier
+            .fillMaxWidth()
+            .heightIn(min = this@BoxWithConstraints.maxHeight - 150.dp),
+          verticalArrangement = if (index == NewChatOption.INVITE.ordinal && connReqInvitation.isEmpty()) Arrangement.Center else Arrangement.Top
+        ) {
+          Spacer(Modifier.height(DEFAULT_PADDING))
+          when (index) {
+            NewChatOption.INVITE.ordinal -> {
+              PrepareAndInviteView(rh?.remoteHostId, contactConnection, connReqInvitation, creatingConnReq)
+            }
+            NewChatOption.CONNECT.ordinal -> {
+              ConnectView(rh?.remoteHostId, showQRCodeScanner, pastedLink, close)
+            }
+          }
+          SectionBottomSpacer()
+        }
       }
     }
   }
