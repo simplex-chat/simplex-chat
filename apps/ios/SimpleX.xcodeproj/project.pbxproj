@@ -206,6 +206,8 @@
 		CEE723B12C3BD3D70009AE93 /* SimpleX SE.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = CEE723A72C3BD3D70009AE93 /* SimpleX SE.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		CEE723F02C3D25C70009AE93 /* ShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE723EF2C3D25C70009AE93 /* ShareView.swift */; };
 		CEE723F22C3D25ED0009AE93 /* ShareModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE723F12C3D25ED0009AE93 /* ShareModel.swift */; };
+		CEE7C1D92C73BA7400DC1C41 /* ArrayMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE7C1D82C73BA7400DC1C41 /* ArrayMap.swift */; };
+		CEE7C1DD2C73BE0F00DC1C41 /* ArrayMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE7C1D82C73BA7400DC1C41 /* ArrayMap.swift */; };
 		CEEA861D2C2ABCB50084E1EA /* ReverseList.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEEA861C2C2ABCB50084E1EA /* ReverseList.swift */; };
 		D7197A1829AE89660055C05A /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D7197A1729AE89660055C05A /* WebRTC */; };
 		D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D72A9087294BD7A70047C86D /* NativeTextEditor.swift */; };
@@ -544,6 +546,7 @@
 		CEE723D42C3C21F50009AE93 /* SimpleX SE.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "SimpleX SE.entitlements"; sourceTree = "<group>"; };
 		CEE723EF2C3D25C70009AE93 /* ShareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareView.swift; sourceTree = "<group>"; };
 		CEE723F12C3D25ED0009AE93 /* ShareModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareModel.swift; sourceTree = "<group>"; };
+		CEE7C1D82C73BA7400DC1C41 /* ArrayMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArrayMap.swift; sourceTree = "<group>"; };
 		CEEA861C2C2ABCB50084E1EA /* ReverseList.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReverseList.swift; sourceTree = "<group>"; };
 		D72A9087294BD7A70047C86D /* NativeTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTextEditor.swift; sourceTree = "<group>"; };
 		D741547729AF89AF0022400A /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/StoreKit.framework; sourceTree = DEVELOPER_DIR; };
@@ -769,6 +772,7 @@
 		5C971E1F27AEBF7000C8A3CE /* Helpers */ = {
 			isa = PBXGroup;
 			children = (
+				CEE7C1D82C73BA7400DC1C41 /* ArrayMap.swift */,
 				5C971E2027AEBF8300C8A3CE /* ChatInfoImage.swift */,
 				5C7505A427B679EE00BE3227 /* NavLinkPlain.swift */,
 				5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */,
@@ -1408,6 +1412,7 @@
 				8C7F8F0E2C19C0C100D16888 /* ViewModifiers.swift in Sources */,
 				5C35CFCB27B2E91D00FB6C6D /* NtfManager.swift in Sources */,
 				5C9D13A3282187BB00AB8B43 /* WebRTC.swift in Sources */,
+				CEE7C1D92C73BA7400DC1C41 /* ArrayMap.swift in Sources */,
 				5C9A5BDB2871E05400A5B906 /* SetNotificationsMode.swift in Sources */,
 				5CB0BA8E2827126500B3292C /* OnboardingView.swift in Sources */,
 				6442E0BE2880182D00CEC0F9 /* GroupChatInfoView.swift in Sources */,
@@ -1515,6 +1520,7 @@
 			files = (
 				5CA059DE279559F40002BEB4 /* Tests_iOSLaunchTests.swift in Sources */,
 				5CA059DC279559F40002BEB4 /* Tests_iOS.swift in Sources */,
+				CEE7C1DD2C73BE0F00DC1C41 /* ArrayMap.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
