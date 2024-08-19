@@ -979,20 +979,29 @@ processChatCommand' vr = \case
           throwChatError (CECommandError "too many reactions")
   APIForwardChatItems (ChatRef toCType toChatId) (ChatRef fromCType fromChatId) (itemId :| _) itemTTL -> withUser $ \user -> case toCType of
     CTDirect -> do
-      (cm, ciff) <- prepareForward user
-      withContactLock "forwardChatItem, to contact" toChatId $
-        sendContactContentMessages user toChatId False itemTTL ((cm, ciff) :| [])
+      cmrs <- prepareForward user
+      case (L.nonEmpty cmrs) of
+        Just cmrs' ->
+          withContactLock "forwardChatItem, to contact" toChatId $
+            sendContactContentMessages user toChatId False itemTTL cmrs'
+        Nothing -> throwChatError $ CEInternalError "no chat items to forward"
     CTGroup -> do
-      (cm, ciff) <- prepareForward user
-      withGroupLock "forwardChatItem, to group" toChatId $
-        sendGroupContentMessages user toChatId False itemTTL ((cm, ciff) :| [])
+      cmrs <- prepareForward user
+      case (L.nonEmpty cmrs) of
+        Just cmrs' ->
+          withGroupLock "forwardChatItem, to group" toChatId $
+            sendGroupContentMessages user toChatId False itemTTL cmrs'
+        Nothing -> throwChatError $ CEInternalError "no chat items to forward"
     CTLocal -> do
-      (cm, ciff) <- prepareForward user
-      createNoteFolderContentItems user toChatId ((cm, ciff) :| [])
+      cmrs <- prepareForward user
+      case (L.nonEmpty cmrs) of
+        Just cmrs' ->
+          createNoteFolderContentItems user toChatId cmrs'
+        Nothing -> throwChatError $ CEInternalError "no chat items to forward"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
-      prepareForward :: User -> CM (ComposedMessage, Maybe CIForwardedFrom)
+      prepareForward :: User -> CM [ComposeMessageReq]
       prepareForward user = case fromCType of
         CTDirect -> withContactLock "forwardChatItem, from contact" fromChatId $ do
           (ct, CChatItem _ ci) <- withFastStore $ \db -> do
@@ -1002,7 +1011,7 @@ processChatCommand' vr = \case
           (mc, mDir) <- forwardMC ci
           file <- forwardCryptoFile ci
           let ciff = forwardCIFF ci $ Just (CIFFContact (forwardName ct) mDir (Just fromChatId) (Just itemId))
-          pure (ComposedMessage file Nothing mc, ciff)
+          pure [(ComposedMessage file Nothing mc, ciff)]
           where
             forwardName :: Contact -> ContactName
             forwardName Contact {profile = LocalProfile {displayName, localAlias}}
@@ -1016,7 +1025,7 @@ processChatCommand' vr = \case
           (mc, mDir) <- forwardMC ci
           file <- forwardCryptoFile ci
           let ciff = forwardCIFF ci $ Just (CIFFGroup (forwardName gInfo) mDir (Just fromChatId) (Just itemId))
-          pure (ComposedMessage file Nothing mc, ciff)
+          pure [(ComposedMessage file Nothing mc, ciff)]
           where
             forwardName :: GroupInfo -> ContactName
             forwardName GroupInfo {groupProfile = GroupProfile {displayName}} = displayName
@@ -1025,7 +1034,7 @@ processChatCommand' vr = \case
           (mc, _) <- forwardMC ci
           file <- forwardCryptoFile ci
           let ciff = forwardCIFF ci Nothing
-          pure (ComposedMessage file Nothing mc, ciff)
+          pure [(ComposedMessage file Nothing mc, ciff)]
         CTContactRequest -> throwChatError $ CECommandError "not supported"
         CTContactConnection -> throwChatError $ CECommandError "not supported"
         where
