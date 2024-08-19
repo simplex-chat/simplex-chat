@@ -135,7 +135,7 @@ fun AppBarTitle(title: String, hostDevice: Pair<Long?, String>? = null,  withPad
       textAlign = TextAlign.Start
     )
     if (hostDevice != null) {
-      Box(Modifier.graphicsLayer {
+      Box(Modifier.padding(start = if (withPadding) DEFAULT_PADDING else 0.dp, end = if (withPadding) DEFAULT_PADDING else 0.dp).graphicsLayer {
         alpha = bottomTitleAlpha(connection)
       }) {
         HostDeviceTitle(hostDevice)
@@ -155,7 +155,7 @@ private fun bottomTitleAlpha(connection: CollapsingAppBarNestedScrollConnection?
 
 @Composable
 private fun HostDeviceTitle(hostDevice: Pair<Long?, String>, extraPadding: Boolean = false) {
-  Row(Modifier.fillMaxWidth().padding(top = 5.dp, bottom = if (extraPadding) DEFAULT_PADDING * 2 else DEFAULT_PADDING_HALF), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+  Row(Modifier.fillMaxWidth().padding(top = 5.dp, bottom = if (extraPadding) DEFAULT_PADDING * 2 else DEFAULT_PADDING_HALF), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Start) {
     Icon(painterResource(if (hostDevice.first == null) MR.images.ic_desktop else MR.images.ic_smartphone_300), null, Modifier.size(15.dp), tint = MaterialTheme.colors.secondary)
     Spacer(Modifier.width(10.dp))
     Text(hostDevice.second, color = MaterialTheme.colors.secondary)
