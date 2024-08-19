@@ -194,7 +194,15 @@ private fun NewChatSheetLayout(
                 (appPlatform.isAndroid && keyboardState == KeyboardState.Opened)
                 ) {
                 0
-              } else if (listState.firstVisibleItemIndex == 0) offsetMultiplier * listState.firstVisibleItemScrollOffset else offsetMultiplier * 1000
+              } else if (oneHandUI.value && listState.firstVisibleItemIndex == 0) {
+                listState.firstVisibleItemScrollOffset
+              } else if (!oneHandUI.value && listState.firstVisibleItemIndex == 0) {
+                0
+              } else if (!oneHandUI.value && listState.firstVisibleItemIndex == 1) {
+                -listState.firstVisibleItemScrollOffset
+              } else {
+                offsetMultiplier * 1000
+              }
             } else {
               0
             }
