@@ -12,13 +12,13 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
+import kotlin.math.absoluteValue
 
 @Composable
 fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Color = if (close != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,  arrangement: Arrangement.Vertical = Arrangement.Top, closeBarTitle: String? = null, barPaddingValues: PaddingValues = PaddingValues(horizontal = AppBarHorizontalPadding), endButtons: @Composable RowScope.() -> Unit = {}) {
@@ -39,7 +39,7 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
       .fillMaxWidth()
       .heightIn(min = AppBarHeight * fontSizeSqrtMultiplier)
       .drawWithCache {
-        val backgroundColor = if (appPlatform.isDesktop && connection != null) themeBackgroundMix.copy(alpha = (-connection.appBarOffset * 2f / AppBarHandler.appBarMaxHeightPx).coerceIn(0f, 1f)) else Color.Transparent
+        val backgroundColor = if (appPlatform.isDesktop && connection != null) themeBackgroundMix.copy(alpha = topTitleAlpha(connection)) else Color.Transparent
         onDrawBehind {
           if (appPlatform.isDesktop) {
             drawRect(backgroundColor)
@@ -77,7 +77,7 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
                 .padding(start = if (showClose) 0.dp else DEFAULT_PADDING_HALF)
                 .weight(1f) // hides the title if something wants full width (eg, search field in chat profiles screen)
                 .graphicsLayer {
-                  alpha = (-connection.appBarOffset * 2f / AppBarHandler.appBarMaxHeightPx).coerceIn(0f, 1f)
+                  alpha = topTitleAlpha((connection))
                 }
                 .padding(start = 4.dp),
               verticalAlignment = Alignment.CenterVertically
@@ -101,7 +101,7 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
       Divider(
         Modifier
           .graphicsLayer {
-            alpha = (-connection.appBarOffset * 2f / AppBarHandler.appBarMaxHeightPx).coerceIn(0f, 1f)
+            alpha = topTitleAlpha(connection)
           }
       )
     }
@@ -127,13 +127,13 @@ fun AppBarTitle(title: String, hostDevice: Pair<Long?, String>? = null,  withPad
         .fillMaxWidth()
         .padding(start = if (withPadding) DEFAULT_PADDING else 0.dp, top = DEFAULT_PADDING_HALF, end = if (withPadding) DEFAULT_PADDING else 0.dp,)
         .graphicsLayer {
-          alpha = (AppBarHandler.appBarMaxHeightPx + (connection?.appBarOffset ?: 0f) * 2).coerceAtLeast(0f) / AppBarHandler.appBarMaxHeightPx
+          alpha = bottomTitleAlpha(connection)
         }
     } else {
       Modifier
         .padding(start = if (withPadding) DEFAULT_PADDING else 0.dp, top = DEFAULT_PADDING_HALF, end = if (withPadding) DEFAULT_PADDING else 0.dp,)
         .graphicsLayer {
-          alpha = (AppBarHandler.appBarMaxHeightPx + (connection?.appBarOffset ?: 0f) * 2).coerceAtLeast(0f) / AppBarHandler.appBarMaxHeightPx
+          alpha = bottomTitleAlpha(connection)
         }
     }
     Text(
@@ -146,7 +146,7 @@ fun AppBarTitle(title: String, hostDevice: Pair<Long?, String>? = null,  withPad
     )
     if (hostDevice != null) {
       Box(Modifier.graphicsLayer {
-        alpha = (AppBarHandler.appBarMaxHeightPx + (connection?.appBarOffset ?: 0f) * 2).coerceAtLeast(0f) / AppBarHandler.appBarMaxHeightPx
+        alpha = bottomTitleAlpha(connection)
       }) {
         HostDeviceTitle(hostDevice)
       }
@@ -154,6 +154,14 @@ fun AppBarTitle(title: String, hostDevice: Pair<Long?, String>? = null,  withPad
     Spacer(Modifier.height(bottomPadding))
   }
 }
+
+private fun topTitleAlpha(connection: CollapsingAppBarNestedScrollConnection) =
+  if (connection.appBarOffset.absoluteValue < AppBarHandler.appBarMaxHeightPx / 3) 0f
+  else ((-connection.appBarOffset * 1.5f) / (AppBarHandler.appBarMaxHeightPx)).coerceIn(0f, 1f)
+
+private fun bottomTitleAlpha(connection: CollapsingAppBarNestedScrollConnection?) =
+  if ((connection?.appBarOffset ?: 0f).absoluteValue < AppBarHandler.appBarMaxHeightPx / 3) 1f
+  else ((AppBarHandler.appBarMaxHeightPx) + (connection?.appBarOffset ?: 0f) / 3).coerceAtLeast(0f) / AppBarHandler.appBarMaxHeightPx
 
 @Composable
 private fun HostDeviceTitle(hostDevice: Pair<Long?, String>, extraPadding: Boolean = false) {
