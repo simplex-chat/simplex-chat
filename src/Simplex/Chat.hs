@@ -2826,19 +2826,13 @@ processChatCommand' vr = \case
         _ -> pure () -- prohibited
     sendContactContentMessages :: User -> ContactId -> Bool -> Maybe Int -> NonEmpty ComposedMessage -> Maybe CIForwardedFrom -> CM ChatResponse
     sendContactContentMessages user contactId live itemTTL cms itemForwarded = do
-      assertMultiSendable
+      assertMultiSendable live cms
       ct@Contact {contactUsed} <- withFastStore $ \db -> getContact db vr user contactId
       assertDirectAllowed user MDSnd ct XMsgNew_
       assertVoiceAllowed ct
       unless contactUsed $ withFastStore' $ \db -> updateContactUsed db user ct
       processComposedMessages ct
       where
-        assertMultiSendable :: CM ()
-        assertMultiSendable
-          | length cms == 1 = pure ()
-          | otherwise =
-              when (live || any (\(ComposedMessage {quotedItemId}) -> isJust quotedItemId) cms) $
-                throwChatError (CECommandError "invalid multi send: live and quotes not supported")
         assertVoiceAllowed :: Contact -> CM ()
         assertVoiceAllowed ct =
           when (not (featureAllowed SCFVoice forUser ct) && any (\(ComposedMessage {msgContent}) -> isVoice msgContent) cms) $
@@ -2886,48 +2880,67 @@ processChatCommand' vr = \case
                 quoteData ChatItem {content = CISndMsgContent qmc} = pure (qmc, CIQDirectSnd, True)
                 quoteData ChatItem {content = CIRcvMsgContent qmc} = pure (qmc, CIQDirectRcv, False)
                 quoteData _ = throwChatError CEInvalidQuote
-            prepareSndItemsData ::
-              [(Either ChatError SndMessage)] ->
-              NonEmpty ComposedMessage ->
-              NonEmpty (Maybe (CIFile 'MDSnd)) ->
-              NonEmpty (Maybe (CIQuote 'CTDirect)) ->
-              [NewSndChatItemData 'CTDirect]
-            prepareSndItemsData msgs_ cms' ciFiles_ quotedItems_ =
-              [ NewSndChatItemData msg (CISndMsgContent msgContent) f q
-                | (Right msg, ComposedMessage {msgContent}, f, q) <-
-                    zipWith4 (,,,) msgs_ (L.toList cms') (L.toList ciFiles_) (L.toList quotedItems_)
-              ]
     sendGroupContentMessages :: User -> GroupId -> Bool -> Maybe Int -> NonEmpty ComposedMessage -> Maybe CIForwardedFrom -> CM ChatResponse
-    sendGroupContentMessages user groupId live itemTTL ((ComposedMessage file_ quotedItemId_ mc) :| _) itemForwarded = do
+    sendGroupContentMessages user groupId live itemTTL cms itemForwarded = do
+      assertMultiSendable live cms
       g@(Group gInfo _) <- withFastStore $ \db -> getGroup db vr user groupId
       assertUserGroupRole gInfo GRAuthor
-      send g
+      assertGroupContentAllowed gInfo
+      processComposedMessages g
       where
-        send g@(Group gInfo@GroupInfo {membership} ms) =
-          case prohibitedGroupContent gInfo membership mc file_ of
-            Just f -> notAllowedError f
-            Nothing -> do
-              (fInv_, ciFile_) <- L.unzip <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
-              timed_ <- sndGroupCITimed live gInfo itemTTL
-              (msgContainer, quotedItem_) <- prepareGroupMsg user gInfo mc quotedItemId_ itemForwarded fInv_ timed_ live
-              (msg, r) <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
-              ci <- saveSndChatItem' user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ itemForwarded timed_ live
-              withFastStore' $ \db -> do
-                let GroupSndResult {sentTo, pending, forwarded} = mkGroupSndResult r
-                createMemberSndStatuses db ci sentTo GSSNew
-                createMemberSndStatuses db ci forwarded GSSForwarded
-                createMemberSndStatuses db ci pending GSSInactive
-              forM_ (timed_ >>= timedDeleteAt') $
-                startProximateTimedItemThread user (ChatRef CTGroup groupId, chatItemId' ci)
-              pure $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci]
-              where
-                createMemberSndStatuses db ci ms' gss =
-                  forM_ ms' $ \GroupMember {groupMemberId} -> createGroupSndStatus db (chatItemId' ci) groupMemberId gss
-        notAllowedError f = pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText f))
-        setupSndFileTransfer :: Group -> Int -> CM (Maybe (FileInvitation, CIFile 'MDSnd))
-        setupSndFileTransfer g n = forM file_ $ \file -> do
-          fileSize <- checkSndFile file
-          xftpSndFileTransfer user file fileSize n $ CGGroup g
+        assertGroupContentAllowed :: GroupInfo -> CM ()
+        assertGroupContentAllowed gInfo@GroupInfo {membership} =
+          case findProhibited (L.toList cms) of
+            Just f -> throwChatError (CECommandError $ "feature not allowed " <> T.unpack (groupFeatureNameText f))
+            Nothing -> pure ()
+          where
+            findProhibited :: [ComposedMessage] -> Maybe GroupFeature
+            findProhibited =
+              foldr
+                (\(ComposedMessage {fileSource, msgContent = mc}) acc -> prohibitedGroupContent gInfo membership mc fileSource <|> acc)
+                Nothing
+        processComposedMessages :: Group -> CM ChatResponse
+        processComposedMessages g@(Group gInfo ms) = do
+          (fInvs_, ciFiles_) <- L.unzip <$> setupSndFileTransfers (length $ filter memberCurrent ms)
+          timed_ <- sndGroupCITimed live gInfo itemTTL
+          -- all quotedItems_ are Nothing in case of multi send - see assertMultiSendable
+          (msgContainers, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cms fInvs_) timed_
+          (msgs_, r) <- sendGroupMessages user gInfo ms $ L.map XMsgNew msgContainers
+          let itemsData = prepareSndItemsData (L.toList msgs_) cms ciFiles_ quotedItems_
+          cis <- saveSndChatItems user (CDGroupSnd gInfo) itemsData itemForwarded timed_ live
+          withFastStore' $ \db -> do
+            forM_ cis $ \ci -> do
+              -- TODO per item snd result?
+              let GroupSndResult {sentTo, pending, forwarded} = mkGroupSndResult r
+              createMemberSndStatuses db ci sentTo GSSNew
+              createMemberSndStatuses db ci forwarded GSSForwarded
+              createMemberSndStatuses db ci pending GSSInactive
+          forM_ (timed_ >>= timedDeleteAt') $ \deleteAt ->
+            forM_ cis $ \ci ->
+              startProximateTimedItemThread user (ChatRef CTGroup groupId, chatItemId' ci) deleteAt
+          pure $ CRNewChatItems user (map (AChatItem SCTGroup SMDSnd (GroupChat gInfo)) cis)
+          where
+            setupSndFileTransfers :: Int -> CM (NonEmpty (Maybe FileInvitation, Maybe (CIFile 'MDSnd)))
+            setupSndFileTransfers n =
+              forM cms $ \ComposedMessage {fileSource = file_} -> case file_ of
+                Just file -> do
+                  fileSize <- checkSndFile file
+                  (fInv, ciFile) <- xftpSndFileTransfer user file fileSize n $ CGGroup g
+                  pure (Just fInv, Just ciFile)
+                Nothing -> pure (Nothing, Nothing)
+            prepareMsgs :: NonEmpty (ComposedMessage, Maybe FileInvitation) -> Maybe CITimed -> CM (NonEmpty (MsgContainer, Maybe (CIQuote 'CTGroup)))
+            prepareMsgs cmsFileInvs timed_ =
+              forM cmsFileInvs $ \(ComposedMessage {quotedItemId, msgContent = mc}, fInv_) ->
+                prepareGroupMsg user gInfo mc quotedItemId itemForwarded fInv_ timed_ live
+            createMemberSndStatuses :: DB.Connection -> ChatItem 'CTGroup 'MDSnd -> [GroupMember] -> GroupSndStatus -> IO ()
+            createMemberSndStatuses db ci ms' gss =
+              forM_ ms' $ \GroupMember {groupMemberId} -> createGroupSndStatus db (chatItemId' ci) groupMemberId gss
+    assertMultiSendable :: Bool -> NonEmpty ComposedMessage -> CM ()
+    assertMultiSendable live cms
+      | length cms == 1 = pure ()
+      | otherwise =
+          when (live || any (\(ComposedMessage {quotedItemId}) -> isJust quotedItemId) cms) $
+            throwChatError (CECommandError "invalid multi send: live and quotes not supported")
     xftpSndFileTransfer :: User -> CryptoFile -> Integer -> Int -> ContactOrGroup -> CM (FileInvitation, CIFile 'MDSnd)
     xftpSndFileTransfer user file fileSize n contactOrGroup = do
       (fInv, ciFile, ft) <- xftpSndFileTransfer_ user file fileSize n $ Just contactOrGroup
@@ -2943,6 +2956,17 @@ processChatCommand' vr = \case
                   \db -> createSndFTDescrXFTP db user (Just m) conn ft dummyFileDescr
             saveMemberFD _ = pure ()
       pure (fInv, ciFile)
+    prepareSndItemsData ::
+      [Either ChatError SndMessage] ->
+      NonEmpty ComposedMessage ->
+      NonEmpty (Maybe (CIFile 'MDSnd)) ->
+      NonEmpty (Maybe (CIQuote c)) ->
+      [NewSndChatItemData c]
+    prepareSndItemsData msgs_ cms' ciFiles_ quotedItems_ =
+      [ NewSndChatItemData msg (CISndMsgContent msgContent) f q
+        | (Right msg, ComposedMessage {msgContent}, f, q) <-
+            zipWith4 (,,,) msgs_ (L.toList cms') (L.toList ciFiles_) (L.toList quotedItems_)
+      ]
     createNoteFolderContentItems :: User -> NoteFolderId -> NonEmpty ComposedMessage -> Maybe CIForwardedFrom -> CM ChatResponse
     createNoteFolderContentItems user folderId ((ComposedMessage file_ quotedItemId_ mc) :| _) itemForwarded = do
       forM_ quotedItemId_ $ \_ -> throwError $ ChatError $ CECommandError "createNoteFolderContentItems: quote not supported"
@@ -4731,7 +4755,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 let GroupMember {memberId} = m
                     ms = forwardedToGroupMembers (introducedMembers <> invitedMembers) forwardedMsgs'
                     events = L.map (\cm -> XGrpMsgForward memberId cm brokerTs) forwardedMsgs'
-                unless (null ms) $ sendGroupMessages user gInfo ms events
+                unless (null ms) $ void $ sendGroupMessages user gInfo ms events
       RCVD msgMeta msgRcpt ->
         withAckMessage' "group rcvd" agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
@@ -6998,13 +7022,31 @@ deliverMessagesB msgReqs = do
       where
         updatePQ = updateConnPQSndEnabled db connId pqSndEnabled'
 
--- TODO combine profile update and message into one batch
--- Take into account that it may not fit, and that we currently don't support sending multiple messages to the same connection in one call.
 sendGroupMessage :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM (SndMessage, GroupSndResultData)
 sendGroupMessage user gInfo members chatMsgEvent = do
+  sendGroupMessages user gInfo members (chatMsgEvent :| []) >>= \case
+    ((Right msg) :| [], groupSndResult) -> pure (msg, groupSndResult)
+    _ -> throwChatError $ CEInternalError "sendGroupMessage: expected 1 message"
+
+type GroupSndResultData = (([Either ChatError ([Int64], PQEncryption)], [(GroupMember, Connection)]), ([Either ChatError ()], [GroupMember]), [GroupMember])
+
+data GroupSndResult = GroupSndResult
+  { sentTo :: [GroupMember],
+    pending :: [GroupMember],
+    forwarded :: [GroupMember]
+  }
+
+sendGroupMessage' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM SndMessage
+sendGroupMessage' user gInfo members chatMsgEvent =
+  sendGroupMessages_ user gInfo members (chatMsgEvent :| []) >>= \case
+    ((Right msg) :| [], _) -> pure msg
+    _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
+
+sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResultData)
+sendGroupMessages user gInfo members events = do
   when shouldSendProfileUpdate $
     sendProfileUpdate `catchChatError` (toView . CRChatError (Just user))
-  sendGroupMessage_ user gInfo members chatMsgEvent
+  sendGroupMessages_ user gInfo members events
   where
     User {profile = p, userMemberProfileUpdatedAt} = user
     GroupInfo {userMemberProfileSentAt} = gInfo
@@ -7022,26 +7064,6 @@ sendGroupMessage user gInfo members chatMsgEvent = do
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
 
-type GroupSndResultData = (([Either ChatError ([Int64], PQEncryption)], [(GroupMember, Connection)]), ([Either ChatError ()], [GroupMember]), [GroupMember])
-
-data GroupSndResult = GroupSndResult
-  { sentTo :: [GroupMember],
-    pending :: [GroupMember],
-    forwarded :: [GroupMember]
-  }
-
-sendGroupMessage' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM SndMessage
-sendGroupMessage' user gInfo members chatMsgEvent = fst <$> sendGroupMessage_ user gInfo members chatMsgEvent
-
-sendGroupMessage_ :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM (SndMessage, GroupSndResultData)
-sendGroupMessage_ user gInfo members chatMsgEvent =
-  sendGroupMessages_ user gInfo members (chatMsgEvent :| []) >>= \case
-    (msg :| [], r) -> pure (msg, r)
-    _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
-
-sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM ()
-sendGroupMessages user gInfo members events = void $ sendGroupMessages_ user gInfo members events
-
 mkGroupSndResult :: GroupSndResultData -> GroupSndResult
 mkGroupSndResult ((delivered, sentTo), (stored, pending), forwarded) =
   GroupSndResult
@@ -7055,13 +7077,14 @@ mkGroupSndResult ((delivered, sentTo), (stored, pending), forwarded) =
     filterSent' :: [Either ChatError a] -> [mem] -> (mem -> GroupMember) -> [GroupMember]
     filterSent' rs ms mem = [mem m | (Right _, m) <- zip rs ms]
 
-sendGroupMessages_ :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty SndMessage, GroupSndResultData)
+sendGroupMessages_ :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResultData)
 sendGroupMessages_ user gInfo@GroupInfo {groupId} members events = do
   let idsEvts = L.map (GroupId groupId,) events
-  (errs, msgs) <- lift $ partitionEithers . L.toList <$> createSndMessages idsEvts
+  sndMsgs_ <- lift $ createSndMessages idsEvts
+  let (errs, msgs) = partitionEithers $ L.toList sndMsgs_
   unless (null errs) $ toView $ CRChatErrors (Just user) errs
   case L.nonEmpty msgs of
-    Nothing -> throwChatError $ CEInternalError "sendGroupMessages: no messages created"
+    Nothing -> pure (sndMsgs_, (([], []), ([], []), []))
     Just msgs' -> do
       recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
       let msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
@@ -7074,7 +7097,7 @@ sendGroupMessages_ user gInfo@GroupInfo {groupId} members events = do
       let errors = lefts delivered
       unless (null errors) $ toView $ CRChatErrors (Just user) errors
       stored <- lift . withStoreBatch' $ \db -> map (\m -> createPendingMsgs db m msgs') pending
-      pure (msgs', ((delivered, toSendSeparate <> toSendBatched), (stored, pending), forwarded))
+      pure (sndMsgs_, ((delivered, toSendSeparate <> toSendBatched), (stored, pending), forwarded))
   where
     shuffleMembers :: [GroupMember] -> IO [GroupMember]
     shuffleMembers ms = do
