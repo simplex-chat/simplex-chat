@@ -501,7 +501,7 @@ func chatStoppedIcon() -> some View {
 struct ChatListView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
-        chatModel.chats = [
+        chatModel.setChats([
             Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
@@ -515,7 +515,7 @@ struct ChatListView_Previews: PreviewProvider {
                 chatItems: []
             )
 
-        ]
+        ])
         return Group {
             ChatListView(showSettings: Binding.constant(false))
                 .environmentObject(chatModel)

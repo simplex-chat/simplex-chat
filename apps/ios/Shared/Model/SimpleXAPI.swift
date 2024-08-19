@@ -1591,7 +1591,7 @@ func getUserChatData() throws {
     m.userAddress = try apiGetUserAddress()
     m.chatItemTTL = try getChatItemTTL()
     let chats = try apiGetChats()
-    m.chats = chats.map { Chat.init($0) }
+    m.setChats(chats.map { Chat.init($0) })
     m.popChatCollector.clear()
 }
 
@@ -1604,13 +1604,13 @@ private func getUserChatDataAsync() async throws {
         await MainActor.run {
             m.userAddress = userAddress
             m.chatItemTTL = chatItemTTL
-            m.chats = chats.map { Chat.init($0) }
+            m.setChats(chats.map { Chat.init($0) })
             m.popChatCollector.clear()
         }
     } else {
         await MainActor.run {
             m.userAddress = nil
-            m.chats = []
+            m.setChats([])
             m.popChatCollector.clear()
         }
     }

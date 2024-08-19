@@ -143,7 +143,8 @@ final class ChatModel: ObservableObject {
     @Published var contentViewAccessAuthenticated: Bool = false
     @Published var laRequest: LocalAuthRequest?
     // list of chat "previews"
-    @Published var chats: [Chat] = []
+    @Published private(set) var chats: [Chat] = []
+    @Published private var chatIndex: [ChatId: Int] = [:]
     @Published var deletedChats: Set<String> = []
     // current chat
     @Published var chatId: String?
@@ -232,11 +233,15 @@ final class ChatModel: ObservableObject {
     }
 
     func hasChat(_ id: String) -> Bool {
-        chats.first(where: { $0.id == id }) != nil
+        chatIndex[id] != nil
     }
 
     func getChat(_ id: String) -> Chat? {
-        chats.first(where: { $0.id == id })
+        if let i = chatIndex[id] {
+            chats[i]
+        } else {
+            nil
+        }
     }
 
     func getContactChat(_ contactId: Int64) -> Chat? {
@@ -285,8 +290,12 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    private func getChatIndex(_ id: String) -> Int? {
-        chats.firstIndex(where: { $0.id == id })
+    func setChats(_ cs: [Chat]) -> Void {
+        chats = cs
+        chatIndex = [:]
+        for i in 0..<cs.count {
+            chatIndex[cs[i].id] = i
+        }
     }
 
     func addChat(_ chat: Chat) {
@@ -298,12 +307,15 @@ final class ChatModel: ObservableObject {
         popChatCollector.throttlePopChat(chat.chatInfo.id, currentPosition: 0)
     }
 
-    func addChat_(_ chat: Chat, at position: Int = 0) {
+    private func addChat_(_ chat: Chat, at position: Int = 0) {
         chats.insert(chat, at: position)
+        for i in position..<chats.count {
+            chatIndex[chats[i].id] = i
+        }
     }
 
     func updateChatInfo(_ cInfo: ChatInfo) {
-        if let i = getChatIndex(cInfo.id) {
+        if let i = chatIndex[cInfo.id] {
             chats[i].chatInfo = cInfo
             chats[i].created = Date.now
         }
@@ -338,7 +350,7 @@ final class ChatModel: ObservableObject {
     }
 
     private func _updateChat(_ id: ChatId, _ update: @escaping (Chat) -> Void) {
-        if let i = getChatIndex(id) {
+        if let i = chatIndex[id] {
             // we need to separately update the chat object, as it is ObservedObject,
             // and chat in the list so the list view is updated...
             // simply updating chats[i] replaces the object without updating the current object in the list
@@ -349,18 +361,20 @@ final class ChatModel: ObservableObject {
     }
 
     func replaceChat(_ id: String, _ chat: Chat) {
-        if let i = getChatIndex(id) {
+        if let i = chatIndex[id] {
+            chatIndex.removeValue(forKey: chats[i].id)
             chats[i] = chat
+            chatIndex[chat.id] = i
         } else {
             // invalid state, correcting
-            chats.insert(chat, at: 0)
+            addChat(chat)
         }
     }
 
     func updateChats(with newChats: [ChatData]) {
         for i in 0..<newChats.count {
             let c = newChats[i]
-            if let j = getChatIndex(c.id)   {
+            if let j = chatIndex[c.id]   {
                 let chat = chats[j]
                 chat.chatInfo = c.chatInfo
                 chat.chatItems = c.chatItems
@@ -392,7 +406,7 @@ final class ChatModel: ObservableObject {
             updateContact(updatedContact)
         }
         // update previews
-        if let i = getChatIndex(cInfo.id) {
+        if let i = chatIndex[cInfo.id] {
             chats[i].chatItems = switch cInfo {
             case .group:
                 if let currentPreviewItem = chats[i].chatItems.first {
@@ -665,7 +679,7 @@ final class ChatModel: ObservableObject {
                 .sink {
                     let m = ChatModel.shared
                     for (chatId, count) in self.unreadCounts {
-                        if let i = m.getChatIndex(chatId) {
+                        if let i = m.chatIndex[chatId] {
                             m.changeUnreadCounter(i, by: count)
                         }
                     }
@@ -720,7 +734,7 @@ final class ChatModel: ObservableObject {
             for (chatId, popTs) in self.chatsToPop {
                 // Currently opened chat is excluded, removing it from the list would navigate out of it
                 // It will be popped to top later when user exits from the list.
-                if m.chatId != chatId, let i = m.getChatIndex(chatId) {
+                if m.chatId != chatId, let i = m.chatIndex[chatId] {
                     ixs.insert(i)
                     let ch = m.chats[i]
                     ch.popTs = popTs
@@ -732,6 +746,9 @@ final class ChatModel: ObservableObject {
                 m.chats.remove(atOffsets: ixs)
                 // sort chats by pop timestamp in descending order
                 m.chats.insert(contentsOf: chs.sorted(using: self.popTsComparator), at: 0)
+                for i in 0..<chs.count {
+                    m.chatIndex[m.chats[i].id] = i
+                }
             }
 
             if m.chatId == nil {
@@ -837,7 +854,7 @@ final class ChatModel: ObservableObject {
     }
 
     func popChat(_ id: String) {
-        if let i = getChatIndex(id) {
+        if let i = chatIndex[id] {
             // no animation here, for it not to look like it just moved when leaving the chat
             popChat_(i)
         }
@@ -845,7 +862,7 @@ final class ChatModel: ObservableObject {
 
     private func popChat_(_ i: Int, to position: Int = 0) {
         let chat = chats.remove(at: i)
-        chats.insert(chat, at: position)
+        addChat_(chat, at: position)
     }
 
     func dismissConnReqView(_ id: String) {
@@ -862,6 +879,7 @@ final class ChatModel: ObservableObject {
     func removeChat(_ id: String) {
         withAnimation {
             chats.removeAll(where: { $0.id == id })
+            chatIndex.removeValue(forKey: id)
         }
     }
 
