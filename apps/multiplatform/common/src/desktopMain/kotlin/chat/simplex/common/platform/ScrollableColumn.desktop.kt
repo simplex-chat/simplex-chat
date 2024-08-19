@@ -70,7 +70,7 @@ actual fun LazyColumnWithScrollBar(
   Box(if (connection != null) Modifier.nestedScroll(connection) else Modifier) {
     LazyColumn(modifier.then(scrollModifier), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
-      DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, reverseLayout, scrollBarDraggingState)
+      DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.fillMaxHeight(), scrollBarAlpha, scrollJob, reverseLayout, scrollBarDraggingState)
     }
   }
 }
@@ -119,7 +119,7 @@ actual fun ColumnWithScrollBar(
   Box(if (connection != null) Modifier.nestedScroll(connection) else Modifier) {
     Column(modifier.verticalScroll(state).then(scrollModifier), verticalArrangement, horizontalAlignment, content)
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
-      DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, false, scrollBarDraggingState)
+      DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.fillMaxHeight(), scrollBarAlpha, scrollJob, false, scrollBarDraggingState)
     }
   }
 }

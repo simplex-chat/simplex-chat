@@ -73,33 +73,30 @@ private fun SetDeliveryReceiptsLayout(
   skip: () -> Unit,
   userCount: Int,
 ) {
+  // This view located in the left panel which means it has to have a padding from right side in order
+  // to see scroll bar. And this padding should be applied to upper element, not scrollable column modifier
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
-  val (scrollBarAlpha, scrollModifier, scrollJob) = platform.desktopScrollBarComponents()
-  val scrollState = rememberScrollState()
-  Column(
-    Modifier.fillMaxSize().verticalScroll(scrollState).then(if (appPlatform.isDesktop) scrollModifier else Modifier).padding(top = DEFAULT_PADDING, end = endPadding),
-    horizontalAlignment = Alignment.CenterHorizontally,
-  ) {
-    AppBarTitle(stringResource(MR.strings.delivery_receipts_title))
+  Box(Modifier.padding(top = DEFAULT_PADDING, end = endPadding)) {
+    ColumnWithScrollBar(
+      Modifier.fillMaxSize(),
+      horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+      AppBarTitle(stringResource(MR.strings.delivery_receipts_title))
 
-    Spacer(Modifier.weight(1f))
+      Spacer(Modifier.weight(1f))
 
-    EnableReceiptsButton(enableReceipts)
-    if (userCount > 1) {
-      TextBelowButton(stringResource(MR.strings.sending_delivery_receipts_will_be_enabled_all_profiles))
-    } else {
-      TextBelowButton(stringResource(MR.strings.sending_delivery_receipts_will_be_enabled))
-    }
+      EnableReceiptsButton(enableReceipts)
+      if (userCount > 1) {
+        TextBelowButton(stringResource(MR.strings.sending_delivery_receipts_will_be_enabled_all_profiles))
+      } else {
+        TextBelowButton(stringResource(MR.strings.sending_delivery_receipts_will_be_enabled))
+      }
 
-    Spacer(Modifier.weight(1f))
+      Spacer(Modifier.weight(1f))
 
-    SkipButton(skip)
+      SkipButton(skip)
 
-    SectionBottomSpacer()
-  }
-  if (appPlatform.isDesktop) {
-    Box(Modifier.fillMaxSize().padding(end = endPadding)) {
-      platform.desktopScrollBar(scrollState, Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, false)
+      SectionBottomSpacer()
     }
   }
 }
