@@ -151,7 +151,7 @@ private fun topTitleAlpha(connection: CollapsingAppBarNestedScrollConnection) =
 
 private fun bottomTitleAlpha(connection: CollapsingAppBarNestedScrollConnection?) =
   if ((connection?.appBarOffset ?: 0f).absoluteValue < AppBarHandler.appBarMaxHeightPx / 3) 1f
-  else ((AppBarHandler.appBarMaxHeightPx) + (connection?.appBarOffset ?: 0f) / 3).coerceAtLeast(0f) / AppBarHandler.appBarMaxHeightPx
+  else ((AppBarHandler.appBarMaxHeightPx) + (connection?.appBarOffset ?: 0f) / 1.5f).coerceAtLeast(0f) / AppBarHandler.appBarMaxHeightPx
 
 @Composable
 private fun HostDeviceTitle(hostDevice: Pair<Long?, String>, extraPadding: Boolean = false) {
