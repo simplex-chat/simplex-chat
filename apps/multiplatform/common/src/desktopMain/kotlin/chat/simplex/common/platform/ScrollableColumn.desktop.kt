@@ -81,7 +81,8 @@ actual fun ColumnWithScrollBar(
   verticalArrangement: Arrangement.Vertical,
   horizontalAlignment: Alignment.Horizontal,
   state: ScrollState?,
-  content: @Composable ColumnScope.() -> Unit
+  maxIntrinsicSize: Boolean,
+  content: @Composable() (ColumnScope.() -> Unit)
 ) {
   val scope = rememberCoroutineScope()
   val scrollBarAlpha = remember { Animatable(0f) }
@@ -117,7 +118,13 @@ actual fun ColumnWithScrollBar(
       }
   }
   Box(if (connection != null) Modifier.nestedScroll(connection) else Modifier) {
-    Column(modifier.verticalScroll(state).then(scrollModifier), verticalArrangement, horizontalAlignment, content)
+    Column(
+      if (maxIntrinsicSize) {
+        modifier.verticalScroll(state).height(IntrinsicSize.Max).then(scrollModifier)
+      } else {
+        modifier.verticalScroll(state).then(scrollModifier)
+      },
+      verticalArrangement, horizontalAlignment, content)
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
       DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.fillMaxHeight(), scrollBarAlpha, scrollJob, false, scrollBarDraggingState)
     }

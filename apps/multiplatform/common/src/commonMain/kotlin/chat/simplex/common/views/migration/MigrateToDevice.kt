@@ -156,7 +156,7 @@ private fun ModalData.MigrateToDeviceLayout(
 ) {
   val tempDatabaseFile = rememberSaveable { mutableStateOf(fileForTemporaryDatabase()) }
   ColumnWithScrollBar(
-    Modifier.fillMaxSize().height(IntrinsicSize.Max),
+    Modifier.fillMaxSize(), maxIntrinsicSize = true
   ) {
     AppBarTitle(stringResource(MR.strings.migrate_to_device_title))
     SectionByState(migrationState, tempDatabaseFile.value, chatReceiver, close)

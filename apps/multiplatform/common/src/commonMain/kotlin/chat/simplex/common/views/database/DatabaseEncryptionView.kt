@@ -203,7 +203,7 @@ fun DatabaseEncryptionLayout(
       Layout()
     }
   } else {
-    ColumnWithScrollBar(Modifier.fillMaxWidth()) {
+    ColumnWithScrollBar(Modifier.fillMaxWidth(), maxIntrinsicSize = true) {
       Layout()
     }
   }

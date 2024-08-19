@@ -53,7 +53,8 @@ actual fun ColumnWithScrollBar(
   verticalArrangement: Arrangement.Vertical,
   horizontalAlignment: Alignment.Horizontal,
   state: ScrollState?,
-  content: @Composable ColumnScope.() -> Unit
+  maxIntrinsicSize: Boolean,
+  content: @Composable() (ColumnScope.() -> Unit)
 ) {
   val state = state ?: LocalAppBarHandler.current?.scrollState ?: rememberScrollState()
   val connection = LocalAppBarHandler.current?.connection
@@ -68,8 +69,17 @@ actual fun ColumnWithScrollBar(
       }
   }
   if (connection != null) {
-      Column(modifier.nestedScroll(connection).verticalScroll(state), verticalArrangement, horizontalAlignment, content)
+      Column(
+        if (maxIntrinsicSize) {
+          modifier.nestedScroll(connection).verticalScroll(state).height(IntrinsicSize.Max)
+        } else {
+          modifier.nestedScroll(connection).verticalScroll(state)
+        }, verticalArrangement, horizontalAlignment, content)
   } else {
-      Column(modifier.verticalScroll(state), verticalArrangement, horizontalAlignment, content)
+      Column(if (maxIntrinsicSize) {
+        modifier.verticalScroll(state).height(IntrinsicSize.Max)
+      } else {
+        modifier.verticalScroll(state)
+      }, verticalArrangement, horizontalAlignment, content)
   }
 }

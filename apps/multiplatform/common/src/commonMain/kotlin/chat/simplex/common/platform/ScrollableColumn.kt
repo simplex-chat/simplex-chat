@@ -30,5 +30,7 @@ expect fun ColumnWithScrollBar(
   verticalArrangement: Arrangement.Vertical = Arrangement.Top,
   horizontalAlignment: Alignment.Horizontal = Alignment.Start,
   state: ScrollState? = null,
+  // set true when you want to show something in the center with respected .fillMaxSize()
+  maxIntrinsicSize: Boolean = false,
   content: @Composable ColumnScope.() -> Unit
 )

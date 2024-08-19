@@ -65,7 +65,8 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
             }
           } else if (title.value.isNotEmpty() && connection != null) {
             Row(
-              Modifier.height(IntrinsicSize.Max)
+              Modifier
+                .padding(start = if (showClose) 0.dp else DEFAULT_PADDING_HALF)
                 .weight(1f) // hides the title if something wants full width (eg, search field in chat profiles screen)
                 .graphicsLayer {
                   alpha = (-connection.appBarOffset * 2f / AppBarHandler.appBarMaxHeightPx).coerceAtMost(1f)

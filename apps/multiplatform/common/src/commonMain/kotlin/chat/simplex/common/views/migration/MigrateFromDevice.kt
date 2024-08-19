@@ -4,6 +4,7 @@ import SectionBottomSpacer
 import SectionSpacer
 import SectionTextFooter
 import SectionView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -146,7 +147,7 @@ private fun MigrateFromDeviceLayout(
   val tempDatabaseFile = rememberSaveable { mutableStateOf(fileForTemporaryDatabase()) }
 
   ColumnWithScrollBar(
-    Modifier.fillMaxSize().height(IntrinsicSize.Max)
+    Modifier.fillMaxSize(), maxIntrinsicSize = true
   ) {
     AppBarTitle(stringResource(MR.strings.migrate_from_device_title))
     SectionByState(migrationState, tempDatabaseFile.value, chatReceiver)
