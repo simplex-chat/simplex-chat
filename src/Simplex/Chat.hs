@@ -3449,9 +3449,11 @@ acceptGroupJoinRequestAsync
     vr <- chatVersionRange
     let chatV = vr `peerConnChatVersion` cReqChatVRange
     connIds <- agentAcceptContactAsync user True invId msg subMode PQSupportOff chatV
-    withStore $ \db -> do
+    m <- withStore $ \db -> do
       liftIO $ createAcceptedMemberConnection db user connIds chatV ucr groupMemberId subMode
       getGroupMemberById db vr user groupMemberId
+    logDebug $ "acceptGroupJoinRequestAsync groupMemberId=" <> tshow (groupMemberId' m)
+    pure m
 
 profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Bool -> Profile
 profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> ip) Nothing
@@ -4277,7 +4279,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               forM_ viaUserContactLink $ \userContactLinkId -> do
                 ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
                 let (UserContactLink {autoAccept}, groupId_, gLinkMemRole) = ucl
-                when (connChatVersion < batchSend2Version) $ sendAutoReply ct' autoAccept
+                when (connChatVersion < batchSend2Version) $ do
+                  logDebug "MARKER CON sendAutoReply"
+                  sendAutoReply ct' autoAccept
                 forM_ groupId_ $ \groupId -> do
                   groupInfo <- withStore $ \db -> getGroupInfo db vr user groupId
                   subMode <- chatReadVar subscriptionMode
@@ -4340,7 +4344,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               forM_ viaUserContactLink $ \userContactLinkId -> do
                 ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
                 let (UserContactLink {autoAccept}, _, _) = ucl
-                when (connChatVersion >= batchSend2Version) $ sendAutoReply ct autoAccept
+                when (connChatVersion >= batchSend2Version) $ do
+                  logDebug "MARKER JOINED sendAutoReply"
+                  sendAutoReply ct autoAccept
         QCONT ->
           void $ continueSending connEntity conn
         MWARN msgId err -> do
@@ -4966,15 +4972,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     ct <- acceptContactRequestAsync user cReq incognitoProfile True reqPQSup
                     toView $ CRAcceptingContactRequest user ct
                   Just groupId -> do
+                    logDebug $ "MARKER REQ profileContactRequest groupId=" <> tshow groupId
                     gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
                     let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
                     if maxVersion chatVRange >= groupFastLinkJoinVersion
                       then do
+                        logDebug $ "MARKER REQ acceptGroupJoinRequestAsync"
                         mem <- acceptGroupJoinRequestAsync user gInfo cReq gLinkMemRole profileMode
                         createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
                         toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
                       else do
                         -- TODO v5.7 remove old API (or v6.0?)
+                        logDebug $ "MARKER REQ acceptContactRequestAsync"
                         ct <- acceptContactRequestAsync user cReq profileMode False PQSupportOff
                         toView $ CRAcceptingGroupJoinRequest user gInfo ct
                 _ -> toView $ CRReceivedContactRequest user cReq
