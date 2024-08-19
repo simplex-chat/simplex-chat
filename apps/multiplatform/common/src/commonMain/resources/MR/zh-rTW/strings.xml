@@ -19,7 +19,7 @@
     <string name="accept">接受</string>
     <string name="auth_unavailable">認證無效</string>
     <string name="allow_verb">允許</string>
-    <string name="display_name__field">顯示名稱：</string>
+    <string name="display_name__field">個人資料名稱：</string>
     <string name="full_name__field">全名：</string>
     <string name="onboarding_notifications_mode_service_desc"><b>使用更多電量</b>！程式始終在背景中運行 – 通知會立即顯示。</string>
     <string name="onboarding_notifications_mode_periodic_desc"><b>對電量友善</b>。程式每10分鐘檢查一次訊息。你可能會錯過電話或警急訊息。</string>
@@ -547,7 +547,8 @@
     <string name="smp_servers_test_some_failed">有一些伺服器測試失敗：</string>
     <string name="smp_servers_scan_qr">掃描伺服器的二維碼</string>
     <string name="smp_servers_your_server">你的伺服器</string>
-    <string name="network_use_onion_hosts_required_desc">連接時將需要使用 Onion 主機。</string>
+    <string name="network_use_onion_hosts_required_desc">連接時需要使用 Onion 主機。
+\n請注意：如果沒有 .onion 地址，您將無法連接到伺服器。</string>
     <string name="network_session_mode_user">對話檔案</string>
     <string name="description_via_group_link">透過群組連結</string>
     <string name="description_via_group_link_incognito">透過群組連結使用匿名聊天模式</string>
@@ -643,7 +644,7 @@
     <string name="save_group_profile">儲存群組檔案</string>
     <string name="voice_prohibited_in_this_chat">語音訊息於這個聊天室是禁用的。</string>
     <string name="v4_3_irreversible_message_deletion_desc">允許你的聯絡人可以完全刪除訊息。</string>
-    <string name="first_platform_without_user_ids">第一個沒有任何用戶識別符的通訊平台 – 以私隱為設計。</string>
+    <string name="first_platform_without_user_ids">沒有用戶識別符。</string>
     <string name="next_generation_of_private_messaging">新一代的私密訊息平台</string>
     <string name="decentralized">去中心化的</string>
     <string name="people_can_connect_only_via_links_you_share">人們只能在你分享了連結後，才能和你連接。</string>
@@ -655,7 +656,7 @@
     <string name="opensource_protocol_and_code_anybody_can_run_servers">任何人都可以託管伺服器。</string>
     <string name="ignore">無視</string>
     <string name="incoming_audio_call">語音通話來電</string>
-    <string name="paste_the_link_you_received">貼上你接收到的連結</string>
+    <string name="paste_the_link_you_received">貼上你收到的連結</string>
     <string name="status_e2e_encrypted">端對端加密</string>
     <string name="status_no_e2e_encryption">沒有端對端加密</string>
     <string name="icon_descr_speaker_off">關閉喇叭</string>
@@ -828,8 +829,8 @@
     <string name="feature_enabled">已啟用</string>
     <string name="feature_enabled_for_you">已為你啟用</string>
     <string name="feature_enabled_for_contact">已為聯絡人啟用</string>
-    <string name="only_you_can_delete_messages">只有你能不可逆地刪除訊息（你的聯絡人可以將它標記為刪除）。</string>
-    <string name="only_your_contact_can_delete">只有你的聊絡人可以不可逆的刪除訊息（你可以將它標記為刪除）。</string>
+    <string name="only_you_can_delete_messages">只有你能不可逆地刪除訊息（你的聯絡人可以將它標記為刪除）。（24小時）</string>
+    <string name="only_your_contact_can_delete">只有你的聊絡人可以不可逆的刪除訊息（你可以將它標記為刪除）。（24小時）</string>
     <string name="only_your_contact_can_send_voice">只有你的聯絡人可以傳送語音訊息。</string>
     <string name="prohibit_direct_messages">禁止私訊群組內的成員。</string>
     <string name="message_deletion_prohibited_in_chat">不可逆地刪除訊息於這個群組內是禁用的。</string>
@@ -1692,4 +1693,82 @@
     <string name="servers_info_sessions_connecting">連接中</string>
     <string name="servers_info_sessions_errors">錯誤</string>
     <string name="receipts_groups_title_disable">為群組停用回執？</string>
+    <string name="past_member_vName">過往的成員 %1$s</string>
+    <string name="v5_8_private_routing">私密訊息路由 🚀</string>
+    <string name="paste_archive_link">貼上存檔連結</string>
+    <string name="open_on_mobile_and_scan_qr_code">在行動應用中打開<i>從桌面使用</i>並掃描QR code。</string>
+    <string name="no_info_on_delivery">無傳送資訊</string>
+    <string name="or_show_this_qr_code">或者顯示此碼</string>
+    <string name="servers_info_subscriptions_connections_pending">待連接</string>
+    <string name="error_parsing_uri_desc">請檢查 Simple X 鏈接是否正確。</string>
+    <string name="note_folder_local_display_name">私密筆記</string>
+    <string name="please_try_later">請稍後再試。</string>
+    <string name="no_filtered_contacts">沒有過濾的聯絡人</string>
+    <string name="app_check_for_updates_button_open">打開檔案位置</string>
+    <string name="rcv_group_event_open_chat">打開</string>
+    <string name="v5_5_private_notes">私密筆記</string>
+    <string name="v5_8_persian_ui">波斯語用戶界面</string>
+    <string name="v6_0_chat_list_media">從聊天列表播放。</string>
+    <string name="migrate_from_device_database_init">正在準備上傳</string>
+    <string name="feature_roles_owners">擁有者</string>
+    <string name="not_compatible">不相容！</string>
+    <string name="agent_critical_error_desc">請將它報告給開發者：
+\n%s
+\n
+\n建議重啟應用。</string>
+    <string name="loading_remote_file_desc">從已連接行動裝置加載檔案時請稍候片刻</string>
+    <string name="or_scan_qr_code">或者掃描QR code</string>
+    <string name="prohibit_sending_simplex_links">禁止傳送 SimpleX 連結</string>
+    <string name="no_selected_chat">沒有選擇聊天</string>
+    <string name="permissions_open_settings">打開設定</string>
+    <string name="settings_section_title_user_theme">這人資料主題</string>
+    <string name="settings_section_title_profile_images">個人資料圖片</string>
+    <string name="only_one_device_can_work_at_the_same_time">同一時刻只有一台裝置可工作</string>
+    <string name="protect_ip_address">保護 IP 地址</string>
+    <string name="network_type_other">其他</string>
+    <string name="network_type_no_network_connection">無網路連接</string>
+    <string name="no_history">無歷史記錄</string>
+    <string name="no_filtered_chats">無過濾聊天</string>
+    <string name="agent_internal_error_desc">請將它報告給開發者：
+\n%s</string>
+    <string name="turn_off_system_restriction_button">打開應用程式設定</string>
+    <string name="auth_open_migration_to_another_device">開啟轉移畫面</string>
+    <string name="shutdown_alert_desc">通知將停止，直到您重啟應用程式</string>
+    <string name="prohibit_sending_files">禁止傳送檔案和媒體。</string>
+    <string name="connect_plan_open_group">打開群組</string>
+    <string name="only_owners_can_enable_files_and_media">只有群組所有者才能啟用檔案和媒體。</string>
+    <string name="paste_the_link_you_received_to_connect_with_your_contact">貼上你收到的連結以與你的聯絡人聯絡…</string>
+    <string name="servers_info_previously_connected_servers_section_header">先前連接的伺服器</string>
+    <string name="other_label">其他</string>
+    <string name="message_queue_info_none">無</string>
+    <string name="v5_4_more_things_descr">- 可選擇通知已刪除的聯絡人。
+\n- 帶空格的個人資料名稱。
+\n- 以及更多！</string>
+    <string name="v5_5_simpler_connect_ui">貼上連結以連接！</string>
+    <string name="paste_desktop_address">貼上桌面地址</string>
+    <string name="migrate_to_device_confirm_network_settings_footer">請確認此裝置的網路設定是否正確。</string>
+    <string name="other_errors">其他錯誤</string>
+    <string name="remote_ctrl_connection_stopped_desc">請檢查行動裝置和桌面設備連接到的是同一個本地網絡，且桌面防火牆允許連接。
+\n請和開發者分享任何其他問題。</string>
+    <string name="open_port_in_firewall_title">在防火牆中打開端口</string>
+    <string name="or_paste_archive_link">或貼上存檔連結</string>
+    <string name="migrate_to_device_database_init">正在準備下載</string>
+    <string name="only_delete_conversation">只刪除對話</string>
+    <string name="paste_link">貼上連結</string>
+    <string name="smp_servers_other">其他 SMP 伺服器</string>
+    <string name="xftp_servers_other">其他 XFTP 伺服器</string>
+    <string name="calls_prohibited_ask_to_enable_calls_alert_text">請讓你的聯絡人啟用通話。</string>
+    <string name="v5_6_picture_in_picture_calls">畫中畫通話</string>
+    <string name="migrate_from_device_or_share_this_file_link">或安全分享此文件連結</string>
+    <string name="servers_info_missing">無資訊，試試重新加載</string>
+    <string name="open_server_settings_button">打開伺服器設定</string>
+    <string name="private_routing_error">私密路由出錯</string>
+    <string name="message_forwarded_desc">尚無直接連接，訊息由管理員轉發。</string>
+    <string name="selected_chat_items_nothing_selected">什麼也沒選中</string>
+    <string name="info_view_open_button">打開</string>
+    <string name="network_smp_proxy_mode_private_routing">私密路由</string>
+    <string name="open_database_folder">打開資料庫文件夾</string>
+    <string name="settings_section_title_private_message_routing">私密訊息路由</string>
+    <string name="app_check_for_updates_installed_successfully_desc">請重啟應用程式。</string>
+    <string name="privacy_media_blur_radius_off">關閉</string>
 </resources>
