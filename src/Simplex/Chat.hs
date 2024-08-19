@@ -2968,22 +2968,35 @@ processChatCommand' vr = \case
             zipWith4 (,,,) msgs_ (L.toList cms') (L.toList ciFiles_) (L.toList quotedItems_)
       ]
     createNoteFolderContentItems :: User -> NoteFolderId -> NonEmpty ComposedMessage -> Maybe CIForwardedFrom -> CM ChatResponse
-    createNoteFolderContentItems user folderId ((ComposedMessage file_ quotedItemId_ mc) :| _) itemForwarded = do
-      forM_ quotedItemId_ $ \_ -> throwError $ ChatError $ CECommandError "createNoteFolderContentItems: quote not supported"
+    createNoteFolderContentItems user folderId cms itemForwarded = do
+      assertNoQuotes
       nf <- withFastStore $ \db -> getNoteFolder db user folderId
       createdAt <- liftIO getCurrentTime
-      let content = CISndMsgContent mc
-      let cd = CDLocalSnd nf
-      ciId <- createLocalChatItem user cd content itemForwarded createdAt
-      ciFile_ <- forM file_ $ \cf@CryptoFile {filePath, cryptoArgs} -> do
-        fsFilePath <- lift $ toFSFilePath filePath
-        fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cryptoArgs
-        chunkSize <- asks $ fileChunkSize . config
-        withFastStore' $ \db -> do
-          fileId <- createLocalFile CIFSSndStored db user nf ciId createdAt cf fileSize chunkSize
-          pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndStored, fileProtocol = FPLocal}
-      let ci = mkChatItem cd ciId content ciFile_ Nothing Nothing itemForwarded Nothing False createdAt Nothing createdAt
-      pure $ CRNewChatItems user [AChatItem SCTLocal SMDSnd (LocalChat nf) ci]
+      ciFiles_ <- createLocalFiles nf createdAt
+      let itemsData = prepareLocalItemsData cms ciFiles_
+      cis <- createLocalChatItems user (CDLocalSnd nf) itemsData itemForwarded createdAt
+      pure $ CRNewChatItems user (map (AChatItem SCTLocal SMDSnd (LocalChat nf)) cis)
+      where
+        assertNoQuotes :: CM ()
+        assertNoQuotes =
+          when (any (\(ComposedMessage {quotedItemId}) -> isJust quotedItemId) cms) $
+            throwChatError (CECommandError "createNoteFolderContentItems: quotes not supported")
+        createLocalFiles :: NoteFolder -> UTCTime -> CM (NonEmpty (Maybe (CIFile 'MDSnd)))
+        createLocalFiles nf createdAt =
+          forM cms $ \ComposedMessage {fileSource = file_} ->
+            forM file_ $ \cf@CryptoFile {filePath, cryptoArgs} -> do
+              fsFilePath <- lift $ toFSFilePath filePath
+              fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cryptoArgs
+              chunkSize <- asks $ fileChunkSize . config
+              withFastStore' $ \db -> do
+                fileId <- createLocalFile CIFSSndStored db user nf createdAt cf fileSize chunkSize
+                pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndStored, fileProtocol = FPLocal}
+        prepareLocalItemsData ::
+          NonEmpty ComposedMessage ->
+          NonEmpty (Maybe (CIFile 'MDSnd)) ->
+          [(CIContent 'MDSnd, Maybe (CIFile 'MDSnd))]
+        prepareLocalItemsData cms' ciFiles_ =
+          [(CISndMsgContent mc, f) | (ComposedMessage {msgContent = mc}, f) <- zip (L.toList cms') (L.toList ciFiles_)]
     getConnQueueInfo user Connection {connId, agentConnId = AgentConnId acId} = do
       msgInfo <- withFastStore' (`getLastRcvMsgInfo` connId)
       CRQueueInfo user msgInfo <$> withAgent (`getConnectionQueueInfo` acId)
@@ -7595,14 +7608,18 @@ createInternalItemsForChats user itemTs_ dirsCIContents = do
       let ci = mkChatItem cd ciId content Nothing Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
       pure $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
 
-createLocalChatItem :: MsgDirectionI d => User -> ChatDirection 'CTLocal d -> CIContent d -> Maybe CIForwardedFrom -> UTCTime -> CM ChatItemId
-createLocalChatItem user cd content itemForwarded createdAt = do
-  gVar <- asks random
-  withStore $ \db -> do
-    liftIO $ updateChatTs db user cd createdAt
-    createWithRandomId gVar $ \sharedMsgId ->
-      let smi_ = Just (SharedMsgId sharedMsgId)
-       in createNewChatItem_ db user cd Nothing smi_ content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False createdAt Nothing createdAt
+createLocalChatItems :: User -> ChatDirection 'CTLocal 'MDSnd -> [(CIContent 'MDSnd, Maybe (CIFile 'MDSnd))] -> Maybe CIForwardedFrom -> UTCTime -> CM [ChatItem 'CTLocal 'MDSnd]
+createLocalChatItems user cd itemsData itemForwarded createdAt = do
+  withStore' $ \db -> updateChatTs db user cd createdAt
+  (errs, items) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (createItem db) itemsData)
+  unless (null errs) $ toView $ CRChatErrors (Just user) errs
+  pure items
+  where
+    createItem :: DB.Connection -> (CIContent 'MDSnd, Maybe (CIFile 'MDSnd)) -> IO (ChatItem 'CTLocal 'MDSnd)
+    createItem db (content, ciFile) = do
+      ciId <- createNewChatItem_ db user cd Nothing Nothing content (Nothing, Nothing, Nothing, Nothing, Nothing) itemForwarded Nothing False createdAt Nothing createdAt
+      forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
+      pure $ mkChatItem cd ciId content ciFile Nothing Nothing itemForwarded Nothing False createdAt Nothing createdAt
 
 withUser' :: (User -> CM ChatResponse) -> CM ChatResponse
 withUser' action =
