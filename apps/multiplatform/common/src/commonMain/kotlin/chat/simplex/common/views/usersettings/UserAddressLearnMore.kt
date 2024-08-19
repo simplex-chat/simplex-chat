@@ -13,11 +13,12 @@ import chat.simplex.res.MR
 
 @Composable
 fun UserAddressLearnMore() {
-  ColumnWithScrollBar(Modifier
-    .fillMaxHeight()
-    .padding(horizontal = DEFAULT_PADDING)
+  ColumnWithScrollBar(
+    Modifier
+      .fillMaxHeight()
+      .padding(horizontal = DEFAULT_PADDING)
   ) {
-    AppBarTitle(stringResource(MR.strings.simplex_address))
+    AppBarTitle(stringResource(MR.strings.simplex_address), withPadding = false)
     ReadableText(MR.strings.you_can_share_your_address)
     ReadableText(MR.strings.you_wont_lose_your_contacts_if_delete_address)
     ReadableText(MR.strings.you_can_accept_or_reject_connection)

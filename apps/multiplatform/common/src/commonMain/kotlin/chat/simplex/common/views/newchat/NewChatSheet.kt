@@ -68,10 +68,10 @@ fun NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
       Column(modifier = Modifier.fillMaxSize()) {
         NewChatSheetLayout(
           addContact = {
-            ModalManager.start.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll ) }
+            ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = closeAll ) }
           },
           scanPaste = {
-            ModalManager.start.showModalCloseable { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll) }
+            ModalManager.start.showModalCloseable(endButtons = { AddContactLearnMoreButton() }) { _ -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.CONNECT, showQRCodeScanner = appPlatform.isAndroid, close = closeAll) }
           },
           createGroup = {
             ModalManager.start.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close, closeAll) }
@@ -194,7 +194,15 @@ private fun NewChatSheetLayout(
                 (appPlatform.isAndroid && keyboardState == KeyboardState.Opened)
                 ) {
                 0
-              } else if (listState.firstVisibleItemIndex == 0) offsetMultiplier * listState.firstVisibleItemScrollOffset else offsetMultiplier * 1000
+              } else if (oneHandUI.value && listState.firstVisibleItemIndex == 0) {
+                listState.firstVisibleItemScrollOffset
+              } else if (!oneHandUI.value && listState.firstVisibleItemIndex == 0) {
+                0
+              } else if (!oneHandUI.value && listState.firstVisibleItemIndex == 1) {
+                -listState.firstVisibleItemScrollOffset
+              } else {
+                offsetMultiplier * 1000
+              }
             } else {
               0
             }
