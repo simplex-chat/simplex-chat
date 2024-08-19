@@ -842,14 +842,6 @@ fun ModalData.ServersSummaryView(rh: RemoteHostInfo?, serversSummary: MutableSta
               )
               SectionDividerSpaced()
             }
-            val scrollState = LocalAppBarHandler.current?.scrollState
-            val connection = LocalAppBarHandler.current?.connection
-            // Workaround a problem when longer first page switches to shorter second page, which makes appBarOffset
-            // bigger than it needs to be with such a small page
-            LaunchedEffect(serverTypePagerState.currentPage) {
-              scrollState?.scrollTo(0)
-              connection?.appBarOffset = 0f
-            }
             when (index) {
               PresentedServerType.SMP.ordinal -> {
                 serversSummary.value?.let {

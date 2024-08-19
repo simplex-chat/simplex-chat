@@ -31,7 +31,6 @@ class AppBarHandler(
 
 class CollapsingAppBarNestedScrollConnection(): NestedScrollConnection {
   var appBarOffset: Float by mutableFloatStateOf(0f)
-    //private set
 
   override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
     appBarOffset += available.y

@@ -284,7 +284,6 @@ fun GroupChatInfoLayout(
       if (s.isEmpty()) members else members.filter { m -> m.anyNameContains(s) }
     }
   }
-  // LALAL strange scrolling
   LazyColumnWithScrollBar(
     Modifier
       .fillMaxWidth(),

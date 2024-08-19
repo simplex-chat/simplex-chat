@@ -127,7 +127,11 @@ fun AppBarTitle(title: String, hostDevice: Pair<Long?, String>? = null,  withPad
       textAlign = if (appPlatform.isDesktop) TextAlign.Center else TextAlign.Start
     )
     if (hostDevice != null) {
-      HostDeviceTitle(hostDevice)
+      Box(Modifier.graphicsLayer {
+        alpha = (AppBarHandler.appBarMaxHeightPx + (connection?.appBarOffset ?: 0f) * 2).coerceAtLeast(0f) / AppBarHandler.appBarMaxHeightPx
+      }) {
+        HostDeviceTitle(hostDevice)
+      }
     }
     Spacer(Modifier.height(bottomPadding))
   }

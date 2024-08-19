@@ -18,6 +18,8 @@ import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.helpers.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.filter
+import kotlin.math.absoluteValue
 
 @Composable
 actual fun LazyColumnWithScrollBar(
@@ -51,11 +53,25 @@ actual fun LazyColumnWithScrollBar(
   }
   val state = state ?: LocalAppBarHandler.current?.listState ?: rememberLazyListState()
   val connection = LocalAppBarHandler.current?.connection
+  // When scroll bar is dragging, there is no scroll event in nested scroll modifier. So, listen for changes on lazy column state
+  // (only first visible row is useful because LazyColumn doesn't have absolute scroll position, only relative to row)
+  val scrollBarDraggingState = remember { mutableStateOf(false) }
+  LaunchedEffect(Unit) {
+    snapshotFlow { state.firstVisibleItemScrollOffset }
+      .filter { state.firstVisibleItemIndex == 0 }
+      .collect { scrollPosition ->
+        val offset = connection?.appBarOffset
+        if (offset != null && ((offset + scrollPosition).absoluteValue > 1 || scrollBarDraggingState.value)) {
+          connection.appBarOffset = -scrollPosition.toFloat()
+//          Log.d(TAG, "Scrolling position changed from $offset to ${connection.appBarOffset}")
+        }
+      }
+  }
   Box(if (connection != null) Modifier.nestedScroll(connection) else Modifier) {
     LazyColumn(modifier.then(scrollModifier), state, contentPadding, reverseLayout, verticalArrangement, horizontalAlignment, flingBehavior, userScrollEnabled, content)
-  }
-  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
-    DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, reverseLayout)
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+      DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, reverseLayout, scrollBarDraggingState)
+    }
   }
 }
 
@@ -87,22 +103,36 @@ actual fun ColumnWithScrollBar(
   }
   val state = state ?: LocalAppBarHandler.current?.scrollState ?: rememberScrollState()
   val connection = LocalAppBarHandler.current?.connection
+  // When scroll bar is dragging, there is no scroll event in nested scroll modifier. So, listen for changes on column state
+  // (exact scroll position is available but in Int, not Float)
+  val scrollBarDraggingState = remember { mutableStateOf(false) }
+  LaunchedEffect(Unit) {
+    snapshotFlow { state.value }
+      .collect { scrollPosition ->
+        val offset = connection?.appBarOffset
+        if (offset != null && ((offset + scrollPosition).absoluteValue > 1 || scrollBarDraggingState.value)) {
+          connection.appBarOffset = -scrollPosition.toFloat()
+//          Log.d(TAG, "Scrolling position changed from $offset to ${connection.appBarOffset}")
+        }
+      }
+  }
   Box(if (connection != null) Modifier.nestedScroll(connection) else Modifier) {
     Column(modifier.verticalScroll(state).then(scrollModifier), verticalArrangement, horizontalAlignment, content)
-  }
-  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
-    DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, false)
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.CenterEnd) {
+      DesktopScrollBar(rememberScrollbarAdapter(state), Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, false, scrollBarDraggingState)
+    }
   }
 }
 
 @Composable
-fun DesktopScrollBar(adapter: androidx.compose.foundation.v2.ScrollbarAdapter, modifier: Modifier, scrollBarAlpha: Animatable<Float, AnimationVector1D>, scrollJob: MutableState<Job>, reversed: Boolean) {
+fun DesktopScrollBar(adapter: androidx.compose.foundation.v2.ScrollbarAdapter, modifier: Modifier, scrollBarAlpha: Animatable<Float, AnimationVector1D>, scrollJob: MutableState<Job>, reversed: Boolean, updateDraggingState: MutableState<Boolean> = remember { mutableStateOf(false) }) {
   val scope = rememberCoroutineScope()
   val interactionSource = remember { MutableInteractionSource() }
   val isHovered by interactionSource.collectIsHoveredAsState()
   val isDragged by interactionSource.collectIsDraggedAsState()
   LaunchedEffect(isHovered, isDragged) {
     scrollJob.value.cancel()
+    updateDraggingState.value = isDragged
     if (isHovered || isDragged) {
       scrollBarAlpha.animateTo(1f)
     } else {

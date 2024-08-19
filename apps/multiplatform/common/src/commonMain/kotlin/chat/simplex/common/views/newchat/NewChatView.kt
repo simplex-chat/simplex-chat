@@ -145,14 +145,6 @@ fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRC
             PrepareAndInviteView(rh?.remoteHostId, contactConnection, connReqInvitation, creatingConnReq)
           }
           NewChatOption.CONNECT.ordinal -> {
-            val scrollState = LocalAppBarHandler.current?.scrollState
-            val connection = LocalAppBarHandler.current?.connection
-            // Workaround a problem when longer first page switches to shorter second page, which makes appBarOffset
-            // bigger than it needs to be with such a small page
-            LaunchedEffect(pagerState.currentPage) {
-              scrollState?.scrollTo(0)
-              connection?.appBarOffset = 0f
-            }
             ConnectView(rh?.remoteHostId, showQRCodeScanner, pastedLink, close)
           }
         }
