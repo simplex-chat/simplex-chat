@@ -1657,12 +1657,17 @@ processChatCommand' vr = \case
       Nothing -> throwChatError CEConnectionIncognitoChangeProhibited
   APISetConnectionUserId connId newUserId -> withUser $ \user@User {userId} -> do
     conn' <- withFastStore $ \db -> do
-      conn <- getPendingContactConnection db userId connId
-      liftIO $ updatePCCUserId db userId conn newUserId
-    newUser' <- withFastStore $ \db -> do
-      newUser <- getUser db newUserId
-      pure newUser
-    pure $ CRConnectionUserIdUpdated user conn' newUser'
+      conn@PendingContactConnection {pccConnStatus} <- getPendingContactConnection db userId connId
+      case pccConnStatus of 
+        ConnNew -> pure (Just conn)
+        _ -> pure Nothing
+    case conn' of
+      Just conn -> do 
+        newUser <- privateGetUser newUserId
+        withAgent $ \a -> updateConnectionUserId a (aUserId user) (aConnId' conn) (aUserId newUser)
+        _ <- withFastStore' $ \db -> updatePCCUserId db userId conn newUserId
+        pure $ CRConnectionUserIdUpdated user conn newUser
+      Nothing -> throwChatError CEInvalidConnReq
   APIConnectPlan userId cReqUri -> withUserId userId $ \user ->
     CRConnectionPlan user <$> connectPlan user cReqUri
   APIConnect userId incognito (Just (ACR SCMInvitation cReq)) -> withUserId userId $ \user -> withInvitationLock "connect" (strEncode cReq) . procCmd $ do
