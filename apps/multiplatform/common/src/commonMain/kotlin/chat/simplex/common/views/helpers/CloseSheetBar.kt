@@ -77,7 +77,7 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
                 .padding(start = if (showClose) 0.dp else DEFAULT_PADDING_HALF)
                 .weight(1f) // hides the title if something wants full width (eg, search field in chat profiles screen)
                 .graphicsLayer {
-                  alpha = (-connection.appBarOffset * 2f / AppBarHandler.appBarMaxHeightPx).coerceAtMost(1f)
+                  alpha = (-connection.appBarOffset * 2f / AppBarHandler.appBarMaxHeightPx).coerceIn(0f, 1f)
                 }
                 .padding(start = 4.dp),
               verticalAlignment = Alignment.CenterVertically
@@ -101,7 +101,7 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
       Divider(
         Modifier
           .graphicsLayer {
-            alpha = (-connection.appBarOffset * 2f / AppBarHandler.appBarMaxHeightPx).coerceAtMost(1f)
+            alpha = (-connection.appBarOffset * 2f / AppBarHandler.appBarMaxHeightPx).coerceIn(0f, 1f)
           }
       )
     }
