@@ -17,6 +17,7 @@ chatLocalChatsTests :: SpecWith FilePath
 chatLocalChatsTests = do
   describe "note folders" $ do
     it "create folders, add notes, read, search" testNotes
+    it "create multiple messages api" testCreateMulti
     it "switch users" testUserNotes
     it "preview pagination for notes" testPreviewsPagination
     it "chat pagination" testChatPagination
@@ -51,6 +52,14 @@ testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/_update item *1 1 text Greetings."
   alice ##> "/tail *"
   alice <# "* Greetings."
+
+testCreateMulti :: FilePath -> IO ()
+testCreateMulti tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+  createCCNoteFolder alice
+
+  alice ##> "/_create *1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
+  alice <# "* test 1"
+  alice <# "* test 2"
 
 testUserNotes :: FilePath -> IO ()
 testUserNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
@@ -173,8 +182,8 @@ testOtherFiles =
     bob ##> "/fr 1"
     bob
       <### [ "saving file 1 from alice to test.jpg",
-              "started receiving file 1 (test.jpg) from alice"
-            ]
+             "started receiving file 1 (test.jpg) from alice"
+           ]
     bob <## "completed receiving file 1 (test.jpg) from alice"
 
     bob /* "test"
