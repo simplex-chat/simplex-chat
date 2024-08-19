@@ -2862,7 +2862,7 @@ processChatCommand' vr = \case
       where
         assertVoiceAllowed :: Contact -> CM ()
         assertVoiceAllowed ct =
-          when (not (featureAllowed SCFVoice forUser ct) && any (\((ComposedMessage {msgContent}, _)) -> isVoice msgContent) cmrs) $
+          when (not (featureAllowed SCFVoice forUser ct) && any (\(ComposedMessage {msgContent}, _) -> isVoice msgContent) cmrs) $
             throwChatError (CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFVoice))
         processComposedMessages :: Contact -> CM ChatResponse
         processComposedMessages ct = do

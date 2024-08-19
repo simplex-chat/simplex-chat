@@ -33,6 +33,8 @@ chatForwardTests = do
     it "with relative paths: from contact to contact" testForwardFileContactToContact
     it "with relative paths: from group to notes" testForwardFileGroupToNotes
     it "with relative paths: from notes to group" testForwardFileNotesToGroup
+  describe "multi forward api" $ do
+    it "from contact to contact" testForwardContactToContactMulti
 
 testForwardContactToContact :: HasCallStack => FilePath -> IO ()
 testForwardContactToContact =
@@ -590,3 +592,31 @@ testForwardFileNotesToGroup =
         alice <## "notes: all messages are removed"
       fwdFileExists <- doesFileExist "./tests/tmp/alice_files/test_1.pdf"
       fwdFileExists `shouldBe` True
+
+testForwardContactToContactMulti :: HasCallStack => FilePath -> IO ()
+testForwardContactToContactMulti =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      connectUsers alice cath
+      connectUsers bob cath
+
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      msgId1 <- lastItemId alice
+
+      threadDelay 1000000
+
+      bob #> "@alice hey"
+      alice <# "bob> hey"
+      msgId2 <- lastItemId alice
+
+      alice ##> ("/_forward @3 @2 " <> msgId1 <> "," <> msgId2)
+      alice <# "@cath <- you @bob"
+      alice <## "      hi"
+      alice <# "@cath <- @bob"
+      alice <## "      hey"
+      cath <# "alice> -> forwarded"
+      cath <## "      hi"
+      cath <# "alice> -> forwarded"
+      cath <## "      hey"
