@@ -185,7 +185,14 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     scaffoldState = scaffoldState,
     drawerContent = {
       tryOrShowError("Settings", error = { ErrorSettingsView() }) {
-        SettingsView(chatModel, setPerformLA, scaffoldState.drawerState)
+        val handler = remember { AppBarHandler() }
+        CompositionLocalProvider(
+          LocalAppBarHandler provides handler
+        ) {
+          ModalView(showClose = appPlatform.isDesktop, close = { scope.launch { scaffoldState.drawerState.close() } }) {
+            SettingsView(chatModel, setPerformLA, scaffoldState.drawerState)
+          }
+        }
       }
     },
     contentColor = LocalContentColor.current,
