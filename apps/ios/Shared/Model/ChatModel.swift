@@ -358,9 +358,13 @@ final class ChatModel: ObservableObject {
     }
 
     func updateChats(with newChats: [ChatData]) {
+        var chatIndex: [ChatId:Int] = [:]
+        for i in 0..<newChats.count {
+            chatIndex[newChats[i].id] = i
+        }
         for i in 0..<newChats.count {
             let c = newChats[i]
-            if let j = getChatIndex(c.id)   {
+            if let j = chatIndex[c.id]   {
                 let chat = chats[j]
                 chat.chatInfo = c.chatInfo
                 chat.chatItems = c.chatItems
