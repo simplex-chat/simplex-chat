@@ -10,7 +10,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
-import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -25,16 +25,27 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
   var rowModifier = Modifier
     .fillMaxWidth()
     .height(AppBarHeight * fontSizeSqrtMultiplier)
-
+  val themeBackgroundMix = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f)
   if (!closeBarTitle.isNullOrEmpty()) {
-    rowModifier = rowModifier.background(MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f))
+    rowModifier = rowModifier.background(themeBackgroundMix)
   }
+  val handler = LocalAppBarHandler.current
+  val connection = LocalAppBarHandler.current?.connection
+  val title = remember(handler?.title?.value) { handler?.title ?: mutableStateOf("") }
 
   Column(
     verticalArrangement = arrangement,
     modifier = Modifier
       .fillMaxWidth()
       .heightIn(min = AppBarHeight * fontSizeSqrtMultiplier)
+      .drawWithCache {
+        val backgroundColor = if (appPlatform.isDesktop && connection != null) themeBackgroundMix.copy(alpha = (-connection.appBarOffset * 2f / AppBarHandler.appBarMaxHeightPx).coerceIn(0f, 1f)) else Color.Transparent
+        onDrawBehind {
+          if (appPlatform.isDesktop) {
+            drawRect(backgroundColor)
+          }
+        }
+      }
   ) {
     Row(
       modifier = Modifier.padding(barPaddingValues),
@@ -43,14 +54,11 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
           rowModifier,
           verticalAlignment = Alignment.CenterVertically
         ) {
-          if (showClose)  {
+          if (showClose) {
             NavigationButtonBack(tintColor = tintColor, onButtonClicked = close)
           } else {
             Spacer(Modifier)
           }
-          val handler = LocalAppBarHandler.current
-          val connection = LocalAppBarHandler.current?.connection
-          val title = remember(handler?.title?.value) { handler?.title ?: mutableStateOf("") }
           if (!closeBarTitle.isNullOrEmpty()) {
             Row(
               Modifier.weight(1f),
@@ -89,6 +97,14 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
         }
       }
     )
+    if (closeBarTitle.isNullOrEmpty() && title.value.isNotEmpty() && connection != null) {
+      Divider(
+        Modifier
+          .graphicsLayer {
+            alpha = (-connection.appBarOffset * 2f / AppBarHandler.appBarMaxHeightPx).coerceAtMost(1f)
+          }
+      )
+    }
   }
 }
 
