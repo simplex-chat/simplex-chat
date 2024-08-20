@@ -1658,19 +1658,10 @@ processChatCommand' vr = \case
   APISetConnectionUserId connId newUserId -> withUser $ \user@User {userId} -> do
     cfg <- asks config
     newUser <- privateGetUser newUserId
-    newUserServers <- withFastStore $ \db -> liftIO $ getServers db cfg newUser SPSMP
     conn' <- withFastStore $ \db -> do
-      conn@PendingContactConnection {pccConnStatus, connReqInv} <- getPendingContactConnection db userId connId
-      case (pccConnStatus, connReqInv) of
-        (ConnNew, Just req) -> do
-          let r = connectionData req
-              ConnReqUriData {crSmpQueues = q :| _} = r
-              SMPQueueUri {queueAddress} = q
-              SMPQueueAddress {smpServer} = queueAddress
-          if smpServer `elem` newUserServers
-            then pure (True, Just conn)
-            else pure (False, Just conn)
-        _ -> pure (False, Nothing)
+      conn <- getPendingContactConnection db userId connId
+      newUserServers <- liftIO $ getServers db cfg newUser SPSMP
+      pure $ checkConnection conn newUserServers
     case conn' of
       (True, Just conn) -> do
         -- Safe to update connection
@@ -1690,6 +1681,15 @@ processChatCommand' vr = \case
     where
       getServers :: (ProtocolTypeI p, UserProtocol p) => DB.Connection -> ChatConfig -> User -> SProtocolType p -> IO (NonEmpty (ProtocolServer p))
       getServers db cfg user p = L.map (\ServerCfg {server} -> protoServer server) . useServers cfg p <$> getProtocolServers db user
+      checkConnection :: PendingContactConnection -> NonEmpty (ProtocolServer 'PSMP) -> (Bool, Maybe PendingContactConnection)
+      checkConnection conn@PendingContactConnection {pccConnStatus, connReqInv} newUserServers =
+        case (pccConnStatus, connReqInv) of
+          (ConnNew, Just req) ->
+            let r = connectionData req
+                ConnReqUriData {crSmpQueues = q :| _} = r
+                SMPQueueUri {queueAddress = SMPQueueAddress {smpServer}} = q
+             in (smpServer `elem` newUserServers, Just conn)
+          _ -> (False, Nothing)
       connectionData :: ConnReqInvitation -> ConnReqUriData
       connectionData (CRInvitationUri crData _) = crData
   APIConnectPlan userId cReqUri -> withUserId userId $ \user ->
