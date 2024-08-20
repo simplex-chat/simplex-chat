@@ -266,7 +266,6 @@ struct ChatListView: View {
                     .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
             }
-            Button("TEST \(test)") { test.toggle() }
         }
     }
 
