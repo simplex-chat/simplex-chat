@@ -1771,4 +1771,34 @@
     <string name="settings_section_title_private_message_routing">私密訊息路由</string>
     <string name="app_check_for_updates_installed_successfully_desc">請重啟應用程式。</string>
     <string name="privacy_media_blur_radius_off">關閉</string>
+    <string name="v5_6_quantum_resistant_encryption">抗量子加密</string>
+    <string name="profile_update_event_removed_address">刪除了聯繫地址</string>
+    <string name="servers_info_reconnect_server_title">重連伺服器？</string>
+    <string name="servers_info_detailed_statistics_received_messages_header">接收到的訊息</string>
+    <string name="servers_info_detailed_statistics_receive_errors">接收錯誤</string>
+    <string name="servers_info_reconnect_servers_message">重新連接所有已連接的伺服器來強制傳送訊息。這會使用額外流量。</string>
+    <string name="servers_info_reconnect_server_message">重連伺服器強制傳送訊息。這會使用額外流量。</string>
+    <string name="network_option_rcv_concurrency">並行接收</string>
+    <string name="recipients_can_not_see_who_message_from">收件人看不到這條訊息來自誰。</string>
+    <string name="profile_update_event_removed_picture">刪除了資料圖片</string>
+    <string name="one_hand_ui">可使用的聊天工具箱</string>
+    <string name="v6_0_reachable_chat_toolbar">可存取的聊天工具欄</string>
+    <string name="v5_5_join_group_conversation_descr">最近歷史和改進的目錄機器人。</string>
+    <string name="network_option_protocol_timeout_per_kb">每 KB 協議超時</string>
+    <string name="v5_8_private_routing_descr">保護您的真實 IP 地址。不讓你聯絡人選擇的訊息中繼看到它。
+\n在*網絡&amp;伺服器*設定中開啓。</string>
+    <string name="you_can_change_it_later">隨機密碼以明文形式儲存在設定中。
+\n您可以稍後更改。</string>
+    <string name="send_receipts_disabled_alert_title">傳送回條已禁用</string>
+    <string name="servers_info_proxied_servers_section_header">代理伺服器</string>
+    <string name="servers_info_reconnect_servers_title">重連伺服器？</string>
+    <string name="conn_event_enabled_pq">抗量子端到端加密</string>
+    <string name="color_received_quote">收到的回覆</string>
+    <string name="servers_info_reconnect_all_servers_button">重連所有伺服器</string>
+    <string name="reconnect">重連</string>
+    <string name="proxied">代理</string>
+    <string name="random_port">隨機</string>
+    <string name="refresh_qr_code">更新</string>
+    <string name="servers_info_detailed_statistics_received_total">接收總計</string>
+    <string name="app_check_for_updates_button_remind_later">稍後提醒</string>
 </resources>
