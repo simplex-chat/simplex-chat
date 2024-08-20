@@ -68,6 +68,7 @@ chatProfileTests = do
     it "can't change user id for non pending connections" testCantUpdateNonPCCUserId
     it "change from incognito profile connects as new user" testUpdatePCCFromIncognito
     it "change user id for pending connection and later set incognito connects as incognito in changed profile" testUpdatePCCAndThenIncognito
+    it "change user id for user without matching servers creates new connection" testUpdatePCCUserIdDiffSrv
   describe "preferences" $ do
     it "set contact preferences" testSetContactPrefs
     it "feature offers" testFeatureOffers
@@ -1580,7 +1581,7 @@ testUpdatePCCUserId = testChat2 aliceProfile bobProfile $
     alice <## "connection 1 changed from user alice to user alisa"
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
-    -- Change connection back to initial user
+    -- Change connection back to other user
     alice ##> "/_set user :1 3"
     alice <## "connection 1 changed from user alisa to user alisa2"
     alice ##> "/user alisa2"
@@ -1670,6 +1671,30 @@ testUpdatePCCAndThenIncognito = testChat2 aliceProfile bobProfile $
           alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> alisaIncognito)
           alice <## ("use /i bob to print out this incognito profile again")
       ]
+
+testUpdatePCCUserIdDiffSrv :: HasCallStack => FilePath -> IO ()
+testUpdatePCCUserIdDiffSrv = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    -- Create a new invite
+    alice ##> "/connect"
+    _ <- getInvitation alice
+    -- Create new user with different servers
+    alice ##> "/create user alisa"
+    showActiveUser alice "alisa"
+    alice #$> ("/smp smp://2345-w==@smp2.example.im smp://3456-w==@smp3.example.im:5224", id, "ok")
+    alice ##> "/user alice"
+    showActiveUser alice "alice (Alice)"
+    -- Change connection to newly created user and use the newly created connection
+    alice ##> "/_set user :1 2"
+    inv <- getInvitation alice
+    alice ##> "/user alisa"
+    showActiveUser alice "alisa"
+    -- Connect
+    bob ##> ("/connect " <> inv)
+    bob <## "confirmation sent!"
+    concurrently_
+      (alice <## "bob (Bob): contact is connected")
+      (bob <## "alisa: contact is connected")
 
 testSetConnectionAlias :: HasCallStack => FilePath -> IO ()
 testSetConnectionAlias = testChat2 aliceProfile bobProfile $
