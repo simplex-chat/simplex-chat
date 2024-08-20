@@ -91,8 +91,8 @@ var systemInDarkThemeCurrently: Bool {
     return UITraitCollection.current.userInterfaceStyle == .dark
 }
 
-func reactOnDarkThemeChanges() {
-    if currentThemeDefault.get() == DefaultTheme.SYSTEM_THEME_NAME && CurrentColors.colors.isLight == systemInDarkThemeCurrently {
+func reactOnDarkThemeChanges(_ inDarkNow: Bool) {
+    if currentThemeDefault.get() == DefaultTheme.SYSTEM_THEME_NAME && CurrentColors.colors.isLight == inDarkNow {
         // Change active colors from light to dark and back based on system theme
         ThemeManager.applyTheme(DefaultTheme.SYSTEM_THEME_NAME)
     }
