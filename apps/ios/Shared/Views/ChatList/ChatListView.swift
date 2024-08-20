@@ -217,14 +217,31 @@ struct ChatListView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                     }
-                    ForEach(cs, id: \.viewId) { chat in
-                        ChatListNavLink(chat: chat)
+                    if #available(iOS 16.0, *) {
+                        ForEach(cs, id: \.viewId) { chat in
+                            ChatListNavLink(chat: chat)
+                                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                                .padding(.trailing, -16)
+                                .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
+                                .listRowBackground(Color.clear)
+                        }
+                        .offset(x: -8)
+                    } else {
+                        ForEach(cs, id: \.viewId) { chat in
+                            VStack(spacing: .zero) {
+                                Divider()
+                                    .padding(.leading, 16)
+                                ChatListNavLink(chat: chat)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                            }
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                            .padding(.trailing, -16)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets())
+                            .background { theme.colors.background } // Hides default list selection colour
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
-                            .listRowBackground(Color.clear)
+                        }
                     }
-                    .offset(x: -8)
                 }
                 .listStyle(.plain)
                 .onChange(of: chatModel.chatId) { currentChatId in
