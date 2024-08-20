@@ -127,7 +127,7 @@ import System.FilePath (takeFileName, (</>))
 import qualified System.FilePath as FP
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush)
 import System.Random (randomRIO)
-import Text.Read (readMaybe)
+import Text.Read (Lexeme (String), readMaybe)
 import UnliftIO.Async
 import UnliftIO.Concurrent (forkFinally, forkIO, mkWeakThreadId, threadDelay)
 import UnliftIO.Directory
@@ -1656,18 +1656,42 @@ processChatCommand' vr = \case
       Just conn' -> pure $ CRConnectionIncognitoUpdated user conn'
       Nothing -> throwChatError CEConnectionIncognitoChangeProhibited
   APISetConnectionUserId connId newUserId -> withUser $ \user@User {userId} -> do
+    cfg <- asks config
+    newUser <- privateGetUser newUserId
+    newUserServers <- withFastStore $ \db -> liftIO $ getServers db cfg newUser SPSMP
     conn' <- withFastStore $ \db -> do
-      conn@PendingContactConnection {pccConnStatus} <- getPendingContactConnection db userId connId
-      case pccConnStatus of 
-        ConnNew -> pure (Just conn)
-        _ -> pure Nothing
+      conn@PendingContactConnection {pccConnStatus, connReqInv} <- getPendingContactConnection db userId connId
+      case (pccConnStatus, connReqInv) of
+        (ConnNew, Just req) -> do
+          let r = connectionData req
+              ConnReqUriData {crSmpQueues = q :| _} = r
+              SMPQueueUri {queueAddress} = q
+              SMPQueueAddress {smpServer} = queueAddress
+          if smpServer `elem` newUserServers
+            then pure (True, Just conn)
+            else pure (False, Just conn)
+        _ -> pure (False, Nothing)
     case conn' of
-      Just conn -> do 
-        newUser <- privateGetUser newUserId
-        withAgent $ \a -> updateConnectionUserId a (aUserId user) (aConnId' conn) (aUserId newUser)
+      (True, Just conn) -> do
+        -- Safe to update connection
+        withAgent $ \a -> changeConnectionUser a (aUserId user) (aConnId' conn) (aUserId newUser)
         _ <- withFastStore' $ \db -> updatePCCUserId db userId conn newUserId
         pure $ CRConnectionUserIdUpdated user conn newUser
-      Nothing -> throwChatError CEInvalidConnReq
+      (False, Just conn) -> do
+        -- Servers do not match, create new connection
+        subMode <- chatReadVar subscriptionMode
+        (newConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing IKPQOn subMode
+        newConn <- withFastStore' $ \db -> do
+          deleteConnectionRecord db user connId
+          createDirectConnection db newUser newConnId cReq ConnNew Nothing subMode initialChatVersion PQSupportOn
+        withAgent $ \a -> deleteConnectionAsync a False (aConnId' conn)
+        pure $ CRConnectionUserIdUpdated user newConn newUser
+      _ -> throwChatError CEInvalidConnReq
+    where
+      getServers :: (ProtocolTypeI p, UserProtocol p) => DB.Connection -> ChatConfig -> User -> SProtocolType p -> IO (NonEmpty (ProtocolServer p))
+      getServers db cfg user p = L.map (\ServerCfg {server} -> protoServer server) . useServers cfg p <$> getProtocolServers db user
+      connectionData :: ConnReqInvitation -> ConnReqUriData
+      connectionData (CRInvitationUri crData _) = crData
   APIConnectPlan userId cReqUri -> withUserId userId $ \user ->
     CRConnectionPlan user <$> connectPlan user cReqUri
   APIConnect userId incognito (Just (ACR SCMInvitation cReq)) -> withUserId userId $ \user -> withInvitationLock "connect" (strEncode cReq) . procCmd $ do
@@ -7803,7 +7827,7 @@ chatCommandP =
       "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
       "/_connect " *> (APIAddContact <$> A.decimal <*> incognitoOnOffP),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
-      "/_set user :" *> (APISetConnectionUserId  <$> A.decimal <* A.space <*> A.decimal),
+      "/_set user :" *> (APISetConnectionUserId <$> A.decimal <* A.space <*> A.decimal),
       ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       ForwardMessage <$> chatNameP <* " <- @" <*> displayName <* A.space <*> msgTextP,
