@@ -1655,43 +1655,43 @@ processChatCommand' vr = \case
     case conn'_ of
       Just conn' -> pure $ CRConnectionIncognitoUpdated user conn'
       Nothing -> throwChatError CEConnectionIncognitoChangeProhibited
-  APISetConnectionUserId connId newUserId -> withUser $ \user@User {userId} -> do
+  APIChangeConnectionUser connId newUserId -> withUser $ \user@User {userId} -> do
     cfg <- asks config
     newUser <- privateGetUser newUserId
-    conn' <- withFastStore $ \db -> do
-      conn <- getPendingContactConnection db userId connId
-      newUserServers <- liftIO $ getServers db cfg newUser SPSMP
-      pure $ checkConnection conn newUserServers
-    case conn' of
-      (True, Just conn) -> do
-        -- Safe to update connection
-        withAgent $ \a -> changeConnectionUser a (aUserId user) (aConnId' conn) (aUserId newUser)
-        _ <- withFastStore' $ \db -> updatePCCUser db userId conn newUserId
-        pure $ CRConnectionUserChanged user conn newUser
-      (False, Just conn) -> do
-        -- Servers do not match, create new connection
-        subMode <- chatReadVar subscriptionMode
-        (newConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing IKPQOn subMode
-        newConn <- withFastStore' $ \db -> do
-          deleteConnectionRecord db user connId
-          createDirectConnection db newUser newConnId cReq ConnNew Nothing subMode initialChatVersion PQSupportOn
-        withAgent $ \a -> deleteConnectionAsync a False (aConnId' conn)
-        pure $ CRInvitation user cReq newConn
+    conn <- withFastStore $ \db -> getPendingContactConnection db userId connId
+    let PendingContactConnection {pccConnStatus, connReqInv, customUserProfileId} = conn
+
+    case (pccConnStatus, connReqInv) of
+      (ConnNew, Just (CRInvitationUri crData _)) -> do
+        newUserServers <- L.map (\ServerCfg {server} -> protoServer server) . useServers cfg SPSMP <$> withFastStore' (`getProtocolServers` newUser)
+        let ConnReqUriData {crSmpQueues = q :| _} = crData
+            SMPQueueUri {queueAddress = SMPQueueAddress {smpServer}} = q
+
+        connId' <-
+          if smpServer `elem` newUserServers
+            then do
+              -- Safe to update connection
+              withAgent $ \a -> changeConnectionUser a (aUserId user) (aConnId' conn) (aUserId newUser)
+              _ <- withFastStore' $ \db -> do
+                _ <- updatePCCUser db userId conn newUserId
+                forM_ customUserProfileId $ \profileId ->
+                  deletePCCIncognitoProfile db user profileId
+              pure connId
+            else do
+              -- Servers do not match, requires creation of a new connection
+              subMode <- chatReadVar subscriptionMode
+              (agConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing IKPQOn subMode
+              conn' <- withFastStore' $ \db -> do
+                deleteConnectionRecord db user connId
+                forM_ customUserProfileId $ \profileId ->
+                  deletePCCIncognitoProfile db user profileId
+                createDirectConnection db newUser agConnId cReq ConnNew Nothing subMode initialChatVersion PQSupportOn
+              deleteAgentConnectionAsync user (aConnId' conn)
+              let PendingContactConnection {pccConnId} = conn'
+              pure pccConnId
+        conn' <- withFastStore $ \db -> getPendingContactConnection db newUserId connId'
+        pure $ CRConnectionUserChanged user conn conn' newUser
       _ -> throwChatError CEInvalidConnReq
-    where
-      getServers :: (ProtocolTypeI p, UserProtocol p) => DB.Connection -> ChatConfig -> User -> SProtocolType p -> IO (NonEmpty (ProtocolServer p))
-      getServers db cfg user p = L.map (\ServerCfg {server} -> protoServer server) . useServers cfg p <$> getProtocolServers db user
-      checkConnection :: PendingContactConnection -> NonEmpty (ProtocolServer 'PSMP) -> (Bool, Maybe PendingContactConnection)
-      checkConnection conn@PendingContactConnection {pccConnStatus, connReqInv} newUserServers =
-        case (pccConnStatus, connReqInv) of
-          (ConnNew, Just req) ->
-            let r = connectionData req
-                ConnReqUriData {crSmpQueues = q :| _} = r
-                SMPQueueUri {queueAddress = SMPQueueAddress {smpServer}} = q
-             in (smpServer `elem` newUserServers, Just conn)
-          _ -> (False, Nothing)
-      connectionData :: ConnReqInvitation -> ConnReqUriData
-      connectionData (CRInvitationUri crData _) = crData
   APIConnectPlan userId cReqUri -> withUserId userId $ \user ->
     CRConnectionPlan user <$> connectPlan user cReqUri
   APIConnect userId incognito (Just (ACR SCMInvitation cReq)) -> withUserId userId $ \user -> withInvitationLock "connect" (strEncode cReq) . procCmd $ do
@@ -7827,7 +7827,7 @@ chatCommandP =
       "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
       "/_connect " *> (APIAddContact <$> A.decimal <*> incognitoOnOffP),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
-      "/_set user :" *> (APISetConnectionUserId <$> A.decimal <* A.space <*> A.decimal),
+      "/_set conn user :" *> (APIChangeConnectionUser <$> A.decimal <* A.space <*> A.decimal),
       ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       ForwardMessage <$> chatNameP <* " <- @" <*> displayName <* A.space <*> msgTextP,
