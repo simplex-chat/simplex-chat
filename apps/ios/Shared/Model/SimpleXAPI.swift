@@ -2166,7 +2166,7 @@ func refreshCallInvitations() async throws {
     let callInvitations = try await justRefreshCallInvitations()
     if let (chatId, ntfAction) = m.ntfCallInvitationAction,
        let invitation = m.callInvitations.removeValue(forKey: chatId) {
-        m.ntfCallInvitationAction = nil
+        await MainActor.run { m.ntfCallInvitationAction = nil }
         CallController.shared.callAction(invitation: invitation, action: ntfAction)
     } else if let invitation = callInvitations.last(where: { $0.user.showNotifications }) {
         activateCall(invitation)

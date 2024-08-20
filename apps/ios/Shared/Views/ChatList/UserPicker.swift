@@ -89,8 +89,8 @@ struct UserPicker: View {
             if case .active = scenePhase {
                 Task {
                     do {
-                        let u = try await listUsersAsync()
-                        await MainActor.run { m.users = u }
+                        let users = try await listUsersAsync()
+                        await MainActor.run { m.users = users }
                     } catch {
                         logger.error("Error loading users \(responseError(error))")
                     }

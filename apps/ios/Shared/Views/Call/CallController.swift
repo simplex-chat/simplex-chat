@@ -198,8 +198,11 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
                 if let uuid = invitation.callkitUUID {
                     logger.debug("CallController: report pushkit call via CallKit")
                     let update = self.cxCallUpdate(invitation: invitation)
-                    do { try await self.provider.reportNewIncomingCall(with: uuid, update: update) }
-                    catch { m.callInvitations.removeValue(forKey: contactId) }
+                    do {
+                        try await self.provider.reportNewIncomingCall(with: uuid, update: update)
+                    } catch {
+                        _ = await MainActor.run { m.callInvitations.removeValue(forKey: contactId) }
+                    }
                     completion()
                 } else {
                     self.reportExpiredCall(update: update, completion)
