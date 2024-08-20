@@ -83,11 +83,9 @@ struct SimpleXApp: App {
                         if appState != .stopped {
                             startChatAndActivate {
                                 if appState.inactive && chatModel.chatRunning == true {
-                                    Task {
-                                        await updateChats()
-                                        if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
-                                            await updateCallInvitations()
-                                        }
+                                    updateChats()
+                                    if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
+                                        updateCallInvitations()
                                     }
                                 }
                             }
@@ -132,16 +130,16 @@ struct SimpleXApp: App {
         }
     }
 
-    private func updateChats() async {
+    private func updateChats() {
         do {
-            let chats = try await apiGetChatsAsync()
-            await MainActor.run { chatModel.updateChats(chats) }
+            let chats = try apiGetChats()
+            chatModel.updateChats(chats)
             if let id = chatModel.chatId,
                let chat = chatModel.getChat(id) {
                 Task { await loadChat(chat: chat, clearItems: false) }
             }
             if let ncr = chatModel.ntfContactRequest {
-                await MainActor.run { chatModel.ntfContactRequest = nil }
+                chatModel.ntfContactRequest = nil
                 if case let .contactRequest(contactRequest) = chatModel.getChat(ncr.chatId)?.chatInfo {
                     Task { await acceptContactRequest(incognito: ncr.incognito, contactRequest: contactRequest) }
                 }
@@ -151,9 +149,9 @@ struct SimpleXApp: App {
         }
     }
 
-    private func updateCallInvitations() async {
+    private func updateCallInvitations() {
         do {
-            try await refreshCallInvitations()
+            try refreshCallInvitations()
         } catch let error {
             logger.error("apiGetCallInvitations: cannot update call invitations \(responseError(error))")
         }
