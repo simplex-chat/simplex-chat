@@ -220,11 +220,12 @@ struct ChatListView: View {
                     ForEach(cs, id: \.viewId) { chat in
                         ChatListNavLink(chat: chat)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                            .padding(.trailing, -16)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 6)
+                            .listRowInsets(EdgeInsets())
+                            .background { theme.colors.background } // Hides default list selection colour
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
-                            .listRowBackground(Color.clear)
                     }
-                    .offset(x: -8)
                 }
                 .listStyle(.plain)
                 .onChange(of: chatModel.chatId) { currentChatId in
