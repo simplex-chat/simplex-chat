@@ -686,9 +686,9 @@
     <string name="error_adding_members">Lỗi thêm thành viên</string>
     <string name="error_creating_message">Lỗi tạo tin nhắn</string>
     <string name="error_creating_address">Lỗi tạo địa chỉ</string>
-    <string name="error_accepting_contact_request">Lỗi chấp nhận yêu cầu liên lạc</string>
+    <string name="error_accepting_contact_request">Lỗi chấp nhận yêu cầu liên hệ</string>
     <string name="error_changing_address">Lỗi thay đổi địa chỉ</string>
-    <string name="error_deleting_database">Lỗi xóa cơ sở dữ liệu trò chuyện</string>
+    <string name="error_deleting_database">Lỗi xóa cơ sở dữ liệu SimpleX Chat</string>
     <string name="error_creating_member_contact">Lỗi tạo liên hệ thành viên</string>
     <string name="error_aborting_address_change">Lỗi hủy bỏ thay đổi địa chỉ</string>
     <string name="error_creating_link_for_group">Lỗi tạo liên kết nhóm</string>
@@ -697,6 +697,15 @@
     <string name="error_deleting_contact">Lỗi xóa liên hệ</string>
     <string name="error_deleting_group">Lỗi xóa nhóm</string>
     <string name="error_deleting_link_for_group">Lỗi xóa liên kết nhóm</string>
-    <string name="error_deleting_contact_request">Lỗi xóa yêu cầu liên lạc</string>
+    <string name="error_deleting_contact_request">Lỗi xóa yêu cầu liên hệ</string>
     <string name="migrate_from_device_error_deleting_database">Lỗi xóa cơ sở dữ liệu</string>
+    <string name="error_deleting_pending_contact_connection">Lỗi xóa kết nối liên hệ đang chờ xử lý</string>
+    <string name="migrate_from_device_error_exporting_archive">Lỗi xuất cơ sở dữ liệu SimpleX Chat</string>
+    <string name="error_encrypting_database">Lỗi mã hóa cơ sở dữ liệu</string>
+    <string name="error_enabling_delivery_receipts">Lỗi bật chỉ báo đã nhận!</string>
+    <string name="error_deleting_note_folder">Lỗi xóa ghi chú riêng tư</string>
+    <string name="error_deleting_user">Lỗi xóa hồ sơ người dùng</string>
+    <string name="error_importing_database">Lỗi nhập cơ sở dữ liệu SimpleX Chat</string>
+    <string name="error_exporting_chat_database">Lỗi xuất cơ sở dữ liệu SimpleX Chat</string>
+    <string name="migrate_to_device_error_downloading_archive">Lỗi tải xuống kho lưu trữ</string>
 </resources>
