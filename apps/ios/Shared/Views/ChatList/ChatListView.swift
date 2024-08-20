@@ -501,21 +501,21 @@ func chatStoppedIcon() -> some View {
 struct ChatListView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
-        chatModel.chats = [
-            Chat(
+        chatModel.updateChats([
+            ChatData(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
             ),
-            Chat(
+            ChatData(
                 chatInfo: ChatInfo.sampleData.group,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")]
             ),
-            Chat(
+            ChatData(
                 chatInfo: ChatInfo.sampleData.contactRequest,
                 chatItems: []
             )
 
-        ]
+        ])
         return Group {
             ChatListView(showSettings: Binding.constant(false))
                 .environmentObject(chatModel)

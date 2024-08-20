@@ -65,7 +65,7 @@ struct LocalAuthView: View {
                 // Clear sensitive data on screen just in case app fails to hide its views while new database is created
                 m.chatId = nil
                 ItemsModel.shared.reversedChatItems = []
-                m.updateChats(with: [])
+                m.updateChats([])
                 m.users = []
                 _ = kcAppPassword.set(password)
                 _ = kcSelfDestructPassword.remove()

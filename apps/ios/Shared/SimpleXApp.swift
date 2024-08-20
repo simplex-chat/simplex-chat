@@ -133,7 +133,7 @@ struct SimpleXApp: App {
     private func updateChats() {
         do {
             let chats = try apiGetChats()
-            chatModel.updateChats(with: chats)
+            chatModel.updateChats(chats)
             if let id = chatModel.chatId,
                let chat = chatModel.getChat(id) {
                 Task { await loadChat(chat: chat, clearItems: false) }
