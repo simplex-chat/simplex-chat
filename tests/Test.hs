@@ -34,7 +34,7 @@ main = do
     describe "Random servers" randomServersTests
     around testBracket $ do
       describe "Mobile API Tests" mobileTests
-      fdescribe "SimpleX chat client" chatTests
+      describe "SimpleX chat client" chatTests
       xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
       xdescribe'' "SimpleX Directory service bot" directoryServiceTests
       describe "Remote session" remoteTests

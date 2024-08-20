@@ -63,7 +63,7 @@ chatProfileTests = do
   describe "contact aliases" $ do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
-  fdescribe "pending connection users" $ do
+  describe "pending connection users" $ do
     it "change user for pending connection" testChangePCCUser
     it "change from incognito profile connects as new user" testChangePCCUserFromIncognito
     it "change user for pending connection and later set incognito connects as incognito in changed profile" testChangePCCUserAndThenIncognito
