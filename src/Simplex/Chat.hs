@@ -3452,7 +3452,7 @@ acceptGroupJoinRequestAsync
     m <- withStore $ \db -> do
       liftIO $ createAcceptedMemberConnection db user connIds chatV ucr groupMemberId subMode
       getGroupMemberById db vr user groupMemberId
-    logDebug $ "acceptGroupJoinRequestAsync groupMemberId=" <> tshow (groupMemberId' m)
+    logDebug $ "MARKER acceptGroupJoinRequestAsync groupMemberId=" <> tshow (groupMemberId' m)
     pure m
 
 profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Bool -> Profile
@@ -4140,7 +4140,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        JOINED _ ->
+        JOINED sqSecured -> do
+          logDebug $ "MARKER processDirectMessage (conn Nothing) JOINED sqSecured=" <> tshow sqSecured
           -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         QCONT ->
@@ -4335,7 +4336,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        JOINED sqSecured ->
+        JOINED sqSecured -> do
+          logDebug $ "MARKER processDirectMessage (connId=" <> tshow connId <> ") JOINED sqSecured=" <> tshow sqSecured
           -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData ->
             when (directOrUsed ct && sqSecured) $ do
@@ -4749,7 +4751,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       OK ->
         -- [async agent commands] continuation on receiving OK
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-      JOINED _ ->
+      JOINED sqSecured -> do
+        logDebug $ "MARKER processGroupMessage (connId=" <> tshow connId <> ") JOINED sqSecured=" <> tshow sqSecured
         -- [async agent commands] continuation on receiving JOINED
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       QCONT -> do
@@ -7321,6 +7324,7 @@ agentAcceptContactAsync user enableNtfs invId msg subMode pqSup chatV = do
   cmdId <- withStore' $ \db -> createCommand db user Nothing CFAcceptContact
   dm <- encodeConnInfoPQ pqSup chatV msg
   connId <- withAgent $ \a -> acceptContactAsync a (aCorrId cmdId) enableNtfs invId dm pqSup subMode
+  logDebug $ "MARKER agentAcceptContactAsync connId=" <> tshow connId
   pure (cmdId, connId)
 
 deleteAgentConnectionAsync :: User -> ConnId -> CM ()
