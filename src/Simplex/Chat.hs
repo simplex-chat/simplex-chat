@@ -6903,8 +6903,6 @@ sendDirectContactMessages' user ct events = do
       msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
   sndMsgs_ <- lift $ createSndMessages idsEvts
   (sndMsgs', pqEnc_) <- batchSendConnMessagesB user conn msgFlags sndMsgs_
-  let errs = lefts sndMsgs'
-  unless (null errs) $ toView $ CRChatErrors (Just user) errs
   forM_ pqEnc_ $ \pqEnc' -> void $ createContactPQSndItem user ct conn pqEnc'
   pure sndMsgs'
 
