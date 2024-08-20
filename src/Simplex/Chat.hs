@@ -7114,19 +7114,6 @@ sendGroupMessages user gInfo members events = do
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
 
-mkGroupSndResult :: GroupSndResultData -> GroupSndResult
-mkGroupSndResult ((delivered, sentTo), (stored, pending), forwarded) =
-  GroupSndResult
-    { sentTo = filterSent' delivered sentTo fst,
-      pending = filterSent' stored pending id,
-      forwarded
-    }
-  where
-    -- TODO in theory this could deduplicate members and keep results only when ... some sent? or all sent?
-    -- This is not important, as it is not used in batch calls
-    filterSent' :: [Either ChatError a] -> [mem] -> (mem -> GroupMember) -> [GroupMember]
-    filterSent' rs ms mem = [mem m | (Right _, m) <- zip rs ms]
-
 sendGroupMessages_ :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResultData)
 sendGroupMessages_ user gInfo@GroupInfo {groupId} members events = do
   let idsEvts = L.map (GroupId groupId,) events
@@ -7184,6 +7171,80 @@ sendGroupMessages_ user gInfo@GroupInfo {groupId} members events = do
         sndMessageReq conn SndMessage {msgId, msgBody} = (conn, msgFlags, msgBody, [msgId])
     createPendingMsgs :: DB.Connection -> GroupMember -> NonEmpty SndMessage -> IO ()
     createPendingMsgs db m = mapM_ (\SndMessage {msgId} -> createPendingGroupMessage db (groupMemberId' m) msgId Nothing)
+
+dummyGSRData :: GroupSndResultData
+dummyGSRData = (([], []), ([], []), [])
+
+mkGroupSndResult :: GroupSndResultData -> GroupSndResult
+mkGroupSndResult ((delivered, sentTo), (stored, pending), forwarded) =
+  GroupSndResult
+    { sentTo = filterSent' delivered sentTo fst,
+      pending = filterSent' stored pending id,
+      forwarded
+    }
+  where
+    -- TODO in theory this could deduplicate members and keep results only when ... some sent? or all sent?
+    -- This is not important, as it is not used in batch calls
+    filterSent' :: [Either ChatError a] -> [mem] -> (mem -> GroupMember) -> [GroupMember]
+    filterSent' rs ms mem = [mem m | (Right _, m) <- zip rs ms]
+
+sendGroupMessages_' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError (SndMessage, GroupSndResultData)))
+sendGroupMessages_' _user gInfo@GroupInfo {groupId} members events = do
+  let idsEvts = L.map (GroupId groupId,) events
+  sndMsgs_ <- lift $ createSndMessages idsEvts
+  recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
+  let msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
+      (toSendSeparate, toSendBatched, pending, forwarded, _, dups) =
+        foldr addMember ([], [], [], [], S.empty, 0 :: Int) recipientMembers
+  when (dups /= 0) $ logError $ "sendGroupMessages_: " <> tshow dups <> " duplicate members"
+  -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
+  let msgReqs = prepareMsgReqs msgFlags sndMsgs_ toSendSeparate toSendBatched
+  -- losing correlation of results to sndMsgs_ here,
+  -- to correctly create per item GroupSndResult need to map results back to sndMsgs_
+  -- and return list of (Either ChatError (SndMessage, GroupSndResultData)) matching initial length of events
+  -- (or (Either ChatError (SndMessage, GroupSndResult)))
+  delivered <- maybe (pure []) (fmap L.toList . deliverMessagesB) $ L.nonEmpty msgReqs
+  stored <- lift . withStoreBatch' $ \db -> map (\m -> createPendingMsgs db m sndMsgs_) pending
+  -- pure (sndMsgs_, ((delivered, toSendSeparate <> toSendBatched), (stored, pending), forwarded))
+  pure (L.map (fmap (,dummyGSRData)) sndMsgs_)
+  where
+    shuffleMembers :: [GroupMember] -> IO [GroupMember]
+    shuffleMembers ms = do
+      let (adminMs, otherMs) = partition isAdmin ms
+      liftM2 (<>) (shuffle adminMs) (shuffle otherMs)
+      where
+        isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
+    addMember m acc@(toSendSeparate, toSendBatched, pending, forwarded, !mIds, !dups) =
+      case memberSendAction gInfo events members m of
+        Just a
+          | mId `S.member` mIds -> (toSendSeparate, toSendBatched, pending, forwarded, mIds, dups + 1)
+          | otherwise -> case a of
+              MSASend conn -> ((m, conn) : toSendSeparate, toSendBatched, pending, forwarded, mIds', dups)
+              MSASendBatched conn -> (toSendSeparate, (m, conn) : toSendBatched, pending, forwarded, mIds', dups)
+              MSAPending -> (toSendSeparate, toSendBatched, m : pending, forwarded, mIds', dups)
+              MSAForwarded -> (toSendSeparate, toSendBatched, pending, m : forwarded, mIds', dups)
+        Nothing -> acc
+      where
+        mId = groupMemberId' m
+        mIds' = S.insert mId mIds
+    prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> [Either ChatError ChatMsgReq]
+    prepareMsgReqs msgFlags msgs_ toSendSeparate toSendBatched = do
+      let batched_ = batchSndMessagesJSON msgs_
+      case L.nonEmpty batched_ of
+        Just batched' -> do
+          let msgReqsSeparate = foldr (\(_, conn) reqs -> foldr (\msg -> (fmap (sndMessageReq conn) msg :)) reqs msgs_) [] toSendSeparate
+              msgReqsBatched = foldr (\(_, conn) reqs -> foldr (\batch -> (fmap (msgBatchReq conn msgFlags) batch :)) reqs batched') [] toSendBatched
+          msgReqsSeparate <> msgReqsBatched
+        Nothing -> []
+      where
+        sndMessageReq :: Connection -> SndMessage -> ChatMsgReq
+        sndMessageReq conn SndMessage {msgId, msgBody} = (conn, msgFlags, msgBody, [msgId])
+    createPendingMsgs :: DB.Connection -> GroupMember -> NonEmpty (Either ChatError SndMessage) -> IO ()
+    createPendingMsgs db m = mapM_ createPendingMsg
+      where
+        createPendingMsg = \case
+          Right SndMessage {msgId} -> createPendingGroupMessage db (groupMemberId' m) msgId Nothing
+          Left _ -> pure ()
 
 data MemberSendAction = MSASend Connection | MSASendBatched Connection | MSAPending | MSAForwarded
 
