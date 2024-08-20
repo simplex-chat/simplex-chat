@@ -2872,7 +2872,8 @@ processChatCommand' vr = \case
           (msgContainers, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
           msgs_ <- sendDirectContactMessages user ct $ L.map XMsgNew msgContainers
           let itemsData = prepareSndItemsData msgs_ cmrs ciFiles_ quotedItems_
-          cis <- saveSndChatItems user (CDDirectSnd ct) itemsData timed_ live
+          (errs, cis) <- partitionEithers <$> saveSndChatItems user (CDDirectSnd ct) itemsData timed_ live
+          unless (null errs) $ toView $ CRChatErrors (Just user) errs
           forM_ (timed_ >>= timedDeleteAt') $ \deleteAt ->
             forM_ cis $ \ci ->
               startProximateTimedItemThread user (ChatRef CTDirect contactId, chatItemId' ci) deleteAt
@@ -2934,14 +2935,18 @@ processChatCommand' vr = \case
           (msgContainers, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
           (msgs_, r) <- sendGroupMessages user gInfo ms $ L.map XMsgNew msgContainers
           let itemsData = prepareSndItemsData (L.toList msgs_) cmrs ciFiles_ quotedItems_
-          cis <- saveSndChatItems user (CDGroupSnd gInfo) itemsData timed_ live
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo) itemsData timed_ live
+          -- TODO per item snd result - zip with GroupSndResult from sendGroupMessages
           withFastStore' $ \db -> do
-            forM_ cis $ \ci -> do
-              -- TODO per item snd result?
-              let GroupSndResult {sentTo, pending, forwarded} = mkGroupSndResult r
-              createMemberSndStatuses db ci sentTo GSSNew
-              createMemberSndStatuses db ci forwarded GSSForwarded
-              createMemberSndStatuses db ci pending GSSInactive
+            forM_ cis_ $ \case
+              Right ci -> do
+                let GroupSndResult {sentTo, pending, forwarded} = mkGroupSndResult r
+                createMemberSndStatuses db ci sentTo GSSNew
+                createMemberSndStatuses db ci forwarded GSSForwarded
+                createMemberSndStatuses db ci pending GSSInactive
+              Left _ -> pure ()
+          let (errs, cis) = partitionEithers cis_
+          unless (null errs) $ toView $ CRChatErrors (Just user) errs
           forM_ (timed_ >>= timedDeleteAt') $ \deleteAt ->
             forM_ cis $ \ci ->
               startProximateTimedItemThread user (ChatRef CTGroup groupId, chatItemId' ci) deleteAt
@@ -2988,10 +2993,13 @@ processChatCommand' vr = \case
       NonEmpty ComposeMessageReq ->
       NonEmpty (Maybe (CIFile 'MDSnd)) ->
       NonEmpty (Maybe (CIQuote c)) ->
-      [NewSndChatItemData c]
+      [Either ChatError (NewSndChatItemData c)]
     prepareSndItemsData msgs_ cmrs' ciFiles_ quotedItems_ =
-      [ NewSndChatItemData msg (CISndMsgContent msgContent) f q itemForwarded
-        | (Right msg, (ComposedMessage {msgContent}, itemForwarded), f, q) <-
+      [ ( case msg_ of
+            Right msg -> Right $ NewSndChatItemData msg (CISndMsgContent msgContent) f q itemForwarded
+            Left e -> Left e -- step over original error
+        )
+        | (msg_, (ComposedMessage {msgContent}, itemForwarded), f, q) <-
             zipWith4 (,,,) msgs_ (L.toList cmrs') (L.toList ciFiles_) (L.toList quotedItems_)
       ]
     createNoteFolderContentItems :: User -> NoteFolderId -> NonEmpty ComposeMessageReq -> CM ChatResponse
@@ -7296,8 +7304,8 @@ saveSndChatItem user cd msg content = saveSndChatItem' user cd msg content Nothi
 
 saveSndChatItem' :: ChatTypeI c => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIFile 'MDSnd) -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> CM (ChatItem c 'MDSnd)
 saveSndChatItem' user cd msg content ciFile quotedItem itemForwarded itemTimed live =
-  saveSndChatItems user cd [NewSndChatItemData {msg, content, ciFile, quotedItem, itemForwarded}] itemTimed live >>= \case
-    [ci] -> pure ci
+  saveSndChatItems user cd [Right NewSndChatItemData {msg, content, ciFile, quotedItem, itemForwarded}] itemTimed live >>= \case
+    [Right ci] -> pure ci
     _ -> throwChatError $ CEInternalError "saveSndChatItem': expected 1 item"
 
 data NewSndChatItemData c = NewSndChatItemData
@@ -7308,21 +7316,26 @@ data NewSndChatItemData c = NewSndChatItemData
     itemForwarded :: Maybe CIForwardedFrom
   }
 
-saveSndChatItems :: forall c. ChatTypeI c => User -> ChatDirection c 'MDSnd -> [NewSndChatItemData c] -> Maybe CITimed -> Bool -> CM [ChatItem c 'MDSnd]
+saveSndChatItems ::
+  forall c.
+  ChatTypeI c =>
+  User ->
+  ChatDirection c 'MDSnd ->
+  [Either ChatError (NewSndChatItemData c)] ->
+  Maybe CITimed ->
+  Bool ->
+  CM [Either ChatError (ChatItem c 'MDSnd)]
 saveSndChatItems user cd itemsData itemTimed live = do
   createdAt <- liftIO getCurrentTime
-  when (contactChatDeleted cd || any (\NewSndChatItemData {content} -> ciRequiresAttention content) itemsData) $
-    withStore' $
-      \db -> updateChatTs db user cd createdAt
-  (errs, items) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (createItem db createdAt) itemsData)
-  unless (null errs) $ toView $ CRChatErrors (Just user) errs
-  pure items
+  when (contactChatDeleted cd || any (\NewSndChatItemData {content} -> ciRequiresAttention content) (rights itemsData)) $
+    withStore' (\db -> updateChatTs db user cd createdAt)
+  lift $ withStoreBatch (\db -> map (bindRight $ createItem db createdAt) itemsData)
   where
-    createItem :: DB.Connection -> UTCTime -> NewSndChatItemData c -> IO (ChatItem c 'MDSnd)
+    createItem :: DB.Connection -> UTCTime -> NewSndChatItemData c -> IO (Either ChatError (ChatItem c 'MDSnd))
     createItem db createdAt NewSndChatItemData {msg = msg@SndMessage {sharedMsgId}, content, ciFile, quotedItem, itemForwarded} = do
       ciId <- createNewSndChatItem db user cd msg content quotedItem itemForwarded itemTimed live createdAt
       forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
-      pure $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live createdAt Nothing createdAt
+      pure $ Right $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) itemForwarded itemTimed live createdAt Nothing createdAt
 
 saveRcvChatItem :: (ChatTypeI c, ChatTypeQuotable c) => User -> ChatDirection c 'MDRcv -> RcvMessage -> UTCTime -> CIContent 'MDRcv -> CM (ChatItem c 'MDRcv)
 saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} brokerTs content =
