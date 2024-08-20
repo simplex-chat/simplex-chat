@@ -64,11 +64,11 @@ chatProfileTests = do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
   describe "pending connection users" $ do
-    it "change user id for pending connection" testUpdatePCCUserId
-    it "can't change user id for non pending connections" testCantUpdateNonPCCUserId
-    it "change from incognito profile connects as new user" testUpdatePCCFromIncognito
-    it "change user id for pending connection and later set incognito connects as incognito in changed profile" testUpdatePCCAndThenIncognito
-    it "change user id for user without matching servers creates new connection" testUpdatePCCUserIdDiffSrv
+    it "change user for pending connection" testChangePCCUser
+    it "can't change user for non pending connections" testCantUpdateNonPCCUser
+    it "change from incognito profile connects as new user" testChangePCCUserFromIncognito
+    it "change user for pending connection and later set incognito connects as incognito in changed profile" testChangePCCUserAndThenIncognito
+    it "change user for user without matching servers creates new connection" testChangePCCUserDiffSrv
   describe "preferences" $ do
     it "set contact preferences" testSetContactPrefs
     it "feature offers" testFeatureOffers
@@ -1563,8 +1563,8 @@ testSetAlias = testChat2 aliceProfile bobProfile $
     alice ##> "/contacts"
     alice <## "bob (Bob)"
 
-testUpdatePCCUserId :: HasCallStack => FilePath -> IO ()
-testUpdatePCCUserId = testChat2 aliceProfile bobProfile $
+testChangePCCUser :: HasCallStack => FilePath -> IO ()
+testChangePCCUser = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- Create a new invite
     alice ##> "/connect"
@@ -1593,8 +1593,8 @@ testUpdatePCCUserId = testChat2 aliceProfile bobProfile $
       (alice <## "bob (Bob): contact is connected")
       (bob <## "alisa2: contact is connected")
 
-testCantUpdateNonPCCUserId :: HasCallStack => FilePath -> IO ()
-testCantUpdateNonPCCUserId = testChat2 aliceProfile bobProfile $
+testCantUpdateNonPCCUser :: HasCallStack => FilePath -> IO ()
+testCantUpdateNonPCCUser = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- Create a new invite and accept
     alice ##> "/connect"
@@ -1613,8 +1613,8 @@ testCantUpdateNonPCCUserId = testChat2 aliceProfile bobProfile $
     alice ##> "/_set user :1 2"
     alice <## "chat db error: SEPendingConnectionNotFound {connId = 1}"
 
-testUpdatePCCFromIncognito :: HasCallStack => FilePath -> IO ()
-testUpdatePCCFromIncognito = testChat2 aliceProfile bobProfile $
+testChangePCCUserFromIncognito :: HasCallStack => FilePath -> IO ()
+testChangePCCUserFromIncognito = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- Create a new invite and set as incognito
     alice ##> "/connect"
@@ -1643,8 +1643,8 @@ testUpdatePCCFromIncognito = testChat2 aliceProfile bobProfile $
       (alice <## "bob (Bob): contact is connected")
       (bob <## "alice (Alice): contact is connected")
 
-testUpdatePCCAndThenIncognito :: HasCallStack => FilePath -> IO ()
-testUpdatePCCAndThenIncognito = testChat2 aliceProfile bobProfile $
+testChangePCCUserAndThenIncognito :: HasCallStack => FilePath -> IO ()
+testChangePCCUserAndThenIncognito = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- Create a new invite and set as incognito
     alice ##> "/connect"
@@ -1672,8 +1672,8 @@ testUpdatePCCAndThenIncognito = testChat2 aliceProfile bobProfile $
           alice <## ("use /i bob to print out this incognito profile again")
       ]
 
-testUpdatePCCUserIdDiffSrv :: HasCallStack => FilePath -> IO ()
-testUpdatePCCUserIdDiffSrv = testChat2 aliceProfile bobProfile $
+testChangePCCUserDiffSrv :: HasCallStack => FilePath -> IO ()
+testChangePCCUserDiffSrv = testChat2 aliceProfile bobProfile $
   \alice bob -> do
     -- Create a new invite
     alice ##> "/connect"

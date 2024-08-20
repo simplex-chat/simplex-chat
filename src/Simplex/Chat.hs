@@ -127,7 +127,7 @@ import System.FilePath (takeFileName, (</>))
 import qualified System.FilePath as FP
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush)
 import System.Random (randomRIO)
-import Text.Read (Lexeme (String), readMaybe)
+import Text.Read (readMaybe)
 import UnliftIO.Async
 import UnliftIO.Concurrent (forkFinally, forkIO, mkWeakThreadId, threadDelay)
 import UnliftIO.Directory
@@ -1666,8 +1666,8 @@ processChatCommand' vr = \case
       (True, Just conn) -> do
         -- Safe to update connection
         withAgent $ \a -> changeConnectionUser a (aUserId user) (aConnId' conn) (aUserId newUser)
-        _ <- withFastStore' $ \db -> updatePCCUserId db userId conn newUserId
-        pure $ CRConnectionUserIdUpdated user conn newUser
+        _ <- withFastStore' $ \db -> updatePCCUser db userId conn newUserId
+        pure $ CRConnectionUserChanged user conn newUser
       (False, Just conn) -> do
         -- Servers do not match, create new connection
         subMode <- chatReadVar subscriptionMode
