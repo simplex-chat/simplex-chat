@@ -85,13 +85,16 @@ struct UserPicker: View {
         .padding(8)
         .opacity(userPickerVisible ? 1.0 : 0.0)
         .onAppear {
-            do {
-                // This check prevents the call of listUsers after the app is suspended, and the database is closed.
-                if case .active = scenePhase {
-                    m.users = try listUsers()
+            // This check prevents the call of listUsers after the app is suspended, and the database is closed.
+            if case .active = scenePhase {
+                Task {
+                    do {
+                        let users = try await listUsersAsync()
+                        await MainActor.run { m.users = users }
+                    } catch {
+                        logger.error("Error loading users \(responseError(error))")
+                    }
                 }
-            } catch let error {
-                logger.error("Error loading users \(responseError(error))")
             }
         }
     }
