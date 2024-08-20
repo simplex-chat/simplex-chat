@@ -504,24 +504,34 @@ fun ChatView(staleChatId: State<String?>, onComposed: suspend (chatId: String) -
       }
       is ChatInfo.ContactConnection -> {
         val close = { chatModel.chatId.value = null }
-        ModalView(close, showClose = appPlatform.isAndroid, content = {
-          ContactConnectionInfoView(chatModel, chatRh, chatInfo.contactConnection.connReqInv, chatInfo.contactConnection, false, close)
-        })
-        LaunchedEffect(chatInfo.id) {
-          onComposed(chatInfo.id)
-          ModalManager.end.closeModals()
-          chatModel.chatItems.clear()
+        val handler = remember { AppBarHandler() }
+        CompositionLocalProvider(
+          LocalAppBarHandler provides handler
+        ) {
+          ModalView(close, showClose = appPlatform.isAndroid, content = {
+            ContactConnectionInfoView(chatModel, chatRh, chatInfo.contactConnection.connReqInv, chatInfo.contactConnection, false, close)
+          })
+          LaunchedEffect(chatInfo.id) {
+            onComposed(chatInfo.id)
+            ModalManager.end.closeModals()
+            chatModel.chatItems.clear()
+          }
         }
       }
       is ChatInfo.InvalidJSON -> {
         val close = { chatModel.chatId.value = null }
-        ModalView(close, showClose = appPlatform.isAndroid, endButtons = { ShareButton { clipboard.shareText(chatInfo.json) } }, content = {
-          InvalidJSONView(chatInfo.json)
-        })
-        LaunchedEffect(chatInfo.id) {
-          onComposed(chatInfo.id)
-          ModalManager.end.closeModals()
-          chatModel.chatItems.clear()
+        val handler = remember { AppBarHandler() }
+        CompositionLocalProvider(
+          LocalAppBarHandler provides handler
+        ) {
+          ModalView(close, showClose = appPlatform.isAndroid, endButtons = { ShareButton { clipboard.shareText(chatInfo.json) } }, content = {
+            InvalidJSONView(chatInfo.json)
+          })
+          LaunchedEffect(chatInfo.id) {
+            onComposed(chatInfo.id)
+            ModalManager.end.closeModals()
+            chatModel.chatItems.clear()
+          }
         }
       }
       else -> {}

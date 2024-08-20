@@ -1500,6 +1500,12 @@ public struct ChatData: Decodable, Identifiable, Hashable, ChatLike {
 
     public var id: ChatId { get { chatInfo.id } }
 
+    public init(chatInfo: ChatInfo, chatItems: [ChatItem], chatStats: ChatStats = ChatStats()) {
+        self.chatInfo = chatInfo
+        self.chatItems = chatItems
+        self.chatStats = chatStats
+    }
+    
     public static func invalidJSON(_ json: String) -> ChatData {
         ChatData(
             chatInfo: .invalidJSON(json: json),

@@ -143,7 +143,7 @@ final class ChatModel: ObservableObject {
     @Published var contentViewAccessAuthenticated: Bool = false
     @Published var laRequest: LocalAuthRequest?
     // list of chat "previews"
-    @Published var chats: [Chat] = []
+    @Published private(set) var chats: [Chat] = []
     @Published var deletedChats: Set<String> = []
     // current chat
     @Published var chatId: String?
@@ -357,25 +357,8 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func updateChats(with newChats: [ChatData]) {
-        for i in 0..<newChats.count {
-            let c = newChats[i]
-            if let j = getChatIndex(c.id)   {
-                let chat = chats[j]
-                chat.chatInfo = c.chatInfo
-                chat.chatItems = c.chatItems
-                chat.chatStats = c.chatStats
-                if i != j {
-                    if chatId != c.chatInfo.id  {
-                        popChat_(j, to: i)
-                    }  else if i == 0 {
-                        chatToTop = c.chatInfo.id
-                    }
-                }
-            } else {
-                addChat_(Chat(c), at: i)
-            }
-        }
+    func updateChats(_ newChats: [ChatData]) {
+        chats = newChats.map { Chat($0) }
         NtfManager.shared.setNtfBadgeCount(totalUnreadCountForAllUsers())
         popChatCollector.clear()
     }

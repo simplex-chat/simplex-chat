@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.usersettings.SetDeliveryReceiptsView
 import chat.simplex.common.model.*
@@ -50,6 +51,7 @@ data class SettingsViewState(
 
 @Composable
 fun AppScreen() {
+  AppBarHandler.appBarMaxHeightPx = with(LocalDensity.current) { AppBarHeight.roundToPx() }
   SimpleXTheme {
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
       Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {

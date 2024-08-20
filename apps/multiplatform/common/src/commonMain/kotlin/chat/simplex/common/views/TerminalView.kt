@@ -125,19 +125,13 @@ fun TerminalLayout(
   }
 }
 
-private var lazyListState = 0 to 0
-
 @Composable
 fun TerminalLog() {
-  val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
-  DisposableEffect(Unit) {
-    onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
-  }
   val reversedTerminalItems by remember {
     derivedStateOf { chatModel.terminalItems.value.asReversed() }
   }
   val clipboard = LocalClipboardManager.current
-  LazyColumnWithScrollBar(state = listState, reverseLayout = true) {
+  LazyColumnWithScrollBar(reverseLayout = true) {
     items(reversedTerminalItems) { item ->
       val rhId = item.remoteHostId
       val rhIdStr = if (rhId == null) "" else "$rhId "

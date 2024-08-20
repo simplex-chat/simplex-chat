@@ -107,101 +107,104 @@ fun DatabaseEncryptionLayout(
   migration: Boolean,
   onConfirmEncrypt: () -> Unit,
 ) {
-  val (scrollBarAlpha, scrollModifier, scrollJob) = platform.desktopScrollBarComponents()
-  val scrollState = rememberScrollState()
-  Column(
-    if (!migration) Modifier.fillMaxWidth().verticalScroll(scrollState).then(if (appPlatform.isDesktop) scrollModifier else Modifier) else Modifier.fillMaxWidth(),
-  ) {
-    if (!migration) {
-      AppBarTitle(stringResource(MR.strings.database_passphrase))
-    } else {
-      ChatStoppedView()
-      SectionSpacer()
-    }
-    SectionView(if (migration) generalGetString(MR.strings.database_passphrase).uppercase() else null) {
-      SavePassphraseSetting(
-        useKeychain.value,
-        initialRandomDBPassphrase.value,
-        storedKey.value,
-        enabled = (!initialRandomDBPassphrase.value && !progressIndicator.value) || migration
-      ) { checked ->
-        if (checked) {
-          setUseKeychain(true, useKeychain, migration)
-        } else if (storedKey.value && !migration) {
-          // Don't show in migration process since it will remove the key after successful encryption
-          removePassphraseAlert {
-            removePassphraseFromKeyChain(useKeychain, storedKey, false)
-          }
-        } else {
-          setUseKeychain(false, useKeychain, migration)
-        }
+  @Composable
+  fun Layout() {
+    Column {
+      if (!migration) {
+        AppBarTitle(stringResource(MR.strings.database_passphrase))
+      } else {
+        ChatStoppedView()
+        SectionSpacer()
       }
+      SectionView(if (migration) generalGetString(MR.strings.database_passphrase).uppercase() else null) {
+        SavePassphraseSetting(
+          useKeychain.value,
+          initialRandomDBPassphrase.value,
+          storedKey.value,
+          enabled = (!initialRandomDBPassphrase.value && !progressIndicator.value) || migration
+        ) { checked ->
+          if (checked) {
+            setUseKeychain(true, useKeychain, migration)
+          } else if (storedKey.value && !migration) {
+            // Don't show in migration process since it will remove the key after successful encryption
+            removePassphraseAlert {
+              removePassphraseFromKeyChain(useKeychain, storedKey, false)
+            }
+          } else {
+            setUseKeychain(false, useKeychain, migration)
+          }
+        }
 
-      if (!initialRandomDBPassphrase.value && chatDbEncrypted == true) {
+        if (!initialRandomDBPassphrase.value && chatDbEncrypted == true) {
+          PassphraseField(
+            currentKey,
+            generalGetString(MR.strings.current_passphrase),
+            modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
+            isValid = ::validKey,
+            keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
+          )
+        }
+
         PassphraseField(
-          currentKey,
-          generalGetString(MR.strings.current_passphrase),
+          newKey,
+          generalGetString(MR.strings.new_passphrase),
           modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
+          showStrength = true,
           isValid = ::validKey,
           keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
         )
-      }
-
-      PassphraseField(
-        newKey,
-        generalGetString(MR.strings.new_passphrase),
-        modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
-        showStrength = true,
-        isValid = ::validKey,
-        keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
-      )
-      val onClickUpdate = {
-        // Don't do things concurrently. Shouldn't be here concurrently, just in case
-        if (!progressIndicator.value) {
-          if (currentKey.value == "") {
-            if (useKeychain.value)
-              encryptDatabaseSavedAlert(onConfirmEncrypt)
-            else
-              encryptDatabaseAlert(onConfirmEncrypt)
-          } else {
-            if (useKeychain.value)
-              changeDatabaseKeySavedAlert(onConfirmEncrypt)
-            else
-              changeDatabaseKeyAlert(onConfirmEncrypt)
+        val onClickUpdate = {
+          // Don't do things concurrently. Shouldn't be here concurrently, just in case
+          if (!progressIndicator.value) {
+            if (currentKey.value == "") {
+              if (useKeychain.value)
+                encryptDatabaseSavedAlert(onConfirmEncrypt)
+              else
+                encryptDatabaseAlert(onConfirmEncrypt)
+            } else {
+              if (useKeychain.value)
+                changeDatabaseKeySavedAlert(onConfirmEncrypt)
+              else
+                changeDatabaseKeyAlert(onConfirmEncrypt)
+            }
           }
         }
+        val disabled = currentKey.value == newKey.value ||
+            newKey.value != confirmNewKey.value ||
+            newKey.value.isEmpty() ||
+            !validKey(currentKey.value) ||
+            !validKey(newKey.value) ||
+            progressIndicator.value
+
+        PassphraseField(
+          confirmNewKey,
+          generalGetString(MR.strings.confirm_new_passphrase),
+          modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
+          isValid = { confirmNewKey.value == "" || newKey.value == confirmNewKey.value },
+          keyboardActions = KeyboardActions(onDone = {
+            if (!disabled) onClickUpdate()
+            defaultKeyboardAction(ImeAction.Done)
+          }),
+        )
+
+        SectionItemViewSpaceBetween(onClickUpdate, disabled = disabled, minHeight = TextFieldDefaults.MinHeight) {
+          Text(generalGetString(if (migration) MR.strings.set_passphrase else MR.strings.update_database_passphrase), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+        }
       }
-      val disabled = currentKey.value == newKey.value ||
-          newKey.value != confirmNewKey.value ||
-          newKey.value.isEmpty() ||
-          !validKey(currentKey.value) ||
-          !validKey(newKey.value) ||
-          progressIndicator.value
 
-      PassphraseField(
-        confirmNewKey,
-        generalGetString(MR.strings.confirm_new_passphrase),
-        modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
-        isValid = { confirmNewKey.value == "" || newKey.value == confirmNewKey.value },
-        keyboardActions = KeyboardActions(onDone = {
-          if (!disabled) onClickUpdate()
-          defaultKeyboardAction(ImeAction.Done)
-        }),
-      )
-
-      SectionItemViewSpaceBetween(onClickUpdate, disabled = disabled, minHeight = TextFieldDefaults.MinHeight) {
-        Text(generalGetString(if (migration) MR.strings.set_passphrase else MR.strings.update_database_passphrase), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+      Column {
+        DatabaseEncryptionFooter(useKeychain, chatDbEncrypted, storedKey, initialRandomDBPassphrase, migration)
       }
+      SectionBottomSpacer()
     }
-
-    Column {
-      DatabaseEncryptionFooter(useKeychain, chatDbEncrypted, storedKey, initialRandomDBPassphrase, migration)
-    }
-    SectionBottomSpacer()
   }
-  if (appPlatform.isDesktop && !migration) {
-    Box(Modifier.fillMaxSize()) {
-      platform.desktopScrollBar(scrollState, Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, false)
+  if (migration) {
+    Column(Modifier.fillMaxWidth()) {
+      Layout()
+    }
+  } else {
+    ColumnWithScrollBar(Modifier.fillMaxWidth(), maxIntrinsicSize = true) {
+      Layout()
     }
   }
 }

@@ -112,9 +112,9 @@ func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? =
     return resp
 }
 
-func chatSendCmd(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, _ ctrl: chat_ctrl? = nil) async -> ChatResponse {
+func chatSendCmd(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil, _ ctrl: chat_ctrl? = nil, log: Bool = true) async -> ChatResponse {
     await withCheckedContinuation { cont in
-        cont.resume(returning: chatSendCmdSync(cmd, bgTask: bgTask, bgDelay: bgDelay, ctrl))
+        cont.resume(returning: chatSendCmdSync(cmd, bgTask: bgTask, bgDelay: bgDelay, ctrl, log: log))
     }
 }
 
@@ -1422,7 +1422,7 @@ func apiGetVersion() throws -> CoreVersionInfo {
 
 func getAgentSubsTotal() async throws -> (SMPServerSubs, Bool) {
     let userId = try currentUserId("getAgentSubsTotal")
-    let r = await chatSendCmd(.getAgentSubsTotal(userId: userId))
+    let r = await chatSendCmd(.getAgentSubsTotal(userId: userId), log: false)
     if case let .agentSubsTotal(_, subsTotal, hasSession) = r { return (subsTotal, hasSession) }
     logger.error("getAgentSubsTotal error: \(String(describing: r))")
     throw r
@@ -1591,8 +1591,7 @@ func getUserChatData() throws {
     m.userAddress = try apiGetUserAddress()
     m.chatItemTTL = try getChatItemTTL()
     let chats = try apiGetChats()
-    m.chats = chats.map { Chat.init($0) }
-    m.popChatCollector.clear()
+    m.updateChats(chats)
 }
 
 private func getUserChatDataAsync() async throws {
@@ -1604,14 +1603,12 @@ private func getUserChatDataAsync() async throws {
         await MainActor.run {
             m.userAddress = userAddress
             m.chatItemTTL = chatItemTTL
-            m.chats = chats.map { Chat.init($0) }
-            m.popChatCollector.clear()
+            m.updateChats(chats)
         }
     } else {
         await MainActor.run {
             m.userAddress = nil
-            m.chats = []
-            m.popChatCollector.clear()
+            m.updateChats([])
         }
     }
 }
