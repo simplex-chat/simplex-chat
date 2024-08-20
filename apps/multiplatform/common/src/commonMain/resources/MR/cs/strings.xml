@@ -1861,4 +1861,5 @@
     <string name="calls_prohibited_alert_title">Volání zakázáno!</string>
     <string name="cant_call_member_alert_title">Nelze zavolat člena skupiny</string>
     <string name="deleted_chats">Archivované kontakty</string>
+    <string name="v6_0_reachable_chat_toolbar"></string>
 </resources>
