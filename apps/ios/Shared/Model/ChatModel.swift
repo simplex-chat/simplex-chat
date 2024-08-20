@@ -358,28 +358,7 @@ final class ChatModel: ObservableObject {
     }
 
     func updateChats(with newChats: [ChatData]) {
-        var chatIndex: [ChatId:Int] = [:]
-        for i in 0..<newChats.count {
-            chatIndex[newChats[i].id] = i
-        }
-        for i in 0..<newChats.count {
-            let c = newChats[i]
-            if let j = chatIndex[c.id]   {
-                let chat = chats[j]
-                chat.chatInfo = c.chatInfo
-                chat.chatItems = c.chatItems
-                chat.chatStats = c.chatStats
-                if i != j {
-                    if chatId != c.chatInfo.id  {
-                        popChat_(j, to: i)
-                    }  else if i == 0 {
-                        chatToTop = c.chatInfo.id
-                    }
-                }
-            } else {
-                addChat_(Chat(c), at: i)
-            }
-        }
+        chats = newChats.map { Chat($0) }
         NtfManager.shared.setNtfBadgeCount(totalUnreadCountForAllUsers())
         popChatCollector.clear()
     }
