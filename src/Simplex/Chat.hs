@@ -1676,7 +1676,7 @@ processChatCommand' vr = \case
           deleteConnectionRecord db user connId
           createDirectConnection db newUser newConnId cReq ConnNew Nothing subMode initialChatVersion PQSupportOn
         withAgent $ \a -> deleteConnectionAsync a False (aConnId' conn)
-        pure $ CRConnectionUserIdUpdated user newConn newUser
+        pure $ CRInvitation user cReq newConn
       _ -> throwChatError CEInvalidConnReq
     where
       getServers :: (ProtocolTypeI p, UserProtocol p) => DB.Connection -> ChatConfig -> User -> SProtocolType p -> IO (NonEmpty (ProtocolServer p))
