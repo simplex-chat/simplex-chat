@@ -1667,27 +1667,28 @@ processChatCommand' vr = \case
         let ConnReqUriData {crSmpQueues = q :| _} = crData
             SMPQueueUri {queueAddress = SMPQueueAddress {smpServer}} = q
 
-        connId' <- case smpServer `elem` newUserServers of
-          True -> do
-            -- Safe to update connection
-            withAgent $ \a -> changeConnectionUser a (aUserId user) (aConnId' conn) (aUserId newUser)
-            _ <- withFastStore' $ \db -> do
-              _ <- updatePCCUser db userId conn newUserId
-              forM_ customUserProfileId $ \profileId ->
-                deletePCCIncognitoProfile db user profileId
-            pure connId
-          False -> do
-            -- Servers do not match, requires creation of a new connection
-            subMode <- chatReadVar subscriptionMode
-            (agConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing IKPQOn subMode
-            conn' <- withFastStore' $ \db -> do
-              deleteConnectionRecord db user connId
-              forM_ customUserProfileId $ \profileId ->
-                deletePCCIncognitoProfile db user profileId
-              createDirectConnection db newUser agConnId cReq ConnNew Nothing subMode initialChatVersion PQSupportOn
-            deleteAgentConnectionAsync user (aConnId' conn)
-            let PendingContactConnection {pccConnId} = conn'
-            pure pccConnId
+        connId' <-
+          if smpServer `elem` newUserServers
+            then do
+              -- Safe to update connection
+              withAgent $ \a -> changeConnectionUser a (aUserId user) (aConnId' conn) (aUserId newUser)
+              _ <- withFastStore' $ \db -> do
+                _ <- updatePCCUser db userId conn newUserId
+                forM_ customUserProfileId $ \profileId ->
+                  deletePCCIncognitoProfile db user profileId
+              pure connId
+            else do
+              -- Servers do not match, requires creation of a new connection
+              subMode <- chatReadVar subscriptionMode
+              (agConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing IKPQOn subMode
+              conn' <- withFastStore' $ \db -> do
+                deleteConnectionRecord db user connId
+                forM_ customUserProfileId $ \profileId ->
+                  deletePCCIncognitoProfile db user profileId
+                createDirectConnection db newUser agConnId cReq ConnNew Nothing subMode initialChatVersion PQSupportOn
+              deleteAgentConnectionAsync user (aConnId' conn)
+              let PendingContactConnection {pccConnId} = conn'
+              pure pccConnId
         conn' <- withFastStore $ \db -> getPendingContactConnection db newUserId connId'
         pure $ CRConnectionUserChanged user conn conn' newUser
       _ -> throwChatError CEInvalidConnReq
