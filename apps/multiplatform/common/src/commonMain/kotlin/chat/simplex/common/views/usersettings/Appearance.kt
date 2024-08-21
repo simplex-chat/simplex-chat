@@ -549,13 +549,13 @@ object AppearanceScope {
           },
         )
       }
-      SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced()
 
       CustomizeThemeColorsSection(currentTheme) { name ->
         editColor(name)
       }
 
-      SectionSpacer()
+      SectionDividerSpaced(maxBottomPadding = false)
 
       val currentOverrides = remember(currentTheme) { ThemeManager.defaultActiveTheme(appPrefs.themeOverrides.get()) }
       val canResetColors = currentTheme.base.hasChangedAnyColor(currentOverrides)
@@ -889,7 +889,7 @@ object AppearanceScope {
       val hexTrimmed = currentColor.toReadableHex().replaceFirst("#ff", "#")
       val savedColor by remember(wallpaperType) { mutableStateOf(initialColor) }
 
-      Row(Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).height(46.dp)) {
+      Row(Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).height(DEFAULT_MIN_SECTION_ITEM_HEIGHT)) {
         Box(Modifier.weight(1f).fillMaxHeight().background(savedColor).clickable {
           currentColor = savedColor
           onColorChange(currentColor)

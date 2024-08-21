@@ -1,6 +1,7 @@
 package chat.simplex.common.views.helpers
 
 import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionItemView
 import SectionSpacer
 import SectionView
@@ -203,11 +204,12 @@ fun ModalData.UserWallpaperEditor(
         }
       )
 
-      SectionSpacer()
+      SectionDividerSpaced()
 
       AppearanceScope.CustomizeThemeColorsSection(currentTheme, editColor = editColor)
 
-      SectionSpacer()
+      SectionDividerSpaced(maxBottomPadding = false)
+
       ImportExportThemeSection(null, remember { chatModel.currentUser }.value?.uiThemes) {
         withBGApi {
           themeModeOverride.value = it
@@ -440,11 +442,11 @@ fun ModalData.ChatWallpaperEditor(
         }
       )
 
-      SectionSpacer()
+      SectionDividerSpaced()
 
       AppearanceScope.CustomizeThemeColorsSection(currentTheme, editColor = editColor)
 
-      SectionSpacer()
+      SectionDividerSpaced(maxBottomPadding = false)
       ImportExportThemeSection(themeModeOverride.value, remember { chatModel.currentUser }.value?.uiThemes) {
         withBGApi {
           themeModeOverride.value = it

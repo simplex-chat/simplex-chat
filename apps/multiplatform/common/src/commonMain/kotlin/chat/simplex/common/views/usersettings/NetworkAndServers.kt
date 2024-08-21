@@ -264,30 +264,26 @@ fun SocksProxySettings(
         .fillMaxWidth()
     ) {
       AppBarTitle(generalGetString(MR.strings.network_socks_proxy_settings))
-      SectionView {
-        SectionItemView {
-          DefaultConfigurableTextField(
-            hostUnsaved,
-            stringResource(MR.strings.host_verb),
-            modifier = Modifier.fillMaxWidth(),
-            isValid = ::validHost,
-            keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
-            keyboardType = KeyboardType.Text,
-          )
-        }
-        SectionItemView {
-          DefaultConfigurableTextField(
-            portUnsaved,
-            stringResource(MR.strings.port_verb),
-            modifier = Modifier.fillMaxWidth(),
-            isValid = ::validPort,
-            keyboardActions = KeyboardActions(onDone = { defaultKeyboardAction(ImeAction.Done); save() }),
-            keyboardType = KeyboardType.Number,
-          )
-        }
+      SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+        DefaultConfigurableTextField(
+          hostUnsaved,
+          stringResource(MR.strings.host_verb),
+          modifier = Modifier.fillMaxWidth(),
+          isValid = ::validHost,
+          keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
+          keyboardType = KeyboardType.Text,
+        )
+        DefaultConfigurableTextField(
+          portUnsaved,
+          stringResource(MR.strings.port_verb),
+          modifier = Modifier.fillMaxWidth(),
+          isValid = ::validPort,
+          keyboardActions = KeyboardActions(onDone = { defaultKeyboardAction(ImeAction.Done); save() }),
+          keyboardType = KeyboardType.Number,
+        )
       }
 
-      Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 27.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
+      SectionDividerSpaced(maxBottomPadding = false)
 
       SectionView {
         SectionItemView({

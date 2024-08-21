@@ -599,7 +599,7 @@ fun ChatInfoLayout(
         }
       }
     }
-    SectionDividerSpaced()
+    SectionDividerSpaced(maxBottomPadding = false)
 
     val conn = contact.activeConn
     if (conn != null) {
@@ -616,7 +616,7 @@ fun ChatInfoLayout(
         ShareAddressButton { clipboard.shareText(simplexChatLink(contact.contactLink)) }
         SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))
       }
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxTopPadding = true)
     }
 
     if (contact.ready && contact.active) {
@@ -650,7 +650,7 @@ fun ChatInfoLayout(
           }
         }
       }
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxBottomPadding = false)
     }
 
     SectionView {
@@ -970,7 +970,7 @@ fun InfoViewActionButton(
           Icon(
             icon,
             contentDescription = null,
-            Modifier.size(24.dp * fontSizeSqrtMultiplier),
+            Modifier.size(22.dp * fontSizeSqrtMultiplier),
             tint = if (disabledLook) MaterialTheme.colors.secondary else MaterialTheme.colors.onPrimary
           )
         }

@@ -133,13 +133,7 @@ private fun GroupWelcomeLayout(
       val clipboard = LocalClipboardManager.current
       CopyTextButton { clipboard.setText(AnnotatedString(wt.value)) }
 
-      Divider(
-        Modifier.padding(
-          start = DEFAULT_PADDING_HALF,
-          top = 8.dp,
-          end = DEFAULT_PADDING_HALF,
-          bottom = 8.dp)
-      )
+      SectionDividerSpaced(maxBottomPadding = false)
 
       SaveButton(
         save = save,
