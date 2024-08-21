@@ -2039,6 +2039,7 @@ viewChatError isCmd logLevel testView = \case
     CEAgentCommandError e -> ["agent command error: " <> plain e]
     CEInvalidFileDescription e -> ["invalid file description: " <> plain e]
     CEConnectionIncognitoChangeProhibited -> ["incognito mode change prohibited"]
+    CEConnectionUserChangeProhibited -> ["incognito mode change prohibited for user"]
     CEPeerChatVRangeIncompatible -> ["peer chat protocol version range incompatible"]
     CEInternalError e -> ["internal chat error: " <> plain e]
     CEException e -> ["exception: " <> plain e]

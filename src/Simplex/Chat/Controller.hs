@@ -1193,6 +1193,7 @@ data ChatErrorType
   | CEAgentCommandError {message :: String}
   | CEInvalidFileDescription {message :: String}
   | CEConnectionIncognitoChangeProhibited
+  | CEConnectionUserChangeProhibited
   | CEPeerChatVRangeIncompatible
   | CEInternalError {message :: String}
   | CEException {message :: String}
