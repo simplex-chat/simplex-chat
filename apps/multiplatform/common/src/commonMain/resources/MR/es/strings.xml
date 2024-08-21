@@ -1526,9 +1526,9 @@
     <string name="recent_history_is_not_sent_to_new_members">El historial no se envía a miembros nuevos.</string>
     <string name="retry_verb">Reintentar</string>
     <string name="camera_not_available">Cámara no disponible</string>
-    <string name="enable_sending_recent_history">Enviar hasta 100 últimos mensajes a los miembros nuevos.</string>
+    <string name="enable_sending_recent_history">Se envían hasta 100 mensajes más recientes a los miembros nuevos.</string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Añadir contacto</b>: crea un enlace de invitación nuevo o usa un enlace recibido.]]></string>
-    <string name="disable_sending_recent_history">No enviar historial a miembros nuevos.</string>
+    <string name="disable_sending_recent_history">No se envía el historial a los miembros nuevos.</string>
     <string name="or_show_this_qr_code">O muestra este código QR</string>
     <string name="recent_history_is_sent_to_new_members">Hasta 100 últimos mensajes son enviados a los miembros nuevos.</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">El código QR escaneado no es un enlace SimpleX.</string>
@@ -1736,9 +1736,9 @@
     <string name="network_type_ethernet">Ethernet por cable</string>
     <string name="feature_roles_admins">administradores</string>
     <string name="feature_enabled_for">Activado para</string>
-    <string name="prohibit_sending_simplex_links">No permitir el envío de enlaces SimpleX</string>
+    <string name="prohibit_sending_simplex_links">No se permite enviar enlaces SimpleX</string>
     <string name="feature_roles_all_members">todos los miembros</string>
-    <string name="allow_to_send_simplex_links">Permitir enviar enlaces SimpleX.</string>
+    <string name="allow_to_send_simplex_links">Se permite enviar enlaces SimpleX.</string>
     <string name="saved_description">guardado</string>
     <string name="saved_from_description">guardado desde %s</string>
     <string name="saved_chat_item_info_tab">Guardado</string>
