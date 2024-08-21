@@ -358,16 +358,10 @@ private struct ActiveProfilePicker: View {
                 }
             }
         }
-        .onChange(of: switchingProfile) { switchingProfile in
-            // Comparing timestamps prevents a race condition in async code that generates a non stopping loader view.
-            let currentTimeInMs = Date().timeIntervalSince1970 * 1000
-            lastSwitchingProfileByTimeoutCall = currentTimeInMs
-
-            if switchingProfile {
+        .onChange(of: switchingProfile) { sp in
+            if sp {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                    if lastSwitchingProfileByTimeoutCall == currentTimeInMs {
-                        switchingProfileByTimeout = switchingProfile
-                    }
+                    switchingProfileByTimeout = switchingProfile
                 }
             } else {
                 switchingProfileByTimeout = false
