@@ -671,7 +671,14 @@ private struct CallButton: View {
 
         InfoViewButton(image: image, title: title, disabledLook: !canCall, width: width) {
             if canCall {
-                CallController.shared.startCall(contact, mediaType)
+                if CallController.useCallKit() {
+                    CallController.shared.startCall(contact, mediaType)
+                } else {
+                    // When CallKit is not used, colorscheme will be changed and it will be visible if not hiding sheets first
+                    dismissAllSheets(animated: true) {
+                        CallController.shared.startCall(contact, mediaType)
+                    }
+                }
             } else if contact.nextSendGrpInv {
                 showAlert(SomeAlert(
                     alert: mkAlert(

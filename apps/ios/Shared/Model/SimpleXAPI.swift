@@ -1218,8 +1218,8 @@ func apiEndCall(_ contact: Contact) async throws {
     try await sendCommandOkResp(.apiEndCall(contact: contact))
 }
 
-func apiGetCallInvitations() async throws -> [RcvCallInvitation] {
-    let r = await chatSendCmd(.apiGetCallInvitations)
+func apiGetCallInvitations() throws -> [RcvCallInvitation] {
+    let r = chatSendCmdSync(.apiGetCallInvitations)
     if case let .callInvitations(invs) = r { return invs }
     throw r
 }
@@ -1517,7 +1517,7 @@ func startChat(refreshInvitations: Bool = true) throws {
         try getUserChatData()
         NtfManager.shared.setNtfBadgeCount(m.totalUnreadCountForAllUsers())
         if (refreshInvitations) {
-            Task { try await refreshCallInvitations() }
+            try refreshCallInvitations()
         }
         (m.savedToken, m.tokenStatus, m.notificationMode, m.notificationServer) = apiGetNtfToken()
         _ = try apiStartChat()
@@ -2161,25 +2161,22 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     }
 }
 
-func refreshCallInvitations() async throws {
+func refreshCallInvitations() throws {
     let m = ChatModel.shared
-    let callInvitations = try await justRefreshCallInvitations()
+    let callInvitations = try justRefreshCallInvitations()
     if let (chatId, ntfAction) = m.ntfCallInvitationAction,
        let invitation = m.callInvitations.removeValue(forKey: chatId) {
-        await MainActor.run { m.ntfCallInvitationAction = nil }
+        m.ntfCallInvitationAction = nil
         CallController.shared.callAction(invitation: invitation, action: ntfAction)
     } else if let invitation = callInvitations.last(where: { $0.user.showNotifications }) {
         activateCall(invitation)
     }
 }
 
-func justRefreshCallInvitations() async throws -> [RcvCallInvitation] {
+func justRefreshCallInvitations() throws -> [RcvCallInvitation] {
     let m = ChatModel.shared
-    let callInvitations = try await apiGetCallInvitations()
-    await MainActor.run {
-        m.callInvitations = callInvitations
-            .reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
-    }
+    let callInvitations = try apiGetCallInvitations()
+    m.callInvitations = callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
     return callInvitations
 }
 

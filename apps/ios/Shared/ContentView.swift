@@ -36,7 +36,7 @@ struct ContentView: View {
     @State private var waitingForOrPassedAuth = true
     @State private var chatListActionSheet: ChatListActionSheet? = nil
 
-    private let callTopPadding: CGFloat = 50
+    private let callTopPadding: CGFloat = 40
 
     private enum ChatListActionSheet: Identifiable {
         case planAndConnectSheet(sheet: PlanAndConnectActionSheet)
@@ -151,12 +151,12 @@ struct ContentView: View {
             }
         }
         .onAppear {
-            reactOnDarkThemeChanges()
+            reactOnDarkThemeChanges(systemInDarkThemeCurrently)
         }
         .onChange(of: colorScheme) { scheme in
             // It's needed to update UI colors when iOS wants to make screenshot after going to background,
             // so when a user changes his global theme from dark to light or back, the app will adapt to it
-            reactOnDarkThemeChanges()
+            reactOnDarkThemeChanges(scheme == .dark)
         }
         .onChange(of: theme.name) { _ in
             ThemeManager.adjustWindowStyle()
@@ -207,7 +207,7 @@ struct ContentView: View {
             CallDuration(call: call)
         }
         .padding(.horizontal)
-        .frame(height: callTopPadding - 10)
+        .frame(height: callTopPadding)
         .background(Color(uiColor: UIColor(red: 47/255, green: 208/255, blue: 88/255, alpha: 1)))
         .onTapGesture {
             chatModel.activeCallViewIsCollapsed = false
