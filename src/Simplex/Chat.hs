@@ -813,7 +813,7 @@ processChatCommand' vr = \case
                   let changed = mc /= oldMC
                   if changed || fromMaybe False itemLive
                     then do
-                      (SndMessage {msgId}, _) <- sendGroupMessage user gInfo ms (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
+                      SndMessage {msgId} <- sendGroupMessage user gInfo ms (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
                       ci' <- withFastStore' $ \db -> do
                         currentTs <- liftIO getCurrentTime
                         when changed $
@@ -959,7 +959,7 @@ processChatCommand' vr = \case
             let GroupMember {memberId = itemMemberId} = chatItemMember g ci
             rs <- withFastStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
             checkReactionAllowed rs
-            (SndMessage {msgId}, _) <- sendGroupMessage user g ms (XMsgReact itemSharedMId (Just itemMemberId) reaction add)
+            SndMessage {msgId} <- sendGroupMessage user g ms (XMsgReact itemSharedMId (Just itemMemberId) reaction add)
             createdAt <- liftIO getCurrentTime
             reactions <- withFastStore' $ \db -> do
               setGroupReaction db g membership itemMemberId itemSharedMId True reaction add msgId createdAt
@@ -2022,7 +2022,7 @@ processChatCommand' vr = \case
                   (Just ct, Just cReq) -> sendGrpInvitation user ct gInfo (m :: GroupMember) {memberRole = memRole} cReq
                   _ -> throwChatError $ CEGroupCantResendInvitation gInfo cName
               _ -> do
-                (msg, _) <- sendGroupMessage user gInfo members $ XGrpMemRole mId memRole
+                msg <- sendGroupMessage user gInfo members $ XGrpMemRole mId memRole
                 ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent gEvent)
                 toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci]
           pure CRMemberRoleUser {user, groupInfo = gInfo, member = m {memberRole = memRole}, fromRole = mRole, toRole = memRole}
@@ -2063,7 +2063,7 @@ processChatCommand' vr = \case
               deleteMemberConnection user m
               withFastStore' $ \db -> deleteGroupMember db user m
             _ -> do
-              (msg, _) <- sendGroupMessage user gInfo members $ XGrpMemDel mId
+              msg <- sendGroupMessage user gInfo members $ XGrpMemDel mId
               ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId (fromLocalProfile memberProfile))
               toView $ CRNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci]
               deleteMemberConnection' user m True
@@ -2653,7 +2653,7 @@ processChatCommand' vr = \case
       assertUserGroupRole g GROwner
       when (n /= n') $ checkValidName n'
       g' <- withStore $ \db -> updateGroupProfile db user g p'
-      (msg, _) <- sendGroupMessage user g' ms (XGrpInfo p')
+      msg <- sendGroupMessage user g' ms (XGrpInfo p')
       let cd = CDGroupSnd g'
       unless (sameGroupProfileInfo p p') $ do
         ci <- saveSndChatItem user cd msg (CISndGroupEvent $ SGEGroupUpdated p')
@@ -2967,18 +2967,19 @@ processChatCommand' vr = \case
           timed_ <- sndGroupCITimed live gInfo itemTTL
           -- all quotedItems_ are Nothing in case of multi send - see assertMultiSendable
           (msgContainers, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
-          (msgs_, r) <- sendGroupMessages user gInfo ms $ L.map XMsgNew msgContainers
+          (msgs_, gsr) <- sendGroupMessages user gInfo ms $ L.map XMsgNew msgContainers
           let itemsData = prepareSndItemsData (L.toList msgs_) cmrs ciFiles_ quotedItems_
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo) itemsData timed_ live
           -- TODO per item snd result - zip with GroupSndResult from sendGroupMessages
           withFastStore' $ \db -> do
-            forM_ cis_ $ \case
-              Right ci -> do
-                let GroupSndResult {sentTo, pending, forwarded} = mkGroupSndResult r
-                createMemberSndStatuses db ci sentTo GSSNew
-                createMemberSndStatuses db ci forwarded GSSForwarded
-                createMemberSndStatuses db ci pending GSSInactive
-              Left _ -> pure ()
+            pure ()
+          -- forM_ cis_ $ \case
+          --   Right ci -> do
+          --     let GroupSndResult {sentTo, pending, forwarded} = mkGroupSndResult r
+          --     createMemberSndStatuses db ci sentTo GSSNew
+          --     createMemberSndStatuses db ci forwarded GSSForwarded
+          --     createMemberSndStatuses db ci pending GSSInactive
+          --   Left _ -> pure ()
           let (errs, cis) = partitionEithers cis_
           unless (null errs) $ toView $ CRChatErrors (Just user) errs
           forM_ (timed_ >>= timedDeleteAt') $ \deleteAt ->
@@ -7016,8 +7017,8 @@ batchSendConnMessagesB _user conn msgFlags msgs_ = do
   where
     flattenMsgs :: Either ChatError MsgBatch -> Either ChatError ([Int64], PQEncryption) -> [Either ChatError SndMessage]
     flattenMsgs (Right (MsgBatch _ sndMsgs)) (Right _) = map Right sndMsgs
+    flattenMsgs (Right (MsgBatch _ sndMsgs)) (Left ce) = replicate (length sndMsgs) (Left ce)
     flattenMsgs (Left ce) _ = [Left ce] -- restore original ChatError
-    flattenMsgs _ (Left ce) = [Left ce]
     findLastPQEnc :: NonEmpty (Either ChatError ([Int64], PQEncryption)) -> Maybe PQEncryption
     findLastPQEnc = foldr (\x acc -> case x of Right (_, pqEnc) -> Just pqEnc; Left _ -> acc) Nothing
 
@@ -7106,19 +7107,11 @@ deliverMessagesB msgReqs = do
       where
         updatePQ = updateConnPQSndEnabled db connId pqSndEnabled'
 
-sendGroupMessage :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM (SndMessage, GroupSndResultData)
+sendGroupMessage :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM SndMessage
 sendGroupMessage user gInfo members chatMsgEvent = do
   sendGroupMessages user gInfo members (chatMsgEvent :| []) >>= \case
-    ((Right msg) :| [], groupSndResult) -> pure (msg, groupSndResult)
+    ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage: expected 1 message"
-
-type GroupSndResultData = (([Either ChatError ([Int64], PQEncryption)], [(GroupMember, Connection)]), ([Either ChatError ()], [GroupMember]), [GroupMember])
-
-data GroupSndResult = GroupSndResult
-  { sentTo :: [GroupMember],
-    pending :: [GroupMember],
-    forwarded :: [GroupMember]
-  }
 
 sendGroupMessage' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM SndMessage
 sendGroupMessage' user gInfo members chatMsgEvent =
@@ -7126,7 +7119,7 @@ sendGroupMessage' user gInfo members chatMsgEvent =
     ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage': expected 1 message"
 
-sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResultData)
+sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
 sendGroupMessages user gInfo members events = do
   when shouldSendProfileUpdate $
     sendProfileUpdate `catchChatError` (toView . CRChatError (Just user))
@@ -7148,99 +7141,33 @@ sendGroupMessages user gInfo members events = do
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
 
-sendGroupMessages_ :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResultData)
-sendGroupMessages_ user gInfo@GroupInfo {groupId} members events = do
-  let idsEvts = L.map (GroupId groupId,) events
-  sndMsgs_ <- lift $ createSndMessages idsEvts
-  let (errs, msgs) = partitionEithers $ L.toList sndMsgs_
-  unless (null errs) $ toView $ CRChatErrors (Just user) errs
-  case L.nonEmpty msgs of
-    Nothing -> pure (sndMsgs_, (([], []), ([], []), []))
-    Just msgs' -> do
-      recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
-      let msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
-          (toSendSeparate, toSendBatched, pending, forwarded, _, dups) =
-            foldr addMember ([], [], [], [], S.empty, 0 :: Int) recipientMembers
-      when (dups /= 0) $ logError $ "sendGroupMessage: " <> tshow dups <> " duplicate members"
-      -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
-      let msgReqs = prepareMsgReqs msgFlags msgs' toSendSeparate toSendBatched
-      delivered <- maybe (pure []) (fmap L.toList . deliverMessages) $ L.nonEmpty msgReqs
-      let errors = lefts delivered
-      unless (null errors) $ toView $ CRChatErrors (Just user) errors
-      stored <- lift . withStoreBatch' $ \db -> map (\m -> createPendingMsgs db m msgs') pending
-      pure (sndMsgs_, ((delivered, toSendSeparate <> toSendBatched), (stored, pending), forwarded))
-  where
-    shuffleMembers :: [GroupMember] -> IO [GroupMember]
-    shuffleMembers ms = do
-      let (adminMs, otherMs) = partition isAdmin ms
-      liftM2 (<>) (shuffle adminMs) (shuffle otherMs)
-      where
-        isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
-    addMember m acc@(toSendSeparate, toSendBatched, pending, forwarded, !mIds, !dups) =
-      case memberSendAction gInfo events members m of
-        Just a
-          | mId `S.member` mIds -> (toSendSeparate, toSendBatched, pending, forwarded, mIds, dups + 1)
-          | otherwise -> case a of
-              MSASend conn -> ((m, conn) : toSendSeparate, toSendBatched, pending, forwarded, mIds', dups)
-              MSASendBatched conn -> (toSendSeparate, (m, conn) : toSendBatched, pending, forwarded, mIds', dups)
-              MSAPending -> (toSendSeparate, toSendBatched, m : pending, forwarded, mIds', dups)
-              MSAForwarded -> (toSendSeparate, toSendBatched, pending, m : forwarded, mIds', dups)
-        Nothing -> acc
-      where
-        mId = groupMemberId' m
-        mIds' = S.insert mId mIds
-    prepareMsgReqs :: MsgFlags -> NonEmpty SndMessage -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> [ChatMsgReq]
-    prepareMsgReqs msgFlags msgs toSendSeparate toSendBatched = do
-      let msgReqsSeparate = foldr (\(_, conn) reqs -> foldr (\msg -> (sndMessageReq conn msg :)) reqs msgs) [] toSendSeparate
-          batched = batchSndMessagesJSON (L.map Right msgs)
-          -- _errs shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
-          (_errs, msgBatches) = partitionEithers batched
-      case L.nonEmpty msgBatches of
-        Just msgBatches' -> do
-          let msgReqsBatched = foldr (\(_, conn) reqs -> foldr (\batch -> (msgBatchReq conn msgFlags batch :)) reqs msgBatches') [] toSendBatched
-          msgReqsSeparate <> msgReqsBatched
-        Nothing -> msgReqsSeparate
-      where
-        sndMessageReq :: Connection -> SndMessage -> ChatMsgReq
-        sndMessageReq conn SndMessage {msgId, msgBody} = (conn, msgFlags, msgBody, [msgId])
-    createPendingMsgs :: DB.Connection -> GroupMember -> NonEmpty SndMessage -> IO ()
-    createPendingMsgs db m = mapM_ (\SndMessage {msgId} -> createPendingGroupMessage db (groupMemberId' m) msgId Nothing)
+data GroupSndResult = GroupSndResult
+  { sentTo :: [(GroupMemberId, Either ChatError [MessageId], Either ChatError ([Int64], PQEncryption))],
+    pending :: [(GroupMemberId, Either ChatError MessageId, Either ChatError ())],
+    forwarded :: [GroupMember]
+  }
 
-dummyGSRData :: GroupSndResultData
-dummyGSRData = (([], []), ([], []), [])
-
-mkGroupSndResult :: GroupSndResultData -> GroupSndResult
-mkGroupSndResult ((delivered, sentTo), (stored, pending), forwarded) =
-  GroupSndResult
-    { sentTo = filterSent' delivered sentTo fst,
-      pending = filterSent' stored pending id,
-      forwarded
-    }
-  where
-    -- TODO in theory this could deduplicate members and keep results only when ... some sent? or all sent?
-    -- This is not important, as it is not used in batch calls
-    filterSent' :: [Either ChatError a] -> [mem] -> (mem -> GroupMember) -> [GroupMember]
-    filterSent' rs ms mem = [mem m | (Right _, m) <- zip rs ms]
-
-sendGroupMessages_' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError (SndMessage, GroupSndResultData)))
-sendGroupMessages_' _user gInfo@GroupInfo {groupId} members events = do
+sendGroupMessages_ :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
+sendGroupMessages_ _user gInfo@GroupInfo {groupId} members events = do
   let idsEvts = L.map (GroupId groupId,) events
   sndMsgs_ <- lift $ createSndMessages idsEvts
   recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
   let msgFlags = MsgFlags {notification = any (hasNotification . toCMEventTag) events}
-      (toSendSeparate, toSendBatched, pending, forwarded, _, dups) =
+      (toSendSeparate, toSendBatched, toPending, forwarded, _, dups) =
         foldr addMember ([], [], [], [], S.empty, 0 :: Int) recipientMembers
   when (dups /= 0) $ logError $ "sendGroupMessages_: " <> tshow dups <> " duplicate members"
   -- TODO PQ either somehow ensure that group members connections cannot have pqSupport/pqEncryption or pass Off's here
-  let msgReqs = prepareMsgReqs msgFlags sndMsgs_ toSendSeparate toSendBatched
-  -- losing correlation of results to sndMsgs_ here,
-  -- to correctly create per item GroupSndResult need to map results back to sndMsgs_
-  -- and return list of (Either ChatError (SndMessage, GroupSndResultData)) matching initial length of events
-  -- (or (Either ChatError (SndMessage, GroupSndResult)))
+  -- Deliver to toSend members
+  let (sendToMemIds, msgReqs) = prepareMsgReqs msgFlags sndMsgs_ toSendSeparate toSendBatched
   delivered <- maybe (pure []) (fmap L.toList . deliverMessagesB) $ L.nonEmpty msgReqs
-  stored <- lift . withStoreBatch' $ \db -> map (\m -> createPendingMsgs db m sndMsgs_) pending
-  -- pure (sndMsgs_, ((delivered, toSendSeparate <> toSendBatched), (stored, pending), forwarded))
-  pure (L.map (fmap (,dummyGSRData)) sndMsgs_)
+  when (length delivered /= length sendToMemIds) $ logError "sendGroupMessages_: sendToMemIds and delivered length mismatch"
+  -- Save as pending for toPending members
+  let (pendingMemIds, pendingReqs) = preparePending sndMsgs_ toPending
+  stored <- lift $ withStoreBatch (\db -> map (bindRight $ createPendingMsg db) pendingReqs)
+  -- Zip for easier access to results
+  let sentTo = zipWith3 (\mId mReq r -> (mId, fmap (\(_, _, _, msgIds) -> msgIds) mReq, r)) sendToMemIds msgReqs delivered
+      pending = zipWith3 (\mId pReq r -> (mId, fmap snd pReq, r)) pendingMemIds pendingReqs stored
+  pure (sndMsgs_, GroupSndResult {sentTo, pending, forwarded})
   where
     shuffleMembers :: [GroupMember] -> IO [GroupMember]
     shuffleMembers ms = do
@@ -7261,24 +7188,38 @@ sendGroupMessages_' _user gInfo@GroupInfo {groupId} members events = do
       where
         mId = groupMemberId' m
         mIds' = S.insert mId mIds
-    prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> [Either ChatError ChatMsgReq]
+    prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
     prepareMsgReqs msgFlags msgs_ toSendSeparate toSendBatched = do
       let batched_ = batchSndMessagesJSON msgs_
       case L.nonEmpty batched_ of
         Just batched' -> do
-          let msgReqsSeparate = foldr (\(_, conn) reqs -> foldr (\msg -> (fmap (sndMessageReq conn) msg :)) reqs msgs_) [] toSendSeparate
-              msgReqsBatched = foldr (\(_, conn) reqs -> foldr (\batch -> (fmap (msgBatchReq conn msgFlags) batch :)) reqs batched') [] toSendBatched
-          msgReqsSeparate <> msgReqsBatched
-        Nothing -> []
+          let (memsSep, mreqsSep) = foldr foldMsgs ([], []) toSendSeparate
+              (memsBtch, mreqsBtch) = foldr (foldBatches batched') ([], []) toSendBatched
+          (memsSep <> memsBtch, mreqsSep <> mreqsBtch)
+        Nothing -> ([], [])
       where
-        sndMessageReq :: Connection -> SndMessage -> ChatMsgReq
-        sndMessageReq conn SndMessage {msgId, msgBody} = (conn, msgFlags, msgBody, [msgId])
-    createPendingMsgs :: DB.Connection -> GroupMember -> NonEmpty (Either ChatError SndMessage) -> IO ()
-    createPendingMsgs db m = mapM_ createPendingMsg
+        foldMsgs :: (GroupMember, Connection) -> ([GroupMemberId], [Either ChatError ChatMsgReq]) -> ([GroupMemberId], [Either ChatError ChatMsgReq])
+        foldMsgs (GroupMember {groupMemberId}, conn) memIdsReqs =
+          foldr (\msg_ (memIds, reqs) -> (groupMemberId : memIds, fmap sndMessageReq msg_ : reqs)) memIdsReqs msgs_
+          where
+            sndMessageReq :: SndMessage -> ChatMsgReq
+            sndMessageReq SndMessage {msgId, msgBody} = (conn, msgFlags, msgBody, [msgId])
+        foldBatches :: NonEmpty (Either ChatError MsgBatch) -> (GroupMember, Connection) -> ([GroupMemberId], [Either ChatError ChatMsgReq]) -> ([GroupMemberId], [Either ChatError ChatMsgReq])
+        foldBatches batched' (GroupMember {groupMemberId}, conn) memIdsReqs =
+          foldr (\batch_ (memIds, reqs) -> (groupMemberId : memIds, fmap (msgBatchReq conn msgFlags) batch_ : reqs)) memIdsReqs batched'
+    preparePending :: NonEmpty (Either ChatError SndMessage) -> [GroupMember] -> ([GroupMemberId], [Either ChatError (GroupMemberId, MessageId)])
+    preparePending msgs_ =
+      foldr foldMsgs ([], [])
       where
-        createPendingMsg = \case
-          Right SndMessage {msgId} -> createPendingGroupMessage db (groupMemberId' m) msgId Nothing
-          Left _ -> pure ()
+        foldMsgs :: GroupMember -> ([GroupMemberId], [Either ChatError (GroupMemberId, MessageId)]) -> ([GroupMemberId], [Either ChatError (GroupMemberId, MessageId)])
+        foldMsgs GroupMember {groupMemberId} memIdsReqs =
+          foldr (\msg_ (memIds, reqs) -> (groupMemberId : memIds, fmap pendingReq msg_ : reqs)) memIdsReqs msgs_
+          where
+            pendingReq :: SndMessage -> (GroupMemberId, MessageId)
+            pendingReq SndMessage {msgId} = (groupMemberId, msgId)
+    createPendingMsg :: DB.Connection -> (GroupMemberId, MessageId) -> IO (Either ChatError ())
+    createPendingMsg db (groupMemberId, msgId) =
+      createPendingGroupMessage db groupMemberId msgId Nothing $> Right ()
 
 data MemberSendAction = MSASend Connection | MSASendBatched Connection | MSAPending | MSAForwarded
 
