@@ -323,9 +323,10 @@ private struct ActiveProfilePicker: View {
             .navigationTitle("Your chat profiles")
             .navigationBarTitleDisplayMode(.large)
             .onChange(of: incognitoEnabled) { incognito in
-                if !incognito {
+                if !switchingProfile {
                     return
                 }
+
                 Task {
                     do {
                         if let contactConn = contactConnection,
@@ -333,11 +334,13 @@ private struct ActiveProfilePicker: View {
                             await MainActor.run {
                                 contactConnection = conn
                                 chatModel.updateContactConnection(conn)
+                                switchingProfile = false
                                 dismiss()
                             }
                         }
                     } catch {
-                        incognitoEnabled = false
+                        switchingProfile = false
+                        incognitoEnabled = !incognito
                         logger.error("apiSetConnectionIncognito error: \(responseError(error))")
                         let err = getErrorAlert(error, "Error changing to incognito!")
 
@@ -442,45 +445,48 @@ private struct ActiveProfilePicker: View {
             .sorted { u, _ in u.activeUser }
     
         List {
+            Button {
+                incognitoEnabled = true
+                switchingProfile = true
+            } label : {
+                HStack {
+                    Image(systemName: "theatermasks")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 30, height: 30)
+                        .foregroundColor(theme.colors.secondary)
+                    Text("Incognito")
+                        .foregroundColor(theme.colors.onBackground)
+                    Spacer()
+                    if incognitoEnabled {
+                        Image(systemName: "checkmark")
+                            .resizable().scaledToFit().frame(width: 16)
+                            .foregroundColor(theme.colors.primary)
+                    }
+                }
+            }
+            ForEach(profiles) { item in
                 Button {
-                    incognitoEnabled = true
-                } label : {
+                    if selectedProfile != item || incognitoEnabled {
+                        switchingProfile = true
+                        incognitoEnabled = false
+                        selectedProfile = item
+                    }
+                } label: {
                     HStack {
-                        Image(systemName: "theatermasks")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 30, height: 30)
-                            .foregroundColor(theme.colors.secondary)
-                        Text("Incognito")
+                        ProfileImage(imageStr: item.image, size: 30)
+                            .padding(.trailing, 2)
+                        Text(item.chatViewName)
                             .foregroundColor(theme.colors.onBackground)
+                            .lineLimit(1)
                         Spacer()
-                        if incognitoEnabled {
+                        if selectedProfile == item, !incognitoEnabled {
                             Image(systemName: "checkmark")
                                 .resizable().scaledToFit().frame(width: 16)
                                 .foregroundColor(theme.colors.primary)
                         }
                     }
                 }
-                ForEach(profiles) { item in
-                    Button {
-                        if selectedProfile != item || incognitoEnabled {
-                            selectedProfile = item
-                        }
-                    } label: {
-                        HStack {
-                            ProfileImage(imageStr: item.image, size: 30)
-                                .padding(.trailing, 2)
-                            Text(item.chatViewName)
-                                .foregroundColor(theme.colors.onBackground)
-                                .lineLimit(1)
-                            Spacer()
-                            if selectedProfile == item, !incognitoEnabled {
-                                Image(systemName: "checkmark")
-                                    .resizable().scaledToFit().frame(width: 16)
-                                    .foregroundColor(theme.colors.primary)
-                            }
-                        }
-                    }
             }
         }
     }
