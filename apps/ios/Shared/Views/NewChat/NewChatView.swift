@@ -323,6 +323,9 @@ private struct ActiveProfilePicker: View {
             .navigationTitle("Your chat profiles")
             .navigationBarTitleDisplayMode(.large)
             .onChange(of: incognitoEnabled) { incognito in
+                if !incognito {
+                    return
+                }
                 Task {
                     do {
                         if let contactConn = contactConnection,
@@ -334,12 +337,14 @@ private struct ActiveProfilePicker: View {
                             }
                         }
                     } catch {
+                        incognitoEnabled = false
                         logger.error("apiSetConnectionIncognito error: \(responseError(error))")
+                        let err = getErrorAlert(error, "Error changing to incognito!")
+
                         alert = SomeAlert(
                             alert: Alert(
-                                title: Text("Error changing to incognito!"),
-                                // TODO: Look at error message
-                                message: Text("Error: \(responseError(error))")
+                                title: Text(err.title),
+                                message: Text(err.message ?? "Error: \(responseError(error))")
                             ),
                             id: "setConnectionIncognitoError"
                         )
@@ -437,7 +442,6 @@ private struct ActiveProfilePicker: View {
             .sorted { u, _ in u.activeUser }
     
         List {
-            Section {
                 Button {
                     incognitoEnabled = true
                 } label : {
@@ -461,7 +465,6 @@ private struct ActiveProfilePicker: View {
                     Button {
                         if selectedProfile != item || incognitoEnabled {
                             selectedProfile = item
-                            incognitoEnabled = false
                         }
                     } label: {
                         HStack {
@@ -478,13 +481,6 @@ private struct ActiveProfilePicker: View {
                             }
                         }
                     }
-                }
-                .environment(\.editMode, .constant(.active))
-            } footer: {
-                Text("Tap to choose profile.")
-                    .foregroundColor(theme.colors.secondary)
-                    .font(.body)
-                    .padding(.top, 8)
             }
         }
     }
