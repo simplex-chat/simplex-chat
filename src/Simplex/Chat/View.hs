@@ -176,6 +176,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRVersionInfo info _ _ -> viewVersionInfo logLevel info
   CRInvitation u cReq _ -> ttyUser u $ viewConnReqInvitation cReq
   CRConnectionIncognitoUpdated u c -> ttyUser u $ viewConnectionIncognitoUpdated c
+  CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged u c nu c'
   CRConnectionPlan u connectionPlan -> ttyUser u $ viewConnectionPlan connectionPlan
   CRSentConfirmation u _ -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u _ customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
@@ -1502,6 +1503,20 @@ viewConnectionIncognitoUpdated PendingContactConnection {pccConnId, customUserPr
   | isJust customUserProfileId = ["connection " <> sShow pccConnId <> " changed to incognito"]
   | otherwise = ["connection " <> sShow pccConnId <> " changed to non incognito"]
 
+viewConnectionUserChanged :: User -> PendingContactConnection -> User -> PendingContactConnection -> [StyledString]
+viewConnectionUserChanged User {localDisplayName = n} PendingContactConnection {pccConnId, connReqInv} User {localDisplayName = n'} PendingContactConnection {connReqInv = connReqInv'} =
+  case (connReqInv, connReqInv') of
+    (Just cReqInv, Just cReqInv')
+      | cReqInv /= cReqInv' -> [userChangedStr <> ", new link:"] <> newLink cReqInv'
+    _ -> [userChangedStr]
+  where
+    userChangedStr = "connection " <> sShow pccConnId <> " changed from user " <> plain n <> " to user " <> plain n'
+    newLink cReqInv =
+      [ "",
+        (plain . strEncode) (simplexChatInvitation cReqInv),
+        ""
+      ]
+
 viewConnectionPlan :: ConnectionPlan -> [StyledString]
 viewConnectionPlan = \case
   CPInvitationLink ilp -> case ilp of
@@ -2028,6 +2043,7 @@ viewChatError isCmd logLevel testView = \case
     CEAgentCommandError e -> ["agent command error: " <> plain e]
     CEInvalidFileDescription e -> ["invalid file description: " <> plain e]
     CEConnectionIncognitoChangeProhibited -> ["incognito mode change prohibited"]
+    CEConnectionUserChangeProhibited -> ["incognito mode change prohibited for user"]
     CEPeerChatVRangeIncompatible -> ["peer chat protocol version range incompatible"]
     CEInternalError e -> ["internal chat error: " <> plain e]
     CEException e -> ["exception: " <> plain e]
