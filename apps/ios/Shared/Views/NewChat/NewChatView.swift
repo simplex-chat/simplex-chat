@@ -321,110 +321,112 @@ private struct ActiveProfilePicker: View {
     var body: some View {
         viewBody()
             .navigationTitle("Your chat profiles")
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .modifier(ThemedBackground(grouped: true))
-    }
-    
-    @ViewBuilder private func viewBody() -> some View {
-        VStack {
-            if switchingProfileByTimeout {
-                ProgressView("Switching profile…")
-                    .foregroundColor(theme.colors.secondary)
-            } else {
-                profilePicker()
-            }
-        }
-        .onChange(of: incognitoEnabled) { incognito in
-            Task {
-                do {
-                    if let contactConn = contactConnection,
-                       let conn = try await apiSetConnectionIncognito(connId: contactConn.pccConnId, incognito: incognito) {
-                        await MainActor.run {
-                            contactConnection = conn
-                            chatModel.updateContactConnection(conn)
-                            dismiss()
+            .navigationBarTitleDisplayMode(.large)
+            .onChange(of: incognitoEnabled) { incognito in
+                Task {
+                    do {
+                        if let contactConn = contactConnection,
+                           let conn = try await apiSetConnectionIncognito(connId: contactConn.pccConnId, incognito: incognito) {
+                            await MainActor.run {
+                                contactConnection = conn
+                                chatModel.updateContactConnection(conn)
+                                dismiss()
+                            }
                         }
+                    } catch {
+                        logger.error("apiSetConnectionIncognito error: \(responseError(error))")
+                        alert = SomeAlert(
+                            alert: Alert(
+                                title: Text("Error changing to incognito!"),
+                                // TODO: Look at error message
+                                message: Text("Error: \(responseError(error))")
+                            ),
+                            id: "setConnectionIncognitoError"
+                        )
                     }
-                } catch {
-                    logger.error("apiSetConnectionIncognito error: \(responseError(error))")
-                    alert = SomeAlert(
-                        alert: Alert(
-                            title: Text("Error changing to incognito!"),
-                            // TODO: Look at error message
-                            message: Text("Error: \(responseError(error))")
-                        ),
-                        id: "setConnectionIncognitoError"
-                    )
                 }
             }
-        }
-        .onChange(of: switchingProfile) { sp in
-            if sp {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    switchingProfileByTimeout = switchingProfile
+            .onChange(of: switchingProfile) { sp in
+                if sp {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        switchingProfileByTimeout = switchingProfile
+                    }
+                } else {
+                    switchingProfileByTimeout = false
                 }
-            } else {
-                switchingProfileByTimeout = false
             }
-        }
-        .onChange(of: selectedProfile) { profile in
-            if (profile == chatModel.currentUser) {
-                return
-            }
-            Task {
-                do {
-                    switchingProfile = true
-                    if let contactConn = contactConnection,
-                       let conn = try await apiChangeConnectionUser(connId: contactConn.pccConnId, userId: profile.userId) {
-                        await MainActor.run {
-                            contactConnection = conn
-                            connReqInvitation = conn.connReqInv ?? ""
-                            chatModel.updateContactConnection(conn)
-                            Task {
-                                do {
-                                    try await changeActiveUserAsync_(profile.userId, viewPwd: nil)
-                                    await MainActor.run {
+            .onChange(of: selectedProfile) { profile in
+                if (profile == chatModel.currentUser) {
+                    return
+                }
+                Task {
+                    do {
+                        switchingProfile = true
+                        if let contactConn = contactConnection,
+                           let conn = try await apiChangeConnectionUser(connId: contactConn.pccConnId, userId: profile.userId) {
+                            await MainActor.run {
+                                contactConnection = conn
+                                connReqInvitation = conn.connReqInv ?? ""
+                                chatModel.updateContactConnection(conn)
+                                Task {
+                                    do {
+                                        try await changeActiveUserAsync_(profile.userId, viewPwd: nil)
+                                        await MainActor.run {
+                                            switchingProfile = false
+                                            dismiss()
+                                        }
+                                    } catch {
                                         switchingProfile = false
-                                        dismiss()
+                                        alert = SomeAlert(
+                                            alert: Alert(
+                                                title: Text("Error switching profile"),
+                                                message: Text("Your connection was moved to \(profile.chatViewName) but and unexpected error ocurred while redirecting you to the profile.")
+                                            ),
+                                            id: "switchingProfileError"
+                                        )
                                     }
-                                } catch {
-                                    switchingProfile = false
-                                    alert = SomeAlert(
-                                        alert: Alert(
-                                            title: Text("Error switching profile"),
-                                            message: Text("Your connection was moved to \(profile.chatViewName) but and unexpected error ocurred while redirecting you to the profile.")
-                                        ),
-                                        id: "switchingProfileError"
-                                    )
                                 }
                             }
                         }
+                    } catch {
+                        // TODO: discuss error handling
+                        switchingProfile = false
+                        if let currentUser = chatModel.currentUser {
+                            selectedProfile = currentUser
+                        }
+                        let err = getErrorAlert(error, "Error changing connection profile")
+                        alert = SomeAlert(
+                            alert: Alert(
+                                title: Text(err.title),
+                                message: Text(err.message ?? "Error: \(responseError(error))")
+                            ),
+                            id: "changeConnectionUserError"
+                        )
                     }
-                } catch {
-                    // TODO: discuss error handling
-                    switchingProfile = false
-                    if let currentUser = chatModel.currentUser {
-                        selectedProfile = currentUser
-                    }
-                    let err = getErrorAlert(error, "Error changing connection profile")
-                    alert = SomeAlert(
-                        alert: Alert(
-                            title: Text(err.title),
-                            message: Text(err.message ?? "Error: \(responseError(error))")
-                        ),
-                        id: "changeConnectionUserError"
-                    )
                 }
             }
-        }
-        .alert(item: $alert) { a in
-            a.alert
-        }
-        .onAppear {
-            choosingProfile = true
-        }
-        .onDisappear {
-            choosingProfile = false
+            .alert(item: $alert) { a in
+                a.alert
+            }
+            .onAppear {
+                choosingProfile = true
+            }
+            .onDisappear {
+                choosingProfile = false
+            }
+    }
+    
+    
+    @ViewBuilder private func viewBody() -> some View {
+        NavigationView {
+            if switchingProfileByTimeout {
+                    ProgressView("Switching profile…")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .modifier(ThemedBackground(grouped: true))
+            } else {
+                profilePicker()
+                    .modifier(ThemedBackground(grouped: true))
+            }
         }
     }
     
