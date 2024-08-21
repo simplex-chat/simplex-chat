@@ -235,7 +235,13 @@ private struct InviteView: View {
 
             qrCodeView()
             if let selectedProfile = chatModel.currentUser {
-                Section(header: Text("Profile").foregroundColor(theme.colors.secondary)) {
+                Section(
+                    header: Text("Profile").foregroundColor(theme.colors.secondary),
+                    footer: Text(
+                        incognitoDefault
+                        ? "A new random profile will be shared."
+                        : "Your profile will be shared.")
+                ) {
                     NavigationLink {
                         ActiveProfilePicker(
                             contactConnection: $contactConnection,
@@ -246,16 +252,16 @@ private struct InviteView: View {
                         )
                     } label: {
                         HStack {
-                            ProfileImage(imageStr: chatModel.currentUser?.image, size: 24)
-                            Text(chatModel.currentUser?.chatViewName ?? "")
-                            
                             if incognitoDefault {
-                                Spacer()
-                                Image(systemName: "theatermasks")
+                                Image(systemName: "theatermasks.fill")
                                     .resizable()
                                     .scaledToFit()
-                                    .frame(width: 22, height: 22)
-                                    .foregroundColor(theme.colors.secondary)
+                                    .frame(width: 24, height: 24)
+                                    .foregroundColor(Color.indigo )
+                                Text("Incognito")
+                            } else {
+                                ProfileImage(imageStr: chatModel.currentUser?.image, size: 24)
+                                Text(chatModel.currentUser?.chatViewName ?? "")
                             }
                         }
                     }
