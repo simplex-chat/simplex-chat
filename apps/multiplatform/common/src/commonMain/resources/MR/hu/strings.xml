@@ -1269,7 +1269,7 @@
     <string name="chat_lock">SimpleX zár</string>
     <string name="your_settings">Beállítások</string>
     <string name="your_chat_database">Csevegési adatbázis</string>
-    <string name="rcv_group_event_member_deleted">%1$s eltávolítva</string>
+    <string name="rcv_group_event_member_deleted">eltávolította őt: %1$s</string>
     <string name="smp_servers_test_failed">Sikertelen kiszolgáló teszt!</string>
     <string name="verify_connection">Kapcsolat ellenőrzése</string>
     <string name="whats_new_read_more">Tudjon meg többet</string>
