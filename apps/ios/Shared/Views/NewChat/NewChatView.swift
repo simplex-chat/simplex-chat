@@ -225,7 +225,6 @@ private struct InviteView: View {
     var connReqInvitation: String
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
     @State private var showSettings: Bool = false
-    @State private var selectedProfile: User?
     
     var body: some View {
         List {
@@ -235,24 +234,23 @@ private struct InviteView: View {
             .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
 
             qrCodeView()
-
-            Section(header: Text("Profile").foregroundColor(theme.colors.secondary)) {
-                NavigationLink {
-                    ActiveProfilePicker(
-                        selectedProfile: $selectedProfile,
-                        incognitoEnabled: $incognitoDefault,
-                        choosingProfile: $choosingProfile
-                    )
-                } label: {
-                    HStack {
-                        ProfileImage(imageStr: selectedProfile?.image, size: 24)
-                        Text(selectedProfile?.chatViewName ?? "")
+            if let selectedProfile = chatModel.currentUser {
+                Section(header: Text("Profile").foregroundColor(theme.colors.secondary)) {
+                    NavigationLink {
+                        ActiveProfilePicker(
+                            contactConnection: $contactConnection,
+                            incognitoEnabled: $incognitoDefault,
+                            choosingProfile: $choosingProfile,
+                            selectedProfile: selectedProfile
+                        )
+                    } label: {
+                        HStack {
+                            ProfileImage(imageStr: chatModel.currentUser?.image, size: 24)
+                            Text(chatModel.currentUser?.chatViewName ?? "")
+                        }
                     }
                 }
             }
-        }
-        .onAppear {
-            selectedProfile = chatModel.currentUser
         }
         .onChange(of: incognitoDefault) { incognito in
             Task {
@@ -310,20 +308,22 @@ private struct InviteView: View {
 }
 
 private struct ActiveProfilePicker: View {
-    @State private var showProfilePicker = false
-    @EnvironmentObject var theme: AppTheme
-    @Binding var selectedProfile: User?
+    @Environment(\.dismiss) var dismiss
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
+    @Binding var contactConnection: PendingContactConnection?
     @Binding var incognitoEnabled: Bool
     @Binding var choosingProfile: Bool
-    
+    @State private var alert: SomeAlert?
+    @State private var showProfilePicker = false
+    @State var selectedProfile: User
+
     var body: some View {
         profilePicker()
             .navigationTitle("Your chat profiles")
             .navigationBarTitleDisplayMode(.inline)
             .modifier(ThemedBackground(grouped: true))
     }
-    
     
     @ViewBuilder private func profilePicker() -> some View {
         let profiles = chatModel.users
@@ -356,6 +356,7 @@ private struct ActiveProfilePicker: View {
                     Button {
                         if selectedProfile != item {
                             selectedProfile = item
+                            incognitoEnabled = false
                         }
                     } label: {
                         HStack {
@@ -380,6 +381,45 @@ private struct ActiveProfilePicker: View {
                     .font(.body)
                     .padding(.top, 8)
             }
+        }
+        .onChange(of: selectedProfile) { profile in
+            Task {
+                do {
+                    if let contactConn = contactConnection,
+                       let conn = try await apiChangeConnectionUser(connId: contactConn.pccConnId, userId: profile.userId) {
+                        await MainActor.run {
+                            contactConnection = conn
+                            chatModel.updateContactConnection(conn)
+                            Task {
+                                do {
+                                    try await changeActiveUserAsync_(profile.userId, viewPwd: nil)
+                                    await MainActor.run { dismiss() }
+                                } catch {
+                                    alert = SomeAlert(
+                                        alert: Alert(
+                                            title: Text("Error switching profile!"),
+                                            message: Text("Your connection was moved to \(profile.chatViewName) but and unexpected error ocurred while redirecting you to the profile.")
+                                        ),
+                                        id: "switchingProfileError"
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } catch {
+                    alert = SomeAlert(
+                        alert: Alert(
+                            title: Text("Error changing connection profile!"),
+                            // TODO: Look at error message
+                            message: Text("Error: \(responseError(error))")
+                        ),
+                        id: "changeConnectionUserError"
+                    )
+                }
+            }
+        }
+        .alert(item: $alert) { a in
+             a.alert
         }
         .onAppear {
             choosingProfile = true
