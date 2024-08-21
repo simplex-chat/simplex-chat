@@ -708,4 +708,20 @@
     <string name="error_importing_database">Lỗi nhập cơ sở dữ liệu SimpleX Chat</string>
     <string name="error_exporting_chat_database">Lỗi xuất cơ sở dữ liệu SimpleX Chat</string>
     <string name="migrate_to_device_error_downloading_archive">Lỗi tải xuống kho lưu trữ</string>
+    <string name="error_initializing_web_view">Lỗi khởi tạo WebView. Cập nhật hệ điều hành của bạn lên phiên bản mới. Vui lòng liên hệ với nhà phát triển.
+\nLỗi: %s</string>
+    <string name="error_removing_member">Lỗi xóa thành viên</string>
+    <string name="error_with_info">Lỗi: %s</string>
+    <string name="unable_to_open_browser_title">Lỗi mở trình duyệt</string>
+    <string name="error_joining_group">Lỗi tham gia nhóm</string>
+    <string name="error_loading_details">Lỗi tải thông tin chi tiết</string>
+    <string name="error_receiving_file">Lỗi nhận tệp</string>
+    <string name="error_saving_group_profile">Lỗi lưu hồ sơ nhóm</string>
+    <string name="error_saving_file">Lỗi lưu tệp</string>
+    <string name="error_loading_smp_servers">Lỗi tải máy chủ SMP</string>
+    <string name="error_loading_xftp_servers">Lỗi tải máy chủ XFTP</string>
+    <string name="servers_info_reconnect_server_error">Lỗi kết nối lại máy chủ</string>
+    <string name="servers_info_reconnect_servers_error">Lỗi kết nối lại máy chủ</string>
+    <string name="servers_info_sessions_errors">Lỗi</string>
+    <string name="servers_info_reset_stats_alert_error_title">Lỗi khôi phục thống kê</string>
 </resources>
