@@ -2171,7 +2171,7 @@ func refreshCallInvitations() async throws {
     let m = ChatModel.shared
     let callInvitations = try await apiGetCallInvitations()
     await MainActor.run {
-        m.callInvitations = reduced(callInvitations)
+        m.callInvitations = callsByChat(callInvitations)
         if let (chatId, ntfAction) = m.ntfCallInvitationAction,
            let invitation = m.callInvitations.removeValue(forKey: chatId) {
             m.ntfCallInvitationAction = nil
@@ -2184,10 +2184,10 @@ func refreshCallInvitations() async throws {
 
 func justRefreshCallInvitations() throws {
     let callInvitations = try apiGetCallInvitationsSync()
-    ChatModel.shared.callInvitations = reduced(callInvitations)
+    ChatModel.shared.callInvitations = callsByChat(callInvitations)
 }
 
-private func reduced(_ callInvitations: [RcvCallInvitation]) -> [ChatId: RcvCallInvitation] {
+private func callsByChat(_ callInvitations: [RcvCallInvitation]) -> [ChatId: RcvCallInvitation] {
     callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) {
         result, inv in result[inv.contact.id] = inv
     }
