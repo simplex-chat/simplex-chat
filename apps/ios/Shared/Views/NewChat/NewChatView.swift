@@ -372,44 +372,47 @@ private struct ActiveProfilePicker: View {
                         switchingProfile = true
                         if let contactConn = contactConnection,
                            let conn = try await apiChangeConnectionUser(connId: contactConn.pccConnId, userId: profile.userId) {
+                            
                             await MainActor.run {
                                 contactConnection = conn
                                 connReqInvitation = conn.connReqInv ?? ""
                                 chatModel.updateContactConnection(conn)
-                                Task {
-                                    do {
-                                        try await changeActiveUserAsync_(profile.userId, viewPwd: nil)
-                                        await MainActor.run {
-                                            switchingProfile = false
-                                            dismiss()
-                                        }
-                                    } catch {
-                                        switchingProfile = false
-                                        alert = SomeAlert(
-                                            alert: Alert(
-                                                title: Text("Error switching profile"),
-                                                message: Text("Your connection was moved to \(profile.chatViewName) but and unexpected error ocurred while redirecting you to the profile.")
-                                            ),
-                                            id: "switchingProfileError"
-                                        )
-                                    }
+                            }
+                            do {
+                                try await changeActiveUserAsync_(profile.userId, viewPwd: nil)
+                                await MainActor.run {
+                                    switchingProfile = false
+                                    dismiss()
+                                }
+                            } catch {
+                                await MainActor.run {
+                                    switchingProfile = false
+                                    alert = SomeAlert(
+                                        alert: Alert(
+                                            title: Text("Error switching profile"),
+                                            message: Text("Your connection was moved to \(profile.chatViewName) but and unexpected error ocurred while redirecting you to the profile.")
+                                        ),
+                                        id: "switchingProfileError"
+                                    )
                                 }
                             }
                         }
                     } catch {
-                        // TODO: discuss error handling
-                        switchingProfile = false
-                        if let currentUser = chatModel.currentUser {
-                            selectedProfile = currentUser
+                        await MainActor.run {
+                            // TODO: discuss error handling
+                            switchingProfile = false
+                            if let currentUser = chatModel.currentUser {
+                                selectedProfile = currentUser
+                            }
+                            let err = getErrorAlert(error, "Error changing connection profile")
+                            alert = SomeAlert(
+                                alert: Alert(
+                                    title: Text(err.title),
+                                    message: Text(err.message ?? "Error: \(responseError(error))")
+                                ),
+                                id: "changeConnectionUserError"
+                            )
                         }
-                        let err = getErrorAlert(error, "Error changing connection profile")
-                        alert = SomeAlert(
-                            alert: Alert(
-                                title: Text(err.title),
-                                message: Text(err.message ?? "Error: \(responseError(error))")
-                            ),
-                            id: "changeConnectionUserError"
-                        )
                     }
                 }
             }
