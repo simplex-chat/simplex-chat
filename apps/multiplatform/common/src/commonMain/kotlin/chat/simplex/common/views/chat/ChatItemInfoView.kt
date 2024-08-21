@@ -224,7 +224,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     Row(
       Modifier
         .fillMaxWidth()
-        .sizeIn(minHeight = 46.dp)
+        .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
         .padding(PaddingValues(horizontal = DEFAULT_PADDING))
         .clickable { expanded.value = !expanded.value },
       horizontalArrangement = Arrangement.spacedBy(12.dp),

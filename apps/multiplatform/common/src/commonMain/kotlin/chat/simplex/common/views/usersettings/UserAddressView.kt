@@ -185,7 +185,7 @@ private fun UserAddressLayout(
           CreateAddressButton(createAddress)
           SectionTextFooter(stringResource(MR.strings.create_address_and_let_people_connect))
         }
-        SectionDividerSpaced(maxBottomPadding = false)
+        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
         SectionView {
           LearnMoreButton(learnMore)
         }

@@ -104,13 +104,13 @@ fun PrivacySettingsView(
       }
       SettingsPreferenceItem(painterResource(MR.images.ic_security), stringResource(MR.strings.protect_ip_address), chatModel.controller.appPrefs.privacyAskToApproveRelays)
     }
-    SectionCustomFooter {
+    SectionTextFooter(
       if (chatModel.controller.appPrefs.privacyAskToApproveRelays.state.value) {
-        Text(stringResource(MR.strings.app_will_ask_to_confirm_unknown_file_servers))
+        stringResource(MR.strings.app_will_ask_to_confirm_unknown_file_servers)
       } else {
-        Text(stringResource(MR.strings.without_tor_or_vpn_ip_address_will_be_visible_to_file_servers))
+        stringResource(MR.strings.without_tor_or_vpn_ip_address_will_be_visible_to_file_servers)
       }
-    }
+    )
 
     val currentUser = chatModel.currentUser.value
     if (currentUser != null) {

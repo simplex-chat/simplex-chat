@@ -66,7 +66,7 @@ fun SelectedItemsBottomToolbar(
         Icon(
           painterResource(MR.images.ic_delete),
           null,
-          Modifier.size(24.dp),
+          Modifier.size(22.dp),
           tint = if (!deleteEnabled.value || allButtonsDisabled.value) MaterialTheme.colors.secondary else MaterialTheme.colors.error
         )
       }
@@ -75,7 +75,7 @@ fun SelectedItemsBottomToolbar(
         Icon(
           painterResource(MR.images.ic_flag),
           null,
-          Modifier.size(24.dp),
+          Modifier.size(22.dp),
           tint = if (!moderateEnabled.value || allButtonsDisabled.value) MaterialTheme.colors.secondary else MaterialTheme.colors.error
         )
       }
@@ -84,7 +84,7 @@ fun SelectedItemsBottomToolbar(
         Icon(
           painterResource(MR.images.ic_share),
           null,
-          Modifier.size(24.dp),
+          Modifier.size(22.dp),
           tint = if (allButtonsDisabled.value) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
         )
       }

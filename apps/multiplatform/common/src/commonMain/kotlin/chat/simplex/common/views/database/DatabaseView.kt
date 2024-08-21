@@ -195,7 +195,7 @@ fun DatabaseLayout(
           stringResource(MR.strings.stop_chat_to_enable_database_actions)
         }
       )
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxTopPadding = true)
     }
 
     SectionView(stringResource(MR.strings.chat_database_section)) {
@@ -264,7 +264,7 @@ fun DatabaseLayout(
         disabled = operationsDisabled
       )
     }
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.files_and_media_section).uppercase()) {
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0

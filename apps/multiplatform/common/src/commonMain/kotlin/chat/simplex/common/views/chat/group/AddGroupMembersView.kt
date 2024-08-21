@@ -4,6 +4,7 @@ import SectionBottomSpacer
 import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
+import SectionItemViewWithoutMinPadding
 import SectionSpacer
 import SectionView
 import androidx.compose.foundation.*
@@ -177,7 +178,7 @@ fun AddGroupMembersLayout(
         InviteSectionFooter(selectedContactsCount = selectedContacts.size, allowModifyMembers, clearSelection)
       }
       SectionDividerSpaced(maxTopPadding = true)
-      SectionView(stringResource(MR.strings.select_contacts)) {
+      SectionView(stringResource(MR.strings.select_contacts).uppercase()) {
         SectionItemView(padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
           SearchRowView(searchText)
         }
@@ -255,7 +256,8 @@ fun InviteSectionFooter(selectedContactsCount: Int, enabled: Boolean, clearSelec
       Text(
         String.format(generalGetString(MR.strings.num_contacts_selected), selectedContactsCount),
         color = MaterialTheme.colors.secondary,
-        fontSize = 12.sp
+        lineHeight = 18.sp,
+        fontSize = 14.sp
       )
       Box(
         Modifier.clickable { if (enabled) clearSelection() }
@@ -263,14 +265,16 @@ fun InviteSectionFooter(selectedContactsCount: Int, enabled: Boolean, clearSelec
         Text(
           stringResource(MR.strings.clear_contacts_selection_button),
           color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-          fontSize = 12.sp
+          lineHeight = 18.sp,
+          fontSize = 14.sp,
         )
       }
     } else {
       Text(
         stringResource(MR.strings.no_contacts_selected),
         color = MaterialTheme.colors.secondary,
-        fontSize = 12.sp
+        lineHeight = 18.sp,
+        fontSize = 14.sp,
       )
     }
   }
@@ -318,7 +322,7 @@ fun ContactCheckRow(
     icon = painterResource(MR.images.ic_circle)
     iconColor = MaterialTheme.colors.secondary
   }
-  SectionItemView(
+  SectionItemViewWithoutMinPadding(
     click = if (enabled) {
       {
         if (prohibitedToInviteIncognito) {
