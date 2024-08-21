@@ -3481,7 +3481,8 @@ testGroupSyncRatchet tmp =
       bob <## "1 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       bob `send` "#team 1"
-      bob <## "error: command is prohibited, sendMessagesB: send prohibited" -- silence?
+      -- "send prohibited" error is not printed in group as SndMessage is created,
+      -- but it should be displayed in per member snd statuses
       bob <# "#team 1"
       (alice </)
       -- synchronize bob and alice
