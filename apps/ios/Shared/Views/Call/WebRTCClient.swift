@@ -411,6 +411,15 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     }
 
     func endCall() {
+        if #available(iOS 16.0, *) {
+            _endCall()
+        } else {
+            // Fixes `connection.close()` getting locked up in iOS15
+            DispatchQueue.global(qos: .utility).async { self._endCall() }
+        }
+    }
+
+    private func _endCall() {
         guard let call = activeCall.wrappedValue else { return }
         logger.debug("WebRTCClient: ending the call")
         activeCall.wrappedValue = nil

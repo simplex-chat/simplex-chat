@@ -293,7 +293,7 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
 @Composable
 fun LinkTextView(link: String, share: Boolean) {
   val clipboard = LocalClipboardManager.current
-  Row(Modifier.fillMaxWidth().heightIn(min = 46.dp).padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
+  Row(Modifier.fillMaxWidth().heightIn(min = DEFAULT_MIN_SECTION_ITEM_HEIGHT).padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
     Box(Modifier.weight(1f).clickable {
       chatModel.markShowingInvitationUsed()
       clipboard.shareText(link)
