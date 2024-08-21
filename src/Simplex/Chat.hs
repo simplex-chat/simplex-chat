@@ -7137,6 +7137,12 @@ sendGroupMessage user gInfo members chatMsgEvent = do
     ((Right msg) :| [], _) -> pure msg
     _ -> throwChatError $ CEInternalError "sendGroupMessage: expected 1 message"
 
+data GroupSndResult = GroupSndResult
+  { sentTo :: [(GroupMemberId, Either ChatError [MessageId], Either ChatError ([Int64], PQEncryption))],
+    pending :: [(GroupMemberId, Either ChatError MessageId, Either ChatError ())],
+    forwarded :: [GroupMember]
+  }
+
 sendGroupMessage' :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> CM SndMessage
 sendGroupMessage' user gInfo members chatMsgEvent =
   sendGroupMessages_ user gInfo members (chatMsgEvent :| []) >>= \case
@@ -7164,12 +7170,6 @@ sendGroupMessages user gInfo members events = do
       void $ sendGroupMessage' user gInfo members' profileUpdateEvent
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
-
-data GroupSndResult = GroupSndResult
-  { sentTo :: [(GroupMemberId, Either ChatError [MessageId], Either ChatError ([Int64], PQEncryption))],
-    pending :: [(GroupMemberId, Either ChatError MessageId, Either ChatError ())],
-    forwarded :: [GroupMember]
-  }
 
 sendGroupMessages_ :: MsgEncodingI e => User -> GroupInfo -> [GroupMember] -> NonEmpty (ChatMsgEvent e) -> CM (NonEmpty (Either ChatError SndMessage), GroupSndResult)
 sendGroupMessages_ _user gInfo@GroupInfo {groupId} members events = do
