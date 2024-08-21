@@ -487,7 +487,7 @@
 \nCsatlakozzon hozzám SimpleX Chat-en keresztül: %s</string>
     <string name="display_name_cannot_contain_whitespace">A megjelenített név nem tartalmazhat szóközöket.</string>
     <string name="info_row_group">Csoport</string>
-    <string name="enter_welcome_message_optional">Üdvözlő üzenetet megadása… (opcionális)</string>
+    <string name="enter_welcome_message_optional">Üdvözlő üzenet megadása… (opcionális)</string>
     <string name="error_exporting_chat_database">Hiba a csevegési adatbázis exportálásakor</string>
     <string name="error_saving_file">Hiba a fájl mentésekor</string>
     <string name="encrypt_local_files">Helyi fájlok titkosítása</string>
@@ -544,7 +544,7 @@
     <string name="alert_text_encryption_renegotiation_failed">Sikertelen titkosítás-újraegyeztetés.</string>
     <string name="error_deleting_user">Hiba a felhasználói profil törlésekor</string>
     <string name="fix_connection_not_supported_by_group_member">Csoporttag általi javítás nem támogatott</string>
-    <string name="enter_welcome_message">Üdvözlő üzenetet megadása…</string>
+    <string name="enter_welcome_message">Üdvözlő üzenet megadása…</string>
     <string name="encrypted_database">Titkosított adatbázis</string>
     <string name="enter_password_to_show">Jelszó megadása a keresőben</string>
     <string name="file_will_be_received_when_contact_completes_uploading">A fájl akkor érkezik meg, amikor a küldője befejezte annak feltöltését.</string>
@@ -2022,7 +2022,7 @@
     <string name="cant_call_member_send_message_alert_text">Üzenet küldése a hívások engedélyezéséhez.</string>
     <string name="you_need_to_allow_calls">Engedélyeznie kell a hívásokat az ismerőse számára, hogy fel tudják hívni egymást.</string>
     <string name="you_can_still_view_conversation_with_contact">A(z) %1$s nevű ismerősével folytatott beszélgetéseit továbbra is megtekintheti a csevegések listájában.</string>
-    <string name="compose_message_placeholder">Üzenet</string>
+    <string name="compose_message_placeholder">Üzenet...</string>
     <string name="select_verb">Kiválaszt</string>
     <string name="moderate_messages_will_be_marked_warning">Az üzenetek minden tag számára moderáltként lesznek megjelölve.</string>
     <string name="selected_chat_items_nothing_selected">Nincs kiválasztva semmi</string>
