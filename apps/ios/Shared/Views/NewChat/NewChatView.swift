@@ -368,6 +368,9 @@ private struct ActiveProfilePicker: View {
             }
         }
         .onChange(of: selectedProfile) { profile in
+            if (profile == chatModel.currentUser) {
+                return
+            }
             Task {
                 do {
                     switchingProfile = true
@@ -388,7 +391,7 @@ private struct ActiveProfilePicker: View {
                                     switchingProfile = false
                                     alert = SomeAlert(
                                         alert: Alert(
-                                            title: Text("Error switching profile!"),
+                                            title: Text("Error switching profile"),
                                             message: Text("Your connection was moved to \(profile.chatViewName) but and unexpected error ocurred while redirecting you to the profile.")
                                         ),
                                         id: "switchingProfileError"
@@ -398,17 +401,20 @@ private struct ActiveProfilePicker: View {
                         }
                     }
                 } catch {
+                    // TODO: discuss error handling
                     switchingProfile = false
+                    if let currentUser = chatModel.currentUser {
+                        selectedProfile = currentUser
+                    }
+                    let err = getErrorAlert(error, "Error changing connection profile")
                     alert = SomeAlert(
                         alert: Alert(
-                            title: Text("Error changing connection profile!"),
-                            // TODO: Look at error message, possibly revert to selected profile
-                            message: Text("Error: \(responseError(error))")
+                            title: Text(err.title),
+                            message: Text(err.message ?? "Error: \(responseError(error))")
                         ),
                         id: "changeConnectionUserError"
                     )
                 }
-                switchingProfile = false
             }
         }
         .alert(item: $alert) { a in
