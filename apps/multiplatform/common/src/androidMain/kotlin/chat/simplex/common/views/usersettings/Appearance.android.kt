@@ -13,6 +13,8 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -130,7 +132,8 @@ fun AppearanceScope.AppearanceLayout(
             contentDescription = "",
             contentScale = ContentScale.Fit,
             modifier = Modifier
-              .shadow(if (item == icon.value) 1.dp else 0.dp, ambientColor = colors.secondaryVariant)
+              .border(1.dp, color = if (item == icon.value) colors.secondaryVariant else Color.Transparent, RoundedCornerShape(percent = 22))
+              .clip(RoundedCornerShape(percent = 22))
               .size(70.dp)
               .clickable { changeIcon(item) }
               .padding(10.dp)
@@ -144,7 +147,7 @@ fun AppearanceScope.AppearanceLayout(
       }
     }
 
-    SectionDividerSpaced(maxTopPadding = false)
+    SectionDividerSpaced(maxTopPadding = true)
     FontScaleSection()
 
     SectionBottomSpacer()
