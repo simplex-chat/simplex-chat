@@ -1655,6 +1655,40 @@ processChatCommand' vr = \case
     case conn'_ of
       Just conn' -> pure $ CRConnectionIncognitoUpdated user conn'
       Nothing -> throwChatError CEConnectionIncognitoChangeProhibited
+  APIChangeConnectionUser connId newUserId -> withUser $ \user@User {userId} -> do
+    conn <- withFastStore $ \db -> getPendingContactConnection db userId connId
+    let PendingContactConnection {pccConnStatus, connReqInv} = conn
+    case (pccConnStatus, connReqInv) of
+      (ConnNew, Just cReqInv) -> do
+        newUser <- privateGetUser newUserId
+        conn' <- ifM (canKeepLink cReqInv newUser) (updateConnRecord user conn newUser) (recreateConn user conn newUser)
+        pure $ CRConnectionUserChanged user conn conn' newUser
+      _ -> throwChatError CEConnectionUserChangeProhibited
+    where
+      canKeepLink :: ConnReqInvitation -> User -> CM Bool
+      canKeepLink (CRInvitationUri crData _) newUser = do
+        let ConnReqUriData {crSmpQueues = q :| _} = crData
+            SMPQueueUri {queueAddress = SMPQueueAddress {smpServer}} = q
+        cfg <- asks config
+        newUserServers <- L.map (\ServerCfg {server} -> protoServer server) . useServers cfg SPSMP <$> withFastStore' (`getProtocolServers` newUser)
+        pure $ smpServer `elem` newUserServers
+      updateConnRecord user@User {userId} conn@PendingContactConnection {customUserProfileId} newUser = do
+        withAgent $ \a -> changeConnectionUser a (aUserId user) (aConnId' conn) (aUserId newUser)
+        withFastStore' $ \db -> do
+          conn' <- updatePCCUser db userId conn newUserId
+          forM_ customUserProfileId $ \profileId ->
+            deletePCCIncognitoProfile db user profileId
+          pure conn'
+      recreateConn user conn@PendingContactConnection {customUserProfileId} newUser = do
+        subMode <- chatReadVar subscriptionMode
+        (agConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing IKPQOn subMode
+        conn' <- withFastStore' $ \db -> do
+          deleteConnectionRecord db user connId
+          forM_ customUserProfileId $ \profileId ->
+            deletePCCIncognitoProfile db user profileId
+          createDirectConnection db newUser agConnId cReq ConnNew Nothing subMode initialChatVersion PQSupportOn
+        deleteAgentConnectionAsync user (aConnId' conn)
+        pure conn'
   APIConnectPlan userId cReqUri -> withUserId userId $ \user ->
     CRConnectionPlan user <$> connectPlan user cReqUri
   APIConnect userId incognito (Just (ACR SCMInvitation cReq)) -> withUserId userId $ \user -> withInvitationLock "connect" (strEncode cReq) . procCmd $ do
@@ -7790,6 +7824,7 @@ chatCommandP =
       "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
       "/_connect " *> (APIAddContact <$> A.decimal <*> incognitoOnOffP),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
+      "/_set conn user :" *> (APIChangeConnectionUser <$> A.decimal <* A.space <*> A.decimal),
       ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       ForwardMessage <$> chatNameP <* " <- @" <*> displayName <* A.space <*> msgTextP,
