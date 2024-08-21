@@ -180,6 +180,13 @@ struct ReverseList<Item: Identifiable & Hashable & Sendable, Content: View>: UIV
                 snapshot,
                 animatingDifferences: itemCount != 0 && abs(items.count - itemCount) == 1
             )
+            // Sets content offset on initial load
+            if itemCount == 0 {
+                tableView.setContentOffset(
+                    CGPoint(x: 0, y: -InvertedTableView.inset),
+                    animated: false
+                )
+            }
             itemCount = items.count
         }
     }
