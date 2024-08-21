@@ -8488,9 +8488,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>eltávolítva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="removed %@" xml:space="preserve">
+      <trans-unit id="removed %@" xml:space="preserve" approved="no">
         <source>removed %@</source>
-        <target>%@ eltávolítva</target>
+        <target state="translated">eltávolította őt: %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="removed contact address" xml:space="preserve">
