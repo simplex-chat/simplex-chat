@@ -1,6 +1,7 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
+import SectionDividerSpaced
 import SectionSpacer
 import SectionTextFooter
 import SectionView
@@ -43,7 +44,7 @@ fun DeveloperView(
       )
     }
     if (devTools.value) {
-      SectionSpacer()
+      SectionDividerSpaced(maxTopPadding = true)
       SectionView(stringResource(MR.strings.developer_options_section).uppercase()) {
         SettingsPreferenceItem(painterResource(MR.images.ic_drive_folder_upload), stringResource(MR.strings.confirm_database_upgrades), m.controller.appPrefs.confirmDBUpgrades)
         if (appPlatform.isDesktop) {

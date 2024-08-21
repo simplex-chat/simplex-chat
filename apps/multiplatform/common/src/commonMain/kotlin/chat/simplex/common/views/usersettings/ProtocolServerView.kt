@@ -110,7 +110,7 @@ private fun PresetServer(
       )
     }
   }
-  SectionDividerSpaced(maxTopPadding = true)
+  SectionDividerSpaced()
   UseServerSection(true, testing, server, testServer, onUpdate, onDelete)
 }
 
@@ -150,7 +150,7 @@ private fun CustomServer(
         }
     }
   }
-  SectionDividerSpaced()
+  SectionDividerSpaced(maxTopPadding = true)
   UseServerSection(valid.value, testing, server, testServer, onUpdate, onDelete)
 
   if (valid.value) {

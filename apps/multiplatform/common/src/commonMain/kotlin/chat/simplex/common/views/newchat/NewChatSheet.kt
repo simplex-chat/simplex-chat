@@ -262,13 +262,13 @@ private fun NewChatSheetLayout(
             }
           }
         }
-        SectionDividerSpaced(maxBottomPadding = false)
 
         val deletedContactTypes = listOf(ContactType.CHAT_DELETED)
         val deletedChats by remember(chatModel.chats.value, deletedContactTypes) {
           derivedStateOf { filterContactTypes(chatModel.chats.value, deletedContactTypes) }
         }
         if (deletedChats.isNotEmpty()) {
+          SectionDividerSpaced(maxBottomPadding = false)
           Row(modifier = sectionModifier) {
             SectionView {
               SectionItemView(
@@ -295,16 +295,20 @@ private fun NewChatSheetLayout(
               }
             }
           }
-          SectionDividerSpaced(maxBottomPadding = false)
         }
       }
     }
 
     item {
       if (filteredContactChats.isNotEmpty() && !oneHandUI.value) {
+        if (searchText.value.text.isNotEmpty()) {
+          Spacer(Modifier.height(DEFAULT_PADDING))
+        } else {
+          SectionDividerSpaced()
+        }
         Text(
           stringResource(MR.strings.contact_list_header_title).uppercase(), color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2,
-          modifier = sectionModifier.padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF, bottom = DEFAULT_PADDING_HALF), fontSize = 12.sp
+          modifier = sectionModifier.padding(start = DEFAULT_PADDING, bottom = DEFAULT_PADDING_HALF), fontSize = 12.sp
         )
       }
     }
@@ -364,7 +368,7 @@ private fun ContactsSearchBar(
     Icon(
       painterResource(MR.images.ic_search),
       contentDescription = null,
-      Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF).size(24.dp * fontSizeSqrtMultiplier),
+      Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF).size(22.dp * fontSizeSqrtMultiplier),
       tint = MaterialTheme.colors.secondary
     )
     SearchTextField(

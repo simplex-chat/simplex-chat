@@ -60,16 +60,16 @@ fun AppearanceScope.AppearanceLayout(
         }
       }
     }
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
     ThemesSection(systemDarkTheme)
 
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
     ProfileImageSection()
 
-    SectionDividerSpaced(maxBottomPadding = true)
+    SectionDividerSpaced(maxTopPadding = true)
     FontScaleSection()
 
-    SectionDividerSpaced(maxBottomPadding = true)
+    SectionDividerSpaced(maxTopPadding = true)
     DensityScaleSection()
 
     SectionBottomSpacer()

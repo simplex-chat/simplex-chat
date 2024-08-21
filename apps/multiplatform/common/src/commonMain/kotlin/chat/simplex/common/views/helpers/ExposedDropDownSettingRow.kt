@@ -50,7 +50,7 @@ fun <T> ExposedDropDownSetting(
       )
       Spacer(Modifier.size(12.dp))
       Icon(
-        if (!expanded.value) painterResource(MR.images.ic_expand_more) else painterResource(MR.images.ic_expand_less),
+        if (!expanded.value) painterResource(MR.images.ic_arrow_drop_down) else painterResource(MR.images.ic_arrow_drop_up),
         generalGetString(MR.strings.icon_descr_more_button),
         tint = MaterialTheme.colors.secondary
       )

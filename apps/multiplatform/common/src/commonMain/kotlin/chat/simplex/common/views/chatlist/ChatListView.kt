@@ -219,7 +219,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
           backgroundColor = if (!stopped) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
           contentColor = Color.White
         ) {
-          Icon(painterResource(MR.images.ic_edit_filled), stringResource(MR.strings.add_contact_or_create_group), Modifier.size(24.dp * fontSizeSqrtMultiplier))
+          Icon(painterResource(MR.images.ic_edit_filled), stringResource(MR.strings.add_contact_or_create_group), Modifier.size(22.dp * fontSizeSqrtMultiplier))
         }
       }
     }
@@ -520,7 +520,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
     Icon(
       painterResource(MR.images.ic_search),
       contentDescription = null,
-      Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF).size(24.dp * fontSizeSqrtMultiplier),
+      Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF).size(22.dp * fontSizeSqrtMultiplier),
       tint = MaterialTheme.colors.secondary
     )
     SearchTextField(
