@@ -247,25 +247,21 @@ private struct InviteView: View {
                         HStack {
                             ProfileImage(imageStr: chatModel.currentUser?.image, size: 24)
                             Text(chatModel.currentUser?.chatViewName ?? "")
+                            
+                            if incognitoDefault {
+                                Spacer()
+                                Image(systemName: "theatermasks")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 22, height: 22)
+                                    .foregroundColor(theme.colors.secondary)
+                            }
                         }
                     }
                 }
             }
         }
         .onChange(of: incognitoDefault) { incognito in
-            Task {
-                do {
-                    if let contactConn = contactConnection,
-                       let conn = try await apiSetConnectionIncognito(connId: contactConn.pccConnId, incognito: incognito) {
-                        await MainActor.run {
-                            contactConnection = conn
-                            chatModel.updateContactConnection(conn)
-                        }
-                    }
-                } catch {
-                    logger.error("apiSetConnectionIncognito error: \(responseError(error))")
-                }
-            }
             setInvitationUsed()
         }
     }
@@ -321,7 +317,6 @@ private struct ActiveProfilePicker: View {
     var body: some View {
         profilePicker()
             .navigationTitle("Your chat profiles")
-            .navigationBarTitleDisplayMode(.inline)
             .modifier(ThemedBackground(grouped: true))
     }
     
@@ -338,10 +333,10 @@ private struct ActiveProfilePicker: View {
                 } label : {
                     HStack {
                         Image(systemName: "theatermasks")
-                            .frame(maxWidth: 20, maxHeight: 20, alignment: .center)
-                            .foregroundColor(.indigo)
-                            .padding(.trailing, 6)
-
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 30, height: 30)
+                            .foregroundColor(theme.colors.secondary)
                         Text("Incognito")
                             .foregroundColor(theme.colors.onBackground)
                         Spacer()
@@ -354,7 +349,7 @@ private struct ActiveProfilePicker: View {
                 }
                 ForEach(profiles) { item in
                     Button {
-                        if selectedProfile != item {
+                        if selectedProfile != item || incognitoEnabled {
                             selectedProfile = item
                             incognitoEnabled = false
                         }
@@ -380,6 +375,30 @@ private struct ActiveProfilePicker: View {
                     .foregroundColor(theme.colors.secondary)
                     .font(.body)
                     .padding(.top, 8)
+            }
+        }
+        .onChange(of: incognitoEnabled) { incognito in
+            Task {
+                do {
+                    if let contactConn = contactConnection,
+                       let conn = try await apiSetConnectionIncognito(connId: contactConn.pccConnId, incognito: incognito) {
+                        await MainActor.run {
+                            contactConnection = conn
+                            chatModel.updateContactConnection(conn)
+                            dismiss()
+                        }
+                    }
+                } catch {
+                    logger.error("apiSetConnectionIncognito error: \(responseError(error))")
+                    alert = SomeAlert(
+                        alert: Alert(
+                            title: Text("Error changing to incognito!"),
+                            // TODO: Look at error message
+                            message: Text("Error: \(responseError(error))")
+                        ),
+                        id: "setConnectionIncognitoError"
+                    )
+                }
             }
         }
         .onChange(of: selectedProfile) { profile in
@@ -410,7 +429,7 @@ private struct ActiveProfilePicker: View {
                     alert = SomeAlert(
                         alert: Alert(
                             title: Text("Error changing connection profile!"),
-                            // TODO: Look at error message
+                            // TODO: Look at error message, possibly revert to selected profile
                             message: Text("Error: \(responseError(error))")
                         ),
                         id: "changeConnectionUserError"
