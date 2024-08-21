@@ -215,6 +215,25 @@ struct NewChatView: View {
     }
 }
 
+
+private struct IncognitoProfileImage: View {
+    @EnvironmentObject var theme: AppTheme
+
+    var body: some View {
+        let c =  Color(uiColor: .tertiarySystemGroupedBackground).asAnotherColorFromSecondaryVariant(theme)
+        
+        VStack {
+            Image(systemName: "theatermasks.fill")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 26, height: 26)
+                .foregroundColor(Color.indigo)
+        }
+        .frame(width: 30, height: 30)
+        .background(Circle().fill(c))
+    }
+}
+
 private struct InviteView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
@@ -253,14 +272,10 @@ private struct InviteView: View {
                     } label: {
                         HStack {
                             if incognitoDefault {
-                                Image(systemName: "theatermasks.fill")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 24, height: 24)
-                                    .foregroundColor(Color.indigo )
+                                IncognitoProfileImage()
                                 Text("Incognito")
                             } else {
-                                ProfileImage(imageStr: chatModel.currentUser?.image, size: 24)
+                                ProfileImage(imageStr: chatModel.currentUser?.image, size: 30)
                                 Text(chatModel.currentUser?.chatViewName ?? "")
                             }
                         }
@@ -446,7 +461,7 @@ private struct ActiveProfilePicker: View {
             }
         }
     }
-    
+        
     @ViewBuilder private func profilePicker() -> some View {
         let profiles = chatModel.users
             .map { $0.user }
@@ -459,11 +474,7 @@ private struct ActiveProfilePicker: View {
                 switchingProfile = true
             } label : {
                 HStack {
-                    Image(systemName: "theatermasks")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 30, height: 30)
-                        .foregroundColor(theme.colors.secondary)
+                    IncognitoProfileImage()
                     Text("Incognito")
                         .foregroundColor(theme.colors.onBackground)
                     Spacer()
