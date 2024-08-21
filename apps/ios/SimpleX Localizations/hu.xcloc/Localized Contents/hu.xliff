@@ -2679,14 +2679,14 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Eszköznév megadása…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter welcome message…" xml:space="preserve">
+      <trans-unit id="Enter welcome message…" xml:space="preserve" approved="no">
         <source>Enter welcome message…</source>
-        <target>Üdvözlő üzenetet megadása…</target>
+        <target state="translated">Üdvözlő üzenet megadása…</target>
         <note>placeholder</note>
       </trans-unit>
-      <trans-unit id="Enter welcome message… (optional)" xml:space="preserve">
+      <trans-unit id="Enter welcome message… (optional)" xml:space="preserve" approved="no">
         <source>Enter welcome message… (optional)</source>
-        <target>Üdvözlő üzenetet megadása… (opcionális)</target>
+        <target state="translated">Üdvözlő üzenet megadása… (opcionális)</target>
         <note>placeholder</note>
       </trans-unit>
       <trans-unit id="Enter your name…" xml:space="preserve">
