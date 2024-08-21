@@ -111,53 +111,59 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
   val scrollState = rememberScrollState()
   val keyboardState by getKeyboardState()
   var savedKeyboardState by remember { mutableStateOf(keyboardState) }
-
-  ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
-    Column(
-      modifier = Modifier
-        .fillMaxSize()
-        .themedBackground(),
-      horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-      CloseSheetBar(close = {
-        if (chatModel.users.none { !it.user.hidden }) {
-          appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
-        } else {
-          close()
-        }
-      })
-      BackHandler(onBack = {
-        appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
-      })
-
-      ColumnWithScrollBar(
-        modifier = if (appPlatform.isAndroid) Modifier.fillMaxSize() else Modifier.widthIn(max = 600.dp).fillMaxHeight(),
+  val handler = remember { AppBarHandler() }
+  CompositionLocalProvider(
+    LocalAppBarHandler provides handler
+  ) {
+    ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
+      Column(
+        modifier = Modifier
+          .fillMaxSize()
+          .themedBackground(),
+        horizontalAlignment = Alignment.CenterHorizontally
       ) {
-        val displayName = rememberSaveable { mutableStateOf("") }
-        val focusRequester = remember { FocusRequester() }
-        Column(Modifier.padding(horizontal = DEFAULT_PADDING)) {
-          AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING)
-          ProfileNameField(displayName, stringResource(MR.strings.display_name), { it.trim() == mkValidName(it) }, focusRequester)
-          Spacer(Modifier.height(DEFAULT_PADDING))
-          ReadableText(MR.strings.your_profile_is_stored_on_your_device, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
-          ReadableText(MR.strings.profile_is_only_shared_with_your_contacts, TextAlign.Start, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
-        }
-        Spacer(Modifier.fillMaxHeight().weight(1f))
-        Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
-          OnboardingActionButton(
-            if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
-            labelId = MR.strings.create_profile_button,
-            onboarding = null,
-            enabled = canCreateProfile(displayName.value),
-            onclick = { createProfileOnboarding(chat.simplex.common.platform.chatModel, displayName.value, close) }
-          )
-          // Reserve space
-          TextButtonBelowOnboardingButton("", null)
-        }
+        CloseSheetBar(close = {
+          if (chatModel.users.none { !it.user.hidden }) {
+            appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+          } else {
+            close()
+          }
+        })
+        BackHandler(onBack = {
+          appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+        })
 
-        LaunchedEffect(Unit) {
-          delay(300)
-          focusRequester.requestFocus()
+        ColumnWithScrollBar(
+          modifier = Modifier.fillMaxSize()
+        ) {
+          val displayName = rememberSaveable { mutableStateOf("") }
+          val focusRequester = remember { FocusRequester() }
+          Column(if (appPlatform.isAndroid) Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING) else Modifier.widthIn(max = 600.dp).fillMaxHeight().padding(horizontal = DEFAULT_PADDING).align(Alignment.CenterHorizontally)) {
+            Box(Modifier.align(Alignment.CenterHorizontally)) {
+              AppBarTitle(stringResource(MR.strings.create_profile), bottomPadding = DEFAULT_PADDING, withPadding = false)
+            }
+            ProfileNameField(displayName, stringResource(MR.strings.display_name), { it.trim() == mkValidName(it) }, focusRequester)
+            Spacer(Modifier.height(DEFAULT_PADDING))
+            ReadableText(MR.strings.your_profile_is_stored_on_your_device, TextAlign.Start, padding = PaddingValues(), style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+            ReadableText(MR.strings.profile_is_only_shared_with_your_contacts, TextAlign.Start, style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.secondary))
+          }
+          Spacer(Modifier.fillMaxHeight().weight(1f))
+          Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
+            OnboardingActionButton(
+              if (appPlatform.isAndroid) Modifier.padding(horizontal = DEFAULT_PADDING * 2).fillMaxWidth() else Modifier.widthIn(min = 300.dp),
+              labelId = MR.strings.create_profile_button,
+              onboarding = null,
+              enabled = canCreateProfile(displayName.value),
+              onclick = { createProfileOnboarding(chat.simplex.common.platform.chatModel, displayName.value, close) }
+            )
+            // Reserve space
+            TextButtonBelowOnboardingButton("", null)
+          }
+
+          LaunchedEffect(Unit) {
+            delay(300)
+            focusRequester.requestFocus()
+          }
         }
       }
       LaunchedEffect(Unit) {
