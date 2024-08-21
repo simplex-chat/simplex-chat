@@ -16,7 +16,6 @@ struct ContactConnectionView: View {
     @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
     @State private var localAlias = ""
     @FocusState private var aliasTextFieldFocused: Bool
-    @State private var showContactConnectionInfo = false
 
     var body: some View {
         if case let .contactConnection(conn) = chat.chatInfo {
@@ -32,7 +31,6 @@ struct ContactConnectionView: View {
                     .scaledToFill()
                     .frame(width: 48, height: 48)
                     .foregroundColor(Color(uiColor: .tertiarySystemGroupedBackground).asAnotherColorFromSecondaryVariant(theme))
-                    .onTapGesture { showContactConnectionInfo = true }
             }
             .frame(width: 63, height: 63)
             .padding(.leading, 4)
@@ -72,9 +70,6 @@ struct ContactConnectionView: View {
                 Spacer()
             }
             .frame(maxHeight: .infinity)
-            .appSheet(isPresented: $showContactConnectionInfo) {
-                ContactConnectionInfo(contactConnection: contactConnection)
-            }
         }
     }
 }

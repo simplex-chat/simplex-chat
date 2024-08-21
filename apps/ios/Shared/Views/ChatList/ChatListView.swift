@@ -217,14 +217,31 @@ struct ChatListView: View {
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                     }
-                    ForEach(cs, id: \.viewId) { chat in
-                        ChatListNavLink(chat: chat)
+                    if #available(iOS 16.0, *) {
+                        ForEach(cs, id: \.viewId) { chat in
+                            ChatListNavLink(chat: chat)
+                                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                                .padding(.trailing, -16)
+                                .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
+                                .listRowBackground(Color.clear)
+                        }
+                        .offset(x: -8)
+                    } else {
+                        ForEach(cs, id: \.viewId) { chat in
+                            VStack(spacing: .zero) {
+                                Divider()
+                                    .padding(.leading, 16)
+                                ChatListNavLink(chat: chat)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 6)
+                            }
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                            .padding(.trailing, -16)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets())
+                            .background { theme.colors.background } // Hides default list selection colour
                             .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
-                            .listRowBackground(Color.clear)
+                        }
                     }
-                    .offset(x: -8)
                 }
                 .listStyle(.plain)
                 .onChange(of: chatModel.chatId) { currentChatId in
@@ -324,7 +341,7 @@ struct ChatListView: View {
 struct SubsStatusIndicator: View {
     @State private var subs: SMPServerSubs = SMPServerSubs.newSMPServerSubs
     @State private var hasSess: Bool = false
-    @State private var timer: Timer? = nil
+    @State private var task: Task<Void, Never>?
     @State private var showServersSummary = false
 
     @AppStorage(DEFAULT_SHOW_SUBSCRIPTION_PERCENTAGE) private var showSubscriptionPercentage = false
@@ -343,10 +360,10 @@ struct SubsStatusIndicator: View {
         }
         .disabled(ChatModel.shared.chatRunning != true)
         .onAppear {
-            startTimer()
+            startTask()
         }
         .onDisappear {
-            stopTimer()
+            stopTask()
         }
         .appSheet(isPresented: $showServersSummary) {
             ServersSummaryView()
@@ -354,25 +371,28 @@ struct SubsStatusIndicator: View {
         }
     }
 
-    private func startTimer() {
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-            if AppChatState.shared.value == .active {
-                getSubsTotal()
+    private func startTask() {
+        task = Task {
+            while !Task.isCancelled {
+                if AppChatState.shared.value == .active {
+                    do {
+                        let (subs, hasSess) = try await getAgentSubsTotal()
+                        await MainActor.run {
+                            self.subs = subs
+                            self.hasSess = hasSess
+                        }
+                    } catch let error {
+                        logger.error("getSubsTotal error: \(responseError(error))")
+                    }
+                }
+                try? await Task.sleep(nanoseconds: 1_000_000_000) // Sleep for 1 second
             }
         }
     }
 
-    func stopTimer() {
-        timer?.invalidate()
-        timer = nil
-    }
-
-    private func getSubsTotal() {
-        do {
-            (subs, hasSess) = try getAgentSubsTotal()
-        } catch let error {
-            logger.error("getSubsTotal error: \(responseError(error))")
-        }
+    func stopTask() {
+        task?.cancel()
+        task = nil
     }
 }
 
@@ -498,21 +518,21 @@ func chatStoppedIcon() -> some View {
 struct ChatListView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
-        chatModel.chats = [
-            Chat(
+        chatModel.updateChats([
+            ChatData(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
             ),
-            Chat(
+            ChatData(
                 chatInfo: ChatInfo.sampleData.group,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")]
             ),
-            Chat(
+            ChatData(
                 chatInfo: ChatInfo.sampleData.contactRequest,
                 chatItems: []
             )
 
-        ]
+        ])
         return Group {
             ChatListView(showSettings: Binding.constant(false))
                 .environmentObject(chatModel)

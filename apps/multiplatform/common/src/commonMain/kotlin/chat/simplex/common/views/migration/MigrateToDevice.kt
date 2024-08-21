@@ -155,19 +155,12 @@ private fun ModalData.MigrateToDeviceLayout(
   close: () -> Unit,
 ) {
   val tempDatabaseFile = rememberSaveable { mutableStateOf(fileForTemporaryDatabase()) }
-  val (scrollBarAlpha, scrollModifier, scrollJob) = platform.desktopScrollBarComponents()
-  val scrollState = rememberScrollState()
-  Column(
-    Modifier.fillMaxSize().verticalScroll(scrollState).then(if (appPlatform.isDesktop) scrollModifier else Modifier).height(IntrinsicSize.Max),
+  ColumnWithScrollBar(
+    Modifier.fillMaxSize(), maxIntrinsicSize = true
   ) {
     AppBarTitle(stringResource(MR.strings.migrate_to_device_title))
     SectionByState(migrationState, tempDatabaseFile.value, chatReceiver, close)
     SectionBottomSpacer()
-  }
-  if (appPlatform.isDesktop) {
-    Box(Modifier.fillMaxSize()) {
-      platform.desktopScrollBar(scrollState, Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, false)
-    }
   }
   platform.androidLockPortraitOrientation()
 }

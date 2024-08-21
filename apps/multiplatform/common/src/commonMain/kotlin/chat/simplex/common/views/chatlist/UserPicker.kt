@@ -262,7 +262,7 @@ fun UserProfilePickerItem(
   Row(
     Modifier
       .fillMaxWidth()
-      .sizeIn(minHeight = 46.dp)
+      .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
       .combinedClickable(
         enabled = enabled,
         onClick = if (u.activeUser) openSettings else onClick,
@@ -330,7 +330,7 @@ fun RemoteHostPickerItem(h: RemoteHostInfo, onLongClick: () -> Unit = {}, action
     Modifier
       .fillMaxWidth()
       .background(color = if (h.activeHost) MaterialTheme.colors.surface.mixWith(MaterialTheme.colors.onBackground, 0.95f) else Color.Unspecified)
-      .sizeIn(minHeight = 46.dp)
+      .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
       .combinedClickable(
         onClick = onClick,
         onLongClick = onLongClick
@@ -373,7 +373,7 @@ fun LocalDevicePickerItem(active: Boolean, onLongClick: () -> Unit = {}, onClick
     Modifier
       .fillMaxWidth()
       .background(color = if (active) MaterialTheme.colors.surface.mixWith(MaterialTheme.colors.onBackground, 0.95f) else Color.Unspecified)
-      .sizeIn(minHeight = 46.dp)
+      .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
       .combinedClickable(
         onClick = if (active) {{}} else onClick,
         onLongClick = onLongClick,

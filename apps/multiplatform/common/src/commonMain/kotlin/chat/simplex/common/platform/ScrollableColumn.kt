@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 expect fun LazyColumnWithScrollBar(
   modifier: Modifier = Modifier,
-  state: LazyListState = rememberLazyListState(),
+  state: LazyListState? = null,
   contentPadding: PaddingValues = PaddingValues(0.dp),
   reverseLayout: Boolean = false,
   verticalArrangement: Arrangement.Vertical =
@@ -29,6 +29,8 @@ expect fun ColumnWithScrollBar(
   modifier: Modifier = Modifier,
   verticalArrangement: Arrangement.Vertical = Arrangement.Top,
   horizontalAlignment: Alignment.Horizontal = Alignment.Start,
-  state: ScrollState = rememberScrollState(),
+  state: ScrollState? = null,
+  // set true when you want to show something in the center with respected .fillMaxSize()
+  maxIntrinsicSize: Boolean = false,
   content: @Composable ColumnScope.() -> Unit
 )

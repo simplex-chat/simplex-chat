@@ -174,7 +174,7 @@ private fun UserAddressLayout(
   saveAas: (AutoAcceptState, MutableState<AutoAcceptState>) -> Unit,
 ) {
   ColumnWithScrollBar {
-    AppBarTitle(stringResource(MR.strings.simplex_address), hostDevice(user?.remoteHostId), withPadding = false)
+    AppBarTitle(stringResource(MR.strings.simplex_address), hostDevice(user?.remoteHostId))
     Column(
       Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF),
       horizontalAlignment = Alignment.CenterHorizontally,
@@ -185,7 +185,7 @@ private fun UserAddressLayout(
           CreateAddressButton(createAddress)
           SectionTextFooter(stringResource(MR.strings.create_address_and_let_people_connect))
         }
-        SectionDividerSpaced(maxBottomPadding = false)
+        SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
         SectionView {
           LearnMoreButton(learnMore)
         }

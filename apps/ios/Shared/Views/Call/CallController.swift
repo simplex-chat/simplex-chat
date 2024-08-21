@@ -186,7 +186,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         logger.debug("CallController: started chat")
         self.shouldSuspendChat = true
         // There are no invitations in the model, as it was processed by NSE
-        _ = try? justRefreshCallInvitations()
+        try? justRefreshCallInvitations()
         logger.debug("CallController: updated call invitations chat")
         // logger.debug("CallController justRefreshCallInvitations: \(String(describing: m.callInvitations))")
         // Extract the call information from the push notification payload

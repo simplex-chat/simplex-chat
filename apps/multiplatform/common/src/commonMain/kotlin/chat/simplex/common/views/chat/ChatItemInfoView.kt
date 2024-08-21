@@ -224,7 +224,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
     Row(
       Modifier
         .fillMaxWidth()
-        .sizeIn(minHeight = 46.dp)
+        .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
         .padding(PaddingValues(horizontal = DEFAULT_PADDING))
         .clickable { expanded.value = !expanded.value },
       horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -277,7 +277,6 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun HistoryTab() {
-    // LALAL SCROLLBAR DOESN'T WORK
     ColumnWithScrollBar(Modifier.fillMaxWidth()) {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
@@ -302,7 +301,6 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun QuoteTab(qi: CIQuote) {
-    // LALAL SCROLLBAR DOESN'T WORK
     ColumnWithScrollBar(Modifier.fillMaxWidth()) {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
@@ -316,7 +314,6 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun ForwardedFromTab(forwardedFromItem: AChatItem) {
-    // LALAL SCROLLBAR DOESN'T WORK
     ColumnWithScrollBar(Modifier.fillMaxWidth()) {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)
@@ -379,7 +376,6 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
 
   @Composable
   fun DeliveryTab(memberDeliveryStatuses: List<MemberDeliveryStatus>) {
-    // LALAL SCROLLBAR DOESN'T WORK
     ColumnWithScrollBar(Modifier.fillMaxWidth()) {
       Details()
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = true)

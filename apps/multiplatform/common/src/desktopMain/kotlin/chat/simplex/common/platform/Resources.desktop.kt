@@ -77,6 +77,9 @@ actual fun windowOrientation(): WindowOrientation =
 @Composable
 actual fun windowWidth(): Dp = simplexWindowState.windowState.size.width
 
+@Composable
+actual fun windowHeight(): Dp = simplexWindowState.windowState.size.height
+
 actual fun desktopExpandWindowToWidth(width: Dp) {
   if (simplexWindowState.windowState.size.width >= width) return
   simplexWindowState.windowState.size = simplexWindowState.windowState.size.copy(width = width)
