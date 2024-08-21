@@ -1657,34 +1657,11 @@ processChatCommand' vr = \case
       Nothing -> throwChatError CEConnectionIncognitoChangeProhibited
   APIChangeConnectionUser connId newUserId -> withUser $ \user@User {userId} -> do
     conn <- withFastStore $ \db -> getPendingContactConnection db userId connId
-    let PendingContactConnection {pccConnStatus, connReqInv, customUserProfileId} = conn
+    let PendingContactConnection {pccConnStatus, connReqInv} = conn
     case (pccConnStatus, connReqInv) of
       (ConnNew, Just cReqInv) -> do
         newUser <- privateGetUser newUserId
-        conn' <-
-          ifM
-            (canKeepLink cReqInv newUser)
-            ( do
-                -- Safe to update connection
-                withAgent $ \a -> changeConnectionUser a (aUserId user) (aConnId' conn) (aUserId newUser)
-                withFastStore' $ \db -> do
-                  conn' <- updatePCCUser db userId conn newUserId
-                  forM_ customUserProfileId $ \profileId ->
-                    deletePCCIncognitoProfile db user profileId
-                  pure conn'
-            )
-            ( do
-                -- Servers do not match, requires creation of a new connection
-                subMode <- chatReadVar subscriptionMode
-                (agConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing IKPQOn subMode
-                conn' <- withFastStore' $ \db -> do
-                  deleteConnectionRecord db user connId
-                  forM_ customUserProfileId $ \profileId ->
-                    deletePCCIncognitoProfile db user profileId
-                  createDirectConnection db newUser agConnId cReq ConnNew Nothing subMode initialChatVersion PQSupportOn
-                deleteAgentConnectionAsync user (aConnId' conn)
-                pure conn'
-            )
+        conn' <- ifM (canKeepLink cReqInv newUser) (updateConnRecord user conn newUser) (recreateConn user conn newUser)
         pure $ CRConnectionUserChanged user conn conn' newUser
       _ -> throwChatError CEConnectionUserChangeProhibited
     where
@@ -1695,6 +1672,23 @@ processChatCommand' vr = \case
         cfg <- asks config
         newUserServers <- L.map (\ServerCfg {server} -> protoServer server) . useServers cfg SPSMP <$> withFastStore' (`getProtocolServers` newUser)
         pure $ smpServer `elem` newUserServers
+      updateConnRecord user@User {userId} conn@PendingContactConnection {customUserProfileId} newUser = do
+        withAgent $ \a -> changeConnectionUser a (aUserId user) (aConnId' conn) (aUserId newUser)
+        withFastStore' $ \db -> do
+          conn' <- updatePCCUser db userId conn newUserId
+          forM_ customUserProfileId $ \profileId ->
+            deletePCCIncognitoProfile db user profileId
+          pure conn'
+      recreateConn user conn@PendingContactConnection {customUserProfileId} newUser = do
+        subMode <- chatReadVar subscriptionMode
+        (agConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing IKPQOn subMode
+        conn' <- withFastStore' $ \db -> do
+          deleteConnectionRecord db user connId
+          forM_ customUserProfileId $ \profileId ->
+            deletePCCIncognitoProfile db user profileId
+          createDirectConnection db newUser agConnId cReq ConnNew Nothing subMode initialChatVersion PQSupportOn
+        deleteAgentConnectionAsync user (aConnId' conn)
+        pure conn'
   APIConnectPlan userId cReqUri -> withUserId userId $ \user ->
     CRConnectionPlan user <$> connectPlan user cReqUri
   APIConnect userId incognito (Just (ACR SCMInvitation cReq)) -> withUserId userId $ \user -> withInvitationLock "connect" (strEncode cReq) . procCmd $ do
