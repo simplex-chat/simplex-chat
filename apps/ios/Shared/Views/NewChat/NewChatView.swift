@@ -470,8 +470,10 @@ private struct ActiveProfilePicker: View {
     
         List {
             Button {
-                incognitoEnabled = true
-                switchingProfile = true
+                if !incognitoEnabled {
+                    incognitoEnabled = true
+                    switchingProfile = true
+                }
             } label : {
                 HStack {
                     IncognitoProfileImage()
