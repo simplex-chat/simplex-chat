@@ -44,7 +44,7 @@
     <string name="network_session_mode_user_description"><![CDATA[Külön TCP kapcsolat (és SOCKS bejelentkezési adatok) lesz használva <b>az alkalmazásban minden csevegési profiljához </b>.]]></string>
     <string name="both_you_and_your_contact_can_send_disappearing">Mindkét fél küldhet eltűnő üzeneteket.</string>
     <string name="keychain_is_storing_securely">Az Android Keystore-t a jelmondat biztonságos tárolására használják - lehetővé teszi az értesítési szolgáltatás működését.</string>
-    <string name="alert_title_msg_bad_hash">Téves üzenet hash</string>
+    <string name="alert_title_msg_bad_hash">Hibás az üzenet ellenőrzőösszege</string>
     <string name="color_background">Háttér</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Tudnivaló</b>: az üzenet- és fájl átjátszók SOCKS proxy által vannak kapcsolatban. A hívások és URL hivatkozás előnézetek közvetlen kapcsolatot használnak.]]></string>
     <string name="full_backup">Alkalmazásadatok biztonsági mentése</string>
@@ -124,7 +124,7 @@
     <string name="icon_descr_cancel_live_message">Élő csevegési üzenet visszavonása</string>
     <string name="allow_irreversible_message_deletion_only_if">Az üzenetek végleges törlése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi. (24 óra)</string>
     <string name="v4_6_audio_video_calls">Hang- és videóhívások</string>
-    <string name="integrity_msg_bad_hash">téves üzenet hash</string>
+    <string name="integrity_msg_bad_hash">hibás az üzenet ellenőrzőösszege</string>
     <string name="notifications_mode_service">Mindig fut</string>
     <string name="keychain_allows_to_receive_ntfs">Az Android Keystore biztonságosan fogja tárolni a jelmondatot az alkalmazás újraindítása, vagy a jelmondat megváltoztatás után - lehetővé téve az értesítések fogadását.</string>
     <string name="all_app_data_will_be_cleared">Minden alkalmazásadat törölve.</string>
@@ -242,7 +242,7 @@
     <string name="group_member_status_intro_invitation">kapcsolódás (bemutatkozó meghívó)</string>
     <string name="create_simplex_address">SimpleX cím létrehozása</string>
     <string name="rcv_direct_event_contact_deleted">törölt ismerős</string>
-    <string name="delete_member_message__question">Csoporttag üzenet törlése?</string>
+    <string name="delete_member_message__question">Csoporttag üzenetének törlése?</string>
     <string name="chat_is_running">A csevegés fut</string>
     <string name="share_one_time_link">Egyszer használatos meghívó hivatkozás létrehozása</string>
     <string name="delete_link">Törlés</string>
@@ -1510,7 +1510,7 @@
     <string name="read_more_in_user_guide_with_link"><![CDATA[További információ a <font color="#0088ff">Használati útmutatóban</font> olvasható.]]></string>
     <string name="settings_is_storing_in_clear_text">A jelmondat a beállításokban egyszerű szövegként van tárolva.</string>
     <string name="terminal_always_visible">Konzol megjelenítése új ablakban</string>
-    <string name="alert_text_msg_bad_hash">Az előző üzenet hash-e más.</string>
+    <string name="alert_text_msg_bad_hash">Az előző üzenet ellenőrzőösszege különbözik.</string>
     <string name="receipts_section_description">Ezek a beállítások a jelenlegi profiljára vonatkoznak</string>
     <string name="loading_remote_file_desc">Várjon, amíg a fájl betöltődik a csatolt mobilról</string>
     <string name="read_more_in_github_with_link"><![CDATA[További információ a <font color="#0088ff">GitHub tárolónkban</font>.]]></string>
