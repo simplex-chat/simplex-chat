@@ -163,8 +163,8 @@ struct NewChatView: View {
                 InviteView(
                     invitationUsed: $invitationUsed,
                     contactConnection: $contactConnection,
-                    choosingProfile: $choosingProfile,
-                    connReqInvitation: connReqInvitation
+                    connReqInvitation: $connReqInvitation,
+                    choosingProfile: $choosingProfile
                 )
             } else if creatingConnReq {
                 creatingLinkProgressView()
@@ -220,9 +220,9 @@ private struct InviteView: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var invitationUsed: Bool
     @Binding var contactConnection: PendingContactConnection?
+    @Binding var connReqInvitation: String
     @Binding var choosingProfile: Bool
 
-    var connReqInvitation: String
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
     @State private var showSettings: Bool = false
     
@@ -239,6 +239,7 @@ private struct InviteView: View {
                     NavigationLink {
                         ActiveProfilePicker(
                             contactConnection: $contactConnection,
+                            connReqInvitation: $connReqInvitation,
                             incognitoEnabled: $incognitoDefault,
                             choosingProfile: $choosingProfile,
                             selectedProfile: selectedProfile
@@ -308,6 +309,7 @@ private struct ActiveProfilePicker: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Binding var contactConnection: PendingContactConnection?
+    @Binding var connReqInvitation: String
     @Binding var incognitoEnabled: Bool
     @Binding var choosingProfile: Bool
     @State private var alert: SomeAlert?
@@ -408,6 +410,7 @@ private struct ActiveProfilePicker: View {
                        let conn = try await apiChangeConnectionUser(connId: contactConn.pccConnId, userId: profile.userId) {
                         await MainActor.run {
                             contactConnection = conn
+                            connReqInvitation = conn.connReqInv ?? ""
                             chatModel.updateContactConnection(conn)
                             Task {
                                 do {
