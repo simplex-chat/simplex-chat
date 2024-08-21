@@ -172,7 +172,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRVersionInfo info _ _ -> viewVersionInfo logLevel info
   CRInvitation u cReq _ -> ttyUser u $ viewConnReqInvitation cReq
   CRConnectionIncognitoUpdated u c -> ttyUser u $ viewConnectionIncognitoUpdated c
-  CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged u c nu c' <> viewConnectionUserLinkChanged c c'
+  CRConnectionUserChanged u c c' nu -> ttyUser u $ viewConnectionUserChanged u c nu c'
   CRConnectionPlan u connectionPlan -> ttyUser u $ viewConnectionPlan connectionPlan
   CRSentConfirmation u _ -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u _ customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
@@ -1499,18 +1499,19 @@ viewConnectionIncognitoUpdated PendingContactConnection {pccConnId, customUserPr
   | isJust customUserProfileId = ["connection " <> sShow pccConnId <> " changed to incognito"]
   | otherwise = ["connection " <> sShow pccConnId <> " changed to non incognito"]
 
-viewConnectionUserLinkChanged :: PendingContactConnection -> PendingContactConnection -> [StyledString]
-viewConnectionUserLinkChanged PendingContactConnection {connReqInv = Just connReqInv} PendingContactConnection {connReqInv = Just connReqInv'}
-  | connReqInv == connReqInv' = []
-  | otherwise =
+viewConnectionUserChanged :: User -> PendingContactConnection -> User -> PendingContactConnection -> [StyledString]
+viewConnectionUserChanged User {localDisplayName = n} PendingContactConnection {pccConnId, connReqInv} User {localDisplayName = n'} PendingContactConnection {connReqInv = connReqInv'} =
+  case (connReqInv, connReqInv') of
+    (Just cReqInv, Just cReqInv')
+      | cReqInv /= cReqInv' -> [userChangedStr <> ", new link:"] <> newLink cReqInv'
+    _ -> [userChangedStr]
+  where
+    userChangedStr = "connection " <> sShow pccConnId <> " changed from user " <> plain n <> " to user " <> plain n'
+    newLink cReqInv =
       [ "",
-        (plain . strEncode) (simplexChatInvitation connReqInv'),
+        (plain . strEncode) (simplexChatInvitation cReqInv),
         ""
       ]
-viewConnectionUserLinkChanged _ _ = []
-
-viewConnectionUserChanged :: User -> PendingContactConnection -> User -> PendingContactConnection -> [StyledString]
-viewConnectionUserChanged User {localDisplayName = oldUserDisplayName} PendingContactConnection {pccConnId = oldPccConnId, connReqInv = oldConnReqInv} User {localDisplayName = newUserDisplayName} PendingContactConnection {connReqInv = newConnReqInv} = ["connection " <> sShow oldPccConnId <> " changed from user " <> plain oldUserDisplayName <> " to user " <> plain newUserDisplayName <> (if newConnReqInv == oldConnReqInv then "" else ", new link:")]
 
 viewConnectionPlan :: ConnectionPlan -> [StyledString]
 viewConnectionPlan = \case
