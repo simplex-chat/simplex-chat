@@ -54,6 +54,7 @@ struct NewChatView: View {
     @State private var contactConnection: PendingContactConnection? = nil
     @State private var connReqInvitation: String = ""
     @State private var creatingConnReq = false
+    @State var choosingProfile = false
     @State private var pastedLink: String = ""
     @State private var alert: NewChatViewAlert?
     @Binding var parentAlert: SomeAlert?
@@ -123,6 +124,7 @@ struct NewChatView: View {
         }
         .onDisappear {
             if !(m.showingInvitation?.connChatUsed ?? true),
+               !choosingProfile,
                let conn = contactConnection {
                 parentAlert = SomeAlert(
                     alert: Alert(
@@ -141,7 +143,9 @@ struct NewChatView: View {
                     id: "keepUnusedInvitation"
                 )
             }
-            m.showingInvitation = nil
+            if !choosingProfile {
+                m.showingInvitation = nil
+            }
         }
         .alert(item: $alert) { a in
             switch(a) {
@@ -159,6 +163,7 @@ struct NewChatView: View {
                 InviteView(
                     invitationUsed: $invitationUsed,
                     contactConnection: $contactConnection,
+                    choosingProfile: $choosingProfile,
                     connReqInvitation: connReqInvitation
                 )
             } else if creatingConnReq {
@@ -215,9 +220,13 @@ private struct InviteView: View {
     @EnvironmentObject var theme: AppTheme
     @Binding var invitationUsed: Bool
     @Binding var contactConnection: PendingContactConnection?
+    @Binding var choosingProfile: Bool
+
     var connReqInvitation: String
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
-
+    @State private var showSettings: Bool = false
+    @State private var selectedProfile: User?
+    
     var body: some View {
         List {
             Section(header: Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)) {
@@ -227,12 +236,23 @@ private struct InviteView: View {
 
             qrCodeView()
 
-            Section {
-                IncognitoToggle(incognitoEnabled: $incognitoDefault)
-            } footer: {
-                sharedProfileInfo(incognitoDefault)
-                    .foregroundColor(theme.colors.secondary)
+            Section(header: Text("Profile").foregroundColor(theme.colors.secondary)) {
+                NavigationLink {
+                    ActiveProfilePicker(
+                        selectedProfile: $selectedProfile,
+                        incognitoEnabled: $incognitoDefault,
+                        choosingProfile: $choosingProfile
+                    )
+                } label: {
+                    HStack {
+                        ProfileImage(imageStr: selectedProfile?.image, size: 24)
+                        Text(selectedProfile?.chatViewName ?? "")
+                    }
+                }
             }
+        }
+        .onAppear {
+            selectedProfile = chatModel.currentUser
         }
         .onChange(of: incognitoDefault) { incognito in
             Task {
@@ -285,6 +305,87 @@ private struct InviteView: View {
     private func setInvitationUsed() {
         if !invitationUsed {
             invitationUsed = true
+        }
+    }
+}
+
+private struct ActiveProfilePicker: View {
+    @State private var showProfilePicker = false
+    @EnvironmentObject var theme: AppTheme
+    @Binding var selectedProfile: User?
+    @EnvironmentObject var chatModel: ChatModel
+    @Binding var incognitoEnabled: Bool
+    @Binding var choosingProfile: Bool
+    
+    var body: some View {
+        profilePicker()
+            .navigationTitle("Your chat profiles")
+            .navigationBarTitleDisplayMode(.inline)
+            .modifier(ThemedBackground(grouped: true))
+    }
+    
+    
+    @ViewBuilder private func profilePicker() -> some View {
+        let profiles = chatModel.users
+            .map { $0.user }
+            .filter({ u in u.activeUser || !u.hidden })
+            .sorted { u, _ in u.activeUser }
+    
+        List {
+            Section {
+                Button {
+                    incognitoEnabled = true
+                } label : {
+                    HStack {
+                        Image(systemName: "theatermasks")
+                            .frame(maxWidth: 20, maxHeight: 20, alignment: .center)
+                            .foregroundColor(.indigo)
+                            .padding(.trailing, 6)
+
+                        Text("Incognito")
+                            .foregroundColor(theme.colors.onBackground)
+                        Spacer()
+                        if incognitoEnabled {
+                            Image(systemName: "checkmark")
+                                .resizable().scaledToFit().frame(width: 16)
+                                .foregroundColor(theme.colors.primary)
+                        }
+                    }
+                }
+                ForEach(profiles) { item in
+                    Button {
+                        if selectedProfile != item {
+                            selectedProfile = item
+                        }
+                    } label: {
+                        HStack {
+                            ProfileImage(imageStr: item.image, size: 30)
+                                .padding(.trailing, 2)
+                            Text(item.chatViewName)
+                                .foregroundColor(theme.colors.onBackground)
+                                .lineLimit(1)
+                            Spacer()
+                            if selectedProfile == item, !incognitoEnabled {
+                                Image(systemName: "checkmark")
+                                    .resizable().scaledToFit().frame(width: 16)
+                                    .foregroundColor(theme.colors.primary)
+                            }
+                        }
+                    }
+                }
+                .environment(\.editMode, .constant(.active))
+            } footer: {
+                Text("Tap to choose profile.")
+                    .foregroundColor(theme.colors.secondary)
+                    .font(.body)
+                    .padding(.top, 8)
+            }
+        }
+        .onAppear {
+            choosingProfile = true
+        }
+        .onDisappear {
+            choosingProfile = false
         }
     }
 }
