@@ -97,6 +97,7 @@ public enum ChatCommand {
     case apiVerifyGroupMember(groupId: Int64, groupMemberId: Int64, connectionCode: String?)
     case apiAddContact(userId: Int64, incognito: Bool)
     case apiSetConnectionIncognito(connId: Int64, incognito: Bool)
+    case apiChangeConnectionUser(connId: Int64, userId: Int64)
     case apiConnectPlan(userId: Int64, connReq: String)
     case apiConnect(userId: Int64, incognito: Bool, connReq: String)
     case apiConnectContactViaAddress(userId: Int64, incognito: Bool, contactId: Int64)
@@ -262,6 +263,7 @@ public enum ChatCommand {
             case let .apiVerifyGroupMember(groupId, groupMemberId, .none): return "/_verify code #\(groupId) \(groupMemberId)"
             case let .apiAddContact(userId, incognito): return "/_connect \(userId) incognito=\(onOff(incognito))"
             case let .apiSetConnectionIncognito(connId, incognito): return "/_set incognito :\(connId) \(onOff(incognito))"
+            case let .apiChangeConnectionUser(connId, userId): return "/_set conn user :\(connId) \(userId)"
             case let .apiConnectPlan(userId, connReq): return "/_connect plan \(userId) \(connReq)"
             case let .apiConnect(userId, incognito, connReq): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connReq)"
             case let .apiConnectContactViaAddress(userId, incognito, contactId): return "/_connect contact \(userId) incognito=\(onOff(incognito)) \(contactId)"
@@ -403,6 +405,7 @@ public enum ChatCommand {
             case .apiVerifyGroupMember: return "apiVerifyGroupMember"
             case .apiAddContact: return "apiAddContact"
             case .apiSetConnectionIncognito: return "apiSetConnectionIncognito"
+            case .apiChangeConnectionUser: return "apiChangeConnectionUser"
             case .apiConnectPlan: return "apiConnectPlan"
             case .apiConnect: return "apiConnect"
             case .apiDeleteChat: return "apiDeleteChat"
@@ -555,6 +558,7 @@ public enum ChatResponse: Decodable, Error {
     case connectionVerified(user: UserRef, verified: Bool, expectedCode: String)
     case invitation(user: UserRef, connReqInvitation: String, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
+    case connectionUserChanged(user: UserRef, fromConnection: PendingContactConnection, toConnection: PendingContactConnection, newUser: UserRef)
     case connectionPlan(user: UserRef, connectionPlan: ConnectionPlan)
     case sentConfirmation(user: UserRef, connection: PendingContactConnection)
     case sentInvitation(user: UserRef, connection: PendingContactConnection)
@@ -725,6 +729,7 @@ public enum ChatResponse: Decodable, Error {
             case .connectionVerified: return "connectionVerified"
             case .invitation: return "invitation"
             case .connectionIncognitoUpdated: return "connectionIncognitoUpdated"
+            case .connectionUserChanged: return "connectionUserChanged"
             case .connectionPlan: return "connectionPlan"
             case .sentConfirmation: return "sentConfirmation"
             case .sentInvitation: return "sentInvitation"
@@ -893,6 +898,7 @@ public enum ChatResponse: Decodable, Error {
             case let .connectionVerified(u, verified, expectedCode): return withUser(u, "verified: \(verified)\nconnectionCode: \(expectedCode)")
             case let .invitation(u, connReqInvitation, connection): return withUser(u, "connReqInvitation: \(connReqInvitation)\nconnection: \(connection)")
             case let .connectionIncognitoUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
+            case let .connectionUserChanged(u, fromConnection, toConnection, newUser): return withUser(u, "fromConnection: \(String(describing: fromConnection))\ntoConnection: \(String(describing: toConnection))\newUserId: \(String(describing: newUser.userId))")
             case let .connectionPlan(u, connectionPlan): return withUser(u, String(describing: connectionPlan))
             case let .sentConfirmation(u, connection): return withUser(u, String(describing: connection))
             case let .sentInvitation(u, connection): return withUser(u, String(describing: connection))
@@ -1857,6 +1863,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case agentCommandError(message: String)
     case invalidFileDescription(message: String)
     case connectionIncognitoChangeProhibited
+    case connectionUserChangeProhibited
     case peerChatVRangeIncompatible
     case internalError(message: String)
     case exception(message: String)
