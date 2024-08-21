@@ -49,7 +49,9 @@ object ThemeManager {
       return perUserTheme
     }
     val defaultTheme = defaultActiveTheme(appSettingsTheme)
-    return ThemeModeOverride(colors = defaultTheme?.colors ?: ThemeColors(), wallpaper = defaultTheme?.wallpaper)
+    return ThemeModeOverride(colors = defaultTheme?.colors ?: ThemeColors(), wallpaper = defaultTheme?.wallpaper
+      // Situation when user didn't change global theme at all (it is not saved yet). Using defaults
+      ?: ThemeWallpaper.from(PresetWallpaper.SCHOOL.toType(CurrentColors.value.base), null, null))
   }
 
   fun currentColors(themeOverridesForType: WallpaperType?, perChatTheme: ThemeModeOverride?, perUserTheme: ThemeModeOverrides?, appSettingsTheme: List<ThemeOverrides>): ActiveTheme {
