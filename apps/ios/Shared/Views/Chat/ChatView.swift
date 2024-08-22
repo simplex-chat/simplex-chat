@@ -717,17 +717,17 @@ struct ChatView: View {
 
         var revealed: Bool { chatItem == revealedChatItem }
 
-        private func roundedToMinute(_ date: Date) -> TimeInterval {
-            date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 60)
+        private func componentsToMinute(_ date: Date) -> DateComponents {
+            Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
         }
 
         private func timeShown(currIndex: Int?) -> Bool {
             let im = ItemsModel.shared
             if let currIndex, currIndex > 0 && !im.reversedChatItems.isEmpty {
                 let nextItem = im.reversedChatItems[currIndex - 1]
-                return nextItem.rcvMember != chatItem.rcvMember ||
-                       nextItem.mergeCategory != chatItem.mergeCategory ||
-                       roundedToMinute(nextItem.meta.createdAt) == roundedToMinute(chatItem.meta.createdAt)
+                return componentsToMinute(nextItem.meta.createdAt) != componentsToMinute(chatItem.meta.createdAt) ||
+                    nextItem.rcvMember != chatItem.rcvMember ||
+                    nextItem.mergeCategory != chatItem.mergeCategory
             } else {
                 return true
             }
