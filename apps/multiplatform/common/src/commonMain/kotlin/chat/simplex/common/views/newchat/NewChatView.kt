@@ -2,12 +2,15 @@ package chat.simplex.common.views.newchat
 
 import SectionBottomSpacer
 import SectionItemView
+import SectionItemViewSpaceBetween
 import SectionTextFooter
 import SectionView
+import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.text.BasicTextField
@@ -29,6 +32,7 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.contacts.ContactListNavLinkView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
@@ -193,6 +197,71 @@ private fun RetryButton(onClick: () -> Unit) {
 }
 
 @Composable
+private fun ProfilePickerOption(
+  title: String,
+  selected: Boolean,
+  onSelected: () -> Unit
+) {
+  SectionItemViewSpaceBetween({ onSelected() }) {
+    Text(title)
+    if (selected) {
+      Icon(painterResource(MR.images.ic_check), title, tint = MaterialTheme.colors.primary)
+    }
+  }
+  Divider(
+    Modifier.padding(
+      start = DEFAULT_PADDING_HALF,
+      top = 4.dp,
+      end = DEFAULT_PADDING_HALF,
+      bottom = 4.dp
+    )
+  )
+}
+
+@Composable
+private fun ActiveProfilePicker(rhId: Long?) {
+  val incognito = remember { mutableStateOf(controller.appPrefs.incognito.get()) }
+  val selectedProfile = remember { mutableStateOf(chatModel.currentUser.value) }
+
+  BoxWithConstraints {
+    Column(Modifier.fillMaxSize()) {
+      AppBarTitle(stringResource(MR.strings.select_profile), hostDevice(rhId), bottomPadding = DEFAULT_PADDING)
+
+      val profiles by remember(chatModel.users) {
+        derivedStateOf {
+          chatModel.users
+            .map {it.user}
+            .filter { !it.hidden || it.activeUser }
+            .sortedBy { !it.activeUser }
+        }
+      }
+
+      LazyColumnWithScrollBar {
+        item {
+          ProfilePickerOption(
+            title = stringResource(MR.strings.incognito),
+            selected = incognito.value,
+            onSelected = {
+              incognito.value = true
+            }
+          )
+        }
+        itemsIndexed(profiles) { _, p ->
+          ProfilePickerOption(
+            title = p.chatViewName,
+            selected = selectedProfile.value?.userId == p.userId && !incognito.value,
+            onSelected = {
+              incognito.value = false
+              selectedProfile.value = p
+            }
+          )
+        }
+      }
+    }
+  }
+}
+
+@Composable
 private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection: MutableState<PendingContactConnection?>) {
   SectionView(stringResource(MR.strings.share_this_1_time_link).uppercase()) {
     LinkTextView(connReqInvitation, true)
@@ -206,6 +275,36 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
 
   Spacer(Modifier.height(10.dp))
   val incognito = remember { mutableStateOf(controller.appPrefs.incognito.get()) }
+  val currentUser by remember(chatModel.currentUser.value) {
+    derivedStateOf { chatModel.currentUser.value }
+  }
+
+  currentUser?.let {
+    SectionView(stringResource(MR.strings.new_chat_profile).uppercase()) {
+      SectionItemView(
+        click = {
+          ModalManager.start.showModal { ActiveProfilePicker(rhId) }
+        }
+      ) {
+        if (incognito.value) {
+          Icon(
+            painterResource(MR.images.ic_theater_comedy_filled),
+            contentDescription = stringResource(MR.strings.incognito),
+            tint = MaterialTheme.colors.secondary,
+          )
+        } else {
+          ProfileImage(size = 24.dp, image = it.image)
+        }
+        TextIconSpaced(false)
+        Text(
+          text = if (incognito.value) stringResource(MR.strings.incognito) else it.chatViewName,
+          color = MaterialTheme.colors.onBackground
+        )
+      }
+    }
+  }
+
+
   IncognitoToggle(controller.appPrefs.incognito, incognito) {
     ModalManager.start.showModal { IncognitoView() }
   }
