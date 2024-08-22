@@ -2022,7 +2022,7 @@
     <string name="cant_call_member_send_message_alert_text">Üzenet küldése a hívások engedélyezéséhez.</string>
     <string name="you_need_to_allow_calls">Engedélyeznie kell a hívásokat az ismerőse számára, hogy fel tudják hívni egymást.</string>
     <string name="you_can_still_view_conversation_with_contact">A(z) %1$s nevű ismerősével folytatott beszélgetéseit továbbra is megtekintheti a csevegések listájában.</string>
-    <string name="compose_message_placeholder">Üzenet...</string>
+    <string name="compose_message_placeholder">Üzenet</string>
     <string name="select_verb">Kiválaszt</string>
     <string name="moderate_messages_will_be_marked_warning">Az üzenetek minden tag számára moderáltként lesznek megjelölve.</string>
     <string name="selected_chat_items_nothing_selected">Nincs kiválasztva semmi</string>
