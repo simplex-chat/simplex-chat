@@ -696,6 +696,7 @@ struct ChatView: View {
         @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
         @Binding @ObservedObject var chat: Chat
+        @ObservedObject var dummyModel: ChatItemDummyModel = .shared
         let chatItem: ChatItem
         let maxWidth: CGFloat
         @Binding var composeState: ComposeState
