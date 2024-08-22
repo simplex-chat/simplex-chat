@@ -1013,10 +1013,10 @@ processChatCommand' vr = \case
             getDirectCI :: DB.Connection -> ChatItemId -> IO (Either ChatError (CChatItem 'CTDirect))
             getDirectCI db itemId = runExceptT . withExceptT ChatErrorStore $ getDirectChatItem db user fromChatId itemId
             ciComposeMsgReq :: Contact -> CChatItem 'CTDirect -> CM ComposeMessageReq
-            ciComposeMsgReq ct ci = do
+            ciComposeMsgReq ct (CChatItem _ ci) = do
               (mc, mDir) <- forwardMC ci
               file <- forwardCryptoFile ci
-              let itemId = cchatItemId ci
+              let itemId = chatItemId' ci
                   ciff = forwardCIFF ci $ Just (CIFFContact (forwardName ct) mDir (Just fromChatId) (Just itemId))
               pure (ComposedMessage file Nothing mc, ciff)
               where
@@ -1033,10 +1033,10 @@ processChatCommand' vr = \case
             getGroupCI :: DB.Connection -> ChatItemId -> IO (Either ChatError (CChatItem 'CTGroup))
             getGroupCI db itemId = runExceptT . withExceptT ChatErrorStore $ getGroupChatItem db user fromChatId itemId
             ciComposeMsgReq :: GroupInfo -> CChatItem 'CTGroup -> CM ComposeMessageReq
-            ciComposeMsgReq gInfo ci = do
+            ciComposeMsgReq gInfo (CChatItem _ ci) = do
               (mc, mDir) <- forwardMC ci
               file <- forwardCryptoFile ci
-              let itemId = cchatItemId ci
+              let itemId = chatItemId' ci
                   ciff = forwardCIFF ci $ Just (CIFFGroup (forwardName gInfo) mDir (Just fromChatId) (Just itemId))
               pure (ComposedMessage file Nothing mc, ciff)
               where
@@ -1050,7 +1050,7 @@ processChatCommand' vr = \case
             getLocalCI :: DB.Connection -> ChatItemId -> IO (Either ChatError (CChatItem 'CTLocal))
             getLocalCI db itemId = runExceptT . withExceptT ChatErrorStore $ getLocalChatItem db user fromChatId itemId
             ciComposeMsgReq :: CChatItem 'CTLocal -> CM ComposeMessageReq
-            ciComposeMsgReq ci = do
+            ciComposeMsgReq (CChatItem _ ci) = do
               (mc, _) <- forwardMC ci
               file <- forwardCryptoFile ci
               let ciff = forwardCIFF ci Nothing
@@ -1058,19 +1058,19 @@ processChatCommand' vr = \case
         CTContactRequest -> throwChatError $ CECommandError "not supported"
         CTContactConnection -> throwChatError $ CECommandError "not supported"
         where
-          forwardMC :: CChatItem c -> CM (MsgContent, MsgDirection)
-          forwardMC (CChatItem _ ChatItem {meta = CIMeta {itemDeleted = Just _}}) = throwChatError CEInvalidForward
-          forwardMC (CChatItem _ ChatItem {content = CISndMsgContent fmc}) = pure (fmc, MDSnd)
-          forwardMC (CChatItem _ ChatItem {content = CIRcvMsgContent fmc}) = pure (fmc, MDRcv)
+          forwardMC :: ChatItem c d -> CM (MsgContent, MsgDirection)
+          forwardMC ChatItem {meta = CIMeta {itemDeleted = Just _}} = throwChatError CEInvalidForward
+          forwardMC ChatItem {content = CISndMsgContent fmc} = pure (fmc, MDSnd)
+          forwardMC ChatItem {content = CIRcvMsgContent fmc} = pure (fmc, MDRcv)
           forwardMC _ = throwChatError CEInvalidForward
-          forwardCIFF :: CChatItem c -> Maybe CIForwardedFrom -> Maybe CIForwardedFrom
-          forwardCIFF (CChatItem _ ChatItem {meta = CIMeta {itemForwarded}}) ciff = case itemForwarded of
+          forwardCIFF :: ChatItem c d -> Maybe CIForwardedFrom -> Maybe CIForwardedFrom
+          forwardCIFF ChatItem {meta = CIMeta {itemForwarded}} ciff = case itemForwarded of
             Nothing -> ciff
             Just CIFFUnknown -> ciff
             Just prevCIFF -> Just prevCIFF
-          forwardCryptoFile :: CChatItem c -> CM (Maybe CryptoFile)
-          forwardCryptoFile (CChatItem _ ChatItem {file = Nothing}) = pure Nothing
-          forwardCryptoFile (CChatItem _ ChatItem {file = Just ciFile}) = case ciFile of
+          forwardCryptoFile :: ChatItem c d -> CM (Maybe CryptoFile)
+          forwardCryptoFile ChatItem {file = Nothing} = pure Nothing
+          forwardCryptoFile ChatItem {file = Just ciFile} = case ciFile of
             CIFile {fileName, fileSource = Just fromCF@CryptoFile {filePath}} ->
               chatReadVar filesFolder >>= \case
                 Nothing ->
