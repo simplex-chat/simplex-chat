@@ -716,7 +716,7 @@ struct ChatView: View {
 
         var revealed: Bool { chatItem == revealedChatItem }
 
-        private func isTimeShown(currIndex: Int?) -> Bool {
+        private func timeShown(currIndex: Int?) -> Bool {
             let im = ItemsModel.shared
             if let currIndex, currIndex > 0 && !im.reversedChatItems.isEmpty {
                 let nextItem = im.reversedChatItems[currIndex - 1]
@@ -730,7 +730,7 @@ struct ChatView: View {
 
         var body: some View {
             let (currIndex, _) = m.getNextChatItem(chatItem)
-            let isTimeShown = isTimeShown(currIndex: currIndex)
+            let isTimeShown = timeShown(currIndex: currIndex)
             let ciCategory = chatItem.mergeCategory
             let (prevHidden, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
             let range = itemsRange(currIndex, prevHidden)
@@ -738,9 +738,9 @@ struct ChatView: View {
             Group {
                 if revealed, let range = range {
                     let items = Array(zip(Array(range), im.reversedChatItems[range]))
-                    ForEach(items.reversed(), id: \.1.viewId) { (i, ci) in
+                    ForEach(items.reversed(), id: \.1.viewId) { (i: Int, ci: ChatItem) in
                         let prev = i == prevHidden ? prevItem : im.reversedChatItems[i + 1]
-                        chatItemView(ci, nil, prev, isTimeShown)
+                        chatItemView(ci, nil, prev, timeShown(currIndex: i))
                         .overlay {
                             if let selected = selectedChatItems, ci.canBeDeletedForSelf {
                                 Color.clear
@@ -905,6 +905,7 @@ struct ChatView: View {
                     revealed: .constant(revealed),
                     allowMenu: $allowMenu
                 )
+                .environment(\.showTimestamp, isTimeShown)
                 .modifier(ChatItemClipped(ci, showsTail: isTimeShown))
                 .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
                 .accessibilityLabel("")
