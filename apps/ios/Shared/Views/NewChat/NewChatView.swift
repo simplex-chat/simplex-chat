@@ -502,18 +502,18 @@ private struct ActiveProfilePicker: View {
                     incognitoProfileImage()
                     Text("Incognito")
                         .foregroundColor(theme.colors.onBackground)
-                    Image(systemName: "info.circle")
-                        .foregroundColor(theme.colors.primary)
-                        .font(.system(size: 14))
-                        .onTapGesture {
-                            showIncognitoSheet = true
-                        }
                     Spacer()
                     if incognitoEnabled {
                         Image(systemName: "checkmark")
                             .resizable().scaledToFit().frame(width: 16)
                             .foregroundColor(theme.colors.primary)
                     }
+                    Image(systemName: "info.circle")
+                        .foregroundColor(theme.colors.primary)
+                        .font(.system(size: 14))
+                        .onTapGesture {
+                            showIncognitoSheet = true
+                        }
                 }
             }
             let filteredProfiles = filteredProfiles()
