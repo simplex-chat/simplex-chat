@@ -337,12 +337,19 @@ private struct ActiveProfilePicker: View {
     @State private var switchingProfile = false
     @State private var switchingProfileByTimeout = false
     @State private var lastSwitchingProfileByTimeoutCall: Double?
+    @State private var profiles: [User] = []
     @State var selectedProfile: User
 
     var body: some View {
         viewBody()
             .navigationTitle("Your chat profiles")
             .navigationBarTitleDisplayMode(.large)
+            .onAppear {
+                profiles = chatModel.users
+                    .map { $0.user }
+                    .filter({ u in u.activeUser || !u.hidden })
+                    .sorted { u, _ in u.activeUser }
+            }
             .onChange(of: incognitoEnabled) { incognito in
                 if !switchingProfile {
                     return
@@ -463,11 +470,6 @@ private struct ActiveProfilePicker: View {
     }
         
     @ViewBuilder private func profilePicker() -> some View {
-        let profiles = chatModel.users
-            .map { $0.user }
-            .filter({ u in u.activeUser || !u.hidden })
-            .sorted { u, _ in u.activeUser }
-    
         List {
             Button {
                 if !incognitoEnabled {
