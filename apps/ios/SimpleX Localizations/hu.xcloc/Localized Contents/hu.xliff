@@ -1042,7 +1042,7 @@
       </trans-unit>
       <trans-unit id="Bad message hash" xml:space="preserve">
         <source>Bad message hash</source>
-        <target>Téves üzenet hash</target>
+        <target>Hibás az üzenet ellenőrzőösszege</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better groups" xml:space="preserve">
@@ -2131,7 +2131,7 @@ Ez az egyszer használatos hivatkozása!</target>
       </trans-unit>
       <trans-unit id="Delete member message?" xml:space="preserve">
         <source>Delete member message?</source>
-        <target>Csoporttag üzenet törlése?</target>
+        <target>Csoporttag üzenetének törlése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete message?" xml:space="preserve">
@@ -2221,7 +2221,7 @@ Ez az egyszer használatos hivatkozása!</target>
       </trans-unit>
       <trans-unit id="Delivery receipts!" xml:space="preserve">
         <source>Delivery receipts!</source>
-        <target>Kézbesítési igazolások!</target>
+        <target>Üzenet kézbesítési jelentések!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -2681,12 +2681,12 @@ Ez az egyszer használatos hivatkozása!</target>
       </trans-unit>
       <trans-unit id="Enter welcome message…" xml:space="preserve">
         <source>Enter welcome message…</source>
-        <target>Üdvözlő üzenetet megadása…</target>
+        <target>Üdvözlő üzenet megadása…</target>
         <note>placeholder</note>
       </trans-unit>
       <trans-unit id="Enter welcome message… (optional)" xml:space="preserve">
         <source>Enter welcome message… (optional)</source>
-        <target>Üdvözlő üzenetet megadása… (opcionális)</target>
+        <target>Üdvözlő üzenet megadása… (opcionális)</target>
         <note>placeholder</note>
       </trans-unit>
       <trans-unit id="Enter your name…" xml:space="preserve">
@@ -4131,7 +4131,7 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
       </trans-unit>
       <trans-unit id="Message delivery receipts!" xml:space="preserve">
         <source>Message delivery receipts!</source>
-        <target>Üzenetkézbesítési bizonylatok!</target>
+        <target>Üzenet kézbesítési jelentések!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message delivery warning" xml:space="preserve">
@@ -4176,7 +4176,7 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
       </trans-unit>
       <trans-unit id="Message reception" xml:space="preserve">
         <source>Message reception</source>
-        <target>Üzenetjelentés</target>
+        <target>Üzenet kézbesítési jelentés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message servers" xml:space="preserve">
@@ -6573,7 +6573,7 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
       </trans-unit>
       <trans-unit id="The hash of the previous message is different." xml:space="preserve">
         <source>The hash of the previous message is different.</source>
-        <target>Az előző üzenet hash-e más.</target>
+        <target>Az előző üzenet ellenőrzőösszege különbözik.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -7888,7 +7888,7 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
       </trans-unit>
       <trans-unit id="bad message hash" xml:space="preserve">
         <source>bad message hash</source>
-        <target>téves üzenet hash</target>
+        <target>hibás az üzenet ellenőrzőösszege</target>
         <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="blocked" xml:space="preserve">
@@ -8490,7 +8490,7 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
       </trans-unit>
       <trans-unit id="removed %@" xml:space="preserve">
         <source>removed %@</source>
-        <target>%@ eltávolítva</target>
+        <target>eltávolította őt: %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="removed contact address" xml:space="preserve">
