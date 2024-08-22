@@ -45,18 +45,47 @@ enum NewChatOption: Identifiable {
     var id: Self { self }
 }
 
+func cleanupPendingConnection(chatModel: ChatModel, contactConnection: PendingContactConnection?) -> SomeAlert? {
+    var alert: SomeAlert? = nil
+
+    if !(chatModel.showingInvitation?.connChatUsed ?? true),
+       let conn = contactConnection {
+        alert = SomeAlert(
+            alert: Alert(
+                title: Text("Keep unused invitation?"),
+                message: Text("You can view invitation link again in connection details."),
+                primaryButton: .default(Text("Keep")) {},
+                secondaryButton: .destructive(Text("Delete")) {
+                    Task {
+                        await deleteChat(Chat(
+                            chatInfo: .contactConnection(contactConnection: conn),
+                            chatItems: []
+                        ))
+                    }
+                }
+            ),
+            id: "keepUnusedInvitation"
+        )
+    }
+    
+    chatModel.showingInvitation = nil
+
+    return alert
+}
+
 struct NewChatView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @State var selection: NewChatOption
     @State var showQRCodeScanner = false
     @State private var invitationUsed: Bool = false
-    @State private var contactConnection: PendingContactConnection? = nil
     @State private var connReqInvitation: String = ""
     @State private var creatingConnReq = false
+    @State var choosingProfile = false
     @State private var pastedLink: String = ""
     @State private var alert: NewChatViewAlert?
     @Binding var parentAlert: SomeAlert?
+    @Binding var contactConnection: PendingContactConnection?
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -122,26 +151,10 @@ struct NewChatView: View {
             }
         }
         .onDisappear {
-            if !(m.showingInvitation?.connChatUsed ?? true),
-               let conn = contactConnection {
-                parentAlert = SomeAlert(
-                    alert: Alert(
-                        title: Text("Keep unused invitation?"),
-                        message: Text("You can view invitation link again in connection details."),
-                        primaryButton: .default(Text("Keep")) {},
-                        secondaryButton: .destructive(Text("Delete")) {
-                            Task {
-                                await deleteChat(Chat(
-                                    chatInfo: .contactConnection(contactConnection: conn),
-                                    chatItems: []
-                                ))
-                            }
-                        }
-                    ),
-                    id: "keepUnusedInvitation"
-                )
+            if !choosingProfile {
+                parentAlert = cleanupPendingConnection(chatModel: m, contactConnection: contactConnection)
+                contactConnection = nil
             }
-            m.showingInvitation = nil
         }
         .alert(item: $alert) { a in
             switch(a) {
@@ -159,7 +172,8 @@ struct NewChatView: View {
                 InviteView(
                     invitationUsed: $invitationUsed,
                     contactConnection: $contactConnection,
-                    connReqInvitation: connReqInvitation
+                    connReqInvitation: $connReqInvitation,
+                    choosingProfile: $choosingProfile
                 )
             } else if creatingConnReq {
                 creatingLinkProgressView()
@@ -210,13 +224,25 @@ struct NewChatView: View {
     }
 }
 
+private func incognitoProfileImage() -> some View {
+    Image(systemName: "theatermasks.fill")
+        .resizable()
+        .scaledToFit()
+        .frame(width: 30)
+        .foregroundColor(.indigo)
+}
+
 private struct InviteView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Binding var invitationUsed: Bool
     @Binding var contactConnection: PendingContactConnection?
-    var connReqInvitation: String
+    @Binding var connReqInvitation: String
+    @Binding var choosingProfile: Bool
+
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
+    @State private var showSettings: Bool = false
+    @State private var showIncognitoSheet = false
 
     var body: some View {
         List {
@@ -226,28 +252,43 @@ private struct InviteView: View {
             .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
 
             qrCodeView()
-
-            Section {
-                IncognitoToggle(incognitoEnabled: $incognitoDefault)
-            } footer: {
-                sharedProfileInfo(incognitoDefault)
-                    .foregroundColor(theme.colors.secondary)
-            }
-        }
-        .onChange(of: incognitoDefault) { incognito in
-            Task {
-                do {
-                    if let contactConn = contactConnection,
-                       let conn = try await apiSetConnectionIncognito(connId: contactConn.pccConnId, incognito: incognito) {
-                        await MainActor.run {
-                            contactConnection = conn
-                            chatModel.updateContactConnection(conn)
+            if let selectedProfile = chatModel.currentUser {
+                Section {
+                    NavigationLink {
+                        ActiveProfilePicker(
+                            contactConnection: $contactConnection,
+                            connReqInvitation: $connReqInvitation,
+                            incognitoEnabled: $incognitoDefault,
+                            choosingProfile: $choosingProfile,
+                            selectedProfile: selectedProfile
+                        )
+                    } label: {
+                        HStack {
+                            if incognitoDefault {
+                                incognitoProfileImage()
+                                Text("Incognito")
+                            } else {
+                                ProfileImage(imageStr: chatModel.currentUser?.image, size: 30)
+                                Text(chatModel.currentUser?.chatViewName ?? "")
+                            }
                         }
                     }
-                } catch {
-                    logger.error("apiSetConnectionIncognito error: \(responseError(error))")
+                } header: {
+                    Text("Share profile").foregroundColor(theme.colors.secondary)
+                } footer: {
+                     if incognitoDefault {
+                         Text("A new random profile will be shared.")
+                     }
                 }
             }
+        }
+        .sheet(isPresented: $showIncognitoSheet) {
+            IncognitoHelp()
+        }
+        .onChange(of: incognitoDefault) { incognito in
+            setInvitationUsed()
+        }
+        .onChange(of: chatModel.currentUser) { u in
             setInvitationUsed()
         }
     }
@@ -270,6 +311,7 @@ private struct InviteView: View {
     private func qrCodeView() -> some View {
         Section(header: Text("Or show this code").foregroundColor(theme.colors.secondary)) {
             SimpleXLinkQRCode(uri: connReqInvitation, onShare: setInvitationUsed)
+                .id("simplex-qrcode-view-for-\(connReqInvitation)")
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -285,6 +327,197 @@ private struct InviteView: View {
     private func setInvitationUsed() {
         if !invitationUsed {
             invitationUsed = true
+        }
+    }
+}
+
+private struct ActiveProfilePicker: View {
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
+    @Binding var contactConnection: PendingContactConnection?
+    @Binding var connReqInvitation: String
+    @Binding var incognitoEnabled: Bool
+    @Binding var choosingProfile: Bool
+    @State private var alert: SomeAlert?
+    @State private var switchingProfile = false
+    @State private var switchingProfileByTimeout = false
+    @State private var lastSwitchingProfileByTimeoutCall: Double?
+    @State private var profiles: [User] = []
+    @State var selectedProfile: User
+
+    var body: some View {
+        viewBody()
+            .navigationTitle("Select chat profile")
+            .navigationBarTitleDisplayMode(.large)
+            .onAppear {
+                profiles = chatModel.users
+                    .map { $0.user }
+                    .filter({ u in u.activeUser || !u.hidden })
+                    .sorted { u, _ in u.activeUser }
+            }
+            .onChange(of: incognitoEnabled) { incognito in
+                if !switchingProfile {
+                    return
+                }
+
+                Task {
+                    do {
+                        if let contactConn = contactConnection,
+                           let conn = try await apiSetConnectionIncognito(connId: contactConn.pccConnId, incognito: incognito) {
+                            await MainActor.run {
+                                contactConnection = conn
+                                chatModel.updateContactConnection(conn)
+                                switchingProfile = false
+                                dismiss()
+                            }
+                        }
+                    } catch {
+                        switchingProfile = false
+                        incognitoEnabled = !incognito
+                        logger.error("apiSetConnectionIncognito error: \(responseError(error))")
+                        let err = getErrorAlert(error, "Error changing to incognito!")
+
+                        alert = SomeAlert(
+                            alert: Alert(
+                                title: Text(err.title),
+                                message: Text(err.message ?? "Error: \(responseError(error))")
+                            ),
+                            id: "setConnectionIncognitoError"
+                        )
+                    }
+                }
+            }
+            .onChange(of: switchingProfile) { sp in
+                if sp {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        switchingProfileByTimeout = switchingProfile
+                    }
+                } else {
+                    switchingProfileByTimeout = false
+                }
+            }
+            .onChange(of: selectedProfile) { profile in
+                if (profile == chatModel.currentUser) {
+                    return
+                }
+                Task {
+                    do {
+                        switchingProfile = true
+                        if let contactConn = contactConnection,
+                           let conn = try await apiChangeConnectionUser(connId: contactConn.pccConnId, userId: profile.userId) {
+                            
+                            await MainActor.run {
+                                contactConnection = conn
+                                connReqInvitation = conn.connReqInv ?? ""
+                                chatModel.updateContactConnection(conn)
+                            }
+                            do {
+                                try await changeActiveUserAsync_(profile.userId, viewPwd: nil)
+                                await MainActor.run {
+                                    switchingProfile = false
+                                    dismiss()
+                                }
+                            } catch {
+                                await MainActor.run {
+                                    switchingProfile = false
+                                    alert = SomeAlert(
+                                        alert: Alert(
+                                            title: Text("Error switching profile"),
+                                            message: Text("Your connection was moved to \(profile.chatViewName) but and unexpected error ocurred while redirecting you to the profile.")
+                                        ),
+                                        id: "switchingProfileError"
+                                    )
+                                }
+                            }
+                        }
+                    } catch {
+                        await MainActor.run {
+                            // TODO: discuss error handling
+                            switchingProfile = false
+                            if let currentUser = chatModel.currentUser {
+                                selectedProfile = currentUser
+                            }
+                            let err = getErrorAlert(error, "Error changing connection profile")
+                            alert = SomeAlert(
+                                alert: Alert(
+                                    title: Text(err.title),
+                                    message: Text(err.message ?? "Error: \(responseError(error))")
+                                ),
+                                id: "changeConnectionUserError"
+                            )
+                        }
+                    }
+                }
+            }
+            .alert(item: $alert) { a in
+                a.alert
+            }
+            .onAppear {
+                choosingProfile = true
+            }
+            .onDisappear {
+                choosingProfile = false
+            }
+    }
+    
+    
+    @ViewBuilder private func viewBody() -> some View {
+        NavigationView {
+            if switchingProfileByTimeout {
+                    ProgressView("Switching profile…")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .modifier(ThemedBackground(grouped: true))
+            } else {
+                profilePicker()
+                    .modifier(ThemedBackground(grouped: true))
+            }
+        }
+    }
+        
+    @ViewBuilder private func profilePicker() -> some View {
+        List {
+            Button {
+                if !incognitoEnabled {
+                    incognitoEnabled = true
+                    switchingProfile = true
+                }
+            } label : {
+                HStack {
+                    incognitoProfileImage()
+                    Text("Incognito")
+                        .foregroundColor(theme.colors.onBackground)
+                    Spacer()
+                    if incognitoEnabled {
+                        Image(systemName: "checkmark")
+                            .resizable().scaledToFit().frame(width: 16)
+                            .foregroundColor(theme.colors.primary)
+                    }
+                }
+            }
+            ForEach(profiles) { item in
+                Button {
+                    if selectedProfile != item || incognitoEnabled {
+                        switchingProfile = true
+                        incognitoEnabled = false
+                        selectedProfile = item
+                    }
+                } label: {
+                    HStack {
+                        ProfileImage(imageStr: item.image, size: 30)
+                            .padding(.trailing, 2)
+                        Text(item.chatViewName)
+                            .foregroundColor(theme.colors.onBackground)
+                            .lineLimit(1)
+                        Spacer()
+                        if selectedProfile == item, !incognitoEnabled {
+                            Image(systemName: "checkmark")
+                                .resizable().scaledToFit().frame(width: 16)
+                                .foregroundColor(theme.colors.primary)
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -975,10 +1208,12 @@ func connReqSentAlert(_ type: ConnReqType) -> Alert {
 struct NewChatView_Previews: PreviewProvider {
     static var previews: some View {
         @State var parentAlert: SomeAlert?
+        @State var contactConnection: PendingContactConnection? = nil
 
         NewChatView(
             selection: .invite,
-            parentAlert: $parentAlert
+            parentAlert: $parentAlert,
+            contactConnection: $contactConnection
         )
     }
 }
