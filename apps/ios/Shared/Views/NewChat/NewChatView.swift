@@ -276,21 +276,9 @@ private struct InviteView: View {
                 } header: {
                     Text("Share profile").foregroundColor(theme.colors.secondary)
                 } footer: {
-                    // if incognitoDefault {
-                    //     Text("A new random profile will be shared.")
-                    // }
-                    if incognitoDefault {
-                        HStack {
-                            Text("A new random profile will be shared.")
-                            Button {
-                                showIncognitoSheet = true
-                            } label: {
-                                Image(systemName: "info.circle")
-                                    .foregroundColor(theme.colors.primary)
-                                    .font(.system(size: 14))
-                            }
-                        }
-                    }
+                     if incognitoDefault {
+                         Text("A new random profile will be shared.")
+                     }
                 }
             }
         }
