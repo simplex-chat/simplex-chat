@@ -242,7 +242,6 @@ private struct InviteView: View {
 
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
     @State private var showSettings: Bool = false
-    @State private var showIncognitoSheet = false
 
     var body: some View {
         List {
@@ -281,9 +280,6 @@ private struct InviteView: View {
                      }
                 }
             }
-        }
-        .sheet(isPresented: $showIncognitoSheet) {
-            IncognitoHelp()
         }
         .onChange(of: incognitoDefault) { incognito in
             setInvitationUsed()
@@ -345,6 +341,7 @@ private struct ActiveProfilePicker: View {
     @State private var lastSwitchingProfileByTimeoutCall: Double?
     @State private var profiles: [User] = []
     @State private var searchTextOrPassword = ""
+    @State private var showIncognitoSheet = false
     @State var selectedProfile: User
 
     var trimmedSearchTextOrPassword: String { searchTextOrPassword.trimmingCharacters(in: .whitespaces)}
@@ -462,6 +459,9 @@ private struct ActiveProfilePicker: View {
             .onDisappear {
                 choosingProfile = false
             }
+            .sheet(isPresented: $showIncognitoSheet) {
+                IncognitoHelp()
+            }
     }
     
     
@@ -502,6 +502,12 @@ private struct ActiveProfilePicker: View {
                     incognitoProfileImage()
                     Text("Incognito")
                         .foregroundColor(theme.colors.onBackground)
+                    Image(systemName: "info.circle")
+                        .foregroundColor(theme.colors.primary)
+                        .font(.system(size: 14))
+                        .onTapGesture {
+                            showIncognitoSheet = true
+                        }
                     Spacer()
                     if incognitoEnabled {
                         Image(systemName: "checkmark")
