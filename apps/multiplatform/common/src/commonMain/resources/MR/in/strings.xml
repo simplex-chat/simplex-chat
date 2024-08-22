@@ -100,4 +100,16 @@
     <string name="connected_mobile">Ponsel yang terhubung</string>
     <string name="multicast_connect_automatically">Hubungkan secara otomatis</string>
     <string name="callstate_connecting">menyambungkan…</string>
+    <string name="servers_info_sessions_connecting">Menghubungkan</string>
+    <string name="error_parsing_uri_title">Tautan tidak valid</string>
+    <string name="error_parsing_uri_desc">Periksa apakah tautan SimpleX sudah benar.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Anda terhubung ke server yang digunakan untuk menerima pesan dari kontak ini.</string>
+    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Mencoba menyambung ke server yang digunakan untuk menerima pesan dari kontak ini (error: %1$s).</string>
+    <string name="database_migration_in_progress">Migrasi basis data sedang berlangsung, 
+\nmemerlukan waktu beberapa menit.</string>
+    <string name="server_connecting">menghubungkan</string>
+    <string name="non_content_uri_alert_title">Lokasi file tidak valid</string>
+    <string name="app_was_crashed">Tampilan macet</string>
+    <string name="non_content_uri_alert_text">Anda membagikan lokasi file yang tidak valid. Laporkan masalah ini ke pengembang aplikasi.</string>
+    <string name="server_error">error</string>
 </resources>

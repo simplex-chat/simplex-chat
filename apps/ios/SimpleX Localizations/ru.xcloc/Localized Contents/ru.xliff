@@ -1418,7 +1418,7 @@
       </trans-unit>
       <trans-unit id="Color chats with the new themes." xml:space="preserve">
         <source>Color chats with the new themes.</source>
-        <target>Добавьте цвета к чатам в настройках тем.</target>
+        <target>Добавьте цвета к чатам в настройках.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Color mode" xml:space="preserve">
@@ -2176,7 +2176,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Delete up to 20 messages at once." xml:space="preserve">
         <source>Delete up to 20 messages at once.</source>
-        <target>Удаляйте до 20 сообщений одновременно.</target>
+        <target>Удаляйте до 20 сообщений за раз.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete user profile?" xml:space="preserve">
@@ -4988,7 +4988,7 @@ Error: %@</source>
       </trans-unit>
       <trans-unit id="Private message routing 🚀" xml:space="preserve">
         <source>Private message routing 🚀</source>
-        <target>Конфиденциальная доставка сообщений 🚀</target>
+        <target>Конфиденциальная доставка 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Private notes" xml:space="preserve">
