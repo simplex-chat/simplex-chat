@@ -541,7 +541,7 @@ private struct ActiveProfilePicker: View {
                 }
             }
         }
-        //.opacity(switchingProfileByTimeout ? 0.4 : 1)
+        .opacity(switchingProfileByTimeout ? 0.4 : 1)
     }
 }
 
