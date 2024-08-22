@@ -2903,7 +2903,6 @@ processChatCommand' vr = \case
         processComposedMessages ct = do
           (fInvs_, ciFiles_) <- L.unzip <$> setupSndFileTransfers
           timed_ <- sndContactCITimed live ct itemTTL
-          -- all quotedItems_ are Nothing in case of multi send - see assertMultiSendable
           (msgContainers, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
           msgs_ <- sendDirectContactMessages user ct $ L.map XMsgNew msgContainers
           let itemsData = prepareSndItemsData msgs_ cmrs ciFiles_ quotedItems_
@@ -2966,7 +2965,6 @@ processChatCommand' vr = \case
         processComposedMessages g@(Group gInfo ms) = do
           (fInvs_, ciFiles_) <- L.unzip <$> setupSndFileTransfers (length $ filter memberCurrent ms)
           timed_ <- sndGroupCITimed live gInfo itemTTL
-          -- all quotedItems_ are Nothing in case of multi send - see assertMultiSendable
           (msgContainers, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
           (msgs_, gsr) <- sendGroupMessages user gInfo ms $ L.map XMsgNew msgContainers
           let itemsData = prepareSndItemsData (L.toList msgs_) cmrs ciFiles_ quotedItems_
@@ -3030,8 +3028,12 @@ processChatCommand' vr = \case
     assertMultiSendable live cmrs
       | length cmrs == 1 = pure ()
       | otherwise =
-          when (live || any (\(ComposedMessage {quotedItemId}, _) -> isJust quotedItemId) cmrs) $
-            throwChatError (CECommandError "invalid multi send: live and quotes not supported")
+          -- When sending multiple messages only single quote is allowed.
+          -- This is to support case of sending multiple attachments while also quoting another message.
+          -- UI doesn't allow composing with multiple quotes, so api prohibits it as well, and doesn't bother
+          -- batching retrieval of quoted messages (prepareMsgs).
+          when (live || length (L.filter (\(ComposedMessage {quotedItemId}, _) -> isJust quotedItemId) cmrs) > 1) $
+            throwChatError (CECommandError "invalid multi send: live and more than one quote not supported")
     xftpSndFileTransfer :: User -> CryptoFile -> Integer -> Int -> ContactOrGroup -> CM (FileInvitation, CIFile 'MDSnd)
     xftpSndFileTransfer user file fileSize n contactOrGroup = do
       (fInv, ciFile, ft) <- xftpSndFileTransfer_ user file fileSize n $ Just contactOrGroup
