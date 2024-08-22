@@ -463,15 +463,16 @@ private struct ActiveProfilePicker: View {
     
     @ViewBuilder private func viewBody() -> some View {
         NavigationView {
-            if switchingProfileByTimeout {
-                    ProgressView("Switching profile…")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .modifier(ThemedBackground(grouped: true))
-            } else {
-                profilePicker()
-                    .modifier(ThemedBackground(grouped: true))
-            }
-        }
+            profilePicker()
+                .modifier(ThemedBackground(grouped: true))
+                .overlay {
+                    if switchingProfileByTimeout {
+                        ProgressView()
+                            .scaleEffect(2)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                }
+        }.allowsHitTesting(!switchingProfileByTimeout)
     }
         
     @ViewBuilder private func profilePicker() -> some View {
@@ -518,6 +519,7 @@ private struct ActiveProfilePicker: View {
                 }
             }
         }
+        .opacity(switchingProfileByTimeout ? 0.4 : 1)
     }
 }
 
