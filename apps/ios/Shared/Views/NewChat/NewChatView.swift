@@ -353,6 +353,7 @@ private struct ActiveProfilePicker: View {
         viewBody()
             .navigationTitle("Select chat profile")
             .searchable(text: $searchTextOrPassword, placement: .navigationBarDrawer(displayMode: .always))
+            .autocorrectionDisabled(true)
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
                 profiles = chatModel.users
