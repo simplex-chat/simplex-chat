@@ -1040,9 +1040,9 @@
         <target>Téves üzenet ID</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bad message hash" xml:space="preserve" approved="no">
+      <trans-unit id="Bad message hash" xml:space="preserve">
         <source>Bad message hash</source>
-        <target state="translated">Hibás az üzenet ellenőrzőösszege</target>
+        <target>Hibás az üzenet ellenőrzőösszege</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better groups" xml:space="preserve">
@@ -2129,9 +2129,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Hivatkozás törlése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete member message?" xml:space="preserve" approved="no">
+      <trans-unit id="Delete member message?" xml:space="preserve">
         <source>Delete member message?</source>
-        <target state="translated">Csoporttag üzenetének törlése?</target>
+        <target>Csoporttag üzenetének törlése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete message?" xml:space="preserve">
@@ -2219,9 +2219,9 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>A kézbesítési jelentések ki vannak kapcsolva!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts!" xml:space="preserve" approved="no">
+      <trans-unit id="Delivery receipts!" xml:space="preserve">
         <source>Delivery receipts!</source>
-        <target state="translated">Üzenet kézbesítési jelentések!</target>
+        <target>Üzenet kézbesítési jelentések!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -2679,14 +2679,14 @@ Ez az egyszer használatos hivatkozása!</target>
         <target>Eszköznév megadása…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter welcome message…" xml:space="preserve" approved="no">
+      <trans-unit id="Enter welcome message…" xml:space="preserve">
         <source>Enter welcome message…</source>
-        <target state="translated">Üdvözlő üzenet megadása…</target>
+        <target>Üdvözlő üzenet megadása…</target>
         <note>placeholder</note>
       </trans-unit>
-      <trans-unit id="Enter welcome message… (optional)" xml:space="preserve" approved="no">
+      <trans-unit id="Enter welcome message… (optional)" xml:space="preserve">
         <source>Enter welcome message… (optional)</source>
-        <target state="translated">Üdvözlő üzenet megadása… (opcionális)</target>
+        <target>Üdvözlő üzenet megadása… (opcionális)</target>
         <note>placeholder</note>
       </trans-unit>
       <trans-unit id="Enter your name…" xml:space="preserve">
@@ -4129,9 +4129,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Üzenetkézbesítési hiba</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Message delivery receipts!" xml:space="preserve" approved="no">
+      <trans-unit id="Message delivery receipts!" xml:space="preserve">
         <source>Message delivery receipts!</source>
-        <target state="translated">Üzenet kézbesítési jelentések!</target>
+        <target>Üzenet kézbesítési jelentések!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message delivery warning" xml:space="preserve">
@@ -4174,9 +4174,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Az üzenetreakciók küldése le van tiltva ebben a csoportban.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reception" xml:space="preserve" approved="no">
+      <trans-unit id="Message reception" xml:space="preserve">
         <source>Message reception</source>
-        <target state="translated">Üzenet kézbesítési jelentés</target>
+        <target>Üzenet kézbesítési jelentés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message servers" xml:space="preserve">
@@ -6571,9 +6571,9 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>A titkosítás működik, és új titkosítási egyezményre nincs szükség. Ez kapcsolati hibákat eredményezhet!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The hash of the previous message is different." xml:space="preserve" approved="no">
+      <trans-unit id="The hash of the previous message is different." xml:space="preserve">
         <source>The hash of the previous message is different.</source>
-        <target state="translated">Az előző üzenet ellenőrzőösszege különbözik.</target>
+        <target>Az előző üzenet ellenőrzőösszege különbözik.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -7886,9 +7886,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>téves üzenet ID</target>
         <note>integrity error chat item</note>
       </trans-unit>
-      <trans-unit id="bad message hash" xml:space="preserve" approved="no">
+      <trans-unit id="bad message hash" xml:space="preserve">
         <source>bad message hash</source>
-        <target state="translated">hibás az üzenet ellenőrzőösszege</target>
+        <target>hibás az üzenet ellenőrzőösszege</target>
         <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="blocked" xml:space="preserve">
@@ -8488,9 +8488,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>eltávolítva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="removed %@" xml:space="preserve" approved="no">
+      <trans-unit id="removed %@" xml:space="preserve">
         <source>removed %@</source>
-        <target state="translated">eltávolította őt: %@</target>
+        <target>eltávolította őt: %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="removed contact address" xml:space="preserve">

@@ -1615,9 +1615,9 @@ Questo è il tuo link una tantum!</target>
         <target>Connessione</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection and servers status." xml:space="preserve" approved="no">
+      <trans-unit id="Connection and servers status." xml:space="preserve">
         <source>Connection and servers status.</source>
-        <target state="translated">Stato della connessione e dei server.</target>
+        <target>Stato della connessione e dei server.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection error" xml:space="preserve">

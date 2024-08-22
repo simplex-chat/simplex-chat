@@ -800,9 +800,9 @@
         <target>Se permite la eliminación irreversible de mensajes. (24 horas)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to send SimpleX links." xml:space="preserve" approved="no">
+      <trans-unit id="Allow to send SimpleX links." xml:space="preserve">
         <source>Allow to send SimpleX links.</source>
-        <target state="translated">Se permite enviar enlaces SimpleX.</target>
+        <target>Se permite enviar enlaces SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send files and media." xml:space="preserve">
@@ -2404,9 +2404,9 @@ This is your own one-time link!</source>
         <target>Hacer más tarde</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do not send history to new members." xml:space="preserve" approved="no">
+      <trans-unit id="Do not send history to new members." xml:space="preserve">
         <source>Do not send history to new members.</source>
-        <target state="translated">No se envía el historial a los miembros nuevos.</target>
+        <target>No se envía el historial a los miembros nuevos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't create address" xml:space="preserve">
@@ -5066,9 +5066,9 @@ Error: %@</target>
         <target>No se permiten reacciones a los mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit sending SimpleX links." xml:space="preserve" approved="no">
+      <trans-unit id="Prohibit sending SimpleX links." xml:space="preserve">
         <source>Prohibit sending SimpleX links.</source>
-        <target state="translated">No se permite enviar enlaces SimpleX.</target>
+        <target>No se permite enviar enlaces SimpleX.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve">
@@ -5839,9 +5839,9 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <target>Envíalos desde la galería o desde teclados personalizados.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send up to 100 last messages to new members." xml:space="preserve" approved="no">
+      <trans-unit id="Send up to 100 last messages to new members." xml:space="preserve">
         <source>Send up to 100 last messages to new members.</source>
-        <target state="translated">Se envían hasta 100 mensajes más recientes a los miembros nuevos.</target>
+        <target>Se envían hasta 100 mensajes más recientes a los miembros nuevos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
@@ -7447,9 +7447,9 @@ Repeat join request?</source>
         <target>Puede aceptar llamadas desde la pantalla de bloqueo, sin autenticación de dispositivos y aplicaciones.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can change it in Appearance settings." xml:space="preserve" approved="no">
+      <trans-unit id="You can change it in Appearance settings." xml:space="preserve">
         <source>You can change it in Appearance settings.</source>
-        <target state="translated">Puedes cambiar la posición de la barra desde el menú Apariencia.</target>
+        <target>Puedes cambiar la posición de la barra desde el menú Apariencia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">
