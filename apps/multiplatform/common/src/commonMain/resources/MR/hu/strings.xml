@@ -44,7 +44,7 @@
     <string name="network_session_mode_user_description"><![CDATA[Külön TCP kapcsolat (és SOCKS bejelentkezési adatok) lesz használva <b>az alkalmazásban minden csevegési profiljához </b>.]]></string>
     <string name="both_you_and_your_contact_can_send_disappearing">Mindkét fél küldhet eltűnő üzeneteket.</string>
     <string name="keychain_is_storing_securely">Az Android Keystore-t a jelmondat biztonságos tárolására használják - lehetővé teszi az értesítési szolgáltatás működését.</string>
-    <string name="alert_title_msg_bad_hash">Hibás az üzenet ellenőrzőösszege</string>
+    <string name="alert_title_msg_bad_hash">Hibás az üzenet hasító értéke</string>
     <string name="color_background">Háttér</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Tudnivaló</b>: az üzenet- és fájl átjátszók SOCKS proxy által vannak kapcsolatban. A hívások és URL hivatkozás előnézetek közvetlen kapcsolatot használnak.]]></string>
     <string name="full_backup">Alkalmazásadatok biztonsági mentése</string>
@@ -124,7 +124,7 @@
     <string name="icon_descr_cancel_live_message">Élő csevegési üzenet visszavonása</string>
     <string name="allow_irreversible_message_deletion_only_if">Az üzenetek végleges törlése kizárólag abban az esetben van engedélyezve, ha az ismerőse is engedélyezi. (24 óra)</string>
     <string name="v4_6_audio_video_calls">Hang- és videóhívások</string>
-    <string name="integrity_msg_bad_hash">hibás az üzenet ellenőrzőösszege</string>
+    <string name="integrity_msg_bad_hash">hibás az üzenet hasító értéke</string>
     <string name="notifications_mode_service">Mindig fut</string>
     <string name="keychain_allows_to_receive_ntfs">Az Android Keystore biztonságosan fogja tárolni a jelmondatot az alkalmazás újraindítása, vagy a jelmondat megváltoztatás után - lehetővé téve az értesítések fogadását.</string>
     <string name="all_app_data_will_be_cleared">Minden alkalmazásadat törölve.</string>
@@ -705,7 +705,7 @@
     <string name="moderated_description">moderált</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">A tag eltávolítása a csoportból - ez a művelet nem vonható vissza!</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">Győződjön meg róla, hogy az XFTP kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nincsenek duplikálva.</string>
-    <string name="no_contacts_selected">Nem kerültek ismerősök kiválasztásra</string>
+    <string name="no_contacts_selected">Nincs kiválasztva ismerős</string>
     <string name="no_received_app_files">Nincsenek fogadott, vagy küldött fájlok</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 mobil: koppintson a <b>Megnyitás mobil alkalmazásban</b>, majd koppintson a <b>Kapcsolódás</b> gombra az alkalmazásban.]]></string>
     <string name="markdown_in_messages">Markdown az üzenetekben</string>
@@ -910,7 +910,7 @@
     <string name="self_destruct_passcode">Önmegsemmisítési jelkód</string>
     <string name="save_and_update_group_profile">Mentés és csoportprofil frissítése</string>
     <string name="your_privacy">Adatvédelem</string>
-    <string name="your_simplex_contact_address">Az ön SimpleX címe</string>
+    <string name="your_simplex_contact_address">SimpleX cím</string>
     <string name="alert_text_fragment_please_report_to_developers">Jelentse a fejlesztőknek.</string>
     <string name="people_can_connect_only_via_links_you_share">Ön dönti el, hogy kivel beszélget.</string>
     <string name="prohibit_sending_disappearing">Az eltűnő üzenetek küldése le van tiltva.</string>
@@ -1045,7 +1045,7 @@
     <string name="smp_save_servers_question">Kiszolgálók mentése?</string>
     <string name="v4_2_security_assessment_desc">A SimpleX Chat biztonsága a Trail of Bits által lett auditálva.</string>
     <string name="rcv_group_event_updated_group_profile">frissítette a csoport profilját</string>
-    <string name="settings_section_title_support">TÁMOGASSA A SIMPLEX CHATET</string>
+    <string name="settings_section_title_support">SIMPLEX CHAT TÁMOGATÁSA</string>
     <string name="simplex_service_notification_title">SimpleX Chat szolgáltatás</string>
     <string name="observer_cant_send_message_title">Nem lehet üzeneteket küldeni!</string>
     <string name="is_verified">%s ellenőrzött</string>
@@ -1128,7 +1128,7 @@
     <string name="chat_preferences_yes">igen</string>
     <string name="voice_message">Hangüzenet</string>
     <string name="settings_section_title_use_from_desktop">Használat számítógépről</string>
-    <string name="settings_section_title_you">ÖN</string>
+    <string name="settings_section_title_you">PROFIL</string>
     <string name="network_proxy_port">port %d</string>
     <string name="to_connect_via_link_title">Kapcsolódás hivatkozáson keresztül</string>
     <string name="share_address">Cím megosztása</string>
@@ -1510,7 +1510,7 @@
     <string name="read_more_in_user_guide_with_link"><![CDATA[További információ a <font color="#0088ff">Használati útmutatóban</font> olvasható.]]></string>
     <string name="settings_is_storing_in_clear_text">A jelmondat a beállításokban egyszerű szövegként van tárolva.</string>
     <string name="terminal_always_visible">Konzol megjelenítése új ablakban</string>
-    <string name="alert_text_msg_bad_hash">Az előző üzenet ellenőrzőösszege különbözik.</string>
+    <string name="alert_text_msg_bad_hash">Az előző üzenet hasító értéke különbözik.</string>
     <string name="receipts_section_description">Ezek a beállítások a jelenlegi profiljára vonatkoznak</string>
     <string name="loading_remote_file_desc">Várjon, amíg a fájl betöltődik a csatolt mobilról</string>
     <string name="read_more_in_github_with_link"><![CDATA[További információ a <font color="#0088ff">GitHub tárolónkban</font>.]]></string>
@@ -2023,7 +2023,7 @@
     <string name="you_need_to_allow_calls">Engedélyeznie kell a hívásokat az ismerőse számára, hogy fel tudják hívni egymást.</string>
     <string name="you_can_still_view_conversation_with_contact">A(z) %1$s nevű ismerősével folytatott beszélgetéseit továbbra is megtekintheti a csevegések listájában.</string>
     <string name="compose_message_placeholder">Üzenet</string>
-    <string name="select_verb">Kiválaszt</string>
+    <string name="select_verb">Kiválasztás</string>
     <string name="moderate_messages_will_be_marked_warning">Az üzenetek minden tag számára moderáltként lesznek megjelölve.</string>
     <string name="selected_chat_items_nothing_selected">Nincs kiválasztva semmi</string>
     <string name="delete_messages_mark_deleted_warning">Az üzenetek törlésre lesznek jelölve. A címzett(ek) képes(ek) lesz(nek) felfedni ezt az üzenetet.</string>
