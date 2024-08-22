@@ -242,7 +242,8 @@ private struct InviteView: View {
 
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
     @State private var showSettings: Bool = false
-    
+    @State private var showIncognitoSheet = false
+
     var body: some View {
         List {
             Section(header: Text("Share this 1-time invite link").foregroundColor(theme.colors.secondary)) {
@@ -252,13 +253,7 @@ private struct InviteView: View {
 
             qrCodeView()
             if let selectedProfile = chatModel.currentUser {
-                Section(
-                    header: Text("Profile").foregroundColor(theme.colors.secondary),
-                    footer: Text(
-                        incognitoDefault
-                        ? "A new random profile will be shared."
-                        : "Your profile will be shared.")
-                ) {
+                Section {
                     NavigationLink {
                         ActiveProfilePicker(
                             contactConnection: $contactConnection,
@@ -278,8 +273,28 @@ private struct InviteView: View {
                             }
                         }
                     }
+                } header: {
+                    Text("Profile").foregroundColor(theme.colors.secondary)
+                } footer: {
+                    if incognitoDefault {
+                        HStack {
+                            Text("A new random profile will be shared.")
+                            Button {
+                                showIncognitoSheet = true
+                            } label: {
+                                Image(systemName: "info.circle")
+                                    .foregroundColor(theme.colors.primary)
+                                    .font(.system(size: 14))
+                            }
+                        }
+                    } else {
+                        Text("Your profile will be shared.")
+                    }
                 }
             }
+        }
+        .sheet(isPresented: $showIncognitoSheet) {
+            IncognitoHelp()
         }
         .onChange(of: incognitoDefault) { incognito in
             setInvitationUsed()
