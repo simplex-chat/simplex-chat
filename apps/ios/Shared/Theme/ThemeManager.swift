@@ -53,7 +53,7 @@ class ThemeManager {
             return perUserTheme
         }
         let defaultTheme = defaultActiveTheme(appSettingsTheme)
-        return ThemeModeOverride(mode: CurrentColors.base.mode, colors: defaultTheme?.colors ?? ThemeColors(), wallpaper: defaultTheme?.wallpaper)
+        return ThemeModeOverride(mode: CurrentColors.base.mode, colors: defaultTheme?.colors ?? ThemeColors(), wallpaper: defaultTheme?.wallpaper ?? ThemeWallpaper.from(PresetWallpaper.school.toType(DefaultTheme.LIGHT), nil, nil))
     }
 
     static func currentColors(_ themeOverridesForType: WallpaperType?, _ perChatTheme: ThemeModeOverride?, _ perUserTheme: ThemeModeOverrides?, _ appSettingsTheme: [ThemeOverrides]) -> ActiveTheme {
