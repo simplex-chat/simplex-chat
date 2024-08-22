@@ -915,7 +915,6 @@ data GroupSndStatus
   | GSSRcvd {msgRcptStatus :: MsgReceiptStatus}
   | GSSError {agentError :: SndError}
   | GSSWarning {agentError :: SndError}
-  | GSSSendChatError {chatError :: Text}
   | GSSInvalid {text :: Text}
 
 deriving instance Eq GroupSndStatus
@@ -932,7 +931,6 @@ instance StrEncoding GroupSndStatus where
     GSSRcvd msgRcptStatus -> "snd_rcvd " <> strEncode msgRcptStatus <> " complete"
     GSSError sndErr -> "snd_error " <> strEncode sndErr
     GSSWarning sndErr -> "snd_warning " <> strEncode sndErr
-    GSSSendChatError e -> "snd_chat_error " <> encodeUtf8 e
     GSSInvalid {} -> "invalid"
   strP =
     (statusP <* A.endOfInput) -- see ACIStatus decoding
@@ -948,7 +946,6 @@ instance StrEncoding GroupSndStatus where
           "snd_error_auth" -> pure $ GSSError SndErrAuth
           "snd_error" -> GSSError <$> (A.space *> strP)
           "snd_warning" -> GSSWarning <$> (A.space *> strP)
-          "snd_chat_error" -> GSSSendChatError . safeDecodeUtf8 <$> (A.space *> A.takeByteString)
           _ -> fail "bad status"
 
 type ChatItemId = Int64

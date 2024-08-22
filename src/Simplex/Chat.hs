@@ -3013,7 +3013,7 @@ processChatCommand' vr = \case
                   let ciIds = mapMaybe (`M.lookup` msgToItem) msgIds
                       status = case deliveryResult of
                         Right _ -> GSSNew
-                        Left e -> GSSSendChatError $ tshow e
+                        Left e -> GSSError $ SndErrOther $ tshow e
                   forM_ ciIds $ \ciId -> createGroupSndStatus db ciId mId status
                 processForwarded :: DB.Connection -> GroupMember -> IO ()
                 processForwarded db GroupMember {groupMemberId} =
@@ -3024,7 +3024,7 @@ processChatCommand' vr = \case
                   let ciId_ = M.lookup msgId msgToItem
                       status = case pendingResult of
                         Right _ -> GSSInactive
-                        Left e -> GSSSendChatError $ tshow e
+                        Left e -> GSSError $ SndErrOther $ tshow e
                   forM_ ciId_ $ \ciId -> createGroupSndStatus db ciId mId status
     assertMultiSendable :: Bool -> NonEmpty ComposeMessageReq -> CM ()
     assertMultiSendable live cmrs
