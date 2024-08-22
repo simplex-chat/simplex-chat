@@ -2471,6 +2471,14 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
         return fileSource.cryptoArgs != nil
     }
 
+    public var rcvMember: GroupMember? {
+        if case let .groupRcv(groupMember) = chatDir {
+            groupMember
+        } else {
+            nil
+        }
+    }
+
     public var memberDisplayName: String? {
         if case let .groupRcv(groupMember) = chatDir {
             switch content {

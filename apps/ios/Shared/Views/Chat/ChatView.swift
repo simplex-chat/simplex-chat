@@ -716,18 +716,31 @@ struct ChatView: View {
 
         var revealed: Bool { chatItem == revealedChatItem }
 
+        private func isTimeShown(currIndex: Int?) -> Bool {
+            let im = ItemsModel.shared
+            if let currIndex, currIndex > 0 && !im.reversedChatItems.isEmpty {
+                let nextItem = im.reversedChatItems[currIndex - 1]
+                return nextItem.rcvMember != chatItem.rcvMember ||
+                       nextItem.mergeCategory != chatItem.mergeCategory ||
+                       nextItem.meta.createdAt.timeIntervalSince(chatItem.meta.createdAt) > 60
+            } else {
+                return true
+            }
+        }
+
         var body: some View {
             let (currIndex, _) = m.getNextChatItem(chatItem)
+            let isTimeShown = isTimeShown(currIndex: currIndex)
             let ciCategory = chatItem.mergeCategory
             let (prevHidden, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
             let range = itemsRange(currIndex, prevHidden)
             let im = ItemsModel.shared
-            Group {
+            return Group {
                 if revealed, let range = range {
                     let items = Array(zip(Array(range), im.reversedChatItems[range]))
                     ForEach(items.reversed(), id: \.1.viewId) { (i, ci) in
                         let prev = i == prevHidden ? prevItem : im.reversedChatItems[i + 1]
-                        chatItemView(ci, nil, prev)
+                        chatItemView(ci, nil, prev, isTimeShown)
                         .overlay {
                             if let selected = selectedChatItems, ci.canBeDeletedForSelf {
                                 Color.clear
@@ -740,7 +753,7 @@ struct ChatView: View {
                         }
                     }
                 } else {
-                    chatItemView(chatItem, range, prevItem)
+                    chatItemView(chatItem, range, prevItem, isTimeShown)
                     .overlay {
                         if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
                             Color.clear
@@ -791,7 +804,7 @@ struct ChatView: View {
             }
         }
 
-        @ViewBuilder func chatItemView(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ prevItem: ChatItem?) -> some View {
+        @ViewBuilder func chatItemView(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ prevItem: ChatItem?, _ isTimeShown: Bool) -> some View {
             if case let .groupRcv(member) = ci.chatDir,
                case let .group(groupInfo) = chat.chatInfo {
                 let (prevMember, memCount): (GroupMember?, Int) =
@@ -833,11 +846,11 @@ struct ChatView: View {
                                             }
                                         }
                                     }
-                                chatItemWithMenu(ci, range, maxWidth)
+                                chatItemWithMenu(ci, range, maxWidth, isTimeShown)
                             }
                         }
                     }
-                    .padding(.bottom, 5)
+                    .padding(.bottom, isTimeShown ? 6 : 2)
                     .padding(.trailing)
                     .padding(.leading, 12)
                 } else {
@@ -846,11 +859,11 @@ struct ChatView: View {
                             SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
                                 .padding(.leading, 12)
                         }
-                        chatItemWithMenu(ci, range, maxWidth)
+                        chatItemWithMenu(ci, range, maxWidth, isTimeShown)
                             .padding(.trailing)
                             .padding(.leading, memberImageSize + 8 + 12)
                     }
-                    .padding(.bottom, 5)
+                    .padding(.bottom, isTimeShown ? 6 : 2)
                 }
             } else {
                 HStack(alignment: .center, spacing: 0) {
@@ -863,10 +876,10 @@ struct ChatView: View {
                                 .padding(.leading)
                         }
                     }
-                    chatItemWithMenu(ci, range, maxWidth)
+                    chatItemWithMenu(ci, range, maxWidth, isTimeShown)
                         .padding(.horizontal)
                 }
-                .padding(.bottom, 5)
+                .padding(.bottom, isTimeShown ? 6 : 2)
             }
         }
 
@@ -881,7 +894,7 @@ struct ChatView: View {
             }
         }
 
-        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat) -> some View {
+        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat, _ isTimeShown: Bool) -> some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
             VStack(alignment: alignment.horizontal, spacing: 3) {
                 ChatItemView(
@@ -891,7 +904,7 @@ struct ChatView: View {
                     revealed: .constant(revealed),
                     allowMenu: $allowMenu
                 )
-                .modifier(ChatItemClipped(ci))
+                .modifier(ChatItemClipped(ci, showsTail: isTimeShown))
                 .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
                 .accessibilityLabel("")
                 if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
