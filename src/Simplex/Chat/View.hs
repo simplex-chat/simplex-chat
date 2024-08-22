@@ -120,7 +120,10 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
-  CRNewChatItem u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewChatItem chat item False ts tz <> viewItemReactions item
+  CRNewChatItems u chatItems ->
+    concatMap
+      (\(AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewChatItem chat item False ts tz <> viewItemReactions item)
+      chatItems
   CRChatItems u _ chatItems -> ttyUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts tz <> viewItemReactions item) chatItems
   CRChatItemInfo u ci ciInfo -> ttyUser u $ viewChatItemInfo ci ciInfo tz
   CRChatItemId u itemId -> ttyUser u [plain $ maybe "no item" show itemId]
@@ -2025,7 +2028,6 @@ viewChatError isCmd logLevel testView = \case
     CEInlineFileProhibited _ -> ["A small file sent without acceptance - you can enable receiving such files with -f option."]
     CEInvalidQuote -> ["cannot reply to this message"]
     CEInvalidForward -> ["cannot forward this message"]
-    CEForwardNoFile -> ["cannot forward this message, file not found"]
     CEInvalidChatItemUpdate -> ["cannot update this item"]
     CEInvalidChatItemDelete -> ["cannot delete this item"]
     CEHasCurrentCall -> ["call already in progress"]

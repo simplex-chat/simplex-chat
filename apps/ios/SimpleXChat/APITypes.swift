@@ -1848,7 +1848,6 @@ public enum ChatErrorType: Decodable, Hashable {
     case inlineFileProhibited(fileId: Int64)
     case invalidQuote
     case invalidForward
-    case forwardNoFile
     case invalidChatItemUpdate
     case invalidChatItemDelete
     case hasCurrentCall

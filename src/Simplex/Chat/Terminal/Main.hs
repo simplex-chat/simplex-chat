@@ -44,7 +44,7 @@ simplexChatCLI' cfg opts@ChatOpts {chatCmd, chatCmdLog, chatCmdDelay, chatServer
       when (chatCmdLog /= CCLNone) . void . forkIO . forever $ do
         (_, _, r') <- atomically . readTBQueue $ outputQ cc
         case r' of
-          CRNewChatItem {} -> printResponse r'
+          CRNewChatItems {} -> printResponse r'
           _ -> when (chatCmdLog == CCLAll) $ printResponse r'
       sendChatCmdStr cc chatCmd >>= printResponse
       threadDelay $ chatCmdDelay * 1000000
