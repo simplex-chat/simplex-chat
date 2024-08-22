@@ -344,16 +344,19 @@ private struct ActiveProfilePicker: View {
     @State private var switchingProfileByTimeout = false
     @State private var lastSwitchingProfileByTimeoutCall: Double?
     @State private var profiles: [User] = []
+    @State private var searchTextOrPassword = ""
     @State var selectedProfile: User
+
+    var trimmedSearchTextOrPassword: String { searchTextOrPassword.trimmingCharacters(in: .whitespaces)}
 
     var body: some View {
         viewBody()
             .navigationTitle("Select chat profile")
+            .searchable(text: $searchTextOrPassword, placement: .navigationBarDrawer(displayMode: .always))
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
                 profiles = chatModel.users
                     .map { $0.user }
-                    .filter({ u in u.activeUser || !u.hidden })
                     .sorted { u, _ in u.activeUser }
             }
             .onChange(of: incognitoEnabled) { incognito in
@@ -462,17 +465,28 @@ private struct ActiveProfilePicker: View {
     
     
     @ViewBuilder private func viewBody() -> some View {
-        NavigationView {
-            profilePicker()
-                .modifier(ThemedBackground(grouped: true))
-                .overlay {
-                    if switchingProfileByTimeout {
-                        ProgressView()
-                            .scaleEffect(2)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    }
+        profilePicker()
+            .allowsHitTesting(!switchingProfileByTimeout)
+            .modifier(ThemedBackground(grouped: true))
+            .overlay {
+                if switchingProfileByTimeout {
+                    ProgressView()
+                        .scaleEffect(2)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-        }.allowsHitTesting(!switchingProfileByTimeout)
+            }
+    }
+    
+    private func filteredProfiles() -> [User] {
+        let s = trimmedSearchTextOrPassword
+        let lower = s.localizedLowercase
+        
+        return profiles.filter { u in
+            if (u.activeUser || !u.hidden) && (s == "" || u.chatViewName.localizedLowercase.contains(lower)) {
+                return true
+            }
+            return correctPassword(u, s)
+        }
     }
         
     @ViewBuilder private func profilePicker() -> some View {
@@ -495,7 +509,8 @@ private struct ActiveProfilePicker: View {
                     }
                 }
             }
-            ForEach(profiles) { item in
+            let filteredProfiles = filteredProfiles()
+            ForEach(filteredProfiles) { item in
                 Button {
                     if selectedProfile != item || incognitoEnabled {
                         switchingProfile = true

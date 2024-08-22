@@ -406,6 +406,13 @@ public func chatPasswordHash(_ pwd: String, _ salt: String) -> String {
     return hash
 }
 
+public func correctPassword(_ user: User, _ pwd: String) -> Bool {
+    if let ph = user.viewPwdHash {
+        return pwd != "" && chatPasswordHash(pwd, ph.salt) == ph.hash
+    }
+    return false
+}
+
 struct UserProfilesView_Previews: PreviewProvider {
     static var previews: some View {
         UserProfilesView(showSettings: Binding.constant(true))
