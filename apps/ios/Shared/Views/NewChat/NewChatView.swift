@@ -414,7 +414,7 @@ private struct ActiveProfilePicker: View {
                                 chatModel.updateContactConnection(conn)
                             }
                             do {
-                                try await changeActiveUserAsync_(profile.userId, viewPwd: nil)
+                                try await changeActiveUserAsync_(profile.userId, viewPwd: profile.hidden ? trimmedSearchTextOrPassword : nil )
                                 await MainActor.run {
                                     switchingProfile = false
                                     dismiss()
@@ -541,7 +541,7 @@ private struct ActiveProfilePicker: View {
                 }
             }
         }
-        .opacity(switchingProfileByTimeout ? 0.4 : 1)
+        //.opacity(switchingProfileByTimeout ? 0.4 : 1)
     }
 }
 
