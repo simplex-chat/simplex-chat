@@ -380,24 +380,28 @@ fun ComposeView(
 
   suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?): ChatItem? {
     val cInfo = chat.chatInfo
-    val aChatItem = if (chat.chatInfo.chatType == ChatType.Local)
-      chatModel.controller.apiCreateChatItem(rh = chat.remoteHostId, noteFolderId = chat.chatInfo.apiId, file = file, mc = mc)
+    val chatItems = if (chat.chatInfo.chatType == ChatType.Local)
+      chatModel.controller.apiCreateChatItems(
+        rh = chat.remoteHostId,
+        noteFolderId = chat.chatInfo.apiId,
+        composedMessages = listOf(ComposedMessage(file, null, mc))
+      )
     else
-      chatModel.controller.apiSendMessage(
-      rh = chat.remoteHostId,
-      type = cInfo.chatType,
-      id = cInfo.apiId,
-      file = file,
-      quotedItemId = quoted,
-      mc = mc,
-      live = live,
-      ttl = ttl
-    )
-    if (aChatItem != null) {
-      withChats {
-        addChatItem(chat.remoteHostId, cInfo, aChatItem.chatItem)
+      chatModel.controller.apiSendMessages(
+        rh = chat.remoteHostId,
+        type = cInfo.chatType,
+        id = cInfo.apiId,
+        live = live,
+        ttl = ttl,
+        composedMessages = listOf(ComposedMessage(file, quoted, mc))
+      )
+    if (!chatItems.isNullOrEmpty()) {
+      chatItems.forEach { aChatItem ->
+        withChats {
+          addChatItem(chat.remoteHostId, cInfo, aChatItem.chatItem)
+        }
       }
-      return aChatItem.chatItem
+      return chatItems.first().chatItem
     }
     if (file != null) removeFile(file.filePath)
     return null
@@ -414,21 +418,22 @@ fun ComposeView(
     }
 
     suspend fun forwardItem(rhId: Long?, forwardedItem: ChatItem, fromChatInfo: ChatInfo, ttl: Int?): ChatItem? {
-      val chatItem = controller.apiForwardChatItem(
+      val chatItems = controller.apiForwardChatItems(
         rh = rhId,
         toChatType = chat.chatInfo.chatType,
         toChatId = chat.chatInfo.apiId,
         fromChatType = fromChatInfo.chatType,
         fromChatId = fromChatInfo.apiId,
-        itemId = forwardedItem.id,
+        itemIds = listOf(forwardedItem.id),
         ttl = ttl
       )
-      if (chatItem != null) {
+      chatItems?.forEach { chatItem ->
         withChats {
           addChatItem(rhId, chat.chatInfo, chatItem)
         }
       }
-      return chatItem
+      // TODO batch send: forward multiple messages
+      return chatItems?.firstOrNull()
     }
 
     fun checkLinkPreview(): MsgContent {
@@ -519,6 +524,7 @@ fun ComposeView(
         ComposePreview.NoPreview -> msgs.add(MsgContent.MCText(msgText))
         is ComposePreview.CLinkPreview -> msgs.add(checkLinkPreview())
         is ComposePreview.MediaPreview -> {
+          // TODO batch send: batch media previews
           preview.content.forEachIndexed { index, it ->
             val file = when (it) {
               is UploadContent.SimpleImage ->

@@ -52,6 +52,7 @@ chatDirectTests = do
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
+    it "send multiple messages api" testSendMulti
   describe "duplicate contacts" $ do
     it "duplicate contacts are separate (contacts don't merge)" testDuplicateContactsSeparate
     it "new contact is separate with multiple duplicate contacts (contacts don't merge)" testDuplicateContactsMultipleSeparate
@@ -838,6 +839,18 @@ testLargeMessage =
       alice <## "user profile is changed to alice2 (your 1 contacts are notified)"
       bob <## "contact alice changed to alice2"
       bob <## "use @alice2 <message> to send messages"
+
+testSendMulti :: HasCallStack => FilePath -> IO ()
+testSendMulti =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice ##> "/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
+      alice <# "@bob test 1"
+      alice <# "@bob test 2"
+      bob <# "alice> test 1"
+      bob <# "alice> test 2"
 
 testGetSetSMPServers :: HasCallStack => FilePath -> IO ()
 testGetSetSMPServers =
@@ -2162,7 +2175,7 @@ testSetChatItemTTL =
       -- chat item with file
       alice #$> ("/_files_folder ./tests/tmp/app_files", id, "ok")
       copyFile "./tests/fixtures/test.jpg" "./tests/tmp/app_files/test.jpg"
-      alice ##> "/_send @2 json {\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+      alice ##> "/_send @2 json [{\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]"
       alice <# "/f @bob test.jpg"
       alice <## "use /fc 1 to cancel sending"
       bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
@@ -2410,7 +2423,7 @@ setupDesynchronizedRatchet tmp alice = do
     (bob </)
     bob ##> "/tail @alice 1"
     bob <# "alice> decryption error, possibly due to the device change (header, 3 messages)"
-    bob ##> "@alice 1"
+    bob `send` "@alice 1"
     bob <## "error: command is prohibited, sendMessagesB: send prohibited"
     (alice </)
   where

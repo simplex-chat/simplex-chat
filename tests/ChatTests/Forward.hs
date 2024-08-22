@@ -33,6 +33,8 @@ chatForwardTests = do
     it "with relative paths: from contact to contact" testForwardFileContactToContact
     it "with relative paths: from group to notes" testForwardFileGroupToNotes
     it "with relative paths: from notes to group" testForwardFileNotesToGroup
+  describe "multi forward api" $ do
+    it "from contact to contact" testForwardContactToContactMulti
 
 testForwardContactToContact :: HasCallStack => FilePath -> IO ()
 testForwardContactToContact =
@@ -384,7 +386,7 @@ testForwardFileNoFilesFolder =
       connectUsers bob cath
 
       -- send original file
-      alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}}"
+      alice ##> "/_send @2 json [{\"filePath\": \"./tests/fixtures/test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}}]"
       alice <# "@bob hi"
       alice <# "/f @bob ./tests/fixtures/test.pdf"
       alice <## "use /fc 1 to cancel sending"
@@ -441,7 +443,7 @@ testForwardFileContactToContact =
       connectUsers bob cath
 
       -- send original file
-      alice ##> "/_send @2 json {\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}}"
+      alice ##> "/_send @2 json [{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}}]"
       alice <# "@bob hi"
       alice <# "/f @bob test.pdf"
       alice <## "use /fc 1 to cancel sending"
@@ -506,7 +508,7 @@ testForwardFileGroupToNotes =
       createCCNoteFolder cath
 
       -- send original file
-      alice ##> "/_send #1 json {\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}}"
+      alice ##> "/_send #1 json [{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}}]"
       alice <# "#team hi"
       alice <# "/f #team test.pdf"
       alice <## "use /fc 1 to cancel sending"
@@ -555,7 +557,7 @@ testForwardFileNotesToGroup =
       createGroup2 "team" alice cath
 
       -- create original file
-      alice ##> "/_create *1 json {\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}}"
+      alice ##> "/_create *1 json [{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi\"}}]"
       alice <# "* hi"
       alice <# "* file 1 (test.pdf)"
 
@@ -590,3 +592,31 @@ testForwardFileNotesToGroup =
         alice <## "notes: all messages are removed"
       fwdFileExists <- doesFileExist "./tests/tmp/alice_files/test_1.pdf"
       fwdFileExists `shouldBe` True
+
+testForwardContactToContactMulti :: HasCallStack => FilePath -> IO ()
+testForwardContactToContactMulti =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      connectUsers alice cath
+      connectUsers bob cath
+
+      alice #> "@bob hi"
+      bob <# "alice> hi"
+      msgId1 <- lastItemId alice
+
+      threadDelay 1000000
+
+      bob #> "@alice hey"
+      alice <# "bob> hey"
+      msgId2 <- lastItemId alice
+
+      alice ##> ("/_forward @3 @2 " <> msgId1 <> "," <> msgId2)
+      alice <# "@cath <- you @bob"
+      alice <## "      hi"
+      alice <# "@cath <- @bob"
+      alice <## "      hey"
+      cath <# "alice> -> forwarded"
+      cath <## "      hi"
+      cath <# "alice> -> forwarded"
+      cath <## "      hey"

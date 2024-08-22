@@ -42,13 +42,13 @@ public enum ChatCommand {
     case apiGetChats(userId: Int64)
     case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String)
     case apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64)
-    case apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: Int64?, msg: MsgContent, live: Bool, ttl: Int?)
-    case apiCreateChatItem(noteFolderId: Int64, file: CryptoFile?, msg: MsgContent)
+    case apiSendMessages(type: ChatType, id: Int64, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
+    case apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage])
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, itemIds: [Int64])
     case apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, reaction: MsgReaction)
-    case apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64, ttl: Int?)
+    case apiForwardChatItems(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemIds: [Int64], ttl: Int?)
     case apiGetNtfToken
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
@@ -191,20 +191,20 @@ public enum ChatCommand {
             case let .apiGetChat(type, id, pagination, search): return "/_get chat \(ref(type, id)) \(pagination.cmdString)" +
                 (search == "" ? "" : " search=\(search)")
             case let .apiGetChatItemInfo(type, id, itemId): return "/_get item info \(ref(type, id)) \(itemId)"
-            case let .apiSendMessage(type, id, file, quotedItemId, mc, live, ttl):
-                let msg = encodeJSON(ComposedMessage(fileSource: file, quotedItemId: quotedItemId, msgContent: mc))
+            case let .apiSendMessages(type, id, live, ttl, composedMessages):
+                let msgs = encodeJSON(composedMessages)
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
-                return "/_send \(ref(type, id)) live=\(onOff(live)) ttl=\(ttlStr) json \(msg)"
-            case let .apiCreateChatItem(noteFolderId, file, mc):
-                let msg = encodeJSON(ComposedMessage(fileSource: file, msgContent: mc))
-                return "/_create *\(noteFolderId) json \(msg)"
+                return "/_send \(ref(type, id)) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
+            case let .apiCreateChatItems(noteFolderId, composedMessages):
+                let msgs = encodeJSON(composedMessages)
+                return "/_create *\(noteFolderId) json \(msgs)"
             case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemIds, mode): return "/_delete item \(ref(type, id)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, itemIds): return "/_delete member item #\(groupId) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
             case let .apiChatItemReaction(type, id, itemId, add, reaction): return "/_reaction \(ref(type, id)) \(itemId) \(onOff(add)) \(encodeJSON(reaction))"
-            case let .apiForwardChatItem(toChatType, toChatId, fromChatType, fromChatId, itemId, ttl):
+            case let .apiForwardChatItems(toChatType, toChatId, fromChatType, fromChatId, itemIds, ttl):
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
-                return "/_forward \(ref(toChatType, toChatId)) \(ref(fromChatType, fromChatId)) \(itemId) ttl=\(ttlStr)"
+                return "/_forward \(ref(toChatType, toChatId)) \(ref(fromChatType, fromChatId)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) ttl=\(ttlStr)"
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
@@ -349,14 +349,14 @@ public enum ChatCommand {
             case .apiGetChats: return "apiGetChats"
             case .apiGetChat: return "apiGetChat"
             case .apiGetChatItemInfo: return "apiGetChatItemInfo"
-            case .apiSendMessage: return "apiSendMessage"
-            case .apiCreateChatItem: return "apiCreateChatItem"
+            case .apiSendMessages: return "apiSendMessages"
+            case .apiCreateChatItems: return "apiCreateChatItems"
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
             case .apiConnectContactViaAddress: return "apiConnectContactViaAddress"
             case .apiDeleteMemberChatItem: return "apiDeleteMemberChatItem"
             case .apiChatItemReaction: return "apiChatItemReaction"
-            case .apiForwardChatItem: return "apiForwardChatItem"
+            case .apiForwardChatItems: return "apiForwardChatItems"
             case .apiGetNtfToken: return "apiGetNtfToken"
             case .apiRegisterToken: return "apiRegisterToken"
             case .apiVerifyToken: return "apiVerifyToken"
@@ -592,7 +592,7 @@ public enum ChatResponse: Decodable, Error {
     case memberSubErrors(user: UserRef, memberSubErrors: [MemberSubError])
     case groupEmpty(user: UserRef, groupInfo: GroupInfo)
     case userContactLinkSubscribed
-    case newChatItem(user: UserRef, chatItem: AChatItem)
+    case newChatItems(user: UserRef, chatItems: [AChatItem])
     case chatItemStatusUpdated(user: UserRef, chatItem: AChatItem)
     case chatItemUpdated(user: UserRef, chatItem: AChatItem)
     case chatItemNotChanged(user: UserRef, chatItem: AChatItem)
@@ -763,7 +763,7 @@ public enum ChatResponse: Decodable, Error {
             case .memberSubErrors: return "memberSubErrors"
             case .groupEmpty: return "groupEmpty"
             case .userContactLinkSubscribed: return "userContactLinkSubscribed"
-            case .newChatItem: return "newChatItem"
+            case .newChatItems: return "newChatItems"
             case .chatItemStatusUpdated: return "chatItemStatusUpdated"
             case .chatItemUpdated: return "chatItemUpdated"
             case .chatItemNotChanged: return "chatItemNotChanged"
@@ -932,7 +932,9 @@ public enum ChatResponse: Decodable, Error {
             case let .memberSubErrors(u, memberSubErrors): return withUser(u, String(describing: memberSubErrors))
             case let .groupEmpty(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case .userContactLinkSubscribed: return noDetails
-            case let .newChatItem(u, chatItem): return withUser(u, String(describing: chatItem))
+            case let .newChatItems(u, chatItems):
+                let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
+                return withUser(u, itemsString)
             case let .chatItemStatusUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemNotChanged(u, chatItem): return withUser(u, String(describing: chatItem))
@@ -1119,10 +1121,16 @@ public enum ChatPagination: Hashable {
     }
 }
 
-struct ComposedMessage: Encodable {
-    var fileSource: CryptoFile?
+public struct ComposedMessage: Encodable {
+    public var fileSource: CryptoFile?
     var quotedItemId: Int64?
     var msgContent: MsgContent
+
+    public init(fileSource: CryptoFile? = nil, quotedItemId: Int64? = nil, msgContent: MsgContent) {
+        self.fileSource = fileSource
+        self.quotedItemId = quotedItemId
+        self.msgContent = msgContent
+    }
 }
 
 public struct ArchiveConfig: Encodable {
@@ -1848,7 +1856,6 @@ public enum ChatErrorType: Decodable, Hashable {
     case inlineFileProhibited(fileId: Int64)
     case invalidQuote
     case invalidForward
-    case forwardNoFile
     case invalidChatItemUpdate
     case invalidChatItemDelete
     case hasCurrentCall

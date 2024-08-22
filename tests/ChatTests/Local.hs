@@ -17,6 +17,7 @@ chatLocalChatsTests :: SpecWith FilePath
 chatLocalChatsTests = do
   describe "note folders" $ do
     it "create folders, add notes, read, search" testNotes
+    it "create multiple messages api" testCreateMulti
     it "switch users" testUserNotes
     it "preview pagination for notes" testPreviewsPagination
     it "chat pagination" testChatPagination
@@ -51,6 +52,14 @@ testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/_update item *1 1 text Greetings."
   alice ##> "/tail *"
   alice <# "* Greetings."
+
+testCreateMulti :: FilePath -> IO ()
+testCreateMulti tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+  createCCNoteFolder alice
+
+  alice ##> "/_create *1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
+  alice <# "* test 1"
+  alice <# "* test 2"
 
 testUserNotes :: FilePath -> IO ()
 testUserNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
@@ -120,7 +129,7 @@ testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   let source = "./tests/fixtures/test.jpg"
   let stored = files </> "test.jpg"
   copyFile source stored
-  alice ##> "/_create *1 json {\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"hi myself\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+  alice ##> "/_create *1 json [{\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"hi myself\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]"
   alice <# "* hi myself"
   alice <# "* file 1 (test.jpg)"
 
@@ -141,7 +150,7 @@ testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   -- one more file
   let stored2 = files </> "another_test.jpg"
   copyFile source stored2
-  alice ##> "/_create *1 json {\"filePath\": \"another_test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+  alice ##> "/_create *1 json [{\"filePath\": \"another_test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]"
   alice <# "* file 2 (another_test.jpg)"
 
   alice ##> "/_delete item *1 2 internal"
@@ -173,8 +182,8 @@ testOtherFiles =
     bob ##> "/fr 1"
     bob
       <### [ "saving file 1 from alice to test.jpg",
-              "started receiving file 1 (test.jpg) from alice"
-            ]
+             "started receiving file 1 (test.jpg) from alice"
+           ]
     bob <## "completed receiving file 1 (test.jpg) from alice"
 
     bob /* "test"
