@@ -45,19 +45,47 @@ enum NewChatOption: Identifiable {
     var id: Self { self }
 }
 
+func cleanupPendingConnection(chatModel: ChatModel, contactConnection: PendingContactConnection?) -> SomeAlert? {
+    var alert: SomeAlert? = nil
+
+    if !(chatModel.showingInvitation?.connChatUsed ?? true),
+       let conn = contactConnection {
+        alert = SomeAlert(
+            alert: Alert(
+                title: Text("Keep unused invitation?"),
+                message: Text("You can view invitation link again in connection details."),
+                primaryButton: .default(Text("Keep")) {},
+                secondaryButton: .destructive(Text("Delete")) {
+                    Task {
+                        await deleteChat(Chat(
+                            chatInfo: .contactConnection(contactConnection: conn),
+                            chatItems: []
+                        ))
+                    }
+                }
+            ),
+            id: "keepUnusedInvitation"
+        )
+    }
+    
+    chatModel.showingInvitation = nil
+
+    return alert
+}
+
 struct NewChatView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @State var selection: NewChatOption
     @State var showQRCodeScanner = false
     @State private var invitationUsed: Bool = false
-    @State private var contactConnection: PendingContactConnection? = nil
     @State private var connReqInvitation: String = ""
     @State private var creatingConnReq = false
     @State var choosingProfile = false
     @State private var pastedLink: String = ""
     @State private var alert: NewChatViewAlert?
     @Binding var parentAlert: SomeAlert?
+    @Binding var contactConnection: PendingContactConnection?
 
     var body: some View {
         VStack(alignment: .leading) {
@@ -123,28 +151,9 @@ struct NewChatView: View {
             }
         }
         .onDisappear {
-            if !(m.showingInvitation?.connChatUsed ?? true),
-               !choosingProfile,
-               let conn = contactConnection {
-                parentAlert = SomeAlert(
-                    alert: Alert(
-                        title: Text("Keep unused invitation?"),
-                        message: Text("You can view invitation link again in connection details."),
-                        primaryButton: .default(Text("Keep")) {},
-                        secondaryButton: .destructive(Text("Delete")) {
-                            Task {
-                                await deleteChat(Chat(
-                                    chatInfo: .contactConnection(contactConnection: conn),
-                                    chatItems: []
-                                ))
-                            }
-                        }
-                    ),
-                    id: "keepUnusedInvitation"
-                )
-            }
             if !choosingProfile {
-                m.showingInvitation = nil
+                parentAlert = cleanupPendingConnection(chatModel: m, contactConnection: contactConnection)
+                contactConnection = nil
             }
         }
         .alert(item: $alert) { a in
@@ -284,6 +293,9 @@ private struct InviteView: View {
             }
         }
         .onChange(of: incognitoDefault) { incognito in
+            setInvitationUsed()
+        }
+        .onChange(of: chatModel.currentUser) { u in
             setInvitationUsed()
         }
     }
@@ -1202,10 +1214,12 @@ func connReqSentAlert(_ type: ConnReqType) -> Alert {
 struct NewChatView_Previews: PreviewProvider {
     static var previews: some View {
         @State var parentAlert: SomeAlert?
+        @State var contactConnection: PendingContactConnection? = nil
 
         NewChatView(
             selection: .invite,
-            parentAlert: $parentAlert
+            parentAlert: $parentAlert,
+            contactConnection: $contactConnection
         )
     }
 }
