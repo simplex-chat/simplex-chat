@@ -717,13 +717,17 @@ struct ChatView: View {
 
         var revealed: Bool { chatItem == revealedChatItem }
 
+        private func roundedToMinute(_ date: Date) -> TimeInterval {
+            date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 60)
+        }
+
         private func timeShown(currIndex: Int?) -> Bool {
             let im = ItemsModel.shared
             if let currIndex, currIndex > 0 && !im.reversedChatItems.isEmpty {
                 let nextItem = im.reversedChatItems[currIndex - 1]
                 return nextItem.rcvMember != chatItem.rcvMember ||
                        nextItem.mergeCategory != chatItem.mergeCategory ||
-                       nextItem.meta.createdAt.timeIntervalSince(chatItem.meta.createdAt) > 60
+                       roundedToMinute(nextItem.meta.createdAt) == roundedToMinute(chatItem.meta.createdAt)
             } else {
                 return true
             }
