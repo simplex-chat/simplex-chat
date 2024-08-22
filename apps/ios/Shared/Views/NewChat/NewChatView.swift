@@ -224,23 +224,12 @@ struct NewChatView: View {
     }
 }
 
-
-private struct IncognitoProfileImage: View {
-    @EnvironmentObject var theme: AppTheme
-
-    var body: some View {
-        let c =  Color(uiColor: .tertiarySystemGroupedBackground).asAnotherColorFromSecondaryVariant(theme)
-        
-        VStack {
-            Image(systemName: "theatermasks.fill")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 26, height: 26)
-                .foregroundColor(Color.indigo)
-        }
-        .frame(width: 30, height: 30)
-        .background(Circle().fill(c))
-    }
+private func incognitoProfileImage() -> some View {
+    Image(systemName: "theatermasks.fill")
+        .resizable()
+        .scaledToFit()
+        .frame(width: 30)
+        .foregroundColor(.indigo)
 }
 
 private struct InviteView: View {
@@ -281,7 +270,7 @@ private struct InviteView: View {
                     } label: {
                         HStack {
                             if incognitoDefault {
-                                IncognitoProfileImage()
+                                incognitoProfileImage()
                                 Text("Incognito")
                             } else {
                                 ProfileImage(imageStr: chatModel.currentUser?.image, size: 30)
@@ -354,7 +343,7 @@ private struct ActiveProfilePicker: View {
 
     var body: some View {
         viewBody()
-            .navigationTitle("Your chat profiles")
+            .navigationTitle("Select chat profile")
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
                 profiles = chatModel.users
@@ -490,7 +479,7 @@ private struct ActiveProfilePicker: View {
                 }
             } label : {
                 HStack {
-                    IncognitoProfileImage()
+                    incognitoProfileImage()
                     Text("Incognito")
                         .foregroundColor(theme.colors.onBackground)
                     Spacer()
