@@ -433,7 +433,6 @@ private struct ActiveProfilePicker: View {
                         }
                     } catch {
                         await MainActor.run {
-                            // TODO: discuss error handling
                             switchingProfile = false
                             if let currentUser = chatModel.currentUser {
                                 selectedProfile = currentUser
