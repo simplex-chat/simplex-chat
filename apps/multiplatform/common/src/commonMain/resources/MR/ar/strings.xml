@@ -1950,7 +1950,7 @@
     <string name="servers_info_sessions_connected">متصل</string>
     <string name="servers_info_connected_servers_section_header">الخوادم المتصلة</string>
     <string name="servers_info_sessions_connecting">جارِ الاتصال</string>
-    <string name="servers_info_subscriptions_connections_subscribed">الاتصالات النسطة</string>
+    <string name="servers_info_subscriptions_connections_subscribed">الاتصالات النشطة</string>
     <string name="current_user">ملف التعريف الحالي</string>
     <string name="deletion_errors">أخطاء الحذف</string>
     <string name="servers_info_detailed_statistics">إحصائيات مفصلة</string>
