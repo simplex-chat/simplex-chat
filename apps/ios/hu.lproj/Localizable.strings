@@ -659,10 +659,10 @@
 "Bad desktop address" = "Hibás számítógép cím";
 
 /* integrity error chat item */
-"bad message hash" = "téves üzenet hash";
+"bad message hash" = "hibás az üzenet ellenőrzőösszege";
 
 /* No comment provided by engineer. */
-"Bad message hash" = "Téves üzenet hash";
+"Bad message hash" = "Hibás az üzenet ellenőrzőösszege";
 
 /* integrity error chat item */
 "bad message ID" = "téves üzenet ID";
@@ -1432,7 +1432,7 @@
 "Delete link?" = "Hivatkozás törlése?";
 
 /* No comment provided by engineer. */
-"Delete member message?" = "Csoporttag üzenet törlése?";
+"Delete member message?" = "Csoporttag üzenetének törlése?";
 
 /* No comment provided by engineer. */
 "Delete message?" = "Üzenet törlése?";
@@ -1495,7 +1495,7 @@
 "Delivery receipts are disabled!" = "A kézbesítési jelentések ki vannak kapcsolva!";
 
 /* No comment provided by engineer. */
-"Delivery receipts!" = "Kézbesítési igazolások!";
+"Delivery receipts!" = "Üzenet kézbesítési jelentések!";
 
 /* No comment provided by engineer. */
 "Description" = "Leírás";
@@ -1828,10 +1828,10 @@
 "Enter this device name…" = "Eszköznév megadása…";
 
 /* placeholder */
-"Enter welcome message…" = "Üdvözlő üzenetet megadása…";
+"Enter welcome message…" = "Üdvözlő üzenet megadása…";
 
 /* placeholder */
-"Enter welcome message… (optional)" = "Üdvözlő üzenetet megadása… (opcionális)";
+"Enter welcome message… (optional)" = "Üdvözlő üzenet megadása… (opcionális)";
 
 /* No comment provided by engineer. */
 "Enter your name…" = "Adjon meg egy nevet…";
@@ -2783,7 +2783,7 @@
 "Message delivery error" = "Üzenetkézbesítési hiba";
 
 /* No comment provided by engineer. */
-"Message delivery receipts!" = "Üzenetkézbesítési bizonylatok!";
+"Message delivery receipts!" = "Üzenet kézbesítési jelentések!";
 
 /* item status text */
 "Message delivery warning" = "Üzenet kézbesítési figyelmeztetés";
@@ -2813,7 +2813,7 @@
 "message received" = "üzenet érkezett";
 
 /* No comment provided by engineer. */
-"Message reception" = "Üzenetjelentés";
+"Message reception" = "Üzenet kézbesítési jelentés";
 
 /* No comment provided by engineer. */
 "Message servers" = "Üzenetkiszolgálók";
@@ -3605,7 +3605,7 @@
 "removed" = "eltávolítva";
 
 /* rcv group event chat item */
-"removed %@" = "%@ eltávolítva";
+"removed %@" = "eltávolította őt: %@";
 
 /* profile update event chat item */
 "removed contact address" = "törölt kapcsolattartási cím";
@@ -4373,7 +4373,7 @@
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "A titkosítás működik, és új titkosítási egyezményre nincs szükség. Ez kapcsolati hibákat eredményezhet!";
 
 /* No comment provided by engineer. */
-"The hash of the previous message is different." = "Az előző üzenet hash-e más.";
+"The hash of the previous message is different." = "Az előző üzenet ellenőrzőösszege különbözik.";
 
 /* No comment provided by engineer. */
 "The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised." = "A következő üzenet azonosítója hibás (kisebb vagy egyenlő az előzővel).\nEz valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.";

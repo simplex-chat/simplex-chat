@@ -506,7 +506,7 @@
 "Allow to send files and media." = "Se permite enviar archivos y multimedia.";
 
 /* No comment provided by engineer. */
-"Allow to send SimpleX links." = "Permitir enviar enlaces SimpleX.";
+"Allow to send SimpleX links." = "Se permite enviar enlaces SimpleX.";
 
 /* No comment provided by engineer. */
 "Allow to send voice messages." = "Permites enviar mensajes de voz.";
@@ -1606,7 +1606,7 @@
 "Do it later" = "Hacer más tarde";
 
 /* No comment provided by engineer. */
-"Do not send history to new members." = "No enviar historial a miembros nuevos.";
+"Do not send history to new members." = "No se envía el historial a los miembros nuevos.";
 
 /* No comment provided by engineer. */
 "Do NOT send messages directly, even if your or destination server does not support private routing." = "NO enviar mensajes directamente incluso si tu servidor o el de destino no soportan enrutamiento privado.";
@@ -3415,7 +3415,7 @@
 "Prohibit sending files and media." = "No permitir el envío de archivos y multimedia.";
 
 /* No comment provided by engineer. */
-"Prohibit sending SimpleX links." = "No permitir el envío de enlaces SimpleX.";
+"Prohibit sending SimpleX links." = "No se permite enviar enlaces SimpleX.";
 
 /* No comment provided by engineer. */
 "Prohibit sending voice messages." = "No se permiten mensajes de voz.";
@@ -3917,7 +3917,7 @@
 "Send them from gallery or custom keyboards." = "Envíalos desde la galería o desde teclados personalizados.";
 
 /* No comment provided by engineer. */
-"Send up to 100 last messages to new members." = "Enviar hasta 100 últimos mensajes a los miembros nuevos.";
+"Send up to 100 last messages to new members." = "Se envían hasta 100 mensajes más recientes a los miembros nuevos.";
 
 /* No comment provided by engineer. */
 "Sender cancelled file transfer." = "El remitente ha cancelado la transferencia de archivos.";
@@ -4979,7 +4979,7 @@
 "You can accept calls from lock screen, without device and app authentication." = "Puede aceptar llamadas desde la pantalla de bloqueo, sin autenticación de dispositivos y aplicaciones.";
 
 /* No comment provided by engineer. */
-"You can change it in Appearance settings." = "Puede cambiarlo desde el menú Apariencia.";
+"You can change it in Appearance settings." = "Puedes cambiar la posición de la barra desde el menú Apariencia.";
 
 /* No comment provided by engineer. */
 "You can create it later" = "Puedes crearla más tarde";
