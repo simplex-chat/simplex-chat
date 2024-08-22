@@ -274,8 +274,11 @@ private struct InviteView: View {
                         }
                     }
                 } header: {
-                    Text("Profile").foregroundColor(theme.colors.secondary)
+                    Text("Share profile").foregroundColor(theme.colors.secondary)
                 } footer: {
+                    // if incognitoDefault {
+                    //     Text("A new random profile will be shared.")
+                    // }
                     if incognitoDefault {
                         HStack {
                             Text("A new random profile will be shared.")
@@ -287,8 +290,6 @@ private struct InviteView: View {
                                     .font(.system(size: 14))
                             }
                         }
-                    } else {
-                        Text("Your profile will be shared.")
                     }
                 }
             }
@@ -322,6 +323,7 @@ private struct InviteView: View {
     private func qrCodeView() -> some View {
         Section(header: Text("Or show this code").foregroundColor(theme.colors.secondary)) {
             SimpleXLinkQRCode(uri: connReqInvitation, onShare: setInvitationUsed)
+                .id("simplex-qrcode-view-for-\(connReqInvitation)")
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
