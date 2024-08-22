@@ -673,6 +673,13 @@ func apiSetConnectionIncognito(connId: Int64, incognito: Bool) async throws -> P
     throw r
 }
 
+func apiChangeConnectionUser(connId: Int64, userId: Int64) async throws -> PendingContactConnection? {
+    let r = await chatSendCmd(.apiChangeConnectionUser(connId: connId, userId: userId))
+    
+    if case let .connectionUserChanged(_, _, toConnection, _) = r {return toConnection}
+    throw r
+}
+
 func apiConnectPlan(connReq: String) async throws -> ConnectionPlan {
     let userId = try currentUserId("apiConnectPlan")
     let r = await chatSendCmd(.apiConnectPlan(userId: userId, connReq: connReq))
