@@ -751,6 +751,7 @@ struct ComposeView: View {
             case .linkPreview:
                 sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl)
             case let .mediaPreviews(mediaPreviews: media):
+                // TODO batch send: batch media previews
                 let last = media.count - 1
                 if last >= 0 {
                     for i in 0..<last {
@@ -928,7 +929,7 @@ struct ComposeView: View {
                         chatModel.addChatItem(chat.chatInfo, chatItem)
                     }
                 }
-                // TODO
+                // TODO batch send: forward multiple messages
                 return chatItems.first
             }
             return nil

@@ -148,7 +148,7 @@ class ShareModel: ObservableObject {
                     if selected.chatInfo.chatType == .local {
                         completion()
                     } else {
-                        // TODO
+                        // TODO batch send: share multiple items
                         if let ci = chatItems.first {
                             await MainActor.run { self.bottomBar = .loadingBar(progress: 0) }
                             if let e = await handleEvents(
