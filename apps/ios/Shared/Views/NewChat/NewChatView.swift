@@ -425,7 +425,7 @@ private struct ActiveProfilePicker: View {
                                     alert = SomeAlert(
                                         alert: Alert(
                                             title: Text("Error switching profile"),
-                                            message: Text("Your connection was moved to \(profile.chatViewName) but and unexpected error ocurred while redirecting you to the profile.")
+                                            message: Text("Your connection was moved to \(profile.chatViewName) but an unexpected error occurred while redirecting you to the profile.")
                                         ),
                                         id: "switchingProfileError"
                                     )
