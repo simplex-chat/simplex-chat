@@ -735,7 +735,7 @@ struct ChatView: View {
             let (prevHidden, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
             let range = itemsRange(currIndex, prevHidden)
             let im = ItemsModel.shared
-            return Group {
+            Group {
                 if revealed, let range = range {
                     let items = Array(zip(Array(range), im.reversedChatItems[range]))
                     ForEach(items.reversed(), id: \.1.viewId) { (i, ci) in
@@ -805,6 +805,7 @@ struct ChatView: View {
         }
 
         @ViewBuilder func chatItemView(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ prevItem: ChatItem?, _ isTimeShown: Bool) -> some View {
+            let bottomPadding: Double = isTimeShown ? 6 : 2
             if case let .groupRcv(member) = ci.chatDir,
                case let .group(groupInfo) = chat.chatInfo {
                 let (prevMember, memCount): (GroupMember?, Int) =
@@ -850,7 +851,7 @@ struct ChatView: View {
                             }
                         }
                     }
-                    .padding(.bottom, isTimeShown ? 6 : 2)
+                    .padding(.bottom, bottomPadding)
                     .padding(.trailing)
                     .padding(.leading, 12)
                 } else {
@@ -863,7 +864,7 @@ struct ChatView: View {
                             .padding(.trailing)
                             .padding(.leading, memberImageSize + 8 + 12)
                     }
-                    .padding(.bottom, isTimeShown ? 6 : 2)
+                    .padding(.bottom, bottomPadding)
                 }
             } else {
                 HStack(alignment: .center, spacing: 0) {
@@ -879,7 +880,7 @@ struct ChatView: View {
                     chatItemWithMenu(ci, range, maxWidth, isTimeShown)
                         .padding(.horizontal)
                 }
-                .padding(.bottom, isTimeShown ? 6 : 2)
+                .padding(.bottom, bottomPadding)
             }
         }
 
