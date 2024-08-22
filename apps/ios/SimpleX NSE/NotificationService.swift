@@ -571,17 +571,22 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
 //            TODO profile update
     case let .receivedContactRequest(user, contactRequest):
         return (UserContact(contactRequest: contactRequest).id, .nse(createContactRequestNtf(user, contactRequest)))
-    case let .newChatItem(user, aChatItem):
-        let cInfo = aChatItem.chatInfo
-        var cItem = aChatItem.chatItem
-        if !cInfo.ntfsEnabled {
-            ntfBadgeCountGroupDefault.set(max(0, ntfBadgeCountGroupDefault.get() - 1))
+    case let .newChatItems(user, chatItems):
+        // Received items are created one at a time
+        if let chatItem = chatItems.first {
+            let cInfo = chatItem.chatInfo
+            var cItem = chatItem.chatItem
+            if !cInfo.ntfsEnabled {
+                ntfBadgeCountGroupDefault.set(max(0, ntfBadgeCountGroupDefault.get() - 1))
+            }
+            if let file = cItem.autoReceiveFile() {
+                cItem = autoReceiveFile(file) ?? cItem
+            }
+            let ntf: NSENotification = cInfo.ntfsEnabled ? .nse(createMessageReceivedNtf(user, cInfo, cItem)) : .empty
+            return cItem.showNotification ? (chatItem.chatId, ntf) : nil
+        } else {
+            return nil
         }
-        if let file = cItem.autoReceiveFile() {
-            cItem = autoReceiveFile(file) ?? cItem
-        }
-        let ntf: NSENotification = cInfo.ntfsEnabled ? .nse(createMessageReceivedNtf(user, cInfo, cItem)) : .empty
-        return cItem.showNotification ? (aChatItem.chatId, ntf) : nil
     case let .rcvFileSndCancelled(_, aChatItem, _):
         cleanupFile(aChatItem)
         return nil
