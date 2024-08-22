@@ -142,7 +142,7 @@ private fun ContactConnectionInfoLayout(
     }
     SectionTextFooter(sharedProfileInfo(chatModel, contactConnection.incognito))
 
-    SectionDividerSpaced(maxBottomPadding = false)
+    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
 
     DeleteButton(deleteConnection)
 

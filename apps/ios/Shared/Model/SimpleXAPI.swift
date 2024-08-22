@@ -1218,8 +1218,14 @@ func apiEndCall(_ contact: Contact) async throws {
     try await sendCommandOkResp(.apiEndCall(contact: contact))
 }
 
-func apiGetCallInvitations() throws -> [RcvCallInvitation] {
+func apiGetCallInvitationsSync() throws -> [RcvCallInvitation] {
     let r = chatSendCmdSync(.apiGetCallInvitations)
+    if case let .callInvitations(invs) = r { return invs }
+    throw r
+}
+
+func apiGetCallInvitations() async throws -> [RcvCallInvitation] {
+    let r = await chatSendCmd(.apiGetCallInvitations)
     if case let .callInvitations(invs) = r { return invs }
     throw r
 }
@@ -1517,7 +1523,7 @@ func startChat(refreshInvitations: Bool = true) throws {
         try getUserChatData()
         NtfManager.shared.setNtfBadgeCount(m.totalUnreadCountForAllUsers())
         if (refreshInvitations) {
-            try refreshCallInvitations()
+            Task { try await refreshCallInvitations() }
         }
         (m.savedToken, m.tokenStatus, m.notificationMode, m.notificationServer) = apiGetNtfToken()
         _ = try apiStartChat()
@@ -2161,23 +2167,30 @@ func chatItemSimpleUpdate(_ user: any UserLike, _ aChatItem: AChatItem) async {
     }
 }
 
-func refreshCallInvitations() throws {
+func refreshCallInvitations() async throws {
     let m = ChatModel.shared
-    let callInvitations = try justRefreshCallInvitations()
-    if let (chatId, ntfAction) = m.ntfCallInvitationAction,
-       let invitation = m.callInvitations.removeValue(forKey: chatId) {
-        m.ntfCallInvitationAction = nil
-        CallController.shared.callAction(invitation: invitation, action: ntfAction)
-    } else if let invitation = callInvitations.last(where: { $0.user.showNotifications }) {
-        activateCall(invitation)
+    let callInvitations = try await apiGetCallInvitations()
+    await MainActor.run {
+        m.callInvitations = callsByChat(callInvitations)
+        if let (chatId, ntfAction) = m.ntfCallInvitationAction,
+           let invitation = m.callInvitations.removeValue(forKey: chatId) {
+            m.ntfCallInvitationAction = nil
+            CallController.shared.callAction(invitation: invitation, action: ntfAction)
+        } else if let invitation = callInvitations.last(where: { $0.user.showNotifications }) {
+            activateCall(invitation)
+        }
     }
 }
 
-func justRefreshCallInvitations() throws -> [RcvCallInvitation] {
-    let m = ChatModel.shared
-    let callInvitations = try apiGetCallInvitations()
-    m.callInvitations = callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) { result, inv in result[inv.contact.id] = inv }
-    return callInvitations
+func justRefreshCallInvitations() throws {
+    let callInvitations = try apiGetCallInvitationsSync()
+    ChatModel.shared.callInvitations = callsByChat(callInvitations)
+}
+
+private func callsByChat(_ callInvitations: [RcvCallInvitation]) -> [ChatId: RcvCallInvitation] {
+    callInvitations.reduce(into: [ChatId: RcvCallInvitation]()) {
+        result, inv in result[inv.contact.id] = inv
+    }
 }
 
 func activateCall(_ callInvitation: RcvCallInvitation) {

@@ -104,84 +104,90 @@ private fun SetupDatabasePassphraseLayout(
   onConfirmEncrypt: () -> Unit,
   nextStep: () -> Unit,
 ) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxSize().themedBackground().padding(bottom = DEFAULT_PADDING * 2),
-    horizontalAlignment = Alignment.CenterHorizontally,
+  val handler = remember { AppBarHandler() }
+  CompositionLocalProvider(
+    LocalAppBarHandler provides handler
   ) {
-    CloseSheetBar(showClose = false, close = {})
-    AppBarTitle(stringResource(MR.strings.setup_database_passphrase))
+    ModalView({}, showClose = false) {
+      ColumnWithScrollBar(
+        Modifier.fillMaxSize().themedBackground().padding(bottom = DEFAULT_PADDING * 2),
+        horizontalAlignment = Alignment.CenterHorizontally,
+      ) {
+        AppBarTitle(stringResource(MR.strings.setup_database_passphrase))
 
-    Spacer(Modifier.weight(1f))
+        Spacer(Modifier.weight(1f))
 
-    Column(Modifier.width(600.dp)) {
-      val focusRequester = remember { FocusRequester() }
-      val focusManager = LocalFocusManager.current
-      LaunchedEffect(Unit) {
-        delay(100L)
-        focusRequester.requestFocus()
-      }
-      PassphraseField(
-        newKey,
-        generalGetString(MR.strings.new_passphrase),
-        modifier = Modifier
-          .padding(horizontal = DEFAULT_PADDING)
-          .focusRequester(focusRequester)
-          .onPreviewKeyEvent {
-            if ((it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyUp) {
-              focusManager.moveFocus(FocusDirection.Down)
-              true
-            } else {
-              false
+        Column(Modifier.width(600.dp)) {
+          val focusRequester = remember { FocusRequester() }
+          val focusManager = LocalFocusManager.current
+          LaunchedEffect(Unit) {
+            delay(100L)
+            focusRequester.requestFocus()
+          }
+          PassphraseField(
+            newKey,
+            generalGetString(MR.strings.new_passphrase),
+            modifier = Modifier
+              .padding(horizontal = DEFAULT_PADDING)
+              .focusRequester(focusRequester)
+              .onPreviewKeyEvent {
+                if ((it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyUp) {
+                  focusManager.moveFocus(FocusDirection.Down)
+                  true
+                } else {
+                  false
+                }
+              },
+            showStrength = true,
+            isValid = ::validKey,
+            keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
+          )
+          val onClickUpdate = {
+            // Don't do things concurrently. Shouldn't be here concurrently, just in case
+            if (!progressIndicator.value) {
+              encryptDatabaseAlert(onConfirmEncrypt)
             }
-          },
-        showStrength = true,
-        isValid = ::validKey,
-        keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
-      )
-      val onClickUpdate = {
-        // Don't do things concurrently. Shouldn't be here concurrently, just in case
-        if (!progressIndicator.value) {
-          encryptDatabaseAlert(onConfirmEncrypt)
+          }
+          val disabled = currentKey.value == newKey.value ||
+              newKey.value != confirmNewKey.value ||
+              newKey.value.isEmpty() ||
+              !validKey(currentKey.value) ||
+              !validKey(newKey.value) ||
+              progressIndicator.value
+
+          PassphraseField(
+            confirmNewKey,
+            generalGetString(MR.strings.confirm_new_passphrase),
+            modifier = Modifier
+              .padding(horizontal = DEFAULT_PADDING)
+              .onPreviewKeyEvent {
+                if (!disabled && (it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyUp) {
+                  onClickUpdate()
+                  true
+                } else {
+                  false
+                }
+              },
+            isValid = { confirmNewKey.value == "" || newKey.value == confirmNewKey.value },
+            keyboardActions = KeyboardActions(onDone = { defaultKeyboardAction(ImeAction.Done) }),
+          )
+
+          Box(Modifier.align(Alignment.CenterHorizontally).padding(vertical = DEFAULT_PADDING)) {
+            SetPassphraseButton(disabled, onClickUpdate)
+          }
+
+          Column {
+            SectionTextFooter(generalGetString(MR.strings.you_have_to_enter_passphrase_every_time))
+            SectionTextFooter(annotatedStringResource(MR.strings.impossible_to_recover_passphrase))
+          }
+        }
+
+        Spacer(Modifier.weight(1f))
+        SkipButton(progressIndicator.value) {
+          chatModel.desktopOnboardingRandomPassword.value = true
+          nextStep()
         }
       }
-      val disabled = currentKey.value == newKey.value ||
-          newKey.value != confirmNewKey.value ||
-          newKey.value.isEmpty() ||
-          !validKey(currentKey.value) ||
-          !validKey(newKey.value) ||
-          progressIndicator.value
-
-      PassphraseField(
-        confirmNewKey,
-        generalGetString(MR.strings.confirm_new_passphrase),
-        modifier = Modifier
-          .padding(horizontal = DEFAULT_PADDING)
-          .onPreviewKeyEvent {
-            if (!disabled && (it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyUp) {
-              onClickUpdate()
-              true
-            } else {
-              false
-            }
-          },
-        isValid = { confirmNewKey.value == "" || newKey.value == confirmNewKey.value },
-        keyboardActions = KeyboardActions(onDone = { defaultKeyboardAction(ImeAction.Done) }),
-      )
-
-      Box(Modifier.align(Alignment.CenterHorizontally).padding(vertical = DEFAULT_PADDING)) {
-        SetPassphraseButton(disabled, onClickUpdate)
-      }
-
-      Column {
-        SectionTextFooter(generalGetString(MR.strings.you_have_to_enter_passphrase_every_time))
-        SectionTextFooter(annotatedStringResource(MR.strings.impossible_to_recover_passphrase))
-      }
-    }
-
-    Spacer(Modifier.weight(1f))
-    SkipButton(progressIndicator.value) {
-      chatModel.desktopOnboardingRandomPassword.value = true
-      nextStep()
     }
   }
 }
