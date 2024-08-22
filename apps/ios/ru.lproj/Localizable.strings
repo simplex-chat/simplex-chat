@@ -936,7 +936,7 @@
 "Clear verification" = "Сбросить подтверждение";
 
 /* No comment provided by engineer. */
-"Color chats with the new themes." = "Добавьте цвета к чатам в настройках тем.";
+"Color chats with the new themes." = "Добавьте цвета к чатам в настройках.";
 
 /* No comment provided by engineer. */
 "Color mode" = "Режим цветов";
@@ -1459,7 +1459,7 @@
 "Delete queue" = "Удаление очереди";
 
 /* No comment provided by engineer. */
-"Delete up to 20 messages at once." = "Удаляйте до 20 сообщений одновременно.";
+"Delete up to 20 messages at once." = "Удаляйте до 20 сообщений за раз.";
 
 /* No comment provided by engineer. */
 "Delete user profile?" = "Удалить профиль пользователя?";
@@ -3358,7 +3358,7 @@
 "Private message routing" = "Конфиденциальная доставка сообщений";
 
 /* No comment provided by engineer. */
-"Private message routing 🚀" = "Конфиденциальная доставка сообщений 🚀";
+"Private message routing 🚀" = "Конфиденциальная доставка 🚀";
 
 /* name of notes to self */
 "Private notes" = "Личные заметки";
