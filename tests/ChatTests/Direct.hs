@@ -55,6 +55,7 @@ chatDirectTests = do
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
+    it "send multiple messages, including quote" testSendMultiWithQuote
   describe "duplicate contacts" $ do
     it "duplicate contacts are separate (contacts don't merge)" testDuplicateContactsSeparate
     it "new contact is separate with multiple duplicate contacts (contacts don't merge)" testDuplicateContactsMultipleSeparate
@@ -874,6 +875,49 @@ testSendMultiTimed =
         <### [ "timed message deleted: test 1",
                "timed message deleted: test 2"
              ]
+
+testSendMultiWithQuote :: HasCallStack => FilePath -> IO ()
+testSendMultiWithQuote =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice #> "@bob hello"
+      bob <# "alice> hello"
+      msgId1 <- lastItemId alice
+
+      threadDelay 1000000
+
+      bob #> "@alice hi"
+      alice <# "bob> hi"
+      msgId2 <- lastItemId alice
+
+      let cm1 = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message 1\"}}"
+          cm2 = "{\"quotedItemId\": " <> msgId1 <> ", \"msgContent\": {\"type\": \"text\", \"text\": \"message 2\"}}"
+          cm3 = "{\"quotedItemId\": " <> msgId2 <> ", \"msgContent\": {\"type\": \"text\", \"text\": \"message 3\"}}"
+
+      alice ##> ("/_send @2 json [" <> cm1 <> ", " <> cm2 <> ", " <> cm3 <> "]")
+      alice <## "bad chat command: invalid multi send: live and more than one quote not supported"
+
+      alice ##> ("/_send @2 json [" <> cm1 <> ", " <> cm2 <> "]")
+
+      alice <# "@bob message 1"
+      alice <# "@bob >> hello"
+      alice <## "      message 2"
+
+      bob <# "alice> message 1"
+      bob <# "alice> >> hello"
+      bob <## "      message 2"
+
+      alice ##> ("/_send @2 json [" <> cm3 <> ", " <> cm1 <> "]")
+
+      alice <# "@bob > hi"
+      alice <## "      message 3"
+      alice <# "@bob message 1"
+
+      bob <# "alice> > hi"
+      bob <## "      message 3"
+      bob <# "alice> message 1"
 
 testGetSetSMPServers :: HasCallStack => FilePath -> IO ()
 testGetSetSMPServers =
