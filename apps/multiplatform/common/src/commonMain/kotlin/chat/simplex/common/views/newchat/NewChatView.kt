@@ -2,6 +2,7 @@ package chat.simplex.common.views.newchat
 
 import SectionBottomSpacer
 import SectionItemView
+import SectionTextFooter
 import SectionView
 import TextIconSpaced
 import androidx.compose.foundation.*
@@ -449,7 +450,7 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
   }
 
   currentUser?.let {
-    SectionView(stringResource(MR.strings.new_chat_profile).uppercase()) {
+    SectionView(stringResource(MR.strings.new_chat_share_profile).uppercase()) {
       SectionItemView(
         click = {
           ModalManager.start.showCustomModal { close ->
@@ -485,6 +486,9 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
           color = MaterialTheme.colors.onBackground
         )
       }
+    }
+    if (incognito) {
+      SectionTextFooter(generalGetString(MR.strings.connect__a_new_random_profile_will_be_shared))
     }
   }
 }
