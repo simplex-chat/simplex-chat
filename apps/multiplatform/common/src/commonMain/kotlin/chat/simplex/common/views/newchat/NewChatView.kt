@@ -19,7 +19,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
@@ -36,6 +38,7 @@ import chat.simplex.common.views.contacts.ContactListNavLinkView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.URI
 
@@ -209,11 +212,20 @@ private fun RetryButton(onClick: () -> Unit) {
 private fun ProfilePickerOption(
   title: String,
   selected: Boolean,
+  disabled: Boolean,
   onSelected: () -> Unit,
   image: @Composable () -> Unit,
   infoIcon: (@Composable () -> Unit)? = null
 ) {
-  SectionItemViewSpaceBetween({ onSelected() }) {
+  Row(
+    Modifier
+      .fillMaxWidth()
+      .sizeIn(minHeight = DEFAULT_MIN_SECTION_ITEM_HEIGHT)
+      .then(if (disabled) Modifier else Modifier.clickable(onClick = onSelected))
+      .padding(horizontal = DEFAULT_PADDING),
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       image()
       TextIconSpaced(false)
@@ -249,6 +261,7 @@ private fun ActiveProfilePicker(
   close: () -> Unit,
   rhId: Long?
 ) {
+  val switchingProfile = remember { mutableStateOf(false) }
   val incognito by remember(chatModel.showingInvitation.value?.conn?.incognito, controller.appPrefs.incognito.get()) {
     derivedStateOf {
       chatModel.showingInvitation.value?.conn?.incognito ?: controller.appPrefs.incognito.get()
@@ -257,19 +270,44 @@ private fun ActiveProfilePicker(
   val selectedProfile by remember { derivedStateOf { chatModel.currentUser.value } }
   val searchTextOrPassword = rememberSaveable { search }
   val profiles by remember { derivedStateOf { filteredUsers(chatModel, searchTextOrPassword.value).sortedBy { !it.activeUser } } }
+  var progressByTimeout by rememberSaveable { mutableStateOf(false) }
+
+  LaunchedEffect(switchingProfile.value) {
+    progressByTimeout = if (switchingProfile.value) {
+      delay(500)
+      switchingProfile.value
+    } else {
+      false
+    }
+  }
 
   BoxWithConstraints {
-    Column(Modifier.fillMaxSize()) {
+    Column(
+      Modifier
+        .fillMaxSize()
+        .then(
+          if (progressByTimeout) {
+            Modifier
+              .alpha(0.6f)
+          } else {
+            Modifier
+          }
+        )
+
+    ) {
       AppBarTitle(stringResource(MR.strings.select_chat_profile), hostDevice(rhId), bottomPadding = DEFAULT_PADDING)
-      LazyColumnWithScrollBar {
+      LazyColumnWithScrollBar(userScrollEnabled = !switchingProfile.value) {
         item {
           ProfilePickerOption(
+            disabled = switchingProfile.value,
             title = stringResource(MR.strings.incognito),
             selected = incognito,
             onSelected = {
+              switchingProfile.value = true
               withApi {
                 if (contactConnection != null) {
                   val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
+                  switchingProfile.value = false
 
                   if (conn != null) {
                     withChats {
@@ -295,6 +333,7 @@ private fun ActiveProfilePicker(
                   stringResource(MR.strings.incognito),
                   Modifier
                     .clickable(
+                      enabled = !progressByTimeout,
                       onClick = { ModalManager.start.showModal { IncognitoView() } }
                     ),
                   tint = MaterialTheme.colors.primary
@@ -305,8 +344,10 @@ private fun ActiveProfilePicker(
         itemsIndexed(profiles) { _, p ->
           ProfilePickerOption(
             title = p.chatViewName,
+            disabled = switchingProfile.value,
             selected = selectedProfile?.userId == p.userId && !incognito,
             onSelected = {
+              switchingProfile.value = true
               withApi {
                 if (contactConnection != null) {
                   val conn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, p.userId)
@@ -331,7 +372,11 @@ private fun ActiveProfilePicker(
                     withChats {
                       updateContactConnection(p.remoteHostId, conn)
                     }
+                    switchingProfile.value = false
                     close.invoke()
+                  }
+                  else {
+                    switchingProfile.value = false
                   }
                 }
               }
@@ -340,6 +385,9 @@ private fun ActiveProfilePicker(
           )
         }
       }
+    }
+    if (progressByTimeout) {
+      DefaultProgressView("")
     }
   }
 }
