@@ -727,9 +727,11 @@ struct ChatView: View {
                 if let index, index > 0 && !im.reversedChatItems.isEmpty {
                     let nextItem = im.reversedChatItems[index - 1]
                     isTimestampShown = nextItem.chatDir != chatItem.chatDir ||
-                    Self.componentsToMinute(nextItem.meta.createdAt) != Self.componentsToMinute(chatItem.meta.createdAt)
-                    isDateShown = Self.componentsToDate(nextItem.meta.createdAt) != Self.componentsToDate(chatItem.meta.createdAt)
-                    isGapLarge = nextItem.meta.createdAt.timeIntervalSince(chatItem.meta.createdAt) > 30
+                        Self.componentsToMinute(nextItem.meta.createdAt) != Self.componentsToMinute(chatItem.meta.createdAt)
+                    isDateShown = 
+                        Self.componentsToDate(nextItem.meta.createdAt) != Self.componentsToDate(chatItem.meta.createdAt)
+                    isGapLarge = nextItem.chatDir != chatItem.chatDir ||
+                        nextItem.meta.createdAt.timeIntervalSince(chatItem.meta.createdAt) > 30
                 } else {
                     isTimestampShown = true
                     isDateShown = false
