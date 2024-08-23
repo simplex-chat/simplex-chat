@@ -17,12 +17,14 @@ chatLocalChatsTests :: SpecWith FilePath
 chatLocalChatsTests = do
   describe "note folders" $ do
     it "create folders, add notes, read, search" testNotes
-    it "create multiple messages api" testCreateMulti
     it "switch users" testUserNotes
     it "preview pagination for notes" testPreviewsPagination
     it "chat pagination" testChatPagination
     it "stores files" testFiles
     it "deleting files does not interfere with other chat types" testOtherFiles
+  describe "batch create messages" $ do
+    it "create multiple messages api" testCreateMulti
+    it "create multiple messages with files" testCreateMultiFiles
 
 testNotes :: FilePath -> IO ()
 testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
@@ -52,14 +54,6 @@ testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/_update item *1 1 text Greetings."
   alice ##> "/tail *"
   alice <# "* Greetings."
-
-testCreateMulti :: FilePath -> IO ()
-testCreateMulti tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-  createCCNoteFolder alice
-
-  alice ##> "/_create *1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
-  alice <# "* test 1"
-  alice <# "* test 2"
 
 testUserNotes :: FilePath -> IO ()
 testUserNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
@@ -197,3 +191,36 @@ testOtherFiles =
     doesFileExist "./tests/tmp/test.jpg" `shouldReturn` True
   where
     cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, receiveChunks = 100}}
+
+testCreateMulti :: FilePath -> IO ()
+testCreateMulti tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+  createCCNoteFolder alice
+
+  alice ##> "/_create *1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
+  alice <# "* test 1"
+  alice <# "* test 2"
+
+testCreateMultiFiles :: FilePath -> IO ()
+testCreateMultiFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+  createCCNoteFolder alice
+  alice #$> ("/_files_folder ./tests/tmp/alice_app_files", id, "ok")
+  copyFile "./tests/fixtures/test.jpg" "./tests/tmp/alice_app_files/test.jpg"
+  copyFile "./tests/fixtures/test.pdf" "./tests/tmp/alice_app_files/test.pdf"
+
+  let cm1 = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message without file\"}}"
+      cm2 = "{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 1\"}}"
+      cm3 = "{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 2\"}}"
+  alice ##> ("/_create *1 json [" <> cm1 <> "," <> cm2 <> "," <> cm3 <> "]")
+
+  alice <# "* message without file"
+  alice <# "* sending file 1"
+  alice <# "* file 1 (test.jpg)"
+  alice <# "* sending file 2"
+  alice <# "* file 2 (test.pdf)"
+
+  doesFileExist "./tests/tmp/alice_app_files/test.jpg" `shouldReturn` True
+  doesFileExist "./tests/tmp/alice_app_files/test.pdf" `shouldReturn` True
+
+  alice ##> "/_get chat *1 count=3"
+  r <- chatF <$> getTermLine alice
+  r `shouldBe` [((1, "message without file"), Nothing), ((1, "sending file 1"), Just "test.jpg"), ((1, "sending file 2"), Just "test.pdf")]
