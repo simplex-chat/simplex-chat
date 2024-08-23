@@ -36,6 +36,8 @@ chatFileTests = do
     it "send and receive image with text and quote" testSendImageWithTextAndQuote
     it "send and receive image to group" testGroupSendImage
     it "send and receive image with text and quote to group" testGroupSendImageWithTextAndQuote
+  describe "batch send messages with files" $ do
+    fit "with files folder: send multiple files" testSendFilesMulti
   describe "file transfer over XFTP" $ do
     it "round file description count" $ const testXFTPRoundFDCount
     it "send and receive file" testXFTPFileTransfer
@@ -405,6 +407,62 @@ testGroupSendImageWithTextAndQuote =
       bob @@@ [("#team", "hey bob"), ("@alice", "received invitation to join group team as admin")]
       cath #$> ("/_get chat #1 count=2", chat'', [((0, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (0, "hi team"), Just "./tests/tmp/test_1.jpg")])
       cath @@@ [("#team", "hey bob"), ("@alice", "received invitation to join group team as admin")]
+
+testSendFilesMulti :: HasCallStack => FilePath -> IO ()
+testSendFilesMulti =
+  testChat2 aliceProfile bobProfile $ \alice bob -> do
+    withXFTPServer $ do
+      connectUsers alice bob
+
+      alice #$> ("/_files_folder ./tests/tmp/alice_app_files", id, "ok")
+      copyFile "./tests/fixtures/test.jpg" "./tests/tmp/alice_app_files/test.jpg"
+      copyFile "./tests/fixtures/test.pdf" "./tests/tmp/alice_app_files/test.pdf"
+      bob #$> ("/_files_folder ./tests/tmp/bob_app_files", id, "ok")
+
+      let cm1 = "{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 1\"}}"
+          cm2 = "{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 2\"}}"
+      alice ##> ("/_send @2 json [" <> cm1 <> "," <> cm2 <> "]")
+
+      alice <# "@bob sending file 1"
+      alice <# "/f @bob test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+
+      alice <# "@bob sending file 2"
+      alice <# "/f @bob test.pdf"
+      alice <## "use /fc 2 to cancel sending"
+
+      bob <# "alice> sending file 1"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      bob <# "alice> sending file 2"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+
+      alice <## "completed uploading file 1 (test.jpg) for bob"
+      alice <## "completed uploading file 2 (test.pdf) for bob"
+
+      bob ##> "/fr 1"
+      bob
+        <### [ "saving file 1 from alice to test.jpg",
+               "started receiving file 1 (test.jpg) from alice"
+             ]
+      bob <## "completed receiving file 1 (test.jpg) from alice"
+
+      bob ##> "/fr 2"
+      bob
+        <### [ "saving file 2 from alice to test.pdf",
+               "started receiving file 2 (test.pdf) from alice"
+             ]
+      bob <## "completed receiving file 2 (test.pdf) from alice"
+
+      src1 <- B.readFile "./tests/tmp/alice_app_files/test.jpg"
+      dest1 <- B.readFile "./tests/tmp/bob_app_files/test.jpg"
+      dest1 `shouldBe` src1
+
+      src2 <- B.readFile "./tests/tmp/alice_app_files/test.pdf"
+      dest2 <- B.readFile "./tests/tmp/bob_app_files/test.pdf"
+      dest2 `shouldBe` src2
 
 testXFTPRoundFDCount :: Expectation
 testXFTPRoundFDCount = do
