@@ -784,7 +784,8 @@ object ChatModel {
 data class ShowingInvitation(
   val connId: String,
   val connReq: String,
-  val connChatUsed: Boolean
+  val connChatUsed: Boolean,
+  val conn: PendingContactConnection
 )
 
 enum class ChatType(val type: String) {

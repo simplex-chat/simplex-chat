@@ -47,7 +47,7 @@ enum class NewChatOption {
 fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRCodeScanner: Boolean = false, close: () -> Unit) {
   val selection = remember { stateGetOrPut("selection") { selection } }
   val showQRCodeScanner = remember { stateGetOrPut("showQRCodeScanner") { showQRCodeScanner } }
-  val contactConnection: MutableState<PendingContactConnection?> = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(null) }
+  val contactConnection: MutableState<PendingContactConnection?> = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(chatModel.showingInvitation.value?.conn) }
   val connReqInvitation by remember { derivedStateOf { chatModel.showingInvitation.value?.connReq ?: "" } }
   val creatingConnReq = rememberSaveable { mutableStateOf(false) }
   val pastedLink = rememberSaveable { mutableStateOf("") }
@@ -181,6 +181,15 @@ private fun CreatingLinkProgressView() {
   DefaultProgressView(stringResource(MR.strings.creating_link))
 }
 
+private fun updateShownConnection(conn: PendingContactConnection) {
+  chatModel.showingInvitation.value = chatModel.showingInvitation.value?.copy(
+    conn = conn,
+    connId = conn.id,
+    connReq = conn.connReqInv ?: "",
+    connChatUsed = true
+  )
+}
+
 @Composable
 private fun RetryButton(onClick: () -> Unit) {
   Column(
@@ -234,9 +243,18 @@ private fun ProfilePickerOption(
 }
 
 @Composable
-private fun ActiveProfilePicker(search: MutableState<String>, rhId: Long?) {
-  val incognito = remember { mutableStateOf(controller.appPrefs.incognito.get()) }
-  val selectedProfile = remember { mutableStateOf(chatModel.currentUser.value) }
+private fun ActiveProfilePicker(
+  search: MutableState<String>,
+  contactConnection: PendingContactConnection?,
+  close: () -> Unit,
+  rhId: Long?
+) {
+  val incognito by remember(chatModel.showingInvitation.value?.conn?.incognito, controller.appPrefs.incognito.get()) {
+    derivedStateOf {
+      chatModel.showingInvitation.value?.conn?.incognito ?: controller.appPrefs.incognito.get()
+    }
+  }
+  val selectedProfile by remember { derivedStateOf { chatModel.currentUser.value } }
   val searchTextOrPassword = rememberSaveable { search }
   val profiles by remember { derivedStateOf { filteredUsers(chatModel, searchTextOrPassword.value).sortedBy { !it.activeUser } } }
 
@@ -247,9 +265,21 @@ private fun ActiveProfilePicker(search: MutableState<String>, rhId: Long?) {
         item {
           ProfilePickerOption(
             title = stringResource(MR.strings.incognito),
-            selected = incognito.value,
+            selected = incognito,
             onSelected = {
-              incognito.value = true
+              withApi {
+                if (contactConnection != null) {
+                  val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
+
+                  if (conn != null) {
+                    withChats {
+                      updateContactConnection(rhId, conn)
+                      updateShownConnection(conn)
+                    }
+                    close.invoke()
+                  }
+                }
+              }
             },
             image = {
               Icon(
@@ -275,10 +305,29 @@ private fun ActiveProfilePicker(search: MutableState<String>, rhId: Long?) {
         itemsIndexed(profiles) { _, p ->
           ProfilePickerOption(
             title = p.chatViewName,
-            selected = selectedProfile.value?.userId == p.userId && !incognito.value,
+            selected = selectedProfile?.userId == p.userId && !incognito,
             onSelected = {
-              incognito.value = false
-              selectedProfile.value = p
+              withApi {
+                if (contactConnection != null) {
+                  val conn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, p.userId)
+                  if (conn != null) {
+                    withChats {
+                      updateContactConnection(rhId, conn)
+                      updateShownConnection(conn)
+                    }
+                    controller.changeActiveUser_(
+                      rhId = p.remoteHostId,
+                      toUserId = p.userId,
+                      viewPwd = if (p.hidden) searchTextOrPassword.value else null
+                    )
+
+                    withChats {
+                      updateContactConnection(p.remoteHostId, conn)
+                    }
+                    close.invoke()
+                  }
+                }
+              }
             },
             image = { ProfileImage(size = 30.dp * fontSizeSqrtMultiplier, image = p.image) }
           )
@@ -301,7 +350,12 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
   }
 
   Spacer(Modifier.height(10.dp))
-  val incognito = remember { mutableStateOf(controller.appPrefs.incognito.get()) }
+  val incognito by remember(chatModel.showingInvitation.value?.conn?.incognito, controller.appPrefs.incognito.get()) {
+    derivedStateOf {
+      chatModel.showingInvitation.value?.conn?.incognito ?: controller.appPrefs.incognito.get()
+    }
+  }
+
   val currentUser by remember(chatModel.currentUser.value) {
     derivedStateOf { chatModel.currentUser.value }
   }
@@ -317,11 +371,18 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
               endButtons = {
                 SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
               },
-              content = { ActiveProfilePicker(search = search, rhId = rhId) })
+              content = {
+                ActiveProfilePicker(
+                  search = search,
+                  close = close,
+                  rhId = rhId,
+                  contactConnection = contactConnection.value
+                )
+              })
           }
         }
       ) {
-        if (incognito.value) {
+        if (incognito) {
           Icon(
             painterResource(MR.images.ic_theater_comedy_filled),
             contentDescription = stringResource(MR.strings.incognito),
@@ -332,23 +393,11 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
         }
         TextIconSpaced(false)
         Text(
-          text = if (incognito.value) stringResource(MR.strings.incognito) else it.chatViewName,
+          text = if (incognito) stringResource(MR.strings.incognito) else it.chatViewName,
           color = MaterialTheme.colors.onBackground
         )
       }
     }
-  }
-
-  KeyChangeEffect(incognito.value) {
-    withBGApi {
-      val contactConn = contactConnection.value ?: return@withBGApi
-      val conn = controller.apiSetConnectionIncognito(rhId, contactConn.pccConnId, incognito.value) ?: return@withBGApi
-      withChats {
-        contactConnection.value = conn
-        updateContactConnection(rhId, conn)
-      }
-    }
-    chatModel.markShowingInvitationUsed()
   }
 }
 
@@ -495,7 +544,7 @@ private fun createInvitation(
     if (r != null) {
       withChats {
         updateContactConnection(rhId, r.second)
-        chatModel.showingInvitation.value = ShowingInvitation(connId = r.second.id, connReq = simplexChatLink(r.first), connChatUsed = false)
+        chatModel.showingInvitation.value = ShowingInvitation(connId = r.second.id, connReq = simplexChatLink(r.first), connChatUsed = false, conn = r.second)
         contactConnection.value = r.second
       }
     } else {
