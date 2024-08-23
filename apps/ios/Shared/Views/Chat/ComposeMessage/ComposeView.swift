@@ -751,6 +751,7 @@ struct ComposeView: View {
             case .linkPreview:
                 sent = await send(checkLinkPreview(), quoted: quoted, live: live, ttl: ttl)
             case let .mediaPreviews(mediaPreviews: media):
+                // TODO batch send: batch media previews
                 let last = media.count - 1
                 if last >= 0 {
                     for i in 0..<last {
@@ -887,22 +888,26 @@ struct ComposeView: View {
         }
 
         func send(_ mc: MsgContent, quoted: Int64?, file: CryptoFile? = nil, live: Bool = false, ttl: Int?) async -> ChatItem? {
-            if let chatItem = chat.chatInfo.chatType == .local
-                ? await apiCreateChatItem(noteFolderId: chat.chatInfo.apiId, file: file, msg: mc)
-                : await apiSendMessage(
+            if let chatItems = chat.chatInfo.chatType == .local
+                ? await apiCreateChatItems(
+                    noteFolderId: chat.chatInfo.apiId,
+                    composedMessages: [ComposedMessage(fileSource: file, msgContent: mc)]
+                )
+                : await apiSendMessages(
                     type: chat.chatInfo.chatType,
                     id: chat.chatInfo.apiId,
-                    file: file,
-                    quotedItemId: quoted,
-                    msg: mc,
                     live: live,
-                    ttl: ttl
+                    ttl: ttl,
+                    composedMessages: [ComposedMessage(fileSource: file, quotedItemId: quoted, msgContent: mc)]
                 ) {
                 await MainActor.run {
                     chatModel.removeLiveDummy(animated: false)
-                    chatModel.addChatItem(chat.chatInfo, chatItem)
+                    for chatItem in chatItems {
+                        chatModel.addChatItem(chat.chatInfo, chatItem)
+                    }
                 }
-                return chatItem
+                // UI only supports sending one item at a time
+                return chatItems.first
             }
             if let file = file {
                 removeFile(file.filePath)
@@ -911,18 +916,21 @@ struct ComposeView: View {
         }
 
         func forwardItem(_ forwardedItem: ChatItem, _ fromChatInfo: ChatInfo, _ ttl: Int?) async -> ChatItem? {
-            if let chatItem = await apiForwardChatItem(
+            if let chatItems = await apiForwardChatItems(
                 toChatType: chat.chatInfo.chatType,
                 toChatId: chat.chatInfo.apiId,
                 fromChatType: fromChatInfo.chatType,
                 fromChatId: fromChatInfo.apiId,
-                itemId: forwardedItem.id,
+                itemIds: [forwardedItem.id],
                 ttl: ttl
             ) {
                 await MainActor.run {
-                    chatModel.addChatItem(chat.chatInfo, chatItem)
+                    for chatItem in chatItems {
+                        chatModel.addChatItem(chat.chatInfo, chatItem)
+                    }
                 }
-                return chatItem
+                // TODO batch send: forward multiple messages
+                return chatItems.first
             }
             return nil
         }

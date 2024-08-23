@@ -1721,7 +1721,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     let startFeatures = [(0, e2eeInfoPQStr), (0, "Disappearing messages: allowed"), (0, "Full deletion: off"), (0, "Message reactions: enabled"), (0, "Voice messages: off"), (0, "Audio/video calls: enabled")]
     alice #$> ("/_get chat @2 count=100", chat, startFeatures)
     bob #$> ("/_get chat @2 count=100", chat, startFeatures)
-    let sendVoice = "/_send @2 json {\"filePath\": \"test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}"
+    let sendVoice = "/_send @2 json [{\"filePath\": \"test.txt\", \"msgContent\": {\"type\": \"voice\", \"text\": \"\", \"duration\": 10}}]"
         voiceNotAllowed = "bad chat command: feature not allowed Voice messages"
     alice ##> sendVoice
     alice <## voiceNotAllowed
@@ -2227,7 +2227,7 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
     inv <- getInvitation bob
     bob ##> ("#team \"" <> inv <> "\\ntest\"")
     bob <## "bad chat command: feature not allowed SimpleX links"
-    bob ##> ("/_send #1 json {\"msgContent\": {\"type\": \"text\", \"text\": \"" <> inv <> "\\ntest\"}}")
+    bob ##> ("/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"" <> inv <> "\\ntest\"}}]")
     bob <## "bad chat command: feature not allowed SimpleX links"
     (alice </)
     (cath </)
