@@ -295,8 +295,10 @@ private fun ActiveProfilePicker(
         )
 
     ) {
-      AppBarTitle(stringResource(MR.strings.select_chat_profile), hostDevice(rhId), bottomPadding = DEFAULT_PADDING)
       LazyColumnWithScrollBar(userScrollEnabled = !switchingProfile.value) {
+        item {
+          AppBarTitle(stringResource(MR.strings.select_chat_profile), hostDevice(rhId), bottomPadding = DEFAULT_PADDING)
+        }
         item {
           ProfilePickerOption(
             disabled = switchingProfile.value,
