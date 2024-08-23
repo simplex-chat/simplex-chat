@@ -717,10 +717,6 @@ struct ChatView: View {
 
         var revealed: Bool { chatItem == revealedChatItem }
 
-        private func componentsToMinute(_ date: Date) -> DateComponents {
-            Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
-        }
-
         struct TimeSeparation {
             let isTimestampShown: Bool
             let isDateShown: Bool // TODO: Implement UI to show date
