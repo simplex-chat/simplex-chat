@@ -201,13 +201,18 @@ private fun ProfilePickerOption(
   title: String,
   selected: Boolean,
   onSelected: () -> Unit,
-  image: @Composable () -> Unit
+  image: @Composable () -> Unit,
+  infoIcon: (@Composable () -> Unit)? = null
 ) {
   SectionItemViewSpaceBetween({ onSelected() }) {
-    Row {
+    Row(verticalAlignment = Alignment.CenterVertically) {
       image()
       TextIconSpaced(false)
       Text(title, modifier = Modifier.align(Alignment.CenterVertically))
+      if (infoIcon != null) {
+        TextIconSpaced(false)
+        infoIcon()
+      }
     }
     if (selected) {
       Icon(painterResource(
@@ -251,8 +256,19 @@ private fun ActiveProfilePicker(search: MutableState<String>, rhId: Long?) {
                 painterResource(MR.images.ic_theater_comedy_filled),
                 contentDescription = stringResource(MR.strings.incognito),
                 Modifier.size(30.dp * fontSizeSqrtMultiplier),
-                tint = MaterialTheme.colors.secondary,
+                tint = Indigo,
               )
+            },
+            infoIcon = {
+                Icon(
+                  painterResource(MR.images.ic_info),
+                  stringResource(MR.strings.incognito),
+                  Modifier
+                    .clickable(
+                      onClick = { ModalManager.start.showModal { IncognitoView() } }
+                    ),
+                  tint = MaterialTheme.colors.primary
+                )
             }
           )
         }
@@ -309,7 +325,7 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
           Icon(
             painterResource(MR.images.ic_theater_comedy_filled),
             contentDescription = stringResource(MR.strings.incognito),
-            tint = MaterialTheme.colors.secondary,
+            tint = Indigo,
           )
         } else {
           ProfileImage(size = 24.dp, image = it.image)
@@ -323,10 +339,6 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
     }
   }
 
-
-  IncognitoToggle(controller.appPrefs.incognito, incognito) {
-    ModalManager.start.showModal { IncognitoView() }
-  }
   KeyChangeEffect(incognito.value) {
     withBGApi {
       val contactConn = contactConnection.value ?: return@withBGApi
@@ -338,7 +350,6 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
     }
     chatModel.markShowingInvitationUsed()
   }
-  SectionTextFooter(sharedProfileInfo(chatModel, incognito.value))
 }
 
 @Composable
