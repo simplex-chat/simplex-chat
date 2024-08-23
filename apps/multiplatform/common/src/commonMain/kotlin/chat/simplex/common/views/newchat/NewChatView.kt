@@ -200,12 +200,22 @@ private fun RetryButton(onClick: () -> Unit) {
 private fun ProfilePickerOption(
   title: String,
   selected: Boolean,
-  onSelected: () -> Unit
+  onSelected: () -> Unit,
+  image: @Composable () -> Unit
 ) {
   SectionItemViewSpaceBetween({ onSelected() }) {
-    Text(title)
+    Row {
+      image()
+      TextIconSpaced(false)
+      Text(title, modifier = Modifier.align(Alignment.CenterVertically))
+    }
     if (selected) {
-      Icon(painterResource(MR.images.ic_check), title, tint = MaterialTheme.colors.primary)
+      Icon(painterResource(
+        MR.images.ic_check),
+        title,
+        Modifier.size(20.dp),
+        tint =  MaterialTheme.colors.primary,
+      )
     }
   }
   Divider(
@@ -227,8 +237,7 @@ private fun ActiveProfilePicker(search: MutableState<String>, rhId: Long?) {
 
   BoxWithConstraints {
     Column(Modifier.fillMaxSize()) {
-      AppBarTitle(stringResource(MR.strings.select_profile), hostDevice(rhId), bottomPadding = DEFAULT_PADDING)
-
+      AppBarTitle(stringResource(MR.strings.select_chat_profile), hostDevice(rhId), bottomPadding = DEFAULT_PADDING)
       LazyColumnWithScrollBar {
         item {
           ProfilePickerOption(
@@ -236,6 +245,14 @@ private fun ActiveProfilePicker(search: MutableState<String>, rhId: Long?) {
             selected = incognito.value,
             onSelected = {
               incognito.value = true
+            },
+            image = {
+              Icon(
+                painterResource(MR.images.ic_theater_comedy_filled),
+                contentDescription = stringResource(MR.strings.incognito),
+                Modifier.size(30.dp * fontSizeSqrtMultiplier),
+                tint = MaterialTheme.colors.secondary,
+              )
             }
           )
         }
@@ -246,7 +263,8 @@ private fun ActiveProfilePicker(search: MutableState<String>, rhId: Long?) {
             onSelected = {
               incognito.value = false
               selectedProfile.value = p
-            }
+            },
+            image = { ProfileImage(size = 30.dp * fontSizeSqrtMultiplier, image = p.image) }
           )
         }
       }
