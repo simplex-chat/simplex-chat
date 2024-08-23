@@ -64,7 +64,9 @@ chatGroupTests = do
     it "moderate message of another group member (full delete)" testGroupModerateFullDelete
     it "moderate message that arrives after the event of moderation" testGroupDelayedModeration
     it "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
+  describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
+    it "send multiple timed messages" testSendMultiTimed
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -1830,6 +1832,34 @@ testSendMulti =
       alice <# "#team test 2"
       bob <# "#team alice> test 1"
       bob <# "#team alice> test 2"
+
+testSendMultiTimed :: HasCallStack => FilePath -> IO ()
+testSendMultiTimed =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/set disappear #team on 1"
+      alice <## "updated group preferences:"
+      alice <## "Disappearing messages: on (1 sec)"
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      bob <## "Disappearing messages: on (1 sec)"
+
+      alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
+      alice <# "#team test 1"
+      alice <# "#team test 2"
+      bob <# "#team alice> test 1"
+      bob <# "#team alice> test 2"
+
+      alice
+        <### [ "timed message deleted: test 1",
+               "timed message deleted: test 2"
+             ]
+      bob
+        <### [ "timed message deleted: test 1",
+               "timed message deleted: test 2"
+             ]
 
 testGroupAsync :: HasCallStack => FilePath -> IO ()
 testGroupAsync tmp = do

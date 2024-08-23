@@ -52,7 +52,9 @@ chatDirectTests = do
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
+  describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
+    it "send multiple timed messages" testSendMultiTimed
   describe "duplicate contacts" $ do
     it "duplicate contacts are separate (contacts don't merge)" testDuplicateContactsSeparate
     it "new contact is separate with multiple duplicate contacts (contacts don't merge)" testDuplicateContactsMultipleSeparate
@@ -851,6 +853,27 @@ testSendMulti =
       alice <# "@bob test 2"
       bob <# "alice> test 1"
       bob <# "alice> test 2"
+
+testSendMultiTimed :: HasCallStack => FilePath -> IO ()
+testSendMultiTimed =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice ##> "/_send @2 ttl=1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
+      alice <# "@bob test 1"
+      alice <# "@bob test 2"
+      bob <# "alice> test 1"
+      bob <# "alice> test 2"
+
+      alice
+        <### [ "timed message deleted: test 1",
+               "timed message deleted: test 2"
+             ]
+      bob
+        <### [ "timed message deleted: test 1",
+               "timed message deleted: test 2"
+             ]
 
 testGetSetSMPServers :: HasCallStack => FilePath -> IO ()
 testGetSetSMPServers =
