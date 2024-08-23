@@ -2,12 +2,9 @@ package chat.simplex.common.views.newchat
 
 import SectionBottomSpacer
 import SectionItemView
-import SectionItemViewSpaceBetween
-import SectionTextFooter
 import SectionView
 import TextIconSpaced
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -21,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
@@ -34,7 +30,6 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.contacts.ContactListNavLinkView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
@@ -281,6 +276,97 @@ private fun ActiveProfilePicker(
     }
   }
 
+  @Composable
+  fun profilePickerUserOption(user: User) {
+    ProfilePickerOption(
+      title = user.chatViewName,
+      disabled = switchingProfile.value,
+      selected = selectedProfile?.userId == user.userId && !incognito,
+      onSelected = {
+        switchingProfile.value = true
+        withApi {
+          if (contactConnection != null) {
+            val conn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, user.userId)
+            if (conn != null) {
+              withChats {
+                updateContactConnection(rhId, conn)
+                updateShownConnection(conn)
+              }
+              controller.changeActiveUser_(
+                rhId = user.remoteHostId,
+                toUserId = user.userId,
+                viewPwd = if (user.hidden) searchTextOrPassword.value else null
+              )
+
+              if (chatModel.currentUser.value?.userId != user.userId) {
+                AlertManager.shared.showAlertMsg(generalGetString(
+                  MR.strings.switching_profile_error_title),
+                  String.format(generalGetString(MR.strings.switching_profile_error_message), user.chatViewName)
+                )
+              }
+
+              withChats {
+                updateContactConnection(user.remoteHostId, conn)
+              }
+              switchingProfile.value = false
+              close.invoke()
+            }
+            else {
+              switchingProfile.value = false
+            }
+          }
+        }
+      },
+      image = { ProfileImage(size = 30.dp * fontSizeSqrtMultiplier, image = user.image) }
+    )
+  }
+
+  @Composable
+  fun incognitoUserOption() {
+    ProfilePickerOption(
+      disabled = switchingProfile.value,
+      title = stringResource(MR.strings.incognito),
+      selected = incognito,
+      onSelected = {
+        switchingProfile.value = true
+        withApi {
+          if (contactConnection != null) {
+            val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
+            switchingProfile.value = false
+
+            if (conn != null) {
+              withChats {
+                updateContactConnection(rhId, conn)
+                updateShownConnection(conn)
+              }
+              close.invoke()
+            }
+          }
+        }
+      },
+      image = {
+        Icon(
+          painterResource(MR.images.ic_theater_comedy_filled),
+          contentDescription = stringResource(MR.strings.incognito),
+          Modifier.size(30.dp * fontSizeSqrtMultiplier),
+          tint = Indigo,
+        )
+      },
+      infoIcon = {
+        Icon(
+          painterResource(MR.images.ic_info),
+          stringResource(MR.strings.incognito),
+          Modifier
+            .clickable(
+              enabled = !progressByTimeout,
+              onClick = { ModalManager.start.showModal { IncognitoView() } }
+            ),
+          tint = MaterialTheme.colors.primary
+        )
+      }
+    )
+  }
+
   BoxWithConstraints {
     Column(
       Modifier
@@ -299,92 +385,37 @@ private fun ActiveProfilePicker(
         item {
           AppBarTitle(stringResource(MR.strings.select_chat_profile), hostDevice(rhId), bottomPadding = DEFAULT_PADDING)
         }
-        item {
-          ProfilePickerOption(
-            disabled = switchingProfile.value,
-            title = stringResource(MR.strings.incognito),
-            selected = incognito,
-            onSelected = {
-              switchingProfile.value = true
-              withApi {
-                if (contactConnection != null) {
-                  val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
-                  switchingProfile.value = false
+        val activeProfile = profiles.firstOrNull { it.activeUser }
 
-                  if (conn != null) {
-                    withChats {
-                      updateContactConnection(rhId, conn)
-                      updateShownConnection(conn)
-                    }
-                    close.invoke()
-                  }
-                }
-              }
-            },
-            image = {
-              Icon(
-                painterResource(MR.images.ic_theater_comedy_filled),
-                contentDescription = stringResource(MR.strings.incognito),
-                Modifier.size(30.dp * fontSizeSqrtMultiplier),
-                tint = Indigo,
-              )
-            },
-            infoIcon = {
-                Icon(
-                  painterResource(MR.images.ic_info),
-                  stringResource(MR.strings.incognito),
-                  Modifier
-                    .clickable(
-                      enabled = !progressByTimeout,
-                      onClick = { ModalManager.start.showModal { IncognitoView() } }
-                    ),
-                  tint = MaterialTheme.colors.primary
-                )
+        if (activeProfile != null) {
+          val otherProfiles = profiles.filter { it.userId != activeProfile.userId }
+
+          if (incognito) {
+            item {
+              incognitoUserOption()
             }
-          )
-        }
-        itemsIndexed(profiles) { _, p ->
-          ProfilePickerOption(
-            title = p.chatViewName,
-            disabled = switchingProfile.value,
-            selected = selectedProfile?.userId == p.userId && !incognito,
-            onSelected = {
-              switchingProfile.value = true
-              withApi {
-                if (contactConnection != null) {
-                  val conn = controller.apiChangeConnectionUser(rhId, contactConnection.pccConnId, p.userId)
-                  if (conn != null) {
-                    withChats {
-                      updateContactConnection(rhId, conn)
-                      updateShownConnection(conn)
-                    }
-                    controller.changeActiveUser_(
-                      rhId = p.remoteHostId,
-                      toUserId = p.userId,
-                      viewPwd = if (p.hidden) searchTextOrPassword.value else null
-                    )
+            item {
+              profilePickerUserOption(activeProfile)
+            }
+          } else {
+            item {
+              profilePickerUserOption(activeProfile)
+            }
+            item {
+              incognitoUserOption()
+            }
+          }
 
-                    if (chatModel.currentUser.value?.userId != p.userId) {
-                      AlertManager.shared.showAlertMsg(generalGetString(
-                        MR.strings.switching_profile_error_title),
-                        String.format(generalGetString(MR.strings.switching_profile_error_message), p.chatViewName)
-                      )
-                    }
-
-                    withChats {
-                      updateContactConnection(p.remoteHostId, conn)
-                    }
-                    switchingProfile.value = false
-                    close.invoke()
-                  }
-                  else {
-                    switchingProfile.value = false
-                  }
-                }
-              }
-            },
-            image = { ProfileImage(size = 30.dp * fontSizeSqrtMultiplier, image = p.image) }
-          )
+          itemsIndexed(otherProfiles) { _, p ->
+            profilePickerUserOption(p)
+          }
+        } else {
+          item {
+            incognitoUserOption()
+          }
+          itemsIndexed(profiles) { _, p ->
+            profilePickerUserOption(p)
+          }
         }
       }
     }
