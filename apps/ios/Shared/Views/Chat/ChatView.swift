@@ -723,6 +723,7 @@ struct ChatView: View {
 
         struct TimeSeparation {
             let isTimestampShown: Bool
+            let isDateShown: Bool // TODO: Implement UI to show date
             let isGapLarge: Bool
 
             init(for chatItem: ChatItem, at index: Int?) {
@@ -731,9 +732,11 @@ struct ChatView: View {
                     let nextItem = im.reversedChatItems[index - 1]
                     isTimestampShown = nextItem.chatDir != chatItem.chatDir ||
                     Self.componentsToMinute(nextItem.meta.createdAt) != Self.componentsToMinute(chatItem.meta.createdAt)
+                    isDateShown = Self.componentsToDate(nextItem.meta.createdAt) != Self.componentsToDate(chatItem.meta.createdAt)
                     isGapLarge = nextItem.meta.createdAt.timeIntervalSince(chatItem.meta.createdAt) > 30
                 } else {
                     isTimestampShown = true
+                    isDateShown = false
                     isGapLarge = true
                 }
             }
@@ -741,6 +744,13 @@ struct ChatView: View {
             private static func componentsToMinute(_ date: Date) -> DateComponents {
                 Calendar.current.dateComponents(
                     [.year, .month, .day, .hour, .minute],
+                    from: date
+                )
+            }
+
+            private static func componentsToDate(_ date: Date) -> DateComponents {
+                Calendar.current.dateComponents(
+                    [.year, .month, .day],
                     from: date
                 )
             }
@@ -867,7 +877,7 @@ struct ChatView: View {
                                             }
                                         }
                                     }
-                                chatItemWithMenu(ci, range, maxWidth, timeSeparation.isTimestampShown)
+                                chatItemWithMenu(ci, range, maxWidth, timeSeparation)
                             }
                         }
                     }
@@ -880,7 +890,7 @@ struct ChatView: View {
                             SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
                                 .padding(.leading, 12)
                         }
-                        chatItemWithMenu(ci, range, maxWidth, timeSeparation.isTimestampShown)
+                        chatItemWithMenu(ci, range, maxWidth, timeSeparation)
                             .padding(.trailing)
                             .padding(.leading, memberImageSize + 8 + 12)
                     }
@@ -897,7 +907,7 @@ struct ChatView: View {
                                 .padding(.leading)
                         }
                     }
-                    chatItemWithMenu(ci, range, maxWidth, timeSeparation.isTimestampShown)
+                    chatItemWithMenu(ci, range, maxWidth, timeSeparation)
                         .padding(.horizontal)
                 }
                 .padding(.bottom, bottomPadding)
@@ -915,7 +925,7 @@ struct ChatView: View {
             }
         }
 
-        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat, _ isTimeShown: Bool) -> some View {
+        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat, _ timeSeparation: TimeSeparation) -> some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
             VStack(alignment: alignment.horizontal, spacing: 3) {
                 ChatItemView(
@@ -925,8 +935,8 @@ struct ChatView: View {
                     revealed: .constant(revealed),
                     allowMenu: $allowMenu
                 )
-                .environment(\.showTimestamp, isTimeShown)
-                .modifier(ChatItemClipped(ci, showsTail: isTimeShown))
+                .environment(\.showTimestamp, timeSeparation.isTimestampShown)
+                .modifier(ChatItemClipped(ci, showsTail: timeSeparation.isGapLarge))
                 .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
                 .accessibilityLabel("")
                 if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
