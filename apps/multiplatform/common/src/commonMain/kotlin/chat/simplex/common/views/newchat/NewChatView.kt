@@ -250,6 +250,18 @@ private fun ProfilePickerOption(
   )
 }
 
+private fun filteredProfiles(users: List<User>, searchTextOrPassword: String): List<User> {
+  val s = searchTextOrPassword.trim()
+  val lower = s.lowercase()
+  return users.filter { u ->
+    if ((u.activeUser || !u.hidden) && (s == "" || u.anyNameContains(lower))) {
+      true
+    } else {
+      correctPassword(u, s)
+    }
+  }
+}
+
 @Composable
 private fun ActiveProfilePicker(
   search: MutableState<String>,
@@ -258,14 +270,18 @@ private fun ActiveProfilePicker(
   rhId: Long?
 ) {
   val switchingProfile = remember { mutableStateOf(false) }
-  val incognito by remember(chatModel.showingInvitation.value?.conn?.incognito, controller.appPrefs.incognito.get()) {
-    derivedStateOf {
-      chatModel.showingInvitation.value?.conn?.incognito ?: controller.appPrefs.incognito.get()
-    }
+  val incognito = remember {
+    chatModel.showingInvitation.value?.conn?.incognito ?: controller.appPrefs.incognito.get()
   }
   val selectedProfile by remember { derivedStateOf { chatModel.currentUser.value } }
   val searchTextOrPassword = rememberSaveable { search }
-  val profiles by remember { derivedStateOf { filteredUsers(chatModel, searchTextOrPassword.value).sortedBy { !it.activeUser } } }
+  val profiles = remember {
+    chatModel.users.map { it.user }.sortedBy { !it.activeUser }
+  }
+  val filteredProfiles by remember {
+    derivedStateOf { filteredProfiles(profiles, searchTextOrPassword.value) }
+  }
+
   var progressByTimeout by rememberSaveable { mutableStateOf(false) }
 
   LaunchedEffect(switchingProfile.value) {
@@ -386,10 +402,10 @@ private fun ActiveProfilePicker(
         item {
           AppBarTitle(stringResource(MR.strings.select_chat_profile), hostDevice(rhId), bottomPadding = DEFAULT_PADDING)
         }
-        val activeProfile = profiles.firstOrNull { it.activeUser }
+        val activeProfile = filteredProfiles.firstOrNull { it.activeUser }
 
         if (activeProfile != null) {
-          val otherProfiles = profiles.filter { it.userId != activeProfile.userId }
+          val otherProfiles = filteredProfiles.filter { it.userId != activeProfile.userId }
 
           if (incognito) {
             item {
@@ -414,7 +430,7 @@ private fun ActiveProfilePicker(
           item {
             incognitoUserOption()
           }
-          itemsIndexed(profiles) { _, p ->
+          itemsIndexed(filteredProfiles) { _, p ->
             profilePickerUserOption(p)
           }
         }
