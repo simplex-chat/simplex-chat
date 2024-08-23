@@ -7040,6 +7040,7 @@ batchSendConnMessagesB _user conn msgFlags msgs_ = do
       delivered <- deliverMessagesB msgReqs
       let msgs' = concat $ L.zipWith flattenMsgs batched' delivered
           pqEnc = findLastPQEnc delivered
+      when (length msgs' /= length msgs_) $ logError "batchSendConnMessagesB: msgs_ and msgs' length mismatch"
       pure (msgs', pqEnc)
     Nothing -> pure ([], Nothing)
   where

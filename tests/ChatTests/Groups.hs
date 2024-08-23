@@ -1309,26 +1309,29 @@ testGroupMessageDeleteMultipleManyBatches =
       cath ##> "/set receipts all off"
       cath <## "ok"
 
-      alice #> "#team message 0"
-      concurrently_
-        (bob <# "#team alice> message 0")
-        (cath <# "#team alice> message 0")
-      msgIdFirst <- lastItemId alice
+      msgIdZero <- lastItemId alice
+
+      let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message " <> show i <> "\"}}"
+          cms = intercalate ", " (map cm [1 .. 300 :: Int])
+
+      alice `send` ("/_send #1 json [" <> cms <> "]")
+      _ <- getTermLine alice
+
+      alice <## "300 messages sent"
 
       forM_ [(1 :: Int) .. 300] $ \i -> do
-        alice #> ("#team message " <> show i)
         concurrently_
           (bob <# ("#team alice> message " <> show i))
           (cath <# ("#team alice> message " <> show i))
       msgIdLast <- lastItemId alice
 
-      let mIdFirst = read msgIdFirst :: Int
+      let mIdFirst = (read msgIdZero :: Int) + 1
           mIdLast = read msgIdLast :: Int
           deleteIds = intercalate "," (map show [mIdFirst .. mIdLast])
       alice `send` ("/_delete item #1 " <> deleteIds <> " broadcast")
       _ <- getTermLine alice
-      alice <## "301 messages deleted"
-      forM_ [(0 :: Int) .. 300] $ \i ->
+      alice <## "300 messages deleted"
+      forM_ [(1 :: Int) .. 300] $ \i ->
         concurrently_
           (bob <# ("#team alice> [marked deleted] message " <> show i))
           (cath <# ("#team alice> [marked deleted] message " <> show i))
@@ -1884,7 +1887,7 @@ testSendMultiManyBatches =
       msgIdBob <- lastItemId bob
       msgIdCath <- lastItemId cath
 
-      let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"test " <> show i <> "\"}}"
+      let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message " <> show i <> "\"}}"
           cms = intercalate ", " (map cm [1 .. 300 :: Int])
 
       alice `send` ("/_send #1 json [" <> cms <> "]")
@@ -1892,10 +1895,10 @@ testSendMultiManyBatches =
 
       alice <## "300 messages sent"
 
-      forM_ [(1 :: Int) .. 300] $ \i ->
-        bob <# ("#team alice> test " <> show i)
-      forM_ [(1 :: Int) .. 300] $ \i ->
-        cath <# ("#team alice> test " <> show i)
+      forM_ [(1 :: Int) .. 300] $ \i -> do
+        concurrently_
+          (bob <# ("#team alice> message " <> show i))
+          (cath <# ("#team alice> message " <> show i))
 
       aliceItemsCount <- withCCTransaction alice $ \db ->
         DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdAlice) :: IO [[Int]]

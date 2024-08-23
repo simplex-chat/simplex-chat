@@ -722,22 +722,27 @@ testDirectMessageDeleteMultipleManyBatches =
     \alice bob -> do
       connectUsers alice bob
 
-      alice #> "@bob message 0"
-      bob <# "alice> message 0"
-      msgIdFirst <- lastItemId alice
+      msgIdZero <- lastItemId alice
 
-      forM_ [(1 :: Int) .. 300] $ \i -> do
-        alice #> ("@bob message " <> show i)
-        bob <# ("alice> message " <> show i)
+      let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message " <> show i <> "\"}}"
+          cms = intercalate ", " (map cm [1 .. 300 :: Int])
+
+      alice `send` ("/_send @2 json [" <> cms <> "]")
+      _ <- getTermLine alice
+
+      alice <## "300 messages sent"
       msgIdLast <- lastItemId alice
 
-      let mIdFirst = read msgIdFirst :: Int
+      forM_ [(1 :: Int) .. 300] $ \i -> do
+        bob <# ("alice> message " <> show i)
+
+      let mIdFirst = (read msgIdZero :: Int) + 1
           mIdLast = read msgIdLast :: Int
           deleteIds = intercalate "," (map show [mIdFirst .. mIdLast])
       alice `send` ("/_delete item @2 " <> deleteIds <> " broadcast")
       _ <- getTermLine alice
-      alice <## "301 messages deleted"
-      forM_ [(0 :: Int) .. 300] $ \i -> do
+      alice <## "300 messages deleted"
+      forM_ [(1 :: Int) .. 300] $ \i -> do
         bob <# ("alice> [marked deleted] message " <> show i)
 
 testDirectLiveMessage :: HasCallStack => FilePath -> IO ()
@@ -928,10 +933,12 @@ testSendMultiManyBatches =
     \alice bob -> do
       connectUsers alice bob
 
+      threadDelay 1000000
+
       msgIdAlice <- lastItemId alice
       msgIdBob <- lastItemId bob
 
-      let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"test " <> show i <> "\"}}"
+      let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message " <> show i <> "\"}}"
           cms = intercalate ", " (map cm [1 .. 300 :: Int])
 
       alice `send` ("/_send @2 json [" <> cms <> "]")
@@ -940,7 +947,7 @@ testSendMultiManyBatches =
       alice <## "300 messages sent"
 
       forM_ [(1 :: Int) .. 300] $ \i ->
-        bob <# ("alice> test " <> show i)
+        bob <# ("alice> message " <> show i)
 
       aliceItemsCount <- withCCTransaction alice $ \db ->
         DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdAlice) :: IO [[Int]]
