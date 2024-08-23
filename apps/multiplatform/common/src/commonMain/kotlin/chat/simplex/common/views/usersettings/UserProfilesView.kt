@@ -304,7 +304,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
   }
 }
 
-private fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<User> {
+fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<User> {
   val s = searchTextOrPassword.trim()
   val lower = s.lowercase()
   return m.users.filter { u ->

@@ -219,22 +219,15 @@ private fun ProfilePickerOption(
 }
 
 @Composable
-private fun ActiveProfilePicker(rhId: Long?) {
+private fun ActiveProfilePicker(search: MutableState<String>, rhId: Long?) {
   val incognito = remember { mutableStateOf(controller.appPrefs.incognito.get()) }
   val selectedProfile = remember { mutableStateOf(chatModel.currentUser.value) }
+  val searchTextOrPassword = rememberSaveable { search }
+  val profiles by remember { derivedStateOf { filteredUsers(chatModel, searchTextOrPassword.value).sortedBy { !it.activeUser } } }
 
   BoxWithConstraints {
     Column(Modifier.fillMaxSize()) {
       AppBarTitle(stringResource(MR.strings.select_profile), hostDevice(rhId), bottomPadding = DEFAULT_PADDING)
-
-      val profiles by remember(chatModel.users) {
-        derivedStateOf {
-          chatModel.users
-            .map {it.user}
-            .filter { !it.hidden || it.activeUser }
-            .sortedBy { !it.activeUser }
-        }
-      }
 
       LazyColumnWithScrollBar {
         item {
@@ -283,7 +276,15 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
     SectionView(stringResource(MR.strings.new_chat_profile).uppercase()) {
       SectionItemView(
         click = {
-          ModalManager.start.showModal { ActiveProfilePicker(rhId) }
+          ModalManager.start.showCustomModal { close ->
+            val search = rememberSaveable { mutableStateOf("") }
+            ModalView(
+              { close() },
+              endButtons = {
+                SearchTextField(Modifier.fillMaxWidth(), placeholder = stringResource(MR.strings.search_verb), alwaysVisible = true) { search.value = it }
+              },
+              content = { ActiveProfilePicker(search = search, rhId = rhId) })
+          }
         }
       ) {
         if (incognito.value) {
