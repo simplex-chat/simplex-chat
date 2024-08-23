@@ -1040,9 +1040,9 @@
         <target>Téves üzenet ID</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bad message hash" xml:space="preserve">
+      <trans-unit id="Bad message hash" xml:space="preserve" approved="no">
         <source>Bad message hash</source>
-        <target>Hibás az üzenet ellenőrzőösszege</target>
+        <target state="translated">Hibás az üzenet hasító értéke</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better groups" xml:space="preserve">
@@ -4459,9 +4459,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Nincs alkalmazás jelszó</target>
         <note>Authentication unavailable</note>
       </trans-unit>
-      <trans-unit id="No contacts selected" xml:space="preserve">
+      <trans-unit id="No contacts selected" xml:space="preserve" approved="no">
         <source>No contacts selected</source>
-        <target>Nem kerültek ismerősök kiválasztásra</target>
+        <target state="translated">Nincs kiválasztva ismerős</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No contacts to add" xml:space="preserve">
@@ -4524,9 +4524,9 @@ Ez az ön hivatkozása a(z) %@ csoporthoz!</target>
         <target>Nem kompatibilis!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Nothing selected" xml:space="preserve">
+      <trans-unit id="Nothing selected" xml:space="preserve" approved="no">
         <source>Nothing selected</source>
-        <target>Semmi sincs kiválasztva</target>
+        <target state="translated">Nincs kiválasztva semmi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Notifications" xml:space="preserve">
@@ -6399,9 +6399,9 @@ Engedélyezze a Beállítások / Hálózat és kiszolgálók menüben.</target>
         <target>Elutasított feliratkozások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Support SimpleX Chat" xml:space="preserve">
+      <trans-unit id="Support SimpleX Chat" xml:space="preserve" approved="no">
         <source>Support SimpleX Chat</source>
-        <target>Támogassa a SimpleX Chatet</target>
+        <target state="translated">SimpleX Chat támogatása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="System" xml:space="preserve">
@@ -6571,9 +6571,9 @@ Ez valamilyen hiba, vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>A titkosítás működik, és új titkosítási egyezményre nincs szükség. Ez kapcsolati hibákat eredményezhet!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The hash of the previous message is different." xml:space="preserve">
+      <trans-unit id="The hash of the previous message is different." xml:space="preserve" approved="no">
         <source>The hash of the previous message is different.</source>
-        <target>Az előző üzenet ellenőrzőösszege különbözik.</target>
+        <target state="translated">Az előző üzenet hasító értéke különbözik.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -7689,9 +7689,9 @@ Kapcsolódási kérés megismétlése?</target>
         <target>SMP kiszolgálók</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your SimpleX address" xml:space="preserve">
+      <trans-unit id="Your SimpleX address" xml:space="preserve" approved="no">
         <source>Your SimpleX address</source>
-        <target>Az ön SimpleX címe</target>
+        <target state="translated">SimpleX cím</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your XFTP servers" xml:space="preserve">
@@ -7886,9 +7886,9 @@ A SimpleX kiszolgálók nem látjhatják profilját.</target>
         <target>téves üzenet ID</target>
         <note>integrity error chat item</note>
       </trans-unit>
-      <trans-unit id="bad message hash" xml:space="preserve">
+      <trans-unit id="bad message hash" xml:space="preserve" approved="no">
         <source>bad message hash</source>
-        <target>hibás az üzenet ellenőrzőösszege</target>
+        <target state="translated">hibás az üzenet hasító értéke</target>
         <note>integrity error chat item</note>
       </trans-unit>
       <trans-unit id="blocked" xml:space="preserve">
