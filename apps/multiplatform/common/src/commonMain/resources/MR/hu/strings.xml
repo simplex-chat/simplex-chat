@@ -910,7 +910,7 @@
     <string name="self_destruct_passcode">Önmegsemmisítési jelkód</string>
     <string name="save_and_update_group_profile">Mentés és csoportprofil frissítése</string>
     <string name="your_privacy">Adatvédelem</string>
-    <string name="your_simplex_contact_address">SimpleX cím</string>
+    <string name="your_simplex_contact_address">Profil SimpleX címe</string>
     <string name="alert_text_fragment_please_report_to_developers">Jelentse a fejlesztőknek.</string>
     <string name="people_can_connect_only_via_links_you_share">Ön dönti el, hogy kivel beszélget.</string>
     <string name="prohibit_sending_disappearing">Az eltűnő üzenetek küldése le van tiltva.</string>
