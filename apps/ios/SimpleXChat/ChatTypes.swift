@@ -2762,7 +2762,7 @@ let msgTimeFormat = Date.FormatStyle.dateTime.hour().minute()
 let msgDateFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits)
 
 public func formatTimestampText(_ date: Date) -> Text {
-    return Text(date, format: recent(date) ? msgTimeFormat : msgDateFormat)
+    Text(verbatim: date.formatted(recent(date) ? msgTimeFormat : msgDateFormat))
 }
 
 private func recent(_ date: Date) -> Bool {

@@ -719,38 +719,20 @@ struct ChatView: View {
 
         struct TimeSeparation {
             let isTimestampShown: Bool
-            let isDateShown: Bool // TODO: Implement UI to show date
             let isGapLarge: Bool
 
             init(for chatItem: ChatItem, at index: Int?) {
                 let im = ItemsModel.shared
                 if let index, index > 0 && !im.reversedChatItems.isEmpty {
                     let nextItem = im.reversedChatItems[index - 1]
-                    isTimestampShown = nextItem.chatDir != chatItem.chatDir ||
-                        Self.componentsToMinute(nextItem.meta.createdAt) != Self.componentsToMinute(chatItem.meta.createdAt)
-                    isDateShown = 
-                        Self.componentsToDate(nextItem.meta.createdAt) != Self.componentsToDate(chatItem.meta.createdAt)
                     isGapLarge = nextItem.chatDir != chatItem.chatDir ||
                         nextItem.meta.createdAt.timeIntervalSince(chatItem.meta.createdAt) > 30
+                    isTimestampShown = isGapLarge ||
+                        formatTimestampText(chatItem.meta.createdAt) != formatTimestampText(nextItem.meta.createdAt)
                 } else {
                     isTimestampShown = true
-                    isDateShown = false
                     isGapLarge = true
                 }
-            }
-
-            private static func componentsToMinute(_ date: Date) -> DateComponents {
-                Calendar.current.dateComponents(
-                    [.year, .month, .day, .hour, .minute],
-                    from: date
-                )
-            }
-
-            private static func componentsToDate(_ date: Date) -> DateComponents {
-                Calendar.current.dateComponents(
-                    [.year, .month, .day],
-                    from: date
-                )
             }
         }
 
@@ -934,7 +916,7 @@ struct ChatView: View {
                     allowMenu: $allowMenu
                 )
                 .environment(\.showTimestamp, timeSeparation.isTimestampShown)
-                .modifier(ChatItemClipped(ci, showsTail: timeSeparation.isGapLarge))
+                .modifier(ChatItemClipped(ci))
                 .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
                 .accessibilityLabel("")
                 if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {
