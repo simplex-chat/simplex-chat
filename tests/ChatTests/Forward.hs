@@ -35,6 +35,7 @@ chatForwardTests = do
     it "with relative paths: from notes to group" testForwardFileNotesToGroup
   describe "multi forward api" $ do
     it "from contact to contact" testForwardContactToContactMulti
+    it "from group to group" testForwardGroupToGroupMulti
 
 testForwardContactToContact :: HasCallStack => FilePath -> IO ()
 testForwardContactToContact =
@@ -619,4 +620,46 @@ testForwardContactToContactMulti =
       cath <# "alice> -> forwarded"
       cath <## "      hi"
       cath <# "alice> -> forwarded"
+      cath <## "      hey"
+
+testForwardGroupToGroupMulti :: HasCallStack => FilePath -> IO ()
+testForwardGroupToGroupMulti =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+      createGroup2 "club" alice cath
+
+      threadDelay 1000000
+
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+      msgId1 <- lastItemId alice
+
+      threadDelay 1000000
+
+      bob #> "#team hey"
+      alice <# "#team bob> hey"
+      msgId2 <- lastItemId alice
+
+      alice ##> ("/_forward #2 #1 " <> msgId1 <> "," <> msgId2)
+      alice <# "#club <- you #team"
+      alice <## "      hi"
+      alice <# "#club <- #team"
+      alice <## "      hey"
+      cath <# "#club alice> -> forwarded"
+      cath <## "      hi"
+      cath <# "#club alice> -> forwarded"
+      cath <## "      hey"
+
+      -- read chat
+      alice ##> "/tail #club 2"
+      alice <# "#club <- you #team"
+      alice <## "      hi"
+      alice <# "#club <- #team"
+      alice <## "      hey"
+
+      cath ##> "/tail #club 2"
+      cath <# "#club alice> -> forwarded"
+      cath <## "      hi"
+      cath <# "#club alice> -> forwarded"
       cath <## "      hey"
