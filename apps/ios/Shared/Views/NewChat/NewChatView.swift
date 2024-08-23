@@ -342,8 +342,8 @@ private struct ActiveProfilePicker: View {
     @State private var profiles: [User] = []
     @State private var searchTextOrPassword = ""
     @State private var showIncognitoSheet = false
+    @State private var incognitoFirst: Bool = false
     @State var selectedProfile: User
-
     var trimmedSearchTextOrPassword: String { searchTextOrPassword.trimmingCharacters(in: .whitespaces)}
 
     var body: some View {
@@ -454,6 +454,7 @@ private struct ActiveProfilePicker: View {
                 a.alert
             }
             .onAppear {
+                incognitoFirst = incognitoEnabled
                 choosingProfile = true
             }
             .onDisappear {
@@ -489,55 +490,79 @@ private struct ActiveProfilePicker: View {
             return correctPassword(u, s)
         }
     }
-        
-    @ViewBuilder private func profilePicker() -> some View {
-        List {
-            Button {
-                if !incognitoEnabled {
-                    incognitoEnabled = true
-                    switchingProfile = true
-                }
-            } label : {
-                HStack {
-                    incognitoProfileImage()
-                    Text("Incognito")
-                        .foregroundColor(theme.colors.onBackground)
-                    Image(systemName: "info.circle")
+    
+    @ViewBuilder private func profilerPickerUserOption(_ user: User) -> some View {
+        Button {
+            if selectedProfile != user || incognitoEnabled {
+                switchingProfile = true
+                incognitoEnabled = false
+                selectedProfile = user
+            }
+        } label: {
+            HStack {
+                ProfileImage(imageStr: user.image, size: 30)
+                    .padding(.trailing, 2)
+                Text(user.chatViewName)
+                    .foregroundColor(theme.colors.onBackground)
+                    .lineLimit(1)
+                Spacer()
+                if selectedProfile == user, !incognitoEnabled {
+                    Image(systemName: "checkmark")
+                        .resizable().scaledToFit().frame(width: 16)
                         .foregroundColor(theme.colors.primary)
-                        .font(.system(size: 14))
-                        .onTapGesture {
-                            showIncognitoSheet = true
-                        }
-                    Spacer()
-                    if incognitoEnabled {
-                        Image(systemName: "checkmark")
-                            .resizable().scaledToFit().frame(width: 16)
-                            .foregroundColor(theme.colors.primary)
-                    }
                 }
             }
+        }
+    }
+        
+    @ViewBuilder private func profilePicker() -> some View {
+        let incognitoOption = Button {
+            if !incognitoEnabled {
+                incognitoEnabled = true
+                switchingProfile = true
+            }
+        } label : {
+            HStack {
+                incognitoProfileImage()
+                Text("Incognito")
+                    .foregroundColor(theme.colors.onBackground)
+                Image(systemName: "info.circle")
+                    .foregroundColor(theme.colors.primary)
+                    .font(.system(size: 14))
+                    .onTapGesture {
+                        showIncognitoSheet = true
+                    }
+                Spacer()
+                if incognitoEnabled {
+                    Image(systemName: "checkmark")
+                        .resizable().scaledToFit().frame(width: 16)
+                        .foregroundColor(theme.colors.primary)
+                }
+            }
+        }
+        
+        List {
             let filteredProfiles = filteredProfiles()
-            ForEach(filteredProfiles) { item in
-                Button {
-                    if selectedProfile != item || incognitoEnabled {
-                        switchingProfile = true
-                        incognitoEnabled = false
-                        selectedProfile = item
-                    }
-                } label: {
-                    HStack {
-                        ProfileImage(imageStr: item.image, size: 30)
-                            .padding(.trailing, 2)
-                        Text(item.chatViewName)
-                            .foregroundColor(theme.colors.onBackground)
-                            .lineLimit(1)
-                        Spacer()
-                        if selectedProfile == item, !incognitoEnabled {
-                            Image(systemName: "checkmark")
-                                .resizable().scaledToFit().frame(width: 16)
-                                .foregroundColor(theme.colors.primary)
-                        }
-                    }
+            let activeProfile = filteredProfiles.first { u in u.activeUser }
+            
+            if let selectedProfile = activeProfile {
+                let otherProfiles = filteredProfiles.filter { u in u.userId != activeProfile?.userId }
+                
+                if incognitoFirst {
+                    incognitoOption
+                    profilerPickerUserOption(selectedProfile)
+                } else {
+                    profilerPickerUserOption(selectedProfile)
+                    incognitoOption
+                }
+                
+                ForEach(otherProfiles) { p in
+                    profilerPickerUserOption(p)
+                }
+            } else {
+                incognitoOption
+                ForEach(filteredProfiles) { p in
+                    profilerPickerUserOption(p)
                 }
             }
         }
