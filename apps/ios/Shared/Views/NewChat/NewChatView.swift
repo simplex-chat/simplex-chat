@@ -328,8 +328,8 @@ private struct InviteView: View {
 }
 
 private enum ProfileSwitchStatus {
-    case swithcingUser
-    case swithcingIncognito
+    case switchingUser
+    case switchingIncognito
     case idle
 }
 
@@ -364,7 +364,7 @@ private struct ActiveProfilePicker: View {
                     .sorted { u, _ in u.activeUser }
             }
             .onChange(of: incognitoEnabled) { incognito in
-                if profileSwitchStatus != .swithcingIncognito {
+                if profileSwitchStatus != .switchingIncognito {
                     return
                 }
 
@@ -405,7 +405,7 @@ private struct ActiveProfilePicker: View {
                 }
             }
             .onChange(of: selectedProfile) { profile in
-                if (profileSwitchStatus != .swithcingUser) {
+                if (profileSwitchStatus != .switchingUser) {
                     return
                 }
                 Task {
@@ -500,7 +500,7 @@ private struct ActiveProfilePicker: View {
     @ViewBuilder private func profilerPickerUserOption(_ user: User) -> some View {
         Button {
             if selectedProfile != user || incognitoEnabled {
-                profileSwitchStatus = .swithcingUser
+                profileSwitchStatus = .switchingUser
                 selectedProfile = user
             }
         } label: {
@@ -524,7 +524,7 @@ private struct ActiveProfilePicker: View {
         let incognitoOption = Button {
             if !incognitoEnabled {
                 incognitoEnabled = true
-                profileSwitchStatus = .swithcingIncognito
+                profileSwitchStatus = .switchingIncognito
             }
         } label : {
             HStack {
