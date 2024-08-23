@@ -64,6 +64,7 @@ chatGroupTests = do
     it "moderate message of another group member (full delete)" testGroupModerateFullDelete
     it "moderate message that arrives after the event of moderation" testGroupDelayedModeration
     it "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
+    it "send multiple messages api" testSendMulti
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -1818,6 +1819,18 @@ testGroupDelayedModerationFullDelete tmp = do
   where
     cfg = testCfgCreateGroupDirect
 
+testSendMulti :: HasCallStack => FilePath -> IO ()
+testSendMulti =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
+      alice <# "#team test 1"
+      alice <# "#team test 2"
+      bob <# "#team alice> test 1"
+      bob <# "#team alice> test 2"
+
 testGroupAsync :: HasCallStack => FilePath -> IO ()
 testGroupAsync tmp = do
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
@@ -3468,7 +3481,8 @@ testGroupSyncRatchet tmp =
       bob <## "1 contacts connected (use /cs for the list)"
       bob <## "#team: connected to server(s)"
       bob `send` "#team 1"
-      bob <## "error: command is prohibited, sendMessagesB: send prohibited" -- silence?
+      -- "send prohibited" error is not printed in group as SndMessage is created,
+      -- but it should be displayed in per member snd statuses
       bob <# "#team 1"
       (alice </)
       -- synchronize bob and alice
@@ -4908,7 +4922,7 @@ testGroupHistoryLargeFile =
 
       createGroup2 "team" alice bob
 
-      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile\", \"msgContent\": {\"text\":\"hello\",\"type\":\"file\"}}"
+      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile\", \"msgContent\": {\"text\":\"hello\",\"type\":\"file\"}}]"
       bob <# "#team hello"
       bob <# "/f #team ./tests/tmp/testfile"
       bob <## "use /fc 1 to cancel sending"
@@ -4969,7 +4983,7 @@ testGroupHistoryMultipleFiles =
 
       threadDelay 1000000
 
-      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}"
+      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}]"
       bob <# "#team hi alice"
       bob <# "/f #team ./tests/tmp/testfile_bob"
       bob <## "use /fc 1 to cancel sending"
@@ -4981,7 +4995,7 @@ testGroupHistoryMultipleFiles =
 
       threadDelay 1000000
 
-      alice ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}"
+      alice ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}]"
       alice <# "#team hey bob"
       alice <# "/f #team ./tests/tmp/testfile_alice"
       alice <## "use /fc 2 to cancel sending"
@@ -5047,7 +5061,7 @@ testGroupHistoryFileCancel =
 
       createGroup2 "team" alice bob
 
-      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}"
+      bob ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}]"
       bob <# "#team hi alice"
       bob <# "/f #team ./tests/tmp/testfile_bob"
       bob <## "use /fc 1 to cancel sending"
@@ -5063,7 +5077,7 @@ testGroupHistoryFileCancel =
 
       threadDelay 1000000
 
-      alice ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}"
+      alice ##> "/_send #1 json [{\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}]"
       alice <# "#team hey bob"
       alice <# "/f #team ./tests/tmp/testfile_alice"
       alice <## "use /fc 2 to cancel sending"
