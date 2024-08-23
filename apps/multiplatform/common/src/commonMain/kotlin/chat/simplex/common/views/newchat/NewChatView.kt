@@ -492,9 +492,10 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
             painterResource(MR.images.ic_theater_comedy_filled),
             contentDescription = stringResource(MR.strings.incognito),
             tint = Indigo,
+            modifier = Modifier.size(30.dp * fontSizeSqrtMultiplier)
           )
         } else {
-          ProfileImage(size = 24.dp, image = it.image)
+          ProfileImage(size = 30.dp * fontSizeSqrtMultiplier, image = it.image)
         }
         TextIconSpaced(false)
         Text(
