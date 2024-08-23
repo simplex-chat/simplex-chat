@@ -420,9 +420,12 @@ testSendMultiFilesDirect =
       copyFile "./tests/fixtures/test.pdf" "./tests/tmp/alice_app_files/test.pdf"
       bob #$> ("/_files_folder ./tests/tmp/bob_app_files", id, "ok")
 
-      let cm1 = "{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 1\"}}"
-          cm2 = "{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 2\"}}"
-      alice ##> ("/_send @2 json [" <> cm1 <> "," <> cm2 <> "]")
+      let cm1 = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message without file\"}}"
+          cm2 = "{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 1\"}}"
+          cm3 = "{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 2\"}}"
+      alice ##> ("/_send @2 json [" <> cm1 <> "," <> cm2 <> "," <> cm3 <> "]")
+
+      alice <# "@bob message without file"
 
       alice <# "@bob sending file 1"
       alice <# "/f @bob test.jpg"
@@ -431,6 +434,8 @@ testSendMultiFilesDirect =
       alice <# "@bob sending file 2"
       alice <# "/f @bob test.pdf"
       alice <## "use /fc 2 to cancel sending"
+
+      bob <# "alice> message without file"
 
       bob <# "alice> sending file 1"
       bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
@@ -465,8 +470,8 @@ testSendMultiFilesDirect =
       dest2 <- B.readFile "./tests/tmp/bob_app_files/test.pdf"
       dest2 `shouldBe` src2
 
-      alice #$> ("/_get chat @2 count=2", chatF, [((1, "sending file 1"), Just "test.jpg"), ((1, "sending file 2"), Just "test.pdf")])
-      bob #$> ("/_get chat @2 count=2", chatF, [((0, "sending file 1"), Just "test.jpg"), ((0, "sending file 2"), Just "test.pdf")])
+      alice #$> ("/_get chat @2 count=3", chatF, [((1, "message without file"), Nothing), ((1, "sending file 1"), Just "test.jpg"), ((1, "sending file 2"), Just "test.pdf")])
+      bob #$> ("/_get chat @2 count=3", chatF, [((0, "message without file"), Nothing), ((0, "sending file 1"), Just "test.jpg"), ((0, "sending file 2"), Just "test.pdf")])
 
 testSendMultiFilesGroup :: HasCallStack => FilePath -> IO ()
 testSendMultiFilesGroup =
@@ -482,9 +487,12 @@ testSendMultiFilesGroup =
       bob #$> ("/_files_folder ./tests/tmp/bob_app_files", id, "ok")
       cath #$> ("/_files_folder ./tests/tmp/cath_app_files", id, "ok")
 
-      let cm1 = "{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 1\"}}"
-          cm2 = "{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 2\"}}"
-      alice ##> ("/_send #1 json [" <> cm1 <> "," <> cm2 <> "]")
+      let cm1 = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message without file\"}}"
+          cm2 = "{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 1\"}}"
+          cm3 = "{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 2\"}}"
+      alice ##> ("/_send #1 json [" <> cm1 <> "," <> cm2 <> "," <> cm3 <> "]")
+
+      alice <# "#team message without file"
 
       alice <# "#team sending file 1"
       alice <# "/f #team test.jpg"
@@ -494,6 +502,8 @@ testSendMultiFilesGroup =
       alice <# "/f #team test.pdf"
       alice <## "use /fc 2 to cancel sending"
 
+      bob <# "#team alice> message without file"
+
       bob <# "#team alice> sending file 1"
       bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
@@ -501,6 +511,8 @@ testSendMultiFilesGroup =
       bob <# "#team alice> sending file 2"
       bob <# "#team alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
       bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+
+      cath <# "#team alice> message without file"
 
       cath <# "#team alice> sending file 1"
       cath <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
@@ -553,9 +565,9 @@ testSendMultiFilesGroup =
       dest2_1 `shouldBe` src2
       dest2_2 `shouldBe` src2
 
-      alice #$> ("/_get chat #1 count=2", chatF, [((1, "sending file 1"), Just "test.jpg"), ((1, "sending file 2"), Just "test.pdf")])
-      bob #$> ("/_get chat #1 count=2", chatF, [((0, "sending file 1"), Just "test.jpg"), ((0, "sending file 2"), Just "test.pdf")])
-      cath #$> ("/_get chat #1 count=2", chatF, [((0, "sending file 1"), Just "test.jpg"), ((0, "sending file 2"), Just "test.pdf")])
+      alice #$> ("/_get chat #1 count=3", chatF, [((1, "message without file"), Nothing), ((1, "sending file 1"), Just "test.jpg"), ((1, "sending file 2"), Just "test.pdf")])
+      bob #$> ("/_get chat #1 count=3", chatF, [((0, "message without file"), Nothing), ((0, "sending file 1"), Just "test.jpg"), ((0, "sending file 2"), Just "test.pdf")])
+      cath #$> ("/_get chat #1 count=3", chatF, [((0, "message without file"), Nothing), ((0, "sending file 1"), Just "test.jpg"), ((0, "sending file 2"), Just "test.pdf")])
 
 testXFTPRoundFDCount :: Expectation
 testXFTPRoundFDCount = do
