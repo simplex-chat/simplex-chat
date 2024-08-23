@@ -242,7 +242,6 @@ private struct InviteView: View {
 
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
     @State private var showSettings: Bool = false
-    @State private var showIncognitoSheet = false
 
     var body: some View {
         List {
@@ -281,9 +280,6 @@ private struct InviteView: View {
                      }
                 }
             }
-        }
-        .sheet(isPresented: $showIncognitoSheet) {
-            IncognitoHelp()
         }
         .onChange(of: incognitoDefault) { incognito in
             setInvitationUsed()
@@ -344,16 +340,21 @@ private struct ActiveProfilePicker: View {
     @State private var switchingProfileByTimeout = false
     @State private var lastSwitchingProfileByTimeoutCall: Double?
     @State private var profiles: [User] = []
+    @State private var searchTextOrPassword = ""
+    @State private var showIncognitoSheet = false
+    @State private var incognitoFirst: Bool = false
     @State var selectedProfile: User
+    var trimmedSearchTextOrPassword: String { searchTextOrPassword.trimmingCharacters(in: .whitespaces)}
 
     var body: some View {
         viewBody()
             .navigationTitle("Select chat profile")
+            .searchable(text: $searchTextOrPassword, placement: .navigationBarDrawer(displayMode: .always))
+            .autocorrectionDisabled(true)
             .navigationBarTitleDisplayMode(.large)
             .onAppear {
                 profiles = chatModel.users
                     .map { $0.user }
-                    .filter({ u in u.activeUser || !u.hidden })
                     .sorted { u, _ in u.activeUser }
             }
             .onChange(of: incognitoEnabled) { incognito in
@@ -413,7 +414,7 @@ private struct ActiveProfilePicker: View {
                                 chatModel.updateContactConnection(conn)
                             }
                             do {
-                                try await changeActiveUserAsync_(profile.userId, viewPwd: nil)
+                                try await changeActiveUserAsync_(profile.userId, viewPwd: profile.hidden ? trimmedSearchTextOrPassword : nil )
                                 await MainActor.run {
                                     switchingProfile = false
                                     dismiss()
@@ -424,7 +425,7 @@ private struct ActiveProfilePicker: View {
                                     alert = SomeAlert(
                                         alert: Alert(
                                             title: Text("Error switching profile"),
-                                            message: Text("Your connection was moved to \(profile.chatViewName) but and unexpected error ocurred while redirecting you to the profile.")
+                                            message: Text("Your connection was moved to \(profile.chatViewName) but an unexpected error occurred while redirecting you to the profile.")
                                         ),
                                         id: "switchingProfileError"
                                     )
@@ -433,7 +434,6 @@ private struct ActiveProfilePicker: View {
                         }
                     } catch {
                         await MainActor.run {
-                            // TODO: discuss error handling
                             switchingProfile = false
                             if let currentUser = chatModel.currentUser {
                                 selectedProfile = currentUser
@@ -454,71 +454,119 @@ private struct ActiveProfilePicker: View {
                 a.alert
             }
             .onAppear {
+                incognitoFirst = incognitoEnabled
                 choosingProfile = true
             }
             .onDisappear {
                 choosingProfile = false
             }
+            .sheet(isPresented: $showIncognitoSheet) {
+                IncognitoHelp()
+            }
     }
     
     
     @ViewBuilder private func viewBody() -> some View {
-        NavigationView {
-            if switchingProfileByTimeout {
-                    ProgressView("Switching profile…")
+        profilePicker()
+            .allowsHitTesting(!switchingProfileByTimeout)
+            .modifier(ThemedBackground(grouped: true))
+            .overlay {
+                if switchingProfileByTimeout {
+                    ProgressView()
+                        .scaleEffect(2)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .modifier(ThemedBackground(grouped: true))
-            } else {
-                profilePicker()
-                    .modifier(ThemedBackground(grouped: true))
+                }
+            }
+    }
+    
+    private func filteredProfiles() -> [User] {
+        let s = trimmedSearchTextOrPassword
+        let lower = s.localizedLowercase
+        
+        return profiles.filter { u in
+            if (u.activeUser || !u.hidden) && (s == "" || u.chatViewName.localizedLowercase.contains(lower)) {
+                return true
+            }
+            return correctPassword(u, s)
+        }
+    }
+    
+    @ViewBuilder private func profilerPickerUserOption(_ user: User) -> some View {
+        Button {
+            if selectedProfile != user || incognitoEnabled {
+                switchingProfile = true
+                incognitoEnabled = false
+                selectedProfile = user
+            }
+        } label: {
+            HStack {
+                ProfileImage(imageStr: user.image, size: 30)
+                    .padding(.trailing, 2)
+                Text(user.chatViewName)
+                    .foregroundColor(theme.colors.onBackground)
+                    .lineLimit(1)
+                Spacer()
+                if selectedProfile == user, !incognitoEnabled {
+                    Image(systemName: "checkmark")
+                        .resizable().scaledToFit().frame(width: 16)
+                        .foregroundColor(theme.colors.primary)
+                }
             }
         }
     }
         
     @ViewBuilder private func profilePicker() -> some View {
-        List {
-            Button {
-                if !incognitoEnabled {
-                    incognitoEnabled = true
-                    switchingProfile = true
-                }
-            } label : {
-                HStack {
-                    incognitoProfileImage()
-                    Text("Incognito")
-                        .foregroundColor(theme.colors.onBackground)
-                    Spacer()
-                    if incognitoEnabled {
-                        Image(systemName: "checkmark")
-                            .resizable().scaledToFit().frame(width: 16)
-                            .foregroundColor(theme.colors.primary)
-                    }
-                }
+        let incognitoOption = Button {
+            if !incognitoEnabled {
+                incognitoEnabled = true
+                switchingProfile = true
             }
-            ForEach(profiles) { item in
-                Button {
-                    if selectedProfile != item || incognitoEnabled {
-                        switchingProfile = true
-                        incognitoEnabled = false
-                        selectedProfile = item
+        } label : {
+            HStack {
+                incognitoProfileImage()
+                Text("Incognito")
+                    .foregroundColor(theme.colors.onBackground)
+                Image(systemName: "info.circle")
+                    .foregroundColor(theme.colors.primary)
+                    .font(.system(size: 14))
+                    .onTapGesture {
+                        showIncognitoSheet = true
                     }
-                } label: {
-                    HStack {
-                        ProfileImage(imageStr: item.image, size: 30)
-                            .padding(.trailing, 2)
-                        Text(item.chatViewName)
-                            .foregroundColor(theme.colors.onBackground)
-                            .lineLimit(1)
-                        Spacer()
-                        if selectedProfile == item, !incognitoEnabled {
-                            Image(systemName: "checkmark")
-                                .resizable().scaledToFit().frame(width: 16)
-                                .foregroundColor(theme.colors.primary)
-                        }
-                    }
+                Spacer()
+                if incognitoEnabled {
+                    Image(systemName: "checkmark")
+                        .resizable().scaledToFit().frame(width: 16)
+                        .foregroundColor(theme.colors.primary)
                 }
             }
         }
+        
+        List {
+            let filteredProfiles = filteredProfiles()
+            let activeProfile = filteredProfiles.first { u in u.activeUser }
+            
+            if let selectedProfile = activeProfile {
+                let otherProfiles = filteredProfiles.filter { u in u.userId != activeProfile?.userId }
+                
+                if incognitoFirst {
+                    incognitoOption
+                    profilerPickerUserOption(selectedProfile)
+                } else {
+                    profilerPickerUserOption(selectedProfile)
+                    incognitoOption
+                }
+                
+                ForEach(otherProfiles) { p in
+                    profilerPickerUserOption(p)
+                }
+            } else {
+                incognitoOption
+                ForEach(filteredProfiles) { p in
+                    profilerPickerUserOption(p)
+                }
+            }
+        }
+        .opacity(switchingProfileByTimeout ? 0.4 : 1)
     }
 }
 
