@@ -499,9 +499,12 @@ private struct ActiveProfilePicker: View {
     
     @ViewBuilder private func profilerPickerUserOption(_ user: User) -> some View {
         Button {
-            if selectedProfile != user || incognitoEnabled {
-                profileSwitchStatus = .switchingUser
+            if selectedProfile == user && incognitoEnabled {
+                incognitoEnabled = false
+                profileSwitchStatus = .switchingIncognito
+            } else if selectedProfile != user {
                 selectedProfile = user
+                profileSwitchStatus = .switchingUser
             }
         } label: {
             HStack {
