@@ -727,7 +727,7 @@ struct ChatView: View {
                 let nextItem = im.reversedChatItems[currIndex - 1]
                 return componentsToMinute(nextItem.meta.createdAt) != componentsToMinute(chatItem.meta.createdAt) ||
                     nextItem.rcvMember != chatItem.rcvMember ||
-                    nextItem.mergeCategory != chatItem.mergeCategory
+                    nextItem.chatDir != chatItem.chatDir
             } else {
                 return true
             }
