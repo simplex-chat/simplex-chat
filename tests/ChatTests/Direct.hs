@@ -17,6 +17,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List (intercalate)
 import qualified Data.Text as T
+import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
@@ -25,6 +26,7 @@ import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
@@ -56,6 +58,7 @@ chatDirectTests = do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
     it "send multiple messages, including quote" testSendMultiWithQuote
+    it "send multiple messages (many chat batches)" testSendMultiManyBatches
   describe "duplicate contacts" $ do
     it "duplicate contacts are separate (contacts don't merge)" testDuplicateContactsSeparate
     it "new contact is separate with multiple duplicate contacts (contacts don't merge)" testDuplicateContactsMultipleSeparate
@@ -918,6 +921,34 @@ testSendMultiWithQuote =
       bob <# "alice> > hi"
       bob <## "      message 3"
       bob <# "alice> message 1"
+
+testSendMultiManyBatches :: HasCallStack => FilePath -> IO ()
+testSendMultiManyBatches =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      msgIdAlice <- lastItemId alice
+      msgIdBob <- lastItemId bob
+
+      let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"test " <> show i <> "\"}}"
+          cms = intercalate ", " (map cm [1 .. 300 :: Int])
+
+      alice `send` ("/_send @2 json [" <> cms <> "]")
+      _ <- getTermLine alice
+
+      alice <## "300 messages sent"
+
+      forM_ [(1 :: Int) .. 300] $ \i ->
+        bob <# ("alice> test " <> show i)
+
+      aliceItemsCount <- withCCTransaction alice $ \db ->
+        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdAlice) :: IO [[Int]]
+      aliceItemsCount `shouldBe` [[300]]
+
+      bobItemsCount <- withCCTransaction bob $ \db ->
+        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdBob) :: IO [[Int]]
+      bobItemsCount `shouldBe` [[300]]
 
 testGetSetSMPServers :: HasCallStack => FilePath -> IO ()
 testGetSetSMPServers =

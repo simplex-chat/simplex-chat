@@ -2906,6 +2906,7 @@ processChatCommand' vr = \case
           (msgContainers, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
           msgs_ <- sendDirectContactMessages user ct $ L.map XMsgNew msgContainers
           let itemsData = prepareSndItemsData msgs_ cmrs ciFiles_ quotedItems_
+          when (length itemsData /= length cmrs) $ logError "sendContactContentMessages: cmrs and itemsData length mismatch"
           (errs, cis) <- partitionEithers <$> saveSndChatItems user (CDDirectSnd ct) itemsData timed_ live
           unless (null errs) $ toView $ CRChatErrors (Just user) errs
           forM_ (timed_ >>= timedDeleteAt') $ \deleteAt ->
@@ -2969,6 +2970,7 @@ processChatCommand' vr = \case
           (msgs_, gsr) <- sendGroupMessages user gInfo ms $ L.map XMsgNew msgContainers
           let itemsData = prepareSndItemsData (L.toList msgs_) cmrs ciFiles_ quotedItems_
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo) itemsData timed_ live
+          when (length itemsData /= length cmrs) $ logError "sendGroupContentMessages: cmrs and cis_ length mismatch"
           createMemberSndStatuses cis_ msgs_ gsr
           let (errs, cis) = partitionEithers cis_
           unless (null errs) $ toView $ CRChatErrors (Just user) errs
@@ -7190,6 +7192,7 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} members events = do
   -- Save as pending for toPending members
   let (pendingMemIds, pendingReqs) = preparePending sndMsgs_ toPending
   stored <- lift $ withStoreBatch (\db -> map (bindRight $ createPendingMsg db) pendingReqs)
+  when (length stored /= length pendingMemIds) $ logError "sendGroupMessages_: pendingMemIds and stored length mismatch"
   -- Zip for easier access to results
   let sentTo = zipWith3 (\mId mReq r -> (mId, fmap (\(_, _, _, msgIds) -> msgIds) mReq, r)) sendToMemIds msgReqs delivered
       pending = zipWith3 (\mId pReq r -> (mId, fmap snd pReq, r)) pendingMemIds pendingReqs stored

@@ -14,6 +14,7 @@ import Control.Monad (forM_, void, when)
 import qualified Data.ByteString.Char8 as B
 import Data.List (intercalate, isInfixOf)
 import qualified Data.Text as T
+import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (supportedChatVRange)
@@ -67,6 +68,7 @@ chatGroupTests = do
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
+    it "send multiple messages (many chat batches)" testSendMultiManyBatches
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -1823,21 +1825,23 @@ testGroupDelayedModerationFullDelete tmp = do
 
 testSendMulti :: HasCallStack => FilePath -> IO ()
 testSendMulti =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      createGroup2 "team" alice bob
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
 
       alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
       alice <# "#team test 1"
       alice <# "#team test 2"
       bob <# "#team alice> test 1"
       bob <# "#team alice> test 2"
+      cath <# "#team alice> test 1"
+      cath <# "#team alice> test 2"
 
 testSendMultiTimed :: HasCallStack => FilePath -> IO ()
 testSendMultiTimed =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      createGroup2 "team" alice bob
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
 
       alice ##> "/set disappear #team on 1"
       alice <## "updated group preferences:"
@@ -1845,12 +1849,17 @@ testSendMultiTimed =
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Disappearing messages: on (1 sec)"
+      cath <## "alice updated group #team:"
+      cath <## "updated group preferences:"
+      cath <## "Disappearing messages: on (1 sec)"
 
       alice ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
       alice <# "#team test 1"
       alice <# "#team test 2"
       bob <# "#team alice> test 1"
       bob <# "#team alice> test 2"
+      cath <# "#team alice> test 1"
+      cath <# "#team alice> test 2"
 
       alice
         <### [ "timed message deleted: test 1",
@@ -1860,6 +1869,45 @@ testSendMultiTimed =
         <### [ "timed message deleted: test 1",
                "timed message deleted: test 2"
              ]
+      cath
+        <### [ "timed message deleted: test 1",
+               "timed message deleted: test 2"
+             ]
+
+testSendMultiManyBatches :: HasCallStack => FilePath -> IO ()
+testSendMultiManyBatches =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      msgIdAlice <- lastItemId alice
+      msgIdBob <- lastItemId bob
+      msgIdCath <- lastItemId cath
+
+      let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"test " <> show i <> "\"}}"
+          cms = intercalate ", " (map cm [1 .. 300 :: Int])
+
+      alice `send` ("/_send #1 json [" <> cms <> "]")
+      _ <- getTermLine alice
+
+      alice <## "300 messages sent"
+
+      forM_ [(1 :: Int) .. 300] $ \i ->
+        bob <# ("#team alice> test " <> show i)
+      forM_ [(1 :: Int) .. 300] $ \i ->
+        cath <# ("#team alice> test " <> show i)
+
+      aliceItemsCount <- withCCTransaction alice $ \db ->
+        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdAlice) :: IO [[Int]]
+      aliceItemsCount `shouldBe` [[300]]
+
+      bobItemsCount <- withCCTransaction bob $ \db ->
+        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdBob) :: IO [[Int]]
+      bobItemsCount `shouldBe` [[300]]
+
+      cathItemsCount <- withCCTransaction cath $ \db ->
+        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdCath) :: IO [[Int]]
+      cathItemsCount `shouldBe` [[300]]
 
 testGroupAsync :: HasCallStack => FilePath -> IO ()
 testGroupAsync tmp = do
