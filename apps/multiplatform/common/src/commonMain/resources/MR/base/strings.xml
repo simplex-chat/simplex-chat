@@ -667,6 +667,8 @@
   <string name="or_show_this_qr_code">Or show this code</string>
   <string name="new_chat_profile">Profile</string>
   <string name="select_chat_profile">Select chat profile</string>
+  <string name="switching_profile_error_title">Error switching profile</string>
+  <string name="switching_profile_error_message">Your connection was moved to %s but an unexpected error occurred while redirecting you to the profile.</string>
   <string name="or_scan_qr_code">Or scan QR code</string>
   <string name="keep_unused_invitation_question">Keep unused invitation?</string>
   <string name="you_can_view_invitation_link_again">You can view invitation link again in connection details.</string>

@@ -1132,17 +1132,30 @@ object ChatController {
 
   suspend fun apiSetConnectionIncognito(rh: Long?, connId: Long, incognito: Boolean): PendingContactConnection? {
     val r = sendCmd(rh, CC.ApiSetConnectionIncognito(connId, incognito))
-    if (r is CR.ConnectionIncognitoUpdated) return r.toConnection
-    Log.e(TAG, "apiSetConnectionIncognito bad response: ${r.responseType} ${r.details}")
-    return null
+
+    return when (r) {
+      is CR.ConnectionIncognitoUpdated -> r.toConnection
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiSetConnectionIncognito", generalGetString(MR.strings.error_sending_message), r)
+        }
+        null
+      }
+    }
   }
 
   suspend fun apiChangeConnectionUser(rh: Long?, connId: Long, userId: Long): PendingContactConnection? {
     val r = sendCmd(rh, CC.ApiChangeConnectionUser(connId, userId))
 
-    if (r is CR.ConnectionUserChanged) return r.toConnection
-    Log.e(TAG, "apiChangeConnectionUser bad response: ${r.responseType} ${r.details}")
-    return null
+    return when (r) {
+      is CR.ConnectionUserChanged -> r.toConnection
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiChangeConnectionUser", generalGetString(MR.strings.error_sending_message), r)
+        }
+        null
+      }
+    }
   }
 
   suspend fun apiConnectPlan(rh: Long?, connReq: String): ConnectionPlan? {

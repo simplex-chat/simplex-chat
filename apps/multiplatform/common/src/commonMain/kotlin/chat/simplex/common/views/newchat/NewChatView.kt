@@ -321,6 +321,13 @@ private fun ActiveProfilePicker(
                       viewPwd = if (p.hidden) searchTextOrPassword.value else null
                     )
 
+                    if (chatModel.currentUser.value?.userId != p.userId) {
+                      AlertManager.shared.showAlertMsg(generalGetString(
+                        MR.strings.switching_profile_error_title),
+                        String.format(generalGetString(MR.strings.switching_profile_error_message), p.chatViewName)
+                      )
+                    }
+
                     withChats {
                       updateContactConnection(p.remoteHostId, conn)
                     }
