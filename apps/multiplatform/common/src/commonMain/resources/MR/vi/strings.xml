@@ -724,4 +724,20 @@
     <string name="servers_info_reconnect_servers_error">Lỗi kết nối lại máy chủ</string>
     <string name="servers_info_sessions_errors">Lỗi</string>
     <string name="servers_info_reset_stats_alert_error_title">Lỗi khôi phục thống kê</string>
+    <string name="error_updating_link_for_group">Lỗi cập nhật liên kết nhóm</string>
+    <string name="error_showing_message">lỗi hiển thị tin nhắn</string>
+    <string name="error_showing_content">lỗi hiển thị nội dung</string>
+    <string name="error_saving_ICE_servers">Lỗi lưu máy chủ ICE</string>
+    <string name="error_saving_xftp_servers">Lỗi lưu máy chủ XFTP</string>
+    <string name="error_saving_smp_servers">Lỗi lưu máy chủ SMP</string>
+    <string name="error_sending_message">Lỗi gửi tin nhắn</string>
+    <string name="error_starting_chat">Lỗi khởi động ứng dụng</string>
+    <string name="error_stopping_chat">Lỗi dừng ứng dụng</string>
+    <string name="error_showing_desktop_notification">Lỗi hiển thị thông báo, liên hệ với nhà phát triển.</string>
+    <string name="error_saving_user_password">Lỗi lưu mật khẩu người dùng</string>
+    <string name="migrate_from_device_error_saving_settings">Lỗi lưu cài đặt</string>
+    <string name="error_sending_message_contact_invitation">Lỗi gửi lời mời</string>
+    <string name="failed_to_active_user_title">Lỗi chuyển đổi hồ sơ!</string>
+    <string name="error_synchronizing_connection">Lỗi đồng bộ kết nối</string>
+    <string name="error_setting_address">Lỗi cài đặt địa chỉ</string>
 </resources>
