@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -18,6 +19,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.TextStyle
@@ -211,7 +213,7 @@ private fun ProfilePickerOption(
   disabled: Boolean,
   onSelected: () -> Unit,
   image: @Composable () -> Unit,
-  infoIcon: (@Composable () -> Unit)? = null
+  onInfo: (@Composable () -> Unit)? = null
 ) {
   Row(
     Modifier
@@ -226,9 +228,24 @@ private fun ProfilePickerOption(
       image()
       TextIconSpaced(false)
       Text(title, modifier = Modifier.align(Alignment.CenterVertically))
-      if (infoIcon != null) {
-        TextIconSpaced(false)
-        infoIcon()
+      if (onInfo != null) {
+        Spacer(Modifier.padding(2.dp))
+        Column(Modifier
+          .size(48.dp)
+          .clip(CircleShape)
+          .clickable(
+            enabled = !disabled,
+            onClick = { ModalManager.start.showModal { IncognitoView() } }
+          ),
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.Center
+        ) {
+          Icon(
+            painterResource(MR.images.ic_info),
+            stringResource(MR.strings.incognito),
+            tint = MaterialTheme.colors.primary
+          )
+        }
       }
     }
     if (selected) {
@@ -369,18 +386,7 @@ private fun ActiveProfilePicker(
           tint = Indigo,
         )
       },
-      infoIcon = {
-        Icon(
-          painterResource(MR.images.ic_info),
-          stringResource(MR.strings.incognito),
-          Modifier
-            .clickable(
-              enabled = !progressByTimeout,
-              onClick = { ModalManager.start.showModal { IncognitoView() } }
-            ),
-          tint = MaterialTheme.colors.primary
-        )
-      }
+      onInfo = { ModalManager.start.showModal { IncognitoView() } },
     )
   }
 
