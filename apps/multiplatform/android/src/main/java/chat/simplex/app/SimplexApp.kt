@@ -119,7 +119,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
            * */
           if (chatModel.chatRunning.value != false &&
             chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete &&
-            appPrefs.notificationsMode.get() == NotificationsMode.SERVICE
+            appPrefs.notificationsMode.get() == NotificationsMode.SERVICE &&
+            // New installation passes all checks above and tries to start the service which is not needed at all
+            // because preferred notification type is not yet chosen. So, check that the user has initialized db already
+            appPrefs.newDatabaseInitialized.get()
           ) {
             SimplexService.start()
           }

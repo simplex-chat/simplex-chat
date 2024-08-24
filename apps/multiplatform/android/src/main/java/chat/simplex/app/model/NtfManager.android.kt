@@ -53,7 +53,7 @@ object NtfManager {
   private val msgNtfTimeoutMs = 30000L
 
   init {
-    if (manager.areNotificationsEnabled()) createNtfChannelsMaybeShowAlert()
+    if (areNotificationsEnabledInSystem()) createNtfChannelsMaybeShowAlert()
   }
 
   private fun callNotificationChannel(channelId: String, channelName: String): NotificationChannel {
@@ -286,6 +286,8 @@ object NtfManager {
       PendingIntent.getBroadcast(SimplexApp.context, uniqueInt, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
   }
+
+  fun areNotificationsEnabledInSystem() = manager.areNotificationsEnabled()
 
   /**
    * This function creates notifications channels. On Android 13+ calling it for the first time will trigger system alert,
