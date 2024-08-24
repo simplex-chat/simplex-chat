@@ -72,7 +72,7 @@ struct FramedItemView: View {
                     .accessibilityLabel("")
             }
         }
-            .modifier(ChatBubblePadding(chatItem: chatItem))
+            .modifier(ChatTailPadding(chatItem: chatItem))
             .background(chatItemFrameColorMaybeImageOrVideo(chatItem, theme))
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
