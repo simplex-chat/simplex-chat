@@ -15,31 +15,48 @@ import SimpleXChat
 /// by retaining pill shape, even when ``ChatItem``'s height is less that twice its corner radius
 struct ChatItemClipped: ViewModifier {
     @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
-    private let itemShape: ChatItemShape
+    @AppStorage(DEFAULT_CHAT_ITEM_TAIL) private var isTailEnabled = true
 
-    init() { itemShape = .roundRect(maxRadius: 8) }
+    let chatItem: ChatItem?
+    let isTailVisible: Bool
+
+    init() {
+        chatItem = nil
+        isTailVisible = false
+    }
 
     init(_ chatItem: ChatItem, isTailVisible: Bool) {
-        itemShape = switch chatItem.content {
-        case
-            .sndMsgContent,
-            .rcvMsgContent,
-            .rcvDecryptionError,
-            .rcvGroupInvitation,
-            .sndGroupInvitation,
-            .sndDeleted,
-            .rcvDeleted,
-            .rcvIntegrityError,
-            .sndModerated,
-            .rcvModerated,
-            .rcvBlocked,
-            .invalidJSON: .bubble(
-                padding: ChatBubble.paddingEdge(for: chatItem),
-                isTailVisible: Self.hidesTail(chatItem.content.msgContent)
-                ? false
-                : isTailVisible
-            )
-        default: .roundRect(maxRadius: 8)
+        self.chatItem = chatItem
+        self.isTailVisible = isTailVisible
+    }
+
+    fileprivate func itemShape() -> ChatItemShape {
+        if let chatItem {
+            switch chatItem.content {
+            case
+                .sndMsgContent,
+                .rcvMsgContent,
+                .rcvDecryptionError,
+                .rcvGroupInvitation,
+                .sndGroupInvitation,
+                .sndDeleted,
+                .rcvDeleted,
+                .rcvIntegrityError,
+                .sndModerated,
+                .rcvModerated,
+                .rcvBlocked,
+                .invalidJSON: isTailEnabled
+                ? .bubble(
+                    padding: chatItem.chatDir.sent ? .trailing : .leading,
+                    isTailVisible: Self.hidesTail(chatItem.content.msgContent)
+                    ? false
+                    : isTailVisible
+                )
+                : .roundRect(maxRadius: ChatBubble.maxRadius)
+            default: .roundRect(maxRadius: 8)
+            }
+        } else {
+            .roundRect(maxRadius: 8)
         }
     }
     
@@ -53,11 +70,27 @@ struct ChatItemClipped: ViewModifier {
     }
 
     func body(content: Content) -> some View {
-        let shape = ChatBubble(roundness: roundness, shapePath: itemShape)
+        let shape = ChatBubble(roundness: roundness, shapePath: itemShape())
         content
             .contentShape(.dragPreview, shape)
             .contentShape(.contextMenuPreview, shape)
             .clipShape(shape)
+    }
+}
+
+struct ChatTailPadding: ViewModifier {
+    @AppStorage(DEFAULT_CHAT_ITEM_TAIL) private var tailEnabled = true
+    let chatItem: ChatItem
+
+    func body(content: Content) -> some View {
+        if tailEnabled {
+            content.padding(
+                chatItem.chatDir.sent ? .trailing : .leading,
+                ChatBubble.tailSize
+            )
+        } else {
+            content
+        }
     }
 }
 
@@ -118,24 +151,9 @@ struct ChatBubble: Shape {
                     .scale(x: -1, y: 1, anchor: .center)
                     .path(in: rect)
             }
-        case .roundRect:
-            return Path(roundedRect: rect, cornerRadius: 8 * roundness)
+        case let .roundRect(radius):
+            return Path(roundedRect: rect, cornerRadius: radius * roundness)
         }
-    }
-
-    static func paddingEdge(for chatItem: ChatItem) -> HorizontalEdge {
-        chatItem.chatDir.sent ? .trailing : .leading
-    }
-}
-
-struct ChatTailPadding: ViewModifier {
-    let chatItem: ChatItem
-
-    func body(content: Content) -> some View {
-        content.padding(
-            chatItem.chatDir.sent ? .trailing : .leading,
-            ChatBubble.tailSize
-        )
     }
 }
 
