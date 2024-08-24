@@ -2,7 +2,6 @@ package com.sd.lib.compose.wheel_picker
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
-import chat.simplex.common.ui.theme.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -12,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.ui.theme.isInDarkTheme
 
 /**
  * The default implementation of focus view in vertical.
@@ -76,7 +76,7 @@ fun FWheelPickerFocusHorizontal(
  */
 private val DefaultDividerColor: Color
   @Composable
-  get() = (if (isSystemInDarkTheme()) {
+  get() = (if (isInDarkTheme()) {
     Color.White
   } else {
     Color.Black

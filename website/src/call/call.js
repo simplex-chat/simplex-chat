@@ -24,9 +24,8 @@ var TransformOperation;
 let activeCall;
 const processCommand = (function () {
     const defaultIceServers = [
-        { urls: ["stuns:stun.simplex.im:443"] },
         { urls: ["stun:stun.simplex.im:443"] },
-        { urls: ["turns:turn.simplex.im:443"], username: "private2", credential: "Hxuq2QxUjnhj96Zq2r4HjqHRj" },
+        { urls: ["turn:turn.simplex.im:443"], username: "private", credential: "yleob6AVkiNI87hpR94Z" },
     ];
     function getCallConfig(encodedInsertableStreams, iceServers, relay) {
         return {

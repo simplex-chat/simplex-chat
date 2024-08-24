@@ -69,16 +69,19 @@ class AlertManager {
   fun showAlertDialogButtonsColumn(
     title: String,
     text: String? = null,
+    textAlign: TextAlign = TextAlign.Center,
+    dismissible: Boolean = true,
     onDismissRequest: (() -> Unit)? = null,
     hostDevice: Pair<Long?, String>? = null,
+    belowTextContent: @Composable (() -> Unit) = {},
     buttons: @Composable () -> Unit,
   ) {
     showAlert {
       AlertDialog(
-        onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
+        onDismissRequest = { onDismissRequest?.invoke(); if (dismissible) hideAlert() },
         title = alertTitle(title),
         buttons = {
-          AlertContent(text, hostDevice, extraPadding = true) {
+          AlertContent(text, hostDevice, extraPadding = true, textAlign = textAlign, belowTextContent = belowTextContent) {
             buttons()
           }
         },
@@ -286,7 +289,14 @@ private fun alertTitle(title: String): (@Composable () -> Unit)? {
 }
 
 @Composable
-private fun AlertContent(text: String?, hostDevice: Pair<Long?, String>?, extraPadding: Boolean = false, content: @Composable (() -> Unit)) {
+private fun AlertContent(
+  text: String?,
+  hostDevice: Pair<Long?, String>?,
+  extraPadding: Boolean = false,
+  textAlign: TextAlign = TextAlign.Center,
+  belowTextContent: @Composable (() -> Unit) = {},
+  content: @Composable (() -> Unit)
+) {
   BoxWithConstraints {
     Column(
       Modifier
@@ -300,17 +310,20 @@ private fun AlertContent(text: String?, hostDevice: Pair<Long?, String>?, extraP
       CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
         if (text != null) {
           Column(Modifier.heightIn(max = this@BoxWithConstraints.maxHeight * 0.7f)
+            .padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING)
             .verticalScroll(rememberScrollState())
           ) {
             SelectionContainer {
               Text(
                 escapedHtmlToAnnotatedString(text, LocalDensity.current),
-                Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f),
+                Modifier.fillMaxWidth(),
                 fontSize = 16.sp,
-                textAlign = TextAlign.Center,
+                textAlign = textAlign,
                 color = MaterialTheme.colors.secondary
               )
             }
+            belowTextContent()
+            Spacer(Modifier.height(DEFAULT_PADDING * 1.5f))
           }
         }
       }

@@ -34,7 +34,7 @@ fun LocalAuthView(m: ChatModel, authRequest: LocalAuthRequest) {
       } else {
         val r: LAResult = if (passcode.value == authRequest.password) {
           if (authRequest.selfDestruct && sdPassword != null && controller.ctrl == -1L) {
-            initChatControllerAndRunMigrations()
+            initChatControllerOnStart()
           }
           LAResult.Success
         } else {

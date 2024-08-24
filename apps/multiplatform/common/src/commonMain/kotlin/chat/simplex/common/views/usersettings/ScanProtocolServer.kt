@@ -25,7 +25,7 @@ fun ScanProtocolServerLayout(rhId: Long?, onNext: (ServerCfg) -> Unit) {
     QRCodeScanner { text ->
       val res = parseServerAddress(text)
       if (res != null) {
-        onNext(ServerCfg(remoteHostId = rhId, text, false, null, true))
+        onNext(ServerCfg(remoteHostId = rhId, text, false, null, false))
       } else {
         AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.smp_servers_invalid_address),

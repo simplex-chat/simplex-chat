@@ -14,7 +14,7 @@ permalink: "/blog/20221206-simplex-chat-v4.3-voice-messages.html"
 
 ## SimpleX Chat reviews
 
-Since we published [the security assessment of SimpleX Chat](https://simplex.chat/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html) completed by Trail of Bits in November, several sites published the reviews and included it in their recommendations:
+Since we published [the security assessment of SimpleX Chat](./20221108-simplex-chat-v4.2-security-audit-new-website.md) completed by Trail of Bits in November, several sites published the reviews and included it in their recommendations:
 
 - Privacy Guides added SimpleX Chat to [the recommended private and secure messengers](https://www.privacyguides.org/real-time-communication/#simplex-chat).
 - Mike Kuketz – a well-known security expert – published [the review of SimpleX Chat](https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/) and added it to [the messenger matrix](https://www.messenger-matrix.de).

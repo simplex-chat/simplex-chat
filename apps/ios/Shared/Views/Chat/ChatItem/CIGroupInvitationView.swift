@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct CIGroupInvitationView: View {
     @EnvironmentObject var chatModel: ChatModel
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
     var groupInvitation: CIGroupInvitation
@@ -20,6 +20,8 @@ struct CIGroupInvitationView: View {
     @State private var frameWidth: CGFloat = 0
     @State private var inProgress = false
     @State private var progressByTimeout = false
+
+    @AppStorage(DEFAULT_SHOW_SENT_VIA_RPOXY) private var showSentViaProxy = false
 
     var body: some View {
         let action = !chatItem.chatDir.sent && groupInvitation.status == .pending
@@ -40,10 +42,10 @@ struct CIGroupInvitationView: View {
                                 .overlay(DetermineWidth())
                             (
                                 Text(chatIncognito ? "Tap to join incognito" : "Tap to join")
-                                    .foregroundColor(inProgress ? .secondary : chatIncognito ? .indigo : .accentColor)
+                                    .foregroundColor(inProgress ? theme.colors.secondary : chatIncognito ? .indigo : theme.colors.primary)
                                     .font(.callout)
                                 + Text("   ")
-                                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false)
+                                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy)
                             )
                             .overlay(DetermineWidth())
                         }
@@ -51,7 +53,7 @@ struct CIGroupInvitationView: View {
                         (
                             groupInvitationText()
                             + Text("   ")
-                            + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false)
+                            + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showStatus: false, showEdited: false, showViaProxy: showSentViaProxy)
                         )
                         .overlay(DetermineWidth())
                     }
@@ -63,12 +65,11 @@ struct CIGroupInvitationView: View {
                 }
             }
 
-            CIMetaView(chat: chat, chatItem: chatItem, showStatus: false, showEdited: false)
+            CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary, showStatus: false, showEdited: false)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
-        .background(chatItemFrameColor(chatItem, colorScheme))
-        .cornerRadius(18)
+        .background(chatItemFrameColor(chatItem, theme))
         .textSelection(.disabled)
         .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
         .onChange(of: inProgress) { inProgress in
@@ -97,7 +98,7 @@ struct CIGroupInvitationView: View {
     private func groupInfoView(_ action: Bool) -> some View {
         var color: Color
         if action && !inProgress {
-            color = chatIncognito ? .indigo : .accentColor
+            color = chatIncognito ? .indigo : theme.colors.primary
         } else {
             color = Color(uiColor: .tertiaryLabel)
         }

@@ -27,7 +27,6 @@ import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
-import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString, pack, unpack)
 import Data.Int (Int64)
@@ -48,12 +47,12 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
-import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, RcvFileId, SAEntity (..), SndFileId, UserId)
+import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
+import Simplex.Messaging.Agent.Protocol (ACorrId, AEventTag (..), AEvtTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
-import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
@@ -125,7 +124,6 @@ data User = User
 
 data NewUser = NewUser
   { profile :: Maybe Profile,
-    sameServers :: Bool,
     pastTimestamp :: Bool
   }
   deriving (Show)
@@ -178,6 +176,7 @@ data Contact = Contact
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
     uiThemes :: Maybe UIThemeEntityOverrides,
+    chatDeleted :: Bool,
     customData :: Maybe CustomData
   }
   deriving (Eq, Show)
@@ -227,7 +226,7 @@ contactActive :: Contact -> Bool
 contactActive Contact {contactStatus} = contactStatus == CSActive
 
 contactDeleted :: Contact -> Bool
-contactDeleted Contact {contactStatus} = contactStatus == CSDeleted
+contactDeleted Contact {contactStatus} = contactStatus == CSDeleted || contactStatus == CSDeletedByUser
 
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode =<< activeConn
@@ -237,7 +236,8 @@ contactPQEnabled Contact {activeConn} = maybe PQEncOff connPQEnabled activeConn
 
 data ContactStatus
   = CSActive
-  | CSDeleted -- contact deleted by contact
+  | CSDeleted
+  | CSDeletedByUser
   deriving (Eq, Show, Ord)
 
 instance FromField ContactStatus where fromField = fromTextField_ textDecode
@@ -255,10 +255,12 @@ instance TextEncoding ContactStatus where
   textDecode = \case
     "active" -> Just CSActive
     "deleted" -> Just CSDeleted
+    "deletedByUser" -> Just CSDeletedByUser
     _ -> Nothing
   textEncode = \case
     CSActive -> "active"
     CSDeleted -> "deleted"
+    CSDeletedByUser -> "deletedByUser"
 
 data ContactRef = ContactRef
   { contactId :: ContactId,
@@ -1069,7 +1071,8 @@ data RcvFileTransfer = RcvFileTransfer
 data XFTPRcvFile = XFTPRcvFile
   { rcvFileDescription :: RcvFileDescr,
     agentRcvFileId :: Maybe AgentRcvFileId,
-    agentRcvFileDeleted :: Bool
+    agentRcvFileDeleted :: Bool,
+    userApprovedRelays :: Bool
   }
   deriving (Eq, Show)
 
@@ -1299,6 +1302,7 @@ data Connection = Connection
     pqSndEnabled :: Maybe PQEncryption,
     pqRcvEnabled :: Maybe PQEncryption,
     authErrCounter :: Int,
+    quotaErrCounter :: Int, -- if exceeds limit messages to group members are created as pending; sending to contacts is unaffected by this
     createdAt :: UTCTime
   }
   deriving (Eq, Show)
@@ -1311,6 +1315,15 @@ authErrDisableCount = 10
 
 connDisabled :: Connection -> Bool
 connDisabled Connection {authErrCounter} = authErrCounter >= authErrDisableCount
+
+quotaErrInactiveCount :: Int
+quotaErrInactiveCount = 5
+
+quotaErrSetOnMERR :: Int
+quotaErrSetOnMERR = 999
+
+connInactive :: Connection -> Bool
+connInactive Connection {quotaErrCounter} = quotaErrCounter >= quotaErrInactiveCount
 
 data SecurityCode = SecurityCode {securityCode :: Text, verifiedAt :: UTCTime}
   deriving (Eq, Show)
@@ -1363,7 +1376,7 @@ data ConnStatus
     ConnRequested
   | -- | initiating party accepted connection with agent LET command (to be renamed to ACPT) (allowConnection)
     ConnAccepted
-  | -- | connection can be sent messages to (after joining party received INFO notification)
+  | -- | connection can be sent messages to (after joining party received INFO notification, or after securing snd queue on join)
     ConnSndReady
   | -- | connection is ready for both parties to send and receive messages
     ConnReady
@@ -1480,9 +1493,6 @@ serializeIntroStatus = \case
   GMIntroToConnected -> "to-con"
   GMIntroConnected -> "con"
 
-textParseJSON :: TextEncoding a => String -> J.Value -> JT.Parser a
-textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . textDecode
-
 data NetworkStatus
   = NSUnknown
   | NSConnected
@@ -1571,19 +1581,19 @@ instance TextEncoding CommandFunction where
     CFAckMessage -> "ack_message"
     CFDeleteConn -> "delete_conn"
 
-commandExpectedResponse :: CommandFunction -> APartyCmdTag 'Agent
+commandExpectedResponse :: CommandFunction -> AEvtTag
 commandExpectedResponse = \case
   CFCreateConnGrpMemInv -> t INV_
   CFCreateConnGrpInv -> t INV_
   CFCreateConnFileInvDirect -> t INV_
   CFCreateConnFileInvGroup -> t INV_
-  CFJoinConn -> t OK_
+  CFJoinConn -> t JOINED_
   CFAllowConn -> t OK_
-  CFAcceptContact -> t OK_
+  CFAcceptContact -> t JOINED_
   CFAckMessage -> t OK_
   CFDeleteConn -> t OK_
   where
-    t = APCT SAEConn
+    t = AEvtTag SAEConn
 
 data CommandData = CommandData
   { cmdId :: CommandId,
@@ -1615,14 +1625,6 @@ data NoteFolder = NoteFolder
   deriving (Eq, Show)
 
 type NoteFolderId = Int64
-
-data ServerCfg p = ServerCfg
-  { server :: ProtoServerWithAuth p,
-    preset :: Bool,
-    tested :: Maybe Bool,
-    enabled :: Bool
-  }
-  deriving (Show)
 
 data ChatVersion
 
@@ -1751,10 +1753,3 @@ $(JQ.deriveJSON defaultJSON ''Contact)
 $(JQ.deriveJSON defaultJSON ''ContactRef)
 
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
-
-instance ProtocolTypeI p => ToJSON (ServerCfg p) where
-  toEncoding = $(JQ.mkToEncoding defaultJSON ''ServerCfg)
-  toJSON = $(JQ.mkToJSON defaultJSON ''ServerCfg)
-
-instance ProtocolTypeI p => FromJSON (ServerCfg p) where
-  parseJSON = $(JQ.mkParseJSON defaultJSON ''ServerCfg)

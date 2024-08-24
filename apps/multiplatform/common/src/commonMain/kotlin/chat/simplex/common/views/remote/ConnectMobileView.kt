@@ -89,18 +89,15 @@ fun ConnectMobileLayout(
   connectDesktop: () -> Unit,
   deleteHost: (RemoteHostInfo) -> Unit,
 ) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-    verticalArrangement = Arrangement.spacedBy(8.dp)
-  ) {
+  ColumnWithScrollBar(Modifier.fillMaxWidth()) {
     AppBarTitle(stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles))
     SectionView(generalGetString(MR.strings.this_device_name).uppercase()) {
       DeviceNameField(deviceName.value ?: "") { updateDeviceName(it) }
       SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
-      PreferenceToggle(stringResource(MR.strings.multicast_discoverable_via_local_network), remember { controller.appPrefs.offerRemoteMulticast.state }.value) {
+      PreferenceToggle(stringResource(MR.strings.multicast_discoverable_via_local_network), checked = remember { controller.appPrefs.offerRemoteMulticast.state }.value) {
         controller.appPrefs.offerRemoteMulticast.set(it)
       }
-      SectionDividerSpaced(maxBottomPadding = false)
+      SectionDividerSpaced()
     }
     SectionView(stringResource(MR.strings.devices).uppercase()) {
       if (chatModel.localUserCreated.value == true) {
@@ -179,10 +176,7 @@ private fun ConnectMobileViewLayout(
   refreshQrCode: () -> Unit = {},
   UnderQrLayout: @Composable () -> Unit = {},
 ) {
-  ColumnWithScrollBar(
-    Modifier.fillMaxWidth(),
-    verticalArrangement = Arrangement.spacedBy(8.dp)
-  ) {
+  ColumnWithScrollBar(Modifier.fillMaxWidth()) {
     if (title != null) {
       AppBarTitle(title)
     }

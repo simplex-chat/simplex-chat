@@ -29,12 +29,11 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (MsgErrorType (..), RatchetSyncState (..), SwitchPhase (..))
-import Simplex.Messaging.Crypto.Ratchet (PQEncryption, pattern PQEncOn, pattern PQEncOff)
+import Simplex.Messaging.Crypto.Ratchet (PQEncryption, pattern PQEncOff, pattern PQEncOn)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, singleFieldJSON, sumTypeJSON)
-import Simplex.Messaging.Util (safeDecodeUtf8, tshow, (<$?>))
+import Simplex.Messaging.Util (encodeJSON, safeDecodeUtf8, tshow, (<$?>))
 
 data MsgDirection = MDRcv | MDSnd
   deriving (Eq, Show)

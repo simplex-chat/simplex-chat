@@ -15,6 +15,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -165,6 +166,24 @@ private fun ConnectingDesktop(session: RemoteCtrlSession, rc: RemoteCtrlInfo?) {
 
   SectionView {
     DisconnectButton(onClick = ::disconnectDesktop)
+  }
+
+  ProgressIndicator()
+}
+
+@Composable
+private fun ProgressIndicator() {
+  Box(
+    Modifier.fillMaxSize(),
+    contentAlignment = Alignment.Center
+  ) {
+    CircularProgressIndicator(
+      Modifier
+        .padding(horizontal = 2.dp)
+        .size(30.dp),
+      color = MaterialTheme.colors.secondary,
+      strokeWidth = 3.dp
+    )
   }
 }
 
@@ -413,14 +432,14 @@ private fun LinkedDesktopsView(remoteCtrls: SnapshotStateList<RemoteCtrlInfo>) {
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.linked_desktop_options).uppercase()) {
-      PreferenceToggle(stringResource(MR.strings.verify_connections), remember { controller.appPrefs.confirmRemoteSessions.state }.value) {
+      PreferenceToggle(stringResource(MR.strings.verify_connections), checked = remember { controller.appPrefs.confirmRemoteSessions.state }.value) {
         controller.appPrefs.confirmRemoteSessions.set(it)
       }
-      PreferenceToggle(stringResource(MR.strings.discover_on_network), remember { controller.appPrefs.connectRemoteViaMulticast.state }.value) {
+      PreferenceToggle(stringResource(MR.strings.discover_on_network), checked = remember { controller.appPrefs.connectRemoteViaMulticast.state }.value) {
         controller.appPrefs.connectRemoteViaMulticast.set(it)
       }
       if (remember { controller.appPrefs.connectRemoteViaMulticast.state }.value) {
-        PreferenceToggle(stringResource(MR.strings.multicast_connect_automatically), remember { controller.appPrefs.connectRemoteViaMulticastAuto.state }.value) {
+        PreferenceToggle(stringResource(MR.strings.multicast_connect_automatically), checked = remember { controller.appPrefs.connectRemoteViaMulticastAuto.state }.value) {
           controller.appPrefs.connectRemoteViaMulticastAuto.set(it)
         }
       }

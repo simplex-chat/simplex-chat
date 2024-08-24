@@ -4,8 +4,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,6 +14,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
@@ -27,6 +27,7 @@ import kotlinx.coroutines.*
 import java.awt.event.WindowEvent
 import java.awt.event.WindowFocusListener
 import java.io.File
+import kotlin.math.sqrt
 import kotlin.system.exitProcess
 
 val simplexWindowState = SimplexWindowState()
@@ -85,20 +86,25 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
     position = WindowPosition(state.x.dp, state.y.dp)
   )
 
+  val storingJob: MutableState<Job> = remember { mutableStateOf(Job()) }
   LaunchedEffect(
     windowState.position.x.value,
     windowState.position.y.value,
     windowState.size.width.value,
     windowState.size.height.value
   ) {
-    storeWindowState(
-      WindowPositionSize(
-        x = windowState.position.x.value.toInt(),
-        y = windowState.position.y.value.toInt(),
-        width = windowState.size.width.value.toInt(),
-        height = windowState.size.height.value.toInt()
+    storingJob.value.cancel()
+    storingJob.value = launch {
+      delay(1000L)
+      storeWindowState(
+        WindowPositionSize(
+          x = windowState.position.x.value.toInt(),
+          y = windowState.position.y.value.toInt(),
+          width = windowState.size.width.value.toInt(),
+          height = windowState.size.height.value.toInt()
+        )
       )
-    )
+    }
   }
 
   simplexWindowState.windowState = windowState
@@ -111,6 +117,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
         false
       }
     }, title = "SimpleX") {
+//      val hardwareAccelerationDisabled = remember { listOf(GraphicsApi.SOFTWARE_FAST, GraphicsApi.SOFTWARE_COMPAT, GraphicsApi.UNKNOWN).contains(window.renderApi) }
       simplexWindowState.window = window
       AppScreen()
       if (simplexWindowState.openDialog.isAwaiting) {
@@ -190,7 +197,8 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
   if (remember { ChatController.appPrefs.developerTools.state }.value && remember { ChatController.appPrefs.terminalAlwaysVisible.state }.value && remember { ChatController.appPrefs.appLanguage.state }.value != "") {
     var hiddenUntilRestart by remember { mutableStateOf(false) }
     if (!hiddenUntilRestart) {
-      val cWindowState = rememberWindowState(placement = WindowPlacement.Floating, width = DEFAULT_START_MODAL_WIDTH, height = 768.dp)
+      val cWindowState = rememberWindowState(placement = WindowPlacement.Floating, width = DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier, height =
+      768.dp)
       Window(state = cWindowState, onCloseRequest = { hiddenUntilRestart = true }, title = stringResource(MR.strings.chat_console)) {
         SimpleXTheme {
           TerminalView(ChatModel) { hiddenUntilRestart = true }

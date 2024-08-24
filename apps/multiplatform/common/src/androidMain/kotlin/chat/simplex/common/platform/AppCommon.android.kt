@@ -6,8 +6,6 @@ import android.net.LocalServerSocket
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.fragment.app.FragmentActivity
-import chat.simplex.common.*
-import chat.simplex.common.platform.*
 import java.io.*
 import java.lang.ref.WeakReference
 import java.util.*
@@ -23,6 +21,8 @@ var isAppOnForeground: Boolean = false
 
 @Suppress("ConstantLocale")
 val defaultLocale: Locale = Locale.getDefault()
+
+actual fun isAppVisibleAndFocused(): Boolean = isAppOnForeground
 
 @SuppressLint("StaticFieldLeak")
 lateinit var androidAppContext: Context

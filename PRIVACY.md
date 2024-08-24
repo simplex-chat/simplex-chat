@@ -1,5 +1,6 @@
 ---
 layout: layouts/privacy.html
+permalink: /privacy/index.html
 ---
 
 # SimpleX Chat Privacy Policy and Conditions of Use
@@ -10,7 +11,7 @@ SimpleX Chat communication protocol is the first protocol that has no user profi
 
 Double ratchet algorithm has such important properties as [forward secrecy](/docs/GLOSSARY.md#forward-secrecy), sender [repudiation](/docs/GLOSSARY.md#) and break-in recovery (also known as [post-compromise security](/docs/GLOSSARY.md#post-compromise-security)).
 
-If you believe that any part of this document is not aligned with our mission or values, please raise it with us via [email](chat@simplex.chat) or [chat](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion).
+If you believe that any part of this document is not aligned with our mission or values, please raise it with us via [email](mailto:chat@simplex.chat) or [chat](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion).
 
 ## Privacy Policy
 
@@ -78,7 +79,7 @@ When you choose to use instant push notifications in SimpleX iOS app, because th
 
 Preset notification server cannot observe the actual addresses of these queues, as a separate address is used to subscribe to the notifications. It also cannot observe who sends messages to you. Apple push notifications servers can only observe how many notifications are sent to you, but not from how many contacts, or from which messaging relays, as notifications are delivered to your device end-to-end encrypted by one of the preset notification servers - these notifications only contain end-to-end encrypted metadata, not even encrypted message content, and they look completely random to Apple push notification servers.
 
-You can read more about the design of iOS push notifications [here](https://simplex.chat/blog/20220404-simplex-chat-instant-notifications.html#our-ios-approach-has-one-trade-off).
+You can read more about the design of iOS push notifications [here](./blog/20220404-simplex-chat-instant-notifications.md#our-ios-approach-has-one-trade-off).
 
 #### Another information stored on the servers
 
@@ -115,7 +116,7 @@ We will update this Privacy Policy as needed so that it is current, accurate, an
 
 Please also read our Conditions of Use of Software and Infrastructure below.
 
-If you have questions about our Privacy Policy please contact us via [email](chat@simplex.chat) or [chat](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion).
+If you have questions about our Privacy Policy please contact us via [email](mailto:chat@simplex.chat) or [chat](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion).
 
 ## Conditions of Use of Software and Infrastructure
 

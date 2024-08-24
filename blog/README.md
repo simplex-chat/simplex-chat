@@ -1,5 +1,61 @@
 # Blog
 
+Aug 14, 2024 [SimpleX network: the investment from Jack Dorsey and Asymmetric, v6.0 released with the new user experience and private message routing](./20240814-simplex-chat-vision-funding-v6-private-routing-new-user-experience.md)
+
+[SimpleX Chat: vision and funding 2.0](#simplex-chat-vision-and-funding-20): past, present, future.
+
+Announcing the investment from Jack Dorsey and Asymmetric.
+
+What's new in v6.0:
+- Private message routing - now enabled by default
+- New chat experience:
+  - connect to your friends faster.
+  - new reachable interface.
+  - and much more!
+- Improved networking and reduced battery usage
+
+---
+
+Jul 4, 2024 [The Future of Privacy: Enforcing Privacy Standards](./20240704-future-of-privacy-enforcing-privacy-standards.md)
+
+It's time we shift the focus: privacy should be a non-negotiable duty of technology providers, not just a right users must fight to protect, and not something that users can be asked to consent away as a condition of access to a service.
+
+---
+
+Jun 4, 2024 [SimpleX network: private message routing, v5.8 released with IP address protection and chat themes](./20240604-simplex-chat-v5.8-private-message-routing-chat-themes.md)
+
+What's new in v5.8:
+- private message routing.
+- server transparency.
+- protect IP address when downloading files & media.
+- chat themes for better conversation privacy - in Android and desktop apps.
+- group improvements - reduced traffic and additional preferences.
+- improved networking, message and file delivery.
+
+Also, we added Persian interface language to the Android and desktop apps, thanks to our users and Weblate.
+
+---
+
+Jun 1, 2024 [Children's Safety Requires End-to-End Encryption](./20240601-children-safety-requires-e2e-encryption.md)
+
+As lawmakers grapple with the serious issue of child exploitation online, some proposed solutions would fuel the very problem they aim to solve.
+
+---
+
+May 16, 2024 [SimpleX: Redefining Privacy by Making Hard Choices](./20240516-simplex-redefining-privacy-hard-choices.md)
+
+When it comes to open source privacy tools, the status quo often dictates the limitations of existing protocols and structures. However, these norms need to be challenged to radically shift how we approach genuinely private communication. This requires doing some uncomfortable things, like making hard choices as it relates to funding, alternative decentralization models, doubling down on privacy over convenience, and more.
+
+In this post we explain a bit more about why SimpleX operates and makes decisions the way it does:
+
+- No user accounts.
+- Privacy over convenience.
+- Network decentralization.
+- Funding and profitability.
+- Company jurisdiction.
+
+---
+
 Apr 26, 2024 [SimpleX network: legally binding transparency, v5.7 released with better calls and messages](./20240426-simplex-legally-binding-transparency-v5-7-better-user-experience.md)
 
 We published Transparency Reports, Security Policy, and Frequently Asked Questions, and updated Privacy Policy.

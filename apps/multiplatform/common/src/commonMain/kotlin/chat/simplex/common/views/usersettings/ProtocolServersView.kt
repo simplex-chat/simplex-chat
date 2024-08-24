@@ -28,7 +28,7 @@ import chat.simplex.res.MR
 
 @Composable
 fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: ServerProtocol, close: () -> Unit) {
-  var presetServers by remember(rhId) { mutableStateOf(emptyList<String>()) }
+  var presetServers by remember(rhId) { mutableStateOf(emptyList<ServerCfg>()) }
   var servers by remember { stateGetOrPut("servers") { emptyList<ServerCfg>() } }
   var serversAlreadyLoaded by remember { stateGetOrPut("serversAlreadyLoaded") { false } }
   val currServers = remember(rhId) { mutableStateOf(servers) }
@@ -198,12 +198,42 @@ private fun ProtocolServersLayout(
   ) {
     AppBarTitle(stringResource(if (serverProtocol == ServerProtocol.SMP) MR.strings.your_SMP_servers else MR.strings.your_XFTP_servers))
 
-    SectionView(stringResource(if (serverProtocol == ServerProtocol.SMP) MR.strings.smp_servers else MR.strings.xftp_servers).uppercase()) {
-      for (srv in servers) {
-        SectionItemView({ showServer(srv) }, disabled = testing) {
-          ProtocolServerView(serverProtocol, srv, servers, testing)
+    val configuredServers = servers.filter { it.preset || it.enabled }
+    val otherServers = servers.filter { !(it.preset || it.enabled) }
+
+    if (configuredServers.isNotEmpty()) {
+      SectionView(stringResource(if (serverProtocol == ServerProtocol.SMP) MR.strings.smp_servers_configured else MR.strings.xftp_servers_configured).uppercase()) {
+        for (srv in configuredServers) {
+          SectionItemView({ showServer(srv) }, disabled = testing) {
+            ProtocolServerView(serverProtocol, srv, servers, testing)
+          }
         }
       }
+      SectionTextFooter(
+        remember(currentUser?.displayName) {
+          buildAnnotatedString {
+            append(generalGetString(MR.strings.smp_servers_per_user) + " ")
+            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+              append(currentUser?.displayName ?: "")
+            }
+            append(".")
+          }
+        }
+      )
+      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+    }
+
+    if (otherServers.isNotEmpty()) {
+      SectionView(stringResource(if (serverProtocol == ServerProtocol.SMP) MR.strings.smp_servers_other else MR.strings.xftp_servers_other).uppercase()) {
+        for (srv in otherServers.filter { !(it.preset || it.enabled) }) {
+          SectionItemView({ showServer(srv) }, disabled = testing) {
+            ProtocolServerView(serverProtocol, srv, servers, testing)
+          }
+        }
+      }
+    }
+
+    SectionView {
       SettingsActionItem(
         painterResource(MR.images.ic_add),
         stringResource(MR.strings.smp_servers_add),
@@ -212,19 +242,9 @@ private fun ProtocolServersLayout(
         textColor = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
         iconColor = if (testing) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
       )
+      SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
     }
-    SectionTextFooter(
-      remember(currentUser?.displayName) {
-        buildAnnotatedString {
-          append(generalGetString(MR.strings.smp_servers_per_user) + " ")
-          withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-            append(currentUser?.displayName ?: "")
-          }
-          append(".")
-        }
-      }
-    )
-    SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+
     SectionView {
       SectionItemView(resetServers, disabled = serversUnchanged) {
         Text(stringResource(MR.strings.reset_verb), color = if (!serversUnchanged) MaterialTheme.colors.onBackground else MaterialTheme.colors.secondary)
@@ -285,21 +305,21 @@ private fun uniqueAddress(s: ServerCfg, address: ServerAddress, servers: List<Se
   }
 }
 
-private fun hasAllPresets(presetServers: List<String>, servers: List<ServerCfg>, m: ChatModel): Boolean =
+private fun hasAllPresets(presetServers: List<ServerCfg>, servers: List<ServerCfg>, m: ChatModel): Boolean =
   presetServers.all { hasPreset(it, servers) } ?: true
 
-private fun addAllPresets(rhId: Long?, presetServers: List<String>, servers: List<ServerCfg>, m: ChatModel): List<ServerCfg> {
+private fun addAllPresets(rhId: Long?, presetServers: List<ServerCfg>, servers: List<ServerCfg>, m: ChatModel): List<ServerCfg> {
   val toAdd = ArrayList<ServerCfg>()
   for (srv in presetServers) {
     if (!hasPreset(srv, servers)) {
-      toAdd.add(ServerCfg(remoteHostId = rhId, srv, preset = true, tested = null, enabled = true))
+      toAdd.add(srv)
     }
   }
   return toAdd
 }
 
-private fun hasPreset(srv: String, servers: List<ServerCfg>): Boolean =
-  servers.any { it.server == srv }
+private fun hasPreset(srv: ServerCfg, servers: List<ServerCfg>): Boolean =
+  servers.any { it.server == srv.server }
 
 private suspend fun testServers(testing: MutableState<Boolean>, servers: List<ServerCfg>, m: ChatModel, onUpdated: (List<ServerCfg>) -> Unit) {
   val resetStatus = resetTestStatus(servers)

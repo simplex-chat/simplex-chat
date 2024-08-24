@@ -329,9 +329,9 @@
         <target state="translated">Pridėti serverius skenuojant QR kodus.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add server…" xml:space="preserve" approved="no">
-        <source>Add server…</source>
-        <target state="translated">Pridėti serverį…</target>
+      <trans-unit id="Add server" xml:space="preserve" approved="no">
+        <source>Add server</source>
+        <target state="translated">Pridėti serverį</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add to another device" xml:space="preserve">

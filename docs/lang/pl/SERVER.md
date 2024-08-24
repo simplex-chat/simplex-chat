@@ -13,7 +13,7 @@ Serwer SMP to serwer przekaźnikowy używany do przekazywania wiadomości w siec
 
 Klienty SimpleX określają tylko, który serwer jest używany do odbierania wiadomości, oddzielnie dla każdego kontaktu (lub połączenia grupowego z członkiem grupy), a serwery te są tylko tymczasowe, ponieważ adres dostawy może ulec zmianie.
 
-_Uwaga_: gdy zmienisz serwery w ustawieniach aplikacji, wpłynie to tylko na to, który serwer będzie używany dla nowych kontaktów, istniejące kontakty nie zostaną automatycznie przeniesione na nowe serwery, ale możesz przenieść je ręcznie za pomocą przycisku ["Zmień adres odbiorczy"](../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta) na stronie z informacjami kontaktu/członka - wkrótce zostanie to zautomatyzowane.
+_Uwaga_: gdy zmienisz serwery w ustawieniach aplikacji, wpłynie to tylko na to, który serwer będzie używany dla nowych kontaktów, istniejące kontakty nie zostaną automatycznie przeniesione na nowe serwery, ale możesz przenieść je ręcznie za pomocą przycisku ["Zmień adres odbiorczy"](../../../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#change-your-delivery-address-beta) na stronie z informacjami kontaktu/członka - wkrótce zostanie to zautomatyzowane.
 
 ## Instalacja
 

@@ -17,8 +17,8 @@ import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import Simplex.Chat.Types.UITheme
-import Simplex.Chat.Types.Util (encodeJSON)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
+import Simplex.Messaging.Util (encodeJSON)
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec hiding (it)
 
@@ -42,6 +42,7 @@ chatProfileTests = do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
     it "connecting via contact address" testPlanAddressConnecting
+    it "connecting via contact address (slow handshake)" testPlanAddressConnectingSlow
     it "re-connect with deleted contact" testPlanAddressContactDeletedReconnected
     it "contact via address" testPlanAddressContactViaAddress
   describe "incognito" $ do
@@ -51,6 +52,7 @@ chatProfileTests = do
     it "set connection incognito" testSetConnectionIncognito
     it "reset connection incognito" testResetConnectionIncognito
     it "set connection incognito prohibited during negotiation" testSetConnectionIncognitoProhibitedDuringNegotiation
+    it "set connection incognito prohibited during negotiation (slow handshake)" testSetConnectionIncognitoProhibitedDuringNegotiationSlow
     it "connection incognito unchanged errors" testConnectionIncognitoUnchangedErrors
     it "set, reset, set connection incognito" testSetResetSetConnectionIncognito
     it "join group incognito" testJoinGroupIncognito
@@ -61,6 +63,11 @@ chatProfileTests = do
   describe "contact aliases" $ do
     it "set contact alias" testSetAlias
     it "set connection alias" testSetConnectionAlias
+  describe "pending connection users" $ do
+    it "change user for pending connection" testChangePCCUser
+    it "change from incognito profile connects as new user" testChangePCCUserFromIncognito
+    it "change user for pending connection and later set incognito connects as incognito in changed profile" testChangePCCUserAndThenIncognito
+    it "change user for user without matching servers creates new connection" testChangePCCUserDiffSrv
   describe "preferences" $ do
     it "set contact preferences" testSetContactPrefs
     it "feature offers" testFeatureOffers
@@ -196,6 +203,7 @@ testMultiWordProfileNames =
              ]
       cath <## "#'Our Team' 'Alice Jones' is creating direct contact 'Alice Jones' with you"
       cath <# "'Alice Jones'> hello"
+      cath <## "'Alice Jones': you can send messages to contact"
       cath <## "'Alice Jones': contact is connected"
       alice <## "'Cath Johnson': contact is connected"
       cath ##> "/p 'Cath J'"
@@ -222,7 +230,7 @@ testUserContactLink =
       alice <#? bob
       alice @@@ [("<@bob", "")]
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -234,7 +242,7 @@ testUserContactLink =
       alice <#? cath
       alice @@@ [("<@cath", ""), ("@bob", "hey")]
       alice ##> "/ac cath"
-      alice <## "cath (Catherine): accepting contact request..."
+      alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
       concurrently_
         (cath <## "alice (Alice): contact is connected")
         (alice <## "cath (Catherine): contact is connected")
@@ -252,7 +260,7 @@ testProfileLink =
       bob ##> ("/c " <> cLink)
       alice <#? bob
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -267,7 +275,7 @@ testProfileLink =
       cath ##> ("/c " <> cLink)
       alice <#? cath
       alice ##> "/ac cath"
-      alice <## "cath (Catherine): accepting contact request..."
+      alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
       concurrently_
         (cath <## "alice (Alice): contact is connected")
         (alice <## "cath (Catherine): contact is connected")
@@ -334,7 +342,7 @@ testUserContactLinkAutoAccept =
       alice <#? bob
       alice @@@ [("<@bob", "")]
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -348,6 +356,7 @@ testUserContactLinkAutoAccept =
       cath ##> ("/c " <> cLink)
       cath <## "connection request sent!"
       alice <## "cath (Catherine): accepting contact request..."
+      alice <## "cath (Catherine): you can send messages to contact"
       concurrently_
         (cath <## "alice (Alice): contact is connected")
         (alice <## "cath (Catherine): contact is connected")
@@ -362,7 +371,7 @@ testUserContactLinkAutoAccept =
       alice <#? dan
       alice @@@ [("<@dan", ""), ("@cath", "hey"), ("@bob", "hey")]
       alice ##> "/ac dan"
-      alice <## "dan (Daniel): accepting contact request..."
+      alice <## "dan (Daniel): accepting contact request, you can send messages to contact"
       concurrently_
         (dan <## "alice (Alice): contact is connected")
         (alice <## "dan (Daniel): contact is connected")
@@ -389,7 +398,7 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     bob @@@! [(":3", "", Just ConnJoined), (":2", "", Just ConnJoined), (":1", "", Just ConnJoined)]
 
     alice ##> "/ac bob"
-    alice <## "bob (Bob): accepting contact request..."
+    alice <## "bob (Bob): accepting contact request, you can send messages to contact"
     concurrently_
       (bob <## "alice (Alice): contact is connected")
       (alice <## "bob (Bob): contact is connected")
@@ -397,6 +406,7 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     bob ##> ("/c " <> cLink)
     bob <## "contact address: known contact alice"
     bob <## "use @alice <message> to send messages"
+    threadDelay 100000
     alice @@@ [("@bob", lastChatFeature)]
     bob @@@ [("@alice", lastChatFeature), (":2", ""), (":1", "")]
     bob ##> "/_delete :1"
@@ -420,7 +430,7 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     alice <#? cath
     alice @@@ [("<@cath", ""), ("@bob", "hey")]
     alice ##> "/ac cath"
-    alice <## "cath (Catherine): accepting contact request..."
+    alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
     concurrently_
       (cath <## "alice (Alice): contact is connected")
       (alice <## "cath (Catherine): contact is connected")
@@ -462,7 +472,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     alice ##> "/ac bob"
     alice <## "no contact request from bob"
     alice ##> "/ac robert"
-    alice <## "robert (Robert): accepting contact request..."
+    alice <## "robert (Robert): accepting contact request, you can send messages to contact"
     concurrently_
       (bob <## "alice (Alice): contact is connected")
       (alice <## "robert (Robert): contact is connected")
@@ -470,6 +480,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     bob ##> ("/c " <> cLink)
     bob <## "contact address: known contact alice"
     bob <## "use @alice <message> to send messages"
+    threadDelay 100000
     alice @@@ [("@robert", lastChatFeature)]
     bob @@@ [("@alice", lastChatFeature), (":3", ""), (":2", ""), (":1", "")]
     bob ##> "/_delete :1"
@@ -488,6 +499,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     bob <## "use @alice <message> to send messages"
 
     alice <##> bob
+    threadDelay 100000
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (0, "hey"), (1, "hi"), (0, "hey")])
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hi"), (1, "hey"), (0, "hi"), (1, "hey")])
 
@@ -495,7 +507,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     alice <#? cath
     alice @@@ [("<@cath", ""), ("@robert", "hey")]
     alice ##> "/ac cath"
-    alice <## "cath (Catherine): accepting contact request..."
+    alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
     concurrently_
       (cath <## "alice (Alice): contact is connected")
       (alice <## "cath (Catherine): contact is connected")
@@ -561,13 +573,13 @@ testAutoReplyMessage = testChat2 aliceProfile bobProfile $
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
     alice <## "bob (Bob): accepting contact request..."
+    alice <## "bob (Bob): you can send messages to contact"
+    alice <# "@bob hello!"
     concurrentlyN_
       [ do
-          bob <## "alice (Alice): contact is connected"
-          bob <# "alice> hello!",
-        do
-          alice <## "bob (Bob): contact is connected"
-          alice <# "@bob hello!"
+          bob <# "alice> hello!"
+          bob <## "alice (Alice): contact is connected",
+        alice <## "bob (Bob): contact is connected"
       ]
 
 testAutoReplyMessageInIncognito :: HasCallStack => FilePath -> IO ()
@@ -583,17 +595,16 @@ testAutoReplyMessageInIncognito = testChat2 aliceProfile bobProfile $
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
     alice <## "bob (Bob): accepting contact request..."
+    alice <## "bob (Bob): you can send messages to contact"
+    alice <# "i @bob hello!"
     aliceIncognito <- getTermLine alice
     concurrentlyN_
       [ do
-          bob <## (aliceIncognito <> ": contact is connected")
-          bob <# (aliceIncognito <> "> hello!"),
+          bob <# (aliceIncognito <> "> hello!")
+          bob <## (aliceIncognito <> ": contact is connected"),
         do
           alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
-          alice
-            <### [ "use /i bob to print out this incognito profile again",
-                   WithTime "i @bob hello!"
-                 ]
+          alice <## "use /i bob to print out this incognito profile again"
       ]
 
 testPlanAddressOkKnown :: HasCallStack => FilePath -> IO ()
@@ -610,7 +621,7 @@ testPlanAddressOkKnown =
       alice <#? bob
       alice @@@ [("<@bob", "")]
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -649,12 +660,13 @@ testPlanAddressOwn tmp =
     alice <## "to reject: /rc alice_1 (the sender will NOT be notified)"
     alice @@@ [("<@alice_1", ""), (":2", "")]
     alice ##> "/ac alice_1"
-    alice <## "alice_1 (Alice): accepting contact request..."
+    alice <## "alice_1 (Alice): accepting contact request, you can send messages to contact"
     alice
       <### [ "alice_1 (Alice): contact is connected",
              "alice_2 (Alice): contact is connected"
            ]
 
+    threadDelay 100000
     alice @@@ [("@alice_1", lastChatFeature), ("@alice_2", lastChatFeature)]
     alice `send` "@alice_2 hi"
     alice
@@ -699,8 +711,51 @@ testPlanAddressConnecting tmp = do
     alice <## "to accept: /ac bob"
     alice <## "to reject: /rc bob (the sender will NOT be notified)"
     alice ##> "/ac bob"
-    alice <## "bob (Bob): accepting contact request..."
+    alice <## "bob (Bob): accepting contact request, you can send messages to contact"
   withTestChat tmp "bob" $ \bob -> do
+    threadDelay 500000
+    bob <## "alice (Alice): contact is connected"
+    bob @@@ [("@alice", "Audio/video calls: enabled")]
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "contact address: known contact alice"
+    bob <## "use @alice <message> to send messages"
+
+    let cLinkSchema2 = linkAnotherSchema cLink
+    bob ##> ("/_connect plan 1 " <> cLinkSchema2)
+    bob <## "contact address: known contact alice"
+    bob <## "use @alice <message> to send messages"
+
+    bob ##> ("/c " <> cLink)
+    bob <## "contact address: known contact alice"
+    bob <## "use @alice <message> to send messages"
+
+testPlanAddressConnectingSlow :: HasCallStack => FilePath -> IO ()
+testPlanAddressConnectingSlow tmp = do
+  cLink <- withNewTestChatCfg tmp testCfgSlow "alice" aliceProfile $ \alice -> do
+    alice ##> "/ad"
+    getContactLink alice True
+  withNewTestChatCfg tmp testCfgSlow "bob" bobProfile $ \bob -> do
+    threadDelay 100000
+
+    bob ##> ("/c " <> cLink)
+    bob <## "connection request sent!"
+
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "contact address: connecting, allowed to reconnect"
+
+    let cLinkSchema2 = linkAnotherSchema cLink
+    bob ##> ("/_connect plan 1 " <> cLinkSchema2)
+    bob <## "contact address: connecting, allowed to reconnect"
+
+    threadDelay 100000
+  withTestChatCfg tmp testCfgSlow "alice" $ \alice -> do
+    alice <## "Your address is active! To show: /sa"
+    alice <## "bob (Bob) wants to connect to you!"
+    alice <## "to accept: /ac bob"
+    alice <## "to reject: /rc bob (the sender will NOT be notified)"
+    alice ##> "/ac bob"
+    alice <## "bob (Bob): accepting contact request..."
+  withTestChatCfg tmp testCfgSlow "bob" $ \bob -> do
     threadDelay 500000
     bob @@@ [("@alice", "")]
     bob ##> ("/_connect plan 1 " <> cLink)
@@ -723,7 +778,7 @@ testPlanAddressContactDeletedReconnected =
       bob ##> ("/c " <> cLink)
       alice <#? bob
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -754,7 +809,7 @@ testPlanAddressContactDeletedReconnected =
       alice <## "to accept: /ac bob"
       alice <## "to reject: /rc bob (the sender will NOT be notified)"
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice_1 (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -828,7 +883,7 @@ testPlanAddressContactViaAddress =
       alice <## "to accept: /ac bob"
       alice <## "to reject: /rc bob (the sender will NOT be notified)"
       alice ##> "/ac bob"
-      alice <## "bob (Bob): accepting contact request..."
+      alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -922,7 +977,7 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     alice <## ("to accept: /ac " <> bobIncognito)
     alice <## ("to reject: /rc " <> bobIncognito <> " (the sender will NOT be notified)")
     alice ##> ("/ac " <> bobIncognito)
-    alice <## (bobIncognito <> ": accepting contact request...")
+    alice <## (bobIncognito <> ": accepting contact request, you can send messages to contact")
     _ <- getTermLine bob
     concurrentlyN_
       [ do
@@ -956,7 +1011,7 @@ testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfil
     bob ##> ("/c " <> cLink)
     alice <#? bob
     alice ##> "/accept incognito bob"
-    alice <## "bob (Bob): accepting contact request..."
+    alice <## "bob (Bob): accepting contact request, you can send messages to contact"
     aliceIncognitoBob <- getTermLine alice
     concurrentlyN_
       [ bob <## (aliceIncognitoBob <> ": contact is connected"),
@@ -984,7 +1039,7 @@ testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfil
     cath ##> ("/c " <> cLink)
     alice <#? cath
     alice ##> "/_accept incognito=on 1"
-    alice <## "cath (Catherine): accepting contact request..."
+    alice <## "cath (Catherine): accepting contact request, you can send messages to contact"
     aliceIncognitoCath <- getTermLine alice
     concurrentlyN_
       [ cath <## (aliceIncognitoCath <> ": contact is connected"),
@@ -1046,9 +1101,30 @@ testSetConnectionIncognitoProhibitedDuringNegotiation tmp = do
     bob <## "confirmation sent!"
   withTestChat tmp "alice" $ \alice -> do
     threadDelay 250000
+    alice <## "bob (Bob): contact is connected"
     alice ##> "/_set incognito :1 on"
     alice <## "chat db error: SEPendingConnectionNotFound {connId = 1}"
     withTestChat tmp "bob" $ \bob -> do
+      bob <## "alice (Alice): contact is connected"
+      alice <##> bob
+      alice `hasContactProfiles` ["alice", "bob"]
+      bob `hasContactProfiles` ["alice", "bob"]
+
+testSetConnectionIncognitoProhibitedDuringNegotiationSlow :: HasCallStack => FilePath -> IO ()
+testSetConnectionIncognitoProhibitedDuringNegotiationSlow tmp = do
+  inv <- withNewTestChatCfg tmp testCfgSlow "alice" aliceProfile $ \alice -> do
+    threadDelay 250000
+    alice ##> "/connect"
+    getInvitation alice
+  withNewTestChatCfg tmp testCfgSlow "bob" bobProfile $ \bob -> do
+    threadDelay 250000
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+  withTestChatCfg tmp testCfgSlow "alice" $ \alice -> do
+    threadDelay 250000
+    alice ##> "/_set incognito :1 on"
+    alice <## "chat db error: SEPendingConnectionNotFound {connId = 1}"
+    withTestChatCfg tmp testCfgSlow "bob" $ \bob -> do
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -1485,6 +1561,126 @@ testSetAlias = testChat2 aliceProfile bobProfile $
     alice #$> ("/_set alias @2", id, "contact bob alias removed")
     alice ##> "/contacts"
     alice <## "bob (Bob)"
+
+testChangePCCUser :: HasCallStack => FilePath -> IO ()
+testChangePCCUser = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    -- Create a new invite
+    alice ##> "/connect"
+    inv <- getInvitation alice
+    -- Create new user and go back to original user
+    alice ##> "/create user alisa"
+    showActiveUser alice "alisa"
+    alice ##> "/create user alisa2"
+    showActiveUser alice "alisa2"
+    alice ##> "/user alice"
+    showActiveUser alice "alice (Alice)"
+    -- Change connection to newly created user
+    alice ##> "/_set conn user :1 2"
+    alice <## "connection 1 changed from user alice to user alisa"
+    alice ##> "/user alisa"
+    showActiveUser alice "alisa"
+    -- Change connection back to other user
+    alice ##> "/_set conn user :1 3"
+    alice <## "connection 1 changed from user alisa to user alisa2"
+    alice ##> "/user alisa2"
+    showActiveUser alice "alisa2"
+    -- Connect
+    bob ##> ("/connect " <> inv)
+    bob <## "confirmation sent!"
+    concurrently_
+      (alice <## "bob (Bob): contact is connected")
+      (bob <## "alisa2: contact is connected")
+
+testChangePCCUserFromIncognito :: HasCallStack => FilePath -> IO ()
+testChangePCCUserFromIncognito = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    -- Create a new invite and set as incognito
+    alice ##> "/connect"
+    inv <- getInvitation alice
+    alice ##> "/_set incognito :1 on"
+    alice <## "connection 1 changed to incognito"
+    -- Create new user and go back to original user
+    alice ##> "/create user alisa"
+    showActiveUser alice "alisa"
+    alice ##> "/user alice"
+    showActiveUser alice "alice (Alice)"
+    -- Change connection to newly created user
+    alice ##> "/_set conn user :1 2"
+    alice <## "connection 1 changed from user alice to user alisa"
+    alice `hasContactProfiles` ["alice"]
+    alice ##> "/user alisa"
+    showActiveUser alice "alisa"
+    -- Change connection back to initial user
+    alice ##> "/_set conn user :1 1"
+    alice <## "connection 1 changed from user alisa to user alice"
+    alice ##> "/user alice"
+    showActiveUser alice "alice (Alice)"
+    -- Connect
+    bob ##> ("/connect " <> inv)
+    bob <## "confirmation sent!"
+    concurrently_
+      (alice <## "bob (Bob): contact is connected")
+      (bob <## "alice (Alice): contact is connected")
+
+testChangePCCUserAndThenIncognito :: HasCallStack => FilePath -> IO ()
+testChangePCCUserAndThenIncognito = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    -- Create a new invite and set as incognito
+    alice ##> "/connect"
+    inv <- getInvitation alice
+    -- Create new user and go back to original user
+    alice ##> "/create user alisa"
+    showActiveUser alice "alisa"
+    alice ##> "/user alice"
+    showActiveUser alice "alice (Alice)"
+    -- Change connection to newly created user
+    alice ##> "/_set conn user :1 2"
+    alice <## "connection 1 changed from user alice to user alisa"
+    alice ##> "/user alisa"
+    showActiveUser alice "alisa"
+    -- Change connection to incognito and make sure it's attached to the newly created user profile
+    alice ##> "/_set incognito :1 on"
+    alice <## "connection 1 changed to incognito"
+    bob ##> ("/connect " <> inv)
+    bob <## "confirmation sent!"
+    alisaIncognito <- getTermLine alice
+    concurrentlyN_
+      [ bob <## (alisaIncognito <> ": contact is connected"),
+        do
+          alice <## ("bob (Bob): contact is connected, your incognito profile for this contact is " <> alisaIncognito)
+          alice <## ("use /i bob to print out this incognito profile again")
+      ]
+
+testChangePCCUserDiffSrv :: HasCallStack => FilePath -> IO ()
+testChangePCCUserDiffSrv = testChat2 aliceProfile bobProfile $
+  \alice bob -> do
+    -- Create a new invite
+    alice ##> "/connect"
+    _ <- getInvitation alice
+    alice ##> "/_set incognito :1 on"
+    alice <## "connection 1 changed to incognito"
+    -- Create new user with different servers
+    alice ##> "/create user alisa"
+    showActiveUser alice "alisa"
+    alice #$> ("/smp smp://2345-w==@smp2.example.im smp://3456-w==@smp3.example.im:5224", id, "ok")
+    alice ##> "/user alice"
+    showActiveUser alice "alice (Alice)"
+    -- Change connection to newly created user and use the newly created connection
+    alice ##> "/_set conn user :1 2"
+    alice <## "connection 1 changed from user alice to user alisa, new link:"
+    alice <## ""
+    inv <- getTermLine alice
+    alice <## ""
+    alice `hasContactProfiles` ["alice"]
+    alice ##> "/user alisa"
+    showActiveUser alice "alisa"
+    -- Connect
+    bob ##> ("/connect " <> inv)
+    bob <## "confirmation sent!"
+    concurrently_
+      (alice <## "bob (Bob): contact is connected")
+      (bob <## "alisa: contact is connected")
 
 testSetConnectionAlias :: HasCallStack => FilePath -> IO ()
 testSetConnectionAlias = testChat2 aliceProfile bobProfile $
@@ -1948,21 +2144,30 @@ testGroupPrefsDirectForRole = testChat4 aliceProfile bobProfile cathProfile danP
           bob <## "#team: cath added dan (Daniel) to the group (connecting...)"
           bob <## "#team: new member dan is connected"
       ]
-    -- dan cannot send direct messages to alice (owner)
+
+    -- dan cannot send direct messages to alice
     dan ##> "@alice hello alice"
     dan <## "bad chat command: direct messages not allowed"
     (alice </)
-    -- but alice can
+
+    -- alice (owner) can send direct messages to dan
     alice `send` "@dan hello dan"
-    alice <## "member #team dan does not have direct connection, creating"
-    alice <## "contact for member #team dan is created"
-    alice <## "sent invitation to connect directly to member #team dan"
-    alice <# "@dan hello dan"
-    alice <## "dan (Daniel): contact is connected"
-    dan <## "#team alice is creating direct contact alice with you"
-    dan <# "alice> hello dan"
-    dan <## "alice (Alice): contact is connected"
-    -- and now dan can too
+    alice
+      <### [ "member #team dan does not have direct connection, creating",
+             "contact for member #team dan is created",
+             "sent invitation to connect directly to member #team dan",
+             WithTime "@dan hello dan"
+           ]
+    dan
+      <### [ "#team alice is creating direct contact alice with you",
+             WithTime "alice> hello dan"
+           ]
+    dan <## "alice (Alice): you can send messages to contact"
+    concurrently_
+      (alice <## "dan (Daniel): contact is connected")
+      (dan <## "alice (Alice): contact is connected")
+
+    -- now dan can send messages to alice
     dan #> "@alice hi alice"
     alice <# "dan> hi alice"
   where
@@ -2020,10 +2225,19 @@ testGroupPrefsSimplexLinksForRole = testChat3 aliceProfile bobProfile cathProfil
     threadDelay 1000000
     bob ##> "/c"
     inv <- getInvitation bob
-    bob ##> ("#team " <> inv)
+    bob ##> ("#team \"" <> inv <> "\\ntest\"")
+    bob <## "bad chat command: feature not allowed SimpleX links"
+    bob ##> ("/_send #1 json {\"msgContent\": {\"type\": \"text\", \"text\": \"" <> inv <> "\\ntest\"}}")
     bob <## "bad chat command: feature not allowed SimpleX links"
     (alice </)
     (cath </)
+    bob `send` ("@alice \"" <> inv <> "\\ntest\"")
+    bob <# ("@alice " <> inv)
+    bob <## "test"
+    alice <# ("bob> " <> inv)
+    alice <## "test"
+    bob ##> "#team <- @alice https://simplex.chat"
+    bob <## "bad chat command: feature not allowed SimpleX links"
     alice #> ("#team " <> inv)
     bob <# ("#team alice> " <> inv)
     cath <# ("#team alice> " <> inv)
@@ -2080,7 +2294,7 @@ testSetUITheme =
       a <## "you've shared main profile with this contact"
       a <## "connection not verified, use /code command to see security code"
       a <## "quantum resistant end-to-end encryption"
-      a <## "peer chat protocol version range: (Version 1, Version 8)"
+      a <## "peer chat protocol version range: (Version 1, Version 9)"
     groupInfo a = do
       a <## "group ID: 1"
       a <## "current members: 1"

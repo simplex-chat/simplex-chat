@@ -1,6 +1,7 @@
 package chat.simplex.common.views.chatlist
 
 import SectionItemView
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -19,16 +20,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.group.deleteGroupDialog
 import chat.simplex.common.views.chat.group.leaveGroupDialog
 import chat.simplex.common.views.chat.item.ItemAction
+import chat.simplex.common.views.contacts.onRequestAccepted
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 import kotlinx.datetime.Clock
 
 @Composable
@@ -47,6 +50,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   val showChatPreviews = chatModel.showChatPreviews.value
   val inProgress = remember { mutableStateOf(false) }
   var progressByTimeout by rememberSaveable { mutableStateOf(false) }
+
   LaunchedEffect(inProgress.value) {
     progressByTimeout = if (inProgress.value) {
       delay(1000)
@@ -55,6 +59,8 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
       false
     }
   }
+
+  val scope = rememberCoroutineScope()
 
   when (chat.chatInfo) {
     is ChatInfo.Direct -> {
@@ -65,7 +71,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
             ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, disabled, linkMode, inProgress = false, progressByTimeout = false)
           }
         },
-        click = { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) },
+        click = { scope.launch { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
             ContactMenuItems(chat, chat.chatInfo.contact, chatModel, showMenu, showMarkRead)
@@ -84,7 +90,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
             ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress.value, progressByTimeout)
           }
         },
-        click = { if (!inProgress.value) groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel, inProgress) },
+        click = { if (!inProgress.value) scope.launch { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel, inProgress) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
             GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, inProgress, showMarkRead)
@@ -102,7 +108,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
             ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress = false, progressByTimeout = false)
           }
         },
-        click = { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) },
+        click = { scope.launch { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
             NoteFolderMenuItems(chat, showMenu, showMarkRead)
@@ -121,7 +127,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
             ContactRequestView(chat.chatInfo)
           }
         },
-        click = { contactRequestAlertDialog(chat.remoteHostId, chat.chatInfo, chatModel) },
+        click = { contactRequestAlertDialog(chat.remoteHostId, chat.chatInfo, chatModel) { onRequestAccepted(it) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
             ContactRequestMenuItems(chat.remoteHostId, chat.chatInfo, chatModel, showMenu)
@@ -172,48 +178,48 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
 }
 
 @Composable
-private fun ErrorChatListItem() {
+fun ErrorChatListItem() {
   Box(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp)) {
     Text(stringResource(MR.strings.error_showing_content), color = MaterialTheme.colors.error, fontStyle = FontStyle.Italic)
   }
 }
 
-fun directChatAction(rhId: Long?, contact: Contact, chatModel: ChatModel) {
+suspend fun directChatAction(rhId: Long?, contact: Contact, chatModel: ChatModel) {
   when {
     contact.activeConn == null && contact.profile.contactLink != null -> askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, rhId, contact, close = null, openChat = true)
-    else -> withBGApi { openChat(rhId, ChatInfo.Direct(contact), chatModel) }
+    else -> openChat(rhId, ChatInfo.Direct(contact), chatModel)
   }
 }
 
-fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, inProgress: MutableState<Boolean>? = null) {
+suspend fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, inProgress: MutableState<Boolean>? = null) {
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(rhId, groupInfo, chatModel, inProgress)
     GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert(rhId)
-    else -> withBGApi { openChat(rhId, ChatInfo.Group(groupInfo), chatModel) }
+    else -> openChat(rhId, ChatInfo.Group(groupInfo), chatModel)
   }
 }
 
-fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) {
-  withBGApi { openChat(rhId, ChatInfo.Local(noteFolder), chatModel) }
+suspend fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) {
+  openChat(rhId, ChatInfo.Local(noteFolder), chatModel)
 }
 
-suspend fun openDirectChat(rhId: Long?, contactId: Long, chatModel: ChatModel) {
+suspend fun openDirectChat(rhId: Long?, contactId: Long, chatModel: ChatModel) = coroutineScope {
   val chat = chatModel.controller.apiGetChat(rhId, ChatType.Direct, contactId)
-  if (chat != null) {
+  if (chat != null && isActive) {
     openLoadedChat(chat, chatModel)
   }
 }
 
-suspend fun openGroupChat(rhId: Long?, groupId: Long, chatModel: ChatModel) {
+suspend fun openGroupChat(rhId: Long?, groupId: Long, chatModel: ChatModel) = coroutineScope {
   val chat = chatModel.controller.apiGetChat(rhId, ChatType.Group, groupId)
-  if (chat != null) {
+  if (chat != null && isActive) {
     openLoadedChat(chat, chatModel)
   }
 }
 
-suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatModel) {
+suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatModel) = coroutineScope {
   val chat = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId)
-  if (chat != null) {
+  if (chat != null && isActive) {
     openLoadedChat(chat, chatModel)
   }
 }
@@ -253,7 +259,9 @@ suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
     }
   }
   chatModel.groupMembers.clear()
+  chatModel.groupMembersIndexes.clear()
   chatModel.groupMembers.addAll(newMembers)
+  chatModel.populateGroupMembersIndexes()
 }
 
 @Composable
@@ -357,7 +365,7 @@ fun ToggleFavoritesChatAction(chat: Chat, chatModel: ChatModel, favorite: Boolea
     if (favorite) stringResource(MR.strings.unfavorite_chat) else stringResource(MR.strings.favorite_chat),
     if (favorite) painterResource(MR.images.ic_star_off) else painterResource(MR.images.ic_star),
     onClick = {
-      toggleChatFavorite(chat, !favorite, chatModel)
+      toggleChatFavorite(chat.remoteHostId, chat.chatInfo, !favorite, chatModel)
       showMenu.value = false
     }
   )
@@ -369,7 +377,7 @@ fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled:
     if (ntfsEnabled) stringResource(MR.strings.mute_chat) else stringResource(MR.strings.unmute_chat),
     if (ntfsEnabled) painterResource(MR.images.ic_notifications_off) else painterResource(MR.images.ic_notifications),
     onClick = {
-      toggleNotifications(chat, !ntfsEnabled, chatModel)
+      toggleNotifications(chat.remoteHostId, chat.chatInfo, !ntfsEnabled, chatModel)
       showMenu.value = false
     }
   )
@@ -467,13 +475,13 @@ fun LeaveGroupAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, sh
 }
 
 @Composable
-fun ContactRequestMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactRequest, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+fun ContactRequestMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactRequest, chatModel: ChatModel, showMenu: MutableState<Boolean>, onSuccess: ((chat: Chat) -> Unit)? = null) {
   ItemAction(
     stringResource(MR.strings.accept_contact_button),
     painterResource(MR.images.ic_check),
     color = MaterialTheme.colors.onBackground,
     onClick = {
-      acceptContactRequest(rhId, incognito = false, chatInfo.apiId, chatInfo, true, chatModel)
+      acceptContactRequest(rhId, incognito = false, chatInfo.apiId, chatInfo, true, chatModel, onSuccess)
       showMenu.value = false
     }
   )
@@ -482,7 +490,7 @@ fun ContactRequestMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactRequest, chat
     painterResource(MR.images.ic_theater_comedy),
     color = MaterialTheme.colors.onBackground,
     onClick = {
-      acceptContactRequest(rhId, incognito = true, chatInfo.apiId, chatInfo, true, chatModel)
+      acceptContactRequest(rhId, incognito = true, chatInfo.apiId, chatInfo, true, chatModel, onSuccess)
       showMenu.value = false
     }
   )
@@ -552,7 +560,9 @@ fun markChatRead(c: Chat, chatModel: ChatModel) {
   withApi {
     if (chat.chatStats.unreadCount > 0) {
       val minUnreadItemId = chat.chatStats.minUnreadItemId
-      chatModel.markChatItemsRead(chat)
+      withChats {
+        markChatItemsRead(chat.remoteHostId, chat.chatInfo)
+      }
       chatModel.controller.apiChatRead(
         chat.remoteHostId,
         chat.chatInfo.chatType,
@@ -569,7 +579,9 @@ fun markChatRead(c: Chat, chatModel: ChatModel) {
         false
       )
       if (success) {
-        chatModel.replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+        withChats {
+          replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+        }
       }
     }
   }
@@ -587,12 +599,14 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
       true
     )
     if (success) {
-      chatModel.replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
+      withChats {
+        replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
+      }
     }
   }
 }
 
-fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
+fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel, onSucess: ((chat: Chat) -> Unit)? = null) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.accept_connection_request__question),
     text = AnnotatedString(generalGetString(MR.strings.if_you_choose_to_reject_the_sender_will_not_be_notified)),
@@ -600,13 +614,13 @@ fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactReque
       Column {
         SectionItemView({
           AlertManager.shared.hideAlert()
-          acceptContactRequest(rhId, incognito = false, contactRequest.apiId, contactRequest, true, chatModel)
+          acceptContactRequest(rhId, incognito = false, contactRequest.apiId, contactRequest, true, chatModel, onSucess)
         }) {
           Text(generalGetString(MR.strings.accept_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
-          acceptContactRequest(rhId, incognito = true, contactRequest.apiId, contactRequest, true, chatModel)
+          acceptContactRequest(rhId, incognito = true, contactRequest.apiId, contactRequest, true, chatModel, onSucess)
         }) {
           Text(generalGetString(MR.strings.accept_contact_incognito_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
@@ -622,12 +636,16 @@ fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactReque
   )
 }
 
-fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRequest: ChatInfo.ContactRequest?, isCurrentUser: Boolean, chatModel: ChatModel) {
+fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRequest: ChatInfo.ContactRequest?, isCurrentUser: Boolean, chatModel: ChatModel, close: ((chat: Chat) -> Unit)? = null ) {
   withBGApi {
     val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, apiId)
     if (contact != null && isCurrentUser && contactRequest != null) {
       val chat = Chat(remoteHostId = rhId, ChatInfo.Direct(contact), listOf())
-      chatModel.replaceChat(rhId, contactRequest.id, chat)
+      withChats {
+        replaceChat(rhId, contactRequest.id, chat)
+      }
+      chatModel.setContactNetworkStatus(contact, NetworkStatus.Connected())
+      close?.invoke(chat)
     }
   }
 }
@@ -635,7 +653,9 @@ fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRe
 fun rejectContactRequest(rhId: Long?, contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
   withBGApi {
     chatModel.controller.apiRejectContactRequest(rhId, contactRequest.apiId)
-    chatModel.removeChat(rhId, contactRequest.id)
+    withChats {
+      removeChat(rhId, contactRequest.id)
+    }
   }
 }
 
@@ -651,7 +671,9 @@ fun deleteContactConnectionAlert(rhId: Long?, connection: PendingContactConnecti
       withBGApi {
         AlertManager.shared.hideAlert()
         if (chatModel.controller.apiDeleteChat(rhId, ChatType.ContactConnection, connection.apiId)) {
-          chatModel.removeChat(rhId, connection.id)
+          withChats {
+            removeChat(rhId, connection.id)
+          }
           onSuccess()
         }
       }
@@ -670,7 +692,9 @@ fun pendingContactAlertDialog(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatMo
       withBGApi {
         val r = chatModel.controller.apiDeleteChat(rhId, chatInfo.chatType, chatInfo.apiId)
         if (r) {
-          chatModel.removeChat(rhId, chatInfo.id)
+          withChats {
+            removeChat(rhId, chatInfo.id)
+          }
           if (chatModel.chatId.value == chatInfo.id) {
             chatModel.chatId.value = null
             ModalManager.end.closeModals()
@@ -732,7 +756,9 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
 suspend fun connectContactViaAddress(chatModel: ChatModel, rhId: Long?, contactId: Long, incognito: Boolean): Boolean {
   val contact = chatModel.controller.apiConnectContactViaAddress(rhId, incognito, contactId)
   if (contact != null) {
-    chatModel.updateContact(rhId, contact)
+    withChats {
+      updateContact(rhId, contact)
+    }
     AlertManager.privacySensitive.showAlertMsg(
       title = generalGetString(MR.strings.connection_request_sent),
       text = generalGetString(MR.strings.you_will_be_connected_when_your_connection_request_is_accepted),
@@ -773,7 +799,9 @@ fun deleteGroup(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
   withBGApi {
     val r = chatModel.controller.apiDeleteChat(rhId, ChatType.Group, groupInfo.apiId)
     if (r) {
-      chatModel.removeChat(rhId, groupInfo.id)
+      withChats {
+        removeChat(rhId, groupInfo.id)
+      }
       if (chatModel.chatId.value == groupInfo.id) {
         chatModel.chatId.value = null
         ModalManager.end.closeModals()
@@ -791,22 +819,22 @@ fun groupInvitationAcceptedAlert(rhId: Long?) {
   )
 }
 
-fun toggleNotifications(chat: Chat, enableAllNtfs: Boolean, chatModel: ChatModel, currentState: MutableState<Boolean>? = null) {
-  val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(enableNtfs = if (enableAllNtfs) MsgFilter.All else MsgFilter.None)
-  updateChatSettings(chat, chatSettings, chatModel, currentState)
+fun toggleNotifications(remoteHostId: Long?, chatInfo: ChatInfo, enableAllNtfs: Boolean, chatModel: ChatModel, currentState: MutableState<Boolean>? = null) {
+  val chatSettings = (chatInfo.chatSettings ?: ChatSettings.defaults).copy(enableNtfs = if (enableAllNtfs) MsgFilter.All else MsgFilter.None)
+  updateChatSettings(remoteHostId, chatInfo, chatSettings, chatModel, currentState)
 }
 
-fun toggleChatFavorite(chat: Chat, favorite: Boolean, chatModel: ChatModel) {
-  val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(favorite = favorite)
-  updateChatSettings(chat, chatSettings, chatModel)
+fun toggleChatFavorite(remoteHostId: Long?, chatInfo: ChatInfo, favorite: Boolean, chatModel: ChatModel) {
+  val chatSettings = (chatInfo.chatSettings ?: ChatSettings.defaults).copy(favorite = favorite)
+  updateChatSettings(remoteHostId, chatInfo, chatSettings, chatModel)
 }
 
-fun updateChatSettings(chat: Chat, chatSettings: ChatSettings, chatModel: ChatModel, currentState: MutableState<Boolean>? = null) {
-  val newChatInfo = when(chat.chatInfo) {
-    is ChatInfo.Direct -> with (chat.chatInfo) {
+fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: ChatSettings, chatModel: ChatModel, currentState: MutableState<Boolean>? = null) {
+  val newChatInfo = when(chatInfo) {
+    is ChatInfo.Direct -> with (chatInfo) {
       ChatInfo.Direct(contact.copy(chatSettings = chatSettings))
     }
-    is ChatInfo.Group -> with(chat.chatInfo) {
+    is ChatInfo.Group -> with(chatInfo) {
       ChatInfo.Group(groupInfo.copy(chatSettings = chatSettings))
     }
     else -> null
@@ -814,17 +842,19 @@ fun updateChatSettings(chat: Chat, chatSettings: ChatSettings, chatModel: ChatMo
   withBGApi {
     val res = when (newChatInfo) {
       is ChatInfo.Direct -> with(newChatInfo) {
-        chatModel.controller.apiSetSettings(chat.remoteHostId, chatType, apiId, contact.chatSettings)
+        chatModel.controller.apiSetSettings(remoteHostId, chatType, apiId, contact.chatSettings)
       }
       is ChatInfo.Group -> with(newChatInfo) {
-        chatModel.controller.apiSetSettings(chat.remoteHostId, chatType, apiId, groupInfo.chatSettings)
+        chatModel.controller.apiSetSettings(remoteHostId, chatType, apiId, groupInfo.chatSettings)
       }
       else -> false
     }
     if (res && newChatInfo != null) {
-      chatModel.updateChatInfo(chat.remoteHostId, newChatInfo)
+      withChats {
+        updateChatInfo(remoteHostId, newChatInfo)
+      }
       if (chatSettings.enableNtfs != MsgFilter.All) {
-        ntfManager.cancelNotificationsForChat(chat.id)
+        ntfManager.cancelNotificationsForChat(chatInfo.id)
       }
       val current = currentState?.value
       if (current != null) {
@@ -885,7 +915,7 @@ fun PreviewChatListNavLinkDirect() {
       showMenu = remember { mutableStateOf(false) },
       disabled = false,
       selectedChat = remember { mutableStateOf(false) },
-      nextChatSelected = remember { mutableStateOf(false) }
+      nextChatSelected = remember { mutableStateOf(false) },
     )
   }
 }
@@ -930,7 +960,7 @@ fun PreviewChatListNavLinkGroup() {
       showMenu = remember { mutableStateOf(false) },
       disabled = false,
       selectedChat = remember { mutableStateOf(false) },
-      nextChatSelected = remember { mutableStateOf(false) }
+      nextChatSelected = remember { mutableStateOf(false) },
     )
   }
 }
@@ -952,7 +982,7 @@ fun PreviewChatListNavLinkContactRequest() {
       showMenu = remember { mutableStateOf(false) },
       disabled = false,
       selectedChat = remember { mutableStateOf(false) },
-      nextChatSelected = remember { mutableStateOf(false) }
+      nextChatSelected = remember { mutableStateOf(false) },
     )
   }
 }

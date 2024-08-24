@@ -10,6 +10,8 @@ permalink: "/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ra
 
 # SimpleX Chat v5.6 beta: adding quantum resistance to Signal double ratchet algorithm
 
+**Published:** Mar 14, 2024
+
 This is a major upgrade for SimpleX messaging protocols, we are really proud to present the results of the hard work of our whole team on the [Pi day](https://en.wikipedia.org/wiki/Pi_Day).
 
 This post also covers various aspects of end-to-end encryption, compares different messengers, and explains why and how quantum-resistant encryption is added to SimpleX Chat:
@@ -101,7 +103,7 @@ This attack is much less understood by the users, and forward secrecy does not p
 
 Out of all encryption algorithms known to us only _Signal double ratchet algorithm_ (also referred to as _Signal algorithm_ or _double ratchet algorithm_, which is not the same as Signal messaging platform and protocols) provides the ability for the encryption security to recover after break-ins attacks. This recovery happens automatically and transparently to the users, without them doing anything special or even knowing about break-in, by simply sending messages. Every time one of the communication parties replies to another party message, new random keys are generated and previously stolen keys become useless.
 
-Double ratchet algorithm is used in Signal, Cwtch and SimpleX Chat. This is why you cannot use SimpleX Chat profile on more than one device at the same time - the encryption scheme rotates the long term keys, randomly, and keys on another device become useless, as they would become useless for the attacker who stole them. Security always has some costs to the convenience.
+Double ratchet algorithm is used in Signal, Cwtch and SimpleX Chat. But Signal app by allowing to use the same profile on multiple devices compromises the break-in recovery function of Signal algorithm, as explained in [this paper](https://eprint.iacr.org/2021/626.pdf). Because of break-in recovery you cannot use SimpleX Chat profile on more than one device at the same time - the encryption scheme rotates the long term keys, randomly, and keys on another device become useless, as they would become useless for the attacker who stole them. Security always has some costs to the convenience.
 
 ### 5. Man-in-the-middle attack - mitigated by two-factor key exchange
 

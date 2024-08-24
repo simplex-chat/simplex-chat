@@ -189,6 +189,8 @@ responseNotification t@ChatTerminal {sendNotification} cc = \case
   CRContactConnected u ct _ -> when (contactNtf u ct False) $ do
     whenCurrUser cc u $ setActiveContact t ct
     sendNtf (viewContactName ct <> "> ", "connected")
+  CRContactSndReady u ct ->
+    whenCurrUser cc u $ setActiveContact t ct
   CRContactAnotherClient u ct -> do
     whenCurrUser cc u $ unsetActiveContact t ct
     when (contactNtf u ct False) $ sendNtf (viewContactName ct <> "> ", "connected to another client")

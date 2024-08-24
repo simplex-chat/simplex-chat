@@ -11,28 +11,31 @@ metadata:
         email: chat@simplex.chat
 ---
 <?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom" xml:base="{{ metadata.url }}">
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="{{ metadata.language }}">
+    <id>{{ metadata.url }}</id>
+    <link type="text/html" rel="alternate" href="{{ metadata.url }}"/>
+    <link type="application/atom+xml" rel="self" href="{{ permalink | absoluteUrl(metadata.url) }}"/>
     <title>{{ metadata.title }}</title>
     <subtitle>{{ metadata.subtitle }}</subtitle>
-    <link href="{{ permalink | absoluteUrl(metadata.url) }}" rel="self"/>
-    <link href="{{ metadata.url }}"/>
     <updated>{{ collections.blogs | getNewestCollectionItemDate | dateToRfc3339 }}</updated>
-    <id>{{ metadata.url }}</id>
     <author>
         <name>{{ metadata.author.name }}</name>
         <email>{{ metadata.author.email }}</email>
     </author>
     {%- for blog in collections.blogs | reverse %}
     {%- if not blog.data.draft %}
-        {%- set absolutePostUrl = blog.url | absoluteUrl(metadata.url) %}
+        {%- set absolutePostUrl = blog.data.permalink | absoluteUrl(metadata.url) %}
         <entry>
+            <id>{{ blog.data.permalink | absoluteUrl(metadata.url) }}</id>
+            <!-- <updated>{{ blog.data.date.toUTCString().split(' ').slice(1, 4).join(' ') }}</updated> -->
+            <updated>{{ blog.data.date | dateToRfc3339 }}</updated>
+            <link rel="alternate" type="text/html" href="{{ absolutePostUrl }}"/>
             <title>{{ blog.data.title }}</title>
-            <link href="{{ absolutePostUrl }}"/>
-            {# <updated>{{ blog.date | dateToRfc3339 }}</updated> #}
-            <updated>{{ blog.data.date.toUTCString().split(' ').slice(1, 4).join(' ') }}</updated>
-            <id>{{ absolutePostUrl }}</id>
-            <content xml:lang="{{ metadata.language }}" type="html">{{ blog.templateContent | htmlToAbsoluteUrls(absolutePostUrl) }}</content>
-            {# <content xml:lang="{{ metadata.language }}" type="html">{{ blog.templateContent | striptags | truncate(200) }}</content> #}
+            <content type="html">{{ blog.templateContent | htmlToAbsoluteUrls(absolutePostUrl) }}</content>
+            <author>
+                <name>{{ metadata.author.name }}</name>
+                <email>{{ metadata.author.email }}</email>
+            </author>
         </entry>
     {%- endif %}
     {%- endfor %}

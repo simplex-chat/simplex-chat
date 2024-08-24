@@ -13,13 +13,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontStyle
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.filesToDelete
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.*
@@ -391,7 +394,9 @@ fun ComposeView(
       ttl = ttl
     )
     if (aChatItem != null) {
-      chatModel.addChatItem(chat.remoteHostId, cInfo, aChatItem.chatItem)
+      withChats {
+        addChatItem(chat.remoteHostId, cInfo, aChatItem.chatItem)
+      }
       return aChatItem.chatItem
     }
     if (file != null) removeFile(file.filePath)
@@ -408,17 +413,20 @@ fun ComposeView(
       composeState.value = composeState.value.copy(inProgress = true)
     }
 
-    suspend fun forwardItem(rhId: Long?, forwardedItem: ChatItem, fromChatInfo: ChatInfo): ChatItem? {
+    suspend fun forwardItem(rhId: Long?, forwardedItem: ChatItem, fromChatInfo: ChatInfo, ttl: Int?): ChatItem? {
       val chatItem = controller.apiForwardChatItem(
         rh = rhId,
         toChatType = chat.chatInfo.chatType,
         toChatId = chat.chatInfo.apiId,
         fromChatType = fromChatInfo.chatType,
         fromChatId = fromChatInfo.apiId,
-        itemId = forwardedItem.id
+        itemId = forwardedItem.id,
+        ttl = ttl
       )
       if (chatItem != null) {
-        chatModel.addChatItem(rhId, chat.chatInfo, chatItem)
+        withChats {
+          addChatItem(rhId, chat.chatInfo, chatItem)
+        }
       }
       return chatItem
     }
@@ -455,7 +463,9 @@ fun ComposeView(
       val mc = checkLinkPreview()
       val contact = chatModel.controller.apiSendMemberContactInvitation(chat.remoteHostId, chat.chatInfo.apiId, mc)
       if (contact != null) {
-        chatModel.updateContact(chat.remoteHostId, contact)
+        withChats {
+          updateContact(chat.remoteHostId, contact)
+        }
       }
     }
 
@@ -471,7 +481,9 @@ fun ComposeView(
           mc = updateMsgContent(oldMsgContent),
           live = live
         )
-        if (updatedItem != null) chatModel.upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
+        if (updatedItem != null) withChats {
+          upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
+        }
         return updatedItem?.chatItem
       }
       return null
@@ -490,9 +502,9 @@ fun ComposeView(
       sendMemberContactInvitation()
       sent = null
     } else if (cs.contextItem is ComposeContextItem.ForwardingItem) {
-      sent = forwardItem(chat.remoteHostId, cs.contextItem.chatItem, cs.contextItem.fromChatInfo)
+      sent = forwardItem(chat.remoteHostId, cs.contextItem.chatItem, cs.contextItem.fromChatInfo, ttl = ttl)
       if (cs.message.isNotEmpty()) {
-        sent = send(chat, checkLinkPreview(), quoted = sent?.id, live = false, ttl = null)
+        sent = send(chat, checkLinkPreview(), quoted = sent?.id, live = false, ttl = ttl)
       }
     } else if (cs.contextItem is ComposeContextItem.EditingItem) {
       val ei = cs.contextItem.chatItem
@@ -775,7 +787,7 @@ fun ComposeView(
 
   @Composable
   fun MsgNotAllowedView(reason: String, icon: Painter) {
-    val color = CurrentColors.collectAsState().value.appColors.receivedMessage
+    val color = MaterialTheme.appColors.receivedMessage
     Row(Modifier.padding(top = 5.dp).fillMaxWidth().background(color).padding(horizontal = DEFAULT_PADDING_HALF, vertical = DEFAULT_PADDING_HALF * 1.5f), verticalAlignment = Alignment.CenterVertically) {
       Icon(icon, null, tint = MaterialTheme.colors.secondary)
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))
@@ -824,7 +836,7 @@ fun ComposeView(
     chatModel.sharedContent.value = null
   }
 
-  val userCanSend = rememberUpdatedState(chat.userCanSend)
+  val userCanSend = rememberUpdatedState(chat.chatInfo.userCanSend)
   val sendMsgEnabled = rememberUpdatedState(chat.chatInfo.sendMsgEnabled)
   val userIsObserver = rememberUpdatedState(chat.userIsObserver)
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
@@ -860,10 +872,9 @@ fun ComposeView(
         }
       }
     }
-    Row(
-      modifier = Modifier.padding(end = 8.dp),
-      verticalAlignment = Alignment.Bottom,
-    ) {
+    Column(Modifier.background(MaterialTheme.colors.background)) {
+    Divider()
+    Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
       val isGroupAndProhibitedFiles = chat.chatInfo is ChatInfo.Group && !chat.chatInfo.groupInfo.fullGroupPreferences.files.on(chat.chatInfo.groupInfo.membership)
       val attachmentClicked = if (isGroupAndProhibitedFiles) {
         {
@@ -883,7 +894,7 @@ fun ComposeView(
             && !nextSendGrpInv.value
       IconButton(
         attachmentClicked,
-        Modifier.padding(bottom = if (appPlatform.isAndroid) 0.dp else 7.dp),
+        Modifier.padding(bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp() * fontSizeSqrtMultiplier),
         enabled = attachmentEnabled
       ) {
         Icon(
@@ -912,7 +923,7 @@ fun ComposeView(
         snapshotFlow { recState.value }
           .distinctUntilChanged()
           .collect {
-            when(it) {
+            when (it) {
               is RecordingState.Started -> onAudioAdded(it.filePath, it.progressMs, false)
               is RecordingState.Finished -> if (it.durationMs > 300) {
                 onAudioAdded(it.filePath, it.durationMs, true)
@@ -924,8 +935,8 @@ fun ComposeView(
           }
       }
 
-      LaunchedEffect(rememberUpdatedState(chat.userCanSend).value) {
-        if (!chat.userCanSend) {
+      LaunchedEffect(rememberUpdatedState(chat.chatInfo.userCanSend).value) {
+        if (!chat.chatInfo.userCanSend) {
           clearCurrentDraft()
           clearState()
         }
@@ -973,7 +984,7 @@ fun ComposeView(
       val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }
       val sendButtonColor =
         if (chat.chatInfo.incognito)
-          if (isSystemInDarkTheme()) Indigo else Indigo.copy(alpha = 0.7F)
+          if (isInDarkTheme()) Indigo else Indigo.copy(alpha = 0.7F)
         else MaterialTheme.colors.primary
       SendMsgView(
         composeState,
@@ -992,6 +1003,7 @@ fun ComposeView(
         sendButtonColor = sendButtonColor,
         timedMessageAllowed = timedMessageAllowed,
         customDisappearingMessageTimePref = chatModel.controller.appPrefs.customDisappearingMessageTime,
+        placeholder = stringResource(MR.strings.compose_message_placeholder),
         sendMessage = { ttl ->
           sendMessage(ttl)
           resetLinkPreview()
@@ -1008,5 +1020,6 @@ fun ComposeView(
         textStyle = textStyle
       )
     }
+  }
   }
 }

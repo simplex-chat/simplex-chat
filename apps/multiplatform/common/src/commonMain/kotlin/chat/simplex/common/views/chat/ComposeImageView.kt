@@ -20,7 +20,7 @@ import chat.simplex.common.views.helpers.UploadContent
 
 @Composable
 fun ComposeImageView(media: ComposePreview.MediaPreview, cancelImages: () -> Unit, cancelEnabled: Boolean) {
-  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+  val sentColor = MaterialTheme.appColors.sentMessage
   Row(
     Modifier
       .padding(top = 8.dp)

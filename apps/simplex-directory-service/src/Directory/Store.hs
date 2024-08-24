@@ -39,8 +39,8 @@ import Data.Text (Text)
 import Simplex.Chat.Types
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util (ifM)
-import System.IO (Handle, IOMode (..), openFile, BufferMode (..), hSetBuffering)
-import System.Directory (renameFile, doesFileExist)
+import System.Directory (doesFileExist, renameFile)
+import System.IO (BufferMode (..), Handle, IOMode (..), hSetBuffering, openFile)
 
 data DirectoryStore = DirectoryStore
   { groupRegs :: TVar [GroupReg],
@@ -112,7 +112,7 @@ addGroupReg st ct GroupInfo {groupId} grStatus = do
         let ugrId = 1 + foldl' maxUgrId 0 grs
             grData' = grData {userGroupRegId_ = ugrId}
             gr' = gr {userGroupRegId = ugrId}
-        in (grData', gr' : grs)
+         in (grData', gr' : grs)
     ctId = contactId' ct
     maxUgrId mx GroupReg {dbContactId, userGroupRegId}
       | dbContactId == ctId && userGroupRegId > mx = userGroupRegId
@@ -311,14 +311,15 @@ readDirectoryData f =
       Right r -> case r of
         GRCreate gr@GroupRegData {dbGroupId_ = gId} -> do
           when (isJust $ M.lookup gId m) $
-            putStrLn $ "Warning: duplicate group with ID " <> show gId <> ", group replaced."
+            putStrLn $
+              "Warning: duplicate group with ID " <> show gId <> ", group replaced."
           pure $ M.insert gId gr m
         GRUpdateStatus gId groupRegStatus_ -> case M.lookup gId m of
           Just gr -> pure $ M.insert gId gr {groupRegStatus_} m
-          Nothing -> m <$ putStrLn ("Warning: no group with ID " <> show gId <>", status update ignored.")
+          Nothing -> m <$ putStrLn ("Warning: no group with ID " <> show gId <> ", status update ignored.")
         GRUpdateOwner gId grOwnerId -> case M.lookup gId m of
           Just gr -> pure $ M.insert gId gr {dbOwnerMemberId_ = Just grOwnerId} m
-          Nothing -> m <$ putStrLn ("Warning: no group with ID " <> show gId <>", owner update ignored.")
+          Nothing -> m <$ putStrLn ("Warning: no group with ID " <> show gId <> ", owner update ignored.")
 
 writeDirectoryData :: FilePath -> [GroupRegData] -> IO Handle
 writeDirectoryData f grs = do

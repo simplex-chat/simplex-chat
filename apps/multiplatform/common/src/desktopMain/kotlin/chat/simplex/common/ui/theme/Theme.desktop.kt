@@ -10,6 +10,10 @@ private val detector: OsThemeDetector = OsThemeDetector.getDetector()
     registerListener(::reactOnDarkThemeChanges)
   }
 
+// TODO: explore possibility to use
+//@Composable
+//actual fun isSystemInDarkTheme(): Boolean = androidx.compose.foundation.isSystemInDarkTheme()
+
 @Composable
 actual fun isSystemInDarkTheme(): Boolean = try {
   detector.isDark

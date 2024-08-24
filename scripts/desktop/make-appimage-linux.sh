@@ -40,6 +40,10 @@ if [ ! -f ../appimagetool-x86_64.AppImage ]; then
     wget --secure-protocol=TLSv1_3 https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O ../appimagetool-x86_64.AppImage
     chmod +x ../appimagetool-x86_64.AppImage
 fi
-../appimagetool-x86_64.AppImage .
+if [ ! -f ../runtime-fuse3-x86_64 ]; then
+    wget --secure-protocol=TLSv1_3 https://github.com/AppImage/type2-runtime/releases/download/old/runtime-fuse3-x86_64 -O ../runtime-fuse3-x86_64
+    chmod +x ../runtime-fuse3-x86_64
+fi
+../appimagetool-x86_64.AppImage --runtime-file ../runtime-fuse3-x86_64 .
 
 mv *imple*.AppImage ../../

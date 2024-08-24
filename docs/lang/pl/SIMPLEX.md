@@ -11,7 +11,7 @@ revision: 07.02.2023
 Istniejące komunikatory oraz protokoły borykają się ze wszystkimi lub kilkoma podanymi problemami:
 
 - Brak zachowania prywatności profilu i kontaktów użytkownika (zachowanie poufności metadanych).
-- Brak ochrony (lub jedynie opcjonalna ochrona) przed atakami MITM przez dostawcę usług przy użyciu szyfrowania [end to end](1)
+- Brak ochrony (lub jedynie opcjonalna ochrona) przed atakami MITM przez dostawcę usług przy użyciu szyfrowania [end to end][1]
 - Niechciane wiadomości (spam i nadużycia).
 - Brak własności danych i ich ochrony.
 - Dla nietechnicznych użytkowników używanie niescentralizowanych protokołów jest skomplikowane.

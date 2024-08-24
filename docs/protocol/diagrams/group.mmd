@@ -4,9 +4,16 @@ sequenceDiagram
   participant B as Bob
   participant C as Existing<br>contact
 
-  note over A, B: 1. send and accept group invitation
-  A ->> B: x.grp.inv<br>invite Bob to group<br>(via contact connection)
-  B ->> A: x.grp.acpt<br>accept invitation<br>(via member connection)<br>establish group member connection
+  alt invite contact
+    note over A, B: 1a. send and accept group invitation
+    A ->> B: x.grp.inv<br>invite Bob to group<br>(via contact connection)
+    B ->> A: x.grp.acpt<br>accept invitation<br>(via member connection)<br>establish group member connection
+  else join via group link
+    note over A, B: 1b. join via group link and accept request
+    B ->> A: join via group link<br>SimpleX contact address
+    A ->> B: x.grp.link.inv in SMP confirmation<br>accept joining member request,<br>sending group profile, etc.<br>establish group member connection
+    A ->> B: x.grp.link.mem<br>send inviting member profile
+  end
 
   note over M, B: 2. introduce new member Bob to all existing members
   A ->> M: x.grp.mem.new<br>"announce" Bob<br>to existing members<br>(via member connections)
@@ -20,14 +27,25 @@ sequenceDiagram
   end
   A ->> M: x.grp.mem.fwd<br>forward "invitations" and<br>Bob's chat protocol version<br>to all members<br>(via member connections)
 
+  note over M, B: group message forwarding<br>(while connections between members are being established)
+  M -->> B: messages between members and Bob are forwarded by Alice
+  B -->> M: 
+
   note over M, B: 3. establish direct and group member connections
   M ->> B: establish group member connection
 
   opt chat protocol compatible version < 2
     M ->> B: establish direct connection
-    note over M, C: 4. deduplicate new contact
+    note over M, C: 3*. deduplicate new contact
     B ->> M: x.info.probe<br>"probe" is sent to all new members
     B ->> C: x.info.probe.check<br>"probe" hash,<br>in case contact and<br>member profiles match
     C ->> B: x.info.probe.ok<br> original "probe",<br> in case contact and member<br>are the same user
     note over B: merge existing and new contacts if received and sent probe hashes match
   end
+
+  note over M, B: 4. notify inviting member that connection is established
+  M ->> A: x.grp.mem.con
+  B ->> A: x.grp.mem.con
+  note over A: stops forwarding messages
+  M -->> B: messages are sent via group connection without forwarding
+  B -->> M: 

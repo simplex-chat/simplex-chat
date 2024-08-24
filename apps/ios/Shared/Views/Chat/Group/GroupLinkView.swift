@@ -22,7 +22,7 @@ struct GroupLinkView: View {
 
     private enum GroupLinkAlert: Identifiable {
         case deleteLink
-        case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
+        case error(title: LocalizedStringKey, error: LocalizedStringKey?)
 
         var id: String {
             switch self {
@@ -34,14 +34,13 @@ struct GroupLinkView: View {
 
     var body: some View {
         if creatingGroup {
-            NavigationView {
-                groupLinkView()
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            Button ("Continue") { linkCreatedCb?() }
-                        }
+            groupLinkView()
+                .navigationBarBackButtonHidden()
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button ("Continue") { linkCreatedCb?() }
                     }
-            }
+                }
         } else {
             groupLinkView()
         }
@@ -113,7 +112,7 @@ struct GroupLinkView: View {
                         }, secondaryButton: .cancel()
                     )
                 case let .error(title, error):
-                    return Alert(title: Text(title), message: Text(error))
+                    return mkAlert(title: title, message: error)
                 }
             }
             .onChange(of: groupLinkMemberRole) { _ in
@@ -133,6 +132,7 @@ struct GroupLinkView: View {
                 shouldCreate = false
             }
         }
+        .modifier(ThemedBackground(grouped: true))
     }
 
     private func createGroupLink() {

@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct GroupWelcomeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
+    @EnvironmentObject var theme: AppTheme
     @Binding var groupInfo: GroupInfo
     @State var groupProfile: GroupProfile
     @State var welcomeText: String
@@ -57,7 +58,7 @@ struct GroupWelcomeView: View {
     }
 
     private func textPreview() -> some View {
-        messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil, showSecrets: false)
+        messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil, showSecrets: false, secondaryColor: theme.colors.secondary)
             .frame(minHeight: 130, alignment: .topLeading)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -70,7 +71,7 @@ struct GroupWelcomeView: View {
                         Group {
                             if welcomeText.isEmpty {
                                 TextEditor(text: Binding.constant(NSLocalizedString("Enter welcome message…", comment: "placeholder")))
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(theme.colors.secondary)
                                     .disabled(true)
                             }
                             TextEditor(text: $welcomeText)

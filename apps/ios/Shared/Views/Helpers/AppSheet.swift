@@ -8,41 +8,21 @@
 
 import SwiftUI
 
-private struct SheetIsPresented<C>: ViewModifier where C: View {
-    var isPresented: Binding<Bool>
-    var onDismiss: (() -> Void)?
-    var sheetContent: () -> C
-    @Environment(\.scenePhase) var scenePhase
-
-    func body(content: Content) -> some View {
-        content.sheet(isPresented: isPresented, onDismiss: onDismiss) {
-            sheetContent().modifier(PrivacySensitive())
-        }
-    }
-}
-
-private struct SheetForItem<T, C>: ViewModifier where T: Identifiable, C: View {
-    var item: Binding<T?>
-    var onDismiss: (() -> Void)?
-    var sheetContent: (T) -> C
-    @Environment(\.scenePhase) var scenePhase
-
-    func body(content: Content) -> some View {
-        content.sheet(item: item, onDismiss: onDismiss) { it in
-            sheetContent(it).modifier(PrivacySensitive())
-        }
-    }
+class AppSheetState: ObservableObject {
+    static let shared = AppSheetState()
+    @Published var scenePhaseActive: Bool = false
 }
 
 private struct PrivacySensitive: ViewModifier {
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
-    @Environment(\.scenePhase) var scenePhase
+    // Screen protection doesn't work for appSheet on iOS 16 if @Environment(\.scenePhase) is used instead of global state
+    @ObservedObject var appSheetState: AppSheetState = AppSheetState.shared
 
     func body(content: Content) -> some View {
-        if case .active = scenePhase {
+        if !protectScreen {
             content
         } else {
-            content.privacySensitive(protectScreen).redacted(reason: .privacy)
+            content.privacySensitive(!appSheetState.scenePhaseActive).redacted(reason: .privacy)
         }
     }
 }
@@ -53,7 +33,9 @@ extension View {
         onDismiss: (() -> Void)? = nil,
         content: @escaping () -> Content
     ) -> some View where Content: View {
-        modifier(SheetIsPresented(isPresented: isPresented, onDismiss: onDismiss, sheetContent: content))
+        sheet(isPresented: isPresented, onDismiss: onDismiss) {
+            content().modifier(PrivacySensitive())
+        }
     }
 
     func appSheet<T, Content>(
@@ -61,6 +43,8 @@ extension View {
         onDismiss: (() -> Void)? = nil,
         content: @escaping (T) -> Content
     ) -> some View where T: Identifiable, Content: View {
-        modifier(SheetForItem(item: item, onDismiss: onDismiss, sheetContent: content))
+        sheet(item: item, onDismiss: onDismiss) { it in
+            content(it).modifier(PrivacySensitive())
+        }
     }
 }

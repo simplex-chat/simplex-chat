@@ -298,7 +298,7 @@ itemId i = show $ length chatFeatures + i
 
 (@@@) :: HasCallStack => TestCC -> [(String, String)] -> Expectation
 (@@@) cc res = do
-  threadDelay 10000
+  threadDelay 100000
   getChats mapChats cc res
 
 mapChats :: [(String, String, Maybe ConnStatus)] -> [(String, String)]

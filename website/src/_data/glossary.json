@@ -60,6 +60,10 @@
         "definition": "Man-in-the-middle attack"
     },
     {
+        "term": "MITM attack",
+        "definition": "Man-in-the-middle attack"
+    },
+    {
         "term": "Merkle directed acyclic graph",
         "definition": "Merkle directed acyclic graph"
     },

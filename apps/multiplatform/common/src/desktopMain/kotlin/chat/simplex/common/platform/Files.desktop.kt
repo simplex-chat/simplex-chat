@@ -13,8 +13,10 @@ actual val dataDir: File = File(desktopPlatform.dataPath)
 actual val tmpDir: File = File(System.getProperty("java.io.tmpdir") + File.separator + "simplex").also { it.deleteOnExit() }
 actual val filesDir: File = File(dataDir.absolutePath + File.separator + "simplex_v1_files")
 actual val appFilesDir: File = filesDir
+actual val wallpapersDir: File = File(dataDir.absolutePath + File.separator + "simplex_v1_assets" + File.separator + "wallpapers").also { it.mkdirs() }
 actual val coreTmpDir: File = File(dataDir.absolutePath + File.separator + "tmp")
 actual val dbAbsolutePrefixPath: String = dataDir.absolutePath + File.separator + "simplex_v1"
+actual val preferencesDir = File(desktopPlatform.configPath).also { it.parentFile.mkdirs() }
 
 actual val chatDatabaseFileName: String = "simplex_v1_chat.db"
 actual val agentDatabaseFileName: String = "simplex_v1_agent.db"
@@ -24,9 +26,13 @@ actual val databaseExportDir: File = tmpDir
 actual val remoteHostsDir: File = File(dataDir.absolutePath + File.separator + "remote_hosts")
 
 actual fun desktopOpenDatabaseDir() {
+  desktopOpenDir(dataDir)
+}
+
+actual fun desktopOpenDir(dir: File) {
   if (Desktop.isDesktopSupported()) {
     try {
-      Desktop.getDesktop().open(dataDir);
+      Desktop.getDesktop().open(dir);
     } catch (e: IOException) {
       Log.e(TAG, e.stackTraceToString())
       AlertManager.shared.showAlertMsg(

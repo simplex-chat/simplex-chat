@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct PreferencesView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @State var profile: LocalProfile
     @State var preferences: FullPreferences
     @State var currentPreferences: FullPreferences
@@ -35,7 +36,7 @@ struct PreferencesView: View {
 
     private func featureSection(_ feature: ChatFeature, _ allowFeature: Binding<FeatureAllowed>) -> some View {
         Section {
-            settingsRow(feature.icon) {
+            settingsRow(feature.icon, color: theme.colors.secondary) {
                 Picker(feature.text, selection: allowFeature) {
                     ForEach(FeatureAllowed.values) { allow in
                         Text(allow.text)
@@ -44,7 +45,7 @@ struct PreferencesView: View {
                 .frame(height: 36)
             }
         }
-        footer: { featureFooter(feature, allowFeature) }
+        footer: { featureFooter(feature, allowFeature).foregroundColor(theme.colors.secondary) }
 
     }
 
@@ -54,11 +55,11 @@ struct PreferencesView: View {
                 get: { allowFeature.wrappedValue == .always || allowFeature.wrappedValue == .yes },
                 set: { yes, _ in allowFeature.wrappedValue = yes ? .yes : .no }
             )
-            settingsRow(ChatFeature.timedMessages.icon) {
+            settingsRow(ChatFeature.timedMessages.icon, color: theme.colors.secondary) {
                 Toggle(ChatFeature.timedMessages.text, isOn: allow)
             }
         }
-        footer: { featureFooter(.timedMessages, allowFeature) }
+        footer: { featureFooter(.timedMessages, allowFeature).foregroundColor(theme.colors.secondary) }
     }
 
     private func featureFooter(_ feature: ChatFeature, _ allowFeature: Binding<FeatureAllowed>) -> some View {

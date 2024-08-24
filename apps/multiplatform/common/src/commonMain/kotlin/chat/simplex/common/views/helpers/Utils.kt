@@ -8,6 +8,7 @@ import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.ThemeOverrides
 import chat.simplex.common.views.chatlist.connectIfOpenedViaUri
@@ -15,10 +16,12 @@ import chat.simplex.res.MR
 import com.charleskorn.kaml.decodeFromStream
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import kotlinx.serialization.encodeToString
 import java.io.*
 import java.net.URI
 import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.Executors
@@ -145,6 +148,7 @@ fun getThemeFromUri(uri: URI, withAlertOnException: Boolean = true): ThemeOverri
     runCatching {
       return yaml.decodeFromStream<ThemeOverrides>(it!!)
     }.onFailure {
+      Log.e(TAG, "Error while decoding theme: ${it.stackTraceToString()}")
       if (withAlertOnException) {
         AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.import_theme_error),
@@ -278,6 +282,38 @@ fun saveFileFromUri(uri: URI, withAlertOnException: Boolean = true): CryptoFile?
 
     null
   }
+}
+
+fun saveWallpaperFile(uri: URI): String? {
+  val destFileName = generateNewFileName("wallpaper", "jpg", File(getWallpaperFilePath("")))
+  val destFile = File(getWallpaperFilePath(destFileName))
+  try {
+    val inputStream = uri.inputStream()
+    Files.copy(inputStream!!, destFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
+  } catch (e: Exception) {
+    Log.e(TAG, "Error saving wallpaper file: ${e.stackTraceToString()}")
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.stackTraceToString())
+    return null
+  }
+  return destFile.name
+}
+
+fun saveWallpaperFile(image: ImageBitmap): String {
+  val destFileName = generateNewFileName("wallpaper", "jpg", File(getWallpaperFilePath("")))
+  val destFile = File(getWallpaperFilePath(destFileName))
+  val dataResized = resizeImageToDataSize(image, false, maxDataSize = 5_000_000)
+  val output = FileOutputStream(destFile)
+  dataResized.use {
+    it.writeTo(output)
+  }
+  return destFile.name
+}
+
+fun removeWallpaperFile(fileName: String? = null) {
+  File(getWallpaperFilePath("_")).parentFile.listFiles()?.forEach {
+    if (it.name == fileName) it.delete()
+  }
+  WallpaperType.cachedImages.remove(fileName)
 }
 
 fun <T> createTmpFileAndDelete(onCreated: (File) -> T): T {
@@ -485,6 +521,28 @@ fun includeMoreFailedComposables() {
   lastExecutedComposables.clear()
 }
 
+val fontSizeMultiplier: Float
+  @Composable get() = remember { appPrefs.fontScale.state }.value
+
+val fontSizeSqrtMultiplier: Float
+  @Composable get() = sqrt(remember { appPrefs.fontScale.state }.value)
+
+val desktopDensityScaleMultiplier: Float
+  @Composable get() = if (appPlatform.isDesktop) remember { appPrefs.densityScale.state }.value else 1f
+
+@Composable
+fun TextUnit.toDp(): Dp {
+  check(type == TextUnitType.Sp) { "Only Sp can convert to Px" }
+  return Dp(value * LocalDensity.current.fontScale)
+}
+
+fun <T> Flow<T>.throttleLatest(delayMillis: Long): Flow<T> = this
+  .conflate()
+  .transform {
+    emit(it)
+    delay(delayMillis)
+  }
+
 @Composable
 fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenGone: () -> Unit) {
   DisposableEffect(Unit) {
@@ -550,8 +608,31 @@ fun KeyChangeEffect(
   val initialKey = remember { key1 }
   val initialKey2 = remember { key2 }
   var anyChange by remember { mutableStateOf(false) }
-  LaunchedEffect(key1) {
+  LaunchedEffect(key1, key2) {
     if (anyChange || key1 != initialKey || key2 != initialKey2) {
+      block()
+      anyChange = true
+    }
+  }
+}
+
+/**
+ * Runs the [block] only after initial value of the [key1], or [key2], or [key3] changes, not after initial launch
+ * */
+@Composable
+@NonRestartableComposable
+fun KeyChangeEffect(
+  key1: Any?,
+  key2: Any?,
+  key3: Any?,
+  block: suspend CoroutineScope.() -> Unit
+) {
+  val initialKey = remember { key1 }
+  val initialKey2 = remember { key2 }
+  val initialKey3 = remember { key3 }
+  var anyChange by remember { mutableStateOf(false) }
+  LaunchedEffect(key1, key2, key3) {
+    if (anyChange || key1 != initialKey || key2 != initialKey2 || key3 != initialKey3) {
       block()
       anyChange = true
     }

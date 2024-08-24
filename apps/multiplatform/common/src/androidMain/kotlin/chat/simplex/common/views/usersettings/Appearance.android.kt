@@ -13,20 +13,19 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material.MaterialTheme.colors
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmap
-import chat.simplex.common.R
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -34,7 +33,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.saveAppLocale
-import chat.simplex.common.views.usersettings.AppearanceScope.ColorEditor
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.painterResource
@@ -46,9 +45,8 @@ enum class AppIcon(val image: ImageResource) {
 }
 
 @Composable
-actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
+actual fun AppearanceView(m: ChatModel) {
   val appIcon = remember { mutableStateOf(findEnabledIcon()) }
-
   fun setAppIcon(newIcon: AppIcon) {
     if (appIcon.value == newIcon) return
     val newComponent = ComponentName(APPLICATION_ID, "chat.simplex.app.MainActivity_${newIcon.name.lowercase()}")
@@ -65,18 +63,11 @@ actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatMod
 
     appIcon.value = newIcon
   }
-
   AppearanceScope.AppearanceLayout(
     appIcon,
     m.controller.appPrefs.appLanguage,
     m.controller.appPrefs.systemDarkTheme,
     changeIcon = ::setAppIcon,
-    showSettingsModal = showSettingsModal,
-    editColor = { name, initialColor ->
-      ModalManager.start.showModalCloseable { close ->
-        ColorEditor(name, initialColor, close)
-      }
-    },
   )
 }
 
@@ -86,14 +77,12 @@ fun AppearanceScope.AppearanceLayout(
   languagePref: SharedPreference<String?>,
   systemDarkTheme: SharedPreference<String?>,
   changeIcon: (AppIcon) -> Unit,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  editColor: (ThemeColor, Color) -> Unit,
 ) {
   ColumnWithScrollBar(
     Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.appearance_settings))
-    SectionView(stringResource(MR.strings.settings_section_title_language), padding = PaddingValues()) {
+    SectionView(stringResource(MR.strings.settings_section_title_interface), padding = PaddingValues()) {
       val context = LocalContext.current
       //      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       //        SectionItemWithValue(
@@ -119,8 +108,20 @@ fun AppearanceScope.AppearanceLayout(
         }
       }
       //      }
+
+      SettingsPreferenceItem(icon = null, stringResource(MR.strings.one_hand_ui), ChatModel.controller.appPrefs.oneHandUI) {
+        val c = CurrentColors.value.colors
+        platform.androidSetStatusAndNavBarColors(c.isLight, c.background, false, false)
+      }
     }
+
     SectionDividerSpaced()
+    ThemesSection(systemDarkTheme)
+
+    SectionDividerSpaced()
+    ProfileImageSection()
+
+    SectionDividerSpaced(maxTopPadding = true)
 
     SectionView(stringResource(MR.strings.settings_section_title_icon), padding = PaddingValues(horizontal = DEFAULT_PADDING_HALF)) {
       LazyRow {
@@ -131,7 +132,8 @@ fun AppearanceScope.AppearanceLayout(
             contentDescription = "",
             contentScale = ContentScale.Fit,
             modifier = Modifier
-              .shadow(if (item == icon.value) 1.dp else 0.dp, ambientColor = colors.secondaryVariant)
+              .border(1.dp, color = if (item == icon.value) colors.secondaryVariant else Color.Transparent, RoundedCornerShape(percent = 22))
+              .clip(RoundedCornerShape(percent = 22))
               .size(70.dp)
               .clickable { changeIcon(item) }
               .padding(10.dp)
@@ -146,10 +148,8 @@ fun AppearanceScope.AppearanceLayout(
     }
 
     SectionDividerSpaced(maxTopPadding = true)
-    ProfileImageSection()
+    FontScaleSection()
 
-    SectionDividerSpaced(maxTopPadding = true)
-    ThemesSection(systemDarkTheme, showSettingsModal, editColor)
     SectionBottomSpacer()
   }
 }
@@ -169,8 +169,6 @@ fun PreviewAppearanceSettings() {
       languagePref = SharedPreference({ null }, {}),
       systemDarkTheme = SharedPreference({ null }, {}),
       changeIcon = {},
-      showSettingsModal = { {} },
-      editColor = { _, _ -> },
     )
   }
 }

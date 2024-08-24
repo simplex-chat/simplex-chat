@@ -20,6 +20,8 @@ import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
 fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
@@ -77,29 +79,33 @@ fun TerminalLayout(
     Scaffold(
       topBar = { CloseSheetBar(close) },
       bottomBar = {
-        Box(Modifier.padding(horizontal = 8.dp)) {
-          SendMsgView(
-            composeState = composeState,
-            showVoiceRecordIcon = false,
-            recState = remember { mutableStateOf(RecordingState.NotStarted) },
-            isDirectChat = false,
-            liveMessageAlertShown = SharedPreference(get = { false }, set = {}),
-            sendMsgEnabled = true,
-            sendButtonEnabled = true,
-            nextSendGrpInv = false,
-            needToAllowVoiceToContact = false,
-            allowedVoiceByPrefs = false,
-            userIsObserver = false,
-            userCanSend = true,
-            allowVoiceToContact = {},
-            sendMessage = { sendCommand() },
-            sendLiveMessage = null,
-            updateLiveMessage = null,
-            editPrevMessage = {},
-            onMessageChange = ::onMessageChange,
-            onFilesPasted = {},
-            textStyle = textStyle
-          )
+        Column {
+          Divider()
+          Box(Modifier.padding(horizontal = 8.dp)) {
+            SendMsgView(
+              composeState = composeState,
+              showVoiceRecordIcon = false,
+              recState = remember { mutableStateOf(RecordingState.NotStarted) },
+              isDirectChat = false,
+              liveMessageAlertShown = SharedPreference(get = { false }, set = {}),
+              sendMsgEnabled = true,
+              sendButtonEnabled = true,
+              nextSendGrpInv = false,
+              needToAllowVoiceToContact = false,
+              allowedVoiceByPrefs = false,
+              userIsObserver = false,
+              userCanSend = true,
+              allowVoiceToContact = {},
+              placeholder = "",
+              sendMessage = { sendCommand() },
+              sendLiveMessage = null,
+              updateLiveMessage = null,
+              editPrevMessage = {},
+              onMessageChange = ::onMessageChange,
+              onFilesPasted = {},
+              textStyle = textStyle
+            )
+          }
         }
       },
       contentColor = LocalContentColor.current,
@@ -119,19 +125,13 @@ fun TerminalLayout(
   }
 }
 
-private var lazyListState = 0 to 0
-
 @Composable
 fun TerminalLog() {
-  val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
-  DisposableEffect(Unit) {
-    onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
-  }
   val reversedTerminalItems by remember {
     derivedStateOf { chatModel.terminalItems.value.asReversed() }
   }
   val clipboard = LocalClipboardManager.current
-  LazyColumnWithScrollBar(state = listState, reverseLayout = true) {
+  LazyColumnWithScrollBar(reverseLayout = true) {
     items(reversedTerminalItems) { item ->
       val rhId = item.remoteHostId
       val rhIdStr = if (rhId == null) "" else "$rhId "

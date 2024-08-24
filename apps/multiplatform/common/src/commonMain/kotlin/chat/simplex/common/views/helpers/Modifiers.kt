@@ -37,7 +37,7 @@ fun SwipeToDismissModifier(
   return Modifier.swipeable(
     state = state,
     anchors = anchors,
-    thresholds = { _, _ -> FractionalThreshold(0.5f) },
+    thresholds = { _, _ -> FractionalThreshold(0.99f) },
     orientation = Orientation.Horizontal,
     reverseDirection = isRtl,
   ).offset { IntOffset(state.offset.value.roundToInt(), 0) }

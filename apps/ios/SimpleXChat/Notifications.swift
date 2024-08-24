@@ -47,7 +47,7 @@ public func createContactConnectedNtf(_ user: any UserLike, _ contact: Contact) 
             hideContent ? NSLocalizedString("A new contact", comment: "notification title") : contact.displayName
         ),
         body: String.localizedStringWithFormat(
-            NSLocalizedString("You can now send messages to %@", comment: "notification body"),
+            NSLocalizedString("You can now chat with %@", comment: "notification body"),
             hideContent ? NSLocalizedString("this contact", comment: "notification title") : contact.chatViewName
         ),
         targetContentIdentifier: contact.id,

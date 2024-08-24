@@ -12,7 +12,7 @@
     "simplex-explained-tab-2-text": "2. איך זה עובד",
     "simplex-chat-protocol": "פרוטוקול SimpleX Chat",
     "terminal-cli": "ממשק שורת פקודה",
-    "terms-and-privacy-policy": "תנאים ומדיניות פרטיות",
+    "terms-and-privacy-policy": "מדיניות הפרטיות",
     "hero-header": "פרטיות מוגדרת מחדש",
     "hero-subheader": "מערכת העברת ההודעות הראשונה<br>ללא מזהי שתמש",
     "hero-overlay-1-textlink": "מדוע מזהי משתמש מזיקים לפרטיות?",
@@ -53,7 +53,7 @@
     "smp-protocol": "פרוטוקול SMP",
     "chat-protocol": "פרוטוקול צ'אט",
     "donate": "תרומה",
-    "copyright-label": "© 2020-2023 SimpleX | פרויקט קוד פתוח",
+    "copyright-label": "© 2020-2024 SimpleX | פרויקט קוד פתוח",
     "hero-p-1": "לאפליקציות אחרות יש מזהי משתמש: Signal, Matrix, Session, Briar, Jami, Cwtch וכו'.<br> ל-SimpleX אין, <strong>אפילו לא מספרים אקראיים</strong>.<br> זה משפר באופן קיצוני את הפרטיות שלך.",
     "hero-overlay-2-title": "מדוע מזהי משתמש מזיקים לפרטיות?",
     "feature-6-title": "שיחות שמע ווידאו<br>מוצפנות מקצה לקצה",
@@ -242,7 +242,7 @@
     "simplex-chat-via-f-droid": "SimpleX Chat דרך F-Droid",
     "glossary": "מילון מונחים",
     "jobs": "הצטרפו לצוות",
-    "releases-to-this-repo-are-done-1-2-days-later": "גרסאות למאגר זה משוחררות לאחר יום או יומיים",
+    "releases-to-this-repo-are-done-1-2-days-later": "גרסאות למאגר זה משוחררות לאחר כמה ימים",
     "f-droid-org-repo": "מאגר F-Droid.org",
     "stable-versions-built-by-f-droid-org": "גרסאות יציבות שנבנו על ידי F-Droid.org",
     "back-to-top": "חזרה למעלה",
@@ -252,5 +252,8 @@
     "docs-dropdown-8": "שירות מדריך כתובות SimpleX",
     "f-droid-page-f-droid-org-repo-section-text": "מאגרי SimpleX Chat ו-F-Droid.org חותמים על גרסאות עם מפתחות שונים. כדי לעבור, אנא <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>ייצא</a> את מסד הנתונים של הצ'אט והתקן מחדש את האפליקציה.",
     "please-enable-javascript": "אנא הפעל JavaScript כדי לראות את קוד ה-QR.",
-    "please-use-link-in-mobile-app": "אנא השתמש בקישור באפליקציה במכשיר נייד"
+    "please-use-link-in-mobile-app": "אנא השתמש בקישור באפליקציה במכשיר נייד",
+    "docs-dropdown-10": "שקיפות",
+    "docs-dropdown-11": "שאלות ותשובות",
+    "docs-dropdown-12": "אבטחה"
 }

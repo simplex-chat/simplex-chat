@@ -1,0 +1,111 @@
+/* No comment provided by engineer. */
+"%@" = "%@";
+
+/* No comment provided by engineer. */
+"App is locked!" = "Додаток заблоковано!";
+
+/* No comment provided by engineer. */
+"Cancel" = "Скасувати";
+
+/* No comment provided by engineer. */
+"Cannot access keychain to save database password" = "Не вдається отримати доступ до зв'язки ключів для збереження пароля до бази даних";
+
+/* No comment provided by engineer. */
+"Cannot forward message" = "Неможливо переслати повідомлення";
+
+/* No comment provided by engineer. */
+"Comment" = "Коментар";
+
+/* No comment provided by engineer. */
+"Currently maximum supported file size is %@." = "Наразі максимальний підтримуваний розмір файлу - %@.";
+
+/* No comment provided by engineer. */
+"Database downgrade required" = "Потрібне оновлення бази даних";
+
+/* No comment provided by engineer. */
+"Database encrypted!" = "База даних зашифрована!";
+
+/* No comment provided by engineer. */
+"Database error" = "Помилка в базі даних";
+
+/* No comment provided by engineer. */
+"Database passphrase is different from saved in the keychain." = "Парольна фраза бази даних відрізняється від збереженої у в’язці ключів.";
+
+/* No comment provided by engineer. */
+"Database passphrase is required to open chat." = "Для відкриття чату потрібно ввести пароль до бази даних.";
+
+/* No comment provided by engineer. */
+"Database upgrade required" = "Потрібне оновлення бази даних";
+
+/* No comment provided by engineer. */
+"Error preparing file" = "Помилка підготовки файлу";
+
+/* No comment provided by engineer. */
+"Error preparing message" = "Повідомлення про підготовку до помилки";
+
+/* No comment provided by engineer. */
+"Error: %@" = "Помилка: %@";
+
+/* No comment provided by engineer. */
+"File error" = "Помилка файлу";
+
+/* No comment provided by engineer. */
+"Incompatible database version" = "Несумісна версія бази даних";
+
+/* No comment provided by engineer. */
+"Invalid migration confirmation" = "Недійсне підтвердження міграції";
+
+/* No comment provided by engineer. */
+"Keychain error" = "Помилка зв'язки ключів";
+
+/* No comment provided by engineer. */
+"Large file!" = "Великий файл!";
+
+/* No comment provided by engineer. */
+"No active profile" = "Немає активного профілю";
+
+/* No comment provided by engineer. */
+"Ok" = "Гаразд";
+
+/* No comment provided by engineer. */
+"Open the app to downgrade the database." = "Відкрийте програму, щоб знизити версію бази даних.";
+
+/* No comment provided by engineer. */
+"Open the app to upgrade the database." = "Відкрийте програму, щоб оновити базу даних.";
+
+/* No comment provided by engineer. */
+"Passphrase" = "Парольна фраза";
+
+/* No comment provided by engineer. */
+"Please create a profile in the SimpleX app" = "Будь ласка, створіть профіль у додатку SimpleX";
+
+/* No comment provided by engineer. */
+"Selected chat preferences prohibit this message." = "Вибрані налаштування чату забороняють це повідомлення.";
+
+/* No comment provided by engineer. */
+"Sending a message takes longer than expected." = "Надсилання повідомлення займає більше часу, ніж очікувалося.";
+
+/* No comment provided by engineer. */
+"Sending message…" = "Надсилаю повідомлення…";
+
+/* No comment provided by engineer. */
+"Share" = "Поділіться";
+
+/* No comment provided by engineer. */
+"Slow network?" = "Повільна мережа?";
+
+/* No comment provided by engineer. */
+"Unknown database error: %@" = "Невідома помилка бази даних: %@";
+
+/* No comment provided by engineer. */
+"Unsupported format" = "Непідтримуваний формат";
+
+/* No comment provided by engineer. */
+"Wait" = "Зачекай";
+
+/* No comment provided by engineer. */
+"Wrong database passphrase" = "Неправильна ключова фраза до бази даних";
+
+/* No comment provided by engineer. */
+"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "Ви можете дозволити спільний доступ у налаштуваннях Конфіденційність і безпека / SimpleX Lock.";
+

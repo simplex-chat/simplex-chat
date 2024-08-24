@@ -57,7 +57,9 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                 chatModel.ntfCallInvitationAction = (chatId, ntfAction)
             }
         } else {
-            chatModel.chatId = content.targetContentIdentifier
+            if let chatId = content.targetContentIdentifier {
+                ItemsModel.shared.loadOpenChat(chatId)
+            }
         }
         handler()
     }
@@ -238,12 +240,8 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
         ntfBadgeCountGroupDefault.set(count)
     }
 
-    func decNtfBadgeCount(by count: Int = 1) {
-        setNtfBadgeCount(max(0, UIApplication.shared.applicationIconBadgeNumber - count))
-    }
-
-    func incNtfBadgeCount(by count: Int = 1) {
-        setNtfBadgeCount(UIApplication.shared.applicationIconBadgeNumber + count)
+    func changeNtfBadgeCount(by count: Int = 1) {
+        setNtfBadgeCount(max(0, UIApplication.shared.applicationIconBadgeNumber + count))
     }
 
     private func addNotification(_ content: UNMutableNotificationContent) {

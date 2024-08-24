@@ -35,7 +35,7 @@ fun ComposeVoiceView(
 ) {
   val progress = rememberSaveable { mutableStateOf(0) }
   val duration = rememberSaveable(recordedDurationMs) { mutableStateOf(recordedDurationMs) }
-  val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
+  val sentColor = MaterialTheme.appColors.sentMessage
   Box {
     Box(
       Modifier
@@ -53,7 +53,7 @@ fun ComposeVoiceView(
         IconButton(
           onClick = {
             if (!audioPlaying.value) {
-              AudioPlayer.play(CryptoFile.plain(filePath), audioPlaying, progress, duration, false)
+              AudioPlayer.play(CryptoFile.plain(filePath), audioPlaying, progress, duration, resetOnEnd = false, smallView = false)
             } else {
               AudioPlayer.pause(audioPlaying, progress)
             }

@@ -7,6 +7,8 @@ import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.text.BidiFormatter
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.Font
@@ -14,9 +16,11 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.toBitmap
 import chat.simplex.common.model.AppPreferences
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.SharedPreferencesSettings
+import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.desc.desc
 
@@ -48,6 +52,12 @@ actual fun windowOrientation(): WindowOrientation = when (mainActivity.get()?.re
 @Composable
 actual fun windowWidth(): Dp = LocalConfiguration.current.screenWidthDp.dp
 
+@Composable
+actual fun windowHeight(): Dp = LocalConfiguration.current.screenHeightDp.dp
+
 actual fun desktopExpandWindowToWidth(width: Dp) {}
 
 actual fun isRtl(text: CharSequence): Boolean = BidiFormatter.getInstance().isRtl(text)
+
+actual fun ImageResource.toComposeImageBitmap(): ImageBitmap? =
+  getDrawable(androidAppContext)?.toBitmap()?.asImageBitmap()

@@ -71,7 +71,7 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       CRChatItems u chatName_ _ -> whenCurrUser cc u $ mapM_ (setActive ct . chatActiveTo) chatName_
       CRNewChatItem u (AChatItem _ SMDSnd cInfo _) -> whenCurrUser cc u $ setActiveChat ct cInfo
       CRChatItemUpdated u (AChatItem _ SMDSnd cInfo _) -> whenCurrUser cc u $ setActiveChat ct cInfo
-      CRChatItemDeleted u (AChatItem _ _ cInfo _) _ _ _ -> whenCurrUser cc u $ setActiveChat ct cInfo
+      CRChatItemsDeleted u ((ChatItemDeletion (AChatItem _ _ cInfo _) _) : _) _ _ -> whenCurrUser cc u $ setActiveChat ct cInfo
       CRContactDeleted u c -> whenCurrUser cc u $ unsetActiveContact ct c
       CRGroupDeletedUser u g -> whenCurrUser cc u $ unsetActiveGroup ct g
       CRSentGroupInvitation u g _ _ -> whenCurrUser cc u $ setActiveGroup ct g

@@ -149,6 +149,11 @@ textWithUri = describe "text with Uri" do
     parseMarkdown "http://simplex.chat" `shouldBe` uri "http://simplex.chat"
     parseMarkdown "this is https://simplex.chat" `shouldBe` "this is " <> uri "https://simplex.chat"
     parseMarkdown "https://simplex.chat site" `shouldBe` uri "https://simplex.chat" <> " site"
+    parseMarkdown "SimpleX on GitHub: https://github.com/simplex-chat/" `shouldBe` "SimpleX on GitHub: " <> uri "https://github.com/simplex-chat/"
+    parseMarkdown "SimpleX on GitHub: https://github.com/simplex-chat." `shouldBe` "SimpleX on GitHub: " <> uri "https://github.com/simplex-chat" <> "."
+    parseMarkdown "https://github.com/simplex-chat/ - SimpleX on GitHub" `shouldBe` uri "https://github.com/simplex-chat/" <> " - SimpleX on GitHub"
+    -- parseMarkdown "SimpleX on GitHub (https://github.com/simplex-chat/)" `shouldBe` "SimpleX on GitHub (" <> uri "https://github.com/simplex-chat/" <> ")"
+    parseMarkdown "https://en.m.wikipedia.org/wiki/Servo_(software)" `shouldBe` uri "https://en.m.wikipedia.org/wiki/Servo_(software)"
   it "ignored as markdown" do
     parseMarkdown "_https://simplex.chat" `shouldBe` "_https://simplex.chat"
     parseMarkdown "this is _https://simplex.chat" `shouldBe` "this is _https://simplex.chat"
@@ -210,3 +215,10 @@ multilineMarkdownList = describe "multiline markdown" do
     parseMaybeMarkdownList "http://simplex.chat\ntext 1\ntext 2\nhttp://app.simplex.chat" `shouldBe` Just [uri' "http://simplex.chat", "\ntext 1\ntext 2\n", uri' "http://app.simplex.chat"]
   it "no markdown" do
     parseMaybeMarkdownList "not a\nmarkdown" `shouldBe` Nothing
+  let inv = "/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D"
+  it "multiline with simplex link" do
+    parseMaybeMarkdownList ("https://simplex.chat" <> inv <> "\ntext")
+      `shouldBe` Just
+        [ FormattedText (Just $ SimplexLink XLInvitation ("simplex:" <> inv) ["smp.simplex.im"]) ("https://simplex.chat" <> inv),
+          "\ntext"
+        ]

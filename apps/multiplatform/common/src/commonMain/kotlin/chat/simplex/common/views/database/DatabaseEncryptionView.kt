@@ -27,6 +27,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -40,9 +41,8 @@ import kotlin.math.log2
 @Composable
 fun DatabaseEncryptionView(m: ChatModel, migration: Boolean) {
   val progressIndicator = remember { mutableStateOf(false) }
-  val prefs = m.controller.appPrefs
-  val useKeychain = remember { mutableStateOf(prefs.storeDBPassphrase.get()) }
-  val initialRandomDBPassphrase = remember { mutableStateOf(prefs.initialRandomDBPassphrase.get()) }
+  val useKeychain = remember { mutableStateOf(appPrefs.storeDBPassphrase.get()) }
+  val initialRandomDBPassphrase = remember { mutableStateOf(appPrefs.initialRandomDBPassphrase.get()) }
   val storedKey = remember { val key = DatabaseUtils.ksDatabasePassword.get(); mutableStateOf(key != null && key != "") }
   // Do not do rememberSaveable on current key to prevent saving it on disk in clear text
   val currentKey = remember { mutableStateOf(if (initialRandomDBPassphrase.value) DatabaseUtils.ksDatabasePassword.get() ?: "" else "") }
@@ -54,7 +54,6 @@ fun DatabaseEncryptionView(m: ChatModel, migration: Boolean) {
   ) {
     DatabaseEncryptionLayout(
       useKeychain,
-      prefs,
       m.chatDbEncrypted.value,
       currentKey,
       newKey,
@@ -65,7 +64,16 @@ fun DatabaseEncryptionView(m: ChatModel, migration: Boolean) {
       migration,
       onConfirmEncrypt = {
         withLongRunningApi {
-          encryptDatabase(currentKey, newKey, confirmNewKey, initialRandomDBPassphrase, useKeychain, storedKey, progressIndicator, migration)
+          encryptDatabase(
+            currentKey = currentKey,
+            newKey = newKey,
+            confirmNewKey = confirmNewKey,
+            initialRandomDBPassphrase = initialRandomDBPassphrase,
+            useKeychain = useKeychain,
+            storedKey = storedKey,
+            progressIndicator = progressIndicator,
+            migration = migration
+          )
         }
       }
     )
@@ -89,7 +97,6 @@ fun DatabaseEncryptionView(m: ChatModel, migration: Boolean) {
 @Composable
 fun DatabaseEncryptionLayout(
   useKeychain: MutableState<Boolean>,
-  prefs: AppPreferences,
   chatDbEncrypted: Boolean?,
   currentKey: MutableState<String>,
   newKey: MutableState<String>,
@@ -100,101 +107,104 @@ fun DatabaseEncryptionLayout(
   migration: Boolean,
   onConfirmEncrypt: () -> Unit,
 ) {
-  val (scrollBarAlpha, scrollModifier, scrollJob) = platform.desktopScrollBarComponents()
-  val scrollState = rememberScrollState()
-  Column(
-    if (!migration) Modifier.fillMaxWidth().verticalScroll(scrollState).then(if (appPlatform.isDesktop) scrollModifier else Modifier) else Modifier.fillMaxWidth(),
-  ) {
-    if (!migration) {
-      AppBarTitle(stringResource(MR.strings.database_passphrase))
-    } else {
-      ChatStoppedView()
-      SectionSpacer()
-    }
-    SectionView(if (migration) generalGetString(MR.strings.database_passphrase).uppercase() else null) {
-      SavePassphraseSetting(
-        useKeychain.value,
-        initialRandomDBPassphrase.value,
-        storedKey.value,
-        enabled = (!initialRandomDBPassphrase.value && !progressIndicator.value) || migration
-      ) { checked ->
-        if (checked) {
-          setUseKeychain(true, useKeychain, prefs, migration)
-        } else if (storedKey.value && !migration) {
-          // Don't show in migration process since it will remove the key after successful encryption
-          removePassphraseAlert {
-            removePassphraseFromKeyChain(useKeychain, prefs, storedKey, false)
-          }
-        } else {
-          setUseKeychain(false, useKeychain, prefs, migration)
-        }
+  @Composable
+  fun Layout() {
+    Column {
+      if (!migration) {
+        AppBarTitle(stringResource(MR.strings.database_passphrase))
+      } else {
+        ChatStoppedView()
+        SectionSpacer()
       }
+      SectionView(if (migration) generalGetString(MR.strings.database_passphrase).uppercase() else null) {
+        SavePassphraseSetting(
+          useKeychain.value,
+          initialRandomDBPassphrase.value,
+          storedKey.value,
+          enabled = (!initialRandomDBPassphrase.value && !progressIndicator.value) || migration
+        ) { checked ->
+          if (checked) {
+            setUseKeychain(true, useKeychain, migration)
+          } else if (storedKey.value && !migration) {
+            // Don't show in migration process since it will remove the key after successful encryption
+            removePassphraseAlert {
+              removePassphraseFromKeyChain(useKeychain, storedKey, false)
+            }
+          } else {
+            setUseKeychain(false, useKeychain, migration)
+          }
+        }
 
-      if (!initialRandomDBPassphrase.value && chatDbEncrypted == true) {
+        if (!initialRandomDBPassphrase.value && chatDbEncrypted == true) {
+          PassphraseField(
+            currentKey,
+            generalGetString(MR.strings.current_passphrase),
+            modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
+            isValid = ::validKey,
+            keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
+          )
+        }
+
         PassphraseField(
-          currentKey,
-          generalGetString(MR.strings.current_passphrase),
+          newKey,
+          generalGetString(MR.strings.new_passphrase),
           modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
+          showStrength = true,
           isValid = ::validKey,
           keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
         )
-      }
-
-      PassphraseField(
-        newKey,
-        generalGetString(MR.strings.new_passphrase),
-        modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
-        showStrength = true,
-        isValid = ::validKey,
-        keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
-      )
-      val onClickUpdate = {
-        // Don't do things concurrently. Shouldn't be here concurrently, just in case
-        if (!progressIndicator.value) {
-          if (currentKey.value == "") {
-            if (useKeychain.value)
-              encryptDatabaseSavedAlert(onConfirmEncrypt)
-            else
-              encryptDatabaseAlert(onConfirmEncrypt)
-          } else {
-            if (useKeychain.value)
-              changeDatabaseKeySavedAlert(onConfirmEncrypt)
-            else
-              changeDatabaseKeyAlert(onConfirmEncrypt)
+        val onClickUpdate = {
+          // Don't do things concurrently. Shouldn't be here concurrently, just in case
+          if (!progressIndicator.value) {
+            if (currentKey.value == "") {
+              if (useKeychain.value)
+                encryptDatabaseSavedAlert(onConfirmEncrypt)
+              else
+                encryptDatabaseAlert(onConfirmEncrypt)
+            } else {
+              if (useKeychain.value)
+                changeDatabaseKeySavedAlert(onConfirmEncrypt)
+              else
+                changeDatabaseKeyAlert(onConfirmEncrypt)
+            }
           }
         }
+        val disabled = currentKey.value == newKey.value ||
+            newKey.value != confirmNewKey.value ||
+            newKey.value.isEmpty() ||
+            !validKey(currentKey.value) ||
+            !validKey(newKey.value) ||
+            progressIndicator.value
+
+        PassphraseField(
+          confirmNewKey,
+          generalGetString(MR.strings.confirm_new_passphrase),
+          modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
+          isValid = { confirmNewKey.value == "" || newKey.value == confirmNewKey.value },
+          keyboardActions = KeyboardActions(onDone = {
+            if (!disabled) onClickUpdate()
+            defaultKeyboardAction(ImeAction.Done)
+          }),
+        )
+
+        SectionItemViewSpaceBetween(onClickUpdate, disabled = disabled, minHeight = TextFieldDefaults.MinHeight) {
+          Text(generalGetString(if (migration) MR.strings.set_passphrase else MR.strings.update_database_passphrase), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+        }
       }
-      val disabled = currentKey.value == newKey.value ||
-          newKey.value != confirmNewKey.value ||
-          newKey.value.isEmpty() ||
-          !validKey(currentKey.value) ||
-          !validKey(newKey.value) ||
-          progressIndicator.value
 
-      PassphraseField(
-        confirmNewKey,
-        generalGetString(MR.strings.confirm_new_passphrase),
-        modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
-        isValid = { confirmNewKey.value == "" || newKey.value == confirmNewKey.value },
-        keyboardActions = KeyboardActions(onDone = {
-          if (!disabled) onClickUpdate()
-          defaultKeyboardAction(ImeAction.Done)
-        }),
-      )
-
-      SectionItemViewSpaceBetween(onClickUpdate, disabled = disabled, minHeight = TextFieldDefaults.MinHeight) {
-        Text(generalGetString(if (migration) MR.strings.set_passphrase else MR.strings.update_database_passphrase), color = if (disabled) MaterialTheme.colors.secondary else MaterialTheme.colors.primary)
+      Column {
+        DatabaseEncryptionFooter(useKeychain, chatDbEncrypted, storedKey, initialRandomDBPassphrase, migration)
       }
+      SectionBottomSpacer()
     }
-
-    Column {
-      DatabaseEncryptionFooter(useKeychain, chatDbEncrypted, storedKey, initialRandomDBPassphrase, migration)
-    }
-    SectionBottomSpacer()
   }
-  if (appPlatform.isDesktop && !migration) {
-    Box(Modifier.fillMaxSize()) {
-      platform.desktopScrollBar(scrollState, Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, false)
+  if (migration) {
+    Column(Modifier.fillMaxWidth()) {
+      Layout()
+    }
+  } else {
+    ColumnWithScrollBar(Modifier.fillMaxWidth(), maxIntrinsicSize = true) {
+      Layout()
     }
   }
 }
@@ -272,17 +282,17 @@ fun resetFormAfterEncryption(
   m.controller.appPrefs.initialRandomDBPassphrase.set(false)
 }
 
-fun setUseKeychain(value: Boolean, useKeychain: MutableState<Boolean>, prefs: AppPreferences, migration: Boolean) {
+fun setUseKeychain(value: Boolean, useKeychain: MutableState<Boolean>, migration: Boolean) {
   useKeychain.value = value
   // Postpone it when migrating to the end of encryption process
   if (!migration) {
-    prefs.storeDBPassphrase.set(value)
+    appPrefs.storeDBPassphrase.set(value)
   }
 }
 
-private fun removePassphraseFromKeyChain(useKeychain: MutableState<Boolean>, prefs: AppPreferences, storedKey: MutableState<Boolean>, migration: Boolean) {
+private fun removePassphraseFromKeyChain(useKeychain: MutableState<Boolean>, storedKey: MutableState<Boolean>, migration: Boolean) {
   DatabaseUtils.ksDatabasePassword.remove()
-  setUseKeychain(false, useKeychain, prefs, migration)
+  setUseKeychain(false, useKeychain, migration)
   storedKey.value = false
 }
 
@@ -415,15 +425,14 @@ suspend fun encryptDatabase(
   migration: Boolean,
 ): Boolean {
   val m = ChatModel
-  val prefs = ChatController.appPrefs
   progressIndicator.value = true
   return try {
-    prefs.encryptionStartedAt.set(Clock.System.now())
+    appPrefs.encryptionStartedAt.set(Clock.System.now())
     if (!m.chatDbChanged.value) {
       m.controller.apiSaveAppSettings(AppSettings.current.prepareForExport())
     }
     val error = m.controller.apiStorageEncryption(currentKey.value, newKey.value)
-    prefs.encryptionStartedAt.set(null)
+    appPrefs.encryptionStartedAt.set(null)
     val sqliteError = ((error?.chatError as? ChatError.ChatErrorDatabase)?.databaseError as? DatabaseError.ErrorExport)?.sqliteError
     when {
       sqliteError is SQLiteError.ErrorNotADatabase -> {
@@ -451,8 +460,8 @@ suspend fun encryptDatabase(
         resetFormAfterEncryption(m, initialRandomDBPassphrase, currentKey, newKey, confirmNewKey, storedKey, useKeychain.value)
         if (useKeychain.value) {
           DatabaseUtils.ksDatabasePassword.set(new)
-        } else if (migration) {
-          removePassphraseFromKeyChain(useKeychain, prefs, storedKey, true)
+        } else {
+          removePassphraseFromKeyChain(useKeychain, storedKey, migration)
         }
         operationEnded(m, progressIndicator) {
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.database_encrypted))
@@ -523,7 +532,6 @@ fun PreviewDatabaseEncryptionLayout() {
   SimpleXTheme {
     DatabaseEncryptionLayout(
       useKeychain = remember { mutableStateOf(true) },
-      prefs = AppPreferences(),
       chatDbEncrypted = true,
       currentKey = remember { mutableStateOf("") },
       newKey = remember { mutableStateOf("") },

@@ -15,29 +15,32 @@ We want to add up to 3 people to the team.
 
 ## Who we are looking for
 
+### Product/UI designer
+
+You will be designing the user experience and the interface of both the app and the website in collaboration with the team.
+
+The current focus of the app is privacy and security, but we hope to have the design that would support the feeling of psychological safety, enabling people to achieve the results in the smallest amount of time.
+
+You are an experienced and innovative product designer with:
+- 8+ years of user experience and visual design.
+- Expertise in typography and high sensitivity to colors.
+- Exceptional precision and attention to details.
+- Strong opinions (weakly held).
+- A strong empathy.
+
 ### Application Haskell engineer
+
+You will work with the Haskell core of the client applications and with the network servers.
 
 You are an expert in language models, databases and Haskell:
 - expert knowledge of SQL.
-- exception handling, concurrency, STM.
-- type systems - we use ad hoc dependent types a lot.
-- experience integrating open-source language models.
-- experience developing community-centric applications.
-- interested to build the next generation of messaging network.
-
-You will be focussed mostly on our client applications, and will also contribute to the servers also written in Haskell. 
-
-### iOS / Mac engineer
-
-You are an expert in Apple platforms, including:
-- iOS and Mac platform architecture.
-- Swift and Objective-C.
-- SwiftUI and UIKit.
-- extensions, including notification service extension and sharing extension.
-- low level inter-process communication primitives for concurrency.
-- interested about creating the next generation of UX for a communication/social network.
-
-Knowledge of Android and Kotlin Multiplatform would be a bonus - we use Kotlin Jetpack Compose for our Android and desktop apps.
+- Haskell exception handling, concurrency, STM, type systems.
+- 8y+ of software engineering experience in complex projects, 
+- deep understanding of the common programming principles:
+  - data structures, bits and bytes, text encoding.
+  - software design and algorithms.
+  - concurrency.
+  - networking.
 
 ## About you
 
@@ -53,20 +56,10 @@ Knowledge of Android and Kotlin Multiplatform would be a bonus - we use Kotlin J
   - focus on solving only today's problems and resist engineering for the future (aka over-engineering) – see [The Duct Tape Programmer](https://www.joelonsoftware.com/2009/09/23/the-duct-tape-programmer/) and [Why I Hate Frameworks](https://medium.com/@johnfliu/why-i-hate-frameworks-6af8cbadba42).
   - do not suffer from "not invented here" syndrome, at the same time interested to design and implement protocols and systems from the ground up when appropriate.
 
-- **Love software engineering**:
-  - have 5y+ of software engineering experience in complex projects, 
-  - great understanding of the common principles:
-    - data structures, bits and byte manipulation
-    - text encoding and manipulation
-    - software design and algorithms
-    - concurrency
-    - networking
-
 - **Want to join a very early stage startup**:
   - high pace and intensity, longer hours.
   - a substantial part of the compensation is stock options.
-  - full transparency – we believe that too much [autonomy](https://twitter.com/KentBeck/status/851459129830850561) hurts learning and slows down progress.
-
+  - full transparency - we believe that too much [autonomy](https://twitter.com/KentBeck/status/851459129830850561) hurts learning and slows down progress.
 
 ## How to join the team
 
@@ -75,3 +68,5 @@ Knowledge of Android and Kotlin Multiplatform would be a bonus - we use Kotlin J
 2. Also look through [GitHub issues](https://github.com/simplex-chat/simplex-chat/issues) submitted by the users to see what would you want to contribute as a test.
 
 3. [Connect to us](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FKBCmxJ3-lEjpWLPPkI6OWPk-YJneU5uY%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEAtixHJWDXvYWcoe-77vIfjvI6XWEuzUsapMS9nVHP_Go%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) via SimpleX Chat to chat about what you want to contribute and about joining the team.
+
+4. You can also email [jobs@simplex.chat](mailto:jobs@simplex.chat?subject=Join%20SimpleX%20Chat%20team)

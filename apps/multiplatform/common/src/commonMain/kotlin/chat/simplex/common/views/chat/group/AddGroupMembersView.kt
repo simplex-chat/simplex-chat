@@ -4,6 +4,7 @@ import SectionBottomSpacer
 import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
+import SectionItemViewWithoutMinPadding
 import SectionSpacer
 import SectionView
 import androidx.compose.foundation.*
@@ -24,6 +25,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.ChatInfoToolbarTitle
 import chat.simplex.common.views.helpers.*
@@ -58,7 +60,9 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
         for (contactId in selectedContacts) {
           val member = chatModel.controller.apiAddMember(rhId, groupInfo.groupId, contactId, selectedRole.value)
           if (member != null) {
-            chatModel.upsertGroupMember(rhId, groupInfo, member)
+            withChats {
+              upsertGroupMember(rhId, groupInfo, member)
+            }
           } else {
             break
           }
@@ -81,12 +85,13 @@ fun getContactsToAdd(chatModel: ChatModel, search: String): List<Contact> {
   val memberContactIds = chatModel.groupMembers
     .filter { it.memberCurrent }
     .mapNotNull { it.memberContactId }
-  return chatModel.chats
+  return chatModel.chats.value
     .asSequence()
     .map { it.chatInfo }
     .filterIsInstance<ChatInfo.Direct>()
     .map { it.contact }
-    .filter { c -> c.ready && c.active && c.contactId !in memberContactIds && c.chatViewName.lowercase().contains(s) }
+    .filter { c -> c.sendMsgEnabled && !c.nextSendGrpInv && c.contactId !in memberContactIds && c.anyNameContains(s)
+    }
     .sortedBy { it.displayName.lowercase() }
     .toList()
 }
@@ -173,7 +178,7 @@ fun AddGroupMembersLayout(
         InviteSectionFooter(selectedContactsCount = selectedContacts.size, allowModifyMembers, clearSelection)
       }
       SectionDividerSpaced(maxTopPadding = true)
-      SectionView(stringResource(MR.strings.select_contacts)) {
+      SectionView(stringResource(MR.strings.select_contacts).uppercase()) {
         SectionItemView(padding = PaddingValues(start = DEFAULT_PADDING, end = DEFAULT_PADDING_HALF)) {
           SearchRowView(searchText)
         }
@@ -251,7 +256,8 @@ fun InviteSectionFooter(selectedContactsCount: Int, enabled: Boolean, clearSelec
       Text(
         String.format(generalGetString(MR.strings.num_contacts_selected), selectedContactsCount),
         color = MaterialTheme.colors.secondary,
-        fontSize = 12.sp
+        lineHeight = 18.sp,
+        fontSize = 14.sp
       )
       Box(
         Modifier.clickable { if (enabled) clearSelection() }
@@ -259,14 +265,16 @@ fun InviteSectionFooter(selectedContactsCount: Int, enabled: Boolean, clearSelec
         Text(
           stringResource(MR.strings.clear_contacts_selection_button),
           color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
-          fontSize = 12.sp
+          lineHeight = 18.sp,
+          fontSize = 14.sp,
         )
       }
     } else {
       Text(
         stringResource(MR.strings.no_contacts_selected),
         color = MaterialTheme.colors.secondary,
-        fontSize = 12.sp
+        lineHeight = 18.sp,
+        fontSize = 14.sp,
       )
     }
   }
@@ -314,7 +322,7 @@ fun ContactCheckRow(
     icon = painterResource(MR.images.ic_circle)
     iconColor = MaterialTheme.colors.secondary
   }
-  SectionItemView(
+  SectionItemViewWithoutMinPadding(
     click = if (enabled) {
       {
         if (prohibitedToInviteIncognito) {

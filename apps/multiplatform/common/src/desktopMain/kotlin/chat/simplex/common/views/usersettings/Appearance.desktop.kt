@@ -3,35 +3,35 @@ package chat.simplex.common.views.usersettings
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionView
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.SharedPreference
-import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.platform.defaultLocale
-import chat.simplex.common.ui.theme.ThemeColor
+import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.usersettings.AppearanceScope.ColorEditor
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.delay
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @Composable
-actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)) {
+actual fun AppearanceView(m: ChatModel) {
   AppearanceScope.AppearanceLayout(
     m.controller.appPrefs.appLanguage,
     m.controller.appPrefs.systemDarkTheme,
-    showSettingsModal = showSettingsModal,
-    editColor = { name, initialColor ->
-      ModalManager.start.showModalCloseable { close ->
-        ColorEditor(name, initialColor, close)
-      }
-    },
   )
 }
 
@@ -39,8 +39,6 @@ actual fun AppearanceView(m: ChatModel, showSettingsModal: (@Composable (ChatMod
 fun AppearanceScope.AppearanceLayout(
   languagePref: SharedPreference<String?>,
   systemDarkTheme: SharedPreference<String?>,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  editColor: (ThemeColor, Color) -> Unit,
 ) {
   ColumnWithScrollBar(
     Modifier.fillMaxWidth(),
@@ -62,11 +60,62 @@ fun AppearanceScope.AppearanceLayout(
         }
       }
     }
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
+    ThemesSection(systemDarkTheme)
+
+    SectionDividerSpaced()
     ProfileImageSection()
 
     SectionDividerSpaced(maxTopPadding = true)
-    ThemesSection(systemDarkTheme, showSettingsModal, editColor)
+    FontScaleSection()
+
+    SectionDividerSpaced(maxTopPadding = true)
+    DensityScaleSection()
+
     SectionBottomSpacer()
+  }
+}
+
+@Composable
+fun DensityScaleSection() {
+  val localDensityScale = remember { mutableStateOf(appPrefs.densityScale.get()) }
+  SectionView(stringResource(MR.strings.appearance_zoom).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+    Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+      Box(Modifier.size(60.dp)
+        .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))
+        .clip(RoundedCornerShape(percent = 22))
+        .clickable {
+          localDensityScale.value = 1f
+          appPrefs.densityScale.set(localDensityScale.value)
+        },
+        contentAlignment = Alignment.Center) {
+        CompositionLocalProvider(
+          LocalDensity provides Density(LocalDensity.current.density * localDensityScale.value, LocalDensity.current.fontScale)
+        ) {
+          Text("${localDensityScale.value}",
+            color = if (localDensityScale.value == 1f) MaterialTheme.colors.primary else MaterialTheme.colors.onBackground,
+            fontSize = 12.sp,
+            maxLines = 1
+          )
+        }
+      }
+      Spacer(Modifier.width(10.dp))
+      Slider(
+        localDensityScale.value,
+        valueRange = 1f..2f,
+        steps = 11,
+        onValueChange = {
+          val diff = it % 0.1f
+          localDensityScale.value = String.format(Locale.US, "%.1f", it + (if (diff >= 0.05f) -diff + 0.1f else -diff)).toFloatOrNull() ?: 1f
+        },
+        onValueChangeFinished = {
+          appPrefs.densityScale.set(localDensityScale.value)
+        },
+        colors = SliderDefaults.colors(
+          activeTickColor = Color.Transparent,
+          inactiveTickColor = Color.Transparent,
+        )
+      )
+    }
   }
 }

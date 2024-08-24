@@ -4,7 +4,7 @@ import SectionBottomSpacer
 import SectionSpacer
 import SectionTextFooter
 import SectionView
-import androidx.compose.foundation.*
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -38,6 +38,7 @@ import kotlinx.serialization.*
 import java.io.File
 import java.net.URLEncoder
 import kotlin.math.max
+import kotlin.math.sqrt
 
 @Serializable
 data class MigrationFileLinkData(
@@ -145,19 +146,12 @@ private fun MigrateFromDeviceLayout(
 ) {
   val tempDatabaseFile = rememberSaveable { mutableStateOf(fileForTemporaryDatabase()) }
 
-  val (scrollBarAlpha, scrollModifier, scrollJob) = platform.desktopScrollBarComponents()
-  val scrollState = rememberScrollState()
-  Column(
-    Modifier.fillMaxSize().verticalScroll(scrollState).then(if (appPlatform.isDesktop) scrollModifier else Modifier).height(IntrinsicSize.Max),
+  ColumnWithScrollBar(
+    Modifier.fillMaxSize(), maxIntrinsicSize = true
   ) {
     AppBarTitle(stringResource(MR.strings.migrate_from_device_title))
     SectionByState(migrationState, tempDatabaseFile.value, chatReceiver)
     SectionBottomSpacer()
-  }
-  if (appPlatform.isDesktop) {
-    Box(Modifier.fillMaxSize()) {
-      platform.desktopScrollBar(scrollState, Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, false)
-    }
   }
   platform.androidLockPortraitOrientation()
 }
@@ -426,7 +420,8 @@ fun LargeProgressView(value: Float, title: String, description: String) {
   Box(Modifier.padding(DEFAULT_PADDING).fillMaxSize(), contentAlignment = Alignment.Center) {
     CircularProgressIndicator(
       progress = value,
-      (if (appPlatform.isDesktop) Modifier.size(DEFAULT_START_MODAL_WIDTH) else Modifier.size(windowWidth() - DEFAULT_PADDING * 2))
+      (if (appPlatform.isDesktop) Modifier.size(DEFAULT_START_MODAL_WIDTH * fontSizeSqrtMultiplier) else Modifier.size(windowWidth() - DEFAULT_PADDING *
+          2))
         .rotate(-90f),
       color = MaterialTheme.colors.primary,
       strokeWidth = 25.dp
@@ -477,12 +472,13 @@ private fun MutableState<MigrationFromState>.exportArchive() {
   withLongRunningApi {
     try {
       getMigrationTempFilesDirectory().mkdir()
-      val archivePath = exportChatArchive(chatModel, getMigrationTempFilesDirectory(), mutableStateOf(""), mutableStateOf(Instant.DISTANT_PAST), mutableStateOf(""))
-      val totalBytes = File(archivePath).length()
-      if (totalBytes > 0L) {
-        state = MigrationFromState.DatabaseInit(totalBytes, archivePath)
+      val (archivePath, archiveErrors) = exportChatArchive(chatModel, getMigrationTempFilesDirectory(), mutableStateOf(""), mutableStateOf(Instant.DISTANT_PAST), mutableStateOf(""))
+      if (archiveErrors.isEmpty()) {
+        uploadArchive(archivePath)
       } else {
-        AlertManager.shared.showAlertMsg(generalGetString(MR.strings.migrate_from_device_exported_file_doesnt_exist))
+        showArchiveExportedWithErrorsAlert(generalGetString(MR.strings.chat_database_exported_migrate), archiveErrors) {
+          uploadArchive(archivePath)
+        }
         state = MigrationFromState.UploadConfirmation
       }
     } catch (e: Exception) {
@@ -495,14 +491,28 @@ private fun MutableState<MigrationFromState>.exportArchive() {
   }
 }
 
+private fun MutableState<MigrationFromState>.uploadArchive(archivePath: String) {
+  val totalBytes = File(archivePath).length()
+  if (totalBytes > 0L) {
+    state = MigrationFromState.DatabaseInit(totalBytes, archivePath)
+  } else {
+    AlertManager.shared.showAlertMsg(generalGetString(MR.strings.migrate_from_device_exported_file_doesnt_exist))
+    state = MigrationFromState.UploadConfirmation
+  }
+
+}
+
 suspend fun initTemporaryDatabase(tempDatabaseFile: File, netCfg: NetCfg): Pair<ChatCtrl, User>? {
   val (status, ctrl) = chatInitTemporaryDatabase(tempDatabaseFile.absolutePath)
   showErrorOnMigrationIfNeeded(status)
   try {
     if (ctrl != null) {
       val user = startChatWithTemporaryDatabase(ctrl, netCfg)
-      return if (user != null) ctrl to user else null
+      if (user != null) return ctrl to user
+      chatCloseStore(ctrl)
     }
+    File(tempDatabaseFile.absolutePath + "_chat.db").delete()
+    File(tempDatabaseFile.absolutePath + "_agent.db").delete()
   } catch (e: Throwable) {
     Log.e(TAG, "Error while starting chat in temporary database: ${e.stackTraceToString()}")
   }

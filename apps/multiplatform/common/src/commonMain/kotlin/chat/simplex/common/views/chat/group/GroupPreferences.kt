@@ -17,6 +17,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.PreferenceToggleWithIcon
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.ColumnWithScrollBar
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -43,8 +44,10 @@ fun GroupPreferencesView(m: ChatModel, rhId: Long?, chatId: String, close: () ->
       val gp = gInfo.groupProfile.copy(groupPreferences = preferences.toGroupPreferences())
       val g = m.controller.apiUpdateGroup(rhId, gInfo.groupId, gp)
       if (g != null) {
-        m.updateGroup(rhId, g)
-        currentPreferences = preferences
+        withChats {
+          updateGroup(rhId, g)
+          currentPreferences = preferences
+        }
       }
       afterSave()
     }
@@ -123,13 +126,12 @@ private fun GroupPreferencesLayout(
       applyPrefs(preferences.copy(files = RoleGroupPreference(enable = enable, role)))
     }
 
-    // TODO enable simplexLinks preference in 5.8
-//    SectionDividerSpaced(true, maxBottomPadding = false)
-//    val allowSimplexLinks = remember(preferences) { mutableStateOf(preferences.simplexLinks.enable) }
-//    val simplexLinksRole = remember(preferences) { mutableStateOf(preferences.simplexLinks.role) }
-//    FeatureSection(GroupFeature.SimplexLinks, allowSimplexLinks, simplexLinksRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
-//      applyPrefs(preferences.copy(simplexLinks = RoleGroupPreference(enable = enable, role)))
-//    }
+    SectionDividerSpaced(true, maxBottomPadding = false)
+    val allowSimplexLinks = remember(preferences) { mutableStateOf(preferences.simplexLinks.enable) }
+    val simplexLinksRole = remember(preferences) { mutableStateOf(preferences.simplexLinks.role) }
+    FeatureSection(GroupFeature.SimplexLinks, allowSimplexLinks, simplexLinksRole, groupInfo, preferences, onTTLUpdated) { enable, role ->
+      applyPrefs(preferences.copy(simplexLinks = RoleGroupPreference(enable = enable, role)))
+    }
 
     SectionDividerSpaced(true, maxBottomPadding = false)
     val enableHistory = remember(preferences) { mutableStateOf(preferences.history.enable) }
@@ -189,8 +191,6 @@ private fun FeatureSection(
           generalGetString(MR.strings.feature_enabled_for),
           featureRoles,
           enableForRole,
-          // remove in v5.8
-          enabled = remember { mutableStateOf(false) },
           onSelected = { value ->
             onSelected(enableFeature.value, value)
           }

@@ -3,21 +3,27 @@ package chat.simplex.desktop
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.*
+import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.size
 import chat.simplex.common.platform.*
 import chat.simplex.common.platform.DesktopPlatform
 import chat.simplex.common.showApp
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.onboarding.OnboardingStage
 import kotlinx.coroutines.*
 import java.io.File
 
 fun main() {
+  // Disable hardware acceleration
+  //System.setProperty("skiko.renderApi", "SOFTWARE")
   initHaskell()
+  runMigrations()
+  setupUpdateChecker()
   initApp()
   tmpDir.deleteRecursively()
   tmpDir.mkdir()
@@ -43,35 +49,28 @@ private fun initHaskell() {
 
   platform = object: PlatformInterface {
     @Composable
-    override fun desktopScrollBarComponents(): Triple<Animatable<Float, AnimationVector1D>, Modifier, MutableState<Job>> {
-      val scope = rememberCoroutineScope()
-      val scrollBarAlpha = remember { Animatable(0f) }
-      val scrollJob: MutableState<Job> = remember { mutableStateOf(Job()) }
-      val modifier = remember {
-        Modifier.pointerInput(Unit) {
-          detectCursorMove {
-            scope.launch {
-              scrollBarAlpha.animateTo(1f)
-            }
-            scrollJob.value.cancel()
-            scrollJob.value = scope.launch {
-              delay(1000L)
-              scrollBarAlpha.animateTo(0f)
-            }
-          }
+    override fun desktopShowAppUpdateNotice() {
+      fun showNoticeIfNeeded() {
+        if (
+          !chatModel.controller.appPrefs.appUpdateNoticeShown.get()
+          && chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete
+          && chatModel.chats.size > 3
+          && chatModel.activeCallInvitation.value == null
+        ) {
+          appPrefs.appUpdateNoticeShown.set(true)
+          showAppUpdateNotice()
         }
       }
-      return Triple(scrollBarAlpha, modifier, scrollJob)
-    }
-
-    @Composable
-    override fun desktopScrollBar(state: LazyListState, modifier: Modifier, scrollBarAlpha: Animatable<Float, AnimationVector1D>, scrollJob: MutableState<Job>, reversed: Boolean) {
-      DesktopScrollBar(rememberScrollbarAdapter(scrollState = state), modifier, scrollBarAlpha, scrollJob, reversed)
-    }
-
-    @Composable
-    override fun desktopScrollBar(state: ScrollState, modifier: Modifier, scrollBarAlpha: Animatable<Float, AnimationVector1D>, scrollJob: MutableState<Job>, reversed: Boolean) {
-      DesktopScrollBar(rememberScrollbarAdapter(scrollState = state), modifier, scrollBarAlpha, scrollJob, reversed)
+      // Will show notice if chats were loaded before that moment and number of chats > 3
+      LaunchedEffect(Unit) {
+        showNoticeIfNeeded()
+      }
+      // Will show notice if chats were loaded later (a lot of chats/slow query) and number of chats > 3
+      KeyChangeEffect(chatModel.chats.size) { oldSize ->
+        if (oldSize == 0) {
+          showNoticeIfNeeded()
+        }
+      }
     }
   }
 }

@@ -3,6 +3,7 @@ package chat.simplex.common.views.usersettings
 import SectionBottomSpacer
 import SectionItemView
 import SectionItemViewSpaceBetween
+import SectionItemViewWithoutMinPadding
 import SectionSpacer
 import SectionTextFooter
 import SectionView
@@ -18,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.User
 import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.ntfManager
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.UserProfileRow
 import chat.simplex.common.views.database.PassphraseField
@@ -36,6 +38,9 @@ fun HiddenProfileView(
       withBGApi {
         try {
           val u = m.controller.apiHideUser(user, hidePassword)
+          if (!u.activeUser) {
+            ntfManager.cancelNotificationsForUser(u.userId)
+          }
           m.updateUser(u)
           close()
         } catch (e: Exception) {
@@ -70,10 +75,10 @@ private fun HiddenProfileLayout(
     val confirmValid by remember { derivedStateOf { confirmHidePassword.value == "" || hidePassword.value == confirmHidePassword.value } }
     val saveDisabled by remember { derivedStateOf { hidePassword.value == "" || !passwordValid || confirmHidePassword.value == "" || !confirmValid } }
     SectionView(stringResource(MR.strings.hidden_profile_password).uppercase()) {
-      SectionItemView {
+      SectionItemViewWithoutMinPadding {
         PassphraseField(hidePassword, generalGetString(MR.strings.password_to_show), isValid = { passwordValid }, showStrength = true)
       }
-      SectionItemView {
+      SectionItemViewWithoutMinPadding {
         PassphraseField(confirmHidePassword, stringResource(MR.strings.confirm_password), isValid = { confirmValid }, dependsOn = hidePassword)
       }
       SectionItemViewSpaceBetween({ saveProfilePassword(hidePassword.value) }, disabled = saveDisabled, minHeight = TextFieldDefaults.MinHeight) {

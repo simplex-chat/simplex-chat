@@ -47,7 +47,7 @@ for ORIG_NAME in "${ORIG_NAMES[@]}"; do
     #(cd apk && 7z a -r -mx=0 -tzip ../$ORIG_NAME resources.arsc)
 
     ALL_TOOLS=("$sdk_dir"/build-tools/*/)
-    BIN_DIR="${ALL_TOOLS[1]}"
+    BIN_DIR="${ALL_TOOLS[${#ALL_TOOLS[@]}-1]}"
 
     "$BIN_DIR"/zipalign -p -f 4 "$ORIG_NAME" "$ORIG_NAME"-2
 

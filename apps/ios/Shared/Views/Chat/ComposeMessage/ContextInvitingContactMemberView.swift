@@ -9,19 +9,18 @@
 import SwiftUI
 
 struct ContextInvitingContactMemberView: View {
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
 
     var body: some View {
         HStack {
             Image(systemName: "message")
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
             Text("Send direct message to connect")
         }
         .padding(12)
-        .frame(minHeight: 50)
+        .frame(minHeight: 54)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(colorScheme == .light ? sentColorLight : sentColorDark)
-        .padding(.top, 8)
+        .background(.thinMaterial)
     }
 }
 

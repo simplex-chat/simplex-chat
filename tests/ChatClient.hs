@@ -25,7 +25,7 @@ import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Network.Socket
 import Simplex.Chat
-import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..))
+import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), defaultSimpleNetCfg)
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (currentChatVersion, pqEncryptionCompressionVersion)
@@ -36,20 +36,23 @@ import Simplex.Chat.Terminal.Output (newChatTerminal)
 import Simplex.Chat.Types
 import Simplex.FileTransfer.Description (kb, mb)
 import Simplex.FileTransfer.Server (runXFTPServerBlocking)
-import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration)
+import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration, supportedXFTPhandshakes)
+import Simplex.FileTransfer.Transport (supportedFileServerVRange)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), closeSQLiteStore)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
+import Simplex.Messaging.Client (ProtocolClientConfig (..))
+import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
 import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
+import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
 import Simplex.Messaging.Transport
-import Simplex.Messaging.Transport.Server (defaultTransportServerConfig)
+import Simplex.Messaging.Transport.Server (TransportServerConfig (..), defaultTransportServerConfig)
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
@@ -92,14 +95,15 @@ testCoreOpts =
       -- dbKey = "this is a pass-phrase to encrypt the database",
       smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],
       xftpServers = ["xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"],
-      networkConfig = defaultNetworkConfig,
+      simpleNetCfg = defaultSimpleNetCfg,
       logLevel = CLLImportant,
       logConnections = False,
       logServerHosts = False,
       logAgent = Nothing,
       logFile = Nothing,
       tbqSize = 16,
-      highlyAvailable = False
+      highlyAvailable = False,
+      yesToUpMigrations = False
     }
 
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
@@ -129,8 +133,15 @@ aCfg = (agentConfig defaultChatConfig) {tbqSize = 16}
 testAgentCfg :: AgentConfig
 testAgentCfg =
   aCfg
-    { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000},
-      xftpNotifyErrsOnRetry = False
+    { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000}
+    }
+
+testAgentCfgSlow :: AgentConfig
+testAgentCfgSlow =
+  testAgentCfg
+    { smpClientVRange = mkVersionRange (Version 1) srvHostnamesSMPClientVersion, -- v2
+      smpAgentVRange = mkVersionRange duplexHandshakeSMPAgentVersion pqdrSMPAgentVersion, -- v5
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange batchCmdsSMPVersion sendingProxySMPVersion} -- v8
     }
 
 testCfg :: ChatConfig
@@ -141,6 +152,9 @@ testCfg =
       testView = True,
       tbqSize = 16
     }
+
+testCfgSlow :: ChatConfig
+testCfgSlow = testCfg {agentConfig = testAgentCfgSlow}
 
 testAgentCfgVPrev :: AgentConfig
 testAgentCfgVPrev =
@@ -210,7 +224,11 @@ testCfgCreateGroupDirect =
   mkCfgCreateGroupDirect testCfg
 
 mkCfgCreateGroupDirect :: ChatConfig -> ChatConfig
-mkCfgCreateGroupDirect cfg = cfg {chatVRange = groupCreateDirectVRange}
+mkCfgCreateGroupDirect cfg =
+  cfg
+    { chatVRange = groupCreateDirectVRange,
+      agentConfig = testAgentCfgSlow
+    }
 
 groupCreateDirectVRange :: VersionRangeChat
 groupCreateDirectVRange = mkVersionRange (VersionChat 1) (VersionChat 1)
@@ -399,8 +417,8 @@ testChatCfg4 cfg p1 p2 p3 p4 test = testChatN cfg testOpts [p1, p2, p3, p4] test
 concurrentlyN_ :: [IO a] -> IO ()
 concurrentlyN_ = mapConcurrently_ id
 
-serverCfg :: ServerConfig
-serverCfg =
+smpServerCfg :: ServerConfig
+smpServerCfg =
   ServerConfig
     { transports = [(serverPort, transport @TLS)],
       tbqSize = 1,
@@ -425,13 +443,20 @@ serverCfg =
       serverStatsLogFile = "tests/smp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
       smpServerVRange = supportedServerSMPRelayVRange,
-      transportConfig = defaultTransportServerConfig,
+      transportConfig = defaultTransportServerConfig {alpn = Just supportedSMPHandshakes},
       smpHandshakeTimeout = 1000000,
-      controlPort = Nothing
+      controlPort = Nothing,
+      smpAgentCfg = defaultSMPClientAgentConfig,
+      allowSMPProxy = True,
+      serverClientConcurrency = 16,
+      information = Nothing
     }
 
 withSmpServer :: IO () -> IO ()
-withSmpServer = serverBracket (`runSMPServerBlocking` serverCfg)
+withSmpServer = withSmpServer' smpServerCfg
+
+withSmpServer' :: ServerConfig -> IO () -> IO ()
+withSmpServer' cfg = serverBracket (`runSMPServerBlocking` cfg)
 
 xftpTestPort :: ServiceName
 xftpTestPort = "7002"
@@ -458,12 +483,13 @@ xftpServerConfig =
       caCertificateFile = "tests/fixtures/tls/ca.crt",
       privateKeyFile = "tests/fixtures/tls/server.key",
       certificateFile = "tests/fixtures/tls/server.crt",
+      xftpServerVRange = supportedFileServerVRange,
       logStatsInterval = Nothing,
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
       controlPort = Nothing,
-      transportConfig = defaultTransportServerConfig,
+      transportConfig = defaultTransportServerConfig {alpn = Just supportedXFTPhandshakes},
       responseDelay = 0
     }
 

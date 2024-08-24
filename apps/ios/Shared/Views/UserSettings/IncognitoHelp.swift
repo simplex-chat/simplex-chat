@@ -27,6 +27,7 @@ struct IncognitoHelp: View {
             }
             .listRowBackground(Color.clear)
         }
+        .modifier(ThemedBackground())
     }
 }
 

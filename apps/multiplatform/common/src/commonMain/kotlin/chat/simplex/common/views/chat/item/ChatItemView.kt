@@ -50,6 +50,8 @@ fun ChatItemView(
   linkMode: SimplexLinkMode,
   revealed: MutableState<Boolean>,
   range: IntRange?,
+  selectedChatItems: MutableState<Set<Long>?>,
+  selectChatItem: () -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long) -> Unit,
@@ -59,6 +61,7 @@ fun ChatItemView(
   scrollToItem: (Long) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
   openDirectChat: (Long) -> Unit,
+  forwardItem: (ChatInfo, ChatItem) -> Unit,
   updateContactStats: (Contact) -> Unit,
   updateMemberStats: (GroupInfo, GroupMember) -> Unit,
   syncContactConnection: (Contact) -> Unit,
@@ -68,6 +71,8 @@ fun ChatItemView(
   setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
   developerTools: Boolean,
+  showViaProxy: Boolean,
+  preview: Boolean = false,
 ) {
   val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
@@ -78,22 +83,18 @@ fun ChatItemView(
   val live = composeState.value.liveMessage != null
 
   Box(
-    modifier = Modifier
-      .padding(bottom = 4.dp)
-      .fillMaxWidth(),
+    modifier = Modifier.fillMaxWidth(),
     contentAlignment = alignment,
   ) {
-    val onClick = {
-      when (cItem.meta.itemStatus) {
-        is CIStatus.SndErrorAuth -> {
-          showMsgDeliveryErrorAlert(generalGetString(MR.strings.message_delivery_error_desc))
-        }
-        is CIStatus.SndError -> {
-          showMsgDeliveryErrorAlert(generalGetString(MR.strings.unknown_error) + ": ${cItem.meta.itemStatus.agentError}")
-        }
-        else -> {}
+    val info = cItem.meta.itemStatus.statusInto
+    val onClick = if (info != null) {
+      {
+        AlertManager.shared.showAlertMsg(
+          title = info.first,
+          text = info.second,
+        )
       }
-    }
+    } else { {} }
 
     @Composable
     fun ChatItemReactions() {
@@ -130,7 +131,7 @@ fun ChatItemView(
       ) {
         @Composable
         fun framedItemView() {
-          FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showMenu, receiveFile, onLinkLongClick, scrollToItem)
+          FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, receiveFile, onLinkLongClick, scrollToItem)
         }
 
         fun deleteMessageQuestionText(): String {
@@ -138,14 +139,6 @@ fun ChatItemView(
             generalGetString(MR.strings.delete_message_cannot_be_undone_warning)
           } else {
             generalGetString(MR.strings.delete_message_mark_deleted_warning)
-          }
-        }
-
-        fun moderateMessageQuestionText(): String {
-          return if (fullDeleteAllowed) {
-            generalGetString(MR.strings.moderate_message_will_be_deleted_warning)
-          } else {
-            generalGetString(MR.strings.moderate_message_will_be_marked_warning)
           }
         }
 
@@ -179,6 +172,10 @@ fun ChatItemView(
         fun DeleteItemMenu() {
           DefaultDropdownMenu(showMenu) {
             DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+            if (cItem.canBeDeletedForSelf) {
+              Divider()
+              SelectItemAction(showMenu, selectChatItem)
+            }
           }
         }
 
@@ -261,8 +258,7 @@ fun ChatItemView(
                   !cItem.isLiveDummy && !live
                   ) {
                   ItemAction(stringResource(MR.strings.forward_chat_item), painterResource(MR.images.ic_forward), onClick = {
-                    chatModel.chatId.value = null
-                    chatModel.sharedContent.value = SharedContent.Forward(cItem, cInfo)
+                    forwardItem(cInfo, cItem)
                     showMenu.value = false
                   })
                 }
@@ -273,12 +269,16 @@ fun ChatItemView(
                 if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancelAction != null && !cItem.localNote) {
                   CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
                 }
-                if (!(live && cItem.meta.isLive)) {
+                if (!(live && cItem.meta.isLive) && !preview) {
                   DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                 }
                 val groupInfo = cItem.memberToModerate(cInfo)?.first
-                if (groupInfo != null) {
-                  ModerateItemAction(cItem, questionText = moderateMessageQuestionText(), showMenu, deleteMessage)
+                if (groupInfo != null && cItem.chatDir !is CIDirection.GroupSnd) {
+                  ModerateItemAction(cItem, questionText = moderateMessageQuestionText(cInfo.featureEnabled(ChatFeature.FullDelete), 1), showMenu, deleteMessage)
+                }
+                if (cItem.canBeDeletedForSelf) {
+                  Divider()
+                  SelectItemAction(showMenu, selectChatItem)
                 }
               }
             }
@@ -293,12 +293,20 @@ fun ChatItemView(
                 }
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                 DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                if (cItem.canBeDeletedForSelf) {
+                  Divider()
+                  SelectItemAction(showMenu, selectChatItem)
+                }
               }
             }
             cItem.isDeletedContent -> {
               DefaultDropdownMenu(showMenu) {
                 ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                 DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                if (cItem.canBeDeletedForSelf) {
+                  Divider()
+                  SelectItemAction(showMenu, selectChatItem)
+                }
               }
             }
             cItem.mergeCategory != null && ((range?.count() ?: 0) > 1 || revealed.value) -> {
@@ -309,11 +317,19 @@ fun ChatItemView(
                   ExpandItemAction(revealed, showMenu)
                 }
                 DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                if (cItem.canBeDeletedForSelf) {
+                  Divider()
+                  SelectItemAction(showMenu, selectChatItem)
+                }
               }
             }
             else -> {
               DefaultDropdownMenu(showMenu) {
                 DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                if (selectedChatItems.value == null) {
+                  Divider()
+                  SelectItemAction(showMenu, selectChatItem)
+                }
               }
             }
           }
@@ -327,6 +343,10 @@ fun ChatItemView(
             }
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+            if (cItem.canBeDeletedForSelf) {
+              Divider()
+              SelectItemAction(showMenu, selectChatItem)
+            }
           }
         }
 
@@ -334,14 +354,14 @@ fun ChatItemView(
         fun ContentItem() {
           val mc = cItem.content.msgContent
           if (cItem.meta.itemDeleted != null && (!revealed.value || cItem.isDeletedContent)) {
-            MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed)
+            MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy)
             MarkedDeletedItemDropdownMenu()
           } else {
             if (cItem.quotedItem == null && cItem.meta.itemForwarded == null && cItem.meta.itemDeleted == null && !cItem.meta.isLive) {
               if (mc is MsgContent.MCText && isShortEmoji(cItem.content.text)) {
-                EmojiItemView(cItem, cInfo.timedMessagesTTL)
+                EmojiItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy)
               } else if (mc is MsgContent.MCVoice && cItem.content.text.isEmpty()) {
-                CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, cInfo.timedMessagesTTL, longClick = { onLinkLongClick("") }, receiveFile)
+                CIVoiceView(mc.duration, cItem.file, cItem.meta.itemEdited, cItem.chatDir.sent, hasText = false, cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy, longClick = { onLinkLongClick("") }, receiveFile = receiveFile)
               } else {
                 framedItemView()
               }
@@ -353,10 +373,14 @@ fun ChatItemView(
         }
 
         @Composable fun LegacyDeletedItem() {
-          DeletedItemView(cItem, cInfo.timedMessagesTTL)
+          DeletedItemView(cItem, cInfo.timedMessagesTTL, showViaProxy = showViaProxy)
           DefaultDropdownMenu(showMenu) {
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+            if (cItem.canBeDeletedForSelf) {
+              Divider()
+              SelectItemAction(showMenu, selectChatItem)
+            }
           }
         }
 
@@ -406,10 +430,14 @@ fun ChatItemView(
 
         @Composable
         fun DeletedItem() {
-          MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed)
+          MarkedDeletedItemView(cItem, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy)
           DefaultDropdownMenu(showMenu) {
             ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
             DeleteItemAction(cItem, revealed, showMenu, questionText = generalGetString(MR.strings.delete_message_cannot_be_undone_warning), deleteMessage, deleteMessages)
+            if (cItem.canBeDeletedForSelf) {
+              Divider()
+              SelectItemAction(showMenu, selectChatItem)
+            }
           }
         }
 
@@ -607,7 +635,12 @@ fun DeleteItemAction(
             for (i in range) {
               itemIds.add(reversedChatItems[i].id)
             }
-            deleteMessagesAlertDialog(itemIds, generalGetString(MR.strings.delete_message_mark_deleted_warning), deleteMessages = deleteMessages)
+            deleteMessagesAlertDialog(
+              itemIds,
+              generalGetString(if (itemIds.size == 1) MR.strings.delete_message_mark_deleted_warning else MR.strings.delete_messages_mark_deleted_warning),
+              forAll = false,
+              deleteMessages = { ids, _ -> deleteMessages(ids) }
+            )
           } else {
             deleteMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
           }
@@ -637,6 +670,21 @@ fun ModerateItemAction(
       moderateMessageAlertDialog(cItem, questionText, deleteMessage = deleteMessage)
     },
     color = Color.Red
+  )
+}
+
+@Composable
+fun SelectItemAction(
+  showMenu: MutableState<Boolean>,
+  selectChatItem: () -> Unit,
+) {
+  ItemAction(
+    stringResource(MR.strings.select_verb),
+    painterResource(MR.images.ic_check_circle),
+    onClick = {
+      showMenu.value = false
+      selectChatItem()
+    }
   )
 }
 
@@ -784,7 +832,7 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMes
   )
 }
 
-fun deleteMessagesAlertDialog(itemIds: List<Long>, questionText: String, deleteMessages: (List<Long>) -> Unit) {
+fun deleteMessagesAlertDialog(itemIds: List<Long>, questionText: String, forAll: Boolean, deleteMessages: (List<Long>, Boolean) -> Unit) {
   AlertManager.shared.showAlertDialogButtons(
     title = generalGetString(MR.strings.delete_messages__question).format(itemIds.size),
     text = questionText,
@@ -796,12 +844,27 @@ fun deleteMessagesAlertDialog(itemIds: List<Long>, questionText: String, deleteM
         horizontalArrangement = Arrangement.Center,
       ) {
         TextButton(onClick = {
-          deleteMessages(itemIds)
+          deleteMessages(itemIds, false)
           AlertManager.shared.hideAlert()
         }) { Text(stringResource(MR.strings.for_me_only), color = MaterialTheme.colors.error) }
+
+        if (forAll) {
+          TextButton(onClick = {
+            deleteMessages(itemIds, true)
+            AlertManager.shared.hideAlert()
+          }) { Text(stringResource(MR.strings.for_everybody), color = MaterialTheme.colors.error) }
+        }
       }
     }
   )
+}
+
+fun moderateMessageQuestionText(fullDeleteAllowed: Boolean, count: Int): String {
+  return if (fullDeleteAllowed) {
+    generalGetString(if (count == 1) MR.strings.moderate_message_will_be_deleted_warning else MR.strings.moderate_messages_will_be_deleted_warning)
+  } else {
+    generalGetString(if (count == 1) MR.strings.moderate_message_will_be_marked_warning else MR.strings.moderate_messages_will_be_marked_warning)
+  }
 }
 
 fun moderateMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMessage: (Long, CIDeleteMode) -> Unit) {
@@ -816,10 +879,13 @@ fun moderateMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteM
   )
 }
 
-private fun showMsgDeliveryErrorAlert(description: String) {
-  AlertManager.shared.showAlertMsg(
-    title = generalGetString(MR.strings.message_delivery_error_title),
-    text = description,
+fun moderateMessagesAlertDialog(itemIds: List<Long>, questionText: String, deleteMessages: (List<Long>) -> Unit) {
+  AlertManager.shared.showAlertDialog(
+    title = if (itemIds.size == 1) generalGetString(MR.strings.delete_member_message__question) else generalGetString(MR.strings.delete_members_messages__question).format(itemIds.size),
+    text = questionText,
+    confirmText = generalGetString(MR.strings.delete_verb),
+    destructive = true,
+    onConfirm = { deleteMessages(itemIds) }
   )
 }
 
@@ -827,39 +893,42 @@ expect fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager)
 
 @Preview
 @Composable
-fun PreviewChatItemView() {
-  SimpleXTheme {
-    ChatItemView(
-      rhId = null,
-      ChatInfo.Direct.sampleData,
-      ChatItem.getSampleData(
-        1, CIDirection.DirectSnd(), Clock.System.now(), "hello"
-      ),
-      useLinkPreviews = true,
-      linkMode = SimplexLinkMode.DESCRIPTION,
-      composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
-      revealed = remember { mutableStateOf(false) },
-      range = 0..1,
-      deleteMessage = { _, _ -> },
-      deleteMessages = { _ -> },
-      receiveFile = { _ -> },
-      cancelFile = {},
-      joinGroup = { _, _ -> },
-      acceptCall = { _ -> },
-      scrollToItem = {},
-      acceptFeature = { _, _, _ -> },
-      openDirectChat = { _ -> },
-      updateContactStats = { },
-      updateMemberStats = { _, _ -> },
-      syncContactConnection = { },
-      syncMemberConnection = { _, _ -> },
-      findModelChat = { null },
-      findModelMember = { null },
-      setReaction = { _, _, _, _ -> },
-      showItemDetails = { _, _ -> },
-      developerTools = false,
-    )
-  }
+fun PreviewChatItemView(
+  chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), Clock.System.now(), "hello")
+) {
+  ChatItemView(
+    rhId = null,
+    ChatInfo.Direct.sampleData,
+    chatItem,
+    useLinkPreviews = true,
+    linkMode = SimplexLinkMode.DESCRIPTION,
+    composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
+    revealed = remember { mutableStateOf(false) },
+    range = 0..1,
+    selectedChatItems = remember { mutableStateOf(setOf()) },
+    selectChatItem = {},
+    deleteMessage = { _, _ -> },
+    deleteMessages = { _ -> },
+    receiveFile = { _ -> },
+    cancelFile = {},
+    joinGroup = { _, _ -> },
+    acceptCall = { _ -> },
+    scrollToItem = {},
+    acceptFeature = { _, _, _ -> },
+    openDirectChat = { _ -> },
+    forwardItem = { _, _ -> },
+    updateContactStats = { },
+    updateMemberStats = { _, _ -> },
+    syncContactConnection = { },
+    syncMemberConnection = { _, _ -> },
+    findModelChat = { null },
+    findModelMember = { null },
+    setReaction = { _, _, _, _ -> },
+    showItemDetails = { _, _ -> },
+    developerTools = false,
+    showViaProxy = false,
+    preview = true,
+  )
 }
 
 @Preview
@@ -875,6 +944,8 @@ fun PreviewChatItemViewDeletedContent() {
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       revealed = remember { mutableStateOf(false) },
       range = 0..1,
+      selectedChatItems = remember { mutableStateOf(setOf()) },
+      selectChatItem = {},
       deleteMessage = { _, _ -> },
       deleteMessages = { _ -> },
       receiveFile = { _ -> },
@@ -884,6 +955,7 @@ fun PreviewChatItemViewDeletedContent() {
       scrollToItem = {},
       acceptFeature = { _, _, _ -> },
       openDirectChat = { _ -> },
+      forwardItem = { _, _ -> },
       updateContactStats = { },
       updateMemberStats = { _, _ -> },
       syncContactConnection = { },
@@ -893,6 +965,8 @@ fun PreviewChatItemViewDeletedContent() {
       setReaction = { _, _, _, _ -> },
       showItemDetails = { _, _ -> },
       developerTools = false,
+      showViaProxy = false,
+      preview = true,
     )
   }
 }

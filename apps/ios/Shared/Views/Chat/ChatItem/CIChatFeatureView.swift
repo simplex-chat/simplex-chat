@@ -11,7 +11,9 @@ import SimpleXChat
 
 struct CIChatFeatureView: View {
     @EnvironmentObject var m: ChatModel
+    @ObservedObject var im = ItemsModel.shared
     @ObservedObject var chat: Chat
+    @EnvironmentObject var theme: AppTheme
     var chatItem: ChatItem
     @Binding var revealed: Bool
     var feature: Feature
@@ -52,8 +54,8 @@ struct CIChatFeatureView: View {
         var fs: [FeatureInfo] = []
         var icons: Set<String> = []
         if var i = m.getChatItemIndex(chatItem) {
-            while i < m.reversedChatItems.count,
-                  let f = featureInfo(m.reversedChatItems[i]) {
+            while i < im.reversedChatItems.count,
+                  let f = featureInfo(im.reversedChatItems[i]) {
                 if !icons.contains(f.icon) {
                     fs.insert(f, at: 0)
                     icons.insert(f.icon)
@@ -66,10 +68,10 @@ struct CIChatFeatureView: View {
 
     private func featureInfo(_ ci: ChatItem) -> FeatureInfo? {
         switch ci.content {
-        case let .rcvChatFeature(feature, enabled, param): FeatureInfo(feature, enabled.iconColor, param)
-        case let .sndChatFeature(feature, enabled, param): FeatureInfo(feature, enabled.iconColor, param)
-        case let .rcvGroupFeature(feature, preference, param, role): FeatureInfo(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor, param)
-        case let .sndGroupFeature(feature, preference, param, role): FeatureInfo(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor, param)
+        case let .rcvChatFeature(feature, enabled, param): FeatureInfo(feature, enabled.iconColor(theme.colors.secondary), param)
+        case let .sndChatFeature(feature, enabled, param): FeatureInfo(feature, enabled.iconColor(theme.colors.secondary), param)
+        case let .rcvGroupFeature(feature, preference, param, role): FeatureInfo(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor(theme.colors.secondary), param)
+        case let .sndGroupFeature(feature, preference, param, role): FeatureInfo(feature, preference.enabled(role, for: chat.chatInfo.groupInfo?.membership).iconColor(theme.colors.secondary), param)
         default: nil
         }
     }
@@ -81,7 +83,7 @@ struct CIChatFeatureView: View {
         if let param = f.param {
             HStack {
                 i
-                chatEventText(Text(param)).lineLimit(1)
+                chatEventText(Text(param), theme.colors.secondary).lineLimit(1)
             }
         } else {
             i
@@ -93,7 +95,7 @@ struct CIChatFeatureView: View {
             Image(systemName: icon ?? feature.iconFilled)
                 .foregroundColor(iconColor)
                 .scaleEffect(feature.iconScale)
-            chatEventText(chatItem)
+            chatEventText(chatItem, theme.colors.secondary)
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 4)
@@ -104,6 +106,6 @@ struct CIChatFeatureView: View {
 struct CIChatFeatureView_Previews: PreviewProvider {
     static var previews: some View {
         let enabled = FeatureEnabled(forUser: false, forContact: false)
-        CIChatFeatureView(chat: Chat.sampleData, chatItem: ChatItem.getChatFeatureSample(.fullDelete, enabled), revealed: Binding.constant(true), feature: ChatFeature.fullDelete, iconColor: enabled.iconColor)
+        CIChatFeatureView(chat: Chat.sampleData, chatItem: ChatItem.getChatFeatureSample(.fullDelete, enabled), revealed: Binding.constant(true), feature: ChatFeature.fullDelete, iconColor: enabled.iconColor(.secondary))
     }
 }

@@ -18,8 +18,9 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.ChatModel.updatingChatsMutex
+import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -194,7 +195,7 @@ fun DatabaseLayout(
           stringResource(MR.strings.stop_chat_to_enable_database_actions)
         }
       )
-      SectionDividerSpaced()
+      SectionDividerSpaced(maxTopPadding = true)
     }
 
     SectionView(stringResource(MR.strings.chat_database_section)) {
@@ -263,7 +264,7 @@ fun DatabaseLayout(
         disabled = operationsDisabled
       )
     }
-    SectionDividerSpaced(maxTopPadding = true)
+    SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.files_and_media_section).uppercase()) {
       val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
@@ -448,6 +449,11 @@ private fun stopChat(m: ChatModel, progressIndicator: MutableState<Boolean>? = n
       progressIndicator?.value = true
       stopChatAsync(m)
       platform.androidChatStopped()
+      // close chat view for desktop
+      chatModel.chatId.value = null
+      if (appPlatform.isDesktop) {
+        ModalManager.end.closeModals()
+      }
       onStop?.invoke()
     } catch (e: Error) {
       m.chatRunning.value = true
@@ -486,15 +492,24 @@ fun deleteChatDatabaseFilesAndState() {
   tmpDir.deleteRecursively()
   getMigrationTempFilesDirectory().deleteRecursively()
   tmpDir.mkdir()
+  wallpapersDir.deleteRecursively()
+  wallpapersDir.mkdirs()
   DatabaseUtils.ksDatabasePassword.remove()
+  appPrefs.newDatabaseInitialized.set(false)
   controller.appPrefs.storeDBPassphrase.set(true)
   controller.ctrl = null
 
   // Clear sensitive data on screen just in case ModalManager will fail to prevent hiding its modals while database encrypts itself
   chatModel.chatId.value = null
   chatModel.chatItems.clear()
-  chatModel.chats.clear()
+  withLongRunningApi {
+    withChats {
+      chats.clear()
+      popChatCollector.clear()
+    }
+  }
   chatModel.users.clear()
+  ntfManager.cancelAllNotifications()
 }
 
 private fun exportArchive(
@@ -508,9 +523,17 @@ private fun exportArchive(
   progressIndicator.value = true
   withLongRunningApi {
     try {
-      val archiveFile = exportChatArchive(m, null, chatArchiveName, chatArchiveTime, chatArchiveFile)
+      val (archiveFile, archiveErrors) = exportChatArchive(m, null, chatArchiveName, chatArchiveTime, chatArchiveFile)
       chatArchiveFile.value = archiveFile
-      saveArchiveLauncher.launch(archiveFile.substringAfterLast(File.separator))
+      if (archiveErrors.isEmpty()) {
+        saveArchiveLauncher.launch(archiveFile.substringAfterLast(File.separator))
+      } else {
+        showArchiveExportedWithErrorsAlert(generalGetString(MR.strings.chat_database_exported_save), archiveErrors) {
+          withLongRunningApi {
+            saveArchiveLauncher.launch(archiveFile.substringAfterLast(File.separator))
+          }
+        }
+      }
       progressIndicator.value = false
     } catch (e: Error) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_exporting_chat_database), e.toString())
@@ -525,7 +548,7 @@ suspend fun exportChatArchive(
   chatArchiveName: MutableState<String?>,
   chatArchiveTime: MutableState<Instant?>,
   chatArchiveFile: MutableState<String?>
-): String {
+): Pair<String, List<ArchiveError>> {
   val archiveTime = Clock.System.now()
   val ts = SimpleDateFormat("yyyy-MM-dd'T'HHmmss", Locale.US).format(Date.from(archiveTime.toJavaInstant()))
   val archiveName = "simplex-chat.$ts.zip"
@@ -535,7 +558,8 @@ suspend fun exportChatArchive(
   if (!m.chatDbChanged.value) {
     controller.apiSaveAppSettings(AppSettings.current.prepareForExport())
   }
-  m.controller.apiExportArchive(config)
+  wallpapersDir.mkdirs()
+  val archiveErrors = m.controller.apiExportArchive(config)
   if (storagePath == null) {
     deleteOldArchive(m)
     m.controller.appPrefs.chatArchiveName.set(archiveName)
@@ -544,7 +568,7 @@ suspend fun exportChatArchive(
   chatArchiveName.value = archiveName
   chatArchiveTime.value = archiveTime
   chatArchiveFile.value = archivePath
-  return archivePath
+  return archivePath to archiveErrors
 }
 
 private fun deleteOldArchive(m: ChatModel) {
@@ -577,6 +601,28 @@ private fun importArchiveAlert(
   )
 }
 
+fun showArchiveImportedWithErrorsAlert(archiveErrors: List<ArchiveError>) {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.chat_database_imported),
+    text = generalGetString(MR.strings.restart_the_app_to_use_imported_chat_database) + "\n\n" + generalGetString(MR.strings.non_fatal_errors_occured_during_import) + archiveErrorsText(archiveErrors))
+}
+
+fun showArchiveExportedWithErrorsAlert(description: String, archiveErrors: List<ArchiveError>, onConfirm: () -> Unit) {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.chat_database_exported_title),
+    text = description + "\n\n" + generalGetString(MR.strings.chat_database_exported_not_all_files) + archiveErrorsText(archiveErrors),
+    confirmText = generalGetString(MR.strings.chat_database_exported_continue),
+    onConfirm = onConfirm
+  )
+}
+
+private fun archiveErrorsText(errs: List<ArchiveError>): String = "\n" + errs.map {
+  when (it) {
+    is ArchiveError.ArchiveErrorImport -> it.importError
+    is ArchiveError.ArchiveErrorFile -> "${it.file}: ${it.fileError}"
+  }
+}.joinToString(separator = "\n")
+
 private fun importArchive(
   m: ChatModel,
   importedArchiveURI: URI,
@@ -590,6 +636,7 @@ private fun importArchive(
     withLongRunningApi {
       try {
         m.controller.apiDeleteStorage()
+        wallpapersDir.mkdirs()
         try {
           val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
           val archiveErrors = m.controller.apiImportArchive(config)
@@ -605,7 +652,7 @@ private fun importArchive(
             }
           } else {
             operationEnded(m, progressIndicator) {
-              AlertManager.shared.showAlertMsg(generalGetString(MR.strings.chat_database_imported), text = generalGetString(MR.strings.restart_the_app_to_use_imported_chat_database) + "\n" + generalGetString(MR.strings.non_fatal_errors_occured_during_import))
+              showArchiveImportedWithErrorsAlert(archiveErrors)
             }
           }
         } catch (e: Error) {
@@ -702,10 +749,10 @@ private fun afterSetCiTTL(
   appFilesCountAndSize.value = directoryFileCountAndSize(appFilesDir.absolutePath)
   withApi {
     try {
-      updatingChatsMutex.withLock {
+      withChats {
         // this is using current remote host on purpose - if it changes during update, it will load correct chats
         val chats = m.controller.apiGetChats(m.remoteHostId())
-        m.updateChats(chats)
+        updateChats(chats)
       }
     } catch (e: Exception) {
       Log.e(TAG, "apiGetChats error: ${e.message}")

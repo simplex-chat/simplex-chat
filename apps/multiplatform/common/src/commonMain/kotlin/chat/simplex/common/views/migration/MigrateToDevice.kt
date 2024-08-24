@@ -155,19 +155,12 @@ private fun ModalData.MigrateToDeviceLayout(
   close: () -> Unit,
 ) {
   val tempDatabaseFile = rememberSaveable { mutableStateOf(fileForTemporaryDatabase()) }
-  val (scrollBarAlpha, scrollModifier, scrollJob) = platform.desktopScrollBarComponents()
-  val scrollState = rememberScrollState()
-  Column(
-    Modifier.fillMaxSize().verticalScroll(scrollState).then(if (appPlatform.isDesktop) scrollModifier else Modifier).height(IntrinsicSize.Max),
+  ColumnWithScrollBar(
+    Modifier.fillMaxSize(), maxIntrinsicSize = true
   ) {
     AppBarTitle(stringResource(MR.strings.migrate_to_device_title))
     SectionByState(migrationState, tempDatabaseFile.value, chatReceiver, close)
     SectionBottomSpacer()
-  }
-  if (appPlatform.isDesktop) {
-    Box(Modifier.fillMaxSize()) {
-      platform.desktopScrollBar(scrollState, Modifier.align(Alignment.CenterEnd).fillMaxHeight(), scrollBarAlpha, scrollJob, false)
-    }
   }
   platform.androidLockPortraitOrientation()
 }
@@ -237,7 +230,6 @@ private fun ModalData.OnionView(link: String, socksProxy: String?, hostMode: Hos
     proxy
   }
   }
-  val proxyPort = remember { derivedStateOf { networkProxyHostPort.value?.split(":")?.lastOrNull()?.toIntOrNull() ?: 9050 } }
 
   val netCfg = rememberSaveable(stateSaver = serializableSaver()) {
     mutableStateOf(getNetCfg().withOnionHosts(onionHosts.value).copy(socksProxy = socksProxy, sessionMode = sessionMode.value))
@@ -275,7 +267,6 @@ private fun ModalData.OnionView(link: String, socksProxy: String?, hostMode: Hos
       onionHosts,
       sessionMode,
       networkProxyHostPortPref,
-      proxyPort,
       toggleSocksProxy = { enable ->
         networkUseSocksProxy.value = enable
       },
@@ -517,7 +508,9 @@ private fun MutableState<MigrationToState?>.prepareDatabase(
   withLongRunningApi {
     val ctrlAndUser = initTemporaryDatabase(tempDatabaseFile, netCfg)
     if (ctrlAndUser == null) {
-      state = MigrationToState.DownloadFailed(0, link, archivePath(), netCfg)
+      // Probably, something wrong with network config or database initialization, let's start from scratch
+      state = MigrationToState.PasteOrScanLink
+      MigrationToDeviceState.save(null)
       return@withLongRunningApi
     }
 
@@ -594,14 +587,12 @@ private fun MutableState<MigrationToState?>.importArchive(archivePath: String, n
         chatInitControllerRemovingDatabases()
       }
       controller.apiDeleteStorage()
+      wallpapersDir.mkdirs()
       try {
         val config = ArchiveConfig(archivePath, parentTempDirectory = databaseExportDir.toString())
         val archiveErrors = controller.apiImportArchive(config)
         if (archiveErrors.isNotEmpty()) {
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.chat_database_imported),
-            generalGetString(MR.strings.non_fatal_errors_occured_during_import)
-          )
+          showArchiveImportedWithErrorsAlert(archiveErrors)
         }
         state = MigrationToState.Passphrase("", netCfg)
         MigrationToDeviceState.save(MigrationToDeviceState.Passphrase(netCfg))
@@ -669,7 +660,7 @@ private suspend fun MutableState<MigrationToState?>.cleanUpOnBack(chatReceiver: 
   if (state is MigrationToState.ArchiveImportFailed) {
     // Original database is not exist, nothing is set up correctly for showing to a user yet. Return to clean state
     deleteChatDatabaseFilesAndState()
-    initChatControllerAndRunMigrations()
+    initChatControllerOnStart()
   } else if (state is MigrationToState.DownloadProgress && state.ctrl != null) {
     stopArchiveDownloading(state.fileId, state.ctrl)
   }

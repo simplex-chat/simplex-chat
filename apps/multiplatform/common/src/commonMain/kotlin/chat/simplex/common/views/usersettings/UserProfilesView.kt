@@ -4,6 +4,7 @@ import SectionBottomSpacer
 import SectionDivider
 import SectionItemView
 import SectionItemViewSpaceBetween
+import SectionItemViewWithoutMinPadding
 import SectionSpacer
 import SectionTextFooter
 import SectionView
@@ -277,7 +278,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
 
     @Composable fun PasswordAndAction(label: StringResource, color: Color = MaterialTheme.colors.primary) {
       SectionView() {
-        SectionItemView {
+        SectionItemViewWithoutMinPadding {
           PassphraseField(actionPassword, generalGetString(MR.strings.profile_password), isValid = { passwordValid }, showStrength = true)
         }
         SectionItemViewSpaceBetween({ doAction(actionPassword.value) }, disabled = !actionEnabled, minHeight = TextFieldDefaults.MinHeight) {
@@ -307,7 +308,7 @@ private fun filteredUsers(m: ChatModel, searchTextOrPassword: String): List<User
   val s = searchTextOrPassword.trim()
   val lower = s.lowercase()
   return m.users.filter { u ->
-    if ((u.user.activeUser || !u.user.hidden) && (s == "" || u.user.chatViewName.lowercase().contains(lower))) {
+    if ((u.user.activeUser || !u.user.hidden) && (s == "" || u.user.anyNameContains(lower))) {
       true
     } else {
       correctPassword(u.user, s)
@@ -367,6 +368,7 @@ private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, de
       }
     }
     m.removeUser(user)
+    ntfManager.cancelNotificationsForUser(user.userId)
   } catch (e: Exception) {
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_deleting_user), e.stackTraceToString())
   }

@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.unit.Dp
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
@@ -15,7 +16,7 @@ import chat.simplex.res.MR
 
 @Composable
 fun DefaultTopAppBar(
-  navigationButton: @Composable RowScope.() -> Unit,
+  navigationButton: (@Composable RowScope.() -> Unit)? = null,
   title: (@Composable () -> Unit)?,
   onTitleClick: (() -> Unit)? = null,
   showSearch: Boolean,
@@ -44,10 +45,19 @@ fun DefaultTopAppBar(
 }
 
 @Composable
-fun NavigationButtonBack(onButtonClicked: (() -> Unit)?, tintColor: Color = if (onButtonClicked != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary) {
+fun NavigationButtonBack(onButtonClicked: (() -> Unit)?, tintColor: Color = if (onButtonClicked != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary, height: Dp = 24.dp) {
   IconButton(onButtonClicked ?: {}, enabled = onButtonClicked != null) {
     Icon(
-      painterResource(MR.images.ic_arrow_back_ios_new), stringResource(MR.strings.back), tint = tintColor
+      painterResource(MR.images.ic_arrow_back_ios_new), stringResource(MR.strings.back), Modifier.height(height), tint = tintColor
+    )
+  }
+}
+
+@Composable
+fun NavigationButtonClose(onButtonClicked: (() -> Unit)?, tintColor: Color = if (onButtonClicked != null) MaterialTheme.colors.primary else MaterialTheme.colors.secondary, height: Dp = 24.dp) {
+  IconButton(onButtonClicked ?: {}, enabled = onButtonClicked != null) {
+    Icon(
+      painterResource(MR.images.ic_close), stringResource(MR.strings.back), Modifier.height(height), tint = tintColor
     )
   }
 }
@@ -84,7 +94,7 @@ private fun TopAppBar(
   Box(
     modifier
       .fillMaxWidth()
-      .height(AppBarHeight)
+      .height(AppBarHeight * fontSizeSqrtMultiplier)
       .background(backgroundColor)
       .padding(horizontal = 4.dp),
     contentAlignment = Alignment.CenterStart,
@@ -125,5 +135,6 @@ private fun TopAppBar(
 
 val AppBarHeight = 56.dp
 val AppBarHorizontalPadding = 4.dp
+val BottomAppBarHeight = 60.dp
 private val TitleInsetWithoutIcon = DEFAULT_PADDING - AppBarHorizontalPadding
 val TitleInsetWithIcon = 72.dp

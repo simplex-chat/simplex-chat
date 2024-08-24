@@ -25,18 +25,13 @@ actual class RecorderNative: RecorderInterface {
 }
 
 actual object AudioPlayer: AudioPlayerInterface {
-  val player by lazy { AudioPlayerComponent().mediaPlayer() }
+  private val player by lazy { AudioPlayerComponent().mediaPlayer() }
 
-  // Filepath: String, onProgressUpdate
-  private val currentlyPlaying: MutableState<Pair<CryptoFile, (position: Int?, state: TrackState) -> Unit>?> = mutableStateOf(null)
+  override val currentlyPlaying: MutableState<CurrentlyPlayingState?> = mutableStateOf(null)
   private var progressJob: Job? = null
 
-  enum class TrackState {
-    PLAYING, PAUSED, REPLACED
-  }
-
   // Returns real duration of the track
-  private fun start(fileSource: CryptoFile, seek: Int? = null, onProgressUpdate: (position: Int?, state: TrackState) -> Unit): Int? {
+  private fun start(fileSource: CryptoFile, smallView: Boolean, seek: Int? = null, onProgressUpdate: (position: Int?, state: TrackState) -> Unit): Int? {
     val absoluteFilePath = if (fileSource.isAbsolutePath) fileSource.filePath else getAppFilePath(fileSource.filePath)
     if (!File(absoluteFilePath).exists()) {
       Log.e(TAG, "No such file: ${fileSource.filePath}")
@@ -46,7 +41,7 @@ actual object AudioPlayer: AudioPlayerInterface {
     VideoPlayerHolder.stopAll()
     RecorderInterface.stopRecording?.invoke()
     val current = currentlyPlaying.value
-    if (current == null || current.first != fileSource || !player.status().isPlayable) {
+    if (current == null || current.fileSource != fileSource || !player.status().isPlayable || smallView != current.smallView) {
       stopListener()
       player.stop()
       runCatching {
@@ -66,7 +61,7 @@ actual object AudioPlayer: AudioPlayerInterface {
     }
     if (seek != null) player.seekTo(seek)
     player.start()
-    currentlyPlaying.value = fileSource to onProgressUpdate
+    currentlyPlaying.value = CurrentlyPlayingState(fileSource, onProgressUpdate, smallView)
     progressJob = CoroutineScope(Dispatchers.Default).launch {
       onProgressUpdate(player.currentPosition, TrackState.PLAYING)
       while(isActive && (player.isPlaying || player.status().state() == State.OPENING)) {
@@ -80,7 +75,11 @@ actual object AudioPlayer: AudioPlayerInterface {
         onProgressUpdate(player.currentPosition, TrackState.PLAYING)
       }
       onProgressUpdate(null, TrackState.PAUSED)
-      currentlyPlaying.value?.first?.deleteTmpFile()
+      currentlyPlaying.value?.fileSource?.deleteTmpFile()
+      // Since coroutine is still NOT canceled, means player ended (no stop/no pause).
+      if (smallView && isActive) {
+        stopListener()
+      }
     }
     return player.duration
   }
@@ -103,7 +102,7 @@ actual object AudioPlayer: AudioPlayerInterface {
 
   // FileName or filePath are ok
   override fun stop(fileName: String?) {
-    if (fileName != null && currentlyPlaying.value?.first?.filePath?.endsWith(fileName) == true) {
+    if (fileName != null && currentlyPlaying.value?.fileSource?.filePath?.endsWith(fileName) == true) {
       stop()
     }
   }
@@ -111,8 +110,8 @@ actual object AudioPlayer: AudioPlayerInterface {
   private fun stopListener() {
     val afterCoroutineCancel: CompletionHandler = {
       // Notify prev audio listener about stop
-      currentlyPlaying.value?.second?.invoke(null, TrackState.REPLACED)
-      currentlyPlaying.value?.first?.deleteTmpFile()
+      currentlyPlaying.value?.onProgressUpdate?.invoke(null, TrackState.REPLACED)
+      currentlyPlaying.value?.fileSource?.deleteTmpFile()
       currentlyPlaying.value = null
     }
     /** Preventing race by calling a code AFTER coroutine ends, so [TrackState] will be:
@@ -133,11 +132,12 @@ actual object AudioPlayer: AudioPlayerInterface {
     progress: MutableState<Int>,
     duration: MutableState<Int>,
     resetOnEnd: Boolean,
+    smallView: Boolean,
   ) {
     if (progress.value == duration.value) {
       progress.value = 0
     }
-    val realDuration = start(fileSource, progress.value) { pro, state ->
+    val realDuration = start(fileSource, smallView = smallView, progress.value) { pro, state ->
       if (pro != null) {
         progress.value = pro
       }
@@ -162,7 +162,7 @@ actual object AudioPlayer: AudioPlayerInterface {
 
   override fun seekTo(ms: Int, pro: MutableState<Int>, filePath: String?) {
     pro.value = ms
-    if (currentlyPlaying.value?.first?.filePath == filePath) {
+    if (currentlyPlaying.value?.fileSource?.filePath == filePath) {
       player.seekTo(ms)
     }
   }
@@ -217,7 +217,7 @@ actual object SoundPlayer: SoundPlayerInterface {
     playing = true
     scope.launch {
       while (playing && sound) {
-        AudioPlayer.play(CryptoFile.plain(tmpFile.absolutePath), mutableStateOf(true), mutableStateOf(0), mutableStateOf(0), true)
+        AudioPlayer.play(CryptoFile.plain(tmpFile.absolutePath), mutableStateOf(true), mutableStateOf(0), mutableStateOf(0), resetOnEnd = true, smallView = false)
         delay(3500)
       }
     }
@@ -239,7 +239,7 @@ actual object CallSoundsPlayer: CallSoundsPlayerInterface {
     SoundPlayer::class.java.getResource(soundPath)!!.openStream()!!.use { it.copyTo(tmpFile.outputStream()) }
     playingJob = scope.launch {
       while (isActive) {
-        AudioPlayer.play(CryptoFile.plain(tmpFile.absolutePath), mutableStateOf(true), mutableStateOf(0), mutableStateOf(0), true)
+        AudioPlayer.play(CryptoFile.plain(tmpFile.absolutePath), mutableStateOf(true), mutableStateOf(0), mutableStateOf(0), resetOnEnd = true, smallView = false)
         delay(delay)
       }
     }

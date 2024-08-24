@@ -29,13 +29,12 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Types
-import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ConnReqUriData (..), ConnectionRequestUri (..), SMPQueue (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import Simplex.Messaging.Util (decodeJSON, safeDecodeUtf8)
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
 
@@ -144,13 +143,9 @@ markdownToList (m1 :|: m2) = markdownToList m1 <> markdownToList m2
 parseMarkdown :: Text -> Markdown
 parseMarkdown s = fromRight (unmarked s) $ A.parseOnly (markdownP <* A.endOfInput) s
 
-containsFormat :: (Format -> Bool) -> Markdown -> Bool
-containsFormat p (Markdown f _) = maybe False p f
-containsFormat p (m1 :|: m2) = containsFormat p m1 || containsFormat p m2
-
 isSimplexLink :: Format -> Bool
 isSimplexLink = \case
-  SimplexLink {} -> True;
+  SimplexLink {} -> True
   _ -> False
 
 markdownP :: Parser Markdown
@@ -227,11 +222,15 @@ markdownP = mconcat <$> A.many' fragmentP
     wordMD s
       | T.null s = unmarked s
       | isUri s =
-          let t = T.takeWhileEnd isPunctuation s
-              uri = uriMarkdown $ T.dropWhileEnd isPunctuation s
+          let t = T.takeWhileEnd isPunctuation' s
+              uri = uriMarkdown $ T.dropWhileEnd isPunctuation' s
            in if T.null t then uri else uri :|: unmarked t
       | isEmail s = markdown Email s
       | otherwise = unmarked s
+    isPunctuation' = \case
+      '/' -> False
+      ')' -> False
+      c -> isPunctuation c
     uriMarkdown s = case strDecode $ encodeUtf8 s of
       Right cReq -> markdown (simplexUriFormat cReq) s
       _ -> markdown Uri s

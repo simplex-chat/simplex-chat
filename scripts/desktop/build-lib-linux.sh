@@ -29,6 +29,11 @@ cabal build lib:simplex-chat --ghc-options='-optl-Wl,-rpath,$ORIGIN' --ghc-optio
 cd $BUILD_DIR/build
 #patchelf --add-needed libHSrts_thr-ghc${GHC_VERSION}.so libHSsimplex-chat-*-inplace-ghc${GHC_VERSION}.so
 #patchelf --add-rpath '$ORIGIN' libHSsimplex-chat-*-inplace-ghc${GHC_VERSION}.so
+
+# GitHub's Ubuntu 20.04 runner started to set libffi.so.7 as a dependency while Ubuntu 20.04 on user's devices may not have it
+# but libffi.so.8 is shipped as an external library with other libs
+patchelf --replace-needed "libffi.so.7" "libffi.so.8" libHSsimplex-chat-*-inplace-ghc${GHC_VERSION}.so
+
 mkdir deps 2> /dev/null || true
 ldd libHSsimplex-chat-*-inplace-ghc${GHC_VERSION}.so | grep "ghc" | cut -d' ' -f 3 | xargs -I {} cp {} ./deps/
 

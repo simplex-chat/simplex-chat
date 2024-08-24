@@ -12,6 +12,7 @@ import SimpleXChat
 struct ContactPreferencesView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
     @Binding var contact: Contact
     @State var featuresAllowed: ContactFeaturesAllowed
     @State var currentFeaturesAllowed: ContactFeaturesAllowed
@@ -66,8 +67,8 @@ struct ContactPreferencesView: View {
             .frame(height: 36)
             infoRow("Contact allows", pref.contactPreference.allow.text)
         }
-        header: { featureHeader(feature, enabled) }
-        footer: { featureFooter(feature, enabled) }
+        header: { featureHeader(feature, enabled).foregroundColor(theme.colors.secondary) }
+        footer: { featureFooter(feature, enabled).foregroundColor(theme.colors.secondary) }
     }
 
     private func timedMessagesFeatureSection() -> some View {
@@ -102,8 +103,8 @@ struct ContactPreferencesView: View {
                 infoRow("Delete after", timeText(pref.contactPreference.ttl))
             }
         }
-        header: { featureHeader(.timedMessages, enabled) }
-        footer: { featureFooter(.timedMessages, enabled) }
+        header: { featureHeader(.timedMessages, enabled).foregroundColor(theme.colors.secondary) }
+        footer: { featureFooter(.timedMessages, enabled).foregroundColor(theme.colors.secondary) }
     }
 
     private func featureHeader(_ feature: ChatFeature, _ enabled: FeatureEnabled) -> some View {

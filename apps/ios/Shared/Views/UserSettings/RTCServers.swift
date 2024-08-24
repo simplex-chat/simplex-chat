@@ -13,6 +13,7 @@ private let howToUrl = URL(string: "https://simplex.chat/docs/webrtc.html#config
 let serversFont = Font.custom("Menlo", size: 14)
 
 struct RTCServers: View {
+    @EnvironmentObject var theme: AppTheme
     @State private var userRTCServers: [String] = []
     @State private var isUserRTCServers = false
     @State private var isUserRTCServersToggle = false
@@ -53,6 +54,7 @@ struct RTCServers: View {
             } footer: {
                 if !isUserRTCServers {
                     Text("Using SimpleX Chat servers.")
+                        .foregroundColor(theme.colors.secondary)
                 }
             }
 
@@ -80,6 +82,7 @@ struct RTCServers: View {
                     }
                 } header: {
                     Text("ICE servers (one per line)")
+                        .foregroundColor(theme.colors.secondary)
                 } footer: {
                     HStack(spacing: 20) {
                         if editRTCServers {

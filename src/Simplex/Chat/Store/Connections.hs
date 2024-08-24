@@ -14,6 +14,7 @@ module Simplex.Chat.Store.Connections
     getContactConnEntityByConnReqHash,
     getConnectionsToSubscribe,
     unsetConnectionToSubscribe,
+    deleteConnectionRecord,
   )
 where
 
@@ -84,7 +85,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
           [sql|
             SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, custom_user_profile_id,
               conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id,
-              created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter,
+              created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
               conn_chat_version, peer_chat_min_version, peer_chat_max_version
             FROM connections
             WHERE user_id = ? AND agent_conn_id = ?
@@ -98,19 +99,19 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
           [sql|
             SELECT
               c.contact_profile_id, c.local_display_name, c.via_group, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, c.contact_used, c.contact_status, c.enable_ntfs, c.send_rcpts, c.favorite,
-              p.preferences, c.user_preferences, c.created_at, c.updated_at, c.chat_ts, c.contact_group_member_id, c.contact_grp_inv_sent, c.ui_themes, c.custom_data
+              p.preferences, c.user_preferences, c.created_at, c.updated_at, c.chat_ts, c.contact_group_member_id, c.contact_grp_inv_sent, c.ui_themes, c.chat_deleted, c.custom_data
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
             WHERE c.user_id = ? AND c.contact_id = ? AND c.deleted = 0
           |]
           (userId, contactId)
     toContact' :: Int64 -> Connection -> [ContactRow'] -> Either StoreError Contact
-    toContact' contactId conn [(profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, uiThemes, customData)] =
+    toContact' contactId conn [(profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. (contactGroupMemberId, contactGrpInvSent, uiThemes, chatDeleted, customData)] =
       let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
           chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
           mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
           activeConn = Just conn
-       in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, uiThemes, customData}
+       in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent, uiThemes, chatDeleted, customData}
     toContact' _ _ _ = Left $ SEInternalError "referenced contact not found"
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ groupMemberId c = ExceptT $ do
@@ -225,3 +226,7 @@ getConnectionsToSubscribe db vr = do
 
 unsetConnectionToSubscribe :: DB.Connection -> IO ()
 unsetConnectionToSubscribe db = DB.execute_ db "UPDATE connections SET to_subscribe = 0 WHERE to_subscribe = 1"
+
+deleteConnectionRecord :: DB.Connection -> User -> Int64 -> IO ()
+deleteConnectionRecord db User {userId} cId = do
+  DB.execute db "DELETE FROM connections WHERE user_id = ? AND connection_id = ?" (userId, cId)

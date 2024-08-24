@@ -1,11 +1,13 @@
 package chat.simplex.common.platform
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import com.russhwolf.settings.Settings
+import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 
 @Composable
@@ -28,6 +30,11 @@ expect fun windowOrientation(): WindowOrientation
 @Composable
 expect fun windowWidth(): Dp
 
+@Composable
+expect fun windowHeight(): Dp
+
 expect fun desktopExpandWindowToWidth(width: Dp)
 
 expect fun isRtl(text: CharSequence): Boolean
+
+expect fun ImageResource.toComposeImageBitmap(): ImageBitmap?

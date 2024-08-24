@@ -12,11 +12,13 @@ import SimpleXChat
 struct ChatItemInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject var theme: AppTheme
     var ci: ChatItem
     @Binding var chatItemInfo: ChatItemInfo?
     @State private var selection: CIInfoTab = .history
     @State private var alert: CIInfoViewAlert? = nil
+    @State private var messageStatusLimited: Bool = true
+    @State private var fileStatusLimited: Bool = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum CIInfoTab {
@@ -99,12 +101,14 @@ struct ChatItemInfoView: View {
                         Label("History", systemImage: "clock")
                     }
                     .tag(CIInfoTab.history)
+                    .modifier(ThemedBackground())
                 if let qi = ci.quotedItem {
                     quoteTab(qi)
                         .tabItem {
                             Label("In reply to", systemImage: "arrowshape.turn.up.left")
                         }
                         .tag(CIInfoTab.quote)
+                        .modifier(ThemedBackground())
                 }
                 if let forwardedFromItem = chatItemInfo?.forwardedFromChatItem {
                     forwardedFromTab(forwardedFromItem)
@@ -112,6 +116,7 @@ struct ChatItemInfoView: View {
                             Label(local ? "Saved" : "Forwarded", systemImage: "arrowshape.turn.up.forward")
                         }
                         .tag(CIInfoTab.forwarded)
+                        .modifier(ThemedBackground())
                 }
             }
             .onAppear {
@@ -121,6 +126,7 @@ struct ChatItemInfoView: View {
             }
         } else {
             historyTab()
+            .modifier(ThemedBackground())
         }
     }
 
@@ -157,6 +163,35 @@ struct ChatItemInfoView: View {
             if developerTools {
                 infoRow("Database ID", "\(meta.itemId)")
                 infoRow("Record updated at", localTimestamp(meta.updatedAt))
+                let msv = infoRow("Message status", ci.meta.itemStatus.id)
+                Group {
+                    if messageStatusLimited {
+                        msv.lineLimit(1)
+                    } else {
+                        msv
+                    }
+                }
+                .onTapGesture {
+                    withAnimation {
+                        messageStatusLimited.toggle()
+                    }
+                }
+
+                if let file = ci.file {
+                    let fsv = infoRow("File status", file.fileStatus.id)
+                    Group {
+                        if fileStatusLimited {
+                            fsv.lineLimit(1)
+                        } else {
+                            fsv
+                        }
+                    }
+                    .onTapGesture {
+                        withAnimation {
+                            fileStatusLimited.toggle()
+                        }
+                    }
+                }
             }
         }
     }
@@ -181,7 +216,7 @@ struct ChatItemInfoView: View {
                     }
                     else {
                         Text("No history")
-                            .foregroundColor(.secondary)
+                            .foregroundColor(theme.colors.secondary)
                             .frame(maxWidth: .infinity)
                     }
                 }
@@ -196,8 +231,8 @@ struct ChatItemInfoView: View {
             textBubble(itemVersion.msgContent.text, itemVersion.formattedText, nil)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(chatItemFrameColor(ci, colorScheme))
-                .cornerRadius(18)
+                .background(chatItemFrameColor(ci, theme))
+                .modifier(ChatItemClipped())
                 .contextMenu {
                     if itemVersion.msgContent.text != "" {
                         Button {
@@ -227,18 +262,19 @@ struct ChatItemInfoView: View {
         } else {
             Text("no text")
                 .italic()
-                .foregroundColor(.secondary)
+                .foregroundColor(theme.colors.secondary)
         }
     }
 
     private struct TextBubble: View {
+        @EnvironmentObject var theme: AppTheme
         var text: String
         var formattedText: [FormattedText]?
         var sender: String? = nil
         @State private var showSecrets = false
 
         var body: some View {
-            toggleSecrets(formattedText, $showSecrets, messageText(text, formattedText, sender, showSecrets: showSecrets))
+            toggleSecrets(formattedText, $showSecrets, messageText(text, formattedText, sender, showSecrets: showSecrets, secondaryColor: theme.colors.secondary))
         }
     }
 
@@ -265,8 +301,8 @@ struct ChatItemInfoView: View {
             textBubble(qi.text, qi.formattedText, qi.getSender(nil))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(quotedMsgFrameColor(qi, colorScheme))
-                .cornerRadius(18)
+                .background(quotedMsgFrameColor(qi, theme))
+                .modifier(ChatItemClipped())
                 .contextMenu {
                     if qi.text != "" {
                         Button {
@@ -289,10 +325,10 @@ struct ChatItemInfoView: View {
         .frame(maxWidth: maxWidth, alignment: .leading)
     }
 
-    func quotedMsgFrameColor(_ qi: CIQuote, _ colorScheme: ColorScheme) -> Color {
+    func quotedMsgFrameColor(_ qi: CIQuote, _ theme: AppTheme) -> Color {
         (qi.chatDir?.sent ?? false)
-        ? (colorScheme == .light ? sentColorLight : sentColorDark)
-        : Color(uiColor: .tertiarySystemGroupedBackground)
+        ? theme.appColors.sentMessage
+        : theme.appColors.receivedMessage
     }
 
     @ViewBuilder private func forwardedFromTab(_ forwardedFromItem: AChatItem) -> some View {
@@ -315,7 +351,7 @@ struct ChatItemInfoView: View {
             Button {
                 Task {
                     await MainActor.run {
-                        chatModel.chatId = forwardedFromItem.chatInfo.id
+                        ItemsModel.shared.loadOpenChat(forwardedFromItem.chatInfo.id)
                         dismiss()
                     }
                 }
@@ -327,7 +363,7 @@ struct ChatItemInfoView: View {
                 Divider().padding(.top, 32)
                 Text("Recipient(s) can't see who this message is from.")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             }
         }
     }
@@ -341,23 +377,23 @@ struct ChatItemInfoView: View {
                 VStack(alignment: .leading) {
                     Text("you")
                         .italic()
-                        .foregroundColor(.primary)
+                        .foregroundColor(theme.colors.onBackground)
                     Text(forwardedFromItem.chatInfo.chatViewName)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                         .lineLimit(1)
                 }
             } else if case let .groupRcv(groupMember) = forwardedFromItem.chatItem.chatDir {
                 VStack(alignment: .leading) {
                     Text(groupMember.chatViewName)
-                        .foregroundColor(.primary)
+                        .foregroundColor(theme.colors.onBackground)
                         .lineLimit(1)
                     Text(forwardedFromItem.chatInfo.chatViewName)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(theme.colors.secondary)
                         .lineLimit(1)
                 }
             } else {
                 Text(forwardedFromItem.chatInfo.chatViewName)
-                    .foregroundColor(.primary)
+                    .foregroundColor(theme.colors.onBackground)
                     .lineLimit(1)
             }
         }
@@ -379,54 +415,54 @@ struct ChatItemInfoView: View {
     }
 
     @ViewBuilder private func memberDeliveryStatusesView(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        LazyVStack(alignment: .leading, spacing: 12) {
             let mss = membersStatuses(memberDeliveryStatuses)
             if !mss.isEmpty {
                 ForEach(mss, id: \.0.groupMemberId) { memberStatus in
-                    memberDeliveryStatusView(memberStatus.0, memberStatus.1)
+                    memberDeliveryStatusView(memberStatus.0, memberStatus.1, memberStatus.2)
                 }
             } else {
                 Text("No delivery information")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(theme.colors.secondary)
             }
         }
     }
 
-    private func membersStatuses(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> [(GroupMember, CIStatus)] {
+    private func membersStatuses(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> [(GroupMember, GroupSndStatus, Bool?)] {
         memberDeliveryStatuses.compactMap({ mds in
             if let mem = chatModel.getGroupMember(mds.groupMemberId) {
-                return (mem.wrapped, mds.memberDeliveryStatus)
+                return (mem.wrapped, mds.memberDeliveryStatus, mds.sentViaProxy)
             } else {
                 return nil
             }
         })
     }
 
-    private func memberDeliveryStatusView(_ member: GroupMember, _ status: CIStatus) -> some View {
+    private func memberDeliveryStatusView(_ member: GroupMember, _ status: GroupSndStatus, _ sentViaProxy: Bool?) -> some View {
         HStack{
-            ProfileImage(imageStr: member.image, size: 30)
+            MemberProfileImage(member, size: 30)
                 .padding(.trailing, 2)
             Text(member.chatViewName)
                 .lineLimit(1)
             Spacer()
+            if sentViaProxy == true {
+                Image(systemName: "arrow.forward")
+                    .foregroundColor(theme.colors.secondary).opacity(0.67)
+            }
             let v = Group {
-                if let (icon, statusColor) = status.statusIcon(Color.secondary) {
-                    switch status {
-                    case .sndRcvd:
-                        ZStack(alignment: .trailing) {
-                            Image(systemName: icon)
-                                .foregroundColor(statusColor.opacity(0.67))
-                                .padding(.trailing, 6)
-                            Image(systemName: icon)
-                                .foregroundColor(statusColor.opacity(0.67))
-                        }
-                    default:
+                let (icon, statusColor) = status.statusIcon(theme.colors.secondary, theme.colors.primary)
+                switch status {
+                case .rcvd:
+                    ZStack(alignment: .trailing) {
                         Image(systemName: icon)
-                            .foregroundColor(statusColor)
+                            .foregroundColor(statusColor.opacity(0.67))
+                            .padding(.trailing, 6)
+                        Image(systemName: icon)
+                            .foregroundColor(statusColor.opacity(0.67))
                     }
-                } else {
-                    Image(systemName: "ellipsis")
-                        .foregroundColor(Color.secondary)
+                default:
+                    Image(systemName: icon)
+                        .foregroundColor(statusColor)
                 }
             }
 
@@ -469,8 +505,12 @@ struct ChatItemInfoView: View {
         if developerTools {
             shareText += [
                 String.localizedStringWithFormat(NSLocalizedString("Database ID: %d", comment: "copied message info"), meta.itemId),
-                String.localizedStringWithFormat(NSLocalizedString("Record updated at: %@", comment: "copied message info"), localTimestamp(meta.updatedAt))
+                String.localizedStringWithFormat(NSLocalizedString("Record updated at: %@", comment: "copied message info"), localTimestamp(meta.updatedAt)),
+                String.localizedStringWithFormat(NSLocalizedString("Message status: %@", comment: "copied message info"), meta.itemStatus.id)
             ]
+            if let file = ci.file {
+                shareText += [String.localizedStringWithFormat(NSLocalizedString("File status: %@", comment: "copied message info"), file.fileStatus.id)]
+            }
         }
         if let qi = ci.quotedItem {
             shareText += ["", NSLocalizedString("## In reply to", comment: "copied message info")]
