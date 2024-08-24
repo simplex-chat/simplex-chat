@@ -13,6 +13,8 @@ public let appSuspendTimeout: Int = 15 // seconds
 
 public let defaultProfileImageCorner: Double = 22.5
 
+public let defaultChatItemRoundness: Double = 0.8
+
 let GROUP_DEFAULT_APP_STATE = "appState"
 let GROUP_DEFAULT_NSE_STATE = "nseState"
 let GROUP_DEFAULT_SE_STATE = "seState"

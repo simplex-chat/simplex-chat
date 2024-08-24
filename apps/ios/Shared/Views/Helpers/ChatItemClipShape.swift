@@ -14,55 +14,130 @@ import SimpleXChat
 /// Supports [Dynamic Type](https://developer.apple.com/documentation/uikit/uifont/scaling_fonts_automatically)
 /// by retaining pill shape, even when ``ChatItem``'s height is less that twice its corner radius
 struct ChatItemClipped: ViewModifier {
-    struct ClipShape: Shape {
-        let maxCornerRadius: Double
-        
-        func path(in rect: CGRect) -> Path {
-            Path(
-                roundedRect: rect,
-                cornerRadius: min((rect.height / 2), maxCornerRadius), 
-                style: .circular
+    @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
+    private let shapePath: ChatBubble.ShapePath
+
+    init() { shapePath = .roundRect(maxRadius: 8) }
+
+    init(_ chatItem: ChatItem, isTailVisible: Bool) {
+        shapePath = switch chatItem.content {
+        case
+            .sndMsgContent,
+            .rcvMsgContent,
+            .rcvDecryptionError,
+            .rcvGroupInvitation,
+            .sndGroupInvitation,
+            .sndDeleted,
+            .rcvDeleted,
+            .rcvIntegrityError,
+            .sndModerated,
+            .rcvModerated,
+            .rcvBlocked,
+            .invalidJSON: .bubble(
+                padding: ChatBubble.paddingEdge(for: chatItem),
+                isTailVisible: Self.hidesTail(chatItem.content.msgContent) ? false : isTailVisible
             )
+        default: .roundRect(maxRadius: 8)
         }
     }
     
-    init() {
-        clipShape = ClipShape(
-            maxCornerRadius: 18
-        )
+    // Tail is hidden for images and video without any text
+    private static func hidesTail(_ msgContent: MsgContent?) -> Bool {
+        if let msgContent, msgContent.isImageOrVideo && msgContent.text.isEmpty {
+            true
+        } else {
+            false
+        }
     }
-    
-    init(_ chatItem: ChatItem) {
-        clipShape = ClipShape(
-            maxCornerRadius: {
-                switch chatItem.content {
-                case 
-                    .sndMsgContent, 
-                    .rcvMsgContent,
-                    .rcvDecryptionError,
-                    .rcvGroupInvitation,
-                    .sndGroupInvitation,
-                    .sndDeleted, 
-                    .rcvDeleted,
-                    .rcvIntegrityError,
-                    .sndModerated, 
-                    .rcvModerated, 
-                    .rcvBlocked,
-                    .invalidJSON: 18
-                default: 8
-                }
-            }()
-        )
-    }
-    
-    private let clipShape: ClipShape
-    
+
     func body(content: Content) -> some View {
+        let shape = ChatBubble(roundness: roundness, shapePath: shapePath)
         content
-            .contentShape(.dragPreview, clipShape)
-            .contentShape(.contextMenuPreview, clipShape)
-            .clipShape(clipShape)
+            .contentShape(.dragPreview, shape)
+            .contentShape(.contextMenuPreview, shape)
+            .clipShape(shape)
     }
 }
 
+struct ChatBubblePadding: ViewModifier {
+    let chatItem: ChatItem
 
+    func body(content: Content) -> some View {
+        content.padding(
+            chatItem.chatDir.sent ? .trailing : .leading,
+            ChatBubble.tailSize
+        )
+    }
+}
+
+struct ChatBubble: Shape {
+    enum ShapePath {
+        case bubble(padding: HorizontalEdge, isTailVisible: Bool)
+        case roundRect(maxRadius: Double)
+    }
+
+    static let tailSize: Double = 8
+    static let maxRadius: Double = 16
+    let roundness: Double
+    let shapePath: ShapePath
+
+    func path(in rect: CGRect) -> Path {
+        switch shapePath {
+        case .bubble(let padding, let isTailVisible):
+            let rMax = min(Self.maxRadius, min(rect.width, rect.height) / 2)
+            let r = roundness * rMax
+            let tailHeight = rect.height - (Self.tailSize + (rMax - Self.tailSize) * roundness)
+            var path = Path()
+            path.addArc(
+                center: CGPoint(x: r + Self.tailSize, y: r),
+                radius: r,
+                startAngle: .degrees(270),
+                endAngle: .degrees(180),
+                clockwise: true
+            )
+            if isTailVisible {
+                path.addLine(
+                    to: CGPoint(x: Self.tailSize, y: tailHeight)
+                )
+                path.addQuadCurve(
+                    to: CGPoint(x: 0, y: rect.height),
+                    control: CGPoint(x: Self.tailSize, y: tailHeight + r * 0.64)
+                )
+            } else {
+                path.addArc(
+                    center: CGPoint(x: r + Self.tailSize, y: rect.height - r),
+                    radius: r,
+                    startAngle: .degrees(180),
+                    endAngle: .degrees(90),
+                    clockwise: true
+                )
+            }
+            path.addArc(
+                center: CGPoint(x: rect.width - r, y: rect.height - r),
+                radius: r,
+                startAngle: .degrees(90),
+                endAngle: .degrees(0),
+                clockwise: true
+            )
+            path.addArc(
+                center: CGPoint(x: rect.width - r, y: r),
+                radius: r,
+                startAngle: .degrees(0),
+                endAngle: .degrees(270),
+                clockwise: true
+            )
+            return switch padding {
+            case .leading: path
+            case .trailing: path
+                    .scale(x: -1, y: 1, anchor: .center)
+                    .path(in: rect)
+            }
+        case .roundRect:
+            return Path(roundedRect: rect, cornerRadius: 8 * roundness)
+        }
+    }
+
+    static func paddingEdge(for chatItem: ChatItem) -> HorizontalEdge {
+        chatItem.chatDir.sent ? .trailing : .leading
+    }
+}

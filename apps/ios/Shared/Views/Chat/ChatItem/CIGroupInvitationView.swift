@@ -70,6 +70,7 @@ struct CIGroupInvitationView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
+        .modifier(ChatBubblePadding(chatItem: chatItem))
         .background(chatItemFrameColor(chatItem, theme))
         .textSelection(.disabled)
         .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
