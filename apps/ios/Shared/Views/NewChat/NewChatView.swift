@@ -327,6 +327,12 @@ private struct InviteView: View {
     }
 }
 
+private enum ProfileSwitchStatus {
+    case switchingUser
+    case switchingIncognito
+    case idle
+}
+
 private struct ActiveProfilePicker: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var chatModel: ChatModel
@@ -336,7 +342,7 @@ private struct ActiveProfilePicker: View {
     @Binding var incognitoEnabled: Bool
     @Binding var choosingProfile: Bool
     @State private var alert: SomeAlert?
-    @State private var switchingProfile = false
+    @State private var profileSwitchStatus: ProfileSwitchStatus = .idle
     @State private var switchingProfileByTimeout = false
     @State private var lastSwitchingProfileByTimeoutCall: Double?
     @State private var profiles: [User] = []
@@ -358,7 +364,7 @@ private struct ActiveProfilePicker: View {
                     .sorted { u, _ in u.activeUser }
             }
             .onChange(of: incognitoEnabled) { incognito in
-                if !switchingProfile {
+                if profileSwitchStatus != .switchingIncognito {
                     return
                 }
 
@@ -369,12 +375,12 @@ private struct ActiveProfilePicker: View {
                             await MainActor.run {
                                 contactConnection = conn
                                 chatModel.updateContactConnection(conn)
-                                switchingProfile = false
+                                profileSwitchStatus = .idle
                                 dismiss()
                             }
                         }
                     } catch {
-                        switchingProfile = false
+                        profileSwitchStatus = .idle
                         incognitoEnabled = !incognito
                         logger.error("apiSetConnectionIncognito error: \(responseError(error))")
                         let err = getErrorAlert(error, "Error changing to incognito!")
@@ -389,39 +395,39 @@ private struct ActiveProfilePicker: View {
                     }
                 }
             }
-            .onChange(of: switchingProfile) { sp in
-                if sp {
+            .onChange(of: profileSwitchStatus) { sp in
+                if sp != .idle {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        switchingProfileByTimeout = switchingProfile
+                        switchingProfileByTimeout = profileSwitchStatus != .idle
                     }
                 } else {
                     switchingProfileByTimeout = false
                 }
             }
             .onChange(of: selectedProfile) { profile in
-                if (profile == chatModel.currentUser) {
+                if (profileSwitchStatus != .switchingUser) {
                     return
                 }
                 Task {
                     do {
-                        switchingProfile = true
                         if let contactConn = contactConnection,
                            let conn = try await apiChangeConnectionUser(connId: contactConn.pccConnId, userId: profile.userId) {
                             
                             await MainActor.run {
                                 contactConnection = conn
                                 connReqInvitation = conn.connReqInv ?? ""
+                                incognitoEnabled = false
                                 chatModel.updateContactConnection(conn)
                             }
                             do {
                                 try await changeActiveUserAsync_(profile.userId, viewPwd: profile.hidden ? trimmedSearchTextOrPassword : nil )
                                 await MainActor.run {
-                                    switchingProfile = false
+                                    profileSwitchStatus = .idle
                                     dismiss()
                                 }
                             } catch {
                                 await MainActor.run {
-                                    switchingProfile = false
+                                    profileSwitchStatus = .idle
                                     alert = SomeAlert(
                                         alert: Alert(
                                             title: Text("Error switching profile"),
@@ -434,7 +440,7 @@ private struct ActiveProfilePicker: View {
                         }
                     } catch {
                         await MainActor.run {
-                            switchingProfile = false
+                            profileSwitchStatus = .idle
                             if let currentUser = chatModel.currentUser {
                                 selectedProfile = currentUser
                             }
@@ -493,10 +499,12 @@ private struct ActiveProfilePicker: View {
     
     @ViewBuilder private func profilerPickerUserOption(_ user: User) -> some View {
         Button {
-            if selectedProfile != user || incognitoEnabled {
-                switchingProfile = true
+            if selectedProfile == user && incognitoEnabled {
                 incognitoEnabled = false
+                profileSwitchStatus = .switchingIncognito
+            } else if selectedProfile != user {
                 selectedProfile = user
+                profileSwitchStatus = .switchingUser
             }
         } label: {
             HStack {
@@ -519,7 +527,7 @@ private struct ActiveProfilePicker: View {
         let incognitoOption = Button {
             if !incognitoEnabled {
                 incognitoEnabled = true
-                switchingProfile = true
+                profileSwitchStatus = .switchingIncognito
             }
         } label : {
             HStack {

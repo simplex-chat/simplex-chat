@@ -2,17 +2,18 @@ package chat.simplex.app
 
 import android.app.*
 import android.content.*
+import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.*
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.core.app.NotificationCompat
+import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import chat.simplex.app.model.NtfManager.EndCallAction
 import chat.simplex.app.views.call.CallActivity
 import chat.simplex.common.model.NotificationPreviewMode
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.call.CallState
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.datetime.Instant
@@ -34,7 +35,7 @@ class CallService: Service() {
     } else {
       Log.d(TAG, "null intent. Probably restarted by the system.")
     }
-    startForeground(CALL_SERVICE_ID, serviceNotification)
+    ServiceCompat.startForeground(this, CALL_SERVICE_ID, createNotificationIfNeeded(), foregroundServiceType())
     return START_STICKY
   }
 
@@ -42,8 +43,7 @@ class CallService: Service() {
     super.onCreate()
     Log.d(TAG, "Call service created")
     notificationManager = createNotificationChannel()
-    updateNotification()
-    startForeground(CALL_SERVICE_ID, serviceNotification)
+    ServiceCompat.startForeground(this, CALL_SERVICE_ID, updateNotification(), foregroundServiceType())
   }
 
   override fun onDestroy() {
@@ -69,7 +69,14 @@ class CallService: Service() {
     }
   }
 
-  fun updateNotification() {
+  private fun createNotificationIfNeeded(): Notification {
+    val ntf = serviceNotification
+    if (ntf != null) return ntf
+
+    return updateNotification()
+  }
+
+  fun updateNotification(): Notification {
     val call = chatModel.activeCall.value
     val previewMode = appPreferences.notificationPreviewMode.get()
     val title = if (previewMode == NotificationPreviewMode.HIDDEN.name)
@@ -83,8 +90,31 @@ class CallService: Service() {
     else
       base64ToBitmap(image).asAndroidBitmap()
 
-    serviceNotification = createNotification(title, text, largeIcon, call?.connectedAt)
-    startForeground(CALL_SERVICE_ID, serviceNotification)
+    val ntf = createNotification(title, text, largeIcon, call?.connectedAt)
+    serviceNotification = ntf
+    ServiceCompat.startForeground(this, CALL_SERVICE_ID, ntf, foregroundServiceType())
+    return ntf
+  }
+
+  private fun foregroundServiceType(): Int {
+    val call = chatModel.activeCall.value
+    return if (call == null) {
+      if (Build.VERSION.SDK_INT >= 34) {
+        ServiceInfo.FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING
+      } else {
+        0
+      }
+    } else if (Build.VERSION.SDK_INT >= 30) {
+      if (call.supportsVideo()) {
+        ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+      } else {
+        ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+      }
+    } else if (Build.VERSION.SDK_INT >= 29) {
+      ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+    } else {
+      0
+    }
   }
 
   private fun createNotificationChannel(): NotificationManager? {

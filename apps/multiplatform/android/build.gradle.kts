@@ -15,7 +15,7 @@ android {
         namespace = "chat.simplex.app"
         minSdk = 26
         //noinspection OldTargetApi
-        targetSdk = 33
+        targetSdk = 34
         // !!!
         // skip version code after release to F-Droid, as it uses two version codes
         versionCode = (extra["android.version_code"] as String).toInt()
@@ -126,29 +126,29 @@ android {
 
 dependencies {
     implementation(project(":common"))
-    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.core:core-ktx:1.13.1")
     //implementation("androidx.compose.ui:ui:${rootProject.extra["compose.version"] as String}")
     //implementation("androidx.compose.material:material:$compose_version")
     //implementation("androidx.compose.ui:ui-tooling-preview:$compose_version")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-process:2.7.0")
-    implementation("androidx.activity:activity-compose:1.8.2")
-    val workVersion = "2.9.0"
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
+    implementation("androidx.lifecycle:lifecycle-process:2.8.4")
+    implementation("androidx.activity:activity-compose:1.9.1")
+    val workVersion = "2.9.1"
     implementation("androidx.work:work-runtime-ktx:$workVersion")
     implementation("androidx.work:work-multiprocess:$workVersion")
 
-    implementation("com.jakewharton:process-phoenix:2.2.0")
+    implementation("com.jakewharton:process-phoenix:3.0.0")
 
     //Camera Permission
-    implementation("com.google.accompanist:accompanist-permissions:0.23.0")
+    implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 
     //implementation("androidx.compose.material:material-icons-extended:$compose_version")
     //implementation("androidx.compose.ui:ui-util:$compose_version")
 
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     //androidTestImplementation("androidx.compose.ui:ui-test-junit4:$compose_version")
     debugImplementation("androidx.compose.ui:ui-tooling:1.6.4")
 }
