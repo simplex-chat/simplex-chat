@@ -1030,14 +1030,14 @@ object ChatController {
     return null
   }
 
-  suspend fun apiContactQueueInfo(rh: Long?, contactId: Long): Pair<RcvMsgInfo?, QueueInfo>? {
+  suspend fun apiContactQueueInfo(rh: Long?, contactId: Long): Pair<RcvMsgInfo?, ServerQueueInfo>? {
     val r = sendCmd(rh, CC.APIContactQueueInfo(contactId))
     if (r is CR.QueueInfoR) return Pair(r.rcvMsgInfo, r.queueInfo)
     apiErrorAlert("apiContactQueueInfo", generalGetString(MR.strings.error), r)
     return null
   }
 
-  suspend fun apiGroupMemberQueueInfo(rh: Long?, groupId: Long, groupMemberId: Long): Pair<RcvMsgInfo?, QueueInfo>? {
+  suspend fun apiGroupMemberQueueInfo(rh: Long?, groupId: Long, groupMemberId: Long): Pair<RcvMsgInfo?, ServerQueueInfo>? {
     val r = sendCmd(rh, CC.APIGroupMemberQueueInfo(groupId, groupMemberId))
     if (r is CR.QueueInfoR) return Pair(r.rcvMsgInfo, r.queueInfo)
     apiErrorAlert("apiGroupMemberQueueInfo", generalGetString(MR.strings.error), r)
@@ -4734,7 +4734,7 @@ sealed class CR {
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
   @Serializable @SerialName("contactInfo") class ContactInfo(val user: UserRef, val contact: Contact, val connectionStats_: ConnectionStats? = null, val customUserProfile: Profile? = null): CR()
   @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats? = null): CR()
-  @Serializable @SerialName("queueInfo") class QueueInfoR(val user: UserRef, val rcvMsgInfo: RcvMsgInfo?, val queueInfo: QueueInfo): CR()
+  @Serializable @SerialName("queueInfo") class QueueInfoR(val user: UserRef, val rcvMsgInfo: RcvMsgInfo?, val queueInfo: ServerQueueInfo): CR()
   @Serializable @SerialName("contactSwitchStarted") class ContactSwitchStarted(val user: UserRef, val contact: Contact, val connectionStats: ConnectionStats): CR()
   @Serializable @SerialName("groupMemberSwitchStarted") class GroupMemberSwitchStarted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
   @Serializable @SerialName("contactSwitchAborted") class ContactSwitchAborted(val user: UserRef, val contact: Contact, val connectionStats: ConnectionStats): CR()
@@ -6407,6 +6407,16 @@ data class RcvMsgInfo (
   val msgDeliveryStatus: String,
   val agentMsgId: Long,
   val agentMsgMeta: String
+)
+
+@Serializable
+data class ServerQueueInfo (
+  val server: String,
+  val rcvId: String,
+  val sndId: String,
+  val ntfId: String? = null,
+  val status: String,
+  val info: QueueInfo
 )
 
 @Serializable
