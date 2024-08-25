@@ -1391,24 +1391,24 @@
         <target>Daten-Pakete hochgeladen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear" xml:space="preserve">
+      <trans-unit id="Clear" xml:space="preserve" approved="no">
         <source>Clear</source>
-        <target>Löschen</target>
+        <target state="translated">Entfernen</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Clear conversation" xml:space="preserve">
+      <trans-unit id="Clear conversation" xml:space="preserve" approved="no">
         <source>Clear conversation</source>
-        <target>Chatinhalte löschen</target>
+        <target state="translated">Chat-Inhalte entfernen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear conversation?" xml:space="preserve">
+      <trans-unit id="Clear conversation?" xml:space="preserve" approved="no">
         <source>Clear conversation?</source>
-        <target>Unterhaltung löschen?</target>
+        <target state="translated">Chat-Inhalte entfernen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear private notes?" xml:space="preserve">
+      <trans-unit id="Clear private notes?" xml:space="preserve" approved="no">
         <source>Clear private notes?</source>
-        <target>Private Notizen löschen?</target>
+        <target state="translated">Private Notizen entfernen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Clear verification" xml:space="preserve">
@@ -1720,9 +1720,9 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target>Weiter</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Conversation deleted!" xml:space="preserve">
+      <trans-unit id="Conversation deleted!" xml:space="preserve" approved="no">
         <source>Conversation deleted!</source>
-        <target>Unterhaltung gelöscht!</target>
+        <target state="translated">Chat-Inhalte entfernt!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Copy" xml:space="preserve">
@@ -3449,9 +3449,9 @@ Fehler: %2$@</target>
         <target>Die Gruppe wird für alle Mitglieder gelöscht. Dies kann nicht rückgängig gemacht werden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group will be deleted for you - this cannot be undone!" xml:space="preserve">
+      <trans-unit id="Group will be deleted for you - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Group will be deleted for you - this cannot be undone!</source>
-        <target>Die Gruppe wird für Sie gelöscht. Dies kann nicht rückgängig gemacht werden!</target>
+        <target state="translated">Die Gruppe wird nur bei Ihnen gelöscht. Dies kann nicht rückgängig gemacht werden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Help" xml:space="preserve">
@@ -3904,9 +3904,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Behalten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Keep conversation" xml:space="preserve">
+      <trans-unit id="Keep conversation" xml:space="preserve" approved="no">
         <source>Keep conversation</source>
-        <target>Unterhaltung behalten</target>
+        <target state="translated">Chat-Inhalte beibehalten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keep the app open to use it from desktop" xml:space="preserve">
@@ -4602,9 +4602,9 @@ Dies erfordert die Aktivierung eines VPNs.</target>
         <target>Nur die Endgeräte speichern die Benutzerprofile, Kontakte, Gruppen und Nachrichten, welche über eine **2-Schichten Ende-zu-Ende-Verschlüsselung** gesendet werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only delete conversation" xml:space="preserve">
+      <trans-unit id="Only delete conversation" xml:space="preserve" approved="no">
         <source>Only delete conversation</source>
-        <target>Nur die Unterhaltung löschen</target>
+        <target state="translated">Nur die Chat-Inhalte löschen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
@@ -5153,9 +5153,9 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <target>Bewerten Sie die App</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reachable chat toolbar" xml:space="preserve">
+      <trans-unit id="Reachable chat toolbar" xml:space="preserve" approved="no">
         <source>Reachable chat toolbar</source>
-        <target>Erreichbare Chat-Symbolleiste</target>
+        <target state="translated">Chat-Symbolleiste unten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="React…" xml:space="preserve">
@@ -5694,9 +5694,9 @@ Aktivieren Sie es in den *Netzwerk &amp; Server* Einstellungen.</target>
         <target>In der Suchleiste werden nun auch Einladungslinks akzeptiert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search or paste SimpleX link" xml:space="preserve">
+      <trans-unit id="Search or paste SimpleX link" xml:space="preserve" approved="no">
         <source>Search or paste SimpleX link</source>
-        <target>Suchen oder fügen Sie den SimpleX-Link ein</target>
+        <target state="translated">Suchen oder SimpleX-Link einfügen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Secondary" xml:space="preserve">
@@ -6586,9 +6586,9 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Diese Nachricht wird für alle Mitglieder als moderiert gekennzeichnet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The messages will be deleted for all members." xml:space="preserve">
+      <trans-unit id="The messages will be deleted for all members." xml:space="preserve" approved="no">
         <source>The messages will be deleted for all members.</source>
-        <target>Die Nachrichten werden für alle Mitglieder gelöscht werden.</target>
+        <target state="translated">Die Nachrichten werden für alle Gruppenmitglieder gelöscht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The messages will be marked as moderated for all members." xml:space="preserve">
@@ -7085,9 +7085,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Die App kann während eines Anrufs genutzt werden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use the app with one hand." xml:space="preserve">
+      <trans-unit id="Use the app with one hand." xml:space="preserve" approved="no">
         <source>Use the app with one hand.</source>
-        <target>Die App mit einer Hand nutzen.</target>
+        <target state="translated">Die App mit einer Hand bedienen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="User profile" xml:space="preserve">
@@ -7517,9 +7517,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>Sie können den Chat über die App-Einstellungen / Datenbank oder durch Neustart der App starten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can still view conversation with %@ in the list of chats." xml:space="preserve">
+      <trans-unit id="You can still view conversation with %@ in the list of chats." xml:space="preserve" approved="no">
         <source>You can still view conversation with %@ in the list of chats.</source>
-        <target>Sie können in der Chatliste weiterhin die Unterhaltung mit %@ einsehen.</target>
+        <target state="translated">Sie können in der Chat-Liste weiterhin die Unterhaltung mit %@ einsehen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve">
