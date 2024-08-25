@@ -21,6 +21,12 @@
   <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
   <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
+  <!-- Requirements that allows to specify foreground service types -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_REMOTE_MESSAGING" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
   <application
       android:name="SimplexApp"
       android:allowBackup="false"
@@ -133,7 +139,9 @@
         android:name=".SimplexService"
         android:enabled="true"
         android:exported="false"
-        android:stopWithTask="false"></service>
+        android:stopWithTask="false"
+        android:foregroundServiceType="remoteMessaging"
+    />
 
     <!-- SimplexService restart on reboot -->
 
@@ -141,7 +149,9 @@
         android:name=".CallService"
         android:enabled="true"
         android:exported="false"
-        android:stopWithTask="false"/>
+        android:stopWithTask="false"
+        android:foregroundServiceType="mediaPlayback|microphone|camera|remoteMessaging"
+    />
 
     <receiver
         android:name=".CallService$CallActionReceiver"

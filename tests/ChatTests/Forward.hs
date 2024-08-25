@@ -35,6 +35,8 @@ chatForwardTests = do
     it "with relative paths: from notes to group" testForwardFileNotesToGroup
   describe "multi forward api" $ do
     it "from contact to contact" testForwardContactToContactMulti
+    it "from group to group" testForwardGroupToGroupMulti
+    it "with relative paths: multiple files from contact to contact" testMultiForwardFiles
 
 testForwardContactToContact :: HasCallStack => FilePath -> IO ()
 testForwardContactToContact =
@@ -620,3 +622,188 @@ testForwardContactToContactMulti =
       cath <## "      hi"
       cath <# "alice> -> forwarded"
       cath <## "      hey"
+
+testForwardGroupToGroupMulti :: HasCallStack => FilePath -> IO ()
+testForwardGroupToGroupMulti =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+      createGroup2 "club" alice cath
+
+      threadDelay 1000000
+
+      alice #> "#team hi"
+      bob <# "#team alice> hi"
+      msgId1 <- lastItemId alice
+
+      threadDelay 1000000
+
+      bob #> "#team hey"
+      alice <# "#team bob> hey"
+      msgId2 <- lastItemId alice
+
+      alice ##> ("/_forward #2 #1 " <> msgId1 <> "," <> msgId2)
+      alice <# "#club <- you #team"
+      alice <## "      hi"
+      alice <# "#club <- #team"
+      alice <## "      hey"
+      cath <# "#club alice> -> forwarded"
+      cath <## "      hi"
+      cath <# "#club alice> -> forwarded"
+      cath <## "      hey"
+
+      -- read chat
+      alice ##> "/tail #club 2"
+      alice <# "#club <- you #team"
+      alice <## "      hi"
+      alice <# "#club <- #team"
+      alice <## "      hey"
+
+      cath ##> "/tail #club 2"
+      cath <# "#club alice> -> forwarded"
+      cath <## "      hi"
+      cath <# "#club alice> -> forwarded"
+      cath <## "      hey"
+
+testMultiForwardFiles :: HasCallStack => FilePath -> IO ()
+testMultiForwardFiles =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
+      setRelativePaths alice "./tests/tmp/alice_app_files" "./tests/tmp/alice_xftp"
+      copyFile "./tests/fixtures/test.jpg" "./tests/tmp/alice_app_files/test.jpg"
+      copyFile "./tests/fixtures/test.pdf" "./tests/tmp/alice_app_files/test.pdf"
+      setRelativePaths bob "./tests/tmp/bob_app_files" "./tests/tmp/bob_xftp"
+      setRelativePaths cath "./tests/tmp/cath_app_files" "./tests/tmp/cath_xftp"
+      connectUsers alice bob
+      connectUsers bob cath
+
+      threadDelay 1000000
+
+      msgIdZero <- lastItemId bob
+
+      bob #> "@alice hi"
+      alice <# "bob> hi"
+
+      -- send original files
+      let cm1 = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message without file\"}}"
+          cm2 = "{\"filePath\": \"test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 1\"}}"
+          cm3 = "{\"filePath\": \"test.pdf\", \"msgContent\": {\"type\": \"text\", \"text\": \"sending file 2\"}}"
+      alice ##> ("/_send @2 json [" <> cm1 <> "," <> cm2 <> "," <> cm3 <> "]")
+
+      alice <# "@bob message without file"
+
+      alice <# "@bob sending file 1"
+      alice <# "/f @bob test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+
+      alice <# "@bob sending file 2"
+      alice <# "/f @bob test.pdf"
+      alice <## "use /fc 2 to cancel sending"
+
+      bob <# "alice> message without file"
+
+      bob <# "alice> sending file 1"
+      bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      bob <# "alice> sending file 2"
+      bob <# "alice> sends file test.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+
+      alice <## "completed uploading file 1 (test.jpg) for bob"
+      alice <## "completed uploading file 2 (test.pdf) for bob"
+
+      bob ##> "/fr 1"
+      bob
+        <### [ "saving file 1 from alice to test.jpg",
+               "started receiving file 1 (test.jpg) from alice"
+             ]
+      bob <## "completed receiving file 1 (test.jpg) from alice"
+
+      bob ##> "/fr 2"
+      bob
+        <### [ "saving file 2 from alice to test.pdf",
+               "started receiving file 2 (test.pdf) from alice"
+             ]
+      bob <## "completed receiving file 2 (test.pdf) from alice"
+
+      src1 <- B.readFile "./tests/tmp/alice_app_files/test.jpg"
+      dest1 <- B.readFile "./tests/tmp/bob_app_files/test.jpg"
+      dest1 `shouldBe` src1
+
+      src2 <- B.readFile "./tests/tmp/alice_app_files/test.pdf"
+      dest2 <- B.readFile "./tests/tmp/bob_app_files/test.pdf"
+      dest2 `shouldBe` src2
+
+      -- forward file
+      let msgId1 = (read msgIdZero :: Int) + 1
+      bob ##> ("/_forward @3 @2 " <> show msgId1 <> "," <> show (msgId1 + 1) <> "," <> show (msgId1 + 2) <> "," <> show (msgId1 + 3))
+
+      -- messages printed for bob
+      bob <# "@cath <- you @alice"
+      bob <## "      hi"
+
+      bob <# "@cath <- @alice"
+      bob <## "      message without file"
+
+      bob <# "@cath <- @alice"
+      bob <## "      sending file 1"
+      bob <# "/f @cath test_1.jpg"
+      bob <## "use /fc 3 to cancel sending"
+
+      bob <# "@cath <- @alice"
+      bob <## "      sending file 2"
+      bob <# "/f @cath test_1.pdf"
+      bob <## "use /fc 4 to cancel sending"
+
+      -- messages printed for cath
+      cath <# "bob> -> forwarded"
+      cath <## "      hi"
+
+      cath <# "bob> -> forwarded"
+      cath <## "      message without file"
+
+      cath <# "bob> -> forwarded"
+      cath <## "      sending file 1"
+      cath <# "bob> sends file test_1.jpg (136.5 KiB / 139737 bytes)"
+      cath <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      cath <# "bob> -> forwarded"
+      cath <## "      sending file 2"
+      cath <# "bob> sends file test_1.pdf (266.0 KiB / 272376 bytes)"
+      cath <## "use /fr 2 [<dir>/ | <path>] to receive it"
+
+      -- file transfer
+      bob <## "completed uploading file 3 (test_1.jpg) for cath"
+      bob <## "completed uploading file 4 (test_1.pdf) for cath"
+
+      cath ##> "/fr 1"
+      cath
+        <### [ "saving file 1 from bob to test_1.jpg",
+               "started receiving file 1 (test_1.jpg) from bob"
+             ]
+      cath <## "completed receiving file 1 (test_1.jpg) from bob"
+
+      cath ##> "/fr 2"
+      cath
+        <### [ "saving file 2 from bob to test_1.pdf",
+               "started receiving file 2 (test_1.pdf) from bob"
+             ]
+      cath <## "completed receiving file 2 (test_1.pdf) from bob"
+
+      src1B <- B.readFile "./tests/tmp/bob_app_files/test_1.jpg"
+      src1B `shouldBe` dest1
+      dest1C <- B.readFile "./tests/tmp/cath_app_files/test_1.jpg"
+      dest1C `shouldBe` src1B
+
+      src2B <- B.readFile "./tests/tmp/bob_app_files/test_1.pdf"
+      src2B `shouldBe` dest2
+      dest2C <- B.readFile "./tests/tmp/cath_app_files/test_1.pdf"
+      dest2C `shouldBe` src2B
+
+      -- deleting original file doesn't delete forwarded file
+      checkActionDeletesFile "./tests/tmp/bob_app_files/test.jpg" $ do
+        bob ##> "/clear alice"
+        bob <## "alice: all messages are removed locally ONLY"
+      fwdFileExists <- doesFileExist "./tests/tmp/bob_app_files/test_1.jpg"
+      fwdFileExists `shouldBe` True
