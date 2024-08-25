@@ -2688,6 +2688,13 @@ public enum CIDirection: Decodable, Hashable {
             }
         }
     }
+    
+    public func sameDirection(_ dir: CIDirection) -> Bool {
+        switch (self, dir) {
+        case let (.groupRcv(m1), .groupRcv(m2)): m1.groupMemberId == m2.groupMemberId
+        default: sent == dir.sent
+        }
+    }
 }
 
 public struct CIMeta: Decodable, Hashable {
@@ -2762,7 +2769,7 @@ let msgTimeFormat = Date.FormatStyle.dateTime.hour().minute()
 let msgDateFormat = Date.FormatStyle.dateTime.day(.twoDigits).month(.twoDigits)
 
 public func formatTimestampText(_ date: Date) -> Text {
-    return Text(date, format: recent(date) ? msgTimeFormat : msgDateFormat)
+    Text(verbatim: date.formatted(recent(date) ? msgTimeFormat : msgDateFormat))
 }
 
 private func recent(_ date: Date) -> Bool {

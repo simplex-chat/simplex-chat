@@ -15,6 +15,7 @@ struct CIRcvDecryptionError: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
+    @Environment(\.showTimestamp) var showTimestamp: Bool
     var msgDecryptError: MsgDecryptError
     var msgCount: UInt32
     var chatItem: ChatItem
@@ -122,7 +123,7 @@ struct CIRcvDecryptionError: View {
                         .foregroundColor(syncSupported ? theme.colors.primary : theme.colors.secondary)
                         .font(.callout)
                     + Text("   ")
-                    + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy)
+                    + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
                 )
             }
             .padding(.horizontal, 12)
@@ -142,7 +143,7 @@ struct CIRcvDecryptionError: View {
                     .foregroundColor(.red)
                     .italic()
                 + Text("   ")
-                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy)
+                + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true, showViaProxy: showSentViaProxy, showTimesamp: showTimestamp)
             }
             .padding(.horizontal, 12)
             CIMetaView(chat: chat, chatItem: chatItem, metaColor: theme.colors.secondary)

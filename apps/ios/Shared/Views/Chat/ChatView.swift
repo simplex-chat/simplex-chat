@@ -696,6 +696,7 @@ struct ChatView: View {
         @EnvironmentObject var m: ChatModel
         @EnvironmentObject var theme: AppTheme
         @Binding @ObservedObject var chat: Chat
+        @ObservedObject var dummyModel: ChatItemDummyModel = .shared
         let chatItem: ChatItem
         let maxWidth: CGFloat
         @Binding var composeState: ComposeState
@@ -716,31 +717,50 @@ struct ChatView: View {
 
         var revealed: Bool { chatItem == revealedChatItem }
 
+        typealias ItemSeparation = (timestamp: Bool, largeGap: Bool)
+        
+        func getItemSeparation(_ chatItem: ChatItem, at i: Int?) -> ItemSeparation {
+            let im = ItemsModel.shared
+            if let i, i > 0 && im.reversedChatItems.count >= i {
+                let nextItem = im.reversedChatItems[i - 1]
+                let largeGap = !nextItem.chatDir.sameDirection(chatItem.chatDir) || nextItem.meta.createdAt.timeIntervalSince(chatItem.meta.createdAt) > 60
+                return (
+                    timestamp: largeGap || formatTimestampText(chatItem.meta.createdAt) != formatTimestampText(nextItem.meta.createdAt),
+                    largeGap: largeGap
+                )
+            } else {
+                return (timestamp: true, largeGap: true)
+            }
+        }
+
         var body: some View {
-            let (currIndex, _) = m.getNextChatItem(chatItem)
+            let currIndex = m.getChatItemIndex(chatItem)
             let ciCategory = chatItem.mergeCategory
             let (prevHidden, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
             let range = itemsRange(currIndex, prevHidden)
+            let timeSeparation = getItemSeparation(chatItem, at: currIndex)
             let im = ItemsModel.shared
             Group {
                 if revealed, let range = range {
                     let items = Array(zip(Array(range), im.reversedChatItems[range]))
-                    ForEach(items.reversed(), id: \.1.viewId) { (i, ci) in
-                        let prev = i == prevHidden ? prevItem : im.reversedChatItems[i + 1]
-                        chatItemView(ci, nil, prev)
-                        .overlay {
-                            if let selected = selectedChatItems, ci.canBeDeletedForSelf {
-                                Color.clear
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {
-                                        let checked = selected.contains(ci.id)
-                                        selectUnselectChatItem(select: !checked, ci)
+                    VStack(spacing: 0) {
+                        ForEach(items.reversed(), id: \.1.viewId) { (i: Int, ci: ChatItem) in
+                            let prev = i == prevHidden ? prevItem : im.reversedChatItems[i + 1]
+                            chatItemView(ci, nil, prev, getItemSeparation(ci, at: i))
+                                .overlay {
+                                    if let selected = selectedChatItems, ci.canBeDeletedForSelf {
+                                        Color.clear
+                                            .contentShape(Rectangle())
+                                            .onTapGesture {
+                                                let checked = selected.contains(ci.id)
+                                                selectUnselectChatItem(select: !checked, ci)
+                                            }
                                     }
-                            }
+                                }
                         }
                     }
                 } else {
-                    chatItemView(chatItem, range, prevItem)
+                    chatItemView(chatItem, range, prevItem, timeSeparation)
                     .overlay {
                         if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
                             Color.clear
@@ -791,7 +811,8 @@ struct ChatView: View {
             }
         }
 
-        @ViewBuilder func chatItemView(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ prevItem: ChatItem?) -> some View {
+        @ViewBuilder func chatItemView(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ prevItem: ChatItem?, _ itemSeparation: ItemSeparation) -> some View {
+            let bottomPadding: Double = itemSeparation.largeGap ? 10 : 2
             if case let .groupRcv(member) = ci.chatDir,
                case let .group(groupInfo) = chat.chatInfo {
                 let (prevMember, memCount): (GroupMember?, Int) =
@@ -833,11 +854,11 @@ struct ChatView: View {
                                             }
                                         }
                                     }
-                                chatItemWithMenu(ci, range, maxWidth)
+                                chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                             }
                         }
                     }
-                    .padding(.bottom, 5)
+                    .padding(.bottom, bottomPadding)
                     .padding(.trailing)
                     .padding(.leading, 12)
                 } else {
@@ -846,11 +867,11 @@ struct ChatView: View {
                             SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
                                 .padding(.leading, 12)
                         }
-                        chatItemWithMenu(ci, range, maxWidth)
+                        chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                             .padding(.trailing)
                             .padding(.leading, memberImageSize + 8 + 12)
                     }
-                    .padding(.bottom, 5)
+                    .padding(.bottom, bottomPadding)
                 }
             } else {
                 HStack(alignment: .center, spacing: 0) {
@@ -863,10 +884,10 @@ struct ChatView: View {
                                 .padding(.leading)
                         }
                     }
-                    chatItemWithMenu(ci, range, maxWidth)
+                    chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                         .padding(.horizontal)
                 }
-                .padding(.bottom, 5)
+                .padding(.bottom, bottomPadding)
             }
         }
 
@@ -881,7 +902,7 @@ struct ChatView: View {
             }
         }
 
-        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat) -> some View {
+        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat, _ itemSeparation: ItemSeparation) -> some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
             VStack(alignment: alignment.horizontal, spacing: 3) {
                 ChatItemView(
@@ -891,6 +912,7 @@ struct ChatView: View {
                     revealed: .constant(revealed),
                     allowMenu: $allowMenu
                 )
+                .environment(\.showTimestamp, itemSeparation.timestamp)
                 .modifier(ChatItemClipped(ci))
                 .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
                 .accessibilityLabel("")

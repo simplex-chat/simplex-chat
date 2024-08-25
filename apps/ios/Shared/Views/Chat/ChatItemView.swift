@@ -9,9 +9,21 @@
 import SwiftUI
 import SimpleXChat
 
+extension EnvironmentValues {
+    struct ShowTimestamp: EnvironmentKey {
+        static let defaultValue: Bool = true
+    }
+
+    var showTimestamp: Bool {
+        get { self[ShowTimestamp.self] }
+        set { self[ShowTimestamp.self] = newValue }
+    }
+}
+
 struct ChatItemView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.showTimestamp) var showTimestamp: Bool
     var chatItem: ChatItem
     var maxWidth: CGFloat = .infinity
     @Binding var revealed: Bool
