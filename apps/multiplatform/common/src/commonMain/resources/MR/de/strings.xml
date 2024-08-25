@@ -277,11 +277,11 @@
     <string name="accept_contact_incognito_button">Inkognito akzeptieren</string>
     <string name="reject_contact_button">Ablehnen</string>
     <!-- Clear Chat - ChatListNavLinkView.kt -->
-    <string name="clear_chat_question">Chatinhalte entfernen?</string>
+    <string name="clear_chat_question">Chat-Inhalte entfernen?</string>
     <string name="clear_chat_warning">Es werden alle Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden! Die Nachrichten werden NUR bei Ihnen gelöscht.</string>
     <string name="clear_verb">Entfernen</string>
-    <string name="clear_chat_button">Chatinhalte entfernen</string>
-    <string name="clear_chat_menu_action">Chatinhalte entfernen</string>
+    <string name="clear_chat_button">Chat-Inhalte entfernen</string>
+    <string name="clear_chat_menu_action">Chat-Inhalte entfernen</string>
     <string name="delete_contact_menu_action">Löschen</string>
     <string name="delete_group_menu_action">Löschen</string>
     <string name="mark_read">Als gelesen markieren</string>
@@ -2081,8 +2081,8 @@
     <string name="info_view_connect_button">Verbinden</string>
     <string name="info_view_message_button">Nachricht</string>
     <string name="info_view_open_button">Öffnen</string>
-    <string name="conversation_deleted">Unterhaltung gelöscht!</string>
-    <string name="only_delete_conversation">Nur die Unterhaltung löschen</string>
+    <string name="conversation_deleted">Chat-Inhalte gelöscht!</string>
+    <string name="only_delete_conversation">Nur die Chat-Inhalte löschen</string>
     <string name="info_view_search_button">Suchen</string>
     <string name="info_view_video_button">Video</string>
     <string name="you_can_still_view_conversation_with_contact">Sie können in der Chat-Liste weiterhin die Unterhaltung mit %1$s einsehen.</string>
@@ -2106,7 +2106,7 @@
     <string name="delete_contact_cannot_undo_warning">Kontakt wird gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="delete_without_notification">Ohne Benachrichtigung löschen</string>
     <string name="action_button_add_members">Einladen</string>
-    <string name="keep_conversation">Unterhaltung beibehalten</string>
+    <string name="keep_conversation">Chat-Inhalte beibehalten</string>
     <string name="cant_call_member_send_message_alert_text">Nachricht senden, um Anrufe zu aktivieren.</string>
     <string name="you_can_still_send_messages_to_contact">Sie können aus den archivierten Kontakten heraus Nachrichten an %1$s versenden.</string>
     <string name="toolbar_settings">Einstellungen</string>
