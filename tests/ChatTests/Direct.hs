@@ -17,6 +17,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List (intercalate)
 import qualified Data.Text as T
+import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.AppSettings (defaultAppSettings)
 import qualified Simplex.Chat.AppSettings as AS
 import Simplex.Chat.Call
@@ -25,6 +26,7 @@ import Simplex.Chat.Options (ChatOpts (..))
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificationCode, verificationCode, pattern VersionChat)
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import Simplex.Messaging.Version
@@ -52,6 +54,11 @@ chatDirectTests = do
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
     it "send large message" testLargeMessage
+  describe "batch send messages" $ do
+    it "send multiple messages api" testSendMulti
+    it "send multiple timed messages" testSendMultiTimed
+    it "send multiple messages, including quote" testSendMultiWithQuote
+    it "send multiple messages (many chat batches)" testSendMultiManyBatches
   describe "duplicate contacts" $ do
     it "duplicate contacts are separate (contacts don't merge)" testDuplicateContactsSeparate
     it "new contact is separate with multiple duplicate contacts (contacts don't merge)" testDuplicateContactsMultipleSeparate
@@ -715,22 +722,27 @@ testDirectMessageDeleteMultipleManyBatches =
     \alice bob -> do
       connectUsers alice bob
 
-      alice #> "@bob message 0"
-      bob <# "alice> message 0"
-      msgIdFirst <- lastItemId alice
+      msgIdZero <- lastItemId alice
 
-      forM_ [(1 :: Int) .. 300] $ \i -> do
-        alice #> ("@bob message " <> show i)
-        bob <# ("alice> message " <> show i)
+      let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message " <> show i <> "\"}}"
+          cms = intercalate ", " (map cm [1 .. 300 :: Int])
+
+      alice `send` ("/_send @2 json [" <> cms <> "]")
+      _ <- getTermLine alice
+
+      alice <## "300 messages sent"
       msgIdLast <- lastItemId alice
 
-      let mIdFirst = read msgIdFirst :: Int
+      forM_ [(1 :: Int) .. 300] $ \i -> do
+        bob <# ("alice> message " <> show i)
+
+      let mIdFirst = (read msgIdZero :: Int) + 1
           mIdLast = read msgIdLast :: Int
           deleteIds = intercalate "," (map show [mIdFirst .. mIdLast])
       alice `send` ("/_delete item @2 " <> deleteIds <> " broadcast")
       _ <- getTermLine alice
-      alice <## "301 messages deleted"
-      forM_ [(0 :: Int) .. 300] $ \i -> do
+      alice <## "300 messages deleted"
+      forM_ [(1 :: Int) .. 300] $ \i -> do
         bob <# ("alice> [marked deleted] message " <> show i)
 
 testDirectLiveMessage :: HasCallStack => FilePath -> IO ()
@@ -838,6 +850,112 @@ testLargeMessage =
       alice <## "user profile is changed to alice2 (your 1 contacts are notified)"
       bob <## "contact alice changed to alice2"
       bob <## "use @alice2 <message> to send messages"
+
+testSendMulti :: HasCallStack => FilePath -> IO ()
+testSendMulti =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice ##> "/_send @2 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
+      alice <# "@bob test 1"
+      alice <# "@bob test 2"
+      bob <# "alice> test 1"
+      bob <# "alice> test 2"
+
+testSendMultiTimed :: HasCallStack => FilePath -> IO ()
+testSendMultiTimed =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice ##> "/_send @2 ttl=1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}]"
+      alice <# "@bob test 1"
+      alice <# "@bob test 2"
+      bob <# "alice> test 1"
+      bob <# "alice> test 2"
+
+      alice
+        <### [ "timed message deleted: test 1",
+               "timed message deleted: test 2"
+             ]
+      bob
+        <### [ "timed message deleted: test 1",
+               "timed message deleted: test 2"
+             ]
+
+testSendMultiWithQuote :: HasCallStack => FilePath -> IO ()
+testSendMultiWithQuote =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice #> "@bob hello"
+      bob <# "alice> hello"
+      msgId1 <- lastItemId alice
+
+      threadDelay 1000000
+
+      bob #> "@alice hi"
+      alice <# "bob> hi"
+      msgId2 <- lastItemId alice
+
+      let cm1 = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message 1\"}}"
+          cm2 = "{\"quotedItemId\": " <> msgId1 <> ", \"msgContent\": {\"type\": \"text\", \"text\": \"message 2\"}}"
+          cm3 = "{\"quotedItemId\": " <> msgId2 <> ", \"msgContent\": {\"type\": \"text\", \"text\": \"message 3\"}}"
+
+      alice ##> ("/_send @2 json [" <> cm1 <> ", " <> cm2 <> ", " <> cm3 <> "]")
+      alice <## "bad chat command: invalid multi send: live and more than one quote not supported"
+
+      alice ##> ("/_send @2 json [" <> cm1 <> ", " <> cm2 <> "]")
+
+      alice <# "@bob message 1"
+      alice <# "@bob >> hello"
+      alice <## "      message 2"
+
+      bob <# "alice> message 1"
+      bob <# "alice> >> hello"
+      bob <## "      message 2"
+
+      alice ##> ("/_send @2 json [" <> cm3 <> ", " <> cm1 <> "]")
+
+      alice <# "@bob > hi"
+      alice <## "      message 3"
+      alice <# "@bob message 1"
+
+      bob <# "alice> > hi"
+      bob <## "      message 3"
+      bob <# "alice> message 1"
+
+testSendMultiManyBatches :: HasCallStack => FilePath -> IO ()
+testSendMultiManyBatches =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      threadDelay 1000000
+
+      msgIdAlice <- lastItemId alice
+      msgIdBob <- lastItemId bob
+
+      let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message " <> show i <> "\"}}"
+          cms = intercalate ", " (map cm [1 .. 300 :: Int])
+
+      alice `send` ("/_send @2 json [" <> cms <> "]")
+      _ <- getTermLine alice
+
+      alice <## "300 messages sent"
+
+      forM_ [(1 :: Int) .. 300] $ \i ->
+        bob <# ("alice> message " <> show i)
+
+      aliceItemsCount <- withCCTransaction alice $ \db ->
+        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdAlice) :: IO [[Int]]
+      aliceItemsCount `shouldBe` [[300]]
+
+      bobItemsCount <- withCCTransaction bob $ \db ->
+        DB.query db "SELECT count(1) FROM chat_items WHERE chat_item_id > ?" (Only msgIdBob) :: IO [[Int]]
+      bobItemsCount `shouldBe` [[300]]
 
 testGetSetSMPServers :: HasCallStack => FilePath -> IO ()
 testGetSetSMPServers =
@@ -2162,7 +2280,7 @@ testSetChatItemTTL =
       -- chat item with file
       alice #$> ("/_files_folder ./tests/tmp/app_files", id, "ok")
       copyFile "./tests/fixtures/test.jpg" "./tests/tmp/app_files/test.jpg"
-      alice ##> "/_send @2 json {\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+      alice ##> "/_send @2 json [{\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}]"
       alice <# "/f @bob test.jpg"
       alice <## "use /fc 1 to cancel sending"
       bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
@@ -2410,7 +2528,7 @@ setupDesynchronizedRatchet tmp alice = do
     (bob </)
     bob ##> "/tail @alice 1"
     bob <# "alice> decryption error, possibly due to the device change (header, 3 messages)"
-    bob ##> "@alice 1"
+    bob `send` "@alice 1"
     bob <## "error: command is prohibited, sendMessagesB: send prohibited"
     (alice </)
   where

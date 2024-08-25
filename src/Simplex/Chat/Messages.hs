@@ -336,6 +336,9 @@ aChatItemId (AChatItem _ _ _ ci) = chatItemId' ci
 aChatItemTs :: AChatItem -> UTCTime
 aChatItemTs (AChatItem _ _ _ ci) = chatItemTs' ci
 
+aChatItemDir :: AChatItem -> MsgDirection
+aChatItemDir (AChatItem _ sMsgDir _ _) = toMsgDirection sMsgDir
+
 updateFileStatus :: forall c d. ChatItem c d -> CIFileStatus d -> ChatItem c d
 updateFileStatus ci@ChatItem {file} status = case file of
   Just f -> ci {file = Just (f :: CIFile d) {fileStatus = status}}

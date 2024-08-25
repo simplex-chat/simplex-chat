@@ -1268,7 +1268,7 @@ fun showSyncConnectionForceAlert(syncConnectionForce: () -> Unit) {
   )
 }
 
-fun queueInfoText(info: Pair<RcvMsgInfo?, QueueInfo>): String {
+fun queueInfoText(info: Pair<RcvMsgInfo?, ServerQueueInfo>): String {
   val (rcvMsgInfo, qInfo) = info
   val msgInfo: String = if (rcvMsgInfo != null) json.encodeToString(rcvMsgInfo) else generalGetString(MR.strings.message_queue_info_none)
   return generalGetString(MR.strings.message_queue_info_server_info).format(json.encodeToString(qInfo), msgInfo)

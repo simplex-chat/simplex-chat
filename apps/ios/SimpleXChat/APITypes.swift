@@ -42,13 +42,13 @@ public enum ChatCommand {
     case apiGetChats(userId: Int64)
     case apiGetChat(type: ChatType, id: Int64, pagination: ChatPagination, search: String)
     case apiGetChatItemInfo(type: ChatType, id: Int64, itemId: Int64)
-    case apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: Int64?, msg: MsgContent, live: Bool, ttl: Int?)
-    case apiCreateChatItem(noteFolderId: Int64, file: CryptoFile?, msg: MsgContent)
+    case apiSendMessages(type: ChatType, id: Int64, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
+    case apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage])
     case apiUpdateChatItem(type: ChatType, id: Int64, itemId: Int64, msg: MsgContent, live: Bool)
     case apiDeleteChatItem(type: ChatType, id: Int64, itemIds: [Int64], mode: CIDeleteMode)
     case apiDeleteMemberChatItem(groupId: Int64, itemIds: [Int64])
     case apiChatItemReaction(type: ChatType, id: Int64, itemId: Int64, add: Bool, reaction: MsgReaction)
-    case apiForwardChatItem(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemId: Int64, ttl: Int?)
+    case apiForwardChatItems(toChatType: ChatType, toChatId: Int64, fromChatType: ChatType, fromChatId: Int64, itemIds: [Int64], ttl: Int?)
     case apiGetNtfToken
     case apiRegisterToken(token: DeviceToken, notificationMode: NotificationsMode)
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
@@ -97,6 +97,7 @@ public enum ChatCommand {
     case apiVerifyGroupMember(groupId: Int64, groupMemberId: Int64, connectionCode: String?)
     case apiAddContact(userId: Int64, incognito: Bool)
     case apiSetConnectionIncognito(connId: Int64, incognito: Bool)
+    case apiChangeConnectionUser(connId: Int64, userId: Int64)
     case apiConnectPlan(userId: Int64, connReq: String)
     case apiConnect(userId: Int64, incognito: Bool, connReq: String)
     case apiConnectContactViaAddress(userId: Int64, incognito: Bool, contactId: Int64)
@@ -190,20 +191,20 @@ public enum ChatCommand {
             case let .apiGetChat(type, id, pagination, search): return "/_get chat \(ref(type, id)) \(pagination.cmdString)" +
                 (search == "" ? "" : " search=\(search)")
             case let .apiGetChatItemInfo(type, id, itemId): return "/_get item info \(ref(type, id)) \(itemId)"
-            case let .apiSendMessage(type, id, file, quotedItemId, mc, live, ttl):
-                let msg = encodeJSON(ComposedMessage(fileSource: file, quotedItemId: quotedItemId, msgContent: mc))
+            case let .apiSendMessages(type, id, live, ttl, composedMessages):
+                let msgs = encodeJSON(composedMessages)
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
-                return "/_send \(ref(type, id)) live=\(onOff(live)) ttl=\(ttlStr) json \(msg)"
-            case let .apiCreateChatItem(noteFolderId, file, mc):
-                let msg = encodeJSON(ComposedMessage(fileSource: file, msgContent: mc))
-                return "/_create *\(noteFolderId) json \(msg)"
+                return "/_send \(ref(type, id)) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
+            case let .apiCreateChatItems(noteFolderId, composedMessages):
+                let msgs = encodeJSON(composedMessages)
+                return "/_create *\(noteFolderId) json \(msgs)"
             case let .apiUpdateChatItem(type, id, itemId, mc, live): return "/_update item \(ref(type, id)) \(itemId) live=\(onOff(live)) \(mc.cmdString)"
             case let .apiDeleteChatItem(type, id, itemIds, mode): return "/_delete item \(ref(type, id)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) \(mode.rawValue)"
             case let .apiDeleteMemberChatItem(groupId, itemIds): return "/_delete member item #\(groupId) \(itemIds.map({ "\($0)" }).joined(separator: ","))"
             case let .apiChatItemReaction(type, id, itemId, add, reaction): return "/_reaction \(ref(type, id)) \(itemId) \(onOff(add)) \(encodeJSON(reaction))"
-            case let .apiForwardChatItem(toChatType, toChatId, fromChatType, fromChatId, itemId, ttl):
+            case let .apiForwardChatItems(toChatType, toChatId, fromChatType, fromChatId, itemIds, ttl):
                 let ttlStr = ttl != nil ? "\(ttl!)" : "default"
-                return "/_forward \(ref(toChatType, toChatId)) \(ref(fromChatType, fromChatId)) \(itemId) ttl=\(ttlStr)"
+                return "/_forward \(ref(toChatType, toChatId)) \(ref(fromChatType, fromChatId)) \(itemIds.map({ "\($0)" }).joined(separator: ",")) ttl=\(ttlStr)"
             case .apiGetNtfToken: return "/_ntf get "
             case let .apiRegisterToken(token, notificationMode): return "/_ntf register \(token.cmdString) \(notificationMode.rawValue)"
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
@@ -262,6 +263,7 @@ public enum ChatCommand {
             case let .apiVerifyGroupMember(groupId, groupMemberId, .none): return "/_verify code #\(groupId) \(groupMemberId)"
             case let .apiAddContact(userId, incognito): return "/_connect \(userId) incognito=\(onOff(incognito))"
             case let .apiSetConnectionIncognito(connId, incognito): return "/_set incognito :\(connId) \(onOff(incognito))"
+            case let .apiChangeConnectionUser(connId, userId): return "/_set conn user :\(connId) \(userId)"
             case let .apiConnectPlan(userId, connReq): return "/_connect plan \(userId) \(connReq)"
             case let .apiConnect(userId, incognito, connReq): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connReq)"
             case let .apiConnectContactViaAddress(userId, incognito, contactId): return "/_connect contact \(userId) incognito=\(onOff(incognito)) \(contactId)"
@@ -347,14 +349,14 @@ public enum ChatCommand {
             case .apiGetChats: return "apiGetChats"
             case .apiGetChat: return "apiGetChat"
             case .apiGetChatItemInfo: return "apiGetChatItemInfo"
-            case .apiSendMessage: return "apiSendMessage"
-            case .apiCreateChatItem: return "apiCreateChatItem"
+            case .apiSendMessages: return "apiSendMessages"
+            case .apiCreateChatItems: return "apiCreateChatItems"
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
             case .apiConnectContactViaAddress: return "apiConnectContactViaAddress"
             case .apiDeleteMemberChatItem: return "apiDeleteMemberChatItem"
             case .apiChatItemReaction: return "apiChatItemReaction"
-            case .apiForwardChatItem: return "apiForwardChatItem"
+            case .apiForwardChatItems: return "apiForwardChatItems"
             case .apiGetNtfToken: return "apiGetNtfToken"
             case .apiRegisterToken: return "apiRegisterToken"
             case .apiVerifyToken: return "apiVerifyToken"
@@ -403,6 +405,7 @@ public enum ChatCommand {
             case .apiVerifyGroupMember: return "apiVerifyGroupMember"
             case .apiAddContact: return "apiAddContact"
             case .apiSetConnectionIncognito: return "apiSetConnectionIncognito"
+            case .apiChangeConnectionUser: return "apiChangeConnectionUser"
             case .apiConnectPlan: return "apiConnectPlan"
             case .apiConnect: return "apiConnect"
             case .apiDeleteChat: return "apiDeleteChat"
@@ -537,7 +540,7 @@ public enum ChatResponse: Decodable, Error {
     case networkConfig(networkConfig: NetCfg)
     case contactInfo(user: UserRef, contact: Contact, connectionStats_: ConnectionStats?, customUserProfile: Profile?)
     case groupMemberInfo(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionStats_: ConnectionStats?)
-    case queueInfo(user: UserRef, rcvMsgInfo: RcvMsgInfo?, queueInfo: QueueInfo)
+    case queueInfo(user: UserRef, rcvMsgInfo: RcvMsgInfo?, queueInfo: ServerQueueInfo)
     case contactSwitchStarted(user: UserRef, contact: Contact, connectionStats: ConnectionStats)
     case groupMemberSwitchStarted(user: UserRef, groupInfo: GroupInfo, member: GroupMember, connectionStats: ConnectionStats)
     case contactSwitchAborted(user: UserRef, contact: Contact, connectionStats: ConnectionStats)
@@ -555,6 +558,7 @@ public enum ChatResponse: Decodable, Error {
     case connectionVerified(user: UserRef, verified: Bool, expectedCode: String)
     case invitation(user: UserRef, connReqInvitation: String, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
+    case connectionUserChanged(user: UserRef, fromConnection: PendingContactConnection, toConnection: PendingContactConnection, newUser: UserRef)
     case connectionPlan(user: UserRef, connectionPlan: ConnectionPlan)
     case sentConfirmation(user: UserRef, connection: PendingContactConnection)
     case sentInvitation(user: UserRef, connection: PendingContactConnection)
@@ -588,7 +592,7 @@ public enum ChatResponse: Decodable, Error {
     case memberSubErrors(user: UserRef, memberSubErrors: [MemberSubError])
     case groupEmpty(user: UserRef, groupInfo: GroupInfo)
     case userContactLinkSubscribed
-    case newChatItem(user: UserRef, chatItem: AChatItem)
+    case newChatItems(user: UserRef, chatItems: [AChatItem])
     case chatItemStatusUpdated(user: UserRef, chatItem: AChatItem)
     case chatItemUpdated(user: UserRef, chatItem: AChatItem)
     case chatItemNotChanged(user: UserRef, chatItem: AChatItem)
@@ -725,6 +729,7 @@ public enum ChatResponse: Decodable, Error {
             case .connectionVerified: return "connectionVerified"
             case .invitation: return "invitation"
             case .connectionIncognitoUpdated: return "connectionIncognitoUpdated"
+            case .connectionUserChanged: return "connectionUserChanged"
             case .connectionPlan: return "connectionPlan"
             case .sentConfirmation: return "sentConfirmation"
             case .sentInvitation: return "sentInvitation"
@@ -758,7 +763,7 @@ public enum ChatResponse: Decodable, Error {
             case .memberSubErrors: return "memberSubErrors"
             case .groupEmpty: return "groupEmpty"
             case .userContactLinkSubscribed: return "userContactLinkSubscribed"
-            case .newChatItem: return "newChatItem"
+            case .newChatItems: return "newChatItems"
             case .chatItemStatusUpdated: return "chatItemStatusUpdated"
             case .chatItemUpdated: return "chatItemUpdated"
             case .chatItemNotChanged: return "chatItemNotChanged"
@@ -893,6 +898,7 @@ public enum ChatResponse: Decodable, Error {
             case let .connectionVerified(u, verified, expectedCode): return withUser(u, "verified: \(verified)\nconnectionCode: \(expectedCode)")
             case let .invitation(u, connReqInvitation, connection): return withUser(u, "connReqInvitation: \(connReqInvitation)\nconnection: \(connection)")
             case let .connectionIncognitoUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
+            case let .connectionUserChanged(u, fromConnection, toConnection, newUser): return withUser(u, "fromConnection: \(String(describing: fromConnection))\ntoConnection: \(String(describing: toConnection))\newUserId: \(String(describing: newUser.userId))")
             case let .connectionPlan(u, connectionPlan): return withUser(u, String(describing: connectionPlan))
             case let .sentConfirmation(u, connection): return withUser(u, String(describing: connection))
             case let .sentInvitation(u, connection): return withUser(u, String(describing: connection))
@@ -926,7 +932,9 @@ public enum ChatResponse: Decodable, Error {
             case let .memberSubErrors(u, memberSubErrors): return withUser(u, String(describing: memberSubErrors))
             case let .groupEmpty(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case .userContactLinkSubscribed: return noDetails
-            case let .newChatItem(u, chatItem): return withUser(u, String(describing: chatItem))
+            case let .newChatItems(u, chatItems):
+                let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
+                return withUser(u, itemsString)
             case let .chatItemStatusUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemUpdated(u, chatItem): return withUser(u, String(describing: chatItem))
             case let .chatItemNotChanged(u, chatItem): return withUser(u, String(describing: chatItem))
@@ -1094,12 +1102,12 @@ public enum GroupLinkPlan: Decodable, Hashable {
     case known(groupInfo: GroupInfo)
 }
 
-struct NewUser: Encodable, Hashable {
+struct NewUser: Encodable {
     var profile: Profile?
     var pastTimestamp: Bool
 }
 
-public enum ChatPagination: Hashable {
+public enum ChatPagination {
     case last(count: Int)
     case after(chatItemId: Int64, count: Int)
     case before(chatItemId: Int64, count: Int)
@@ -1113,10 +1121,16 @@ public enum ChatPagination: Hashable {
     }
 }
 
-struct ComposedMessage: Encodable {
-    var fileSource: CryptoFile?
+public struct ComposedMessage: Encodable {
+    public var fileSource: CryptoFile?
     var quotedItemId: Int64?
     var msgContent: MsgContent
+
+    public init(fileSource: CryptoFile? = nil, quotedItemId: Int64? = nil, msgContent: MsgContent) {
+        self.fileSource = fileSource
+        self.quotedItemId = quotedItemId
+        self.msgContent = msgContent
+    }
 }
 
 public struct ArchiveConfig: Encodable {
@@ -1315,7 +1329,7 @@ public struct ServerAddress: Decodable {
     )
 }
 
-public struct NetCfg: Codable, Equatable, Hashable {
+public struct NetCfg: Codable, Equatable {
     public var socksProxy: String? = nil
     var socksMode: SocksMode = .always
     public var hostMode: HostMode = .publicHost
@@ -1369,18 +1383,18 @@ public struct NetCfg: Codable, Equatable, Hashable {
     public var enableKeepAlive: Bool { tcpKeepAlive != nil }
 }
 
-public enum HostMode: String, Codable, Hashable {
+public enum HostMode: String, Codable {
     case onionViaSocks
     case onionHost = "onion"
     case publicHost = "public"
 }
 
-public enum SocksMode: String, Codable, Hashable {
+public enum SocksMode: String, Codable {
     case always = "always"
     case onion = "onion"
 }
 
-public enum SMPProxyMode: String, Codable, Hashable, SelectableItem {
+public enum SMPProxyMode: String, Codable, SelectableItem {
     case always = "always"
     case unknown = "unknown"
     case unprotected = "unprotected"
@@ -1400,7 +1414,7 @@ public enum SMPProxyMode: String, Codable, Hashable, SelectableItem {
     public static let values: [SMPProxyMode] = [.always, .unknown, .unprotected, .never]
 }
 
-public enum SMPProxyFallback: String, Codable, Hashable, SelectableItem {
+public enum SMPProxyFallback: String, Codable, SelectableItem {
     case allow = "allow"
     case allowProtected = "allowProtected"
     case prohibit = "prohibit"
@@ -1418,7 +1432,7 @@ public enum SMPProxyFallback: String, Codable, Hashable, SelectableItem {
     public static let values: [SMPProxyFallback] = [.allow, .allowProtected, .prohibit]
 }
 
-public enum OnionHosts: String, Identifiable, Hashable {
+public enum OnionHosts: String, Identifiable {
     case no
     case prefer
     case require
@@ -1452,7 +1466,7 @@ public enum OnionHosts: String, Identifiable, Hashable {
     public static let values: [OnionHosts] = [.no, .prefer, .require]
 }
 
-public enum TransportSessionMode: String, Codable, Identifiable, Hashable {
+public enum TransportSessionMode: String, Codable, Identifiable {
     case user
     case entity
 
@@ -1468,7 +1482,7 @@ public enum TransportSessionMode: String, Codable, Identifiable, Hashable {
     public static let values: [TransportSessionMode] = [.user, .entity]
 }
 
-public struct KeepAliveOpts: Codable, Equatable, Hashable {
+public struct KeepAliveOpts: Codable, Equatable {
     public var keepIdle: Int // seconds
     public var keepIntvl: Int // seconds
     public var keepCnt: Int // times
@@ -1476,7 +1490,7 @@ public struct KeepAliveOpts: Codable, Equatable, Hashable {
     public static let defaults: KeepAliveOpts = KeepAliveOpts(keepIdle: 30, keepIntvl: 15, keepCnt: 4)
 }
 
-public enum NetworkStatus: Decodable, Equatable, Hashable {
+public enum NetworkStatus: Decodable, Equatable {
     case unknown
     case connected
     case disconnected
@@ -1514,7 +1528,7 @@ public enum NetworkStatus: Decodable, Equatable, Hashable {
     }
 }
 
-public struct ConnNetworkStatus: Decodable, Hashable {
+public struct ConnNetworkStatus: Decodable {
     public var agentConnId: String
     public var networkStatus: NetworkStatus
 }
@@ -1539,7 +1553,7 @@ public enum MsgFilter: String, Codable, Hashable {
     case mentions
 }
 
-public struct UserMsgReceiptSettings: Codable, Hashable {
+public struct UserMsgReceiptSettings: Codable {
     public var enable: Bool
     public var clearOverrides: Bool
 
@@ -1588,7 +1602,7 @@ public enum SndSwitchStatus: String, Codable, Hashable {
     case sendingQTEST = "sending_qtest"
 }
 
-public enum QueueDirection: String, Decodable, Hashable {
+public enum QueueDirection: String, Decodable {
     case rcv
     case snd
 }
@@ -1643,12 +1657,12 @@ public struct AutoAccept: Codable, Hashable {
     }
 }
 
-public protocol SelectableItem: Hashable, Identifiable {
+public protocol SelectableItem: Identifiable, Equatable {
     var label: LocalizedStringKey { get }
     static var values: [Self] { get }
 }
 
-public struct DeviceToken: Decodable, Hashable {
+public struct DeviceToken: Decodable {
     var pushProvider: PushProvider
     var token: String
 
@@ -1662,12 +1676,12 @@ public struct DeviceToken: Decodable, Hashable {
     }
 }
 
-public enum PushEnvironment: String, Hashable {
+public enum PushEnvironment: String {
     case development
     case production
 }
 
-public enum PushProvider: String, Decodable, Hashable {
+public enum PushProvider: String, Decodable {
     case apns_dev
     case apns_prod
 
@@ -1681,7 +1695,7 @@ public enum PushProvider: String, Decodable, Hashable {
 
 // This notification mode is for app core, UI uses AppNotificationsMode.off to mean completely disable,
 // and .local for periodic background checks
-public enum NotificationsMode: String, Decodable, SelectableItem, Hashable {
+public enum NotificationsMode: String, Decodable, SelectableItem {
     case off = "OFF"
     case periodic = "PERIODIC"
     case instant = "INSTANT"
@@ -1699,7 +1713,7 @@ public enum NotificationsMode: String, Decodable, SelectableItem, Hashable {
     public static var values: [NotificationsMode] = [.instant, .periodic, .off]
 }
 
-public enum NotificationPreviewMode: String, SelectableItem, Codable, Hashable {
+public enum NotificationPreviewMode: String, SelectableItem, Codable {
     case hidden
     case contact
     case message
@@ -1717,7 +1731,7 @@ public enum NotificationPreviewMode: String, SelectableItem, Codable, Hashable {
     public static var values: [NotificationPreviewMode] = [.message, .contact, .hidden]
 }
 
-public struct RemoteCtrlInfo: Decodable, Hashable {
+public struct RemoteCtrlInfo: Decodable {
     public var remoteCtrlId: Int64
     public var ctrlDeviceName: String
     public var sessionState: RemoteCtrlSessionState?
@@ -1727,7 +1741,7 @@ public struct RemoteCtrlInfo: Decodable, Hashable {
     }
 }
 
-public enum RemoteCtrlSessionState: Decodable, Hashable {
+public enum RemoteCtrlSessionState: Decodable {
     case starting
     case searching
     case connecting
@@ -1742,17 +1756,17 @@ public enum RemoteCtrlStopReason: Decodable {
     case disconnected
 }
 
-public struct CtrlAppInfo: Decodable, Hashable {
+public struct CtrlAppInfo: Decodable {
     public var appVersionRange: AppVersionRange
     public var deviceName: String
 }
 
-public struct AppVersionRange: Decodable, Hashable {
+public struct AppVersionRange: Decodable {
     public var minVersion: String
     public var maxVersion: String
 }
 
-public struct CoreVersionInfo: Decodable, Hashable {
+public struct CoreVersionInfo: Decodable {
     public var version: String
     public var simplexmqVersion: String
     public var simplexmqCommit: String
@@ -1842,7 +1856,6 @@ public enum ChatErrorType: Decodable, Hashable {
     case inlineFileProhibited(fileId: Int64)
     case invalidQuote
     case invalidForward
-    case forwardNoFile
     case invalidChatItemUpdate
     case invalidChatItemDelete
     case hasCurrentCall
@@ -1857,6 +1870,7 @@ public enum ChatErrorType: Decodable, Hashable {
     case agentCommandError(message: String)
     case invalidFileDescription(message: String)
     case connectionIncognitoChangeProhibited
+    case connectionUserChangeProhibited
     case peerChatVRangeIncompatible
     case internalError(message: String)
     case exception(message: String)
@@ -2090,14 +2104,14 @@ public enum RemoteCtrlError: Decodable, Hashable {
     case protocolError
 }
 
-public struct MigrationFileLinkData: Codable, Hashable {
+public struct MigrationFileLinkData: Codable {
     let networkConfig: NetworkConfig?
 
     public init(networkConfig: NetworkConfig) {
         self.networkConfig = networkConfig
     }
 
-    public struct NetworkConfig: Codable, Hashable {
+    public struct NetworkConfig: Codable {
         let socksProxy: String?
         let hostMode: HostMode?
         let requiredHostMode: Bool?
@@ -2129,7 +2143,7 @@ public struct MigrationFileLinkData: Codable, Hashable {
     }
 }
 
-public struct AppSettings: Codable, Equatable, Hashable {
+public struct AppSettings: Codable, Equatable {
     public var networkConfig: NetCfg? = nil
     public var privacyEncryptLocalFiles: Bool? = nil
     public var privacyAskToApproveRelays: Bool? = nil
@@ -2224,7 +2238,7 @@ public struct AppSettings: Codable, Equatable, Hashable {
     }
 }
 
-public enum AppSettingsNotificationMode: String, Codable, Hashable {
+public enum AppSettingsNotificationMode: String, Codable {
     case off
     case periodic
     case instant
@@ -2252,13 +2266,13 @@ public enum AppSettingsNotificationMode: String, Codable, Hashable {
 //    case message
 //}
 
-public enum AppSettingsLockScreenCalls: String, Codable, Hashable {
+public enum AppSettingsLockScreenCalls: String, Codable {
     case disable
     case show
     case accept
 }
 
-public struct UserNetworkInfo: Codable, Equatable, Hashable {
+public struct UserNetworkInfo: Codable, Equatable {
     public let networkType: UserNetworkType
     public let online: Bool
 
@@ -2268,7 +2282,7 @@ public struct UserNetworkInfo: Codable, Equatable, Hashable {
     }
 }
 
-public enum UserNetworkType: String, Codable, Hashable {
+public enum UserNetworkType: String, Codable {
     case none
     case cellular
     case wifi
@@ -2286,7 +2300,7 @@ public enum UserNetworkType: String, Codable, Hashable {
     }
 }
 
-public struct RcvMsgInfo: Codable, Hashable {
+public struct RcvMsgInfo: Codable {
     var msgId: Int64
     var msgDeliveryId: Int64
     var msgDeliveryStatus: String
@@ -2294,7 +2308,16 @@ public struct RcvMsgInfo: Codable, Hashable {
     var agentMsgMeta: String
 }
 
-public struct QueueInfo: Codable, Hashable {
+public struct ServerQueueInfo: Codable {
+    var server: String
+    var rcvId: String
+    var sndId: String
+    var ntfId: String?
+    var status: String
+    var info: QueueInfo
+}
+
+public struct QueueInfo: Codable {
     var qiSnd: Bool
     var qiNtf: Bool
     var qiSub: QSub?
@@ -2302,25 +2325,25 @@ public struct QueueInfo: Codable, Hashable {
     var qiMsg: MsgInfo?
 }
 
-public struct QSub: Codable, Hashable {
+public struct QSub: Codable {
     var qSubThread: QSubThread
     var qDelivered: String?
 }
 
-public enum QSubThread: String, Codable, Hashable {
+public enum QSubThread: String, Codable {
     case noSub
     case subPending
     case subThread
     case prohibitSub
 }
 
-public struct MsgInfo: Codable, Hashable {
+public struct MsgInfo: Codable {
     var msgId: String
     var msgTs: Date
     var msgType: MsgType
 }
 
-public enum MsgType: String, Codable, Hashable {
+public enum MsgType: String, Codable {
     case message
     case quota
 }
