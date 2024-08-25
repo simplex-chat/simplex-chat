@@ -2688,6 +2688,13 @@ public enum CIDirection: Decodable, Hashable {
             }
         }
     }
+    
+    public func sameDirection(_ dir: CIDirection) -> Bool {
+        switch (self, dir) {
+        case let (.groupRcv(m1), .groupRcv(m2)): m1.groupMemberId == m2.groupMemberId
+        default: sent == dir.sent
+        }
+    }
 }
 
 public struct CIMeta: Decodable, Hashable {

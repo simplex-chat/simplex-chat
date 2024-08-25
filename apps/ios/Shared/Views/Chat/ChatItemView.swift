@@ -23,7 +23,7 @@ extension EnvironmentValues {
 struct ChatItemView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
-    @Environment(\.showTimestamp) var showTimestamp
+    @Environment(\.showTimestamp) var showTimestamp: Bool
     var chatItem: ChatItem
     var maxWidth: CGFloat = .infinity
     @Binding var revealed: Bool

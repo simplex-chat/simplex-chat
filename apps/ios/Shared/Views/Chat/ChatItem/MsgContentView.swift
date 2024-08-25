@@ -26,7 +26,7 @@ private func typing(_ w: Font.Weight = .light) -> Text {
 
 struct MsgContentView: View {
     @ObservedObject var chat: Chat
-    @Environment(\.showTimestamp) var showTimestamp
+    @Environment(\.showTimestamp) var showTimestamp: Bool
     @EnvironmentObject var theme: AppTheme
     var text: String
     var formattedText: [FormattedText]? = nil

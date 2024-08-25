@@ -15,7 +15,7 @@ struct CIRcvDecryptionError: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
-    @Environment(\.showTimestamp) var showTimestamp
+    @Environment(\.showTimestamp) var showTimestamp: Bool
     var msgDecryptError: MsgDecryptError
     var msgCount: UInt32
     var chatItem: ChatItem

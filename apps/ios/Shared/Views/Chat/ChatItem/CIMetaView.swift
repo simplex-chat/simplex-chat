@@ -12,7 +12,7 @@ import SimpleXChat
 struct CIMetaView: View {
     @ObservedObject var chat: Chat
     @EnvironmentObject var theme: AppTheme
-    @Environment(\.showTimestamp) var showTimestamp
+    @Environment(\.showTimestamp) var showTimestamp: Bool
     var chatItem: ChatItem
     var metaColor: Color
     var paleMetaColor = Color(UIColor.tertiaryLabel)

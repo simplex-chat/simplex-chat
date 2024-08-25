@@ -12,7 +12,7 @@ import SimpleXChat
 struct CIGroupInvitationView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
-    @Environment(\.showTimestamp) var showTimestamp
+    @Environment(\.showTimestamp) var showTimestamp: Bool
     @ObservedObject var chat: Chat
     var chatItem: ChatItem
     var groupInvitation: CIGroupInvitation
