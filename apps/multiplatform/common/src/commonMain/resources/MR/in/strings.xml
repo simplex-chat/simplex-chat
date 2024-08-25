@@ -2,16 +2,16 @@
 <resources>
     <string name="group_info_section_title_num_members">%1$s ANGGOTA</string>
     <string name="address_section_title">Alamat</string>
-    <string name="moderated_items_description">%1$d pesan dihapus admin %2$s</string>
+    <string name="moderated_items_description">%1$d pesan dimoderasi oleh %2$s</string>
     <string name="send_disappearing_message_1_minute">1 menit</string>
     <string name="send_disappearing_message_30_seconds">30 detik</string>
     <string name="send_disappearing_message_5_minutes">5 menit</string>
     <string name="clear_chat_warning">Semua pesan akan dihapus - ini tidak bisa dikembalikan! Pesan akan HANYA dihapus untukmu.</string>
-    <string name="accept_connection_request__question">Terima permintaan relasi?</string>
+    <string name="accept_connection_request__question">Terima permintaan koneksi?</string>
     <string name="learn_more_about_address">Tentang alamat SimpleX</string>
     <string name="add_contact_tab">Tambah kontak</string>
     <string name="about_simplex">Tentang SimpleX</string>
-    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d gagal mendekripsi pesan.</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d pesan gagal terdekripsi.</string>
     <string name="alert_text_fragment_please_report_to_developers">Tolong laporkan hal ini ke pengembang.</string>
     <string name="chat_item_ttl_month">1 bulan</string>
     <string name="chat_item_ttl_week">1 minggu</string>
@@ -19,7 +19,7 @@
     <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Anda sudah bergabung dalam grup <b>%1$s</b>.]]></string>
     <string name="call_service_notification_audio_call">Panggilan suara</string>
     <string name="abort_switch_receiving_address_confirm">Batal</string>
-    <string name="allow_voice_messages_question">izinkan pesan suara?</string>
+    <string name="allow_voice_messages_question">Izinkan pesan suara?</string>
     <string name="accept_contact_button">Terima</string>
     <string name="app_version_title">Versi aplikasi</string>
     <string name="app_version_name">Versi aplikasi: v%s</string>
@@ -30,13 +30,13 @@
     <string name="users_add">Tambah profil</string>
     <string name="color_primary">Corak</string>
     <string name="color_secondary_variant">Tambahan sekunder</string>
-    <string name="theme_destination_app_theme">Motif aplikasi</string>
+    <string name="theme_destination_app_theme">Tema aplikasi</string>
     <string name="chat_preferences_always">selalu</string>
-    <string name="allow_to_send_voice">diizinkan mengirim pesan suara.</string>
+    <string name="allow_to_send_voice">Izinkan mengirim pesan suara.</string>
     <string name="feature_roles_all_members">semua anggota</string>
     <string name="v4_6_audio_video_calls">Panggilan suara dan video</string>
     <string name="v5_2_more_things">Hal-hal lain</string>
-    <string name="connect_plan_already_connecting">Sudah menghubungi!</string>
+    <string name="connect_plan_already_connecting">Sudah terhubungkan!</string>
     <string name="connect_plan_already_joining_the_group">Sudah bergabung dengan grup!</string>
     <string name="contact_wants_to_connect_via_call">%1$s ingin menghubungimu lewat</string>
     <string name="abort_switch_receiving_address_question">Batalkan penggantian alamat?</string>
@@ -112,4 +112,16 @@
     <string name="app_was_crashed">Tampilan macet</string>
     <string name="non_content_uri_alert_text">Anda membagikan lokasi file yang tidak valid. Laporkan masalah ini ke pengembang aplikasi.</string>
     <string name="server_error">error</string>
+    <string name="one_time_link_short">Tuatan 1 kali pakai</string>
+    <string name="integrity_msg_skipped">%1$d pesan yang terlewati</string>
+    <string name="alert_text_decryption_error_too_many_skipped">%1$d pesan yang dilewati</string>
+    <string name="remote_host_error_bad_version">Versi perangkat <b>%s</b> tidak didukung. Harap pastikan kamu menggunakan versi yang sama pada kedua perangkat.</string>
+    <string name="remote_host_error_busy">Perangkat <b>%s</b> sedang sibuk</string>
+    <string name="remote_host_error_disconnected">Perangkat <b>%s</b> tidak terhubung</string>
+    <string name="remote_host_error_inactive">Perangkat <b>%s</b> tidak aktif</string>
+    <string name="remote_host_error_missing">Perangkat <b>%s</b> tidak di temukan</string>
+    <string name="accept_contact_incognito_button">Terima penyamaran</string>
+    <string name="callstatus_accepted">panggilan diterima</string>
+    <string name="v5_3_new_interface_languages">6 bahasa antarmuka baru</string>
+    <string name="remote_host_was_disconnected_toast">Perangkat <b>%s</b> tidak terhubung</string>
 </resources>
