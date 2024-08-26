@@ -75,7 +75,6 @@ struct ChatTailPadding: ViewModifier {
 }
 
 struct ChatItemShape: Shape {
-
     fileprivate enum Style {
         case bubble(padding: HorizontalEdge, isTailVisible: Bool)
         case roundRect(maxRadius: Double)
@@ -83,54 +82,92 @@ struct ChatItemShape: Shape {
 
     static let tailSize: Double = 8
     static let maxRadius: Double = 18
+    private static let bubbleMaxRadius = ChatItemShape.maxRadius * 1.2
     fileprivate let roundness: Double
     fileprivate let style: Style
 
     func path(in rect: CGRect) -> Path {
         switch style {
         case .bubble(let padding, let isTailVisible):
-            let rMax = min(Self.maxRadius, min(rect.width, rect.height) / 2)
-            let r = roundness * rMax
-            let tailHeight = rect.height - (Self.tailSize + (rMax - Self.tailSize) * roundness)
+            let rhMax = min(Self.bubbleMaxRadius, rect.width / 2)
+            let rvMax = min(Self.bubbleMaxRadius, rect.height / 2)
+            let rh = roundness * rhMax
+            let rv = roundness * rvMax
+//            let tailHeight = rect.height - (Self.tailSize + (rMax - Self.tailSize) * roundness)
             var path = Path()
-            path.addArc(
-                center: CGPoint(x: r, y: r),
-                radius: r,
-                startAngle: .degrees(270),
-                endAngle: .degrees(180),
-                clockwise: true
-            )
-            if isTailVisible {
-                path.addLine(
-                    to: CGPoint(x: 0, y: tailHeight)
-                )
-                path.addQuadCurve(
-                    to: CGPoint(x: -Self.tailSize, y: rect.height),
-                    control: CGPoint(x: 0, y: tailHeight + r * 0.64)
-                )
-            } else {
-                path.addArc(
-                    center: CGPoint(x: r, y: rect.height - r),
-                    radius: r,
-                    startAngle: .degrees(180),
-                    endAngle: .degrees(90),
-                    clockwise: true
-                )
+            // top side
+            path.move(to: CGPoint(x: rh, y: 0))
+            path.addLine(to: CGPoint(x: rect.width - rh, y: 0))
+            if roundness > 0 {
+                // top-right corner
+                path.addQuadCurve(to: CGPoint(x: rect.width, y: rv), control: CGPoint(x: rect.width, y: 0))
             }
-            path.addArc(
-                center: CGPoint(x: rect.width - r, y: rect.height - r),
-                radius: r,
-                startAngle: .degrees(90),
-                endAngle: .degrees(0),
-                clockwise: true
-            )
-            path.addArc(
-                center: CGPoint(x: rect.width - r, y: r),
-                radius: r,
-                startAngle: .degrees(0),
-                endAngle: .degrees(270),
-                clockwise: true
-            )
+            if rect.height > 2 * rv {
+                // right side
+                path.addLine(to: CGPoint(x: rect.width, y: rect.height - rv))
+            }
+            if roundness > 0 {
+                // bottom-right corner
+                path.addQuadCurve(to: CGPoint(x: rect.width - rh, y: rect.height), control: CGPoint(x: rect.width, y: rect.height))
+            }
+            // bottom side
+//            path.addLine(to: CGPoint(x: rh, y: rect.height)) // no tail
+            path.addLine(to: CGPoint(x: -Self.tailSize, y: rect.height))
+            if roundness > 0 {
+                // bottom-left tail
+                path.addQuadCurve(to: CGPoint(x: 0, y: rect.height - Self.tailSize), control: CGPoint(x: 0, y: rect.height))
+            } else {
+                path.addLine(to: CGPoint(x: 0, y: Self.tailSize))
+            }
+            if rect.height > 2 * rv {
+                // left side
+                path.addLine(to: CGPoint(x: 0, y: rv))
+            }
+            if roundness > 0 {
+                // top-left corner
+                path.addQuadCurve(to: CGPoint(x: rh, y: 0), control: CGPoint(x: 0, y: 0))
+            }
+            path.closeSubpath()
+                    
+            
+//            path.addArc(
+//                center: CGPoint(x: r, y: r),
+//                radius: r,
+//                startAngle: .degrees(270),
+//                endAngle: .degrees(180),
+//                clockwise: true
+//            )
+//            if isTailVisible {
+//                path.addLine(
+//                    to: CGPoint(x: 0, y: tailHeight)
+//                )
+//                path.addQuadCurve(
+//                    to: CGPoint(x: -Self.tailSize, y: rect.height),
+//                    control: CGPoint(x: 0, y: tailHeight + r * 0.64)
+//                )
+//            } else {
+//                path.addArc(
+//                    center: CGPoint(x: r, y: rect.height - r),
+//                    radius: r,
+//                    startAngle: .degrees(180),
+//                    endAngle: .degrees(90),
+//                    clockwise: true
+//                )
+//            }
+//            path.addArc(
+//                center: CGPoint(x: rect.width - r, y: rect.height - r),
+//                radius: r,
+//                startAngle: .degrees(90),
+//                endAngle: .degrees(0),
+//                clockwise: true
+//            )
+//            path.addArc(
+//                center: CGPoint(x: rect.width - r, y: r),
+//                radius: r,
+//                startAngle: .degrees(0),
+//                endAngle: .degrees(270),
+//                clockwise: true
+//            )
             return switch padding {
             case .leading: path
             case .trailing: path
