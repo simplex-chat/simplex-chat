@@ -351,7 +351,7 @@ private fun ActiveProfilePicker(
           }
         }
       },
-      image = { ProfileImage(size = 30.dp * fontSizeSqrtMultiplier, image = user.image) }
+        image = { ProfileImage(size = 42.dp, image = user.image) }
     )
   }
 
@@ -382,7 +382,7 @@ private fun ActiveProfilePicker(
         Icon(
           painterResource(MR.images.ic_theater_comedy_filled),
           contentDescription = stringResource(MR.strings.incognito),
-          Modifier.size(30.dp * fontSizeSqrtMultiplier),
+          Modifier.size(42.dp),
           tint = Indigo,
         )
       },
@@ -498,10 +498,10 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
             painterResource(MR.images.ic_theater_comedy_filled),
             contentDescription = stringResource(MR.strings.incognito),
             tint = Indigo,
-            modifier = Modifier.size(30.dp * fontSizeSqrtMultiplier)
+            modifier = Modifier.size(42.dp)
           )
         } else {
-          ProfileImage(size = 30.dp * fontSizeSqrtMultiplier, image = it.image)
+          ProfileImage(size = 42.dp, image = it.image)
         }
         TextIconSpaced(false)
         Text(
