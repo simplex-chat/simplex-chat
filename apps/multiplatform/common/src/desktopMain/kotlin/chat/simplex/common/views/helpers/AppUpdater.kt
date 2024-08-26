@@ -19,12 +19,72 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.Closeable
 import java.io.File
 import java.net.InetSocketAddress
 import java.net.Proxy
+
+data class SemVer(
+  val major: Int,
+  val minor: Int,
+  val patch: Int,
+  val preRelease: String? = null,
+  val buildMetaData: String? = null
+): Comparable<SemVer?> {
+
+  val isNotStable: Boolean = preRelease != null
+
+  // Patch version are not checked in comparison
+  override fun compareTo(other: SemVer?): Int {
+    if (other == null) return 1
+    // Up to 1000 versions in patch and minor
+    val mmp = (major * 1_000_000 + minor * 1_000 + patch).compareTo(other.major * 1_000_000 + other.minor * 1_000 + other.patch)
+    return if (mmp != 0) {
+      mmp
+    } else if (preRelease != null && other.preRelease != null) {
+      preRelease.compareTo(other.preRelease, ignoreCase = true)
+    } else if (preRelease != null) {
+      -1
+    } else if (other.preRelease != null) {
+      1
+    } else {
+      0
+    }
+  }
+
+  companion object {
+    // https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
+    private val regex = Regex("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?\$")
+    fun from(tagName: String): SemVer? {
+      val trimmed = tagName.trimStart { it == 'v' }
+      val redacted = when {
+        trimmed.contains('-') && trimmed.substringBefore('-').count { it == '.' } == 1 -> "${trimmed.substringBefore('-')}.0-${trimmed.substringAfter('-')}"
+        trimmed.substringBefore('-').count { it == '.' } == 1 -> "${trimmed}.0"
+        else -> trimmed
+      }
+      val group = regex.matchEntire(redacted)?.groups
+      return if (group != null) {
+        SemVer(
+          major = group[1]?.value?.toIntOrNull() ?: return null,
+          minor = group[2]?.value?.toIntOrNull() ?: return null,
+          patch = group[3]?.value?.toIntOrNull() ?: return null,
+          preRelease = group[4]?.value,
+          buildMetaData = group[5]?.value,
+        )
+      } else {
+        null
+      }
+    }
+
+    fun fromCurrentVersionName(): SemVer? {
+      val currentVersionName = if (appPlatform.isAndroid) BuildConfigCommon.ANDROID_VERSION_NAME else BuildConfigCommon.DESKTOP_VERSION_NAME
+      return from(currentVersionName)
+    }
+  }
+}
 
 @Serializable
 data class GitHubRelease(
@@ -34,12 +94,18 @@ data class GitHubRelease(
   val htmlUrl: String,
   val name: String,
   val draft: Boolean,
-  val prerelease: Boolean,
+  @SerialName("prerelease")
+  private val preRelease: Boolean,
   val body: String,
   @SerialName("published_at")
   val publishedAt: String,
   val assets: List<GitHubAsset>
-)
+) {
+  @Transient
+  val semVer: SemVer? = SemVer.from(tagName)
+
+  val isConsideredBeta: Boolean = preRelease || semVer == null || semVer.isNotStable
+}
 
 @Serializable
 data class GitHubAsset(
@@ -105,25 +171,25 @@ private fun createUpdateJob() {
 
 fun checkForUpdate() {
   Log.d(TAG, "Checking for update")
+  val currentSemVer = SemVer.fromCurrentVersionName()
+  if (currentSemVer == null) {
+    Log.e(TAG, "Current SemVer cannot be parsed")
+    return
+  }
   val client = setupHttpClient()
   try {
     val request = Request.Builder().url("https://api.github.com/repos/simplex-chat/simplex-chat/releases").addHeader("User-agent", "curl").build()
     client.newCall(request).execute().use { response ->
       response.body?.use {
         val body = it.string()
-        val releases = json.decodeFromString<List<GitHubRelease>>(body).filterNot { it.draft }
+        val releases = json.decodeFromString<List<GitHubRelease>>(body)
         val release = when (appPrefs.appUpdateChannel.get()) {
-          AppUpdatesChannel.STABLE -> releases.firstOrNull { !it.prerelease }
-          AppUpdatesChannel.BETA -> releases.firstOrNull()
+          AppUpdatesChannel.STABLE -> releases.firstOrNull { r -> !r.draft && !r.isConsideredBeta && currentSemVer < r.semVer }
+          AppUpdatesChannel.BETA -> releases.firstOrNull { r -> !r.draft && currentSemVer < r.semVer }
           AppUpdatesChannel.DISABLED -> return
-        } ?: return
-        val currentVersionName = "v" + (if (appPlatform.isAndroid) BuildConfigCommon.ANDROID_VERSION_NAME else BuildConfigCommon.DESKTOP_VERSION_NAME)
-        val redactedCurrentVersionName = when {
-          currentVersionName.contains('-') && currentVersionName.substringBefore('-').count { it == '.' } == 1 -> "${currentVersionName.substringBefore('-')}.0-${currentVersionName.substringAfter('-')}"
-          currentVersionName.substringBefore('-').count { it == '.' } == 1 -> "${currentVersionName}.0"
-          else -> currentVersionName
         }
-        if (release.tagName == appPrefs.appSkippedUpdate.get() || release.tagName == currentVersionName || release.tagName == redactedCurrentVersionName) {
+
+        if (release == null || release.tagName == appPrefs.appSkippedUpdate.get()) {
           Log.d(TAG, "Skipping update because of the same version or skipped version")
           return
         }
