@@ -229,7 +229,7 @@ private fun ProfilePickerOption(
       TextIconSpaced(false)
       Text(title, modifier = Modifier.align(Alignment.CenterVertically))
       if (onInfo != null) {
-        Spacer(Modifier.padding(2.dp))
+        Spacer(Modifier.padding(6.dp))
         Column(Modifier
           .size(48.dp)
           .clip(CircleShape)
@@ -382,9 +382,10 @@ private fun ActiveProfilePicker(
         Icon(
           painterResource(MR.images.ic_theater_comedy_filled),
           contentDescription = stringResource(MR.strings.incognito),
-          Modifier.size(42.dp),
+          Modifier.size(38.dp),
           tint = Indigo,
         )
+        Spacer(Modifier.width(4.dp))
       },
       onInfo = { ModalManager.start.showModal { IncognitoView() } },
     )
@@ -498,8 +499,9 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
             painterResource(MR.images.ic_theater_comedy_filled),
             contentDescription = stringResource(MR.strings.incognito),
             tint = Indigo,
-            modifier = Modifier.size(42.dp)
+            modifier = Modifier.size(38.dp)
           )
+          Spacer(Modifier.width(4.dp))
         } else {
           ProfileImage(size = 42.dp, image = it.image)
         }
