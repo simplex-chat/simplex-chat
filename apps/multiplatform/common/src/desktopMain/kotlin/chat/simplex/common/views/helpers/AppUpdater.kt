@@ -45,8 +45,9 @@ data class SemVer(
       minor != other.minor -> minor.compareTo(other.minor)
       patch != other.patch -> patch.compareTo(other.patch)
       preRelease != null && other.preRelease != null -> {
+        val pr = preRelease.compareTo(other.preRelease, ignoreCase = true)
         when {
-          preRelease.compareTo(other.preRelease, ignoreCase = true) != 0 -> preRelease.compareTo(other.preRelease, ignoreCase = true)
+          pr != 0 -> pr
           buildNumber != null && other.buildNumber != null -> buildNumber.compareTo(other.buildNumber)
           buildNumber != null -> -1
           other.buildNumber != null -> 1
