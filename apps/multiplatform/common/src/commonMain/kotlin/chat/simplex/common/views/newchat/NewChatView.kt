@@ -476,7 +476,12 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
   currentUser?.let {
     SectionView(stringResource(MR.strings.new_chat_share_profile).uppercase()) {
       SectionItemView(
-        padding = PaddingValues(vertical = 0.dp, horizontal = DEFAULT_PADDING),
+        padding = PaddingValues(
+          top = 0.dp,
+          bottom = 0.dp,
+          start = 16.dp,
+          end = 16.dp
+        ),
         click = {
           ModalManager.start.showCustomModal { close ->
             val search = rememberSaveable { mutableStateOf("") }
@@ -497,6 +502,7 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
         }
       ) {
         if (incognito) {
+          Spacer(Modifier.width(4.dp))
           Icon(
             painterResource(MR.images.ic_theater_comedy_filled),
             contentDescription = stringResource(MR.strings.incognito),
@@ -514,7 +520,7 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
         )
         Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
           Icon(
-            painter = painterResource(MR.images.ic_chevron_right),
+            painter = painterResource(MR.images.ic_arrow_forward_ios),
             contentDescription = stringResource(MR.strings.new_chat_share_profile),
             tint = MaterialTheme.colors.onBackground,
           )
