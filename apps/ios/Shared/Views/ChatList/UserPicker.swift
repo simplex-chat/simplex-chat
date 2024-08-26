@@ -27,6 +27,7 @@ struct UserPicker: View {
     @State var activeSheet: UserPickerSheet? = nil
     @State private var showProgress: Bool = false
     private let verticalSpaceDefault: CGFloat = 12
+    @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
 
     var body: some View {
         let users = m.users
@@ -52,32 +53,40 @@ struct UserPicker: View {
                                     activeSheet = .chatProfiles
                                 }
                     }
+                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     Text(currentUser.displayName)
                         .fontWeight(.bold)
                         .font(.title2)
                         .padding(.vertical, verticalSpaceDefault)
+                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                 }
                 menuButton("Your SimpleX address", icon: "qrcode") {
                     activeSheet = .address
+                    userPickerVisible.toggle()
                 }
                 menuButton("Chat preferences", icon: "switch.2") {
                     activeSheet = .chatPreferences
+                    userPickerVisible.toggle()
                 }
                 menuButton("Use from desktop", icon: "desktopcomputer") {
                     showConnectDesktop = true
+                    userPickerVisible.toggle()
                 }
                 menuButton("Migrate to another device", icon: "tray.and.arrow.up") {
                     activeSheet = .migrateDevice
+                    userPickerVisible.toggle()
                 }
                 
                 Divider().padding(.vertical, verticalSpaceDefault)
                 
                 menuButton("Settings", icon: "gearshape") {
                     showSettings = true
+                    userPickerVisible.toggle()
                 }
             }
             .padding(16)
         }
+        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .background(
             Rectangle()
                 .fill(theme.colors.surface)
@@ -85,7 +94,7 @@ struct UserPicker: View {
         )
         .frame(maxWidth: .infinity)
         .opacity(userPickerVisible ? 1.0 : 0.0)
-        .offset(y: userPickerVisible ? 0 : -200)
+        .offset(y: userPickerVisible ? 0 : oneHandUI ? 200 : -200)
         .onAppear {
             // This check prevents the call of listUsers after the app is suspended, and the database is closed.
             if case .active = scenePhase {
@@ -174,6 +183,7 @@ struct UserPicker: View {
             .frame(height: 20)
             .padding(.vertical, verticalSpaceDefault)
         }
+        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .buttonStyle(PressedButtonStyle(defaultColor: theme.colors.surface, pressedColor: Color(uiColor: .secondarySystemFill)))
     }
 }
