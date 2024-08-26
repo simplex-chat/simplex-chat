@@ -717,8 +717,8 @@ struct ChatView: View {
 
         var revealed: Bool { chatItem == revealedChatItem }
 
-        typealias ItemSeparation = (timestamp: Bool, largeGap: Bool)
-        
+        typealias ItemSeparation = (timestamp: Bool, largeGap: Bool, date: Date?)
+
         func getItemSeparation(_ chatItem: ChatItem, at i: Int?) -> ItemSeparation {
             let im = ItemsModel.shared
             if let i, i > 0 && im.reversedChatItems.count >= i {
@@ -726,10 +726,11 @@ struct ChatView: View {
                 let largeGap = !nextItem.chatDir.sameDirection(chatItem.chatDir) || nextItem.meta.createdAt.timeIntervalSince(chatItem.meta.createdAt) > 60
                 return (
                     timestamp: largeGap || formatTimestampText(chatItem.meta.createdAt) != formatTimestampText(nextItem.meta.createdAt),
-                    largeGap: largeGap
+                    largeGap: largeGap,
+                    date: Calendar.current.isDate(chatItem.meta.createdAt, inSameDayAs: nextItem.meta.createdAt) ? nil : nextItem.meta.createdAt
                 )
             } else {
-                return (timestamp: true, largeGap: true)
+                return (timestamp: true, largeGap: true, date: nil)
             }
         }
 
@@ -760,7 +761,17 @@ struct ChatView: View {
                         }
                     }
                 } else {
-                    chatItemView(chatItem, range, prevItem, timeSeparation)
+                    VStack(spacing: 0) {
+                        chatItemView(chatItem, range, prevItem, timeSeparation)
+                        if let date = timeSeparation.date {
+                            Text(date, format: Date.FormatStyle.dateTime.day(.twoDigits).month(.abbreviated))
+                                .fontWeight(.medium)
+                                .padding(.vertical, 4)
+                                .padding(.horizontal, 8)
+                                .overlay { Capsule().strokeBorder(.tertiary).opacity(0.7) }
+                                .padding(.vertical, 8)
+                        }
+                    }
                     .overlay {
                         if let selected = selectedChatItems, chatItem.canBeDeletedForSelf {
                             Color.clear
