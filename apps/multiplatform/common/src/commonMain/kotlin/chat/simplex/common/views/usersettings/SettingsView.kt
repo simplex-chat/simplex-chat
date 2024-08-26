@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.CreateProfile
@@ -234,7 +235,7 @@ fun ChatLockItem(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   setPerformLA: (Boolean) -> Unit
 ) {
-  val performLA = remember { ChatModel.performLA }
+  val performLA = remember { appPrefs.performLA.state }
   val currentLAMode = remember { ChatModel.controller.appPrefs.laMode }
   SettingsActionItemWithContent(
     click = showSettingsModal { SimplexLockView(ChatModel, currentLAMode, setPerformLA) },

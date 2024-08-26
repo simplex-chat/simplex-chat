@@ -14,7 +14,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
@@ -27,7 +26,6 @@ import kotlinx.coroutines.*
 import java.awt.event.WindowEvent
 import java.awt.event.WindowFocusListener
 import java.io.File
-import kotlin.math.sqrt
 import kotlin.system.exitProcess
 
 val simplexWindowState = SimplexWindowState()
@@ -172,7 +170,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
       var windowFocused by remember { simplexWindowState.windowFocused }
       LaunchedEffect(windowFocused) {
         val delay = ChatController.appPrefs.laLockDelay.get()
-        if (!windowFocused && ChatModel.performLA.value && delay > 0) {
+        if (!windowFocused && ChatModel.showAuthScreen.value && delay > 0) {
           delay(delay * 1000L)
           // Trigger auth state check when delay ends (and if it ends)
           AppLock.recheckAuthState()

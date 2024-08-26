@@ -1,12 +1,10 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionCustomFooter
 import SectionDividerSpaced
 import SectionItemView
 import SectionTextFooter
 import SectionView
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -34,8 +32,6 @@ import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
-import kotlin.math.min
-import kotlin.math.roundToInt
 
 enum class LAMode {
   SYSTEM,
@@ -374,7 +370,8 @@ fun SimplexLockView(
   currentLAMode: SharedPreference<LAMode>,
   setPerformLA: (Boolean) -> Unit
 ) {
-  val performLA = remember { chatModel.performLA }
+  val showAuthScreen = remember { chatModel.showAuthScreen }
+  val performLA = remember { appPrefs.performLA.state }
   val laMode = remember { chatModel.controller.appPrefs.laMode.state }
   val laLockDelay = remember { chatModel.controller.appPrefs.laLockDelay }
   val showChangePasscode = remember { derivedStateOf { performLA.value && currentLAMode.state.value == LAMode.PASSCODE } }
@@ -382,13 +379,9 @@ fun SimplexLockView(
   val selfDestructDisplayName = remember { mutableStateOf(chatModel.controller.appPrefs.selfDestructDisplayName.get() ?: "") }
   val selfDestructDisplayNamePref = remember { chatModel.controller.appPrefs.selfDestructDisplayName }
 
-  fun resetLAEnabled(onOff: Boolean) {
-    chatModel.controller.appPrefs.performLA.set(onOff)
-    chatModel.performLA.value = onOff
-  }
-
   fun disableUnavailableLA() {
-    resetLAEnabled(false)
+    chatModel.controller.appPrefs.performLA.set(false)
+    chatModel.showAuthScreen.value = false
     currentLAMode.set(LAMode.default)
     laUnavailableInstructionAlert()
   }
@@ -525,8 +518,8 @@ fun SimplexLockView(
   ) {
     AppBarTitle(stringResource(MR.strings.chat_lock))
     SectionView {
-      EnableLock(performLA) { performLAToggle ->
-        performLA.value = performLAToggle
+      EnableLock(remember { appPrefs.performLA.state }) { performLAToggle ->
+        showAuthScreen.value = performLAToggle
         chatModel.controller.appPrefs.laNoticeShown.set(true)
         if (performLAToggle) {
           when (currentLAMode.state.value) {
@@ -543,7 +536,9 @@ fun SimplexLockView(
                       passcodeAlert(generalGetString(MR.strings.passcode_set))
                     },
                     cancel = {
-                      resetLAEnabled(false)
+                      chatModel.showAuthScreen.value = false
+                      // Don't drop auth pref in case of state inconsistency (eg, you have set passcode but somehow bypassed toggle and turned it off and then on)
+                      // chatModel.controller.appPrefs.performLA.set(false)
                     },
                     close = close
                   )
@@ -660,7 +655,7 @@ private fun EnableSelfDestruct(
 }
 
 @Composable
-private fun EnableLock(performLA: MutableState<Boolean>, onCheckedChange: (Boolean) -> Unit) {
+private fun EnableLock(performLA: State<Boolean>, onCheckedChange: (Boolean) -> Unit) {
   SectionItemView {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Text(

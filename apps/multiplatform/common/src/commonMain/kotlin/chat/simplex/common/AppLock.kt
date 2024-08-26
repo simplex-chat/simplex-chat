@@ -83,18 +83,19 @@ object AppLock {
       completed = { laResult ->
         when (laResult) {
           LAResult.Success -> {
-            m.performLA.value = true
+            m.showAuthScreen.value = true
             appPrefs.performLA.set(true)
             laTurnedOnAlert()
           }
           is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
           is LAResult.Error -> {
-            m.performLA.value = false
-            appPrefs.performLA.set(false)
+            m.showAuthScreen.value = false
+            // Don't drop auth pref in case of state inconsistency (eg, you have set passcode but somehow bypassed toggle and turned it off and then on)
+            // appPrefs.performLA.set(false)
             laFailedAlert()
           }
           is LAResult.Unavailable -> {
-            m.performLA.value = false
+            m.showAuthScreen.value = false
             appPrefs.performLA.set(false)
             m.showAdvertiseLAUnavailableAlert.value = true
           }
@@ -109,14 +110,15 @@ object AppLock {
       Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
         SetAppPasscodeView(
           submit = {
-            ChatModel.performLA.value = true
+            ChatModel.showAuthScreen.value = true
             appPrefs.performLA.set(true)
             appPrefs.laMode.set(LAMode.PASSCODE)
             laTurnedOnAlert()
           },
           cancel = {
-            ChatModel.performLA.value = false
-            appPrefs.performLA.set(false)
+            ChatModel.showAuthScreen.value = false
+            // Don't drop auth pref in case of state inconsistency (eg, you have set passcode but somehow bypassed toggle and turned it off and then on)
+            // appPrefs.performLA.set(false)
             laPasscodeNotSetAlert()
           },
           close = close
@@ -160,7 +162,7 @@ object AppLock {
                 }
                 is LAResult.Unavailable -> {
                   userAuthorized.value = true
-                  m.performLA.value = false
+                  m.showAuthScreen.value = false
                   m.controller.appPrefs.performLA.set(false)
                   laUnavailableTurningOffAlert()
                 }
@@ -196,18 +198,18 @@ object AppLock {
         val prefPerformLA = m.controller.appPrefs.performLA
         when (laResult) {
           LAResult.Success -> {
-            m.performLA.value = true
+            m.showAuthScreen.value = true
             prefPerformLA.set(true)
             laTurnedOnAlert()
           }
           is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
           is LAResult.Error -> {
-            m.performLA.value = false
+            m.showAuthScreen.value = false
             prefPerformLA.set(false)
             laFailedAlert()
           }
           is LAResult.Unavailable -> {
-            m.performLA.value = false
+            m.showAuthScreen.value = false
             prefPerformLA.set(false)
             laUnavailableInstructionAlert()
           }
@@ -232,7 +234,7 @@ object AppLock {
         val selfDestructPref = m.controller.appPrefs.selfDestruct
         when (laResult) {
           LAResult.Success -> {
-            m.performLA.value = false
+            m.showAuthScreen.value = false
             prefPerformLA.set(false)
             DatabaseUtils.ksAppPassword.remove()
             selfDestructPref.set(false)
@@ -240,12 +242,12 @@ object AppLock {
           }
           is LAResult.Failed -> { /* Can be called multiple times on every failure */ }
           is LAResult.Error -> {
-            m.performLA.value = true
+            m.showAuthScreen.value = true
             prefPerformLA.set(true)
             laFailedAlert()
           }
           is LAResult.Unavailable -> {
-            m.performLA.value = false
+            m.showAuthScreen.value = false
             prefPerformLA.set(false)
             laUnavailableTurningOffAlert()
           }
