@@ -77,7 +77,7 @@ let DEFAULT_THEME_OVERRIDES = "themeOverrides"
 
 let ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN = "androidCallOnLockScreen"
 
-let defaultChatItemRoundness = 0.8
+let defaultChatItemRoundness = 1
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
