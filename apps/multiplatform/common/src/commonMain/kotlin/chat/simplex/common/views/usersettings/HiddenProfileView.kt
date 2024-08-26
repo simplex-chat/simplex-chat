@@ -1,15 +1,12 @@
 package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
-import SectionItemView
 import SectionItemViewSpaceBetween
 import SectionItemViewWithoutMinPadding
 import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -64,7 +61,7 @@ private fun HiddenProfileLayout(
       .fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.hide_profile))
-    SectionView(padding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
+    SectionView(contentPadding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
       UserProfileRow(user)
     }
     SectionSpacer()

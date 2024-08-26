@@ -22,7 +22,6 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
@@ -264,7 +263,7 @@ fun SocksProxySettings(
         .fillMaxWidth()
     ) {
       AppBarTitle(generalGetString(MR.strings.network_socks_proxy_settings))
-      SectionView(padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+      SectionView(contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
         DefaultConfigurableTextField(
           hostUnsaved,
           stringResource(MR.strings.host_verb),

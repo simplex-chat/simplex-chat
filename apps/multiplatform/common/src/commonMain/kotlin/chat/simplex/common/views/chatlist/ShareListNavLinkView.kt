@@ -80,7 +80,7 @@ private fun ShareListNavLinkLayout(
   click: () -> Unit,
   stopped: Boolean,
 ) {
-  SectionItemView(minHeight = 50.dp, click = click, disabled = stopped) {
+  SectionItemView(padding = PaddingValues(horizontal = DEFAULT_PADDING, vertical = 8.dp), click = click, disabled = stopped) {
     chatLinkPreview()
   }
   Divider(Modifier.padding(horizontal = 8.dp))
@@ -98,9 +98,11 @@ private fun SharePreviewView(chat: Chat, disabled: Boolean) {
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
       if (chat.chatInfo is ChatInfo.Local) {
-        ProfileImage(size = 46.dp, null, icon = MR.images.ic_folder_filled, color = NoteFolderIconColor)
+        ProfileImage(size = 42.dp, null, icon = MR.images.ic_folder_filled, color = NoteFolderIconColor)
+      } else if (chat.chatInfo is ChatInfo.Group) {
+        ProfileImage(size = 42.dp, chat.chatInfo.image, icon = MR.images.ic_supervised_user_circle_filled)
       } else {
-        ProfileImage(size = 46.dp, chat.chatInfo.image)
+        ProfileImage(size = 42.dp, chat.chatInfo.image)
       }
       Text(
         chat.chatInfo.chatViewName, maxLines = 1, overflow = TextOverflow.Ellipsis,
