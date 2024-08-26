@@ -26,6 +26,7 @@ import java.io.Closeable
 import java.io.File
 import java.net.InetSocketAddress
 import java.net.Proxy
+import kotlin.math.min
 
 data class SemVer(
   val major: Int,
@@ -37,32 +38,24 @@ data class SemVer(
 
   val isNotStable: Boolean = preRelease != null
 
-  // Patch version are not checked in comparison
   override fun compareTo(other: SemVer?): Int {
     if (other == null) return 1
-    // Up to 1000 versions in patch and minor
-    val mmp = (major * 1_000_000 + minor * 1_000 + patch).compareTo(other.major * 1_000_000 + other.minor * 1_000 + other.patch)
-    return if (mmp != 0) {
-      mmp
-    } else if (preRelease != null && other.preRelease != null) {
-      val pre = preRelease.compareTo(other.preRelease, ignoreCase = true)
-      if (pre != 0) {
-        pre
-      } else if (buildNumber != null && other.buildNumber != null) {
-        buildNumber.compareTo(other.buildNumber)
-      } else if (buildNumber != null) {
-        -1
-      } else if (other.buildNumber != null) {
-        1
-      } else {
-        0
+    return when {
+      major.compareTo(other.major) != 0 -> major.compareTo(other.major)
+      minor.compareTo(other.minor) != 0 -> minor.compareTo(other.minor)
+      patch.compareTo(other.patch) != 0 -> patch.compareTo(other.patch)
+      preRelease != null && other.preRelease != null -> {
+        when {
+          preRelease.compareTo(other.preRelease, ignoreCase = true) != 0 -> preRelease.compareTo(other.preRelease, ignoreCase = true)
+          buildNumber != null && other.buildNumber != null -> buildNumber.compareTo(other.buildNumber)
+          buildNumber != null -> -1
+          other.buildNumber != null -> 1
+          else -> 0
+        }
       }
-    } else if (preRelease != null) {
-      -1
-    } else if (other.preRelease != null) {
-      1
-    } else {
-      0
+      preRelease != null -> -1
+      other.preRelease != null -> 1
+      else -> 0
     }
   }
 
