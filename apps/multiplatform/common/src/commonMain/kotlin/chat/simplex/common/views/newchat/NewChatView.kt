@@ -5,6 +5,7 @@ import SectionItemView
 import SectionSpacer
 import SectionTextFooter
 import SectionView
+import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -226,7 +227,7 @@ private fun ProfilePickerOption(
   ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       image()
-      Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
+      TextIconSpaced(false)
       Text(title, modifier = Modifier.align(Alignment.CenterVertically))
       if (onInfo != null) {
         Spacer(Modifier.padding(6.dp))
@@ -506,11 +507,18 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
         } else {
           ProfileImage(size = 42.dp, image = it.image)
         }
-        Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
+        TextIconSpaced(false)
         Text(
           text = if (incognito) stringResource(MR.strings.incognito) else it.chatViewName,
           color = MaterialTheme.colors.onBackground
         )
+        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+          Icon(
+            painter = painterResource(MR.images.ic_chevron_right),
+            contentDescription = stringResource(MR.strings.new_chat_share_profile),
+            tint = MaterialTheme.colors.onBackground,
+          )
+        }
       }
     }
     if (incognito) {
