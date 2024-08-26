@@ -32,7 +32,7 @@ data class SemVer(
   val minor: Int,
   val patch: Int,
   val preRelease: String? = null,
-  val buildMetaData: String? = null
+  val buildNumber: Int? = null,
 ): Comparable<SemVer?> {
 
   val isNotStable: Boolean = preRelease != null
@@ -45,7 +45,18 @@ data class SemVer(
     return if (mmp != 0) {
       mmp
     } else if (preRelease != null && other.preRelease != null) {
-      preRelease.compareTo(other.preRelease, ignoreCase = true)
+      val pre = preRelease.compareTo(other.preRelease, ignoreCase = true)
+      if (pre != 0) {
+        pre
+      } else if (buildNumber != null && other.buildNumber != null) {
+        buildNumber.compareTo(other.buildNumber)
+      } else if (buildNumber != null) {
+        -1
+      } else if (other.buildNumber != null) {
+        1
+      } else {
+        0
+      }
     } else if (preRelease != null) {
       -1
     } else if (other.preRelease != null) {
@@ -57,7 +68,7 @@ data class SemVer(
 
   companion object {
     // https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
-    private val regex = Regex("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?\$")
+    private val regex = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)(?:-([A-Za-z]+)\\.(\\d+))?\$")
     fun from(tagName: String): SemVer? {
       val trimmed = tagName.trimStart { it == 'v' }
       val redacted = when {
@@ -72,7 +83,7 @@ data class SemVer(
           minor = group[2]?.value?.toIntOrNull() ?: return null,
           patch = group[3]?.value?.toIntOrNull() ?: return null,
           preRelease = group[4]?.value,
-          buildMetaData = group[5]?.value,
+          buildNumber = group[5]?.value?.toIntOrNull(),
         )
       } else {
         null
