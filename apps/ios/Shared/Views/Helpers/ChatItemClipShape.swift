@@ -20,7 +20,7 @@ struct ChatItemClipped: ViewModifier {
     
     init() {
         shapeStyle = { roundness, isTailEnabled in
-            .roundRect(maxRadius: ChatBubble.maxRadius * roundness)
+            .roundRect(maxRadius: ChatBubble.maxRadius)
         }
     }
 
