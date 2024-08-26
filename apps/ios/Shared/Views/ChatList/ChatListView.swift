@@ -47,11 +47,15 @@ struct ChatListView: View {
                 destination: chatView
             ) { chatListView }
             if userPickerVisible {
-                Rectangle().fill(.white.opacity(0.001)).onTapGesture {
-                    withAnimation {
-                        userPickerVisible.toggle()
+                Rectangle()
+                    .fill(.black)
+                    .ignoresSafeArea()
+                    .opacity(0.6)
+                    .onTapGesture {
+                        withAnimation {
+                            userPickerVisible.toggle()
+                        }
                     }
-                }
             }
             UserPicker(
                 showSettings: $showSettings,
