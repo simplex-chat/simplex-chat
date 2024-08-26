@@ -16,11 +16,11 @@ import SimpleXChat
 struct ChatItemClipped: ViewModifier {
     @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
     @AppStorage(DEFAULT_CHAT_ITEM_TAIL) private var isTailEnabled = true
-    private let shapeStyle: (Double, Bool) -> ChatItemShapeStyle
-    
+    private let shapeStyle: (Double, Bool) -> ChatItemShape.Style
+
     init() {
         shapeStyle = { roundness, isTailEnabled in
-            .roundRect(maxRadius: ChatBubble.maxRadius)
+            .roundRect(maxRadius: ChatItemShape.maxRadius)
         }
     }
 
@@ -41,9 +41,7 @@ struct ChatItemClipped: ViewModifier {
                 .rcvBlocked,
                 .invalidJSON: isTailEnabled
                 ? .bubble(
-                    padding: ci.chatDir.sent 
-                    ? .trailing
-                    : .leading,
+                    padding: ci.chatDir.sent ? .trailing : .leading,
                     isTailVisible: {
                         if let mc = ci.content.msgContent, mc.isImageOrVideo, mc.text.isEmpty {
                             false
@@ -52,14 +50,17 @@ struct ChatItemClipped: ViewModifier {
                         }
                     }()
                 )
-                : .roundRect(maxRadius: ChatBubble.maxRadius)
+                : .roundRect(maxRadius: ChatItemShape.maxRadius)
             default: .roundRect(maxRadius: 8)
             }
         }
     }
 
     func body(content: Content) -> some View {
-        let clipShape = ChatBubble(roundness: roundness, shapeStyle: shapeStyle(roundness, isTailEnabled))
+        let clipShape = ChatItemShape(
+            roundness: roundness,
+            style: shapeStyle(roundness, isTailEnabled)
+        )
         content
             .contentShape(.dragPreview, clipShape)
             .contentShape(.contextMenuPreview, clipShape)
@@ -75,7 +76,7 @@ struct ChatTailPadding: ViewModifier {
         if tailEnabled {
             content.padding(
                 chatItem.chatDir.sent ? .trailing : .leading,
-                ChatBubble.tailSize
+                ChatItemShape.tailSize
             )
         } else {
             content
@@ -83,19 +84,20 @@ struct ChatTailPadding: ViewModifier {
     }
 }
 
-fileprivate enum ChatItemShapeStyle {
-    case bubble(padding: HorizontalEdge, isTailVisible: Bool)
-    case roundRect(maxRadius: Double)
-}
+struct ChatItemShape: Shape {
 
-struct ChatBubble: Shape {
+    fileprivate enum Style {
+        case bubble(padding: HorizontalEdge, isTailVisible: Bool)
+        case roundRect(maxRadius: Double)
+    }
+
     static let tailSize: Double = 8
     static let maxRadius: Double = 16
     fileprivate let roundness: Double
-    fileprivate let shapeStyle: ChatItemShapeStyle
+    fileprivate let style: Style
 
     func path(in rect: CGRect) -> Path {
-        switch shapeStyle {
+        switch style {
         case .bubble(let padding, let isTailVisible):
             let rMax = min(Self.maxRadius, min(rect.width, rect.height) / 2)
             let r = roundness * rMax
