@@ -60,7 +60,6 @@ data class SemVer(
   }
 
   companion object {
-    // https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
     private val regex = Regex("^(\\d+)\\.(\\d+)\\.(\\d+)(?:-([A-Za-z]+)\\.(\\d+))?\$")
     fun from(tagName: String): SemVer? {
       val trimmed = tagName.trimStart { it == 'v' }
