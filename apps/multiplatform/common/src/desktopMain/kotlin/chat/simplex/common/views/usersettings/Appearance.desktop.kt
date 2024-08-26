@@ -25,7 +25,6 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.delay
 import java.util.Locale
-import kotlin.math.roundToInt
 
 @Composable
 actual fun AppearanceView(m: ChatModel) {
@@ -44,7 +43,7 @@ fun AppearanceScope.AppearanceLayout(
     Modifier.fillMaxWidth(),
   ) {
     AppBarTitle(stringResource(MR.strings.appearance_settings))
-    SectionView(stringResource(MR.strings.settings_section_title_language), padding = PaddingValues()) {
+    SectionView(stringResource(MR.strings.settings_section_title_language), contentPadding = PaddingValues()) {
       val state = rememberSaveable { mutableStateOf(languagePref.get() ?: "system") }
       LangSelector(state) {
         state.value = it
@@ -79,7 +78,7 @@ fun AppearanceScope.AppearanceLayout(
 @Composable
 fun DensityScaleSection() {
   val localDensityScale = remember { mutableStateOf(appPrefs.densityScale.get()) }
-  SectionView(stringResource(MR.strings.appearance_zoom).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+  SectionView(stringResource(MR.strings.appearance_zoom).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
       Box(Modifier.size(60.dp)
         .background(MaterialTheme.colors.surface, RoundedCornerShape(percent = 22))

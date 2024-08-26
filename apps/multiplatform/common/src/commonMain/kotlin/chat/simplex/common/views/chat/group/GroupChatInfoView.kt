@@ -509,11 +509,11 @@ private fun MemberRow(member: GroupMember, user: Boolean = false, onClick: (() -
     verticalAlignment = Alignment.CenterVertically
   ) {
     Row(
-      Modifier.weight(1f).padding(end = DEFAULT_PADDING),
+      Modifier.weight(1f).padding(top = 8.dp, end = DEFAULT_PADDING, bottom = 8.dp),
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-      MemberProfileImage(size = DEFAULT_MIN_SECTION_ITEM_HEIGHT, member)
+      MemberProfileImage(size = 42.dp, member)
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))
       Column {
         Row(verticalAlignment = Alignment.CenterVertically) {

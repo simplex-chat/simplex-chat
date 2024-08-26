@@ -85,7 +85,8 @@ fun CloseSheetBar(close: (() -> Unit)?, showClose: Boolean = true, tintColor: Co
               Text(
                 title.value,
                 fontWeight = FontWeight.SemiBold,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
               )
             }
           } else {

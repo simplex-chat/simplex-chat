@@ -8,9 +8,7 @@ import SectionSpacer
 import SectionView
 import TextIconSpaced
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -149,7 +147,7 @@ private fun ConnectDesktop(deviceName: String, remoteCtrls: SnapshotStateList<Re
 @Composable
 private fun ConnectingDesktop(session: RemoteCtrlSession, rc: RemoteCtrlInfo?) {
   AppBarTitle(stringResource(MR.strings.connecting_to_desktop))
-  SectionView(stringResource(MR.strings.connecting_to_desktop).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+  SectionView(stringResource(MR.strings.connecting_to_desktop).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     CtrlDeviceNameText(session, rc)
     Spacer(Modifier.height(DEFAULT_PADDING_HALF))
     CtrlDeviceVersionText(session)
@@ -199,7 +197,7 @@ private fun SearchingDesktop(deviceName: String, remoteCtrls: SnapshotStateList<
     }
   }
   SectionDividerSpaced()
-  SectionView(stringResource(MR.strings.found_desktop).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+  SectionView(stringResource(MR.strings.found_desktop).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     Text(stringResource(MR.strings.waiting_for_desktop), fontStyle = FontStyle.Italic)
   }
   SectionSpacer()
@@ -226,7 +224,7 @@ private fun FoundDesktop(
     }
   }
   SectionDividerSpaced()
-  SectionView(stringResource(MR.strings.found_desktop).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+  SectionView(stringResource(MR.strings.found_desktop).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     CtrlDeviceNameText(session, rc)
     CtrlDeviceVersionText(session)
     if (!compatible) {
@@ -258,7 +256,7 @@ private fun FoundDesktop(
 @Composable
 private fun VerifySession(session: RemoteCtrlSession, rc: RemoteCtrlInfo?, sessCode: String, remoteCtrls: SnapshotStateList<RemoteCtrlInfo>) {
   AppBarTitle(stringResource(MR.strings.verify_connection))
-  SectionView(stringResource(MR.strings.connected_to_desktop).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+  SectionView(stringResource(MR.strings.connected_to_desktop).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     CtrlDeviceNameText(session, rc)
     Spacer(Modifier.height(DEFAULT_PADDING_HALF))
     CtrlDeviceVersionText(session)
@@ -313,7 +311,7 @@ private fun CtrlDeviceVersionText(session: RemoteCtrlSession) {
 @Composable
 private fun ActiveSession(session: RemoteCtrlSession, rc: RemoteCtrlInfo, close: () -> Unit) {
   AppBarTitle(stringResource(MR.strings.connected_to_desktop))
-  SectionView(stringResource(MR.strings.connected_desktop).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
+  SectionView(stringResource(MR.strings.connected_desktop).uppercase(), contentPadding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     Text(rc.deviceViewName)
     Spacer(Modifier.height(DEFAULT_PADDING_HALF))
     CtrlDeviceVersionText(session)
