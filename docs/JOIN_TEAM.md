@@ -49,7 +49,7 @@ You are an expert in language models, databases and Haskell:
   - passionate about privacy, security and communications.
   - interested to make contributions to SimpleX Chat open-source project in your free time before we hire you, as an extended test.
 
-- **Exceptionally pragmatic, very fast and customer-focussed**:
+- **Exceptionally pragmatic, very fast and customer-focused**:
   - care about the customers (aka users) and about the product we build much more than about the code quality, technology stack, etc.
   - believe that the simplest solution is the best.
   - 2-3x faster than the most competent people you worked with.
