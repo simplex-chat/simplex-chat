@@ -384,13 +384,14 @@ private fun ActiveProfilePicker(
         }
       },
       image = {
+        Spacer(Modifier.width(8.dp))
         Icon(
           painterResource(MR.images.ic_theater_comedy_filled),
           contentDescription = stringResource(MR.strings.incognito),
-          Modifier.size(38.dp),
+          Modifier.size(32.dp),
           tint = Indigo,
         )
-        Spacer(Modifier.width(4.dp))
+        Spacer(Modifier.width(2.dp))
       },
       onInfo = { ModalManager.start.showModal { IncognitoView() } },
     )
@@ -478,7 +479,7 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
   }
 
   currentUser?.let {
-    SectionView(stringResource(MR.strings.new_chat_share_profile).uppercase()) {
+    SectionView(stringResource(MR.strings.new_chat_share_profile).uppercase(), headerBottomPadding = 5.dp) {
       SectionItemView(
         padding = PaddingValues(
           top = 0.dp,
@@ -506,14 +507,14 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
         }
       ) {
         if (incognito) {
-          Spacer(Modifier.width(4.dp))
+          Spacer(Modifier.width(8.dp))
           Icon(
             painterResource(MR.images.ic_theater_comedy_filled),
             contentDescription = stringResource(MR.strings.incognito),
             tint = Indigo,
-            modifier = Modifier.size(38.dp)
+            modifier = Modifier.size(32.dp)
           )
-          Spacer(Modifier.width(4.dp))
+          Spacer(Modifier.width(2.dp))
         } else {
           ProfileImage(size = 42.dp, image = it.image)
         }
@@ -526,7 +527,7 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
           Icon(
             painter = painterResource(MR.images.ic_arrow_forward_ios),
             contentDescription = stringResource(MR.strings.new_chat_share_profile),
-            tint = MaterialTheme.colors.onBackground,
+            tint = MaterialTheme.colors.secondary,
           )
         }
       }
