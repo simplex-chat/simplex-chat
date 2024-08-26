@@ -91,7 +91,7 @@ struct ChatItemShape: Shape {
         case .bubble(let padding, let isTailVisible):
             let rMax = min(Self.maxRadius, min(rect.width, rect.height) / 2)
             let r = roundness * rMax
-            let tailHeight = rect.height - Self.tailSize + 8 * roundness
+            let tailHeight = rect.height - (Self.tailSize + (rMax - Self.tailSize) * roundness)
             var path = Path()
             path.addArc(
                 center: CGPoint(x: r, y: r),
