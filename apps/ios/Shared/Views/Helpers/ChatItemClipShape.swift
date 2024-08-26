@@ -92,7 +92,7 @@ struct ChatItemShape: Shape {
     }
 
     static let tailSize: Double = 8
-    static let maxRadius: Double = 16
+    static let maxRadius: Double = 18
     fileprivate let roundness: Double
     fileprivate let style: Style
 
