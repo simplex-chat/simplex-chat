@@ -41,9 +41,9 @@ data class SemVer(
   override fun compareTo(other: SemVer?): Int {
     if (other == null) return 1
     return when {
-      major.compareTo(other.major) != 0 -> major.compareTo(other.major)
-      minor.compareTo(other.minor) != 0 -> minor.compareTo(other.minor)
-      patch.compareTo(other.patch) != 0 -> patch.compareTo(other.patch)
+      major != other.major -> major.compareTo(other.major)
+      minor != other.minor -> minor.compareTo(other.minor)
+      patch != other.patch -> patch.compareTo(other.patch)
       preRelease != null && other.preRelease != null -> {
         when {
           preRelease.compareTo(other.preRelease, ignoreCase = true) != 0 -> preRelease.compareTo(other.preRelease, ignoreCase = true)
