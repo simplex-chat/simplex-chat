@@ -102,8 +102,7 @@ struct CIRcvDecryptionError: View {
                 basicDecryptionErrorItem()
             }
         }
-        .modifier(ChatTailPadding(chatItem: chatItem))
-        .background(chatItemFrameColor(chatItem, theme))
+        .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
     }
 
     private func basicDecryptionErrorItem() -> some View {

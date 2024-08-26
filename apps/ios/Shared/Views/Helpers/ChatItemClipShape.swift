@@ -69,18 +69,8 @@ struct ChatItemClipped: ViewModifier {
 }
 
 struct ChatTailPadding: ViewModifier {
-    @AppStorage(DEFAULT_CHAT_ITEM_TAIL) private var tailEnabled = true
-    let chatItem: ChatItem
-
     func body(content: Content) -> some View {
-        if tailEnabled {
-            content.padding(
-                chatItem.chatDir.sent ? .trailing : .leading,
-                ChatItemShape.tailSize
-            )
-        } else {
-            content
-        }
+        content.padding(.horizontal, -ChatItemShape.tailSize)
     }
 }
 
@@ -104,7 +94,7 @@ struct ChatItemShape: Shape {
             let tailHeight = rect.height - (Self.tailSize + (rMax - Self.tailSize) * roundness)
             var path = Path()
             path.addArc(
-                center: CGPoint(x: r + Self.tailSize, y: r),
+                center: CGPoint(x: r, y: r),
                 radius: r,
                 startAngle: .degrees(270),
                 endAngle: .degrees(180),
@@ -112,15 +102,15 @@ struct ChatItemShape: Shape {
             )
             if isTailVisible {
                 path.addLine(
-                    to: CGPoint(x: Self.tailSize, y: tailHeight)
+                    to: CGPoint(x: 0, y: tailHeight)
                 )
                 path.addQuadCurve(
-                    to: CGPoint(x: 0, y: rect.height),
-                    control: CGPoint(x: Self.tailSize, y: tailHeight + r * 0.64)
+                    to: CGPoint(x: -Self.tailSize, y: rect.height),
+                    control: CGPoint(x: 0, y: tailHeight + r * 0.64)
                 )
             } else {
                 path.addArc(
-                    center: CGPoint(x: r + Self.tailSize, y: rect.height - r),
+                    center: CGPoint(x: r, y: rect.height - r),
                     radius: r,
                     startAngle: .degrees(180),
                     endAngle: .degrees(90),
@@ -151,4 +141,18 @@ struct ChatItemShape: Shape {
             return Path(roundedRect: rect, cornerRadius: radius * roundness)
         }
     }
+
+    var offset: Double? {
+        switch style {
+        case let .bubble(padding, isTailVisible):
+            if isTailVisible {
+                switch padding {
+                case .leading: -Self.tailSize
+                case .trailing: Self.tailSize
+                }
+            } else { 0 }
+        case .roundRect: 0
+        }
+    }
+
 }

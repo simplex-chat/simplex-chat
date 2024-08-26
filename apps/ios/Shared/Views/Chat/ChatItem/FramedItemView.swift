@@ -72,8 +72,10 @@ struct FramedItemView: View {
                     .accessibilityLabel("")
             }
         }   
-            .modifier(ChatTailPadding(chatItem: chatItem))
-            .background(chatItemFrameColorMaybeImageOrVideo(chatItem, theme))
+
+            .background(
+                chatItemFrameColorMaybeImageOrVideo(chatItem, theme).modifier(ChatTailPadding())
+            )
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 
         if let (title, text) = chatItem.meta.itemStatus.statusInfo {

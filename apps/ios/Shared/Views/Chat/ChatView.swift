@@ -764,12 +764,17 @@ struct ChatView: View {
                     VStack(spacing: 0) {
                         chatItemView(chatItem, range, prevItem, timeSeparation)
                         if let date = timeSeparation.date {
-                            Text(date, format: Date.FormatStyle.dateTime.day(.twoDigits).month(.abbreviated))
-                                .fontWeight(.medium)
-                                .padding(.vertical, 4)
-                                .padding(.horizontal, 8)
-                                .overlay { Capsule().strokeBorder(.tertiary).opacity(0.7) }
-                                .padding(.vertical, 8)
+                            Group {
+                                Text(date, format: .dateTime.weekday(.abbreviated))
+                                    .fontWeight(.semibold) +
+                                Text(", ")
+                                    .fontWeight(.semibold) +
+                                Text(date, format: .dateTime.day().month(.abbreviated))
+                                    .fontWeight(.semibold)
+                            }
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .padding(8)
                         }
                     }
                     .overlay {
@@ -852,7 +857,7 @@ struct ChatView: View {
                                 SelectedChatItem(ciId: ci.id, selectedChatItems: $selectedChatItems)
                                     .padding(.trailing, 12)
                             }
-                            HStack(alignment: .top, spacing: 8) {
+                            HStack(alignment: .top, spacing: 12) {
                                 MemberProfileImage(member, size: memberImageSize, backgroundColor: theme.colors.background)
                                     .onTapGesture {
                                         if let member =  m.getGroupMember(member.groupMemberId) {
@@ -880,7 +885,7 @@ struct ChatView: View {
                         }
                         chatItemWithMenu(ci, range, maxWidth, itemSeparation)
                             .padding(.trailing)
-                            .padding(.leading, memberImageSize + 8 + 12)
+                            .padding(.leading, 12 + memberImageSize + 12)
                     }
                     .padding(.bottom, bottomPadding)
                 }

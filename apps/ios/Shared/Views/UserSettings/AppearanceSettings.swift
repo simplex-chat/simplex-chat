@@ -381,7 +381,8 @@ struct ChatThemePreview: View {
                 Rectangle().fill(.clear)
             }
         }
-        .padding(10)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 16)
         .frame(maxWidth: .infinity)
 
         if let wallpaperType, let wallpaperImage = wallpaperType.image, let backgroundColor, let tintColor {
