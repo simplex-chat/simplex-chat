@@ -9,7 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
-/// Modifier, which provides clipping mask for ``ChatItemWithMenu`` view
+/// Modifier, which provides clipping mask for ``ChatItemWithMenu`` view 
 /// and it's previews: (drag interaction, context menu, etc.)
 /// Supports [Dynamic Type](https://developer.apple.com/documentation/uikit/uifont/scaling_fonts_automatically)
 /// by retaining pill shape, even when ``ChatItem``'s height is less that twice its corner radius
@@ -44,9 +44,13 @@ struct ChatItemClipped: ViewModifier {
                     padding: ci.chatDir.sent 
                     ? .trailing
                     : .leading,
-                    isTailVisible: ci.content.msgContent?.isImageOrVideo == true && ci.content.msgContent?.text.isEmpty == true
-                    ? false
-                    : isTailVisible
+                    isTailVisible: {
+                        if let mc = ci.content.msgContent, mc.isImageOrVideo, mc.text.isEmpty {
+                            false
+                        } else {
+                            isTailVisible
+                        }
+                    }()
                 )
                 : .roundRect(maxRadius: ChatBubble.maxRadius)
             default: .roundRect(maxRadius: 8)
@@ -55,11 +59,11 @@ struct ChatItemClipped: ViewModifier {
     }
 
     func body(content: Content) -> some View {
-        let shape = ChatBubble(roundness: roundness, shapeStyle: shapeStyle(roundness, isTailEnabled))
+        let clipShape = ChatBubble(roundness: roundness, shapeStyle: shapeStyle(roundness, isTailEnabled))
         content
-            .contentShape(.dragPreview, shape)
-            .contentShape(.contextMenuPreview, shape)
-            .clipShape(shape)
+            .contentShape(.dragPreview, clipShape)
+            .contentShape(.contextMenuPreview, clipShape)
+            .clipShape(clipShape)
     }
 }
 
