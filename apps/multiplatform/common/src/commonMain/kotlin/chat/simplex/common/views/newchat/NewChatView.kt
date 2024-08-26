@@ -361,22 +361,24 @@ private fun ActiveProfilePicker(
   @Composable
   fun incognitoUserOption() {
     ProfilePickerOption(
-      disabled = switchingProfile.value || incognito,
+      disabled = switchingProfile.value,
       title = stringResource(MR.strings.incognito),
       selected = incognito,
       onSelected = {
-        switchingProfile.value = true
-        withApi {
-          if (contactConnection != null) {
-            val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
-            switchingProfile.value = false
+        if (!incognito) {
+          switchingProfile.value = true
+          withApi {
+            if (contactConnection != null) {
+              val conn = controller.apiSetConnectionIncognito(rhId, contactConnection.pccConnId, true)
+              switchingProfile.value = false
 
-            if (conn != null) {
-              withChats {
-                updateContactConnection(rhId, conn)
-                updateShownConnection(conn)
+              if (conn != null) {
+                withChats {
+                  updateContactConnection(rhId, conn)
+                  updateShownConnection(conn)
+                }
+                close.invoke()
               }
-              close.invoke()
             }
           }
         }
