@@ -2,9 +2,9 @@ package chat.simplex.common.views.newchat
 
 import SectionBottomSpacer
 import SectionItemView
+import SectionSpacer
 import SectionTextFooter
 import SectionView
-import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -226,7 +226,7 @@ private fun ProfilePickerOption(
   ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
       image()
-      TextIconSpaced(false)
+      Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
       Text(title, modifier = Modifier.align(Alignment.CenterVertically))
       if (onInfo != null) {
         Spacer(Modifier.padding(6.dp))
@@ -461,7 +461,7 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
     SimpleXLinkQRCode(connReqInvitation, onShare = { chatModel.markShowingInvitationUsed() })
   }
 
-  Spacer(Modifier.height(10.dp))
+  Spacer(Modifier.height(DEFAULT_PADDING))
   val incognito by remember(chatModel.showingInvitation.value?.conn?.incognito, controller.appPrefs.incognito.get()) {
     derivedStateOf {
       chatModel.showingInvitation.value?.conn?.incognito ?: controller.appPrefs.incognito.get()
@@ -475,6 +475,7 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
   currentUser?.let {
     SectionView(stringResource(MR.strings.new_chat_share_profile).uppercase()) {
       SectionItemView(
+        padding = PaddingValues(vertical = 0.dp, horizontal = DEFAULT_PADDING),
         click = {
           ModalManager.start.showCustomModal { close ->
             val search = rememberSaveable { mutableStateOf("") }
@@ -505,7 +506,7 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
         } else {
           ProfileImage(size = 42.dp, image = it.image)
         }
-        TextIconSpaced(false)
+        Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
         Text(
           text = if (incognito) stringResource(MR.strings.incognito) else it.chatViewName,
           color = MaterialTheme.colors.onBackground
