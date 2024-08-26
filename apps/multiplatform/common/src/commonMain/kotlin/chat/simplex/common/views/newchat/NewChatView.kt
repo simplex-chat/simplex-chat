@@ -313,10 +313,12 @@ private fun ActiveProfilePicker(
 
   @Composable
   fun profilePickerUserOption(user: User) {
+    val selected = selectedProfile?.userId == user.userId && !incognito
+
     ProfilePickerOption(
       title = user.chatViewName,
-      disabled = switchingProfile.value,
-      selected = selectedProfile?.userId == user.userId && !incognito,
+      disabled = switchingProfile.value || selected,
+      selected = selected,
       onSelected = {
         switchingProfile.value = true
         withApi {
@@ -359,7 +361,7 @@ private fun ActiveProfilePicker(
   @Composable
   fun incognitoUserOption() {
     ProfilePickerOption(
-      disabled = switchingProfile.value,
+      disabled = switchingProfile.value || incognito,
       title = stringResource(MR.strings.incognito),
       selected = incognito,
       onSelected = {
