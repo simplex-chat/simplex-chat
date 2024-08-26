@@ -71,7 +71,8 @@ struct FramedItemView: View {
                     .overlay(DetermineWidth())
                     .accessibilityLabel("")
             }
-        }
+        }   
+            .modifier(ChatTailPadding(chatItem: chatItem))
             .background(chatItemFrameColorMaybeImageOrVideo(chatItem, theme))
             .onPreferenceChange(DetermineWidth.Key.self) { msgWidth = $0 }
 

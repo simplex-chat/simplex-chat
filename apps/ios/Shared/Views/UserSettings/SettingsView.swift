@@ -47,6 +47,8 @@ let DEFAULT_ACCENT_COLOR_GREEN = "accentColorGreen" // deprecated, only used for
 let DEFAULT_ACCENT_COLOR_BLUE = "accentColorBlue" // deprecated, only used for migration
 let DEFAULT_USER_INTERFACE_STYLE = "userInterfaceStyle" // deprecated, only used for migration
 let DEFAULT_PROFILE_IMAGE_CORNER_RADIUS = "profileImageCornerRadius"
+let DEFAULT_CHAT_ITEM_ROUNDNESS = "chatItemRoundness"
+let DEFAULT_CHAT_ITEM_TAIL = "chatItemTail"
 let DEFAULT_ONE_HAND_UI_CARD_SHOWN = "oneHandUICardShown"
 let DEFAULT_TOOLBAR_MATERIAL = "toolbarMaterial"
 let DEFAULT_CONNECT_VIA_LINK_TAB = "connectViaLinkTab"
@@ -75,6 +77,8 @@ let DEFAULT_THEME_OVERRIDES = "themeOverrides"
 
 let ANDROID_DEFAULT_CALL_ON_LOCK_SCREEN = "androidCallOnLockScreen"
 
+let defaultChatItemRoundness = 0.8
+
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
     DEFAULT_LA_NOTICE_SHOWN: false,
@@ -98,6 +102,8 @@ let appDefaults: [String: Any] = [
     DEFAULT_DEVELOPER_TOOLS: false,
     DEFAULT_ENCRYPTION_STARTED: false,
     DEFAULT_PROFILE_IMAGE_CORNER_RADIUS: defaultProfileImageCorner,
+    DEFAULT_CHAT_ITEM_ROUNDNESS: defaultChatItemRoundness,
+    DEFAULT_CHAT_ITEM_TAIL: true,
     DEFAULT_ONE_HAND_UI_CARD_SHOWN: false,
     DEFAULT_TOOLBAR_MATERIAL: ToolbarMaterial.defaultMaterial,
     DEFAULT_CONNECT_VIA_LINK_TAB: ConnectViaLinkTab.scan.rawValue,

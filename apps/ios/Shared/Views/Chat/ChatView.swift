@@ -913,7 +913,7 @@ struct ChatView: View {
                     allowMenu: $allowMenu
                 )
                 .environment(\.showTimestamp, itemSeparation.timestamp)
-                .modifier(ChatItemClipped(ci))
+                .modifier(ChatItemClipped(ci, isTailVisible: itemSeparation.largeGap))
                 .contextMenu { menu(ci, range, live: composeState.liveMessage != nil) }
                 .accessibilityLabel("")
                 if ci.content.msgContent != nil && (ci.meta.itemDeleted == nil || revealed) && ci.reactions.count > 0 {

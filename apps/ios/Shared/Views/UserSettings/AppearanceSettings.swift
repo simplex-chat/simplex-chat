@@ -33,6 +33,8 @@ struct AppearanceSettings: View {
     }()
     @State private var darkModeTheme: String = UserDefaults.standard.string(forKey: DEFAULT_SYSTEM_DARK_THEME) ?? DefaultTheme.DARK.themeName
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var profileImageCornerRadius = defaultProfileImageCorner
+    @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var chatItemRoundness = defaultChatItemRoundness
+    @AppStorage(DEFAULT_CHAT_ITEM_TAIL) private var chatItemTail = true
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
@@ -177,6 +179,14 @@ struct AppearanceSettings: View {
                     } else if currentThemeDefault.get() != DefaultTheme.LIGHT.themeName {
                         ThemeManager.applyTheme(systemDarkThemeDefault.get())
                     }
+                }
+
+                Section(header: Text("Messages").foregroundColor(theme.colors.secondary)) {
+                    HStack {
+                        Text("Roundness")
+                        Slider(value: $chatItemRoundness, in: 0...1, step: 0.1)
+                    }
+                    Toggle("Tail", isOn: $chatItemTail)
                 }
 
                 Section(header: Text("Profile images").foregroundColor(theme.colors.secondary)) {
@@ -358,13 +368,13 @@ struct ChatThemePreview: View {
                 let bob = ChatItem.getSample(2, CIDirection.directSnd, Date.now, NSLocalizedString("Good morning!", comment: "message preview"), quotedItem: CIQuote.getSample(alice.id, alice.meta.itemTs, alice.content.text, chatDir: alice.chatDir))
                 HStack {
                     ChatItemView(chat: Chat.sampleData, chatItem: alice, revealed: Binding.constant(false))
-                        .modifier(ChatItemClipped())
+                        .modifier(ChatItemClipped(alice, isTailVisible: true))
                     Spacer()
                 }
                 HStack {
                     Spacer()
                     ChatItemView(chat: Chat.sampleData, chatItem: bob, revealed: Binding.constant(false))
-                        .modifier(ChatItemClipped())
+                        .modifier(ChatItemClipped(bob, isTailVisible: true))
                         .frame(alignment: .trailing)
                 }
             } else {

@@ -69,7 +69,8 @@ struct CIMsgError: View {
         }
         .padding(.leading, 12)
         .padding(.vertical, 6)
-        .background(Color(uiColor: .tertiarySystemGroupedBackground))
+        .modifier(ChatTailPadding(chatItem: chatItem))
+        .background(chatItemFrameColor(chatItem, theme))
         .textSelection(.disabled)
         .onTapGesture(perform: onTap)
     }
