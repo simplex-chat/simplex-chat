@@ -452,13 +452,13 @@ private fun ActiveProfilePicker(
 
 @Composable
 private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection: MutableState<PendingContactConnection?>) {
-  SectionView(stringResource(MR.strings.share_this_1_time_link).uppercase()) {
+  SectionView(stringResource(MR.strings.share_this_1_time_link).uppercase(), headerBottomPadding = 5.dp) {
     LinkTextView(connReqInvitation, true)
   }
 
   Spacer(Modifier.height(10.dp))
 
-  SectionView(stringResource(MR.strings.or_show_this_qr_code).uppercase()) {
+  SectionView(stringResource(MR.strings.or_show_this_qr_code).uppercase(), headerBottomPadding = 5.dp) {
     SimpleXLinkQRCode(connReqInvitation, onShare = { chatModel.markShowingInvitationUsed() })
   }
 
@@ -552,14 +552,14 @@ fun AddContactLearnMoreButton() {
 
 @Composable
 private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, pastedLink: MutableState<String>, close: () -> Unit) {
-  SectionView(stringResource(MR.strings.paste_the_link_you_received).uppercase()) {
+  SectionView(stringResource(MR.strings.paste_the_link_you_received).uppercase(), headerBottomPadding = 5.dp) {
     PasteLinkView(rhId, pastedLink, showQRCodeScanner, close)
   }
 
   if (appPlatform.isAndroid) {
     Spacer(Modifier.height(10.dp))
 
-    SectionView(stringResource(MR.strings.or_scan_qr_code).uppercase()) {
+    SectionView(stringResource(MR.strings.or_scan_qr_code).uppercase(), headerBottomPadding = 5.dp) {
       QRCodeScanner(showQRCodeScanner) { text ->
         withBGApi {
           val res = verify(rhId, text, close)

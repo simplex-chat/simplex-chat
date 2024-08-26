@@ -8,7 +8,6 @@ import SectionItemViewWithoutMinPadding
 import SectionSpacer
 import SectionTextFooter
 import SectionView
-import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -270,7 +269,7 @@ private fun ProfileActionView(action: UserProfileAction, user: User, doAction: (
 
     @Composable fun ActionHeader(title: StringResource) {
       AppBarTitle(stringResource(title))
-      SectionView(padding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
+      SectionView(contentPadding = PaddingValues(start = 8.dp, end = DEFAULT_PADDING)) {
         UserProfileRow(user)
       }
       SectionSpacer()
