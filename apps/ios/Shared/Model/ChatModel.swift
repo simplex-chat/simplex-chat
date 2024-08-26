@@ -123,6 +123,14 @@ class NetworkModel: ObservableObject {
     }
 }
 
+/// ChatItemWithMenu can depend on previous or next item for it's appearance
+/// This dummy model is used to force an update of all chat items,
+/// when they might have changed appearance.
+class ChatItemDummyModel: ObservableObject {
+    static let shared = ChatItemDummyModel()
+    func sendUpdate() { objectWillChange.send() }
+}
+
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
@@ -428,19 +436,17 @@ final class ChatModel: ObservableObject {
 
     private func _upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
         if let i = getChatItemIndex(cItem) {
-            withConditionalAnimation {
-                _updateChatItem(at: i, with: cItem)
-            }
+            _updateChatItem(at: i, with: cItem)
+            ChatItemDummyModel.shared.sendUpdate()
             return false
         } else {
-            withConditionalAnimation(itemAnimation()) {
-                var ci = cItem
-                if let status = chatItemStatuses.removeValue(forKey: ci.id), case .sndNew = ci.meta.itemStatus {
-                    ci.meta.itemStatus = status
-                }
-                im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
-                im.itemAdded = true
+            var ci = cItem
+            if let status = chatItemStatuses.removeValue(forKey: ci.id), case .sndNew = ci.meta.itemStatus {
+                ci.meta.itemStatus = status
             }
+            im.reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
+            im.itemAdded = true
+            ChatItemDummyModel.shared.sendUpdate()
             return true
         }
 
