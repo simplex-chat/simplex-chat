@@ -36,98 +36,96 @@ struct UserPicker: View {
             .filter({ u in !u.user.hidden && !u.user.activeUser })
             .prefix(3)
         
-        VStack {
-            VStack(alignment: .leading, spacing: 0) {
-                if let currentUser = m.currentUser {
-                    HStack(spacing: 19) {
-                        ProfileImage(imageStr: currentUser.image, size: 44)
-                            .onTapGesture {
-                                showSettings = false
-                                activeSheet = .currentProfile
-                            }
-                        Spacer()
-                        ForEach(users) { u in
-                            userView(u)
+        VStack(alignment: .leading, spacing: 0) {
+            if let currentUser = m.currentUser {
+                HStack(spacing: 19) {
+                    ProfileImage(imageStr: currentUser.image, size: 44)
+                        .onTapGesture {
+                            showSettings = false
+                            activeSheet = .currentProfile
                         }
-                        Image(systemName: "list.bullet.circle")
-                            .resizable()
-                            .foregroundColor(theme.colors.secondary)
-                            .accentColor(theme.colors.secondary)
-                            .font(.system(size: 32, weight: .thin))
-                            .frame(width: 32, height: 32)
-                            .onTapGesture {
-                                showSettings = false
-                                activeSheet = .chatProfiles
-                            }
+                    Spacer()
+                    ForEach(users) { u in
+                        userView(u)
                     }
-                    .padding(.horizontal, 16)
-                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-                    
-                    Text(currentUser.displayName)
-                        .fontWeight(.bold)
-                        .font(.title2)
-                        .padding(.vertical, verticalSpaceDefault)
-                        .padding(.horizontal, 16)
-                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                    Image(systemName: "list.bullet.circle")
+                        .resizable()
+                        .foregroundColor(theme.colors.secondary)
+                        .accentColor(theme.colors.secondary)
+                        .font(.system(size: 32, weight: .thin))
+                        .frame(width: 32, height: 32)
+                        .onTapGesture {
+                            showSettings = false
+                            activeSheet = .chatProfiles
+                        }
                 }
-                menuButton("Your SimpleX address", icon: "qrcode") {
-                    activeSheet = .address
-                    userPickerVisible.toggle()
-                }
-                menuButton("Chat preferences", icon: "switch.2") {
-                    activeSheet = .chatPreferences
-                    userPickerVisible.toggle()
-                }
-                menuButton("Use from desktop", icon: "desktopcomputer") {
-                    showConnectDesktop = true
-                    userPickerVisible.toggle()
-                }
-                menuButton("Migrate to another device", icon: "tray.and.arrow.up") {
-                    activeSheet = .migrateDevice
-                    userPickerVisible.toggle()
-                }
+                .padding(.horizontal, 16)
+                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                 
-                Divider()
+                Text(currentUser.displayName)
+                    .fontWeight(.bold)
+                    .font(.title2)
                     .padding(.vertical, verticalSpaceDefault)
                     .padding(.horizontal, 16)
-                
-                
-                HStack {
-                    Button {
-                        showSettings = true
-                        userPickerVisible.toggle()
-                    } label: {
-                        HStack(spacing: verticalSpaceDefault) {
-                            Image(systemName: "gearshape")
-                                .symbolRenderingMode(.monochrome)
-                                .foregroundColor(theme.colors.secondary)
-                                .frame(maxWidth: 20, maxHeight: 20)
-                            Text("Settings")
-                            Spacer()
-                        }
-                        .padding(.vertical, verticalSpaceDefault)
-                        .padding(.horizontal, 16)
-                    }
-                    .buttonStyle(PressedButtonStyle(defaultColor: theme.colors.surface, pressedColor: Color(uiColor: .secondarySystemFill)))
-                    Button {
-                        if (colorScheme == .light) {
-                            ThemeManager.applyTheme(systemDarkThemeDefault.get())
-                        } else {
-                            ThemeManager.applyTheme(DefaultTheme.LIGHT.themeName)
-                        }
-                    } label: {
-                        Image(systemName: colorScheme == .light ? "sun.max" : "moon.stars")
+                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+            }
+            menuButton("Your SimpleX address", icon: "qrcode") {
+                activeSheet = .address
+                userPickerVisible.toggle()
+            }
+            menuButton("Chat preferences", icon: "switch.2") {
+                activeSheet = .chatPreferences
+                userPickerVisible.toggle()
+            }
+            menuButton("Use from desktop", icon: "desktopcomputer") {
+                showConnectDesktop = true
+                userPickerVisible.toggle()
+            }
+            menuButton("Migrate to another device", icon: "tray.and.arrow.up") {
+                activeSheet = .migrateDevice
+                userPickerVisible.toggle()
+            }
+            
+            Divider()
+                .padding(.vertical, verticalSpaceDefault)
+                .padding(.horizontal, 16)
+            
+            
+            HStack {
+                Button {
+                    showSettings = true
+                    userPickerVisible.toggle()
+                } label: {
+                    HStack(spacing: verticalSpaceDefault) {
+                        Image(systemName: "gearshape")
                             .symbolRenderingMode(.monochrome)
                             .foregroundColor(theme.colors.secondary)
                             .frame(maxWidth: 20, maxHeight: 20)
-                            .padding(.vertical, verticalSpaceDefault)
-                            .padding(.horizontal, 16)
+                        Text("Settings")
+                        Spacer()
                     }
+                    .padding(.vertical, verticalSpaceDefault)
+                    .padding(.horizontal, 16)
                 }
-                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+                .buttonStyle(PressedButtonStyle(defaultColor: theme.colors.surface, pressedColor: Color(uiColor: .secondarySystemFill)))
+                Button {
+                    if (colorScheme == .light) {
+                        ThemeManager.applyTheme(systemDarkThemeDefault.get())
+                    } else {
+                        ThemeManager.applyTheme(DefaultTheme.LIGHT.themeName)
+                    }
+                } label: {
+                    Image(systemName: colorScheme == .light ? "sun.max" : "moon.stars")
+                        .symbolRenderingMode(.monochrome)
+                        .foregroundColor(theme.colors.secondary)
+                        .frame(maxWidth: 20, maxHeight: 20)
+                        .padding(.vertical, verticalSpaceDefault)
+                        .padding(.horizontal, 16)
+                }
             }
-            .padding(.bottom, 7)
+            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         }
+        .padding(.bottom, 7)
         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .background(
             Rectangle()
