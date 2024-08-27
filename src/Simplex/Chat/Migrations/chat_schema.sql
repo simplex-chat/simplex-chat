@@ -407,6 +407,7 @@ CREATE TABLE chat_item_messages(
 CREATE TABLE calls(
   -- stores call invitations state for communicating state between NSE and app when call notification comes
   call_id INTEGER PRIMARY KEY,
+  call_uuid TEXT NOT NULL,
   contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE CASCADE,
   shared_call_id BLOB NOT NULL,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
