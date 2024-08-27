@@ -30,14 +30,12 @@ struct UserPicker: View {
     @State private var showProgress: Bool = false
     private let verticalSpaceDefault: CGFloat = 12
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
+    @State private var usersToPreview: ArraySlice<UserInfo> = []
+    @State private var activeUser: User? = nil
 
     var body: some View {
-        let users = m.users
-            .filter({ u in !u.user.hidden && !u.user.activeUser })
-            .prefix(3)
-        
         VStack(alignment: .leading, spacing: 0) {
-            if let currentUser = m.currentUser {
+            if let currentUser = activeUser {
                 HStack(spacing: 19) {
                     ProfileImage(imageStr: currentUser.image, size: 44)
                         .onTapGesture {
@@ -45,7 +43,7 @@ struct UserPicker: View {
                             activeSheet = .currentProfile
                         }
                     Spacer()
-                    ForEach(users) { u in
+                    ForEach(usersToPreview) { u in
                         userView(u)
                     }
                     Image(systemName: "list.bullet.circle")
@@ -152,36 +150,41 @@ struct UserPicker: View {
                 }
             }
         }
+        .onChange(of: userPickerVisible) { visible in
+            if visible {
+                usersToPreview = m.users
+                    .filter({ u in !u.user.hidden && !u.user.activeUser })
+                    .prefix(3)
+                
+                activeUser = m.currentUser
+            }
+        }
         .sheet(item: $activeSheet) { sheet in
-            NavigationView {
-                switch sheet {
-                case .chatProfiles:
-                    UserProfilesView(showSettings: $showSettings)
-                case .currentProfile:
-                    if m.currentUser != nil {
+            if let currentUser = activeUser {
+                NavigationView {
+                    switch sheet {
+                    case .chatProfiles:
+                        UserProfilesView(showSettings: $showSettings)
+                    case .currentProfile:
                         UserProfile()
                             .navigationTitle("Your current profile")
                             .modifier(ThemedBackground())
-                    }
-                case .address:
-                    if let user = m.currentUser {
-                        UserAddressView(shareViaProfile: user.addressShared)
+                    case .address:
+                        UserAddressView(shareViaProfile: currentUser.addressShared)
                             .navigationTitle("SimpleX address")
                             .navigationBarTitleDisplayMode(.large)
                             .modifier(ThemedBackground(grouped: true))
-                    }
-                case .chatPreferences:
-                    if let user = m.currentUser {
-                        PreferencesView(profile: user.profile, preferences: user.fullPreferences, currentPreferences: user.fullPreferences)
+                    case .chatPreferences:
+                        PreferencesView(profile: currentUser.profile, preferences: currentUser.fullPreferences, currentPreferences: currentUser.fullPreferences)
                             .navigationTitle("Your preferences")
                             .navigationBarTitleDisplayMode(.large)
                             .modifier(ThemedBackground(grouped: true))
+                    case .migrateDevice:
+                        MigrateFromDevice(showSettings: $showSettings, showProgressOnSettings: $showProgress)
+                            .navigationTitle("Migrate device")
+                            .modifier(ThemedBackground(grouped: true))
+                            .navigationBarTitleDisplayMode(.large)
                     }
-                case .migrateDevice:
-                    MigrateFromDevice(showSettings: $showSettings, showProgressOnSettings: $showProgress)
-                        .navigationTitle("Migrate device")
-                        .modifier(ThemedBackground(grouped: true))
-                        .navigationBarTitleDisplayMode(.large)
                 }
             }
         }
@@ -204,7 +207,11 @@ struct UserPicker: View {
             Task {
                 do {
                     try await changeActiveUserAsync_(user.userId, viewPwd: nil)
-                    await MainActor.run { userPickerVisible = false }
+                    await MainActor.run {
+                        withAnimation {
+                            userPickerVisible = false
+                        }
+                    }
                 } catch {
                     await MainActor.run {
                         AlertManager.shared.showAlertMsg(
