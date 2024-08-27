@@ -214,7 +214,7 @@ private fun ProfilePickerOption(
   disabled: Boolean,
   onSelected: () -> Unit,
   image: @Composable () -> Unit,
-  onInfo: (@Composable () -> Unit)? = null
+  onInfo: (() -> Unit)? = null
 ) {
   Row(
     Modifier
