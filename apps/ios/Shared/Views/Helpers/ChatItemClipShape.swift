@@ -100,7 +100,6 @@ struct ChatItemShape: Shape {
             let rx = roundness * rxMax
             let ry = roundness * ryMax
             let tailHeight = min(msgTailHeight, h / 2)
-//            let tailHeight = h - (Self.tailSize + (rMax - Self.tailSize) * roundness)
             var path = Path()
             // top side
             path.move(to: CGPoint(x: rx, y: 0))
@@ -126,7 +125,7 @@ struct ChatItemShape: Shape {
                 // distance of control point from touch point, calculated via ratios
                 let d = tailHeight - msgTailWidth * msgTailWidth / tailHeight
                 // tail control point
-                let tc = CGPoint(x: 0, y: h - tailHeight + d * roundness)
+                let tc = CGPoint(x: 0, y: h - tailHeight + d * roundness * roundness)
                 // bottom-left tail curve
                 path.addQuadCurve(to: CGPoint(x: 0, y: h - tailHeight), control: tc)
             } else {
