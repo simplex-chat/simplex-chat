@@ -188,7 +188,12 @@ struct UserPicker: View {
                 }
             }
         }, label: {
-            ProfileImage(imageStr: u.user.image, size: 32)
+            ZStack(alignment: .topTrailing) {
+                ProfileImage(imageStr: u.user.image, size: 32)
+                if (u.unreadCount > 0) {
+                    unreadCounter(u.unreadCount, color: user.showNtfs ? theme.colors.primary : theme.colors.secondary).offset(x: 8, y: -4)
+                }
+            }
         })
         .buttonStyle(PressedButtonStyle(defaultColor: theme.colors.surface, pressedColor: Color(uiColor: .secondarySystemFill)))
     }
@@ -218,12 +223,12 @@ struct UserPicker: View {
 
 private func unreadCounter(_ unread: Int, color: Color) -> some View {
     unreadCountText(unread)
-    .font(.caption)
-    .foregroundColor(.white)
-    .padding(.horizontal, 4)
-    .frame(minWidth: 18, minHeight: 18)
-    .background(color)
-    .cornerRadius(10)
+        .font(.caption)
+        .foregroundColor(.white)
+        .padding(.horizontal, 4)
+        .frame(minWidth: 18, minHeight: 18)
+        .background(color)
+        .cornerRadius(10)
 }
 
 struct UserPicker_Previews: PreviewProvider {
