@@ -467,10 +467,9 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
       chatModel.showingInvitation.value?.conn?.incognito ?: controller.appPrefs.incognito.get()
     }
   }
+  val currentUser = remember { chatModel.currentUser }.value
 
-  val currentUser by remember { chatModel.currentUser }
-
-  currentUser?.let { user ->
+  if (currentUser != null) {
     SectionView(stringResource(MR.strings.new_chat_share_profile).uppercase(), headerBottomPadding = 5.dp) {
       SectionItemView(
         padding = PaddingValues(
@@ -508,11 +507,11 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
           )
           Spacer(Modifier.width(2.dp))
         } else {
-          ProfileImage(size = 42.dp, image = user.image)
+          ProfileImage(size = 42.dp, image = currentUser.image)
         }
         TextIconSpaced(false)
         Text(
-          text = if (incognito) stringResource(MR.strings.incognito) else user.chatViewName,
+          text = if (incognito) stringResource(MR.strings.incognito) else currentUser.chatViewName,
           color = MaterialTheme.colors.onBackground
         )
         Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
