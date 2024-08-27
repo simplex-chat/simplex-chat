@@ -182,7 +182,7 @@ struct UserPicker: View {
                             .navigationBarTitleDisplayMode(.large)
                             .modifier(ThemedBackground(grouped: true))
                     case .migrateDevice:
-                        MigrateFromDevice(showSettings: $showSettings, showProgressOnSettings: $showProgress)
+                        MigrateFromDevice(showProgressOnSettings: $showProgress)
                             .navigationTitle("Migrate device")
                             .modifier(ThemedBackground(grouped: true))
                             .navigationBarTitleDisplayMode(.large)
