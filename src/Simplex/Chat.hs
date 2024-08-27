@@ -1709,7 +1709,7 @@ processChatCommand' vr = \case
           pure conn'
       recreateConn user conn@PendingContactConnection {customUserProfileId} newUser = do
         subMode <- chatReadVar subscriptionMode
-        (agConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing IKPQOn subMode
+        (agConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId newUser) True SCMInvitation Nothing IKPQOn subMode
         conn' <- withFastStore' $ \db -> do
           deleteConnectionRecord db user connId
           forM_ customUserProfileId $ \profileId ->
